@@ -506,6 +506,10 @@ export const IntMapRefData = (function(){
        astronomical, cut at 1886, less the ground OpenHistoricalMap states 1689–1885), so CC BY 4.0's conditions —
        credit, a link to the licence, and saying that it was changed — are paid here and in the bundle's own `src`.
        scripts/build-hist-clio.mjs holds the citation as a value. */
+    /* (hist-border-refine) where a reviewed fact says a historical boundary followed a river or wall, the coarse
+       line is redrawn along that feature's OpenStreetMap geometry (data/hist-courses.js) — ODbL 1.0, so credit
+       is a condition of redistribution, paid by this row (scripts/build-hist-courses.mjs GOVERNANCE paidBy). */
+    {n:'Historical boundary courses — OpenStreetMap contributors (ODbL 1.0), reviewed by IntMap',u:'https://www.openstreetmap.org/copyright',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
     {n:'Cliopatria — Seshat Global History Databank (CC BY 4.0)',u:'https://github.com/Seshat-Global-History-Databank/cliopatria',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},
     /* ⚠⚠⚠ (#R689) THE CREDIT #R679 WROTE DOWN AS AN INSTRUCTION AND THEN DID NOT PAY. The
        harvest that produced scripts/histcities/derived-pleiades.mjs put the condition in that

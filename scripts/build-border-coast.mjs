@@ -110,6 +110,25 @@ export const INLAND_KM = 6;
    polity sets at 6 km remain exactly identical to R710 (25/26/25 at the same
    three dates, compared by names, not counts alone). No inland-border polity
    goes silent as a consequence of the refinement. */
+/* ⚠⚠ (hist-border-refine) THE BAND IS A PROPERTY OF THE RECORD, AND ONE RECORD IS FAR COARSER THAN THE TWO
+   IT WAS MEASURED ON. INLAND_KM was read off CShapes and OpenHistoricalMap, and its own expiry says «the band
+   has to stay above the record's own coastal registration error». Cliopatria (data/hist-clio.js, hand-drawn)
+   was then marked with the same 6 km, and its copy of the coast wanders further than that: measured
+   2026-10-05 with `--sweep __HISTCLIO` at 17 years from 500 BC to 1880, the drawn line falls by 7–10 thousand
+   km per 2 km of cut up to 10 km (0: 110,548 → 103,180 → 96,018 km at 6 / 8 / 10), then the loss slows
+   (91,875 at 12, 90,138 at 15, 89,440 at 20). The polities that fall silent up to 10 km are islands or coastal
+   slivers smaller than the record's own error — Japan (the Kamakura and Ashikaga shogunates), Bali, the Isle
+   of Man, Chūzan and Nanzan, the Hunnic remnant on the Black Sea shore (2 rings, 8 points), the 1612–1689
+   Maguindanao fragment (0.2° across), the British Colonial Empire's posts; at 12 km the Republic of Amalfi and
+   French India — polities with a land border — go silent. So Cliopatria's band is 10 km.
+   The sheets (data/hist-eras.js, data/hist-eras-rest.js) were swept the same way (every sheet from 3000 BC) and keep 6 km:
+   already at 8 km the 1492 sheet silences coastal peoples with land neighbours (Accomack, Nauset, Croatan,
+   Lummi…), so no wider band passes the second test for them.
+   ⚠ EXPIRES with the record: re-run `--sweep <global> <years>` when Cliopatria is rebuilt from another release
+   or at another tolerance. The key is the global the bundle assigns — the identity the marks file already
+   carries — and a record not named here is marked with INLAND_KM. */
+export const RECORD_INLAND_KM = { __HISTCLIO: 10 };
+export const inlandKmFor = (global) => RECORD_INLAND_KM[global] || INLAND_KM;
 /* Walk edges at 1 km intervals within the 6 km classification band, rather than
    judging a long segment only at its endpoints. This samples classification, not new geometry. */
 const SAMPLE_KM = 1;
@@ -278,7 +297,8 @@ function markAll(W, cut, sets) {
   const out = {};
   for (const s of sets) {
     const d = loadBundle(s.file, s.global);
-    out[s.key] = { file: 'data/' + s.file, global: s.global, rings: d.rings.length, draw: d.rings.map((r) => markRing(W, r, cut)) };
+    const c = cut == null ? inlandKmFor(s.global) : cut;
+    out[s.key] = { file: 'data/' + s.file, global: s.global, rings: d.rings.length, ...(c !== INLAND_KM ? { inlandKm: c } : {}), draw: d.rings.map((r) => markRing(W, r, c)) };
     const zero = d.rings.reduce((a, r) => a + (ringArea(closedRing(r)) === 0 ? 1 : 0), 0);
     console.log('  ' + s.key + ': ' + d.rings.length + ' rings, ' + zero + ' of them enclosing no area at the stored precision (not stroked)');
   }
@@ -292,6 +312,35 @@ function tally(sets) {
     if (v === 1) whole++; else if (v === 0) none++; else { part++; runs += v.length; }
   }
   return { rings, whole, none, part, runs };
+}
+
+/* ── --sweep <global> <year,…>: the second measurement, for ONE record ─────────────────────────
+   The measurement INLAND_KM was read off (above): at each cut, the line the record draws and the
+   polities that fall silent (draw no border at all). A record's own cut is the one at which the
+   marginal line lost flattens AND every newly silent polity is one with no land neighbour. Rows are
+   the record's rows in force on 1 July of each year (a ring-pooled bundle with dated rows), or each
+   sheet whose year is listed (a bundle of `snaps`). */
+function sweep(global, years) {
+  const W = water(), CUTS = [6, 8, 10, 12, 15, 20];
+  const s = discoverBundles().find((b) => b.global === global);
+  if (!s) throw new Error(global + ' is not a ring-pooled bundle in data/');
+  const d = loadBundle(s.file, s.global), memo = new Map();
+  const R = 6371, rad = Math.PI / 180;
+  const km = (a, b) => { const k = Math.cos((a[1] + b[1]) * 0.5 * rad); return Math.hypot((b[0] - a[0]) * k, b[1] - a[1]) * rad * R; };
+  const drawn = (i) => { let m = memo.get(i); if (m) return m; const V = closedRing(d.rings[i]);
+    m = CUTS.map((c) => { const mk = markRing(W, d.rings[i], c); if (mk === 0) return 0; const runs = mk === 1 ? [[0, V.length - 1]] : mk; let t = 0; for (const [a, b] of runs) for (let j = a; j < b; j++) t += km(V[j], V[j + 1]); return t; });
+    memo.set(i, m); return m; };
+  for (const y of years) {
+    let rows;
+    if (Array.isArray(d.snaps)) { const sn = d.snaps.find((x) => x.y === y); if (!sn) { console.log(y + ': no sheet of that year'); continue; } rows = sn.feats.map((f) => [(f[0] && f[0].en) || '?', f[2]]); }
+    else { const t = y * 10000 + 701; rows = d.feats.filter((f) => !(f[9] && f[9].r) && f[2] * 10000 + f[3] * 100 + f[4] <= t && t < f[5] * 10000 + f[6] * 100 + f[7]).map((f) => [(f[0] && f[0].en) || f[0], f[8]]); }
+    const tot = CUTS.map(() => 0), silent = CUTS.map(() => []);
+    for (const [name, polys] of rows) { const per = CUTS.map(() => 0);
+      for (const p of polys) for (const i of p) drawn(i).forEach((v, k) => { per[k] += v; tot[k] += v; });
+      per.forEach((v, k) => { if (v === 0 && per[0] > 0) silent[k].push(name); }); }
+    console.log(y + '  drawn km by cut  ' + CUTS.map((c, k) => c + ':' + Math.round(tot[k])).join('  '));
+    for (let k = 1; k < CUTS.length; k++) { const was = new Set(silent[k - 1]); const now = silent[k].filter((n) => !was.has(n)); if (now.length) console.log('   newly silent at ' + CUTS[k] + ' km: ' + now.join(', ')); }
+  }
 }
 
 /* ── --report: the distribution INLAND_KM is read off ─────────────────────────────────────────── */
@@ -331,7 +380,7 @@ function build() {
   const W = water();
   const found = discoverBundles();
   console.log('bundles discovered in data/:', found.map((s) => s.file + ' → ' + s.key).join(', '));
-  const sets = markAll(W, INLAND_KM, found);
+  const sets = markAll(W, null, found);
   const doc = {
     v: 1,
     src: 'derived: ' + found.map((s2) => 'data/' + s2.file).join(' + ') + ' against data/coastline.json.gz',
@@ -380,6 +429,7 @@ function check(step) {
     const got = D.sets[s.key];
     ok(got && got.rings === d.rings.length, s.key + ': ring count matches ' + s.file);
     ok(got && got.global === s.global, s.key + ': the entry names the global it marks (' + s.global + ')');
+    ok(got && (got.inlandKm || INLAND_KM) === inlandKmFor(s.global), s.key + ': marked with a band of ' + (got && (got.inlandKm || INLAND_KM)) + ' km, but the record band is ' + inlandKmFor(s.global));
     ok(got && got.draw.length === d.rings.length, s.key + ': one entry per ring');
     if (!got || got.draw.length !== d.rings.length) continue;
     let mism = 0, badShape = 0, tried = 0;
@@ -395,7 +445,7 @@ function check(step) {
       }
       if (i % step) continue;
       tried++;
-      const re = markRing(W, d.rings[i], INLAND_KM);
+      const re = markRing(W, d.rings[i], inlandKmFor(s.global));
       if (JSON.stringify(re) !== JSON.stringify(v)) mism++;
     }
     ok(badShape === 0, s.key + ': every entry is 0, 1 or ordered in-range runs (' + badShape + ' bad)');
@@ -413,6 +463,7 @@ if (process.argv[1] && join(process.argv[1]) === join(fileURLToPath(import.meta.
   const arg = process.argv[2] || '';
   const sampleAt = process.argv.indexOf('--sample');
   if (arg === '--report') report();
+  else if (arg === '--sweep') sweep(process.argv[3], String(process.argv[4] || '').split(',').filter(Boolean).map(Number));
   else if (arg === '--check') check(sampleAt >= 0 ? process.argv[sampleAt + 1] : 1);
   else build();
 }

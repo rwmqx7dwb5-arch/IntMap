@@ -84,28 +84,106 @@ export const IntMapBorderCoast = (function () {
      without them */
   function onArrive(cb) { if (typeof cb === 'function') _arrived.push(cb); }
 
+  /* ══ (hist-border-refine) A COARSE BOUNDARY REDRAWN ALONG THE RIVER OR WALL HISTORY SAYS IT FOLLOWED ══
+     data/hist-courses.js (scripts/build-hist-courses.mjs) names, for a ring of a coarse record, the vertex
+     ranges of its drawn runs that are that record's drawing of a stretch a reviewed fact says followed a
+     river or wall (scripts/histcourse/courses.json, two sources each) — and the feature's own vertices to
+     draw there instead. Every decision is in that file; this only splices. ⚠ OPTIONAL in the same way the
+     marks are: absent or for another pool, the ring is drawn exactly as the marks say. */
+  let _C = null, _CP = null;
+  function loadCourses() {
+    if (_C) return Promise.resolve(_C);
+    if (_CP) return _CP;
+    _CP = new Promise((res) => {
+      if (window.__IMBCOURSE) { _C = window.__IMBCOURSE; res(_C); return; }
+      if (typeof document === 'undefined') { _CP = null; res(null); return; }
+      const s = document.createElement('script'); s.src = 'data/hist-courses.js'; s.async = true;
+      s.onload = () => {
+        _C = window.__IMBCOURSE || null;
+        if (_C) for (const cb of _arrived) { try { cb(); } catch (_) {} }
+        res(_C);
+      };
+      s.onerror = () => { _CP = null; res(null); };
+      document.head.appendChild(s);
+    });
+    return _CP;
+  }
+  /* ⚠ A REDRAW HOLDS ONLY WHILE ITS FACT DOES. A ring is pooled across every row (and date) that draws it, so each
+     substitution is in force only while the clock `t` (a sortable YYYYMMDD day) is inside its course's `days`
+     [from, to) — and with no clock, never. The caller that memoises lines keys them by `courseEpoch(t)`: two dates
+     in the same epoch draw the same substitutions. */
+  const _active = (x, t) => { const c = _C && _C.courses && _C.courses[x[2]]; return !!(c && c.days && t >= c.days[0] && t < c.days[1]); };
+  /* the substitutions for ring `ri` of the pool `global` holds at `t` — only if that pool is the one they were
+     derived from (same length), as a mark is */
+  function subsAt(global, ri, poolLen, t) {
+    if (!_C || !_C.sets || t == null) return null;
+    for (const k in _C.sets) {
+      const s = _C.sets[k];
+      if (s && s.global === global) { const l = (s.rings === poolLen && s.sub && s.sub[ri]) || null; if (!l) return null; const a = l.filter((x) => _active(x, t)); return a.length ? a : null; }
+    }
+    return null;
+  }
+  function subsOf(ring, t) {
+    if (!_C || t == null) return null;
+    let o = null; try { o = _HB() ? _HB().ringOrigin(ring) : null; } catch (_) { o = null; }
+    if (o) return subsAt(o[0], o[1], o[2], t);
+    for (const k in _C.sets) {
+      const s = _C.sets[k], b = s && window[s.global];
+      if (b && Array.isArray(b.rings) && b.rings.length === s.rings) { const i = b.rings.indexOf(ring); if (i >= 0) return subsAt(s.global, i, s.rings, t); }
+    }
+    return null;
+  }
+  /* which stretch of time `t` is in, among every course's [from, to) — two dates with the same answer draw the same
+     substitutions; -1 while no course file is loaded */
+  let _edges = null;
+  function courseEpoch(t) {
+    if (!_C || !_C.courses || t == null) return -1;
+    if (!_edges) _edges = [...new Set(_C.courses.flatMap((c) => c.days || []))].sort((a, b) => a - b);
+    let n = 0; for (const e of _edges) { if (e <= t) n++; else break; }
+    return n;
+  }
+  /* one run V[a..b] with the substitutions inside it spliced in: V[..x0-1], the course's own vertices
+     i0 → i1, then V[x1+1..] — one continuous line, so nothing about the run's ends moves */
+  function spliceRun(V, a, b, subs) {
+    const out = [];
+    let i = a;
+    for (const s of subs) {
+      if (s[0] < a || s[1] > b) continue;
+      for (; i < s[0]; i++) out.push(V[i]);
+      const line = _C.courses[s[2]] && _C.courses[s[2]].line;
+      if (!line) { for (; i <= s[1]; i++) out.push(V[i]); continue; }
+      if (s[4] >= s[3]) for (let j = s[3]; j <= s[4]; j++) out.push(line[j]);
+      else for (let j = s[3]; j >= s[4]; j--) out.push(line[j]);
+      i = s[1] + 1;
+    }
+    for (; i <= b; i++) out.push(V[i]);
+    return out;
+  }
+
   function marks(set) { try { return (_D && _D.sets && _D.sets[set] && _D.sets[set].draw) || null; } catch (_) { return null; } }
 
   const closedRing = (r) => { const n = r.length; return (n > 1 && r[0][0] === r[n - 1][0] && r[0][1] === r[n - 1][1]) ? r : r.concat([r[0]]); };
 
   /* the border runs of ONE ring, as LineString coordinate arrays */
-  function ringLines(ring, mark) {
+  function ringLines(ring, mark, subs) {
     const V = closedRing(ring);
     if (mark === 0) return [];
-    if (mark === 1 || !Array.isArray(mark)) return [V];
+    if (mark === 1 || !Array.isArray(mark)) return [subs ? spliceRun(V, 0, V.length - 1, subs) : V];
     const out = [];
-    for (const run of mark) { const seg = V.slice(run[0], run[1] + 1); if (seg.length > 1) out.push(seg); }
+    for (const run of mark) { const seg = subs ? spliceRun(V, run[0], run[1], subs) : V.slice(run[0], run[1] + 1); if (seg.length > 1) out.push(seg); }
     return out;
   }
 
   /* one bundled feature's border runs. `d` is any of the ring-pooled bundles — they all carry
      `rings` and `feats[i][8] = [[ringIdx…]…]`, which is why one reader serves all of them. */
-  function lineGeom(d, idx, marksArr, allowDetail = true) {
+  function lineGeom(d, idx, marksArr, allowDetail = true, t = null) {
     const detail = allowDetail ? detailLine(d, idx) : undefined;
     if (detail !== undefined) return detail;
     const lines = [];
+    let global = null; if (_C) { try { global = _HB() ? _HB().globalOf(d) : null; } catch (_) { global = null; }
+      if (!global) for (const k in _C.sets) if (window[_C.sets[k].global] === d) { global = _C.sets[k].global; break; } }
     for (const poly of d.feats[idx][8]) for (const ri of poly) {
-      for (const l of ringLines(d.rings[ri], marksArr ? marksArr[ri] : 1)) lines.push(l);
+      for (const l of ringLines(d.rings[ri], marksArr ? marksArr[ri] : 1, global ? subsAt(global, ri, d.rings.length, t) : null)) lines.push(l);
     }
     return lines.length ? { type: 'MultiLineString', coordinates: lines } : null;
   }
@@ -165,19 +243,20 @@ export const IntMapBorderCoast = (function () {
   /* a collection handed over whole: each ring stroked whole unless the marks know it, in which case
      it is stroked the way the marks say — the outline drawn before #R531 for everything nobody has
      measured, and the measured answer for everything that has been. */
-  function wholeLines(fc) {
+  function wholeLines(fc, t = null) {
     /* ⚠ the marks may not have been asked for yet on this path (the era tier awaits the bundle, not
        these), so ask now: a caller that memoizes what it gets back keeps the whole-ring drawing
        until it rebuilds, and one request started here is what makes that a first frame instead of a
        session. */
     if (!_D) { try { load(); } catch (_) {} }
+    if (!_C) { try { loadCourses(); } catch (_) {} }
     const feats = [];
     for (const f of ((fc && fc.features) || [])) {
       const g = f.geometry; if (!g) continue;
       const polys = g.type === 'Polygon' ? [g.coordinates] : (g.type === 'MultiPolygon' ? g.coordinates : null);
       if (!polys) continue;
       const lines = [];
-      for (const p of polys) for (const r of p) if (r && r.length > 1) for (const l of ringLines(r, markOf(r))) lines.push(l);
+      for (const p of polys) for (const r of p) if (r && r.length > 1) for (const l of ringLines(r, markOf(r), subsOf(r, t))) lines.push(l);
       if (lines.length) feats.push({ type: 'Feature', geometry: { type: 'MultiLineString', coordinates: lines }, properties: Object.assign({}, f.properties) });
     }
     return { type: 'FeatureCollection', features: feats };
@@ -325,6 +404,6 @@ export const IntMapBorderCoast = (function () {
     return lines.length ? { type: 'MultiLineString', coordinates: lines } : null;
   }
 
-  return { load, onArrive, marks, closedRing, ringLines, lineGeom, wholeLines, geometryKey, loaded: () => !!_D };
+  return { load, loadCourses, courseEpoch, onArrive, marks, closedRing, ringLines, lineGeom, wholeLines, geometryKey, loaded: () => !!_D };
 })();
 globalThis.IntMapBorderCoast = IntMapBorderCoast;   /* (module-graph) the compat window: importers get the binding above */

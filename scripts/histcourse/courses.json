@@ -1,0 +1,3767 @@
+{
+ "about": "Reviewed facts: where a historical boundary followed a river or wall, on which stretch and when. Read by scripts/build-hist-courses.mjs. `reviewed` may move a coarse line; `notDrawn` may not: each says what the research found (`verdict`) and why it is not drawn — refuted, undetermined, or confirmed but not placeable within 1 km on a modern line.",
+ "reviewedOn": "2026-10-05",
+ "reviewed": [
+  {
+   "id": "danube-byzantine-paristrion-vidin-silistra",
+   "feature": {
+    "kind": "river",
+    "name": "Danube",
+    "wikidata": "Q1653",
+    "osm": {
+     "type": "relation",
+     "ids": [
+      89652
+     ]
+    }
+   },
+   "from": [
+    22.885,
+    43.995
+   ],
+   "to": [
+    27.27,
+    44.12
+   ],
+   "span": [
+    "1002",
+    "1072"
+   ],
+   "sides": [
+    {
+     "name": "Byzantine Empire",
+     "qid": "Q12544"
+    },
+    {
+     "name": "Pechenegs",
+     "qid": "Q181752"
+    }
+   ],
+   "claim": "After Basil II's reconquest the southern bank of the lower Danube (Paristrion/Paradounavon, roughly Moesia Inferior and Dobruja) was a Byzantine frontier province, and the river separated it from the Pechenegs 'who dwelt beyond the Danube'. Stephenson accepts that Basil II extended the empire's political borders 'as far as the Danube', creating 'a frontier between Byzantium and the turbulent lands beyond the Danube'; Dall'Aglio, following Madgearu, calls the river a 'permeable frontier' guarded by forts.",
+   "channel": "Upstream of the delta the main channel is broadly where it was, but between Calarasi/Silistra and Braila the river is braided (Borcea arm west of the Balta Ialomitei, main 'Old Danube' east of it) and no source says which arm bounded Paristrion; do not snap to the Borcea. Below Isaccea/Tulcea (the delta) the medieval outlets differ from today's (the Sulina arm is a 19th-century canalised course), so the stretch deliberately stops at Isaccea.",
+   "review": "Accepted from Vidin (taken 1002, Stephenson p. 65) to Durostorum/Silistra, the seat of Paristrion. Not drawn below Silistra: between Calarasi and Braila the river is braided (Borcea arm vs main arm) and no source says which arm bounded the province.",
+   "research": "byzantine-paristrion-lower-danube-1001-1072",
+   "sources": [
+    {
+     "cite": "Paul Stephenson, Byzantium's Balkan Frontier: A Political Study of the Northern Balkans, 900-1204, Cambridge University Press, 2000, pp. 6-7, 63-65, 89-91, 98, 318",
+     "url": "https://www.cristoraul.org/BYZANTIUM/Byzantine-Balkan-Frontier.pdf",
+     "supports": "Basil II extended the political borders as far as the Danube; recovery of Pliska/Preslav (1001) and Vidin (1002); Pechenegs crossing the frozen river into Paristrion (1047) and nomads settled south of the Danube; 'The loss of Paradounavon' from 1072; conclusion: a frontier between Byzantium and the lands beyond the Danube."
+    },
+    {
+     "cite": "Francesco Dall'Aglio, 'Paristrion as Centre and Periphery: from Byzantine Border Province to Heartland of the Second Bulgarian Tsardom', Studia Ceranea 12, 2022 (doi 10.18778/2084-140X.12.12), abstract and p. 5",
+     "url": "https://pdfs.semanticscholar.org/4cf3/1418d6daf78cd0294ab700469762be6922d7.pdf",
+     "supports": "Paristrion was a Byzantine border province on the lower Danube after Tzimiskes and Basil II; with the Pechenegs north of the Danube the river became a 'permeable frontier' (citing Madgearu); mixobarbaroi employed to defend the 'Danube limes'."
+    }
+   ]
+  },
+  {
+   "id": "danube-byzantine-paristrion-braila-isaccea",
+   "feature": {
+    "kind": "river",
+    "name": "Danube",
+    "wikidata": "Q1653",
+    "osm": {
+     "type": "relation",
+     "ids": [
+      89652
+     ]
+    }
+   },
+   "from": [
+    27.97,
+    45.27
+   ],
+   "to": [
+    28.46,
+    45.27
+   ],
+   "span": [
+    "1001",
+    "1072"
+   ],
+   "sides": [
+    {
+     "name": "Byzantine Empire",
+     "qid": "Q12544"
+    },
+    {
+     "name": "Pechenegs",
+     "qid": "Q181752"
+    }
+   ],
+   "claim": "After Basil II's reconquest the southern bank of the lower Danube (Paristrion/Paradounavon, roughly Moesia Inferior and Dobruja) was a Byzantine frontier province, and the river separated it from the Pechenegs 'who dwelt beyond the Danube'. Stephenson accepts that Basil II extended the empire's political borders 'as far as the Danube', creating 'a frontier between Byzantium and the turbulent lands beyond the Danube'; Dall'Aglio, following Madgearu, calls the river a 'permeable frontier' guarded by forts.",
+   "channel": "Upstream of the delta the main channel is broadly where it was, but between Calarasi/Silistra and Braila the river is braided (Borcea arm west of the Balta Ialomitei, main 'Old Danube' east of it) and no source says which arm bounded Paristrion; do not snap to the Borcea. Below Isaccea/Tulcea (the delta) the medieval outlets differ from today's (the Sulina arm is a 19th-century canalised course), so the stretch deliberately stops at Isaccea.",
+   "review": "The single-channel reach from Braila to Noviodunum/Isaccea, the head of the delta (the medieval delta outlets differ from today's, so nothing below Isaccea is drawn). Little Preslav and the Dobrujan bank were recovered in 1001 (Stephenson pp. 63-64).",
+   "research": "byzantine-paristrion-lower-danube-1001-1072",
+   "sources": [
+    {
+     "cite": "Paul Stephenson, Byzantium's Balkan Frontier: A Political Study of the Northern Balkans, 900-1204, Cambridge University Press, 2000, pp. 6-7, 63-65, 89-91, 98, 318",
+     "url": "https://www.cristoraul.org/BYZANTIUM/Byzantine-Balkan-Frontier.pdf",
+     "supports": "Basil II extended the political borders as far as the Danube; recovery of Pliska/Preslav (1001) and Vidin (1002); Pechenegs crossing the frozen river into Paristrion (1047) and nomads settled south of the Danube; 'The loss of Paradounavon' from 1072; conclusion: a frontier between Byzantium and the lands beyond the Danube."
+    },
+    {
+     "cite": "Francesco Dall'Aglio, 'Paristrion as Centre and Periphery: from Byzantine Border Province to Heartland of the Second Bulgarian Tsardom', Studia Ceranea 12, 2022 (doi 10.18778/2084-140X.12.12), abstract and p. 5",
+     "url": "https://pdfs.semanticscholar.org/4cf3/1418d6daf78cd0294ab700469762be6922d7.pdf",
+     "supports": "Paristrion was a Byzantine border province on the lower Danube after Tzimiskes and Basil II; with the Pechenegs north of the Danube the river became a 'permeable frontier' (citing Madgearu); mixobarbaroi employed to defend the 'Danube limes'."
+    }
+   ]
+  },
+  {
+   "id": "danube-ottoman-wallachia",
+   "feature": {
+    "kind": "river",
+    "name": "Danube",
+    "wikidata": "Q1653",
+    "osm": {
+     "type": "relation",
+     "ids": [
+      89652
+     ]
+    }
+   },
+   "from": [
+    22.68,
+    44.21
+   ],
+   "to": [
+    27.27,
+    44.12
+   ],
+   "span": [
+    "1420",
+    "1829-09-14"
+   ],
+   "sides": [
+    {
+     "name": "Ottoman Empire (directly ruled sanjaks of Vidin, Nikopol, Silistra)",
+     "qid": "Q12560"
+    }
+   ],
+   "claim": "The lower Danube separated directly ruled Ottoman territory from the tributary principality of Wallachia. The Ottomans also held fortified districts (kaza/raya) on the left bank at Turnu, Giurgiu and later Braila until the Treaty of Adrianople (1829); after that the Danube itself 'formed the border between the Wallachian voivodeship and the Ottoman state'. Giurgiu is described as lying on the northern border of the Ottoman Empire.",
+   "channel": "Between Calarasi/Silistra and Braila the river is braided (Borcea arm vs main arm, Balta Ialomitei and Balta Brailei). No source says which arm was the limit, and the Balta was drained and regulated in the 20th century.",
+   "exceptions": [
+    {
+     "place": "Turnu (Turnu Magurele) raya on the left bank, Ottoman 1420-1829",
+     "lon": 24.87,
+     "lat": 43.72,
+     "km": 12
+    },
+    {
+     "place": "Giurgiu raya on the left bank (c. 25 villages), Ottoman by 1449-1829",
+     "lon": 25.97,
+     "lat": 43.89,
+     "km": 20
+    }
+   ],
+   "review": "The edge of direct Ottoman rule against tributary Wallachia from the Timok mouth to Silistra. Ends at the Treaty of Adrianople (1829-09-14), which returned the left-bank rayas; the rayas of Turnu and Giurgiu are kept coarse (their extent is not established). Only the Ottoman side is redrawn: Cliopatria's Wallachia carries no verified identity. Not drawn below Silistra (braided reach; Braila raya from 1538/42).",
+   "research": "ottoman-wallachia-lower-danube",
+   "sources": [
+    {
+     "cite": "TDV Islam Ansiklopedisi, 'Yergogu' (Giurgiu)",
+     "url": "https://islamansiklopedisi.org.tr/yergogu",
+     "supports": "Giurgiu on the left bank; taken 1420 (not 1417); Wallachian in 1427; Ottoman by 1449; after the 1829 Edirne treaty the Danube formed the Wallachian-Ottoman border."
+    },
+    {
+     "cite": "Meryem Kacan Erdogan, 'An Ottoman Castle on the North Border in the XVIth Century: Giurgiu', Balkan Arastirma Enstitusu Dergisi (Trakya University) 11/1, 2022",
+     "url": "https://www.ceeol.com/search/article-detail?id=1059356",
+     "supports": "Giurgiu on the left bank of the Danube, on the northern border of the Ottoman Empire, directly affected by Ottoman-Wallachian relations."
+    },
+    {
+     "cite": "Wikipedia, 'Raya (country subdivision)' (citing Academia Romana, Istoria Romanilor vol. V, 2001, pp. 571-572)",
+     "url": "https://en.wikipedia.org/wiki/Raya_(country_subdivision)",
+     "supports": "Wallachian rayas on the northern bank around Turnu, Giurgiu and Braila; returned in 1829."
+    }
+   ]
+  },
+  {
+   "id": "dniester-moldavia-east",
+   "feature": {
+    "kind": "river",
+    "name": "Dniester",
+    "wikidata": "Q131210",
+    "osm": {
+     "type": "relation",
+     "ids": [
+      2474595
+     ]
+    }
+   },
+   "from": [
+    25.73,
+    48.64
+   ],
+   "to": [
+    29.1,
+    47.35
+   ],
+   "span": [
+    "1400",
+    "1672-10-18"
+   ],
+   "sides": [
+    {
+     "name": "Principality of Moldavia",
+     "qid": "Q10957559"
+    }
+   ],
+   "claim": "Scholarship describes the Polish-Moldavian boundary as running for most of its course along the White Cheremosh, the Kolachin and the Dniester, and the Dniester as Moldavia's eastern boundary from the late 14th century. On the middle Dniester (Khotyn opposite Kamianets) the river is therefore the boundary between Moldavia and Poland/Lithuania. The southern terminus on the left bank (Yahorlyk brook, beyond which lay Crimean/Ottoman Yedisan) is attested only by a Wikipedia summary of Romanian historiography.",
+   "channel": "Gorge reach without known avulsion; the Novodnistrovsk (1981) and Dubasari (1954) reservoirs are narrow and follow the old valley.",
+   "review": "Moldavia's eastern boundary on the Dniester, from where the Kolachin line reaches the river to the Yahorlyk mouth. Both opened sources state that the boundary ran along the Dniester (Wasiucionek; Internet Encyclopedia of Ukraine, which dates Moldavia's reach to the river to the late 14th century, so 1400 is the latest year that statement allows). Ends at the Treaty of Buczacz (1672-10-18). Only Moldavia's side is redrawn (the far bank changed hands).",
+   "research": "dniester-moldavia-poland-middle",
+   "sources": [
+    {
+     "cite": "Michał Wasiucionek, 'Across the Dniester: The Texture of Contact in the Seventeenth-Century Polish-Moldavian Borderland', Polish History (polishhistory.pl)",
+     "url": "https://polishhistory.pl/across-the-dniester-the-texture-of-contact-in-the-seventeenth-century-polish-moldavian-borderland/",
+     "supports": "the boundary ran for most of its course along the White Cheremosh, the Kolachin and the Dniester"
+    },
+    {
+     "cite": "Internet Encyclopedia of Ukraine, 'Moldavia'",
+     "url": "https://www.encyclopediaofukraine.com/display.asp?linkpath=pages\\M\\O\\Moldavia.htm",
+     "supports": "Moldavia bounded by the Dniester to the east; by the late 14th century it extended to the Dniester"
+    },
+    {
+     "cite": "Wikipedia, 'History of Transnistria to 1792' (cites Ion Nistor and Aurel V. Sava) - used only to locate the Yahorlyk terminus",
+     "url": "https://en.wikipedia.org/wiki/History_of_Transnistria_to_1792",
+     "supports": "left bank north Lithuanian (Podolia), south Crimean/Ottoman Yedisan from 1504; the border between them on the Yahorlyk brook"
+    }
+   ]
+  },
+  {
+   "id": "yalu-joseon-qing-uiju-manpo",
+   "feature": {
+    "kind": "river",
+    "name": "Yalu (Amnok) River",
+    "wikidata": "Q55498",
+    "osm": {
+     "type": "relation",
+     "ids": [
+      2899525
+     ]
+    }
+   },
+   "from": [
+    124.53,
+    40.2
+   ],
+   "to": [
+    126.29,
+    41.15
+   ],
+   "span": [
+    "1627-03-31",
+    "1910-08-29"
+   ],
+   "sides": [
+    {
+     "name": "Joseon",
+     "qid": "Q28179"
+    },
+    {
+     "name": "Later Jin",
+     "qid": "Q1062546"
+    },
+    {
+     "name": "Qing",
+     "qid": "Q8733"
+    }
+   ],
+   "claim": "After invading Chosŏn in 1627 the Manchus concluded a covenant that emphasised the Yalu as the boundary and required each state to guard its own territory; later Korean crossings for ginseng were treated as trespass. Song (2017) treats the Yalu section as the long-established western boundary, and Bohnet speaks of 'the established boundaries of Chosŏn at the Yalu and Tumen' (while noting precise demarcation came only in the 18th century).",
+   "channel": "As for the Ming period: branching and island accretion on the lower 40 km around Sinuiju/Dandong; middle course impounded by 20th-c. dams. Today's main channel is adequate at ~5 km precision.",
+   "review": "The 1627 covenant named the Yalu as the boundary (Liu & Piao 2020, citing the Injo sillok). Drawn from Uiju upstream to Manp'o only: below Uiju the islands and the choice of branch were disputed until the 20th century, so a precise channel there would claim an allocation that did not exist.",
+   "research": "yalu-joseon-laterjin-qing",
+   "sources": [
+    {
+     "cite": "Jing Liu and Yan Piao, 'Expansion, Contestation, and Boundary Making: Chosŏn Korea and Ming China's Border Relations over the Yalu River Region', International Journal of Korean History 25(2), 2020, pp. 105-142",
+     "url": "https://ijkh.khistory.org/upload/pdf/ijkh-25-2-105.pdf",
+     "supports": "1627 covenant with the Manchus emphasised the Yalu River as the boundary and required each state to guard its territory; Willow Palisade later fenced the Yalu region"
+    },
+    {
+     "cite": "Nianshen Song, 'The Journey towards \"No Man's Land\": Interpreting the China-Korea Borderland within Imperial and Colonial Contexts', Journal of Asian Studies 76(4), 2017",
+     "url": "https://www.cambridge.org/core/journals/journal-of-asian-studies/article/journey-towards-no-mans-land-interpreting-the-chinakorea-borderland-within-imperial-and-colonial-contexts/D920C0302AABF07D5E9D4B5CEF40DA7E",
+     "supports": "Yalu section of the boundary dates from the late 14th century; Qing patrolled the border with Korea"
+    },
+    {
+     "cite": "Adam C. I. Bohnet, Migrant and Border Subjects in Late Chosŏn Korea, PhD thesis, University of Toronto, 2008, pp. 37-43, 119-120",
+     "url": "https://utoronto.scholaris.ca/server/api/core/bitstreams/21f141fc-ba0f-4845-bd28-0c1c400f418b/content",
+     "supports": "Chosŏn's 'established boundaries' at the Yalu and Tumen; lower Yalu one of Chosŏn's more stable land frontiers"
+    }
+   ]
+  },
+  {
+   "id": "yalu-joseon-mid-15th-uiju-manpo",
+   "feature": {
+    "kind": "river",
+    "name": "Yalu (Amnok) River",
+    "wikidata": "Q55498",
+    "osm": {
+     "type": "relation",
+     "ids": [
+      2899525
+     ]
+    }
+   },
+   "from": [
+    124.53,
+    40.2
+   ],
+   "to": [
+    126.29,
+    41.15
+   ],
+   "span": [
+    "1450",
+    "1616"
+   ],
+   "sides": [
+    {
+     "name": "Joseon",
+     "qid": "Q28179"
+    }
+   ],
+   "claim": "The Encyclopedia of Korean Culture and Liu Yang (2017) state that by the mid-15th century Chosŏn's northern limit 'fully extended' to the Yalu and that a riverside defence system made the Yalu main stream the boundary. Upstream of Uiju the far bank was Jianzhou Jurchen country, not Ming-administered, so the river was Chosŏn's defended limit facing tribal polities rather than a bilateral state boundary.",
+   "channel": "Middle Yalu now impounded by the Sup'ung (1941) and later dams; reservoirs fill the old valley, so the historical line lies within ~1 km of the drowned channel.",
+   "review": "Joseon's northern limit on the middle Yalu, completed with the Four Commanderies (1443) and the Six Garrisons (1449); both sources state that by the mid-15th century the limit reached the Yalu and that a riverside defence system held it. The far bank was Jurchen country without a state, so only Joseon's side is redrawn. Ends with the proclamation of the Later Jin (1616).",
+   "research": "yalu-middle-joseon-jurchen",
+   "sources": [
+    {
+     "cite": "Encyclopedia of Korean Culture (한국민족문화대백과사전, Academy of Korean Studies), '육진 (六鎭)'",
+     "url": "https://encykorea.aks.ac.kr/Article/E0042168",
+     "supports": "Through the 4 commanderies and 6 garrisons Korea's northern boundary 'fully extended' to the Tumen and Yalu banks"
+    },
+    {
+     "cite": "Liu Yang 刘阳, '15世纪中叶以来中朝鸭绿江与图们江界河形成的历史根源——以朝鲜王朝为中心', 河南师范大学学报(哲学社会科学版) 44(3), 2017, pp. 50-55 (abstract only)",
+     "url": "https://hnsk.cbpt.cnki.net/portal/journal/portal/client/paper/c7927755be7ce467addb3675f550e876",
+     "supports": "By the mid-15th c. the Yalu and Tumen roughly became the Sino-Korean border and continued so; Chosŏn's riverside defence system stabilised the two boundary rivers"
+    },
+    {
+     "cite": "Jing Liu and Yan Piao, 'Expansion, Contestation, and Boundary Making: Chosŏn Korea and Ming China's Border Relations over the Yalu River Region', International Journal of Korean History 25(2), 2020, pp. 105-142",
+     "url": "https://ijkh.khistory.org/upload/pdf/ijkh-25-2-105.pdf",
+     "supports": "Chosŏn built defensive walls and garrisons and relocated people to develop the Tumen and Yalu frontiers against Jurchen invasions"
+    }
+   ]
+  },
+  {
+   "id": "march-morava-austria-hungary",
+   "feature": {
+    "kind": "river",
+    "name": "March (Morava)",
+    "wikidata": "Q179251",
+    "osm": {
+     "type": "relation",
+     "ids": [
+      1741294
+     ]
+    }
+   },
+   "from": [
+    16.94,
+    48.62
+   ],
+   "to": [
+    16.976,
+    48.174
+   ],
+   "span": [
+    "1372-10-22",
+    "1919"
+   ],
+   "sides": [
+    {
+     "name": "Austria (House of Habsburg)",
+     "qid": "Q65968"
+    },
+    {
+     "name": "Kingdom of Hungary",
+     "qid": "Q171150"
+    }
+   ],
+   "claim": "The 1372 treaty treats the Morava as the river dividing Austria north of the Danube from Pozsony County, with fishing rights shared fifty-fifty, and the 1411 confirmation states that the March is the border between Hungary and Austria. The Österreich-Lexikon states that until 1918 the March was the border with the Hungarian half of the monarchy.",
+   "channel": "Meandering river regulated 1935-1980s: 23 meander cut-offs and trenches on the lower Morava; the historical boundary followed the pre-regulation meanders, not today's straightened channel in cut-off reaches.",
+   "review": "The 1372 border treaty and its 1411 confirmation state that the March is the boundary between Austria and Hungary, from the Thaya mouth at Hohenau to the Danube below Devin (Skorka 2019). The river was straightened 1935-1980s; in the cut-off meanders the historical line lay on the old channel, within about 1 km of the drawn one.",
+   "research": "march-morava-austria-hungary",
+   "sources": [
+    {
+     "cite": "Renáta Skorka, 'On Two Sides of the Border: The Hungarian-Austrian Border Treaty of 1372', Hungarian Historical Review 8 no. 2 (2019), pp. 302-303",
+     "url": "https://epa.oszk.hu/02400/02460/00028/pdf/EPA02460_hungarian_historical_review_2019_02_290-312.pdf",
+     "supports": "Morava divided Austria north of the Danube from Pozsony County (1372); 1411: the March is the border between Hungary and Austria"
+    },
+    {
+     "cite": "AEIOU Österreich-Lexikon, 'March' (Austria-Forum)",
+     "url": "https://austria-forum.org/af/AEIOU/March",
+     "supports": "until 1918 the March was the border to the Hungarian half; from the Thaya mouth at Hohenau the mid-river is the border"
+    },
+    {
+     "cite": "REWET project, 'Morava River in Austria'",
+     "url": "https://www.rewet-he.eu/open-labs/ol2-austria",
+     "supports": "1930s-1980s regulation, 36 meanders cut off"
+    }
+   ]
+  },
+  {
+   "id": "danube-roman-golubac-olt",
+   "feature": {
+    "kind": "river",
+    "name": "Danube (Iron Gates and Dacia Ripensis section)",
+    "wikidata": "Q1653",
+    "osm": {
+     "type": "relation",
+     "ids": [
+      89652
+     ]
+    }
+   },
+   "from": [
+    21.63,
+    44.66
+   ],
+   "to": [
+    24.83,
+    43.71
+   ],
+   "span": [
+    "271",
+    "614"
+   ],
+   "sides": [
+    {
+     "name": "Roman Empire",
+     "qid": "Q2277"
+    },
+    {
+     "name": "Eastern Roman Empire",
+     "qid": "Q12544"
+    }
+   ],
+   "claim": "After Dacia was evacuated the Danube between Singidunum and the Olt again became the frontier, now of the new province Dacia Ripensis, reorganised in the late 3rd and 4th centuries, restored by Justinian and lost to Avar and Slav invasions in the early 7th century.",
+   "channel": "Iron Gates section submerged by the Iron Gate I and II reservoirs (1972, 1984); otherwise mostly stable rock-confined course; floodplain sections downstream of Kladovo with islands.",
+   "exceptions": [
+    {
+     "place": "Drobeta (Turnu Severin), late Roman fortification on the north bank",
+     "lon": 22.66,
+     "lat": 44.62,
+     "km": 4
+    },
+    {
+     "place": "Hinova, late Roman fortification on the north bank",
+     "lon": 22.78,
+     "lat": 44.55,
+     "km": 4
+    },
+    {
+     "place": "Desa, late Roman fortification on the north bank",
+     "lon": 23.03,
+     "lat": 43.87,
+     "km": 4
+    }
+   ],
+   "review": "From the abandonment of Dacia (271) to the Avar-Slav collapse of the limes (614): the Danube from the head of the Iron Gates (Golubac) to the Olt. Not drawn upstream of Golubac (Singidunum-Viminacium lies in the Pannonian floodplain, where no source places the Roman channel). The Iron Gates reservoirs (1972, 1984) follow the gorge in plan. The late north-bank fortifications are kept coarse. The right-bank Roman and Byzantine fortresses of the lower Danube (Bononia/Vidin, Ratiaria, Oescus, Novae, Sexaginta Prista, Transmarisca, Durostorum) stand on the river today: the river still runs under the southern bluff it ran under then.",
+   "research": "danube-singidunum-to-olt-271-614",
+   "sources": [
+    {
+     "cite": "D.J. Breeze, S. Jilek, M. Korac et al., Frontiers of the Roman Empire: Roman Limes in Serbia, Archaeopress, 2022, p. 43, p. 45, p. 47",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781803272238",
+     "supports": "Aurelian's decision (274) to withdraw from Dacia; frontier reorganised; Hunnic invasion 441-443; Justinian's restoration; frontier completely overrun in 614."
+    },
+    {
+     "cite": "UNESCO World Heritage Centre, Tentative List 6973, 'Frontiers of the Roman Empire - The Danube Limes (Bulgaria)' (eastern-segment description shared by the Croatia/Serbia/Bulgaria/Romania submissions)",
+     "url": "https://whc.unesco.org/en/tentativelists/6973/",
+     "supports": "In 271 the Dacian province was evacuated and provincial structure and frontier reorganised; eastern frontier ended in the early 7th century."
+    },
+    {
+     "cite": "D.J. Breeze, F. Marcu, G. Cupcea, Frontiers of the Roman Empire: The Roman Frontiers of Dacia, Archaeopress, 2022, p. 75",
+     "url": "https://limes.univie.ac.at/FRE_DOWNLOADS/dacia.pdf",
+     "supports": "Late fortifications north of the Danube at Drobeta, Hinova, Desa and Sucidava after the abandonment of Dacia."
+    }
+   ]
+  },
+  {
+   "id": "danube-roman-olt-silistra",
+   "feature": {
+    "kind": "river",
+    "name": "Danube (lower Danube, Moesia Inferior / Moesia Secunda / Scythia)",
+    "wikidata": "Q1653",
+    "osm": {
+     "type": "relation",
+     "ids": [
+      89652
+     ]
+    }
+   },
+   "from": [
+    24.83,
+    43.71
+   ],
+   "to": [
+    27.27,
+    44.12
+   ],
+   "span": [
+    "118",
+    "614"
+   ],
+   "sides": [
+    {
+     "name": "Roman Empire",
+     "qid": "Q2277"
+    },
+    {
+     "name": "Eastern Roman Empire",
+     "qid": "Q12544"
+    }
+   ],
+   "claim": "From Hadrian to the early 7th century the lower Danube was the frontier of Moesia Inferior (later Moesia Secunda and Scythia), with legionary fortresses at Oescus, Novae, Durostorum and Troesmis; it survived the 5th century and was restored under Justinian before Avar and Slav invasions ended it. Downstream of Durostorum the installations stood on the higher ground 'along the most easterly river channel'.",
+   "channel": "Downstream of Durostorum the river develops many twisting channels in a wide zone (Balta Ialomitei / Braila marshes); the Roman line follows the easternmost channel (Macin branch side), not necessarily today's main navigation channel. Changes >1 km likely in the Braila marsh section.",
+   "exceptions": [
+    {
+     "place": "Daphne, Constantinian bridgehead on the left bank opposite Transmarisca/Tutrakan (site approximate)",
+     "lon": 26.6,
+     "lat": 44.1,
+     "km": 5
+    }
+   ],
+   "review": "From Hadrian's withdrawal from the plain north of the lower Danube (118) to 614: the Olt mouth to Durostorum/Silistra. Not drawn between Silistra and Braila (braided Balta reach; the Roman line followed the easternmost arm, not today's main channel). The right-bank Roman and Byzantine fortresses of the lower Danube (Bononia/Vidin, Ratiaria, Oescus, Novae, Sexaginta Prista, Transmarisca, Durostorum) stand on the river today: the river still runs under the southern bluff it ran under then.",
+   "research": "danube-olt-to-noviodunum-118-614",
+   "sources": [
+    {
+     "cite": "UNESCO World Heritage Centre, Tentative List 6973, 'Frontiers of the Roman Empire - The Danube Limes (Bulgaria)' (eastern-segment description shared by the Croatia/Serbia/Bulgaria/Romania submissions)",
+     "url": "https://whc.unesco.org/en/tentativelists/6973/",
+     "supports": "Frontier established in the 1st century, strongly fortified after a temporary collapse in the late 3rd century; Eastern part served as frontier of the Eastern Roman Empire until given up in the early 7th century; downstream from Durostorum installations on the higher grounds along the most easterly river channel; opposite bank under military control."
+    },
+    {
+     "cite": "D.J. Breeze, S. Jilek, M. Korac et al., Frontiers of the Roman Empire: Roman Limes in Serbia, Archaeopress, 2022, p. 44, p. 45, p. 47",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781803272238",
+     "supports": "Hunnic invasion 441-443 and collapse; Justinian's restoration; frontier completely overrun in 614."
+    },
+    {
+     "cite": "D.J. Breeze, F. Marcu, G. Cupcea, Frontiers of the Roman Empire: The Roman Frontiers of Dacia, Archaeopress, 2022, p. 75, p. 76",
+     "url": "https://limes.univie.ac.at/FRE_DOWNLOADS/dacia.pdf",
+     "supports": "Hadrian abandoned Muntenia and southern Moldova; after the 260s late fortifications north of the Danube at Drobeta, Hinova, Desa, Sucidava."
+    },
+    {
+     "cite": "D.J. Breeze, P. Dyczek, Frontiers of the Roman Empire: The Lower Danube Limes in Bulgaria, Archaeopress (ISBN 978-1-80327-779-0), pp. 42-43",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781803277790",
+     "supports": "Moesia Inferior from 86; Dacia Ripensis created after 271 from western Moesia Inferior."
+    }
+   ]
+  },
+  {
+   "id": "danube-roman-braila-isaccea",
+   "feature": {
+    "kind": "river",
+    "name": "Danube (lower Danube, Moesia Inferior / Moesia Secunda / Scythia)",
+    "wikidata": "Q1653",
+    "osm": {
+     "type": "relation",
+     "ids": [
+      89652
+     ]
+    }
+   },
+   "from": [
+    27.97,
+    45.27
+   ],
+   "to": [
+    28.46,
+    45.27
+   ],
+   "span": [
+    "118",
+    "614"
+   ],
+   "sides": [
+    {
+     "name": "Roman Empire",
+     "qid": "Q2277"
+    },
+    {
+     "name": "Eastern Roman Empire",
+     "qid": "Q12544"
+    }
+   ],
+   "claim": "From Hadrian to the early 7th century the lower Danube was the frontier of Moesia Inferior (later Moesia Secunda and Scythia), with legionary fortresses at Oescus, Novae, Durostorum and Troesmis; it survived the 5th century and was restored under Justinian before Avar and Slav invasions ended it. Downstream of Durostorum the installations stood on the higher ground 'along the most easterly river channel'.",
+   "channel": "Downstream of Durostorum the river develops many twisting channels in a wide zone (Balta Ialomitei / Braila marshes); the Roman line follows the easternmost channel (Macin branch side), not necessarily today's main navigation channel. Changes >1 km likely in the Braila marsh section.",
+   "exceptions": [
+    {
+     "place": "Barbosi (Galati), Roman post on the north bank at the Siret mouth",
+     "lon": 28.07,
+     "lat": 45.42,
+     "km": 4
+    }
+   ],
+   "review": "The single channel below the braided reach, from Braila to Noviodunum/Isaccea at the head of the delta; the delta itself is not drawn (the Chilia branch is the youngest arm and Rome held land north of the delta in the 1st-3rd centuries). The Barbosi post is kept coarse.",
+   "research": "danube-olt-to-noviodunum-118-614",
+   "sources": [
+    {
+     "cite": "UNESCO World Heritage Centre, Tentative List 6973, 'Frontiers of the Roman Empire - The Danube Limes (Bulgaria)' (eastern-segment description shared by the Croatia/Serbia/Bulgaria/Romania submissions)",
+     "url": "https://whc.unesco.org/en/tentativelists/6973/",
+     "supports": "Frontier established in the 1st century, strongly fortified after a temporary collapse in the late 3rd century; Eastern part served as frontier of the Eastern Roman Empire until given up in the early 7th century; downstream from Durostorum installations on the higher grounds along the most easterly river channel; opposite bank under military control."
+    },
+    {
+     "cite": "D.J. Breeze, S. Jilek, M. Korac et al., Frontiers of the Roman Empire: Roman Limes in Serbia, Archaeopress, 2022, p. 44, p. 45, p. 47",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781803272238",
+     "supports": "Hunnic invasion 441-443 and collapse; Justinian's restoration; frontier completely overrun in 614."
+    },
+    {
+     "cite": "D.J. Breeze, F. Marcu, G. Cupcea, Frontiers of the Roman Empire: The Roman Frontiers of Dacia, Archaeopress, 2022, p. 75, p. 76",
+     "url": "https://limes.univie.ac.at/FRE_DOWNLOADS/dacia.pdf",
+     "supports": "Hadrian abandoned Muntenia and southern Moldova; after the 260s late fortifications north of the Danube at Drobeta, Hinova, Desa, Sucidava."
+    },
+    {
+     "cite": "D.J. Breeze, P. Dyczek, Frontiers of the Roman Empire: The Lower Danube Limes in Bulgaria, Archaeopress (ISBN 978-1-80327-779-0), pp. 42-43",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781803277790",
+     "supports": "Moesia Inferior from 86; Dacia Ripensis created after 271 from western Moesia Inferior."
+    }
+   ]
+  },
+  {
+   "id": "danube-roman-passau-linz",
+   "feature": {
+    "kind": "river",
+    "name": "Danube (Raetian, Norican and Pannonian sections)",
+    "wikidata": "Q1653",
+    "osm": {
+     "type": "relation",
+     "ids": [
+      89652
+     ]
+    }
+   },
+   "from": [
+    13.47,
+    48.575
+   ],
+   "to": [
+    14.29,
+    48.31
+   ],
+   "span": [
+    "70",
+    "450"
+   ],
+   "sides": [
+    {
+     "name": "Roman Empire",
+     "qid": "Q2277"
+    },
+    {
+     "name": "Western Roman Empire",
+     "qid": "Q42834"
+    }
+   ],
+   "claim": "The Danube was the boundary of Raetia, Noricum and Pannonia for over 400 years from the 1st century AD, with a continuous chain of military installations 'almost all along the southern banks of the river', defined continuously from the Flavian period, and broke down in the 5th century. In Raetia new auxiliary forts on the Danube were set up under Vespasian (Eining, Regensburg, Straubing, Passau); from c. 150 the Raetian land limes met the Danube at Hienheim near Eining, so the river was the frontier only downstream of that point.",
+   "channel": "YES in places: UNESCO notes the Danube 'has shifted its course considerably since Roman times' in places and in places the original course 'has not been identified'. Major regulation at Vienna (19th c.) and in the Hungarian plain; the Szigetkoez/Bratislava inland delta and the Gemenc floodplain are areas of large shifts.",
+   "review": "The Norican Danube in its confined valley from Batavis/Passau to Lentia/Linz (the Schlögen meander). Only the bedrock-confined reaches of the western segment are drawn: UNESCO (property 1608) records that elsewhere the Danube has shifted considerably since Roman times and in places its Roman course has not been identified (Straubing basin, Vienna, the Szigetköz inland delta, the Gemenc floodplain).",
+   "research": "danube-eining-to-pannonia-western-segment",
+   "sources": [
+    {
+     "cite": "UNESCO World Heritage Centre, 'Frontiers of the Roman Empire - The Danube Limes (Western Segment)' (property 1608), inscription description",
+     "url": "https://whc.unesco.org/en/list/1608/",
+     "supports": "First continuously defined in the Flavian dynasty (69-96 CE); continuous chain of installations almost all along the southern banks; for more than 400 years the middle European boundary; broke down in the 5th century; bridgehead on the left bank; river shifted its course considerably in places."
+    },
+    {
+     "cite": "D.J. Breeze, T. Fischer, V. Fischer, C. Fluegel, M. Gschwind, M. Meyr, B. Steidl, Frontiers of the Roman Empire: The Frontier of the Roman Province of Raetia, Archaeopress (ISBN 978-1-80583-277-5), p. 49, p. 50, p. 82",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781805832775",
+     "supports": "Eining-Passau Danube border; Tiberian-Claudian fortlets; Vespasianic auxiliary forts; land frontier met the Danube at Hienheim near Eining; 476 end of pay at Passau."
+    },
+    {
+     "cite": "UNESCO World Heritage Centre, Tentative List 6973, 'Frontiers of the Roman Empire - The Danube Limes (Bulgaria)' (eastern-segment description shared by the Croatia/Serbia/Bulgaria/Romania submissions)",
+     "url": "https://whc.unesco.org/en/tentativelists/6973/",
+     "supports": "Western part of the Danube frontier, to approximately the Croatian-Serbian border, abandoned at the fall of the Western Roman Empire by the mid-5th century."
+    }
+   ]
+  },
+  {
+   "id": "danube-roman-grein-krems",
+   "feature": {
+    "kind": "river",
+    "name": "Danube (Raetian, Norican and Pannonian sections)",
+    "wikidata": "Q1653",
+    "osm": {
+     "type": "relation",
+     "ids": [
+      89652
+     ]
+    }
+   },
+   "from": [
+    14.86,
+    48.23
+   ],
+   "to": [
+    15.6,
+    48.405
+   ],
+   "span": [
+    "70",
+    "450"
+   ],
+   "sides": [
+    {
+     "name": "Roman Empire",
+     "qid": "Q2277"
+    },
+    {
+     "name": "Western Roman Empire",
+     "qid": "Q42834"
+    }
+   ],
+   "claim": "The Danube was the boundary of Raetia, Noricum and Pannonia for over 400 years from the 1st century AD, with a continuous chain of military installations 'almost all along the southern banks of the river', defined continuously from the Flavian period, and broke down in the 5th century. In Raetia new auxiliary forts on the Danube were set up under Vespasian (Eining, Regensburg, Straubing, Passau); from c. 150 the Raetian land limes met the Danube at Hienheim near Eining, so the river was the frontier only downstream of that point.",
+   "channel": "YES in places: UNESCO notes the Danube 'has shifted its course considerably since Roman times' in places and in places the original course 'has not been identified'. Major regulation at Vienna (19th c.) and in the Hungarian plain; the Szigetkoez/Bratislava inland delta and the Gemenc floodplain are areas of large shifts.",
+   "review": "The Strudengau gorge and the Wachau, from Grein to Krems (Favianis/Mautern opposite): confined reaches of the Norican limes. See danube-roman-passau-linz for why the floodplain reaches are not drawn.",
+   "research": "danube-eining-to-pannonia-western-segment",
+   "sources": [
+    {
+     "cite": "UNESCO World Heritage Centre, 'Frontiers of the Roman Empire - The Danube Limes (Western Segment)' (property 1608), inscription description",
+     "url": "https://whc.unesco.org/en/list/1608/",
+     "supports": "First continuously defined in the Flavian dynasty (69-96 CE); continuous chain of installations almost all along the southern banks; for more than 400 years the middle European boundary; broke down in the 5th century; bridgehead on the left bank; river shifted its course considerably in places."
+    },
+    {
+     "cite": "D.J. Breeze, T. Fischer, V. Fischer, C. Fluegel, M. Gschwind, M. Meyr, B. Steidl, Frontiers of the Roman Empire: The Frontier of the Roman Province of Raetia, Archaeopress (ISBN 978-1-80583-277-5), p. 49, p. 50, p. 82",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781805832775",
+     "supports": "Eining-Passau Danube border; Tiberian-Claudian fortlets; Vespasianic auxiliary forts; land frontier met the Danube at Hienheim near Eining; 476 end of pay at Passau."
+    },
+    {
+     "cite": "UNESCO World Heritage Centre, Tentative List 6973, 'Frontiers of the Roman Empire - The Danube Limes (Bulgaria)' (eastern-segment description shared by the Croatia/Serbia/Bulgaria/Romania submissions)",
+     "url": "https://whc.unesco.org/en/tentativelists/6973/",
+     "supports": "Western part of the Danube frontier, to approximately the Croatian-Serbian border, abandoned at the fall of the Western Roman Empire by the mid-5th century."
+    }
+   ]
+  },
+  {
+   "id": "danube-roman-esztergom-vac",
+   "feature": {
+    "kind": "river",
+    "name": "Danube (Raetian, Norican and Pannonian sections)",
+    "wikidata": "Q1653",
+    "osm": {
+     "type": "relation",
+     "ids": [
+      89652
+     ]
+    }
+   },
+   "from": [
+    18.74,
+    47.8
+   ],
+   "to": [
+    19.13,
+    47.78
+   ],
+   "span": [
+    "70",
+    "450"
+   ],
+   "sides": [
+    {
+     "name": "Roman Empire",
+     "qid": "Q2277"
+    },
+    {
+     "name": "Western Roman Empire",
+     "qid": "Q42834"
+    }
+   ],
+   "claim": "The Danube was the boundary of Raetia, Noricum and Pannonia for over 400 years from the 1st century AD, with a continuous chain of military installations 'almost all along the southern banks of the river', defined continuously from the Flavian period, and broke down in the 5th century. In Raetia new auxiliary forts on the Danube were set up under Vespasian (Eining, Regensburg, Straubing, Passau); from c. 150 the Raetian land limes met the Danube at Hienheim near Eining, so the river was the frontier only downstream of that point.",
+   "channel": "YES in places: UNESCO notes the Danube 'has shifted its course considerably since Roman times' in places and in places the original course 'has not been identified'. Major regulation at Vienna (19th c.) and in the Hungarian plain; the Szigetkoez/Bratislava inland delta and the Gemenc floodplain are areas of large shifts.",
+   "review": "The Danube Bend gorge (Visegrád) from Solva/Esztergom to Vác: a confined reach of the Pannonian limes. The bend's islands below Vác and the Hungarian plain are not drawn (see danube-roman-passau-linz).",
+   "research": "danube-eining-to-pannonia-western-segment",
+   "sources": [
+    {
+     "cite": "UNESCO World Heritage Centre, 'Frontiers of the Roman Empire - The Danube Limes (Western Segment)' (property 1608), inscription description",
+     "url": "https://whc.unesco.org/en/list/1608/",
+     "supports": "First continuously defined in the Flavian dynasty (69-96 CE); continuous chain of installations almost all along the southern banks; for more than 400 years the middle European boundary; broke down in the 5th century; bridgehead on the left bank; river shifted its course considerably in places."
+    },
+    {
+     "cite": "D.J. Breeze, T. Fischer, V. Fischer, C. Fluegel, M. Gschwind, M. Meyr, B. Steidl, Frontiers of the Roman Empire: The Frontier of the Roman Province of Raetia, Archaeopress (ISBN 978-1-80583-277-5), p. 49, p. 50, p. 82",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781805832775",
+     "supports": "Eining-Passau Danube border; Tiberian-Claudian fortlets; Vespasianic auxiliary forts; land frontier met the Danube at Hienheim near Eining; 476 end of pay at Passau."
+    },
+    {
+     "cite": "UNESCO World Heritage Centre, Tentative List 6973, 'Frontiers of the Roman Empire - The Danube Limes (Bulgaria)' (eastern-segment description shared by the Croatia/Serbia/Bulgaria/Romania submissions)",
+     "url": "https://whc.unesco.org/en/tentativelists/6973/",
+     "supports": "Western part of the Danube frontier, to approximately the Croatian-Serbian border, abandoned at the fall of the Western Roman Empire by the mid-5th century."
+    }
+   ]
+  },
+  {
+   "id": "rhine-roman-vinxtbach-bonn",
+   "feature": {
+    "kind": "river",
+    "name": "Rhine (Lower Rhine)",
+    "wikidata": "Q584",
+    "osm": {
+     "type": "relation",
+     "ids": [
+      123924
+     ]
+    }
+   },
+   "from": [
+    7.27,
+    50.505
+   ],
+   "to": [
+    7.1,
+    50.735
+   ],
+   "span": [
+    "16",
+    "406"
+   ],
+   "sides": [
+    {
+     "name": "Roman Empire",
+     "qid": "Q2277"
+    },
+    {
+     "name": "Western Roman Empire",
+     "qid": "Q42834"
+    }
+   ],
+   "claim": "From the early 1st century AD to the early 5th century the Lower Rhine between Remagen and the delta was the boundary of the province of Lower Germany, held by a chain of forts on the left (west) bank roughly 10 km apart, and described by Breeze et al. as 'the first frontier of the Roman world to reach the classical shape of a continuous chain of forts'. The Upper Germanic Limes volume states that after AD 9 'the Lower Rhine remained the frontier of the empire's territory until Late Antiquity'. In the 4th century the frontier was repeatedly reinstated (Constantine c. 310, Julian, Valentinian, Theodosius).",
+   "channel": "Partly. Downstream of Bonn the Roman river 'meandered more freely, migrating within its band of holocene sediments, about 3 km wide'; forts were placed on the terrace edge where meanders touched it. Several Roman sites now lie away from the present channel (individual shifts not quantified in the sources consulted). 19th-20th-century regularisation fixed the present bed. Upstream of Bonn (Middle Rhine gorge) the course is stable.",
+   "review": "The Rhine below the Vinxtbach (the Germania Inferior boundary) through the Middle Rhine gorge to Bonna/Bonn, where the course is stable. Not drawn below Bonn: there the Roman river meandered within a holocene belt about 3 km wide and several Roman sites now lie away from the channel. Ends with the crossing of December 406.",
+   "research": "rhine-lower-remagen-to-delta-16-406",
+   "sources": [
+    {
+     "cite": "D.J. Breeze, S. Jilek, E.P. Graafstal, W.J.H. Willems, S. Boedecker, Frontiers of the Roman Empire: The Lower German Limes, 2nd ed., Archaeopress, 2021, pp. 52, 62, 68",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781803271422",
+     "supports": "Chain of forts on the left/south bank from Remagen to Katwijk; redeployment on the left bank after AD 9; continuous chain of forts c. 10 km apart."
+    },
+    {
+     "cite": "D.J. Breeze, S. Jilek, E.P. Graafstal, W.J.H. Willems, S. Boedecker, Frontiers of the Roman Empire: The Lower German Limes, 2nd ed., Archaeopress, 2021, p. 57",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781803271422",
+     "supports": "River meandered within a c. 3 km holocene belt below Bonn; forts on the Lower Terrace edge."
+    },
+    {
+     "cite": "D.J. Breeze, S. Jilek, E.P. Graafstal, W.J.H. Willems, S. Boedecker, Frontiers of the Roman Empire: The Lower German Limes, 2nd ed., Archaeopress, 2021, p. 70, p. 72",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781803271422",
+     "supports": "Constantine's reinstatement c. 310; bridgehead fort Divitia at Koeln-Deutz; final demise of Roman power on the Lower Rhine in the second half of the 5th century."
+    },
+    {
+     "cite": "D.J. Breeze, A. Thiel, S. Roth, T. Becker, Frontiers of the Roman Empire: The Upper Germanic Limes, Archaeopress, 2022, p. 43",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781803271743",
+     "supports": "After the Teutoburg battle (AD 9) 'the Lower Rhine remained the frontier of the empire's territory until Late Antiquity'."
+    },
+    {
+     "cite": "UNESCO World Heritage Centre, 'Frontiers of the Roman Empire - The Lower German Limes' (property 1631), inscription description",
+     "url": "https://whc.unesco.org/en/list/1631/",
+     "supports": "Lower German Limes ran 400 km along the Lower Rhine marking the edge of Lower Germany from the 1st to 5th centuries; left bank converted into a fortified frontier."
+    },
+    {
+     "cite": "M. Brueggler, 'Sustaining the Rhine in the Later Roman Empire', HiMA - Revue internationale d'Histoire Militaire Ancienne 14 (2025), 97-124, section 'The definitive end of the Rhine frontier?'",
+     "url": "https://preo.ube.fr/hima/index.php?id=2378&lang=en",
+     "supports": "401 Stilicho's troop withdrawal; 406 crossing did not seem to affect the Lower Rhine; Aetius reinstated the frontier from 428; finewares reach forts until c. mid-5th century."
+    }
+   ]
+  },
+  {
+   "id": "rhine-roman-koblenz-bingen",
+   "feature": {
+    "kind": "river",
+    "name": "Rhine (Middle and Upper Rhine)",
+    "wikidata": "Q584",
+    "osm": {
+     "type": "relation",
+     "ids": [
+      123924
+     ]
+    }
+   },
+   "from": [
+    7.605,
+    50.36
+   ],
+   "to": [
+    7.9,
+    49.97
+   ],
+   "span": [
+    "275",
+    "406"
+   ],
+   "sides": [
+    {
+     "name": "Roman Empire",
+     "qid": "Q2277"
+    },
+    {
+     "name": "Western Roman Empire",
+     "qid": "Q42834"
+    }
+   ],
+   "claim": "After the abandonment of the Upper Germanic-Raetian limes the Rhine again became the frontier for roughly 150 years: Breeze et al. state that 'the frontier was moved back to the Rhine' while Rome kept a nominal claim to the lost lands. Brueggler describes the Rhine 'from Lake Constance to the channel coast' as the frontier of the later empire, fortified under the Tetrarchs, Constantine, Julian and Valentinian, though she stresses the frontier was also a broad zone reaching into the hinterland and beyond the river.",
+   "channel": "YES in the Upper Rhine plain (Basel-Mainz): before J.G. Tulla's rectification (19th century) the river was a braided/meandering belt several km wide, so the Roman channel differs from today's canalised bed by more than 1 km in places; some late Roman fortifications listed by Brueggler (Breisach, Sponeck) now lie on the right (German) bank. The Middle Rhine gorge (Bingen-Koblenz) is stable.",
+   "exceptions": [
+    {
+     "place": "Niederlahnstein, late Roman fortification on the right bank",
+     "lon": 7.6,
+     "lat": 50.31,
+     "km": 3
+    }
+   ],
+   "review": "The late Roman Rhine frontier (after the limes was given up, c. 275) through the Middle Rhine gorge from Confluentes/Koblenz to Bingium/Bingen, where the course is stable. Not drawn in the Upper Rhine plain (Mainz to Basel), where the pre-Tulla river was a braided belt several km wide and the Roman channel differs from today's by more than 1 km. Niederlahnstein is kept coarse.",
+   "research": "rhine-middle-upper-late-roman-275-406",
+   "sources": [
+    {
+     "cite": "D.J. Breeze, A. Thiel, S. Roth, T. Becker, Frontiers of the Roman Empire: The Upper Germanic Limes, Archaeopress, 2022, p. 46, p. 48",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781803271743",
+     "supports": "Roman rule east of the Rhine ended at the latest 260-275; for about 150 years the late Roman frontier was moved back to the Rhine."
+    },
+    {
+     "cite": "M. Brueggler, 'Sustaining the Rhine in the Later Roman Empire', HiMA - Revue internationale d'Histoire Militaire Ancienne 14 (2025), 97-124, Introduction; 'Military Installations along the Rhine'; 'The definitive end of the Rhine frontier?'",
+     "url": "https://preo.ube.fr/hima/index.php?id=2378&lang=en",
+     "supports": "Rhine formed the frontier from Lake Constance to the channel coast; Hochrhein fortifications at Biesheim-Oedenburg, Breisach, Sponeck; 401 withdrawal; 406 crossing (northernmost probably near Koblenz); Aetius from 428; list of late sites incl. Niederlahnstein, Neuwied-Engers, Biblis-Zullenstein."
+    },
+    {
+     "cite": "Swiss National Museum blog, 'Roman frontier on the Rhine' ('The Emperor's new frontier'), April 2021",
+     "url": "https://blog.nationalmuseum.ch/en/2021/04/roman-frontier/",
+     "supports": "After the limes was breached (213-259) the Roman leadership moved the border to the Rhine; Roman troops withdrew from the Rhine around 406."
+    }
+   ]
+  },
+  {
+   "id": "high-rhine-roman-basel-stein",
+   "feature": {
+    "kind": "river",
+    "name": "High Rhine (Hochrhein)",
+    "wikidata": "Q650521",
+    "osm": {
+     "type": "relation",
+     "ids": [
+      123924
+     ]
+    }
+   },
+   "from": [
+    7.59,
+    47.56
+   ],
+   "to": [
+    8.86,
+    47.66
+   ],
+   "span": [
+    "275",
+    "406"
+   ],
+   "sides": [
+    {
+     "name": "Roman Empire",
+     "qid": "Q2277"
+    },
+    {
+     "name": "Western Roman Empire",
+     "qid": "Q42834"
+    }
+   ],
+   "claim": "In the late Roman period the High Rhine between Basel and Lake Constance was the frontier of Maxima Sequanorum/Raetia I, forming the western leg of the Danube-Iller-Rhine frontier: around 50 fortifications, including watchtowers at short intervals, were built between Basel and Stein am Rhein under Valentinian I, and a strong fortress was built at Kaiseraugst. The Raetia volume places Tasgetium/Stein am Rhein 'immediately west of the provincial border at the outlet of the Rhine from Lake Constance', with a Diocletianic building inscription.",
+   "channel": "No material change of course known on the High Rhine (bedrock-confined, now impounded by hydropower weirs); Rhine falls at Schaffhausen unchanged.",
+   "exceptions": [
+    {
+     "place": "Kaiseraugst bridgehead on the right bank (Wyhlen)",
+     "lon": 7.72,
+     "lat": 47.54,
+     "km": 2
+    }
+   ],
+   "review": "The late Roman High Rhine from Basilia/Basel to Tasgetium/Stein am Rhein: bedrock-confined, no material change of course. The Wyhlen bridgehead is kept coarse.",
+   "research": "high-rhine-basel-lake-constance-late-roman-275-406",
+   "sources": [
+    {
+     "cite": "Swiss National Museum blog, 'Roman frontier on the Rhine' ('The Emperor's new frontier'), April 2021",
+     "url": "https://blog.nationalmuseum.ch/en/2021/04/roman-frontier/",
+     "supports": "Valentinian I extended the Rhine border; around 50 fortifications between Basel and Stein am Rhein; border moved to the Rhine after 213-259; withdrawal around 406."
+    },
+    {
+     "cite": "M. Brueggler, 'Sustaining the Rhine in the Later Roman Empire', HiMA - Revue internationale d'Histoire Militaire Ancienne 14 (2025), 97-124, 'Military Installations along the Rhine'",
+     "url": "https://preo.ube.fr/hima/index.php?id=2378&lang=en",
+     "supports": "Kaiseraugst fortress of 3.5 ha with a bridgehead on the opposite bank; Hochrhein fortifications reinforced under the Tetrarchy/Constantine; Lake Constance fleet in the Notitia."
+    },
+    {
+     "cite": "D.J. Breeze, T. Fischer, V. Fischer, C. Fluegel, M. Gschwind, M. Meyr, B. Steidl, Frontiers of the Roman Empire: The Frontier of the Roman Province of Raetia, Archaeopress (ISBN 978-1-80583-277-5), pp. 75-76",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781805832775",
+     "supports": "Diocletianic Danube-Iller-Lake Constance frontier; Tasgetium/Stein am Rhein immediately west of the provincial border at the Rhine outlet from Lake Constance; late forts c. 300."
+    }
+   ]
+  },
+  {
+   "id": "minho-portugal",
+   "feature": {
+    "kind": "river",
+    "name": "Minho (Mino)",
+    "wikidata": "Q14554",
+    "osm": {
+     "type": "relation",
+     "ids": [
+      1226237
+     ]
+    }
+   },
+   "from": [
+    -8.16,
+    42.13
+   ],
+   "to": [
+    -8.87,
+    41.868
+   ],
+   "span": [
+    "1169",
+    "1689"
+   ],
+   "sides": [
+    {
+     "name": "Kingdom of Portugal",
+     "qid": "Q45670"
+    },
+    {
+     "name": "Kingdom of León",
+     "qid": "Q175276"
+    },
+    {
+     "name": "Crown of Castile",
+     "qid": "Q217196"
+    },
+    {
+     "name": "Kingdom of Spain (the Crown of Castile within it from 1516)",
+     "qid": "Q29"
+    }
+   ],
+   "claim": "Same line as the preceding entry: the Minho from the Trancoso confluence to the sea separated Portugal from Galicia after 1169 (Barros 1994; Campelo 2023), and Pizarro (2007) states that after 1297 Portugal's outline remained unchanged to the present except for Olivenca, so the Minho line continued through the whole period.",
+   "channel": "As preceding entry.",
+   "exceptions": [
+    {
+     "place": "Minho estuary: islands and sandbanks were allocated only by the 1864-1866 delimitation",
+     "lon": -8.87,
+     "lat": 41.868,
+     "km": 6
+    }
+   ],
+   "review": "The Minho from the Trancoso confluence to the sea, the boundary of Portugal with León (Galicia) after 1169 and with Castile after 1230 (Barros 1994; Campelo 2023; Pizarro 2007). Drawn to 1689 (OpenHistoricalMap answers from then). The estuary is kept coarse.",
+   "research": "minho-portugal-castile-1230-onward",
+   "sources": [
+    {
+     "cite": "Carlos Barros, 'La frontera medieval entre Galicia y Portugal', Medievalismo 4 (Madrid, 1994), pp. 27-39 (online text on h-debate.com)",
+     "url": "https://www.h-debate.com/wp-content/old_debates/cbarros/spanish/frontera_castellano.htm",
+     "supports": "Afonso Henriques occupied southern Galicia 1130-1169; in 1169 (captured at Badajoz) he definitively ceded Tui, Toronho and A Limia to Leon; after 1169 the juridical-political limit Galicia/Portugal was fundamentally fixed, the Mino being the frontier, while the inland stretch (upper Limia, Tras-os-Montes) was much vaguer; the coto mixto near Meaus (inland, not on the Mino) kept mixed jurisdiction until 1864-66."
+    },
+    {
+     "cite": "Alvaro Campelo, 'Galicia and Portugal. A fruitful courtship. New strategies for a Euroregion and Eurocity identity', Populacao e Sociedade (CEPESE, Porto) vol. 40, Dec. 2023, pp. 80-107, DOI 10.52224/21845263/rev40a6",
+     "url": "https://www.cepese.pt/portal/pt/publicacoes/obras/populacao-e-sociedade-n-o-40/galicia-and-portugal-a-fruitful-courtship/galicia-and-portugal-a-fruitful-courtship/@@display-file/file/Revista%2040_6.pdf",
+     "supports": "Galicia-Portugal border 'delimited by the Minho River' since Portuguese independence in the 12th century; the Diocese of Tui nevertheless administered Portuguese parishes between Minho and Lima until 1381 (ecclesiastical, not political, cross-river tie)."
+    },
+    {
+     "cite": "Jose Augusto de Sotto Mayor Pizarro, 'O regime senhorial na fronteira do nordeste portugues. Alto Douro e Riba Coa (seculos XI-XIII)', Hispania. Revista Espanola de Historia LXVII no. 227 (2007), pp. 849-880, p. 876",
+     "url": "https://hispania.revistas.csic.es/index.php/hispania/article/download/64/64/64",
+     "supports": "After Alcanices (1297) Portugal kept the same territorial outline to the present except for the loss of Olivenca."
+    }
+   ]
+  },
+  {
+   "id": "guadiana-lower-portugal",
+   "feature": {
+    "kind": "river",
+    "name": "Guadiana",
+    "wikidata": "Q14305",
+    "osm": {
+     "type": "relation",
+     "ids": [
+      289968
+     ]
+    }
+   },
+   "from": [
+    -7.528,
+    37.555
+   ],
+   "to": [
+    -7.405,
+    37.175
+   ],
+   "span": [
+    "1267-02-16",
+    "1689"
+   ],
+   "sides": [
+    {
+     "name": "Kingdom of Portugal",
+     "qid": "Q45670"
+    },
+    {
+     "name": "Kingdom of León",
+     "qid": "Q175276"
+    },
+    {
+     "name": "Crown of Castile",
+     "qid": "Q217196"
+    },
+    {
+     "name": "Kingdom of Spain (the Crown of Castile within it from 1516)",
+     "qid": "Q29"
+    }
+   ],
+   "claim": "Medina Garcia (2006) records that the 1267 Treaty of Badajoz for the first time placed a stretch of the frontier on the Guadiana. The Alcoutim municipal museum guide dates the delimitation to 1267 and describes Alcoutim (castle c. 1304) as founded to defend the Guadiana frontier facing Sanlucar. Pizarro (2007) notes the outline fixed by 1297 lasted to today except Olivenca, which lies upstream of this stretch.",
+   "channel": "Lower Guadiana is tidal and incised between Mertola and the estuary; course stable. The mouth area (Castro Marim marshes, Isla Canela / Vila Real de Santo Antonio sand bars) has accreted since the Middle Ages, so the last ~5 km to the sea are approximate.",
+   "exceptions": [
+    {
+     "place": "Guadiana mouth: marshes and sand bars accreted since the Middle Ages",
+     "lon": -7.405,
+     "lat": 37.175,
+     "km": 6
+    }
+   ],
+   "review": "The tidal lower Guadiana from Pomarão to the sea, first a frontier river by the Treaty of Badajoz (1267-02-16). The accreted mouth is kept coarse.",
+   "research": "guadiana-lower-pomarao-to-sea-1267",
+   "sources": [
+    {
+     "cite": "Eusebio Medina Garcia, 'Origenes historicos y ambiguedad de la frontera hispano-lusa (La Raya)', Revista de Estudios Extremenos LXII no. 2 (2006), pp. 713-723 (esp. pp. 715-717 and n. 3), p. 715 n. 3",
+     "url": "https://www.dip-badajoz.es/cultura/ceex/reex_digital/reex_LXII/2006/T.%20LXII%20n.%202%202006%20mayo-ag/RV000827.pdf",
+     "supports": "1267 Treaty of Badajoz first set a stretch of the frontier on the Guadiana; Alcanices 1297 terms."
+    },
+    {
+     "cite": "Museu Municipal de Alcoutim / Camara Municipal de Alcoutim, 'Guia de Alcoutim' (visitor guide, bilingual PT/EN; bibliography incl. A. R. Mendes & D. Pereira, Alcoutim, Terra de Fronteira, 2010)",
+     "url": "https://museudealcoutim.pt/wp-content/uploads/2021/03/PROD_GUIA_ALCOUTIM.pdf",
+     "supports": "Delimitation between Portugal and Castile in 1267; Alcoutim founded and castle built c. 1304 for defence of the Guadiana frontier; Peace of Alcoutim 1371."
+    },
+    {
+     "cite": "Jose Augusto de Sotto Mayor Pizarro, 'O regime senhorial na fronteira do nordeste portugues. Alto Douro e Riba Coa (seculos XI-XIII)', Hispania. Revista Espanola de Historia LXVII no. 227 (2007), pp. 849-880, p. 876",
+     "url": "https://hispania.revistas.csic.es/index.php/hispania/article/download/64/64/64",
+     "supports": "Portugal's outline unchanged since 1297 except the loss of Olivenca."
+    }
+   ]
+  },
+  {
+   "id": "douro-arribes-portugal",
+   "feature": {
+    "kind": "river",
+    "name": "Douro (Duero) - international stretch (Arribes)",
+    "wikidata": "Q14299",
+    "osm": {
+     "type": "relation",
+     "ids": [
+      2566210
+     ]
+    }
+   },
+   "from": [
+    -6.2,
+    41.57
+   ],
+   "to": [
+    -6.933,
+    41.027
+   ],
+   "span": [
+    "1297-09-12",
+    "1689"
+   ],
+   "sides": [
+    {
+     "name": "Kingdom of Portugal",
+     "qid": "Q45670"
+    },
+    {
+     "name": "Kingdom of León",
+     "qid": "Q175276"
+    },
+    {
+     "name": "Crown of Castile",
+     "qid": "Q217196"
+    },
+    {
+     "name": "Kingdom of Spain (the Crown of Castile within it from 1516)",
+     "qid": "Q29"
+    }
+   ],
+   "claim": "Pizarro (2007) describes the frontier area of Miranda do Douro, Mogadouro, Freixo de Espada a Cinta and Torre de Moncorvo as delimited by the Douro, whose gorge makes 'a line of rock and water' a practically impassable frontier, and states that after Alcanices 1297 Portugal's outline remained unchanged except for Olivenca. Medina Garcia (2006) states that by Alcanices 1297 the frontier was practically defined with its present limits and that it runs largely along rivers.",
+   "channel": "Deep granite gorge; course fixed. Since the 1950s-60s the reach is a chain of reservoirs (Miranda, Picote, Bemposta, Aldeadavila, Saucelle) - water surface wider but the thalweg/boundary unchanged.",
+   "review": "The Douro in the Arribes gorge from where the boundary reaches it to the Águeda mouth, from the Treaty of Alcañices (1297-09-12): a granite gorge whose thalweg the reservoirs did not move. Not drawn before 1297 (no opened source dates it).",
+   "research": "douro-arribes-portugal-castile",
+   "sources": [
+    {
+     "cite": "Jose Augusto de Sotto Mayor Pizarro, 'O regime senhorial na fronteira do nordeste portugues. Alto Douro e Riba Coa (seculos XI-XIII)', Hispania. Revista Espanola de Historia LXVII no. 227 (2007), pp. 849-880, pp. 849-850 (introduction) and p. 876",
+     "url": "https://hispania.revistas.csic.es/index.php/hispania/article/download/64/64/64",
+     "supports": "Frontier area delimited by the Douro (Miranda, Mogadouro, Freixo, Moncorvo); outline unchanged since 1297 except Olivenca."
+    },
+    {
+     "cite": "Eusebio Medina Garcia, 'Origenes historicos y ambiguedad de la frontera hispano-lusa (La Raya)', Revista de Estudios Extremenos LXII no. 2 (2006), pp. 713-723 (esp. pp. 715-717 and n. 3), pp. 713, 717",
+     "url": "https://www.dip-badajoz.es/cultura/ceex/reex_digital/reex_LXII/2006/T.%20LXII%20n.%202%202006%20mayo-ag/RV000827.pdf",
+     "supports": "Frontier largely runs along rivers; by Alcanices 1297 practically defined with present limits."
+    }
+   ]
+  },
+  {
+   "id": "hadrians-wall-122",
+   "feature": {
+    "kind": "wall",
+    "name": "Hadrian's Wall",
+    "wikidata": "Q57357",
+    "osm": {
+     "type": "relation",
+     "ids": [
+      5538074
+     ]
+    },
+    "roles": [
+     "wall",
+     "wall-route"
+    ],
+    "bridgeKm": 0.4
+   },
+   "from": [
+    -1.533,
+    54.988
+   ],
+   "to": [
+    -2.732,
+    54.972
+   ],
+   "span": [
+    "122",
+    "142"
+   ],
+   "sides": [
+    {
+     "name": "Roman Empire",
+     "qid": "Q2277"
+    }
+   ],
+   "claim": "Hadrian's Wall was built from c. 122 as a continuous linear barrier at the then northernmost limit of Britannia, from Wallsend on the Tyne to Bowness-on-Solway, with the system of milefortlets and towers (without a barrier) continuing at least 40 km down the Cumbrian coast. It was superseded as the frontier by the Antonine Wall from c. 142.",
+   "channel": "Not applicable (artificial line; course fixed by archaeology).",
+   "review": "Hadrian's Wall as the frontier from its construction (122) to the advance to the Antonine Wall (142), drawn from Wallsend to east of Carlisle along OpenStreetMap's mapped wall and wall-route. Gaps of up to 0.4 km between mapped sections (river crossings) are joined straight, as the Wall crossed them; the western section, where OpenStreetMap leaves gaps of 2.9-5 km, is not drawn.",
+   "research": "hadrians-wall-122-142",
+   "sources": [
+    {
+     "cite": "UNESCO World Heritage Centre, 'Frontiers of the Roman Empire' (property 430ter: Hadrian's Wall, Upper German-Raetian Limes, Antonine Wall), statement of Outstanding Universal Value",
+     "url": "https://whc.unesco.org/en/list/430/",
+     "supports": "Hadrian's Wall built on the orders of Hadrian in AD 122 as a continuous linear barrier at the then northernmost limits of Britannia, Tyne mouth to Solway Firth, with a further 36 km of coastal installations."
+    },
+    {
+     "cite": "D.J. Breeze, Frontiers of the Roman Empire: Hadrian's Wall, Archaeopress (ISBN 978-1-80327-416-4), p. 60, p. 62",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781803274164",
+     "supports": "Wall ran from Wallsend to Bowness-on-Solway; coastal milefortlets and towers for at least 40 km; at least three forts to the north, all in the west; Antoninus Pius decided within months of his accession to abandon Hadrian's Wall and build a new frontier 120 km to the north."
+    },
+    {
+     "cite": "D.J. Breeze, Frontiers of the Roman Empire: The Antonine Wall - A World Heritage Site, Archaeopress (ISBN 978-1-78969-995-1), p. 40, p. 41",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781789699951",
+     "supports": "Construction began c. 122; Antoninus Pius abandoned Hadrian's Wall; victory celebrated 142 and the Antonine Wall built from then."
+    },
+    {
+     "cite": "English Heritage, history page for Housesteads Roman Fort (Hadrian's Wall), 'History'",
+     "url": "https://www.english-heritage.org.uk/visit/places/hadrians-wall/history-and-stories/history/",
+     "supports": "Within four years of Hadrian's death Antoninus Pius began the Antonine Wall; recent excavations at Housesteads found no evidence that Hadrian's Wall was abandoned."
+    }
+   ]
+  },
+  {
+   "id": "hadrians-wall-158",
+   "feature": {
+    "kind": "wall",
+    "name": "Hadrian's Wall",
+    "wikidata": "Q57357",
+    "osm": {
+     "type": "relation",
+     "ids": [
+      5538074
+     ]
+    },
+    "roles": [
+     "wall",
+     "wall-route"
+    ],
+    "bridgeKm": 0.4
+   },
+   "from": [
+    -1.533,
+    54.988
+   ],
+   "to": [
+    -2.732,
+    54.972
+   ],
+   "span": [
+    "158",
+    "410"
+   ],
+   "sides": [
+    {
+     "name": "Roman Empire",
+     "qid": "Q2277"
+    }
+   ],
+   "claim": "After about 20 years of disuse the Wall was recommissioned from 158 and remained the northern frontier of Roman Britain until 410, apart from Septimius Severus' campaigns of 208-211, which did not lead to lasting conquest. Outpost forts north of the Wall were held until probably the early 4th century.",
+   "channel": "Not applicable (artificial line).",
+   "review": "Hadrian's Wall again the frontier from the withdrawal from the Antonine Wall (c. 158) to the end of Roman Britain (410). Same drawing as hadrians-wall-122.",
+   "research": "hadrians-wall-158-410",
+   "sources": [
+    {
+     "cite": "D.J. Breeze, Frontiers of the Roman Empire: Hadrian's Wall, Archaeopress (ISBN 978-1-80327-416-4), p. 62, p. 64",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781803274164",
+     "supports": "Wall re-commissioned after c. 20 years' disuse, rebuilding from 158; Severus campaigned 208-211; forts north of the Wall probably abandoned in the early 4th century; Wall in military occupation until 410."
+    },
+    {
+     "cite": "J.C. Mann, 'The history of the Antonine Wall - a reappraisal', Proceedings of the Society of Antiquaries of Scotland 118 (1988), 131-137, pp. 131-134",
+     "url": "http://journals.socantscot.org/index.php/psas/article/download/9329/9297",
+     "supports": "Inscription of AD 158 (RIB 1389) implies reoccupation of Hadrian's Wall as a frontier line in 158; argues for a later second Antonine occupation with the frontier on the Antonine Wall in the 180s."
+    },
+    {
+     "cite": "English Heritage, history page for Housesteads Roman Fort (Hadrian's Wall), 'History'",
+     "url": "https://www.english-heritage.org.uk/visit/places/hadrians-wall/history-and-stories/history/",
+     "supports": "The Antonine Wall was abandoned after AD 160 and Hadrian's Wall was fully garrisoned for the next two centuries; Roman rule in north Britain ended at the turn of the 5th century."
+    }
+   ]
+  }
+ ],
+ "notDrawn": [
+  {
+   "id": "byzantine-paristrion-lower-danube-1072-1091",
+   "verdict": "undetermined",
+   "feature": "Danube",
+   "span": [
+    "1072",
+    "1091"
+   ],
+   "sides": [
+    "Byzantine Empire (nominal)",
+    "none (unorganised / tribal): Pechenegs, on both banks"
+   ],
+   "why": "For these two decades imperial authority on the lower Danube had lapsed. The effective edge of Byzantine control lay inland (Haemus), and nomads lived south of the river. No source says whether the river stayed a boundary in law.",
+   "sources": [
+    {
+     "cite": "Paul Stephenson, Byzantium's Balkan Frontier: A Political Study of the Northern Balkans, 900-1204, Cambridge University Press, 2000, pp. 98-103",
+     "url": "https://www.cristoraul.org/BYZANTIUM/Byzantine-Balkan-Frontier.pdf"
+    }
+   ]
+  },
+  {
+   "id": "byzantine-paristrion-lower-danube-1091-1186",
+   "verdict": "partial",
+   "feature": "Danube",
+   "span": [
+    "1091",
+    "1186"
+   ],
+   "sides": [
+    "Byzantine Empire",
+    "none (unorganised / tribal): Cumans north of the river"
+   ],
+   "why": "Neither source states a boundary line for the twelfth century.",
+   "sources": [
+    {
+     "cite": "Francesco Dall'Aglio, 'Paristrion as Centre and Periphery: from Byzantine Border Province to Heartland of the Second Bulgarian Tsardom', Studia Ceranea 12, 2022 (doi 10.18778/2084-140X.12.12), p. 9 and abstract",
+     "url": "https://pdfs.semanticscholar.org/4cf3/1418d6daf78cd0294ab700469762be6922d7.pdf"
+    },
+    {
+     "cite": "Paul Stephenson, Byzantium's Balkan Frontier: A Political Study of the Northern Balkans, 900-1204, Cambridge University Press, 2000, pp. 288-290, 310",
+     "url": "https://www.cristoraul.org/BYZANTIUM/Byzantine-Balkan-Frontier.pdf"
+    }
+   ]
+  },
+  {
+   "id": "byzantine-upper-danube-sava-1018-1071",
+   "verdict": "partial",
+   "feature": "Sava",
+   "span": [
+    "1018",
+    "1071"
+   ],
+   "sides": [
+    "Byzantine Empire",
+    "Kingdom of Hungary"
+   ],
+   "why": "A poorly defined march delegated to local rulers, with Sirmium on the far bank.",
+   "sources": [
+    {
+     "cite": "Paul Stephenson, Byzantium's Balkan Frontier: A Political Study of the Northern Balkans, 900-1204, Cambridge University Press, 2000, pp. 65-66, 123-124, 141",
+     "url": "https://www.cristoraul.org/BYZANTIUM/Byzantine-Balkan-Frontier.pdf"
+    }
+   ]
+  },
+  {
+   "id": "byzantine-hungarian-sava-danube-1071-1165",
+   "verdict": "partial",
+   "feature": "Sava",
+   "span": [
+    "1071",
+    "1165"
+   ],
+   "sides": [
+    "Byzantine Empire (Belgrade, Branicevo)",
+    "Kingdom of Hungary (Sirmium, Zemun, Haram)"
+   ],
+   "why": "The dating of Hungarian Sirmium is disputed among scholars.",
+   "sources": [
+    {
+     "cite": "Paul Stephenson, Byzantium's Balkan Frontier: A Political Study of the Northern Balkans, 900-1204, Cambridge University Press, 2000, pp. 141, 191, 282",
+     "url": "https://www.cristoraul.org/BYZANTIUM/Byzantine-Balkan-Frontier.pdf"
+    },
+    {
+     "cite": "Wikipedia, 'Sirmium (theme)' (used only to show the contrary reading that Byzantine control was restored under the Komnenoi; it gives no page-level scholarly citation)",
+     "url": "https://en.wikipedia.org/wiki/Sirmium_(theme)"
+    }
+   ]
+  },
+  {
+   "id": "byzantine-lower-danube-681-1001-refuted",
+   "verdict": "refuted",
+   "feature": "Danube",
+   "span": [
+    "681",
+    "1001"
+   ],
+   "sides": [
+    "Byzantine Empire",
+    "First Bulgarian Empire"
+   ],
+   "why": "The dataset's Byzantine Danube span from 633 is not supported, because after 681 the south bank was Bulgarian. The sources read do not cover 633-681 (after the late-Roman Danube limes collapsed), so do not draw that period either. Byzantium held Dristra and Preslav from 971 to c.986; whether the Danube was its boundary from 986 to 1001 is undetermined.",
+   "sources": [
+    {
+     "cite": "Francesco Dall'Aglio, 'Paristrion as Centre and Periphery: from Byzantine Border Province to Heartland of the Second Bulgarian Tsardom', Studia Ceranea 12, 2022 (doi 10.18778/2084-140X.12.12), abstract",
+     "url": "https://pdfs.semanticscholar.org/4cf3/1418d6daf78cd0294ab700469762be6922d7.pdf"
+    },
+    {
+     "cite": "Paul Stephenson, Byzantium's Balkan Frontier: A Political Study of the Northern Balkans, 900-1204, Cambridge University Press, 2000, pp. 51, 59, 63-64",
+     "url": "https://www.cristoraul.org/BYZANTIUM/Byzantine-Balkan-Frontier.pdf"
+    }
+   ]
+  },
+  {
+   "id": "first-bulgarian-empire-danube",
+   "verdict": "undetermined",
+   "feature": "Danube",
+   "span": [
+    "681",
+    "971"
+   ],
+   "sides": [
+    "First Bulgarian Empire",
+    "north bank: Bulgarian-ruled or nomad (Magyar, Pecheneg), disputed"
+   ],
+   "why": "If Bulgaria held the north bank, the Danube was an internal river (refuted). If it did not, its northern edge may have been the river, but no source read states a river boundary. The 10th-century relationship with the Pechenegs north of the river is not described as a line.",
+   "sources": [
+    {
+     "cite": "Wikipedia, 'Bulgarian lands across the Danube' (citing P. Koledarov, Political Geography of Medieval Bulgaria I; V. Tapkova-Zaimova on 'Transdanubian Bulgaria'; F. Curta, 'Bulgaria beyond the Danube', in Christianization in Early Medieval Transylvania, Brill 2022, pp. 57-77)",
+     "url": "https://en.wikipedia.org/wiki/Bulgarian_lands_across_the_Danube"
+    },
+    {
+     "cite": "Paul Stephenson, Byzantium's Balkan Frontier: A Political Study of the Northern Balkans, 900-1204, Cambridge University Press, 2000, p. 39",
+     "url": "https://www.cristoraul.org/BYZANTIUM/Byzantine-Balkan-Frontier.pdf"
+    }
+   ]
+  },
+  {
+   "id": "second-bulgarian-empire-danube",
+   "verdict": "undetermined",
+   "feature": "Danube",
+   "span": [
+    "1186",
+    "1396"
+   ],
+   "sides": [
+    "Second Bulgarian Empire",
+    "Cumans; later the Hungarian Banate of Severin, then Wallachia"
+   ],
+   "why": "No scholarly statement was found that fixes the Danube as the Second Bulgarian Empire's boundary. The north side was Cuman nomad country until 1241, then Hungarian (Severin) and Wallachian, and the Bulgarian state itself broke up (Vidin 1356, Dobruja under Dobrotitsa). Do not snap.",
+   "sources": [
+    {
+     "cite": "Francesco Dall'Aglio, 'Paristrion as Centre and Periphery: from Byzantine Border Province to Heartland of the Second Bulgarian Tsardom', Studia Ceranea 12, 2022 (doi 10.18778/2084-140X.12.12), abstract",
+     "url": "https://pdfs.semanticscholar.org/4cf3/1418d6daf78cd0294ab700469762be6922d7.pdf"
+    }
+   ]
+  },
+  {
+   "id": "huns-danube-refuted",
+   "verdict": "refuted",
+   "feature": "Danube",
+   "span": [
+    "378",
+    "455"
+   ],
+   "sides": [
+    "Huns",
+    "Eastern Roman Empire"
+   ],
+   "why": "In 447-453 the Roman-Hunnic division was an evacuated march some five days deep south of the river, not the river itself, and Pannonian districts west of the Danube were Hunnic. Before the 440s the Danube was the Roman limes, but Bury does not describe it as a defined Roman-Hunnic boundary, and Hunnic power was not territorial in that sense. Draw no line.",
+   "sources": [
+    {
+     "cite": "J. B. Bury, History of the Later Roman Empire, vol. 1, Macmillan, 1923, ch. IX (based on Priscus)",
+     "url": "https://penelope.uchicago.edu/Thayer/E/Roman/Texts/secondary/BURLAT/9*.html"
+    }
+   ]
+  },
+  {
+   "id": "avar-khaganate-danube-refuted",
+   "verdict": "refuted",
+   "feature": "Danube",
+   "span": [
+    "567",
+    "800"
+   ],
+   "sides": [
+    "Avar Khaganate",
+    "Byzantine Empire / Franks"
+   ],
+   "why": "On the middle Danube the river ran through the Avar heartland, not along its edge. On the lower Danube no Avar boundary on the river is documented.",
+   "sources": [
+    {
+     "cite": "Wikipedia, 'Siege of Sirmium' (citing W. Pohl, Die Awaren. Ein Steppenvolk in Mitteleuropa 567-822 n. Chr., Beck 1988, pp. 70-76)",
+     "url": "https://en.wikipedia.org/wiki/Siege_of_Sirmium"
+    }
+   ]
+  },
+  {
+   "id": "rome-tervingi-lower-danube-332-376",
+   "verdict": "partial",
+   "feature": "Danube",
+   "span": [
+    "332",
+    "376"
+   ],
+   "sides": [
+    "Roman Empire",
+    "Tervingi (the dataset's 'Gothia'; note Q422253 is a Wikidata disambiguation page)"
+   ],
+   "why": "Covered by danube-roman-olt-silistra (the Roman frontier 118-614); the Tervingi carry no verified identity in Cliopatria.",
+   "sources": [
+    {
+     "cite": "Ammianus Marcellinus, Res Gestae 27.5.2 and 27.5.9 (Loeb trans. J. C. Rolfe, via LacusCurtius)",
+     "url": "https://penelope.uchicago.edu/Thayer/E/Roman/Texts/Ammian/27*.html"
+    },
+    {
+     "cite": "World History Encyclopedia, 'Athanaric'",
+     "url": "https://www.worldhistory.org/Athanaric/"
+    }
+   ]
+  },
+  {
+   "id": "hungary-ottoman-sava-danube-1459-1521",
+   "verdict": "partial",
+   "feature": "Danube",
+   "span": [
+    "1459",
+    "1521"
+   ],
+   "sides": [
+    "Kingdom of Hungary",
+    "Ottoman Empire"
+   ],
+   "why": "Only popular sources and an abstract were opened.",
+   "sources": [
+    {
+     "cite": "Hungarian Conservative, 'A Hungarian Border Fortress on the Banks of the Sava River: The Siege of Szabacs, 1476'",
+     "url": "https://www.hungarianconservative.com/articles/culture_society/border-fortress-sava-river-siege-of-szabacs-castle-ottomans/"
+    },
+    {
+     "cite": "Richard Horvath, 'The Castle of Jajce in the Organization of the Hungarian Border Defence System under Matthias Corvinus', in Stjepan Tomasevic (1461-1463), Zagreb 2013 (repository abstract only)",
+     "url": "https://real.mtak.hu/13132/"
+    }
+   ]
+  },
+  {
+   "id": "hungary-sava-bosnian-sector-refuted",
+   "verdict": "refuted",
+   "feature": "Sava",
+   "span": [
+    "1363",
+    "1540"
+   ],
+   "sides": [
+    "Kingdom of Hungary (Slavonia)",
+    "Kingdom of Bosnia to 1463, then Ottoman Empire"
+   ],
+   "why": "In 1463-1527 Hungarian territory reached well south of the Sava in this sector (Jajce on the Vrbas), so the river was not the boundary. For 1363-1463 (Hungary vs Bosnia), Hungarian banates (Usora, Soli, Macva) also lay south of the Sava and suzerainty was contested; no source read fixes the Sava as the line. That earlier part is undetermined rather than positively refuted.",
+   "sources": [
+    {
+     "cite": "Richard Horvath, 'The Castle of Jajce in the Organization of the Hungarian Border Defence System under Matthias Corvinus', Zagreb 2013 (repository abstract)",
+     "url": "https://real.mtak.hu/13132/"
+    }
+   ]
+  },
+  {
+   "id": "ottoman-habsburg-middle-danube-1541-1689-refuted",
+   "verdict": "refuted",
+   "feature": "Danube",
+   "span": [
+    "1541",
+    "1689"
+   ],
+   "sides": [
+    "Ottoman Empire",
+    "Habsburg monarchy (Royal Hungary)"
+   ],
+   "why": "This was a zone, not a line. The river ran at right angles to the front, through Ottoman-held Buda/Pest (both banks), and the front crossed it between Esztergom (Ottoman 1543-1595 and 1605-1683) and Habsburg Komarom.",
+   "sources": [
+    {
+     "cite": "Zsolt G. Torok, 'Cartographic circles: maps of Hungary as the Habsburg-Ottoman military border in the 16th century', Proceedings of the ICA 3, 2021",
+     "url": "https://ica-proc.copernicus.org/articles/3/11/2021/ica-proc-3-11-2021.pdf"
+    },
+    {
+     "cite": "Jovan Pesalj, Monitoring migrations: the Habsburg-Ottoman border in the eighteenth century, PhD thesis, Leiden University, 2019, ch. 1, pp. 32-34",
+     "url": "https://scholarlypublications.universiteitleiden.nl/access/item:2978136/view"
+    },
+    {
+     "cite": "Explore Carpathia, 'Komarom (Komarno)'",
+     "url": "https://www.explorecarpathia.eu/en/hungary/komarom-komarno"
+    }
+   ]
+  },
+  {
+   "id": "habsburg-ottoman-sava-una-before-1699-refuted",
+   "verdict": "refuted",
+   "feature": "Sava and Una",
+   "span": [
+    "1527",
+    "1699"
+   ],
+   "sides": [
+    "Habsburg monarchy",
+    "Ottoman Empire"
+   ],
+   "why": "Before 1699 the Ottomans held Slavonia north of the Sava and, from 1592, Bihac and both banks of the middle Una, while the Croatian front lay on the Kupa. Neither river was the boundary before 1699. These holdings come from general knowledge and were not verified against an opened source; the sourced point is that the river line dates from 1699.",
+   "sources": [
+    {
+     "cite": "Jovan Pesalj, Monitoring migrations: the Habsburg-Ottoman border in the eighteenth century, PhD thesis, Leiden University, 2019, ch. 1",
+     "url": "https://scholarlypublications.universiteitleiden.nl/access/item:2978136/view"
+    }
+   ]
+  },
+  {
+   "id": "byzantine-bulgarian-maritsa-815-refuted",
+   "verdict": "refuted",
+   "feature": "Maritsa (Hebros / Evros)",
+   "span": [
+    "815",
+    "1344"
+   ],
+   "sides": [
+    "Byzantine Empire",
+    "First / Second Bulgarian Empire"
+   ],
+   "why": "The built boundary is the Erkesia earthwork (Q1355091), a separate feature that meets the Maritsa crosswise. No source read describes the Maritsa as a Byzantine-Bulgarian boundary in any later period; later frontiers (e.g. 1344) were defined by towns in the Rhodopes.",
+   "sources": [
+    {
+     "cite": "Wikipedia, 'Byzantine-Bulgarian treaty of 815' (citing V. Zlatarski, History of the Bulgarian State in the Middle Ages, pp. 385-389)",
+     "url": "https://en.wikipedia.org/wiki/Byzantine%E2%80%93Bulgarian_treaty_of_815"
+    },
+    {
+     "cite": "Wikipedia, 'Omurtag of Bulgaria'",
+     "url": "https://en.wikipedia.org/wiki/Omurtag_of_Bulgaria"
+    }
+   ]
+  },
+  {
+   "id": "byzantine-abbasid-seyhan-refuted",
+   "verdict": "refuted",
+   "feature": "Seyhan (Saros)",
+   "span": [
+    "724",
+    "965"
+   ],
+   "sides": [
+    "Byzantine Empire",
+    "Abbasid Caliphate (Cilician thughur)"
+   ],
+   "why": "The Seyhan flowed through the Muslim thughur, with Adana on its banks. The customary meeting point was the Lamos, far to the west, and the frontier as a whole was a no-man's-land zone, not the Seyhan.",
+   "sources": [
+    {
+     "cite": "Wikipedia, 'Al-Awasim' (citing Kaegi 1995, Whittow 1996, Wheatley 2000, Kennedy 2001, El-Cheikh 2004)",
+     "url": "https://en.wikipedia.org/wiki/Al-Awasim"
+    },
+    {
+     "cite": "Wikipedia, 'Arab-Byzantine prisoner exchanges' (citing N. Oikonomides in the Oxford Dictionary of Byzantium, 1991)",
+     "url": "https://en.wikipedia.org/wiki/Arab%E2%80%93Byzantine_prisoner_exchanges"
+    }
+   ]
+  },
+  {
+   "id": "atrak-russia-persia-1869",
+   "verdict": "confirmed",
+   "feature": "Atrek (Atrak)",
+   "span": [
+    "1869-12-13",
+    "present"
+   ],
+   "sides": [
+    "Russian Empire",
+    "Qajar Iran (Persia)"
+   ],
+   "why": "Inside the years OpenHistoricalMap and CShapes already draw precisely; the old mouth channel is not today's river.",
+   "sources": [
+    {
+     "cite": "US Department of State, Office of the Geographer, International Boundary Study No. 25 (Revised): Iran - U.S.S.R. Boundary, 1978, sections II.B, III and treaty annex B-E",
+     "url": "https://library.law.fsu.edu/Digital-Collections/LimitsinSeas/pdf/ibs025.pdf"
+    },
+    {
+     "cite": "X. de Planhol, 'Boundaries ii. With Russia', Encyclopaedia Iranica",
+     "url": "https://www.iranicaonline.org/articles/boundaries-ii/"
+    }
+   ]
+  },
+  {
+   "id": "aras-russia-persia-1828",
+   "verdict": "confirmed",
+   "feature": "Aras (Araxes)",
+   "span": [
+    "1828-02-22",
+    "present"
+   ],
+   "sides": [
+    "Russian Empire",
+    "Qajar Iran (Persia)"
+   ],
+   "why": "Confirmed by treaty, but the river’s course is broken by the Araks HPP (1970) and Khudafarin reservoirs, over which the boundary itself was redrawn as straight segments; and 1828-1886 is drawn by OpenHistoricalMap, a precise record.",
+   "sources": [
+    {
+     "cite": "US Department of State, Office of the Geographer, International Boundary Study No. 25 (Revised): Iran - U.S.S.R. Boundary, 1978, sections II.B, III and treaty annex B-E",
+     "url": "https://library.law.fsu.edu/Digital-Collections/LimitsinSeas/pdf/ibs025.pdf"
+    },
+    {
+     "cite": "'Araxes River', Encyclopaedia Iranica",
+     "url": "https://www.iranicaonline.org/articles/araxes-river/"
+    },
+    {
+     "cite": "Treaty of Turkmenchay, Article IV (English rendering of the treaty text), karabakh.org",
+     "url": "https://karabakh.org/treaties/turkmenchay-treaty/"
+    }
+   ]
+  },
+  {
+   "id": "aras-russia-persia-golestan-1813",
+   "verdict": "partial",
+   "feature": "Aras (Araxes)",
+   "span": [
+    "1813-10-24",
+    "1828-02-22"
+   ],
+   "sides": [
+    "Russian Empire (Karabakh khanate side)",
+    "Qajar Iran (Persia)"
+   ],
+   "why": "The whole 1813 settlement was status quo ad presentem and undemarcated, and the Kapanak-chay mouth is not located.",
+   "sources": [
+    {
+     "cite": "E. Daniel, 'Golestan Treaty', Encyclopaedia Iranica (quoting J. C. Hurewitz, The Middle East and North Africa in World Politics I, p. 197)",
+     "url": "https://www.iranicaonline.org/articles/golestan-treaty/"
+    },
+    {
+     "cite": "Treaty of Gulistan, Article II (English rendering of the treaty text), karabakh.org",
+     "url": "https://karabakh.org/treaties/gulustan-treaty/"
+    },
+    {
+     "cite": "'Araxes River', Encyclopaedia Iranica",
+     "url": "https://www.iranicaonline.org/articles/araxes-river/"
+    }
+   ]
+  },
+  {
+   "id": "aras-ottoman-safavid-1639",
+   "verdict": "refuted",
+   "feature": "Aras (Araxes)",
+   "span": [
+    "1639",
+    "1737"
+   ],
+   "sides": [
+    "Ottoman Empire",
+    "Safavid Iran"
+   ],
+   "why": "A provincial partition, not a river line. The Safavid Chukhur-e Sa'd province (Erivan, Nakhchivan) lay on the north bank and Safavid Azarbaijan on the south bank, so the middle Aras ran inside Safavid territory, while the upper Aras lay inside Ottoman Erzurum/Kars; the frontier crossed the river rather than following it, and is described as a buffer zone.",
+   "sources": [
+    {
+     "cite": "'Treaty of Zuhab', Wikipedia (finding aid only)",
+     "url": "https://en.wikipedia.org/wiki/Treaty_of_Zuhab"
+    },
+    {
+     "cite": "'Araxes River', Encyclopaedia Iranica",
+     "url": "https://www.iranicaonline.org/articles/araxes-river/"
+    }
+   ]
+  },
+  {
+   "id": "aras-medieval-abbasid-seljuk-georgia",
+   "verdict": "refuted",
+   "feature": "Aras (Araxes)",
+   "span": [
+    "825",
+    "1463"
+   ],
+   "sides": [
+    "Abbasid Caliphate / Seljuk Empire / Kingdom of Georgia (dataset)",
+    "varies"
+   ],
+   "why": "Under the Abbasids and Great Seljuks one polity held both banks (Azarbaijan and Arran); the river was a provincial/geographical divide, not a political boundary. For the Kingdom of Georgia no source opened says its frontier followed the Aras.",
+   "sources": [
+    {
+     "cite": "C. E. Bosworth, 'Azerbaijan iv. Islamic history to 1941', Encyclopaedia Iranica",
+     "url": "https://www.iranicaonline.org/articles/azerbaijan-iv/"
+    },
+    {
+     "cite": "'Araxes River', Encyclopaedia Iranica",
+     "url": "https://www.iranicaonline.org/articles/araxes-river/"
+    }
+   ]
+  },
+  {
+   "id": "euphrates-mamluk-ilkhanate",
+   "verdict": "partial",
+   "feature": "Euphrates",
+   "span": [
+    "1260-09-03",
+    "1323"
+   ],
+   "sides": [
+    "Mamluk Sultanate (west bank)",
+    "Ilkhanate (east bank / Jazira)"
+   ],
+   "why": "A war front and depopulated zone with a Mamluk fortress on the east bank, never a delimited line.",
+   "sources": [
+    {
+     "cite": "R. Amitai-Preiss, Mongols and Mamluks: The Mamluk-Ilkhanid War 1260-1281, Cambridge UP, 1995, ch. 9 'The Mamluk-Ilkhanid frontier' (publisher abstract)",
+     "url": "https://www.cambridge.org/core/books/abs/mongols-and-mamluks/mamlukilkhanid-frontier/519ABCF7CD45127349B413196D2F7E46"
+    },
+    {
+     "cite": "'Il-khanids i. Dynastic history', Encyclopaedia Iranica",
+     "url": "https://www.iranicaonline.org/articles/il-khanids-i-dynastic-history/"
+    },
+    {
+     "cite": "A. Durukan, 'Some Considerations on the Mamluk Remains of Birecik (Sanliurfa)', Proceedings of the First International Congress on Islamic Archaeology, IRCICA, Istanbul 2011",
+     "url": "https://isamveri.org/pdfdrg/D201829/2011/2011_DURUKANA.pdf"
+    }
+   ]
+  },
+  {
+   "id": "euphrates-ottoman-safavid-1512",
+   "verdict": "undetermined",
+   "feature": "Euphrates",
+   "span": [
+    "1512",
+    "1534"
+   ],
+   "sides": [
+    "Ottoman Empire",
+    "Safavid Iran"
+   ],
+   "why": "No source opened places the Ottoman-Safavid frontier on the Euphrates; the extent of Safavid Iraq up the Euphrates is unknown. Before 1516 the Syrian side was Mamluk, not Ottoman.",
+   "sources": [
+    {
+     "cite": "R. Matthee, 'Iraq iv. Relations in the Safavid period', Encyclopaedia Iranica",
+     "url": "https://www.iranicaonline.org/articles/iraq-iv-safavid-period/"
+    }
+   ]
+  },
+  {
+   "id": "oxus-ghaznavid-karakhanid-999",
+   "verdict": "partial",
+   "feature": "Amu Darya (Oxus)",
+   "span": [
+    "999",
+    "1040"
+   ],
+   "sides": [
+    "Ghaznavids",
+    "Kara-Khanid Khanate"
+   ],
+   "why": "An agreed line soon violated, with Ghaznavid vassal principalities north of the river; its extent is not established.",
+   "sources": [
+    {
+     "cite": "C. E. Bosworth, 'The Ghaznavids', in History of Civilizations of Central Asia vol. IV pt 1, UNESCO, 1998, ch. 5",
+     "url": "http://ambijat.wdfiles.com/local--files/admin:manage/Ghaznavids.pdf"
+    },
+    {
+     "cite": "'Ilak-khanids', Encyclopaedia Iranica",
+     "url": "https://www.iranicaonline.org/articles/ilak-khanids/"
+    }
+   ]
+  },
+  {
+   "id": "oxus-sasanian-turk-560",
+   "verdict": "undetermined",
+   "feature": "Amu Darya (Oxus)",
+   "span": [
+    "560",
+    "625"
+   ],
+   "sides": [
+    "Sasanian Empire (via Hephthalite vassal principalities south of the river)",
+    "Western Turkic Khaganate"
+   ],
+   "why": "A division 'along the line of the Oxus' is stated, but the land south of it was a tributary sphere of vassal principalities, the dates are approximate, the arrangement was breached in 588-89 and ended c. 625. From c. 625 the river was NOT a boundary (Western Turks/Yabghus on both banks) - so the dataset's Sasanian 387..644 and Western Turk 587..661 Oxus spans are refuted after 625.",
+   "sources": [
+    {
+     "cite": "'Hephthalites', Encyclopaedia Iranica",
+     "url": "https://www.iranicaonline.org/articles/hephthalites/"
+    },
+    {
+     "cite": "'Tokhara Yabghus', Wikipedia (finding aid; cites Dani & Litvinsky, History of Civilizations of Central Asia III, UNESCO 1996, pp. 368-375)",
+     "url": "https://en.wikipedia.org/wiki/Tokhara_Yabghus"
+    }
+   ]
+  },
+  {
+   "id": "oxus-single-polity-medieval",
+   "verdict": "refuted",
+   "feature": "Amu Darya (Oxus)",
+   "span": [
+    "666",
+    "1507"
+   ],
+   "sides": [
+    "Umayyad / Abbasid / Samanid / Seljuk / Timurid (dataset)",
+    "same polity or its vassal on the other bank"
+   ],
+   "why": "'The river divides Transoxiana from Khurasan' is geography. Caliphal Khurasan, the Samanids, Great Seljuks and Timurids held both banks; Khwarazm was a Qara Khitai tributary and itself straddled the lower Oxus. For the Umayyad conquest phase (before c. 710) the river was a raiding frontier, not a line; for Saffarid vs Samanid (875-900) no source opened attests an agreed river line.",
+   "sources": [
+    {
+     "cite": "C. E. Bosworth, 'The Ghaznavids', in History of Civilizations of Central Asia vol. IV pt 1, UNESCO, 1998, ch. 5",
+     "url": "http://ambijat.wdfiles.com/local--files/admin:manage/Ghaznavids.pdf"
+    },
+    {
+     "cite": "'Amu Darya', Encyclopaedia Iranica",
+     "url": "https://www.iranicaonline.org/articles/amu-darya/"
+    }
+   ]
+  },
+  {
+   "id": "oxus-bukhara-safavid-mughal-1526",
+   "verdict": "refuted",
+   "feature": "Amu Darya (Oxus)",
+   "span": [
+    "1526",
+    "1689"
+   ],
+   "sides": [
+    "Khanate of Bukhara",
+    "Safavid Iran / Mughal Empire (dataset: Mughal Balkh 1530-1689)"
+   ],
+   "why": "Bukhara held Balkh SOUTH of the Oxus (later a Janid appanage together with Badakhshan); the Mughal occupation of Balkh (1646-47) was brief. The frontier with Safavid Khorasan lay well south of the river and was a contested zone. The dataset's Mughal Balkh 1530-1689 is itself doubtful.",
+   "sources": [
+    {
+     "cite": "Y. Bregel, 'Bukhara iv. Khanate of Bukhara and Khorasan', Encyclopaedia Iranica",
+     "url": "https://www.iranicaonline.org/articles/bukhara-iv/"
+    }
+   ]
+  },
+  {
+   "id": "oxus-panj-afghanistan-bukhara-1873",
+   "verdict": "partial",
+   "feature": "Amu Darya and Panj (Pyandzh), with the Pamir river to Lake Zorkul",
+   "span": [
+    "1873-01-31",
+    "present"
+   ],
+   "sides": [
+    "Emirate of Afghanistan",
+    "Emirate of Bukhara (Russian protectorate)"
+   ],
+   "why": "Drawn by the precise records of 1873-1886 (OpenHistoricalMap) where it applies; the upper Panj did not match possession until 1895.",
+   "sources": [
+    {
+     "cite": "US Department of State, Office of the Geographer, International Boundary Study No. 26 (Revised): Afghanistan - U.S.S.R. Boundary, 1983, history section and treaty annex A-D",
+     "url": "https://library.law.fsu.edu/Digital-Collections/LimitsinSeas/pdf/ibs026.pdf"
+    },
+    {
+     "cite": "'Darvaz', Encyclopaedia Iranica",
+     "url": "https://www.iranicaonline.org/articles/darvaz/"
+    }
+   ]
+  },
+  {
+   "id": "oxus-durrani-bukhara-1797",
+   "verdict": "undetermined",
+   "feature": "Amu Darya (Oxus)",
+   "span": [
+    "1797",
+    "1823"
+   ],
+   "sides": [
+    "Durrani Empire",
+    "Emirate of Bukhara"
+   ],
+   "why": "No delimitation is known before 1873; not researched further.",
+   "sources": [
+    {
+     "cite": "US Department of State, Office of the Geographer, International Boundary Study No. 26 (Revised): Afghanistan - U.S.S.R. Boundary, 1983, history section and treaty annex A-D",
+     "url": "https://library.law.fsu.edu/Digital-Collections/LimitsinSeas/pdf/ibs026.pdf"
+    }
+   ]
+  },
+  {
+   "id": "amu-darya-russia-khiva-1873",
+   "verdict": "partial",
+   "feature": "Amu Darya (lower course) and its westernmost delta branch, the Taldyk",
+   "span": [
+    "1873-08-24",
+    "1920"
+   ],
+   "sides": [
+    "Russian Empire (Amu-Darya Department, right bank)",
+    "Khanate of Khiva (left bank)"
+   ],
+   "why": "The delta channels and the Aral shore of 1873 are not today's; the upstream end is not established.",
+   "sources": [
+    {
+     "cite": "'Khiva', Encyclopaedia Iranica",
+     "url": "https://www.iranicaonline.org/articles/khiva/"
+    },
+    {
+     "cite": "'3. The Amu-Darya Department and Fort Petro-Aleksandrovsk', chapter of a monograph published by the Austrian Academy of Sciences Press (austriaca.at), citing S. Becker, Russia's Protectorates in Central Asia, pp. 58-60",
+     "url": "https://austriaca.at/0xc1aa5572%200x003f1c73.pdf"
+    }
+   ]
+  },
+  {
+   "id": "amu-darya-khiva-bukhara-1822",
+   "verdict": "undetermined",
+   "feature": "Amu Darya (Oxus)",
+   "span": [
+    "1822",
+    "1873"
+   ],
+   "sides": [
+    "Khanate of Khiva",
+    "Emirate of Bukhara"
+   ],
+   "why": "The two khanates met along the river valley (Bukharan Chardzhou on the left bank, Khivan lands downstream), so the frontier most likely crossed the river rather than following it, but this is not documented in sources opened.",
+   "sources": [
+    {
+     "cite": "'Khiva', Encyclopaedia Iranica",
+     "url": "https://www.iranicaonline.org/articles/khiva/"
+    }
+   ]
+  },
+  {
+   "id": "syr-darya-russia-kokand-1853",
+   "verdict": "refuted",
+   "feature": "Syr Darya",
+   "span": [
+    "1853-07-28",
+    "1864"
+   ],
+   "sides": [
+    "Russian Empire",
+    "Khanate of Kokand"
+   ],
+   "why": "The 'Syr Darya line' was a chain of forts strung ALONG the river with Russia on both banks, facing Kokand upstream (Julek, Yany-Kurgan, Turkestan): the frontier crossed the river between Russian and Kokandi posts rather than following it, and the steppe on both sides was Kazakh land under Russian suzerainty.",
+   "sources": [
+    {
+     "cite": "A. Morrison, The Russian Conquest of Central Asia, Cambridge UP, 2020, ch. 3 'This Particularly Painful Place: The Failure of the Syr-Darya Line as a Frontier, 1841-63' (publisher abstract)",
+     "url": "https://www.cambridge.org/core/books/abs/russian-conquest-of-central-asia/this-particularly-painful-place-the-failure-of-the-syrdarya-line-as-a-frontier-184163/D0507ED50692A627A47FF21434951CDA"
+    }
+   ]
+  },
+  {
+   "id": "ural-river-russia-1848",
+   "verdict": "refuted",
+   "feature": "Ural (Yaik)",
+   "span": [
+    "1848",
+    "1868"
+   ],
+   "sides": [
+    "Russian Empire",
+    "Kazakh Junior Zhuz (Russian subjects; khanship abolished 1824)"
+   ],
+   "why": "In 1848-1868 both banks were under Russian sovereignty; the river was an internal administrative and settlement line, with Kazakh hordes on both banks. The Kimek-Kipchak 750..1236 span is a steppe zone with no attested line (not researched).",
+   "sources": [
+    {
+     "cite": "'Bukey Horde', Wikipedia (finding aid; cites Y. Bregel, An Historical Atlas of Central Asia, 2003, and M. B. Olcott, The Kazakhs, 1995)",
+     "url": "https://en.wikipedia.org/wiki/Bukey_Horde"
+    }
+   ]
+  },
+  {
+   "id": "sutlej-lahore-british-1809",
+   "verdict": "partial",
+   "feature": "Sutlej",
+   "span": [
+    "1809-04-25",
+    "1846-03-09"
+   ],
+   "sides": [
+    "Sikh Empire (Lahore)",
+    "Cis-Sutlej states under East India Company protection"
+   ],
+   "why": "Lahore kept sovereign territory on the left bank whose extent is not located.",
+   "sources": [
+    {
+     "cite": "'Anglo-Sikh Treaty (Amritsar, 1809)', The Sikh Encyclopedia (Encyclopaedia of Sikhism entry)",
+     "url": "https://www.thesikhencyclopedia.com/anglo-sikh-treaty-2/"
+    },
+    {
+     "cite": "V. N. Datta, feature on Maharaja Ranjit Singh, The Tribune (Spectrum), 8 Apr 2001",
+     "url": "https://www.tribuneindia.com/2001/20010408/spectrum/main1.htm"
+    },
+    {
+     "cite": "'Treaty of Amritsar (1809)', Wikipedia (finding aid; cites W. A. J. Archbold in Cambridge History of India V, 1929)",
+     "url": "https://en.wikipedia.org/wiki/Treaty_of_Amritsar_(1809)"
+    },
+    {
+     "cite": "'Treaty of Lahore', Wikipedia (finding aid)",
+     "url": "https://en.wikipedia.org/wiki/Treaty_of_Lahore"
+    }
+   ]
+  },
+  {
+   "id": "sutlej-bahawalpur-lahore",
+   "verdict": "undetermined",
+   "feature": "Sutlej (Ghara) and Panjnad",
+   "span": [
+    "1809",
+    "1849"
+   ],
+   "sides": [
+    "Sikh Empire",
+    "Bahawalpur State"
+   ],
+   "why": "No source opened documents whether and when Lahore took Bahawalpur's lands north of the Sutlej, so it cannot be said that the Sutlej/Panjnad was the Lahore-Bahawalpur line.",
+   "sources": [
+    {
+     "cite": "'Bahawalpur (princely state)', Wikipedia (finding aid)",
+     "url": "https://en.wikipedia.org/wiki/Bahawalpur_(princely_state)"
+    }
+   ]
+  },
+  {
+   "id": "tungabhadra-krishna-hyderabad-1727",
+   "verdict": "undetermined",
+   "feature": "Tungabhadra and Krishna",
+   "span": [
+    "1727",
+    "1768"
+   ],
+   "sides": [
+    "Hyderabad State",
+    "Marathas / Mysore (dataset)"
+   ],
+   "why": "No line along these rivers is attested for 1727-1768 in sources opened; the Nizam's claims extended south of them and frontiers with the Marathas and Mysore shifted by campaign. (After the 1800 cession the Tungabhadra separated Hyderabad's Raichur Doab from the Madras districts - not researched to the required standard here.)",
+   "sources": [
+    {
+     "cite": "'Ceded Districts', Wikipedia (finding aid; cites Imperial Gazetteer of India)",
+     "url": "https://en.wikipedia.org/wiki/Ceded_Districts"
+    },
+    {
+     "cite": "'Tungabhadra River', Wikipedia (finding aid)",
+     "url": "https://en.wikipedia.org/wiki/Tungabhadra_River"
+    }
+   ]
+  },
+  {
+   "id": "yalu-lower-joseon-ming",
+   "verdict": "partial",
+   "feature": "Yalu (Amnok) River",
+   "span": [
+    "1392",
+    "1621"
+   ],
+   "sides": [
+    "Joseon",
+    "Ming dynasty (Liaodong Regional Military Commission)"
+   ],
+   "why": "A mutually recognised river, but run as a deliberately emptied buffer with contested islands; which branch was the line was disputed until c. 1604. Not a line to draw precisely.",
+   "sources": [
+    {
+     "cite": "Jing Liu and Yan Piao, 'Expansion, Contestation, and Boundary Making: Chosŏn Korea and Ming China's Border Relations over the Yalu River Region', International Journal of Korean History 25(2), 2020, pp. 105-142",
+     "url": "https://ijkh.khistory.org/upload/pdf/ijkh-25-2-105.pdf"
+    },
+    {
+     "cite": "Nianshen Song, 'The Journey towards \"No Man's Land\": Interpreting the China-Korea Borderland within Imperial and Colonial Contexts', Journal of Asian Studies 76(4), 2017",
+     "url": "https://www.cambridge.org/core/journals/journal-of-asian-studies/article/journey-towards-no-mans-land-interpreting-the-chinakorea-borderland-within-imperial-and-colonial-contexts/D920C0302AABF07D5E9D4B5CEF40DA7E"
+    },
+    {
+     "cite": "Adam C. I. Bohnet, Migrant and Border Subjects in Late Chosŏn Korea, PhD thesis, University of Toronto, 2008, pp. 37-43, 119-120",
+     "url": "https://utoronto.scholaris.ca/server/api/core/bitstreams/21f141fc-ba0f-4845-bd28-0c1c400f418b/content"
+    }
+   ]
+  },
+  {
+   "id": "yalu-upper-four-commanderies",
+   "verdict": "partial",
+   "feature": "Yalu (Amnok) River",
+   "span": [
+    "1443",
+    "1455"
+   ],
+   "sides": [
+    "Joseon",
+    "Jurchen (unorganised)"
+   ],
+   "why": "Held only 1443-1455/59, and the upstream end of Joseon control is not established.",
+   "sources": [
+    {
+     "cite": "Encyclopedia of Korean Culture (한국민족문화대백과사전, Academy of Korean Studies), '사군 (四郡)'",
+     "url": "https://encykorea.aks.ac.kr/Article/E0025393"
+    },
+    {
+     "cite": "Liu Yang 刘阳, '15世纪中叶以来中朝鸭绿江与图们江界河形成的历史根源——以朝鲜王朝为中心', 河南师范大学学报(哲学社会科学版) 44(3), 2017, pp. 50-55 (abstract only)",
+     "url": "https://hnsk.cbpt.cnki.net/portal/journal/portal/client/paper/c7927755be7ce467addb3675f550e876"
+    }
+   ]
+  },
+  {
+   "id": "yalu-upper-pyesagun-1459-1712",
+   "verdict": "undetermined",
+   "feature": "Yalu (Amnok) River",
+   "span": [
+    "1459",
+    "1712"
+   ],
+   "sides": [
+    "Joseon",
+    "Jurchen / Later Jin / Qing"
+   ],
+   "why": "Chosŏn's effective line ran inland (Kanggye/Kapsan) and the river tract was empty; whether the river or the inland defence line was the boundary is not established; no bilateral delimitation before 1712.",
+   "sources": [
+    {
+     "cite": "Encyclopedia of Korean Culture (한국민족문화대백과사전, Academy of Korean Studies), '사군 (四郡)'",
+     "url": "https://encykorea.aks.ac.kr/Article/E0025393"
+    },
+    {
+     "cite": "Adam C. I. Bohnet, Migrant and Border Subjects in Late Chosŏn Korea, PhD thesis, University of Toronto, 2008, pp. 37-43, 119-120",
+     "url": "https://utoronto.scholaris.ca/server/api/core/bitstreams/21f141fc-ba0f-4845-bd28-0c1c400f418b/content"
+    }
+   ]
+  },
+  {
+   "id": "yalu-tumen-headwaters-paektu-undefined",
+   "verdict": "refuted",
+   "feature": "Yalu and Tumen headwaters around Mt Paektu (Changbai)",
+   "span": [
+    "1392",
+    "1712"
+   ],
+   "sides": [
+    "Joseon",
+    "Jurchen / Ming / Later Jin / Qing"
+   ],
+   "why": "No boundary line existed on the headwaters / Mt Paektu before 1712; mark this stretch as undefined rather than along either river.",
+   "sources": [
+    {
+     "cite": "Nianshen Song, 'The Journey towards \"No Man's Land\": Interpreting the China-Korea Borderland within Imperial and Colonial Contexts', Journal of Asian Studies 76(4), 2017",
+     "url": "https://www.cambridge.org/core/journals/journal-of-asian-studies/article/journey-towards-no-mans-land-interpreting-the-chinakorea-borderland-within-imperial-and-colonial-contexts/D920C0302AABF07D5E9D4B5CEF40DA7E"
+    },
+    {
+     "cite": "Adam C. I. Bohnet, Migrant and Border Subjects in Late Chosŏn Korea, PhD thesis, University of Toronto, 2008, pp. 37-43, 119-120",
+     "url": "https://utoronto.scholaris.ca/server/api/core/bitstreams/21f141fc-ba0f-4845-bd28-0c1c400f418b/content"
+    },
+    {
+     "cite": "Liu Yang 刘阳, '15世纪中叶以来中朝鸭绿江与图们江界河形成的历史根源——以朝鲜王朝为中心', 河南师范大学学报(哲学社会科学版) 44(3), 2017, pp. 50-55 (abstract only)",
+     "url": "https://hnsk.cbpt.cnki.net/portal/journal/portal/client/paper/c7927755be7ce467addb3675f550e876"
+    }
+   ]
+  },
+  {
+   "id": "tumen-joseon-jurchen-six-garrisons",
+   "verdict": "partial",
+   "feature": "Tumen (Duman) River",
+   "span": [
+    "1449",
+    "1616"
+   ],
+   "sides": [
+    "Joseon",
+    "Jurchen (Odori, Uriyangkhad etc.; nominal Ming jimi guards)"
+   ],
+   "why": "A garrison line with Joseon-affiliated Jurchen living across it; not a bilateral boundary.",
+   "sources": [
+    {
+     "cite": "Encyclopedia of Korean Culture (한국민족문화대백과사전, Academy of Korean Studies), '육진 (六鎭)'",
+     "url": "https://encykorea.aks.ac.kr/Article/E0042168"
+    },
+    {
+     "cite": "Nianshen Song, 'The Journey towards \"No Man's Land\": Interpreting the China-Korea Borderland within Imperial and Colonial Contexts', Journal of Asian Studies 76(4), 2017",
+     "url": "https://www.cambridge.org/core/journals/journal-of-asian-studies/article/journey-towards-no-mans-land-interpreting-the-chinakorea-borderland-within-imperial-and-colonial-contexts/D920C0302AABF07D5E9D4B5CEF40DA7E"
+    },
+    {
+     "cite": "Adam C. I. Bohnet, Migrant and Border Subjects in Late Chosŏn Korea, PhD thesis, University of Toronto, 2008, pp. 37-43, 119-120",
+     "url": "https://utoronto.scholaris.ca/server/api/core/bitstreams/21f141fc-ba0f-4845-bd28-0c1c400f418b/content"
+    }
+   ]
+  },
+  {
+   "id": "tumen-joseon-qing-1627-1712",
+   "verdict": "partial",
+   "feature": "Tumen (Duman) River",
+   "span": [
+    "1627",
+    "1712"
+   ],
+   "sides": [
+    "Joseon",
+    "Later Jin / Qing"
+   ],
+   "why": "No opened source names the Tumen as the agreed boundary before the 1712 delimitation.",
+   "sources": [
+    {
+     "cite": "Adam C. I. Bohnet, Migrant and Border Subjects in Late Chosŏn Korea, PhD thesis, University of Toronto, 2008, pp. 37-43, 119-120",
+     "url": "https://utoronto.scholaris.ca/server/api/core/bitstreams/21f141fc-ba0f-4845-bd28-0c1c400f418b/content"
+    },
+    {
+     "cite": "Nianshen Song, 'The Journey towards \"No Man's Land\": Interpreting the China-Korea Borderland within Imperial and Colonial Contexts', Journal of Asian Studies 76(4), 2017",
+     "url": "https://www.cambridge.org/core/journals/journal-of-asian-studies/article/journey-towards-no-mans-land-interpreting-the-chinakorea-borderland-within-imperial-and-colonial-contexts/D920C0302AABF07D5E9D4B5CEF40DA7E"
+    }
+   ]
+  },
+  {
+   "id": "argun-pre-nerchinsk-qing-russia",
+   "verdict": "refuted",
+   "feature": "Argun (Ergun) River",
+   "span": [
+    "1648",
+    "1689-08-27"
+   ],
+   "sides": [
+    "Qing",
+    "Tsardom of Russia"
+   ],
+   "why": "No boundary of any kind on the Argun or Amur before 1689-08-27; contested zone with Russian posts on the Amur.",
+   "sources": [
+    {
+     "cite": "US Dept. of State, The Geographer, International Boundary Study No. 64 (Revised), China-U.S.S.R. Boundary, 1978, pp. 4-5, 11",
+     "url": "https://library.law.fsu.edu/Digital-Collections/LimitsinSeas/pdf/ibs064.pdf"
+    },
+    {
+     "cite": "Jarmo T. Kotilaine, 'Nerchinsk, Treaty of', Encyclopedia of Russian History (via Encyclopedia.com)",
+     "url": "https://www.encyclopedia.com/history/encyclopedias-almanacs-transcripts-and-maps/nerchinsk-treaty"
+    }
+   ]
+  },
+  {
+   "id": "argun-nerchinsk-qing-russia",
+   "verdict": "confirmed",
+   "feature": "Argun (Ergun) River",
+   "span": [
+    "1689-08-27",
+    "1912-02-12"
+   ],
+   "sides": [
+    "Qing",
+    "Tsardom / Russian Empire"
+   ],
+   "why": "Confirmed by the Treaty of Nerchinsk, but in the braided upper Argun OpenStreetMap’s main stream is broken in three places (1.3-5.4 km) and the 1911 Tsitsihar treaty itself records differing channels; the river cannot be followed as one line within 1 km, and from 1689 OpenHistoricalMap draws this boundary.",
+   "sources": [
+    {
+     "cite": "Treaty of Nerchinsk, 27 Aug 1689, Articles I-II (English text in 'The World and Japan' Database, GRIPS / Univ. of Tokyo, from Gaimusho Joyakukyoku, pp. 1709-1711)",
+     "url": "https://worldjpn.net/documents/texts/pw/16890827.T1E.html"
+    },
+    {
+     "cite": "US Dept. of State, The Geographer, International Boundary Study No. 64 (Revised), China-U.S.S.R. Boundary, 1978, pp. 4-5, 11",
+     "url": "https://library.law.fsu.edu/Digital-Collections/LimitsinSeas/pdf/ibs064.pdf"
+    }
+   ]
+  },
+  {
+   "id": "amur-jin-mongol-not-boundary",
+   "verdict": "refuted",
+   "feature": "Amur (Heilong Jiang)",
+   "span": [
+    "1126",
+    "1279"
+   ],
+   "sides": [
+    "Jin dynasty / Mongol Empire",
+    "none (unorganised forest peoples)"
+   ],
+   "why": "For the Mongol/Yuan period the lower Amur lay inside Yuan-claimed territory; for the Jin no line is attested (northern edge was an undefined tributary zone). Do not draw a river boundary. Support is thin (Wikipedia only) - treat as 'no basis for a river line' rather than a positive finding.",
+   "sources": [
+    {
+     "cite": "Wikipedia, 'Manchuria under Yuan rule' (cites D. M. Robinson, Empire's Twilight: Northeast Asia under the Mongols, Harvard UP 2009 - not opened; article flagged as under-cited)",
+     "url": "https://en.wikipedia.org/wiki/Manchuria_under_Yuan_rule"
+    }
+   ]
+  },
+  {
+   "id": "huanghe-ningxia-ming-riverbank-wall",
+   "verdict": "partial",
+   "feature": "Yellow River (Huang He)",
+   "span": [
+    "1479",
+    "1644"
+   ],
+   "sides": [
+    "Ming dynasty (Ningxia garrison)",
+    "Ordos Mongols"
+   ],
+   "why": "The line was a bank wall on the east bank, since destroyed; today's channel is not that line.",
+   "sources": [
+    {
+     "cite": "Yang Jianlin 杨建林 (Baotou Institute of Cultural Relics) and Wu Junsheng 武俊生 (Wuhai Museum), '乌海明长城研究', Wuhai municipal government site, 2021-01-04 (draws on 内蒙古自治区长城资源调查报告)",
+     "url": "http://wtlygdj.wuhai.gov.cn/ltw1/817015/ywgz22/whzh/1018814/index.html"
+    },
+    {
+     "cite": "Xue Zhengchang 薛正昌, '宁夏历代长城踏勘纪行（中）', 朔方 2024 no. 9 (via 中国作家网)",
+     "url": "https://www.chinawriter.com.cn/n1/2024/1021/c418991-40343733.html"
+    },
+    {
+     "cite": "'明长城宁夏镇：关中之屏蔽，河陇之噤喉' (popular summary web page; corroboration only, not independent scholarship)",
+     "url": "http://www.rongwp.com/8life/earth%20and%20river/wall/wall014.html"
+    }
+   ]
+  },
+  {
+   "id": "ming-hedong-yansui-wall-ordos",
+   "verdict": "partial",
+   "feature": "Ming Great Wall: Hedong wall (Ningxia) + Yansui frontier wall (Ordos southern wall)",
+   "span": [
+    "1474",
+    "1644"
+   ],
+   "sides": [
+    "Ming dynasty (Ningxia and Yansui garrisons)",
+    "Ordos Mongols"
+   ],
+   "why": "Parallel walls replaced each other (the Jiajing realignment) and the endpoints differ between sources; not drawable as one line without the surveyed alignment.",
+   "sources": [
+    {
+     "cite": "Jianxin Cui et al., 'Climate Change, Desertification, and Societal Responses along the Mu Us Desert Margin during the Ming Dynasty', Weather, Climate, and Society 9(1), 2017, pp. 81-94",
+     "url": "https://journals.ametsoc.org/view/journals/wcas/9/1/wcas-d-16-0015_1.pdf"
+    },
+    {
+     "cite": "Wikipedia, 'Ming Great Wall' (section on Yu Zijun's Ordos wall; scholarly basis A. Waldron, The Great Wall of China: From History to Myth, CUP 1990 - not opened)",
+     "url": "https://en.wikipedia.org/wiki/Ming_Great_Wall"
+    },
+    {
+     "cite": "'明长城宁夏镇：关中之屏蔽，河陇之噤喉' (popular summary web page; corroboration only, not independent scholarship)",
+     "url": "http://www.rongwp.com/8life/earth%20and%20river/wall/wall014.html"
+    }
+   ]
+  },
+  {
+   "id": "huanghe-ordos-loop-ming-not-river",
+   "verdict": "refuted",
+   "feature": "Yellow River (Huang He)",
+   "span": [
+    "1450",
+    "1645"
+   ],
+   "sides": [
+    "Ming dynasty",
+    "Ordos / Tümed Mongols"
+   ],
+   "why": "Both banks of the northern loop were Mongol; the Ming line was the wall (see ming-hedong-yansui-wall-ordos).",
+   "sources": [
+    {
+     "cite": "Jianxin Cui et al., 'Climate Change, Desertification, and Societal Responses along the Mu Us Desert Margin during the Ming Dynasty', Weather, Climate, and Society 9(1), 2017, pp. 81-94",
+     "url": "https://journals.ametsoc.org/view/journals/wcas/9/1/wcas-d-16-0015_1.pdf"
+    }
+   ]
+  },
+  {
+   "id": "mekong-lanna-shan",
+   "verdict": "refuted",
+   "feature": "Mekong (Lancang)",
+   "span": [
+    "1294",
+    "1564"
+   ],
+   "sides": [
+    "Lan Na",
+    "Shan states (Kengtung, Chiang Khaeng)"
+   ],
+   "why": "Mandala zones with polities straddling the river; no linear boundary before 1893/1896. The direct evidence is 19th-century, but no source suggests an earlier river line.",
+   "sources": [
+    {
+     "cite": "Daniels, 'Strategic fluidity: Expansion by Kengtung (Chiang Tung) into Siam-controlled Lan Na, 1869-1892', Modern Asian Studies 59, 2025, pp. 655-675",
+     "url": "https://www.cambridge.org/core/journals/modern-asian-studies/article/strategic-fluidity-expansion-by-kengtung-chiang-tung-into-siamcontrolled-lan-na-18691892/69A3FCAFB0BC04C2A325E0DBB62DD883"
+    },
+    {
+     "cite": "Andrew Walker, 'Borders in Motion on the Upper Mekong: Siam and France in the 1890s' (CAOM-based paper hosted by New Mandala, ANU), pp. 1-2",
+     "url": "https://www.newmandala.org/wp-content/uploads/2006/11/Borders%20in%20motion.pdf"
+    }
+   ]
+  },
+  {
+   "id": "mekong-ming-upper",
+   "verdict": "refuted",
+   "feature": "Mekong (Lancang)",
+   "span": [
+    "1564",
+    "1645"
+   ],
+   "sides": [
+    "Ming dynasty (tusi of Yunnan)",
+    "Toungoo Burma and its Tai vassals"
+   ],
+   "why": "Dual-tributary polities straddling the river; no line. Evidence is indirect (no source discusses a Ming Mekong line at all).",
+   "sources": [
+    {
+     "cite": "Ratanaporn Sethakul, 'Politics Across the Mekong River: the Relationship Between Nan and Sipsong Panna in the Nineteenth Century', Journal of Fine Arts (Chiang Mai University) 6(1), 2015 (abstract only)",
+     "url": "https://so02.tci-thaijo.org/index.php/fineartsJournal/article/view/77254"
+    },
+    {
+     "cite": "Daniels, 'Strategic fluidity: Expansion by Kengtung (Chiang Tung) into Siam-controlled Lan Na, 1869-1892', Modern Asian Studies 59, 2025, pp. 655-675",
+     "url": "https://www.cambridge.org/core/journals/modern-asian-studies/article/strategic-fluidity-expansion-by-kengtung-chiang-tung-into-siamcontrolled-lan-na-18691892/69A3FCAFB0BC04C2A325E0DBB62DD883"
+    }
+   ]
+  },
+  {
+   "id": "mekong-vientiane-luangprabang",
+   "verdict": "refuted",
+   "feature": "Mekong (Lancang)",
+   "span": [
+    "1707",
+    "1779"
+   ],
+   "sides": [
+    "Kingdom of Vientiane",
+    "Kingdom of Luang Phrabang"
+   ],
+   "why": "The Mekong runs through both kingdoms; any boundary between them crossed the river rather than following it.",
+   "sources": [
+    {
+     "cite": "US Dept. of State, The Geographer, International Boundary Study No. 20, Laos-Thailand Boundary, 1962",
+     "url": "https://library.law.fsu.edu/Digital-Collections/LimitsinSeas/pdf/ibs020.pdf"
+    },
+    {
+     "cite": "Andrew Walker, 'Borders in Motion on the Upper Mekong: Siam and France in the 1890s' (CAOM-based paper hosted by New Mandala, ANU), pp. 1-2",
+     "url": "https://www.newmandala.org/wp-content/uploads/2006/11/Borders%20in%20motion.pdf"
+    }
+   ]
+  },
+  {
+   "id": "mekong-konbaung-chiangmai",
+   "verdict": "refuted",
+   "feature": "Mekong (Lancang)",
+   "span": [
+    "1762",
+    "1805"
+   ],
+   "sides": [
+    "Konbaung dynasty",
+    "Chiang Mai (Lan Na under Siam)"
+   ],
+   "why": "Frontier of allegiance between muang, not a river line.",
+   "sources": [
+    {
+     "cite": "Daniels, 'Strategic fluidity: Expansion by Kengtung (Chiang Tung) into Siam-controlled Lan Na, 1869-1892', Modern Asian Studies 59, 2025, pp. 655-675",
+     "url": "https://www.cambridge.org/core/journals/modern-asian-studies/article/strategic-fluidity-expansion-by-kengtung-chiang-tung-into-siamcontrolled-lan-na-18691892/69A3FCAFB0BC04C2A325E0DBB62DD883"
+    },
+    {
+     "cite": "Andrew Walker, 'Borders in Motion on the Upper Mekong: Siam and France in the 1890s' (CAOM-based paper hosted by New Mandala, ANU), pp. 1-2",
+     "url": "https://www.newmandala.org/wp-content/uploads/2006/11/Borders%20in%20motion.pdf"
+    }
+   ]
+  },
+  {
+   "id": "yangtze-chu",
+   "verdict": "refuted",
+   "feature": "Yangtze (Chang Jiang)",
+   "span": [
+    "-699",
+    "-222"
+   ],
+   "sides": [
+    "Chu",
+    "none"
+   ],
+   "why": "Chu held both banks; the Yangtze was internal to Chu, not a boundary.",
+   "sources": [
+    {
+     "cite": "Wikipedia, 'Chu (state)' (cites Shiji and Zuozhuan)",
+     "url": "https://en.wikipedia.org/wiki/Chu_(state)"
+    }
+   ]
+  },
+  {
+   "id": "dniester-lower-ottoman",
+   "verdict": "undetermined",
+   "feature": "Dniester (lower course and liman)",
+   "span": [
+    "1484",
+    "1689"
+   ],
+   "sides": [
+    "Ottoman Empire (Akkerman, Bender, Budjak) / Moldavia (Ottoman vassal) above Bender until 1538",
+    "Yedisan (Crimean Khanate / Ottoman Empire)"
+   ],
+   "why": "No scholarly source opened establishes the river itself as a line between Ottoman and Crimean jurisdictions; both banks were Ottoman or Ottoman-dependent, and nomad (Nogai) use straddled the area. Between 1484 and 1538 a Moldavia (right bank) vs Yedisan (left bank) division is plausible but not documented in the sources I opened.",
+   "sources": [
+    {
+     "cite": "Internet Encyclopedia of Ukraine, 'Bendery'",
+     "url": "https://www.encyclopediaofukraine.com/display.asp?linkpath=pages%5CB%5CE%5CBendery.htm"
+    },
+    {
+     "cite": "Wikipedia, 'History of Transnistria to 1792' (tertiary; finder only)",
+     "url": "https://en.wikipedia.org/wiki/History_of_Transnistria_to_1792"
+    }
+   ]
+  },
+  {
+   "id": "prut-not-polish-moldavian-boundary",
+   "verdict": "refuted",
+   "feature": "Prut",
+   "span": [
+    "1572",
+    "1689"
+   ],
+   "sides": [
+    "Polish-Lithuanian Commonwealth",
+    "Principality of Moldavia"
+   ],
+   "why": "Boundary rivers named by scholarship are the Cheremosh, Kolachin and Dniester; the Prut flowed across the line.",
+   "sources": [
+    {
+     "cite": "Michał Wasiucionek, 'Across the Dniester...', Polish History",
+     "url": "https://polishhistory.pl/across-the-dniester-the-texture-of-contact-in-the-seventeenth-century-polish-moldavian-borderland/"
+    }
+   ]
+  },
+  {
+   "id": "narva-livonia-novgorod-muscovy",
+   "verdict": "confirmed",
+   "feature": "Narva",
+   "span": [
+    "1400",
+    "1558-05"
+   ],
+   "sides": [
+    "Livonian Order (Livonian Confederation)",
+    "Novgorod Republic; Grand Duchy of Moscow from 1478; Tsardom of Russia from 1547"
+   ],
+   "why": "Only one opened scholarly source (Pae, citing Selart); the dated treaties were not opened. Kept for a second source.",
+   "sources": [
+    {
+     "cite": "Taavi Pae, 'Eesti-Vene piir Vasknarvas - Euroopa Liit Narva jõe paremkaldal', Akadeemia (Tartu), introduction (citing Selart 1996, 1998)",
+     "url": "https://www.digar.ee/arhiiv/et/download/185670"
+    },
+    {
+     "cite": "Anti Selart, 'Narva jõgi - Virumaa idapiir keskajal', Akadeemia 8 (1996) no. 12, pp. 2539-2556 (cited via Wikipedia 'Narva (river)'; not opened)",
+     "url": "https://en.wikipedia.org/wiki/Narva_(river)"
+    }
+   ]
+  },
+  {
+   "id": "narva-sweden-russia-1595-1612",
+   "verdict": "partial",
+   "feature": "Narva",
+   "span": [
+    "1595-05-18",
+    "1612"
+   ],
+   "sides": [
+    "Sweden (Swedish Estonia)",
+    "Tsardom of Russia"
+   ],
+   "why": "Rests on a single Wikipedia summary; the end date was not sourced.",
+   "sources": [
+    {
+     "cite": "Wikipedia, 'Treaty of Teusina' (cites Maureen Perrie, Pretenders and Popular Monarchism in Early Modern Russia, CUP 2002, p. 24)",
+     "url": "https://en.wikipedia.org/wiki/Treaty_of_Teusina"
+    },
+    {
+     "cite": "Taavi Pae, Akadeemia (as above)",
+     "url": "https://www.digar.ee/arhiiv/et/download/185670"
+    }
+   ]
+  },
+  {
+   "id": "narva-internal-swedish-1617-1704",
+   "verdict": "refuted",
+   "feature": "Narva",
+   "span": [
+    "1617",
+    "1689"
+   ],
+   "sides": [
+    "Swedish Empire (both banks)",
+    "Tsardom of Russia (not adjacent to the river)"
+   ],
+   "why": "Both banks under one sovereign; at most an internal provincial line (Estonia vs Ingria).",
+   "sources": [
+    {
+     "cite": "Wikipedia, 'Narva (river)' (citing Selart 1996)",
+     "url": "https://en.wikipedia.org/wiki/Narva_(river)"
+    },
+    {
+     "cite": "Taavi Pae, Akadeemia (as above)",
+     "url": "https://www.digar.ee/arhiiv/et/download/185670"
+    }
+   ]
+  },
+  {
+   "id": "paatsjoki-pasvik-no-boundary-before-1826",
+   "verdict": "refuted",
+   "feature": "Paatsjoki / Pasvikelva",
+   "span": [
+    "1600",
+    "1826"
+   ],
+   "sides": [
+    "Tsardom of Russia",
+    "Denmark-Norway / Sweden"
+   ],
+   "why": "Joint/common district, no line, before 1826.",
+   "sources": [
+    {
+     "cite": "Pasvikelva.no 'Border history' (Sør-Varanger Museum material)",
+     "url": "https://www.pasvikelva.no/en"
+    },
+    {
+     "cite": "Wikipedia, 'Norway-Russia border' (finder; consistent statement)",
+     "url": "https://en.wikipedia.org/wiki/Norway%E2%80%93Russia_border"
+    }
+   ]
+  },
+  {
+   "id": "dnieper-andrusovo-left-right-bank",
+   "verdict": "partial",
+   "feature": "Dnieper",
+   "span": [
+    "1667-01-30",
+    "1793"
+   ],
+   "sides": [
+    "Tsardom of Russia (Left-Bank Hetmanate, plus Kyiv)",
+    "Polish-Lithuanian Commonwealth (Right Bank)"
+   ],
+   "why": "The treaty line ran on a braided channel now drowned under the Kaniv and Kremenchuk reservoirs: no modern line represents it.",
+   "sources": [
+    {
+     "cite": "W. M. Reger IV, 'Andrusovo, Peace of', Encyclopedia of Russian History (via Encyclopedia.com)",
+     "url": "https://www.encyclopedia.com/history/encyclopedias-almanacs-transcripts-and-maps/andrusovo-peace"
+    },
+    {
+     "cite": "Internet Encyclopedia of Ukraine, 'Andrusovo, Treaty of' (bibliography: C. B. O'Brien 1963)",
+     "url": "https://www.encyclopediaofukraine.com/display.asp?linkpath=pages%5CA%5CN%5CAndrusovoTreatyof.htm"
+    },
+    {
+     "cite": "Internet Encyclopedia of Ukraine, 'Eternal Peace of 1686'",
+     "url": "https://www.encyclopediaofukraine.com/display.asp?linkpath=pages%5CE%5CT%5CEternalPeaceof1686.htm"
+    }
+   ]
+  },
+  {
+   "id": "dnieper-bakhchisarai-ottoman-russia",
+   "verdict": "partial",
+   "feature": "Dnieper",
+   "span": [
+    "1681-01-13",
+    "1699"
+   ],
+   "sides": [
+    "Tsardom of Russia (Left Bank, Kyiv, Zaporozhians)",
+    "Ottoman Empire / Crimean Khanate (right bank)"
+   ],
+   "why": "A demarcation backed by an unsettled buffer and cross-river rights, on a channel now under reservoirs.",
+   "sources": [
+    {
+     "cite": "Internet Encyclopedia of Ukraine, 'Bakhchysarai, Treaty of'",
+     "url": "https://www.encyclopediaofukraine.com/display.asp?linkpath=pages%5CB%5CA%5CBakhchysaraiTreatyof.htm"
+    }
+   ]
+  },
+  {
+   "id": "dnieper-crimean-khanate",
+   "verdict": "undetermined",
+   "feature": "Dnieper (lower course)",
+   "span": [
+    "1468",
+    "1689"
+   ],
+   "sides": [
+    "Crimean Khanate",
+    "Grand Duchy of Lithuania / Polish-Lithuanian Commonwealth / Zaporozhian Cossacks / Russia (varies)"
+   ],
+   "why": "Frontier zone with overlapping nomadic and Cossack use; Ottoman Ochakiv and Kyzy-Kermen fortresses on the river; no treaty line before 1681.",
+   "sources": [
+    {
+     "cite": "Internet Encyclopedia of Ukraine, 'Bakhchysarai, Treaty of'",
+     "url": "https://www.encyclopediaofukraine.com/display.asp?linkpath=pages%5CB%5CA%5CBakhchysaraiTreatyof.htm"
+    }
+   ]
+  },
+  {
+   "id": "dnieper-khazaria-first-bulgaria",
+   "verdict": "refuted",
+   "feature": "Dnieper",
+   "span": [
+    "674",
+    "970"
+   ],
+   "sides": [
+    "Khazar Khaganate",
+    "First Bulgarian Empire / Magyars (Etelköz) / Slavic tribes / Pechenegs"
+   ],
+   "why": "Tributary steppe sphere with shifting nomad groups (Magyars, Pechenegs); no evidence of a river line; Bulgarian extent to the Dnieper is a cartographic convention without documentary basis in the sources opened.",
+   "sources": [
+    {
+     "cite": "Gale Encyclopedia of World History and Encyclopedia of Russian History, 'Khazars' (via Encyclopedia.com)",
+     "url": "https://www.encyclopedia.com/history/asia-and-africa/central-asian-history/khazars"
+    }
+   ]
+  },
+  {
+   "id": "thaya-podyji-moravia-austria",
+   "verdict": "partial",
+   "feature": "Thaya (Dyje)",
+   "span": [
+    "1100",
+    "1526"
+   ],
+   "sides": [
+    "Margraviate of Moravia (Kingdom of Bohemia)",
+    "Duchy / Archduchy of Austria (Babenberg, then Habsburg)"
+   ],
+   "why": "The stretch on which the land boundary followed the river is inferred from today's border, not stated by a source.",
+   "sources": [
+    {
+     "cite": "Jiří Kacetl, Hrady a zámky moravsko-rakouského Podyjí slovem / Burgen und Schlösser des österreichisch-mährischen Thayatals in Wort, Jihomoravské muzeum ve Znojmě, 2013 (ISBN 978-80-86974-12-5), introduction",
+     "url": "https://www.muzeumznojmo.cz/admin/images/files/Hrady%20Podyji%20slovem_Burgen%20Thayatals%20in%20Wort.pdf"
+    },
+    {
+     "cite": "Wikipedia (cs), 'Dyje' (cites Cosmas)",
+     "url": "https://cs.wikipedia.org/wiki/Dyje"
+    },
+    {
+     "cite": "Austria-Forum (AustriaWiki), 'Thaya'",
+     "url": "https://austria-forum.org/af/AustriaWiki/Thaya"
+    }
+   ]
+  },
+  {
+   "id": "thaya-lower-feldsberg-not-boundary",
+   "verdict": "refuted",
+   "feature": "Thaya (Dyje), lower course",
+   "span": [
+    "1202",
+    "1920-07-31"
+   ],
+   "sides": [
+    "Moravia (Kingdom of Bohemia)",
+    "Lower Austria"
+   ],
+   "why": "Pre-1920 boundary ran inland (Včelínek stream; north-east of the Dyje triangle), so drawing the pre-1689 boundary on the lower Thaya would be wrong.",
+   "sources": [
+    {
+     "cite": "Wikipedia (cs), 'Dyje'",
+     "url": "https://cs.wikipedia.org/wiki/Dyje"
+    },
+    {
+     "cite": "Wikipedia (cs), 'Valticko'",
+     "url": "https://cs.wikipedia.org/wiki/Valticko"
+    },
+    {
+     "cite": "Moravské Karpaty (R. Hruban), 'Včelínek'",
+     "url": "http://moravske-karpaty.cz/prirodni-pomery/hydrografie/vcelinek/"
+    }
+   ]
+  },
+  {
+   "id": "leitha-austria-hungary",
+   "verdict": "partial",
+   "feature": "Leitha (Lajta)",
+   "span": [
+    "1372-10-22",
+    "1921-12"
+   ],
+   "sides": [
+    "Duchy/Archduchy of Austria",
+    "Kingdom of Hungary"
+   ],
+   "why": "The 1372 treaty itself says the border follows the river only where they coincide; which parts did is not established, and several villages changed sides in the 15th century.",
+   "sources": [
+    {
+     "cite": "Renáta Skorka, 'On Two Sides of the Border: The Hungarian-Austrian Border Treaty of 1372', Hungarian Historical Review 8 no. 2 (2019), pp. 293, 303",
+     "url": "https://epa.oszk.hu/02400/02460/00028/pdf/EPA02460_hungarian_historical_review_2019_02_290-312.pdf"
+    },
+    {
+     "cite": "Bence Péterfi, 'Debates Concerning the Regulation of Border Rivers in the Late Middle Ages: The Case of the Mura River', Hungarian Historical Review 8 no. 2 (2019), p. 317",
+     "url": "https://epa.oszk.hu/02400/02460/00028/pdf/EPA02460_hungarian_historical_review_2019_02_313-335.pdf"
+    },
+    {
+     "cite": "Austria-Forum (AustriaWiki), 'Leitha', section 'Die Leitha als historische Grenze' (citing Lampel 1899)",
+     "url": "https://austria-forum.org/af/AustriaWiki/Leitha"
+    },
+    {
+     "cite": "AEIOU Österreich-Lexikon, 'Leitha'",
+     "url": "https://austria-forum.org/af/AEIOU/Leitha"
+    }
+   ]
+  },
+  {
+   "id": "rhine-delta-kromme-oude-rijn-47-275",
+   "verdict": "confirmed",
+   "feature": "Rhine delta channel: Nederrijn -> Kromme Rijn -> Oude Rijn (to Katwijk)",
+   "span": [
+    "47",
+    "275"
+   ],
+   "sides": [
+    "Roman Empire",
+    "Frisii and other peoples north of the Rhine (no organised state)"
+   ],
+   "why": "The Roman channel (Nederrijn, Kromme Rijn, Oude Rijn to Katwijk) has silted up and survives only as residual gullies and canalised streams; their present lines are not shown by a source to be the Roman channel within 1 km.",
+   "sources": [
+    {
+     "cite": "D.J. Breeze, S. Jilek, E.P. Graafstal, W.J.H. Willems, S. Boedecker, Frontiers of the Roman Empire: The Lower German Limes, 2nd ed., Archaeopress, 2021, p. 52",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781803271422"
+    },
+    {
+     "cite": "D.J. Breeze, S. Jilek, E.P. Graafstal, W.J.H. Willems, S. Boedecker, Frontiers of the Roman Empire: The Lower German Limes, 2nd ed., Archaeopress, 2021, p. 58",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781803271422"
+    },
+    {
+     "cite": "D.J. Breeze, S. Jilek, E.P. Graafstal, W.J.H. Willems, S. Boedecker, Frontiers of the Roman Empire: The Lower German Limes, 2nd ed., Archaeopress, 2021, pp. 62-64",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781803271422"
+    },
+    {
+     "cite": "D.J. Breeze, S. Jilek, E.P. Graafstal, W.J.H. Willems, S. Boedecker, Frontiers of the Roman Empire: The Lower German Limes, 2nd ed., Archaeopress, 2021, p. 68, p. 72",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781803271422"
+    },
+    {
+     "cite": "UNESCO World Heritage Centre, 'Frontiers of the Roman Empire - The Lower German Limes' (property 1631), inscription description",
+     "url": "https://whc.unesco.org/en/list/1631/"
+    },
+    {
+     "cite": "M. Brueggler, 'Sustaining the Rhine in the Later Roman Empire', HiMA - Revue internationale d'Histoire Militaire Ancienne 14 (2025), 97-124, section 'Towns' / 'Behind and in front of the border'",
+     "url": "https://preo.ube.fr/hima/index.php?id=2378&lang=en"
+    }
+   ]
+  },
+  {
+   "id": "rhine-upper-and-high-rhine-behind-limes-90-275",
+   "verdict": "refuted",
+   "feature": "Rhine (Middle/Upper Rhine and High Rhine)",
+   "span": [
+    "90",
+    "275"
+   ],
+   "sides": [
+    "Roman Empire",
+    "n/a - both banks Roman (Agri Decumates / Germania Superior and Raetia)"
+   ],
+   "why": "The dataset's 'Roman Empire -30..395, Upper/High Rhine' is wrong for c. 90-260/275: the boundary was the limes (see the wall entries), up to c. 30-80 km east of the river. For c. 15 BC-c. 74/90 (before the Flavian advance) the status of the Upper Rhine as a line is undetermined: troops were concentrated on the river from 15 BC but Roman control already reached across it (e.g. Mainz area, Ladenburg civitas later), and no source consulted fixes a line.",
+   "sources": [
+    {
+     "cite": "D.J. Breeze, A. Thiel, S. Roth, T. Becker, Frontiers of the Roman Empire: The Upper Germanic Limes, Archaeopress, 2022, p. 43",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781803271743"
+    },
+    {
+     "cite": "D.J. Breeze, A. Thiel, S. Roth, T. Becker, Frontiers of the Roman Empire: The Upper Germanic Limes, Archaeopress, 2022, p. 46",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781803271743"
+    },
+    {
+     "cite": "UNESCO World Heritage Centre, 'Frontiers of the Roman Empire' (property 430ter: Hadrian's Wall, Upper German-Raetian Limes, Antonine Wall), statement of Outstanding Universal Value",
+     "url": "https://whc.unesco.org/en/list/430/"
+    }
+   ]
+  },
+  {
+   "id": "danube-upper-raetia-claudian-river-frontier",
+   "verdict": "partial",
+   "feature": "Danube (upper course, Raetia)",
+   "span": [
+    "41",
+    "90"
+   ],
+   "sides": [
+    "Roman Empire",
+    "Germanic peoples north of the Danube (no organised state)"
+   ],
+   "why": "Only one detailed source opened; start and end are reign-level, not dated events; the western beginning of the Raetian Danube line is 'controversial among researchers' (Huefingen belonged to Upper Germany). From c. 90/150 to 260 this stretch lay behind the Alb/Raetian limes and was NOT the boundary; after 260 only the stretch below the Iller mouth became frontier again (separate entry).",
+   "sources": [
+    {
+     "cite": "D.J. Breeze, T. Fischer, V. Fischer, C. Fluegel, M. Gschwind, M. Meyr, B. Steidl, Frontiers of the Roman Empire: The Frontier of the Roman Province of Raetia, Archaeopress (ISBN 978-1-80583-277-5), p. 41",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781805832775"
+    },
+    {
+     "cite": "D.J. Breeze, T. Fischer, V. Fischer, C. Fluegel, M. Gschwind, M. Meyr, B. Steidl, Frontiers of the Roman Empire: The Frontier of the Roman Province of Raetia, Archaeopress (ISBN 978-1-80583-277-5), p. 42",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781805832775"
+    }
+   ]
+  },
+  {
+   "id": "danube-iller-mouth-to-eining-late-roman-275-430",
+   "verdict": "confirmed",
+   "feature": "Danube (Raetian section of the Danube-Iller-Rhine limes)",
+   "span": [
+    "275",
+    "430"
+   ],
+   "sides": [
+    "Roman Empire",
+    "Alamanni / Iuthungi"
+   ],
+   "why": "Straightened in the 19th century; the late Roman channel is not reconstructed and shifts of more than 1 km are plausible.",
+   "sources": [
+    {
+     "cite": "D.J. Breeze, T. Fischer, V. Fischer, C. Fluegel, M. Gschwind, M. Meyr, B. Steidl, Frontiers of the Roman Empire: The Frontier of the Roman Province of Raetia, Archaeopress (ISBN 978-1-80583-277-5), p. 75, p. 76",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781805832775"
+    },
+    {
+     "cite": "D.J. Breeze, T. Fischer, V. Fischer, C. Fluegel, M. Gschwind, M. Meyr, B. Steidl, Frontiers of the Roman Empire: The Frontier of the Roman Province of Raetia, Archaeopress (ISBN 978-1-80583-277-5), p. 82",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781805832775"
+    },
+    {
+     "cite": "M. Brueggler, 'Sustaining the Rhine in the Later Roman Empire', HiMA - Revue internationale d'Histoire Militaire Ancienne 14 (2025), 97-124, 'Military Installations along the Rhine'",
+     "url": "https://preo.ube.fr/hima/index.php?id=2378&lang=en"
+    }
+   ]
+  },
+  {
+   "id": "danube-moesia-singidunum-to-durostorum-46-106",
+   "verdict": "partial",
+   "feature": "Danube (Moesian section)",
+   "span": [
+    "46",
+    "106"
+   ],
+   "sides": [
+    "Roman Empire",
+    "Kingdom of Dacia and Sarmatian peoples (Roxolani)"
+   ],
+   "why": "The river was the line of the provincial military establishment, but scholarship stresses repeated Roman control and campaigning across it (interventions as far as the Dniester; 'on this frontier more than elsewhere the opposite river bank was under military control'); the date at which Moesia itself was constituted is debated (15 BC vs AD 6). Downstream of Durostorum, Dobruja was only incorporated c. 74 (not covered here).",
+   "sources": [
+    {
+     "cite": "UNESCO World Heritage Centre, Tentative List 6973, 'Frontiers of the Roman Empire - The Danube Limes (Bulgaria)' (eastern-segment description shared by the Croatia/Serbia/Bulgaria/Romania submissions)",
+     "url": "https://whc.unesco.org/en/tentativelists/6973/"
+    },
+    {
+     "cite": "UNESCO World Heritage Centre, Tentative List 6475, 'Frontiers of the Roman Empire - The Danube Limes (Serbia)'",
+     "url": "https://whc.unesco.org/en/tentativelists/6475/"
+    },
+    {
+     "cite": "D.J. Breeze, P. Dyczek, Frontiers of the Roman Empire: The Lower Danube Limes in Bulgaria, Archaeopress (ISBN 978-1-80327-779-0), pp. 42-43",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781803277790"
+    }
+   ]
+  },
+  {
+   "id": "danube-iron-gates-to-olt-not-frontier-106-271",
+   "verdict": "refuted",
+   "feature": "Danube (Iron Gates to Olt mouth)",
+   "span": [
+    "106",
+    "271"
+   ],
+   "sides": [
+    "Roman Empire",
+    "n/a - both banks Roman (Moesia Superior/Inferior and Dacia)"
+   ],
+   "why": "The dataset draws 'Roman Empire -26..395, all stretches'; for 106-c. 271 this stretch was internal. Before 106 and after c. 271 it was the frontier (separate entries). The stretch upstream of Dierna (Lederata to the Iron Gates, opposite the Banat) also lay inside the empire under Trajan; its status after Hadrian's abandonment of south-western Dacian roads is undetermined in the sources consulted.",
+   "sources": [
+    {
+     "cite": "D.J. Breeze, S. Jilek, M. Korac et al., Frontiers of the Roman Empire: Roman Limes in Serbia, Archaeopress, 2022, p. 42",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781803272238"
+    },
+    {
+     "cite": "D.J. Breeze, F. Marcu, G. Cupcea, Frontiers of the Roman Empire: The Roman Frontiers of Dacia, Archaeopress, 2022, p. 76",
+     "url": "https://limes.univie.ac.at/FRE_DOWNLOADS/dacia.pdf"
+    },
+    {
+     "cite": "LEIZA (Leibniz-Zentrum fuer Archaeologie, formerly RGZM), 'Transformation' project, 'Roman Dacia (today Romania): Creation of the provincial structure'",
+     "url": "https://www1.leiza.de/transformation/romania/creationofprovince/1sttheme.htm"
+    }
+   ]
+  },
+  {
+   "id": "danube-olt-to-delta-not-frontier-106-118",
+   "verdict": "refuted",
+   "feature": "Danube (Olt mouth to the delta)",
+   "span": [
+    "106",
+    "118"
+   ],
+   "sides": [
+    "Roman Empire",
+    "n/a - north bank also Roman (Moesia Inferior)"
+   ],
+   "why": "For 106-c. 118 the lower Danube was internal; the end date is reign-level (117/118, LEIZA: reorganisation in 119).",
+   "sources": [
+    {
+     "cite": "D.J. Breeze, F. Marcu, G. Cupcea, Frontiers of the Roman Empire: The Roman Frontiers of Dacia, Archaeopress, 2022, p. 46, p. 76",
+     "url": "https://limes.univie.ac.at/FRE_DOWNLOADS/dacia.pdf"
+    },
+    {
+     "cite": "LEIZA (Leibniz-Zentrum fuer Archaeologie, formerly RGZM), 'Transformation' project, 'Roman Dacia (today Romania): Creation of the provincial structure'",
+     "url": "https://www1.leiza.de/transformation/romania/creationofprovince/1sttheme.htm"
+    }
+   ]
+  },
+  {
+   "id": "danube-delta-st-george-arm-late-roman",
+   "verdict": "partial",
+   "feature": "Danube delta: Tulcea arm and St George (Sfantu Gheorghe) arm",
+   "span": [
+    "275",
+    "614"
+   ],
+   "sides": [
+    "Roman Empire",
+    "Eastern Roman Empire",
+    "Goths, Huns, later Slavs/Avars (north of the delta)"
+   ],
+   "why": "For the 1st-3rd centuries the delta was NOT a clear boundary: Rome annexed territory between the delta and the Dniester (permanently in 75) and under Trajan occupied southern Bessarabia including Orlovka opposite Isaccea, so the line north of the delta is undetermined for that period. For the late Roman period the fortifications sit on the St George/Tulcea arm, but whether the delta islands (Peuce) were Roman territory is not stated.",
+   "sources": [
+    {
+     "cite": "G. Romanescu, A. Mihu-Pintilie, D. Carboni, 'The city-port of Halmyris: an integrated geoarchaeological and environmental approach to the last Roman bastion on the eastern flank of the Danubian limes', Present Environment and Sustainable Development 12.2 (2018), DOI 10.2478/pesd-2018-0028, abstract; pp. on paleogeography",
+     "url": "https://pesd.ro/articole/nr.12/nr.2/10.2478%20-Volume12_issue_2%2003_paper.pdf"
+    },
+    {
+     "cite": "UNESCO World Heritage Centre, Tentative List 6973, 'Frontiers of the Roman Empire - The Danube Limes (Bulgaria)' (eastern-segment description shared by the Croatia/Serbia/Bulgaria/Romania submissions)",
+     "url": "https://whc.unesco.org/en/tentativelists/6973/"
+    },
+    {
+     "cite": "D.J. Breeze, P. Dyczek, Frontiers of the Roman Empire: The Lower Danube Limes in Bulgaria, Archaeopress (ISBN 978-1-80327-779-0), p. 43",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781803277790"
+    },
+    {
+     "cite": "D.J. Breeze, F. Marcu, G. Cupcea, Frontiers of the Roman Empire: The Roman Frontiers of Dacia, Archaeopress, 2022, p. 46",
+     "url": "https://limes.univie.ac.at/FRE_DOWNLOADS/dacia.pdf"
+    }
+   ]
+  },
+  {
+   "id": "danube-delta-chilia-branch-not-roman-boundary",
+   "verdict": "refuted",
+   "feature": "Chilia (Kiliya) branch of the Danube",
+   "span": [
+    "395",
+    "633"
+   ],
+   "sides": [
+    "Eastern Roman Empire",
+    "peoples north of the delta"
+   ],
+   "why": "Drawing the boundary on the Chilia branch is not supported: the frontier installations are on the St George/Tulcea arms, the Chilia arm is the youngest arm, and for the 1st-3rd centuries Rome held land north of the delta. Use the late Roman St George/Tulcea arm entry instead, with the delta interior undetermined.",
+   "sources": [
+    {
+     "cite": "G. Romanescu, A. Mihu-Pintilie, D. Carboni, 'The city-port of Halmyris: an integrated geoarchaeological and environmental approach to the last Roman bastion on the eastern flank of the Danubian limes', Present Environment and Sustainable Development 12.2 (2018), DOI 10.2478/pesd-2018-0028, pp. on paleogeography",
+     "url": "https://pesd.ro/articole/nr.12/nr.2/10.2478%20-Volume12_issue_2%2003_paper.pdf"
+    },
+    {
+     "cite": "UNESCO World Heritage Centre, Tentative List 6973, 'Frontiers of the Roman Empire - The Danube Limes (Bulgaria)' (eastern-segment description shared by the Croatia/Serbia/Bulgaria/Romania submissions)",
+     "url": "https://whc.unesco.org/en/tentativelists/6973/"
+    }
+   ]
+  },
+  {
+   "id": "euphrates-syria-middle-course-boundary-with-parthia",
+   "verdict": "partial",
+   "feature": "Euphrates (Syrian middle course)",
+   "span": [
+    "-20",
+    "165"
+   ],
+   "sides": [
+    "Roman Empire",
+    "Parthian Empire (east bank partly via the client kingdom of Osrhoene)"
+   ],
+   "why": "It is a boundary of spheres agreed between two powers, not a garrisoned line, and the east bank was largely the kingdom of Osrhoene (a Parthian client), not Parthia directly. Downstream of the Sura area the river valley was Parthian on both banks (Dura-Europos, on the west bank, was Parthian until 165), so the river was NOT the boundary there. Upstream of the Turkish-Syrian border the west bank was the client kingdom of Commagene (independent vassal until 38, annexed again later), so the Roman provincial boundary there is not the river for most of this period. The dataset end of 215 is refuted: the river ceased to be the external boundary on this stretch from 165 (formally c. 195-200).",
+   "sources": [
+    {
+     "cite": "D.J. Breeze, F. Abudanah, D. Braund, M. Driessen et al., Frontiers of the Roman Empire: The Eastern Frontiers, Archaeopress (ISBN 978-1-80327-264-1), p. 44",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781803272641"
+    },
+    {
+     "cite": "D.J. Breeze, F. Abudanah, D. Braund, M. Driessen et al., Frontiers of the Roman Empire: The Eastern Frontiers, Archaeopress (ISBN 978-1-80327-264-1), p. 45, p. 48",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781803272641"
+    },
+    {
+     "cite": "P. Edwell, 'The Euphrates as a boundary between Rome and Parthia in the late Republic and early Empire', Antichthon 47 (2013), 191-206 (abstract only, via Macquarie University research portal)",
+     "url": "https://researchers.mq.edu.au/en/publications/the-euphrates-as-a-boundary-between-rome-and-parthia-in-the-late-/"
+    },
+    {
+     "cite": "M.J. Olbrycht, 'Phraates V', Encyclopaedia Iranica (online edition)",
+     "url": "https://www.iranicaonline.org/articles/phraates-v/"
+    },
+    {
+     "cite": "Encyclopaedia Iranica, 'Euphrates' (online edition)",
+     "url": "https://www.iranicaonline.org/articles/euphrates/"
+    }
+   ]
+  },
+  {
+   "id": "mures-dacia-not-a-frontier-river",
+   "verdict": "refuted",
+   "feature": "Mures (Maros, ancient Marisus)",
+   "span": [
+    "106",
+    "271"
+   ],
+   "sides": [
+    "Roman Empire",
+    "n/a - the Mures flowed through the province"
+   ],
+   "why": "Both banks of the middle Mures were Roman; the river was an internal route. Roman finds continue down the valley 'beyond what we consider the western frontier', so the lower Mures (west of Micia towards the Tisza, Iazyges territory after Hadrian's withdrawal of 119) was outside or at the edge of the province, but no source consulted says the boundary ran along the lower Mures; that stretch is undetermined.",
+   "sources": [
+    {
+     "cite": "D.J. Breeze, F. Marcu, G. Cupcea, Frontiers of the Roman Empire: The Roman Frontiers of Dacia, Archaeopress, 2022, p. 53",
+     "url": "https://limes.univie.ac.at/FRE_DOWNLOADS/dacia.pdf"
+    },
+    {
+     "cite": "D.J. Breeze, F. Marcu, G. Cupcea, Frontiers of the Roman Empire: The Roman Frontiers of Dacia, Archaeopress, 2022, p. 64",
+     "url": "https://limes.univie.ac.at/FRE_DOWNLOADS/dacia.pdf"
+    },
+    {
+     "cite": "LEIZA (Leibniz-Zentrum fuer Archaeologie, formerly RGZM), 'Transformation' project, 'Roman Dacia (today Romania): Creation of the provincial structure'",
+     "url": "https://www1.leiza.de/transformation/romania/creationofprovince/1sttheme.htm"
+    }
+   ]
+  },
+  {
+   "id": "antonine-wall-142-158",
+   "verdict": "confirmed",
+   "feature": "Antonine Wall",
+   "span": [
+    "142",
+    "158"
+   ],
+   "sides": [
+    "Roman Empire",
+    "Caledonians / Maeatae"
+   ],
+   "why": "OpenStreetMap maps the Antonine Wall only as two short ruin sections and a site boundary, not as a line along its length.",
+   "sources": [
+    {
+     "cite": "D.J. Breeze, Frontiers of the Roman Empire: The Antonine Wall - A World Heritage Site, Archaeopress (ISBN 978-1-78969-995-1), p. 41, p. 42, p. 46",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781789699951"
+    },
+    {
+     "cite": "UNESCO World Heritage Centre, 'Frontiers of the Roman Empire' (property 430ter: Hadrian's Wall, Upper German-Raetian Limes, Antonine Wall), statement of Outstanding Universal Value",
+     "url": "https://whc.unesco.org/en/list/430/"
+    },
+    {
+     "cite": "English Heritage, history page for Housesteads Roman Fort (Hadrian's Wall), 'History'",
+     "url": "https://www.english-heritage.org.uk/visit/places/hadrians-wall/history-and-stories/history/"
+    },
+    {
+     "cite": "J.C. Mann, 'The history of the Antonine Wall - a reappraisal', Proceedings of the Society of Antiquaries of Scotland 118 (1988), 131-137, p. 134",
+     "url": "http://journals.socantscot.org/index.php/psas/article/download/9329/9297"
+    }
+   ]
+  },
+  {
+   "id": "upper-german-limes-taunus-wetterau-90-275",
+   "verdict": "confirmed",
+   "feature": "Upper Germanic-Raetian Limes",
+   "span": [
+    "90",
+    "275"
+   ],
+   "sides": [
+    "Roman Empire",
+    "Chatti and other Germanic peoples, later Alamanni/Franks"
+   ],
+   "why": "OpenStreetMap carries the limes as a heritage site, not as a continuous line that can be walked.",
+   "sources": [
+    {
+     "cite": "UNESCO World Heritage Centre, 'Frontiers of the Roman Empire' (property 430ter: Hadrian's Wall, Upper German-Raetian Limes, Antonine Wall), statement of Outstanding Universal Value",
+     "url": "https://whc.unesco.org/en/list/430/"
+    },
+    {
+     "cite": "D.J. Breeze, A. Thiel, S. Roth, T. Becker, Frontiers of the Roman Empire: The Upper Germanic Limes, Archaeopress, 2022, p. 43, p. 46, p. 48",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781803271743"
+    },
+    {
+     "cite": "D.J. Breeze, A. Thiel, S. Roth, T. Becker, Frontiers of the Roman Empire: The Upper Germanic Limes, Archaeopress, 2022, p. 52",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781803271743"
+    }
+   ]
+  },
+  {
+   "id": "upper-german-limes-odenwald-neckar-line-100-160",
+   "verdict": "partial",
+   "feature": "Neckar-Odenwald Limes (inner line)",
+   "span": [
+    "100",
+    "160"
+   ],
+   "sides": [
+    "Roman Empire",
+    "Germanic peoples (no organised state)"
+   ],
+   "why": "The opened sources give the c. 160 forward move and the Trajanic phase only at reign level; the exact construction date of the Odenwald line (c. 100 / c. 107) and the Neckar stretch are not documented in the sources opened.",
+   "sources": [
+    {
+     "cite": "D.J. Breeze, A. Thiel, S. Roth, T. Becker, Frontiers of the Roman Empire: The Upper Germanic Limes, Archaeopress, 2022, p. 46",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781803271743"
+    },
+    {
+     "cite": "D.J. Breeze, A. Thiel, S. Roth, T. Becker, Frontiers of the Roman Empire: The Upper Germanic Limes, Archaeopress, 2022, p. 54, p. 68",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781803271743"
+    }
+   ]
+  },
+  {
+   "id": "upper-german-raetian-limes-outer-line-160-275",
+   "verdict": "confirmed",
+   "feature": "Upper Germanic-Raetian Limes",
+   "span": [
+    "160",
+    "275"
+   ],
+   "sides": [
+    "Roman Empire",
+    "Germanic peoples, later Alamanni / Iuthungi"
+   ],
+   "why": "OpenStreetMap carries the limes as a heritage site, not as a continuous line that can be walked.",
+   "sources": [
+    {
+     "cite": "D.J. Breeze, A. Thiel, S. Roth, T. Becker, Frontiers of the Roman Empire: The Upper Germanic Limes, Archaeopress, 2022, p. 54",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781803271743"
+    },
+    {
+     "cite": "D.J. Breeze, T. Fischer, V. Fischer, C. Fluegel, M. Gschwind, M. Meyr, B. Steidl, Frontiers of the Roman Empire: The Frontier of the Roman Province of Raetia, Archaeopress (ISBN 978-1-80583-277-5), p. 50",
+     "url": "https://www.archaeopress.com/Archaeopress/download/9781805832775"
+    },
+    {
+     "cite": "UNESCO World Heritage Centre, 'Frontiers of the Roman Empire' (property 430ter: Hadrian's Wall, Upper German-Raetian Limes, Antonine Wall), statement of Outstanding Universal Value",
+     "url": "https://whc.unesco.org/en/list/430/"
+    }
+   ]
+  },
+  {
+   "id": "minho-portugal-leon-1169-1230",
+   "verdict": "confirmed",
+   "feature": "Minho (Mino)",
+   "span": [
+    "1169",
+    "1230"
+   ],
+   "sides": [
+    "Kingdom of Portugal",
+    "Kingdom of Leon (Galicia)"
+   ],
+   "why": "Merged into minho-portugal (1169 onward).",
+   "sources": [
+    {
+     "cite": "Carlos Barros, 'La frontera medieval entre Galicia y Portugal', Medievalismo 4 (Madrid, 1994), pp. 27-39 (online text on h-debate.com)",
+     "url": "https://www.h-debate.com/wp-content/old_debates/cbarros/spanish/frontera_castellano.htm"
+    },
+    {
+     "cite": "Alvaro Campelo, 'Galicia and Portugal. A fruitful courtship. New strategies for a Euroregion and Eurocity identity', Populacao e Sociedade (CEPESE, Porto) vol. 40, Dec. 2023, pp. 80-107, DOI 10.52224/21845263/rev40a6",
+     "url": "https://www.cepese.pt/portal/pt/publicacoes/obras/populacao-e-sociedade-n-o-40/galicia-and-portugal-a-fruitful-courtship/galicia-and-portugal-a-fruitful-courtship/@@display-file/file/Revista%2040_6.pdf"
+    },
+    {
+     "cite": "Jose Augusto de Sotto Mayor Pizarro, 'O regime senhorial na fronteira do nordeste portugues. Alto Douro e Riba Coa (seculos XI-XIII)', Hispania. Revista Espanola de Historia LXVII no. 227 (2007), pp. 849-880, p. 876",
+     "url": "https://hispania.revistas.csic.es/index.php/hispania/article/download/64/64/64"
+    }
+   ]
+  },
+  {
+   "id": "guadiana-caia-to-pomarao-1267-1297",
+   "verdict": "partial",
+   "feature": "Guadiana",
+   "span": [
+    "1267-02-16",
+    "1297-09-12"
+   ],
+   "sides": [
+    "Kingdom of Portugal",
+    "Crown of Castile"
+   ],
+   "why": "Only one scholarly source opened; the line was overturned by force in 1295.",
+   "sources": [
+    {
+     "cite": "Eusebio Medina Garcia, 'Origenes historicos y ambiguedad de la frontera hispano-lusa (La Raya)', Revista de Estudios Extremenos LXII no. 2 (2006), pp. 713-723 (esp. pp. 715-717 and n. 3), p. 715 n. 3",
+     "url": "https://www.dip-badajoz.es/cultura/ceex/reex_digital/reex_LXII/2006/T.%20LXII%20n.%202%202006%20mayo-ag/RV000827.pdf"
+    },
+    {
+     "cite": "Wikipedia, 'Treaty of Badajoz (1267)', citing Joseph F. O'Callaghan, A History of Medieval Spain, Cornell University Press, 1983",
+     "url": "https://en.wikipedia.org/wiki/Treaty_of_Badajoz_(1267)"
+    }
+   ]
+  },
+  {
+   "id": "guadiana-caia-to-pomarao-after-1297-refuted",
+   "verdict": "refuted",
+   "feature": "Guadiana",
+   "span": [
+    "1297-09-12",
+    "1801"
+   ],
+   "sides": [
+    "Kingdom of Portugal",
+    "Crown of Castile / Spain"
+   ],
+   "why": "Portugal held substantial left-bank territory (Olivenca 1297-1801; Mourao/Moura/Serpa from 1297 to today), so the Guadiana was not the boundary on this reach before 1801. Only after 1801 does the river between the Caia and the Cuncos become the de facto boundary (still contested by Portugal) - outside the pre-1689 scope.",
+   "sources": [
+    {
+     "cite": "Eusebio Medina Garcia, 'Origenes historicos y ambiguedad de la frontera hispano-lusa (La Raya)', Revista de Estudios Extremenos LXII no. 2 (2006), pp. 713-723 (esp. pp. 715-717 and n. 3), pp. 714-715 and n. 2-3",
+     "url": "https://www.dip-badajoz.es/cultura/ceex/reex_digital/reex_LXII/2006/T.%20LXII%20n.%202%202006%20mayo-ag/RV000827.pdf"
+    },
+    {
+     "cite": "Jose Augusto de Sotto Mayor Pizarro, 'O regime senhorial na fronteira do nordeste portugues. Alto Douro e Riba Coa (seculos XI-XIII)', Hispania. Revista Espanola de Historia LXVII no. 227 (2007), pp. 849-880, p. 876",
+     "url": "https://hispania.revistas.csic.es/index.php/hispania/article/download/64/64/64"
+    }
+   ]
+  },
+  {
+   "id": "chanca-portugal-castile-undetermined",
+   "verdict": "undetermined",
+   "feature": "Chanca (Chanza)",
+   "span": [
+    "1297",
+    "present"
+   ],
+   "sides": [
+    "Kingdom of Portugal",
+    "Crown of Castile"
+   ],
+   "why": "No source found that the Chanca was the boundary before modern delimitation; the adjacent Moura area was a contested tract ('contenda') rather than a line.",
+   "sources": [
+    {
+     "cite": "Eusebio Medina Garcia, 'Origenes historicos y ambiguedad de la frontera hispano-lusa (La Raya)', Revista de Estudios Extremenos LXII no. 2 (2006), pp. 713-723 (esp. pp. 715-717 and n. 3), n. 6",
+     "url": "https://www.dip-badajoz.es/cultura/ceex/reex_digital/reex_LXII/2006/T.%20LXII%20n.%202%202006%20mayo-ag/RV000827.pdf"
+    }
+   ]
+  },
+  {
+   "id": "coa-portugal-leon-before-1297",
+   "verdict": "partial",
+   "feature": "Coa",
+   "span": [
+    "1209",
+    "1297-09-12"
+   ],
+   "sides": [
+    "Kingdom of Portugal",
+    "Kingdom of Leon (to 1230), then Crown of Castile"
+   ],
+   "why": "The Côa as the pre-1297 limit is stated only by heritage sources, and the start date is not fixed.",
+   "sources": [
+    {
+     "cite": "Jose Augusto de Sotto Mayor Pizarro, 'O regime senhorial na fronteira do nordeste portugues. Alto Douro e Riba Coa (seculos XI-XIII)', Hispania. Revista Espanola de Historia LXVII no. 227 (2007), pp. 849-880, section III (pp. 866-868) and conclusion (p. 876)",
+     "url": "https://hispania.revistas.csic.es/index.php/hispania/article/download/64/64/64"
+    },
+    {
+     "cite": "Wikipedia, 'Castle of Castelo Melhor' (citing IGESPAR/SIPA heritage records)",
+     "url": "https://en.wikipedia.org/wiki/Castle_of_Castelo_Melhor"
+    },
+    {
+     "cite": "Aldeias Historicas de Portugal (regional heritage network), 'The story of the king who fought for the territory of the Historic Villages of Portugal', 2019",
+     "url": "https://www.aldeiashistoricasdeportugalblog.pt/en/2019/02/05/the-story-of-the-king-who-fought-for-the-territory-of-the-historic-villages-of-portugal/"
+    }
+   ]
+  },
+  {
+   "id": "douro-foz-coa-to-agueda-before-1297",
+   "verdict": "partial",
+   "feature": "Douro - reach between the Coa and Agueda mouths",
+   "span": [
+    "1209",
+    "1297-09-12"
+   ],
+   "sides": [
+    "Kingdom of Portugal (Freixo de Espada a Cinta, Torre de Moncorvo, north bank)",
+    "Kingdom of Leon / Crown of Castile (Riba-Coa, south bank)"
+   ],
+   "why": "An inference from two facts, not stated by a source, with the same undated start as the Côa.",
+   "sources": [
+    {
+     "cite": "Jose Augusto de Sotto Mayor Pizarro, 'O regime senhorial na fronteira do nordeste portugues. Alto Douro e Riba Coa (seculos XI-XIII)', Hispania. Revista Espanola de Historia LXVII no. 227 (2007), pp. 849-880, pp. 849-850, 874-876",
+     "url": "https://hispania.revistas.csic.es/index.php/hispania/article/download/64/64/64"
+    }
+   ]
+  },
+  {
+   "id": "erges-tejo-sever-portugal-castile-undetermined",
+   "verdict": "undetermined",
+   "feature": "Erges (Eljas), with the Tagus (Tejo) and Sever border reaches",
+   "span": [
+    "1297",
+    "present"
+   ],
+   "sides": [
+    "Kingdom of Portugal",
+    "Crown of Castile (Order of Alcantara lands)"
+   ],
+   "why": "No scholarly source opened describes these rivers as the medieval line or dates it; Valencia de Alcantara/Marvao exchanges (1267) and Order of Alcantara jurisdictions leave the 13th-15th c. line unverified.",
+   "sources": [
+    {
+     "cite": "Museu da Paisagem (online landscape museum), 'Salvaterra do Extremo'",
+     "url": "https://museudapaisagem.pt/pontos/detail/17"
+    },
+    {
+     "cite": "Eusebio Medina Garcia, 'Origenes historicos y ambiguedad de la frontera hispano-lusa (La Raya)', Revista de Estudios Extremenos LXII no. 2 (2006), pp. 713-723 (esp. pp. 715-717 and n. 3), p. 717",
+     "url": "https://www.dip-badajoz.es/cultura/ceex/reex_digital/reex_LXII/2006/T.%20LXII%20n.%202%202006%20mayo-ag/RV000827.pdf"
+    }
+   ]
+  },
+  {
+   "id": "duero-cordoba-asturias-757-936-refuted",
+   "verdict": "refuted",
+   "feature": "Duero (Douro)",
+   "span": [
+    "757",
+    "936"
+   ],
+   "sides": [
+    "Emirate of Cordoba",
+    "Kingdom of Asturias (then Leon)"
+   ],
+   "why": "Frontier zone (an uncontrolled basin between the Cantabrian kingdom and the Muslim Middle/Lower Marches beyond the Sistema Central), not a boundary along the river. Christian fortified points reached the Duero only from the late 9th/early 10th c. and Muslim march centres lay far south, so even then the river was a line of advance, not a shared boundary.",
+   "sources": [
+    {
+     "cite": "Gonzalo J. Escudero Manzano, 'La \"despoblacion\" y \"repoblacion\" del valle del Duero: la problematica de las fuentes y el debate historiografico', Estudios medievales hispanicos 5 (2016), pp. 151-172 (bibliographic record opened; full text not read)",
+     "url": "https://produccioncientifica.ucm.es/documentos/666892e405cc2147b831dd7e"
+    },
+    {
+     "cite": "es.wikipedia, 'Desierto del Duero' (citing J. Valdeon; E. Manzano Moreno 2010; Barbero & Vigil 1978; Sanchez-Albornoz)",
+     "url": "https://es.wikipedia.org/wiki/Desierto_del_Duero"
+    }
+   ]
+  },
+  {
+   "id": "scheldt-france-empire-crown-imperial-flanders",
+   "verdict": "partial",
+   "feature": "Scheldt (Escaut / Schelde)",
+   "span": [
+    "843",
+    "1529-08-05"
+   ],
+   "sides": [
+    "Kingdom of France (Crown Flanders, west bank)",
+    "Holy Roman Empire (Imperial Flanders: Land of Aalst etc., east bank)"
+   ],
+   "why": "No opened source shows a line fixed on the channel; the Scheldt has been canalised with meanders cut.",
+   "sources": [
+    {
+     "cite": "Francois Pernot, 'Guerres, territoires et frontieres de l'Europe lotharingienne, du traite de Verdun de 843 au XIXe siecle', Les Cahiers d'AGORA (CY Cergy Paris Universite, EA 7392), abstract and p. 1",
+     "url": "https://cyagora.cyu.fr/medias/fichier/pernot-francois-guerres-territoires-et-frontieres-de-l-europe-lotharingienne_1611671589389-pdf?ID_FICHE=781&INLINE=FALSE"
+    },
+    {
+     "cite": "Leonard Dauphant, 'Entre ideel et materiel. Frontiere ideelle et marqueurs territoriaux du royaume des Quatre rivieres (France, 1258-1529)', Editions de la Sorbonne (OpenEdition Books), 2018",
+     "url": "https://books.openedition.org/psorbonne/41103?lang=en"
+    },
+    {
+     "cite": "nl.wikipedia, 'Rijks-Vlaanderen' (no scholarly citation; used only to locate)",
+     "url": "https://nl.wikipedia.org/wiki/Rijks-Vlaanderen"
+    }
+   ]
+  },
+  {
+   "id": "meuse-france-empire-barrois",
+   "verdict": "partial",
+   "feature": "Meuse (Maas)",
+   "span": [
+    "1301",
+    "1552"
+   ],
+   "sides": [
+    "Kingdom of France (Champagne, Barrois mouvant)",
+    "Holy Roman Empire (Barrois non-mouvant, Lorraine, Verdun)"
+   ],
+   "why": "Scholarship describes a bundle of lines with imperial land west of the river (Verdun, Clermontois), not a river line.",
+   "sources": [
+    {
+     "cite": "Leonard Dauphant, 'Le royaume des Quatre Rivieres: l'exemple de la frontiere de la Meuse de Philippe IV a Francois Ier', in Frontieres oubliees, frontieres retrouvees, Presses universitaires de Rennes, 2012",
+     "url": "https://books.openedition.org/pur/34315?lang=en"
+    },
+    {
+     "cite": "Leonard Dauphant, 'Entre ideel et materiel. Frontiere ideelle et marqueurs territoriaux du royaume des Quatre rivieres (France, 1258-1529)', Editions de la Sorbonne (OpenEdition Books), 2018",
+     "url": "https://books.openedition.org/psorbonne/41103?lang=en"
+    },
+    {
+     "cite": "Francois Pernot, 'Guerres, territoires et frontieres de l'Europe lotharingienne, du traite de Verdun de 843 au XIXe siecle', Les Cahiers d'AGORA (CY Cergy Paris Universite, EA 7392)",
+     "url": "https://cyagora.cyu.fr/medias/fichier/pernot-francois-guerres-territoires-et-frontieres-de-l-europe-lotharingienne_1611671589389-pdf?ID_FICHE=781&INLINE=FALSE"
+    }
+   ]
+  },
+  {
+   "id": "saone-france-empire-macon-to-lyon",
+   "verdict": "partial",
+   "feature": "Saone",
+   "span": [
+    "1032",
+    "1601-01-17"
+   ],
+   "sides": [
+    "Kingdom of France (Maconnais, Beaujolais)",
+    "Holy Roman Empire (Bresse under Savoy; Dombes)"
+   ],
+   "why": "Supported only by regional heritage pages; a French tract on the left bank (Franc-Lyonnais) is reported but unverified.",
+   "sources": [
+    {
+     "cite": "DREAL Bourgogne-Franche-Comte, Atlas des paysages de Saone-et-Loire, 'Les poles d'attractions historiques'",
+     "url": "https://www.atlas-paysages.saone-et-loire.developpement-durable.gouv.fr/les-poles-d-attractions-historiques-a24.html"
+    },
+    {
+     "cite": "Departement de l'Ain, Patrimoine(s) de l'Ain, 'La Dombes et le parlement de Trevoux - notice historique'",
+     "url": "https://patrimoines.ain.fr/parlement-dombes/annexes_notices/notice_01b.htm"
+    },
+    {
+     "cite": "Leonard Dauphant, Le royaume des Quatre Rivieres. L'espace politique francais (1380-1515), Champ Vallon, 2012 (publisher's description)",
+     "url": "https://www.champ-vallon.com/leonard-dauphant-le-royaume-des-quatre-rivieres/"
+    }
+   ]
+  },
+  {
+   "id": "rhone-upper-dauphine-savoy-1355-1601",
+   "verdict": "confirmed",
+   "feature": "Rhone - reach upstream of Lyon",
+   "span": [
+    "1355-01-05",
+    "1601-01-17"
+   ],
+   "sides": [
+    "Dauphine (held by the French royal heir; Kingdom of France)",
+    "County (from 1416 Duchy) of Savoy"
+   ],
+   "why": "A treaty river line on a braided reach whose medieval channel shifted (the 1410 Molesole case) and was rebuilt in the 19th century; not placeable within 1 km.",
+   "sources": [
+    {
+     "cite": "Leonard Dauphant, 'Entre ideel et materiel. Frontiere ideelle et marqueurs territoriaux du royaume des Quatre rivieres (France, 1258-1529)', Editions de la Sorbonne (OpenEdition Books), 2018",
+     "url": "https://books.openedition.org/psorbonne/41103?lang=en"
+    },
+    {
+     "cite": "Departement de l'Ain, Patrimoine(s) de l'Ain, chronology 'Aux frontieres de l'Ain'",
+     "url": "https://patrimoines.ain.fr/chronologie/liste/aux-frontieres-de-l-ain-3/n:136"
+    }
+   ]
+  },
+  {
+   "id": "rhone-middle-lyon-to-ardeche-1308-1349",
+   "verdict": "partial",
+   "feature": "Rhone - Lyon to the Ardeche confluence",
+   "span": [
+    "1308",
+    "1349"
+   ],
+   "sides": [
+    "Kingdom of France (Vivarais, Lyonnais)",
+    "Holy Roman Empire (Dauphine of Viennois, Valentinois)"
+   ],
+   "why": "No scholarly delimitation of the channel; the canalised Rhône differs from the medieval braided channels by more than 1 km in places.",
+   "sources": [
+    {
+     "cite": "Anne Merlin-Chazelas, 'La notion de frontiere d'Empire sous Francois Ier', Actes des congres nationaux des societes historiques et scientifiques 125-2 (2002), pp. 29-46 (Persee)",
+     "url": "https://www.persee.fr/doc/acths_0000-0001_2002_act_125_2_4785"
+    },
+    {
+     "cite": "Leonard Dauphant, 'Entre ideel et materiel. Frontiere ideelle et marqueurs territoriaux du royaume des Quatre rivieres (France, 1258-1529)', Editions de la Sorbonne (OpenEdition Books), 2018",
+     "url": "https://books.openedition.org/psorbonne/41103?lang=en"
+    },
+    {
+     "cite": "J. Bethemont, review of Jacques Rossiaud, Le Rhone au Moyen Age. Histoire et representations d'un fleuve europeen (Aubier, 2007), Geocarrefour (OpenEdition)",
+     "url": "https://journals.openedition.org/geocarrefour/1509"
+    }
+   ]
+  },
+  {
+   "id": "rhone-lower-languedoc-provence-comtat",
+   "verdict": "partial",
+   "feature": "Rhone - Ardeche confluence to the delta fork at Arles",
+   "span": [
+    "1032",
+    "1481-12-11"
+   ],
+   "sides": [
+    "Kingdom of France (Languedoc: Beaucaire, Villeneuve-les-Avignon)",
+    "Holy Roman Empire (County of Provence; Comtat Venaissin/Avignon, papal from 1274/1348)"
+   ],
+   "why": "No opened source delimits the line on the channel, the islands or the delta branch.",
+   "sources": [
+    {
+     "cite": "Anne Merlin-Chazelas, 'La notion de frontiere d'Empire sous Francois Ier', Actes des congres nationaux des societes historiques et scientifiques 125-2 (2002), pp. 29-46 (Persee)",
+     "url": "https://www.persee.fr/doc/acths_0000-0001_2002_act_125_2_4785"
+    },
+    {
+     "cite": "Leonard Dauphant, 'Entre ideel et materiel. Frontiere ideelle et marqueurs territoriaux du royaume des Quatre rivieres (France, 1258-1529)', Editions de la Sorbonne (OpenEdition Books), 2018",
+     "url": "https://books.openedition.org/psorbonne/41103?lang=en"
+    },
+    {
+     "cite": "J. Bethemont, review of Jacques Rossiaud, Le Rhone au Moyen Age. Histoire et representations d'un fleuve europeen (Aubier, 2007), Geocarrefour (OpenEdition)",
+     "url": "https://journals.openedition.org/geocarrefour/1509"
+    }
+   ]
+  },
+  {
+   "id": "aire-argonne-france-artefact",
+   "verdict": "undetermined",
+   "feature": "Aire (tributary of the Aisne, Argonne)",
+   "span": [
+    "1285",
+    "1636"
+   ],
+   "sides": [
+    "Kingdom of France (Champagne)",
+    "Holy Roman Empire (Clermontois / Barrois / Verdunois)"
+   ],
+   "why": "Probably a coarse-dataset artefact: no evidence of the Aire as a boundary; the sector was a multi-line zone. Do not snap to the Aire.",
+   "sources": [
+    {
+     "cite": "Leonard Dauphant, 'Le royaume des Quatre Rivieres: l'exemple de la frontiere de la Meuse de Philippe IV a Francois Ier', in Frontieres oubliees, frontieres retrouvees, Presses universitaires de Rennes, 2012",
+     "url": "https://books.openedition.org/pur/34315?lang=en"
+    }
+   ]
+  },
+  {
+   "id": "lot-france-artefact-refuted",
+   "verdict": "refuted",
+   "feature": "Lot",
+   "span": [
+    "1272",
+    "1595"
+   ],
+   "sides": [
+    "Kingdom of France",
+    "none - both banks inside the kingdom"
+   ],
+   "why": "Internal river of the kingdom; any line drawn on it as a France boundary is an artefact. No source was needed beyond geography; none opened.",
+   "sources": []
+  },
+  {
+   "id": "salzach-bavaria-salzburg-refuted-before-1816",
+   "verdict": "refuted",
+   "feature": "Salzach (with the Saalach)",
+   "span": [
+    "1816-05-01",
+    "present"
+   ],
+   "sides": [
+    "Kingdom of Bavaria",
+    "Austrian Empire"
+   ],
+   "why": "For any period before 1689 the Salzach (Laufen-Tittmoning reach) was internal to the Prince-Archbishopric of Salzburg (Q701614), not a Bavaria-Salzburg boundary. The lower reach towards the Inn adjoined the Innviertel, Bavarian until 1779 (Teschen) - the Inn/Salzach as an Austria-Bavaria line is post-1779 (not verified in an opened source). Pre-1689 river boundary: refuted.",
+   "sources": [
+    {
+     "cite": "Historischer Verein Rupertiwinkel (local historical society), homepage history text",
+     "url": "https://www.rupertiwinkel.org/"
+    },
+    {
+     "cite": "Austria-Forum (AustriaWiki), 'Rupertiwinkel'",
+     "url": "https://austria-forum.org/af/AustriaWiki/Rupertiwinkel"
+    }
+   ]
+  },
+  {
+   "id": "rhine-upper-within-empire-1260-1677",
+   "verdict": "refuted",
+   "feature": "Rhine - Upper Rhine (Basel to Lauterbourg)",
+   "span": [
+    "1260",
+    "1677"
+   ],
+   "sides": [
+    "Holy Roman Empire (Alsace)",
+    "Holy Roman Empire (Breisgau, Baden, Palatinate)"
+   ],
+   "why": "1260-1648: internal division of a composite realm, not an inter-polity boundary at the level the dataset draws. 1648-1677: undetermined at best - French sovereignty in Alsace was ambiguous (Decapole immediacy), and France held Breisach and Philippsburg across the river, so the river was not a clean France-Empire line before Nijmegen (1679) / Strasbourg (1681).",
+   "sources": [
+    {
+     "cite": "Encyclopedia.com, 'Westphalia, Peace of (1648)' (Encyclopedia of Early Modern World / Gale)",
+     "url": "https://www.encyclopedia.com/history/modern-europe/treaties-and-alliances/peace-westphalia"
+    }
+   ]
+  },
+  {
+   "id": "empire-italy-internal-rivers-group",
+   "verdict": "undetermined",
+   "feature": "Danube, Weser, Spree, Adige, Reno, Tiber (dataset candidates inside the Empire / Italy)",
+   "span": [
+    "1260",
+    "1677"
+   ],
+   "sides": [
+    "Holy Roman Empire / Italian states",
+    "internal subdivisions"
+   ],
+   "why": "No stretch was found or checked where one of these rivers was the boundary between two distinct polities drawn by the dataset before 1689. Do not snap to these rivers without a specific source.",
+   "sources": []
+  }
+ ]
+}

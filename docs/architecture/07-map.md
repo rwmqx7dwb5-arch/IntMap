@@ -1049,7 +1049,13 @@ Atlas の `research.related` / `research.impact` / 実世界オブジェクト�
   ラベルのアンカーは領域についての話で、そこは変わっていない。
   ⚠ **規則は地方区分にも同じ定数で効く。** 区分の束を 2.5〜14 km で掃いても描かれる長さは 1 km
   あたり 0.2% しか動かず、区分独自の肘は無い（区分の輪郭はほとんどが内陸なので、海岸線の写しは
-  小さい割合である）。1つの規則・1つの権威・1つの定数。
+  小さい割合である）。1つの規則・1つの権威。⚠ **帯は記録ごと**（`RECORD_INLAND_KM`）: 手描きの Cliopatria だけは
+  海岸線の写しが 6 km より遠くまでさまようので、同じ測り方（`--sweep`）で読み取った 10 km を使う（実測と根拠は
+  [`docs/MAP-LAYERS.md`](../MAP-LAYERS.md) §7.13）。
+- **粗い記録の線は、史料が述べる区間だけ川・城壁の実形で引き直す**（`data/hist-courses.js`・`scripts/build-hist-courses.mjs`・
+  事実は `scripts/histcourse/courses.json`）。読み手は同じ `js/border-coast.js` で、印で決まった run の中の指定範囲を
+  OpenStreetMap の地物の頂点で置き換える（`spliceRun`）。線だけが変わり、塗り・名前・日付・クリックは記録のまま。
+  対象・規則・計器は [`docs/MAP-LAYERS.md`](../MAP-LAYERS.md) §7.13 が正本。
   ⚠ **印は任意**: 読めなかったときと、**実行時に GitHub から取りに行く** historical-basemaps の
   スナップショット（束が答えない年だけ通る経路）には印が無く、そこは環を丸ごと描く。
   ⚠ **同梱の historical-basemaps（`data/hist-eras.js`）には印がある。** ただしその層は環の索引では
