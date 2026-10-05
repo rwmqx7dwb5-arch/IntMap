@@ -1,6 +1,7 @@
 ---
 title: 明治5年以前の日本の日付が旧暦の月日のまま新暦として書かれていた——滋賀県はひと月早く、琉球藩も同じ。査読台帳の calendar 節で 7 件を換算し、束の行とタイルの線の両方に効かせる
 date: 2026-10-05
+pr: 1014
 newsen: Japanese boundaries before 1873 now follow the Gregorian dates of their events — the merged Shiga Prefecture begins on 30 October 1872, not a month early — and the province popup says which reviewed date a boundary is drawn from.
 newsjp: 1873年より前の日本の区分を、出来事の新暦の日付で描くようにしました（合併後の滋賀県は1872年10月30日から。これまではひと月早く描いていました）。区分のポップアップは、どの査読済みの日付で描いているかも示します。
 ---
