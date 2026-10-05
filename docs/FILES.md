@@ -1688,7 +1688,7 @@ data/histnames.json               **歴史的な政体名の、記録をまた�
                                   ⚠ **上流が書いた名前は上書きしない**。⚠ **出荷する言語の方針は
                                   `scripts/histnames/langs.mjs` の 1 か所**（いまは en / jp）
 data/border-coast.js              歴史的な輪郭の各辺が「境界」か「その記録が持つ海岸線の写し」かの印（`data/` から
-                                  **発見された**束すべて・いまは11・全 78,319 リング分／
+                                  **発見された**束すべて・いまは11・全 78,340 リング分／
                                   `scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
                                   `imta2-line` はこの印の run だけを描く。読み手は js/border-coast.js
                                   （束の索引でも**環そのものの同一性**でも引ける）。⚠ 面積 0 のリングは
@@ -1954,8 +1954,8 @@ scripts/
                                   `--ohm-late` で 1886〜1923 年の OHM − CShapes → `data/hist-borders-late.js`。
                                   国境を精度の順に合成する引き算をここで 1 回だけ行う（Worker スレッドで並列・結果は入力の
                                   ハッシュでディスクに置く）。
-                                  QID の同一性は `scripts/histclio/wikidata.json`、史実による名前の差し止めは
-                                  `scripts/histclio/review.json`。`--fetch`（ネットワーク）／既定（ビルド）／`--check`（オフライン）
+                                  QID の同一性は `scripts/histclio/wikidata.json`、史実による名前の差し止めと
+                                  土地の審査（最初の行より前の土地を政体へ戻す `ground`）は `scripts/histclio/review.json`。`--fetch`（ネットワーク）／既定（ビルド）／`--check`（オフライン）
   build-hist-eras.mjs             aourednik/historical-basemaps の `world_*.geojson` 54 枚 → `data/hist-eras.js`。
                                   一覧は上流のディレクトリから発見し、年の規約（`bc323` → 天文年 −322）は
                                   1 関数だけが持つ。`--check` はそれを評価して照合する。
