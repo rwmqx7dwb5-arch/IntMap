@@ -143,3 +143,9 @@ Denmark で描かれ、1886 年にコンゴ自由国・ドイツ領東アフリ�
 `check:histfidelity`（`--update` 後）・`check:histnames`・`check:bordercoast`（`data/border-coast.js` を作り直した——
 束が 11 になり、環は 74,737 → 75,327）・`check:datagov`（書き手 `scripts/build-hist-clio.mjs → data/hist-borders-late.js` を、
 `data/hist-borders.js` と同じ形式の理由で台帳に未宣言として記録: 179 件・2,366 facet）・`check:static`・`check:engine`・`check:docs`。
+
+### 統治台帳（`data/governance-ledger.json`）に 1 件を「未宣言」として記録した理由
+
+`data/hist-borders-late`（束の側）。書き手 `scripts/build-hist-clio.mjs` は `GOVERNANCE` で publisher・url・cadence・builtBy を
+値として述べ、束の `src` がライセンスを述べるが、残りの facet（取得日・行数・欠損など）はこの形式の束に値の欄が無い——
+隣の `data/hist-borders`・`data/hist-clio` と同じ状態で、同じ理由で数える（180 件・2,382 facet）。
