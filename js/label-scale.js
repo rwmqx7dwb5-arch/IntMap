@@ -116,5 +116,25 @@ window.IntMapLabelScale=(function(){
     return _expr(SUB.map(([z,s])=>[z,['case',cond,_fl(s*a),_fl(s*b)]]));
   }
 
-  return { place, placeAt, refAt, sub, subAt, subCase, PLACE, REF, SUB_REF, SUB, SUB_RATIO };
+  /* ══ (city-label-size) A BIGGER PLACE HAS A BIGGER NAME ═════════════════════════════════════════════════════
+     「Google earthみたいに、都市の規模に応じて、地名ラベルの大きさも変わる仕組みにして。」 (2026-10-05). Measured on
+     Google Earth the same day, Japanese view: at an 800 km camera Tokyo and Osaka ≈14 px, Fukuoka ≈13, Hakodate ≈10;
+     at 500 km Tokyo/Yokohama ≈16, Shizuoka/Kyoto ≈15, Nagano ≈13, Fukui ≈11 — three to four steps of one curve, the
+     prefecture names smaller still. So a class's curve now has TIERS: tier 0 is the most important, and each tier is
+     the class's own curve × TIER_K[tier]. WHICH tier a feature is in is not decided here — the layer that knows its
+     source's schema says it (js/place-labels.js `CITY_TIER`, from the tiles' own rank and capital marks); this file
+     only owns how big each step is, so the relations above keep holding by construction:
+       · TIER_K[0] = 1.10 is the largest factor that keeps every tier under the pre-#R198 city curve
+         (tests/labels-stack-and-scale-checks.test.mjs ①c — the binding zoom is z4: 11 / 10.0) and so under REF;
+       · the steps are strictly decreasing, so a bigger place is never drawn smaller;
+       · the spread 1.10 / 0.82 ≈ 1.34 is Google Earth's 14 / 10.4 at one camera, read off the screenshots above.
+     These are design numbers taken from that observation; they lapse if the reader asks for a different spread,
+     and the tier rule (not these) is what changes if the source's rank changes meaning. */
+  const TIER_K=[1.10,1.02,0.94,0.82];
+  function placeTierAt(kind,tier,z){ const k=TIER_K[Math.max(0,Math.min(TIER_K.length-1,tier|0))]; return _fl(placeAt(kind,z)*k); }
+  /* zoom outermost (#R73), each stop a `step` over the tier expression — the shape both renderers evaluate */
+  function placeTiered(kind,tierExpr){ const s=PLACE[kind]; if(!s) throw new Error('IntMapLabelScale.placeTiered: unknown kind '+kind);
+    return _expr(s.map(([z,px])=>{ const st=['step',tierExpr,_fl(px*TIER_K[0])]; for(let i=1;i<TIER_K.length;i++) st.push(i,_fl(px*TIER_K[i])); return [z,st]; })); }
+
+  return { place, placeAt, placeTiered, placeTierAt, refAt, sub, subAt, subCase, PLACE, REF, SUB_REF, SUB, SUB_RATIO, TIER_K };
 })();
