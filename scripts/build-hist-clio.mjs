@@ -65,6 +65,8 @@
  *
  *      node scripts/build-hist-clio.mjs --fetch     # download the pinned release into the cache (network)
  *      node scripts/build-hist-clio.mjs             # build both bundles from the cache
+ *      node scripts/build-hist-clio.mjs --identities # re-decide the shipped QIDs only (no subtraction), then
+ *                                                    # node scripts/build-histnames.mjs --identifiers
  *      node scripts/build-hist-clio.mjs --check     # the committed files' invariants (offline)
  * ==========================================================================*/
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
@@ -300,12 +302,27 @@ function subtract(polys, cutters0, area0) {
       · Wikidata states no lifespan, and its English label is the name Cliopatria writes (folded:
         case, accents, punctuation, a leading «the»).
    Otherwise the row ships with no QID — it keeps its name and its Wikipedia article, and loses only the
-   identifier nobody could vouch for. The gate re-decides every shipped QID from the committed facts. */
+   identifier nobody could vouch for. The gate re-decides every shipped QID from the committed facts.
+   ⚠⚠ BOTH TESTS ASK WHETHER THE ITEM AGREES WITH THE ROW; NEITHER ASKS WHETHER IT IS ABOUT THE WORLD AT ALL.
+   Measured 2026-10-05: «Gothia» (207–383) shipped Q422253, a Wikimedia DISAMBIGUATION PAGE — no lifespan, and
+   its label is the row's name, so the label test passed it. Of the 1,472 items the facts held, 38 were
+   Wikimedia-internal (32 disambiguation pages, 5 list articles, 1 duplicated item — «Han», «Xia», «Rus»,
+   «Angles», «Kalinga», «Imam of Yemen»…): items about Wikimedia's own pages, so no lifespan and no label can
+   make one the polity drawn. ⇒ An item with a P31 below Q17379835 («Wikimedia page outside the main knowledge
+   tree» — the root of that branch of Wikidata's OWN class hierarchy, walked by --fetch with P31/P279*, not a
+   list of classes typed here) is REFUSED before either test (`i` in the facts; its P31 are kept as `c` so the
+   verdict can be read). The row then falls back to its Wikipedia article's item, put to the same test, or
+   ships no QID — measured the same day: 24 name/QID pairs on 103 shipped rows refused, 2 of them answered by
+   the article («White Huns» → Hephthalites Q26576, «Western Liang» → Q994451), 22 now ship none (their article
+   IS the disambiguation page). expires: never as a rule; the counts are a photograph of the facts of that date.
+   ⚠ A facts file fetched WITHOUT the class question has no `i` anywhere and the refusal is silently absent, so
+   --fetch records the root it asked about (`internal`) and the gate refuses facts that do not say it. */
+export const WIKIMEDIA_INTERNAL = 'Q17379835';
 const fold = (x) => String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/^the\s+/, '').replace(/[^a-z0-9]+/g, ' ').trim();
 export function verifiedQid(qid, name, span, facts) {
   if (!qid) return false;
   const f = facts[qid];
-  if (!f) return false;
+  if (!f || f.i) return false;
   const s = f.s && f.s.length ? Math.min(...f.s) : null, e = f.e && f.e.length ? Math.max(...f.e) : null;
   if (s == null && e == null) return !!f.l && fold(f.l) === fold(name);
   return (e == null || span[0] <= e) && (s == null || span[1] >= s);
@@ -587,25 +604,28 @@ async function fetchUpstream() {
     for (const want of b) { let t = want, k = 0; while (hop.has(t) && k++ < 4) t = hop.get(t); if (item.has(t)) wiki[want] = item.get(t); }
     console.error('wikipedia ' + Math.min(i + 50, titles.length) + '/' + titles.length);
   }
-  /* the identity facts: P571 / P576 / English label of every QID either statement names */
+  /* the identity facts: P571 / P576 / English label of every QID either statement names, its P31, and whether any
+     P31 lies below Wikidata's root of Wikimedia-internal items (WIKIMEDIA_INTERNAL) — the class tree is Wikidata's to walk */
   const qs = [...new Set(rows.map((p) => p.Wikidata).filter(Boolean).concat(Object.values(wiki)))];
   const facts = {};
   for (let i = 0; i < qs.length; i += 200) {
     const b = qs.slice(i, i + 200);
-    const q = 'SELECT ?i ?s ?e ?l WHERE { VALUES ?i { ' + b.map((x) => 'wd:' + x).join(' ') + " } OPTIONAL{?i wdt:P571 ?s} OPTIONAL{?i wdt:P576 ?e} OPTIONAL{?i rdfs:label ?l FILTER(lang(?l)='en')} }";
+    const q = 'SELECT ?i ?s ?e ?l ?c ?w WHERE { VALUES ?i { ' + b.map((x) => 'wd:' + x).join(' ') + " } OPTIONAL{?i wdt:P571 ?s} OPTIONAL{?i wdt:P576 ?e} OPTIONAL{?i rdfs:label ?l FILTER(lang(?l)='en')} OPTIONAL{?i wdt:P31 ?c} BIND(EXISTS{?i wdt:P31/wdt:P279* wd:" + WIKIMEDIA_INTERNAL + "} AS ?w) }";
     for (const x of (await wdFetch('https://query.wikidata.org/sparql?format=json&query=' + encodeURIComponent(q), 'application/sparql-results+json')).results.bindings) {
       const id = x.i.value.split('/').pop(), o = facts[id] || (facts[id] = {});
       const yr = (v) => { const m = /^(-?)(\d+)-/.exec(v); return m ? (m[1] ? -(+m[2]) : +m[2]) : null; };
       for (const [k, v] of [['s', x.s], ['e', x.e]]) if (v) { const y = yr(v.value); if (y != null) (o[k] = o[k] || []).includes(y) || o[k].push(y); }
       if (x.l) o.l = x.l.value;
+      if (x.c) { const c = x.c.value.split('/').pop(); (o.c = o.c || []).includes(c) || o.c.push(c); }
+      if (x.w && x.w.value === 'true') o.i = 1;
     }
     console.error('wikidata ' + Math.min(i + 200, qs.length) + '/' + qs.length);
   }
   const sorted = {};
-  for (const q of Object.keys(facts).sort((a, b) => +a.slice(1) - +b.slice(1))) { const o = facts[q]; for (const k of ['s', 'e']) if (o[k]) o[k].sort((a, b) => a - b); sorted[q] = o; }
+  for (const q of Object.keys(facts).sort((a, b) => +a.slice(1) - +b.slice(1))) { const o = facts[q]; for (const k of ['s', 'e']) if (o[k]) o[k].sort((a, b) => a - b); if (o.c) o.c.sort((a, b) => +a.slice(1) - +b.slice(1)); sorted[q] = o; }
   const rec = JSON.parse(readFileSync(FACTS, 'utf8'));
   const wsorted = Object.fromEntries(Object.keys(wiki).sort().map((k) => [k, wiki[k]]));
-  writeFileSync(FACTS, JSON.stringify({ ...rec, fetched: new Date().toISOString().slice(0, 10), facts: sorted, wiki: wsorted }));
+  writeFileSync(FACTS, JSON.stringify({ ...rec, fetched: new Date().toISOString().slice(0, 10), internal: WIKIMEDIA_INTERNAL, facts: sorted, wiki: wsorted }));
 }
 function readUpstream() {
   const f = join(CACHE, UPSTREAM.member);
@@ -641,22 +661,9 @@ async function clioRows(features, ohm, clip, ground) {
   const [hbLo] = ohm.window, T_HB = ymd(hbLo, 1, 1);
   const out = [], band = [];
   let leaf = 0, relation = 0, aggregate = 0, late = 0;
-  /* the span Cliopatria draws each NAME over (astronomical years), and which of its QIDs are that polity */
-  const spanOf = new Map();
-  /* the span as SHIPPED (cut at 1886, a realm under its unbracketed name) — the one the offline gate can re-measure */
-  const bare = (n) => (/^\(.*\)$/.test(n) ? n.slice(1, -1) : n);
+  /* ⚠ a row starting on or after ohm.top (a YYYYMMDD) is a row starting after lastY — the same cut identityOf makes */
   const lastY = Math.floor(ohm.top / 10000) - (ohm.top % 10000 === 101 ? 1 : 0);
-  for (const ft of features) { const p = ft.properties; if (p.Type !== 'POLITY' || ymd(astro(p.FromYear), 1, 1) >= ohm.top) continue;
-    const k = bare(p.Name), sp = spanOf.get(k) || [Infinity, -Infinity]; sp[0] = Math.min(sp[0], astro(p.FromYear)); sp[1] = Math.max(sp[1], Math.min(astro(p.ToYear), lastY)); spanOf.set(k, sp); }
-  /* (sudan-mahdist-1886) a judged `ground` row draws the polity from the year history gives — the span its QID is
-     decided on, and the one the gate re-decides on, starts there */
-  for (const R of (ground && ground.rows) || []) { const sp = spanOf.get(R.name); if (sp) sp[0] = Math.min(sp[0], R.s); }
-  const facts = readFacts(), wikiQ = readWiki(), verdict = new Map();
-  /* the release's own QID first; when it is shown NOT to be the polity, the item of the Wikipedia article the
-     same row names — measured 2026-10-04: «Han Dynasty» carries Q1068371 (Chauhan) and names the article
-     «Han dynasty» (Q7209); both are put to the same test, and neither is taken on trust */
-  const decide = (q, n) => { const k = n + '|' + q; if (!verdict.has(k)) verdict.set(k, verifiedQid(q, n, spanOf.get(n), facts)); return verdict.get(k) ? q : null; };
-  const qidFor = (p) => decide(p.Wikidata, bare(p.Name)) || (p.Wikipedia && wikiQ[p.Wikipedia] && wikiQ[p.Wikipedia] !== p.Wikidata ? decide(wikiQ[p.Wikipedia], bare(p.Name)) : null);
+  const { qidFor, verdict, ids } = identityOf(features, lastY, readFacts(), readWiki(), ground);
   const all = [];
   for (const ft of features) {
     const p = ft.properties;
@@ -687,11 +694,36 @@ async function clioRows(features, ohm, clip, ground) {
   /* (sudan-mahdist-1886) the judged `ground` rows act on the rows as they will be DRAWN — after OHM and CShapes are
      taken out — because that is what the finding measured and what a reader sees (see `applyHeld`) */
   const held = applyHeld(out, ground); out.length = 0; for (const r of held) out.push(r);
+  out.ids = ids;
+  return out;
+}
+const bare = (n) => (/^\(.*\)$/.test(n) ? n.slice(1, -1) : n);
+/* WHICH QID EACH CLIOPATRIA ROW SHIPS — one decision, read by the build and by --identities.
+   lastY: the last year the composition draws (a row starting after it is not drawn; a span is cut at it);
+   ground: scripts/histclio/review.json `ground`.
+   → { qidFor(properties), verdict: Map('name|Q' → bool), ids: { name: [first, last] } } */
+export function identityOf(features, lastY, facts, wikiQ, ground) {
+  /* the span Cliopatria draws each NAME over (astronomical years) — the span as SHIPPED (cut at 1886, a realm
+     under its unbracketed name), the one the offline gate can re-measure */
+  const spanOf = new Map();
+  const drawn = (p) => p.Type === 'POLITY' && astro(p.FromYear) <= lastY;
+  for (const ft of features) { const p = ft.properties; if (!drawn(p)) continue;
+    const k = bare(p.Name), sp = spanOf.get(k) || [Infinity, -Infinity]; sp[0] = Math.min(sp[0], astro(p.FromYear)); sp[1] = Math.max(sp[1], Math.min(astro(p.ToYear), lastY)); spanOf.set(k, sp); }
+  /* (sudan-mahdist-1886) a judged `ground` row draws the polity from the year history gives — the span its QID is
+     decided on, and the one the gate re-decides on, starts there */
+  for (const R of (ground && ground.rows) || []) { const sp = spanOf.get(R.name); if (sp) sp[0] = Math.min(sp[0], R.s); }
+  const verdict = new Map();
+  /* the release's own QID first; when it is shown NOT to be the polity, the item of the Wikipedia article the
+     same row names — measured 2026-10-04: «Han Dynasty» carries Q1068371 (Chauhan) and names the article
+     «Han dynasty» (Q7209); both are put to the same test, and neither is taken on trust */
+  const decide = (q, n) => { const k = n + '|' + q; if (!verdict.has(k)) verdict.set(k, verifiedQid(q, n, spanOf.get(n), facts)); return verdict.get(k) ? q : null; };
+  const qidFor = (p) => decide(p.Wikidata, bare(p.Name)) || (p.Wikipedia && wikiQ[p.Wikipedia] && wikiQ[p.Wikipedia] !== p.Wikidata ? decide(wikiQ[p.Wikipedia], bare(p.Name)) : null);
+  for (const ft of features) if (drawn(ft.properties)) qidFor(ft.properties);
   /* the span each verified QID was decided on — the bundle carries it, because the rows it ships are fewer
      than the rows the decision read (OHM answers part of them), and the gate must re-decide on the same span */
-  out.ids = {};
-  for (const [k, ok] of verdict) if (ok) { const n = k.slice(0, k.lastIndexOf('|')); out.ids[n] = spanOf.get(n); }
-  return out;
+  const ids = {};
+  for (const [k, ok] of verdict) if (ok) { const n = k.slice(0, k.lastIndexOf('|')); ids[n] = spanOf.get(n); }
+  return { qidFor, verdict, ids };
 }
 
 /* ── 2. the sheets, less what is above them at their own year ─────────────── */
@@ -866,6 +898,60 @@ async function lateOnly() {
   try { await ohmLate(ohm, P.run, lateTop()); } finally { await P.close(); }
 }
 
+/* the findings nobody has judged yet, written to scripts/histclio/review.json as pending — both depend on the
+   shipped QIDs (the lifespan each is compared with), so --identities re-lists them too */
+function writePending(review, feats, rings, ids) {
+  const judged = judgedKeys(review);
+  const found = findingsOf(feats, readFacts());
+  review.pending = found.filter((x) => !judged.has(x.name + '|' + x.side)).map((x) => ({ name: x.name, q: x.q, side: x.side, drawn: x.drawn, wd: x.wd }));
+  /* (sudan-mahdist-1886) …and the findings of ground given to a continuing row before a polity's first row */
+  const G = review.ground || (review.ground = { rows: [], refuted: [], pending: [] }), gj = groundJudged(G);
+  const held = heldFindingsOf(feats, rings, readFacts(), ids);
+  G.pending = held.filter((x) => !gj.has(x.name + '|' + x.over)).map(({ name, q, over, from, to, first, wd }) => ({ name, q, over, from, to, first, wd }));
+  console.error(`ground: ${held.length} finding(s) still raised — ${G.rows.length} polity(ies) drawn back by a reviewed row, ${G.refuted.length} refuted, ${G.pending.length} pending`);
+  writeFileSync(REVIEW, JSON.stringify(review, null, 1) + '\n');
+  return found;
+}
+
+/* ── --identities: RE-DECIDE THE SHIPPED QIDs, AND NOTHING ELSE ──────────────────────────────────────────
+   Which QID a row ships is a decision about identity; the composition is minutes of polygon subtraction that
+   no identity can change (a row's shape and dates do not depend on its QID, nor does what the sheets below
+   keep — restSheets reads only polygons and dates). So a change to the identity test or to the facts is
+   re-decided here: every shipped named row is keyed back to the upstream rows by (name, Wikipedia article)
+   — measured 2026-10-05, that key names ONE Wikidata value in all 1,567 keys of the pinned release, and the
+   mode refuses to run when it does not — and ships the QID `identityOf`, the build's own decision, gives it.
+   The pending findings are re-listed, and data/hist-eras-rest.js's record of the bundle it was cut against
+   moves to the new bytes: its geometry was cut against the same shapes. */
+function identities() {
+  const d = evalBundle(OUT, '__HISTCLIO');
+  const features = readUpstream();
+  const review = JSON.parse(readFileSync(REVIEW, 'utf8'));
+  const { qidFor, ids } = identityOf(features, d.window[1], readFacts(), readWiki(), review.ground);
+  const byKey = new Map();
+  for (const ft of features) { const p = ft.properties; if (p.Type !== 'POLITY' || astro(p.FromYear) > d.window[1]) continue;
+    const k = bare(p.Name) + '\u0000' + (p.Wikipedia || ''), q = qidFor(p) || null;
+    if (byKey.has(k) && byKey.get(k) !== q) throw new Error('«' + bare(p.Name) + '» / «' + (p.Wikipedia || '') + '» decides two QIDs (' + byKey.get(k) + ', ' + q + ') — the key no longer names one row; rebuild in full');
+    byKey.set(k, q); }
+  const changed = new Map();
+  for (const f of d.feats) {
+    if (!f[0].en) continue;
+    const k = f[0].en + '\u0000' + ((f[9] && f[9].w) || '');
+    if (!byKey.has(k)) throw new Error('shipped row «' + f[0].en + '» matches no upstream row — rebuild in full');
+    const q = byKey.get(k);
+    if (q !== f[1]) { const c = f[0].en + '  ' + (f[1] || '—') + ' → ' + (q || '—'); changed.set(c, (changed.get(c) || 0) + 1); f[1] = q; }
+  }
+  d.ids = Object.fromEntries(Object.keys(ids).sort().map((k) => [k, ids[k]]));
+  writeFileSync(OUT, 'window.__HISTCLIO=' + JSON.stringify(d) + ';\n');
+  const r = evalBundle(REST, '__HISTERASREST');
+  r.basis['data/hist-clio.js'] = sha(OUT);
+  writeFileSync(REST, 'window.__HISTERASREST=' + JSON.stringify(r) + ';\n');
+  writePending(review, d.feats, d.rings, d.ids);
+  let rows = 0; for (const v of changed.values()) rows += v;
+  console.error('identities: ' + rows + ' shipped row(s) of ' + changed.size + ' name/QID pair(s) change QID' + (changed.size ? ':' : ''));
+  for (const [c, v] of changed) console.error('  ' + c + '  (' + v + ' row' + (v > 1 ? 's' : '') + ')');
+  console.error('review: ' + review.pending.length + ' pending');
+}
+
 /* ── build ───────────────────────────────────────────────────────────────── */
 async function build({ measure } = {}) {
   const ohm = ohmRows();
@@ -892,15 +978,7 @@ async function build({ measure } = {}) {
     const body = 'window.__HISTCLIO=' + JSON.stringify({ ...head, rings, feats }) + ';\n';
     writeFileSync(OUT, body);
     /* the findings nobody has judged yet are listed as pending — counted, drawn as Cliopatria states them */
-    const judged = judgedKeys(review);
-    const found = findingsOf(feats, readFacts());
-    review.pending = found.filter((x) => !judged.has(x.name + '|' + x.side)).map((x) => ({ name: x.name, q: x.q, side: x.side, drawn: x.drawn, wd: x.wd }));
-    /* (sudan-mahdist-1886) …and the findings of ground given to a continuing row before a polity's first row */
-    const G = review.ground || (review.ground = { rows: [], refuted: [], pending: [] }), gj = groundJudged(G);
-    const held = heldFindingsOf(feats, rings, readFacts(), head.ids);
-    G.pending = held.filter((x) => !gj.has(x.name + '|' + x.over)).map(({ name, q, over, from, to, first, wd }) => ({ name, q, over, from, to, first, wd }));
-    console.error(`ground: ${held.length} finding(s) still raised — ${G.rows.length} polity(ies) drawn back by a reviewed row, ${G.refuted.length} refuted, ${G.pending.length} pending`);
-    writeFileSync(REVIEW, JSON.stringify(review, null, 1) + '\n');
+    const found = writePending(review, feats, rings, head.ids);
     console.error(`review: ${found.length} finding(s) — ${review.rows.length} name(s) withheld by a reviewed row, ${review.refuted.length} refuted, ${review.pending.length} pending`);
     console.error(`data/hist-clio.js: ${feats.length} rows, ${rings.length} rings, ${rings.reduce((a, r) => a + r.length, 0)} points, ${(body.length / 1e6).toFixed(2)} MB`);
 
@@ -970,6 +1048,7 @@ export function check() {
   }
   /* every QID the bundle ships is re-decided from the committed facts — an unverified identifier would be
      translated and linked as if it were the polity drawn */
+  ok(JSON.parse(readFileSync(FACTS, 'utf8')).internal === WIKIMEDIA_INTERNAL, 'scripts/histclio/wikidata.json was not fetched with the class question (internal: ' + WIKIMEDIA_INTERNAL + ') — a Wikimedia disambiguation page would pass the label test; node scripts/build-hist-clio.mjs --fetch, then --identities');
   { const facts = readFacts(), ids = d.ids || {};
     let bad = 0; const eg = [];
     for (const f of d.feats) {
@@ -1103,5 +1182,6 @@ else if (process.argv[1] && join(process.argv[1]) === join(fileURLToPath(import.
   if (arg.includes('--check')) check();
   else if (arg.includes('--fetch')) await fetchUpstream();
   else if (arg.includes('--ohm-late')) await lateOnly();
+  else if (arg.includes('--identities')) identities();
   else await build({ measure: arg.includes('--measure') });
 }
