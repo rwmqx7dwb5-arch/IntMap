@@ -263,7 +263,7 @@ npm run test:qa          # IntMap's own in-page QA harnesses
 ```
 
 **WHICH of these to run WHILE working** — the staged ladder (targeted checks during the edit,
-`npm test` once before the push, `test:deep` only when 3-D/physics were touched) is stated once,
+the full `npm test` run left to the PR's CI rather than repeated locally, `test:deep` only when 3-D/physics were touched) is stated once,
 in [`../.agents/rules/execution-strategy.md`](../.agents/rules/execution-strategy.md) §4. This
 document owns *what each layer is*; that one owns *when a session runs it*.
 

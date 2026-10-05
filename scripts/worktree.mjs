@@ -419,8 +419,34 @@ function masterState() {
    An item is «pending» only when it is KNOWN to be outstanding: an unknown is neither pending nor
    done, and the full `status` states it in its own right (the brief follows nightly()'s precedent
    of staying silent about what it could not read, rather than printing a line every session). */
+/* ── (proportional-finish) A PR WAITING ON AUTO-MERGE WHOSE CI IS RED HAS NO OTHER READER ──────
+   The full run moved from the session's own machine to the PR's CI (AGENTS.md §4), and the session
+   does not sit and watch that CI (§5.1: auto-merge on green). A green PR lands by itself; a RED one
+   with auto-merge set waits forever and nothing says so — the session that opened it has ended.
+   So it is outstanding work, named by PR number with the checks that failed, exactly like a commit
+   that has not reached production. Only auto-merge PRs: one without it was not put on this chain
+   (a bot refresh, a PR held on purpose), and naming it every session would be the line nobody reads.
+   gh missing/logged out/offline → known:false, and the brief stays silent like the others. */
+const RED = new Set(['FAILURE', 'TIMED_OUT', 'CANCELLED', 'ACTION_REQUIRED', 'STARTUP_FAILURE', 'ERROR']);
+export function redAutoMerge(prs) {
+  return (prs || []).filter((p) => p.autoMergeRequest).map((p) => ({
+    number: p.number,
+    failed: [...new Set((p.statusCheckRollup || [])
+      .filter((c) => RED.has(c.conclusion || c.state)).map((c) => c.name || c.context))],
+  })).filter((p) => p.failed.length);
+}
+function redPRs() {
+  try {
+    const raw = execFileSync('gh', ['pr', 'list', '--state', 'open', '--limit', '100',
+      '--json', 'number,autoMergeRequest,statusCheckRollup'],
+    { cwd: REPO, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 20000 });
+    return { known: true, prs: redAutoMerge(JSON.parse(raw)) };
+  } catch { return { known: false, prs: [] }; }
+}
+
 function pendingWork(master) {
   const deploy = deployState();
+  const red = redPRs();
   const verified = verifiedState(master);
   const copy = masterState();
   const items = [];
@@ -430,7 +456,8 @@ function pendingWork(master) {
     items.push(`本番検証 ${verified.labels.length ? labelList(verified.labels) : `${verified.n} commit 分`}`);
   }
   if (copy.known && !copy.ok) items.push(`原本: ${copy.reasons[0] || 'merge 後の状態ではない'}`);
-  return { deploy, verified, copy, items };
+  if (red.prs.length) items.push(`CI が赤い auto-merge 待ち ${red.prs.map((p) => '#' + p.number).join(' ')}`);
+  return { deploy, verified, copy, red, items };
 }
 
 /* ── (generated-file-merge-driver) THE MERGE DRIVER IS CONFIGURATION, SO IT IS INSTALLED HERE ──────
@@ -560,6 +587,14 @@ function status(brief) {
   else {
     console.log(`    本番検証        ⚠ ${v.n} commit 分が未検証${v.labels.length ? `: ${labelList(v.labels)}` : ''}`);
     console.log(`                    最後の検証 ${String(v.sha).slice(0, 7)}${v.at ? `・${String(v.at).slice(0, 10)}` : ''}  → 本番を見てから node scripts/worktree.mjs verified`);
+  }
+
+  const rp = pw.red;
+  if (!rp.known) console.log('    赤い PR         不明（gh が無い・未ログイン・オフラインのいずれか）');
+  else if (!rp.prs.length) console.log('    赤い PR         auto-merge 待ちで CI が赤いものは無い');
+  else {
+    console.log(`    赤い PR         ⚠ auto-merge 待ちのまま CI が赤い: ${rp.prs.map((p) => '#' + p.number).join(' ')}`);
+    for (const p of rp.prs) console.log(`                    #${p.number}: ${p.failed.slice(0, 4).join(' / ')}${p.failed.length > 4 ? ' …' : ''}  → gh pr checks ${p.number}`);
   }
 
   const c = pw.copy;
@@ -853,24 +888,28 @@ function done() {
 }
 
 /* ── entry ──────────────────────────────────────────────────────────────────────────────────── */
-const argv = process.argv.slice(2);
-const cmd = argv[0] || 'status';
-try {
-  if (cmd === 'status') status(argv.includes('--brief'));
-  else if (cmd === 'new') await makeNew(argv[1]);
-  else if (cmd === 'done') done();
-  else if (cmd === 'verified') {
-    /* ⚠ a leftover `--round R770` is REFUSED rather than ignored: the caller meant to say which
-       work was verified, and silently recording something else is the one thing that must not
-       happen here. The commit's sha (and its PR) is what is recorded now. */
-    if (argv.includes('--round')) {
-      console.error('✖ --round はもう無い。受領証は origin/main の commit（sha と、件名の (#PR)）を記録する。');
-      process.exit(1);
-    }
-    markVerified();
-  } else { console.error(`unknown command: ${cmd}\nusage: node scripts/worktree.mjs [status [--brief] | new <slug> | done | verified]`); process.exit(1); }
-} catch (e) {
-  /* status is wired to a hook — it reports and leaves, it does not take the session down with it */
-  if (cmd === 'status') { console.log('IntMap · 現在地を読めなかった: ' + e.message); process.exit(0); }
-  throw e;
+/* (proportional-finish) only when run as a command: tests import redAutoMerge() from here, and an
+   import must not print the session's status. */
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const argv = process.argv.slice(2);
+  const cmd = argv[0] || 'status';
+  try {
+    if (cmd === 'status') status(argv.includes('--brief'));
+    else if (cmd === 'new') await makeNew(argv[1]);
+    else if (cmd === 'done') done();
+    else if (cmd === 'verified') {
+      /* ⚠ a leftover `--round R770` is REFUSED rather than ignored: the caller meant to say which
+         work was verified, and silently recording something else is the one thing that must not
+         happen here. The commit's sha (and its PR) is what is recorded now. */
+      if (argv.includes('--round')) {
+        console.error('✖ --round はもう無い。受領証は origin/main の commit（sha と、件名の (#PR)）を記録する。');
+        process.exit(1);
+      }
+      markVerified();
+    } else { console.error(`unknown command: ${cmd}\nusage: node scripts/worktree.mjs [status [--brief] | new <slug> | done | verified]`); process.exit(1); }
+  } catch (e) {
+    /* status is wired to a hook — it reports and leaves, it does not take the session down with it */
+    if (cmd === 'status') { console.log('IntMap · 現在地を読めなかった: ' + e.message); process.exit(0); }
+    throw e;
+  }
 }

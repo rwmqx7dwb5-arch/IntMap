@@ -101,7 +101,17 @@ export function install(cwd = process.cwd()) {
 export const installed = (cwd = process.cwd()) => qGit(['config', '--get', `merge.${DRIVER}.driver`], cwd) === DRIVER_CMD;
 
 /* ══ DECLARATIONS — read from git, never restated ═════════════════════════════════════════════ */
-const ATTRS = ['merge', 'intmap-merge', 'intmap-clash', 'intmap-clash-by', 'intmap-regen'];
+const ATTRS = ['merge', 'intmap-merge', 'intmap-clash', 'intmap-clash-by', 'intmap-regen', 'intmap-tighten', 'intmap-tighten-info'];
+/* `intmap-tighten=<cmd>` (proportional-finish): on a RATCHET ledger, the writer that rewrites it from
+   the tree. The merge never runs it (see `json` above: `--update` accepts whatever the tree holds).
+   scripts/regen.mjs runs it and keeps the result ONLY when every move tightens — a count down, a
+   name or key gone — so the one direction that is pure bookkeeping stops being a red CI run, and the
+   other direction is still a person's question. Same encoding as `intmap-regen`.
+   `intmap-tighten-info=<key>[,<key>]`: top-level keys the writer records as CONTEXT, not as the ratchet
+   (output-taint's `sinks`, data-effects' `reaching`: how many exist in all — no gate reads them), so
+   they may move either way. MEASURED on a clean main: those two had drifted 680→714 and 39→75 while
+   both gates were green; holding them to «only down» refused a ledger nothing was wrong with. */
+const infoKeys = (v) => (v && v !== 'set' && v !== 'unset' ? v.split(',').filter(Boolean) : []);
 /* `intmap-clash-by=<script>` (perf-measure-parity): the ledger's WRITER says, per row, which numbers are
    counts — it exports `mergeClash(keys)` → 'sum' | 'upstream' | null (null = the file's `intmap-clash`).
    The writer already knows; a list of row names here would be a second copy of it. */
@@ -119,7 +129,7 @@ function parseCheckAttr(out) {
 /** the declaration for one path (as git resolves .gitattributes for it) */
 export function declarationOf(path, cwd = process.cwd()) {
   const d = parseCheckAttr(qGit(['check-attr', ...ATTRS, '--', path], cwd)).get(path) || {};
-  return d.merge === DRIVER ? { path, kind: d['intmap-merge'] || null, clash: d['intmap-clash'] || 'upstream', clashBy: clashBy(d['intmap-clash-by']), regen: parseRegen(d['intmap-regen']) } : null;
+  return d.merge === DRIVER ? { path, kind: d['intmap-merge'] || null, clash: d['intmap-clash'] || 'upstream', clashBy: clashBy(d['intmap-clash-by']), regen: parseRegen(d['intmap-regen']), tighten: parseRegen(d['intmap-tighten']), tightenInfo: infoKeys(d['intmap-tighten-info']) } : null;
 }
 /** every tracked path the driver is assigned to */
 export function declarations(cwd = process.cwd()) {
@@ -128,7 +138,7 @@ export function declarations(cwd = process.cwd()) {
   const out = [];
   for (const [path, d] of parseCheckAttr(r.stdout || '')) {
     if (d.merge !== DRIVER) continue;
-    out.push({ path, kind: d['intmap-merge'] || null, clash: d['intmap-clash'] || 'upstream', clashBy: clashBy(d['intmap-clash-by']), regen: parseRegen(d['intmap-regen']) });
+    out.push({ path, kind: d['intmap-merge'] || null, clash: d['intmap-clash'] || 'upstream', clashBy: clashBy(d['intmap-clash-by']), regen: parseRegen(d['intmap-regen']), tighten: parseRegen(d['intmap-tighten']), tightenInfo: infoKeys(d['intmap-tighten-info']) });
   }
   return out;
 }
