@@ -1,0 +1,1088 @@
+{
+ "country": "MDG",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1960-06-26",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Madagascar (Malagasy Republic) since independence 1960-06-26. NE depicts the 22 regions of 2004 (first-level since 2009); the six provinces 1960–2009 are unions of them.",
+ "units": [
+  {
+   "id": "MDG:Antananarivo@1960",
+   "names": {
+    "en": "Antananarivo Province (Tananarive until 1975)",
+    "ja": "アンタナナリボ州",
+    "local": "Faritanin'Antananarivo"
+   },
+   "wikidata": "Q489821",
+   "spans": [
+    {
+     "from": "1960-06-26",
+     "precision": "day",
+     "to": "2009-10",
+     "atoms": [
+      "MDG-5862",
+      "MDG-5871",
+      "MDG-5875",
+      "MDG-5881"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/umg.html",
+       "title": "Statoids — Provinces of Madagascar (change history)",
+       "says": "Lists only renamings of the six provinces (1975, ~1980) and their 2000 autonomous status; no boundary change between provinces is recorded.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ymg.html",
+       "title": "Statoids — Regions of Madagascar (fivondronana 2000–2004 with their province and new region)",
+       "says": "Each of the 111 fivondronana is coded by province and assigned to one of the 22 regions of law 2004-001; every region code carries its province code.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Madagascar&oldid=1373981556",
+       "title": "Wikipedia — Provinces of Madagascar (oldid 1373981556)",
+       "says": "Six provinces existed since before 1957; the 4 April 2007 referendum removed them, with a transition until October 2009; regions are now the main level.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Union of the 2004 regions, which were built from fivondronana that each lay in one province (statoids ymg). No inter-provincial transfer is recorded 1960–2009. End: the constitutional transition after the 2007 referendum ran until October 2009 (month precision)."
+    }
+   ]
+  },
+  {
+   "id": "MDG:Antsiranana@1960",
+   "names": {
+    "en": "Antsiranana Province (Diégo-Suarez until ~1980)",
+    "ja": "アンツィラナナ州",
+    "local": "Faritanin'Antsiranana"
+   },
+   "wikidata": "Q656073",
+   "spans": [
+    {
+     "from": "1960-06-26",
+     "precision": "day",
+     "to": "2009-10",
+     "atoms": [
+      "MDG-5872",
+      "MDG-5879"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/umg.html",
+       "title": "Statoids — Provinces of Madagascar (change history)",
+       "says": "Lists only renamings of the six provinces (1975, ~1980) and their 2000 autonomous status; no boundary change between provinces is recorded.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ymg.html",
+       "title": "Statoids — Regions of Madagascar (fivondronana 2000–2004 with their province and new region)",
+       "says": "Each of the 111 fivondronana is coded by province and assigned to one of the 22 regions of law 2004-001; every region code carries its province code.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Madagascar&oldid=1373981556",
+       "title": "Wikipedia — Provinces of Madagascar (oldid 1373981556)",
+       "says": "Six provinces existed since before 1957; the 4 April 2007 referendum removed them, with a transition until October 2009; regions are now the main level.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Union of the 2004 regions, which were built from fivondronana that each lay in one province (statoids ymg). No inter-provincial transfer is recorded 1960–2009. End: the constitutional transition after the 2007 referendum ran until October 2009 (month precision)."
+    }
+   ]
+  },
+  {
+   "id": "MDG:Fianarantsoa@1960",
+   "names": {
+    "en": "Fianarantsoa Province",
+    "ja": "フィアナランツァ州",
+    "local": "Faritanin'Fianarantsoa"
+   },
+   "wikidata": "Q841197",
+   "spans": [
+    {
+     "from": "1960-06-26",
+     "precision": "day",
+     "to": "2009-10",
+     "atoms": [
+      "MDG-5861",
+      "MDG-5867",
+      "MDG-5873",
+      "MDG-5874",
+      "MDG-5882"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/umg.html",
+       "title": "Statoids — Provinces of Madagascar (change history)",
+       "says": "Lists only renamings of the six provinces (1975, ~1980) and their 2000 autonomous status; no boundary change between provinces is recorded.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ymg.html",
+       "title": "Statoids — Regions of Madagascar (fivondronana 2000–2004 with their province and new region)",
+       "says": "Each of the 111 fivondronana is coded by province and assigned to one of the 22 regions of law 2004-001; every region code carries its province code.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Madagascar&oldid=1373981556",
+       "title": "Wikipedia — Provinces of Madagascar (oldid 1373981556)",
+       "says": "Six provinces existed since before 1957; the 4 April 2007 referendum removed them, with a transition until October 2009; regions are now the main level.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Union of the 2004 regions, which were built from fivondronana that each lay in one province (statoids ymg). No inter-provincial transfer is recorded 1960–2009. End: the constitutional transition after the 2007 referendum ran until October 2009 (month precision)."
+    }
+   ]
+  },
+  {
+   "id": "MDG:Mahajanga@1960",
+   "names": {
+    "en": "Mahajanga Province (Majunga until ~1980)",
+    "ja": "マジュンガ州",
+    "local": "Faritanin'Mahajanga"
+   },
+   "wikidata": "Q669259",
+   "spans": [
+    {
+     "from": "1960-06-26",
+     "precision": "day",
+     "to": "2009-10",
+     "atoms": [
+      "MDG-5869",
+      "MDG-5870",
+      "MDG-5876",
+      "MDG-5880"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/umg.html",
+       "title": "Statoids — Provinces of Madagascar (change history)",
+       "says": "Lists only renamings of the six provinces (1975, ~1980) and their 2000 autonomous status; no boundary change between provinces is recorded.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ymg.html",
+       "title": "Statoids — Regions of Madagascar (fivondronana 2000–2004 with their province and new region)",
+       "says": "Each of the 111 fivondronana is coded by province and assigned to one of the 22 regions of law 2004-001; every region code carries its province code.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Madagascar&oldid=1373981556",
+       "title": "Wikipedia — Provinces of Madagascar (oldid 1373981556)",
+       "says": "Six provinces existed since before 1957; the 4 April 2007 referendum removed them, with a transition until October 2009; regions are now the main level.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Union of the 2004 regions, which were built from fivondronana that each lay in one province (statoids ymg). No inter-provincial transfer is recorded 1960–2009. End: the constitutional transition after the 2007 referendum ran until October 2009 (month precision)."
+    }
+   ]
+  },
+  {
+   "id": "MDG:Toamasina@1960",
+   "names": {
+    "en": "Toamasina Province (Tamatave until ~1980)",
+    "ja": "トアマシナ州",
+    "local": "Faritanin'Toamasina"
+   },
+   "wikidata": "Q639418",
+   "spans": [
+    {
+     "from": "1960-06-26",
+     "precision": "day",
+     "to": "2009-10",
+     "atoms": [
+      "MDG-5860",
+      "MDG-5863",
+      "MDG-5868"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/umg.html",
+       "title": "Statoids — Provinces of Madagascar (change history)",
+       "says": "Lists only renamings of the six provinces (1975, ~1980) and their 2000 autonomous status; no boundary change between provinces is recorded.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ymg.html",
+       "title": "Statoids — Regions of Madagascar (fivondronana 2000–2004 with their province and new region)",
+       "says": "Each of the 111 fivondronana is coded by province and assigned to one of the 22 regions of law 2004-001; every region code carries its province code.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Madagascar&oldid=1373981556",
+       "title": "Wikipedia — Provinces of Madagascar (oldid 1373981556)",
+       "says": "Six provinces existed since before 1957; the 4 April 2007 referendum removed them, with a transition until October 2009; regions are now the main level.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Union of the 2004 regions, which were built from fivondronana that each lay in one province (statoids ymg). No inter-provincial transfer is recorded 1960–2009. End: the constitutional transition after the 2007 referendum ran until October 2009 (month precision)."
+    }
+   ]
+  },
+  {
+   "id": "MDG:Toliara@1960",
+   "names": {
+    "en": "Toliara Province (Tuléar until ~1980)",
+    "ja": "トゥリアラ州",
+    "local": "Faritanin'Toliara"
+   },
+   "wikidata": "Q162020",
+   "spans": [
+    {
+     "from": "1960-06-26",
+     "precision": "day",
+     "to": "2009-10",
+     "atoms": [
+      "MDG-5864",
+      "MDG-5865",
+      "MDG-5866",
+      "MDG-5878"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/umg.html",
+       "title": "Statoids — Provinces of Madagascar (change history)",
+       "says": "Lists only renamings of the six provinces (1975, ~1980) and their 2000 autonomous status; no boundary change between provinces is recorded.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ymg.html",
+       "title": "Statoids — Regions of Madagascar (fivondronana 2000–2004 with their province and new region)",
+       "says": "Each of the 111 fivondronana is coded by province and assigned to one of the 22 regions of law 2004-001; every region code carries its province code.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Madagascar&oldid=1373981556",
+       "title": "Wikipedia — Provinces of Madagascar (oldid 1373981556)",
+       "says": "Six provinces existed since before 1957; the 4 April 2007 referendum removed them, with a transition until October 2009; regions are now the main level.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Union of the 2004 regions, which were built from fivondronana that each lay in one province (statoids ymg). No inter-provincial transfer is recorded 1960–2009. End: the constitutional transition after the 2007 referendum ran until October 2009 (month precision)."
+    }
+   ]
+  },
+  {
+   "id": "MDG:AlaotraMangoro@2009",
+   "names": {
+    "en": "Alaotra-Mangoro Region",
+    "ja": "アロチャ＝マングル地域圏",
+    "local": "Faritra Alaotra-Mangoro"
+   },
+   "wikidata": "Q1352996",
+   "spans": [
+    {
+     "from": "2009-10",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "MDG-5860"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Madagascar&oldid=1370207669",
+       "title": "Wikipedia — Regions of Madagascar (oldid 1370207669)",
+       "says": "The 22 regions were created in 2004 and replaced the provinces as first-level divisions in 2009; Vatovavy-Fitovinany was split only in 2021.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Madagascar&oldid=1373981556",
+       "title": "Wikipedia — Provinces of Madagascar (oldid 1373981556)",
+       "says": "Six provinces existed since before 1957; the 4 April 2007 referendum removed them, with a transition until October 2009; regions are now the main level.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "First-level since the provinces lapsed (Oct 2009); region created 2004; unchanged to 2019 (the Vatovavy / Fitovinany split is 2021)."
+    }
+   ]
+  },
+  {
+   "id": "MDG:AmoroniMania@2009",
+   "names": {
+    "en": "Amoron'i Mania Region",
+    "ja": "アモロニ・マニア地域圏",
+    "local": "Faritra Amoron'i Mania"
+   },
+   "wikidata": "Q474134",
+   "spans": [
+    {
+     "from": "2009-10",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "MDG-5861"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Madagascar&oldid=1370207669",
+       "title": "Wikipedia — Regions of Madagascar (oldid 1370207669)",
+       "says": "The 22 regions were created in 2004 and replaced the provinces as first-level divisions in 2009; Vatovavy-Fitovinany was split only in 2021.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Madagascar&oldid=1373981556",
+       "title": "Wikipedia — Provinces of Madagascar (oldid 1373981556)",
+       "says": "Six provinces existed since before 1957; the 4 April 2007 referendum removed them, with a transition until October 2009; regions are now the main level.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "First-level since the provinces lapsed (Oct 2009); region created 2004; unchanged to 2019 (the Vatovavy / Fitovinany split is 2021)."
+    }
+   ]
+  },
+  {
+   "id": "MDG:Analamanga@2009",
+   "names": {
+    "en": "Analamanga Region",
+    "ja": "アナラマンガ地域圏",
+    "local": "Faritra Analamanga"
+   },
+   "wikidata": "Q484625",
+   "spans": [
+    {
+     "from": "2009-10",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "MDG-5862"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Madagascar&oldid=1370207669",
+       "title": "Wikipedia — Regions of Madagascar (oldid 1370207669)",
+       "says": "The 22 regions were created in 2004 and replaced the provinces as first-level divisions in 2009; Vatovavy-Fitovinany was split only in 2021.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Madagascar&oldid=1373981556",
+       "title": "Wikipedia — Provinces of Madagascar (oldid 1373981556)",
+       "says": "Six provinces existed since before 1957; the 4 April 2007 referendum removed them, with a transition until October 2009; regions are now the main level.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "First-level since the provinces lapsed (Oct 2009); region created 2004; unchanged to 2019 (the Vatovavy / Fitovinany split is 2021)."
+    }
+   ]
+  },
+  {
+   "id": "MDG:Analanjirofo@2009",
+   "names": {
+    "en": "Analanjirofo Region",
+    "ja": "アナランジロフォ地域圏",
+    "local": "Faritra Analanjirofo"
+   },
+   "wikidata": "Q178449",
+   "spans": [
+    {
+     "from": "2009-10",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "MDG-5863"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Madagascar&oldid=1370207669",
+       "title": "Wikipedia — Regions of Madagascar (oldid 1370207669)",
+       "says": "The 22 regions were created in 2004 and replaced the provinces as first-level divisions in 2009; Vatovavy-Fitovinany was split only in 2021.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Madagascar&oldid=1373981556",
+       "title": "Wikipedia — Provinces of Madagascar (oldid 1373981556)",
+       "says": "Six provinces existed since before 1957; the 4 April 2007 referendum removed them, with a transition until October 2009; regions are now the main level.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "First-level since the provinces lapsed (Oct 2009); region created 2004; unchanged to 2019 (the Vatovavy / Fitovinany split is 2021)."
+    }
+   ]
+  },
+  {
+   "id": "MDG:Androy@2009",
+   "names": {
+    "en": "Androy Region",
+    "ja": "アンドロィ地域圏",
+    "local": "Faritra Androy"
+   },
+   "wikidata": "Q218981",
+   "spans": [
+    {
+     "from": "2009-10",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "MDG-5864"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Madagascar&oldid=1370207669",
+       "title": "Wikipedia — Regions of Madagascar (oldid 1370207669)",
+       "says": "The 22 regions were created in 2004 and replaced the provinces as first-level divisions in 2009; Vatovavy-Fitovinany was split only in 2021.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Madagascar&oldid=1373981556",
+       "title": "Wikipedia — Provinces of Madagascar (oldid 1373981556)",
+       "says": "Six provinces existed since before 1957; the 4 April 2007 referendum removed them, with a transition until October 2009; regions are now the main level.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "First-level since the provinces lapsed (Oct 2009); region created 2004; unchanged to 2019 (the Vatovavy / Fitovinany split is 2021)."
+    }
+   ]
+  },
+  {
+   "id": "MDG:Anosy@2009",
+   "names": {
+    "en": "Anosy Region",
+    "ja": "アヌシ地域圏",
+    "local": "Faritra Anosy"
+   },
+   "wikidata": "Q16045730",
+   "spans": [
+    {
+     "from": "2009-10",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "MDG-5865"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Madagascar&oldid=1370207669",
+       "title": "Wikipedia — Regions of Madagascar (oldid 1370207669)",
+       "says": "The 22 regions were created in 2004 and replaced the provinces as first-level divisions in 2009; Vatovavy-Fitovinany was split only in 2021.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Madagascar&oldid=1373981556",
+       "title": "Wikipedia — Provinces of Madagascar (oldid 1373981556)",
+       "says": "Six provinces existed since before 1957; the 4 April 2007 referendum removed them, with a transition until October 2009; regions are now the main level.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "First-level since the provinces lapsed (Oct 2009); region created 2004; unchanged to 2019 (the Vatovavy / Fitovinany split is 2021)."
+    }
+   ]
+  },
+  {
+   "id": "MDG:AtsimoAndrefana@2009",
+   "names": {
+    "en": "Atsimo-Andrefana Region",
+    "ja": "アッチモ＝アンドレファナ地域圏",
+    "local": "Faritra Atsimo-Andrefana"
+   },
+   "wikidata": "Q757781",
+   "spans": [
+    {
+     "from": "2009-10",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "MDG-5866"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Madagascar&oldid=1370207669",
+       "title": "Wikipedia — Regions of Madagascar (oldid 1370207669)",
+       "says": "The 22 regions were created in 2004 and replaced the provinces as first-level divisions in 2009; Vatovavy-Fitovinany was split only in 2021.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Madagascar&oldid=1373981556",
+       "title": "Wikipedia — Provinces of Madagascar (oldid 1373981556)",
+       "says": "Six provinces existed since before 1957; the 4 April 2007 referendum removed them, with a transition until October 2009; regions are now the main level.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "First-level since the provinces lapsed (Oct 2009); region created 2004; unchanged to 2019 (the Vatovavy / Fitovinany split is 2021)."
+    }
+   ]
+  },
+  {
+   "id": "MDG:AtsimoAtsinanana@2009",
+   "names": {
+    "en": "Atsimo-Atsinanana Region",
+    "ja": "アッチモ＝アツィナナナ地域圏",
+    "local": "Faritra Atsimo-Atsinanana"
+   },
+   "wikidata": "Q757782",
+   "spans": [
+    {
+     "from": "2009-10",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "MDG-5867"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Madagascar&oldid=1370207669",
+       "title": "Wikipedia — Regions of Madagascar (oldid 1370207669)",
+       "says": "The 22 regions were created in 2004 and replaced the provinces as first-level divisions in 2009; Vatovavy-Fitovinany was split only in 2021.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Madagascar&oldid=1373981556",
+       "title": "Wikipedia — Provinces of Madagascar (oldid 1373981556)",
+       "says": "Six provinces existed since before 1957; the 4 April 2007 referendum removed them, with a transition until October 2009; regions are now the main level.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "First-level since the provinces lapsed (Oct 2009); region created 2004; unchanged to 2019 (the Vatovavy / Fitovinany split is 2021)."
+    }
+   ]
+  },
+  {
+   "id": "MDG:Atsinanana@2009",
+   "names": {
+    "en": "Atsinanana Region",
+    "ja": "アツィナナナ地域圏",
+    "local": "Faritra Atsinanana"
+   },
+   "wikidata": "Q757783",
+   "spans": [
+    {
+     "from": "2009-10",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "MDG-5868"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Madagascar&oldid=1370207669",
+       "title": "Wikipedia — Regions of Madagascar (oldid 1370207669)",
+       "says": "The 22 regions were created in 2004 and replaced the provinces as first-level divisions in 2009; Vatovavy-Fitovinany was split only in 2021.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Madagascar&oldid=1373981556",
+       "title": "Wikipedia — Provinces of Madagascar (oldid 1373981556)",
+       "says": "Six provinces existed since before 1957; the 4 April 2007 referendum removed them, with a transition until October 2009; regions are now the main level.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "First-level since the provinces lapsed (Oct 2009); region created 2004; unchanged to 2019 (the Vatovavy / Fitovinany split is 2021)."
+    }
+   ]
+  },
+  {
+   "id": "MDG:Betsiboka@2009",
+   "names": {
+    "en": "Betsiboka Region",
+    "ja": "ベツィブカ地域圏",
+    "local": "Faritra Betsiboka"
+   },
+   "wikidata": "Q832223",
+   "spans": [
+    {
+     "from": "2009-10",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "MDG-5869"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Madagascar&oldid=1370207669",
+       "title": "Wikipedia — Regions of Madagascar (oldid 1370207669)",
+       "says": "The 22 regions were created in 2004 and replaced the provinces as first-level divisions in 2009; Vatovavy-Fitovinany was split only in 2021.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Madagascar&oldid=1373981556",
+       "title": "Wikipedia — Provinces of Madagascar (oldid 1373981556)",
+       "says": "Six provinces existed since before 1957; the 4 April 2007 referendum removed them, with a transition until October 2009; regions are now the main level.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "First-level since the provinces lapsed (Oct 2009); region created 2004; unchanged to 2019 (the Vatovavy / Fitovinany split is 2021)."
+    }
+   ]
+  },
+  {
+   "id": "MDG:Boeny@2009",
+   "names": {
+    "en": "Boeny Region",
+    "ja": "ブエニ地域圏",
+    "local": "Faritra Boeny"
+   },
+   "wikidata": "Q740164",
+   "spans": [
+    {
+     "from": "2009-10",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "MDG-5870"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Madagascar&oldid=1370207669",
+       "title": "Wikipedia — Regions of Madagascar (oldid 1370207669)",
+       "says": "The 22 regions were created in 2004 and replaced the provinces as first-level divisions in 2009; Vatovavy-Fitovinany was split only in 2021.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Madagascar&oldid=1373981556",
+       "title": "Wikipedia — Provinces of Madagascar (oldid 1373981556)",
+       "says": "Six provinces existed since before 1957; the 4 April 2007 referendum removed them, with a transition until October 2009; regions are now the main level.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "First-level since the provinces lapsed (Oct 2009); region created 2004; unchanged to 2019 (the Vatovavy / Fitovinany split is 2021)."
+    }
+   ]
+  },
+  {
+   "id": "MDG:Bongolava@2009",
+   "names": {
+    "en": "Bongolava Region",
+    "ja": "ブングラバ地域圏",
+    "local": "Faritra Bongolava"
+   },
+   "wikidata": "Q679739",
+   "spans": [
+    {
+     "from": "2009-10",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "MDG-5871"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Madagascar&oldid=1370207669",
+       "title": "Wikipedia — Regions of Madagascar (oldid 1370207669)",
+       "says": "The 22 regions were created in 2004 and replaced the provinces as first-level divisions in 2009; Vatovavy-Fitovinany was split only in 2021.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Madagascar&oldid=1373981556",
+       "title": "Wikipedia — Provinces of Madagascar (oldid 1373981556)",
+       "says": "Six provinces existed since before 1957; the 4 April 2007 referendum removed them, with a transition until October 2009; regions are now the main level.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "First-level since the provinces lapsed (Oct 2009); region created 2004; unchanged to 2019 (the Vatovavy / Fitovinany split is 2021)."
+    }
+   ]
+  },
+  {
+   "id": "MDG:Diana@2009",
+   "names": {
+    "en": "Diana Region",
+    "ja": "ディアナ地域圏",
+    "local": "Faritra Diana"
+   },
+   "wikidata": "Q1143947",
+   "spans": [
+    {
+     "from": "2009-10",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "MDG-5872"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Madagascar&oldid=1370207669",
+       "title": "Wikipedia — Regions of Madagascar (oldid 1370207669)",
+       "says": "The 22 regions were created in 2004 and replaced the provinces as first-level divisions in 2009; Vatovavy-Fitovinany was split only in 2021.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Madagascar&oldid=1373981556",
+       "title": "Wikipedia — Provinces of Madagascar (oldid 1373981556)",
+       "says": "Six provinces existed since before 1957; the 4 April 2007 referendum removed them, with a transition until October 2009; regions are now the main level.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "First-level since the provinces lapsed (Oct 2009); region created 2004; unchanged to 2019 (the Vatovavy / Fitovinany split is 2021)."
+    }
+   ]
+  },
+  {
+   "id": "MDG:HauteMatsiatra@2009",
+   "names": {
+    "en": "Haute Matsiatra Region",
+    "ja": "オート・マチアトラ地域圏",
+    "local": "Faritra Haute Matsiatra"
+   },
+   "wikidata": "Q1440747",
+   "spans": [
+    {
+     "from": "2009-10",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "MDG-5873"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Madagascar&oldid=1370207669",
+       "title": "Wikipedia — Regions of Madagascar (oldid 1370207669)",
+       "says": "The 22 regions were created in 2004 and replaced the provinces as first-level divisions in 2009; Vatovavy-Fitovinany was split only in 2021.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Madagascar&oldid=1373981556",
+       "title": "Wikipedia — Provinces of Madagascar (oldid 1373981556)",
+       "says": "Six provinces existed since before 1957; the 4 April 2007 referendum removed them, with a transition until October 2009; regions are now the main level.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "First-level since the provinces lapsed (Oct 2009); region created 2004; unchanged to 2019 (the Vatovavy / Fitovinany split is 2021)."
+    }
+   ]
+  },
+  {
+   "id": "MDG:Ihorombe@2009",
+   "names": {
+    "en": "Ihorombe Region",
+    "ja": "イフルンベ地域圏",
+    "local": "Faritra Ihorombe"
+   },
+   "wikidata": "Q1513970",
+   "spans": [
+    {
+     "from": "2009-10",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "MDG-5874"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Madagascar&oldid=1370207669",
+       "title": "Wikipedia — Regions of Madagascar (oldid 1370207669)",
+       "says": "The 22 regions were created in 2004 and replaced the provinces as first-level divisions in 2009; Vatovavy-Fitovinany was split only in 2021.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Madagascar&oldid=1373981556",
+       "title": "Wikipedia — Provinces of Madagascar (oldid 1373981556)",
+       "says": "Six provinces existed since before 1957; the 4 April 2007 referendum removed them, with a transition until October 2009; regions are now the main level.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "First-level since the provinces lapsed (Oct 2009); region created 2004; unchanged to 2019 (the Vatovavy / Fitovinany split is 2021)."
+    }
+   ]
+  },
+  {
+   "id": "MDG:Itasy@2009",
+   "names": {
+    "en": "Itasy Region",
+    "ja": "イタシ地域圏",
+    "local": "Faritra Itasy"
+   },
+   "wikidata": "Q573931",
+   "spans": [
+    {
+     "from": "2009-10",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "MDG-5875"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Madagascar&oldid=1370207669",
+       "title": "Wikipedia — Regions of Madagascar (oldid 1370207669)",
+       "says": "The 22 regions were created in 2004 and replaced the provinces as first-level divisions in 2009; Vatovavy-Fitovinany was split only in 2021.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Madagascar&oldid=1373981556",
+       "title": "Wikipedia — Provinces of Madagascar (oldid 1373981556)",
+       "says": "Six provinces existed since before 1957; the 4 April 2007 referendum removed them, with a transition until October 2009; regions are now the main level.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "First-level since the provinces lapsed (Oct 2009); region created 2004; unchanged to 2019 (the Vatovavy / Fitovinany split is 2021)."
+    }
+   ]
+  },
+  {
+   "id": "MDG:Melaky@2009",
+   "names": {
+    "en": "Melaky Region",
+    "ja": "メラキー地域圏",
+    "local": "Faritra Melaky"
+   },
+   "wikidata": "Q1514040",
+   "spans": [
+    {
+     "from": "2009-10",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "MDG-5876"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Madagascar&oldid=1370207669",
+       "title": "Wikipedia — Regions of Madagascar (oldid 1370207669)",
+       "says": "The 22 regions were created in 2004 and replaced the provinces as first-level divisions in 2009; Vatovavy-Fitovinany was split only in 2021.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Madagascar&oldid=1373981556",
+       "title": "Wikipedia — Provinces of Madagascar (oldid 1373981556)",
+       "says": "Six provinces existed since before 1957; the 4 April 2007 referendum removed them, with a transition until October 2009; regions are now the main level.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "First-level since the provinces lapsed (Oct 2009); region created 2004; unchanged to 2019 (the Vatovavy / Fitovinany split is 2021)."
+    }
+   ]
+  },
+  {
+   "id": "MDG:Menabe@2009",
+   "names": {
+    "en": "Menabe Region",
+    "ja": "メナベ地域圏",
+    "local": "Faritra Menabe"
+   },
+   "wikidata": "Q1344087",
+   "spans": [
+    {
+     "from": "2009-10",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "MDG-5878"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Madagascar&oldid=1370207669",
+       "title": "Wikipedia — Regions of Madagascar (oldid 1370207669)",
+       "says": "The 22 regions were created in 2004 and replaced the provinces as first-level divisions in 2009; Vatovavy-Fitovinany was split only in 2021.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Madagascar&oldid=1373981556",
+       "title": "Wikipedia — Provinces of Madagascar (oldid 1373981556)",
+       "says": "Six provinces existed since before 1957; the 4 April 2007 referendum removed them, with a transition until October 2009; regions are now the main level.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "First-level since the provinces lapsed (Oct 2009); region created 2004; unchanged to 2019 (the Vatovavy / Fitovinany split is 2021)."
+    }
+   ]
+  },
+  {
+   "id": "MDG:Sava@2009",
+   "names": {
+    "en": "Sava Region",
+    "ja": "サヴァ地域圏",
+    "local": "Faritra Sava"
+   },
+   "wikidata": "Q1143915",
+   "spans": [
+    {
+     "from": "2009-10",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "MDG-5879"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Madagascar&oldid=1370207669",
+       "title": "Wikipedia — Regions of Madagascar (oldid 1370207669)",
+       "says": "The 22 regions were created in 2004 and replaced the provinces as first-level divisions in 2009; Vatovavy-Fitovinany was split only in 2021.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Madagascar&oldid=1373981556",
+       "title": "Wikipedia — Provinces of Madagascar (oldid 1373981556)",
+       "says": "Six provinces existed since before 1957; the 4 April 2007 referendum removed them, with a transition until October 2009; regions are now the main level.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "First-level since the provinces lapsed (Oct 2009); region created 2004; unchanged to 2019 (the Vatovavy / Fitovinany split is 2021)."
+    }
+   ]
+  },
+  {
+   "id": "MDG:Sofia@2009",
+   "names": {
+    "en": "Sofia Region",
+    "ja": "ソフィア地域圏",
+    "local": "Faritra Sofia"
+   },
+   "wikidata": "Q1165783",
+   "spans": [
+    {
+     "from": "2009-10",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "MDG-5880"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Madagascar&oldid=1370207669",
+       "title": "Wikipedia — Regions of Madagascar (oldid 1370207669)",
+       "says": "The 22 regions were created in 2004 and replaced the provinces as first-level divisions in 2009; Vatovavy-Fitovinany was split only in 2021.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Madagascar&oldid=1373981556",
+       "title": "Wikipedia — Provinces of Madagascar (oldid 1373981556)",
+       "says": "Six provinces existed since before 1957; the 4 April 2007 referendum removed them, with a transition until October 2009; regions are now the main level.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "First-level since the provinces lapsed (Oct 2009); region created 2004; unchanged to 2019 (the Vatovavy / Fitovinany split is 2021)."
+    }
+   ]
+  },
+  {
+   "id": "MDG:Vakinankaratra@2009",
+   "names": {
+    "en": "Vakinankaratra Region",
+    "ja": "ヴァキナカラチャ地域圏",
+    "local": "Faritra Vakinankaratra"
+   },
+   "wikidata": "Q1463029",
+   "spans": [
+    {
+     "from": "2009-10",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "MDG-5881"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Madagascar&oldid=1370207669",
+       "title": "Wikipedia — Regions of Madagascar (oldid 1370207669)",
+       "says": "The 22 regions were created in 2004 and replaced the provinces as first-level divisions in 2009; Vatovavy-Fitovinany was split only in 2021.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Madagascar&oldid=1373981556",
+       "title": "Wikipedia — Provinces of Madagascar (oldid 1373981556)",
+       "says": "Six provinces existed since before 1957; the 4 April 2007 referendum removed them, with a transition until October 2009; regions are now the main level.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "First-level since the provinces lapsed (Oct 2009); region created 2004; unchanged to 2019 (the Vatovavy / Fitovinany split is 2021)."
+    }
+   ]
+  },
+  {
+   "id": "MDG:VatovavyFitovinany@2009",
+   "names": {
+    "en": "Vatovavy-Fitovinany Region",
+    "ja": "ヴァトヴァヴィ＝フィトヴィナニィ地域圏",
+    "local": "Faritra Vatovavy-Fitovinany"
+   },
+   "wikidata": "Q1462671",
+   "spans": [
+    {
+     "from": "2009-10",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "MDG-5882"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Madagascar&oldid=1370207669",
+       "title": "Wikipedia — Regions of Madagascar (oldid 1370207669)",
+       "says": "The 22 regions were created in 2004 and replaced the provinces as first-level divisions in 2009; Vatovavy-Fitovinany was split only in 2021.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Madagascar&oldid=1373981556",
+       "title": "Wikipedia — Provinces of Madagascar (oldid 1373981556)",
+       "says": "Six provinces existed since before 1957; the 4 April 2007 referendum removed them, with a transition until October 2009; regions are now the main level.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "First-level since the provinces lapsed (Oct 2009); region created 2004; unchanged to 2019 (the Vatovavy / Fitovinany split is 2021)."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "2004",
+   "precision": "year",
+   "what": "22 regions created inside the provinces (law 2004-001)",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ymg.html",
+     "title": "Statoids — Regions of Madagascar (fivondronana 2000–2004 with their province and new region)",
+     "says": "Each of the 111 fivondronana is coded by province and assigned to one of the 22 regions of law 2004-001; every region code carries its province code.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Madagascar&oldid=1370207669",
+     "title": "Wikipedia — Regions of Madagascar (oldid 1370207669)",
+     "says": "The 22 regions were created in 2004 and replaced the provinces as first-level divisions in 2009; Vatovavy-Fitovinany was split only in 2021.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2007-04-04",
+   "precision": "day",
+   "what": "Referendum removes the provinces from the constitution, with a transition until October 2009",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Madagascar&oldid=1373981556",
+     "title": "Wikipedia — Provinces of Madagascar (oldid 1373981556)",
+     "says": "Six provinces existed since before 1957; the 4 April 2007 referendum removed them, with a transition until October 2009; regions are now the main level.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1970-01-01",
+   "n": 6,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/umg.html",
+     "title": "Statoids — Provinces of Madagascar (change history)",
+     "says": "Lists only renamings of the six provinces (1975, ~1980) and their 2000 autonomous status; no boundary change between provinces is recorded.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2015-01-01",
+   "n": 22,
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Madagascar&oldid=1370207669",
+     "title": "Wikipedia — Regions of Madagascar (oldid 1370207669)",
+     "says": "The 22 regions were created in 2004 and replaced the provinces as first-level divisions in 2009; Vatovavy-Fitovinany was split only in 2021.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Malagasy provinces before independence (1946–1960)",
+   "from": "1946",
+   "to": "1960-06-26",
+   "why": "Outside the polity scope (French colony / autonomous republic within the French Community from 1958-10-14); not claimed.",
+   "checked": [
+    "Wikipedia Provinces of Madagascar oldid 1373981556"
+   ],
+   "needs": "nothing — scope decision"
+  }
+ ]
+}

@@ -1,0 +1,1062 @@
+{
+ "country": "RUE",
+ "atomSet": "ristat-1897-uyezd@v3",
+ "atomGroups": [
+  "Kuban region",
+  "Stavropol governorate",
+  "Black Sea governorate",
+  "Terek region",
+  "Dagestan region",
+  "Kutaisi governorate incl. Sukhumi district",
+  "Tiflis governorate incl. Zakatalskii district",
+  "Erevan governorate",
+  "Elisabethpol governorate",
+  "Baku governorate",
+  "Kars governorate"
+ ],
+ "scope": {
+  "from": "1861-07-06",
+  "to": "1917-11-06"
+ },
+ "polityNote": "Russian Empire (to 1917-11-06), Caucasus. Kars and Batum regions Ottoman until the Treaty of Berlin (1878). Ottoman occupation of parts of Batum/Kars (1914–15) did not change de jure units. Old Style dates converted to Gregorian (+12 days to 1900-02-28 O.S., +13 after).",
+ "units": [
+  {
+   "id": "RUE:Stavropol@1847",
+   "names": {
+    "en": "Stavropol Governorate",
+    "ja": "スタヴロポリ県",
+    "local": "Ставропольская губерния"
+   },
+   "wikidata": "Q7952",
+   "spans": [
+    {
+     "from": "1874-06-02",
+     "precision": "day",
+     "to": "1888-04-02",
+     "atoms": [
+      "U1897-633",
+      "U1897-636",
+      "U1897-628",
+      "U1897-550",
+      "U1897-844",
+      "U1897-632",
+      "U1897-631",
+      "U1897-618"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2024/https://old.bigenc.ru/domestic_history/text/4162134",
+       "title": "Большая российская энциклопедия — Ставропольская губерния (old.bigenc.ru, archived)",
+       "says": "Moved to Terek: Kizlyar part 1867, Pyatigorsk with part of uyezd 21.5(2.6).1874, Karanogai pristavstvo 21.3(2.4).1888; no later outer change listed.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=154133354",
+       "title": "Ставропольская губерния — Википедия (oldid 154133354)",
+       "says": "1874 new Stavropol–Terek line (Pyatigorsk to Terek, Sablinskaya to Stavropol); 1888 Karanogai pristavstvo to Terek; 1900–1910 only internal uyezd changes.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Opened by the State Council opinion of 21.5.1874 O.S. (= 2.6.1874) drawing the new Stavropol–Terek line; includes the Karanogai pristavstvo (in Terek in 1897). Closed by the statute 21.3.1888 O.S. (= 2.4.1888)."
+    },
+    {
+     "from": "1888-04-02",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-633",
+      "U1897-636",
+      "U1897-628",
+      "U1897-550",
+      "U1897-844",
+      "U1897-632",
+      "U1897-631"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2024/https://old.bigenc.ru/domestic_history/text/4162134",
+       "title": "Большая российская энциклопедия — Ставропольская губерния (old.bigenc.ru, archived)",
+       "says": "Moved to Terek: Kizlyar part 1867, Pyatigorsk with part of uyezd 21.5(2.6).1874, Karanogai pristavstvo 21.3(2.4).1888; no later outer change listed.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=154133354",
+       "title": "Ставропольская губерния — Википедия (oldid 154133354)",
+       "says": "1874 new Stavropol–Terek line (Pyatigorsk to Terek, Sablinskaya to Stavropol); 1888 Karanogai pristavstvo to Terek; 1900–1910 only internal uyezd changes.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Karanogai pristavstvo transferred to Terek oblast by the statute of 21.3.1888 O.S. (= 2.4.1888); 1899 removal from the Caucasus administration and 1900/1910 uyezd changes were internal."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Terek@1860",
+   "names": {
+    "en": "Terek Oblast",
+    "ja": "テレク州",
+    "local": "Терская область"
+   },
+   "wikidata": "Q1205547",
+   "spans": [
+    {
+     "from": "1874-06-02",
+     "precision": "day",
+     "to": "1888-04-02",
+     "atoms": [
+      "U1897-616",
+      "U1897-624",
+      "U1897-626",
+      "U1897-622",
+      "U1897-619",
+      "U1897-627",
+      "U1897-617"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2024/https://old.bigenc.ru/domestic_history/text/4189974",
+       "title": "Большая российская энциклопедия — Терская область (old.bigenc.ru, archived)",
+       "says": "Received from Stavropol: Pyatigorsk with part of former uyezd 21.5(2.6).1874, Karanogai pristavstvo 21.3(2.4).1888; later only internal okrug/otdel changes.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=153549187",
+       "title": "Терская область — Википедия (oldid 153549187)",
+       "says": "1874 Pyatigorsk joined; 1888 Karanogai pristavstvo transferred from Stavropol; 1899, 1905, 1909 only internal otdel/okrug changes.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "State Council opinion 21.5.1874 O.S. (= 2.6.1874): Pyatigorsk with part of the former uyezd joined Terek; the 1897 Karanogai pristavstvo was still in Stavropol gub."
+    },
+    {
+     "from": "1888-04-02",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-616",
+      "U1897-624",
+      "U1897-626",
+      "U1897-618",
+      "U1897-622",
+      "U1897-619",
+      "U1897-627",
+      "U1897-617"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2024/https://old.bigenc.ru/domestic_history/text/4189974",
+       "title": "Большая российская энциклопедия — Терская область (old.bigenc.ru, archived)",
+       "says": "Received from Stavropol: Pyatigorsk with part of former uyezd 21.5(2.6).1874, Karanogai pristavstvo 21.3(2.4).1888; later only internal okrug/otdel changes.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=153549187",
+       "title": "Терская область — Википедия (oldid 153549187)",
+       "says": "1874 Pyatigorsk joined; 1888 Karanogai pristavstvo transferred from Stavropol; 1899, 1905, 1909 only internal otdel/okrug changes.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Statute on the administration of Terek and Kuban oblasts 21.3.1888 O.S. (= 2.4.1888): Karanogai pristavstvo added; 1898, 1905, 1909 okrug/otdel changes internal."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Kuban@1860",
+   "names": {
+    "en": "Kuban Oblast",
+    "ja": "クバン州",
+    "local": "Кубанская область"
+   },
+   "wikidata": "Q1786286",
+   "spans": [
+    {
+     "from": "1884-03-21",
+     "precision": "day",
+     "to": "1888-04-02",
+     "atoms": [
+      "U1897-548",
+      "U1897-557",
+      "U1897-554",
+      "U1897-556",
+      "U1897-558",
+      "U1897-553",
+      "U1897-555"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2024/https://old.bigenc.ru/domestic_history/text/4683226",
+       "title": "Большая российская энциклопедия — Черноморский округ (old.bigenc.ru, archived)",
+       "says": "9(21).3.1884 Anapa passed to Kuban oblast; 21.3(2.4).1888 okrug included in Kuban oblast; 23.5(4.6).1896 turned into Black Sea governorate.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=153885652",
+       "title": "Кубанская область — Википедия (oldid 153885652)",
+       "says": "1888: Black Sea okrug joined Kuban oblast; 1896 it became the separate Black Sea governorate; otherwise only internal otdel changes to 1918.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Anapa with neighbouring settlements passed from the Black Sea okrug to Kuban oblast 9.3.1884 O.S. (= 21.3.1884); before that Anapa (inside the 1897 Temryuk otdel) was outside the oblast."
+    },
+    {
+     "from": "1888-04-02",
+     "precision": "day",
+     "to": "1896-06-04",
+     "atoms": [
+      "U1897-548",
+      "U1897-557",
+      "U1897-554",
+      "U1897-556",
+      "U1897-558",
+      "U1897-553",
+      "U1897-555",
+      "U1897-559",
+      "U1897-560",
+      "U1897-561"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2024/https://old.bigenc.ru/domestic_history/text/4683226",
+       "title": "Большая российская энциклопедия — Черноморский округ (old.bigenc.ru, archived)",
+       "says": "9(21).3.1884 Anapa passed to Kuban oblast; 21.3(2.4).1888 okrug included in Kuban oblast; 23.5(4.6).1896 turned into Black Sea governorate.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=153885652",
+       "title": "Кубанская область — Википедия (oldid 153885652)",
+       "says": "1888: Black Sea okrug joined Kuban oblast; 1896 it became the separate Black Sea governorate; otherwise only internal otdel changes to 1918.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Decree «Об учреждении управления Кубанской и Терской областей и Черноморского округа» 21.3.1888 O.S. (= 2.4.1888) put the Black Sea okrug into Kuban oblast."
+    },
+    {
+     "from": "1896-06-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-548",
+      "U1897-557",
+      "U1897-554",
+      "U1897-556",
+      "U1897-558",
+      "U1897-553",
+      "U1897-555"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2024/https://old.bigenc.ru/domestic_history/text/4683214",
+       "title": "Большая российская энциклопедия — Черноморская губерния (old.bigenc.ru, archived)",
+       "says": "Formed 23.5(4.6).1896 from Black Sea okrug of Kuban oblast; 25.12.1904 (7.1.1905) Gagra station with environs passed from Sukhumi okrug to Sochi okrug.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=153885652",
+       "title": "Кубанская область — Википедия (oldid 153885652)",
+       "says": "1888: Black Sea okrug joined Kuban oblast; 1896 it became the separate Black Sea governorate; otherwise only internal otdel changes to 1918.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "State Council opinion 23.5.1896 O.S. (= 4.6.1896) made the Black Sea okrug a separate governorate; no later outer change of Kuban found (1910 renaming of Temryuk otdel internal)."
+    }
+   ]
+  },
+  {
+   "id": "RUE:BlackSeaOkrug@1866",
+   "names": {
+    "en": "Black Sea Okrug",
+    "local": "Черноморский округ",
+    "ja": "黒海管区"
+   },
+   "wikidata": "Q166608",
+   "spans": [
+    {
+     "from": "1884-03-21",
+     "precision": "day",
+     "to": "1888-04-02",
+     "atoms": [
+      "U1897-559",
+      "U1897-560",
+      "U1897-561"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2024/https://old.bigenc.ru/domestic_history/text/4683226",
+       "title": "Большая российская энциклопедия — Черноморский округ (old.bigenc.ru, archived)",
+       "says": "9(21).3.1884 Anapa passed to Kuban oblast; 21.3(2.4).1888 okrug included in Kuban oblast; 23.5(4.6).1896 turned into Black Sea governorate.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Separate okrug under the Caucasus administration (1866–1888); its outline equals the 1897 Black Sea governorate only after Anapa left it on 9.3.1884 O.S. (= 21.3.1884). Included in Kuban oblast 21.3.1888 O.S. (= 2.4.1888)."
+    }
+   ]
+  },
+  {
+   "id": "RUE:BlackSea@1896",
+   "names": {
+    "en": "Black Sea Governorate",
+    "ja": "チェルノモール県",
+    "local": "Черноморская губерния"
+   },
+   "wikidata": "Q127887",
+   "spans": [
+    {
+     "from": "1896-06-04",
+     "precision": "day",
+     "to": "1905-01-07",
+     "atoms": [
+      "U1897-559",
+      "U1897-560",
+      "U1897-561"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2024/https://old.bigenc.ru/domestic_history/text/4683214",
+       "title": "Большая российская энциклопедия — Черноморская губерния (old.bigenc.ru, archived)",
+       "says": "Formed 23.5(4.6).1896 from Black Sea okrug of Kuban oblast; 25.12.1904 (7.1.1905) Gagra station with environs passed from Sukhumi okrug to Sochi okrug.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "State Council opinion 23.5.1896 O.S. (= 4.6.1896). Closed by the transfer of the Gagra area from Sukhumi okrug 25.12.1904 O.S. (= 7.1.1905)."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Dagestan@1860",
+   "names": {
+    "en": "Dagestan Oblast",
+    "ja": "ダゲスタン州",
+    "local": "Дагестанская область"
+   },
+   "wikidata": "Q2380900",
+   "spans": [
+    {
+     "from": "1861-07-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-598",
+      "U1897-600",
+      "U1897-601",
+      "U1897-603",
+      "U1897-605",
+      "U1897-604",
+      "U1897-606",
+      "U1897-599",
+      "U1897-602"
+     ],
+     "sources": [
+      {
+       "url": "https://instituteofhistory.ru/media/library/publication/files/Республика_Дагестан._Админ._устройство_население_и_территория_2001.pdf",
+       "title": "Республика Дагестан: административное устройство, население, территория (60-е гг. XIX в. – 90-е гг. XX в.), Махачкала 2001, pp. 5–7",
+       "says": "24 June 1861 five Andi Koisu societies passed from Terek to Dagestan oblast; okrug division kept until 1929.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://web.archive.org/web/2024/https://old.bigenc.ru/domestic_history/text/2627397",
+       "title": "Большая российская энциклопедия — Дагестанская область (old.bigenc.ru, archived)",
+       "says": "Formed 18(30).7.1860 except 5 left-bank Andi Koisu societies, added 1861; no later territorial change mentioned.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Five Andi Koisu societies (now in the 1897 Andi okrug) passed from Terek oblast 24.6.1861; the date is taken as O.S. (= 6.7.1861). Later changes (1864–1867 okrugs, 1899 uchastki) internal."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Kutaisi@1846",
+   "names": {
+    "en": "Kutaisi Governorate",
+    "ja": "クタイス県",
+    "local": "Кутаисская губерния"
+   },
+   "wikidata": "Q1854389",
+   "spans": [
+    {
+     "from": "1883-06-24",
+     "precision": "day",
+     "to": "1903-07-14",
+     "atoms": [
+      "U1897-562",
+      "U1897-563",
+      "U1897-564",
+      "U1897-567",
+      "U1897-568",
+      "U1897-569",
+      "U1897-571",
+      "U1897-566",
+      "U1897-565",
+      "U1897-570"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2024/https://old.bigenc.ru/domestic_history/text/1856793",
+       "title": "Большая российская энциклопедия — Батумская область (old.bigenc.ru, archived)",
+       "says": "Formed 20.9(2.10).1878; joined to Kutaisi gub. 12(24).6.1883; by statute of 17(30).3.1903 separated again as Batum and Artvin okrugs.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://web.archive.org/web/2024/https://old.bigenc.ru/domestic_history/text/4175503",
+       "title": "Большая российская энциклопедия — Сухумский округ (old.bigenc.ru, archived)",
+       "says": "Formed under the Caucasus administration statute 26.4(8.5).1883; in Kutaisi gub. 1883–1903, then directly subordinate; 25.12.1904 (7.1.1905) Gagra area separated.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=154658976",
+       "title": "Кутаисская губерния — Википедия (oldid 154658976)",
+       "says": "1883 Sukhumi, Batum, Artvin okrugs joined; 1903 Batum and Artvin separated again; Sukhumi okrug later a special okrug; after 1904 part of Sukhumi to Sochi okrug.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Batum oblast (Batum, Artvin okrugs) joined 12.6.1883 O.S. (= 24.6.1883); Sukhumi okrug had joined under the statute of 26.4.1883 O.S. (= 8.5.1883). Closed 1.7.1903 O.S. (= 14.7.1903) when Batum oblast was re-formed."
+    },
+    {
+     "from": "1905-01-07",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-563",
+      "U1897-564",
+      "U1897-567",
+      "U1897-568",
+      "U1897-569",
+      "U1897-566",
+      "U1897-565"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2024/https://old.bigenc.ru/domestic_history/text/4175503",
+       "title": "Большая российская энциклопедия — Сухумский округ (old.bigenc.ru, archived)",
+       "says": "Formed under the Caucasus administration statute 26.4(8.5).1883; in Kutaisi gub. 1883–1903, then directly subordinate; 25.12.1904 (7.1.1905) Gagra area separated.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://web.archive.org/web/2024/https://old.bigenc.ru/domestic_history/text/4683214",
+       "title": "Большая российская энциклопедия — Черноморская губерния (old.bigenc.ru, archived)",
+       "says": "Formed 23.5(4.6).1896 from Black Sea okrug of Kuban oblast; 25.12.1904 (7.1.1905) Gagra station with environs passed from Sukhumi okrug to Sochi okrug.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=154658976",
+       "title": "Кутаисская губерния — Википедия (oldid 154658976)",
+       "says": "1883 Sukhumi, Batum, Artvin okrugs joined; 1903 Batum and Artvin separated again; Sukhumi okrug later a special okrug; after 1904 part of Sukhumi to Sochi okrug.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "From 25.12.1904 O.S. (= 7.1.1905) Sukhumi okrug is a special okrug outside Kutaisi governorate in every source consulted (BRE: since 1903; Russian Wikipedia: Dec 1904)."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Batum@1878",
+   "names": {
+    "en": "Batum Oblast",
+    "ja": "バトゥーミ州",
+    "local": "Батумская область"
+   },
+   "wikidata": "Q72670",
+   "spans": [
+    {
+     "from": "1903-07-14",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-570",
+      "U1897-571"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2024/https://old.bigenc.ru/domestic_history/text/1856793",
+       "title": "Большая российская энциклопедия — Батумская область (old.bigenc.ru, archived)",
+       "says": "Formed 20.9(2.10).1878; joined to Kutaisi gub. 12(24).6.1883; by statute of 17(30).3.1903 separated again as Batum and Artvin okrugs.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=152538834",
+       "title": "Батумская область — Википедия (oldid 152538834)",
+       "says": "Re-formed 1 July 1903 from the Batum and Artvin okrugs of Kutaisi governorate.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Statute 17.3.1903 O.S. (= 30.3.1903); the oblast was formed from the whole Batum and Artvin okrugs on 1.7.1903 (taken as O.S. = 14.7.1903)."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Tiflis@1846",
+   "names": {
+    "en": "Tiflis Governorate",
+    "ja": "チフリス県",
+    "local": "Тифлисская губерния"
+   },
+   "wikidata": "Q1773517",
+   "spans": [
+    {
+     "from": "1868-01-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-608",
+      "U1897-607",
+      "U1897-610",
+      "U1897-609",
+      "U1897-611",
+      "U1897-612",
+      "U1897-614",
+      "U1897-615",
+      "U1897-613"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=153618333",
+       "title": "Тифлисская губерния — Википедия (oldid 153618333)",
+       "says": "1867 Akhaltsikh uyezd from Kutaisi, Elisavetpol uyezd to new Elisavetpol gub.; 1874 Akhalkalaki, 1880 Borchalo uyezds formed inside; division kept to 1917.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=154133354",
+       "title": "Ставропольская губерния — Википедия (oldid 154133354)",
+       "says": "Decree of 9.12.1867 «О преобразовании управления Кавказского и Закавказского края»: its provisions put into force from 1.1.1868.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Decree «О преобразовании управления Кавказского и Закавказского края» 9.12.1867 O.S. (= 21.12.1867), in force from 1.1.1868 O.S. = 1868-01-13. Akhaltsikh uyezd (later Akhaltsikh + Akhalkalaki) joined from Kutaisi, Elisavetpol uyezd left; 1874 and 1880 uyezd changes internal."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Zakatal@1859",
+   "names": {
+    "en": "Zakatal Okrug",
+    "ja": "ザカタル管区",
+    "local": "Закатальский округ"
+   },
+   "wikidata": "Q2592878",
+   "spans": [
+    {
+     "from": "1868-01-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-597"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2024/https://old.bigenc.ru/domestic_history/text/1986087",
+       "title": "Большая российская энциклопедия — Закатальский округ (old.bigenc.ru, archived)",
+       "says": "Special administrative unit; separated from Georgia-Imeretia gub. 10(22).3.1844, autonomy confirmed 1846, renamed Zakatal okrug 1859.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikisource.org/w/index.php?oldid=3599775",
+       "title": "ЭСБЕ, Закатальский округ (Викитека, oldid 3599775; vol. XII, 1894)",
+       "says": "Zakatal okrug is a self-standing administrative unit under military-popular administration, bordering Dagestan, Elisavetpol and Tiflis governorates.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Separate okrug throughout (BRE; ЭСБЕ 1894). Some secondary sources place it under Tiflis governorate c. 1883/1893–1903/05; its outline is the same either way. Span starts with the 1868 reform of its neighbours."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Erivan@1849",
+   "names": {
+    "en": "Erivan Governorate",
+    "ja": "エリヴァニ県",
+    "local": "Эриванская губерния"
+   },
+   "wikidata": "Q81226",
+   "spans": [
+    {
+     "from": "1868-01-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-577",
+      "U1897-578",
+      "U1897-579",
+      "U1897-576",
+      "U1897-580",
+      "U1897-582",
+      "U1897-581"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2024/https://old.bigenc.ru/domestic_history/text/4937627",
+       "title": "Большая российская энциклопедия — Эриванская губерния (old.bigenc.ru, archived)",
+       "says": "Formed 9(21).6.1849; 9(21).12.1867 part of Ordubad uyezd passed to new Elisavetpol gub.; later only internal uyezds (1870, 1875).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=154133354",
+       "title": "Ставропольская губерния — Википедия (oldid 154133354)",
+       "says": "Decree of 9.12.1867 «О преобразовании управления Кавказского и Закавказского края»: its provisions put into force from 1.1.1868.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Decree «О преобразовании управления Кавказского и Закавказского края» 9.12.1867 O.S. (= 21.12.1867), in force from 1.1.1868 O.S. = 1868-01-13. Part of Ordubad uyezd went to Elisavetpol gub.; 1870 Sharur-Daralagez and 1875 Surmali uyezds formed inside."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Elisavetpol@1867",
+   "names": {
+    "en": "Elisabethpol Governorate",
+    "ja": "エリザヴェトポリ県",
+    "local": "Елисаветпольская губерния"
+   },
+   "wikidata": "Q596063",
+   "spans": [
+    {
+     "from": "1868-01-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-587",
+      "U1897-588",
+      "U1897-589",
+      "U1897-583",
+      "U1897-586",
+      "U1897-590",
+      "U1897-584",
+      "U1897-585"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2024/https://old.bigenc.ru/domestic_history/text/3822603",
+       "title": "Большая российская энциклопедия — Елисаветпольская губерния (old.bigenc.ru, archived)",
+       "says": "Formed 9(21).12.1867 from parts of Baku and Tiflis governorates; uyezds Aresh, Jebrail, Jevanshir, Elisavetpol, Zangezur, Kazakh, Nukha, Shusha.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=154133354",
+       "title": "Ставропольская губерния — Википедия (oldid 154133354)",
+       "says": "Decree of 9.12.1867 «О преобразовании управления Кавказского и Закавказского края»: its provisions put into force from 1.1.1868.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Decree «О преобразовании управления Кавказского и Закавказского края» 9.12.1867 O.S. (= 21.12.1867), in force from 1.1.1868 O.S. = 1868-01-13."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Baku@1859",
+   "names": {
+    "en": "Baku Governorate",
+    "ja": "バクー県",
+    "local": "Бакинская губерния"
+   },
+   "wikidata": "Q763603",
+   "spans": [
+    {
+     "from": "1868-01-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-592",
+      "U1897-593",
+      "U1897-594",
+      "U1897-596",
+      "U1897-591",
+      "U1897-595"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2024/https://old.bigenc.ru/domestic_history/text/3787899",
+       "title": "Большая российская энциклопедия — Бакинская губерния (old.bigenc.ru, archived)",
+       "says": "1860 Kuba uyezd joined; 1867 Nukha and Shusha uyezds passed to Elisavetpol gub.; late-19th c. uyezds Baku, Geokchay, Javad, Kuba, Lenkoran, Shemakha.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=154133354",
+       "title": "Ставропольская губерния — Википедия (oldid 154133354)",
+       "says": "Decree of 9.12.1867 «О преобразовании управления Кавказского и Закавказского края»: its provisions put into force from 1.1.1868.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Decree «О преобразовании управления Кавказского и Закавказского края» 9.12.1867 O.S. (= 21.12.1867), in force from 1.1.1868 O.S. = 1868-01-13. Nukha and Shusha uyezds passed to Elisavetpol gub."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Kars@1878",
+   "names": {
+    "en": "Kars Oblast",
+    "ja": "カルス州",
+    "local": "Карсская область"
+   },
+   "wikidata": "Q60011",
+   "spans": [
+    {
+     "from": "1878-11-08",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-572",
+      "U1897-574",
+      "U1897-575",
+      "U1897-573"
+     ],
+     "sources": [
+      {
+       "url": "http://modernhistory.ru/f/urushadze.pdf",
+       "title": "Урушадзе А. Т., горские словесные суды на Кавказе (Новейшая история России / Modern History of Russia), p. 2",
+       "says": "Courts of Kars oblast worked under the Temporary statute on the administration of Kars oblast of 27 October 1878.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=154462404",
+       "title": "Карсская область — Википедия (oldid 154462404)",
+       "says": "Formed 1878 from Kars and Childir sanjaks ceded by the Ottoman Empire; existed 1878–1917.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Temporary statute on the administration of Kars oblast 27.10.1878 O.S. (= 8.11.1878). 1881 re-cut of okrugs internal."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1874-06-02",
+   "precision": "day",
+   "what": "New Stavropol–Terek line (Pyatigorsk to Terek)",
+   "sources": [
+    {
+     "url": "https://web.archive.org/web/2024/https://old.bigenc.ru/domestic_history/text/4162134",
+     "title": "Большая российская энциклопедия — Ставропольская губерния (old.bigenc.ru, archived)",
+     "says": "Moved to Terek: Kizlyar part 1867, Pyatigorsk with part of uyezd 21.5(2.6).1874, Karanogai pristavstvo 21.3(2.4).1888; no later outer change listed.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1883-06-24",
+   "precision": "day",
+   "what": "Batum oblast joined to Kutaisi governorate",
+   "sources": [
+    {
+     "url": "https://web.archive.org/web/2024/https://old.bigenc.ru/domestic_history/text/1856793",
+     "title": "Большая российская энциклопедия — Батумская область (old.bigenc.ru, archived)",
+     "says": "Formed 20.9(2.10).1878; joined to Kutaisi gub. 12(24).6.1883; by statute of 17(30).3.1903 separated again as Batum and Artvin okrugs.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1884-03-21",
+   "precision": "day",
+   "what": "Anapa from Black Sea okrug to Kuban oblast",
+   "sources": [
+    {
+     "url": "https://web.archive.org/web/2024/https://old.bigenc.ru/domestic_history/text/4683226",
+     "title": "Большая российская энциклопедия — Черноморский округ (old.bigenc.ru, archived)",
+     "says": "9(21).3.1884 Anapa passed to Kuban oblast; 21.3(2.4).1888 okrug included in Kuban oblast; 23.5(4.6).1896 turned into Black Sea governorate.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1888-04-02",
+   "precision": "day",
+   "what": "Black Sea okrug into Kuban oblast; Karanogai pristavstvo Stavropol → Terek",
+   "sources": [
+    {
+     "url": "https://web.archive.org/web/2024/https://old.bigenc.ru/domestic_history/text/4683226",
+     "title": "Большая российская энциклопедия — Черноморский округ (old.bigenc.ru, archived)",
+     "says": "9(21).3.1884 Anapa passed to Kuban oblast; 21.3(2.4).1888 okrug included in Kuban oblast; 23.5(4.6).1896 turned into Black Sea governorate.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://web.archive.org/web/2024/https://old.bigenc.ru/domestic_history/text/4162134",
+     "title": "Большая российская энциклопедия — Ставропольская губерния (old.bigenc.ru, archived)",
+     "says": "Moved to Terek: Kizlyar part 1867, Pyatigorsk with part of uyezd 21.5(2.6).1874, Karanogai pristavstvo 21.3(2.4).1888; no later outer change listed.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1896-06-04",
+   "precision": "day",
+   "what": "Black Sea governorate formed",
+   "sources": [
+    {
+     "url": "https://web.archive.org/web/2024/https://old.bigenc.ru/domestic_history/text/4683214",
+     "title": "Большая российская энциклопедия — Черноморская губерния (old.bigenc.ru, archived)",
+     "says": "Formed 23.5(4.6).1896 from Black Sea okrug of Kuban oblast; 25.12.1904 (7.1.1905) Gagra station with environs passed from Sukhumi okrug to Sochi okrug.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1903-07-14",
+   "precision": "day",
+   "what": "Batum oblast re-formed",
+   "sources": [
+    {
+     "url": "https://web.archive.org/web/2024/https://old.bigenc.ru/domestic_history/text/1856793",
+     "title": "Большая российская энциклопедия — Батумская область (old.bigenc.ru, archived)",
+     "says": "Formed 20.9(2.10).1878; joined to Kutaisi gub. 12(24).6.1883; by statute of 17(30).3.1903 separated again as Batum and Artvin okrugs.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=152538834",
+     "title": "Батумская область — Википедия (oldid 152538834)",
+     "says": "Re-formed 1 July 1903 from the Batum and Artvin okrugs of Kutaisi governorate.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1905-01-07",
+   "precision": "day",
+   "what": "Gagra area from Sukhumi okrug to Black Sea governorate",
+   "sources": [
+    {
+     "url": "https://web.archive.org/web/2024/https://old.bigenc.ru/domestic_history/text/4683214",
+     "title": "Большая российская энциклопедия — Черноморская губерния (old.bigenc.ru, archived)",
+     "says": "Formed 23.5(4.6).1896 from Black Sea okrug of Kuban oblast; 25.12.1904 (7.1.1905) Gagra station with environs passed from Sukhumi okrug to Sochi okrug.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [
+  {
+   "atom": "U1897-572",
+   "to": "1878-07-13",
+   "why": "Ottoman territory until the Treaty of Berlin (13 July 1878)"
+  },
+  {
+   "atom": "U1897-574",
+   "to": "1878-07-13",
+   "why": "Ottoman territory until the Treaty of Berlin (13 July 1878)"
+  },
+  {
+   "atom": "U1897-575",
+   "to": "1878-07-13",
+   "why": "Ottoman territory until the Treaty of Berlin (13 July 1878)"
+  },
+  {
+   "atom": "U1897-573",
+   "to": "1878-07-13",
+   "why": "Ottoman territory until the Treaty of Berlin (13 July 1878)"
+  },
+  {
+   "atom": "U1897-570",
+   "to": "1878-07-13",
+   "why": "Ottoman territory until the Treaty of Berlin (13 July 1878)"
+  },
+  {
+   "atom": "U1897-571",
+   "to": "1878-07-13",
+   "why": "Ottoman territory until the Treaty of Berlin (13 July 1878)"
+  }
+ ],
+ "unresolved": [
+  {
+   "what": "Stavropol governorate and Terek oblast before the 1874 line",
+   "atoms": [
+    "U1897-633",
+    "U1897-636",
+    "U1897-628",
+    "U1897-550",
+    "U1897-844",
+    "U1897-632",
+    "U1897-631",
+    "U1897-616",
+    "U1897-624",
+    "U1897-626",
+    "U1897-618",
+    "U1897-622",
+    "U1897-619",
+    "U1897-627",
+    "U1897-617"
+   ],
+   "from": "1861-07-06",
+   "to": "1874-06-02",
+   "why": "1866–1874 Stavropol passed towns and parts of uyezds to Terek (Mozdok 1866, Kizlyar with part of its uyezd 1867, Georgievsk 1868, Pyatigorsk with part of uyezd 1874) and received 12 Kuban stanitsas (1870); the Stavropol–Terek line ran through the 1897 Pyatigorsk/Aleksandrov/Kizlyar areas.",
+   "checked": [
+    "ru.wikipedia Ставропольская губерния oldid 154133354",
+    "ru.wikipedia Терская область oldid 153549187",
+    "БРЭ Ставропольская губерния",
+    "БРЭ Терская область"
+   ],
+   "needs": "atoms split along the pre-1874 Stavropol–Terek line"
+  },
+  {
+   "what": "Kuban oblast and Black Sea okrug before Anapa's transfer",
+   "atoms": [
+    "U1897-548",
+    "U1897-557",
+    "U1897-554",
+    "U1897-556",
+    "U1897-558",
+    "U1897-553",
+    "U1897-555",
+    "U1897-559",
+    "U1897-560",
+    "U1897-561"
+   ],
+   "from": "1861-07-06",
+   "to": "1884-03-21",
+   "why": "Until 9.3.1884 O.S. Anapa (inside the 1897 Temryuk otdel) belonged to the Black Sea okrug; 1869/70 twelve Kuban stanitsas went to Stavropol; the Black Sea okrug of 1866 reached the Bzyb, and the date the Psou became its line with Sukhumi was not found.",
+   "checked": [
+    "БРЭ Черноморский округ",
+    "ru.wikipedia Черноморский округ (Российская империя) oldid 155146590",
+    "ru.wikipedia Кубанская область oldid 153885652",
+    "ru.wikipedia Ставропольская губерния oldid 154133354"
+   ],
+   "needs": "Anapa town lands as a separate atom; pre-1870 Kuban–Stavropol line"
+  },
+  {
+   "what": "Transcaucasian governorates before the 1867 reform",
+   "atoms": [
+    "U1897-608",
+    "U1897-607",
+    "U1897-610",
+    "U1897-609",
+    "U1897-611",
+    "U1897-612",
+    "U1897-614",
+    "U1897-615",
+    "U1897-613",
+    "U1897-597",
+    "U1897-577",
+    "U1897-578",
+    "U1897-579",
+    "U1897-576",
+    "U1897-580",
+    "U1897-582",
+    "U1897-581",
+    "U1897-587",
+    "U1897-588",
+    "U1897-589",
+    "U1897-583",
+    "U1897-586",
+    "U1897-590",
+    "U1897-584",
+    "U1897-585",
+    "U1897-592",
+    "U1897-593",
+    "U1897-594",
+    "U1897-596",
+    "U1897-591",
+    "U1897-595"
+   ],
+   "from": "1861-07-06",
+   "to": "1868-01-13",
+   "why": "Before 1.1.1868 O.S. Elisavetpol gub. did not exist; its Zangezur uyezd was formed from Shusha uyezd (Baku gub.) plus part of Ordubad uyezd (Erivan gub.), so Erivan and Baku lines crossed the 1897 Zangezur/Nakhichevan uyezds; Tiflis held Elisavetpol uyezd and lacked Akhaltsikh. Zakatal okrug kept out of the earlier window for want of a complete 1861–1867 change list.",
+   "checked": [
+    "БРЭ Эриванская губерния",
+    "БРЭ Елисаветпольская губерния",
+    "БРЭ Бакинская губерния",
+    "ru.wikipedia Тифлисская губерния oldid 153618333",
+    "БРЭ Закатальский округ"
+   ],
+   "needs": "1897 Zangezur and Nakhichevan uyezds split along the former Ordubad uyezd line"
+  },
+  {
+   "what": "Kutaisi governorate and Sukhumi military otdel/okrug before 1883",
+   "atoms": [
+    "U1897-562",
+    "U1897-563",
+    "U1897-564",
+    "U1897-567",
+    "U1897-568",
+    "U1897-569",
+    "U1897-566",
+    "U1897-565"
+   ],
+   "from": "1861-07-06",
+   "to": "1883-06-24",
+   "why": "Mingrelia (1897 Zugdidi, Senaki) was a principality until 1867; Akhaltsikh uyezd belonged to Kutaisi until 1868; the Sukhumi military otdel (1864/66–1883) and the Black Sea okrug (to the Bzyb in 1866) had a line whose move to the Psou is undated; Sukhumi okrug joined Kutaisi 8.5.1883 but Batum only 24.6.1883 (pre-1883 Batum oblast outline unverified).",
+   "checked": [
+    "БРЭ Сухумский округ",
+    "БРЭ Черноморский округ",
+    "ru.wikipedia Мегрельское княжество oldid 153140996",
+    "ru.wikipedia Кутаисская губерния oldid 154658976",
+    "en.wikipedia Sukhumi okrug oldid 1377597088"
+   ],
+   "needs": "Sukhumi otdel and Kutaisi lines of 1864–1883 attested against 1897 uyezds"
+  },
+  {
+   "what": "Batum oblast 1878–1883",
+   "unit": "RUE:Batum@1878",
+   "atoms": [
+    "U1897-570",
+    "U1897-571"
+   ],
+   "from": "1878-07-13",
+   "to": "1883-06-24",
+   "why": "Batum oblast formed 20.9.1878 O.S. with Batum, Artvin and Adjara okrugs; no source found confirming its outer line (incl. after the 1879–1880 border demarcation) equals the 1897 Batum + Artvin okrugs; 13.7–2.10.1878 Russian territory without a dated unit.",
+   "checked": [
+    "БРЭ Батумская область",
+    "ru.wikipedia Батумская область oldid 152538834",
+    "ЭСБЕ Батумская область (Викитека oldid 3535374)"
+   ],
+   "needs": "a source for the 1878 Batum oblast boundary"
+  },
+  {
+   "what": "Kutaisi governorate / Sukhumi okrug 1903–1905: whether Sukhumi was still inside Kutaisi",
+   "unit": "RUE:Kutaisi@1846",
+   "atoms": [
+    "U1897-562",
+    "U1897-563",
+    "U1897-564",
+    "U1897-567",
+    "U1897-568",
+    "U1897-569",
+    "U1897-566",
+    "U1897-565"
+   ],
+   "from": "1903-07-14",
+   "to": "1905-01-07",
+   "why": "BRE says Sukhumi okrug left Kutaisi governorate in 1903 (no day given); Russian Wikipedia ties its governorate-equivalent status to Dec 1904; English Wikipedia (Tsutsiev atlas) says 1905. Kutaisi's territory (with or without the Sukhumi atom) cannot be fixed in this window.",
+   "checked": [
+    "БРЭ Сухумский округ",
+    "ru.wikipedia Сухумский округ oldid 155146490",
+    "en.wikipedia Sukhumi okrug oldid 1377597088",
+    "geneal.ru Сухумский округ"
+   ],
+   "needs": "the 1903 law separating Sukhumi okrug (ПСЗ-3), with its date"
+  },
+  {
+   "what": "Black Sea governorate and Sukhumi okrug after the Gagra transfer",
+   "unit": "RUE:BlackSea@1896",
+   "atoms": [
+    "U1897-559",
+    "U1897-560",
+    "U1897-561",
+    "U1897-562"
+   ],
+   "from": "1905-01-07",
+   "to": null,
+   "why": "25.12.1904 O.S. (= 7.1.1905) the Gagra climatic station with environs passed from Sukhumi okrug to Sochi okrug: a part of the 1897 Sukhumi atom moved, so neither unit is a union of 1897 atoms.",
+   "checked": [
+    "БРЭ Черноморская губерния",
+    "БРЭ Сухумский округ",
+    "ru.wikipedia Сочинский округ oldid 155147655"
+   ],
+   "needs": "1897 Sukhumi okrug split along the 1904 Gagra line (the Psou–Gagra strip as a separate atom)"
+  },
+  {
+   "what": "Kars region between cession and the oblast statute",
+   "unit": "RUE:Kars@1878",
+   "atoms": [
+    "U1897-572",
+    "U1897-574",
+    "U1897-575",
+    "U1897-573"
+   ],
+   "from": "1878-07-13",
+   "to": "1878-11-08",
+   "why": "Ceded by the Treaty of Berlin (13.7.1878); the temporary statute organising Kars oblast is dated 27.10.1878 O.S.; no earlier dated act forming the oblast found.",
+   "checked": [
+    "Урушадзе (modernhistory.ru)",
+    "ru.wikipedia Карсская область oldid 154462404",
+    "ЭСБЕ Карсская область (Викитека oldid 5751044)"
+   ]
+  }
+ ]
+}

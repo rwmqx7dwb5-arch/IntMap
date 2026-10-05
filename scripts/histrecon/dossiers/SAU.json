@@ -1,0 +1,607 @@
+{
+ "country": "SAU",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1993-09-17",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Kingdom of Saudi Arabia (over the whole scope).",
+ "units": [
+  {
+   "id": "SAU:Riyadh@1993",
+   "names": {
+    "en": "Riyadh Province",
+    "ja": "リヤード州",
+    "local": "منطقة الرياض"
+   },
+   "wikidata": "Q1249255",
+   "spans": [
+    {
+     "from": "1993-09-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SAU-1097"
+     ],
+     "sources": [
+      {
+       "url": "https://ar.wikipedia.org/wiki/%D8%A7%D9%84%D8%AA%D9%82%D8%B3%D9%8A%D9%85_%D8%A7%D9%84%D8%A5%D8%AF%D8%A7%D8%B1%D9%8A_%D9%81%D9%8A_%D8%A7%D9%84%D9%85%D9%85%D9%84%D9%83%D8%A9_%D8%A7%D9%84%D8%B9%D8%B1%D8%A8%D9%8A%D8%A9_%D8%A7%D9%84%D8%B3%D8%B9%D9%88%D8%AF%D9%8A%D8%A9",
+       "title": "التقسيم الإداري في المملكة العربية السعودية — ويكيبيديا العربية",
+       "says": "The division results from the Regions Law, Royal Order A/92 of 27/8/1412 H, amended by Royal Order A/21 of 30/3/1414 H; 13 regions.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/usa.html",
+       "title": "Statoids — Regions of Saudi Arabia (Gwillim Law)",
+       "says": "13 regions listed; last change listed is the 1993-11 merger of Al Qurayyat into Al Jawf.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start = Royal Order A/21 (30/3/1414 H, converted with the Umm al-Qura calendar; ±1 day) amending the Regions Law and fixing the 13 regions. No later change between regions found in Statoids or Wikipedia; international lines of this region unchanged since the scope start (Iraq zone 1982, Jordan 1965, Taif line 1934 confirmed 2000)."
+    }
+   ]
+  },
+  {
+   "id": "SAU:Makkah@1993",
+   "names": {
+    "en": "Mecca Province",
+    "ja": "マッカ州",
+    "local": "منطقة مكة المكرمة"
+   },
+   "wikidata": "Q234167",
+   "spans": [
+    {
+     "from": "1993-09-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SAU-888"
+     ],
+     "sources": [
+      {
+       "url": "https://ar.wikipedia.org/wiki/%D8%A7%D9%84%D8%AA%D9%82%D8%B3%D9%8A%D9%85_%D8%A7%D9%84%D8%A5%D8%AF%D8%A7%D8%B1%D9%8A_%D9%81%D9%8A_%D8%A7%D9%84%D9%85%D9%85%D9%84%D9%83%D8%A9_%D8%A7%D9%84%D8%B9%D8%B1%D8%A8%D9%8A%D8%A9_%D8%A7%D9%84%D8%B3%D8%B9%D9%88%D8%AF%D9%8A%D8%A9",
+       "title": "التقسيم الإداري في المملكة العربية السعودية — ويكيبيديا العربية",
+       "says": "The division results from the Regions Law, Royal Order A/92 of 27/8/1412 H, amended by Royal Order A/21 of 30/3/1414 H; 13 regions.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/usa.html",
+       "title": "Statoids — Regions of Saudi Arabia (Gwillim Law)",
+       "says": "13 regions listed; last change listed is the 1993-11 merger of Al Qurayyat into Al Jawf.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start = Royal Order A/21 (30/3/1414 H, converted with the Umm al-Qura calendar; ±1 day) amending the Regions Law and fixing the 13 regions. No later change between regions found in Statoids or Wikipedia; international lines of this region unchanged since the scope start (Iraq zone 1982, Jordan 1965, Taif line 1934 confirmed 2000)."
+    }
+   ]
+  },
+  {
+   "id": "SAU:Madinah@1993",
+   "names": {
+    "en": "Medina Province",
+    "ja": "マディーナ州",
+    "local": "منطقة المدينة المنورة"
+   },
+   "wikidata": "Q236027",
+   "spans": [
+    {
+     "from": "1993-09-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SAU-845"
+     ],
+     "sources": [
+      {
+       "url": "https://ar.wikipedia.org/wiki/%D8%A7%D9%84%D8%AA%D9%82%D8%B3%D9%8A%D9%85_%D8%A7%D9%84%D8%A5%D8%AF%D8%A7%D8%B1%D9%8A_%D9%81%D9%8A_%D8%A7%D9%84%D9%85%D9%85%D9%84%D9%83%D8%A9_%D8%A7%D9%84%D8%B9%D8%B1%D8%A8%D9%8A%D8%A9_%D8%A7%D9%84%D8%B3%D8%B9%D9%88%D8%AF%D9%8A%D8%A9",
+       "title": "التقسيم الإداري في المملكة العربية السعودية — ويكيبيديا العربية",
+       "says": "The division results from the Regions Law, Royal Order A/92 of 27/8/1412 H, amended by Royal Order A/21 of 30/3/1414 H; 13 regions.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/usa.html",
+       "title": "Statoids — Regions of Saudi Arabia (Gwillim Law)",
+       "says": "13 regions listed; last change listed is the 1993-11 merger of Al Qurayyat into Al Jawf.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start = Royal Order A/21 (30/3/1414 H, converted with the Umm al-Qura calendar; ±1 day) amending the Regions Law and fixing the 13 regions. No later change between regions found in Statoids or Wikipedia; international lines of this region unchanged since the scope start (Iraq zone 1982, Jordan 1965, Taif line 1934 confirmed 2000)."
+    }
+   ]
+  },
+  {
+   "id": "SAU:Qassim@1993",
+   "names": {
+    "en": "Al-Qassim",
+    "ja": "カスィーム州",
+    "local": "منطقة القصيم"
+   },
+   "wikidata": "Q1105411",
+   "spans": [
+    {
+     "from": "1993-09-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SAU-846"
+     ],
+     "sources": [
+      {
+       "url": "https://ar.wikipedia.org/wiki/%D8%A7%D9%84%D8%AA%D9%82%D8%B3%D9%8A%D9%85_%D8%A7%D9%84%D8%A5%D8%AF%D8%A7%D8%B1%D9%8A_%D9%81%D9%8A_%D8%A7%D9%84%D9%85%D9%85%D9%84%D9%83%D8%A9_%D8%A7%D9%84%D8%B9%D8%B1%D8%A8%D9%8A%D8%A9_%D8%A7%D9%84%D8%B3%D8%B9%D9%88%D8%AF%D9%8A%D8%A9",
+       "title": "التقسيم الإداري في المملكة العربية السعودية — ويكيبيديا العربية",
+       "says": "The division results from the Regions Law, Royal Order A/92 of 27/8/1412 H, amended by Royal Order A/21 of 30/3/1414 H; 13 regions.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/usa.html",
+       "title": "Statoids — Regions of Saudi Arabia (Gwillim Law)",
+       "says": "13 regions listed; last change listed is the 1993-11 merger of Al Qurayyat into Al Jawf.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start = Royal Order A/21 (30/3/1414 H, converted with the Umm al-Qura calendar; ±1 day) amending the Regions Law and fixing the 13 regions. No later change between regions found in Statoids or Wikipedia; international lines of this region unchanged since the scope start (Iraq zone 1982, Jordan 1965, Taif line 1934 confirmed 2000)."
+    }
+   ]
+  },
+  {
+   "id": "SAU:Hail@1993",
+   "names": {
+    "en": "Ḥaʼil Province",
+    "ja": "ハーイル州",
+    "local": "منطقة حائل"
+   },
+   "wikidata": "Q243656",
+   "spans": [
+    {
+     "from": "1993-09-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SAU-847"
+     ],
+     "sources": [
+      {
+       "url": "https://ar.wikipedia.org/wiki/%D8%A7%D9%84%D8%AA%D9%82%D8%B3%D9%8A%D9%85_%D8%A7%D9%84%D8%A5%D8%AF%D8%A7%D8%B1%D9%8A_%D9%81%D9%8A_%D8%A7%D9%84%D9%85%D9%85%D9%84%D9%83%D8%A9_%D8%A7%D9%84%D8%B9%D8%B1%D8%A8%D9%8A%D8%A9_%D8%A7%D9%84%D8%B3%D8%B9%D9%88%D8%AF%D9%8A%D8%A9",
+       "title": "التقسيم الإداري في المملكة العربية السعودية — ويكيبيديا العربية",
+       "says": "The division results from the Regions Law, Royal Order A/92 of 27/8/1412 H, amended by Royal Order A/21 of 30/3/1414 H; 13 regions.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/usa.html",
+       "title": "Statoids — Regions of Saudi Arabia (Gwillim Law)",
+       "says": "13 regions listed; last change listed is the 1993-11 merger of Al Qurayyat into Al Jawf.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start = Royal Order A/21 (30/3/1414 H, converted with the Umm al-Qura calendar; ±1 day) amending the Regions Law and fixing the 13 regions. No later change between regions found in Statoids or Wikipedia; international lines of this region unchanged since the scope start (Iraq zone 1982, Jordan 1965, Taif line 1934 confirmed 2000)."
+    }
+   ]
+  },
+  {
+   "id": "SAU:Asir@1993",
+   "names": {
+    "en": "Asir Province",
+    "ja": "アスィール州",
+    "local": "منطقة عسير"
+   },
+   "wikidata": "Q779855",
+   "spans": [
+    {
+     "from": "1993-09-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SAU-886"
+     ],
+     "sources": [
+      {
+       "url": "https://ar.wikipedia.org/wiki/%D8%A7%D9%84%D8%AA%D9%82%D8%B3%D9%8A%D9%85_%D8%A7%D9%84%D8%A5%D8%AF%D8%A7%D8%B1%D9%8A_%D9%81%D9%8A_%D8%A7%D9%84%D9%85%D9%85%D9%84%D9%83%D8%A9_%D8%A7%D9%84%D8%B9%D8%B1%D8%A8%D9%8A%D8%A9_%D8%A7%D9%84%D8%B3%D8%B9%D9%88%D8%AF%D9%8A%D8%A9",
+       "title": "التقسيم الإداري في المملكة العربية السعودية — ويكيبيديا العربية",
+       "says": "The division results from the Regions Law, Royal Order A/92 of 27/8/1412 H, amended by Royal Order A/21 of 30/3/1414 H; 13 regions.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/usa.html",
+       "title": "Statoids — Regions of Saudi Arabia (Gwillim Law)",
+       "says": "13 regions listed; last change listed is the 1993-11 merger of Al Qurayyat into Al Jawf.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start = Royal Order A/21 (30/3/1414 H, converted with the Umm al-Qura calendar; ±1 day) amending the Regions Law and fixing the 13 regions. No later change between regions found in Statoids or Wikipedia; international lines of this region unchanged since the scope start (Iraq zone 1982, Jordan 1965, Taif line 1934 confirmed 2000)."
+    }
+   ]
+  },
+  {
+   "id": "SAU:Baha@1993",
+   "names": {
+    "en": "Al-Baha Province",
+    "ja": "バーハ州",
+    "local": "منطقة الباحة"
+   },
+   "wikidata": "Q852774",
+   "spans": [
+    {
+     "from": "1993-09-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SAU-885"
+     ],
+     "sources": [
+      {
+       "url": "https://ar.wikipedia.org/wiki/%D8%A7%D9%84%D8%AA%D9%82%D8%B3%D9%8A%D9%85_%D8%A7%D9%84%D8%A5%D8%AF%D8%A7%D8%B1%D9%8A_%D9%81%D9%8A_%D8%A7%D9%84%D9%85%D9%85%D9%84%D9%83%D8%A9_%D8%A7%D9%84%D8%B9%D8%B1%D8%A8%D9%8A%D8%A9_%D8%A7%D9%84%D8%B3%D8%B9%D9%88%D8%AF%D9%8A%D8%A9",
+       "title": "التقسيم الإداري في المملكة العربية السعودية — ويكيبيديا العربية",
+       "says": "The division results from the Regions Law, Royal Order A/92 of 27/8/1412 H, amended by Royal Order A/21 of 30/3/1414 H; 13 regions.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/usa.html",
+       "title": "Statoids — Regions of Saudi Arabia (Gwillim Law)",
+       "says": "13 regions listed; last change listed is the 1993-11 merger of Al Qurayyat into Al Jawf.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start = Royal Order A/21 (30/3/1414 H, converted with the Umm al-Qura calendar; ±1 day) amending the Regions Law and fixing the 13 regions. No later change between regions found in Statoids or Wikipedia; international lines of this region unchanged since the scope start (Iraq zone 1982, Jordan 1965, Taif line 1934 confirmed 2000)."
+    }
+   ]
+  },
+  {
+   "id": "SAU:Jazan@1993",
+   "names": {
+    "en": "Jazan Province",
+    "ja": "ジーザーン州",
+    "local": "منطقة جازان"
+   },
+   "wikidata": "Q269973",
+   "spans": [
+    {
+     "from": "1993-09-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SAU-887"
+     ],
+     "sources": [
+      {
+       "url": "https://ar.wikipedia.org/wiki/%D8%A7%D9%84%D8%AA%D9%82%D8%B3%D9%8A%D9%85_%D8%A7%D9%84%D8%A5%D8%AF%D8%A7%D8%B1%D9%8A_%D9%81%D9%8A_%D8%A7%D9%84%D9%85%D9%85%D9%84%D9%83%D8%A9_%D8%A7%D9%84%D8%B9%D8%B1%D8%A8%D9%8A%D8%A9_%D8%A7%D9%84%D8%B3%D8%B9%D9%88%D8%AF%D9%8A%D8%A9",
+       "title": "التقسيم الإداري في المملكة العربية السعودية — ويكيبيديا العربية",
+       "says": "The division results from the Regions Law, Royal Order A/92 of 27/8/1412 H, amended by Royal Order A/21 of 30/3/1414 H; 13 regions.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/usa.html",
+       "title": "Statoids — Regions of Saudi Arabia (Gwillim Law)",
+       "says": "13 regions listed; last change listed is the 1993-11 merger of Al Qurayyat into Al Jawf.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start = Royal Order A/21 (30/3/1414 H, converted with the Umm al-Qura calendar; ±1 day) amending the Regions Law and fixing the 13 regions. No later change between regions found in Statoids or Wikipedia; international lines of this region unchanged since the scope start (Iraq zone 1982, Jordan 1965, Taif line 1934 confirmed 2000)."
+    }
+   ]
+  },
+  {
+   "id": "SAU:NorthernBorders@1993",
+   "names": {
+    "en": "Northern Borders Province",
+    "ja": "北部国境州",
+    "local": "منطقة الحدود الشمالية"
+   },
+   "wikidata": "Q201781",
+   "spans": [
+    {
+     "from": "1993-09-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SAU-861"
+     ],
+     "sources": [
+      {
+       "url": "https://ar.wikipedia.org/wiki/%D8%A7%D9%84%D8%AA%D9%82%D8%B3%D9%8A%D9%85_%D8%A7%D9%84%D8%A5%D8%AF%D8%A7%D8%B1%D9%8A_%D9%81%D9%8A_%D8%A7%D9%84%D9%85%D9%85%D9%84%D9%83%D8%A9_%D8%A7%D9%84%D8%B9%D8%B1%D8%A8%D9%8A%D8%A9_%D8%A7%D9%84%D8%B3%D8%B9%D9%88%D8%AF%D9%8A%D8%A9",
+       "title": "التقسيم الإداري في المملكة العربية السعودية — ويكيبيديا العربية",
+       "says": "The division results from the Regions Law, Royal Order A/92 of 27/8/1412 H, amended by Royal Order A/21 of 30/3/1414 H; 13 regions.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/usa.html",
+       "title": "Statoids — Regions of Saudi Arabia (Gwillim Law)",
+       "says": "13 regions listed; last change listed is the 1993-11 merger of Al Qurayyat into Al Jawf.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start = Royal Order A/21 (30/3/1414 H, converted with the Umm al-Qura calendar; ±1 day) amending the Regions Law and fixing the 13 regions. No later change between regions found in Statoids or Wikipedia; international lines of this region unchanged since the scope start (Iraq zone 1982, Jordan 1965, Taif line 1934 confirmed 2000)."
+    }
+   ]
+  },
+  {
+   "id": "SAU:Jawf@1993",
+   "names": {
+    "en": "Al-Jowf Province",
+    "ja": "ジャウフ州",
+    "local": "منطقة الجوف"
+   },
+   "wikidata": "Q1471266",
+   "spans": [
+    {
+     "from": "1993-12",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "SAU-862"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/usa.html",
+       "title": "Statoids — Regions of Saudi Arabia (Gwillim Law)",
+       "says": "1993-11: Al Qurayyat merged with Al Jawf.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ar.wikipedia.org/w/index.php?oldid=69754476",
+       "title": "منطقة القريات — ويكيبيديا العربية (oldid 69754476)",
+       "says": "Qurayyat was a region until the Regions Law of 28 Sha'ban 1412 merged it with Al-Jawf (and Tabuk).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Sources disagree on when Qurayyat region ended (Regions Law 1992-03-01 per ar.Wikipedia; 1993-11 per Statoids). Span starts at the first month after the latest stated date."
+    }
+   ]
+  },
+  {
+   "id": "SAU:Tabuk@1993",
+   "names": {
+    "en": "Tabuk Province",
+    "ja": "タブーク州",
+    "local": "منطقة تبوك"
+   },
+   "wikidata": "Q1315953",
+   "spans": [
+    {
+     "from": "1993-12",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "SAU-848"
+     ],
+     "sources": [
+      {
+       "url": "https://ar.wikipedia.org/w/index.php?oldid=69754476",
+       "title": "منطقة القريات — ويكيبيديا العربية (oldid 69754476)",
+       "says": "Qurayyat was a region until the Regions Law of 28 Sha'ban 1412 merged it with Al-Jawf (and Tabuk).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/usa.html",
+       "title": "Statoids — Regions of Saudi Arabia (Gwillim Law)",
+       "says": "13 regions; no change to Tabuk listed besides the Qurayyat merger period.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "ar.Wikipedia says Qurayyat was merged with Al-Jawf and Tabuk; held back with Al-Jawf until the latest stated merger date."
+    }
+   ]
+  },
+  {
+   "id": "SAU:Najran@2000",
+   "names": {
+    "en": "Najran Province",
+    "ja": "ナジュラーン州",
+    "local": "منطقة نجران"
+   },
+   "wikidata": "Q464718",
+   "spans": [
+    {
+     "from": "2000-08",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "SAU-1096"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1315431731",
+       "title": "Treaty of Jeddah (2000) — Wikipedia (oldid 1315431731)",
+       "says": "Saudi–Yemeni boundary treaty signed 12 June 2000, taking effect the following month (July 2000).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1376982157",
+       "title": "Saudi Arabia–Yemen border — Wikipedia (oldid 1376982157)",
+       "says": "The 1934 Taif line reached only the vicinity of Najran; the 2000 Treaty of Jeddah finalised the entire border at its current position.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The NE outer line is the 2000 Treaty of Jeddah line; the treaty took effect in July 2000 (day not found), so the span starts at the next month."
+    }
+   ]
+  },
+  {
+   "id": "SAU:Eastern@2001",
+   "names": {
+    "en": "Eastern Province",
+    "ja": "東部州",
+    "local": "المنطقة الشرقية"
+   },
+   "wikidata": "Q953508",
+   "spans": [
+    {
+     "from": "2001-03-21",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SAU-1098"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1368706993",
+       "title": "Qatar–Saudi Arabia border — Wikipedia (oldid 1368706993)",
+       "says": "1965 treaty disputed in implementation; agreement 1999, final treaty signed 2001 (Al Bawaba, 21 March 2001).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1315431731",
+       "title": "Treaty of Jeddah (2000) — Wikipedia (oldid 1315431731)",
+       "says": "Saudi–Yemeni boundary treaty signed 12 June 2000, taking effect the following month (July 2000).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1354814812",
+       "title": "Saudi Arabia–United Arab Emirates border — Wikipedia (oldid 1354814812)",
+       "says": "1974 Treaty of Jeddah defines the line drawn today; UAE never ratified it and disputes it.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Last of the outer lines to be finalised within scope: Yemen (July 2000), Qatar (final treaty signed 21 March 2001). The UAE line is the 1974 treaty line, applied de facto but never ratified by the UAE."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1992-03-01",
+   "precision": "day",
+   "what": "Law of the Provinces (Royal Order A/92 of 27/8/1412 H)",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1372326679",
+     "title": "Provinces of Saudi Arabia — Wikipedia (oldid 1372326679)",
+     "says": "Royal Order A/92 (Law of the Provinces, 2 March 1992) provided for 13 provinces, replacing the five previous provinces.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://ar.wikipedia.org/wiki/%D8%A7%D9%84%D8%AA%D9%82%D8%B3%D9%8A%D9%85_%D8%A7%D9%84%D8%A5%D8%AF%D8%A7%D8%B1%D9%8A_%D9%81%D9%8A_%D8%A7%D9%84%D9%85%D9%85%D9%84%D9%83%D8%A9_%D8%A7%D9%84%D8%B9%D8%B1%D8%A8%D9%8A%D8%A9_%D8%A7%D9%84%D8%B3%D8%B9%D9%88%D8%AF%D9%8A%D8%A9",
+     "title": "التقسيم الإداري في المملكة العربية السعودية — ويكيبيديا العربية",
+     "says": "The division results from the Regions Law, Royal Order A/92 of 27/8/1412 H, amended by Royal Order A/21 of 30/3/1414 H; 13 regions.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1993-09-17",
+   "precision": "day",
+   "what": "Royal Order A/21 (30/3/1414 H) amends the Regions Law; 13 regions",
+   "sources": [
+    {
+     "url": "https://ar.wikipedia.org/wiki/%D8%A7%D9%84%D8%AA%D9%82%D8%B3%D9%8A%D9%85_%D8%A7%D9%84%D8%A5%D8%AF%D8%A7%D8%B1%D9%8A_%D9%81%D9%8A_%D8%A7%D9%84%D9%85%D9%85%D9%84%D9%83%D8%A9_%D8%A7%D9%84%D8%B9%D8%B1%D8%A8%D9%8A%D8%A9_%D8%A7%D9%84%D8%B3%D8%B9%D9%88%D8%AF%D9%8A%D8%A9",
+     "title": "التقسيم الإداري في المملكة العربية السعودية — ويكيبيديا العربية",
+     "says": "The division results from the Regions Law, Royal Order A/92 of 27/8/1412 H, amended by Royal Order A/21 of 30/3/1414 H; 13 regions.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1993-11",
+   "precision": "month",
+   "what": "Al Qurayyat region merged with Al Jawf (Statoids date)",
+   "sources": [
+    {
+     "url": "https://statoids.com/usa.html",
+     "title": "Statoids — Regions of Saudi Arabia (Gwillim Law)",
+     "says": "1993-11: Al Qurayyat merged with Al Jawf.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2000-07",
+   "precision": "month",
+   "what": "Saudi–Yemeni Treaty of Jeddah takes effect, fixing the southern border",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1315431731",
+     "title": "Treaty of Jeddah (2000) — Wikipedia (oldid 1315431731)",
+     "says": "Saudi–Yemeni boundary treaty signed 12 June 2000, taking effect the following month (July 2000).",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2001-03-21",
+   "precision": "day",
+   "what": "Final Saudi–Qatari border treaty signed",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1368706993",
+     "title": "Qatar–Saudi Arabia border — Wikipedia (oldid 1368706993)",
+     "says": "1965 treaty disputed in implementation; agreement 1999, final treaty signed 2001 (Al Bawaba, 21 March 2001).",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "2010-04-27",
+   "n": 13,
+   "sources": [
+    {
+     "url": "https://statoids.com/usa.html",
+     "title": "Statoids — Regions of Saudi Arabia (Gwillim Law)",
+     "says": "Population table for the 2010-04-27 census lists 13 regions.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Saudi provinces before 1993-09-17 (four/five provinces 1932–1992; emirates incl. Al Qurayyat; Northern Borders formed ~1980)",
+   "from": "1932-09-23",
+   "to": "1993-09-17",
+   "why": "Pre-1992 provincial lines are not documented in any source found; the 1992 law did not define boundaries and Qurayyat (now inside the Jawf and Tabuk atoms) was a separate region. Not attempted.",
+   "checked": [
+    "statoids.com/usa.html",
+    "Provinces of Saudi Arabia (Wikipedia oldid 1372326679)",
+    "ar.Wikipedia منطقة القريات oldid 69754476"
+   ],
+   "needs": "pre-1992 emirate boundaries (no redistributable source found)"
+  },
+  {
+   "what": "Al Jawf and Tabuk while the Qurayyat merger date is disputed",
+   "unit": "SAU:Jawf@1993",
+   "atoms": [
+    "SAU-862",
+    "SAU-848"
+   ],
+   "from": "1993-09-17",
+   "to": "1993-12",
+   "why": "Qurayyat region ended either with the 1992 law or in November 1993; until the later date the Jawf/Tabuk atoms may contain a separate region.",
+   "checked": [
+    "statoids.com/usa.html",
+    "ar.Wikipedia منطقة القريات oldid 69754476"
+   ],
+   "needs": "text of Royal Order A/21 of 30/3/1414 H and any 1414 H decree on Qurayyat"
+  },
+  {
+   "what": "Najran before the 2000 Saudi–Yemeni treaty",
+   "unit": "SAU:Najran@2000",
+   "atoms": [
+    "SAU-1096"
+   ],
+   "from": "1993-09-17",
+   "to": "2000-08",
+   "why": "East of the Taif line the border was undefined until the 2000 treaty (Yemen received >40,000 km² in the east); the NE outer line did not exist before.",
+   "checked": [
+    "Saudi Arabia–Yemen border oldid 1376982157",
+    "Treaty of Jeddah (2000) oldid 1315431731"
+   ],
+   "needs": "nothing finer: the pre-2000 line was undefined"
+  },
+  {
+   "what": "Eastern Province before its outer lines were finalised (Yemen 2000, Qatar 2001)",
+   "unit": "SAU:Eastern@2001",
+   "atoms": [
+    "SAU-1098"
+   ],
+   "from": "1993-09-17",
+   "to": "2001-03-21",
+   "why": "Rub' al Khali boundary with Yemen undefined until July 2000; Qatar line contested until the 2001 treaty.",
+   "checked": [
+    "Saudi Arabia–Yemen border oldid 1376982157",
+    "Qatar–Saudi Arabia border oldid 1368706993"
+   ],
+   "needs": "nothing finer: the pre-treaty lines were undefined"
+  }
+ ]
+}

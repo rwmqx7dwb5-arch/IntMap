@@ -1,0 +1,845 @@
+{
+ "country": "GHA",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1957-03-06",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Ghana since independence 1957-03-06 (Gold Coast colony, Ashanti, Northern Territories and British Togoland united). NE depicts the 1983–2019 layout of ten regions.",
+ "units": [
+  {
+   "id": "GHA:Ashanti@1957",
+   "names": {
+    "en": "Ashanti Region (incl. Brong-Ahafo)",
+    "ja": "アシャンティ州",
+    "local": "Ashanti Region"
+   },
+   "wikidata": "Q398417",
+   "spans": [
+    {
+     "from": "1957-03-06",
+     "precision": "day",
+     "to": "1959-04-04",
+     "atoms": [
+      "GHA-2158",
+      "GHA-2159"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ugh.html",
+       "title": "Statoids — Regions of Ghana (change history)",
+       "says": "1957 five regions; Brong-Ahafo 1959-04-04; Upper 1960-07-01; Central 1970-07; Greater Accra 1982-07-23; Upper split into Upper East and Upper West 1983.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Ghana&oldid=1361313766",
+       "title": "Wikipedia — Regions of Ghana (oldid 1361313766)",
+       "says": "Brong-Ahafo Region Act No. 18 of 1959 split Ashanti on 4 April 1959; Northern split into Northern and Upper on 1 July 1960; PNDCL 26 of 23 July 1982 created Greater Accra.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Brong-Ahafo was carved wholly from Ashanti (Act No. 18 of 1959). Graphic Online dates the administrative separation to January 1958 under the Emergency Powers Act; the legal creation date 1959-04-04 is used."
+    }
+   ]
+  },
+  {
+   "id": "GHA:Ashanti@1959",
+   "names": {
+    "en": "Ashanti Region",
+    "ja": "アシャンティ州",
+    "local": "Ashanti Region"
+   },
+   "wikidata": "Q398417",
+   "spans": [
+    {
+     "from": "1959-04-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "GHA-2158"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ugh.html",
+       "title": "Statoids — Regions of Ghana (change history)",
+       "says": "1957 five regions; Brong-Ahafo 1959-04-04; Upper 1960-07-01; Central 1970-07; Greater Accra 1982-07-23; Upper split into Upper East and Upper West 1983.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Ghana&oldid=1361313766",
+       "title": "Wikipedia — Regions of Ghana (oldid 1361313766)",
+       "says": "Brong-Ahafo Region Act No. 18 of 1959 split Ashanti on 4 April 1959; Northern split into Northern and Upper on 1 July 1960; PNDCL 26 of 23 July 1982 created Greater Accra.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change; Ashanti was not affected by the 2019 reorganisation."
+    }
+   ]
+  },
+  {
+   "id": "GHA:BrongAhafo@1959",
+   "names": {
+    "en": "Brong-Ahafo Region",
+    "ja": "ブロング＝アハフォ州",
+    "local": "Brong-Ahafo Region"
+   },
+   "wikidata": "Q397737",
+   "spans": [
+    {
+     "from": "1959-04-04",
+     "precision": "day",
+     "to": "2019-02-01",
+     "atoms": [
+      "GHA-2159"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ugh.html",
+       "title": "Statoids — Regions of Ghana (change history)",
+       "says": "1957 five regions; Brong-Ahafo 1959-04-04; Upper 1960-07-01; Central 1970-07; Greater Accra 1982-07-23; Upper split into Upper East and Upper West 1983.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Ghana&oldid=1361313766",
+       "title": "Wikipedia — Regions of Ghana (oldid 1361313766)",
+       "says": "Brong-Ahafo Region Act No. 18 of 1959 split Ashanti on 4 April 1959; Northern split into Northern and Upper on 1 July 1960; PNDCL 26 of 23 July 1982 created Greater Accra.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.wikidata.org/wiki/Q48804004",
+       "title": "Wikidata — Oti Region (Q48804004)",
+       "says": "Inception of Oti Region: 1 February 2019.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Ends 2019-02-01, the earliest date any source gives for the Constitutional Instruments 112–117 (sources also give 12, 13 and 15 Feb 2019); the post-2019 regions are withheld in `unresolved`."
+    }
+   ]
+  },
+  {
+   "id": "GHA:Eastern@1957",
+   "names": {
+    "en": "Eastern Region (incl. Accra Capital District and Ada)",
+    "ja": "イースタン州",
+    "local": "Eastern Region"
+   },
+   "wikidata": "Q405670",
+   "spans": [
+    {
+     "from": "1957-03-06",
+     "precision": "day",
+     "to": "1982-07-23",
+     "atoms": [
+      "GHA-2161",
+      "GHA-2172"
+     ],
+     "sources": [
+      {
+       "url": "https://www.modernghana.com/news/909846/a-short-history-of-the-creation-of-regions-in-ghana.html",
+       "title": "Kofi Amenyo, “A short history of the creation of regions in Ghana”, ModernGhana (Jan 2019)",
+       "says": "Greater Accra (Accra Capital District) was legally part of Eastern Region until PNDCL 26 of 23 July 1982, which also added Ada; Central created just before the 1970 census.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ugh.html",
+       "title": "Statoids — Regions of Ghana (change history)",
+       "says": "1957 five regions; Brong-Ahafo 1959-04-04; Upper 1960-07-01; Central 1970-07; Greater Accra 1982-07-23; Upper split into Upper East and Upper West 1983.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Greater Accra = Accra Capital District (legally part of Eastern) + Ada local council (Eastern), both taken from Eastern by PNDCL 26."
+    }
+   ]
+  },
+  {
+   "id": "GHA:Eastern@1982",
+   "names": {
+    "en": "Eastern Region",
+    "ja": "イースタン州",
+    "local": "Eastern Region"
+   },
+   "wikidata": "Q405670",
+   "spans": [
+    {
+     "from": "1982-07-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "GHA-2161"
+     ],
+     "sources": [
+      {
+       "url": "https://www.modernghana.com/news/909846/a-short-history-of-the-creation-of-regions-in-ghana.html",
+       "title": "Kofi Amenyo, “A short history of the creation of regions in Ghana”, ModernGhana (Jan 2019)",
+       "says": "Greater Accra (Accra Capital District) was legally part of Eastern Region until PNDCL 26 of 23 July 1982, which also added Ada; Central created just before the 1970 census.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Ghana&oldid=1361313766",
+       "title": "Wikipedia — Regions of Ghana (oldid 1361313766)",
+       "says": "Brong-Ahafo Region Act No. 18 of 1959 split Ashanti on 4 April 1959; Northern split into Northern and Upper on 1 July 1960; PNDCL 26 of 23 July 1982 created Greater Accra.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "GHA:GreaterAccra@1982",
+   "names": {
+    "en": "Greater Accra Region",
+    "ja": "グレーター・アクラ州",
+    "local": "Greater Accra Region"
+   },
+   "wikidata": "Q431729",
+   "spans": [
+    {
+     "from": "1982-07-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "GHA-2172"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Ghana&oldid=1361313766",
+       "title": "Wikipedia — Regions of Ghana (oldid 1361313766)",
+       "says": "Brong-Ahafo Region Act No. 18 of 1959 split Ashanti on 4 April 1959; Northern split into Northern and Upper on 1 July 1960; PNDCL 26 of 23 July 1982 created Greater Accra.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.modernghana.com/news/909846/a-short-history-of-the-creation-of-regions-in-ghana.html",
+       "title": "Kofi Amenyo, “A short history of the creation of regions in Ghana”, ModernGhana (Jan 2019)",
+       "says": "Greater Accra (Accra Capital District) was legally part of Eastern Region until PNDCL 26 of 23 July 1982, which also added Ada; Central created just before the 1970 census.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "GHA:Northern@1957",
+   "names": {
+    "en": "Northern Region (incl. the later Upper Region)",
+    "ja": "ノーザン州",
+    "local": "Northern Region"
+   },
+   "wikidata": "Q502215",
+   "spans": [
+    {
+     "from": "1957-03-06",
+     "precision": "day",
+     "to": "1960-07-01",
+     "atoms": [
+      "GHA-2155",
+      "GHA-2156",
+      "GHA-2157"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ugh.html",
+       "title": "Statoids — Regions of Ghana (change history)",
+       "says": "1957 five regions; Brong-Ahafo 1959-04-04; Upper 1960-07-01; Central 1970-07; Greater Accra 1982-07-23; Upper split into Upper East and Upper West 1983.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Ghana&oldid=1361313766",
+       "title": "Wikipedia — Regions of Ghana (oldid 1361313766)",
+       "says": "Brong-Ahafo Region Act No. 18 of 1959 split Ashanti on 4 April 1959; Northern split into Northern and Upper on 1 July 1960; PNDCL 26 of 23 July 1982 created Greater Accra.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Northern Territories plus northern British Togoland; Upper Region taken wholly from it on 1960-07-01."
+    }
+   ]
+  },
+  {
+   "id": "GHA:Northern@1960",
+   "names": {
+    "en": "Northern Region",
+    "ja": "ノーザン州",
+    "local": "Northern Region"
+   },
+   "wikidata": "Q502215",
+   "spans": [
+    {
+     "from": "1960-07-01",
+     "precision": "day",
+     "to": "2019-02-01",
+     "atoms": [
+      "GHA-2155"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ugh.html",
+       "title": "Statoids — Regions of Ghana (change history)",
+       "says": "1957 five regions; Brong-Ahafo 1959-04-04; Upper 1960-07-01; Central 1970-07; Greater Accra 1982-07-23; Upper split into Upper East and Upper West 1983.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Ghana&oldid=1361313766",
+       "title": "Wikipedia — Regions of Ghana (oldid 1361313766)",
+       "says": "Brong-Ahafo Region Act No. 18 of 1959 split Ashanti on 4 April 1959; Northern split into Northern and Upper on 1 July 1960; PNDCL 26 of 23 July 1982 created Greater Accra.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/wiki/Savannah_Region",
+       "title": "Wikipedia — Savannah Region (permanent id not obtainable; API rate-limited)",
+       "says": "Savannah Region carved from Northern after the 27 Dec 2018 referendum; CI 115 signed and presented on 12 February 2019.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Ends 2019-02-01, the earliest date any source gives for the Constitutional Instruments 112–117 (sources also give 12, 13 and 15 Feb 2019); the post-2019 regions are withheld in `unresolved`."
+    }
+   ]
+  },
+  {
+   "id": "GHA:Upper@1960",
+   "names": {
+    "en": "Upper Region",
+    "local": "Upper Region"
+   },
+   "wikidata": null,
+   "spans": [
+    {
+     "from": "1960-07-01",
+     "precision": "day",
+     "to": "1983",
+     "atoms": [
+      "GHA-2156",
+      "GHA-2157"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ugh.html",
+       "title": "Statoids — Regions of Ghana (change history)",
+       "says": "1957 five regions; Brong-Ahafo 1959-04-04; Upper 1960-07-01; Central 1970-07; Greater Accra 1982-07-23; Upper split into Upper East and Upper West 1983.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Ghana&oldid=1361313766",
+       "title": "Wikipedia — Regions of Ghana (oldid 1361313766)",
+       "says": "Brong-Ahafo Region Act No. 18 of 1959 split Ashanti on 4 April 1959; Northern split into Northern and Upper on 1 July 1960; PNDCL 26 of 23 July 1982 created Greater Accra.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ghanalegal.com/laws_subdomain/acts/id/58/regions-of-ghana-act/",
+       "title": "GhanaLegal — Regions of Ghana Act (CA 11), with Regions of Ghana (Amendment) Law 1983 (PNDCL 41)",
+       "says": "PNDCL 41 (1983) divided the Upper Region into the Upper West Region and the Upper East Region.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "PNDCL 41 (1983) split it into Upper East and Upper West; only the year of PNDCL 41 is established (one unverified web source says 14 Jan 1983)."
+    }
+   ]
+  },
+  {
+   "id": "GHA:UpperEast@1983",
+   "names": {
+    "en": "Upper East Region",
+    "ja": "アッパー・イースト州",
+    "local": "Upper East Region"
+   },
+   "wikidata": "Q712828",
+   "spans": [
+    {
+     "from": "1983",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "GHA-2156"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ugh.html",
+       "title": "Statoids — Regions of Ghana (change history)",
+       "says": "1957 five regions; Brong-Ahafo 1959-04-04; Upper 1960-07-01; Central 1970-07; Greater Accra 1982-07-23; Upper split into Upper East and Upper West 1983.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ghanalegal.com/laws_subdomain/acts/id/58/regions-of-ghana-act/",
+       "title": "GhanaLegal — Regions of Ghana Act (CA 11), with Regions of Ghana (Amendment) Law 1983 (PNDCL 41)",
+       "says": "PNDCL 41 (1983) divided the Upper Region into the Upper West Region and the Upper East Region.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "GHA:UpperWest@1983",
+   "names": {
+    "en": "Upper West Region",
+    "ja": "アッパー・ウエスト州",
+    "local": "Upper West Region"
+   },
+   "wikidata": "Q715805",
+   "spans": [
+    {
+     "from": "1983",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "GHA-2157"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ugh.html",
+       "title": "Statoids — Regions of Ghana (change history)",
+       "says": "1957 five regions; Brong-Ahafo 1959-04-04; Upper 1960-07-01; Central 1970-07; Greater Accra 1982-07-23; Upper split into Upper East and Upper West 1983.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ghanalegal.com/laws_subdomain/acts/id/58/regions-of-ghana-act/",
+       "title": "GhanaLegal — Regions of Ghana Act (CA 11), with Regions of Ghana (Amendment) Law 1983 (PNDCL 41)",
+       "says": "PNDCL 41 (1983) divided the Upper Region into the Upper West Region and the Upper East Region.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "GHA:Volta@1957",
+   "names": {
+    "en": "Volta Region",
+    "ja": "ヴォルタ州",
+    "local": "Volta Region"
+   },
+   "wikidata": "Q712832",
+   "spans": [
+    {
+     "from": "1957-03-06",
+     "precision": "day",
+     "to": "2019-02-01",
+     "atoms": [
+      "GHA-2173"
+     ],
+     "sources": [
+      {
+       "url": "https://www.modernghana.com/news/909846/a-short-history-of-the-creation-of-regions-in-ghana.html",
+       "title": "Kofi Amenyo, “A short history of the creation of regions in Ghana”, ModernGhana (Jan 2019)",
+       "says": "Greater Accra (Accra Capital District) was legally part of Eastern Region until PNDCL 26 of 23 July 1982, which also added Ada; Central created just before the 1970 census.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ugh.html",
+       "title": "Statoids — Regions of Ghana (change history)",
+       "says": "1957 five regions; Brong-Ahafo 1959-04-04; Upper 1960-07-01; Central 1970-07; Greater Accra 1982-07-23; Upper split into Upper East and Upper West 1983.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.wikidata.org/wiki/Q48804004",
+       "title": "Wikidata — Oti Region (Q48804004)",
+       "says": "Inception of Oti Region: 1 February 2019.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Formed 1957 from southern British Togoland plus Anlo and Tongu of the Colony; no later change until Oti split off in 2019. Ends 2019-02-01, the earliest date any source gives for the Constitutional Instruments 112–117 (sources also give 12, 13 and 15 Feb 2019); the post-2019 regions are withheld in `unresolved`."
+    }
+   ]
+  },
+  {
+   "id": "GHA:Western@1957",
+   "names": {
+    "en": "Western Region (incl. the later Central Region)",
+    "ja": "ウェスタン州",
+    "local": "Western Region"
+   },
+   "wikidata": "Q870155",
+   "spans": [
+    {
+     "from": "1957-03-06",
+     "precision": "day",
+     "to": "1969-10-01",
+     "atoms": [
+      "GHA-2162",
+      "GHA-2160"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ugh.html",
+       "title": "Statoids — Regions of Ghana (change history)",
+       "says": "1957 five regions; Brong-Ahafo 1959-04-04; Upper 1960-07-01; Central 1970-07; Greater Accra 1982-07-23; Upper split into Upper East and Upper West 1983.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.modernghana.com/news/909846/a-short-history-of-the-creation-of-regions-in-ghana.html",
+       "title": "Kofi Amenyo, “A short history of the creation of regions in Ghana”, ModernGhana (Jan 2019)",
+       "says": "Greater Accra (Accra Capital District) was legally part of Eastern Region until PNDCL 26 of 23 July 1982, which also added Ada; Central created just before the 1970 census.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Central was carved wholly from Western during the Second Republic (from 1969-10-01); sources disagree on the date (before the 1970-03-01 census vs 1970-07), so the window is withheld."
+    }
+   ]
+  },
+  {
+   "id": "GHA:Western@1970",
+   "names": {
+    "en": "Western Region",
+    "ja": "ウェスタン州",
+    "local": "Western Region"
+   },
+   "wikidata": "Q870155",
+   "spans": [
+    {
+     "from": "1970-08-01",
+     "precision": "day",
+     "to": "2019-02-01",
+     "atoms": [
+      "GHA-2162"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ugh.html",
+       "title": "Statoids — Regions of Ghana (change history)",
+       "says": "1957 five regions; Brong-Ahafo 1959-04-04; Upper 1960-07-01; Central 1970-07; Greater Accra 1982-07-23; Upper split into Upper East and Upper West 1983.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.modernghana.com/news/909846/a-short-history-of-the-creation-of-regions-in-ghana.html",
+       "title": "Kofi Amenyo, “A short history of the creation of regions in Ghana”, ModernGhana (Jan 2019)",
+       "says": "Greater Accra (Accra Capital District) was legally part of Eastern Region until PNDCL 26 of 23 July 1982, which also added Ada; Central created just before the 1970 census.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Starts after the latest date any source gives for the Central split (1970-07). Ends 2019-02-01, the earliest date any source gives for the Constitutional Instruments 112–117 (sources also give 12, 13 and 15 Feb 2019); the post-2019 regions are withheld in `unresolved`."
+    }
+   ]
+  },
+  {
+   "id": "GHA:Central@1970",
+   "names": {
+    "en": "Central Region",
+    "ja": "セントラル州",
+    "local": "Central Region"
+   },
+   "wikidata": "Q846323",
+   "spans": [
+    {
+     "from": "1970-08-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "GHA-2160"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ugh.html",
+       "title": "Statoids — Regions of Ghana (change history)",
+       "says": "1957 five regions; Brong-Ahafo 1959-04-04; Upper 1960-07-01; Central 1970-07; Greater Accra 1982-07-23; Upper split into Upper East and Upper West 1983.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.modernghana.com/news/909846/a-short-history-of-the-creation-of-regions-in-ghana.html",
+       "title": "Kofi Amenyo, “A short history of the creation of regions in Ghana”, ModernGhana (Jan 2019)",
+       "says": "Greater Accra (Accra Capital District) was legally part of Eastern Region until PNDCL 26 of 23 July 1982, which also added Ada; Central created just before the 1970 census.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Starts after the latest date any source gives for its creation (1970-07); not affected in 2019."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1959-04-04",
+   "precision": "day",
+   "what": "Brong-Ahafo split from Ashanti",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Ghana&oldid=1361313766",
+     "title": "Wikipedia — Regions of Ghana (oldid 1361313766)",
+     "says": "Brong-Ahafo Region Act No. 18 of 1959 split Ashanti on 4 April 1959; Northern split into Northern and Upper on 1 July 1960; PNDCL 26 of 23 July 1982 created Greater Accra.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1960-07-01",
+   "precision": "day",
+   "what": "Upper Region split from Northern",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Ghana&oldid=1361313766",
+     "title": "Wikipedia — Regions of Ghana (oldid 1361313766)",
+     "says": "Brong-Ahafo Region Act No. 18 of 1959 split Ashanti on 4 April 1959; Northern split into Northern and Upper on 1 July 1960; PNDCL 26 of 23 July 1982 created Greater Accra.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1970",
+   "precision": "year",
+   "what": "Central split from Western (between 1969-10-01 and 1970-07)",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ugh.html",
+     "title": "Statoids — Regions of Ghana (change history)",
+     "says": "1957 five regions; Brong-Ahafo 1959-04-04; Upper 1960-07-01; Central 1970-07; Greater Accra 1982-07-23; Upper split into Upper East and Upper West 1983.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://www.modernghana.com/news/909846/a-short-history-of-the-creation-of-regions-in-ghana.html",
+     "title": "Kofi Amenyo, “A short history of the creation of regions in Ghana”, ModernGhana (Jan 2019)",
+     "says": "Greater Accra (Accra Capital District) was legally part of Eastern Region until PNDCL 26 of 23 July 1982, which also added Ada; Central created just before the 1970 census.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1982-07-23",
+   "precision": "day",
+   "what": "Greater Accra region (Accra Capital District + Ada) separated from Eastern",
+   "sources": [
+    {
+     "url": "https://www.modernghana.com/news/909846/a-short-history-of-the-creation-of-regions-in-ghana.html",
+     "title": "Kofi Amenyo, “A short history of the creation of regions in Ghana”, ModernGhana (Jan 2019)",
+     "says": "Greater Accra (Accra Capital District) was legally part of Eastern Region until PNDCL 26 of 23 July 1982, which also added Ada; Central created just before the 1970 census.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1983",
+   "precision": "year",
+   "what": "Upper Region split into Upper East and Upper West (PNDCL 41)",
+   "sources": [
+    {
+     "url": "https://ghanalegal.com/laws_subdomain/acts/id/58/regions-of-ghana-act/",
+     "title": "GhanaLegal — Regions of Ghana Act (CA 11), with Regions of Ghana (Amendment) Law 1983 (PNDCL 41)",
+     "says": "PNDCL 41 (1983) divided the Upper Region into the Upper West Region and the Upper East Region.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2019-02",
+   "precision": "month",
+   "what": "Six new regions: Bono East and Ahafo (Brong-Ahafo renamed Bono), Savannah and North East (from Northern), Oti (from Volta), Western North (from Western)",
+   "sources": [
+    {
+     "url": "https://www.wikidata.org/wiki/Q48804004",
+     "title": "Wikidata — Oti Region (Q48804004)",
+     "says": "Inception of Oti Region: 1 February 2019.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/Savannah_Region",
+     "title": "Wikipedia — Savannah Region (permanent id not obtainable; API rate-limited)",
+     "says": "Savannah Region carved from Northern after the 27 Dec 2018 referendum; CI 115 signed and presented on 12 February 2019.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1958-01-01",
+   "n": 5,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ugh.html",
+     "title": "Statoids — Regions of Ghana (change history)",
+     "says": "1957 five regions; Brong-Ahafo 1959-04-04; Upper 1960-07-01; Central 1970-07; Greater Accra 1982-07-23; Upper split into Upper East and Upper West 1983.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1965-01-01",
+   "n": 7,
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Ghana&oldid=1361313766",
+     "title": "Wikipedia — Regions of Ghana (oldid 1361313766)",
+     "says": "Brong-Ahafo Region Act No. 18 of 1959 split Ashanti on 4 April 1959; Northern split into Northern and Upper on 1 July 1960; PNDCL 26 of 23 July 1982 created Greater Accra.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1975-01-01",
+   "n": 8,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ugh.html",
+     "title": "Statoids — Regions of Ghana (change history)",
+     "says": "1957 five regions; Brong-Ahafo 1959-04-04; Upper 1960-07-01; Central 1970-07; Greater Accra 1982-07-23; Upper split into Upper East and Upper West 1983.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1990-01-01",
+   "n": 10,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ugh.html",
+     "title": "Statoids — Regions of Ghana (change history)",
+     "says": "1957 five regions; Brong-Ahafo 1959-04-04; Upper 1960-07-01; Central 1970-07; Greater Accra 1982-07-23; Upper split into Upper East and Upper West 1983.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2019-12-31",
+   "n": 16,
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Savannah_Region",
+     "title": "Wikipedia — Savannah Region (permanent id not obtainable; API rate-limited)",
+     "says": "Savannah Region carved from Northern after the 27 Dec 2018 referendum; CI 115 signed and presented on 12 February 2019.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Western and Central regions while the Central split was taking effect",
+   "atoms": [
+    "GHA-2162",
+    "GHA-2160"
+   ],
+   "from": "1969-10-01",
+   "to": "1970-08-01",
+   "why": "Central Region was created from Western between the start of the Second Republic (1969-10-01) and July 1970; one source says before the 1970-03-01 census, statoids says 1970-07. Within this window it cannot be said whether one or two units existed.",
+   "checked": [
+    "statoids ugh.html",
+    "ModernGhana (Amenyo 2019)",
+    "Wikipedia Regions of Ghana oldid 1361313766",
+    "Wikipedia Central Region (Ghana) (no date)",
+    "GhanaLegal Regions of Ghana Act"
+   ],
+   "needs": "a dated legal instrument for the Central Region (not finer atoms)"
+  },
+  {
+   "what": "Bono Region (Brong-Ahafo minus Bono East and Ahafo), 2019–",
+   "unit": "GHA:Bono@2019",
+   "atoms": [
+    "GHA-2159"
+   ],
+   "from": "2019-02-01",
+   "to": null,
+   "why": "The 2019 regions follow district lines inside the NE Brong-Ahafo atom.",
+   "checked": [
+    "NE catalogue (10 GHA atoms)",
+    "Wikidata Q48804004",
+    "Wikipedia Savannah Region"
+   ],
+   "needs": "finer atoms: Ghana districts (e.g. geoBoundaries GHA ADM2; licence to be checked)"
+  },
+  {
+   "what": "Bono East Region 2019–",
+   "unit": "GHA:BonoEast@2019",
+   "from": "2019-02-01",
+   "to": null,
+   "why": "Inside the NE Brong-Ahafo atom (atoms withheld above).",
+   "checked": [
+    "Wikipedia Regions of Ghana oldid 1361313766"
+   ],
+   "needs": "district atoms"
+  },
+  {
+   "what": "Ahafo Region 2019–",
+   "unit": "GHA:Ahafo@2019",
+   "from": "2019-02-01",
+   "to": null,
+   "why": "Inside the NE Brong-Ahafo atom (atoms withheld above).",
+   "checked": [
+    "Wikipedia Regions of Ghana oldid 1361313766"
+   ],
+   "needs": "district atoms"
+  },
+  {
+   "what": "Northern Region (2019 extent)",
+   "unit": "GHA:Northern@1960",
+   "atoms": [
+    "GHA-2155"
+   ],
+   "from": "2019-02-01",
+   "to": null,
+   "why": "Savannah and North East were carved out along district lines inside the NE Northern atom.",
+   "checked": [
+    "Wikipedia Savannah Region"
+   ],
+   "needs": "district atoms"
+  },
+  {
+   "what": "Savannah Region 2019–",
+   "unit": "GHA:Savannah@2019",
+   "from": "2019-02-01",
+   "to": null,
+   "why": "Inside the NE Northern atom (atoms withheld above).",
+   "checked": [
+    "Wikipedia Savannah Region"
+   ],
+   "needs": "district atoms"
+  },
+  {
+   "what": "North East Region 2019–",
+   "unit": "GHA:NorthEast@2019",
+   "from": "2019-02-01",
+   "to": null,
+   "why": "Inside the NE Northern atom (atoms withheld above).",
+   "checked": [
+    "Wikipedia Regions of Ghana oldid 1361313766"
+   ],
+   "needs": "district atoms"
+  },
+  {
+   "what": "Volta Region (2019 extent)",
+   "unit": "GHA:Volta@1957",
+   "atoms": [
+    "GHA-2173"
+   ],
+   "from": "2019-02-01",
+   "to": null,
+   "why": "Oti was carved out of the north of the NE Volta atom along district lines.",
+   "checked": [
+    "Wikidata Q48804004"
+   ],
+   "needs": "district atoms"
+  },
+  {
+   "what": "Oti Region 2019–",
+   "unit": "GHA:Oti@2019",
+   "from": "2019-02-01",
+   "to": null,
+   "why": "Inside the NE Volta atom (atoms withheld above).",
+   "checked": [
+    "Wikidata Q48804004"
+   ],
+   "needs": "district atoms"
+  },
+  {
+   "what": "Western Region (2019 extent)",
+   "unit": "GHA:Western@1970",
+   "atoms": [
+    "GHA-2162"
+   ],
+   "from": "2019-02-01",
+   "to": null,
+   "why": "Western North was carved out along district lines inside the NE Western atom.",
+   "checked": [
+    "Wikipedia Regions of Ghana oldid 1361313766"
+   ],
+   "needs": "district atoms"
+  },
+  {
+   "what": "Western North Region 2019–",
+   "unit": "GHA:WesternNorth@2019",
+   "from": "2019-02-01",
+   "to": null,
+   "why": "Inside the NE Western atom (atoms withheld above).",
+   "checked": [
+    "Wikipedia Regions of Ghana oldid 1361313766"
+   ],
+   "needs": "district atoms"
+  }
+ ]
+}

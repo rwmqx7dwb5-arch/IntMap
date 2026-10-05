@@ -1,0 +1,752 @@
+{
+ "country": "YEM",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "2004-01-01",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Republic of Yemen (unified 1990-05-22); the de jure governorate layout is used, not the wartime control lines after 2014.",
+ "units": [
+  {
+   "id": "YEM:AlMahrah@2004",
+   "names": {
+    "en": "Al Mahrah Governorate",
+    "ja": "マフラ県",
+    "local": "محافظة المهرة"
+   },
+   "wikidata": "Q275752",
+   "spans": [
+    {
+     "from": "2004-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "YEM-332"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uye.html",
+       "title": "Statoids — Governorates of Yemen (Gwillim Law)",
+       "says": "Changes after 1998-07-29: ~2000 Socotra Aden→Hadramawt, 2004-02 Raymah from San'a', 2013-12-18 Socotra from Hadramawt; none touch this governorate.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Raymah created January 2004). No change touching this governorate listed by Statoids after the 1998 creation of Amran and Al Dali'; outer international lines fixed by the 1992 Oman and 2000 Saudi treaties before scope."
+    }
+   ]
+  },
+  {
+   "id": "YEM:Saada@2004",
+   "names": {
+    "en": "Saada Governorate",
+    "ja": "サアダ県",
+    "local": "محافظة صعدة"
+   },
+   "wikidata": "Q275732",
+   "spans": [
+    {
+     "from": "2004-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "YEM-150"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uye.html",
+       "title": "Statoids — Governorates of Yemen (Gwillim Law)",
+       "says": "Changes after 1998-07-29: ~2000 Socotra Aden→Hadramawt, 2004-02 Raymah from San'a', 2013-12-18 Socotra from Hadramawt; none touch this governorate.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Raymah created January 2004). No change touching this governorate listed by Statoids after the 1998 creation of Amran and Al Dali'; outer international lines fixed by the 1992 Oman and 2000 Saudi treaties before scope."
+    }
+   ]
+  },
+  {
+   "id": "YEM:Hajjah@2004",
+   "names": {
+    "en": "Hajjah Governorate",
+    "ja": "ハッジャ県",
+    "local": "محافظة حجة"
+   },
+   "wikidata": "Q328158",
+   "spans": [
+    {
+     "from": "2004-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "YEM-154"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uye.html",
+       "title": "Statoids — Governorates of Yemen (Gwillim Law)",
+       "says": "Changes after 1998-07-29: ~2000 Socotra Aden→Hadramawt, 2004-02 Raymah from San'a', 2013-12-18 Socotra from Hadramawt; none touch this governorate.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Raymah created January 2004). No change touching this governorate listed by Statoids after the 1998 creation of Amran and Al Dali'; outer international lines fixed by the 1992 Oman and 2000 Saudi treaties before scope."
+    }
+   ]
+  },
+  {
+   "id": "YEM:AlJawf@2004",
+   "names": {
+    "en": "Al Jawf Governorate",
+    "ja": "ジャウフ県",
+    "local": "محافظة الجوف"
+   },
+   "wikidata": "Q328128",
+   "spans": [
+    {
+     "from": "2004-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "YEM-335"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uye.html",
+       "title": "Statoids — Governorates of Yemen (Gwillim Law)",
+       "says": "Changes after 1998-07-29: ~2000 Socotra Aden→Hadramawt, 2004-02 Raymah from San'a', 2013-12-18 Socotra from Hadramawt; none touch this governorate.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Raymah created January 2004). No change touching this governorate listed by Statoids after the 1998 creation of Amran and Al Dali'; outer international lines fixed by the 1992 Oman and 2000 Saudi treaties before scope."
+    }
+   ]
+  },
+  {
+   "id": "YEM:AlHudaydah@2004",
+   "names": {
+    "en": "Al Hudaydah Governorate",
+    "ja": "フダイダ県",
+    "local": "محافظة الحديدة"
+   },
+   "wikidata": "Q275755",
+   "spans": [
+    {
+     "from": "2004-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "YEM-151"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uye.html",
+       "title": "Statoids — Governorates of Yemen (Gwillim Law)",
+       "says": "Changes after 1998-07-29: ~2000 Socotra Aden→Hadramawt, 2004-02 Raymah from San'a', 2013-12-18 Socotra from Hadramawt; none touch this governorate.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Raymah created January 2004). No change touching this governorate listed by Statoids after the 1998 creation of Amran and Al Dali'; outer international lines fixed by the 1992 Oman and 2000 Saudi treaties before scope."
+    }
+   ]
+  },
+  {
+   "id": "YEM:Taizz@2004",
+   "names": {
+    "en": "Ta'izz Governorate",
+    "ja": "タイズ県",
+    "local": "محافظة تعز"
+   },
+   "wikidata": "Q388330",
+   "spans": [
+    {
+     "from": "2004-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "YEM-158"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uye.html",
+       "title": "Statoids — Governorates of Yemen (Gwillim Law)",
+       "says": "Changes after 1998-07-29: ~2000 Socotra Aden→Hadramawt, 2004-02 Raymah from San'a', 2013-12-18 Socotra from Hadramawt; none touch this governorate.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Raymah created January 2004). No change touching this governorate listed by Statoids after the 1998 creation of Amran and Al Dali'; outer international lines fixed by the 1992 Oman and 2000 Saudi treaties before scope."
+    }
+   ]
+  },
+  {
+   "id": "YEM:Lahij@2004",
+   "names": {
+    "en": "Lahij Governorate",
+    "ja": "ラヒジュ県",
+    "local": "محافظة لحج"
+   },
+   "wikidata": "Q388318",
+   "spans": [
+    {
+     "from": "2004-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "YEM-157"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uye.html",
+       "title": "Statoids — Governorates of Yemen (Gwillim Law)",
+       "says": "Changes after 1998-07-29: ~2000 Socotra Aden→Hadramawt, 2004-02 Raymah from San'a', 2013-12-18 Socotra from Hadramawt; none touch this governorate.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Raymah created January 2004). No change touching this governorate listed by Statoids after the 1998 creation of Amran and Al Dali'; outer international lines fixed by the 1992 Oman and 2000 Saudi treaties before scope."
+    }
+   ]
+  },
+  {
+   "id": "YEM:Abyan@2004",
+   "names": {
+    "en": "Abyan Governorate",
+    "ja": "アビヤン県",
+    "local": "محافظة أبين"
+   },
+   "wikidata": "Q241774",
+   "spans": [
+    {
+     "from": "2004-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "YEM-3511"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uye.html",
+       "title": "Statoids — Governorates of Yemen (Gwillim Law)",
+       "says": "Changes after 1998-07-29: ~2000 Socotra Aden→Hadramawt, 2004-02 Raymah from San'a', 2013-12-18 Socotra from Hadramawt; none touch this governorate.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Raymah created January 2004). No change touching this governorate listed by Statoids after the 1998 creation of Amran and Al Dali'; outer international lines fixed by the 1992 Oman and 2000 Saudi treaties before scope."
+    }
+   ]
+  },
+  {
+   "id": "YEM:Shabwah@2004",
+   "names": {
+    "en": "Shabwah Governorate",
+    "ja": "シャブワ県",
+    "local": "محافظة شبوة"
+   },
+   "wikidata": "Q328180",
+   "spans": [
+    {
+     "from": "2004-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "YEM-336"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uye.html",
+       "title": "Statoids — Governorates of Yemen (Gwillim Law)",
+       "says": "Changes after 1998-07-29: ~2000 Socotra Aden→Hadramawt, 2004-02 Raymah from San'a', 2013-12-18 Socotra from Hadramawt; none touch this governorate.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Raymah created January 2004). No change touching this governorate listed by Statoids after the 1998 creation of Amran and Al Dali'; outer international lines fixed by the 1992 Oman and 2000 Saudi treaties before scope."
+    }
+   ]
+  },
+  {
+   "id": "YEM:Marib@2004",
+   "names": {
+    "en": "Marib Governorate",
+    "ja": "マアリブ県",
+    "local": "محافظة مأرب"
+   },
+   "wikidata": "Q498465",
+   "spans": [
+    {
+     "from": "2004-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "YEM-337"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uye.html",
+       "title": "Statoids — Governorates of Yemen (Gwillim Law)",
+       "says": "Changes after 1998-07-29: ~2000 Socotra Aden→Hadramawt, 2004-02 Raymah from San'a', 2013-12-18 Socotra from Hadramawt; none touch this governorate.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Raymah created January 2004). No change touching this governorate listed by Statoids after the 1998 creation of Amran and Al Dali'; outer international lines fixed by the 1992 Oman and 2000 Saudi treaties before scope."
+    }
+   ]
+  },
+  {
+   "id": "YEM:AlBayda@2004",
+   "names": {
+    "en": "Al Bayda' Governorate",
+    "ja": "バイダー県",
+    "local": "محافظة البيضاء"
+   },
+   "wikidata": "Q221212",
+   "spans": [
+    {
+     "from": "2004-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "YEM-333"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uye.html",
+       "title": "Statoids — Governorates of Yemen (Gwillim Law)",
+       "says": "Changes after 1998-07-29: ~2000 Socotra Aden→Hadramawt, 2004-02 Raymah from San'a', 2013-12-18 Socotra from Hadramawt; none touch this governorate.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Raymah created January 2004). No change touching this governorate listed by Statoids after the 1998 creation of Amran and Al Dali'; outer international lines fixed by the 1992 Oman and 2000 Saudi treaties before scope."
+    }
+   ]
+  },
+  {
+   "id": "YEM:Amran@2004",
+   "names": {
+    "en": "'Amran Governorate",
+    "ja": "アムラーン県",
+    "local": "محافظة عمران"
+   },
+   "wikidata": "Q275720",
+   "spans": [
+    {
+     "from": "2004-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "YEM-155"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uye.html",
+       "title": "Statoids — Governorates of Yemen (Gwillim Law)",
+       "says": "Changes after 1998-07-29: ~2000 Socotra Aden→Hadramawt, 2004-02 Raymah from San'a', 2013-12-18 Socotra from Hadramawt; none touch this governorate.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Raymah created January 2004). No change touching this governorate listed by Statoids after the 1998 creation of Amran and Al Dali'; outer international lines fixed by the 1992 Oman and 2000 Saudi treaties before scope."
+    }
+   ]
+  },
+  {
+   "id": "YEM:AlDali@2004",
+   "names": {
+    "en": "Dhale Governorate",
+    "ja": "ダーリウ県",
+    "local": "محافظة الضالع"
+   },
+   "wikidata": "Q328187",
+   "spans": [
+    {
+     "from": "2004-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "YEM-334"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uye.html",
+       "title": "Statoids — Governorates of Yemen (Gwillim Law)",
+       "says": "Changes after 1998-07-29: ~2000 Socotra Aden→Hadramawt, 2004-02 Raymah from San'a', 2013-12-18 Socotra from Hadramawt; none touch this governorate.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Raymah created January 2004). No change touching this governorate listed by Statoids after the 1998 creation of Amran and Al Dali'; outer international lines fixed by the 1992 Oman and 2000 Saudi treaties before scope."
+    }
+   ]
+  },
+  {
+   "id": "YEM:Ibb@2004",
+   "names": {
+    "en": "Ibb Governorate",
+    "ja": "イッブ県",
+    "local": "محافظة إب"
+   },
+   "wikidata": "Q388274",
+   "spans": [
+    {
+     "from": "2004-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "YEM-156"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uye.html",
+       "title": "Statoids — Governorates of Yemen (Gwillim Law)",
+       "says": "Changes after 1998-07-29: ~2000 Socotra Aden→Hadramawt, 2004-02 Raymah from San'a', 2013-12-18 Socotra from Hadramawt; none touch this governorate.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Raymah created January 2004). No change touching this governorate listed by Statoids after the 1998 creation of Amran and Al Dali'; outer international lines fixed by the 1992 Oman and 2000 Saudi treaties before scope."
+    }
+   ]
+  },
+  {
+   "id": "YEM:AlMahwit@2004",
+   "names": {
+    "en": "Al Mahwit Governorate",
+    "ja": "マフウィート県",
+    "local": "محافظة المحويت"
+   },
+   "wikidata": "Q388280",
+   "spans": [
+    {
+     "from": "2004-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "YEM-152"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uye.html",
+       "title": "Statoids — Governorates of Yemen (Gwillim Law)",
+       "says": "Changes after 1998-07-29: ~2000 Socotra Aden→Hadramawt, 2004-02 Raymah from San'a', 2013-12-18 Socotra from Hadramawt; none touch this governorate.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Raymah created January 2004). No change touching this governorate listed by Statoids after the 1998 creation of Amran and Al Dali'; outer international lines fixed by the 1992 Oman and 2000 Saudi treaties before scope."
+    }
+   ]
+  },
+  {
+   "id": "YEM:Dhamar@2004",
+   "names": {
+    "en": "Dhamar Governorate",
+    "ja": "ザマール県",
+    "local": "محافظة ذمار"
+   },
+   "wikidata": "Q328193",
+   "spans": [
+    {
+     "from": "2004-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "YEM-153"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uye.html",
+       "title": "Statoids — Governorates of Yemen (Gwillim Law)",
+       "says": "Changes after 1998-07-29: ~2000 Socotra Aden→Hadramawt, 2004-02 Raymah from San'a', 2013-12-18 Socotra from Hadramawt; none touch this governorate.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Raymah created January 2004). No change touching this governorate listed by Statoids after the 1998 creation of Amran and Al Dali'; outer international lines fixed by the 1992 Oman and 2000 Saudi treaties before scope."
+    }
+   ]
+  },
+  {
+   "id": "YEM:AmanatAlAsimah@2004",
+   "names": {
+    "en": "Amanat al-Asimah Governorate",
+    "local": "أمانة العاصمة صنعاء"
+   },
+   "wikidata": "Q32130189",
+   "spans": [
+    {
+     "from": "2004-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "YEM-3498"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uye.html",
+       "title": "Statoids — Governorates of Yemen (Gwillim Law)",
+       "says": "Changes after 1998-07-29: ~2000 Socotra Aden→Hadramawt, 2004-02 Raymah from San'a', 2013-12-18 Socotra from Hadramawt; none touch this governorate.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Raymah created January 2004). No change touching this governorate listed by Statoids after the 1998 creation of Amran and Al Dali'; outer international lines fixed by the 1992 Oman and 2000 Saudi treaties before scope."
+    }
+   ]
+  },
+  {
+   "id": "YEM:Sanaa@2004",
+   "names": {
+    "en": "Sanaa Governorate",
+    "ja": "サナア県",
+    "local": "محافظة صنعاء"
+   },
+   "wikidata": "Q388291",
+   "spans": [
+    {
+     "from": "2004-03",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "YEM-3496"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1376593471",
+       "title": "Raymah Governorate — Wikipedia (oldid 1376593471)",
+       "says": "Established in January 2004 from parts of Sanaa Governorate.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/uye.html",
+       "title": "Statoids — Governorates of Yemen (Gwillim Law)",
+       "says": "2004-02: Raymah governorate split from San'a'.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Raymah split in January (Wikipedia) or February (Statoids) 2004; span starts at the first month after both."
+    }
+   ]
+  },
+  {
+   "id": "YEM:Raymah@2004",
+   "names": {
+    "en": "Raymah Governorate",
+    "ja": "ライマ県",
+    "local": "محافظة ريمة"
+   },
+   "wikidata": "Q475033",
+   "spans": [
+    {
+     "from": "2004-03",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "YEM-3499"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1376593471",
+       "title": "Raymah Governorate — Wikipedia (oldid 1376593471)",
+       "says": "Established in January 2004 from parts of Sanaa Governorate.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/uye.html",
+       "title": "Statoids — Governorates of Yemen (Gwillim Law)",
+       "says": "2004-02: Raymah governorate split from San'a'.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "See Sanaa: start after both stated months."
+    }
+   ]
+  },
+  {
+   "id": "YEM:Aden@2005",
+   "names": {
+    "en": "Aden Governorate",
+    "ja": "アデン県",
+    "local": "محافظة عدن"
+   },
+   "wikidata": "Q275729",
+   "spans": [
+    {
+     "from": "2005",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "YEM-3510"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1374294891",
+       "title": "Socotra Governorate — Wikipedia (oldid 1374294891)",
+       "says": "Archipelago attached to Aden Governorate from 1967, moved to Hadhramaut in 2004, its own governorate since December 2013.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/uye.html",
+       "title": "Statoids — Governorates of Yemen (Gwillim Law)",
+       "says": "~2000: Socotra transferred from Aden to Hadramawt.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Without Socotra; the transfer is dated 2004 (Wikipedia) or ~2000 (Statoids). Span starts after the later year."
+    }
+   ]
+  },
+  {
+   "id": "YEM:Hadramawt@2005",
+   "names": {
+    "en": "Hadhramaut Governorate",
+    "ja": "ハドラマウト県",
+    "local": "محافظة حضرموت"
+   },
+   "wikidata": "Q241135",
+   "spans": [
+    {
+     "from": "2005",
+     "precision": "year",
+     "to": "2013-12-18",
+     "atoms": [
+      "YEM-3497"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1374294891",
+       "title": "Socotra Governorate — Wikipedia (oldid 1374294891)",
+       "says": "Archipelago attached to Aden Governorate from 1967, moved to Hadhramaut in 2004, its own governorate since December 2013.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/uye.html",
+       "title": "Statoids — Governorates of Yemen (Gwillim Law)",
+       "says": "2013-12-18: Socotra governorate split from Hadramawt under Law No. 31 of 2013.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "NE Hadramawt includes Socotra (point-in-polygon: Hadibu, Abd al Kuri → YEM-3497); valid from the Socotra transfer (latest stated year 2004) to Law 31/2013."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1998-07-29",
+   "precision": "day",
+   "what": "Amran and Al Dali' governorates formed from parts of several governorates",
+   "sources": [
+    {
+     "url": "https://statoids.com/uye.html",
+     "title": "Statoids — Governorates of Yemen (Gwillim Law)",
+     "says": "1998-07-29: Amran and Al-Dali' formed from parts of Al Mahwit, Hajjah, San'a', Ibb, Lahij, Ta'izz (sources differ).",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2004-01",
+   "precision": "month",
+   "what": "Raymah governorate formed from part of Sanaa governorate (Statoids: 2004-02)",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1376593471",
+     "title": "Raymah Governorate — Wikipedia (oldid 1376593471)",
+     "says": "Established in January 2004 from parts of Sanaa Governorate.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2004",
+   "precision": "year",
+   "what": "Socotra archipelago moved from Aden to Hadramawt (Statoids: ~2000)",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1374294891",
+     "title": "Socotra Governorate — Wikipedia (oldid 1374294891)",
+     "says": "Archipelago attached to Aden Governorate from 1967, moved to Hadhramaut in 2004, its own governorate since December 2013.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2013-12-18",
+   "precision": "day",
+   "what": "Socotra governorate split from Hadramawt (Law No. 31 of 2013)",
+   "sources": [
+    {
+     "url": "https://statoids.com/uye.html",
+     "title": "Statoids — Governorates of Yemen (Gwillim Law)",
+     "says": "2013-12-18: Socotra governorate split from Hadramawt under Law No. 31 of 2013.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "2017-10-21",
+   "n": 22,
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1377044290",
+     "title": "Governorates of Yemen — Wikipedia (oldid 1377044290)",
+     "says": "Yemen is divided into twenty-one governorates and one municipality (amanah).",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Yemeni governorates 1990-05-22 to 2004 (17 governorates + Sanaa city; 1998 Amran and Al Dali' carved from parts of six governorates)",
+   "from": "1990-05-22",
+   "to": "2004-01-01",
+   "why": "The 1998 creations took districts from several governorates (sources disagree which), so pre-1998 parents are not unions of NE atoms; Socotra (inside NE Hadramawt) belonged to Aden; Saudi border undefined east of the Taif line until 2000. Not attempted.",
+   "checked": [
+    "statoids.com/uye.html",
+    "Governorates of Yemen oldid 1377044290"
+   ],
+   "needs": "district atoms (OCHA COD-AB Yemen ADM2, CC BY-IGO — check) and the 1998 decree text"
+  },
+  {
+   "what": "Sanaa governorate (with Raymah) during the month(s) Raymah was split",
+   "unit": "YEM:Sanaa@2004",
+   "atoms": [
+    "YEM-3496",
+    "YEM-3499"
+   ],
+   "from": "2004-01-01",
+   "to": "2004-03",
+   "why": "Raymah established in January (Wikipedia) or February (Statoids) 2004; day unknown.",
+   "checked": [
+    "Raymah Governorate oldid 1376593471",
+    "statoids.com/uye.html"
+   ],
+   "needs": "date of the Raymah law/decree"
+  },
+  {
+   "what": "Aden and Hadramawt while the Socotra transfer date is uncertain",
+   "unit": "YEM:Hadramawt@2005",
+   "atoms": [
+    "YEM-3497",
+    "YEM-3510"
+   ],
+   "from": "2004-01-01",
+   "to": "2005",
+   "why": "Socotra moved from Aden to Hadramawt in 2004 (Wikipedia, citing Yemen Times 2013) or ~2000 (Statoids); during 2004 the archipelago may still belong to Aden.",
+   "checked": [
+    "Socotra Governorate oldid 1374294891",
+    "statoids.com/uye.html"
+   ],
+   "needs": "the law transferring Socotra"
+  },
+  {
+   "what": "Hadramawt after Socotra governorate split; Socotra governorate itself",
+   "unit": "YEM:Hadramawt@2005",
+   "atoms": [
+    "YEM-3497"
+   ],
+   "from": "2013-12-18",
+   "to": null,
+   "why": "NE has no Socotra atom; the archipelago is part of NE Hadramawt (YEM-3497, 5 parts). Hadramawt 2013+ = YEM-3497 minus its island parts, which needs splitting the multipolygon — a finer atom.",
+   "checked": [
+    "statoids.com/uye.html",
+    "Socotra Governorate oldid 1374294891",
+    "NE geometry (point-in-polygon)"
+   ],
+   "needs": "Socotra governorate polygon (e.g. geoBoundaries YEM ADM1, check licence) or a part-level atom of YEM-3497"
+  }
+ ]
+}

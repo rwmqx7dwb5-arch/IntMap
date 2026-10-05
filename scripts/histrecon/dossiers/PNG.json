@@ -1,0 +1,822 @@
+{
+ "country": "PNG",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1975-09-16",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Independent State of Papua New Guinea since 1975-09-16. Before independence the same districts belonged to the Australian-administered Territory of Papua and New Guinea (a different polity; not covered).",
+ "units": [
+  {
+   "id": "PNG:Sandaun@1975",
+   "names": {
+    "en": "Sandaun Province (West Sepik until ~1989)",
+    "ja": "サンダウン州",
+    "local": "Sandaun Province (West Sepik until ~1989)"
+   },
+   "wikidata": "Q753689",
+   "spans": [
+    {
+     "from": "1975-09-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PNG-1241"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Papua_New_Guinea&oldid=1366914945",
+       "title": "Wikipedia — Provinces of Papua New Guinea (oldid 1366914945; cites The National, 17 May 2012 and RNZI 15 Jul 2009)",
+       "says": "Immediately before independence (16 Sep 1975) PNG had nineteen provinces and the National Capital District; Hela and Jiwaka came into being 17 May 2012.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upg.html",
+       "title": "Statoids — Provinces of Papua New Guinea (change history)",
+       "says": "Enga 1973, NCD 1974, independence 1975 (districts become provinces); renamings only until 2012-05-17, when Hela split from Southern Highlands and Jiwaka from Western Highlands.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same territory since independence: statoids lists only renamings and capital moves between 1975 and the 2012 Highlands split; no inter-provincial transfer is recorded."
+    }
+   ]
+  },
+  {
+   "id": "PNG:Western@1975",
+   "names": {
+    "en": "Western Province (Fly River)",
+    "ja": "西部州",
+    "local": "Western Province (Fly River)"
+   },
+   "wikidata": "Q849790",
+   "spans": [
+    {
+     "from": "1975-09-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PNG-1248"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Papua_New_Guinea&oldid=1366914945",
+       "title": "Wikipedia — Provinces of Papua New Guinea (oldid 1366914945; cites The National, 17 May 2012 and RNZI 15 Jul 2009)",
+       "says": "Immediately before independence (16 Sep 1975) PNG had nineteen provinces and the National Capital District; Hela and Jiwaka came into being 17 May 2012.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upg.html",
+       "title": "Statoids — Provinces of Papua New Guinea (change history)",
+       "says": "Enga 1973, NCD 1974, independence 1975 (districts become provinces); renamings only until 2012-05-17, when Hela split from Southern Highlands and Jiwaka from Western Highlands.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same territory since independence: statoids lists only renamings and capital moves between 1975 and the 2012 Highlands split; no inter-provincial transfer is recorded."
+    }
+   ]
+  },
+  {
+   "id": "PNG:EastSepik@1975",
+   "names": {
+    "en": "East Sepik Province",
+    "ja": "東セピック州",
+    "local": "East Sepik Province"
+   },
+   "wikidata": "Q690880",
+   "spans": [
+    {
+     "from": "1975-09-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PNG-1239"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Papua_New_Guinea&oldid=1366914945",
+       "title": "Wikipedia — Provinces of Papua New Guinea (oldid 1366914945; cites The National, 17 May 2012 and RNZI 15 Jul 2009)",
+       "says": "Immediately before independence (16 Sep 1975) PNG had nineteen provinces and the National Capital District; Hela and Jiwaka came into being 17 May 2012.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upg.html",
+       "title": "Statoids — Provinces of Papua New Guinea (change history)",
+       "says": "Enga 1973, NCD 1974, independence 1975 (districts become provinces); renamings only until 2012-05-17, when Hela split from Southern Highlands and Jiwaka from Western Highlands.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same territory since independence: statoids lists only renamings and capital moves between 1975 and the 2012 Highlands split; no inter-provincial transfer is recorded."
+    }
+   ]
+  },
+  {
+   "id": "PNG:Madang@1975",
+   "names": {
+    "en": "Madang Province",
+    "ja": "マダン州",
+    "local": "Madang Province"
+   },
+   "wikidata": "Q326254",
+   "spans": [
+    {
+     "from": "1975-09-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PNG-1240"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Papua_New_Guinea&oldid=1366914945",
+       "title": "Wikipedia — Provinces of Papua New Guinea (oldid 1366914945; cites The National, 17 May 2012 and RNZI 15 Jul 2009)",
+       "says": "Immediately before independence (16 Sep 1975) PNG had nineteen provinces and the National Capital District; Hela and Jiwaka came into being 17 May 2012.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upg.html",
+       "title": "Statoids — Provinces of Papua New Guinea (change history)",
+       "says": "Enga 1973, NCD 1974, independence 1975 (districts become provinces); renamings only until 2012-05-17, when Hela split from Southern Highlands and Jiwaka from Western Highlands.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same territory since independence: statoids lists only renamings and capital moves between 1975 and the 2012 Highlands split; no inter-provincial transfer is recorded."
+    }
+   ]
+  },
+  {
+   "id": "PNG:Morobe@1975",
+   "names": {
+    "en": "Morobe Province",
+    "ja": "モロベ州",
+    "local": "Morobe Province"
+   },
+   "wikidata": "Q853664",
+   "spans": [
+    {
+     "from": "1975-09-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PNG-1253"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Papua_New_Guinea&oldid=1366914945",
+       "title": "Wikipedia — Provinces of Papua New Guinea (oldid 1366914945; cites The National, 17 May 2012 and RNZI 15 Jul 2009)",
+       "says": "Immediately before independence (16 Sep 1975) PNG had nineteen provinces and the National Capital District; Hela and Jiwaka came into being 17 May 2012.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upg.html",
+       "title": "Statoids — Provinces of Papua New Guinea (change history)",
+       "says": "Enga 1973, NCD 1974, independence 1975 (districts become provinces); renamings only until 2012-05-17, when Hela split from Southern Highlands and Jiwaka from Western Highlands.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same territory since independence: statoids lists only renamings and capital moves between 1975 and the 2012 Highlands split; no inter-provincial transfer is recorded."
+    }
+   ]
+  },
+  {
+   "id": "PNG:Oro@1975",
+   "names": {
+    "en": "Oro Province (Northern Province)",
+    "ja": "オロ州",
+    "local": "Oro Province (Northern Province)"
+   },
+   "wikidata": "Q753686",
+   "spans": [
+    {
+     "from": "1975-09-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PNG-1256"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Papua_New_Guinea&oldid=1366914945",
+       "title": "Wikipedia — Provinces of Papua New Guinea (oldid 1366914945; cites The National, 17 May 2012 and RNZI 15 Jul 2009)",
+       "says": "Immediately before independence (16 Sep 1975) PNG had nineteen provinces and the National Capital District; Hela and Jiwaka came into being 17 May 2012.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upg.html",
+       "title": "Statoids — Provinces of Papua New Guinea (change history)",
+       "says": "Enga 1973, NCD 1974, independence 1975 (districts become provinces); renamings only until 2012-05-17, when Hela split from Southern Highlands and Jiwaka from Western Highlands.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same territory since independence: statoids lists only renamings and capital moves between 1975 and the 2012 Highlands split; no inter-provincial transfer is recorded."
+    }
+   ]
+  },
+  {
+   "id": "PNG:MilneBay@1975",
+   "names": {
+    "en": "Milne Bay Province",
+    "ja": "ミルン湾州",
+    "local": "Milne Bay Province"
+   },
+   "wikidata": "Q874962",
+   "spans": [
+    {
+     "from": "1975-09-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PNG-1252"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Papua_New_Guinea&oldid=1366914945",
+       "title": "Wikipedia — Provinces of Papua New Guinea (oldid 1366914945; cites The National, 17 May 2012 and RNZI 15 Jul 2009)",
+       "says": "Immediately before independence (16 Sep 1975) PNG had nineteen provinces and the National Capital District; Hela and Jiwaka came into being 17 May 2012.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upg.html",
+       "title": "Statoids — Provinces of Papua New Guinea (change history)",
+       "says": "Enga 1973, NCD 1974, independence 1975 (districts become provinces); renamings only until 2012-05-17, when Hela split from Southern Highlands and Jiwaka from Western Highlands.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same territory since independence: statoids lists only renamings and capital moves between 1975 and the 2012 Highlands split; no inter-provincial transfer is recorded."
+    }
+   ]
+  },
+  {
+   "id": "PNG:Central@1975",
+   "names": {
+    "en": "Central Province",
+    "ja": "中央州",
+    "local": "Central Province"
+   },
+   "wikidata": "Q874942",
+   "spans": [
+    {
+     "from": "1975-09-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PNG-1249"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Papua_New_Guinea&oldid=1366914945",
+       "title": "Wikipedia — Provinces of Papua New Guinea (oldid 1366914945; cites The National, 17 May 2012 and RNZI 15 Jul 2009)",
+       "says": "Immediately before independence (16 Sep 1975) PNG had nineteen provinces and the National Capital District; Hela and Jiwaka came into being 17 May 2012.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upg.html",
+       "title": "Statoids — Provinces of Papua New Guinea (change history)",
+       "says": "Enga 1973, NCD 1974, independence 1975 (districts become provinces); renamings only until 2012-05-17, when Hela split from Southern Highlands and Jiwaka from Western Highlands.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same territory since independence: statoids lists only renamings and capital moves between 1975 and the 2012 Highlands split; no inter-provincial transfer is recorded."
+    }
+   ]
+  },
+  {
+   "id": "PNG:NCD@1975",
+   "names": {
+    "en": "National Capital District",
+    "ja": "首都区",
+    "local": "National Capital District"
+   },
+   "wikidata": "Q1378310",
+   "spans": [
+    {
+     "from": "1975-09-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PNG-1254"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=National_Capital_District_(Papua_New_Guinea)&oldid=1377784488",
+       "title": "Wikipedia — National Capital District (Papua New Guinea) (oldid 1377784488)",
+       "says": "Established 16 September 1975; surrounded by Central Province but technically not part of it.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Papua_New_Guinea&oldid=1366914945",
+       "title": "Wikipedia — Provinces of Papua New Guinea (oldid 1366914945; cites The National, 17 May 2012 and RNZI 15 Jul 2009)",
+       "says": "Immediately before independence (16 Sep 1975) PNG had nineteen provinces and the National Capital District; Hela and Jiwaka came into being 17 May 2012.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upg.html",
+       "title": "Statoids — Provinces of Papua New Guinea (change history)",
+       "says": "Enga 1973, NCD 1974, independence 1975 (districts become provinces); renamings only until 2012-05-17, when Hela split from Southern Highlands and Jiwaka from Western Highlands.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same territory since independence: statoids lists only renamings and capital moves between 1975 and the 2012 Highlands split; no inter-provincial transfer is recorded."
+    }
+   ]
+  },
+  {
+   "id": "PNG:Gulf@1975",
+   "names": {
+    "en": "Gulf Province",
+    "ja": "湾岸州",
+    "local": "Gulf Province"
+   },
+   "wikidata": "Q874980",
+   "spans": [
+    {
+     "from": "1975-09-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PNG-1244"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Papua_New_Guinea&oldid=1366914945",
+       "title": "Wikipedia — Provinces of Papua New Guinea (oldid 1366914945; cites The National, 17 May 2012 and RNZI 15 Jul 2009)",
+       "says": "Immediately before independence (16 Sep 1975) PNG had nineteen provinces and the National Capital District; Hela and Jiwaka came into being 17 May 2012.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upg.html",
+       "title": "Statoids — Provinces of Papua New Guinea (change history)",
+       "says": "Enga 1973, NCD 1974, independence 1975 (districts become provinces); renamings only until 2012-05-17, when Hela split from Southern Highlands and Jiwaka from Western Highlands.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same territory since independence: statoids lists only renamings and capital moves between 1975 and the 2012 Highlands split; no inter-provincial transfer is recorded."
+    }
+   ]
+  },
+  {
+   "id": "PNG:Bougainville@1975",
+   "names": {
+    "en": "Bougainville (North Solomons Province 1975–1990s; Autonomous Region of Bougainville since 2005)",
+    "ja": "ブーゲンビル州",
+    "local": "Bougainville (North Solomons Province 1975–1990s; Autonomous Region of Bougainville since 2005)"
+   },
+   "wikidata": "Q18826",
+   "spans": [
+    {
+     "from": "1975-09-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PNG-1245"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Papua_New_Guinea&oldid=1366914945",
+       "title": "Wikipedia — Provinces of Papua New Guinea (oldid 1366914945; cites The National, 17 May 2012 and RNZI 15 Jul 2009)",
+       "says": "Immediately before independence (16 Sep 1975) PNG had nineteen provinces and the National Capital District; Hela and Jiwaka came into being 17 May 2012.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upg.html",
+       "title": "Statoids — Provinces of Papua New Guinea (change history)",
+       "says": "Enga 1973, NCD 1974, independence 1975 (districts become provinces); renamings only until 2012-05-17, when Hela split from Southern Highlands and Jiwaka from Western Highlands.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same territory since independence: statoids lists only renamings and capital moves between 1975 and the 2012 Highlands split; no inter-provincial transfer is recorded. Changes of name and status (North Solomons, Bougainville, autonomous region) did not change the territory. PNG lost effective control of the island 1990–1997 (civil war), but it remained de jure a province."
+    }
+   ]
+  },
+  {
+   "id": "PNG:WestNewBritain@1975",
+   "names": {
+    "en": "West New Britain Province",
+    "ja": "西ニューブリテン州",
+    "local": "West New Britain Province"
+   },
+   "wikidata": "Q667468",
+   "spans": [
+    {
+     "from": "1975-09-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PNG-1257"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Papua_New_Guinea&oldid=1366914945",
+       "title": "Wikipedia — Provinces of Papua New Guinea (oldid 1366914945; cites The National, 17 May 2012 and RNZI 15 Jul 2009)",
+       "says": "Immediately before independence (16 Sep 1975) PNG had nineteen provinces and the National Capital District; Hela and Jiwaka came into being 17 May 2012.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upg.html",
+       "title": "Statoids — Provinces of Papua New Guinea (change history)",
+       "says": "Enga 1973, NCD 1974, independence 1975 (districts become provinces); renamings only until 2012-05-17, when Hela split from Southern Highlands and Jiwaka from Western Highlands.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same territory since independence: statoids lists only renamings and capital moves between 1975 and the 2012 Highlands split; no inter-provincial transfer is recorded."
+    }
+   ]
+  },
+  {
+   "id": "PNG:EastNewBritain@1975",
+   "names": {
+    "en": "East New Britain Province",
+    "ja": "東ニューブリテン州",
+    "local": "East New Britain Province"
+   },
+   "wikidata": "Q753702",
+   "spans": [
+    {
+     "from": "1975-09-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PNG-1250"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Papua_New_Guinea&oldid=1366914945",
+       "title": "Wikipedia — Provinces of Papua New Guinea (oldid 1366914945; cites The National, 17 May 2012 and RNZI 15 Jul 2009)",
+       "says": "Immediately before independence (16 Sep 1975) PNG had nineteen provinces and the National Capital District; Hela and Jiwaka came into being 17 May 2012.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upg.html",
+       "title": "Statoids — Provinces of Papua New Guinea (change history)",
+       "says": "Enga 1973, NCD 1974, independence 1975 (districts become provinces); renamings only until 2012-05-17, when Hela split from Southern Highlands and Jiwaka from Western Highlands.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same territory since independence: statoids lists only renamings and capital moves between 1975 and the 2012 Highlands split; no inter-provincial transfer is recorded."
+    }
+   ]
+  },
+  {
+   "id": "PNG:NewIreland@1975",
+   "names": {
+    "en": "New Ireland Province",
+    "ja": "ニューアイルランド州",
+    "local": "New Ireland Province"
+   },
+   "wikidata": "Q838690",
+   "spans": [
+    {
+     "from": "1975-09-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PNG-1255"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Papua_New_Guinea&oldid=1366914945",
+       "title": "Wikipedia — Provinces of Papua New Guinea (oldid 1366914945; cites The National, 17 May 2012 and RNZI 15 Jul 2009)",
+       "says": "Immediately before independence (16 Sep 1975) PNG had nineteen provinces and the National Capital District; Hela and Jiwaka came into being 17 May 2012.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upg.html",
+       "title": "Statoids — Provinces of Papua New Guinea (change history)",
+       "says": "Enga 1973, NCD 1974, independence 1975 (districts become provinces); renamings only until 2012-05-17, when Hela split from Southern Highlands and Jiwaka from Western Highlands.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same territory since independence: statoids lists only renamings and capital moves between 1975 and the 2012 Highlands split; no inter-provincial transfer is recorded."
+    }
+   ]
+  },
+  {
+   "id": "PNG:Manus@1975",
+   "names": {
+    "en": "Manus Province",
+    "ja": "マヌス州",
+    "local": "Manus Province"
+   },
+   "wikidata": "Q874935",
+   "spans": [
+    {
+     "from": "1975-09-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PNG-1251"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Papua_New_Guinea&oldid=1366914945",
+       "title": "Wikipedia — Provinces of Papua New Guinea (oldid 1366914945; cites The National, 17 May 2012 and RNZI 15 Jul 2009)",
+       "says": "Immediately before independence (16 Sep 1975) PNG had nineteen provinces and the National Capital District; Hela and Jiwaka came into being 17 May 2012.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upg.html",
+       "title": "Statoids — Provinces of Papua New Guinea (change history)",
+       "says": "Enga 1973, NCD 1974, independence 1975 (districts become provinces); renamings only until 2012-05-17, when Hela split from Southern Highlands and Jiwaka from Western Highlands.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same territory since independence: statoids lists only renamings and capital moves between 1975 and the 2012 Highlands split; no inter-provincial transfer is recorded."
+    }
+   ]
+  },
+  {
+   "id": "PNG:Chimbu@1975",
+   "names": {
+    "en": "Chimbu (Simbu) Province",
+    "ja": "シンブ州",
+    "local": "Chimbu (Simbu) Province"
+   },
+   "wikidata": "Q599448",
+   "spans": [
+    {
+     "from": "1975-09-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PNG-1242"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Papua_New_Guinea&oldid=1366914945",
+       "title": "Wikipedia — Provinces of Papua New Guinea (oldid 1366914945; cites The National, 17 May 2012 and RNZI 15 Jul 2009)",
+       "says": "Immediately before independence (16 Sep 1975) PNG had nineteen provinces and the National Capital District; Hela and Jiwaka came into being 17 May 2012.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upg.html",
+       "title": "Statoids — Provinces of Papua New Guinea (change history)",
+       "says": "Enga 1973, NCD 1974, independence 1975 (districts become provinces); renamings only until 2012-05-17, when Hela split from Southern Highlands and Jiwaka from Western Highlands.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same territory since independence: statoids lists only renamings and capital moves between 1975 and the 2012 Highlands split; no inter-provincial transfer is recorded."
+    }
+   ]
+  },
+  {
+   "id": "PNG:Enga@1975",
+   "names": {
+    "en": "Enga Province",
+    "ja": "エンガ州",
+    "local": "Enga Province"
+   },
+   "wikidata": "Q862584",
+   "spans": [
+    {
+     "from": "1975-09-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PNG-1238"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Papua_New_Guinea&oldid=1366914945",
+       "title": "Wikipedia — Provinces of Papua New Guinea (oldid 1366914945; cites The National, 17 May 2012 and RNZI 15 Jul 2009)",
+       "says": "Immediately before independence (16 Sep 1975) PNG had nineteen provinces and the National Capital District; Hela and Jiwaka came into being 17 May 2012.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upg.html",
+       "title": "Statoids — Provinces of Papua New Guinea (change history)",
+       "says": "Enga 1973, NCD 1974, independence 1975 (districts become provinces); renamings only until 2012-05-17, when Hela split from Southern Highlands and Jiwaka from Western Highlands.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same territory since independence: statoids lists only renamings and capital moves between 1975 and the 2012 Highlands split; no inter-provincial transfer is recorded."
+    }
+   ]
+  },
+  {
+   "id": "PNG:EasternHighlands@1975",
+   "names": {
+    "en": "Eastern Highlands Province",
+    "ja": "東部山岳州",
+    "local": "Eastern Highlands Province"
+   },
+   "wikidata": "Q849812",
+   "spans": [
+    {
+     "from": "1975-09-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PNG-1243"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Papua_New_Guinea&oldid=1366914945",
+       "title": "Wikipedia — Provinces of Papua New Guinea (oldid 1366914945; cites The National, 17 May 2012 and RNZI 15 Jul 2009)",
+       "says": "Immediately before independence (16 Sep 1975) PNG had nineteen provinces and the National Capital District; Hela and Jiwaka came into being 17 May 2012.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upg.html",
+       "title": "Statoids — Provinces of Papua New Guinea (change history)",
+       "says": "Enga 1973, NCD 1974, independence 1975 (districts become provinces); renamings only until 2012-05-17, when Hela split from Southern Highlands and Jiwaka from Western Highlands.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same territory since independence: statoids lists only renamings and capital moves between 1975 and the 2012 Highlands split; no inter-provincial transfer is recorded."
+    }
+   ]
+  },
+  {
+   "id": "PNG:WesternHighlands@1975",
+   "names": {
+    "en": "Western Highlands Province",
+    "ja": "西部山岳州",
+    "local": "Western Highlands Province"
+   },
+   "wikidata": "Q849807",
+   "spans": [
+    {
+     "from": "1975-09-16",
+     "precision": "day",
+     "to": "2012-05-17",
+     "atoms": [
+      "PNG-1247"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Papua_New_Guinea&oldid=1366914945",
+       "title": "Wikipedia — Provinces of Papua New Guinea (oldid 1366914945; cites The National, 17 May 2012 and RNZI 15 Jul 2009)",
+       "says": "Immediately before independence (16 Sep 1975) PNG had nineteen provinces and the National Capital District; Hela and Jiwaka came into being 17 May 2012.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upg.html",
+       "title": "Statoids — Provinces of Papua New Guinea (change history)",
+       "says": "Enga 1973, NCD 1974, independence 1975 (districts become provinces); renamings only until 2012-05-17, when Hela split from Southern Highlands and Jiwaka from Western Highlands.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same territory since independence: statoids lists only renamings and capital moves between 1975 and the 2012 Highlands split; no inter-provincial transfer is recorded. Until 17 May 2012 it included the area that became Jiwaka Province."
+    }
+   ]
+  },
+  {
+   "id": "PNG:SouthernHighlands@1975",
+   "names": {
+    "en": "Southern Highlands Province",
+    "ja": "南部山岳州",
+    "local": "Southern Highlands Province"
+   },
+   "wikidata": "Q849801",
+   "spans": [
+    {
+     "from": "1975-09-16",
+     "precision": "day",
+     "to": "2012-05-17",
+     "atoms": [
+      "PNG-1246"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Papua_New_Guinea&oldid=1366914945",
+       "title": "Wikipedia — Provinces of Papua New Guinea (oldid 1366914945; cites The National, 17 May 2012 and RNZI 15 Jul 2009)",
+       "says": "Immediately before independence (16 Sep 1975) PNG had nineteen provinces and the National Capital District; Hela and Jiwaka came into being 17 May 2012.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upg.html",
+       "title": "Statoids — Provinces of Papua New Guinea (change history)",
+       "says": "Enga 1973, NCD 1974, independence 1975 (districts become provinces); renamings only until 2012-05-17, when Hela split from Southern Highlands and Jiwaka from Western Highlands.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same territory since independence: statoids lists only renamings and capital moves between 1975 and the 2012 Highlands split; no inter-provincial transfer is recorded. Until 17 May 2012 it included the area that became Hela Province."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1975-09-16",
+   "precision": "day",
+   "what": "Independence; the nineteen districts become provinces, plus the National Capital District",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Papua_New_Guinea&oldid=1366914945",
+     "title": "Wikipedia — Provinces of Papua New Guinea (oldid 1366914945; cites The National, 17 May 2012 and RNZI 15 Jul 2009)",
+     "says": "Immediately before independence (16 Sep 1975) PNG had nineteen provinces and the National Capital District; Hela and Jiwaka came into being 17 May 2012.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=National_Capital_District_(Papua_New_Guinea)&oldid=1377784488",
+     "title": "Wikipedia — National Capital District (Papua New Guinea) (oldid 1377784488)",
+     "says": "Established 16 September 1975; surrounded by Central Province but technically not part of it.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2012-05-17",
+   "precision": "day",
+   "what": "Hela Province split from Southern Highlands (Komo-Margarima, Koroba-Lake Kopiago, Tari-Pori districts); Jiwaka Province split from Western Highlands (Jimi, North Waghi, Anglimp-South Waghi districts)",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Papua_New_Guinea&oldid=1366914945",
+     "title": "Wikipedia — Provinces of Papua New Guinea (oldid 1366914945; cites The National, 17 May 2012 and RNZI 15 Jul 2009)",
+     "says": "Immediately before independence (16 Sep 1975) PNG had nineteen provinces and the National Capital District; Hela and Jiwaka came into being 17 May 2012.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://www.statoids.com/upg.html",
+     "title": "Statoids — Provinces of Papua New Guinea (change history)",
+     "says": "Enga 1973, NCD 1974, independence 1975 (districts become provinces); renamings only until 2012-05-17, when Hela split from Southern Highlands and Jiwaka from Western Highlands.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1975-09-16",
+   "n": 20,
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Papua_New_Guinea&oldid=1366914945",
+     "title": "Wikipedia — Provinces of Papua New Guinea (oldid 1366914945; cites The National, 17 May 2012 and RNZI 15 Jul 2009)",
+     "says": "Immediately before independence (16 Sep 1975) PNG had nineteen provinces and the National Capital District; Hela and Jiwaka came into being 17 May 2012.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2019-12-31",
+   "n": 22,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/upg.html",
+     "title": "Statoids — Provinces of Papua New Guinea (change history)",
+     "says": "Enga 1973, NCD 1974, independence 1975 (districts become provinces); renamings only until 2012-05-17, when Hela split from Southern Highlands and Jiwaka from Western Highlands.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Papua_New_Guinea&oldid=1366914945",
+     "title": "Wikipedia — Provinces of Papua New Guinea (oldid 1366914945; cites The National, 17 May 2012 and RNZI 15 Jul 2009)",
+     "says": "Immediately before independence (16 Sep 1975) PNG had nineteen provinces and the National Capital District; Hela and Jiwaka came into being 17 May 2012.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Southern Highlands Province after 2012-05-17 (without Hela)",
+   "unit": "PNG:SouthernHighlands@1975",
+   "atoms": [
+    "PNG-1246",
+    "PNG-1247"
+   ],
+   "from": "2012-05-17",
+   "to": null,
+   "why": "NE depicts the pre-2012 layout: one atom for Southern Highlands incl. Hela and one for Western Highlands incl. Jiwaka. The new provinces follow district lines inside those atoms, so none of the four post-2012 provinces is a union of NE atoms.",
+   "checked": [
+    "NE atom catalogue (20 PNG atoms, no Hela/Jiwaka)",
+    "statoids upg.html",
+    "Wikipedia Provinces of Papua New Guinea oldid 1366914945"
+   ],
+   "needs": "finer atoms: PNG districts (e.g. geoBoundaries PNG ADM2 or the NSO 2011 census district boundaries; licence to be checked) — Hela = 3 districts of former Southern Highlands, Jiwaka = 3 districts of former Western Highlands"
+  },
+  {
+   "what": "Hela Province 2012-05-17 onward",
+   "unit": "PNG:Hela@2012",
+   "from": "2012-05-17",
+   "to": null,
+   "why": "Carved wholly from Southern Highlands along district lines inside atom PNG-1246 (withheld in the previous entry).",
+   "checked": [
+    "as above"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "Western Highlands Province after 2012-05-17 (without Jiwaka)",
+   "unit": "PNG:WesternHighlands@1975",
+   "from": "2012-05-17",
+   "to": null,
+   "why": "Atom PNG-1247 still includes Jiwaka (withheld in the first entry).",
+   "checked": [
+    "as above"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "Jiwaka Province 2012-05-17 onward",
+   "unit": "PNG:Jiwaka@2012",
+   "from": "2012-05-17",
+   "to": null,
+   "why": "Carved wholly from Western Highlands along district lines inside atom PNG-1247 (withheld in the first entry).",
+   "checked": [
+    "as above"
+   ],
+   "needs": "as above"
+  }
+ ]
+}

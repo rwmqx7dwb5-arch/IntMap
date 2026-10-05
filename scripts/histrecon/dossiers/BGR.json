@@ -1,0 +1,1384 @@
+{
+ "country": "BGR",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1999-01-08",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Republic of Bulgaria; no change of the state border in scope.",
+ "units": [
+  {
+   "id": "BGR:Burgas@1999",
+   "names": {
+    "en": "Burgas Province",
+    "ja": "ブルガス州",
+    "local": "Област Бургас"
+   },
+   "wikidata": "Q369220",
+   "spans": [
+    {
+     "from": "1999-01-08",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGR-2254"
+     ],
+     "sources": [
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register (Ekat_ver.txt in Ekatte-2022-json.zip), entries 930–931",
+       "says": "Law amending ZATURB (DV 154/1998) divides Bulgaria into 28 oblasti; Presidential Decree 1 of 05.01.1999 (DV 2/8.1.1999) fixes their borders and centres.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, 1999-01 to 2020-07",
+       "says": "Every later municipal border change listed (e.g. 2005 Vratsa, 2009 Ruse, 2012 Stara Zagora) lies inside a single oblast.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ubg.html",
+       "title": "Provinces of Bulgaria (statoids.com, updated 2015-06-30)",
+       "says": "1999 reorganisation into 28 regions; 2001-07-03 Knezha municipality from Vratsa to Pleven; 2001–2004 small transfers between Razgrad and Ruse.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Borders fixed by Presidential Decree 1/1999, published DV 2 of 08.01.1999; no later change of this oblast outer border appears in the NSI register up to July 2020."
+    }
+   ]
+  },
+  {
+   "id": "BGR:Yambol@1999",
+   "names": {
+    "en": "Yambol Province",
+    "ja": "ヤンボル州",
+    "local": "Област Ямбол"
+   },
+   "wikidata": "Q220736",
+   "spans": [
+    {
+     "from": "1999-01-08",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGR-2255"
+     ],
+     "sources": [
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register (Ekat_ver.txt in Ekatte-2022-json.zip), entries 930–931",
+       "says": "Law amending ZATURB (DV 154/1998) divides Bulgaria into 28 oblasti; Presidential Decree 1 of 05.01.1999 (DV 2/8.1.1999) fixes their borders and centres.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, 1999-01 to 2020-07",
+       "says": "Every later municipal border change listed (e.g. 2005 Vratsa, 2009 Ruse, 2012 Stara Zagora) lies inside a single oblast.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ubg.html",
+       "title": "Provinces of Bulgaria (statoids.com, updated 2015-06-30)",
+       "says": "1999 reorganisation into 28 regions; 2001-07-03 Knezha municipality from Vratsa to Pleven; 2001–2004 small transfers between Razgrad and Ruse.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Borders fixed by Presidential Decree 1/1999, published DV 2 of 08.01.1999; no later change of this oblast outer border appears in the NSI register up to July 2020."
+    }
+   ]
+  },
+  {
+   "id": "BGR:Haskovo@1999",
+   "names": {
+    "en": "Haskovo Province",
+    "ja": "ハスコヴォ州",
+    "local": "Област Хасково"
+   },
+   "wikidata": "Q182809",
+   "spans": [
+    {
+     "from": "1999-01-08",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGR-2232"
+     ],
+     "sources": [
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register (Ekat_ver.txt in Ekatte-2022-json.zip), entries 930–931",
+       "says": "Law amending ZATURB (DV 154/1998) divides Bulgaria into 28 oblasti; Presidential Decree 1 of 05.01.1999 (DV 2/8.1.1999) fixes their borders and centres.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, 1999-01 to 2020-07",
+       "says": "Every later municipal border change listed (e.g. 2005 Vratsa, 2009 Ruse, 2012 Stara Zagora) lies inside a single oblast.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ubg.html",
+       "title": "Provinces of Bulgaria (statoids.com, updated 2015-06-30)",
+       "says": "1999 reorganisation into 28 regions; 2001-07-03 Knezha municipality from Vratsa to Pleven; 2001–2004 small transfers between Razgrad and Ruse.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Borders fixed by Presidential Decree 1/1999, published DV 2 of 08.01.1999; no later change of this oblast outer border appears in the NSI register up to July 2020."
+    }
+   ]
+  },
+  {
+   "id": "BGR:Vidin@1999",
+   "names": {
+    "en": "Vidin Province",
+    "ja": "ヴィディン州",
+    "local": "Област Видин"
+   },
+   "wikidata": "Q2012772",
+   "spans": [
+    {
+     "from": "1999-01-08",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGR-2253"
+     ],
+     "sources": [
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register (Ekat_ver.txt in Ekatte-2022-json.zip), entries 930–931",
+       "says": "Law amending ZATURB (DV 154/1998) divides Bulgaria into 28 oblasti; Presidential Decree 1 of 05.01.1999 (DV 2/8.1.1999) fixes their borders and centres.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, 1999-01 to 2020-07",
+       "says": "Every later municipal border change listed (e.g. 2005 Vratsa, 2009 Ruse, 2012 Stara Zagora) lies inside a single oblast.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ubg.html",
+       "title": "Provinces of Bulgaria (statoids.com, updated 2015-06-30)",
+       "says": "1999 reorganisation into 28 regions; 2001-07-03 Knezha municipality from Vratsa to Pleven; 2001–2004 small transfers between Razgrad and Ruse.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Borders fixed by Presidential Decree 1/1999, published DV 2 of 08.01.1999; no later change of this oblast outer border appears in the NSI register up to July 2020."
+    }
+   ]
+  },
+  {
+   "id": "BGR:Pernik@1999",
+   "names": {
+    "en": "Pernik Province",
+    "ja": "ペルニク州",
+    "local": "Област Перник"
+   },
+   "wikidata": "Q2012234",
+   "spans": [
+    {
+     "from": "1999-01-08",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGR-2245"
+     ],
+     "sources": [
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register (Ekat_ver.txt in Ekatte-2022-json.zip), entries 930–931",
+       "says": "Law amending ZATURB (DV 154/1998) divides Bulgaria into 28 oblasti; Presidential Decree 1 of 05.01.1999 (DV 2/8.1.1999) fixes their borders and centres.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, 1999-01 to 2020-07",
+       "says": "Every later municipal border change listed (e.g. 2005 Vratsa, 2009 Ruse, 2012 Stara Zagora) lies inside a single oblast.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ubg.html",
+       "title": "Provinces of Bulgaria (statoids.com, updated 2015-06-30)",
+       "says": "1999 reorganisation into 28 regions; 2001-07-03 Knezha municipality from Vratsa to Pleven; 2001–2004 small transfers between Razgrad and Ruse.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Borders fixed by Presidential Decree 1/1999, published DV 2 of 08.01.1999; no later change of this oblast outer border appears in the NSI register up to July 2020."
+    }
+   ]
+  },
+  {
+   "id": "BGR:Sofia@1999",
+   "names": {
+    "en": "Sofia Province",
+    "ja": "ソフィア州",
+    "local": "Софийска област"
+   },
+   "wikidata": "Q202904",
+   "spans": [
+    {
+     "from": "1999-01-08",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGR-2244"
+     ],
+     "sources": [
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register (Ekat_ver.txt in Ekatte-2022-json.zip), entries 930–931",
+       "says": "Law amending ZATURB (DV 154/1998) divides Bulgaria into 28 oblasti; Presidential Decree 1 of 05.01.1999 (DV 2/8.1.1999) fixes their borders and centres.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, 1999-01 to 2020-07",
+       "says": "Every later municipal border change listed (e.g. 2005 Vratsa, 2009 Ruse, 2012 Stara Zagora) lies inside a single oblast.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ubg.html",
+       "title": "Provinces of Bulgaria (statoids.com, updated 2015-06-30)",
+       "says": "1999 reorganisation into 28 regions; 2001-07-03 Knezha municipality from Vratsa to Pleven; 2001–2004 small transfers between Razgrad and Ruse.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Borders fixed by Presidential Decree 1/1999, published DV 2 of 08.01.1999; no later change of this oblast outer border appears in the NSI register up to July 2020."
+    }
+   ]
+  },
+  {
+   "id": "BGR:Montana@1999",
+   "names": {
+    "en": "Montana Province",
+    "ja": "モンタナ州",
+    "local": "Област Монтана"
+   },
+   "wikidata": "Q2012057",
+   "spans": [
+    {
+     "from": "1999-01-08",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGR-2250"
+     ],
+     "sources": [
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register (Ekat_ver.txt in Ekatte-2022-json.zip), entries 930–931",
+       "says": "Law amending ZATURB (DV 154/1998) divides Bulgaria into 28 oblasti; Presidential Decree 1 of 05.01.1999 (DV 2/8.1.1999) fixes their borders and centres.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, 1999-01 to 2020-07",
+       "says": "Every later municipal border change listed (e.g. 2005 Vratsa, 2009 Ruse, 2012 Stara Zagora) lies inside a single oblast.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ubg.html",
+       "title": "Provinces of Bulgaria (statoids.com, updated 2015-06-30)",
+       "says": "1999 reorganisation into 28 regions; 2001-07-03 Knezha municipality from Vratsa to Pleven; 2001–2004 small transfers between Razgrad and Ruse.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Borders fixed by Presidential Decree 1/1999, published DV 2 of 08.01.1999; no later change of this oblast outer border appears in the NSI register up to July 2020."
+    }
+   ]
+  },
+  {
+   "id": "BGR:Kyustendil@1999",
+   "names": {
+    "en": "Kyustendil Province",
+    "ja": "キュステンディル州",
+    "local": "Област Кюстендил"
+   },
+   "wikidata": "Q1112985",
+   "spans": [
+    {
+     "from": "1999-01-08",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGR-2252"
+     ],
+     "sources": [
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register (Ekat_ver.txt in Ekatte-2022-json.zip), entries 930–931",
+       "says": "Law amending ZATURB (DV 154/1998) divides Bulgaria into 28 oblasti; Presidential Decree 1 of 05.01.1999 (DV 2/8.1.1999) fixes their borders and centres.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, 1999-01 to 2020-07",
+       "says": "Every later municipal border change listed (e.g. 2005 Vratsa, 2009 Ruse, 2012 Stara Zagora) lies inside a single oblast.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ubg.html",
+       "title": "Provinces of Bulgaria (statoids.com, updated 2015-06-30)",
+       "says": "1999 reorganisation into 28 regions; 2001-07-03 Knezha municipality from Vratsa to Pleven; 2001–2004 small transfers between Razgrad and Ruse.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Borders fixed by Presidential Decree 1/1999, published DV 2 of 08.01.1999; no later change of this oblast outer border appears in the NSI register up to July 2020."
+    }
+   ]
+  },
+  {
+   "id": "BGR:Blagoevgrad@1999",
+   "names": {
+    "en": "Blagoevgrad Province",
+    "ja": "ブラゴエヴグラト州",
+    "local": "Област Благоевград"
+   },
+   "wikidata": "Q804311",
+   "spans": [
+    {
+     "from": "1999-01-08",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGR-3002"
+     ],
+     "sources": [
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register (Ekat_ver.txt in Ekatte-2022-json.zip), entries 930–931",
+       "says": "Law amending ZATURB (DV 154/1998) divides Bulgaria into 28 oblasti; Presidential Decree 1 of 05.01.1999 (DV 2/8.1.1999) fixes their borders and centres.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, 1999-01 to 2020-07",
+       "says": "Every later municipal border change listed (e.g. 2005 Vratsa, 2009 Ruse, 2012 Stara Zagora) lies inside a single oblast.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ubg.html",
+       "title": "Provinces of Bulgaria (statoids.com, updated 2015-06-30)",
+       "says": "1999 reorganisation into 28 regions; 2001-07-03 Knezha municipality from Vratsa to Pleven; 2001–2004 small transfers between Razgrad and Ruse.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Borders fixed by Presidential Decree 1/1999, published DV 2 of 08.01.1999; no later change of this oblast outer border appears in the NSI register up to July 2020."
+    }
+   ]
+  },
+  {
+   "id": "BGR:Silistra@1999",
+   "names": {
+    "en": "Silistra Province",
+    "ja": "シリストラ州",
+    "local": "Област Силистра"
+   },
+   "wikidata": "Q2012423",
+   "spans": [
+    {
+     "from": "1999-01-08",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGR-2261"
+     ],
+     "sources": [
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register (Ekat_ver.txt in Ekatte-2022-json.zip), entries 930–931",
+       "says": "Law amending ZATURB (DV 154/1998) divides Bulgaria into 28 oblasti; Presidential Decree 1 of 05.01.1999 (DV 2/8.1.1999) fixes their borders and centres.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, 1999-01 to 2020-07",
+       "says": "Every later municipal border change listed (e.g. 2005 Vratsa, 2009 Ruse, 2012 Stara Zagora) lies inside a single oblast.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ubg.html",
+       "title": "Provinces of Bulgaria (statoids.com, updated 2015-06-30)",
+       "says": "1999 reorganisation into 28 regions; 2001-07-03 Knezha municipality from Vratsa to Pleven; 2001–2004 small transfers between Razgrad and Ruse.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Borders fixed by Presidential Decree 1/1999, published DV 2 of 08.01.1999; no later change of this oblast outer border appears in the NSI register up to July 2020."
+    }
+   ]
+  },
+  {
+   "id": "BGR:Ruse@1999",
+   "names": {
+    "en": "Ruse Province",
+    "ja": "ルセ州",
+    "local": "Област Русе"
+   },
+   "wikidata": "Q1251933",
+   "spans": [
+    {
+     "from": "2004-03-05",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGR-2262"
+     ],
+     "sources": [
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, entries 1150, 1171, 1279, 1285",
+       "says": "New borders between municipalities of Razgrad and Ruse oblasti: DV 63/17.7.2001, DV 36/18.4.2003, DV 85/26.9.2003, DV 18/5.3.2004.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ubg.html",
+       "title": "Provinces of Bulgaria (statoids.com, updated 2015-06-30)",
+       "says": "1999 reorganisation into 28 regions; 2001-07-03 Knezha municipality from Vratsa to Pleven; 2001–2004 small transfers between Razgrad and Ruse.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, 1999-01 to 2020-07",
+       "says": "Every later municipal border change listed (e.g. 2005 Vratsa, 2009 Ruse, 2012 Stara Zagora) lies inside a single oblast.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "After the last Razgrad–Ruse border decree (DV 18 of 05.03.2004)."
+    }
+   ]
+  },
+  {
+   "id": "BGR:Dobrich@1999",
+   "names": {
+    "en": "Dobrich Province",
+    "ja": "ドブリチ州",
+    "local": "Област Добрич"
+   },
+   "wikidata": "Q907395",
+   "spans": [
+    {
+     "from": "1999-01-08",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGR-2259"
+     ],
+     "sources": [
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register (Ekat_ver.txt in Ekatte-2022-json.zip), entries 930–931",
+       "says": "Law amending ZATURB (DV 154/1998) divides Bulgaria into 28 oblasti; Presidential Decree 1 of 05.01.1999 (DV 2/8.1.1999) fixes their borders and centres.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, 1999-01 to 2020-07",
+       "says": "Every later municipal border change listed (e.g. 2005 Vratsa, 2009 Ruse, 2012 Stara Zagora) lies inside a single oblast.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ubg.html",
+       "title": "Provinces of Bulgaria (statoids.com, updated 2015-06-30)",
+       "says": "1999 reorganisation into 28 regions; 2001-07-03 Knezha municipality from Vratsa to Pleven; 2001–2004 small transfers between Razgrad and Ruse.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Borders fixed by Presidential Decree 1/1999, published DV 2 of 08.01.1999; no later change of this oblast outer border appears in the NSI register up to July 2020."
+    }
+   ]
+  },
+  {
+   "id": "BGR:Vratsa@1999",
+   "names": {
+    "en": "Vratsa Province",
+    "ja": "ヴラツァ州",
+    "local": "Област Враца"
+   },
+   "wikidata": "Q2012785",
+   "spans": [
+    {
+     "from": "2001-07-03",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGR-2251"
+     ],
+     "sources": [
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, entry 1147",
+       "says": "Decree 163 of 19.06.2001 (DV 59/3.7.2001): new borders of Vratsa and Pleven oblasti.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ubg.html",
+       "title": "Provinces of Bulgaria (statoids.com, updated 2015-06-30)",
+       "says": "1999 reorganisation into 28 regions; 2001-07-03 Knezha municipality from Vratsa to Pleven; 2001–2004 small transfers between Razgrad and Ruse.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register (Ekat_ver.txt in Ekatte-2022-json.zip), entries 930–931",
+       "says": "Law amending ZATURB (DV 154/1998) divides Bulgaria into 28 oblasti; Presidential Decree 1 of 05.01.1999 (DV 2/8.1.1999) fixes their borders and centres.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, 1999-01 to 2020-07",
+       "says": "Every later municipal border change listed (e.g. 2005 Vratsa, 2009 Ruse, 2012 Stara Zagora) lies inside a single oblast.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Knezha municipality transferred to Pleven: Decree 163/2001 published DV 59 of 03.07.2001 (statoids gives the same date)."
+    }
+   ]
+  },
+  {
+   "id": "BGR:Pleven@1999",
+   "names": {
+    "en": "Pleven Province",
+    "ja": "プレヴェン州",
+    "local": "Област Плевен"
+   },
+   "wikidata": "Q2012242",
+   "spans": [
+    {
+     "from": "2001-07-03",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGR-2248"
+     ],
+     "sources": [
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, entry 1147",
+       "says": "Decree 163 of 19.06.2001 (DV 59/3.7.2001): new borders of Vratsa and Pleven oblasti.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ubg.html",
+       "title": "Provinces of Bulgaria (statoids.com, updated 2015-06-30)",
+       "says": "1999 reorganisation into 28 regions; 2001-07-03 Knezha municipality from Vratsa to Pleven; 2001–2004 small transfers between Razgrad and Ruse.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register (Ekat_ver.txt in Ekatte-2022-json.zip), entries 930–931",
+       "says": "Law amending ZATURB (DV 154/1998) divides Bulgaria into 28 oblasti; Presidential Decree 1 of 05.01.1999 (DV 2/8.1.1999) fixes their borders and centres.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, 1999-01 to 2020-07",
+       "says": "Every later municipal border change listed (e.g. 2005 Vratsa, 2009 Ruse, 2012 Stara Zagora) lies inside a single oblast.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "As Vratsa: oblast border redrawn on publication 03.07.2001."
+    }
+   ]
+  },
+  {
+   "id": "BGR:VelikoTarnovo@1999",
+   "names": {
+    "en": "Veliko Tarnovo Province",
+    "ja": "ヴェリコ・タルノヴォ州",
+    "local": "Област Велико Търново"
+   },
+   "wikidata": "Q2012621",
+   "spans": [
+    {
+     "from": "1999-01-08",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGR-2249"
+     ],
+     "sources": [
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register (Ekat_ver.txt in Ekatte-2022-json.zip), entries 930–931",
+       "says": "Law amending ZATURB (DV 154/1998) divides Bulgaria into 28 oblasti; Presidential Decree 1 of 05.01.1999 (DV 2/8.1.1999) fixes their borders and centres.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, 1999-01 to 2020-07",
+       "says": "Every later municipal border change listed (e.g. 2005 Vratsa, 2009 Ruse, 2012 Stara Zagora) lies inside a single oblast.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ubg.html",
+       "title": "Provinces of Bulgaria (statoids.com, updated 2015-06-30)",
+       "says": "1999 reorganisation into 28 regions; 2001-07-03 Knezha municipality from Vratsa to Pleven; 2001–2004 small transfers between Razgrad and Ruse.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Borders fixed by Presidential Decree 1/1999, published DV 2 of 08.01.1999; no later change of this oblast outer border appears in the NSI register up to July 2020."
+    }
+   ]
+  },
+  {
+   "id": "BGR:Kardzhali@1999",
+   "names": {
+    "en": "Kardzhali Province",
+    "ja": "クルジャリ州",
+    "local": "Област Кърджали"
+   },
+   "wikidata": "Q1104675",
+   "spans": [
+    {
+     "from": "1999-01-08",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGR-2237"
+     ],
+     "sources": [
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register (Ekat_ver.txt in Ekatte-2022-json.zip), entries 930–931",
+       "says": "Law amending ZATURB (DV 154/1998) divides Bulgaria into 28 oblasti; Presidential Decree 1 of 05.01.1999 (DV 2/8.1.1999) fixes their borders and centres.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, 1999-01 to 2020-07",
+       "says": "Every later municipal border change listed (e.g. 2005 Vratsa, 2009 Ruse, 2012 Stara Zagora) lies inside a single oblast.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ubg.html",
+       "title": "Provinces of Bulgaria (statoids.com, updated 2015-06-30)",
+       "says": "1999 reorganisation into 28 regions; 2001-07-03 Knezha municipality from Vratsa to Pleven; 2001–2004 small transfers between Razgrad and Ruse.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Borders fixed by Presidential Decree 1/1999, published DV 2 of 08.01.1999; no later change of this oblast outer border appears in the NSI register up to July 2020."
+    }
+   ]
+  },
+  {
+   "id": "BGR:Smolyan@1999",
+   "names": {
+    "en": "Smolyan Province",
+    "ja": "スモリャン州",
+    "local": "Област Смолян"
+   },
+   "wikidata": "Q2012430",
+   "spans": [
+    {
+     "from": "1999-01-08",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGR-2236"
+     ],
+     "sources": [
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register (Ekat_ver.txt in Ekatte-2022-json.zip), entries 930–931",
+       "says": "Law amending ZATURB (DV 154/1998) divides Bulgaria into 28 oblasti; Presidential Decree 1 of 05.01.1999 (DV 2/8.1.1999) fixes their borders and centres.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, 1999-01 to 2020-07",
+       "says": "Every later municipal border change listed (e.g. 2005 Vratsa, 2009 Ruse, 2012 Stara Zagora) lies inside a single oblast.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ubg.html",
+       "title": "Provinces of Bulgaria (statoids.com, updated 2015-06-30)",
+       "says": "1999 reorganisation into 28 regions; 2001-07-03 Knezha municipality from Vratsa to Pleven; 2001–2004 small transfers between Razgrad and Ruse.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Borders fixed by Presidential Decree 1/1999, published DV 2 of 08.01.1999; no later change of this oblast outer border appears in the NSI register up to July 2020."
+    }
+   ]
+  },
+  {
+   "id": "BGR:Varna@1999",
+   "names": {
+    "en": "Varna Province",
+    "ja": "ヴァルナ州",
+    "local": "Област Варна"
+   },
+   "wikidata": "Q183487",
+   "spans": [
+    {
+     "from": "1999-01-08",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGR-2260"
+     ],
+     "sources": [
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register (Ekat_ver.txt in Ekatte-2022-json.zip), entries 930–931",
+       "says": "Law amending ZATURB (DV 154/1998) divides Bulgaria into 28 oblasti; Presidential Decree 1 of 05.01.1999 (DV 2/8.1.1999) fixes their borders and centres.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, 1999-01 to 2020-07",
+       "says": "Every later municipal border change listed (e.g. 2005 Vratsa, 2009 Ruse, 2012 Stara Zagora) lies inside a single oblast.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ubg.html",
+       "title": "Provinces of Bulgaria (statoids.com, updated 2015-06-30)",
+       "says": "1999 reorganisation into 28 regions; 2001-07-03 Knezha municipality from Vratsa to Pleven; 2001–2004 small transfers between Razgrad and Ruse.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Borders fixed by Presidential Decree 1/1999, published DV 2 of 08.01.1999; no later change of this oblast outer border appears in the NSI register up to July 2020."
+    }
+   ]
+  },
+  {
+   "id": "BGR:Plovdiv@1999",
+   "names": {
+    "en": "Plovdiv Province",
+    "ja": "プロヴディフ州",
+    "local": "Област Пловдив"
+   },
+   "wikidata": "Q187874",
+   "spans": [
+    {
+     "from": "1999-01-08",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGR-2235"
+     ],
+     "sources": [
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register (Ekat_ver.txt in Ekatte-2022-json.zip), entries 930–931",
+       "says": "Law amending ZATURB (DV 154/1998) divides Bulgaria into 28 oblasti; Presidential Decree 1 of 05.01.1999 (DV 2/8.1.1999) fixes their borders and centres.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, 1999-01 to 2020-07",
+       "says": "Every later municipal border change listed (e.g. 2005 Vratsa, 2009 Ruse, 2012 Stara Zagora) lies inside a single oblast.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ubg.html",
+       "title": "Provinces of Bulgaria (statoids.com, updated 2015-06-30)",
+       "says": "1999 reorganisation into 28 regions; 2001-07-03 Knezha municipality from Vratsa to Pleven; 2001–2004 small transfers between Razgrad and Ruse.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Borders fixed by Presidential Decree 1/1999, published DV 2 of 08.01.1999; no later change of this oblast outer border appears in the NSI register up to July 2020."
+    }
+   ]
+  },
+  {
+   "id": "BGR:StaraZagora@1999",
+   "names": {
+    "en": "Stara Zagora Province",
+    "ja": "スタラ・ザゴラ州",
+    "local": "Област Стара Загора"
+   },
+   "wikidata": "Q2012583",
+   "spans": [
+    {
+     "from": "1999-01-08",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGR-2233"
+     ],
+     "sources": [
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register (Ekat_ver.txt in Ekatte-2022-json.zip), entries 930–931",
+       "says": "Law amending ZATURB (DV 154/1998) divides Bulgaria into 28 oblasti; Presidential Decree 1 of 05.01.1999 (DV 2/8.1.1999) fixes their borders and centres.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, 1999-01 to 2020-07",
+       "says": "Every later municipal border change listed (e.g. 2005 Vratsa, 2009 Ruse, 2012 Stara Zagora) lies inside a single oblast.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ubg.html",
+       "title": "Provinces of Bulgaria (statoids.com, updated 2015-06-30)",
+       "says": "1999 reorganisation into 28 regions; 2001-07-03 Knezha municipality from Vratsa to Pleven; 2001–2004 small transfers between Razgrad and Ruse.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Borders fixed by Presidential Decree 1/1999, published DV 2 of 08.01.1999; no later change of this oblast outer border appears in the NSI register up to July 2020."
+    }
+   ]
+  },
+  {
+   "id": "BGR:Sliven@1999",
+   "names": {
+    "en": "Sliven Province",
+    "ja": "スリヴェン州",
+    "local": "Област Сливен"
+   },
+   "wikidata": "Q113120",
+   "spans": [
+    {
+     "from": "1999-01-08",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGR-2231"
+     ],
+     "sources": [
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register (Ekat_ver.txt in Ekatte-2022-json.zip), entries 930–931",
+       "says": "Law amending ZATURB (DV 154/1998) divides Bulgaria into 28 oblasti; Presidential Decree 1 of 05.01.1999 (DV 2/8.1.1999) fixes their borders and centres.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, 1999-01 to 2020-07",
+       "says": "Every later municipal border change listed (e.g. 2005 Vratsa, 2009 Ruse, 2012 Stara Zagora) lies inside a single oblast.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ubg.html",
+       "title": "Provinces of Bulgaria (statoids.com, updated 2015-06-30)",
+       "says": "1999 reorganisation into 28 regions; 2001-07-03 Knezha municipality from Vratsa to Pleven; 2001–2004 small transfers between Razgrad and Ruse.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Borders fixed by Presidential Decree 1/1999, published DV 2 of 08.01.1999; no later change of this oblast outer border appears in the NSI register up to July 2020."
+    }
+   ]
+  },
+  {
+   "id": "BGR:Shumen@1999",
+   "names": {
+    "en": "Shumen Province",
+    "ja": "シュメン州",
+    "local": "Област Шумен"
+   },
+   "wikidata": "Q184981",
+   "spans": [
+    {
+     "from": "1999-01-08",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGR-2258"
+     ],
+     "sources": [
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register (Ekat_ver.txt in Ekatte-2022-json.zip), entries 930–931",
+       "says": "Law amending ZATURB (DV 154/1998) divides Bulgaria into 28 oblasti; Presidential Decree 1 of 05.01.1999 (DV 2/8.1.1999) fixes their borders and centres.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, 1999-01 to 2020-07",
+       "says": "Every later municipal border change listed (e.g. 2005 Vratsa, 2009 Ruse, 2012 Stara Zagora) lies inside a single oblast.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ubg.html",
+       "title": "Provinces of Bulgaria (statoids.com, updated 2015-06-30)",
+       "says": "1999 reorganisation into 28 regions; 2001-07-03 Knezha municipality from Vratsa to Pleven; 2001–2004 small transfers between Razgrad and Ruse.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Borders fixed by Presidential Decree 1/1999, published DV 2 of 08.01.1999; no later change of this oblast outer border appears in the NSI register up to July 2020."
+    }
+   ]
+  },
+  {
+   "id": "BGR:Razgrad@1999",
+   "names": {
+    "en": "Razgrad Province",
+    "ja": "ラズグラト州",
+    "local": "Област Разград"
+   },
+   "wikidata": "Q2790675",
+   "spans": [
+    {
+     "from": "2004-03-05",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGR-2256"
+     ],
+     "sources": [
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, entries 1150, 1171, 1279, 1285",
+       "says": "New borders between municipalities of Razgrad and Ruse oblasti: DV 63/17.7.2001, DV 36/18.4.2003, DV 85/26.9.2003, DV 18/5.3.2004.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, entry 1143",
+       "says": "Decree 55 of 22.03.2001 (DV 31/30.3.2001): new borders of Loznitsa municipality (Razgrad oblast) and Targovishte municipality (Targovishte oblast).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ubg.html",
+       "title": "Provinces of Bulgaria (statoids.com, updated 2015-06-30)",
+       "says": "1999 reorganisation into 28 regions; 2001-07-03 Knezha municipality from Vratsa to Pleven; 2001–2004 small transfers between Razgrad and Ruse.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, 1999-01 to 2020-07",
+       "says": "Every later municipal border change listed (e.g. 2005 Vratsa, 2009 Ruse, 2012 Stara Zagora) lies inside a single oblast.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "After the last of four Razgrad–Ruse border decrees (Decree 51/2004, DV 18 of 05.03.2004)."
+    }
+   ]
+  },
+  {
+   "id": "BGR:Targovishte@1999",
+   "names": {
+    "en": "Targovishte Province",
+    "ja": "トゥルゴヴィシテ州",
+    "local": "Област Търговище"
+   },
+   "wikidata": "Q2012589",
+   "spans": [
+    {
+     "from": "2001-03-30",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGR-2257"
+     ],
+     "sources": [
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, entry 1143",
+       "says": "Decree 55 of 22.03.2001 (DV 31/30.3.2001): new borders of Loznitsa municipality (Razgrad oblast) and Targovishte municipality (Targovishte oblast).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register (Ekat_ver.txt in Ekatte-2022-json.zip), entries 930–931",
+       "says": "Law amending ZATURB (DV 154/1998) divides Bulgaria into 28 oblasti; Presidential Decree 1 of 05.01.1999 (DV 2/8.1.1999) fixes their borders and centres.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, 1999-01 to 2020-07",
+       "says": "Every later municipal border change listed (e.g. 2005 Vratsa, 2009 Ruse, 2012 Stara Zagora) lies inside a single oblast.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Targovishte–Razgrad (Loznitsa) border changed by Decree 55/2001, taken as in force on publication in DV 31 of 30.03.2001."
+    }
+   ]
+  },
+  {
+   "id": "BGR:Gabrovo@1999",
+   "names": {
+    "en": "Gabrovo Province",
+    "ja": "ガブロヴォ州",
+    "local": "Област Габрово"
+   },
+   "wikidata": "Q1007272",
+   "spans": [
+    {
+     "from": "1999-01-08",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGR-2246"
+     ],
+     "sources": [
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register (Ekat_ver.txt in Ekatte-2022-json.zip), entries 930–931",
+       "says": "Law amending ZATURB (DV 154/1998) divides Bulgaria into 28 oblasti; Presidential Decree 1 of 05.01.1999 (DV 2/8.1.1999) fixes their borders and centres.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, 1999-01 to 2020-07",
+       "says": "Every later municipal border change listed (e.g. 2005 Vratsa, 2009 Ruse, 2012 Stara Zagora) lies inside a single oblast.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ubg.html",
+       "title": "Provinces of Bulgaria (statoids.com, updated 2015-06-30)",
+       "says": "1999 reorganisation into 28 regions; 2001-07-03 Knezha municipality from Vratsa to Pleven; 2001–2004 small transfers between Razgrad and Ruse.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Borders fixed by Presidential Decree 1/1999, published DV 2 of 08.01.1999; no later change of this oblast outer border appears in the NSI register up to July 2020."
+    }
+   ]
+  },
+  {
+   "id": "BGR:Pazardzhik@1999",
+   "names": {
+    "en": "Pazardzhik Province",
+    "ja": "パザルジク州",
+    "local": "Област Пазарджик"
+   },
+   "wikidata": "Q2012227",
+   "spans": [
+    {
+     "from": "1999-01-08",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGR-2234"
+     ],
+     "sources": [
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register (Ekat_ver.txt in Ekatte-2022-json.zip), entries 930–931",
+       "says": "Law amending ZATURB (DV 154/1998) divides Bulgaria into 28 oblasti; Presidential Decree 1 of 05.01.1999 (DV 2/8.1.1999) fixes their borders and centres.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, 1999-01 to 2020-07",
+       "says": "Every later municipal border change listed (e.g. 2005 Vratsa, 2009 Ruse, 2012 Stara Zagora) lies inside a single oblast.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ubg.html",
+       "title": "Provinces of Bulgaria (statoids.com, updated 2015-06-30)",
+       "says": "1999 reorganisation into 28 regions; 2001-07-03 Knezha municipality from Vratsa to Pleven; 2001–2004 small transfers between Razgrad and Ruse.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Borders fixed by Presidential Decree 1/1999, published DV 2 of 08.01.1999; no later change of this oblast outer border appears in the NSI register up to July 2020."
+    }
+   ]
+  },
+  {
+   "id": "BGR:Lovech@1999",
+   "names": {
+    "en": "Lovech Province",
+    "ja": "ロヴェチ州",
+    "local": "Област Ловеч"
+   },
+   "wikidata": "Q6587068",
+   "spans": [
+    {
+     "from": "1999-01-08",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGR-2247"
+     ],
+     "sources": [
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register (Ekat_ver.txt in Ekatte-2022-json.zip), entries 930–931",
+       "says": "Law amending ZATURB (DV 154/1998) divides Bulgaria into 28 oblasti; Presidential Decree 1 of 05.01.1999 (DV 2/8.1.1999) fixes their borders and centres.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, 1999-01 to 2020-07",
+       "says": "Every later municipal border change listed (e.g. 2005 Vratsa, 2009 Ruse, 2012 Stara Zagora) lies inside a single oblast.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ubg.html",
+       "title": "Provinces of Bulgaria (statoids.com, updated 2015-06-30)",
+       "says": "1999 reorganisation into 28 regions; 2001-07-03 Knezha municipality from Vratsa to Pleven; 2001–2004 small transfers between Razgrad and Ruse.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Borders fixed by Presidential Decree 1/1999, published DV 2 of 08.01.1999; no later change of this oblast outer border appears in the NSI register up to July 2020."
+    }
+   ]
+  },
+  {
+   "id": "BGR:GradSofiya@1999",
+   "names": {
+    "en": "Sofia City Province",
+    "ja": "ソフィア市州",
+    "local": "Област София (столица)"
+   },
+   "wikidata": "Q1585725",
+   "spans": [
+    {
+     "from": "1999-01-08",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGR-2243"
+     ],
+     "sources": [
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register (Ekat_ver.txt in Ekatte-2022-json.zip), entries 930–931",
+       "says": "Law amending ZATURB (DV 154/1998) divides Bulgaria into 28 oblasti; Presidential Decree 1 of 05.01.1999 (DV 2/8.1.1999) fixes their borders and centres.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+       "title": "NSI EKATTE change register, 1999-01 to 2020-07",
+       "says": "Every later municipal border change listed (e.g. 2005 Vratsa, 2009 Ruse, 2012 Stara Zagora) lies inside a single oblast.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ubg.html",
+       "title": "Provinces of Bulgaria (statoids.com, updated 2015-06-30)",
+       "says": "1999 reorganisation into 28 regions; 2001-07-03 Knezha municipality from Vratsa to Pleven; 2001–2004 small transfers between Razgrad and Ruse.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Borders fixed by Presidential Decree 1/1999, published DV 2 of 08.01.1999; no later change of this oblast outer border appears in the NSI register up to July 2020."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1999-01-08",
+   "precision": "day",
+   "what": "28 oblasti replace the nine oblasti (Decree 1/1999)",
+   "sources": [
+    {
+     "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+     "title": "NSI EKATTE change register (Ekat_ver.txt in Ekatte-2022-json.zip), entries 930–931",
+     "says": "Law amending ZATURB (DV 154/1998) divides Bulgaria into 28 oblasti; Presidential Decree 1 of 05.01.1999 (DV 2/8.1.1999) fixes their borders and centres.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://statoids.com/ubg.html",
+     "title": "Provinces of Bulgaria (statoids.com, updated 2015-06-30)",
+     "says": "1999 reorganisation into 28 regions; 2001-07-03 Knezha municipality from Vratsa to Pleven; 2001–2004 small transfers between Razgrad and Ruse.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2001-03-30",
+   "precision": "day",
+   "what": "Loznitsa (Razgrad) – Targovishte municipal border redrawn",
+   "sources": [
+    {
+     "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+     "title": "NSI EKATTE change register, entry 1143",
+     "says": "Decree 55 of 22.03.2001 (DV 31/30.3.2001): new borders of Loznitsa municipality (Razgrad oblast) and Targovishte municipality (Targovishte oblast).",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2001-07-03",
+   "precision": "day",
+   "what": "Knezha municipality from Vratsa to Pleven oblast",
+   "sources": [
+    {
+     "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+     "title": "NSI EKATTE change register, entry 1147",
+     "says": "Decree 163 of 19.06.2001 (DV 59/3.7.2001): new borders of Vratsa and Pleven oblasti.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://statoids.com/ubg.html",
+     "title": "Provinces of Bulgaria (statoids.com, updated 2015-06-30)",
+     "says": "1999 reorganisation into 28 regions; 2001-07-03 Knezha municipality from Vratsa to Pleven; 2001–2004 small transfers between Razgrad and Ruse.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2001-07-17",
+   "precision": "day",
+   "what": "Kubrat (Razgrad) – Ruse border redrawn",
+   "sources": [
+    {
+     "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+     "title": "NSI EKATTE change register, entries 1150, 1171, 1279, 1285",
+     "says": "New borders between municipalities of Razgrad and Ruse oblasti: DV 63/17.7.2001, DV 36/18.4.2003, DV 85/26.9.2003, DV 18/5.3.2004.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2003-04-18",
+   "precision": "day",
+   "what": "Vetovo (Ruse) – Kubrat/Razgrad border redrawn",
+   "sources": [
+    {
+     "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+     "title": "NSI EKATTE change register, entries 1150, 1171, 1279, 1285",
+     "says": "New borders between municipalities of Razgrad and Ruse oblasti: DV 63/17.7.2001, DV 36/18.4.2003, DV 85/26.9.2003, DV 18/5.3.2004.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2003-09-26",
+   "precision": "day",
+   "what": "Tsar Kaloyan (Razgrad) – Ivanovo (Ruse) border redrawn",
+   "sources": [
+    {
+     "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+     "title": "NSI EKATTE change register, entries 1150, 1171, 1279, 1285",
+     "says": "New borders between municipalities of Razgrad and Ruse oblasti: DV 63/17.7.2001, DV 36/18.4.2003, DV 85/26.9.2003, DV 18/5.3.2004.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2004-03-05",
+   "precision": "day",
+   "what": "Kubrat (Razgrad) – Slivo pole (Ruse) border redrawn",
+   "sources": [
+    {
+     "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+     "title": "NSI EKATTE change register, entries 1150, 1171, 1279, 1285",
+     "says": "New borders between municipalities of Razgrad and Ruse oblasti: DV 63/17.7.2001, DV 36/18.4.2003, DV 85/26.9.2003, DV 18/5.3.2004.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1999-01-08",
+   "n": 28,
+   "sources": [
+    {
+     "url": "https://www.nsi.bg/nrnm/ekatte/archive",
+     "title": "NSI EKATTE change register (Ekat_ver.txt in Ekatte-2022-json.zip), entries 930–931",
+     "says": "Law amending ZATURB (DV 154/1998) divides Bulgaria into 28 oblasti; Presidential Decree 1 of 05.01.1999 (DV 2/8.1.1999) fixes their borders and centres.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2005-01-01",
+   "n": 28,
+   "sources": [
+    {
+     "url": "https://statoids.com/ubg.html",
+     "title": "Provinces of Bulgaria (statoids.com, updated 2015-06-30)",
+     "says": "1999 reorganisation into 28 regions; 2001-07-03 Knezha municipality from Vratsa to Pleven; 2001–2004 small transfers between Razgrad and Ruse.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Ruse oblast, 1999-01-08 to 2004-03-05",
+   "unit": "BGR:Ruse@1999",
+   "atoms": [
+    "BGR-2262"
+   ],
+   "from": "1999-01-08",
+   "to": "2004-03-05",
+   "why": "Settlement lands moved between Kubrat/Razgrad/Tsar Kaloyan (Razgrad) and Ruse/Vetovo/Ivanovo/Slivo pole (Ruse) in 2001–2004 (and Loznitsa–Targovishte in 2001); earlier lines run inside today’s atoms.",
+   "checked": [
+    "NSI EKATTE change register (Ekat_ver.txt, 1636 entries)",
+    "statoids.com/ubg.html",
+    "bg.wikipedia Области в България"
+   ],
+   "needs": "municipality atoms (Knezha: geoBoundaries BGR ADM2 or OSM admin_level=6, licence to verify) and, for the village transfers, settlement-territory (землище) polygons, e.g. OSM admin_level=8/9 (ODbL)"
+  },
+  {
+   "what": "Vratsa oblast, 1999-01-08 to 2001-07-03",
+   "unit": "BGR:Vratsa@1999",
+   "atoms": [
+    "BGR-2251"
+   ],
+   "from": "1999-01-08",
+   "to": "2001-07-03",
+   "why": "Knezha municipality lay in Vratsa oblast until 2001 and is inside today’s Pleven atom; the 1999–2001 line runs through an atom.",
+   "checked": [
+    "NSI EKATTE change register (Ekat_ver.txt, 1636 entries)",
+    "statoids.com/ubg.html",
+    "bg.wikipedia Области в България"
+   ],
+   "needs": "municipality atoms (Knezha: geoBoundaries BGR ADM2 or OSM admin_level=6, licence to verify) and, for the village transfers, settlement-territory (землище) polygons, e.g. OSM admin_level=8/9 (ODbL)"
+  },
+  {
+   "what": "Pleven oblast, 1999-01-08 to 2001-07-03",
+   "unit": "BGR:Pleven@1999",
+   "atoms": [
+    "BGR-2248"
+   ],
+   "from": "1999-01-08",
+   "to": "2001-07-03",
+   "why": "Knezha municipality lay in Vratsa oblast until 2001 and is inside today’s Pleven atom; the 1999–2001 line runs through an atom.",
+   "checked": [
+    "NSI EKATTE change register (Ekat_ver.txt, 1636 entries)",
+    "statoids.com/ubg.html",
+    "bg.wikipedia Области в България"
+   ],
+   "needs": "municipality atoms (Knezha: geoBoundaries BGR ADM2 or OSM admin_level=6, licence to verify) and, for the village transfers, settlement-territory (землище) polygons, e.g. OSM admin_level=8/9 (ODbL)"
+  },
+  {
+   "what": "Razgrad oblast, 1999-01-08 to 2004-03-05",
+   "unit": "BGR:Razgrad@1999",
+   "atoms": [
+    "BGR-2256"
+   ],
+   "from": "1999-01-08",
+   "to": "2004-03-05",
+   "why": "Settlement lands moved between Kubrat/Razgrad/Tsar Kaloyan (Razgrad) and Ruse/Vetovo/Ivanovo/Slivo pole (Ruse) in 2001–2004 (and Loznitsa–Targovishte in 2001); earlier lines run inside today’s atoms.",
+   "checked": [
+    "NSI EKATTE change register (Ekat_ver.txt, 1636 entries)",
+    "statoids.com/ubg.html",
+    "bg.wikipedia Области в България"
+   ],
+   "needs": "municipality atoms (Knezha: geoBoundaries BGR ADM2 or OSM admin_level=6, licence to verify) and, for the village transfers, settlement-territory (землище) polygons, e.g. OSM admin_level=8/9 (ODbL)"
+  },
+  {
+   "what": "Targovishte oblast, 1999-01-08 to 2001-03-30",
+   "unit": "BGR:Targovishte@1999",
+   "atoms": [
+    "BGR-2257"
+   ],
+   "from": "1999-01-08",
+   "to": "2001-03-30",
+   "why": "The Targovishte–Loznitsa (Razgrad) municipal border was redrawn in 2001; the earlier line runs inside one of today’s atoms.",
+   "checked": [
+    "NSI EKATTE change register (Ekat_ver.txt, 1636 entries)",
+    "statoids.com/ubg.html",
+    "bg.wikipedia Области в България"
+   ],
+   "needs": "municipality atoms (Knezha: geoBoundaries BGR ADM2 or OSM admin_level=6, licence to verify) and, for the village transfers, settlement-territory (землище) polygons, e.g. OSM admin_level=8/9 (ODbL)"
+  },
+  {
+   "what": "1987-08-28 to 1999-01-08: nine oblasti (Sofia city + 8)",
+   "from": "1987-08-28",
+   "to": "1999-01-08",
+   "why": "Not claimed as unions: the municipal lists of Decree 2704/1987, the content of Decree 3005 (06.10.1987) and of the 1991 territorial-changes law were not retrieved, so it is unverified that every 1999 oblast lay wholly inside one 1987 oblast (Topolovgrad and Knezha are known boundary cases).",
+   "checked": [
+    "NSI EKATTE change register entries 769–931",
+    "statoids.com/ubg.html"
+   ],
+   "needs": "municipality-level atoms and the annex of Decree 2704/1987"
+  },
+  {
+   "what": "Before 1987-08-28: 28 okrugs of 1959–1987 (and 1949–59 okrugs, pre-1949 oblasti)",
+   "to": "1987-08-28",
+   "why": "Today’s oblasti resemble the 1959–87 okrugs but not exactly (Topolovgrad was in Yambol okrug, now Haskovo); decrees of 1986–87 changed okrug lines.",
+   "checked": [
+    "statoids.com/ubg.html",
+    "NSI EKATTE change register entries 763, 769"
+   ],
+   "needs": "municipality-level atoms of the period"
+  }
+ ]
+}

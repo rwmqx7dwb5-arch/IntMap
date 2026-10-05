@@ -1,0 +1,515 @@
+{
+  "country": "LAO",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "2006-01-13",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Lao People's Democratic Republic (since 1975-12-02). Scope limited to the layout NE depicts (after the 2006 dissolution of the Xaisomboun special region).",
+  "units": [
+    {
+      "id": "LAO:Phongsaly",
+      "names": {
+        "en": "Phongsaly Province",
+        "ja": "ポンサーリー県",
+        "local": "ແຂວງຜົ້ງສາລີ"
+      },
+      "wikidata": "Q334868",
+      "spans": [
+        {
+          "from": "2006-01-13",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LAO-3291"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ula.html",
+              "title": "Statoids: Provinces of Laos, change history",
+              "says": "2006-01-13: Xaisomboun special region dissolved; its districts given to Vientiane and Xiangkhoang provinces. No other change recorded until 2013.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "LAO:Oudomxay",
+      "names": {
+        "en": "Oudomxay Province",
+        "ja": "ウドムサイ県",
+        "local": "ແຂວງອຸດົມໄຊ"
+      },
+      "wikidata": "Q465961",
+      "spans": [
+        {
+          "from": "2006-01-13",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LAO-3290"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ula.html",
+              "title": "Statoids: Provinces of Laos, change history",
+              "says": "2006-01-13: Xaisomboun special region dissolved; its districts given to Vientiane and Xiangkhoang provinces. No other change recorded until 2013.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "LAO:LuangNamtha",
+      "names": {
+        "en": "Luang Namtha Province",
+        "ja": "ルアンナムター県",
+        "local": "ແຂວງຫຼວງນ້ຳທາ"
+      },
+      "wikidata": "Q948691",
+      "spans": [
+        {
+          "from": "2006-01-13",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LAO-3272"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ula.html",
+              "title": "Statoids: Provinces of Laos, change history",
+              "says": "2006-01-13: Xaisomboun special region dissolved; its districts given to Vientiane and Xiangkhoang provinces. No other change recorded until 2013.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "LAO:Bokeo",
+      "names": {
+        "en": "Bokeo Province",
+        "ja": "ボーケーオ県",
+        "local": "ແຂວງບໍ່ແກ້ວ"
+      },
+      "wikidata": "Q334884",
+      "spans": [
+        {
+          "from": "2006-01-13",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LAO-3271"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ula.html",
+              "title": "Statoids: Provinces of Laos, change history",
+              "says": "2006-01-13: Xaisomboun special region dissolved; its districts given to Vientiane and Xiangkhoang provinces. No other change recorded until 2013.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "LAO:Sainyabuli",
+      "names": {
+        "en": "Sainyabuli Province",
+        "ja": "サイニャブーリー県",
+        "local": "ແຂວງໄຊຍະບູລີ"
+      },
+      "wikidata": "Q465929",
+      "spans": [
+        {
+          "from": "2006-01-13",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LAO-3278"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ula.html",
+              "title": "Statoids: Provinces of Laos, change history",
+              "says": "2006-01-13: Xaisomboun special region dissolved; its districts given to Vientiane and Xiangkhoang provinces. No other change recorded until 2013.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "LAO:Khammouane",
+      "names": {
+        "en": "Khammouane Province",
+        "ja": "カムムアン県",
+        "local": "ແຂວງຄຳມ່ວນ"
+      },
+      "wikidata": "Q506641",
+      "spans": [
+        {
+          "from": "2006-01-13",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LAO-3293"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ula.html",
+              "title": "Statoids: Provinces of Laos, change history",
+              "says": "2006-01-13: Xaisomboun special region dissolved; its districts given to Vientiane and Xiangkhoang provinces. No other change recorded until 2013.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "LAO:Savannakhet",
+      "names": {
+        "en": "Savannakhet Province",
+        "ja": "サワンナケート県",
+        "local": "ແຂວງສະຫວັນນະເຂດ"
+      },
+      "wikidata": "Q465940",
+      "spans": [
+        {
+          "from": "2006-01-13",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LAO-3282"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ula.html",
+              "title": "Statoids: Provinces of Laos, change history",
+              "says": "2006-01-13: Xaisomboun special region dissolved; its districts given to Vientiane and Xiangkhoang provinces. No other change recorded until 2013.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "LAO:Salavan",
+      "names": {
+        "en": "Salavan Province",
+        "ja": "サーラワン県",
+        "local": "ແຂວງສາລະວັນ"
+      },
+      "wikidata": "Q302656",
+      "spans": [
+        {
+          "from": "2006-01-13",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LAO-3281"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ula.html",
+              "title": "Statoids: Provinces of Laos, change history",
+              "says": "2006-01-13: Xaisomboun special region dissolved; its districts given to Vientiane and Xiangkhoang provinces. No other change recorded until 2013.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "LAO:VientianePrefecture",
+      "names": {
+        "en": "Vientiane Prefecture",
+        "ja": "ヴィエンチャン都",
+        "local": "ນະຄອນຫຼວງວຽງຈັນ"
+      },
+      "wikidata": "Q390377",
+      "spans": [
+        {
+          "from": "2006-01-13",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LAO-3283"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ula.html",
+              "title": "Statoids: Provinces of Laos, change history",
+              "says": "2006-01-13: Xaisomboun special region dissolved; its districts given to Vientiane and Xiangkhoang provinces. No other change recorded until 2013.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "LAO:Champasak",
+      "names": {
+        "en": "Champasak Province",
+        "ja": "チャンパーサック県",
+        "local": "ແຂວງຈຳປາສັກ"
+      },
+      "wikidata": "Q334888",
+      "spans": [
+        {
+          "from": "2006-01-13",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LAO-3280"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ula.html",
+              "title": "Statoids: Provinces of Laos, change history",
+              "says": "2006-01-13: Xaisomboun special region dissolved; its districts given to Vientiane and Xiangkhoang provinces. No other change recorded until 2013.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "LAO:LuangPrabang",
+      "names": {
+        "en": "Luang Prabang Province",
+        "ja": "ルアンパバーン県",
+        "local": "ແຂວງຫຼວງພະບາງ"
+      },
+      "wikidata": "Q747881",
+      "spans": [
+        {
+          "from": "2006-01-13",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LAO-3289"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ula.html",
+              "title": "Statoids: Provinces of Laos, change history",
+              "says": "2006-01-13: Xaisomboun special region dissolved; its districts given to Vientiane and Xiangkhoang provinces. No other change recorded until 2013.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "LAO:Houaphanh",
+      "names": {
+        "en": "Houaphanh Province",
+        "ja": "フアパン県",
+        "local": "ແຂວງຫົວພັນ"
+      },
+      "wikidata": "Q502997",
+      "spans": [
+        {
+          "from": "2006-01-13",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LAO-3288"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ula.html",
+              "title": "Statoids: Provinces of Laos, change history",
+              "says": "2006-01-13: Xaisomboun special region dissolved; its districts given to Vientiane and Xiangkhoang provinces. No other change recorded until 2013.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "LAO:Sekong",
+      "names": {
+        "en": "Sekong Province",
+        "ja": "セーコーン県",
+        "local": "ແຂວງເຊກອງ"
+      },
+      "wikidata": "Q585707",
+      "spans": [
+        {
+          "from": "2006-01-13",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LAO-3295"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ula.html",
+              "title": "Statoids: Provinces of Laos, change history",
+              "says": "2006-01-13: Xaisomboun special region dissolved; its districts given to Vientiane and Xiangkhoang provinces. No other change recorded until 2013.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "LAO:Attapeu",
+      "names": {
+        "en": "Attapeu Province",
+        "ja": "アッタプー県",
+        "local": "ແຂວງອັດຕະປື"
+      },
+      "wikidata": "Q503004",
+      "spans": [
+        {
+          "from": "2006-01-13",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LAO-3294"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ula.html",
+              "title": "Statoids: Provinces of Laos, change history",
+              "says": "2006-01-13: Xaisomboun special region dissolved; its districts given to Vientiane and Xiangkhoang provinces. No other change recorded until 2013.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "2006-01-13",
+      "precision": "day",
+      "what": "Xaisomboun special region dissolved (Longsan, Xaysomboun, Phun, Hom to Vientiane province; Thathom to Xiangkhoang)",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ula.html",
+          "title": "Statoids: Provinces of Laos, change history",
+          "says": "2006-01-13: Xaisomboun special region dissolved; its districts given to Vientiane and Xiangkhoang provinces. No other change recorded until 2013.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2013-12-13",
+      "precision": "day",
+      "what": "Xaisomboun re-created as a province from parts of Vientiane and Xiangkhoang provinces",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/w/index.php?oldid=1375492898",
+          "title": "Xaisomboun province (en.wikipedia, revision 1375492898)",
+          "says": "Xaisomboun was established as a province on 13 December 2013.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://www.statoids.com/ula.html",
+          "title": "Statoids: Provinces of Laos, change history",
+          "says": "2013-12-31: Xaisomboun restored as a province.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "2007-01-01",
+      "n": 17,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ula.html",
+          "title": "Statoids: Provinces of Laos, change history",
+          "says": "2006-01-13: Xaisomboun special region dissolved; its districts given to Vientiane and Xiangkhoang provinces. No other change recorded until 2013.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2019-12-31",
+      "n": 18,
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/w/index.php?oldid=1375492898",
+          "title": "Xaisomboun province (en.wikipedia, revision 1375492898)",
+          "says": "Xaisomboun is the 18th province of Laos.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Vientiane, Xiangkhoang and Bolikhamxai provinces (whole scope)",
+      "unit": "LAO:VientianeProvince",
+      "atoms": [
+        "LAO-3284",
+        "LAO-3286",
+        "LAO-3292"
+      ],
+      "from": "2006-01-13",
+      "to": null,
+      "why": "These atoms meet in the former Xaisomboun area, whose districts moved in 1994, 2006 and 2013. Spot checks against district seats suggest NE does not follow the 2006 allotment (Thathom area falls in NE Vientiane, not Xiangkhoang), and the 2013 province has no NE atom; their lines cannot be tied to a documented layout.",
+      "checked": [
+        "statoids ula.html",
+        "en.wikipedia Xaisomboun province rev 1375492898",
+        "NE geometry point-in-polygon spot checks"
+      ],
+      "needs": "district-level atoms (geoBoundaries LAO ADM2, CC BY; or Lao Statistics Bureau district boundaries) with the 2006 and 2013 allotments"
+    },
+    {
+      "what": "Xiangkhoang Province",
+      "unit": "LAO:Xiangkhouang",
+      "from": "2006-01-13",
+      "to": null,
+      "why": "See Vientiane entry (atoms withheld there).",
+      "checked": [
+        "statoids ula.html"
+      ],
+      "needs": "geoBoundaries LAO ADM2"
+    },
+    {
+      "what": "Bolikhamxai Province",
+      "unit": "LAO:Bolikhamxai",
+      "from": "2006-01-13",
+      "to": null,
+      "why": "See Vientiane entry (lost districts to Xaisomboun in 1994 and it is not documented whether the NE outline reflects that).",
+      "checked": [
+        "statoids ula.html"
+      ],
+      "needs": "geoBoundaries LAO ADM2"
+    },
+    {
+      "what": "Xaisomboun Province from 2013",
+      "unit": "LAO:Xaisomboun",
+      "from": "2013-12-13",
+      "to": null,
+      "why": "Re-created 13 Dec 2013 (statoids: 31 Dec 2013) with borders that differ from 1994-2006; no NE atom.",
+      "checked": [
+        "en.wikipedia Xaisomboun province",
+        "statoids ula.html"
+      ],
+      "needs": "geoBoundaries LAO ADM1/ADM2"
+    },
+    {
+      "what": "Laos 1975-12-02 to 2006-01-13",
+      "from": "1975-12-02",
+      "to": "2006-01-13",
+      "why": "Provinces were merged ~1976, split 1983 (Bokeo, Bolikhamxai, Xekong), Vientiane prefecture ~1989 and Xaisomboun 1994; the dates found are years only and the compositions (district lists) were not found; several lines run inside NE atoms.",
+      "checked": [
+        "statoids ula.html",
+        "en.wikipedia Provinces of Laos rev 1372371529"
+      ],
+      "needs": "dated decrees and district-level atoms (geoBoundaries LAO ADM2)"
+    }
+  ]
+}

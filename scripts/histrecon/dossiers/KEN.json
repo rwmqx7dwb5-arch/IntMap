@@ -1,0 +1,407 @@
+{
+  "country": "KEN",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "1963-12-12",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Kenya, independent since 1963-12-12.",
+  "units": [
+    {
+      "id": "KEN:RiftValley@1963",
+      "names": {
+        "en": "Rift Valley Province",
+        "ja": "リフトバレー州",
+        "local": "Mkoa wa Bonde la Ufa"
+      },
+      "wikidata": "Q38587",
+      "spans": [
+        {
+          "from": "1963-12-12",
+          "precision": "day",
+          "to": "2013-03-04",
+          "atoms": [
+            "KEN-890"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/yke.html",
+              "title": "Statoids — Districts of Kenya, change history (Gwillim Law)",
+              "says": "Lists Kenya's 40 districts on 1966-07-31 with their provinces; later districts were split inside provinces (one Turkana→West Pokot transfer within Rift Valley).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uke.html",
+              "title": "Statoids — Counties of Kenya, change history (Gwillim Law)",
+              "says": "1963: North-Eastern formed from Northern and part of Coast; table of the eight provinces (incl. Nairobi Area); 2013 reorganized into 47 counties.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "From independence (regions of the 1963 constitution, renamed provinces later). Ends on the 2013-03-04 general election, from which the 2010 constitution's devolved counties took effect (statoids gives 2013-03-27)."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Eastern@1963",
+      "names": {
+        "en": "Eastern Province",
+        "ja": "東部州",
+        "local": "Mkoa wa Mashariki"
+      },
+      "wikidata": "Q328493",
+      "spans": [
+        {
+          "from": "1963-12-12",
+          "precision": "day",
+          "to": "2013-03-04",
+          "atoms": [
+            "KEN-889"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/yke.html",
+              "title": "Statoids — Districts of Kenya, change history (Gwillim Law)",
+              "says": "Lists Kenya's 40 districts on 1966-07-31 with their provinces; later districts were split inside provinces (one Turkana→West Pokot transfer within Rift Valley).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uke.html",
+              "title": "Statoids — Counties of Kenya, change history (Gwillim Law)",
+              "says": "1963: North-Eastern formed from Northern and part of Coast; table of the eight provinces (incl. Nairobi Area); 2013 reorganized into 47 counties.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "From independence (regions of the 1963 constitution, renamed provinces later). Ends on the 2013-03-04 general election, from which the 2010 constitution's devolved counties took effect (statoids gives 2013-03-27)."
+        }
+      ]
+    },
+    {
+      "id": "KEN:NorthEastern@1963",
+      "names": {
+        "en": "North Eastern Province",
+        "ja": "北東州",
+        "local": "Mkoa wa Kaskazini-Mashariki"
+      },
+      "wikidata": "Q390213",
+      "spans": [
+        {
+          "from": "1963-12-12",
+          "precision": "day",
+          "to": "2013-03-04",
+          "atoms": [
+            "KEN-893"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/yke.html",
+              "title": "Statoids — Districts of Kenya, change history (Gwillim Law)",
+              "says": "Lists Kenya's 40 districts on 1966-07-31 with their provinces; later districts were split inside provinces (one Turkana→West Pokot transfer within Rift Valley).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uke.html",
+              "title": "Statoids — Counties of Kenya, change history (Gwillim Law)",
+              "says": "1963: North-Eastern formed from Northern and part of Coast; table of the eight provinces (incl. Nairobi Area); 2013 reorganized into 47 counties.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "From independence (regions of the 1963 constitution, renamed provinces later). Ends on the 2013-03-04 general election, from which the 2010 constitution's devolved counties took effect (statoids gives 2013-03-27)."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Coast@1963",
+      "names": {
+        "en": "Coast Province",
+        "ja": "海岸州",
+        "local": "Mkoa wa Pwani"
+      },
+      "wikidata": "Q185371",
+      "spans": [
+        {
+          "from": "1963-12-12",
+          "precision": "day",
+          "to": "2013-03-04",
+          "atoms": [
+            "KEN-1193"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/yke.html",
+              "title": "Statoids — Districts of Kenya, change history (Gwillim Law)",
+              "says": "Lists Kenya's 40 districts on 1966-07-31 with their provinces; later districts were split inside provinces (one Turkana→West Pokot transfer within Rift Valley).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uke.html",
+              "title": "Statoids — Counties of Kenya, change history (Gwillim Law)",
+              "says": "1963: North-Eastern formed from Northern and part of Coast; table of the eight provinces (incl. Nairobi Area); 2013 reorganized into 47 counties.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "From independence (regions of the 1963 constitution, renamed provinces later). Ends on the 2013-03-04 general election, from which the 2010 constitution's devolved counties took effect (statoids gives 2013-03-27)."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Nyanza@1963",
+      "names": {
+        "en": "Nyanza Province",
+        "ja": "ニャンザ州",
+        "local": "Mkoa wa Nyanza"
+      },
+      "wikidata": "Q38589",
+      "spans": [
+        {
+          "from": "1963-12-12",
+          "precision": "day",
+          "to": "2013-03-04",
+          "atoms": [
+            "KEN-1197"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/yke.html",
+              "title": "Statoids — Districts of Kenya, change history (Gwillim Law)",
+              "says": "Lists Kenya's 40 districts on 1966-07-31 with their provinces; later districts were split inside provinces (one Turkana→West Pokot transfer within Rift Valley).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uke.html",
+              "title": "Statoids — Counties of Kenya, change history (Gwillim Law)",
+              "says": "1963: North-Eastern formed from Northern and part of Coast; table of the eight provinces (incl. Nairobi Area); 2013 reorganized into 47 counties.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "From independence (regions of the 1963 constitution, renamed provinces later). Ends on the 2013-03-04 general election, from which the 2010 constitution's devolved counties took effect (statoids gives 2013-03-27)."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Western@1963",
+      "names": {
+        "en": "Western Province",
+        "ja": "西部州",
+        "local": "Mkoa wa Magharibi"
+      },
+      "wikidata": "Q38585",
+      "spans": [
+        {
+          "from": "1963-12-12",
+          "precision": "day",
+          "to": "2013-03-04",
+          "atoms": [
+            "KEN-891"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/yke.html",
+              "title": "Statoids — Districts of Kenya, change history (Gwillim Law)",
+              "says": "Lists Kenya's 40 districts on 1966-07-31 with their provinces; later districts were split inside provinces (one Turkana→West Pokot transfer within Rift Valley).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uke.html",
+              "title": "Statoids — Counties of Kenya, change history (Gwillim Law)",
+              "says": "1963: North-Eastern formed from Northern and part of Coast; table of the eight provinces (incl. Nairobi Area); 2013 reorganized into 47 counties.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "From independence (regions of the 1963 constitution, renamed provinces later). Ends on the 2013-03-04 general election, from which the 2010 constitution's devolved counties took effect (statoids gives 2013-03-27)."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Nairobi@1963",
+      "names": {
+        "en": "Nairobi Area (Province)",
+        "ja": "ナイロビ州",
+        "local": "Mkoa wa Nairobi"
+      },
+      "wikidata": "Q1061480",
+      "spans": [
+        {
+          "from": "1963-12-12",
+          "precision": "day",
+          "to": "2013-03-04",
+          "atoms": [
+            "KEN-1196"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/yke.html",
+              "title": "Statoids — Districts of Kenya, change history (Gwillim Law)",
+              "says": "Lists Kenya's 40 districts on 1966-07-31 with their provinces; later districts were split inside provinces (one Turkana→West Pokot transfer within Rift Valley).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uke.html",
+              "title": "Statoids — Counties of Kenya, change history (Gwillim Law)",
+              "says": "1963: North-Eastern formed from Northern and part of Coast; table of the eight provinces (incl. Nairobi Area); 2013 reorganized into 47 counties.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "From independence (regions of the 1963 constitution, renamed provinces later). Ends on the 2013-03-04 general election, from which the 2010 constitution's devolved counties took effect (statoids gives 2013-03-27)."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Central@1963",
+      "names": {
+        "en": "Central Province",
+        "ja": "中央州",
+        "local": "Mkoa wa Kati"
+      },
+      "wikidata": "Q318666",
+      "spans": [
+        {
+          "from": "1963-12-12",
+          "precision": "day",
+          "to": "2013-03-04",
+          "atoms": [
+            "KEN-1195"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/yke.html",
+              "title": "Statoids — Districts of Kenya, change history (Gwillim Law)",
+              "says": "Lists Kenya's 40 districts on 1966-07-31 with their provinces; later districts were split inside provinces (one Turkana→West Pokot transfer within Rift Valley).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uke.html",
+              "title": "Statoids — Counties of Kenya, change history (Gwillim Law)",
+              "says": "1963: North-Eastern formed from Northern and part of Coast; table of the eight provinces (incl. Nairobi Area); 2013 reorganized into 47 counties.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "From independence (regions of the 1963 constitution, renamed provinces later). Ends on the 2013-03-04 general election, from which the 2010 constitution's devolved counties took effect (statoids gives 2013-03-27)."
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "2013-03-04",
+      "precision": "day",
+      "what": "Provinces replaced by 47 counties (devolution under the 2010 constitution took effect with the first general election).",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+          "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+          "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://www.statoids.com/uke.html",
+          "title": "Statoids — Counties of Kenya, change history (Gwillim Law)",
+          "says": "1963: North-Eastern formed from Northern and part of Coast; table of the eight provinces (incl. Nairobi Area); 2013 reorganized into 47 counties.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "1966-07-31",
+      "n": 8,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/yke.html",
+          "title": "Statoids — Districts of Kenya, change history (Gwillim Law)",
+          "says": "Lists Kenya's 40 districts on 1966-07-31 with their provinces; later districts were split inside provinces (one Turkana→West Pokot transfer within Rift Valley).",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://www.statoids.com/uke.html",
+          "title": "Statoids — Counties of Kenya, change history (Gwillim Law)",
+          "says": "1963: North-Eastern formed from Northern and part of Coast; table of the eight provinces (incl. Nairobi Area); 2013 reorganized into 47 counties.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "47 counties 2013-03-04 → 2019-12-31",
+      "atoms": [
+        "KEN-890",
+        "KEN-889",
+        "KEN-893",
+        "KEN-1193",
+        "KEN-1197",
+        "KEN-891",
+        "KEN-1196",
+        "KEN-1195"
+      ],
+      "from": "2013-03-04",
+      "to": null,
+      "why": "The counties (= the 46 districts of 1992 plus Nairobi) nest inside the old provinces but NE carries only the eight provinces; county lines run inside every NE atom.",
+      "checked": [
+        "statoids uke.html",
+        "Wikipedia Provinces of Kenya rev 1334399350"
+      ],
+      "needs": "geoBoundaries KEN ADM1 (47 counties; licence to check) or IEBC/KNBS county boundaries"
+    },
+    {
+      "what": "Colonial provinces before independence (1902–1963)",
+      "from": "1902",
+      "to": "1963-12-12",
+      "why": "Before scope; colonial provinces (Northern Frontier, Southern, Masai district etc.) were redrawn in 1962–63 along lines that do not coincide with the NE provinces.",
+      "checked": [
+        "statoids uke.html",
+        "statoids yke.html"
+      ],
+      "needs": "colonial district atoms"
+    }
+  ]
+}

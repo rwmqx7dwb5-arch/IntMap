@@ -1,0 +1,1782 @@
+{
+ "country": "RUE",
+ "atomSet": "ristat-1897-uyezd@v3",
+ "atomGroups": [
+  "Suwałki governorate",
+  "Łomża governorate",
+  "Płock governorate",
+  "Warsaw governorate",
+  "Siedlce governorate",
+  "Kalisz governorate",
+  "Piotrków governorate",
+  "Kielce governorate",
+  "Radom governorate",
+  "Lublin governorate",
+  "Kovno governorate",
+  "Vilna governorate",
+  "Grodno governorate",
+  "Minsk governorate",
+  "Vitebsk governorate",
+  "Mogilev governorate"
+ ],
+ "scope": {
+  "from": "1802-03-11",
+  "to": "1917-11-06"
+ },
+ "polityNote": "Russian Empire (from March 1917 the Russian Republic). North-West Krai governorates throughout; the Kingdom of Poland (in personal union with the Russian crown, administratively integrated after 1867) from 9 June 1815. Spans are the de jure Russian first-level units: they do not depict the French occupation of 1812, nor the German/Austro-Hungarian occupation from Aug–Sep 1915 (Kingdom of Poland, Kovno, Grodno, most of Vilna, western Minsk), during which the occupiers abolished the governorate level in their General Governments, nor the Provisional Government declaration on Polish independence of 16/29 March 1917.",
+ "units": [
+  {
+   "id": "RUE:Vitebsk@1802",
+   "names": {
+    "en": "Vitebsk Governorate",
+    "ja": "ヴィテプスク県",
+    "local": "Витебская губерния"
+   },
+   "wikidata": "Q1435411",
+   "spans": [
+    {
+     "from": "1802-03-11",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-176",
+      "U1897-177",
+      "U1897-178",
+      "U1897-179",
+      "U1897-180",
+      "U1897-181",
+      "U1897-182",
+      "U1897-183",
+      "U1897-184",
+      "U1897-185",
+      "U1897-186",
+      "U1897-187"
+     ],
+     "dateNote": "Senate decree of 27 Feb 1802 O.S. (ПСЗ-1 № 20162) dividing the Belarus governorate; = 11 Mar 1802 N.S. Only internal change after 1802: Surazh uyezd abolished 1866 into neighbouring uyezds of the same governorate; Dinaburg renamed Dvinsk 1893.",
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/20210603025416/http://archives.gov.by/home/genealogiya/administrativno-territorialnoe-delenie-belarusi",
+       "title": "Архивы Беларуси — Административно-территориальное деление Беларуси (archived 2021-06-03)",
+       "says": "Vitebsk governorate formed 1802 with 12 uyezds; Surazh abolished 1866; no transfer to or from other governorates before 1919.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=150887270",
+       "title": "Витебская губерния — Википедия (oldid 150887270)",
+       "says": "Created by Senate decree of 1802 splitting Belarus governorate; 12 uyezds; Surazh abolished 1866; Dinaburg renamed Dvinsk 1893.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "RUE:Mogilev@1802",
+   "names": {
+    "en": "Mogilev Governorate",
+    "ja": "モギリョフ県",
+    "local": "Могилёвская губерния"
+   },
+   "wikidata": "Q586369",
+   "spans": [
+    {
+     "from": "1895",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "U1897-392",
+      "U1897-393",
+      "U1897-394",
+      "U1897-395",
+      "U1897-396",
+      "U1897-397",
+      "U1897-398",
+      "U1897-399",
+      "U1897-400",
+      "U1897-401",
+      "U1897-402"
+     ],
+     "dateNote": "Senate decree of 27 Feb 1802 O.S. (ПСЗ-1 № 20162) dividing the Belarus governorate; = 11 Mar 1802 N.S. Later changes internal only: Babinovichi uyezd abolished 1840 (into Orsha), Kopys abolished and Gorki created 1861, Belitsa renamed Gomel and Staryi Bykhov renamed Bykhov 1852. / start moved from 1802-03-11 to 1895 (year) after the 1889/1894 Chernigov→Mogilev parcel transfers were found (reconciliation with RUE-south)",
+     "sources": [
+      {
+       "url": "https://ru.wikisource.org/w/index.php?oldid=5335317",
+       "title": "ЭСБЕ / Черниговская губерния (Викитека, oldid 5335317), т. XXXVIIIa (1903)",
+       "says": "Chernigov parcels were ceded to Kiev and Mogilev governorates by Committee of Ministers decisions of 1889 and 1894.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=153057639",
+       "title": "Могилёвская губерния — Википедия (oldid 153057639)",
+       "says": "Restored 27 Feb 1802 with its former 12 uyezds; Babinovichi abolished 1840, Kopys replaced by Gorki 1861; next territorial change 1919.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://web.archive.org/web/20210603025416/http://archives.gov.by/home/genealogiya/administrativno-territorialnoe-delenie-belarusi",
+       "title": "Архивы Беларуси — Административно-территориальное деление Беларуси (archived 2021-06-03)",
+       "says": "Mogilev governorate restored 1802 with 12 uyezds; only internal uyezd changes until its abolition in July 1919.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "RUE:Vilna@1795",
+   "names": {
+    "en": "Vilna Governorate (Lithuania-Vilna until 1840)",
+    "ja": "ヴィリナ県",
+    "local": "Виленская губерния"
+   },
+   "wikidata": "Q279583",
+   "spans": [
+    {
+     "from": "1819-03-25",
+     "precision": "day",
+     "to": "1843-07-13",
+     "atoms": [
+      "U1897-169",
+      "U1897-170",
+      "U1897-171",
+      "U1897-172",
+      "U1897-173",
+      "U1897-174",
+      "U1897-175",
+      "U1897-206",
+      "U1897-208",
+      "U1897-211",
+      "U1897-212"
+     ],
+     "dateNote": "Starts when the Palanga coastal strip (part of the 1897 Grobin uyezd of Kurland, outside these atoms) was transferred to Kurland: ПСЗ-1 № 27718, 13 Mar 1819 O.S. = 25 Mar 1819 N.S. Until 1843 the governorate comprised the 7 later Kovno uyezds plus Vilna, Oshmyany, Zavileisk/Sventsiany and Troki.",
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=154901389",
+       "title": "Курляндская губерния — Википедия (oldid 154901389)",
+       "says": "In 1819 a Baltic coastal strip with Palangen was transferred from Vilna to Kurland governorate (ПСЗ т. 36 № 27718, 13 March 1819).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://web.archive.org/web/20210603025416/http://archives.gov.by/home/genealogiya/administrativno-territorialnoe-delenie-belarusi",
+       "title": "Архивы Беларуси — Административно-территориальное деление Беларуси (archived 2021-06-03)",
+       "says": "Vilna governorate had 11 uyezds from 1795; in 1843 seven went to the new Kovno governorate.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    },
+    {
+     "from": "1843-07-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-206",
+      "U1897-207",
+      "U1897-208",
+      "U1897-209",
+      "U1897-210",
+      "U1897-211",
+      "U1897-212"
+     ],
+     "dateNote": "Decree of 18 Dec 1842 O.S. (ПСЗ-2 № 16347, 30 Dec 1842 N.S.); the new composition took effect 1 Jul 1843 O.S. = 13 Jul 1843 N.S. (ЭСБЕ, Виленская губерния: «С 1 июля 1843 г.»).",
+     "sources": [
+      {
+       "url": "https://ru.wikisource.org/w/index.php?oldid=5369338",
+       "title": "ЭСБЕ / Виленская губерния (Викитека, oldid 5369338)",
+       "says": "From 1 July 1843 Vilna governorate consists of 7 uyezds: Vilna, Troki, Lida, Sventsiany, Oshmyany, Vileyka, Disna; Kovno governorate separated.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "RUE:Kovno@1843",
+   "names": {
+    "en": "Kovno Governorate",
+    "ja": "コヴノ県",
+    "local": "Ковенская губерния"
+   },
+   "wikidata": "Q1540300",
+   "spans": [
+    {
+     "from": "1843-07-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-169",
+      "U1897-170",
+      "U1897-171",
+      "U1897-172",
+      "U1897-173",
+      "U1897-174",
+      "U1897-175"
+     ],
+     "dateNote": "Decree of 18 Dec 1842 O.S. (ПСЗ-2 № 16347, 30 Dec 1842 N.S.); the new composition took effect 1 Jul 1843 O.S. = 13 Jul 1843 N.S. (ЭСБЕ, Виленская губерния: «С 1 июля 1843 г.»). The first governor took office 23 Apr 1843 O.S.; the territorial composition is dated by the 1 Jul 1843 O.S. entry into force.",
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=149817212",
+       "title": "Ковенская губерния — Википедия (oldid 149817212)",
+       "says": "Formed from 7 northern uyezds of Vilna governorate by decree of 18 (30) December 1842, ПСЗ № 16347; same 7 uyezds thereafter.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "RUE:Grodno@1801",
+   "names": {
+    "en": "Grodno Governorate",
+    "ja": "グロドノ県",
+    "local": "Гродненская губерния"
+   },
+   "wikidata": "Q2294422",
+   "spans": [
+    {
+     "from": "1802-03-11",
+     "precision": "day",
+     "to": "1843-07-13",
+     "atoms": [
+      "U1897-297",
+      "U1897-298",
+      "U1897-299",
+      "U1897-300",
+      "U1897-301",
+      "U1897-302",
+      "U1897-207",
+      "U1897-303"
+     ],
+     "dateNote": "Scope start (governorate restored 1801 as Slonim, renamed Grodno 1802); 8 uyezds unchanged until 1843.",
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/20210603025416/http://archives.gov.by/home/genealogiya/administrativno-territorialnoe-delenie-belarusi",
+       "title": "Архивы Беларуси — Административно-территориальное деление Беларуси (archived 2021-06-03)",
+       "says": "From 1802 Grodno governorate had 8 uyezds incl. Lida and Novogrudok; in 1843 it received Białystok oblast, gave Novogrudok to Minsk and Lida to Vilna.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    },
+    {
+     "from": "1843-07-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-294",
+      "U1897-295",
+      "U1897-296",
+      "U1897-297",
+      "U1897-298",
+      "U1897-299",
+      "U1897-300",
+      "U1897-301",
+      "U1897-302"
+     ],
+     "dateNote": "Decree of 18 Dec 1842 O.S. (ПСЗ-2 № 16347, 30 Dec 1842 N.S.); the new composition took effect 1 Jul 1843 O.S. = 13 Jul 1843 N.S. (ЭСБЕ, Виленская губерния: «С 1 июля 1843 г.»). Drohiczyn uyezd of the oblast was merged whole into Bielsk uyezd.",
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/20210603025416/http://archives.gov.by/home/genealogiya/administrativno-territorialnoe-delenie-belarusi",
+       "title": "Архивы Беларуси — Административно-территориальное деление Беларуси (archived 2021-06-03)",
+       "says": "In 1843 Białystok, Bielsk and Sokółka uyezds of the abolished oblast joined Grodno; Novogrudok to Minsk, Lida to Vilna; unchanged until 1921.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "RUE:Bialystok@1808",
+   "names": {
+    "en": "Białystok Oblast",
+    "local": "Белостокская область",
+    "ja": "ベロストク州"
+   },
+   "wikidata": "Q2068163",
+   "spans": [
+    {
+     "from": "1808",
+     "precision": "year",
+     "to": "1843-07-13",
+     "atoms": [
+      "U1897-294",
+      "U1897-295",
+      "U1897-296"
+     ],
+     "dateNote": "The decree forming the oblast is dated 1808 (day not found). Its 4 uyezds (Białystok, Bielsk, Sokółka, Drohiczyn) = the 1897 Białystok+Bielsk+Sokółka uyezds (Drohiczyn merged whole into Bielsk 1843). Check: ЭСБЕ area 7742 sq versts vs 7899 sq versts measured on the three RISTAT atoms.",
+     "sources": [
+      {
+       "url": "https://ru.wikisource.org/w/index.php?oldid=3807586",
+       "title": "ЭСБЕ / Белостокская область (Викитека, oldid 3807586)",
+       "says": "Ceded by Prussia at Tilsit 1807; by decree of 1808 formed as oblast of 4 uyezds; joined Grodno 1842 with Drohiczyn merged into Bielsk; 7742 sq versts.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "RUE:Minsk@1793",
+   "names": {
+    "en": "Minsk Governorate",
+    "ja": "ミンスク県",
+    "local": "Минская губерния"
+   },
+   "wikidata": "Q593230",
+   "spans": [
+    {
+     "from": "1802-03-11",
+     "precision": "day",
+     "to": "1843-07-13",
+     "atoms": [
+      "U1897-304",
+      "U1897-305",
+      "U1897-306",
+      "U1897-307",
+      "U1897-308",
+      "U1897-309",
+      "U1897-310",
+      "U1897-311",
+      "U1897-209",
+      "U1897-210"
+     ],
+     "dateNote": "Scope start; composition since 1797 (Rechitsa added) with Vileyka and Disna, without Novogrudok.",
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/20210603025416/http://archives.gov.by/home/genealogiya/administrativno-territorialnoe-delenie-belarusi",
+       "title": "Архивы Беларуси — Административно-территориальное деление Беларуси (archived 2021-06-03)",
+       "says": "Minsk governorate: Rechitsa added 1797; in 1842/43 received Novogrudok from Grodno and gave Vileyka and Disna to Vilna.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    },
+    {
+     "from": "1843-07-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-303",
+      "U1897-304",
+      "U1897-305",
+      "U1897-306",
+      "U1897-307",
+      "U1897-308",
+      "U1897-309",
+      "U1897-310",
+      "U1897-311"
+     ],
+     "dateNote": "Decree of 18 Dec 1842 O.S. (ПСЗ-2 № 16347, 30 Dec 1842 N.S.); the new composition took effect 1 Jul 1843 O.S. = 13 Jul 1843 N.S. (ЭСБЕ, Виленская губерния: «С 1 июля 1843 г.»). (Vileyka uyezd entered Vilna governorate 1 Jul 1843.)",
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/20210603025416/http://archives.gov.by/home/genealogiya/administrativno-territorialnoe-delenie-belarusi",
+       "title": "Архивы Беларуси — Административно-территориальное деление Беларуси (archived 2021-06-03)",
+       "says": "From 1842/43 Minsk governorate had Novogrudok; next change of its territory came in 1919.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "RUE:Suwalki@1867",
+   "names": {
+    "en": "Suwałki Governorate",
+    "ja": "スヴァウキ県",
+    "local": "Сувалкская губерния"
+   },
+   "wikidata": "Q1525048",
+   "spans": [
+    {
+     "from": "1867-01-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-199",
+      "U1897-200",
+      "U1897-201",
+      "U1897-202",
+      "U1897-203",
+      "U1897-204",
+      "U1897-205"
+     ],
+     "dateNote": "Law of 19 Dec 1866 O.S. (31 Dec 1866 N.S.) on governorate administration in the Kingdom of Poland, in force 1 Jan 1867 O.S. = 13 Jan 1867 N.S. No change of its outer line 1867–1915 in the change list.",
+     "sources": [
+      {
+       "url": "https://ru.wikisource.org/w/index.php?oldid=5351558",
+       "title": "ЭСБЕ / Сувалкская губерния (Викитека, oldid 5351558)",
+       "says": "Established at the new division of the Kingdom in 1867 from the former Augustów governorate minus the area that formed Łomża.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://pl.wikipedia.org/w/index.php?oldid=80137017",
+       "title": "Podział administracyjny Królestwa Polskiego — Wikipedia (oldid 80137017)",
+       "says": "Year-by-year change list 1867–1915: no transfer involving Suwałki governorate.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "RUE:Lomza@1867",
+   "names": {
+    "en": "Łomża Governorate",
+    "ja": "ウォムジャ県",
+    "local": "Ломжинская губерния"
+   },
+   "wikidata": "Q2479621",
+   "spans": [
+    {
+     "from": "1867-01-13",
+     "precision": "day",
+     "to": "1893-12-26",
+     "atoms": [
+      "U1897-213",
+      "U1897-214",
+      "U1897-215",
+      "U1897-216",
+      "U1897-218",
+      "U1897-219",
+      "U1897-220",
+      "U1897-240"
+     ],
+     "dateNote": "Law of 19 Dec 1866 O.S. (31 Dec 1866 N.S.) on governorate administration in the Kingdom of Poland, in force 1 Jan 1867 O.S. = 13 Jan 1867 N.S.",
+     "sources": [
+      {
+       "url": "https://ru.wikisource.org/w/index.php?oldid=5369693",
+       "title": "ЭСБЕ / Ломжинская губерния (Викитека, oldid 5369693)",
+       "says": "Formed 1867 from Szczuczyn, Kolno, Łomża, Mazowieck (Augustów) and Ostrołęka, Ostrów, Maków, Pułtusk (Płock); 10621 sq versts before Pułtusk left.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    },
+    {
+     "from": "1893-12-26",
+     "precision": "day",
+     "to": "1912-07-06",
+     "atoms": [
+      "U1897-213",
+      "U1897-214",
+      "U1897-215",
+      "U1897-216",
+      "U1897-218",
+      "U1897-219",
+      "U1897-220"
+     ],
+     "dateNote": "Ukaz of 14 Dec 1893 O.S. = 26 Dec 1893 N.S. (Zbiór Praw ser. II t. 19 s. 25). ЭСБЕ says the transfer took place «в январе 1894»; the decree date is used because the decree text naming an effective day was not seen.",
+     "sources": [
+      {
+       "url": "https://pl.wikipedia.org/w/index.php?oldid=79243575",
+       "title": "Gubernia warszawska — Wikipedia (oldid 79243575)",
+       "says": "Ukaz of 14/26 December 1893 joined Płońsk (from Płock) and Pułtusk (from Łomża) uyezds to Warsaw governorate.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    },
+    {
+     "from": "1912-07-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-213",
+      "U1897-214",
+      "U1897-215",
+      "U1897-216",
+      "U1897-218",
+      "U1897-219",
+      "U1897-220",
+      "U1897-221"
+     ],
+     "dateNote": "Law of 23 Jun 1912 O.S. = 6 Jul 1912 N.S. (Собрание узаконений 1912 № 128, с. 2377). Kholm boundaries were fixed only by the MVD order of 6/19 Aug 1913 and the Kholm governor took office 1 Sep 1913 O.S.; the law date is used. Węgrów uyezd passed whole from the abolished Siedlce governorate.",
+     "sources": [
+      {
+       "url": "https://pl.wikipedia.org/w/index.php?oldid=80137017",
+       "title": "Podział administracyjny Królestwa Polskiego — Wikipedia (oldid 80137017)",
+       "says": "Under the law of 6 July 1912 abolishing Siedlce governorate, Węgrów uyezd was assigned to Łomża governorate.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=146255542",
+       "title": "Ломжинская губерния — Википедия (oldid 146255542)",
+       "says": "In 1912, with Siedlce governorate abolished, its Węgrów uyezd was joined to Łomża governorate.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "RUE:Plock@1867",
+   "names": {
+    "en": "Płock Governorate",
+    "ja": "プウォツク県",
+    "local": "Плоцкая губерния"
+   },
+   "wikidata": "Q2181566",
+   "spans": [
+    {
+     "from": "1867-01-13",
+     "precision": "day",
+     "to": "1893-12-26",
+     "atoms": [
+      "U1897-222",
+      "U1897-223",
+      "U1897-224",
+      "U1897-225",
+      "U1897-226",
+      "U1897-227",
+      "U1897-228",
+      "U1897-239"
+     ],
+     "dateNote": "Law of 19 Dec 1866 O.S. (31 Dec 1866 N.S.) on governorate administration in the Kingdom of Poland, in force 1 Jan 1867 O.S. = 13 Jan 1867 N.S.",
+     "sources": [
+      {
+       "url": "https://ru.wikisource.org/w/index.php?oldid=5104202",
+       "title": "ЭСБЕ / Плоцкая губерния (Викитека, oldid 5104202)",
+       "says": "In 1867 Ostrołęka and Pułtusk uyezds went to new Łomża governorate; in 1894 Płońsk uyezd went to Warsaw governorate.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    },
+    {
+     "from": "1893-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-222",
+      "U1897-223",
+      "U1897-224",
+      "U1897-225",
+      "U1897-226",
+      "U1897-227",
+      "U1897-228"
+     ],
+     "dateNote": "Ukaz of 14 Dec 1893 O.S. = 26 Dec 1893 N.S. (Zbiór Praw ser. II t. 19 s. 25). ЭСБЕ says the transfer took place «в январе 1894»; the decree date is used because the decree text naming an effective day was not seen.",
+     "sources": [
+      {
+       "url": "https://pl.wikipedia.org/w/index.php?oldid=79243575",
+       "title": "Gubernia warszawska — Wikipedia (oldid 79243575)",
+       "says": "Ukaz of 14/26 December 1893 joined Płońsk uyezd of Płock governorate to Warsaw governorate.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "RUE:Warsaw@1867",
+   "names": {
+    "en": "Warsaw Governorate",
+    "ja": "ワルシャワ県",
+    "local": "Варшавская губерния"
+   },
+   "wikidata": "Q2520566",
+   "spans": [
+    {
+     "from": "1889",
+     "precision": "year",
+     "to": "1893-12-26",
+     "atoms": [
+      "U1897-229",
+      "U1897-230",
+      "U1897-231",
+      "U1897-232",
+      "U1897-233",
+      "U1897-234",
+      "U1897-235",
+      "U1897-236",
+      "U1897-237",
+      "U1897-238",
+      "U1897-241",
+      "U1897-242"
+     ],
+     "dateNote": "Starts with the 1889 transfer of Kamieńczyk gmina from Węgrów uyezd (Siedlce gov.) to Radzymin uyezd (Warsaw gov.), which set the 1897 Radzymin–Węgrów line; day not found. Górna Kalwaria uyezd merged into Grójec 1879 (internal).",
+     "sources": [
+      {
+       "url": "https://pl.wikipedia.org/w/index.php?oldid=80137017",
+       "title": "Podział administracyjny Królestwa Polskiego — Wikipedia (oldid 80137017)",
+       "says": "1889: Warsaw governorate (Radzymin uyezd) enlarged at the expense of Siedlce governorate (Węgrów uyezd) by Kamieńczyk gmina.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    },
+    {
+     "from": "1893-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-229",
+      "U1897-230",
+      "U1897-231",
+      "U1897-232",
+      "U1897-233",
+      "U1897-234",
+      "U1897-235",
+      "U1897-236",
+      "U1897-237",
+      "U1897-238",
+      "U1897-239",
+      "U1897-240",
+      "U1897-241",
+      "U1897-242"
+     ],
+     "dateNote": "Ukaz of 14 Dec 1893 O.S. = 26 Dec 1893 N.S. (Zbiór Praw ser. II t. 19 s. 25). ЭСБЕ says the transfer took place «в январе 1894»; the decree date is used because the decree text naming an effective day was not seen.",
+     "sources": [
+      {
+       "url": "https://pl.wikipedia.org/w/index.php?oldid=79243575",
+       "title": "Gubernia warszawska — Wikipedia (oldid 79243575)",
+       "says": "Ukaz of 14/26 December 1893 added Płońsk and Pułtusk uyezds; table gives the division valid 1893–1912.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "RUE:Siedlce@1867",
+   "names": {
+    "en": "Siedlce Governorate",
+    "ja": "シェドルツェ県",
+    "local": "Седлецкая губерния"
+   },
+   "wikidata": "Q2473698",
+   "spans": [
+    {
+     "from": "1889",
+     "precision": "year",
+     "to": "1912-07-06",
+     "atoms": [
+      "U1897-221",
+      "U1897-279",
+      "U1897-280",
+      "U1897-281",
+      "U1897-282",
+      "U1897-283",
+      "U1897-290",
+      "U1897-291",
+      "U1897-293"
+     ],
+     "dateNote": "Starts with the 1889 loss of Kamieńczyk gmina to Radzymin uyezd (Warsaw gov.); day not found. Ends with the 1912 Kholm law. Law of 23 Jun 1912 O.S. = 6 Jul 1912 N.S. (Собрание узаконений 1912 № 128, с. 2377). Kholm boundaries were fixed only by the MVD order of 6/19 Aug 1913 and the Kholm governor took office 1 Sep 1913 O.S.; the law date is used.",
+     "sources": [
+      {
+       "url": "https://pl.wikipedia.org/w/index.php?oldid=80137017",
+       "title": "Podział administracyjny Królestwa Polskiego — Wikipedia (oldid 80137017)",
+       "says": "1889 Kamieńczyk gmina left Węgrów uyezd for Warsaw governorate; 6 July 1912 Siedlce governorate abolished and divided among Lublin, Łomża and Kholm.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "RUE:Kalisz@1867",
+   "names": {
+    "en": "Kalisz Governorate",
+    "ja": "カリシュ県",
+    "local": "Калишская губерния"
+   },
+   "wikidata": "Q2531968",
+   "spans": [
+    {
+     "from": "1867-01-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-243",
+      "U1897-244",
+      "U1897-245",
+      "U1897-246",
+      "U1897-247",
+      "U1897-248",
+      "U1897-249",
+      "U1897-250"
+     ],
+     "dateNote": "Law of 19 Dec 1866 O.S. (31 Dec 1866 N.S.) on governorate administration in the Kingdom of Poland, in force 1 Jan 1867 O.S. = 13 Jan 1867 N.S. Only internal change: Warta town and Bartochów gmina moved from Turek to Sieradz uyezd 1886.",
+     "sources": [
+      {
+       "url": "https://pl.wikipedia.org/w/index.php?oldid=80137017",
+       "title": "Podział administracyjny Królestwa Polskiego — Wikipedia (oldid 80137017)",
+       "says": "Change list 1867–1915: for Kalisz only the internal 1886 Turek-to-Sieradz transfer and the 1906 enlargement of Kalisz town.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://pl.wikipedia.org/w/index.php?oldid=78348289",
+       "title": "Gubernia kaliska — Wikipedia (oldid 78348289)",
+       "says": "Kalisz governorate existed 1867–1915 with 8 powiats (as in 1882).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "RUE:Piotrkow@1867",
+   "names": {
+    "en": "Piotrków Governorate",
+    "ja": "ピョトルクフ県",
+    "local": "Петроковская губерния"
+   },
+   "wikidata": "Q2532730",
+   "spans": [
+    {
+     "from": "1890",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "U1897-251",
+      "U1897-252",
+      "U1897-253",
+      "U1897-254",
+      "U1897-255",
+      "U1897-256",
+      "U1897-257",
+      "U1897-258"
+     ],
+     "dateNote": "Starts with the 1890 transfer of Kromołów gmina from Olkusz uyezd (Kielce gov.) to Będzin uyezd (Piotrków gov.); day not found. (The change list misnames the uyezds; the Kromołów gmina article gives Olkusz to Będzin.)",
+     "sources": [
+      {
+       "url": "https://pl.wikipedia.org/w/index.php?oldid=80137017",
+       "title": "Podział administracyjny Królestwa Polskiego — Wikipedia (oldid 80137017)",
+       "says": "1890: Piotrków governorate enlarged by Kromołów gmina taken from Olkusz uyezd; no later transfer across its line before 1915.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "RUE:Kielce@1867",
+   "names": {
+    "en": "Kielce Governorate",
+    "ja": "キェルツェ県",
+    "local": "Келецкая губерния"
+   },
+   "wikidata": "Q2532702",
+   "spans": [
+    {
+     "from": "1890",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "U1897-259",
+      "U1897-260",
+      "U1897-261",
+      "U1897-262",
+      "U1897-263",
+      "U1897-264",
+      "U1897-265"
+     ],
+     "dateNote": "Starts after both cross-line changes: Nowa Słupia gmina gained from Opatów uyezd (Radom gov.) 1887 and Kromołów gmina lost to Będzin uyezd (Piotrków gov.) 1890; days not found.",
+     "sources": [
+      {
+       "url": "https://pl.wikipedia.org/w/index.php?oldid=78349817",
+       "title": "Gubernia kielecka — Wikipedia (oldid 78349817)",
+       "says": "In 1887 Nowa Słupia gmina, until then in Opatów uyezd of Radom governorate, was joined to Kielce uyezd.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://pl.wikipedia.org/w/index.php?oldid=80137017",
+       "title": "Podział administracyjny Królestwa Polskiego — Wikipedia (oldid 80137017)",
+       "says": "1890: Kromołów gmina passed from Olkusz uyezd to Piotrków governorate.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "RUE:Radom@1867",
+   "names": {
+    "en": "Radom Governorate",
+    "ja": "ラドム県",
+    "local": "Радомская губерния"
+   },
+   "wikidata": "Q2532795",
+   "spans": [
+    {
+     "from": "1887",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "U1897-266",
+      "U1897-267",
+      "U1897-268",
+      "U1897-269",
+      "U1897-270",
+      "U1897-271",
+      "U1897-272"
+     ],
+     "dateNote": "Starts with the 1887 loss of Nowa Słupia gmina (Opatów uyezd) to Kielce uyezd; day not found. Radom town enlargements 1891/1905 internal.",
+     "sources": [
+      {
+       "url": "https://pl.wikipedia.org/w/index.php?oldid=78349817",
+       "title": "Gubernia kielecka — Wikipedia (oldid 78349817)",
+       "says": "In 1887 Nowa Słupia gmina was moved from Opatów uyezd of Radom governorate to Kielce uyezd.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://pl.wikipedia.org/w/index.php?oldid=80137017",
+       "title": "Podział administracyjny Królestwa Polskiego — Wikipedia (oldid 80137017)",
+       "says": "Change list 1867–1915: Nowa Słupia 1887 is the only transfer across the Radom governorate line.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "RUE:Lublin@1867",
+   "names": {
+    "en": "Lublin Governorate",
+    "ja": "ルブリン県",
+    "local": "Люблинская губерния"
+   },
+   "wikidata": "Q2620729",
+   "spans": [
+    {
+     "from": "1867-01-13",
+     "precision": "day",
+     "to": "1912-07-06",
+     "atoms": [
+      "U1897-273",
+      "U1897-274",
+      "U1897-275",
+      "U1897-276",
+      "U1897-277",
+      "U1897-278",
+      "U1897-284",
+      "U1897-286",
+      "U1897-288",
+      "U1897-289"
+     ],
+     "dateNote": "Law of 19 Dec 1866 O.S. (31 Dec 1866 N.S.) on governorate administration in the Kingdom of Poland, in force 1 Jan 1867 O.S. = 13 Jan 1867 N.S. Only internal change before 1912: Dołhobyczów gmina moved from Tomaszów to Hrubieszów 1905.",
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=146211262",
+       "title": "Люблинская губерния — Википедия (oldid 146211262)",
+       "says": "From 1867 to 1912 the governorate comprised 10 uyezds; in 1912 parts went to the new Kholm governorate and parts of Siedlce were added.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://pl.wikipedia.org/w/index.php?oldid=80137017",
+       "title": "Podział administracyjny Królestwa Polskiego — Wikipedia (oldid 80137017)",
+       "says": "Change list: Lublin governorate only had the internal 1905 Dołhobyczów transfer before the 1912 reform.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1802-03-11",
+   "precision": "day",
+   "what": "Belarus governorate divided into Vitebsk and Mogilev governorates",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=153057639",
+     "title": "Могилёвская губерния — Википедия (oldid 153057639)",
+     "says": "On 27 February 1802 Mogilev governorate restored with its former 12 uyezds (Belarus governorate divided).",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1819-03-25",
+   "precision": "day",
+   "what": "Palanga strip transferred from Vilna to Kurland governorate",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=154901389",
+     "title": "Курляндская губерния — Википедия (oldid 154901389)",
+     "says": "ПСЗ т. 36 № 27718 of 13 March 1819 transferred the Palangen coastal strip from Vilna to Kurland.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1843-07-13",
+   "precision": "day",
+   "what": "Kovno governorate created; Białystok oblast joined to Grodno; Lida to Vilna; Novogrudok to Minsk; Vileyka and Disna to Vilna",
+   "sources": [
+    {
+     "url": "https://ru.wikisource.org/w/index.php?oldid=5369338",
+     "title": "ЭСБЕ / Виленская губерния (Викитека, oldid 5369338)",
+     "says": "From 1 July 1843 Vilna governorate has 7 uyezds and Kovno governorate is separated.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1867-01-13",
+   "precision": "day",
+   "what": "Kingdom of Poland re-divided into 10 governorates and 85 powiats",
+   "sources": [
+    {
+     "url": "https://pl.wikipedia.org/w/index.php?oldid=80137017",
+     "title": "Podział administracyjny Królestwa Polskiego — Wikipedia (oldid 80137017)",
+     "says": "On 1 January 1867 (law of 31 December 1866) a new division into 10 governorates; 85 powiats with new borders.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1893-12-26",
+   "precision": "day",
+   "what": "Płońsk (Płock) and Pułtusk (Łomża) uyezds transferred to Warsaw governorate",
+   "sources": [
+    {
+     "url": "https://pl.wikipedia.org/w/index.php?oldid=79243575",
+     "title": "Gubernia warszawska — Wikipedia (oldid 79243575)",
+     "says": "Ukaz of 14/26 December 1893.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1912-07-06",
+   "precision": "day",
+   "what": "Kholm governorate created; Siedlce governorate abolished (Węgrów to Łomża, rest to Lublin and Kholm)",
+   "sources": [
+    {
+     "url": "https://pl.wikipedia.org/w/index.php?oldid=80216424",
+     "title": "Gubernia chełmska — Wikipedia (oldid 80216424)",
+     "says": "Kholm governorate created from parts of Siedlce and Lublin governorates by the law of 23 June / 6 July 1912.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [
+  {
+   "atom": "U1897-199",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-200",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-201",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-202",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-203",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-204",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-205",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-213",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-214",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-215",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-216",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-218",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-219",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-220",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-222",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-223",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-224",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-225",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-226",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-227",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-228",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-229",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-230",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-231",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-232",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-233",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-234",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-235",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-236",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-237",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-238",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-239",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-240",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-241",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-242",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-221",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-279",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-280",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-281",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-282",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-283",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-290",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-291",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-293",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-243",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-244",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-245",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-246",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-247",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-248",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-249",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-250",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-251",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-252",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-253",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-254",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-255",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-256",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-257",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-258",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-259",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-260",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-261",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-262",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-263",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-264",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-265",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-266",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-267",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-268",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-269",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-270",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-271",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-272",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-273",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-274",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-275",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-276",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-277",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-278",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-284",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-286",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-288",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-289",
+   "from": "1802-03-11",
+   "to": "1815-06-09",
+   "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
+  },
+  {
+   "atom": "U1897-294",
+   "from": "1802-03-11",
+   "to": "1807-07-09",
+   "why": "Prussian (New East Prussia) until ceded to Russia by the Treaties of Tilsit (7/9 July 1807)."
+  },
+  {
+   "atom": "U1897-295",
+   "from": "1802-03-11",
+   "to": "1807-07-09",
+   "why": "Prussian (New East Prussia) until ceded to Russia by the Treaties of Tilsit (7/9 July 1807)."
+  },
+  {
+   "atom": "U1897-296",
+   "from": "1802-03-11",
+   "to": "1807-07-09",
+   "why": "Prussian (New East Prussia) until ceded to Russia by the Treaties of Tilsit (7/9 July 1807)."
+  }
+ ],
+ "unresolved": [
+  {
+   "what": "Vilna governorate 1802–1819 (incl. the Palanga strip)",
+   "unit": "RUE:Vilna@1795",
+   "atoms": [
+    "U1897-169",
+    "U1897-170",
+    "U1897-171",
+    "U1897-172",
+    "U1897-173",
+    "U1897-174",
+    "U1897-175",
+    "U1897-206",
+    "U1897-208",
+    "U1897-211",
+    "U1897-212"
+   ],
+   "from": "1802-03-11",
+   "to": "1819-03-25",
+   "why": "Until 13 Mar 1819 O.S. Vilna governorate also held the Palanga coastal strip, which lies inside the 1897 Grobin uyezd of Kurland (another group, only part of that atom); the governorate is not a union of these atoms.",
+   "checked": [
+    "ru.wikipedia Курляндская губерния oldid 154901389 (ПСЗ-1 № 27718)",
+    "ru.wikipedia Гробинский уезд oldid 147481405",
+    "archives.gov.by change list"
+   ],
+   "needs": "the Palanga strip as a separate atom (1897 Grobin uyezd split along the 1819 line)"
+  },
+  {
+   "what": "Białystok region between the Treaties of Tilsit and the 1808 decree forming the oblast",
+   "atoms": [
+    "U1897-294",
+    "U1897-295",
+    "U1897-296"
+   ],
+   "from": "1807-07-09",
+   "to": "1808",
+   "why": "Russian from the Tilsit treaties (7/9 July 1807) but organised as an oblast only by a decree of 1808 whose day was not found; no first-level unit can be dated in this window.",
+   "checked": [
+    "ЭСБЕ Белостокская область (Викитека oldid 3807586)",
+    "ru.wikipedia Белостокская область (Российская империя) oldid 151123413",
+    "ru.wikipedia Белостокский / Бельский / Сокольский уезд"
+   ]
+  },
+  {
+   "what": "Kingdom of Poland 1815–1867 (voivodeships 1816, governorates 1837 and 1844)",
+   "atoms": [
+    "U1897-199",
+    "U1897-200",
+    "U1897-201",
+    "U1897-202",
+    "U1897-203",
+    "U1897-204",
+    "U1897-205",
+    "U1897-213",
+    "U1897-214",
+    "U1897-215",
+    "U1897-216",
+    "U1897-218",
+    "U1897-219",
+    "U1897-220",
+    "U1897-222",
+    "U1897-223",
+    "U1897-224",
+    "U1897-225",
+    "U1897-226",
+    "U1897-227",
+    "U1897-228",
+    "U1897-229",
+    "U1897-230",
+    "U1897-231",
+    "U1897-232",
+    "U1897-233",
+    "U1897-234",
+    "U1897-235",
+    "U1897-236",
+    "U1897-237",
+    "U1897-238",
+    "U1897-239",
+    "U1897-240",
+    "U1897-241",
+    "U1897-242",
+    "U1897-221",
+    "U1897-279",
+    "U1897-280",
+    "U1897-281",
+    "U1897-282",
+    "U1897-283",
+    "U1897-290",
+    "U1897-291",
+    "U1897-293",
+    "U1897-243",
+    "U1897-244",
+    "U1897-245",
+    "U1897-246",
+    "U1897-247",
+    "U1897-248",
+    "U1897-249",
+    "U1897-250",
+    "U1897-251",
+    "U1897-252",
+    "U1897-253",
+    "U1897-254",
+    "U1897-255",
+    "U1897-256",
+    "U1897-257",
+    "U1897-258",
+    "U1897-259",
+    "U1897-260",
+    "U1897-261",
+    "U1897-262",
+    "U1897-263",
+    "U1897-264",
+    "U1897-265",
+    "U1897-266",
+    "U1897-267",
+    "U1897-268",
+    "U1897-269",
+    "U1897-270",
+    "U1897-271",
+    "U1897-272",
+    "U1897-273",
+    "U1897-274",
+    "U1897-275",
+    "U1897-276",
+    "U1897-277",
+    "U1897-278",
+    "U1897-284",
+    "U1897-286",
+    "U1897-288",
+    "U1897-289"
+   ],
+   "from": "1815-06-09",
+   "to": "1867-01-13",
+   "why": "The 1867 reform created 85 powiats, all with new borders, and re-cut governorate membership (e.g. Augustów split, Płock uyezds given to Łomża); the earlier units do not follow 1897 uyezd lines.",
+   "checked": [
+    "pl.wikipedia Podział administracyjny Królestwa Polskiego oldid 80137017 (1815–1867 sections)",
+    "ЭСБЕ articles on the ten governorates",
+    "ru.wikipedia governorate articles"
+   ],
+   "needs": "finer atoms: the pre-1867 obwód/powiat lines of the Kingdom of Poland"
+  },
+  {
+   "what": "Warsaw and Siedlce governorates 1867–1889 (Kamieńczyk gmina in Węgrów uyezd)",
+   "atoms": [
+    "U1897-229",
+    "U1897-230",
+    "U1897-231",
+    "U1897-232",
+    "U1897-233",
+    "U1897-234",
+    "U1897-235",
+    "U1897-236",
+    "U1897-237",
+    "U1897-238",
+    "U1897-241",
+    "U1897-242",
+    "U1897-221",
+    "U1897-279",
+    "U1897-280",
+    "U1897-281",
+    "U1897-282",
+    "U1897-283",
+    "U1897-290",
+    "U1897-291",
+    "U1897-293"
+   ],
+   "from": "1867-01-13",
+   "to": "1889",
+   "why": "Kamieńczyk gmina belonged to Węgrów uyezd (Siedlce) until 1889 and to Radzymin uyezd (Warsaw) in 1897; part of a 1897 uyezd moved across the governorate line.",
+   "checked": [
+    "pl.wikipedia Podział administracyjny Królestwa Polskiego oldid 80137017",
+    "pl.wikipedia Kamieńczyk (gmina) oldid 79908220",
+    "pl.wikipedia Powiat radzymiński oldid 78376924"
+   ],
+   "needs": "gmina-level atoms (Kamieńczyk gmina, 1870–1889)"
+  },
+  {
+   "what": "Kielce, Radom and Piotrków governorates 1867–1887 (Nowa Słupia, Kromołów)",
+   "atoms": [
+    "U1897-259",
+    "U1897-260",
+    "U1897-261",
+    "U1897-262",
+    "U1897-263",
+    "U1897-264",
+    "U1897-265",
+    "U1897-266",
+    "U1897-267",
+    "U1897-268",
+    "U1897-269",
+    "U1897-270",
+    "U1897-271",
+    "U1897-272",
+    "U1897-251",
+    "U1897-252",
+    "U1897-253",
+    "U1897-254",
+    "U1897-255",
+    "U1897-256",
+    "U1897-257",
+    "U1897-258"
+   ],
+   "from": "1867-01-13",
+   "to": "1887",
+   "why": "Nowa Słupia gmina was in Opatów uyezd (Radom) until 1887 and Kromołów gmina in Olkusz uyezd (Kielce) until 1890; both lie in other 1897 uyezds and governorates (partial uyezd transfers).",
+   "checked": [
+    "pl.wikipedia Gubernia kielecka oldid 78349817",
+    "pl.wikipedia Kromołów (gmina) oldid 80010753",
+    "pl.wikipedia Nowa Słupia (gmina) oldid 79154428",
+    "pl.wikipedia Podział administracyjny Królestwa Polskiego oldid 80137017"
+   ],
+   "needs": "gmina-level atoms (Nowa Słupia, Kromołów gminas)"
+  },
+  {
+   "what": "Kielce and Piotrków governorates 1887–1890 (Kromołów gmina still in Olkusz uyezd)",
+   "atoms": [
+    "U1897-259",
+    "U1897-260",
+    "U1897-261",
+    "U1897-262",
+    "U1897-263",
+    "U1897-264",
+    "U1897-265",
+    "U1897-251",
+    "U1897-252",
+    "U1897-253",
+    "U1897-254",
+    "U1897-255",
+    "U1897-256",
+    "U1897-257",
+    "U1897-258"
+   ],
+   "from": "1887",
+   "to": "1890",
+   "why": "Kromołów gmina belonged to Olkusz uyezd (Kielce) until 1890; in 1897 it is part of Będzin uyezd (Piotrków).",
+   "checked": [
+    "pl.wikipedia Kromołów (gmina) oldid 80010753",
+    "pl.wikipedia Podział administracyjny Królestwa Polskiego oldid 80137017"
+   ],
+   "needs": "gmina-level atom for Kromołów"
+  },
+  {
+   "what": "Lublin and Kholm governorates after the 1912 Kholm law",
+   "unit": "RUE:Kholm@1912",
+   "atoms": [
+    "U1897-273",
+    "U1897-274",
+    "U1897-275",
+    "U1897-276",
+    "U1897-277",
+    "U1897-278",
+    "U1897-284",
+    "U1897-286",
+    "U1897-288",
+    "U1897-289",
+    "U1897-279",
+    "U1897-280",
+    "U1897-281",
+    "U1897-282",
+    "U1897-283",
+    "U1897-290",
+    "U1897-291",
+    "U1897-293"
+   ],
+   "from": "1912-07-06",
+   "to": null,
+   "why": "Kholm (Q2371767, ホルム県) took whole Biała, Hrubieszów, Tomaszów uyezds but only parts of Konstantynów, Włodawa, Radzyń, Chełm, Zamość, Biłgoraj, Krasnystaw, Lubartów (gmina/village lists, two enclaves); Lublin received the rest. Lines cut 1897 uyezds. Effective date also unclear (law 6 Jul 1912; delimitation Aug 1913; never fully implemented before the 1915 occupation).",
+   "checked": [
+    "pl.wikipedia Gubernia chełmska oldid 80216424 (MVD order 6/19 Aug 1913)",
+    "pl.wikipedia Podział administracyjny Królestwa Polskiego oldid 80137017 (Reforma z 1912)",
+    "ru.wikipedia Холмская губерния oldid 152187087"
+   ],
+   "needs": "gmina/village-level atoms of 1912–1913 (Wrzyszcz 1991, «Delimitacja guberni chełmskiej»)"
+  },
+  {
+   "what": "Belarus governorate 1796–1802 and the earlier Polotsk/Mogilev units (before scope)",
+   "from": "1772",
+   "to": "1802-03-11",
+   "why": "Before the 1802 split the Belarus governorate had 16 uyezds with other lines (Babinovichi divided 1796 between Vitebsk and Orsha uyezds, restored 1802); not established as unions of 1897 uyezds, left outside scope.",
+   "checked": [
+    "archives.gov.by change list",
+    "ru.wikipedia Могилёвская губерния oldid 153057639",
+    "ru.wikipedia Бабиновичский уезд oldid 146931972"
+   ]
+  },
+  {
+   "what": "Mogilev governorate 1802–1894",
+   "unit": "RUE:Mogilev@1802",
+   "atoms": [
+    "U1897-392",
+    "U1897-393",
+    "U1897-394",
+    "U1897-395",
+    "U1897-396",
+    "U1897-397",
+    "U1897-398",
+    "U1897-399",
+    "U1897-400",
+    "U1897-401",
+    "U1897-402"
+   ],
+   "from": "1802-03-11",
+   "to": "1895-01-01",
+   "why": "Chernigov parcels joined Mogilev by decisions of 1889 and 1894 (reconciled with RUE-south); they lie inside 1897 Mogilev uyezds, so earlier outlines are not unions of 1897 uyezds; exact parcels and days not found.",
+   "checked": [
+    "ЭСБЕ Черниговская губерния",
+    "RUE-south research (Novozybkov parcel, 1894-02-18 unverified)"
+   ],
+   "needs": "the 1889/1894 decisions (Собрание узаконений) and finer atoms"
+  }
+ ]
+}

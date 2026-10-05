@@ -1,0 +1,898 @@
+{
+ "country": "NPL",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1962-12-17",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Kingdom of Nepal, Federal Democratic Republic from 28 May 2008. NE depicts the 14 zones (NE names NPL-1134 «Bhojpur», but it is Kosi Zone: gn_name «Kosi Zone»).",
+ "units": [
+  {
+   "id": "NPL:Mechi",
+   "names": {
+    "en": "Mechi Zone",
+    "ja": "メチ県",
+    "local": "मेची अञ्चल"
+   },
+   "wikidata": "Q9180",
+   "spans": [
+    {
+     "from": "1976-04-13",
+     "precision": "day",
+     "to": "2015-09-20",
+     "atoms": [
+      "NPL-1135"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=List_of_districts_of_Nepal&oldid=1378300427",
+       "title": "Wikipedia — List of districts of Nepal",
+       "says": "14 zones and 75 districts took effect on publication in the Nepal Gazette, 17 Dec 1962; in 1975 Bhojpur, Parbat and Dolpa changed zones and panchayats moved across 58 districts.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/unp.html",
+       "title": "Statoids — Zones of Nepal, change history",
+       "says": "Table of the 14 zones (1991 census populations).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 1975 reorganisation is dated only to the year (possibly B.S. 2032 = Apr 1975–Apr 1976); the span starts on 13 Apr 1976 (B.S. 2033-01-01) to lie safely after it. Development regions (1972/1981) are unions of zones and are not drawn separately."
+    }
+   ]
+  },
+  {
+   "id": "NPL:Kosi",
+   "names": {
+    "en": "Kosi Zone",
+    "ja": "コシ県",
+    "local": "कोशी अञ्चल"
+   },
+   "wikidata": "Q9170",
+   "spans": [
+    {
+     "from": "1976-04-13",
+     "precision": "day",
+     "to": "2015-09-20",
+     "atoms": [
+      "NPL-1134"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=List_of_districts_of_Nepal&oldid=1378300427",
+       "title": "Wikipedia — List of districts of Nepal",
+       "says": "14 zones and 75 districts took effect on publication in the Nepal Gazette, 17 Dec 1962; in 1975 Bhojpur, Parbat and Dolpa changed zones and panchayats moved across 58 districts.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/unp.html",
+       "title": "Statoids — Zones of Nepal, change history",
+       "says": "Table of the 14 zones (1991 census populations).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 1975 reorganisation is dated only to the year (possibly B.S. 2032 = Apr 1975–Apr 1976); the span starts on 13 Apr 1976 (B.S. 2033-01-01) to lie safely after it. Development regions (1972/1981) are unions of zones and are not drawn separately."
+    }
+   ]
+  },
+  {
+   "id": "NPL:Sagarmatha",
+   "names": {
+    "en": "Sagarmatha Zone",
+    "ja": "サガルマタ県",
+    "local": "सगरमाथा अञ्चल"
+   },
+   "wikidata": "Q9195",
+   "spans": [
+    {
+     "from": "1976-04-13",
+     "precision": "day",
+     "to": "2015-09-20",
+     "atoms": [
+      "NPL-1133"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=List_of_districts_of_Nepal&oldid=1378300427",
+       "title": "Wikipedia — List of districts of Nepal",
+       "says": "14 zones and 75 districts took effect on publication in the Nepal Gazette, 17 Dec 1962; in 1975 Bhojpur, Parbat and Dolpa changed zones and panchayats moved across 58 districts.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/unp.html",
+       "title": "Statoids — Zones of Nepal, change history",
+       "says": "Table of the 14 zones (1991 census populations).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 1975 reorganisation is dated only to the year (possibly B.S. 2032 = Apr 1975–Apr 1976); the span starts on 13 Apr 1976 (B.S. 2033-01-01) to lie safely after it. Development regions (1972/1981) are unions of zones and are not drawn separately."
+    }
+   ]
+  },
+  {
+   "id": "NPL:Janakpur",
+   "names": {
+    "en": "Janakpur Zone",
+    "ja": "ジャナクプル県",
+    "local": "जनकपुर अञ्चल"
+   },
+   "wikidata": "Q9152",
+   "spans": [
+    {
+     "from": "1976-04-13",
+     "precision": "day",
+     "to": "2015-09-20",
+     "atoms": [
+      "NPL-1131"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=List_of_districts_of_Nepal&oldid=1378300427",
+       "title": "Wikipedia — List of districts of Nepal",
+       "says": "14 zones and 75 districts took effect on publication in the Nepal Gazette, 17 Dec 1962; in 1975 Bhojpur, Parbat and Dolpa changed zones and panchayats moved across 58 districts.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/unp.html",
+       "title": "Statoids — Zones of Nepal, change history",
+       "says": "Table of the 14 zones (1991 census populations).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 1975 reorganisation is dated only to the year (possibly B.S. 2032 = Apr 1975–Apr 1976); the span starts on 13 Apr 1976 (B.S. 2033-01-01) to lie safely after it. Development regions (1972/1981) are unions of zones and are not drawn separately."
+    }
+   ]
+  },
+  {
+   "id": "NPL:Bagmati",
+   "names": {
+    "en": "Bagmati Zone",
+    "ja": "バグマティ県",
+    "local": "बागमती अञ्चल"
+   },
+   "wikidata": "Q9046",
+   "spans": [
+    {
+     "from": "1976-04-13",
+     "precision": "day",
+     "to": "2015-09-20",
+     "atoms": [
+      "NPL-1130"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=List_of_districts_of_Nepal&oldid=1378300427",
+       "title": "Wikipedia — List of districts of Nepal",
+       "says": "14 zones and 75 districts took effect on publication in the Nepal Gazette, 17 Dec 1962; in 1975 Bhojpur, Parbat and Dolpa changed zones and panchayats moved across 58 districts.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/unp.html",
+       "title": "Statoids — Zones of Nepal, change history",
+       "says": "Table of the 14 zones (1991 census populations).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 1975 reorganisation is dated only to the year (possibly B.S. 2032 = Apr 1975–Apr 1976); the span starts on 13 Apr 1976 (B.S. 2033-01-01) to lie safely after it. Development regions (1972/1981) are unions of zones and are not drawn separately."
+    }
+   ]
+  },
+  {
+   "id": "NPL:Narayani",
+   "names": {
+    "en": "Narayani Zone",
+    "ja": "ナラヤニ県",
+    "local": "नारायणी अञ्चल"
+   },
+   "wikidata": "Q9183",
+   "spans": [
+    {
+     "from": "1976-04-13",
+     "precision": "day",
+     "to": "2015-09-20",
+     "atoms": [
+      "NPL-1132"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=List_of_districts_of_Nepal&oldid=1378300427",
+       "title": "Wikipedia — List of districts of Nepal",
+       "says": "14 zones and 75 districts took effect on publication in the Nepal Gazette, 17 Dec 1962; in 1975 Bhojpur, Parbat and Dolpa changed zones and panchayats moved across 58 districts.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/unp.html",
+       "title": "Statoids — Zones of Nepal, change history",
+       "says": "Table of the 14 zones (1991 census populations).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 1975 reorganisation is dated only to the year (possibly B.S. 2032 = Apr 1975–Apr 1976); the span starts on 13 Apr 1976 (B.S. 2033-01-01) to lie safely after it. Development regions (1972/1981) are unions of zones and are not drawn separately."
+    }
+   ]
+  },
+  {
+   "id": "NPL:Gandaki",
+   "names": {
+    "en": "Gandaki Zone",
+    "ja": "ガンダキ県",
+    "local": "गण्डकी अञ्चल"
+   },
+   "wikidata": "Q9133",
+   "spans": [
+    {
+     "from": "1976-04-13",
+     "precision": "day",
+     "to": "2015-09-20",
+     "atoms": [
+      "NPL-1095"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=List_of_districts_of_Nepal&oldid=1378300427",
+       "title": "Wikipedia — List of districts of Nepal",
+       "says": "14 zones and 75 districts took effect on publication in the Nepal Gazette, 17 Dec 1962; in 1975 Bhojpur, Parbat and Dolpa changed zones and panchayats moved across 58 districts.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/unp.html",
+       "title": "Statoids — Zones of Nepal, change history",
+       "says": "Table of the 14 zones (1991 census populations).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 1975 reorganisation is dated only to the year (possibly B.S. 2032 = Apr 1975–Apr 1976); the span starts on 13 Apr 1976 (B.S. 2033-01-01) to lie safely after it. Development regions (1972/1981) are unions of zones and are not drawn separately."
+    }
+   ]
+  },
+  {
+   "id": "NPL:Dhaulagiri",
+   "names": {
+    "en": "Dhaulagiri Zone",
+    "ja": "ダウラギリ県",
+    "local": "धौलागिरी अञ्चल"
+   },
+   "wikidata": "Q9088",
+   "spans": [
+    {
+     "from": "1976-04-13",
+     "precision": "day",
+     "to": "2015-09-20",
+     "atoms": [
+      "NPL-1125"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=List_of_districts_of_Nepal&oldid=1378300427",
+       "title": "Wikipedia — List of districts of Nepal",
+       "says": "14 zones and 75 districts took effect on publication in the Nepal Gazette, 17 Dec 1962; in 1975 Bhojpur, Parbat and Dolpa changed zones and panchayats moved across 58 districts.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/unp.html",
+       "title": "Statoids — Zones of Nepal, change history",
+       "says": "Table of the 14 zones (1991 census populations).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 1975 reorganisation is dated only to the year (possibly B.S. 2032 = Apr 1975–Apr 1976); the span starts on 13 Apr 1976 (B.S. 2033-01-01) to lie safely after it. Development regions (1972/1981) are unions of zones and are not drawn separately."
+    }
+   ]
+  },
+  {
+   "id": "NPL:Lumbini",
+   "names": {
+    "en": "Lumbini Zone",
+    "ja": "ルンビニ県",
+    "local": "लुम्बिनी अञ्चल"
+   },
+   "wikidata": "Q9172",
+   "spans": [
+    {
+     "from": "1976-04-13",
+     "precision": "day",
+     "to": "2015-09-20",
+     "atoms": [
+      "NPL-1127"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=List_of_districts_of_Nepal&oldid=1378300427",
+       "title": "Wikipedia — List of districts of Nepal",
+       "says": "14 zones and 75 districts took effect on publication in the Nepal Gazette, 17 Dec 1962; in 1975 Bhojpur, Parbat and Dolpa changed zones and panchayats moved across 58 districts.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/unp.html",
+       "title": "Statoids — Zones of Nepal, change history",
+       "says": "Table of the 14 zones (1991 census populations).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 1975 reorganisation is dated only to the year (possibly B.S. 2032 = Apr 1975–Apr 1976); the span starts on 13 Apr 1976 (B.S. 2033-01-01) to lie safely after it. Development regions (1972/1981) are unions of zones and are not drawn separately."
+    }
+   ]
+  },
+  {
+   "id": "NPL:Rapti",
+   "names": {
+    "en": "Rapti Zone",
+    "ja": "ラプティ県",
+    "local": "राप्ती अञ्चल"
+   },
+   "wikidata": "Q9185",
+   "spans": [
+    {
+     "from": "1976-04-13",
+     "precision": "day",
+     "to": "2015-09-20",
+     "atoms": [
+      "NPL-373"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=List_of_districts_of_Nepal&oldid=1378300427",
+       "title": "Wikipedia — List of districts of Nepal",
+       "says": "14 zones and 75 districts took effect on publication in the Nepal Gazette, 17 Dec 1962; in 1975 Bhojpur, Parbat and Dolpa changed zones and panchayats moved across 58 districts.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/unp.html",
+       "title": "Statoids — Zones of Nepal, change history",
+       "says": "Table of the 14 zones (1991 census populations).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 1975 reorganisation is dated only to the year (possibly B.S. 2032 = Apr 1975–Apr 1976); the span starts on 13 Apr 1976 (B.S. 2033-01-01) to lie safely after it. Development regions (1972/1981) are unions of zones and are not drawn separately."
+    }
+   ]
+  },
+  {
+   "id": "NPL:Bheri",
+   "names": {
+    "en": "Bheri Zone",
+    "ja": "ベリ県",
+    "local": "भेरी अञ्चल"
+   },
+   "wikidata": "Q9060",
+   "spans": [
+    {
+     "from": "1976-04-13",
+     "precision": "day",
+     "to": "2015-09-20",
+     "atoms": [
+      "NPL-1124"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=List_of_districts_of_Nepal&oldid=1378300427",
+       "title": "Wikipedia — List of districts of Nepal",
+       "says": "14 zones and 75 districts took effect on publication in the Nepal Gazette, 17 Dec 1962; in 1975 Bhojpur, Parbat and Dolpa changed zones and panchayats moved across 58 districts.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/unp.html",
+       "title": "Statoids — Zones of Nepal, change history",
+       "says": "Table of the 14 zones (1991 census populations).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 1975 reorganisation is dated only to the year (possibly B.S. 2032 = Apr 1975–Apr 1976); the span starts on 13 Apr 1976 (B.S. 2033-01-01) to lie safely after it. Development regions (1972/1981) are unions of zones and are not drawn separately."
+    }
+   ]
+  },
+  {
+   "id": "NPL:Karnali",
+   "names": {
+    "en": "Karnali Zone",
+    "ja": "カルナリ県",
+    "local": "कर्णाली अञ्चल"
+   },
+   "wikidata": "Q9164",
+   "spans": [
+    {
+     "from": "1976-04-13",
+     "precision": "day",
+     "to": "2015-09-20",
+     "atoms": [
+      "NPL-1126"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=List_of_districts_of_Nepal&oldid=1378300427",
+       "title": "Wikipedia — List of districts of Nepal",
+       "says": "14 zones and 75 districts took effect on publication in the Nepal Gazette, 17 Dec 1962; in 1975 Bhojpur, Parbat and Dolpa changed zones and panchayats moved across 58 districts.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/unp.html",
+       "title": "Statoids — Zones of Nepal, change history",
+       "says": "Table of the 14 zones (1991 census populations).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 1975 reorganisation is dated only to the year (possibly B.S. 2032 = Apr 1975–Apr 1976); the span starts on 13 Apr 1976 (B.S. 2033-01-01) to lie safely after it. Development regions (1972/1981) are unions of zones and are not drawn separately."
+    }
+   ]
+  },
+  {
+   "id": "NPL:Seti",
+   "names": {
+    "en": "Seti Zone",
+    "ja": "セティ県",
+    "local": "सेती अञ्चल"
+   },
+   "wikidata": "Q9196",
+   "spans": [
+    {
+     "from": "1976-04-13",
+     "precision": "day",
+     "to": "2015-09-20",
+     "atoms": [
+      "NPL-1129"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=List_of_districts_of_Nepal&oldid=1378300427",
+       "title": "Wikipedia — List of districts of Nepal",
+       "says": "14 zones and 75 districts took effect on publication in the Nepal Gazette, 17 Dec 1962; in 1975 Bhojpur, Parbat and Dolpa changed zones and panchayats moved across 58 districts.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/unp.html",
+       "title": "Statoids — Zones of Nepal, change history",
+       "says": "Table of the 14 zones (1991 census populations).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 1975 reorganisation is dated only to the year (possibly B.S. 2032 = Apr 1975–Apr 1976); the span starts on 13 Apr 1976 (B.S. 2033-01-01) to lie safely after it. Development regions (1972/1981) are unions of zones and are not drawn separately."
+    }
+   ]
+  },
+  {
+   "id": "NPL:Mahakali",
+   "names": {
+    "en": "Mahakali Zone",
+    "ja": "マハカリ県",
+    "local": "महाकाली अञ्चल"
+   },
+   "wikidata": "Q9178",
+   "spans": [
+    {
+     "from": "1976-04-13",
+     "precision": "day",
+     "to": "2015-09-20",
+     "atoms": [
+      "NPL-1128"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=List_of_districts_of_Nepal&oldid=1378300427",
+       "title": "Wikipedia — List of districts of Nepal",
+       "says": "14 zones and 75 districts took effect on publication in the Nepal Gazette, 17 Dec 1962; in 1975 Bhojpur, Parbat and Dolpa changed zones and panchayats moved across 58 districts.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/unp.html",
+       "title": "Statoids — Zones of Nepal, change history",
+       "says": "Table of the 14 zones (1991 census populations).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 1975 reorganisation is dated only to the year (possibly B.S. 2032 = Apr 1975–Apr 1976); the span starts on 13 Apr 1976 (B.S. 2033-01-01) to lie safely after it. Development regions (1972/1981) are unions of zones and are not drawn separately."
+    }
+   ]
+  },
+  {
+   "id": "NPL:Sudurpashchim",
+   "names": {
+    "en": "Sudurpashchim Province",
+    "ja": "第七州",
+    "local": "सुदूरपश्चिम प्रदेश"
+   },
+   "wikidata": "Q25104019",
+   "spans": [
+    {
+     "from": "2015-09-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NPL-1129",
+      "NPL-1128"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/unp.html",
+       "title": "Statoids — Zones of Nepal, change history",
+       "says": "2015-09-20: under the new constitution seven provinces replaced the regions; Rukum and Nawalparasi were split between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=List_of_districts_of_Nepal&oldid=1378300427",
+       "title": "Wikipedia — List of districts of Nepal",
+       "says": "Sudurpashchim Province has 9 districts; the 1975–2015 zone table puts exactly these nine (Bajura…Kailali, Darchula…Kanchanpur) in Seti and Mahakali zones.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Province No. 7 = the former Far-Western region = Seti ∪ Mahakali zones, all nine districts intact; named Sudurpashchim in 2018."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1962-12-17",
+   "precision": "day",
+   "what": "14 zones and 75 districts take effect",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=List_of_districts_of_Nepal&oldid=1378300427",
+     "title": "Wikipedia — List of districts of Nepal",
+     "says": "14 zones and 75 districts decided 20 Nov 1962, in effect on publication in the Nepal Gazette on 17 December 1962.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1975",
+   "precision": "year",
+   "what": "District and zone boundaries reorganised",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=List_of_districts_of_Nepal&oldid=1378300427",
+     "title": "Wikipedia — List of districts of Nepal",
+     "says": "14 zones and 75 districts took effect on publication in the Nepal Gazette, 17 Dec 1962; in 1975 Bhojpur, Parbat and Dolpa changed zones and panchayats moved across 58 districts.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2015-09-20",
+   "precision": "day",
+   "what": "Constitution: seven provinces replace zones/regions",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/unp.html",
+     "title": "Statoids — Zones of Nepal, change history",
+     "says": "2015-09-20: under the new constitution seven provinces replaced the regions; Rukum and Nawalparasi were split between provinces.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1991-06-22",
+   "n": 14,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/unp.html",
+     "title": "Statoids — Zones of Nepal, change history",
+     "says": "Table of the 14 zones (1991 census populations).",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2015-09-20",
+   "n": 7,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/unp.html",
+     "title": "Statoids — Zones of Nepal, change history",
+     "says": "2015-09-20: under the new constitution seven provinces replaced the regions; Rukum and Nawalparasi were split between provinces.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Mechi Zone 1962–1976",
+   "unit": "NPL:Mechi",
+   "atoms": [
+    "NPL-1135"
+   ],
+   "from": "1962-12-17",
+   "to": "1976-04-13",
+   "why": "Before the 1975 reorganisation zone memberships differed (Bhojpur in Sagarmatha, Parbat in Gandaki, Dolpa in Dhaulagiri; Tibrikot merged, Kalikot created; panchayats moved across 58 districts) and its exact date is not established.",
+   "checked": [
+    "statoids.com/unp.html",
+    "Wikipedia List of districts of Nepal, Zones of Nepal, Administrative divisions of Nepal"
+   ],
+   "needs": "pre-1975 district/panchayat boundaries (no open dataset found)"
+  },
+  {
+   "what": "Kosi Zone 1962–1976",
+   "unit": "NPL:Kosi",
+   "atoms": [
+    "NPL-1134"
+   ],
+   "from": "1962-12-17",
+   "to": "1976-04-13",
+   "why": "Before the 1975 reorganisation zone memberships differed (Bhojpur in Sagarmatha, Parbat in Gandaki, Dolpa in Dhaulagiri; Tibrikot merged, Kalikot created; panchayats moved across 58 districts) and its exact date is not established.",
+   "checked": [
+    "statoids.com/unp.html",
+    "Wikipedia List of districts of Nepal, Zones of Nepal, Administrative divisions of Nepal"
+   ],
+   "needs": "pre-1975 district/panchayat boundaries (no open dataset found)"
+  },
+  {
+   "what": "Sagarmatha Zone 1962–1976",
+   "unit": "NPL:Sagarmatha",
+   "atoms": [
+    "NPL-1133"
+   ],
+   "from": "1962-12-17",
+   "to": "1976-04-13",
+   "why": "Before the 1975 reorganisation zone memberships differed (Bhojpur in Sagarmatha, Parbat in Gandaki, Dolpa in Dhaulagiri; Tibrikot merged, Kalikot created; panchayats moved across 58 districts) and its exact date is not established.",
+   "checked": [
+    "statoids.com/unp.html",
+    "Wikipedia List of districts of Nepal, Zones of Nepal, Administrative divisions of Nepal"
+   ],
+   "needs": "pre-1975 district/panchayat boundaries (no open dataset found)"
+  },
+  {
+   "what": "Janakpur Zone 1962–1976",
+   "unit": "NPL:Janakpur",
+   "atoms": [
+    "NPL-1131"
+   ],
+   "from": "1962-12-17",
+   "to": "1976-04-13",
+   "why": "Before the 1975 reorganisation zone memberships differed (Bhojpur in Sagarmatha, Parbat in Gandaki, Dolpa in Dhaulagiri; Tibrikot merged, Kalikot created; panchayats moved across 58 districts) and its exact date is not established.",
+   "checked": [
+    "statoids.com/unp.html",
+    "Wikipedia List of districts of Nepal, Zones of Nepal, Administrative divisions of Nepal"
+   ],
+   "needs": "pre-1975 district/panchayat boundaries (no open dataset found)"
+  },
+  {
+   "what": "Bagmati Zone 1962–1976",
+   "unit": "NPL:Bagmati",
+   "atoms": [
+    "NPL-1130"
+   ],
+   "from": "1962-12-17",
+   "to": "1976-04-13",
+   "why": "Before the 1975 reorganisation zone memberships differed (Bhojpur in Sagarmatha, Parbat in Gandaki, Dolpa in Dhaulagiri; Tibrikot merged, Kalikot created; panchayats moved across 58 districts) and its exact date is not established.",
+   "checked": [
+    "statoids.com/unp.html",
+    "Wikipedia List of districts of Nepal, Zones of Nepal, Administrative divisions of Nepal"
+   ],
+   "needs": "pre-1975 district/panchayat boundaries (no open dataset found)"
+  },
+  {
+   "what": "Narayani Zone 1962–1976",
+   "unit": "NPL:Narayani",
+   "atoms": [
+    "NPL-1132"
+   ],
+   "from": "1962-12-17",
+   "to": "1976-04-13",
+   "why": "Before the 1975 reorganisation zone memberships differed (Bhojpur in Sagarmatha, Parbat in Gandaki, Dolpa in Dhaulagiri; Tibrikot merged, Kalikot created; panchayats moved across 58 districts) and its exact date is not established.",
+   "checked": [
+    "statoids.com/unp.html",
+    "Wikipedia List of districts of Nepal, Zones of Nepal, Administrative divisions of Nepal"
+   ],
+   "needs": "pre-1975 district/panchayat boundaries (no open dataset found)"
+  },
+  {
+   "what": "Gandaki Zone 1962–1976",
+   "unit": "NPL:Gandaki",
+   "atoms": [
+    "NPL-1095"
+   ],
+   "from": "1962-12-17",
+   "to": "1976-04-13",
+   "why": "Before the 1975 reorganisation zone memberships differed (Bhojpur in Sagarmatha, Parbat in Gandaki, Dolpa in Dhaulagiri; Tibrikot merged, Kalikot created; panchayats moved across 58 districts) and its exact date is not established.",
+   "checked": [
+    "statoids.com/unp.html",
+    "Wikipedia List of districts of Nepal, Zones of Nepal, Administrative divisions of Nepal"
+   ],
+   "needs": "pre-1975 district/panchayat boundaries (no open dataset found)"
+  },
+  {
+   "what": "Dhaulagiri Zone 1962–1976",
+   "unit": "NPL:Dhaulagiri",
+   "atoms": [
+    "NPL-1125"
+   ],
+   "from": "1962-12-17",
+   "to": "1976-04-13",
+   "why": "Before the 1975 reorganisation zone memberships differed (Bhojpur in Sagarmatha, Parbat in Gandaki, Dolpa in Dhaulagiri; Tibrikot merged, Kalikot created; panchayats moved across 58 districts) and its exact date is not established.",
+   "checked": [
+    "statoids.com/unp.html",
+    "Wikipedia List of districts of Nepal, Zones of Nepal, Administrative divisions of Nepal"
+   ],
+   "needs": "pre-1975 district/panchayat boundaries (no open dataset found)"
+  },
+  {
+   "what": "Lumbini Zone 1962–1976",
+   "unit": "NPL:Lumbini",
+   "atoms": [
+    "NPL-1127"
+   ],
+   "from": "1962-12-17",
+   "to": "1976-04-13",
+   "why": "Before the 1975 reorganisation zone memberships differed (Bhojpur in Sagarmatha, Parbat in Gandaki, Dolpa in Dhaulagiri; Tibrikot merged, Kalikot created; panchayats moved across 58 districts) and its exact date is not established.",
+   "checked": [
+    "statoids.com/unp.html",
+    "Wikipedia List of districts of Nepal, Zones of Nepal, Administrative divisions of Nepal"
+   ],
+   "needs": "pre-1975 district/panchayat boundaries (no open dataset found)"
+  },
+  {
+   "what": "Rapti Zone 1962–1976",
+   "unit": "NPL:Rapti",
+   "atoms": [
+    "NPL-373"
+   ],
+   "from": "1962-12-17",
+   "to": "1976-04-13",
+   "why": "Before the 1975 reorganisation zone memberships differed (Bhojpur in Sagarmatha, Parbat in Gandaki, Dolpa in Dhaulagiri; Tibrikot merged, Kalikot created; panchayats moved across 58 districts) and its exact date is not established.",
+   "checked": [
+    "statoids.com/unp.html",
+    "Wikipedia List of districts of Nepal, Zones of Nepal, Administrative divisions of Nepal"
+   ],
+   "needs": "pre-1975 district/panchayat boundaries (no open dataset found)"
+  },
+  {
+   "what": "Bheri Zone 1962–1976",
+   "unit": "NPL:Bheri",
+   "atoms": [
+    "NPL-1124"
+   ],
+   "from": "1962-12-17",
+   "to": "1976-04-13",
+   "why": "Before the 1975 reorganisation zone memberships differed (Bhojpur in Sagarmatha, Parbat in Gandaki, Dolpa in Dhaulagiri; Tibrikot merged, Kalikot created; panchayats moved across 58 districts) and its exact date is not established.",
+   "checked": [
+    "statoids.com/unp.html",
+    "Wikipedia List of districts of Nepal, Zones of Nepal, Administrative divisions of Nepal"
+   ],
+   "needs": "pre-1975 district/panchayat boundaries (no open dataset found)"
+  },
+  {
+   "what": "Karnali Zone 1962–1976",
+   "unit": "NPL:Karnali",
+   "atoms": [
+    "NPL-1126"
+   ],
+   "from": "1962-12-17",
+   "to": "1976-04-13",
+   "why": "Before the 1975 reorganisation zone memberships differed (Bhojpur in Sagarmatha, Parbat in Gandaki, Dolpa in Dhaulagiri; Tibrikot merged, Kalikot created; panchayats moved across 58 districts) and its exact date is not established.",
+   "checked": [
+    "statoids.com/unp.html",
+    "Wikipedia List of districts of Nepal, Zones of Nepal, Administrative divisions of Nepal"
+   ],
+   "needs": "pre-1975 district/panchayat boundaries (no open dataset found)"
+  },
+  {
+   "what": "Seti Zone 1962–1976",
+   "unit": "NPL:Seti",
+   "atoms": [
+    "NPL-1129"
+   ],
+   "from": "1962-12-17",
+   "to": "1976-04-13",
+   "why": "Before the 1975 reorganisation zone memberships differed (Bhojpur in Sagarmatha, Parbat in Gandaki, Dolpa in Dhaulagiri; Tibrikot merged, Kalikot created; panchayats moved across 58 districts) and its exact date is not established.",
+   "checked": [
+    "statoids.com/unp.html",
+    "Wikipedia List of districts of Nepal, Zones of Nepal, Administrative divisions of Nepal"
+   ],
+   "needs": "pre-1975 district/panchayat boundaries (no open dataset found)"
+  },
+  {
+   "what": "Mahakali Zone 1962–1976",
+   "unit": "NPL:Mahakali",
+   "atoms": [
+    "NPL-1128"
+   ],
+   "from": "1962-12-17",
+   "to": "1976-04-13",
+   "why": "Before the 1975 reorganisation zone memberships differed (Bhojpur in Sagarmatha, Parbat in Gandaki, Dolpa in Dhaulagiri; Tibrikot merged, Kalikot created; panchayats moved across 58 districts) and its exact date is not established.",
+   "checked": [
+    "statoids.com/unp.html",
+    "Wikipedia List of districts of Nepal, Zones of Nepal, Administrative divisions of Nepal"
+   ],
+   "needs": "pre-1975 district/panchayat boundaries (no open dataset found)"
+  },
+  {
+   "what": "Koshi Province (Province No. 1) 2015–2019",
+   "unit": "NPL:Koshi",
+   "atoms": [
+    "NPL-1135",
+    "NPL-1134",
+    "NPL-1133"
+   ],
+   "from": "2015-09-20",
+   "to": null,
+   "why": "Provinces 1–6 cut through zones (Sagarmatha, Janakpur, Narayani, Lumbini, Rapti, Bheri are split; Rukum and Nawalparasi districts are themselves split). Atoms are grouped here only for bookkeeping, not as membership.",
+   "checked": [
+    "statoids.com/unp.html",
+    "Wikipedia List of districts of Nepal, Zones of Nepal, Administrative divisions of Nepal"
+   ],
+   "needs": "district atoms plus the Rukum/Nawalparasi split lines, e.g. Survey Department of Nepal 77-district boundaries (licence to check) or geoBoundaries NPL ADM2"
+  },
+  {
+   "what": "Madhesh Province (Province No. 2) 2015–2019",
+   "unit": "NPL:Madhesh",
+   "atoms": [
+    "NPL-1131",
+    "NPL-1132"
+   ],
+   "from": "2015-09-20",
+   "to": null,
+   "why": "Provinces 1–6 cut through zones (Sagarmatha, Janakpur, Narayani, Lumbini, Rapti, Bheri are split; Rukum and Nawalparasi districts are themselves split). Atoms are grouped here only for bookkeeping, not as membership.",
+   "checked": [
+    "statoids.com/unp.html",
+    "Wikipedia List of districts of Nepal, Zones of Nepal, Administrative divisions of Nepal"
+   ],
+   "needs": "district atoms plus the Rukum/Nawalparasi split lines, e.g. Survey Department of Nepal 77-district boundaries (licence to check) or geoBoundaries NPL ADM2"
+  },
+  {
+   "what": "Bagmati Province (Province No. 3) 2015–2019",
+   "unit": "NPL:Bagmati",
+   "atoms": [
+    "NPL-1130"
+   ],
+   "from": "2015-09-20",
+   "to": null,
+   "why": "Provinces 1–6 cut through zones (Sagarmatha, Janakpur, Narayani, Lumbini, Rapti, Bheri are split; Rukum and Nawalparasi districts are themselves split). Atoms are grouped here only for bookkeeping, not as membership.",
+   "checked": [
+    "statoids.com/unp.html",
+    "Wikipedia List of districts of Nepal, Zones of Nepal, Administrative divisions of Nepal"
+   ],
+   "needs": "district atoms plus the Rukum/Nawalparasi split lines, e.g. Survey Department of Nepal 77-district boundaries (licence to check) or geoBoundaries NPL ADM2"
+  },
+  {
+   "what": "Gandaki Province (Province No. 4) 2015–2019",
+   "unit": "NPL:Gandaki",
+   "atoms": [
+    "NPL-1095",
+    "NPL-1125"
+   ],
+   "from": "2015-09-20",
+   "to": null,
+   "why": "Provinces 1–6 cut through zones (Sagarmatha, Janakpur, Narayani, Lumbini, Rapti, Bheri are split; Rukum and Nawalparasi districts are themselves split). Atoms are grouped here only for bookkeeping, not as membership.",
+   "checked": [
+    "statoids.com/unp.html",
+    "Wikipedia List of districts of Nepal, Zones of Nepal, Administrative divisions of Nepal"
+   ],
+   "needs": "district atoms plus the Rukum/Nawalparasi split lines, e.g. Survey Department of Nepal 77-district boundaries (licence to check) or geoBoundaries NPL ADM2"
+  },
+  {
+   "what": "Lumbini Province (Province No. 5) 2015–2019",
+   "unit": "NPL:Lumbini",
+   "atoms": [
+    "NPL-1127",
+    "NPL-373"
+   ],
+   "from": "2015-09-20",
+   "to": null,
+   "why": "Provinces 1–6 cut through zones (Sagarmatha, Janakpur, Narayani, Lumbini, Rapti, Bheri are split; Rukum and Nawalparasi districts are themselves split). Atoms are grouped here only for bookkeeping, not as membership.",
+   "checked": [
+    "statoids.com/unp.html",
+    "Wikipedia List of districts of Nepal, Zones of Nepal, Administrative divisions of Nepal"
+   ],
+   "needs": "district atoms plus the Rukum/Nawalparasi split lines, e.g. Survey Department of Nepal 77-district boundaries (licence to check) or geoBoundaries NPL ADM2"
+  },
+  {
+   "what": "Karnali Province (Province No. 6) 2015–2019",
+   "unit": "NPL:Karnali",
+   "atoms": [
+    "NPL-1126",
+    "NPL-1124"
+   ],
+   "from": "2015-09-20",
+   "to": null,
+   "why": "Provinces 1–6 cut through zones (Sagarmatha, Janakpur, Narayani, Lumbini, Rapti, Bheri are split; Rukum and Nawalparasi districts are themselves split). Atoms are grouped here only for bookkeeping, not as membership.",
+   "checked": [
+    "statoids.com/unp.html",
+    "Wikipedia List of districts of Nepal, Zones of Nepal, Administrative divisions of Nepal"
+   ],
+   "needs": "district atoms plus the Rukum/Nawalparasi split lines, e.g. Survey Department of Nepal 77-district boundaries (licence to check) or geoBoundaries NPL ADM2"
+  }
+ ]
+}

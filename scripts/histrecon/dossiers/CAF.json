@@ -1,0 +1,877 @@
+{
+ "country": "CAF",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1960-08-13",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Central African Republic since 1960-08-13 (Central African Empire 1976-12-04 to 1979-09-21). Law 96-013 (1996) provided 7 regions above prefectures, but regions were not implemented; prefectures stayed the functioning first level (Répertoire). The 2020-12 reform to 20 prefectures is outside scope.",
+ "units": [
+  {
+   "id": "CAF:OmbellaMPoko",
+   "names": {
+    "en": "Ombella-M'Poko",
+    "ja": "オンベラ・ムポコ州",
+    "local": "Ombella-M'Poko"
+   },
+   "wikidata": "Q378970",
+   "spans": [
+    {
+     "from": "1960-08-13",
+     "precision": "day",
+     "to": "1964-01-03",
+     "atoms": [
+      "CAF-4856",
+      "CAF-1460"
+     ],
+     "sources": [
+      {
+       "url": "https://api.pageplace.de/preview/DT0400.9782336355801_A24327786/preview-9782336355801_A24327786.pdf",
+       "title": "J. Serre & J. Fandos-Rius, Répertoire de l'administration territoriale de la République centrafricaine (L'Harmattan), publisher preview pp. 23–29",
+       "says": "Law 60-179 (23 Jan 1961) turned regions into prefectures keeping the same areas; Law 61-285: 12 prefectures, 2 autonomous sub-prefectures; these vanish 1964.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/ucf.html",
+       "title": "Prefectures of the Central African Republic — Statoids (Gwillim Law, last updated 2015-06-30)",
+       "says": "Bangui split from Ombella-M'Poko 1964-01-03; Kémo-Gribingui split 1974-08-06; Sangha-économique formed ~1974 from 14,150 km² of Haute-Sangha and 5,250 km² of Lobaye.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope starts at independence: the 1961 law converted the existing régions/autonomous districts into prefectures/autonomous sub-prefectures with the same areas (Répertoire). Bangui lay inside the prefecture until 1964-01-03."
+    },
+    {
+     "from": "1964-01-03",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CAF-4856"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/ucf.html",
+       "title": "Prefectures of the Central African Republic — Statoids (Gwillim Law, last updated 2015-06-30)",
+       "says": "Bangui split from Ombella-M'Poko 1964-01-03; Kémo-Gribingui split 1974-08-06; Sangha-économique formed ~1974 from 14,150 km² of Haute-Sangha and 5,250 km² of Lobaye.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=237822006",
+       "title": "Préfectures de la République centrafricaine — fr.wikipedia, oldid 237822006",
+       "says": "1964: Bangui autonomous commune (Law 63-445); Birao and N'Délé become prefectures (14). 1974: Gribingui and Sangha économiques created; 16 prefectures. 1988 ordinance confirms 16.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Law 63-445 of 3 Jan 1964 separated Bangui; capital moved to Bimbo (Nov 1964)."
+    }
+   ]
+  },
+  {
+   "id": "CAF:Bangui@1964",
+   "names": {
+    "en": "Bangui (autonomous commune)",
+    "ja": "バンギ",
+    "local": "Commune de Bangui"
+   },
+   "wikidata": "Q3832",
+   "spans": [
+    {
+     "from": "1964-01-03",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CAF-1460"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/ucf.html",
+       "title": "Prefectures of the Central African Republic — Statoids (Gwillim Law, last updated 2015-06-30)",
+       "says": "Bangui split from Ombella-M'Poko 1964-01-03; Kémo-Gribingui split 1974-08-06; Sangha-économique formed ~1974 from 14,150 km² of Haute-Sangha and 5,250 km² of Lobaye.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=237822006",
+       "title": "Préfectures de la République centrafricaine — fr.wikipedia, oldid 237822006",
+       "says": "1964: Bangui autonomous commune (Law 63-445); Birao and N'Délé become prefectures (14). 1974: Gribingui and Sangha économiques created; 16 prefectures. 1988 ordinance confirms 16.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Law 63-445 of 3 Jan 1964; status on a par with a prefecture."
+    }
+   ]
+  },
+  {
+   "id": "CAF:KemoGribingui@1960",
+   "names": {
+    "en": "Kémo-Gribingui",
+    "ja": "ケモ＝グリビンギ州",
+    "local": "Kémo-Gribingui"
+   },
+   "spans": [
+    {
+     "from": "1960-08-13",
+     "precision": "day",
+     "to": "1974-08-06",
+     "atoms": [
+      "CAF-808",
+      "CAF-807"
+     ],
+     "sources": [
+      {
+       "url": "https://api.pageplace.de/preview/DT0400.9782336355801_A24327786/preview-9782336355801_A24327786.pdf",
+       "title": "J. Serre & J. Fandos-Rius, Répertoire de l'administration territoriale de la République centrafricaine (L'Harmattan), publisher preview pp. 23–29",
+       "says": "Law 60-179 (23 Jan 1961) turned regions into prefectures keeping the same areas; Law 61-285: 12 prefectures, 2 autonomous sub-prefectures; these vanish 1964.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/ucf.html",
+       "title": "Prefectures of the Central African Republic — Statoids (Gwillim Law, last updated 2015-06-30)",
+       "says": "Bangui split from Ombella-M'Poko 1964-01-03; Kémo-Gribingui split 1974-08-06; Sangha-économique formed ~1974 from 14,150 km² of Haute-Sangha and 5,250 km² of Lobaye.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope starts at independence: the 1961 law converted the existing régions/autonomous districts into prefectures/autonomous sub-prefectures with the same areas (Répertoire). 1968 area 37,210 km² = Kémo 17,204 + Nana-Grébizi 19,996 (statoids)."
+    }
+   ]
+  },
+  {
+   "id": "CAF:Kemo@1974",
+   "names": {
+    "en": "Kémo (Kémo-Gribingui until c.1992)",
+    "ja": "ケモ州",
+    "local": "Kémo"
+   },
+   "wikidata": "Q848572",
+   "spans": [
+    {
+     "from": "1974-08-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CAF-808"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/ucf.html",
+       "title": "Prefectures of the Central African Republic — Statoids (Gwillim Law, last updated 2015-06-30)",
+       "says": "Bangui split from Ombella-M'Poko 1964-01-03; Kémo-Gribingui split 1974-08-06; Sangha-économique formed ~1974 from 14,150 km² of Haute-Sangha and 5,250 km² of Lobaye.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=237822006",
+       "title": "Préfectures de la République centrafricaine — fr.wikipedia, oldid 237822006",
+       "says": "1964: Bangui autonomous commune (Law 63-445); Birao and N'Délé become prefectures (14). 1974: Gribingui and Sangha économiques created; 16 prefectures. 1988 ordinance confirms 16.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Remaining southern part after the 1974-08-06 split; renamed Kémo c.1992 (name only)."
+    }
+   ]
+  },
+  {
+   "id": "CAF:NanaGrebizi@1974",
+   "names": {
+    "en": "Nana-Grébizi (Gribingui-économique until c.1992)",
+    "ja": "ナナ・グリビジ州",
+    "local": "Nana-Grébizi"
+   },
+   "wikidata": "Q856227",
+   "spans": [
+    {
+     "from": "1974-08-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CAF-807"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/ucf.html",
+       "title": "Prefectures of the Central African Republic — Statoids (Gwillim Law, last updated 2015-06-30)",
+       "says": "Bangui split from Ombella-M'Poko 1964-01-03; Kémo-Gribingui split 1974-08-06; Sangha-économique formed ~1974 from 14,150 km² of Haute-Sangha and 5,250 km² of Lobaye.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=237822006",
+       "title": "Préfectures de la République centrafricaine — fr.wikipedia, oldid 237822006",
+       "says": "1964: Bangui autonomous commune (Law 63-445); Birao and N'Délé become prefectures (14). 1974: Gribingui and Sangha économiques created; 16 prefectures. 1988 ordinance confirms 16.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Northern part of Kémo-Gribingui made the economic prefecture of Gribingui on 1974-08-06; renamed c.1992."
+    }
+   ]
+  },
+  {
+   "id": "CAF:MambereKadei@1974",
+   "names": {
+    "en": "Mambéré-Kadéï (Haute-Sangha until c.1992)",
+    "ja": "マンベレ・カデイ州",
+    "local": "Mambéré-Kadéï"
+   },
+   "wikidata": "Q848567",
+   "spans": [
+    {
+     "from": "1974",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "CAF-801"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/ucf.html",
+       "title": "Prefectures of the Central African Republic — Statoids (Gwillim Law, last updated 2015-06-30)",
+       "says": "Bangui split from Ombella-M'Poko 1964-01-03; Kémo-Gribingui split 1974-08-06; Sangha-économique formed ~1974 from 14,150 km² of Haute-Sangha and 5,250 km² of Lobaye.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=237822006",
+       "title": "Préfectures de la République centrafricaine — fr.wikipedia, oldid 237822006",
+       "says": "1964: Bangui autonomous commune (Law 63-445); Birao and N'Délé become prefectures (14). 1974: Gribingui and Sangha économiques created; 16 prefectures. 1988 ordinance confirms 16.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Haute-Sangha after losing its south to Sangha-économique (year only in sources); renamed c.1992."
+    }
+   ]
+  },
+  {
+   "id": "CAF:Lobaye@1974",
+   "names": {
+    "en": "Lobaye",
+    "ja": "ロバイエ州",
+    "local": "Lobaye"
+   },
+   "wikidata": "Q821037",
+   "spans": [
+    {
+     "from": "1974",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "CAF-795"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/ucf.html",
+       "title": "Prefectures of the Central African Republic — Statoids (Gwillim Law, last updated 2015-06-30)",
+       "says": "Bangui split from Ombella-M'Poko 1964-01-03; Kémo-Gribingui split 1974-08-06; Sangha-économique formed ~1974 from 14,150 km² of Haute-Sangha and 5,250 km² of Lobaye.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=237822006",
+       "title": "Préfectures de la République centrafricaine — fr.wikipedia, oldid 237822006",
+       "says": "1964: Bangui autonomous commune (Law 63-445); Birao and N'Délé become prefectures (14). 1974: Gribingui and Sangha économiques created; 16 prefectures. 1988 ordinance confirms 16.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Lobaye after losing its west to Sangha-économique (year only in sources)."
+    }
+   ]
+  },
+  {
+   "id": "CAF:SanghaMbaere@1974",
+   "names": {
+    "en": "Sangha-Mbaéré (Sangha-économique until c.1982)",
+    "ja": "サンガ・ムバエレ州",
+    "local": "Sangha-Mbaéré"
+   },
+   "wikidata": "Q856237",
+   "spans": [
+    {
+     "from": "1974",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "CAF-802"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/ucf.html",
+       "title": "Prefectures of the Central African Republic — Statoids (Gwillim Law, last updated 2015-06-30)",
+       "says": "Bangui split from Ombella-M'Poko 1964-01-03; Kémo-Gribingui split 1974-08-06; Sangha-économique formed ~1974 from 14,150 km² of Haute-Sangha and 5,250 km² of Lobaye.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=237822006",
+       "title": "Préfectures de la République centrafricaine — fr.wikipedia, oldid 237822006",
+       "says": "1964: Bangui autonomous commune (Law 63-445); Birao and N'Délé become prefectures (14). 1974: Gribingui and Sangha économiques created; 16 prefectures. 1988 ordinance confirms 16.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Created 1974 (day not found) from parts of Haute-Sangha and Lobaye."
+    }
+   ]
+  },
+  {
+   "id": "CAF:NanaMambere",
+   "names": {
+    "en": "Nana-Mambéré (Bouar-Baboua until 1964-11-20)",
+    "ja": "ナナ・メンベレ州",
+    "local": "Nana-Mambéré"
+   },
+   "wikidata": "Q742455",
+   "spans": [
+    {
+     "from": "1960-08-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CAF-804"
+     ],
+     "sources": [
+      {
+       "url": "https://api.pageplace.de/preview/DT0400.9782336355801_A24327786/preview-9782336355801_A24327786.pdf",
+       "title": "J. Serre & J. Fandos-Rius, Répertoire de l'administration territoriale de la République centrafricaine (L'Harmattan), publisher preview pp. 23–29",
+       "says": "Law 60-179 (23 Jan 1961) turned regions into prefectures keeping the same areas; Law 61-285: 12 prefectures, 2 autonomous sub-prefectures; these vanish 1964.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/ucf.html",
+       "title": "Prefectures of the Central African Republic — Statoids (Gwillim Law, last updated 2015-06-30)",
+       "says": "Bangui split from Ombella-M'Poko 1964-01-03; Kémo-Gribingui split 1974-08-06; Sangha-économique formed ~1974 from 14,150 km² of Haute-Sangha and 5,250 km² of Lobaye.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/ucf.html",
+       "title": "Prefectures of the Central African Republic — Statoids, 1968 and 2003 tables",
+       "says": "1968 areas equal current ones for the untouched prefectures (e.g. Ouham 50,250; Ouham-Pendé 32,100; Haute-Kotto 86,650; Haut-Mbomou 55,530 km²).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope starts at independence: the 1961 law converted the existing régions/autonomous districts into prefectures/autonomous sub-prefectures with the same areas (Répertoire)."
+    }
+   ]
+  },
+  {
+   "id": "CAF:OuhamPende",
+   "names": {
+    "en": "Ouham-Pendé",
+    "ja": "ウハム・ペンデ州",
+    "local": "Ouham-Pendé"
+   },
+   "wikidata": "Q848591",
+   "spans": [
+    {
+     "from": "1960-08-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CAF-805"
+     ],
+     "sources": [
+      {
+       "url": "https://api.pageplace.de/preview/DT0400.9782336355801_A24327786/preview-9782336355801_A24327786.pdf",
+       "title": "J. Serre & J. Fandos-Rius, Répertoire de l'administration territoriale de la République centrafricaine (L'Harmattan), publisher preview pp. 23–29",
+       "says": "Law 60-179 (23 Jan 1961) turned regions into prefectures keeping the same areas; Law 61-285: 12 prefectures, 2 autonomous sub-prefectures; these vanish 1964.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/ucf.html",
+       "title": "Prefectures of the Central African Republic — Statoids (Gwillim Law, last updated 2015-06-30)",
+       "says": "Bangui split from Ombella-M'Poko 1964-01-03; Kémo-Gribingui split 1974-08-06; Sangha-économique formed ~1974 from 14,150 km² of Haute-Sangha and 5,250 km² of Lobaye.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/ucf.html",
+       "title": "Prefectures of the Central African Republic — Statoids, 1968 and 2003 tables",
+       "says": "1968 areas equal current ones for the untouched prefectures (e.g. Ouham 50,250; Ouham-Pendé 32,100; Haute-Kotto 86,650; Haut-Mbomou 55,530 km²).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope starts at independence: the 1961 law converted the existing régions/autonomous districts into prefectures/autonomous sub-prefectures with the same areas (Répertoire)."
+    }
+   ]
+  },
+  {
+   "id": "CAF:Ouham",
+   "names": {
+    "en": "Ouham",
+    "ja": "ウハム州",
+    "local": "Ouham"
+   },
+   "wikidata": "Q726620",
+   "spans": [
+    {
+     "from": "1960-08-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CAF-810"
+     ],
+     "sources": [
+      {
+       "url": "https://api.pageplace.de/preview/DT0400.9782336355801_A24327786/preview-9782336355801_A24327786.pdf",
+       "title": "J. Serre & J. Fandos-Rius, Répertoire de l'administration territoriale de la République centrafricaine (L'Harmattan), publisher preview pp. 23–29",
+       "says": "Law 60-179 (23 Jan 1961) turned regions into prefectures keeping the same areas; Law 61-285: 12 prefectures, 2 autonomous sub-prefectures; these vanish 1964.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/ucf.html",
+       "title": "Prefectures of the Central African Republic — Statoids (Gwillim Law, last updated 2015-06-30)",
+       "says": "Bangui split from Ombella-M'Poko 1964-01-03; Kémo-Gribingui split 1974-08-06; Sangha-économique formed ~1974 from 14,150 km² of Haute-Sangha and 5,250 km² of Lobaye.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/ucf.html",
+       "title": "Prefectures of the Central African Republic — Statoids, 1968 and 2003 tables",
+       "says": "1968 areas equal current ones for the untouched prefectures (e.g. Ouham 50,250; Ouham-Pendé 32,100; Haute-Kotto 86,650; Haut-Mbomou 55,530 km²).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope starts at independence: the 1961 law converted the existing régions/autonomous districts into prefectures/autonomous sub-prefectures with the same areas (Répertoire)."
+    }
+   ]
+  },
+  {
+   "id": "CAF:Ouaka",
+   "names": {
+    "en": "Ouaka",
+    "ja": "ワカ州",
+    "local": "Ouaka"
+   },
+   "wikidata": "Q848560",
+   "spans": [
+    {
+     "from": "1960-08-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CAF-809"
+     ],
+     "sources": [
+      {
+       "url": "https://api.pageplace.de/preview/DT0400.9782336355801_A24327786/preview-9782336355801_A24327786.pdf",
+       "title": "J. Serre & J. Fandos-Rius, Répertoire de l'administration territoriale de la République centrafricaine (L'Harmattan), publisher preview pp. 23–29",
+       "says": "Law 60-179 (23 Jan 1961) turned regions into prefectures keeping the same areas; Law 61-285: 12 prefectures, 2 autonomous sub-prefectures; these vanish 1964.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/ucf.html",
+       "title": "Prefectures of the Central African Republic — Statoids (Gwillim Law, last updated 2015-06-30)",
+       "says": "Bangui split from Ombella-M'Poko 1964-01-03; Kémo-Gribingui split 1974-08-06; Sangha-économique formed ~1974 from 14,150 km² of Haute-Sangha and 5,250 km² of Lobaye.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/ucf.html",
+       "title": "Prefectures of the Central African Republic — Statoids, 1968 and 2003 tables",
+       "says": "1968 areas equal current ones for the untouched prefectures (e.g. Ouham 50,250; Ouham-Pendé 32,100; Haute-Kotto 86,650; Haut-Mbomou 55,530 km²).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope starts at independence: the 1961 law converted the existing régions/autonomous districts into prefectures/autonomous sub-prefectures with the same areas (Répertoire)."
+    }
+   ]
+  },
+  {
+   "id": "CAF:BasseKotto",
+   "names": {
+    "en": "Basse-Kotto",
+    "ja": "バス・コト州",
+    "local": "Basse-Kotto"
+   },
+   "wikidata": "Q810484",
+   "spans": [
+    {
+     "from": "1960-08-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CAF-794"
+     ],
+     "sources": [
+      {
+       "url": "https://api.pageplace.de/preview/DT0400.9782336355801_A24327786/preview-9782336355801_A24327786.pdf",
+       "title": "J. Serre & J. Fandos-Rius, Répertoire de l'administration territoriale de la République centrafricaine (L'Harmattan), publisher preview pp. 23–29",
+       "says": "Law 60-179 (23 Jan 1961) turned regions into prefectures keeping the same areas; Law 61-285: 12 prefectures, 2 autonomous sub-prefectures; these vanish 1964.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/ucf.html",
+       "title": "Prefectures of the Central African Republic — Statoids (Gwillim Law, last updated 2015-06-30)",
+       "says": "Bangui split from Ombella-M'Poko 1964-01-03; Kémo-Gribingui split 1974-08-06; Sangha-économique formed ~1974 from 14,150 km² of Haute-Sangha and 5,250 km² of Lobaye.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/ucf.html",
+       "title": "Prefectures of the Central African Republic — Statoids, 1968 and 2003 tables",
+       "says": "1968 areas equal current ones for the untouched prefectures (e.g. Ouham 50,250; Ouham-Pendé 32,100; Haute-Kotto 86,650; Haut-Mbomou 55,530 km²).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope starts at independence: the 1961 law converted the existing régions/autonomous districts into prefectures/autonomous sub-prefectures with the same areas (Répertoire)."
+    }
+   ]
+  },
+  {
+   "id": "CAF:HauteKotto",
+   "names": {
+    "en": "Haute-Kotto",
+    "ja": "オート・コト州",
+    "local": "Haute-Kotto"
+   },
+   "wikidata": "Q848596",
+   "spans": [
+    {
+     "from": "1960-08-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CAF-866"
+     ],
+     "sources": [
+      {
+       "url": "https://api.pageplace.de/preview/DT0400.9782336355801_A24327786/preview-9782336355801_A24327786.pdf",
+       "title": "J. Serre & J. Fandos-Rius, Répertoire de l'administration territoriale de la République centrafricaine (L'Harmattan), publisher preview pp. 23–29",
+       "says": "Law 60-179 (23 Jan 1961) turned regions into prefectures keeping the same areas; Law 61-285: 12 prefectures, 2 autonomous sub-prefectures; these vanish 1964.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/ucf.html",
+       "title": "Prefectures of the Central African Republic — Statoids (Gwillim Law, last updated 2015-06-30)",
+       "says": "Bangui split from Ombella-M'Poko 1964-01-03; Kémo-Gribingui split 1974-08-06; Sangha-économique formed ~1974 from 14,150 km² of Haute-Sangha and 5,250 km² of Lobaye.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/ucf.html",
+       "title": "Prefectures of the Central African Republic — Statoids, 1968 and 2003 tables",
+       "says": "1968 areas equal current ones for the untouched prefectures (e.g. Ouham 50,250; Ouham-Pendé 32,100; Haute-Kotto 86,650; Haut-Mbomou 55,530 km²).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope starts at independence: the 1961 law converted the existing régions/autonomous districts into prefectures/autonomous sub-prefectures with the same areas (Répertoire)."
+    }
+   ]
+  },
+  {
+   "id": "CAF:Mbomou",
+   "names": {
+    "en": "Mbomou",
+    "ja": "ムボム州",
+    "local": "Mbomou"
+   },
+   "wikidata": "Q848582",
+   "spans": [
+    {
+     "from": "1960-08-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CAF-868"
+     ],
+     "sources": [
+      {
+       "url": "https://api.pageplace.de/preview/DT0400.9782336355801_A24327786/preview-9782336355801_A24327786.pdf",
+       "title": "J. Serre & J. Fandos-Rius, Répertoire de l'administration territoriale de la République centrafricaine (L'Harmattan), publisher preview pp. 23–29",
+       "says": "Law 60-179 (23 Jan 1961) turned regions into prefectures keeping the same areas; Law 61-285: 12 prefectures, 2 autonomous sub-prefectures; these vanish 1964.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/ucf.html",
+       "title": "Prefectures of the Central African Republic — Statoids (Gwillim Law, last updated 2015-06-30)",
+       "says": "Bangui split from Ombella-M'Poko 1964-01-03; Kémo-Gribingui split 1974-08-06; Sangha-économique formed ~1974 from 14,150 km² of Haute-Sangha and 5,250 km² of Lobaye.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/ucf.html",
+       "title": "Prefectures of the Central African Republic — Statoids, 1968 and 2003 tables",
+       "says": "1968 areas equal current ones for the untouched prefectures (e.g. Ouham 50,250; Ouham-Pendé 32,100; Haute-Kotto 86,650; Haut-Mbomou 55,530 km²).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope starts at independence: the 1961 law converted the existing régions/autonomous districts into prefectures/autonomous sub-prefectures with the same areas (Répertoire)."
+    }
+   ]
+  },
+  {
+   "id": "CAF:HautMbomou",
+   "names": {
+    "en": "Haut-Mbomou (Zandé, then Obo-Zémio, until 1964-11-20)",
+    "ja": "オー・ムボム州",
+    "local": "Haut-Mbomou"
+   },
+   "wikidata": "Q848578",
+   "spans": [
+    {
+     "from": "1960-08-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CAF-867"
+     ],
+     "sources": [
+      {
+       "url": "https://api.pageplace.de/preview/DT0400.9782336355801_A24327786/preview-9782336355801_A24327786.pdf",
+       "title": "J. Serre & J. Fandos-Rius, Répertoire de l'administration territoriale de la République centrafricaine (L'Harmattan), publisher preview pp. 23–29",
+       "says": "Law 60-179 (23 Jan 1961) turned regions into prefectures keeping the same areas; Law 61-285: 12 prefectures, 2 autonomous sub-prefectures; these vanish 1964.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/ucf.html",
+       "title": "Prefectures of the Central African Republic — Statoids (Gwillim Law, last updated 2015-06-30)",
+       "says": "Bangui split from Ombella-M'Poko 1964-01-03; Kémo-Gribingui split 1974-08-06; Sangha-économique formed ~1974 from 14,150 km² of Haute-Sangha and 5,250 km² of Lobaye.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/ucf.html",
+       "title": "Prefectures of the Central African Republic — Statoids, 1968 and 2003 tables",
+       "says": "1968 areas equal current ones for the untouched prefectures (e.g. Ouham 50,250; Ouham-Pendé 32,100; Haute-Kotto 86,650; Haut-Mbomou 55,530 km²).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope starts at independence: the 1961 law converted the existing régions/autonomous districts into prefectures/autonomous sub-prefectures with the same areas (Répertoire)."
+    }
+   ]
+  },
+  {
+   "id": "CAF:Vakaga",
+   "names": {
+    "en": "Vakaga (Birao autonomous district/sub-prefecture until 1964-11-20)",
+    "ja": "バカガ州",
+    "local": "Vakaga"
+   },
+   "wikidata": "Q848585",
+   "spans": [
+    {
+     "from": "1960-08-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CAF-812"
+     ],
+     "sources": [
+      {
+       "url": "https://api.pageplace.de/preview/DT0400.9782336355801_A24327786/preview-9782336355801_A24327786.pdf",
+       "title": "J. Serre & J. Fandos-Rius, Répertoire de l'administration territoriale de la République centrafricaine (L'Harmattan), publisher preview pp. 23–29",
+       "says": "Law 60-179 (23 Jan 1961) turned regions into prefectures keeping the same areas; Law 61-285: 12 prefectures, 2 autonomous sub-prefectures; these vanish 1964.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/ucf.html",
+       "title": "Prefectures of the Central African Republic — Statoids (Gwillim Law, last updated 2015-06-30)",
+       "says": "Bangui split from Ombella-M'Poko 1964-01-03; Kémo-Gribingui split 1974-08-06; Sangha-économique formed ~1974 from 14,150 km² of Haute-Sangha and 5,250 km² of Lobaye.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/ucf.html",
+       "title": "Prefectures of the Central African Republic — Statoids, 1968 and 2003 tables",
+       "says": "1968 areas equal current ones for the untouched prefectures (e.g. Ouham 50,250; Ouham-Pendé 32,100; Haute-Kotto 86,650; Haut-Mbomou 55,530 km²).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope starts at independence: the 1961 law converted the existing régions/autonomous districts into prefectures/autonomous sub-prefectures with the same areas (Répertoire). Autonomous unit directly under the government, hence first-level throughout."
+    }
+   ]
+  },
+  {
+   "id": "CAF:BaminguiBangoran",
+   "names": {
+    "en": "Bamingui-Bangoran (N'Délé autonomous district/sub-prefecture until 1964-11-20)",
+    "ja": "バミンギ・バンゴラン州",
+    "local": "Bamingui-Bangoran"
+   },
+   "wikidata": "Q741025",
+   "spans": [
+    {
+     "from": "1960-08-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CAF-806"
+     ],
+     "sources": [
+      {
+       "url": "https://api.pageplace.de/preview/DT0400.9782336355801_A24327786/preview-9782336355801_A24327786.pdf",
+       "title": "J. Serre & J. Fandos-Rius, Répertoire de l'administration territoriale de la République centrafricaine (L'Harmattan), publisher preview pp. 23–29",
+       "says": "Law 60-179 (23 Jan 1961) turned regions into prefectures keeping the same areas; Law 61-285: 12 prefectures, 2 autonomous sub-prefectures; these vanish 1964.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/ucf.html",
+       "title": "Prefectures of the Central African Republic — Statoids (Gwillim Law, last updated 2015-06-30)",
+       "says": "Bangui split from Ombella-M'Poko 1964-01-03; Kémo-Gribingui split 1974-08-06; Sangha-économique formed ~1974 from 14,150 km² of Haute-Sangha and 5,250 km² of Lobaye.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/ucf.html",
+       "title": "Prefectures of the Central African Republic — Statoids, 1968 and 2003 tables",
+       "says": "1968 areas equal current ones for the untouched prefectures (e.g. Ouham 50,250; Ouham-Pendé 32,100; Haute-Kotto 86,650; Haut-Mbomou 55,530 km²).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope starts at independence: the 1961 law converted the existing régions/autonomous districts into prefectures/autonomous sub-prefectures with the same areas (Répertoire). Autonomous unit directly under the government, hence first-level throughout."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1961-01-23",
+   "precision": "day",
+   "what": "Law 60-179: régions/districts become prefectures/sub-prefectures, same areas",
+   "sources": [
+    {
+     "url": "https://api.pageplace.de/preview/DT0400.9782336355801_A24327786/preview-9782336355801_A24327786.pdf",
+     "title": "J. Serre & J. Fandos-Rius, Répertoire de l'administration territoriale de la République centrafricaine (L'Harmattan), publisher preview pp. 23–29",
+     "says": "Law 60-179 (23 Jan 1961) turned regions into prefectures keeping the same areas; Law 61-285: 12 prefectures, 2 autonomous sub-prefectures; these vanish 1964.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1964-01-03",
+   "precision": "day",
+   "what": "Bangui separated from Ombella-M'Poko as autonomous commune (Law 63-445)",
+   "sources": [
+    {
+     "url": "http://www.statoids.com/ucf.html",
+     "title": "Prefectures of the Central African Republic — Statoids (Gwillim Law, last updated 2015-06-30)",
+     "says": "Bangui split from Ombella-M'Poko 1964-01-03; Kémo-Gribingui split 1974-08-06; Sangha-économique formed ~1974 from 14,150 km² of Haute-Sangha and 5,250 km² of Lobaye.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://fr.wikipedia.org/w/index.php?oldid=237822006",
+     "title": "Préfectures de la République centrafricaine — fr.wikipedia, oldid 237822006",
+     "says": "1964: Bangui autonomous commune (Law 63-445); Birao and N'Délé become prefectures (14). 1974: Gribingui and Sangha économiques created; 16 prefectures. 1988 ordinance confirms 16.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1964-11-20",
+   "precision": "day",
+   "what": "Law 64-32: Birao and N'Délé become prefectures (Vakaga, Bamingui-Bangoran); renamings of Bouar-Baboua and Obo-Zémio",
+   "sources": [
+    {
+     "url": "https://api.pageplace.de/preview/DT0400.9782336355801_A24327786/preview-9782336355801_A24327786.pdf",
+     "title": "J. Serre & J. Fandos-Rius, Répertoire de l'administration territoriale de la République centrafricaine (L'Harmattan), publisher preview pp. 23–29",
+     "says": "Law 60-179 (23 Jan 1961) turned regions into prefectures keeping the same areas; Law 61-285: 12 prefectures, 2 autonomous sub-prefectures; these vanish 1964.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "http://www.statoids.com/ucf.html",
+     "title": "Prefectures of the Central African Republic — Statoids (Gwillim Law, last updated 2015-06-30)",
+     "says": "Bangui split from Ombella-M'Poko 1964-01-03; Kémo-Gribingui split 1974-08-06; Sangha-économique formed ~1974 from 14,150 km² of Haute-Sangha and 5,250 km² of Lobaye.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1974-08-06",
+   "precision": "day",
+   "what": "Kémo-Gribingui split into Kémo-Gribingui (Kémo) and Gribingui-économique",
+   "sources": [
+    {
+     "url": "http://www.statoids.com/ucf.html",
+     "title": "Prefectures of the Central African Republic — Statoids (Gwillim Law, last updated 2015-06-30)",
+     "says": "Bangui split from Ombella-M'Poko 1964-01-03; Kémo-Gribingui split 1974-08-06; Sangha-économique formed ~1974 from 14,150 km² of Haute-Sangha and 5,250 km² of Lobaye.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1974",
+   "precision": "year",
+   "what": "Sangha-économique formed from parts of Haute-Sangha and Lobaye",
+   "sources": [
+    {
+     "url": "http://www.statoids.com/ucf.html",
+     "title": "Prefectures of the Central African Republic — Statoids (Gwillim Law, last updated 2015-06-30)",
+     "says": "Bangui split from Ombella-M'Poko 1964-01-03; Kémo-Gribingui split 1974-08-06; Sangha-économique formed ~1974 from 14,150 km² of Haute-Sangha and 5,250 km² of Lobaye.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://fr.wikipedia.org/w/index.php?oldid=237822006",
+     "title": "Préfectures de la République centrafricaine — fr.wikipedia, oldid 237822006",
+     "says": "1964: Bangui autonomous commune (Law 63-445); Birao and N'Délé become prefectures (14). 1974: Gribingui and Sangha économiques created; 16 prefectures. 1988 ordinance confirms 16.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1961-12-23",
+   "n": 14,
+   "sources": [
+    {
+     "url": "https://api.pageplace.de/preview/DT0400.9782336355801_A24327786/preview-9782336355801_A24327786.pdf",
+     "title": "J. Serre & J. Fandos-Rius, Répertoire de l'administration territoriale de la République centrafricaine (L'Harmattan), publisher preview pp. 23–29",
+     "says": "Law 60-179 (23 Jan 1961) turned regions into prefectures keeping the same areas; Law 61-285: 12 prefectures, 2 autonomous sub-prefectures; these vanish 1964.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1972-09-29",
+   "n": 15,
+   "sources": [
+    {
+     "url": "http://www.statoids.com/ucf.html",
+     "title": "Prefectures of the Central African Republic — Statoids (Gwillim Law, last updated 2015-06-30)",
+     "says": "Bangui split from Ombella-M'Poko 1964-01-03; Kémo-Gribingui split 1974-08-06; Sangha-économique formed ~1974 from 14,150 km² of Haute-Sangha and 5,250 km² of Lobaye.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1988-02-05",
+   "n": 17,
+   "sources": [
+    {
+     "url": "https://fr.wikipedia.org/w/index.php?oldid=237822006",
+     "title": "Préfectures de la République centrafricaine — fr.wikipedia, oldid 237822006",
+     "says": "1964: Bangui autonomous commune (Law 63-445); Birao and N'Délé become prefectures (14). 1974: Gribingui and Sangha économiques created; 16 prefectures. 1988 ordinance confirms 16.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2003-12-08",
+   "n": 17,
+   "sources": [
+    {
+     "url": "http://www.statoids.com/ucf.html",
+     "title": "Prefectures of the Central African Republic — Statoids (Gwillim Law, last updated 2015-06-30)",
+     "says": "Bangui split from Ombella-M'Poko 1964-01-03; Kémo-Gribingui split 1974-08-06; Sangha-économique formed ~1974 from 14,150 km² of Haute-Sangha and 5,250 km² of Lobaye.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Haute-Sangha before Sangha-économique was formed",
+   "unit": "CAF:HauteSangha@1960",
+   "atoms": [
+    "CAF-801"
+   ],
+   "from": "1960-08-13",
+   "to": "1974",
+   "why": "Haute-Sangha = Mambéré-Kadéï + the southern part of Sangha-Mbaéré (≈14,150 km²); the line between that part and the Lobaye part runs inside the NE Sangha-Mbaéré atom.",
+   "checked": [
+    "statoids ucf (1968 table: Haute-Sangha 44,360 km²)",
+    "fr.wikipedia oldid 237822006",
+    "Répertoire preview (1961 sub-prefecture lists)"
+   ],
+   "needs": "sub-prefecture atoms (Nola, Bayanga, Bambio…) e.g. OCHA COD-AB CAF ADM2/ADM3 (licence to check) or geoBoundaries CAF ADM3"
+  },
+  {
+   "what": "Lobaye before Sangha-économique was formed",
+   "unit": "CAF:Lobaye@1960",
+   "atoms": [
+    "CAF-795",
+    "CAF-802"
+   ],
+   "from": "1960-08-13",
+   "to": "1974",
+   "why": "Lobaye = current Lobaye + western part (≈5,250 km²) of Sangha-Mbaéré; the Sangha-Mbaéré atom is shared between Haute-Sangha and Lobaye, so neither can be drawn.",
+   "checked": [
+    "statoids ucf (1968 table: Lobaye 24,500 km²)",
+    "fr.wikipedia oldid 237822006"
+   ],
+   "needs": "sub-prefecture atoms (as above)"
+  }
+ ]
+}

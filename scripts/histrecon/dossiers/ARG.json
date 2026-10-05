@@ -1,0 +1,1470 @@
+{
+ "country": "ARG",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1955-07-28",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Argentine Republic throughout. Scope starts when the Comodoro Rivadavia military zone ceased (1955-07-28), after Ley 14.408 provincialised the remaining national territories. The Falklands/Malvinas, South Georgia and the Antarctic sector are not Argentine atoms.",
+ "units": [
+  {
+   "id": "ARG:BuenosAires@1820",
+   "names": {
+    "en": "Buenos Aires Province",
+    "ja": "ブエノスアイレス州",
+    "local": "Provincia de Buenos Aires"
+   },
+   "wikidata": "Q44754",
+   "spans": [
+    {
+     "from": "1969-09-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ARG-1295"
+     ],
+     "sources": [
+      {
+       "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=18331",
+       "title": "InfoLeg — Ley 18331 (Boletín Oficial record)",
+       "says": "Fixes the limits of Buenos Aires and Río Negro provinces; B.O. 1969-09-04.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
+       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
+       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "From the Boletín Oficial publication of Ley 18.331 (Buenos Aires–Río Negro), the last national act fixing a limit of this province; NE is taken to carry the line fixed then. Earlier de facto lines are not established."
+    }
+   ]
+  },
+  {
+   "id": "ARG:Catamarca@1821",
+   "names": {
+    "en": "Catamarca Province",
+    "ja": "カタマルカ州",
+    "local": "Provincia de Catamarca"
+   },
+   "wikidata": "Q44756",
+   "spans": [
+    {
+     "from": "1983-02-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ARG-1300"
+     ],
+     "sources": [
+      {
+       "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=22742",
+       "title": "InfoLeg — Ley 22742 (Boletín Oficial record)",
+       "says": "Fixes the limit between Catamarca and Santiago del Estero; B.O. 1983-02-16.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=18533",
+       "title": "InfoLeg — Ley 18533 (Boletín Oficial record)",
+       "says": "Fixes the whole Catamarca–La Rioja limit; B.O. 1970-01-22.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=18500",
+       "title": "InfoLeg — Ley 18500 (Boletín Oficial record)",
+       "says": "Catamarca–Salta limit from Cerro Vicuñorco; B.O. 1970-01-07.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
+       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
+       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "From the Boletín Oficial publication of Ley 22.742 (Catamarca–Santiago del Estero), the last national act fixing a limit of this province; NE is taken to carry the line fixed then. Earlier de facto lines are not established."
+    }
+   ]
+  },
+  {
+   "id": "ARG:Chaco@1951",
+   "names": {
+    "en": "Chaco Province",
+    "ja": "チャコ州",
+    "local": "Provincia del Chaco"
+   },
+   "wikidata": "Q44757",
+   "spans": [
+    {
+     "from": "1969-06-09",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ARG-1306"
+     ],
+     "sources": [
+      {
+       "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=18229",
+       "title": "InfoLeg — Ley 18229 (Boletín Oficial record)",
+       "says": "Demarcates a limit between Chaco and Salta; B.O. 1969-06-09.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=14037",
+       "title": "InfoLeg — Ley 14037 (Boletín Oficial record)",
+       "says": "Declares the national territories of Chaco and La Pampa provinces; B.O. 1951-08-10.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
+       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
+       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "From the Boletín Oficial publication of Ley 18.229 (Chaco–Salta), the last national act fixing a limit of this province; NE is taken to carry the line fixed then. Earlier de facto lines are not established. Province since 1951 (named Presidente Perón until 1956)."
+    }
+   ]
+  },
+  {
+   "id": "ARG:Chubut@1955",
+   "names": {
+    "en": "Chubut Province",
+    "ja": "チュブ州",
+    "local": "Provincia del Chubut"
+   },
+   "wikidata": "Q45007",
+   "spans": [
+    {
+     "from": "1966-12-09",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ARG-1274"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Argentina%E2%80%93Chile_relations&oldid=1373214645",
+       "title": "Wikipedia (en) — Argentina–Chile relations (oldid 1373214645)",
+       "says": "Encuentro River–Alto Palena dispute (1913–1966) resolved by the British award issued 9 Dec 1966, dividing the disputed land between Palena (Chile) and Languiñeo (Chubut).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=14408",
+       "title": "InfoLeg — Ley 14408 (Boletín Oficial record)",
+       "says": "Provincialisation of national territories (Formosa, Neuquén, Río Negro, Chubut, and the southern province incl. Tierra del Fuego); B.O. 1955-06-30.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Zona_Militar_de_Comodoro_Rivadavia&oldid=168226494",
+       "title": "Wikipedia (es) — Zona Militar de Comodoro Rivadavia (oldid 168226494)",
+       "says": "Created 31 May 1944 (decree-law 13.941); suppressed by the 1955 provincialisation; ceased to exist 28 July 1955, territory divided between Santa Cruz and Chubut.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "From the British award on the Alto Palena/Encuentro dispute (issued 1966-12-09), which moved Chubut's western line; no interprovincial limit act for Chubut is listed."
+    }
+   ]
+  },
+  {
+   "id": "ARG:Cordoba@1820",
+   "names": {
+    "en": "Córdoba Province",
+    "ja": "コルドバ州",
+    "local": "Provincia de Córdoba"
+   },
+   "wikidata": "Q44759",
+   "spans": [
+    {
+     "from": "1983-04-25",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ARG-1299"
+     ],
+     "sources": [
+      {
+       "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=22789",
+       "title": "InfoLeg — Ley 22789 (Boletín Oficial record)",
+       "says": "Fixes the limit between Córdoba and Santiago del Estero; B.O. 1983-04-25.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=18288",
+       "title": "InfoLeg — Ley 18288 (Boletín Oficial record)",
+       "says": "Fixes a limit between La Pampa and Córdoba; B.O. 1969-07-29.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
+       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
+       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "From the Boletín Oficial publication of Ley 22.789 (Córdoba–Santiago del Estero), the last national act fixing a limit of this province; NE is taken to carry the line fixed then. Earlier de facto lines are not established."
+    }
+   ]
+  },
+  {
+   "id": "ARG:Corrientes@1814",
+   "names": {
+    "en": "Corrientes Province",
+    "ja": "コリエンテス州",
+    "local": "Provincia de Corrientes"
+   },
+   "wikidata": "Q44758",
+   "spans": [
+    {
+     "from": "1983-04-25",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ARG-1308"
+     ],
+     "sources": [
+      {
+       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
+       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
+       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uar.html",
+       "title": "Statoids — Provinces of Argentina (change history)",
+       "says": "Lists 1884 territories, 1943 Los Andes split, 1951/1953/1955 provincialisations, Patagonia, 1990s Tierra del Fuego province; warns of minor interprovincial and Chilean boundary adjustments.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Conservative start: no national act fixing a limit of this province was found, and the national limits commission (CNLI) ceased in 1983 after its last act (Ley 22.789, B.O. 1983-04-25). The window before is withheld because the 1943–1983 record (IGM awards, CNLI acts) cannot be shown complete for this province. The Paraná islands were divided with Chaco and Santa Fe in 13 sections, six of them contested."
+    }
+   ]
+  },
+  {
+   "id": "ARG:EntreRios@1814",
+   "names": {
+    "en": "Entre Ríos Province",
+    "ja": "エントレ・リオス州",
+    "local": "Provincia de Entre Ríos"
+   },
+   "wikidata": "Q44762",
+   "spans": [
+    {
+     "from": "1983-04-25",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ARG-1309"
+     ],
+     "sources": [
+      {
+       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
+       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
+       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uar.html",
+       "title": "Statoids — Provinces of Argentina (change history)",
+       "says": "Lists 1884 territories, 1943 Los Andes split, 1951/1953/1955 provincialisations, Patagonia, 1990s Tierra del Fuego province; warns of minor interprovincial and Chilean boundary adjustments.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Conservative start: no national act fixing a limit of this province was found, and the national limits commission (CNLI) ceased in 1983 after its last act (Ley 22.789, B.O. 1983-04-25). The window before is withheld because the 1943–1983 record (IGM awards, CNLI acts) cannot be shown complete for this province."
+    }
+   ]
+  },
+  {
+   "id": "ARG:Misiones@1953",
+   "names": {
+    "en": "Misiones Province",
+    "ja": "ミシオネス州",
+    "local": "Provincia de Misiones"
+   },
+   "wikidata": "Q44798",
+   "spans": [
+    {
+     "from": "1983-04-25",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ARG-1312"
+     ],
+     "sources": [
+      {
+       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
+       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
+       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=14294",
+       "title": "InfoLeg — Ley 14294 (Boletín Oficial record)",
+       "says": "Declares the national territory of Misiones a province; B.O. 1954-01-04.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Conservative start: no national act fixing a limit of this province was found, and the national limits commission (CNLI) ceased in 1983 after its last act (Ley 22.789, B.O. 1983-04-25). The window before is withheld because the 1943–1983 record (IGM awards, CNLI acts) cannot be shown complete for this province."
+    }
+   ]
+  },
+  {
+   "id": "ARG:SantaFe@1819",
+   "names": {
+    "en": "Santa Fe Province",
+    "ja": "サンタフェ州",
+    "local": "Provincia de Santa Fe"
+   },
+   "wikidata": "Q44823",
+   "spans": [
+    {
+     "from": "1983-04-25",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ARG-1310"
+     ],
+     "sources": [
+      {
+       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
+       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
+       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uar.html",
+       "title": "Statoids — Provinces of Argentina (change history)",
+       "says": "Lists 1884 territories, 1943 Los Andes split, 1951/1953/1955 provincialisations, Patagonia, 1990s Tierra del Fuego province; warns of minor interprovincial and Chilean boundary adjustments.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Conservative start: no national act fixing a limit of this province was found, and the national limits commission (CNLI) ceased in 1983 after its last act (Ley 22.789, B.O. 1983-04-25). The window before is withheld because the 1943–1983 record (IGM awards, CNLI acts) cannot be shown complete for this province."
+    }
+   ]
+  },
+  {
+   "id": "ARG:SanJuan@1820",
+   "names": {
+    "en": "San Juan Province",
+    "ja": "サンフアン州",
+    "local": "Provincia de San Juan"
+   },
+   "wikidata": "Q44805",
+   "spans": [
+    {
+     "from": "1983-04-25",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ARG-1273"
+     ],
+     "sources": [
+      {
+       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
+       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
+       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uar.html",
+       "title": "Statoids — Provinces of Argentina (change history)",
+       "says": "Lists 1884 territories, 1943 Los Andes split, 1951/1953/1955 provincialisations, Patagonia, 1990s Tierra del Fuego province; warns of minor interprovincial and Chilean boundary adjustments.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Conservative start: no national act fixing a limit of this province was found, and the national limits commission (CNLI) ceased in 1983 after its last act (Ley 22.789, B.O. 1983-04-25). The window before is withheld because the 1943–1983 record (IGM awards, CNLI acts) cannot be shown complete for this province. The La Rioja–San Juan limit at Vicuña remains disputed."
+    }
+   ]
+  },
+  {
+   "id": "ARG:Tucuman@1814",
+   "names": {
+    "en": "Tucumán Province",
+    "ja": "トゥクマン州",
+    "local": "Provincia de Tucumán"
+   },
+   "wikidata": "Q44829",
+   "spans": [
+    {
+     "from": "1983-04-25",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ARG-1305"
+     ],
+     "sources": [
+      {
+       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
+       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
+       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uar.html",
+       "title": "Statoids — Provinces of Argentina (change history)",
+       "says": "Lists 1884 territories, 1943 Los Andes split, 1951/1953/1955 provincialisations, Patagonia, 1990s Tierra del Fuego province; warns of minor interprovincial and Chilean boundary adjustments.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Conservative start: no national act fixing a limit of this province was found, and the national limits commission (CNLI) ceased in 1983 after its last act (Ley 22.789, B.O. 1983-04-25). The window before is withheld because the 1943–1983 record (IGM awards, CNLI acts) cannot be shown complete for this province."
+    }
+   ]
+  },
+  {
+   "id": "ARG:Formosa@1955",
+   "names": {
+    "en": "Formosa Province",
+    "ja": "フォルモサ州",
+    "local": "Provincia de Formosa"
+   },
+   "wikidata": "Q44761",
+   "spans": [
+    {
+     "from": "1969-10-02",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ARG-1307"
+     ],
+     "sources": [
+      {
+       "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=18372",
+       "title": "InfoLeg — Ley 18372 (Boletín Oficial record)",
+       "says": "Fixes the western limit of Formosa and eastern limit of Salta; B.O. 1969-10-02.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=14408",
+       "title": "InfoLeg — Ley 14408 (Boletín Oficial record)",
+       "says": "Provincialisation of national territories (Formosa, Neuquén, Río Negro, Chubut, and the southern province incl. Tierra del Fuego); B.O. 1955-06-30.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
+       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
+       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "From the Boletín Oficial publication of Ley 18.372 (Formosa–Salta), the last national act fixing a limit of this province; NE is taken to carry the line fixed then. Earlier de facto lines are not established."
+    }
+   ]
+  },
+  {
+   "id": "ARG:Jujuy@1834",
+   "names": {
+    "en": "Jujuy Province",
+    "ja": "フフイ州",
+    "local": "Provincia de Jujuy"
+   },
+   "wikidata": "Q44764",
+   "spans": [
+    {
+     "from": "1955-07-28",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ARG-1301"
+     ],
+     "sources": [
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Disputas_de_l%C3%ADmites_de_Salta_con_Jujuy_y_Catamarca&oldid=159702502",
+       "title": "Wikipedia (es) — Disputas de límites de Salta con Jujuy y Catamarca (oldid 159702502)",
+       "says": "IGM awards settled four Salta–Jujuy zones 1948–1953 (last 12 May 1953); a 1983 joint declaration kept the status quo.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uar.html",
+       "title": "Statoids — Provinces of Argentina (change history)",
+       "says": "Lists 1884 territories, 1943 Los Andes split, 1951/1953/1955 provincialisations, Patagonia, 1990s Tierra del Fuego province; warns of minor interprovincial and Chilean boundary adjustments.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The four Salta–Jujuy zones were settled by IGM awards, the last on 1953-05-12; the 1983 joint declaration kept the status quo (historic bed of the Las Piedras river). No other interprovincial neighbour."
+    }
+   ]
+  },
+  {
+   "id": "ARG:LaPampa@1951",
+   "names": {
+    "en": "La Pampa Province",
+    "ja": "ラ・パンパ州",
+    "local": "Provincia de La Pampa"
+   },
+   "wikidata": "Q44795",
+   "spans": [
+    {
+     "from": "1969-07-29",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ARG-1296"
+     ],
+     "sources": [
+      {
+       "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=18288",
+       "title": "InfoLeg — Ley 18288 (Boletín Oficial record)",
+       "says": "Fixes a limit between La Pampa and Córdoba; B.O. 1969-07-29.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=14037",
+       "title": "InfoLeg — Ley 14037 (Boletín Oficial record)",
+       "says": "Declares the territories of Chaco and La Pampa provinces; B.O. 1951-08-10.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
+       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
+       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "From the Boletín Oficial publication of Ley 18.288 (La Pampa–Córdoba), the last national act fixing a limit of this province; NE is taken to carry the line fixed then. Earlier de facto lines are not established. Province since 1951 (named Eva Perón 1952–1956)."
+    }
+   ]
+  },
+  {
+   "id": "ARG:LaRioja@1820",
+   "names": {
+    "en": "La Rioja Province",
+    "ja": "ラ・リオハ州",
+    "local": "Provincia de La Rioja"
+   },
+   "wikidata": "Q44796",
+   "spans": [
+    {
+     "from": "1980-03-12",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ARG-1302"
+     ],
+     "sources": [
+      {
+       "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=22184",
+       "title": "InfoLeg — Ley 22184 (Boletín Oficial record)",
+       "says": "Fixes the limit between La Rioja and San Luis; B.O. 1980-03-12.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=18533",
+       "title": "InfoLeg — Ley 18533 (Boletín Oficial record)",
+       "says": "Catamarca–La Rioja limit; B.O. 1970-01-22.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
+       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
+       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "From the Boletín Oficial publication of Ley 22.184 (La Rioja–San Luis), the last national act fixing a limit of this province; NE is taken to carry the line fixed then. Earlier de facto lines are not established. (The UCA paper describes 22.184 as La Rioja–San Juan; the InfoLeg record says La Rioja–San Luis.)"
+    }
+   ]
+  },
+  {
+   "id": "ARG:Mendoza@1820",
+   "names": {
+    "en": "Mendoza Province",
+    "ja": "メンドーサ州",
+    "local": "Provincia de Mendoza"
+   },
+   "wikidata": "Q44797",
+   "spans": [
+    {
+     "from": "1970-01-07",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ARG-1275"
+     ],
+     "sources": [
+      {
+       "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=18498",
+       "title": "InfoLeg — Ley 18498 (Boletín Oficial record)",
+       "says": "Mendoza–San Luis limit along the Desaguadero between Bajada del Toro and the Salado–Tilatirú confluence; B.O. 1970-01-07.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
+       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
+       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "From the Boletín Oficial publication of Ley 18.498 (Mendoza–San Luis), the last national act fixing a limit of this province; NE is taken to carry the line fixed then. Earlier de facto lines are not established."
+    }
+   ]
+  },
+  {
+   "id": "ARG:Neuquen@1955",
+   "names": {
+    "en": "Neuquén Province",
+    "ja": "ネウケン州",
+    "local": "Provincia del Neuquén"
+   },
+   "wikidata": "Q44800",
+   "spans": [
+    {
+     "from": "1970-01-07",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ARG-1276"
+     ],
+     "sources": [
+      {
+       "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=18501",
+       "title": "InfoLeg — Ley 18501 (Boletín Oficial record)",
+       "says": "Neuquén–Río Negro limit (rivers, islands, Nahuel Huapi leaving Isla Victoria to the north, Arroyo Blest); B.O. 1970-01-07.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=14408",
+       "title": "InfoLeg — Ley 14408 (Boletín Oficial record)",
+       "says": "Provincialisation of national territories (Formosa, Neuquén, Río Negro, Chubut, and the southern province incl. Tierra del Fuego); B.O. 1955-06-30.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
+       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
+       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "From the Boletín Oficial publication of Ley 18.501 (Neuquén–Río Negro), the last national act fixing a limit of this province; NE is taken to carry the line fixed then. Earlier de facto lines are not established."
+    }
+   ]
+  },
+  {
+   "id": "ARG:RioNegro@1955",
+   "names": {
+    "en": "Río Negro Province",
+    "ja": "リオネグロ州",
+    "local": "Provincia de Río Negro"
+   },
+   "wikidata": "Q44802",
+   "spans": [
+    {
+     "from": "1970-01-07",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ARG-1297"
+     ],
+     "sources": [
+      {
+       "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=18501",
+       "title": "InfoLeg — Ley 18501 (Boletín Oficial record)",
+       "says": "Neuquén–Río Negro limit; B.O. 1970-01-07.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=18331",
+       "title": "InfoLeg — Ley 18331 (Boletín Oficial record)",
+       "says": "Buenos Aires–Río Negro limits; B.O. 1969-09-04.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=14408",
+       "title": "InfoLeg — Ley 14408 (Boletín Oficial record)",
+       "says": "Provincialisation of national territories (Formosa, Neuquén, Río Negro, Chubut, and the southern province incl. Tierra del Fuego); B.O. 1955-06-30.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
+       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
+       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "From the Boletín Oficial publication of Ley 18.501 (Neuquén–Río Negro), the last national act fixing a limit of this province; NE is taken to carry the line fixed then. Earlier de facto lines are not established."
+    }
+   ]
+  },
+  {
+   "id": "ARG:Salta@1814",
+   "names": {
+    "en": "Salta Province",
+    "ja": "サルタ州",
+    "local": "Provincia de Salta"
+   },
+   "wikidata": "Q44803",
+   "spans": [
+    {
+     "from": "1970-01-07",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ARG-1303"
+     ],
+     "sources": [
+      {
+       "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=18500",
+       "title": "InfoLeg — Ley 18500 (Boletín Oficial record)",
+       "says": "Catamarca–Salta limit; B.O. 1970-01-07.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=18372",
+       "title": "InfoLeg — Ley 18372 (Boletín Oficial record)",
+       "says": "Formosa–Salta limit; B.O. 1969-10-02.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=18229",
+       "title": "InfoLeg — Ley 18229 (Boletín Oficial record)",
+       "says": "Chaco–Salta limit; B.O. 1969-06-09.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Disputas_de_l%C3%ADmites_de_Salta_con_Jujuy_y_Catamarca&oldid=159702502",
+       "title": "Wikipedia (es) — Disputas de límites de Salta con Jujuy y Catamarca (oldid 159702502)",
+       "says": "IGM awards settled four Salta–Jujuy zones 1948–1953 (last 12 May 1953); a 1983 joint declaration kept the status quo.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
+       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
+       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "From the Boletín Oficial publication of Ley 18.500 (Catamarca–Salta), the last national act fixing a limit of this province; NE is taken to carry the line fixed then. Earlier de facto lines are not established. The Salta–Catamarca line remains contested (Supreme Court 1985, 1987, 2009)."
+    }
+   ]
+  },
+  {
+   "id": "ARG:SanLuis@1820",
+   "names": {
+    "en": "San Luis Province",
+    "ja": "サンルイス州",
+    "local": "Provincia de San Luis"
+   },
+   "wikidata": "Q44818",
+   "spans": [
+    {
+     "from": "1980-03-12",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ARG-1298"
+     ],
+     "sources": [
+      {
+       "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=22184",
+       "title": "InfoLeg — Ley 22184 (Boletín Oficial record)",
+       "says": "La Rioja–San Luis limit; B.O. 1980-03-12.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=18498",
+       "title": "InfoLeg — Ley 18498 (Boletín Oficial record)",
+       "says": "Mendoza–San Luis limit; B.O. 1970-01-07.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
+       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
+       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "From the Boletín Oficial publication of Ley 22.184 (La Rioja–San Luis), the last national act fixing a limit of this province; NE is taken to carry the line fixed then. Earlier de facto lines are not established."
+    }
+   ]
+  },
+  {
+   "id": "ARG:SantiagoDelEstero@1820",
+   "names": {
+    "en": "Santiago del Estero Province",
+    "ja": "サンティアゴ・デル・エステロ州",
+    "local": "Provincia de Santiago del Estero"
+   },
+   "wikidata": "Q44827",
+   "spans": [
+    {
+     "from": "1983-04-25",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ARG-1304"
+     ],
+     "sources": [
+      {
+       "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=22789",
+       "title": "InfoLeg — Ley 22789 (Boletín Oficial record)",
+       "says": "Córdoba–Santiago del Estero limit; B.O. 1983-04-25.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=22742",
+       "title": "InfoLeg — Ley 22742 (Boletín Oficial record)",
+       "says": "Catamarca–Santiago del Estero limit; B.O. 1983-02-16.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
+       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
+       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "From the Boletín Oficial publication of Ley 22.789 (Córdoba–Santiago del Estero), the last national act fixing a limit of this province; NE is taken to carry the line fixed then. Earlier de facto lines are not established."
+    }
+   ]
+  },
+  {
+   "id": "ARG:SantaCruz@1956",
+   "names": {
+    "en": "Santa Cruz Province",
+    "ja": "サンタクルス州",
+    "local": "Provincia de Santa Cruz"
+   },
+   "wikidata": "Q44821",
+   "spans": [
+    {
+     "from": "1995-10-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ARG-1271"
+     ],
+     "sources": [
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Lago_del_Desierto&oldid=170090537",
+       "title": "Wikipedia (es) — Lago del Desierto (oldid 170090537)",
+       "says": "Laguna del Desierto dispute settled by arbitral award 1994-10-21, confirmed 1995-10-13 when Chile's reconsideration was rejected.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Proyecto_de_provincia_de_Patagonia&oldid=168213001",
+       "title": "Wikipedia (es) — Proyecto de provincia de Patagonia (oldid 168213001)",
+       "says": "Ley 14.408 (1955) created Patagonia incl. Tierra del Fuego; decree-law 21.178 (22 Nov 1956) re-created Santa Cruz; decree-law 2.191 (28 Feb 1957) restored TdF territory.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Province re-created 1956-11-22 with the old territory's land; drawn only from the date the Laguna del Desierto award became final. The Southern Patagonian Ice Field line is partly undemarcated; NE draws one line there."
+    }
+   ]
+  },
+  {
+   "id": "ARG:TierraDelFuego@1957",
+   "names": {
+    "en": "Tierra del Fuego (National Territory 1957–1990; Province from 1990)",
+    "ja": "ティエラ・デル・フエゴ州",
+    "local": "Tierra del Fuego, Antártida e Islas del Atlántico Sur"
+   },
+   "wikidata": "Q44832",
+   "spans": [
+    {
+     "from": "1957-02-28",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ARG-1272"
+     ],
+     "sources": [
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Proyecto_de_provincia_de_Patagonia&oldid=168213001",
+       "title": "Wikipedia (es) — Proyecto de provincia de Patagonia (oldid 168213001)",
+       "says": "Ley 14.408 (1955) created Patagonia incl. Tierra del Fuego; decree-law 21.178 (22 Nov 1956) re-created Santa Cruz; decree-law 2.191 (28 Feb 1957) restored TdF territory.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=23775",
+       "title": "InfoLeg — Ley 23775 (Boletín Oficial record)",
+       "says": "Declares the territory of Tierra del Fuego, Antártida e Islas del Atlántico Sur a province; B.O. 1990-05-15.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uar.html",
+       "title": "Statoids — Provinces of Argentina (change history)",
+       "says": "Lists 1884 territories, 1943 Los Andes split, 1951/1953/1955 provincialisations, Patagonia, 1990s Tierra del Fuego province; warns of minor interprovincial and Chilean boundary adjustments.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Territory restored by decree-law 2.191 (1957-02-28); province by Ley 23.775 (B.O. 1990-05-15; statoids marks 1991-06-01, when its constitution took effect). Only the Argentine part of Isla Grande and Isla de los Estados are atoms; Antarctic and South Atlantic claims are not."
+    }
+   ]
+  },
+  {
+   "id": "ARG:CapitalFederal@1880",
+   "names": {
+    "en": "Buenos Aires (Capital Federal; Ciudad Autónoma from 1996)",
+    "ja": "ブエノスアイレス",
+    "local": "Ciudad Autónoma de Buenos Aires"
+   },
+   "wikidata": "Q1486",
+   "spans": [
+    {
+     "from": "1955-07-28",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ARG-5493"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uar.html",
+       "title": "Statoids — Provinces of Argentina (change history)",
+       "says": "Lists 1884 territories, 1943 Los Andes split, 1951/1953/1955 provincialisations, Patagonia, 1990s Tierra del Fuego province; warns of minor interprovincial and Chilean boundary adjustments.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
+       "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
+       "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Federal capital since 1880, enlarged in 1887 (Belgrano, Flores); no later limit act with Buenos Aires province is listed. Autonomous city from 1996-08-06 (status only)."
+    }
+   ]
+  }
+ ],
+ "unresolved": [
+  {
+   "what": "BuenosAires 1955-07-28 – 1969-09-04",
+   "unit": "ARG:BuenosAires@1820",
+   "atoms": [
+    "ARG-1295"
+   ],
+   "from": "1955-07-28",
+   "to": "1969-09-04",
+   "why": "Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502"
+   ],
+   "needs": "department-level atoms with the pre-act lines (IGN Argentina historical cartography; geoBoundaries ARG ADM2 shows only today's lines)"
+  },
+  {
+   "what": "Catamarca 1955-07-28 – 1983-02-16",
+   "unit": "ARG:Catamarca@1821",
+   "atoms": [
+    "ARG-1300"
+   ],
+   "from": "1955-07-28",
+   "to": "1983-02-16",
+   "why": "Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502"
+   ],
+   "needs": "department-level atoms with the pre-act lines (IGN Argentina historical cartography; geoBoundaries ARG ADM2 shows only today's lines)"
+  },
+  {
+   "what": "Chaco 1955-07-28 – 1969-06-09",
+   "unit": "ARG:Chaco@1951",
+   "atoms": [
+    "ARG-1306"
+   ],
+   "from": "1955-07-28",
+   "to": "1969-06-09",
+   "why": "Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502"
+   ],
+   "needs": "department-level atoms with the pre-act lines (IGN Argentina historical cartography; geoBoundaries ARG ADM2 shows only today's lines)"
+  },
+  {
+   "what": "Chubut 1955-07-28 – 1966-12-09",
+   "unit": "ARG:Chubut@1955",
+   "atoms": [
+    "ARG-1274"
+   ],
+   "from": "1955-07-28",
+   "to": "1966-12-09",
+   "why": "The Alto Palena/Encuentro valleys were disputed with Chile (Argentine gendarmerie occupied parts in 1952) until the 1966 award divided them; the atom carries the post-award line.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502"
+   ],
+   "needs": "department-level atoms with the pre-act lines (IGN Argentina historical cartography; geoBoundaries ARG ADM2 shows only today's lines)"
+  },
+  {
+   "what": "Cordoba 1955-07-28 – 1983-04-25",
+   "unit": "ARG:Cordoba@1820",
+   "atoms": [
+    "ARG-1299"
+   ],
+   "from": "1955-07-28",
+   "to": "1983-04-25",
+   "why": "Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502"
+   ],
+   "needs": "department-level atoms with the pre-act lines (IGN Argentina historical cartography; geoBoundaries ARG ADM2 shows only today's lines)"
+  },
+  {
+   "what": "Corrientes 1955-07-28 – 1983-04-25",
+   "unit": "ARG:Corrientes@1814",
+   "atoms": [
+    "ARG-1308"
+   ],
+   "from": "1955-07-28",
+   "to": "1983-04-25",
+   "why": "Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502"
+   ],
+   "needs": "department-level atoms with the pre-act lines (IGN Argentina historical cartography; geoBoundaries ARG ADM2 shows only today's lines)"
+  },
+  {
+   "what": "EntreRios 1955-07-28 – 1983-04-25",
+   "unit": "ARG:EntreRios@1814",
+   "atoms": [
+    "ARG-1309"
+   ],
+   "from": "1955-07-28",
+   "to": "1983-04-25",
+   "why": "Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502"
+   ],
+   "needs": "department-level atoms with the pre-act lines (IGN Argentina historical cartography; geoBoundaries ARG ADM2 shows only today's lines)"
+  },
+  {
+   "what": "Misiones 1955-07-28 – 1983-04-25",
+   "unit": "ARG:Misiones@1953",
+   "atoms": [
+    "ARG-1312"
+   ],
+   "from": "1955-07-28",
+   "to": "1983-04-25",
+   "why": "Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502"
+   ],
+   "needs": "department-level atoms with the pre-act lines (IGN Argentina historical cartography; geoBoundaries ARG ADM2 shows only today's lines)"
+  },
+  {
+   "what": "SantaFe 1955-07-28 – 1983-04-25",
+   "unit": "ARG:SantaFe@1819",
+   "atoms": [
+    "ARG-1310"
+   ],
+   "from": "1955-07-28",
+   "to": "1983-04-25",
+   "why": "Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502"
+   ],
+   "needs": "department-level atoms with the pre-act lines (IGN Argentina historical cartography; geoBoundaries ARG ADM2 shows only today's lines)"
+  },
+  {
+   "what": "SanJuan 1955-07-28 – 1983-04-25",
+   "unit": "ARG:SanJuan@1820",
+   "atoms": [
+    "ARG-1273"
+   ],
+   "from": "1955-07-28",
+   "to": "1983-04-25",
+   "why": "Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502"
+   ],
+   "needs": "department-level atoms with the pre-act lines (IGN Argentina historical cartography; geoBoundaries ARG ADM2 shows only today's lines)"
+  },
+  {
+   "what": "Tucuman 1955-07-28 – 1983-04-25",
+   "unit": "ARG:Tucuman@1814",
+   "atoms": [
+    "ARG-1305"
+   ],
+   "from": "1955-07-28",
+   "to": "1983-04-25",
+   "why": "Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502"
+   ],
+   "needs": "department-level atoms with the pre-act lines (IGN Argentina historical cartography; geoBoundaries ARG ADM2 shows only today's lines)"
+  },
+  {
+   "what": "Formosa 1955-07-28 – 1969-10-02",
+   "unit": "ARG:Formosa@1955",
+   "atoms": [
+    "ARG-1307"
+   ],
+   "from": "1955-07-28",
+   "to": "1969-10-02",
+   "why": "Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502"
+   ],
+   "needs": "department-level atoms with the pre-act lines (IGN Argentina historical cartography; geoBoundaries ARG ADM2 shows only today's lines)"
+  },
+  {
+   "what": "LaPampa 1955-07-28 – 1969-07-29",
+   "unit": "ARG:LaPampa@1951",
+   "atoms": [
+    "ARG-1296"
+   ],
+   "from": "1955-07-28",
+   "to": "1969-07-29",
+   "why": "Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502"
+   ],
+   "needs": "department-level atoms with the pre-act lines (IGN Argentina historical cartography; geoBoundaries ARG ADM2 shows only today's lines)"
+  },
+  {
+   "what": "LaRioja 1955-07-28 – 1980-03-12",
+   "unit": "ARG:LaRioja@1820",
+   "atoms": [
+    "ARG-1302"
+   ],
+   "from": "1955-07-28",
+   "to": "1980-03-12",
+   "why": "Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502"
+   ],
+   "needs": "department-level atoms with the pre-act lines (IGN Argentina historical cartography; geoBoundaries ARG ADM2 shows only today's lines)"
+  },
+  {
+   "what": "Mendoza 1955-07-28 – 1970-01-07",
+   "unit": "ARG:Mendoza@1820",
+   "atoms": [
+    "ARG-1275"
+   ],
+   "from": "1955-07-28",
+   "to": "1970-01-07",
+   "why": "Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502"
+   ],
+   "needs": "department-level atoms with the pre-act lines (IGN Argentina historical cartography; geoBoundaries ARG ADM2 shows only today's lines)"
+  },
+  {
+   "what": "Neuquen 1955-07-28 – 1970-01-07",
+   "unit": "ARG:Neuquen@1955",
+   "atoms": [
+    "ARG-1276"
+   ],
+   "from": "1955-07-28",
+   "to": "1970-01-07",
+   "why": "Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502"
+   ],
+   "needs": "department-level atoms with the pre-act lines (IGN Argentina historical cartography; geoBoundaries ARG ADM2 shows only today's lines)"
+  },
+  {
+   "what": "RioNegro 1955-07-28 – 1970-01-07",
+   "unit": "ARG:RioNegro@1955",
+   "atoms": [
+    "ARG-1297"
+   ],
+   "from": "1955-07-28",
+   "to": "1970-01-07",
+   "why": "Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502"
+   ],
+   "needs": "department-level atoms with the pre-act lines (IGN Argentina historical cartography; geoBoundaries ARG ADM2 shows only today's lines)"
+  },
+  {
+   "what": "Salta 1955-07-28 – 1970-01-07",
+   "unit": "ARG:Salta@1814",
+   "atoms": [
+    "ARG-1303"
+   ],
+   "from": "1955-07-28",
+   "to": "1970-01-07",
+   "why": "Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502"
+   ],
+   "needs": "department-level atoms with the pre-act lines (IGN Argentina historical cartography; geoBoundaries ARG ADM2 shows only today's lines)"
+  },
+  {
+   "what": "SanLuis 1955-07-28 – 1980-03-12",
+   "unit": "ARG:SanLuis@1820",
+   "atoms": [
+    "ARG-1298"
+   ],
+   "from": "1955-07-28",
+   "to": "1980-03-12",
+   "why": "Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502"
+   ],
+   "needs": "department-level atoms with the pre-act lines (IGN Argentina historical cartography; geoBoundaries ARG ADM2 shows only today's lines)"
+  },
+  {
+   "what": "SantiagoDelEstero 1955-07-28 – 1983-04-25",
+   "unit": "ARG:SantiagoDelEstero@1820",
+   "atoms": [
+    "ARG-1304"
+   ],
+   "from": "1955-07-28",
+   "to": "1983-04-25",
+   "why": "Interprovincial limits were fixed by national acts in 1969–1983 (and contested before); the line in force before the act that fixed this province's last limit is not established and may run through NE atoms.",
+   "checked": [
+    "UCA repository: Godio, Los límites interprovinciales en la Constitución Nacional",
+    "InfoLeg records of Leyes 18.229, 18.288, 18.331, 18.372, 18.498, 18.500, 18.501, 18.533, 22.184, 22.742, 22.789",
+    "statoids uar.html",
+    "es.wikipedia Disputas de límites de Salta con Jujuy y Catamarca oldid 159702502"
+   ],
+   "needs": "department-level atoms with the pre-act lines (IGN Argentina historical cartography; geoBoundaries ARG ADM2 shows only today's lines)"
+  },
+  {
+   "what": "Patagonia province 1955-07-28 – 1956-11-22 (Santa Cruz + Tierra del Fuego)",
+   "unit": "ARG:Patagonia@1955",
+   "atoms": [
+    "ARG-1271",
+    "ARG-1272"
+   ],
+   "from": "1955-07-28",
+   "to": "1956-11-22",
+   "why": "The province (never organised; no authorities elected) comprised the Santa Cruz territory and Tierra del Fuego; its western line at Laguna del Desierto was the disputed pre-1994 one (the 1902 award was read as giving Chile the valley), not the atom's line.",
+   "checked": [
+    "es.wikipedia Proyecto de provincia de Patagonia oldid 168213001",
+    "es.wikipedia Lago del Desierto oldid 170090537",
+    "InfoLeg Ley 14.408"
+   ],
+   "needs": "an atom for the Laguna del Desierto disputed zone"
+  },
+  {
+   "what": "Santa Cruz province 1956-11-22 – 1995-10-13",
+   "unit": "ARG:SantaCruz@1956",
+   "atoms": [
+    "ARG-1271"
+   ],
+   "from": "1956-11-22",
+   "to": "1995-10-13",
+   "why": "The Laguna del Desierto zone was contested with Chile (Chilean settlers and police until 1965, Argentine gendarmerie after) until the 1994 award (final 1995-10-13), which gave almost all of it to Argentina; the atom carries the post-award line.",
+   "checked": [
+    "es.wikipedia Lago del Desierto oldid 170090537",
+    "en.wikipedia Laguna del Desierto incident oldid 1375552167"
+   ],
+   "needs": "an atom for the Laguna del Desierto disputed zone"
+  },
+  {
+   "what": "Tierra del Fuego 1956-11-22 – 1957-02-28",
+   "unit": null,
+   "atoms": [
+    "ARG-1272"
+   ],
+   "from": "1956-11-22",
+   "to": "1957-02-28",
+   "why": "Decree-law 21.178 dissolved Patagonia and re-created Santa Cruz ending at Punta Dúngeness; Tierra del Fuego's status until decree-law 2.191 restored the national territory is not stated by the sources.",
+   "checked": [
+    "es.wikipedia Proyecto de provincia de Patagonia oldid 168213001",
+    "statoids uar.html"
+   ],
+   "needs": "the text of decree-law 21.178/56 and 2.191/57"
+  },
+  {
+   "what": "Layouts 1884-10-16 – 1955-07-28 (national territories of Ley 1532, Los Andes 1900–1943, Comodoro Rivadavia military zone 1944–1955, provincialisations 1951–1955)",
+   "from": "1884-10-16",
+   "to": "1955-07-28",
+   "why": "Los Andes (1900–1943) and the Comodoro Rivadavia zone (1944–1955) were carved from parts of Jujuy/Salta/Catamarca and Chubut/Santa Cruz along lines inside NE atoms; the international line moved in 1899 (Puna), 1902 (British award), 1938 (Los Toldos); most interprovincial lines were fixed only in 1907–1983. Not claimed (outside scope).",
+   "checked": [
+    "statoids uar.html",
+    "es.wikipedia Zona Militar de Comodoro Rivadavia oldid 168226494",
+    "UCA repository paper on interprovincial limits"
+   ],
+   "needs": "department-level atoms (IGN Argentina) with the historical lines"
+  }
+ ],
+ "events": [
+  {
+   "date": "1955-07-28",
+   "precision": "day",
+   "what": "Comodoro Rivadavia military zone ceases; its land returns to Chubut and the southern province",
+   "sources": [
+    {
+     "url": "https://es.wikipedia.org/w/index.php?title=Zona_Militar_de_Comodoro_Rivadavia&oldid=168226494",
+     "title": "Wikipedia (es) — Zona Militar de Comodoro Rivadavia (oldid 168226494)",
+     "says": "Created 31 May 1944 (decree-law 13.941); suppressed by the 1955 provincialisation; ceased to exist 28 July 1955, territory divided between Santa Cruz and Chubut.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1956-11-22",
+   "precision": "day",
+   "what": "Decree-law 21.178 dissolves Patagonia and re-creates Santa Cruz province",
+   "sources": [
+    {
+     "url": "https://es.wikipedia.org/w/index.php?title=Proyecto_de_provincia_de_Patagonia&oldid=168213001",
+     "title": "Wikipedia (es) — Proyecto de provincia de Patagonia (oldid 168213001)",
+     "says": "Ley 14.408 (1955) created Patagonia incl. Tierra del Fuego; decree-law 21.178 (22 Nov 1956) re-created Santa Cruz; decree-law 2.191 (28 Feb 1957) restored TdF territory.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1957-02-28",
+   "precision": "day",
+   "what": "Decree-law 2.191 restores the national territory of Tierra del Fuego, Antártida e Islas del Atlántico Sur",
+   "sources": [
+    {
+     "url": "https://es.wikipedia.org/w/index.php?title=Proyecto_de_provincia_de_Patagonia&oldid=168213001",
+     "title": "Wikipedia (es) — Proyecto de provincia de Patagonia (oldid 168213001)",
+     "says": "Ley 14.408 (1955) created Patagonia incl. Tierra del Fuego; decree-law 21.178 (22 Nov 1956) re-created Santa Cruz; decree-law 2.191 (28 Feb 1957) restored TdF territory.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1966-12-09",
+   "precision": "day",
+   "what": "British award on the Alto Palena/Encuentro valleys (Chubut–Chile)",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Argentina%E2%80%93Chile_relations&oldid=1373214645",
+     "title": "Wikipedia (en) — Argentina–Chile relations (oldid 1373214645)",
+     "says": "Encuentro River–Alto Palena dispute (1913–1966) resolved by the British award issued 9 Dec 1966, dividing the disputed land between Palena (Chile) and Languiñeo (Chubut).",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1969-06-09",
+   "precision": "day",
+   "what": "Ley 18.229 Chaco–Salta limit",
+   "sources": [
+    {
+     "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=18229",
+     "title": "InfoLeg — Ley 18229 (Boletín Oficial record)",
+     "says": "Chaco–Salta limit; B.O. 1969-06-09.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1970-01-07",
+   "precision": "day",
+   "what": "Leyes 18.498, 18.500, 18.501 (Mendoza–San Luis, Catamarca–Salta, Neuquén–Río Negro)",
+   "sources": [
+    {
+     "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
+     "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
+     "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1983-04-25",
+   "precision": "day",
+   "what": "Ley 22.789 Córdoba–Santiago del Estero limit, the last CNLI act",
+   "sources": [
+    {
+     "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=22789",
+     "title": "InfoLeg — Ley 22789 (Boletín Oficial record)",
+     "says": "Córdoba–Santiago del Estero limit; B.O. 1983-04-25.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://repositorio.uca.edu.ar/bitstream/123456789/18737/1/limites-interprovinciales.pdf",
+     "title": "Godio, «Los límites interprovinciales en la Constitución Nacional» (UCA repository)",
+     "says": "Lists the interprovincial limits fixed through the CNLI (eight 1969 acts; 1980 and 1983 acts) and states the commission ceased definitively in 1983.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1990-05-15",
+   "precision": "day",
+   "what": "Tierra del Fuego becomes a province (Ley 23.775)",
+   "sources": [
+    {
+     "url": "https://servicios.infoleg.gob.ar/infolegInternet/buscarNormas.do?tipoNorma=1&numero=23775",
+     "title": "InfoLeg — Ley 23775 (Boletín Oficial record)",
+     "says": "Provincialisation of Tierra del Fuego; B.O. 1990-05-15.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1995-10-13",
+   "precision": "day",
+   "what": "Laguna del Desierto award (1994-10-21) confirmed",
+   "sources": [
+    {
+     "url": "https://es.wikipedia.org/w/index.php?title=Lago_del_Desierto&oldid=170090537",
+     "title": "Wikipedia (es) — Lago del Desierto (oldid 170090537)",
+     "says": "Laguna del Desierto dispute settled by arbitral award 1994-10-21, confirmed 1995-10-13 when Chile's reconsideration was rejected.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "2019-12-31",
+   "n": 24,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uar.html",
+     "title": "Statoids — Provinces of Argentina (change history)",
+     "says": "Lists 1884 territories, 1943 Los Andes split, 1951/1953/1955 provincialisations, Patagonia, 1990s Tierra del Fuego province; warns of minor interprovincial and Chilean boundary adjustments.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": []
+}

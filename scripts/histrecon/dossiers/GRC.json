@@ -1,0 +1,552 @@
+{
+ "country": "GRC",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1987-03-06",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Hellenic Republic. 1987–2010 the 13 regions were state planning/administrative groupings of the nomoi (the nomoi remained the self-governing tier); from 2011-01-01 the regions are the first tier. Mount Athos is an autonomous part of Greece outside any region.",
+ "units": [
+  {
+   "id": "GRC:DytikiMakedonia@1987",
+   "names": {
+    "en": "Western Macedonia Region",
+    "local": "Περιφέρεια Δυτικής Μακεδονίας",
+    "ja": "西マケドニア"
+   },
+   "wikidata": "Q165408",
+   "spans": [
+    {
+     "from": "1987-03-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "GRC-2892"
+     ],
+     "sources": [
+      {
+       "url": "https://el.wikipedia.org/w/index.php?title=%CE%A0%CE%B5%CF%81%CE%B9%CF%86%CE%AD%CF%81%CE%B5%CE%B9%CE%B5%CF%82_%CF%84%CE%B7%CF%82_%CE%95%CE%BB%CE%BB%CE%AC%CE%B4%CE%B1%CF%82&oldid=11611141",
+       "title": "Περιφέρειες της Ελλάδας (Wikipedia EL, rev. 11611141)",
+       "says": "13 regions created by Law 1622/1986 (FEK 92/A/14-7-1986) and PD 51/1987 (FEK 26/A/06-03-1987); Kallikratis Law 3852/2010; Mount Athos excepted.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ugr.html",
+       "title": "Regions of Greece (statoids.com, updated 2015-06-30)",
+       "says": "~1987 ten regions reorganised into 13 (groupings of departments); 2011-01-01 Kallikratis keeps the 13 regions; Mount Athos is not part of any periphery.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "PD 51/1987 published FEK 26/A of 06.03.1987 (publication date used). Regions are fixed groupings of whole nomoi; Kallikratis (2011-01-01) changed their status, not their territory."
+    }
+   ]
+  },
+  {
+   "id": "GRC:Ipeiros@1987",
+   "names": {
+    "en": "Epirus Region",
+    "local": "Περιφέρεια Ηπείρου",
+    "ja": "イピロス"
+   },
+   "wikidata": "Q180484",
+   "spans": [
+    {
+     "from": "1987-03-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "GRC-2949"
+     ],
+     "sources": [
+      {
+       "url": "https://el.wikipedia.org/w/index.php?title=%CE%A0%CE%B5%CF%81%CE%B9%CF%86%CE%AD%CF%81%CE%B5%CE%B9%CE%B5%CF%82_%CF%84%CE%B7%CF%82_%CE%95%CE%BB%CE%BB%CE%AC%CE%B4%CE%B1%CF%82&oldid=11611141",
+       "title": "Περιφέρειες της Ελλάδας (Wikipedia EL, rev. 11611141)",
+       "says": "13 regions created by Law 1622/1986 (FEK 92/A/14-7-1986) and PD 51/1987 (FEK 26/A/06-03-1987); Kallikratis Law 3852/2010; Mount Athos excepted.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ugr.html",
+       "title": "Regions of Greece (statoids.com, updated 2015-06-30)",
+       "says": "~1987 ten regions reorganised into 13 (groupings of departments); 2011-01-01 Kallikratis keeps the 13 regions; Mount Athos is not part of any periphery.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "PD 51/1987 published FEK 26/A of 06.03.1987 (publication date used). Regions are fixed groupings of whole nomoi; Kallikratis (2011-01-01) changed their status, not their territory."
+    }
+   ]
+  },
+  {
+   "id": "GRC:KentrikiMakedonia@1987",
+   "names": {
+    "en": "Central Macedonia Region",
+    "local": "Περιφέρεια Κεντρικής Μακεδονίας",
+    "ja": "中央マケドニア"
+   },
+   "wikidata": "Q17152",
+   "spans": [
+    {
+     "from": "1987-03-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "GRC-2991"
+     ],
+     "sources": [
+      {
+       "url": "https://el.wikipedia.org/w/index.php?title=%CE%A0%CE%B5%CF%81%CE%B9%CF%86%CE%AD%CF%81%CE%B5%CE%B9%CE%B5%CF%82_%CF%84%CE%B7%CF%82_%CE%95%CE%BB%CE%BB%CE%AC%CE%B4%CE%B1%CF%82&oldid=11611141",
+       "title": "Περιφέρειες της Ελλάδας (Wikipedia EL, rev. 11611141)",
+       "says": "13 regions created by Law 1622/1986 (FEK 92/A/14-7-1986) and PD 51/1987 (FEK 26/A/06-03-1987); Kallikratis Law 3852/2010; Mount Athos excepted.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ugr.html",
+       "title": "Regions of Greece (statoids.com, updated 2015-06-30)",
+       "says": "~1987 ten regions reorganised into 13 (groupings of departments); 2011-01-01 Kallikratis keeps the 13 regions; Mount Athos is not part of any periphery.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "PD 51/1987 published FEK 26/A of 06.03.1987 (publication date used). Regions are fixed groupings of whole nomoi; Kallikratis (2011-01-01) changed their status, not their territory."
+    }
+   ]
+  },
+  {
+   "id": "GRC:AnatolikiMakedoniakaiThraki@1987",
+   "names": {
+    "en": "Eastern Macedonia and Thrace Region",
+    "local": "Περιφέρεια Ανατολικής Μακεδονίας και Θράκης",
+    "ja": "東マケドニア・トラキア"
+   },
+   "wikidata": "Q171314",
+   "spans": [
+    {
+     "from": "1987-03-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "GRC-3001"
+     ],
+     "sources": [
+      {
+       "url": "https://el.wikipedia.org/w/index.php?title=%CE%A0%CE%B5%CF%81%CE%B9%CF%86%CE%AD%CF%81%CE%B5%CE%B9%CE%B5%CF%82_%CF%84%CE%B7%CF%82_%CE%95%CE%BB%CE%BB%CE%AC%CE%B4%CE%B1%CF%82&oldid=11611141",
+       "title": "Περιφέρειες της Ελλάδας (Wikipedia EL, rev. 11611141)",
+       "says": "13 regions created by Law 1622/1986 (FEK 92/A/14-7-1986) and PD 51/1987 (FEK 26/A/06-03-1987); Kallikratis Law 3852/2010; Mount Athos excepted.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ugr.html",
+       "title": "Regions of Greece (statoids.com, updated 2015-06-30)",
+       "says": "~1987 ten regions reorganised into 13 (groupings of departments); 2011-01-01 Kallikratis keeps the 13 regions; Mount Athos is not part of any periphery.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "PD 51/1987 published FEK 26/A of 06.03.1987 (publication date used). Regions are fixed groupings of whole nomoi; Kallikratis (2011-01-01) changed their status, not their territory."
+    }
+   ]
+  },
+  {
+   "id": "GRC:AyionOros",
+   "names": {
+    "en": "Mount Athos (Autonomous Monastic State)",
+    "local": "Αυτόνομη Μοναστική Πολιτεία Αγἰου Όρους",
+    "ja": "アトス自治修道士共和国"
+   },
+   "wikidata": "Q780149",
+   "spans": [
+    {
+     "from": "1987-03-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "GRC-2992"
+     ],
+     "sources": [
+      {
+       "url": "https://el.wikipedia.org/w/index.php?title=%CE%A0%CE%B5%CF%81%CE%B9%CF%86%CE%AD%CF%81%CE%B5%CE%B9%CE%B5%CF%82_%CF%84%CE%B7%CF%82_%CE%95%CE%BB%CE%BB%CE%AC%CE%B4%CE%B1%CF%82&oldid=11611141",
+       "title": "Περιφέρειες της Ελλάδας (Wikipedia EL, rev. 11611141)",
+       "says": "13 regions created by Law 1622/1986 (FEK 92/A/14-7-1986) and PD 51/1987 (FEK 26/A/06-03-1987); Kallikratis Law 3852/2010; Mount Athos excepted.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ugr.html",
+       "title": "Regions of Greece (statoids.com, updated 2015-06-30)",
+       "says": "~1987 ten regions reorganised into 13 (groupings of departments); 2011-01-01 Kallikratis keeps the 13 regions; Mount Athos is not part of any periphery.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Self-governing under Greek sovereignty since 1926 (legislative decree of 10.09.1926 ratifying the 1924 charter); outside every region throughout. Only claimed from scope start."
+    }
+   ]
+  },
+  {
+   "id": "GRC:Thessalia@1987",
+   "names": {
+    "en": "Thessaly Region",
+    "local": "Περιφέρεια Θεσσαλίας",
+    "ja": "テッサリア"
+   },
+   "wikidata": "Q22807284",
+   "spans": [
+    {
+     "from": "1987-03-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "GRC-2900"
+     ],
+     "sources": [
+      {
+       "url": "https://el.wikipedia.org/w/index.php?title=%CE%A0%CE%B5%CF%81%CE%B9%CF%86%CE%AD%CF%81%CE%B5%CE%B9%CE%B5%CF%82_%CF%84%CE%B7%CF%82_%CE%95%CE%BB%CE%BB%CE%AC%CE%B4%CE%B1%CF%82&oldid=11611141",
+       "title": "Περιφέρειες της Ελλάδας (Wikipedia EL, rev. 11611141)",
+       "says": "13 regions created by Law 1622/1986 (FEK 92/A/14-7-1986) and PD 51/1987 (FEK 26/A/06-03-1987); Kallikratis Law 3852/2010; Mount Athos excepted.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ugr.html",
+       "title": "Regions of Greece (statoids.com, updated 2015-06-30)",
+       "says": "~1987 ten regions reorganised into 13 (groupings of departments); 2011-01-01 Kallikratis keeps the 13 regions; Mount Athos is not part of any periphery.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "PD 51/1987 published FEK 26/A of 06.03.1987 (publication date used). Regions are fixed groupings of whole nomoi; Kallikratis (2011-01-01) changed their status, not their territory."
+    }
+   ]
+  },
+  {
+   "id": "GRC:StereáElláda@1987",
+   "names": {
+    "en": "Central Greece Region",
+    "local": "Περιφέρεια Στερεάς Ελλάδας",
+    "ja": "中央ギリシャ"
+   },
+   "wikidata": "Q199580",
+   "spans": [
+    {
+     "from": "1987-03-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "GRC-2989"
+     ],
+     "sources": [
+      {
+       "url": "https://el.wikipedia.org/w/index.php?title=%CE%A0%CE%B5%CF%81%CE%B9%CF%86%CE%AD%CF%81%CE%B5%CE%B9%CE%B5%CF%82_%CF%84%CE%B7%CF%82_%CE%95%CE%BB%CE%BB%CE%AC%CE%B4%CE%B1%CF%82&oldid=11611141",
+       "title": "Περιφέρειες της Ελλάδας (Wikipedia EL, rev. 11611141)",
+       "says": "13 regions created by Law 1622/1986 (FEK 92/A/14-7-1986) and PD 51/1987 (FEK 26/A/06-03-1987); Kallikratis Law 3852/2010; Mount Athos excepted.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ugr.html",
+       "title": "Regions of Greece (statoids.com, updated 2015-06-30)",
+       "says": "~1987 ten regions reorganised into 13 (groupings of departments); 2011-01-01 Kallikratis keeps the 13 regions; Mount Athos is not part of any periphery.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "PD 51/1987 published FEK 26/A of 06.03.1987 (publication date used). Regions are fixed groupings of whole nomoi; Kallikratis (2011-01-01) changed their status, not their territory."
+    }
+   ]
+  },
+  {
+   "id": "GRC:Attiki@1987",
+   "names": {
+    "en": "Attica Region",
+    "local": "Περιφέρεια Αττικής",
+    "ja": "アッティキ"
+   },
+   "wikidata": "Q758056",
+   "spans": [
+    {
+     "from": "1987-03-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "GRC-2884"
+     ],
+     "sources": [
+      {
+       "url": "https://el.wikipedia.org/w/index.php?title=%CE%A0%CE%B5%CF%81%CE%B9%CF%86%CE%AD%CF%81%CE%B5%CE%B9%CE%B5%CF%82_%CF%84%CE%B7%CF%82_%CE%95%CE%BB%CE%BB%CE%AC%CE%B4%CE%B1%CF%82&oldid=11611141",
+       "title": "Περιφέρειες της Ελλάδας (Wikipedia EL, rev. 11611141)",
+       "says": "13 regions created by Law 1622/1986 (FEK 92/A/14-7-1986) and PD 51/1987 (FEK 26/A/06-03-1987); Kallikratis Law 3852/2010; Mount Athos excepted.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ugr.html",
+       "title": "Regions of Greece (statoids.com, updated 2015-06-30)",
+       "says": "~1987 ten regions reorganised into 13 (groupings of departments); 2011-01-01 Kallikratis keeps the 13 regions; Mount Athos is not part of any periphery.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "PD 51/1987 published FEK 26/A of 06.03.1987 (publication date used). Regions are fixed groupings of whole nomoi; Kallikratis (2011-01-01) changed their status, not their territory."
+    }
+   ]
+  },
+  {
+   "id": "GRC:Peloponnisos@1987",
+   "names": {
+    "en": "Peloponnese Region",
+    "local": "Περιφέρεια Πελοποννήσου",
+    "ja": "ペロポネソス"
+   },
+   "wikidata": "Q202484",
+   "spans": [
+    {
+     "from": "1987-03-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "GRC-2885"
+     ],
+     "sources": [
+      {
+       "url": "https://el.wikipedia.org/w/index.php?title=%CE%A0%CE%B5%CF%81%CE%B9%CF%86%CE%AD%CF%81%CE%B5%CE%B9%CE%B5%CF%82_%CF%84%CE%B7%CF%82_%CE%95%CE%BB%CE%BB%CE%AC%CE%B4%CE%B1%CF%82&oldid=11611141",
+       "title": "Περιφέρειες της Ελλάδας (Wikipedia EL, rev. 11611141)",
+       "says": "13 regions created by Law 1622/1986 (FEK 92/A/14-7-1986) and PD 51/1987 (FEK 26/A/06-03-1987); Kallikratis Law 3852/2010; Mount Athos excepted.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ugr.html",
+       "title": "Regions of Greece (statoids.com, updated 2015-06-30)",
+       "says": "~1987 ten regions reorganised into 13 (groupings of departments); 2011-01-01 Kallikratis keeps the 13 regions; Mount Athos is not part of any periphery.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "PD 51/1987 published FEK 26/A of 06.03.1987 (publication date used). Regions are fixed groupings of whole nomoi; Kallikratis (2011-01-01) changed their status, not their territory."
+    }
+   ]
+  },
+  {
+   "id": "GRC:DytikiEllada@1987",
+   "names": {
+    "en": "West Greece Region",
+    "local": "Περιφέρεια Δυτικής Ελλάδας",
+    "ja": "西ギリシャ"
+   },
+   "wikidata": "Q170291",
+   "spans": [
+    {
+     "from": "1987-03-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "GRC-2886"
+     ],
+     "sources": [
+      {
+       "url": "https://el.wikipedia.org/w/index.php?title=%CE%A0%CE%B5%CF%81%CE%B9%CF%86%CE%AD%CF%81%CE%B5%CE%B9%CE%B5%CF%82_%CF%84%CE%B7%CF%82_%CE%95%CE%BB%CE%BB%CE%AC%CE%B4%CE%B1%CF%82&oldid=11611141",
+       "title": "Περιφέρειες της Ελλάδας (Wikipedia EL, rev. 11611141)",
+       "says": "13 regions created by Law 1622/1986 (FEK 92/A/14-7-1986) and PD 51/1987 (FEK 26/A/06-03-1987); Kallikratis Law 3852/2010; Mount Athos excepted.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ugr.html",
+       "title": "Regions of Greece (statoids.com, updated 2015-06-30)",
+       "says": "~1987 ten regions reorganised into 13 (groupings of departments); 2011-01-01 Kallikratis keeps the 13 regions; Mount Athos is not part of any periphery.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "PD 51/1987 published FEK 26/A of 06.03.1987 (publication date used). Regions are fixed groupings of whole nomoi; Kallikratis (2011-01-01) changed their status, not their territory."
+    }
+   ]
+  },
+  {
+   "id": "GRC:Kriti@1987",
+   "names": {
+    "en": "Crete Region",
+    "local": "Περιφέρεια Κρήτης"
+   },
+   "wikidata": "Q1267522",
+   "spans": [
+    {
+     "from": "1987-03-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "GRC-2990"
+     ],
+     "sources": [
+      {
+       "url": "https://el.wikipedia.org/w/index.php?title=%CE%A0%CE%B5%CF%81%CE%B9%CF%86%CE%AD%CF%81%CE%B5%CE%B9%CE%B5%CF%82_%CF%84%CE%B7%CF%82_%CE%95%CE%BB%CE%BB%CE%AC%CE%B4%CE%B1%CF%82&oldid=11611141",
+       "title": "Περιφέρειες της Ελλάδας (Wikipedia EL, rev. 11611141)",
+       "says": "13 regions created by Law 1622/1986 (FEK 92/A/14-7-1986) and PD 51/1987 (FEK 26/A/06-03-1987); Kallikratis Law 3852/2010; Mount Athos excepted.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ugr.html",
+       "title": "Regions of Greece (statoids.com, updated 2015-06-30)",
+       "says": "~1987 ten regions reorganised into 13 (groupings of departments); 2011-01-01 Kallikratis keeps the 13 regions; Mount Athos is not part of any periphery.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "PD 51/1987 published FEK 26/A of 06.03.1987 (publication date used). Regions are fixed groupings of whole nomoi; Kallikratis (2011-01-01) changed their status, not their territory."
+    }
+   ]
+  },
+  {
+   "id": "GRC:NotioAigaio@1987",
+   "names": {
+    "en": "South Aegean Region",
+    "local": "Περιφέρεια Νοτίου Αιγαίου",
+    "ja": "南エーゲ"
+   },
+   "wikidata": "Q173616",
+   "spans": [
+    {
+     "from": "1987-03-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "GRC-3013"
+     ],
+     "sources": [
+      {
+       "url": "https://el.wikipedia.org/w/index.php?title=%CE%A0%CE%B5%CF%81%CE%B9%CF%86%CE%AD%CF%81%CE%B5%CE%B9%CE%B5%CF%82_%CF%84%CE%B7%CF%82_%CE%95%CE%BB%CE%BB%CE%AC%CE%B4%CE%B1%CF%82&oldid=11611141",
+       "title": "Περιφέρειες της Ελλάδας (Wikipedia EL, rev. 11611141)",
+       "says": "13 regions created by Law 1622/1986 (FEK 92/A/14-7-1986) and PD 51/1987 (FEK 26/A/06-03-1987); Kallikratis Law 3852/2010; Mount Athos excepted.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ugr.html",
+       "title": "Regions of Greece (statoids.com, updated 2015-06-30)",
+       "says": "~1987 ten regions reorganised into 13 (groupings of departments); 2011-01-01 Kallikratis keeps the 13 regions; Mount Athos is not part of any periphery.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "PD 51/1987 published FEK 26/A of 06.03.1987 (publication date used). Regions are fixed groupings of whole nomoi; Kallikratis (2011-01-01) changed their status, not their territory."
+    }
+   ]
+  },
+  {
+   "id": "GRC:VoreioAigaio@1987",
+   "names": {
+    "en": "North Aegean Region",
+    "local": "Περιφέρεια Βορείου Αιγαίου",
+    "ja": "北エーゲ"
+   },
+   "wikidata": "Q173620",
+   "spans": [
+    {
+     "from": "1987-03-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "GRC-2988"
+     ],
+     "sources": [
+      {
+       "url": "https://el.wikipedia.org/w/index.php?title=%CE%A0%CE%B5%CF%81%CE%B9%CF%86%CE%AD%CF%81%CE%B5%CE%B9%CE%B5%CF%82_%CF%84%CE%B7%CF%82_%CE%95%CE%BB%CE%BB%CE%AC%CE%B4%CE%B1%CF%82&oldid=11611141",
+       "title": "Περιφέρειες της Ελλάδας (Wikipedia EL, rev. 11611141)",
+       "says": "13 regions created by Law 1622/1986 (FEK 92/A/14-7-1986) and PD 51/1987 (FEK 26/A/06-03-1987); Kallikratis Law 3852/2010; Mount Athos excepted.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ugr.html",
+       "title": "Regions of Greece (statoids.com, updated 2015-06-30)",
+       "says": "~1987 ten regions reorganised into 13 (groupings of departments); 2011-01-01 Kallikratis keeps the 13 regions; Mount Athos is not part of any periphery.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "PD 51/1987 published FEK 26/A of 06.03.1987 (publication date used). Regions are fixed groupings of whole nomoi; Kallikratis (2011-01-01) changed their status, not their territory."
+    }
+   ]
+  },
+  {
+   "id": "GRC:IonioiNisoi@1987",
+   "names": {
+    "en": "Ionian Islands Region",
+    "local": "Περιφέρεια Ιονίων Νήσων"
+   },
+   "wikidata": "Q1147674",
+   "spans": [
+    {
+     "from": "1987-03-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "GRC-2883"
+     ],
+     "sources": [
+      {
+       "url": "https://el.wikipedia.org/w/index.php?title=%CE%A0%CE%B5%CF%81%CE%B9%CF%86%CE%AD%CF%81%CE%B5%CE%B9%CE%B5%CF%82_%CF%84%CE%B7%CF%82_%CE%95%CE%BB%CE%BB%CE%AC%CE%B4%CE%B1%CF%82&oldid=11611141",
+       "title": "Περιφέρειες της Ελλάδας (Wikipedia EL, rev. 11611141)",
+       "says": "13 regions created by Law 1622/1986 (FEK 92/A/14-7-1986) and PD 51/1987 (FEK 26/A/06-03-1987); Kallikratis Law 3852/2010; Mount Athos excepted.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/ugr.html",
+       "title": "Regions of Greece (statoids.com, updated 2015-06-30)",
+       "says": "~1987 ten regions reorganised into 13 (groupings of departments); 2011-01-01 Kallikratis keeps the 13 regions; Mount Athos is not part of any periphery.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "PD 51/1987 published FEK 26/A of 06.03.1987 (publication date used). Regions are fixed groupings of whole nomoi; Kallikratis (2011-01-01) changed their status, not their territory."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1987-03-06",
+   "precision": "day",
+   "what": "PD 51/1987 defines the 13 regions (under Law 1622/1986)",
+   "sources": [
+    {
+     "url": "https://el.wikipedia.org/w/index.php?title=%CE%A0%CE%B5%CF%81%CE%B9%CF%86%CE%AD%CF%81%CE%B5%CE%B9%CE%B5%CF%82_%CF%84%CE%B7%CF%82_%CE%95%CE%BB%CE%BB%CE%AC%CE%B4%CE%B1%CF%82&oldid=11611141",
+     "title": "Περιφέρειες της Ελλάδας (Wikipedia EL, rev. 11611141)",
+     "says": "13 regions created by Law 1622/1986 (FEK 92/A/14-7-1986) and PD 51/1987 (FEK 26/A/06-03-1987); Kallikratis Law 3852/2010; Mount Athos excepted.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://statoids.com/ugr.html",
+     "title": "Regions of Greece (statoids.com, updated 2015-06-30)",
+     "says": "~1987 ten regions reorganised into 13 (groupings of departments); 2011-01-01 Kallikratis keeps the 13 regions; Mount Athos is not part of any periphery.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2011-01-01",
+   "precision": "day",
+   "what": "Kallikratis (Law 3852/2010): regions become self-governing, nomoi abolished as authorities; regional territory unchanged",
+   "sources": [
+    {
+     "url": "https://el.wikipedia.org/w/index.php?title=%CE%A0%CE%B5%CF%81%CE%B9%CF%86%CE%AD%CF%81%CE%B5%CE%B9%CE%B5%CF%82_%CF%84%CE%B7%CF%82_%CE%95%CE%BB%CE%BB%CE%AC%CE%B4%CE%B1%CF%82&oldid=11611141",
+     "title": "Περιφέρειες της Ελλάδας (Wikipedia EL, rev. 11611141)",
+     "says": "13 regions created by Law 1622/1986 (FEK 92/A/14-7-1986) and PD 51/1987 (FEK 26/A/06-03-1987); Kallikratis Law 3852/2010; Mount Athos excepted.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://statoids.com/ugr.html",
+     "title": "Regions of Greece (statoids.com, updated 2015-06-30)",
+     "says": "~1987 ten regions reorganised into 13 (groupings of departments); 2011-01-01 Kallikratis keeps the 13 regions; Mount Athos is not part of any periphery.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "2011-01-01",
+   "n": 14,
+   "sources": [
+    {
+     "url": "https://statoids.com/ugr.html",
+     "title": "Regions of Greece (statoids.com, updated 2015-06-30)",
+     "says": "~1987 ten regions reorganised into 13 (groupings of departments); 2011-01-01 Kallikratis keeps the 13 regions; Mount Athos is not part of any periphery.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Before 1987-03-06: the nomoi (51 + Mount Athos, ~1974–87) and earlier the informal 9–10 geographic regions",
+   "to": "1987-03-06",
+   "why": "The first tier was the nomos; 52 units cannot be formed from 14 regional atoms, and the pre-1987 geographic regions (e.g. Greater Athens, Macedonia, Thrace) do not follow today’s regional lines.",
+   "checked": [
+    "statoids.com/ugr.html",
+    "el.wikipedia Περιφέρειες της Ελλάδας"
+   ],
+   "needs": "nomos-level atoms (e.g. geoBoundaries GRC ADM2 / OSM admin_level=6, licence to verify), plus the dated nomos splits of 1930–1969"
+  }
+ ]
+}

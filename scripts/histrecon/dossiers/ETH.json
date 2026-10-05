@@ -1,0 +1,458 @@
+{
+  "country": "ETH",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "1995-08-21",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Federal Democratic Republic of Ethiopia from the entry into force of its constitution on 1995-08-21 (Eritrea independent since 1993, so ERI atoms are never Ethiopian inside this scope).",
+  "units": [
+    {
+      "id": "ETH:Tigray@1995",
+      "names": {
+        "en": "Tigray Region",
+        "ja": "ティグレ州",
+        "local": "ትግራይ ክልል"
+      },
+      "wikidata": "Q200127",
+      "spans": [
+        {
+          "from": "1995-08-21",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ETH-3110"
+          ],
+          "sources": [
+            {
+              "url": "https://www.constituteproject.org/constitution/Ethiopia_1994?lang=en",
+              "title": "Constitution of the FDRE (1995), Art. 47 — Constitute Project",
+              "says": "Article 47 lists the member states: Tigray, Afar, Amhara, Oromia, Somali, Benshangul/Gumuz, SNNP, Gambela, Harari; Art. 49 makes Addis Ababa the capital city.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=1995_Constitution_of_Ethiopia&oldid=1378455832",
+              "title": "Wikipedia: 1995 Constitution of Ethiopia (rev 1378455832)",
+              "says": "The constitution came into force on 21 August 1995 (adopted 8 December 1994).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ETH:Afar@1995",
+      "names": {
+        "en": "Afar Region",
+        "ja": "アファール州",
+        "local": "አፋር"
+      },
+      "wikidata": "Q193494",
+      "spans": [
+        {
+          "from": "1995-08-21",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ETH-3111"
+          ],
+          "sources": [
+            {
+              "url": "https://www.constituteproject.org/constitution/Ethiopia_1994?lang=en",
+              "title": "Constitution of the FDRE (1995), Art. 47 — Constitute Project",
+              "says": "Article 47 lists the member states: Tigray, Afar, Amhara, Oromia, Somali, Benshangul/Gumuz, SNNP, Gambela, Harari; Art. 49 makes Addis Ababa the capital city.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=1995_Constitution_of_Ethiopia&oldid=1378455832",
+              "title": "Wikipedia: 1995 Constitution of Ethiopia (rev 1378455832)",
+              "says": "The constitution came into force on 21 August 1995 (adopted 8 December 1994).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "The 2014 Afar–Somali agreement recognised Adaytu, Undufo and Gedamaytu as special kebeles INSIDE Afar (no transfer); Somali Region repudiated it in 2018. No legal change of the line within scope is documented."
+        }
+      ]
+    },
+    {
+      "id": "ETH:Amhara@1995",
+      "names": {
+        "en": "Amhara Region",
+        "ja": "アムハラ州",
+        "local": "አማራ"
+      },
+      "wikidata": "Q203009",
+      "spans": [
+        {
+          "from": "1995-08-21",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ETH-3109"
+          ],
+          "sources": [
+            {
+              "url": "https://www.constituteproject.org/constitution/Ethiopia_1994?lang=en",
+              "title": "Constitution of the FDRE (1995), Art. 47 — Constitute Project",
+              "says": "Article 47 lists the member states: Tigray, Afar, Amhara, Oromia, Somali, Benshangul/Gumuz, SNNP, Gambela, Harari; Art. 49 makes Addis Ababa the capital city.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=1995_Constitution_of_Ethiopia&oldid=1378455832",
+              "title": "Wikipedia: 1995 Constitution of Ethiopia (rev 1378455832)",
+              "says": "The constitution came into force on 21 August 1995 (adopted 8 December 1994).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ETH:BenishangulGumuz@1995",
+      "names": {
+        "en": "Benishangul-Gumuz Region",
+        "ja": "ベニシャングル・グムズ州",
+        "local": "ቤንሻንጉል-ጉምዝ ክልል"
+      },
+      "wikidata": "Q207635",
+      "spans": [
+        {
+          "from": "1995-08-21",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ETH-3132"
+          ],
+          "sources": [
+            {
+              "url": "https://www.constituteproject.org/constitution/Ethiopia_1994?lang=en",
+              "title": "Constitution of the FDRE (1995), Art. 47 — Constitute Project",
+              "says": "Article 47 lists the member states: Tigray, Afar, Amhara, Oromia, Somali, Benshangul/Gumuz, SNNP, Gambela, Harari; Art. 49 makes Addis Ababa the capital city.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=1995_Constitution_of_Ethiopia&oldid=1378455832",
+              "title": "Wikipedia: 1995 Constitution of Ethiopia (rev 1378455832)",
+              "says": "The constitution came into force on 21 August 1995 (adopted 8 December 1994).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ETH:Gambela@1995",
+      "names": {
+        "en": "Gambela Region",
+        "ja": "ガンベラ州",
+        "local": "ጋምቤላ ሕዝቦች ክልል"
+      },
+      "wikidata": "Q207638",
+      "spans": [
+        {
+          "from": "1995-08-21",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ETH-3130"
+          ],
+          "sources": [
+            {
+              "url": "https://www.constituteproject.org/constitution/Ethiopia_1994?lang=en",
+              "title": "Constitution of the FDRE (1995), Art. 47 — Constitute Project",
+              "says": "Article 47 lists the member states: Tigray, Afar, Amhara, Oromia, Somali, Benshangul/Gumuz, SNNP, Gambela, Harari; Art. 49 makes Addis Ababa the capital city.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=1995_Constitution_of_Ethiopia&oldid=1378455832",
+              "title": "Wikipedia: 1995 Constitution of Ethiopia (rev 1378455832)",
+              "says": "The constitution came into force on 21 August 1995 (adopted 8 December 1994).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ETH:SNNPR@1995",
+      "names": {
+        "en": "Southern Nations, Nationalities, and Peoples' Region",
+        "ja": "南部諸民族州",
+        "local": "ደቡብ ብሔሮች ብሔረሰቦችና ሕዝቦች ክልል"
+      },
+      "wikidata": "Q203193",
+      "spans": [
+        {
+          "from": "1995-08-21",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ETH-3129"
+          ],
+          "sources": [
+            {
+              "url": "https://www.constituteproject.org/constitution/Ethiopia_1994?lang=en",
+              "title": "Constitution of the FDRE (1995), Art. 47 — Constitute Project",
+              "says": "Article 47 lists the member states: Tigray, Afar, Amhara, Oromia, Somali, Benshangul/Gumuz, SNNP, Gambela, Harari; Art. 49 makes Addis Ababa the capital city.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=1995_Constitution_of_Ethiopia&oldid=1378455832",
+              "title": "Wikipedia: 1995 Constitution of Ethiopia (rev 1378455832)",
+              "says": "The constitution came into force on 21 August 1995 (adopted 8 December 1994).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "SNNPR was formed in 1992 from transitional regions 7–11; the Sidama split (2020) is after scope."
+        }
+      ]
+    },
+    {
+      "id": "ETH:Harari@1995",
+      "names": {
+        "en": "Harari Region",
+        "ja": "ハラリ州",
+        "local": "ሐረሪ ሕዝብ ክልል"
+      },
+      "wikidata": "Q1033855",
+      "spans": [
+        {
+          "from": "1995-08-21",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ETH-3136"
+          ],
+          "sources": [
+            {
+              "url": "https://www.constituteproject.org/constitution/Ethiopia_1994?lang=en",
+              "title": "Constitution of the FDRE (1995), Art. 47 — Constitute Project",
+              "says": "Article 47 lists the member states: Tigray, Afar, Amhara, Oromia, Somali, Benshangul/Gumuz, SNNP, Gambela, Harari; Art. 49 makes Addis Ababa the capital city.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=1995_Constitution_of_Ethiopia&oldid=1378455832",
+              "title": "Wikipedia: 1995 Constitution of Ethiopia (rev 1378455832)",
+              "says": "The constitution came into force on 21 August 1995 (adopted 8 December 1994).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ETH:AddisAbaba@1995",
+      "names": {
+        "en": "Addis Ababa (chartered city)",
+        "ja": "アディスアベバ",
+        "local": "አዲስ አበባ"
+      },
+      "wikidata": "Q3624",
+      "spans": [
+        {
+          "from": "1995-08-21",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ETH-3133"
+          ],
+          "sources": [
+            {
+              "url": "https://www.constituteproject.org/constitution/Ethiopia_1994?lang=en",
+              "title": "Constitution of the FDRE (1995), Art. 47 — Constitute Project",
+              "says": "Article 47 lists the member states: Tigray, Afar, Amhara, Oromia, Somali, Benshangul/Gumuz, SNNP, Gambela, Harari; Art. 49 makes Addis Ababa the capital city.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=1995_Constitution_of_Ethiopia&oldid=1378455832",
+              "title": "Wikipedia: 1995 Constitution of Ethiopia (rev 1378455832)",
+              "says": "The constitution came into force on 21 August 1995 (adopted 8 December 1994).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ETH:DireDawa@2004",
+      "names": {
+        "en": "Dire Dawa City Administration",
+        "ja": "ディレ・ダワ",
+        "local": "ድሬዳዋ"
+      },
+      "wikidata": "Q131278048",
+      "spans": [
+        {
+          "from": "2004-07-30",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ETH-3135"
+          ],
+          "sources": [
+            {
+              "url": "https://www.ecolex.org/details/legislation/diredawa-administration-charter-proclamation-no-4162004-lex-faoc135249/",
+              "title": "ECOLEX: Diredawa Administration Charter Proclamation No. 416/2004",
+              "says": "Published in Federal Negarit Gazeta No. 18, 10th year, 30 July 2004; Dire Dawa had been directed by the Federal Government since 1993.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Date = publication of Proclamation 416/2004 in the Federal Negarit Gazeta; a separate entry-into-force day was not found."
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1995-08-21",
+      "precision": "day",
+      "what": "FDRE constitution in force: nine member states and the capital Addis Ababa.",
+      "sources": [
+        {
+          "url": "https://www.constituteproject.org/constitution/Ethiopia_1994?lang=en",
+          "title": "Constitution of the FDRE (1995), Art. 47 — Constitute Project",
+          "says": "Article 47 lists the member states: Tigray, Afar, Amhara, Oromia, Somali, Benshangul/Gumuz, SNNP, Gambela, Harari; Art. 49 makes Addis Ababa the capital city.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?title=1995_Constitution_of_Ethiopia&oldid=1378455832",
+          "title": "Wikipedia: 1995 Constitution of Ethiopia (rev 1378455832)",
+          "says": "The constitution came into force on 21 August 1995 (adopted 8 December 1994).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2004-07-30",
+      "precision": "day",
+      "what": "Dire Dawa Administration Charter (Proclamation 416/2004) published.",
+      "sources": [
+        {
+          "url": "https://www.ecolex.org/details/legislation/diredawa-administration-charter-proclamation-no-4162004-lex-faoc135249/",
+          "title": "ECOLEX: Diredawa Administration Charter Proclamation No. 416/2004",
+          "says": "Published in Federal Negarit Gazeta No. 18, 10th year, 30 July 2004; Dire Dawa had been directed by the Federal Government since 1993.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2004-10",
+      "precision": "month",
+      "what": "Oromia–Somali boundary referendum over ~420 kebeles; results only partly demarcated.",
+      "sources": [
+        {
+          "url": "https://nebe.org.et/sites/default/files/2020-04/Oromia-and-Somali-Referendum-english.pdf",
+          "title": "NEBE — Referendum of the Somali and Oromia States (2004)",
+          "says": "Federal referendum (October 2004) deciding to which of the two states each of about 420 disputed border kebeles belongs.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://www.ssrc.org/wp-content/uploads/2023/06/APN_Briefing-Note_No.-36_053123-1-1.pdf",
+          "title": "SSRC APN Briefing Note 36 — Peaceful relations between Oromia and Somali",
+          "says": "Referendum assigned most disputed kebeles to Oromia; demarcation delayed to 2012/13 and not implemented in many kebeles; clashes continued.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "1995-08-21",
+      "n": 10,
+      "sources": [
+        {
+          "url": "https://www.constituteproject.org/constitution/Ethiopia_1994?lang=en",
+          "title": "Constitution of the FDRE (1995), Art. 47 — Constitute Project",
+          "says": "Article 47 lists the member states: Tigray, Afar, Amhara, Oromia, Somali, Benshangul/Gumuz, SNNP, Gambela, Harari; Art. 49 makes Addis Ababa the capital city.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?title=1995_Constitution_of_Ethiopia&oldid=1378455832",
+          "title": "Wikipedia: 1995 Constitution of Ethiopia (rev 1378455832)",
+          "says": "The constitution came into force on 21 August 1995 (adopted 8 December 1994).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2005-01-01",
+      "n": 11,
+      "sources": [
+        {
+          "url": "https://www.constituteproject.org/constitution/Ethiopia_1994?lang=en",
+          "title": "Constitution of the FDRE (1995), Art. 47 — Constitute Project",
+          "says": "Article 47 lists the member states: Tigray, Afar, Amhara, Oromia, Somali, Benshangul/Gumuz, SNNP, Gambela, Harari; Art. 49 makes Addis Ababa the capital city.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://www.ecolex.org/details/legislation/diredawa-administration-charter-proclamation-no-4162004-lex-faoc135249/",
+          "title": "ECOLEX: Diredawa Administration Charter Proclamation No. 416/2004",
+          "says": "Published in Federal Negarit Gazeta No. 18, 10th year, 30 July 2004; Dire Dawa had been directed by the Federal Government since 1993.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Oromia Region, whole scope",
+      "unit": "ETH:Oromia@1995",
+      "atoms": [
+        "ETH-3131"
+      ],
+      "from": "1995-08-21",
+      "to": null,
+      "why": "The Oromia–Somali line changed by the 2004 kebele referendum and was demarcated only partly (2012/13, many kebeles never); the date of the line NE draws is unknown, so neither the pre- nor post-referendum outline can be asserted from the NE atom.",
+      "checked": [
+        "NEBE referendum report (2004)",
+        "SSRC APN briefing note 36 (2023)",
+        "Wikipedia Regions of Ethiopia rev 1377657129",
+        "statoids uet.html"
+      ],
+      "needs": "kebele- or woreda-level atoms with dated referendum assignments (e.g. CSA 2007 enumeration areas / OCHA woreda boundaries of known vintage; licence to check)"
+    },
+    {
+      "what": "Somali Region, whole scope",
+      "unit": "ETH:Somali@1995",
+      "atoms": [
+        "ETH-3134"
+      ],
+      "from": "1995-08-21",
+      "to": null,
+      "why": "Same Oromia–Somali referendum line as Oromia; also the Afar–Somali special-kebele dispute. The outline NE draws cannot be dated.",
+      "checked": [
+        "NEBE referendum report (2004)",
+        "SSRC APN briefing note 36 (2023)",
+        "Addis Standard on the 2014 Afar–Somali agreement"
+      ],
+      "needs": "kebele-level atoms with dated assignments"
+    },
+    {
+      "what": "Dire Dawa before its 2004 charter",
+      "atoms": [
+        "ETH-3135"
+      ],
+      "from": "1995-08-21",
+      "to": "2004-07-30",
+      "why": "Dire Dawa was directed by the federal government from 1993 pending the Oromia/Somali claims, but no source fixes its territory before the 2004 charter, so the NE outline cannot be asserted for 1995–2004. (Not counted as a constitutional unit in 1995.)",
+      "checked": [
+        "ECOLEX abstract of Proclamation 416/2004",
+        "Wikipedia Dire Dawa City Administration rev 1285676843",
+        "statoids uet.html (~1998 \"became an administration\")"
+      ],
+      "needs": "a dated legal description of the Dire Dawa administrative area 1993–2004"
+    },
+    {
+      "what": "Transitional regions 1992-01 → 1995-08-21 (14 regions of Proclamation 7/1992; regions 7–11 merged into SNNPR in 1992) and the 1987 and pre-1987 provinces",
+      "from": "1992",
+      "to": "1995-08-21",
+      "why": "Before scope. The 1987 regions and older provinces (awraja-based) do not follow present state lines; transitional-region lines 1992–95 are not documented against NE atoms.",
+      "checked": [
+        "statoids uet.html",
+        "Wikipedia Regions of Ethiopia rev 1377657129"
+      ],
+      "needs": "awraja/woreda atoms of the 1984/1994 census (CSA)"
+    }
+  ]
+}

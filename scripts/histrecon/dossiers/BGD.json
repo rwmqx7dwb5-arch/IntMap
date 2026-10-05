@@ -1,0 +1,459 @@
+{
+ "country": "BGD",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1971-12-16",
+  "to": "2019-12-31"
+ },
+ "polityNote": "People’s Republic of Bangladesh from 16 Dec 1971 (surrender of Pakistani forces). East Pakistan’s divisions before that are not covered.",
+ "units": [
+  {
+   "id": "BGD:Chittagong",
+   "names": {
+    "en": "Chittagong Division",
+    "ja": "チッタゴン管区",
+    "local": "চট্টগ্রাম বিভাগ"
+   },
+   "wikidata": "Q158087",
+   "spans": [
+    {
+     "from": "1971-12-16",
+     "precision": "day",
+     "to": "1995-08-01",
+     "atoms": [
+      "BGD-2476",
+      "BGD-2488"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ubd.html",
+       "title": "Statoids — Divisions of Bangladesh, change history",
+       "says": "Population table: in 1974 Bangladesh had four divisions — Chittagong, Dhaka, Khulna, Rajshahi.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Sylhet_Division&oldid=1378159502",
+       "title": "Wikipedia — Sylhet Division",
+       "says": "Established 1 August 1995; its four districts were part of Chittagong Division until then.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Chittagong before 1995 = modern Chittagong + Sylhet (Sylhet’s four districts came wholly from it)."
+    },
+    {
+     "from": "1995-08-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGD-2476"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Sylhet_Division&oldid=1378159502",
+       "title": "Wikipedia — Sylhet Division",
+       "says": "Established 1 August 1995; its four districts were part of Chittagong Division until then.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ubd.html",
+       "title": "Statoids — Divisions of Bangladesh, change history",
+       "says": "Sylhet division split from Chittagong.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "BGD:Sylhet",
+   "names": {
+    "en": "Sylhet Division",
+    "ja": "シレット管区",
+    "local": "সিলেট বিভাগ"
+   },
+   "wikidata": "Q459732",
+   "spans": [
+    {
+     "from": "1995-08-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGD-2488"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Sylhet_Division&oldid=1378159502",
+       "title": "Wikipedia — Sylhet Division",
+       "says": "Established 1 August 1995; its four districts were part of Chittagong Division until then.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "BGD:Khulna",
+   "names": {
+    "en": "Khulna Division",
+    "ja": "クルナ県",
+    "local": "খুলনা জেলা"
+   },
+   "wikidata": "Q2093344",
+   "spans": [
+    {
+     "from": "1971-12-16",
+     "precision": "day",
+     "to": "1993-01-01",
+     "atoms": [
+      "BGD-2432",
+      "BGD-2475"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ubd.html",
+       "title": "Statoids — Divisions of Bangladesh, change history",
+       "says": "Population table: in 1974 Bangladesh had four divisions — Chittagong, Dhaka, Khulna, Rajshahi.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Barisal_Division&oldid=1373992524",
+       "title": "Wikipedia — Barisal Division",
+       "says": "The Greater Barisal region (six districts) was created as Barisal Division on 1 January 1993.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Khulna before 1993 = modern Khulna + Barisal (Barisal and Patuakhali greater districts were Khulna’s)."
+    },
+    {
+     "from": "1993-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGD-2432"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Barisal_Division&oldid=1373992524",
+       "title": "Wikipedia — Barisal Division",
+       "says": "The Greater Barisal region (six districts) was created as Barisal Division on 1 January 1993.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ubd.html",
+       "title": "Statoids — Divisions of Bangladesh, change history",
+       "says": "~1993: Barisal division split from Khulna.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "BGD:Barisal",
+   "names": {
+    "en": "Barisal Division",
+    "ja": "バリサル管区",
+    "local": "বরিশাল বিভাগ"
+   },
+   "wikidata": "Q459723",
+   "spans": [
+    {
+     "from": "1993-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGD-2475"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Barisal_Division&oldid=1373992524",
+       "title": "Wikipedia — Barisal Division",
+       "says": "The Greater Barisal region (six districts) was created as Barisal Division on 1 January 1993.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "BGD:Dhaka",
+   "names": {
+    "en": "Dhaka Division",
+    "ja": "ダッカ管区",
+    "local": "ঢাকা বিভাগ"
+   },
+   "wikidata": "Q330158",
+   "spans": [
+    {
+     "from": "1971-12-16",
+     "precision": "day",
+     "to": "2015-09-14",
+     "atoms": [
+      "BGD-1806"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ubd.html",
+       "title": "Statoids — Divisions of Bangladesh, change history",
+       "says": "Population table: in 1974 Bangladesh had four divisions — Chittagong, Dhaka, Khulna, Rajshahi.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Mymensingh_Division&oldid=1376875462",
+       "title": "Wikipedia — Mymensingh Division",
+       "says": "On 14 September 2015 Mymensingh became a division of four districts carved from Dhaka Division.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "NE draws Dhaka with Mymensingh inside (pre-2015 extent)."
+    }
+   ]
+  },
+  {
+   "id": "BGD:Rajshahi",
+   "names": {
+    "en": "Rajshahi Division",
+    "ja": "ラジシャヒ県",
+    "local": "রাজশাহী জেলা"
+   },
+   "wikidata": "Q2344697",
+   "spans": [
+    {
+     "from": "2010-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGD-3255"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Rangpur_Division&oldid=1378155197",
+       "title": "Wikipedia — Rangpur Division",
+       "says": "Infobox: established 1 July 2010.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ubd.html",
+       "title": "Statoids — Divisions of Bangladesh, change history",
+       "says": "2010-01-25: Rangpur division formed from eight districts of Rajshahi.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Sources differ on Rangpur’s creation (statoids 25 Jan 2010, Wikipedia 1 Jul 2010); the later date is used."
+    }
+   ]
+  },
+  {
+   "id": "BGD:Rangpur",
+   "names": {
+    "en": "Rangpur Division",
+    "ja": "ロンプール県",
+    "local": "রংপুর জেলা"
+   },
+   "wikidata": "Q2344570",
+   "spans": [
+    {
+     "from": "2015-08-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BGD-5492"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Bangladesh%E2%80%93India_enclaves&oldid=1376307970",
+       "title": "Wikipedia — Bangladesh–India enclaves",
+       "says": "The enclaves were exchanged at midnight on 31 July 2015; India received 51 enclaves, Bangladesh 111.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Rangpur_Division&oldid=1378155197",
+       "title": "Wikipedia — Rangpur Division",
+       "says": "Infobox: established 1 July 2010.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "NE has no Cooch Behar enclaves, i.e. it shows the post-exchange territory (from 1 Aug 2015)."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1993-01-01",
+   "precision": "day",
+   "what": "Barisal Division from Khulna",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Barisal_Division&oldid=1373992524",
+     "title": "Wikipedia — Barisal Division",
+     "says": "The Greater Barisal region (six districts) was created as Barisal Division on 1 January 1993.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1995-08-01",
+   "precision": "day",
+   "what": "Sylhet Division from Chittagong",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Sylhet_Division&oldid=1378159502",
+     "title": "Wikipedia — Sylhet Division",
+     "says": "Established 1 August 1995; its four districts were part of Chittagong Division until then.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2010-07-01",
+   "precision": "day",
+   "what": "Rangpur Division from Rajshahi (statoids: 2010-01-25)",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Rangpur_Division&oldid=1378155197",
+     "title": "Wikipedia — Rangpur Division",
+     "says": "Infobox: established 1 July 2010.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://www.statoids.com/ubd.html",
+     "title": "Statoids — Divisions of Bangladesh, change history",
+     "says": "2010-01-25: Rangpur division formed from eight districts of Rajshahi.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2015-07-31",
+   "precision": "day",
+   "what": "Enclave exchange with India at midnight",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Bangladesh%E2%80%93India_enclaves&oldid=1376307970",
+     "title": "Wikipedia — Bangladesh–India enclaves",
+     "says": "The enclaves were exchanged at midnight on 31 July 2015; India received 51 enclaves, Bangladesh 111.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2015-09-14",
+   "precision": "day",
+   "what": "Mymensingh Division from Dhaka",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Mymensingh_Division&oldid=1376875462",
+     "title": "Wikipedia — Mymensingh Division",
+     "says": "On 14 September 2015 Mymensingh became a division of four districts carved from Dhaka Division.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1974-03-01",
+   "n": 4,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ubd.html",
+     "title": "Statoids — Divisions of Bangladesh, change history",
+     "says": "Population table: in 1974 Bangladesh had four divisions — Chittagong, Dhaka, Khulna, Rajshahi.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2011-03-15",
+   "n": 7,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ubd.html",
+     "title": "Statoids — Divisions of Bangladesh, change history",
+     "says": "2011 census table lists seven divisions incl. Rangpur.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Rajshahi Division (incl. Rangpur) 1971–2010",
+   "unit": "BGD:Rajshahi",
+   "atoms": [
+    "BGD-3255",
+    "BGD-5492"
+   ],
+   "from": "1971-12-16",
+   "to": "2010-07-01",
+   "why": "Until 31 Jul 2015 the Rangpur-area districts contained 111 Indian enclaves; NE omits them, so the pre-2015 outline is not the NE outline. Also covers the disputed Jan–Jul 2010 creation window.",
+   "checked": [
+    "statoids.com/ubd.html",
+    "Wikipedia division articles",
+    "NE geometry of BGD-5492 and IND-3257 (no holes/exclaves: enclaves absent)"
+   ],
+   "needs": "pre-2015 enclave polygons (e.g. OSM history / Whyte 2002 enclave maps)"
+  },
+  {
+   "what": "Rangpur Division 2010–2015",
+   "unit": "BGD:Rangpur",
+   "atoms": [],
+   "from": "2010-07-01",
+   "to": "2015-08-01",
+   "why": "Same enclave issue; atom withheld via the next entry.",
+   "checked": [
+    "statoids.com/ubd.html",
+    "Wikipedia division articles",
+    "NE geometry of BGD-5492 and IND-3257 (no holes/exclaves: enclaves absent)"
+   ],
+   "needs": "pre-2015 enclave polygons"
+  },
+  {
+   "what": "Rangpur atom 2010–2015",
+   "atoms": [
+    "BGD-5492"
+   ],
+   "from": "2010-07-01",
+   "to": "2015-08-01",
+   "why": "Indian enclaves inside Rangpur Division until the 31 Jul 2015 exchange.",
+   "checked": [
+    "statoids.com/ubd.html",
+    "Wikipedia division articles",
+    "NE geometry of BGD-5492 and IND-3257 (no holes/exclaves: enclaves absent)"
+   ],
+   "needs": "pre-2015 enclave polygons"
+  },
+  {
+   "what": "Dhaka and Mymensingh 2015–2019",
+   "unit": "BGD:Dhaka",
+   "atoms": [
+    "BGD-1806"
+   ],
+   "from": "2015-09-14",
+   "to": null,
+   "why": "NE has a single Dhaka feature containing the new Mymensingh Division (Jamalpur, Mymensingh, Netrokona, Sherpur districts).",
+   "checked": [
+    "statoids.com/ubd.html",
+    "Wikipedia division articles",
+    "NE geometry of BGD-5492 and IND-3257 (no holes/exclaves: enclaves absent)"
+   ],
+   "needs": "district atoms, e.g. geoBoundaries BGD ADM2 (licence per source)"
+  },
+  {
+   "what": "Mymensingh Division 2015–2019",
+   "unit": "BGD:Mymensingh",
+   "atoms": [],
+   "from": "2015-09-14",
+   "to": null,
+   "why": "Inside the NE Dhaka atom (withheld above).",
+   "checked": [
+    "statoids.com/ubd.html",
+    "Wikipedia division articles",
+    "NE geometry of BGD-5492 and IND-3257 (no holes/exclaves: enclaves absent)"
+   ],
+   "needs": "district atoms"
+  }
+ ]
+}

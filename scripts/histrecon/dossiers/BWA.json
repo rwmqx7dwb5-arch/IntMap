@@ -1,0 +1,112 @@
+{
+  "country": "BWA",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "1966-09-30",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Republic of Botswana from independence on 1966-09-30.",
+  "units": [
+    {
+      "id": "BWA:Ghanzi@1966",
+      "names": {
+        "en": "Ghanzi District",
+        "ja": "ハンツィ地区",
+        "local": "Ghanzi"
+      },
+      "wikidata": "Q57571",
+      "spans": [
+        {
+          "from": "1966-09-30",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BWA-1191"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubw.html",
+              "title": "Statoids: Districts of Botswana (G. Law)",
+              "says": "1957 list includes Ghanzi and Kgalagadi; ~1980 changes affect Tuli, Lobatse, Chobe, Ngamiland, Ngwato; Chobe/North-West merged ~2001, split ~2006; towns separate later.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "District predates independence (1957 list); none of the changes in the statoids change history touches it. Area figures differ (NE 115,169 vs 117,910 km²) at the 2% level."
+        }
+      ]
+    },
+    {
+      "id": "BWA:Kgalagadi@1966",
+      "names": {
+        "en": "Kgalagadi District",
+        "ja": "カラハリ地区",
+        "local": "Kgalagadi"
+      },
+      "wikidata": "Q57581",
+      "spans": [
+        {
+          "from": "1966-09-30",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BWA-2625"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubw.html",
+              "title": "Statoids: Districts of Botswana (G. Law)",
+              "says": "1957 list includes Ghanzi and Kgalagadi; ~1980 changes affect Tuli, Lobatse, Chobe, Ngamiland, Ngwato; Chobe/North-West merged ~2001, split ~2006; towns separate later.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "District predates independence (1957 list); none of the recorded changes touches it."
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1980",
+      "precision": "year",
+      "what": "~1980: Tuli merged into Central; Lobatse district divided between South-East and Southern; parts of Chobe to Ngamiland and Central (approximate date)",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ubw.html",
+          "title": "Statoids: Districts of Botswana (G. Law)",
+          "says": "1957 list includes Ghanzi and Kgalagadi; ~1980 changes affect Tuli, Lobatse, Chobe, Ngamiland, Ngwato; Chobe/North-West merged ~2001, split ~2006; towns separate later.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "All other districts and town councils",
+      "atoms": [
+        "BWA-2629",
+        "BWA-2630",
+        "BWA-4853",
+        "BWA-2646",
+        "BWA-2648",
+        "BWA-2649",
+        "BWA-2647",
+        "BWA-5501",
+        "BWA-5506",
+        "BWA-5502",
+        "BWA-5503",
+        "BWA-5504",
+        "BWA-5505"
+      ],
+      "from": "1966-09-30",
+      "to": null,
+      "why": "NE combines a merged North-West (Ngamiland + Chobe) with separate city/town atoms — a layout that never existed (Chobe merge c.2001 and split c.2006 are themselves unsure). The NE Gaborone atom (286 km² vs 169 km² official) contains Mogoditshane (Kweneng) and Tlokweng (South-East), so the Kweneng, South-East and probably Kgatleng outlines are not legal ones. The ~1980 changes (Tuli, Lobatse, Chobe) are undated.",
+      "checked": [
+        "statoids ubw.html (change history, ISO 3166-2 newsletters I-5 2003 and 2014 update)",
+        "Natural Earth point tests (Mogoditshane, Tlokweng → BWA-5501)"
+      ],
+      "needs": "geoBoundaries BWA ADM1/ADM2 (CC BY 4.0) and the Local Government Act schedules with dates; Chobe / Ngamiland line"
+    }
+  ]
+}

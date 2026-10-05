@@ -1,0 +1,513 @@
+{
+ "country": "ZAF",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1994-04-27",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Republic of South Africa from the nine-province constitution of 1994-04-27 (Interim Constitution). Before that the four provinces and the bantustans (TBVC states claimed independent) are not expressible with these atoms. NE shows the provinces after the 2009 Sixteenth Amendment (verified: Carletonville/Khutsong in Gauteng, Matatiele in Eastern Cape, Umzimkulu in KwaZulu-Natal, Bushbuckridge in Mpumalanga, Groblersdal/Marble Hall in Limpopo).",
+ "units": [
+  {
+   "id": "ZAF:WesternCape@1994",
+   "names": {
+    "en": "Western Cape",
+    "ja": "西ケープ州",
+    "local": "Wes-Kaap"
+   },
+   "wikidata": "Q127167",
+   "spans": [
+    {
+     "from": "1994-04-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ZAF-1189"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uza.html",
+       "title": "Statoids — Provinces of South Africa (change history)",
+       "says": "South Africa reorganized into nine provinces on 1994-04-27; later entries are renamings and the Umzimkulu/Matatiele transfers.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Twelfth_Amendment_of_the_Constitution_of_South_Africa&oldid=1337687805",
+       "title": "Wikipedia — Twelfth Amendment of the Constitution of South Africa (oldid 1337687805)",
+       "says": "Effective 1 March 2006, redrew seven provinces (cross-boundary municipalities); Western Cape and Free State were not affected.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Not affected by the 2005–2009 boundary amendments."
+    }
+   ]
+  },
+  {
+   "id": "ZAF:FreeState@1994",
+   "names": {
+    "en": "Free State (Orange Free State until 1995-06-29)",
+    "ja": "フリーステイト州",
+    "local": "Vrystaat"
+   },
+   "wikidata": "Q160284",
+   "spans": [
+    {
+     "from": "1994-04-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ZAF-1206"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uza.html",
+       "title": "Statoids — Provinces of South Africa (change history)",
+       "says": "South Africa reorganized into nine provinces on 1994-04-27; later entries are renamings and the Umzimkulu/Matatiele transfers.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Twelfth_Amendment_of_the_Constitution_of_South_Africa&oldid=1337687805",
+       "title": "Wikipedia — Twelfth Amendment of the Constitution of South Africa (oldid 1337687805)",
+       "says": "Effective 1 March 2006, redrew seven provinces (cross-boundary municipalities); Western Cape and Free State were not affected.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Renamed 1995-06-29; not affected by the boundary amendments."
+    }
+   ]
+  },
+  {
+   "id": "ZAF:EasternCape@1994",
+   "names": {
+    "en": "Eastern Cape",
+    "ja": "東ケープ州",
+    "local": "Oos-Kaap"
+   },
+   "wikidata": "Q130840",
+   "spans": [
+    {
+     "from": "2006-03-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ZAF-1926"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Twelfth_Amendment_of_the_Constitution_of_South_Africa&oldid=1337687805",
+       "title": "Wikipedia — Twelfth Amendment of the Constitution of South Africa (oldid 1337687805)",
+       "says": "Effective 1 March 2006, redrew seven provinces (cross-boundary municipalities); Western Cape and Free State were not affected.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_South_Africa&oldid=1365166680",
+       "title": "Wikipedia — Provinces of South Africa (oldid 1365166680)",
+       "says": "The 12th and 13th amendments (2006) altered the boundaries of seven provinces; the 16th (2009) altered North West and Gauteng.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same territory since the Twelfth Amendment (1 March 2006); Matatiele (to Eastern Cape) was struck down by the Constitutional Court in Aug 2006 with the invalidity suspended, and re-enacted by the Thirteenth Amendment (14 Dec 2007), so it never left Eastern Cape in practice."
+    }
+   ]
+  },
+  {
+   "id": "ZAF:KwaZuluNatal@1994",
+   "names": {
+    "en": "KwaZulu-Natal",
+    "ja": "クワズール・ナタール州",
+    "local": "KwaZulu-Natal"
+   },
+   "wikidata": "Q81725",
+   "spans": [
+    {
+     "from": "2006-03-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ZAF-1216"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Twelfth_Amendment_of_the_Constitution_of_South_Africa&oldid=1337687805",
+       "title": "Wikipedia — Twelfth Amendment of the Constitution of South Africa (oldid 1337687805)",
+       "says": "Effective 1 March 2006, redrew seven provinces (cross-boundary municipalities); Western Cape and Free State were not affected.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_South_Africa&oldid=1365166680",
+       "title": "Wikipedia — Provinces of South Africa (oldid 1365166680)",
+       "says": "The 12th and 13th amendments (2006) altered the boundaries of seven provinces; the 16th (2009) altered North West and Gauteng.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same territory since the Twelfth Amendment (1 March 2006); Matatiele (to Eastern Cape) was struck down by the Constitutional Court in Aug 2006 with the invalidity suspended, and re-enacted by the Thirteenth Amendment (14 Dec 2007), so it never left Eastern Cape in practice."
+    }
+   ]
+  },
+  {
+   "id": "ZAF:NorthernCape@1994",
+   "names": {
+    "en": "Northern Cape",
+    "ja": "北ケープ州",
+    "local": "Noord-Kaap"
+   },
+   "wikidata": "Q132418",
+   "spans": [
+    {
+     "from": "2006-03-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ZAF-1188"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Twelfth_Amendment_of_the_Constitution_of_South_Africa&oldid=1337687805",
+       "title": "Wikipedia — Twelfth Amendment of the Constitution of South Africa (oldid 1337687805)",
+       "says": "Effective 1 March 2006, redrew seven provinces (cross-boundary municipalities); Western Cape and Free State were not affected.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_South_Africa&oldid=1365166680",
+       "title": "Wikipedia — Provinces of South Africa (oldid 1365166680)",
+       "says": "The 12th and 13th amendments (2006) altered the boundaries of seven provinces; the 16th (2009) altered North West and Gauteng.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Gained Moshaweng from North West on 2006-03-01; no later change."
+    }
+   ]
+  },
+  {
+   "id": "ZAF:Limpopo@1994",
+   "names": {
+    "en": "Limpopo (Northern Transvaal / Northern Province until 2003)",
+    "ja": "リンポポ州",
+    "local": "Limpopo"
+   },
+   "wikidata": "Q134907",
+   "spans": [
+    {
+     "from": "2006-03-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ZAF-1210"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Twelfth_Amendment_of_the_Constitution_of_South_Africa&oldid=1337687805",
+       "title": "Wikipedia — Twelfth Amendment of the Constitution of South Africa (oldid 1337687805)",
+       "says": "Effective 1 March 2006, redrew seven provinces (cross-boundary municipalities); Western Cape and Free State were not affected.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_South_Africa&oldid=1365166680",
+       "title": "Wikipedia — Provinces of South Africa (oldid 1365166680)",
+       "says": "The 12th and 13th amendments (2006) altered the boundaries of seven provinces; the 16th (2009) altered North West and Gauteng.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Lost Bushbuckridge, gained Groblersdal/Sekhukhuneland on 2006-03-01; no later change."
+    }
+   ]
+  },
+  {
+   "id": "ZAF:Mpumalanga@1994",
+   "names": {
+    "en": "Mpumalanga (Eastern Transvaal until 1995)",
+    "ja": "ムプマランガ州",
+    "local": "Mpumalanga"
+   },
+   "wikidata": "Q132410",
+   "spans": [
+    {
+     "from": "2006-03-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ZAF-1209"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Twelfth_Amendment_of_the_Constitution_of_South_Africa&oldid=1337687805",
+       "title": "Wikipedia — Twelfth Amendment of the Constitution of South Africa (oldid 1337687805)",
+       "says": "Effective 1 March 2006, redrew seven provinces (cross-boundary municipalities); Western Cape and Free State were not affected.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_South_Africa&oldid=1365166680",
+       "title": "Wikipedia — Provinces of South Africa (oldid 1365166680)",
+       "says": "The 12th and 13th amendments (2006) altered the boundaries of seven provinces; the 16th (2009) altered North West and Gauteng.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Changed on 2006-03-01 (Bushbuckridge in, Groblersdal out, small areas to Gauteng); no later change."
+    }
+   ]
+  },
+  {
+   "id": "ZAF:Gauteng@1994",
+   "names": {
+    "en": "Gauteng (PWV until 1995)",
+    "ja": "ハウテン州",
+    "local": "Gauteng"
+   },
+   "wikidata": "Q133083",
+   "spans": [
+    {
+     "from": "2009-04-03",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ZAF-1208"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Sixteenth_Amendment_of_the_Constitution_of_South_Africa&oldid=1337687567",
+       "title": "Wikipedia — Sixteenth Amendment of the Constitution of South Africa (oldid 1337687567)",
+       "says": "Commenced 3 April 2009: Merafong City moved from North West to Gauteng; only these two provinces affected.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_South_Africa&oldid=1365166680",
+       "title": "Wikipedia — Provinces of South Africa (oldid 1365166680)",
+       "says": "The 12th and 13th amendments (2006) altered the boundaries of seven provinces; the 16th (2009) altered North West and Gauteng.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same territory since Merafong City returned on 2009-04-03."
+    }
+   ]
+  },
+  {
+   "id": "ZAF:NorthWest@1994",
+   "names": {
+    "en": "North West",
+    "ja": "北西州",
+    "local": "Noordwes"
+   },
+   "wikidata": "Q165956",
+   "spans": [
+    {
+     "from": "2009-04-03",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ZAF-1201"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Sixteenth_Amendment_of_the_Constitution_of_South_Africa&oldid=1337687567",
+       "title": "Wikipedia — Sixteenth Amendment of the Constitution of South Africa (oldid 1337687567)",
+       "says": "Commenced 3 April 2009: Merafong City moved from North West to Gauteng; only these two provinces affected.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_South_Africa&oldid=1365166680",
+       "title": "Wikipedia — Provinces of South Africa (oldid 1365166680)",
+       "says": "The 12th and 13th amendments (2006) altered the boundaries of seven provinces; the 16th (2009) altered North West and Gauteng.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same territory since Merafong City left on 2009-04-03."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1994-04-27",
+   "precision": "day",
+   "what": "Nine provinces replace the four provinces and the bantustans",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uza.html",
+     "title": "Statoids — Provinces of South Africa (change history)",
+     "says": "South Africa reorganized into nine provinces on 1994-04-27; later entries are renamings and the Umzimkulu/Matatiele transfers.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2006-03-01",
+   "precision": "day",
+   "what": "Twelfth Amendment: cross-boundary municipalities assigned to one province; seven provinces redrawn",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Twelfth_Amendment_of_the_Constitution_of_South_Africa&oldid=1337687805",
+     "title": "Wikipedia — Twelfth Amendment of the Constitution of South Africa (oldid 1337687805)",
+     "says": "Effective 1 March 2006, redrew seven provinces (cross-boundary municipalities); Western Cape and Free State were not affected.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2009-04-03",
+   "precision": "day",
+   "what": "Sixteenth Amendment: Merafong City from North West to Gauteng",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Sixteenth_Amendment_of_the_Constitution_of_South_Africa&oldid=1337687567",
+     "title": "Wikipedia — Sixteenth Amendment of the Constitution of South Africa (oldid 1337687567)",
+     "says": "Commenced 3 April 2009: Merafong City moved from North West to Gauteng; only these two provinces affected.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "2000-01-01",
+   "n": 9,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uza.html",
+     "title": "Statoids — Provinces of South Africa (change history)",
+     "says": "South Africa reorganized into nine provinces on 1994-04-27; later entries are renamings and the Umzimkulu/Matatiele transfers.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2007-01-01",
+   "n": 9,
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_South_Africa&oldid=1365166680",
+     "title": "Wikipedia — Provinces of South Africa (oldid 1365166680)",
+     "says": "The 12th and 13th amendments (2006) altered the boundaries of seven provinces; the 16th (2009) altered North West and Gauteng.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2015-01-01",
+   "n": 9,
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_South_Africa&oldid=1365166680",
+     "title": "Wikipedia — Provinces of South Africa (oldid 1365166680)",
+     "says": "The 12th and 13th amendments (2006) altered the boundaries of seven provinces; the 16th (2009) altered North West and Gauteng.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Seven provinces before the Twelfth Amendment (1994 boundaries)",
+   "unit": "ZAF:EasternCape@1994",
+   "atoms": [
+    "ZAF-1926",
+    "ZAF-1216",
+    "ZAF-1188",
+    "ZAF-1210",
+    "ZAF-1209",
+    "ZAF-1208",
+    "ZAF-1201"
+   ],
+   "from": "1994-04-27",
+   "to": "2006-03-01",
+   "why": "Between 1994 and 2006 these provinces had cross-boundary municipalities and different lines (Umzimkulu, Matatiele, Bushbuckridge, Groblersdal/Sekhukhuneland, Moshaweng, Carletonville/Khutsong, Gauteng fringes). The 1994 lines run through the NE atoms.",
+   "checked": [
+    "statoids uza.html",
+    "Wikipedia Twelfth Amendment oldid 1337687805",
+    "Wikipedia Provinces of South Africa oldid 1365166680"
+   ],
+   "needs": "finer atoms: 1994-era magisterial districts or 2001 census municipalities (Stats SA / Municipal Demarcation Board, licence to be checked)"
+  },
+  {
+   "what": "KwaZuluNatal 1994–2006 extent",
+   "unit": "ZAF:KwaZuluNatal@1994",
+   "from": "1994-04-27",
+   "to": "2006-03-01",
+   "why": "Atoms withheld in the Eastern Cape entry (same window, same reason).",
+   "checked": [
+    "Wikipedia Twelfth Amendment oldid 1337687805"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "NorthernCape 1994–2006 extent",
+   "unit": "ZAF:NorthernCape@1994",
+   "from": "1994-04-27",
+   "to": "2006-03-01",
+   "why": "Atoms withheld in the Eastern Cape entry (same window, same reason).",
+   "checked": [
+    "Wikipedia Twelfth Amendment oldid 1337687805"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "Limpopo 1994–2006 extent",
+   "unit": "ZAF:Limpopo@1994",
+   "from": "1994-04-27",
+   "to": "2006-03-01",
+   "why": "Atoms withheld in the Eastern Cape entry (same window, same reason).",
+   "checked": [
+    "Wikipedia Twelfth Amendment oldid 1337687805"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "Mpumalanga 1994–2006 extent",
+   "unit": "ZAF:Mpumalanga@1994",
+   "from": "1994-04-27",
+   "to": "2006-03-01",
+   "why": "Atoms withheld in the Eastern Cape entry (same window, same reason).",
+   "checked": [
+    "Wikipedia Twelfth Amendment oldid 1337687805"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "Gauteng 1994–2006 extent",
+   "unit": "ZAF:Gauteng@1994",
+   "from": "1994-04-27",
+   "to": "2006-03-01",
+   "why": "Atoms withheld in the Eastern Cape entry (same window, same reason).",
+   "checked": [
+    "Wikipedia Twelfth Amendment oldid 1337687805"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "NorthWest 1994–2006 extent",
+   "unit": "ZAF:NorthWest@1994",
+   "from": "1994-04-27",
+   "to": "2006-03-01",
+   "why": "Atoms withheld in the Eastern Cape entry (same window, same reason).",
+   "checked": [
+    "Wikipedia Twelfth Amendment oldid 1337687805"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "Gauteng and North West between the 12th and 16th amendments (Merafong in North West)",
+   "unit": "ZAF:Gauteng@1994",
+   "atoms": [
+    "ZAF-1208",
+    "ZAF-1201"
+   ],
+   "from": "2006-03-01",
+   "to": "2009-04-03",
+   "why": "Merafong City (Carletonville, Khutsong) was in North West in this window; NE draws it in Gauteng.",
+   "checked": [
+    "Wikipedia Sixteenth Amendment oldid 1337687567"
+   ],
+   "needs": "finer atoms: Merafong City local municipality outline (MDB, licence to be checked)"
+  },
+  {
+   "what": "North West 2006–2009 extent",
+   "unit": "ZAF:NorthWest@1994",
+   "from": "2006-03-01",
+   "to": "2009-04-03",
+   "why": "Atoms withheld in the Gauteng entry.",
+   "checked": [
+    "Wikipedia Sixteenth Amendment oldid 1337687567"
+   ],
+   "needs": "as above"
+  }
+ ]
+}

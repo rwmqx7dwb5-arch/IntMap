@@ -1,0 +1,937 @@
+{
+  "country": "LBY",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "2006-03-26",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Great Socialist People's Libyan Arab Jamahiriya until 2011, then the State of Libya. NE's 22 features are the 22 shabiyat of GPC Secretariat Resolution 43/2006 as amended in 2006, several carrying stale 2001-era names (NE «Al Qubbah» = Derna, «Ajdabiya» = Al Wahat, «Ghadamis» = Nalut, «Mizdah» = Jabal al Gharbi, «Tajura'…» = Tripoli; NE's own gn_name fields confirm).",
+  "units": [
+    {
+      "id": "LBY:Butnan@2006",
+      "names": {
+        "en": "Butnan District",
+        "ja": "ブトナーン県",
+        "local": "شعبية البطنان"
+      },
+      "wikidata": "Q25931",
+      "spans": [
+        {
+          "from": "2006-03-26",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LBY-2987"
+          ],
+          "sources": [
+            {
+              "url": "https://security-legislation.ly/ar/latest-laws/%d9%82%d8%b1%d8%a7%d8%b1-%d8%b1%d9%82%d9%85-43-%d9%84%d8%b3%d9%86%d8%a9-2006-%d8%a8%d8%b4%d8%a3%d9%86-%d8%a5%d8%b9%d8%a7%d8%af%d8%a9-%d8%a8%d9%86%d8%a7%d8%a1-%d8%a7%d9%84%d9%85%d8%a4%d8%aa%d9%85/",
+              "title": "GPC Secretariat Resolution 43 of 1374 FDR (2006) on rebuilding the people's congresses of the shabiyat",
+              "says": "Paragraph naming the Butnan shabiya with its basic people's congresses; the list is identical in the original (2006) and consolidated texts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20070928180734/http://gpco.gov.ly/online/shabyat.php",
+              "title": "General People's Committee — «Shabiyat of the Great Jamahiriya» (archived)",
+              "says": "Lists the Butnan shabiya among the 22 with its seat and basic congresses (snapshot 2007-09-28).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Resolution 43 issued at Sirte 27 Safar / 26 al-Rabi' (March) 1374 FDR = 2006-03-26; «in force from the date of issue». End left open: Law 59 of 2012-07-18 provides for governorates to be created by law; none were delimited by 2019, and the 22 shabiyat remained the delimited first-level/statistical units."
+        }
+      ]
+    },
+    {
+      "id": "LBY:Benghazi@2006",
+      "names": {
+        "en": "Benghazi District",
+        "ja": "ベンガジ県",
+        "local": "شعبية بنغازي"
+      },
+      "wikidata": "Q33507",
+      "spans": [
+        {
+          "from": "2006-03-26",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LBY-2984"
+          ],
+          "sources": [
+            {
+              "url": "https://security-legislation.ly/ar/latest-laws/%d9%82%d8%b1%d8%a7%d8%b1-%d8%b1%d9%82%d9%85-43-%d9%84%d8%b3%d9%86%d8%a9-2006-%d8%a8%d8%b4%d8%a3%d9%86-%d8%a5%d8%b9%d8%a7%d8%af%d8%a9-%d8%a8%d9%86%d8%a7%d8%a1-%d8%a7%d9%84%d9%85%d8%a4%d8%aa%d9%85/",
+              "title": "GPC Secretariat Resolution 43 of 1374 FDR (2006) on rebuilding the people's congresses of the shabiyat",
+              "says": "Paragraph naming the Benghazi shabiya with its basic people's congresses; the list is identical in the original (2006) and consolidated texts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20070928180734/http://gpco.gov.ly/online/shabyat.php",
+              "title": "General People's Committee — «Shabiyat of the Great Jamahiriya» (archived)",
+              "says": "Lists the Benghazi shabiya among the 22 with its seat and basic congresses (snapshot 2007-09-28).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Resolution 43 issued at Sirte 27 Safar / 26 al-Rabi' (March) 1374 FDR = 2006-03-26; «in force from the date of issue». End left open: Law 59 of 2012-07-18 provides for governorates to be created by law; none were delimited by 2019, and the 22 shabiyat remained the delimited first-level/statistical units."
+        }
+      ]
+    },
+    {
+      "id": "LBY:Wahat@2006",
+      "names": {
+        "en": "Al Wahat District",
+        "ja": "アル・ワーハート県",
+        "local": "شعبية الواحات"
+      },
+      "wikidata": "Q26000",
+      "spans": [
+        {
+          "from": "2006-03-26",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LBY-2983"
+          ],
+          "sources": [
+            {
+              "url": "https://security-legislation.ly/ar/latest-laws/%d9%82%d8%b1%d8%a7%d8%b1-%d8%b1%d9%82%d9%85-43-%d9%84%d8%b3%d9%86%d8%a9-2006-%d8%a8%d8%b4%d8%a3%d9%86-%d8%a5%d8%b9%d8%a7%d8%af%d8%a9-%d8%a8%d9%86%d8%a7%d8%a1-%d8%a7%d9%84%d9%85%d8%a4%d8%aa%d9%85/",
+              "title": "GPC Secretariat Resolution 43 of 1374 FDR (2006) on rebuilding the people's congresses of the shabiyat",
+              "says": "Paragraph naming the Al Wahat shabiya with its basic people's congresses; the list is identical in the original (2006) and consolidated texts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20070928180734/http://gpco.gov.ly/online/shabyat.php",
+              "title": "General People's Committee — «Shabiyat of the Great Jamahiriya» (archived)",
+              "says": "Lists the Al Wahat shabiya among the 22 with its seat and basic congresses (snapshot 2007-09-28).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Resolution 43 issued at Sirte 27 Safar / 26 al-Rabi' (March) 1374 FDR = 2006-03-26; «in force from the date of issue». End left open: Law 59 of 2012-07-18 provides for governorates to be created by law; none were delimited by 2019, and the 22 shabiyat remained the delimited first-level/statistical units."
+        }
+      ]
+    },
+    {
+      "id": "LBY:Kufra@2006",
+      "names": {
+        "en": "Kufra District",
+        "ja": "クフラ県",
+        "local": "شعبية الكفرة"
+      },
+      "wikidata": "Q48200",
+      "spans": [
+        {
+          "from": "2006-03-26",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LBY-2965"
+          ],
+          "sources": [
+            {
+              "url": "https://security-legislation.ly/ar/latest-laws/%d9%82%d8%b1%d8%a7%d8%b1-%d8%b1%d9%82%d9%85-43-%d9%84%d8%b3%d9%86%d8%a9-2006-%d8%a8%d8%b4%d8%a3%d9%86-%d8%a5%d8%b9%d8%a7%d8%af%d8%a9-%d8%a8%d9%86%d8%a7%d8%a1-%d8%a7%d9%84%d9%85%d8%a4%d8%aa%d9%85/",
+              "title": "GPC Secretariat Resolution 43 of 1374 FDR (2006) on rebuilding the people's congresses of the shabiyat",
+              "says": "Paragraph naming the Kufra shabiya with its basic people's congresses; the list is identical in the original (2006) and consolidated texts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20070928180734/http://gpco.gov.ly/online/shabyat.php",
+              "title": "General People's Committee — «Shabiyat of the Great Jamahiriya» (archived)",
+              "says": "Lists the Kufra shabiya among the 22 with its seat and basic congresses (snapshot 2007-09-28).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Resolution 43 issued at Sirte 27 Safar / 26 al-Rabi' (March) 1374 FDR = 2006-03-26; «in force from the date of issue». End left open: Law 59 of 2012-07-18 provides for governorates to be created by law; none were delimited by 2019, and the 22 shabiyat remained the delimited first-level/statistical units."
+        }
+      ]
+    },
+    {
+      "id": "LBY:Murzuq@2006",
+      "names": {
+        "en": "Murzuq District",
+        "ja": "ムルズク県",
+        "local": "شعبية مرزق"
+      },
+      "wikidata": "Q48239",
+      "spans": [
+        {
+          "from": "2006-03-26",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LBY-2969"
+          ],
+          "sources": [
+            {
+              "url": "https://security-legislation.ly/ar/latest-laws/%d9%82%d8%b1%d8%a7%d8%b1-%d8%b1%d9%82%d9%85-43-%d9%84%d8%b3%d9%86%d8%a9-2006-%d8%a8%d8%b4%d8%a3%d9%86-%d8%a5%d8%b9%d8%a7%d8%af%d8%a9-%d8%a8%d9%86%d8%a7%d8%a1-%d8%a7%d9%84%d9%85%d8%a4%d8%aa%d9%85/",
+              "title": "GPC Secretariat Resolution 43 of 1374 FDR (2006) on rebuilding the people's congresses of the shabiyat",
+              "says": "Paragraph naming the Murzuq shabiya with its basic people's congresses; the list is identical in the original (2006) and consolidated texts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20070928180734/http://gpco.gov.ly/online/shabyat.php",
+              "title": "General People's Committee — «Shabiyat of the Great Jamahiriya» (archived)",
+              "says": "Lists the Murzuq shabiya among the 22 with its seat and basic congresses (snapshot 2007-09-28).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Resolution 43 issued at Sirte 27 Safar / 26 al-Rabi' (March) 1374 FDR = 2006-03-26; «in force from the date of issue». End left open: Law 59 of 2012-07-18 provides for governorates to be created by law; none were delimited by 2019, and the 22 shabiyat remained the delimited first-level/statistical units."
+        }
+      ]
+    },
+    {
+      "id": "LBY:WadiHayaa@2006",
+      "names": {
+        "en": "Wadi al Hayaa District",
+        "ja": "ワジ・アル・ハヤー県",
+        "local": "شعبية وادي الحياة"
+      },
+      "wikidata": "Q48233",
+      "spans": [
+        {
+          "from": "2006-03-26",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LBY-5488"
+          ],
+          "sources": [
+            {
+              "url": "https://security-legislation.ly/ar/latest-laws/%d9%82%d8%b1%d8%a7%d8%b1-%d8%b1%d9%82%d9%85-43-%d9%84%d8%b3%d9%86%d8%a9-2006-%d8%a8%d8%b4%d8%a3%d9%86-%d8%a5%d8%b9%d8%a7%d8%af%d8%a9-%d8%a8%d9%86%d8%a7%d8%a1-%d8%a7%d9%84%d9%85%d8%a4%d8%aa%d9%85/",
+              "title": "GPC Secretariat Resolution 43 of 1374 FDR (2006) on rebuilding the people's congresses of the shabiyat",
+              "says": "Paragraph naming the Wadi al Hayaa shabiya with its basic people's congresses; the list is identical in the original (2006) and consolidated texts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20070928180734/http://gpco.gov.ly/online/shabyat.php",
+              "title": "General People's Committee — «Shabiyat of the Great Jamahiriya» (archived)",
+              "says": "Lists the Wadi al Hayaa shabiya among the 22 with its seat and basic congresses (snapshot 2007-09-28).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Resolution 43 issued at Sirte 27 Safar / 26 al-Rabi' (March) 1374 FDR = 2006-03-26; «in force from the date of issue». End left open: Law 59 of 2012-07-18 provides for governorates to be created by law; none were delimited by 2019, and the 22 shabiyat remained the delimited first-level/statistical units."
+        }
+      ]
+    },
+    {
+      "id": "LBY:Misrata@2006",
+      "names": {
+        "en": "Misrata District",
+        "ja": "ミスラタ県",
+        "local": "شعبية مصراتة"
+      },
+      "wikidata": "Q32845",
+      "spans": [
+        {
+          "from": "2006-03-26",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LBY-2970"
+          ],
+          "sources": [
+            {
+              "url": "https://security-legislation.ly/ar/latest-laws/%d9%82%d8%b1%d8%a7%d8%b1-%d8%b1%d9%82%d9%85-43-%d9%84%d8%b3%d9%86%d8%a9-2006-%d8%a8%d8%b4%d8%a3%d9%86-%d8%a5%d8%b9%d8%a7%d8%af%d8%a9-%d8%a8%d9%86%d8%a7%d8%a1-%d8%a7%d9%84%d9%85%d8%a4%d8%aa%d9%85/",
+              "title": "GPC Secretariat Resolution 43 of 1374 FDR (2006) on rebuilding the people's congresses of the shabiyat",
+              "says": "Paragraph naming the Misrata shabiya with its basic people's congresses; the list is identical in the original (2006) and consolidated texts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20070928180734/http://gpco.gov.ly/online/shabyat.php",
+              "title": "General People's Committee — «Shabiyat of the Great Jamahiriya» (archived)",
+              "says": "Lists the Misrata shabiya among the 22 with its seat and basic congresses (snapshot 2007-09-28).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Resolution 43 issued at Sirte 27 Safar / 26 al-Rabi' (March) 1374 FDR = 2006-03-26; «in force from the date of issue». End left open: Law 59 of 2012-07-18 provides for governorates to be created by law; none were delimited by 2019, and the 22 shabiyat remained the delimited first-level/statistical units."
+        }
+      ]
+    },
+    {
+      "id": "LBY:Murqub@2006",
+      "names": {
+        "en": "Murqub District",
+        "ja": "ムルクブ県",
+        "local": "شعبية المرقب"
+      },
+      "wikidata": "Q209778",
+      "spans": [
+        {
+          "from": "2006-03-26",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LBY-2966"
+          ],
+          "sources": [
+            {
+              "url": "https://security-legislation.ly/ar/latest-laws/%d9%82%d8%b1%d8%a7%d8%b1-%d8%b1%d9%82%d9%85-43-%d9%84%d8%b3%d9%86%d8%a9-2006-%d8%a8%d8%b4%d8%a3%d9%86-%d8%a5%d8%b9%d8%a7%d8%af%d8%a9-%d8%a8%d9%86%d8%a7%d8%a1-%d8%a7%d9%84%d9%85%d8%a4%d8%aa%d9%85/",
+              "title": "GPC Secretariat Resolution 43 of 1374 FDR (2006) on rebuilding the people's congresses of the shabiyat",
+              "says": "Paragraph naming the Murqub shabiya with its basic people's congresses; the list is identical in the original (2006) and consolidated texts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20070928180734/http://gpco.gov.ly/online/shabyat.php",
+              "title": "General People's Committee — «Shabiyat of the Great Jamahiriya» (archived)",
+              "says": "Lists the Murqub shabiya among the 22 with its seat and basic congresses (snapshot 2007-09-28).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Resolution 43 issued at Sirte 27 Safar / 26 al-Rabi' (March) 1374 FDR = 2006-03-26; «in force from the date of issue». End left open: Law 59 of 2012-07-18 provides for governorates to be created by law; none were delimited by 2019, and the 22 shabiyat remained the delimited first-level/statistical units."
+        }
+      ]
+    },
+    {
+      "id": "LBY:Tripoli@2006",
+      "names": {
+        "en": "Tripoli District",
+        "ja": "トリポリ県",
+        "local": "شعبية طرابلس"
+      },
+      "wikidata": "Q32837",
+      "spans": [
+        {
+          "from": "2006-03-26",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LBY-2978"
+          ],
+          "sources": [
+            {
+              "url": "https://security-legislation.ly/ar/latest-laws/%d9%82%d8%b1%d8%a7%d8%b1-%d8%b1%d9%82%d9%85-43-%d9%84%d8%b3%d9%86%d8%a9-2006-%d8%a8%d8%b4%d8%a3%d9%86-%d8%a5%d8%b9%d8%a7%d8%af%d8%a9-%d8%a8%d9%86%d8%a7%d8%a1-%d8%a7%d9%84%d9%85%d8%a4%d8%aa%d9%85/",
+              "title": "GPC Secretariat Resolution 43 of 1374 FDR (2006) on rebuilding the people's congresses of the shabiyat",
+              "says": "Paragraph naming the Tripoli shabiya with its basic people's congresses; the list is identical in the original (2006) and consolidated texts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20070928180734/http://gpco.gov.ly/online/shabyat.php",
+              "title": "General People's Committee — «Shabiyat of the Great Jamahiriya» (archived)",
+              "says": "Lists the Tripoli shabiya among the 22 with its seat and basic congresses (snapshot 2007-09-28).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Resolution 43 issued at Sirte 27 Safar / 26 al-Rabi' (March) 1374 FDR = 2006-03-26; «in force from the date of issue». End left open: Law 59 of 2012-07-18 provides for governorates to be created by law; none were delimited by 2019, and the 22 shabiyat remained the delimited first-level/statistical units."
+        }
+      ]
+    },
+    {
+      "id": "LBY:Jafara@2006",
+      "names": {
+        "en": "Jafara District",
+        "ja": "ジファーラ県",
+        "local": "شعبية الجفارة"
+      },
+      "wikidata": "Q329060",
+      "spans": [
+        {
+          "from": "2006-03-26",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LBY-2973"
+          ],
+          "sources": [
+            {
+              "url": "https://security-legislation.ly/ar/latest-laws/%d9%82%d8%b1%d8%a7%d8%b1-%d8%b1%d9%82%d9%85-43-%d9%84%d8%b3%d9%86%d8%a9-2006-%d8%a8%d8%b4%d8%a3%d9%86-%d8%a5%d8%b9%d8%a7%d8%af%d8%a9-%d8%a8%d9%86%d8%a7%d8%a1-%d8%a7%d9%84%d9%85%d8%a4%d8%aa%d9%85/",
+              "title": "GPC Secretariat Resolution 43 of 1374 FDR (2006) on rebuilding the people's congresses of the shabiyat",
+              "says": "Paragraph naming the Jafara shabiya with its basic people's congresses; the list is identical in the original (2006) and consolidated texts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20070928180734/http://gpco.gov.ly/online/shabyat.php",
+              "title": "General People's Committee — «Shabiyat of the Great Jamahiriya» (archived)",
+              "says": "Lists the Jafara shabiya among the 22 with its seat and basic congresses (snapshot 2007-09-28).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Resolution 43 issued at Sirte 27 Safar / 26 al-Rabi' (March) 1374 FDR = 2006-03-26; «in force from the date of issue». End left open: Law 59 of 2012-07-18 provides for governorates to be created by law; none were delimited by 2019, and the 22 shabiyat remained the delimited first-level/statistical units."
+        }
+      ]
+    },
+    {
+      "id": "LBY:Zawiya@2006",
+      "names": {
+        "en": "Zawiya District",
+        "ja": "ザーウィヤ県",
+        "local": "شعبية الزاوية"
+      },
+      "wikidata": "Q26153",
+      "spans": [
+        {
+          "from": "2006-03-26",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LBY-2975"
+          ],
+          "sources": [
+            {
+              "url": "https://security-legislation.ly/ar/latest-laws/%d9%82%d8%b1%d8%a7%d8%b1-%d8%b1%d9%82%d9%85-43-%d9%84%d8%b3%d9%86%d8%a9-2006-%d8%a8%d8%b4%d8%a3%d9%86-%d8%a5%d8%b9%d8%a7%d8%af%d8%a9-%d8%a8%d9%86%d8%a7%d8%a1-%d8%a7%d9%84%d9%85%d8%a4%d8%aa%d9%85/",
+              "title": "GPC Secretariat Resolution 43 of 1374 FDR (2006) on rebuilding the people's congresses of the shabiyat",
+              "says": "Paragraph naming the Zawiya shabiya with its basic people's congresses; the list is identical in the original (2006) and consolidated texts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20070928180734/http://gpco.gov.ly/online/shabyat.php",
+              "title": "General People's Committee — «Shabiyat of the Great Jamahiriya» (archived)",
+              "says": "Lists the Zawiya shabiya among the 22 with its seat and basic congresses (snapshot 2007-09-28).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Resolution 43 issued at Sirte 27 Safar / 26 al-Rabi' (March) 1374 FDR = 2006-03-26; «in force from the date of issue». End left open: Law 59 of 2012-07-18 provides for governorates to be created by law; none were delimited by 2019, and the 22 shabiyat remained the delimited first-level/statistical units."
+        }
+      ]
+    },
+    {
+      "id": "LBY:Nuqat@2006",
+      "names": {
+        "en": "Nuqat al Khams District",
+        "ja": "ヌカート・アル・ハムス県",
+        "local": "شعبية النقاط الخمس"
+      },
+      "wikidata": "Q26161",
+      "spans": [
+        {
+          "from": "2006-03-26",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LBY-2974"
+          ],
+          "sources": [
+            {
+              "url": "https://security-legislation.ly/ar/latest-laws/%d9%82%d8%b1%d8%a7%d8%b1-%d8%b1%d9%82%d9%85-43-%d9%84%d8%b3%d9%86%d8%a9-2006-%d8%a8%d8%b4%d8%a3%d9%86-%d8%a5%d8%b9%d8%a7%d8%af%d8%a9-%d8%a8%d9%86%d8%a7%d8%a1-%d8%a7%d9%84%d9%85%d8%a4%d8%aa%d9%85/",
+              "title": "GPC Secretariat Resolution 43 of 1374 FDR (2006) on rebuilding the people's congresses of the shabiyat",
+              "says": "Paragraph naming the Nuqat al Khams shabiya with its basic people's congresses; the list is identical in the original (2006) and consolidated texts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20070928180734/http://gpco.gov.ly/online/shabyat.php",
+              "title": "General People's Committee — «Shabiyat of the Great Jamahiriya» (archived)",
+              "says": "Lists the Nuqat al Khams shabiya among the 22 with its seat and basic congresses (snapshot 2007-09-28).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Resolution 43 issued at Sirte 27 Safar / 26 al-Rabi' (March) 1374 FDR = 2006-03-26; «in force from the date of issue». End left open: Law 59 of 2012-07-18 provides for governorates to be created by law; none were delimited by 2019, and the 22 shabiyat remained the delimited first-level/statistical units."
+        }
+      ]
+    },
+    {
+      "id": "LBY:JabalGharbi@2006",
+      "names": {
+        "en": "Jabal al Gharbi District",
+        "ja": "ジャバル・アル・ガルビ県",
+        "local": "شعبية الجبل الغربي"
+      },
+      "wikidata": "Q25632",
+      "spans": [
+        {
+          "from": "2006-03-26",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LBY-2976"
+          ],
+          "sources": [
+            {
+              "url": "https://security-legislation.ly/ar/latest-laws/%d9%82%d8%b1%d8%a7%d8%b1-%d8%b1%d9%82%d9%85-43-%d9%84%d8%b3%d9%86%d8%a9-2006-%d8%a8%d8%b4%d8%a3%d9%86-%d8%a5%d8%b9%d8%a7%d8%af%d8%a9-%d8%a8%d9%86%d8%a7%d8%a1-%d8%a7%d9%84%d9%85%d8%a4%d8%aa%d9%85/",
+              "title": "GPC Secretariat Resolution 43 of 1374 FDR (2006) on rebuilding the people's congresses of the shabiyat",
+              "says": "Paragraph naming the Jabal al Gharbi shabiya with its basic people's congresses; the list is identical in the original (2006) and consolidated texts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20070928180734/http://gpco.gov.ly/online/shabyat.php",
+              "title": "General People's Committee — «Shabiyat of the Great Jamahiriya» (archived)",
+              "says": "Lists the Jabal al Gharbi shabiya among the 22 with its seat and basic congresses (snapshot 2007-09-28).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Resolution 43 issued at Sirte 27 Safar / 26 al-Rabi' (March) 1374 FDR = 2006-03-26; «in force from the date of issue». End left open: Law 59 of 2012-07-18 provides for governorates to be created by law; none were delimited by 2019, and the 22 shabiyat remained the delimited first-level/statistical units."
+        }
+      ]
+    },
+    {
+      "id": "LBY:Nalut@2006",
+      "names": {
+        "en": "Nalut District",
+        "ja": "ナールート県",
+        "local": "شعبية نالوت"
+      },
+      "wikidata": "Q27659",
+      "spans": [
+        {
+          "from": "2006-03-26",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LBY-2882"
+          ],
+          "sources": [
+            {
+              "url": "https://security-legislation.ly/ar/latest-laws/%d9%82%d8%b1%d8%a7%d8%b1-%d8%b1%d9%82%d9%85-43-%d9%84%d8%b3%d9%86%d8%a9-2006-%d8%a8%d8%b4%d8%a3%d9%86-%d8%a5%d8%b9%d8%a7%d8%af%d8%a9-%d8%a8%d9%86%d8%a7%d8%a1-%d8%a7%d9%84%d9%85%d8%a4%d8%aa%d9%85/",
+              "title": "GPC Secretariat Resolution 43 of 1374 FDR (2006) on rebuilding the people's congresses of the shabiyat",
+              "says": "Paragraph naming the Nalut shabiya with its basic people's congresses; the list is identical in the original (2006) and consolidated texts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20070928180734/http://gpco.gov.ly/online/shabyat.php",
+              "title": "General People's Committee — «Shabiyat of the Great Jamahiriya» (archived)",
+              "says": "Lists the Nalut shabiya among the 22 with its seat and basic congresses (snapshot 2007-09-28).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Resolution 43 issued at Sirte 27 Safar / 26 al-Rabi' (March) 1374 FDR = 2006-03-26; «in force from the date of issue». End left open: Law 59 of 2012-07-18 provides for governorates to be created by law; none were delimited by 2019, and the 22 shabiyat remained the delimited first-level/statistical units."
+        }
+      ]
+    },
+    {
+      "id": "LBY:Ghat@2006",
+      "names": {
+        "en": "Ghat District",
+        "ja": "ガート県",
+        "local": "شعبية غات"
+      },
+      "wikidata": "Q48236",
+      "spans": [
+        {
+          "from": "2006-03-26",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LBY-2968"
+          ],
+          "sources": [
+            {
+              "url": "https://security-legislation.ly/ar/latest-laws/%d9%82%d8%b1%d8%a7%d8%b1-%d8%b1%d9%82%d9%85-43-%d9%84%d8%b3%d9%86%d8%a9-2006-%d8%a8%d8%b4%d8%a3%d9%86-%d8%a5%d8%b9%d8%a7%d8%af%d8%a9-%d8%a8%d9%86%d8%a7%d8%a1-%d8%a7%d9%84%d9%85%d8%a4%d8%aa%d9%85/",
+              "title": "GPC Secretariat Resolution 43 of 1374 FDR (2006) on rebuilding the people's congresses of the shabiyat",
+              "says": "Paragraph naming the Ghat shabiya with its basic people's congresses; the list is identical in the original (2006) and consolidated texts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20070928180734/http://gpco.gov.ly/online/shabyat.php",
+              "title": "General People's Committee — «Shabiyat of the Great Jamahiriya» (archived)",
+              "says": "Lists the Ghat shabiya among the 22 with its seat and basic congresses (snapshot 2007-09-28).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Resolution 43 issued at Sirte 27 Safar / 26 al-Rabi' (March) 1374 FDR = 2006-03-26; «in force from the date of issue». End left open: Law 59 of 2012-07-18 provides for governorates to be created by law; none were delimited by 2019, and the 22 shabiyat remained the delimited first-level/statistical units."
+        }
+      ]
+    },
+    {
+      "id": "LBY:Sabha@2006",
+      "names": {
+        "en": "Sabha District",
+        "ja": "サブハー県",
+        "local": "شعبية سبها"
+      },
+      "wikidata": "Q26132",
+      "spans": [
+        {
+          "from": "2006-03-26",
+          "precision": "day",
+          "to": "2006-08-03",
+          "atoms": [
+            "LBY-2971",
+            "LBY-2967"
+          ],
+          "sources": [
+            {
+              "url": "https://security-legislation.ly/ar/latest-laws/%d9%82%d8%b1%d8%a7%d8%b1-%d8%b1%d9%82%d9%85-43-%d9%84%d8%b3%d9%86%d8%a9-2006-%d8%a8%d8%b4%d8%a3%d9%86-%d8%a5%d8%b9%d8%a7%d8%af%d8%a9-%d8%a8%d9%86%d8%a7%d8%a1-%d8%a7%d9%84%d9%85%d8%a4%d8%aa%d9%85/",
+              "title": "GPC Secretariat Resolution 43 of 1374 FDR (2006) on rebuilding the people's congresses of the shabiyat",
+              "says": "Original paragraph 10: Sabha shabiya includes the Wadi ash-Shati' congresses (Brak, Qira, Tamzawa, Aqar, Idri, Wanzrik …).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Resolution 43 issued at Sirte 27 Safar / 26 al-Rabi' (March) 1374 FDR = 2006-03-26; «in force from the date of issue»."
+        },
+        {
+          "from": "2006-08-03",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LBY-2971"
+          ],
+          "sources": [
+            {
+              "url": "https://security-legislation.ly/ar/latest-laws/%D9%82%D8%B1%D8%A7%D8%B1-%D8%B1%D9%82%D9%85-130-%D9%84%D8%B3%D9%86%D8%A9-2006-%D8%A8%D8%B4%D8%A3%D9%86-%D8%AA%D8%B9%D8%AF%D9%8A%D9%84-%D9%82%D8%B1%D8%A7%D8%B1-%D8%A3%D9%85%D8%A7%D9%86%D8%A9-%D9%85/",
+              "title": "GPC Secretariat Resolution 130 of 1374 FDR (2006) amending Resolution 43",
+              "says": "Art. 1 rewrites paragraph 10: Sabha keeps 10 congresses; art. 2 adds paragraph 22, Wadi ash-Shati' shabiya, with the rest.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20070928180734/http://gpco.gov.ly/online/shabyat.php",
+              "title": "General People's Committee — «Shabiyat of the Great Jamahiriya» (archived)",
+              "says": "Sabha shabiya with the same 10 basic congresses (snapshot 2007-09-28).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Resolution 130 issued at Sirte 9 Rajab / 3 Hannibal (August) 1374 FDR = 2006-08-03, in force from issue; art. 4 keeps the old Sabha congress running until the rebuild is complete. End left open: Law 59 of 2012-07-18 provides for governorates to be created by law; none were delimited by 2019, and the 22 shabiyat remained the delimited first-level/statistical units."
+        }
+      ]
+    },
+    {
+      "id": "LBY:Shati@2006",
+      "names": {
+        "en": "Wadi al Shatii District",
+        "ja": "ワジ・アル・シャーティー県",
+        "local": "شعبية وادي الشاطئ"
+      },
+      "wikidata": "Q48232",
+      "spans": [
+        {
+          "from": "2006-08-03",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LBY-2967"
+          ],
+          "sources": [
+            {
+              "url": "https://security-legislation.ly/ar/latest-laws/%D9%82%D8%B1%D8%A7%D8%B1-%D8%B1%D9%82%D9%85-130-%D9%84%D8%B3%D9%86%D8%A9-2006-%D8%A8%D8%B4%D8%A3%D9%86-%D8%AA%D8%B9%D8%AF%D9%8A%D9%84-%D9%82%D8%B1%D8%A7%D8%B1-%D8%A3%D9%85%D8%A7%D9%86%D8%A9-%D9%85/",
+              "title": "GPC Secretariat Resolution 130 of 1374 FDR (2006) amending Resolution 43",
+              "says": "Art. 2 adds paragraph 22: Wadi ash-Shati' shabiya with 12 basic congresses taken from Sabha; seat to be fixed later.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20070928180734/http://gpco.gov.ly/online/shabyat.php",
+              "title": "General People's Committee — «Shabiyat of the Great Jamahiriya» (archived)",
+              "says": "Wadi ash-Shati' listed as the 22nd shabiya (snapshot 2007-09-28).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "End left open: Law 59 of 2012-07-18 provides for governorates to be created by law; none were delimited by 2019, and the 22 shabiyat remained the delimited first-level/statistical units."
+        }
+      ]
+    },
+    {
+      "id": "LBY:Sirte@2006",
+      "names": {
+        "en": "Sirte District",
+        "ja": "スルト県",
+        "local": "شعبية سرت"
+      },
+      "wikidata": "Q26417",
+      "spans": [
+        {
+          "from": "2006-08-03",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LBY-2985"
+          ],
+          "sources": [
+            {
+              "url": "https://security-legislation.ly/ar/latest-laws/%d9%82%d8%b1%d8%a7%d8%b1-%d8%b1%d9%82%d9%85-43-%d9%84%d8%b3%d9%86%d8%a9-2006-%d8%a8%d8%b4%d8%a3%d9%86-%d8%a5%d8%b9%d8%a7%d8%af%d8%a9-%d8%a8%d9%86%d8%a7%d8%a1-%d8%a7%d9%84%d9%85%d8%a4%d8%aa%d9%85/",
+              "title": "GPC Secretariat Resolution 43 of 1374 FDR (2006) on rebuilding the people's congresses of the shabiyat",
+              "says": "Consolidated paragraph 8: Sirte with 12 congresses; Hun, Waddan, Sokna, Zilla, Fuqaha moved to a new paragraph 21 (Jufra).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20070928180734/http://gpco.gov.ly/online/shabyat.php",
+              "title": "General People's Committee — «Shabiyat of the Great Jamahiriya» (archived)",
+              "says": "Sirte shabiya with the same 12 basic congresses (snapshot 2007-09-28).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "From 2006-08-03: Resolution 130 adds a paragraph «22», so paragraph 21 (Jufra, split from Sirte) existed by then; the exact earlier amendment date was not found (see unresolved). End left open: Law 59 of 2012-07-18 provides for governorates to be created by law; none were delimited by 2019, and the 22 shabiyat remained the delimited first-level/statistical units."
+        }
+      ]
+    },
+    {
+      "id": "LBY:Jufra@2006",
+      "names": {
+        "en": "Jufra District",
+        "ja": "ジュフラ県",
+        "local": "شعبية الجفرة"
+      },
+      "wikidata": "Q48247",
+      "spans": [
+        {
+          "from": "2006-08-03",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LBY-2964"
+          ],
+          "sources": [
+            {
+              "url": "https://security-legislation.ly/ar/latest-laws/%d9%82%d8%b1%d8%a7%d8%b1-%d8%b1%d9%82%d9%85-43-%d9%84%d8%b3%d9%86%d8%a9-2006-%d8%a8%d8%b4%d8%a3%d9%86-%d8%a5%d8%b9%d8%a7%d8%af%d8%a9-%d8%a8%d9%86%d8%a7%d8%a1-%d8%a7%d9%84%d9%85%d8%a4%d8%aa%d9%85/",
+              "title": "GPC Secretariat Resolution 43 of 1374 FDR (2006) on rebuilding the people's congresses of the shabiyat",
+              "says": "Consolidated paragraph 21: Jufra shabiya, seat Hun, congresses Hun, Waddan, Sokna, Zilla, Fuqaha (in Sirte's paragraph in the original).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://security-legislation.ly/ar/latest-laws/%D9%82%D8%B1%D8%A7%D8%B1-%D8%B1%D9%82%D9%85-130-%D9%84%D8%B3%D9%86%D8%A9-2006-%D8%A8%D8%B4%D8%A3%D9%86-%D8%AA%D8%B9%D8%AF%D9%8A%D9%84-%D9%82%D8%B1%D8%A7%D8%B1-%D8%A3%D9%85%D8%A7%D9%86%D8%A9-%D9%85/",
+              "title": "GPC Secretariat Resolution 130 of 1374 FDR (2006) amending Resolution 43",
+              "says": "Art. 2 adds a new paragraph numbered 22, implying paragraph 21 already existed on 2006-08-03.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Attested from 2006-08-03 (inference from paragraph numbering); created on an unknown date after 2006-03-26. End left open: Law 59 of 2012-07-18 provides for governorates to be created by law; none were delimited by 2019, and the 22 shabiyat remained the delimited first-level/statistical units."
+        }
+      ]
+    },
+    {
+      "id": "LBY:Darnah@2006",
+      "names": {
+        "en": "Derna District",
+        "ja": "デルナ県",
+        "local": "شعبية درنة"
+      },
+      "wikidata": "Q26124",
+      "spans": [
+        {
+          "from": "2007-09-28",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LBY-2986"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20070928180734/http://gpco.gov.ly/online/shabyat.php",
+              "title": "General People's Committee — «Shabiyat of the Great Jamahiriya» (archived)",
+              "says": "Paragraph listing the Derna shabiya with its seat and basic congresses (first attestation found: 2007-09-28).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20081220214410/http://gpco.gov.ly/online/shabyat.php",
+              "title": "General People's Committee — «Shabiyat of the Great Jamahiriya» (archived)",
+              "says": "Same 22-shabiya list, snapshot 2008-12-20.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Start = first attestation, not creation (the shabiya existed since 2006-03-26 but its paragraph is missing from the DCAF copy of Resolution 43). End left open: Law 59 of 2012-07-18 provides for governorates to be created by law; none were delimited by 2019, and the 22 shabiyat remained the delimited first-level/statistical units."
+        }
+      ]
+    },
+    {
+      "id": "LBY:JabalAkhdar@2006",
+      "names": {
+        "en": "Jabal al Akhdar District",
+        "ja": "ジャバル・アル・アフダル県",
+        "local": "شعبية الجبل الأخضر"
+      },
+      "wikidata": "Q32841",
+      "spans": [
+        {
+          "from": "2007-09-28",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LBY-2982"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20070928180734/http://gpco.gov.ly/online/shabyat.php",
+              "title": "General People's Committee — «Shabiyat of the Great Jamahiriya» (archived)",
+              "says": "Paragraph listing the Jabal al Akhdar shabiya with its seat and basic congresses (first attestation found: 2007-09-28).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20081220214410/http://gpco.gov.ly/online/shabyat.php",
+              "title": "General People's Committee — «Shabiyat of the Great Jamahiriya» (archived)",
+              "says": "Same 22-shabiya list, snapshot 2008-12-20.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Start = first attestation, not creation (the shabiya existed since 2006-03-26 but its paragraph is missing from the DCAF copy of Resolution 43). End left open: Law 59 of 2012-07-18 provides for governorates to be created by law; none were delimited by 2019, and the 22 shabiyat remained the delimited first-level/statistical units."
+        }
+      ]
+    },
+    {
+      "id": "LBY:Marj@2006",
+      "names": {
+        "en": "Marj District",
+        "ja": "マルジュ県",
+        "local": "شعبية المرج"
+      },
+      "wikidata": "Q26023",
+      "spans": [
+        {
+          "from": "2007-09-28",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LBY-2981"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20070928180734/http://gpco.gov.ly/online/shabyat.php",
+              "title": "General People's Committee — «Shabiyat of the Great Jamahiriya» (archived)",
+              "says": "Paragraph listing the Marj shabiya with its seat and basic congresses (first attestation found: 2007-09-28).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20081220214410/http://gpco.gov.ly/online/shabyat.php",
+              "title": "General People's Committee — «Shabiyat of the Great Jamahiriya» (archived)",
+              "says": "Same 22-shabiya list, snapshot 2008-12-20.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Start = first attestation, not creation (the shabiya existed since 2006-03-26 but its paragraph is missing from the DCAF copy of Resolution 43). End left open: Law 59 of 2012-07-18 provides for governorates to be created by law; none were delimited by 2019, and the 22 shabiyat remained the delimited first-level/statistical units."
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "2006-03-26",
+      "precision": "day",
+      "what": "Resolution 43: shabiyat rebuilt as 20 shabiyat (Sabha incl. Wadi ash-Shati', Sirte incl. Jufra)",
+      "sources": [
+        {
+          "url": "https://security-legislation.ly/ar/latest-laws/%d9%82%d8%b1%d8%a7%d8%b1-%d8%b1%d9%82%d9%85-43-%d9%84%d8%b3%d9%86%d8%a9-2006-%d8%a8%d8%b4%d8%a3%d9%86-%d8%a5%d8%b9%d8%a7%d8%af%d8%a9-%d8%a8%d9%86%d8%a7%d8%a1-%d8%a7%d9%84%d9%85%d8%a4%d8%aa%d9%85/",
+          "title": "GPC Secretariat Resolution 43 of 1374 FDR (2006) on rebuilding the people's congresses of the shabiyat",
+          "says": "Art. 1 lists the shabiyat with seats and basic congresses; in force from issue.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2006-08-03",
+      "precision": "day",
+      "what": "Resolution 130: Wadi ash-Shati' shabiya split from Sabha (22nd paragraph)",
+      "sources": [
+        {
+          "url": "https://security-legislation.ly/ar/latest-laws/%D9%82%D8%B1%D8%A7%D8%B1-%D8%B1%D9%82%D9%85-130-%D9%84%D8%B3%D9%86%D8%A9-2006-%D8%A8%D8%B4%D8%A3%D9%86-%D8%AA%D8%B9%D8%AF%D9%8A%D9%84-%D9%82%D8%B1%D8%A7%D8%B1-%D8%A3%D9%85%D8%A7%D9%86%D8%A9-%D9%85/",
+          "title": "GPC Secretariat Resolution 130 of 1374 FDR (2006) amending Resolution 43",
+          "says": "Arts 1-2: Sabha reduced, Wadi ash-Shati' added as paragraph 22.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2012-07-18",
+      "precision": "day",
+      "what": "Law 59/2012 on local administration: governorates to be established by law (not delimited by 2019)",
+      "sources": [
+        {
+          "url": "https://security-legislation.ly/latest-laws/law-no-59-of-2012-on-the-local-administration-system/",
+          "title": "Law No. 59 of 2012 on the local administration system (DCAF)",
+          "says": "Art. 4: provinces, their scope and seats are determined by law; existing local councils continue (art. 80).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "2006-04-01",
+      "n": 20,
+      "sources": [
+        {
+          "url": "https://security-legislation.ly/ar/latest-laws/%d9%82%d8%b1%d8%a7%d8%b1-%d8%b1%d9%82%d9%85-43-%d9%84%d8%b3%d9%86%d8%a9-2006-%d8%a8%d8%b4%d8%a3%d9%86-%d8%a5%d8%b9%d8%a7%d8%af%d8%a9-%d8%a8%d9%86%d8%a7%d8%a1-%d8%a7%d9%84%d9%85%d8%a4%d8%aa%d9%85/",
+          "title": "GPC Secretariat Resolution 43 of 1374 FDR (2006) on rebuilding the people's congresses of the shabiyat",
+          "says": "Original art. 1 enumerates twenty shabiyat (first to twentieth).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2007-10-01",
+      "n": 22,
+      "sources": [
+        {
+          "url": "https://web.archive.org/web/20070928180734/http://gpco.gov.ly/online/shabyat.php",
+          "title": "General People's Committee — «Shabiyat of the Great Jamahiriya» (archived)",
+          "says": "Lists twenty-two shabiyat.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Libya&oldid=1375132041",
+          "title": "Districts of Libya (Wikipedia, oldid 1375132041)",
+          "says": "Table of 22 districts citing the GPCO list.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Sirte shabiya 2006-03-26 → (Jufra split, unknown date ≤ 2006-08-03)",
+      "unit": "LBY:Sirte@2006",
+      "atoms": [
+        "LBY-2985",
+        "LBY-2964"
+      ],
+      "from": "2006-03-26",
+      "to": "2006-08-03",
+      "why": "Original Resolution 43 put the Jufra congresses (Hun, Waddan, Sokna, Zilla, Fuqaha) inside Sirte; the amendment adding paragraph 21 (Jufra) was not found, so the split date inside this window is unknown. Union = Surt+Jufra atoms throughout; the split instant is not.",
+      "checked": [
+        "DCAF copy of Resolution 43 (original and consolidated text)",
+        "Resolution 130 (2006-08-03)",
+        "GPCO archived list 2007-09-28"
+      ],
+      "needs": "the text/date of the Resolution 43 amendment creating Jufra shabiya (no finer atoms needed)"
+    },
+    {
+      "what": "Derna shabiya 2006-03-26 → 2007-09-28",
+      "unit": "LBY:Darnah@2006",
+      "atoms": [
+        "LBY-2986"
+      ],
+      "from": "2006-03-26",
+      "to": "2007-09-28",
+      "why": "Paragraphs 2-4 (Derna, Jabal al Akhdar, Marj) are missing from the DCAF copy of Resolution 43; neighbours Butnan, Benghazi and Wahat are unchanged, so only the union of the three is certain before the first attestation.",
+      "checked": [
+        "DCAF copy of Resolution 43 (numbering jumps from congress 20 to 107)",
+        "GPCO archived lists 2007-09-28, 2008-12-20"
+      ],
+      "needs": "full original text of Resolution 43 paragraphs 2-4 (no finer atoms needed if unchanged)"
+    },
+    {
+      "what": "Jabal al Akhdar shabiya 2006-03-26 → 2007-09-28",
+      "unit": "LBY:JabalAkhdar@2006",
+      "atoms": [
+        "LBY-2982"
+      ],
+      "from": "2006-03-26",
+      "to": "2007-09-28",
+      "why": "As for Derna (paragraph missing from the available copy).",
+      "checked": [
+        "DCAF copy of Resolution 43",
+        "GPCO archived lists"
+      ],
+      "needs": "full original text of Resolution 43 paragraphs 2-4"
+    },
+    {
+      "what": "Marj shabiya 2006-03-26 → 2007-09-28",
+      "unit": "LBY:Marj@2006",
+      "atoms": [
+        "LBY-2981"
+      ],
+      "from": "2006-03-26",
+      "to": "2007-09-28",
+      "why": "As for Derna (paragraph missing from the available copy).",
+      "checked": [
+        "DCAF copy of Resolution 43",
+        "GPCO archived lists"
+      ],
+      "needs": "full original text of Resolution 43 paragraphs 2-4"
+    },
+    {
+      "what": "32 shabiyat + 3 administrative regions (2001/2002 → 2006-03-26)",
+      "from": "2001",
+      "to": "2006-03-26",
+      "why": "Hizam al-Akhdar, Qubba, Ajdabiya/Wahat, Ghadames/Nalut, Mizda, Gharyan, Yafran, Tarhuna-Msallata, Bani Walid, Sabratha-Sorman, Tajura, Qatrun, Jaghbub, Marada cut across the 2006 shabiyat (e.g. Bani Walid is now inside Misrata, Mizda inside Jabal al Gharbi); start date itself uncertain (statoids ~2001, ISO list 2002).",
+      "checked": [
+        "statoids.com/uly.html (~2001 table, ~2002 note)",
+        "en.wikipedia Districts of Libya oldid 1375132041 (32-district table citing gpc.gov.ly 2006 archive)"
+      ],
+      "needs": "Libyan basic-people's-congress (mahalla) geometry for 2001-2006 — none open"
+    },
+    {
+      "what": "Earlier layouts: 3 provinces (1951), 10 muhafazat (1963-04-27), Khalij reorganisation (~1973), 46 baladiyat (~1983), 25 baladiyat (~1987), 13 shabiyat (1995-08-02), 26 shabiyat (1998)",
+      "from": "1951-12-24",
+      "to": "2001",
+      "why": "None coincides with the 2006 shabiyat boundaries along its whole length (e.g. 1963 Benghazi included Ajdabiya and Kufra but its line with Sirte differs); dates of several are approximate and sources disagree (statoids gives two contradictory 1995 lists).",
+      "checked": [
+        "statoids.com/uly.html",
+        "en.wikipedia Districts of Libya oldid 1375132041"
+      ],
+      "needs": "historical baladiya/muhafaza geometry — none open"
+    }
+  ]
+}

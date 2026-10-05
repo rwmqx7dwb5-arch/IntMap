@@ -1,0 +1,1255 @@
+{
+  "country": "TZA",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "2002-08-25",
+    "to": "2019-12-31"
+  },
+  "polityNote": "United Republic of Tanzania (mainland regions and the five Zanzibar regions).",
+  "units": [
+    {
+      "id": "TZA:Kilimanjaro",
+      "names": {
+        "en": "Kilimanjaro Region",
+        "ja": "キリマンジャロ州",
+        "local": "Mkoa wa Kilimanjaro"
+      },
+      "wikidata": "Q328922",
+      "spans": [
+        {
+          "from": "2002-08-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TZA-3393"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20051219025451/http://www.tanzania.go.tz/census/census/tables.htm",
+              "title": "2002 Population and Housing Census, General Report tables (Tanzania government website, archived)",
+              "says": "Lists 21 mainland and 5 Zanzibar regions; Arusha region of 1988 was split into Arusha and Manyara just before the 2002 census.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/utz.html",
+              "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+              "says": "2012-03-02 GN 72: Geita from Shinyanga, Kagera, Mwanza parts; Katavi from Rukwa; Njombe from Iringa; Simiyu from Shinyanga plus Busega (Mwanza).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens on the 2002 census night (25 Aug 2002), the first date an official source attests the 2002 layout; Manyara's split date is reported as ~May 2002 (statoids) — not claimed earlier. Not touched by the 2012 GN 72 or the 2016 Songwe change."
+        }
+      ]
+    },
+    {
+      "id": "TZA:Tanga",
+      "names": {
+        "en": "Tanga Region",
+        "ja": "タンガ州",
+        "local": "Mkoa wa Tanga"
+      },
+      "wikidata": "Q389737",
+      "spans": [
+        {
+          "from": "2002-08-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TZA-3395"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20051219025451/http://www.tanzania.go.tz/census/census/tables.htm",
+              "title": "2002 Population and Housing Census, General Report tables (Tanzania government website, archived)",
+              "says": "Lists 21 mainland and 5 Zanzibar regions; Arusha region of 1988 was split into Arusha and Manyara just before the 2002 census.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/utz.html",
+              "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+              "says": "2012-03-02 GN 72: Geita from Shinyanga, Kagera, Mwanza parts; Katavi from Rukwa; Njombe from Iringa; Simiyu from Shinyanga plus Busega (Mwanza).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens on the 2002 census night (25 Aug 2002), the first date an official source attests the 2002 layout; Manyara's split date is reported as ~May 2002 (statoids) — not claimed earlier. Not touched by the 2012 GN 72 or the 2016 Songwe change."
+        }
+      ]
+    },
+    {
+      "id": "TZA:Pwani",
+      "names": {
+        "en": "Pwani Region",
+        "ja": "プワニ州",
+        "local": "Mkoa wa Pwani"
+      },
+      "wikidata": "Q458412",
+      "spans": [
+        {
+          "from": "2002-08-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TZA-3382"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20051219025451/http://www.tanzania.go.tz/census/census/tables.htm",
+              "title": "2002 Population and Housing Census, General Report tables (Tanzania government website, archived)",
+              "says": "Lists 21 mainland and 5 Zanzibar regions; Arusha region of 1988 was split into Arusha and Manyara just before the 2002 census.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/utz.html",
+              "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+              "says": "2012-03-02 GN 72: Geita from Shinyanga, Kagera, Mwanza parts; Katavi from Rukwa; Njombe from Iringa; Simiyu from Shinyanga plus Busega (Mwanza).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens on the 2002 census night (25 Aug 2002), the first date an official source attests the 2002 layout; Manyara's split date is reported as ~May 2002 (statoids) — not claimed earlier. Not touched by the 2012 GN 72 or the 2016 Songwe change."
+        }
+      ]
+    },
+    {
+      "id": "TZA:DarEsSalaam",
+      "names": {
+        "en": "Dar es Salaam Region",
+        "ja": "ダルエスサラーム州",
+        "local": "Mkoa wa Dar es Salaam"
+      },
+      "wikidata": "Q557539",
+      "spans": [
+        {
+          "from": "2002-08-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TZA-3378"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20051219025451/http://www.tanzania.go.tz/census/census/tables.htm",
+              "title": "2002 Population and Housing Census, General Report tables (Tanzania government website, archived)",
+              "says": "Lists 21 mainland and 5 Zanzibar regions; Arusha region of 1988 was split into Arusha and Manyara just before the 2002 census.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/utz.html",
+              "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+              "says": "2012-03-02 GN 72: Geita from Shinyanga, Kagera, Mwanza parts; Katavi from Rukwa; Njombe from Iringa; Simiyu from Shinyanga plus Busega (Mwanza).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens on the 2002 census night (25 Aug 2002), the first date an official source attests the 2002 layout; Manyara's split date is reported as ~May 2002 (statoids) — not claimed earlier. Not touched by the 2012 GN 72 or the 2016 Songwe change."
+        }
+      ]
+    },
+    {
+      "id": "TZA:Morogoro",
+      "names": {
+        "en": "Morogoro Region",
+        "ja": "モロゴロ州",
+        "local": "Mkoa wa Morogoro"
+      },
+      "wikidata": "Q458388",
+      "spans": [
+        {
+          "from": "2002-08-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TZA-3379"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20051219025451/http://www.tanzania.go.tz/census/census/tables.htm",
+              "title": "2002 Population and Housing Census, General Report tables (Tanzania government website, archived)",
+              "says": "Lists 21 mainland and 5 Zanzibar regions; Arusha region of 1988 was split into Arusha and Manyara just before the 2002 census.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/utz.html",
+              "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+              "says": "2012-03-02 GN 72: Geita from Shinyanga, Kagera, Mwanza parts; Katavi from Rukwa; Njombe from Iringa; Simiyu from Shinyanga plus Busega (Mwanza).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens on the 2002 census night (25 Aug 2002), the first date an official source attests the 2002 layout; Manyara's split date is reported as ~May 2002 (statoids) — not claimed earlier. Not touched by the 2012 GN 72 or the 2016 Songwe change."
+        }
+      ]
+    },
+    {
+      "id": "TZA:Dodoma",
+      "names": {
+        "en": "Dodoma Region",
+        "ja": "ドドマ州",
+        "local": "Mkoa wa Dodoma"
+      },
+      "wikidata": "Q213268",
+      "spans": [
+        {
+          "from": "2002-08-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TZA-3385"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20051219025451/http://www.tanzania.go.tz/census/census/tables.htm",
+              "title": "2002 Population and Housing Census, General Report tables (Tanzania government website, archived)",
+              "says": "Lists 21 mainland and 5 Zanzibar regions; Arusha region of 1988 was split into Arusha and Manyara just before the 2002 census.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/utz.html",
+              "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+              "says": "2012-03-02 GN 72: Geita from Shinyanga, Kagera, Mwanza parts; Katavi from Rukwa; Njombe from Iringa; Simiyu from Shinyanga plus Busega (Mwanza).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens on the 2002 census night (25 Aug 2002), the first date an official source attests the 2002 layout; Manyara's split date is reported as ~May 2002 (statoids) — not claimed earlier. Not touched by the 2012 GN 72 or the 2016 Songwe change."
+        }
+      ]
+    },
+    {
+      "id": "TZA:Singida",
+      "names": {
+        "en": "Singida Region",
+        "ja": "シンギダ州",
+        "local": "Mkoa wa Singida"
+      },
+      "wikidata": "Q153326",
+      "spans": [
+        {
+          "from": "2002-08-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TZA-3390"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20051219025451/http://www.tanzania.go.tz/census/census/tables.htm",
+              "title": "2002 Population and Housing Census, General Report tables (Tanzania government website, archived)",
+              "says": "Lists 21 mainland and 5 Zanzibar regions; Arusha region of 1988 was split into Arusha and Manyara just before the 2002 census.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/utz.html",
+              "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+              "says": "2012-03-02 GN 72: Geita from Shinyanga, Kagera, Mwanza parts; Katavi from Rukwa; Njombe from Iringa; Simiyu from Shinyanga plus Busega (Mwanza).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens on the 2002 census night (25 Aug 2002), the first date an official source attests the 2002 layout; Manyara's split date is reported as ~May 2002 (statoids) — not claimed earlier. Not touched by the 2012 GN 72 or the 2016 Songwe change."
+        }
+      ]
+    },
+    {
+      "id": "TZA:Tabora",
+      "names": {
+        "en": "Tabora Region",
+        "ja": "タボーラ州",
+        "local": "Mkoa wa Tabora"
+      },
+      "wikidata": "Q153335",
+      "spans": [
+        {
+          "from": "2002-08-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TZA-3359"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20051219025451/http://www.tanzania.go.tz/census/census/tables.htm",
+              "title": "2002 Population and Housing Census, General Report tables (Tanzania government website, archived)",
+              "says": "Lists 21 mainland and 5 Zanzibar regions; Arusha region of 1988 was split into Arusha and Manyara just before the 2002 census.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/utz.html",
+              "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+              "says": "2012-03-02 GN 72: Geita from Shinyanga, Kagera, Mwanza parts; Katavi from Rukwa; Njombe from Iringa; Simiyu from Shinyanga plus Busega (Mwanza).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens on the 2002 census night (25 Aug 2002), the first date an official source attests the 2002 layout; Manyara's split date is reported as ~May 2002 (statoids) — not claimed earlier. Not touched by the 2012 GN 72 or the 2016 Songwe change."
+        }
+      ]
+    },
+    {
+      "id": "TZA:Kigoma",
+      "names": {
+        "en": "Kigoma Region",
+        "ja": "キゴマ州",
+        "local": "Mkoa wa Kigoma"
+      },
+      "wikidata": "Q747943",
+      "spans": [
+        {
+          "from": "2002-08-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TZA-3363"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20051219025451/http://www.tanzania.go.tz/census/census/tables.htm",
+              "title": "2002 Population and Housing Census, General Report tables (Tanzania government website, archived)",
+              "says": "Lists 21 mainland and 5 Zanzibar regions; Arusha region of 1988 was split into Arusha and Manyara just before the 2002 census.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/utz.html",
+              "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+              "says": "2012-03-02 GN 72: Geita from Shinyanga, Kagera, Mwanza parts; Katavi from Rukwa; Njombe from Iringa; Simiyu from Shinyanga plus Busega (Mwanza).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens on the 2002 census night (25 Aug 2002), the first date an official source attests the 2002 layout; Manyara's split date is reported as ~May 2002 (statoids) — not claimed earlier. Not touched by the 2012 GN 72 or the 2016 Songwe change."
+        }
+      ]
+    },
+    {
+      "id": "TZA:Mara",
+      "names": {
+        "en": "Mara Region",
+        "ja": "マラ州",
+        "local": "Mkoa wa Mara"
+      },
+      "wikidata": "Q458406",
+      "spans": [
+        {
+          "from": "2002-08-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TZA-3394"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20051219025451/http://www.tanzania.go.tz/census/census/tables.htm",
+              "title": "2002 Population and Housing Census, General Report tables (Tanzania government website, archived)",
+              "says": "Lists 21 mainland and 5 Zanzibar regions; Arusha region of 1988 was split into Arusha and Manyara just before the 2002 census.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/utz.html",
+              "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+              "says": "2012-03-02 GN 72: Geita from Shinyanga, Kagera, Mwanza parts; Katavi from Rukwa; Njombe from Iringa; Simiyu from Shinyanga plus Busega (Mwanza).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens on the 2002 census night (25 Aug 2002), the first date an official source attests the 2002 layout; Manyara's split date is reported as ~May 2002 (statoids) — not claimed earlier. Not touched by the 2012 GN 72 or the 2016 Songwe change."
+        }
+      ]
+    },
+    {
+      "id": "TZA:Mtwara",
+      "names": {
+        "en": "Mtwara Region",
+        "ja": "ムトワラ州",
+        "local": "Mkoa wa Mtwara"
+      },
+      "wikidata": "Q499465",
+      "spans": [
+        {
+          "from": "2002-08-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TZA-3388"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20051219025451/http://www.tanzania.go.tz/census/census/tables.htm",
+              "title": "2002 Population and Housing Census, General Report tables (Tanzania government website, archived)",
+              "says": "Lists 21 mainland and 5 Zanzibar regions; Arusha region of 1988 was split into Arusha and Manyara just before the 2002 census.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/utz.html",
+              "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+              "says": "2012-03-02 GN 72: Geita from Shinyanga, Kagera, Mwanza parts; Katavi from Rukwa; Njombe from Iringa; Simiyu from Shinyanga plus Busega (Mwanza).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens on the 2002 census night (25 Aug 2002), the first date an official source attests the 2002 layout; Manyara's split date is reported as ~May 2002 (statoids) — not claimed earlier. Not touched by the 2012 GN 72 or the 2016 Songwe change."
+        }
+      ]
+    },
+    {
+      "id": "TZA:Lindi",
+      "names": {
+        "en": "Lindi Region",
+        "ja": "リンディ州",
+        "local": "Mkoa wa Lindi"
+      },
+      "wikidata": "Q309339",
+      "spans": [
+        {
+          "from": "2002-08-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TZA-3387"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20051219025451/http://www.tanzania.go.tz/census/census/tables.htm",
+              "title": "2002 Population and Housing Census, General Report tables (Tanzania government website, archived)",
+              "says": "Lists 21 mainland and 5 Zanzibar regions; Arusha region of 1988 was split into Arusha and Manyara just before the 2002 census.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/utz.html",
+              "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+              "says": "2012-03-02 GN 72: Geita from Shinyanga, Kagera, Mwanza parts; Katavi from Rukwa; Njombe from Iringa; Simiyu from Shinyanga plus Busega (Mwanza).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens on the 2002 census night (25 Aug 2002), the first date an official source attests the 2002 layout; Manyara's split date is reported as ~May 2002 (statoids) — not claimed earlier. Not touched by the 2012 GN 72 or the 2016 Songwe change."
+        }
+      ]
+    },
+    {
+      "id": "TZA:Ruvuma",
+      "names": {
+        "en": "Ruvuma Region",
+        "ja": "ルヴマ州",
+        "local": "Mkoa wa Ruvuma"
+      },
+      "wikidata": "Q115318",
+      "spans": [
+        {
+          "from": "2002-08-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TZA-3389"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20051219025451/http://www.tanzania.go.tz/census/census/tables.htm",
+              "title": "2002 Population and Housing Census, General Report tables (Tanzania government website, archived)",
+              "says": "Lists 21 mainland and 5 Zanzibar regions; Arusha region of 1988 was split into Arusha and Manyara just before the 2002 census.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/utz.html",
+              "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+              "says": "2012-03-02 GN 72: Geita from Shinyanga, Kagera, Mwanza parts; Katavi from Rukwa; Njombe from Iringa; Simiyu from Shinyanga plus Busega (Mwanza).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens on the 2002 census night (25 Aug 2002), the first date an official source attests the 2002 layout; Manyara's split date is reported as ~May 2002 (statoids) — not claimed earlier. Not touched by the 2012 GN 72 or the 2016 Songwe change."
+        }
+      ]
+    },
+    {
+      "id": "TZA:ZanzibarSouthandCentral",
+      "names": {
+        "en": "Unguja South Region",
+        "ja": "ザンジバル中部・南部州",
+        "local": "Mkoa wa Unguja Kusini"
+      },
+      "wikidata": "Q643120",
+      "spans": [
+        {
+          "from": "2002-08-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TZA-3337"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20051219025451/http://www.tanzania.go.tz/census/census/tables.htm",
+              "title": "2002 Population and Housing Census, General Report tables (Tanzania government website, archived)",
+              "says": "Lists 21 mainland and 5 Zanzibar regions; Arusha region of 1988 was split into Arusha and Manyara just before the 2002 census.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/utz.html",
+              "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+              "says": "2012-03-02 GN 72: Geita from Shinyanga, Kagera, Mwanza parts; Katavi from Rukwa; Njombe from Iringa; Simiyu from Shinyanga plus Busega (Mwanza).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens on the 2002 census night (25 Aug 2002), the first date an official source attests the 2002 layout; Manyara's split date is reported as ~May 2002 (statoids) — not claimed earlier. Not touched by the 2012 GN 72 or the 2016 Songwe change."
+        }
+      ]
+    },
+    {
+      "id": "TZA:KaskaziniUnguja",
+      "names": {
+        "en": "Unguja North Region",
+        "ja": "ザンジバル北部州",
+        "local": "Mkoa wa Unguja Kaskazini"
+      },
+      "wikidata": "Q147116",
+      "spans": [
+        {
+          "from": "2002-08-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TZA-3383"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20051219025451/http://www.tanzania.go.tz/census/census/tables.htm",
+              "title": "2002 Population and Housing Census, General Report tables (Tanzania government website, archived)",
+              "says": "Lists 21 mainland and 5 Zanzibar regions; Arusha region of 1988 was split into Arusha and Manyara just before the 2002 census.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/utz.html",
+              "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+              "says": "2012-03-02 GN 72: Geita from Shinyanga, Kagera, Mwanza parts; Katavi from Rukwa; Njombe from Iringa; Simiyu from Shinyanga plus Busega (Mwanza).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens on the 2002 census night (25 Aug 2002), the first date an official source attests the 2002 layout; Manyara's split date is reported as ~May 2002 (statoids) — not claimed earlier. Not touched by the 2012 GN 72 or the 2016 Songwe change."
+        }
+      ]
+    },
+    {
+      "id": "TZA:ZanzibarWest",
+      "names": {
+        "en": "Mjini Magharibi Region",
+        "ja": "ザンジバル都市部・西部州",
+        "local": "Mkoa wa Unguja Mjini Magharibi"
+      },
+      "wikidata": "Q180822",
+      "spans": [
+        {
+          "from": "2002-08-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TZA-3384"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20051219025451/http://www.tanzania.go.tz/census/census/tables.htm",
+              "title": "2002 Population and Housing Census, General Report tables (Tanzania government website, archived)",
+              "says": "Lists 21 mainland and 5 Zanzibar regions; Arusha region of 1988 was split into Arusha and Manyara just before the 2002 census.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/utz.html",
+              "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+              "says": "2012-03-02 GN 72: Geita from Shinyanga, Kagera, Mwanza parts; Katavi from Rukwa; Njombe from Iringa; Simiyu from Shinyanga plus Busega (Mwanza).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens on the 2002 census night (25 Aug 2002), the first date an official source attests the 2002 layout; Manyara's split date is reported as ~May 2002 (statoids) — not claimed earlier. Not touched by the 2012 GN 72 or the 2016 Songwe change."
+        }
+      ]
+    },
+    {
+      "id": "TZA:KusiniPemba",
+      "names": {
+        "en": "South Pemba Region",
+        "ja": "ペンバ南部州",
+        "local": "Mkoa wa Pemba Kusini"
+      },
+      "wikidata": "Q498067",
+      "spans": [
+        {
+          "from": "2002-08-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TZA-3381"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20051219025451/http://www.tanzania.go.tz/census/census/tables.htm",
+              "title": "2002 Population and Housing Census, General Report tables (Tanzania government website, archived)",
+              "says": "Lists 21 mainland and 5 Zanzibar regions; Arusha region of 1988 was split into Arusha and Manyara just before the 2002 census.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/utz.html",
+              "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+              "says": "2012-03-02 GN 72: Geita from Shinyanga, Kagera, Mwanza parts; Katavi from Rukwa; Njombe from Iringa; Simiyu from Shinyanga plus Busega (Mwanza).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens on the 2002 census night (25 Aug 2002), the first date an official source attests the 2002 layout; Manyara's split date is reported as ~May 2002 (statoids) — not claimed earlier. Not touched by the 2012 GN 72 or the 2016 Songwe change."
+        }
+      ]
+    },
+    {
+      "id": "TZA:KaskaziniPemba",
+      "names": {
+        "en": "North Pemba Region",
+        "ja": "ペンバ北部州",
+        "local": "Mkoa wa Pemba Kaskazini"
+      },
+      "wikidata": "Q498073",
+      "spans": [
+        {
+          "from": "2002-08-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TZA-3380"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20051219025451/http://www.tanzania.go.tz/census/census/tables.htm",
+              "title": "2002 Population and Housing Census, General Report tables (Tanzania government website, archived)",
+              "says": "Lists 21 mainland and 5 Zanzibar regions; Arusha region of 1988 was split into Arusha and Manyara just before the 2002 census.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/utz.html",
+              "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+              "says": "2012-03-02 GN 72: Geita from Shinyanga, Kagera, Mwanza parts; Katavi from Rukwa; Njombe from Iringa; Simiyu from Shinyanga plus Busega (Mwanza).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens on the 2002 census night (25 Aug 2002), the first date an official source attests the 2002 layout; Manyara's split date is reported as ~May 2002 (statoids) — not claimed earlier. Not touched by the 2012 GN 72 or the 2016 Songwe change."
+        }
+      ]
+    },
+    {
+      "id": "TZA:Arusha",
+      "names": {
+        "en": "Arusha Region",
+        "ja": "アルーシャ州",
+        "local": "Mkoa wa Arusha"
+      },
+      "wikidata": "Q329261",
+      "spans": [
+        {
+          "from": "2002-08-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TZA-3391"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20051219025451/http://www.tanzania.go.tz/census/census/tables.htm",
+              "title": "2002 Population and Housing Census, General Report tables (Tanzania government website, archived)",
+              "says": "Lists 21 mainland and 5 Zanzibar regions; Arusha region of 1988 was split into Arusha and Manyara just before the 2002 census.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/utz.html",
+              "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+              "says": "~2002-05 Manyara split from Arusha: Babati, Hanang, Kiteto, Mbulu, Simanjiro; southern Monduli annexed to Babati — all formerly Arusha.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens on the 2002 census night (25 Aug 2002), the first date an official source attests the 2002 layout; Manyara's split date is reported as ~May 2002 (statoids) — not claimed earlier."
+        }
+      ]
+    },
+    {
+      "id": "TZA:Manyara",
+      "names": {
+        "en": "Manyara Region",
+        "ja": "マニャラ州",
+        "local": "Mkoa wa Manyara"
+      },
+      "wikidata": "Q331117",
+      "spans": [
+        {
+          "from": "2002-08-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TZA-3392"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20051219025451/http://www.tanzania.go.tz/census/census/tables.htm",
+              "title": "2002 Population and Housing Census, General Report tables (Tanzania government website, archived)",
+              "says": "Lists 21 mainland and 5 Zanzibar regions; Arusha region of 1988 was split into Arusha and Manyara just before the 2002 census.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/utz.html",
+              "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+              "says": "~2002-05 Manyara split from Arusha: Babati, Hanang, Kiteto, Mbulu, Simanjiro; southern Monduli annexed to Babati — all formerly Arusha.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens on the 2002 census night (25 Aug 2002), the first date an official source attests the 2002 layout; Manyara's split date is reported as ~May 2002 (statoids) — not claimed earlier."
+        }
+      ]
+    },
+    {
+      "id": "TZA:Mbeya",
+      "names": {
+        "en": "Mbeya Region",
+        "ja": "ムベヤ州",
+        "local": "Mkoa wa Mbeya"
+      },
+      "wikidata": "Q458382",
+      "spans": [
+        {
+          "from": "2002-08-25",
+          "precision": "day",
+          "to": "2016-01-29",
+          "atoms": [
+            "TZA-3335"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20051219025451/http://www.tanzania.go.tz/census/census/tables.htm",
+              "title": "2002 Population and Housing Census, General Report tables (Tanzania government website, archived)",
+              "says": "Lists 21 mainland and 5 Zanzibar regions; Arusha region of 1988 was split into Arusha and Manyara just before the 2002 census.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Songwe_Region&oldid=1376880374",
+              "title": "Wikipedia: Songwe Region (rev 1376880374)",
+              "says": "Songwe Region was created on 29 January 2016 from the western half of Mbeya Region.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens on the 2002 census night (25 Aug 2002), the first date an official source attests the 2002 layout; Manyara's split date is reported as ~May 2002 (statoids) — not claimed earlier. NE Mbeya is the pre-Songwe region."
+        }
+      ]
+    },
+    {
+      "id": "TZA:Iringa",
+      "names": {
+        "en": "Iringa Region",
+        "ja": "イリンガ州",
+        "local": "Mkoa wa Iringa"
+      },
+      "wikidata": "Q309352",
+      "spans": [
+        {
+          "from": "2002-08-25",
+          "precision": "day",
+          "to": "2012-03-02",
+          "atoms": [
+            "TZA-3386",
+            "TZA-5587"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20051219025451/http://www.tanzania.go.tz/census/census/tables.htm",
+              "title": "2002 Population and Housing Census, General Report tables (Tanzania government website, archived)",
+              "says": "Lists 21 mainland and 5 Zanzibar regions; Arusha region of 1988 was split into Arusha and Manyara just before the 2002 census.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/utz.html",
+              "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+              "says": "2012-03-02 GN 72: Geita from Shinyanga, Kagera, Mwanza parts; Katavi from Rukwa; Njombe from Iringa; Simiyu from Shinyanga plus Busega (Mwanza).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20120823174437/http://www.dailynews.co.tz/index.php/local-news/2739-state-gazettes-new-regions-districts",
+              "title": "Daily News (Dar es Salaam), \"State gazettes new regions, districts\", March 2012 (archived)",
+              "says": "GN No. 72 created Geita, Katavi, Njombe and Simiyu with immediate effect from 2 March 2012, listing each new region's districts.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens on the 2002 census night (25 Aug 2002), the first date an official source attests the 2002 layout; Manyara's split date is reported as ~May 2002 (statoids) — not claimed earlier. Njombe (Makete, Njombe, Ludewa) came wholly from Iringa."
+        },
+        {
+          "from": "2012-03-02",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TZA-3386"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utz.html",
+              "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+              "says": "2012-03-02 GN 72: Geita from Shinyanga, Kagera, Mwanza parts; Katavi from Rukwa; Njombe from Iringa; Simiyu from Shinyanga plus Busega (Mwanza).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20120823174437/http://www.dailynews.co.tz/index.php/local-news/2739-state-gazettes-new-regions-districts",
+              "title": "Daily News (Dar es Salaam), \"State gazettes new regions, districts\", March 2012 (archived)",
+              "says": "GN No. 72 created Geita, Katavi, Njombe and Simiyu with immediate effect from 2 March 2012, listing each new region's districts.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TZA:Njombe",
+      "names": {
+        "en": "Njombe Region",
+        "ja": "ンジョンベ州",
+        "local": "Mkoa wa Njombe"
+      },
+      "wikidata": "Q2086273",
+      "spans": [
+        {
+          "from": "2012-03-02",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TZA-5587"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utz.html",
+              "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+              "says": "2012-03-02 GN 72: Geita from Shinyanga, Kagera, Mwanza parts; Katavi from Rukwa; Njombe from Iringa; Simiyu from Shinyanga plus Busega (Mwanza).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20120823174437/http://www.dailynews.co.tz/index.php/local-news/2739-state-gazettes-new-regions-districts",
+              "title": "Daily News (Dar es Salaam), \"State gazettes new regions, districts\", March 2012 (archived)",
+              "says": "GN No. 72 created Geita, Katavi, Njombe and Simiyu with immediate effect from 2 March 2012, listing each new region's districts.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TZA:Rukwa",
+      "names": {
+        "en": "Rukwa Region",
+        "ja": "ルクワ州",
+        "local": "Mkoa wa Rukwa"
+      },
+      "wikidata": "Q153329",
+      "spans": [
+        {
+          "from": "2002-08-25",
+          "precision": "day",
+          "to": "2012-03-02",
+          "atoms": [
+            "TZA-3336",
+            "TZA-5584"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20051219025451/http://www.tanzania.go.tz/census/census/tables.htm",
+              "title": "2002 Population and Housing Census, General Report tables (Tanzania government website, archived)",
+              "says": "Lists 21 mainland and 5 Zanzibar regions; Arusha region of 1988 was split into Arusha and Manyara just before the 2002 census.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/utz.html",
+              "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+              "says": "2012-03-02 GN 72: Geita from Shinyanga, Kagera, Mwanza parts; Katavi from Rukwa; Njombe from Iringa; Simiyu from Shinyanga plus Busega (Mwanza).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20120823174437/http://www.dailynews.co.tz/index.php/local-news/2739-state-gazettes-new-regions-districts",
+              "title": "Daily News (Dar es Salaam), \"State gazettes new regions, districts\", March 2012 (archived)",
+              "says": "GN No. 72 created Geita, Katavi, Njombe and Simiyu with immediate effect from 2 March 2012, listing each new region's districts.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens on the 2002 census night (25 Aug 2002), the first date an official source attests the 2002 layout; Manyara's split date is reported as ~May 2002 (statoids) — not claimed earlier. Katavi (Mpanda, Mlele) came wholly from Rukwa."
+        },
+        {
+          "from": "2012-03-02",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TZA-3336"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utz.html",
+              "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+              "says": "2012-03-02 GN 72: Geita from Shinyanga, Kagera, Mwanza parts; Katavi from Rukwa; Njombe from Iringa; Simiyu from Shinyanga plus Busega (Mwanza).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20120823174437/http://www.dailynews.co.tz/index.php/local-news/2739-state-gazettes-new-regions-districts",
+              "title": "Daily News (Dar es Salaam), \"State gazettes new regions, districts\", March 2012 (archived)",
+              "says": "GN No. 72 created Geita, Katavi, Njombe and Simiyu with immediate effect from 2 March 2012, listing each new region's districts.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TZA:Katavi",
+      "names": {
+        "en": "Katavi Region",
+        "ja": "カタヴィ州",
+        "local": "Mkoa wa Katavi"
+      },
+      "wikidata": "Q2682731",
+      "spans": [
+        {
+          "from": "2012-03-02",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TZA-5584"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utz.html",
+              "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+              "says": "2012-03-02 GN 72: Geita from Shinyanga, Kagera, Mwanza parts; Katavi from Rukwa; Njombe from Iringa; Simiyu from Shinyanga plus Busega (Mwanza).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20120823174437/http://www.dailynews.co.tz/index.php/local-news/2739-state-gazettes-new-regions-districts",
+              "title": "Daily News (Dar es Salaam), \"State gazettes new regions, districts\", March 2012 (archived)",
+              "says": "GN No. 72 created Geita, Katavi, Njombe and Simiyu with immediate effect from 2 March 2012, listing each new region's districts.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TZA:Mwanza",
+      "names": {
+        "en": "Mwanza Region",
+        "ja": "ムワンザ州",
+        "local": "Mkoa wa Mwanza"
+      },
+      "wikidata": "Q331153",
+      "spans": [
+        {
+          "from": "2012-03-02",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TZA-3357"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utz.html",
+              "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+              "says": "2012-03-02 GN 72: Geita from Shinyanga, Kagera, Mwanza parts; Katavi from Rukwa; Njombe from Iringa; Simiyu from Shinyanga plus Busega (Mwanza).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20120823174437/http://www.dailynews.co.tz/index.php/local-news/2739-state-gazettes-new-regions-districts",
+              "title": "Daily News (Dar es Salaam), \"State gazettes new regions, districts\", March 2012 (archived)",
+              "says": "GN No. 72 created Geita, Katavi, Njombe and Simiyu with immediate effect from 2 March 2012, listing each new region's districts.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TZA:Shinyanga",
+      "names": {
+        "en": "Shinyanga Region",
+        "ja": "シニャンガ州",
+        "local": "Mkoa wa Shinyanga"
+      },
+      "wikidata": "Q153339",
+      "spans": [
+        {
+          "from": "2012-03-02",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TZA-3358"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utz.html",
+              "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+              "says": "2012-03-02 GN 72: Geita from Shinyanga, Kagera, Mwanza parts; Katavi from Rukwa; Njombe from Iringa; Simiyu from Shinyanga plus Busega (Mwanza).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20120823174437/http://www.dailynews.co.tz/index.php/local-news/2739-state-gazettes-new-regions-districts",
+              "title": "Daily News (Dar es Salaam), \"State gazettes new regions, districts\", March 2012 (archived)",
+              "says": "GN No. 72 created Geita, Katavi, Njombe and Simiyu with immediate effect from 2 March 2012, listing each new region's districts.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TZA:Kagera",
+      "names": {
+        "en": "Kagera Region",
+        "ja": "カゲラ州",
+        "local": "Mkoa wa Kagera"
+      },
+      "wikidata": "Q309190",
+      "spans": [
+        {
+          "from": "2012-03-02",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TZA-3360"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utz.html",
+              "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+              "says": "2012-03-02 GN 72: Geita from Shinyanga, Kagera, Mwanza parts; Katavi from Rukwa; Njombe from Iringa; Simiyu from Shinyanga plus Busega (Mwanza).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20120823174437/http://www.dailynews.co.tz/index.php/local-news/2739-state-gazettes-new-regions-districts",
+              "title": "Daily News (Dar es Salaam), \"State gazettes new regions, districts\", March 2012 (archived)",
+              "says": "GN No. 72 created Geita, Katavi, Njombe and Simiyu with immediate effect from 2 March 2012, listing each new region's districts.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TZA:Geita",
+      "names": {
+        "en": "Geita Region",
+        "ja": "ゲイタ州",
+        "local": "Mkoa wa Geita"
+      },
+      "wikidata": "Q1848521",
+      "spans": [
+        {
+          "from": "2012-03-02",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TZA-5586"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utz.html",
+              "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+              "says": "2012-03-02 GN 72: Geita from Shinyanga, Kagera, Mwanza parts; Katavi from Rukwa; Njombe from Iringa; Simiyu from Shinyanga plus Busega (Mwanza).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20120823174437/http://www.dailynews.co.tz/index.php/local-news/2739-state-gazettes-new-regions-districts",
+              "title": "Daily News (Dar es Salaam), \"State gazettes new regions, districts\", March 2012 (archived)",
+              "says": "GN No. 72 created Geita, Katavi, Njombe and Simiyu with immediate effect from 2 March 2012, listing each new region's districts.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TZA:Simiyu",
+      "names": {
+        "en": "Simiyu Region",
+        "ja": "シミユ州",
+        "local": "Mkoa wa Simiyu"
+      },
+      "wikidata": "Q2787568",
+      "spans": [
+        {
+          "from": "2012-03-02",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TZA-5585"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utz.html",
+              "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+              "says": "2012-03-02 GN 72: Geita from Shinyanga, Kagera, Mwanza parts; Katavi from Rukwa; Njombe from Iringa; Simiyu from Shinyanga plus Busega (Mwanza).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://web.archive.org/web/20120823174437/http://www.dailynews.co.tz/index.php/local-news/2739-state-gazettes-new-regions-districts",
+              "title": "Daily News (Dar es Salaam), \"State gazettes new regions, districts\", March 2012 (archived)",
+              "says": "GN No. 72 created Geita, Katavi, Njombe and Simiyu with immediate effect from 2 March 2012, listing each new region's districts.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "2002-08-25",
+      "precision": "day",
+      "what": "Census attests Arusha and Manyara as separate regions (split ~May 2002).",
+      "sources": [
+        {
+          "url": "https://web.archive.org/web/20051219025451/http://www.tanzania.go.tz/census/census/tables.htm",
+          "title": "2002 Population and Housing Census, General Report tables (Tanzania government website, archived)",
+          "says": "Lists 21 mainland and 5 Zanzibar regions; Arusha region of 1988 was split into Arusha and Manyara just before the 2002 census.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://www.statoids.com/utz.html",
+          "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+          "says": "~2002-05 Manyara split from Arusha: Babati, Hanang, Kiteto, Mbulu, Simanjiro; southern Monduli annexed to Babati — all formerly Arusha.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2012-03-02",
+      "precision": "day",
+      "what": "GN 72: Geita, Katavi, Njombe, Simiyu created.",
+      "sources": [
+        {
+          "url": "https://web.archive.org/web/20120823174437/http://www.dailynews.co.tz/index.php/local-news/2739-state-gazettes-new-regions-districts",
+          "title": "Daily News (Dar es Salaam), \"State gazettes new regions, districts\", March 2012 (archived)",
+          "says": "GN No. 72 created Geita, Katavi, Njombe and Simiyu with immediate effect from 2 March 2012, listing each new region's districts.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://www.statoids.com/utz.html",
+          "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+          "says": "2012-03-02 GN 72: Geita from Shinyanga, Kagera, Mwanza parts; Katavi from Rukwa; Njombe from Iringa; Simiyu from Shinyanga plus Busega (Mwanza).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2016-01-29",
+      "precision": "day",
+      "what": "Songwe Region split from Mbeya.",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/w/index.php?title=Songwe_Region&oldid=1376880374",
+          "title": "Wikipedia: Songwe Region (rev 1376880374)",
+          "says": "Songwe Region was created on 29 January 2016 from the western half of Mbeya Region.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "2002-08-25",
+      "n": 26,
+      "sources": [
+        {
+          "url": "https://web.archive.org/web/20051219025451/http://www.tanzania.go.tz/census/census/tables.htm",
+          "title": "2002 Population and Housing Census, General Report tables (Tanzania government website, archived)",
+          "says": "Lists 21 mainland and 5 Zanzibar regions; Arusha region of 1988 was split into Arusha and Manyara just before the 2002 census.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2012-03-02",
+      "n": 30,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/utz.html",
+          "title": "Statoids — Regions of Tanzania (Gwillim Law, updated 2015-06-30)",
+          "says": "2012-03-02 GN 72: Geita from Shinyanga, Kagera, Mwanza parts; Katavi from Rukwa; Njombe from Iringa; Simiyu from Shinyanga plus Busega (Mwanza).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2016-01-29",
+      "n": 31,
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Tanzania&oldid=1375229043",
+          "title": "Wikipedia: Regions of Tanzania (rev 1375229043)",
+          "says": "Tanzania is divided into thirty-one regions; Songwe created in 2016 from the western part of Mbeya.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Mwanza, Shinyanga and Kagera before GN 72 (2002-08-25 → 2012-03-02)",
+      "unit": "TZA:Mwanza@pre2012",
+      "atoms": [
+        "TZA-3357",
+        "TZA-3358",
+        "TZA-3360",
+        "TZA-5586",
+        "TZA-5585"
+      ],
+      "from": "2002-08-25",
+      "to": "2012-03-02",
+      "why": "Geita region was assembled from Bukombe (Shinyanga), Chato (Kagera) and Geita (Mwanza) districts, and Simiyu took Busega from Mwanza: the old lines run inside the NE Geita and Simiyu atoms.",
+      "checked": [
+        "Daily News on GN 72/73 (2012)",
+        "statoids utz.html"
+      ],
+      "needs": "district atoms of 2002 (NBS census districts; geoBoundaries TZA ADM2, licence to check)"
+    },
+    {
+      "what": "Shinyanga before GN 72",
+      "unit": "TZA:Shinyanga@pre2012",
+      "from": "2002-08-25",
+      "to": "2012-03-02",
+      "why": "See previous entry (atoms withheld there).",
+      "checked": [
+        "statoids utz.html"
+      ],
+      "needs": "district atoms of 2002"
+    },
+    {
+      "what": "Kagera before GN 72",
+      "unit": "TZA:Kagera@pre2012",
+      "from": "2002-08-25",
+      "to": "2012-03-02",
+      "why": "See previous entry (atoms withheld there).",
+      "checked": [
+        "statoids utz.html"
+      ],
+      "needs": "district atoms of 2002"
+    },
+    {
+      "what": "Mbeya and Songwe from 2016-01-29",
+      "unit": "TZA:Mbeya@2016",
+      "atoms": [
+        "TZA-3335"
+      ],
+      "from": "2016-01-29",
+      "to": null,
+      "why": "NE draws the pre-2016 Mbeya; the Mbeya–Songwe line runs inside that atom.",
+      "checked": [
+        "Wikipedia Songwe Region rev 1376880374",
+        "Wikipedia Regions of Tanzania rev 1375229043"
+      ],
+      "needs": "district atoms (geoBoundaries TZA ADM2 post-2016)"
+    },
+    {
+      "what": "Songwe Region from 2016-01-29",
+      "unit": "TZA:Songwe@2016",
+      "from": "2016-01-29",
+      "to": null,
+      "why": "Carried inside the NE Mbeya atom (see previous entry).",
+      "checked": [
+        "Wikipedia Songwe Region rev 1376880374"
+      ],
+      "needs": "district atoms"
+    },
+    {
+      "what": "Mainland regions 1961/1963 → 2002 (provinces to regions 1963; Rukwa from Mbeya and Tabora ~1971–74; Lindi 1971/72; Dar es Salaam 1973/74; Pemba and Unguja splits)",
+      "from": "1961-12-09",
+      "to": "2002-08-25",
+      "why": "Before scope: the change list for 1963–2002 is incomplete at district level (e.g. Rukwa took parts of two regions; Karatu–Mbulu ward moves) and dates conflict between sources.",
+      "checked": [
+        "statoids utz.html",
+        "Wikipedia Regions of Tanzania rev 1375229043",
+        "2002 census General Report"
+      ],
+      "needs": "district atoms of the 1967/1978/1988 censuses"
+    }
+  ]
+}

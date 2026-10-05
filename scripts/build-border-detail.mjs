@@ -57,11 +57,14 @@ const OHM_SETS = [ ['hist-borders', '__HISTB', 'intmap-histb-cache'], ['hist-adm
    overview tolerance (0.004°), while the publisher's own outline is far finer — so zoomed in, the
    reader saw a 400 m caricature of a surveyed boundary. Their detail is the PUBLISHER'S geometry as
    its harvester (scripts/histsurveys/<key>.mjs) returns it: NO tolerance, no rounding beyond the
-   harvester's own. A derived record is not listed here — its overview IS its claim.
+   harvester's own. A derived record is not listed here — its overview IS its claim — except a reconstructed one (below).
    ⚠ Each record is its own set and its own fragment family (`<file>-<hash>.json`): the non-commercial
    record's geometry never shares a fragment with open geometry, and its fragments and its index entry
    state its licence (read from the bundle's own `licence`, not typed here). */
-const SURVEY_SETS = HIST_ADMIN_GAPS.filter(g => g.derived === false).map(g => [basename(g.file, '.js'), g.global, null, g]);
+/* (hist-reconstruction) a RECONSTRUCTED record is derived, but its claim is the union of its atoms at the precision
+   they were published in — its overview is simplified for the overview only — so its detail is served the same
+   way, with the same proof (the union, simplified as the bundle was, reproduces the shipped row byte for byte). */
+const SURVEY_SETS = HIST_ADMIN_GAPS.filter(g => g.derived === false || g.reconstructed).map(g => [basename(g.file, '.js'), g.global, null, g]);
 const SETS = [...OHM_SETS, ...SURVEY_SETS];
 const isSurvey = global => SURVEY_SETS.some(s => s[1] === global);
 /* a fragment this builder owns: one of the sets' own families, by name */
@@ -278,9 +281,11 @@ async function build(names = null) {
       const harvesters = await surveyHarvesters(), harvested = new Map();
       const unitsOf = async key => {
         if (!harvested.has(key)) {
-          const h = harvesters.get(key); if (!h) throw new Error(file + ': no harvester in scripts/histsurveys/ declares SOURCE.key ' + key);
           const byId = new Map();
-          for (const u of (await h.harvest()).units) { if (!byId.has(u.id)) byId.set(u.id, []); byId.get(u.id).push(u); }
+          let units;
+          if (key.startsWith('recon:')) units = await (await import('./build-hist-admin-recon.mjs')).fineUnits(key.slice(6));
+          else { const h = harvesters.get(key); if (!h) throw new Error(file + ': no harvester in scripts/histsurveys/ declares SOURCE.key ' + key); units = (await h.harvest()).units; }
+          for (const u of units) { if (!byId.has(u.id)) byId.set(u.id, []); byId.get(u.id).push(u); }
           harvested.set(key, byId);
         }
         return harvested.get(key);

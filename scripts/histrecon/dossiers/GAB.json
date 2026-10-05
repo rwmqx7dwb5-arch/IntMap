@@ -1,0 +1,373 @@
+{
+ "country": "GAB",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1960-08-17",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Gabonese Republic since independence 1960-08-17. The nine units were called régions (then préfectures) until c.1975, provinces since; territory unchanged.",
+ "units": [
+  {
+   "id": "GAB:Estuaire@1960",
+   "names": {
+    "en": "Estuaire Province",
+    "ja": "エスチュエール州",
+    "local": "Estuaire"
+   },
+   "wikidata": "Q281109",
+   "spans": [
+    {
+     "from": "1960-08-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "GAB-2168"
+     ],
+     "sources": [
+      {
+       "url": "http://anom.archivesnationales.culture.gouv.fr/geo.php?lieu=Gabon",
+       "title": "Gabon — fiche géographique, Archives nationales d'outre-mer (updated 2017-09-15)",
+       "says": "Haut-Ogooué recreated in Gabon 16 Oct 1946; at the 1958 elections the regions were these nine; independence 17 August 1960.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/uga.html",
+       "title": "Provinces of Gabon — Statoids (Gwillim Law, last updated 2016-10-06)",
+       "says": "Nine provinces; change history lists only capital renamings and the ~1975 prefecture-to-province status change, no transfer of territory between provinces.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The same nine units existed as régions before independence (ANOM: 1958 list); scope starts at independence. No inter-provincial transfer is recorded through 2019."
+    }
+   ]
+  },
+  {
+   "id": "GAB:HautOgoou@1960",
+   "names": {
+    "en": "Haut-Ogooué Province",
+    "ja": "オートオゴウェ州",
+    "local": "Haut-Ogooué"
+   },
+   "wikidata": "Q654438",
+   "spans": [
+    {
+     "from": "1960-08-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "GAB-2627"
+     ],
+     "sources": [
+      {
+       "url": "http://anom.archivesnationales.culture.gouv.fr/geo.php?lieu=Gabon",
+       "title": "Gabon — fiche géographique, Archives nationales d'outre-mer (updated 2017-09-15)",
+       "says": "Haut-Ogooué recreated in Gabon 16 Oct 1946; at the 1958 elections the regions were these nine; independence 17 August 1960.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/uga.html",
+       "title": "Provinces of Gabon — Statoids (Gwillim Law, last updated 2016-10-06)",
+       "says": "Nine provinces; change history lists only capital renamings and the ~1975 prefecture-to-province status change, no transfer of territory between provinces.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The same nine units existed as régions before independence (ANOM: 1958 list); scope starts at independence. No inter-provincial transfer is recorded through 2019."
+    }
+   ]
+  },
+  {
+   "id": "GAB:MoyenOgoou@1960",
+   "names": {
+    "en": "Moyen-Ogooué Province",
+    "ja": "モワイエン・オゴウェ州",
+    "local": "Moyen-Ogooué"
+   },
+   "wikidata": "Q590802",
+   "spans": [
+    {
+     "from": "1960-08-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "GAB-2621"
+     ],
+     "sources": [
+      {
+       "url": "http://anom.archivesnationales.culture.gouv.fr/geo.php?lieu=Gabon",
+       "title": "Gabon — fiche géographique, Archives nationales d'outre-mer (updated 2017-09-15)",
+       "says": "Haut-Ogooué recreated in Gabon 16 Oct 1946; at the 1958 elections the regions were these nine; independence 17 August 1960.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/uga.html",
+       "title": "Provinces of Gabon — Statoids (Gwillim Law, last updated 2016-10-06)",
+       "says": "Nine provinces; change history lists only capital renamings and the ~1975 prefecture-to-province status change, no transfer of territory between provinces.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The same nine units existed as régions before independence (ANOM: 1958 list); scope starts at independence. No inter-provincial transfer is recorded through 2019."
+    }
+   ]
+  },
+  {
+   "id": "GAB:Ngouni@1960",
+   "names": {
+    "en": "Ngounié Province",
+    "ja": "ングニエ州",
+    "local": "Ngounié"
+   },
+   "wikidata": "Q823774",
+   "spans": [
+    {
+     "from": "1960-08-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "GAB-2622"
+     ],
+     "sources": [
+      {
+       "url": "http://anom.archivesnationales.culture.gouv.fr/geo.php?lieu=Gabon",
+       "title": "Gabon — fiche géographique, Archives nationales d'outre-mer (updated 2017-09-15)",
+       "says": "Haut-Ogooué recreated in Gabon 16 Oct 1946; at the 1958 elections the regions were these nine; independence 17 August 1960.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/uga.html",
+       "title": "Provinces of Gabon — Statoids (Gwillim Law, last updated 2016-10-06)",
+       "says": "Nine provinces; change history lists only capital renamings and the ~1975 prefecture-to-province status change, no transfer of territory between provinces.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The same nine units existed as régions before independence (ANOM: 1958 list); scope starts at independence. No inter-provincial transfer is recorded through 2019."
+    }
+   ]
+  },
+  {
+   "id": "GAB:Nyanga@1960",
+   "names": {
+    "en": "Nyanga Province",
+    "ja": "ニャンガ州",
+    "local": "Nyanga"
+   },
+   "wikidata": "Q846017",
+   "spans": [
+    {
+     "from": "1960-08-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "GAB-2623"
+     ],
+     "sources": [
+      {
+       "url": "http://anom.archivesnationales.culture.gouv.fr/geo.php?lieu=Gabon",
+       "title": "Gabon — fiche géographique, Archives nationales d'outre-mer (updated 2017-09-15)",
+       "says": "Haut-Ogooué recreated in Gabon 16 Oct 1946; at the 1958 elections the regions were these nine; independence 17 August 1960.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/uga.html",
+       "title": "Provinces of Gabon — Statoids (Gwillim Law, last updated 2016-10-06)",
+       "says": "Nine provinces; change history lists only capital renamings and the ~1975 prefecture-to-province status change, no transfer of territory between provinces.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The same nine units existed as régions before independence (ANOM: 1958 list); scope starts at independence. No inter-provincial transfer is recorded through 2019."
+    }
+   ]
+  },
+  {
+   "id": "GAB:OgoouIvindo@1960",
+   "names": {
+    "en": "Ogooué-Ivindo Province",
+    "ja": "オゴウェ・イヴィンド州",
+    "local": "Ogooué-Ivindo"
+   },
+   "wikidata": "Q823822",
+   "spans": [
+    {
+     "from": "1960-08-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "GAB-2186"
+     ],
+     "sources": [
+      {
+       "url": "http://anom.archivesnationales.culture.gouv.fr/geo.php?lieu=Gabon",
+       "title": "Gabon — fiche géographique, Archives nationales d'outre-mer (updated 2017-09-15)",
+       "says": "Haut-Ogooué recreated in Gabon 16 Oct 1946; at the 1958 elections the regions were these nine; independence 17 August 1960.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/uga.html",
+       "title": "Provinces of Gabon — Statoids (Gwillim Law, last updated 2016-10-06)",
+       "says": "Nine provinces; change history lists only capital renamings and the ~1975 prefecture-to-province status change, no transfer of territory between provinces.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The same nine units existed as régions before independence (ANOM: 1958 list); scope starts at independence. No inter-provincial transfer is recorded through 2019."
+    }
+   ]
+  },
+  {
+   "id": "GAB:OgoouLolo@1960",
+   "names": {
+    "en": "Ogooué-Lolo Province",
+    "ja": "オゴウェ・ロロ州",
+    "local": "Ogooué-Lolo"
+   },
+   "wikidata": "Q823762",
+   "spans": [
+    {
+     "from": "1960-08-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "GAB-2628"
+     ],
+     "sources": [
+      {
+       "url": "http://anom.archivesnationales.culture.gouv.fr/geo.php?lieu=Gabon",
+       "title": "Gabon — fiche géographique, Archives nationales d'outre-mer (updated 2017-09-15)",
+       "says": "Haut-Ogooué recreated in Gabon 16 Oct 1946; at the 1958 elections the regions were these nine; independence 17 August 1960.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/uga.html",
+       "title": "Provinces of Gabon — Statoids (Gwillim Law, last updated 2016-10-06)",
+       "says": "Nine provinces; change history lists only capital renamings and the ~1975 prefecture-to-province status change, no transfer of territory between provinces.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The same nine units existed as régions before independence (ANOM: 1958 list); scope starts at independence. No inter-provincial transfer is recorded through 2019."
+    }
+   ]
+  },
+  {
+   "id": "GAB:OgoouMaritime@1960",
+   "names": {
+    "en": "Ogooué-Maritime Province",
+    "ja": "オゴウェ・マリティム州",
+    "local": "Ogooué-Maritime"
+   },
+   "wikidata": "Q823751",
+   "spans": [
+    {
+     "from": "1960-08-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "GAB-2624"
+     ],
+     "sources": [
+      {
+       "url": "http://anom.archivesnationales.culture.gouv.fr/geo.php?lieu=Gabon",
+       "title": "Gabon — fiche géographique, Archives nationales d'outre-mer (updated 2017-09-15)",
+       "says": "Haut-Ogooué recreated in Gabon 16 Oct 1946; at the 1958 elections the regions were these nine; independence 17 August 1960.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/uga.html",
+       "title": "Provinces of Gabon — Statoids (Gwillim Law, last updated 2016-10-06)",
+       "says": "Nine provinces; change history lists only capital renamings and the ~1975 prefecture-to-province status change, no transfer of territory between provinces.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The same nine units existed as régions before independence (ANOM: 1958 list); scope starts at independence. No inter-provincial transfer is recorded through 2019."
+    }
+   ]
+  },
+  {
+   "id": "GAB:WoleuNtem@1960",
+   "names": {
+    "en": "Woleu-Ntem Province",
+    "ja": "ウォレウ・ンテム州",
+    "local": "Woleu-Ntem"
+   },
+   "wikidata": "Q823800",
+   "spans": [
+    {
+     "from": "1960-08-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "GAB-2187"
+     ],
+     "sources": [
+      {
+       "url": "http://anom.archivesnationales.culture.gouv.fr/geo.php?lieu=Gabon",
+       "title": "Gabon — fiche géographique, Archives nationales d'outre-mer (updated 2017-09-15)",
+       "says": "Haut-Ogooué recreated in Gabon 16 Oct 1946; at the 1958 elections the regions were these nine; independence 17 August 1960.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/uga.html",
+       "title": "Provinces of Gabon — Statoids (Gwillim Law, last updated 2016-10-06)",
+       "says": "Nine provinces; change history lists only capital renamings and the ~1975 prefecture-to-province status change, no transfer of territory between provinces.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The same nine units existed as régions before independence (ANOM: 1958 list); scope starts at independence. No inter-provincial transfer is recorded through 2019."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1960-08-17",
+   "precision": "day",
+   "what": "Independence; nine régions inherited from the colonial territory",
+   "sources": [
+    {
+     "url": "http://anom.archivesnationales.culture.gouv.fr/geo.php?lieu=Gabon",
+     "title": "Gabon — fiche géographique, Archives nationales d'outre-mer (updated 2017-09-15)",
+     "says": "Haut-Ogooué recreated in Gabon 16 Oct 1946; at the 1958 elections the regions were these nine; independence 17 August 1960.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1975",
+   "precision": "year",
+   "what": "c.1975 (approximate in source): the nine prefectures become provinces; sub-prefectures reorganised into 37 departments — no change of provincial territory",
+   "sources": [
+    {
+     "url": "http://www.statoids.com/uga.html",
+     "title": "Provinces of Gabon — Statoids (Gwillim Law, last updated 2016-10-06)",
+     "says": "Nine provinces; change history lists only capital renamings and the ~1975 prefecture-to-province status change, no transfer of territory between provinces.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1969-01-06",
+   "n": 9,
+   "sources": [
+    {
+     "url": "http://www.statoids.com/uga.html",
+     "title": "Provinces of Gabon — Statoids (Gwillim Law, last updated 2016-10-06)",
+     "says": "Nine provinces; change history lists only capital renamings and the ~1975 prefecture-to-province status change, no transfer of territory between provinces.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2013-10-01",
+   "n": 9,
+   "sources": [
+    {
+     "url": "http://www.statoids.com/uga.html",
+     "title": "Provinces of Gabon — Statoids (Gwillim Law, last updated 2016-10-06)",
+     "says": "Nine provinces; change history lists only capital renamings and the ~1975 prefecture-to-province status change, no transfer of territory between provinces.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": []
+}

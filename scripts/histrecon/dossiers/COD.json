@@ -1,0 +1,1010 @@
+{
+ "country": "COD",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1960-06-30",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Republic of the Congo (Léopoldville) from 1960-06-30, Democratic Republic of the Congo 1964, Zaire 1971-10-27 to 1997-05-17. Units are the de jure provinces: the State of Katanga (1960-07-11 to 1963-01) and South Kasai (1960–62) secessions are polity questions, not drawn here. Provinces were called regions 1972–1997.",
+ "units": [
+  {
+   "id": "COD:Equateur",
+   "names": {
+    "en": "Équateur",
+    "ja": "赤道州",
+    "local": "Équateur"
+   },
+   "wikidata": "Q988104",
+   "spans": [
+    {
+     "from": "1960-06-30",
+     "precision": "day",
+     "to": "1962-08-14",
+     "atoms": [
+      "COD-1461"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1353446106",
+       "title": "Provinces of the Democratic Republic of the Congo — en.wikipedia, oldid 1353446106",
+       "says": "Loi Fondamentale: six provinces; decree of 6 Apr 1966 cut them to 12; 24 Dec 1966 to eight; Kinshasa a province 1975; Kivu split 1988.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "14 Aug 1962: Cuvette Centrale and Ubangi separated from Équateur; remainder became Moyen-Congo 5 Feb 1963.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Province of the Loi Fondamentale; the outer line is the union of the post-1966 provinces formed only from it (no inter-provincial transfer is recorded 1960–2015)."
+    },
+    {
+     "from": "1966-04-25",
+     "precision": "day",
+     "to": "2015-06",
+     "atoms": [
+      "COD-1461"
+     ],
+     "sources": [
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "25 Apr 1966: Cuvette Centrale, Moyen-Congo and Ubangi reunited in a new Équateur province; split 11 Jul 2015.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "New provinces became operational in June–July 2015 (rulers.org gives per-province dates in mid-July); ended at the earliest possible month."
+    }
+   ]
+  },
+  {
+   "id": "COD:Kasai@1960",
+   "names": {
+    "en": "Kasaï",
+    "ja": "カサイ州",
+    "local": "Kasaï"
+   },
+   "spans": [
+    {
+     "from": "1960-06-30",
+     "precision": "day",
+     "to": "1962-08-14",
+     "atoms": [
+      "COD-1872",
+      "COD-1896"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1353446106",
+       "title": "Provinces of the Democratic Republic of the Congo — en.wikipedia, oldid 1353446106",
+       "says": "Loi Fondamentale: six provinces; decree of 6 Apr 1966 cut them to 12; 24 Dec 1966 to eight; Kinshasa a province 1975; Kivu split 1988.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "14 Aug 1962: Kasaï divided into Lomami, Luluabourg, Sankuru, Sud-Kasaï, Unité Kasaïenne; 25 Apr 1966 these form Kasaï Occidental and Oriental.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Province of the Loi Fondamentale; the outer line is the union of the post-1966 provinces formed only from it (no inter-provincial transfer is recorded 1960–2015)."
+    }
+   ]
+  },
+  {
+   "id": "COD:KasaiOccidental@1966",
+   "names": {
+    "en": "Kasaï-Occidental",
+    "ja": "西カサイ州",
+    "local": "Kasaï-Occidental"
+   },
+   "wikidata": "Q130576",
+   "spans": [
+    {
+     "from": "1966-04-25",
+     "precision": "day",
+     "to": "2015-06",
+     "atoms": [
+      "COD-1872"
+     ],
+     "sources": [
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "25 Apr 1966: Luluabourg and Unité Kasaïenne unite to form Kasaï Occidental; split 18 Jul 2015 into Kasaï and Kasaï Central.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "New provinces became operational in June–July 2015 (rulers.org gives per-province dates in mid-July); ended at the earliest possible month."
+    }
+   ]
+  },
+  {
+   "id": "COD:KasaiOriental@1966",
+   "names": {
+    "en": "Kasaï-Oriental",
+    "ja": "東カサイ州",
+    "local": "Kasaï-Oriental"
+   },
+   "wikidata": "Q80953",
+   "spans": [
+    {
+     "from": "1966-04-25",
+     "precision": "day",
+     "to": "2015-06",
+     "atoms": [
+      "COD-1896"
+     ],
+     "sources": [
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "25 Apr 1966: Lomami, Sankuru, Sud-Kasaï united as Kasaï Oriental; split 15 Jul 2015 into Kasaï Oriental, Lomami, Sankuru.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "New provinces became operational in June–July 2015 (rulers.org gives per-province dates in mid-July); ended at the earliest possible month."
+    }
+   ]
+  },
+  {
+   "id": "COD:Leopoldville@1960",
+   "names": {
+    "en": "Léopoldville Province",
+    "ja": "レオポルドヴィル州",
+    "local": "Province de Léopoldville"
+   },
+   "spans": [
+    {
+     "from": "1960-06-30",
+     "precision": "day",
+     "to": "1962-08-14",
+     "atoms": [
+      "COD-1871",
+      "COD-1883",
+      "COD-1884"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1353446106",
+       "title": "Provinces of the Democratic Republic of the Congo — en.wikipedia, oldid 1353446106",
+       "says": "Loi Fondamentale: six provinces; decree of 6 Apr 1966 cut them to 12; 24 Dec 1966 to eight; Kinshasa a province 1975; Kivu split 1988.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "14 Aug 1962: Léopoldville province divided into Kongo Central, Kwango, Kwilu and Mai-Ndombe.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Province of the Loi Fondamentale; the outer line is the union of the post-1966 provinces formed only from it (no inter-provincial transfer is recorded 1960–2015). Maluku (moved 1968–69 to Kinshasa) came from Kasa-Ngulu territory of the same province."
+    }
+   ]
+  },
+  {
+   "id": "COD:Bandundu@1966",
+   "names": {
+    "en": "Bandundu",
+    "ja": "バンドゥンドゥ州",
+    "local": "Bandundu"
+   },
+   "wikidata": "Q671442",
+   "spans": [
+    {
+     "from": "1966-04-25",
+     "precision": "day",
+     "to": "2015-06",
+     "atoms": [
+      "COD-1871"
+     ],
+     "sources": [
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "25 Apr 1966: Kwango, Kwilu and Mai-Ndombe united in Bandundu; split again 19 Jul 2015.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "New provinces became operational in June–July 2015 (rulers.org gives per-province dates in mid-July); ended at the earliest possible month."
+    }
+   ]
+  },
+  {
+   "id": "COD:KongoCentral",
+   "names": {
+    "en": "Kongo Central (Congo-Central; Bas-Zaïre 1971–97; Bas-Congo 1997–2015)",
+    "ja": "コンゴ中央州",
+    "local": "Kongo-Central"
+   },
+   "wikidata": "Q1043494",
+   "spans": [
+    {
+     "from": "1969-01-25",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COD-1883"
+     ],
+     "sources": [
+      {
+       "url": "https://orbi.uliege.be/bitstream/2268/243692/1/Krossy_Th%C3%A8se_Gouvernance%20et%20services%20publics%20dans%20le%20territoire%20p%C3%A9riurbain%20de%20Maluku%20%C3%A0%20Kinshasa.pdf",
+       "title": "Krossy, Gouvernance et services publics dans le territoire périurbain de Maluku (PhD thesis, ULiège), pp. 17–20",
+       "says": "Maluku, a post of Kasa-Ngulu territory, became Kinshasa's 24th commune by ordinance 068-024 of 20 Feb 1968; its limits were fixed by arrêté 69-042 of 25 Jan 1969.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=232244891",
+       "title": "Maluku (Kinshasa) — fr.wikipedia, oldid 232244891",
+       "says": "Maluku covers 7,948.8 km², 79% of the city-province; created as a commune by ordonnance-loi in early 1968.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "From the day the limits of Maluku (taken from Kasa-Ngulu) were fixed; unchanged in 2015 (renamed only)."
+    }
+   ]
+  },
+  {
+   "id": "COD:Kinshasa",
+   "names": {
+    "en": "Kinshasa",
+    "ja": "キンシャサ",
+    "local": "Ville de Kinshasa"
+   },
+   "wikidata": "Q3838",
+   "spans": [
+    {
+     "from": "1969-01-25",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COD-1884"
+     ],
+     "sources": [
+      {
+       "url": "https://orbi.uliege.be/bitstream/2268/243692/1/Krossy_Th%C3%A8se_Gouvernance%20et%20services%20publics%20dans%20le%20territoire%20p%C3%A9riurbain%20de%20Maluku%20%C3%A0%20Kinshasa.pdf",
+       "title": "Krossy, Gouvernance et services publics dans le territoire périurbain de Maluku (PhD thesis, ULiège), pp. 17–20",
+       "says": "Maluku, a post of Kasa-Ngulu territory, became Kinshasa's 24th commune by ordinance 068-024 of 20 Feb 1968; its limits were fixed by arrêté 69-042 of 25 Jan 1969.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=232244891",
+       "title": "Maluku (Kinshasa) — fr.wikipedia, oldid 232244891",
+       "says": "Maluku covers 7,948.8 km², 79% of the city-province; created as a commune by ordonnance-loi in early 1968.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Includes Maluku (7,948.8 km²) from the fixing of its limits by arrêté 69-042; province status 1975 (no territorial change); unchanged in 2015."
+    }
+   ]
+  },
+  {
+   "id": "COD:Katanga",
+   "names": {
+    "en": "Katanga (Shaba 1971–97)",
+    "ja": "カタンガ州",
+    "local": "Katanga"
+   },
+   "wikidata": "Q217242",
+   "spans": [
+    {
+     "from": "1960-06-30",
+     "precision": "day",
+     "to": "1962-07-11",
+     "atoms": [
+      "COD-1897"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1353446106",
+       "title": "Provinces of the Democratic Republic of the Congo — en.wikipedia, oldid 1353446106",
+       "says": "Loi Fondamentale: six provinces; decree of 6 Apr 1966 cut them to 12; 24 Dec 1966 to eight; Kinshasa a province 1975; Kivu split 1988.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "11 Jul 1962: proclamation of the province of Nord-Katanga (Katanga itself in secession 11 Jul 1960–Jan 1963).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Province of the Loi Fondamentale; the outer line is the union of the post-1966 provinces formed only from it (no inter-provincial transfer is recorded 1960–2015)."
+    },
+    {
+     "from": "1966-12-28",
+     "precision": "day",
+     "to": "2015-06",
+     "atoms": [
+      "COD-1897"
+     ],
+     "sources": [
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "28 Dec 1966: reconstruction of the province of Katanga; renamed Shaba 2 Jan 1972; split 16 Jul 2015.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "New provinces became operational in June–July 2015 (rulers.org gives per-province dates in mid-July); ended at the earliest possible month."
+    }
+   ]
+  },
+  {
+   "id": "COD:Kivu",
+   "names": {
+    "en": "Kivu",
+    "ja": "キヴ州",
+    "local": "Kivu"
+   },
+   "spans": [
+    {
+     "from": "1960-06-30",
+     "precision": "day",
+     "to": "1962-05-10",
+     "atoms": [
+      "COD-1894",
+      "COD-1895",
+      "COD-1898"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1353446106",
+       "title": "Provinces of the Democratic Republic of the Congo — en.wikipedia, oldid 1353446106",
+       "says": "Loi Fondamentale: six provinces; decree of 6 Apr 1966 cut them to 12; 24 Dec 1966 to eight; Kinshasa a province 1975; Kivu split 1988.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1363142404",
+       "title": "Kivu Province — en.wikipedia, oldid 1363142404",
+       "says": "Between 1962 and 1966 Kivu was temporarily broken into Maniema, North Kivu and South Kivu; in 1988 it was again broken into these provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "10 May 1962: central takeover and creation of separate provinces of Maniema and Nord-Kivu (elsewhere dated 14 Aug 1962).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Province of the Loi Fondamentale; the outer line is the union of the post-1966 provinces formed only from it (no inter-provincial transfer is recorded 1960–2015). Ended at the earlier of two dates given for the 1962 split."
+    },
+    {
+     "from": "1966-12-28",
+     "precision": "day",
+     "to": "1988-07-20",
+     "atoms": [
+      "COD-1894",
+      "COD-1895",
+      "COD-1898"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1363142404",
+       "title": "Kivu Province — en.wikipedia, oldid 1363142404",
+       "says": "Between 1962 and 1966 Kivu was temporarily broken into Maniema, North Kivu and South Kivu; in 1988 it was again broken into these provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "28 Dec 1966: Kivu province reunited; 20 Jul 1988 divided into Maniema, Nord-Kivu and Sud-Kivu.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "COD:NordKivu@1988",
+   "names": {
+    "en": "Nord-Kivu",
+    "ja": "北キヴ州",
+    "local": "Nord-Kivu"
+   },
+   "wikidata": "Q130625",
+   "spans": [
+    {
+     "from": "1988-07-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COD-1898"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1363142404",
+       "title": "Kivu Province — en.wikipedia, oldid 1363142404",
+       "says": "Between 1962 and 1966 Kivu was temporarily broken into Maniema, North Kivu and South Kivu; in 1988 it was again broken into these provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "20 Jul 1988: Nord-Kivu province recreated.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Unchanged in 2015."
+    }
+   ]
+  },
+  {
+   "id": "COD:SudKivu@1988",
+   "names": {
+    "en": "Sud-Kivu",
+    "ja": "南キヴ州",
+    "local": "Sud-Kivu"
+   },
+   "wikidata": "Q488326",
+   "spans": [
+    {
+     "from": "1988-07-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COD-1894"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1363142404",
+       "title": "Kivu Province — en.wikipedia, oldid 1363142404",
+       "says": "Between 1962 and 1966 Kivu was temporarily broken into Maniema, North Kivu and South Kivu; in 1988 it was again broken into these provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "20 Jul 1988: Sud-Kivu province recreated.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Unchanged in 2015."
+    }
+   ]
+  },
+  {
+   "id": "COD:Maniema@1988",
+   "names": {
+    "en": "Maniema",
+    "ja": "マニエマ州",
+    "local": "Maniema"
+   },
+   "wikidata": "Q130566",
+   "spans": [
+    {
+     "from": "1988-07-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COD-1895"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1363142404",
+       "title": "Kivu Province — en.wikipedia, oldid 1363142404",
+       "says": "Between 1962 and 1966 Kivu was temporarily broken into Maniema, North Kivu and South Kivu; in 1988 it was again broken into these provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "20 Jul 1988: Maniema province recreated.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Unchanged in 2015."
+    }
+   ]
+  },
+  {
+   "id": "COD:Orientale",
+   "names": {
+    "en": "Orientale (Haut-Zaïre 1971–97)",
+    "ja": "東部州",
+    "local": "Province Orientale"
+   },
+   "wikidata": "Q831370",
+   "spans": [
+    {
+     "from": "1960-06-30",
+     "precision": "day",
+     "to": "1962-07-27",
+     "atoms": [
+      "COD-1559"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1353446106",
+       "title": "Provinces of the Democratic Republic of the Congo — en.wikipedia, oldid 1353446106",
+       "says": "Loi Fondamentale: six provinces; decree of 6 Apr 1966 cut them to 12; 24 Dec 1966 to eight; Kinshasa a province 1975; Kivu split 1988.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "27 Jul 1962: central takeover and separation of Kibali-Ituri and Uélé (their creation is dated 14 Aug 1962).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Province of the Loi Fondamentale; the outer line is the union of the post-1966 provinces formed only from it (no inter-provincial transfer is recorded 1960–2015). Ended at the earlier of two dates given for the split."
+    },
+    {
+     "from": "1966-12-28",
+     "precision": "day",
+     "to": "2015-06",
+     "atoms": [
+      "COD-1559"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1373639413",
+       "title": "Orientale Province — en.wikipedia, oldid 1373639413",
+       "says": "Broken up in 1963 into Kibali-Ituri, Uélé and Haut-Congo; reconstituted 1966 from them; dissolved 2015 into Bas-Uélé, Haut-Uélé, Ituri, Tshopo.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "28 Dec 1966: reunification of Orientale province; split 11 Jul 2015 into Bas-Uélé, Haut-Uélé, Ituri, Tshopo.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "New provinces became operational in June–July 2015 (rulers.org gives per-province dates in mid-July); ended at the earliest possible month."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1960-06-30",
+   "precision": "day",
+   "what": "Independence with six provinces (Équateur, Kasaï, Katanga, Kivu, Léopoldville, Orientale)",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1353446106",
+     "title": "Provinces of the Democratic Republic of the Congo — en.wikipedia, oldid 1353446106",
+     "says": "Loi Fondamentale: six provinces; decree of 6 Apr 1966 cut them to 12; 24 Dec 1966 to eight; Kinshasa a province 1975; Kivu split 1988.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1962-08-14",
+   "precision": "day",
+   "what": "Most provinces split into \"provincettes\" (21 provinces + Léopoldville by 1963); Kivu (May?) and Orientale (Jul) partly earlier",
+   "sources": [
+    {
+     "url": "https://rulers.org/cngkprov.html",
+     "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+     "says": "14 Aug 1962: division of Équateur, Kasaï, Léopoldville; creation of Kibali-Ituri, Uélé, Maniema, Nord-Kivu.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1966-04-25",
+   "precision": "day",
+   "what": "21 provinces reduced to 12 + Kinshasa (decree of 6 Apr 1966)",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1353446106",
+     "title": "Provinces of the Democratic Republic of the Congo — en.wikipedia, oldid 1353446106",
+     "says": "Loi Fondamentale: six provinces; decree of 6 Apr 1966 cut them to 12; 24 Dec 1966 to eight; Kinshasa a province 1975; Kivu split 1988.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://rulers.org/cngkprov.html",
+     "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+     "says": "25 Apr 1966: new provinces Équateur, Bandundu, Kasaï Occidental, Kasaï Oriental, Sud-Kivu; Sud-Katanga 24 Apr.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1966-12-28",
+   "precision": "day",
+   "what": "Reduced to 8 provinces + Kinshasa (Katanga, Kivu, Orientale reunited)",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1353446106",
+     "title": "Provinces of the Democratic Republic of the Congo — en.wikipedia, oldid 1353446106",
+     "says": "Loi Fondamentale: six provinces; decree of 6 Apr 1966 cut them to 12; 24 Dec 1966 to eight; Kinshasa a province 1975; Kivu split 1988.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://rulers.org/cngkprov.html",
+     "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+     "says": "28 Dec 1966: Katanga reconstructed, Kivu reunited, Orientale reunified.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1968-02-20",
+   "precision": "day",
+   "what": "Maluku (from Kasa-Ngulu territory, Congo-Central) made a commune of Kinshasa; limits fixed 1969-01-25",
+   "sources": [
+    {
+     "url": "https://orbi.uliege.be/bitstream/2268/243692/1/Krossy_Th%C3%A8se_Gouvernance%20et%20services%20publics%20dans%20le%20territoire%20p%C3%A9riurbain%20de%20Maluku%20%C3%A0%20Kinshasa.pdf",
+     "title": "Krossy, Gouvernance et services publics dans le territoire périurbain de Maluku (PhD thesis, ULiège), pp. 17–20",
+     "says": "Maluku, a post of Kasa-Ngulu territory, became Kinshasa's 24th commune by ordinance 068-024 of 20 Feb 1968; its limits were fixed by arrêté 69-042 of 25 Jan 1969.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://fr.wikipedia.org/w/index.php?oldid=232244891",
+     "title": "Maluku (Kinshasa) — fr.wikipedia, oldid 232244891",
+     "says": "Maluku covers 7,948.8 km², 79% of the city-province; created as a commune by ordonnance-loi in early 1968.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1988-07-20",
+   "precision": "day",
+   "what": "Kivu divided into Nord-Kivu, Sud-Kivu, Maniema",
+   "sources": [
+    {
+     "url": "https://rulers.org/cngkprov.html",
+     "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+     "says": "20 Jul 1988: Kivu divided into Maniema, Nord-Kivu, Sud-Kivu.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2015-07",
+   "precision": "month",
+   "what": "Six provinces split into 21 new ones (total 26 incl. Kinshasa), installed June–July 2015 (Law 15/004 of 28 Feb 2015)",
+   "sources": [
+    {
+     "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+     "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+     "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://rulers.org/cngkprov.html",
+     "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+     "says": "Équateur and Orientale split 11 Jul 2015; Kasaï Oriental 15 Jul; Katanga 16 Jul; Kasaï Occidental 18 Jul; Bandundu 19 Jul.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1960-07-01",
+   "n": 6,
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1353446106",
+     "title": "Provinces of the Democratic Republic of the Congo — en.wikipedia, oldid 1353446106",
+     "says": "Loi Fondamentale: six provinces; decree of 6 Apr 1966 cut them to 12; 24 Dec 1966 to eight; Kinshasa a province 1975; Kivu split 1988.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1967-06-01",
+   "n": 9,
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1353446106",
+     "title": "Provinces of the Democratic Republic of the Congo — en.wikipedia, oldid 1353446106",
+     "says": "Loi Fondamentale: six provinces; decree of 6 Apr 1966 cut them to 12; 24 Dec 1966 to eight; Kinshasa a province 1975; Kivu split 1988.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "http://www.statoids.com/ucd.html",
+     "title": "Provinces of the Democratic Republic of Congo — Statoids (Gwillim Law, last updated 2015-06-30)",
+     "says": "Six colonial provinces 1933–60; 1966 reorganisation into eight regions plus Kinshasa; an area of 7,949 km² transferred from Bas-Zaïre to Kinshasa; Kivu split into three.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1998-01-01",
+   "n": 11,
+   "sources": [
+    {
+     "url": "http://www.statoids.com/ucd.html",
+     "title": "Provinces of the Democratic Republic of Congo — Statoids (Gwillim Law, last updated 2015-06-30)",
+     "says": "Six colonial provinces 1933–60; 1966 reorganisation into eight regions plus Kinshasa; an area of 7,949 km² transferred from Bas-Zaïre to Kinshasa; Kivu split into three.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Kivu provinces 1962–1966 (Nord-Kivu, Maniema, Kivu-Central/Sud-Kivu)",
+   "atoms": [
+    "COD-1894",
+    "COD-1895",
+    "COD-1898"
+   ],
+   "from": "1962-05-10",
+   "to": "1966-12-28",
+   "why": "The 1962–66 lines are not shown to coincide with the 1988 lines that NE carries, and the start date of the split is given as 10 May or 14 Aug 1962.",
+   "checked": [
+    "rulers.org Congo (Kinshasa) provinces",
+    "statoids ucd (1963 list of 21 provinces + Léopoldville)",
+    "fr.wikipedia oldid 222682973 (1963 list)",
+    "en.wikipedia Kivu Province oldid 1363142404",
+    "en.wikipedia North Kivu oldid 1375249497"
+   ],
+   "needs": "district / 2015-province atoms: the 1962–66 provinces largely follow colonial district lines that the 2015 provinces reuse, e.g. OCHA COD-AB COD ADM1 (post-2015) or geoBoundaries COD ADM1 — licence to check"
+  },
+  {
+   "what": "Orientale split 1962–1966 (Kibali-Ituri, Uélé, Haut-Congo)",
+   "atoms": [
+    "COD-1559"
+   ],
+   "from": "1962-07-27",
+   "to": "1966-12-28",
+   "why": "Lines of the three provinces run inside the NE Orientale atom.",
+   "checked": [
+    "rulers.org Congo (Kinshasa) provinces",
+    "statoids ucd (1963 list of 21 provinces + Léopoldville)",
+    "fr.wikipedia oldid 222682973 (1963 list)",
+    "en.wikipedia Orientale Province oldid 1373639413"
+   ],
+   "needs": "district / 2015-province atoms: the 1962–66 provinces largely follow colonial district lines that the 2015 provinces reuse, e.g. OCHA COD-AB COD ADM1 (post-2015) or geoBoundaries COD ADM1 — licence to check"
+  },
+  {
+   "what": "Katanga split 1962–1966 (Nord-Katanga, Lualaba, Katanga-Oriental, then Sud-Katanga)",
+   "atoms": [
+    "COD-1897"
+   ],
+   "from": "1962-07-11",
+   "to": "1966-12-28",
+   "why": "Lines run inside the NE Katanga atom.",
+   "checked": [
+    "rulers.org Congo (Kinshasa) provinces",
+    "statoids ucd (1963 list of 21 provinces + Léopoldville)",
+    "fr.wikipedia oldid 222682973 (1963 list)"
+   ],
+   "needs": "district / 2015-province atoms: the 1962–66 provinces largely follow colonial district lines that the 2015 provinces reuse, e.g. OCHA COD-AB COD ADM1 (post-2015) or geoBoundaries COD ADM1 — licence to check"
+  },
+  {
+   "what": "Équateur split 1962–1966 (Cuvette-Centrale, Ubangi, Moyen-Congo)",
+   "atoms": [
+    "COD-1461"
+   ],
+   "from": "1962-08-14",
+   "to": "1966-04-25",
+   "why": "Lines run inside the NE Équateur atom.",
+   "checked": [
+    "rulers.org Congo (Kinshasa) provinces",
+    "statoids ucd (1963 list of 21 provinces + Léopoldville)",
+    "fr.wikipedia oldid 222682973 (1963 list)"
+   ],
+   "needs": "district / 2015-province atoms: the 1962–66 provinces largely follow colonial district lines that the 2015 provinces reuse, e.g. OCHA COD-AB COD ADM1 (post-2015) or geoBoundaries COD ADM1 — licence to check"
+  },
+  {
+   "what": "Kasaï split 1962–1966 (Lomami, Luluabourg, Sankuru, Sud-Kasaï, Unité Kasaïenne; Mwene Ditu neutralised until 1966-02-18)",
+   "atoms": [
+    "COD-1872",
+    "COD-1896"
+   ],
+   "from": "1962-08-14",
+   "to": "1966-04-25",
+   "why": "Sankuru and others straddle the later Kasaï-Occidental/Oriental line; lines run inside the NE atoms.",
+   "checked": [
+    "rulers.org Congo (Kinshasa) provinces",
+    "statoids ucd (1963 list of 21 provinces + Léopoldville)",
+    "fr.wikipedia oldid 222682973 (1963 list)"
+   ],
+   "needs": "district / 2015-province atoms: the 1962–66 provinces largely follow colonial district lines that the 2015 provinces reuse, e.g. OCHA COD-AB COD ADM1 (post-2015) or geoBoundaries COD ADM1 — licence to check"
+  },
+  {
+   "what": "Léopoldville split 1962–1966 (Kwango, Kwilu, Mai-Ndombe)",
+   "atoms": [
+    "COD-1871"
+   ],
+   "from": "1962-08-14",
+   "to": "1966-04-25",
+   "why": "Lines run inside the NE Bandundu atom.",
+   "checked": [
+    "rulers.org Congo (Kinshasa) provinces",
+    "statoids ucd (1963 list of 21 provinces + Léopoldville)",
+    "fr.wikipedia oldid 222682973 (1963 list)"
+   ],
+   "needs": "district / 2015-province atoms: the 1962–66 provinces largely follow colonial district lines that the 2015 provinces reuse, e.g. OCHA COD-AB COD ADM1 (post-2015) or geoBoundaries COD ADM1 — licence to check"
+  },
+  {
+   "what": "Kongo Central and Léopoldville city 1962–1966",
+   "atoms": [
+    "COD-1883",
+    "COD-1884"
+   ],
+   "from": "1962-08-14",
+   "to": "1966-04-25",
+   "why": "The city's limits before the 1968–69 annexation of Maluku run inside the NE Kinshasa atom; rulers.org also says the city was separated from Kongo Central only on 25 Apr 1966.",
+   "checked": [
+    "rulers.org Congo (Kinshasa) provinces",
+    "statoids ucd (1963 list of 21 provinces + Léopoldville)",
+    "fr.wikipedia oldid 222682973 (1963 list)",
+    "Krossy thesis pp. 17–20"
+   ],
+   "needs": "Kinshasa commune limits before 1968 (pre-Maluku); none open found"
+  },
+  {
+   "what": "Kongo Central before Maluku was transferred",
+   "unit": "COD:KongoCentral",
+   "atoms": [
+    "COD-1883"
+   ],
+   "from": "1966-04-25",
+   "to": "1969-01-25",
+   "why": "Maluku (7,948.9 km²) belonged to Kongo-Central (Kasa-Ngulu) until 1968–69; the old line runs inside the NE Kinshasa atom.",
+   "checked": [
+    "Krossy thesis pp. 17–20",
+    "fr.wikipedia Maluku oldid 232244891",
+    "statoids ucd"
+   ],
+   "needs": "Maluku commune boundary (e.g. OSM / geoBoundaries COD ADM2-3)"
+  },
+  {
+   "what": "Kinshasa before the Maluku annexation",
+   "unit": "COD:Kinshasa",
+   "atoms": [
+    "COD-1884"
+   ],
+   "from": "1966-04-25",
+   "to": "1969-01-25",
+   "why": "see Kongo Central entry (the annexation was enacted in stages in 1968; limits fixed 25 Jan 1969).",
+   "checked": [
+    "Krossy thesis pp. 17–20",
+    "fr.wikipedia Maluku oldid 232244891"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "Équateur after the 2015 split (Équateur, Mongala, Nord-Ubangi, Sud-Ubangi, Tshuapa)",
+   "atoms": [
+    "COD-1461"
+   ],
+   "from": "2015-06",
+   "to": null,
+   "why": "New lines run inside the NE atom.",
+   "checked": [
+    "rulers.org",
+    "fr.wikipedia oldid 222682973"
+   ],
+   "needs": "post-2015 provincial atoms (26 provinces), e.g. OCHA COD-AB COD ADM1 or geoBoundaries COD ADM1 — licence to check"
+  },
+  {
+   "what": "Orientale after the 2015 split (Bas-Uélé, Haut-Uélé, Ituri, Tshopo)",
+   "atoms": [
+    "COD-1559"
+   ],
+   "from": "2015-06",
+   "to": null,
+   "why": "New lines run inside the NE atom.",
+   "checked": [
+    "rulers.org",
+    "en.wikipedia Orientale oldid 1373639413"
+   ],
+   "needs": "post-2015 provincial atoms (26 provinces), e.g. OCHA COD-AB COD ADM1 or geoBoundaries COD ADM1 — licence to check"
+  },
+  {
+   "what": "Katanga after the 2015 split (Haut-Katanga, Haut-Lomami, Lualaba, Tanganyika)",
+   "atoms": [
+    "COD-1897"
+   ],
+   "from": "2015-06",
+   "to": null,
+   "why": "New lines run inside the NE atom.",
+   "checked": [
+    "rulers.org",
+    "fr.wikipedia oldid 222682973"
+   ],
+   "needs": "post-2015 provincial atoms (26 provinces), e.g. OCHA COD-AB COD ADM1 or geoBoundaries COD ADM1 — licence to check"
+  },
+  {
+   "what": "Kasaï-Occidental after the 2015 split (Kasaï, Kasaï-Central)",
+   "atoms": [
+    "COD-1872"
+   ],
+   "from": "2015-06",
+   "to": null,
+   "why": "New lines run inside the NE atom.",
+   "checked": [
+    "rulers.org",
+    "fr.wikipedia oldid 222682973"
+   ],
+   "needs": "post-2015 provincial atoms (26 provinces), e.g. OCHA COD-AB COD ADM1 or geoBoundaries COD ADM1 — licence to check"
+  },
+  {
+   "what": "Kasaï-Oriental after the 2015 split (Kasaï-Oriental, Lomami, Sankuru)",
+   "atoms": [
+    "COD-1896"
+   ],
+   "from": "2015-06",
+   "to": null,
+   "why": "New lines run inside the NE atom.",
+   "checked": [
+    "rulers.org",
+    "fr.wikipedia oldid 222682973"
+   ],
+   "needs": "post-2015 provincial atoms (26 provinces), e.g. OCHA COD-AB COD ADM1 or geoBoundaries COD ADM1 — licence to check"
+  },
+  {
+   "what": "Bandundu after the 2015 split (Kwango, Kwilu, Mai-Ndombe)",
+   "atoms": [
+    "COD-1871"
+   ],
+   "from": "2015-06",
+   "to": null,
+   "why": "New lines run inside the NE atom.",
+   "checked": [
+    "rulers.org",
+    "fr.wikipedia oldid 222682973"
+   ],
+   "needs": "post-2015 provincial atoms (26 provinces), e.g. OCHA COD-AB COD ADM1 or geoBoundaries COD ADM1 — licence to check"
+  }
+ ]
+}

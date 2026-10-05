@@ -1,0 +1,657 @@
+{
+ "country": "MNG",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1994-05-06",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Mongolia (People's Republic until 1992-02-12, then Mongolia), aimags and the capital Ulaanbaatar under the 1992 Law on administrative units and the 1994 State Great Khural resolution No.32.",
+ "units": [
+  {
+   "id": "MNG:Arkhangai",
+   "names": {
+    "en": "Arkhangai Province",
+    "ja": "アルハンガイ県",
+    "local": "Архангай аймаг"
+   },
+   "wikidata": "Q207809",
+   "spans": [
+    {
+     "from": "1994-05-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MNG-3316"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/umn.html",
+       "title": "Aimags of Mongolia — statoids.com",
+       "says": "Change history lists aimag creations from ~1941, Darhan (~1966), Erdenet (~1979) and Govisumber split from Dornogovi (~1996) as the last change.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://mn.wikipedia.org/w/index.php?oldid=868156",
+       "title": "Говьсүмбэр аймаг (mn.wikipedia, permanent revision)",
+       "says": "State Great Khural resolution No.32 of 6 May 1994 made Govisümber aimag from Dornogovi's Sümber sum and Ulaanbaatar's Shivee-Gobi and Bayantsagaan districts (Choir city since 21 June 1991).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor (date of State Great Khural resolution No.32 of 1994, which set the present aimags; promulgation date — entry into force not established). This aimag was not touched by that resolution; no earlier extent is claimed."
+    }
+   ]
+  },
+  {
+   "id": "MNG:BayanOlgii",
+   "names": {
+    "en": "Bayan-Ölgii Province",
+    "ja": "バヤン・ウルギー県",
+    "local": "Баян-Өлгий аймаг"
+   },
+   "wikidata": "Q191792",
+   "spans": [
+    {
+     "from": "1994-05-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MNG-3208"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/umn.html",
+       "title": "Aimags of Mongolia — statoids.com",
+       "says": "Change history lists aimag creations from ~1941, Darhan (~1966), Erdenet (~1979) and Govisumber split from Dornogovi (~1996) as the last change.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://mn.wikipedia.org/w/index.php?oldid=868156",
+       "title": "Говьсүмбэр аймаг (mn.wikipedia, permanent revision)",
+       "says": "State Great Khural resolution No.32 of 6 May 1994 made Govisümber aimag from Dornogovi's Sümber sum and Ulaanbaatar's Shivee-Gobi and Bayantsagaan districts (Choir city since 21 June 1991).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor (date of State Great Khural resolution No.32 of 1994, which set the present aimags; promulgation date — entry into force not established). This aimag was not touched by that resolution; no earlier extent is claimed."
+    }
+   ]
+  },
+  {
+   "id": "MNG:Bayankhongor",
+   "names": {
+    "en": "Bayankhongor Province",
+    "ja": "バヤンホンゴル県",
+    "local": "Баянхонгор аймаг"
+   },
+   "wikidata": "Q276200",
+   "spans": [
+    {
+     "from": "1994-05-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MNG-3317"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/umn.html",
+       "title": "Aimags of Mongolia — statoids.com",
+       "says": "Change history lists aimag creations from ~1941, Darhan (~1966), Erdenet (~1979) and Govisumber split from Dornogovi (~1996) as the last change.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://mn.wikipedia.org/w/index.php?oldid=868156",
+       "title": "Говьсүмбэр аймаг (mn.wikipedia, permanent revision)",
+       "says": "State Great Khural resolution No.32 of 6 May 1994 made Govisümber aimag from Dornogovi's Sümber sum and Ulaanbaatar's Shivee-Gobi and Bayantsagaan districts (Choir city since 21 June 1991).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor (date of State Great Khural resolution No.32 of 1994, which set the present aimags; promulgation date — entry into force not established). This aimag was not touched by that resolution; no earlier extent is claimed."
+    }
+   ]
+  },
+  {
+   "id": "MNG:GoviAltai",
+   "names": {
+    "en": "Govi-Altai Province",
+    "ja": "ゴビ・アルタイ県",
+    "local": "Говь-Алтай аймаг"
+   },
+   "wikidata": "Q192945",
+   "spans": [
+    {
+     "from": "1994-05-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MNG-3319"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/umn.html",
+       "title": "Aimags of Mongolia — statoids.com",
+       "says": "Change history lists aimag creations from ~1941, Darhan (~1966), Erdenet (~1979) and Govisumber split from Dornogovi (~1996) as the last change.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://mn.wikipedia.org/w/index.php?oldid=868156",
+       "title": "Говьсүмбэр аймаг (mn.wikipedia, permanent revision)",
+       "says": "State Great Khural resolution No.32 of 6 May 1994 made Govisümber aimag from Dornogovi's Sümber sum and Ulaanbaatar's Shivee-Gobi and Bayantsagaan districts (Choir city since 21 June 1991).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor (date of State Great Khural resolution No.32 of 1994, which set the present aimags; promulgation date — entry into force not established). This aimag was not touched by that resolution; no earlier extent is claimed."
+    }
+   ]
+  },
+  {
+   "id": "MNG:Dornod",
+   "names": {
+    "en": "Dornod Province",
+    "ja": "ドルノド県",
+    "local": "Дорнод аймаг"
+   },
+   "wikidata": "Q207795",
+   "spans": [
+    {
+     "from": "1994-05-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MNG-3332"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/umn.html",
+       "title": "Aimags of Mongolia — statoids.com",
+       "says": "Change history lists aimag creations from ~1941, Darhan (~1966), Erdenet (~1979) and Govisumber split from Dornogovi (~1996) as the last change.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://mn.wikipedia.org/w/index.php?oldid=868156",
+       "title": "Говьсүмбэр аймаг (mn.wikipedia, permanent revision)",
+       "says": "State Great Khural resolution No.32 of 6 May 1994 made Govisümber aimag from Dornogovi's Sümber sum and Ulaanbaatar's Shivee-Gobi and Bayantsagaan districts (Choir city since 21 June 1991).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor (date of State Great Khural resolution No.32 of 1994, which set the present aimags; promulgation date — entry into force not established). This aimag was not touched by that resolution; no earlier extent is claimed."
+    }
+   ]
+  },
+  {
+   "id": "MNG:Dundgovi",
+   "names": {
+    "en": "Dundgovi Province",
+    "ja": "ドンドゴビ県",
+    "local": "Дундговь аймаг"
+   },
+   "wikidata": "Q211835",
+   "spans": [
+    {
+     "from": "1994-05-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MNG-3325"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/umn.html",
+       "title": "Aimags of Mongolia — statoids.com",
+       "says": "Change history lists aimag creations from ~1941, Darhan (~1966), Erdenet (~1979) and Govisumber split from Dornogovi (~1996) as the last change.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://mn.wikipedia.org/w/index.php?oldid=868156",
+       "title": "Говьсүмбэр аймаг (mn.wikipedia, permanent revision)",
+       "says": "State Great Khural resolution No.32 of 6 May 1994 made Govisümber aimag from Dornogovi's Sümber sum and Ulaanbaatar's Shivee-Gobi and Bayantsagaan districts (Choir city since 21 June 1991).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor (date of State Great Khural resolution No.32 of 1994, which set the present aimags; promulgation date — entry into force not established). This aimag was not touched by that resolution; no earlier extent is claimed."
+    }
+   ]
+  },
+  {
+   "id": "MNG:Zavkhan",
+   "names": {
+    "en": "Zavkhan Province",
+    "ja": "ザブハン県",
+    "local": "Завхан аймаг"
+   },
+   "wikidata": "Q167764",
+   "spans": [
+    {
+     "from": "1994-05-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MNG-3318"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/umn.html",
+       "title": "Aimags of Mongolia — statoids.com",
+       "says": "Change history lists aimag creations from ~1941, Darhan (~1966), Erdenet (~1979) and Govisumber split from Dornogovi (~1996) as the last change.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://mn.wikipedia.org/w/index.php?oldid=868156",
+       "title": "Говьсүмбэр аймаг (mn.wikipedia, permanent revision)",
+       "says": "State Great Khural resolution No.32 of 6 May 1994 made Govisümber aimag from Dornogovi's Sümber sum and Ulaanbaatar's Shivee-Gobi and Bayantsagaan districts (Choir city since 21 June 1991).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor (date of State Great Khural resolution No.32 of 1994, which set the present aimags; promulgation date — entry into force not established). This aimag was not touched by that resolution; no earlier extent is claimed."
+    }
+   ]
+  },
+  {
+   "id": "MNG:Ovorkhangai",
+   "names": {
+    "en": "Övörkhangai Province",
+    "ja": "ウブルハンガイ県",
+    "local": "Өвөрхангай аймаг"
+   },
+   "wikidata": "Q234713",
+   "spans": [
+    {
+     "from": "1994-05-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MNG-3327"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/umn.html",
+       "title": "Aimags of Mongolia — statoids.com",
+       "says": "Change history lists aimag creations from ~1941, Darhan (~1966), Erdenet (~1979) and Govisumber split from Dornogovi (~1996) as the last change.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://mn.wikipedia.org/w/index.php?oldid=868156",
+       "title": "Говьсүмбэр аймаг (mn.wikipedia, permanent revision)",
+       "says": "State Great Khural resolution No.32 of 6 May 1994 made Govisümber aimag from Dornogovi's Sümber sum and Ulaanbaatar's Shivee-Gobi and Bayantsagaan districts (Choir city since 21 June 1991).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor (date of State Great Khural resolution No.32 of 1994, which set the present aimags; promulgation date — entry into force not established). This aimag was not touched by that resolution; no earlier extent is claimed."
+    }
+   ]
+  },
+  {
+   "id": "MNG:Omnogovi",
+   "names": {
+    "en": "Ömnögovi Province",
+    "ja": "ウムヌゴビ県",
+    "local": "Өмнөговь аймаг"
+   },
+   "wikidata": "Q235579",
+   "spans": [
+    {
+     "from": "1994-05-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MNG-3298"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/umn.html",
+       "title": "Aimags of Mongolia — statoids.com",
+       "says": "Change history lists aimag creations from ~1941, Darhan (~1966), Erdenet (~1979) and Govisumber split from Dornogovi (~1996) as the last change.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://mn.wikipedia.org/w/index.php?oldid=868156",
+       "title": "Говьсүмбэр аймаг (mn.wikipedia, permanent revision)",
+       "says": "State Great Khural resolution No.32 of 6 May 1994 made Govisümber aimag from Dornogovi's Sümber sum and Ulaanbaatar's Shivee-Gobi and Bayantsagaan districts (Choir city since 21 June 1991).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor (date of State Great Khural resolution No.32 of 1994, which set the present aimags; promulgation date — entry into force not established). This aimag was not touched by that resolution; no earlier extent is claimed."
+    }
+   ]
+  },
+  {
+   "id": "MNG:Sukhbaatar",
+   "names": {
+    "en": "Sükhbaatar Province",
+    "ja": "スフバートル県",
+    "local": "Сүхбаатар аймаг"
+   },
+   "wikidata": "Q244804",
+   "spans": [
+    {
+     "from": "1994-05-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MNG-3333"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/umn.html",
+       "title": "Aimags of Mongolia — statoids.com",
+       "says": "Change history lists aimag creations from ~1941, Darhan (~1966), Erdenet (~1979) and Govisumber split from Dornogovi (~1996) as the last change.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://mn.wikipedia.org/w/index.php?oldid=868156",
+       "title": "Говьсүмбэр аймаг (mn.wikipedia, permanent revision)",
+       "says": "State Great Khural resolution No.32 of 6 May 1994 made Govisümber aimag from Dornogovi's Sümber sum and Ulaanbaatar's Shivee-Gobi and Bayantsagaan districts (Choir city since 21 June 1991).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor (date of State Great Khural resolution No.32 of 1994, which set the present aimags; promulgation date — entry into force not established). This aimag was not touched by that resolution; no earlier extent is claimed."
+    }
+   ]
+  },
+  {
+   "id": "MNG:Uvs",
+   "names": {
+    "en": "Uvs Province",
+    "ja": "オブス県",
+    "local": "Увс аймаг"
+   },
+   "wikidata": "Q192942",
+   "spans": [
+    {
+     "from": "1994-05-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MNG-3322"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/umn.html",
+       "title": "Aimags of Mongolia — statoids.com",
+       "says": "Change history lists aimag creations from ~1941, Darhan (~1966), Erdenet (~1979) and Govisumber split from Dornogovi (~1996) as the last change.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://mn.wikipedia.org/w/index.php?oldid=868156",
+       "title": "Говьсүмбэр аймаг (mn.wikipedia, permanent revision)",
+       "says": "State Great Khural resolution No.32 of 6 May 1994 made Govisümber aimag from Dornogovi's Sümber sum and Ulaanbaatar's Shivee-Gobi and Bayantsagaan districts (Choir city since 21 June 1991).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor (date of State Great Khural resolution No.32 of 1994, which set the present aimags; promulgation date — entry into force not established). This aimag was not touched by that resolution; no earlier extent is claimed."
+    }
+   ]
+  },
+  {
+   "id": "MNG:Khovd",
+   "names": {
+    "en": "Khovd Province",
+    "ja": "ホブド県",
+    "local": "Ховд аймаг"
+   },
+   "wikidata": "Q194098",
+   "spans": [
+    {
+     "from": "1994-05-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MNG-3320"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/umn.html",
+       "title": "Aimags of Mongolia — statoids.com",
+       "says": "Change history lists aimag creations from ~1941, Darhan (~1966), Erdenet (~1979) and Govisumber split from Dornogovi (~1996) as the last change.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://mn.wikipedia.org/w/index.php?oldid=868156",
+       "title": "Говьсүмбэр аймаг (mn.wikipedia, permanent revision)",
+       "says": "State Great Khural resolution No.32 of 6 May 1994 made Govisümber aimag from Dornogovi's Sümber sum and Ulaanbaatar's Shivee-Gobi and Bayantsagaan districts (Choir city since 21 June 1991).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor (date of State Great Khural resolution No.32 of 1994, which set the present aimags; promulgation date — entry into force not established). This aimag was not touched by that resolution; no earlier extent is claimed."
+    }
+   ]
+  },
+  {
+   "id": "MNG:Khovsgol",
+   "names": {
+    "en": "Khövsgöl Province",
+    "ja": "フブスグル県",
+    "local": "Хөвсгөл аймаг"
+   },
+   "wikidata": "Q244788",
+   "spans": [
+    {
+     "from": "1994-05-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MNG-3321"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/umn.html",
+       "title": "Aimags of Mongolia — statoids.com",
+       "says": "Change history lists aimag creations from ~1941, Darhan (~1966), Erdenet (~1979) and Govisumber split from Dornogovi (~1996) as the last change.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://mn.wikipedia.org/w/index.php?oldid=868156",
+       "title": "Говьсүмбэр аймаг (mn.wikipedia, permanent revision)",
+       "says": "State Great Khural resolution No.32 of 6 May 1994 made Govisümber aimag from Dornogovi's Sümber sum and Ulaanbaatar's Shivee-Gobi and Bayantsagaan districts (Choir city since 21 June 1991).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor (date of State Great Khural resolution No.32 of 1994, which set the present aimags; promulgation date — entry into force not established). This aimag was not touched by that resolution; no earlier extent is claimed."
+    }
+   ]
+  },
+  {
+   "id": "MNG:Khentii",
+   "names": {
+    "en": "Khentii Province",
+    "ja": "ヘンティー県",
+    "local": "Хэнтий аймаг"
+   },
+   "wikidata": "Q239040",
+   "spans": [
+    {
+     "from": "1994-05-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MNG-3315"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/umn.html",
+       "title": "Aimags of Mongolia — statoids.com",
+       "says": "Change history lists aimag creations from ~1941, Darhan (~1966), Erdenet (~1979) and Govisumber split from Dornogovi (~1996) as the last change.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://mn.wikipedia.org/w/index.php?oldid=868156",
+       "title": "Говьсүмбэр аймаг (mn.wikipedia, permanent revision)",
+       "says": "State Great Khural resolution No.32 of 6 May 1994 made Govisümber aimag from Dornogovi's Sümber sum and Ulaanbaatar's Shivee-Gobi and Bayantsagaan districts (Choir city since 21 June 1991).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor (date of State Great Khural resolution No.32 of 1994, which set the present aimags; promulgation date — entry into force not established). This aimag was not touched by that resolution; no earlier extent is claimed."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1991-06-21",
+   "precision": "day",
+   "what": "Choir city formed from Dornogovi's Sümber sum and Ulaanbaatar's Shivee-Gobi and Bayantsagaan districts (State Little Khural resolution No.46) — before scope",
+   "sources": [
+    {
+     "url": "https://mn.wikipedia.org/w/index.php?oldid=868156",
+     "title": "Говьсүмбэр аймаг (mn.wikipedia, permanent revision)",
+     "says": "State Great Khural resolution No.32 of 6 May 1994 made Govisümber aimag from Dornogovi's Sümber sum and Ulaanbaatar's Shivee-Gobi and Bayantsagaan districts (Choir city since 21 June 1991).",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1994-05-06",
+   "precision": "day",
+   "what": "State Great Khural resolution No.32: Darkhan city → Darkhan-Uul aimag, Choir city → Govisümber aimag, Erdenet → Orkhon aimag",
+   "sources": [
+    {
+     "url": "https://mn.wikipedia.org/w/index.php?oldid=868156",
+     "title": "Говьсүмбэр аймаг (mn.wikipedia, permanent revision)",
+     "says": "State Great Khural resolution No.32 of 6 May 1994 made Govisümber aimag from Dornogovi's Sümber sum and Ulaanbaatar's Shivee-Gobi and Bayantsagaan districts (Choir city since 21 June 1991).",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://mn.wikipedia.org/w/index.php?oldid=869057",
+     "title": "Дархан-Уул аймаг (mn.wikipedia, permanent revision)",
+     "says": "By State Great Khural resolution No.32 of 1994 Darkhan city was reorganised as Darkhan-Uul aimag (sums Darkhan, Orkhon, Khongor, Sharyngol).",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1374823654",
+     "title": "Orkhon Province (en.wikipedia, permanent revision)",
+     "says": "Text says Orkhon was carved out of Bulgan in 1994; infobox says established 1976; sums Bayan-Öndör and Jargalant.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Dornogovi 1994-05-06 → 2019",
+   "unit": "MNG:Dornogovi",
+   "atoms": [
+    "MNG-3297"
+   ],
+   "from": "1994-05-06",
+   "to": null,
+   "why": "NE quirk: atom MNG-3297 (114,328 km²) contains the whole of Govisümber (5,542 km²; Choir at 108.36E 46.36N falls inside it). That union never was one unit: Govisümber came from Dornogovi's Sümber sum AND two Ulaanbaatar districts.",
+   "checked": [
+    "NE ca96624 point-in-polygon (Choir) and per-atom areas",
+    "mn.wikipedia Govisümber oldid 868156"
+   ],
+   "needs": "an atom for Govisümber split out of NE MNG-3297 (e.g. geoBoundaries MNG ADM1/ADM2 or OSM, licence to be checked)"
+  },
+  {
+   "what": "Govisümber 1994-05-06 → 2019 (no atom carries it)",
+   "unit": "MNG:Govisumber",
+   "from": "1994-05-06",
+   "to": null,
+   "why": "Its territory lies inside NE's Dornogovi atom; the NE feature named Govĭ-Sümber is not Govisümber (see Ulaanbaatar entry).",
+   "checked": [
+    "NE ca96624 geometry (MNG-3330 is 645 km² centred 108.39E 47.73N = Baganuur)"
+   ],
+   "needs": "a Govisümber atom"
+  },
+  {
+   "what": "Ulaanbaatar 1994-05-06 → 2019",
+   "unit": "MNG:Ulaanbaatar",
+   "atoms": [
+    "MNG-3331",
+    "MNG-3330"
+   ],
+   "from": "1994-05-06",
+   "to": null,
+   "why": "NE quirk: MNG-3330, labelled Govĭ-Sümber, is the Baganuur exclave of Ulaanbaatar (645 km² at 108.39E 47.73N vs Baganuur 620 km²). Ulaanbaatar's Bagakhangai exclave (140 km², 107.49E 47.36N) lies inside NE's Töv atom, so no union of NE atoms equals Ulaanbaatar.",
+   "checked": [
+    "NE ca96624 point-in-polygon at Bagakhangai, Baganuur, Nalaikh",
+    "en.wikipedia Bagakhangai oldid 1374968109, Baganuur oldid 1377559764"
+   ],
+   "needs": "a Bagakhangai atom split from NE MNG-3329"
+  },
+  {
+   "what": "Töv 1994-05-06 → 2019",
+   "unit": "MNG:Tov",
+   "atoms": [
+    "MNG-3329"
+   ],
+   "from": "1994-05-06",
+   "to": null,
+   "why": "NE's Töv atom includes Ulaanbaatar's Bagakhangai exclave (district since 1989).",
+   "checked": [
+    "NE ca96624 point-in-polygon at 107.49E 47.36N"
+   ],
+   "needs": "a Bagakhangai atom split from NE MNG-3329"
+  },
+  {
+   "what": "Bulgan and Orkhon 1994-05-06 → 2019",
+   "unit": "MNG:Bulgan",
+   "atoms": [
+    "MNG-3323"
+   ],
+   "from": "1994-05-06",
+   "to": null,
+   "why": "When and how the Orkhon–Bulgan line reached its present course (Erdenet municipality 1976, Orkhon aimag 1994, Jargalant sum) is not established: sources disagree (1976 vs 1994) and none gives the sums transferred or the day.",
+   "checked": [
+    "en.wikipedia Orkhon Province oldid 1374823654",
+    "mn.wikipedia Орхон аймаг",
+    "statoids.com/umn.html (gives ~1979)"
+   ],
+   "needs": "the 1994 resolution text or NSO Mongolia boundary history"
+  },
+  {
+   "what": "Orkhon 1994-05-06 → 2019",
+   "unit": "MNG:Orkhon",
+   "atoms": [
+    "MNG-3324"
+   ],
+   "from": "1994-05-06",
+   "to": null,
+   "why": "See Bulgan: date of the present Orkhon outline not established.",
+   "checked": [
+    "en.wikipedia Orkhon Province oldid 1374823654"
+   ],
+   "needs": "the 1994 resolution text"
+  },
+  {
+   "what": "Selenge 1994-05-06 → 2019",
+   "unit": "MNG:Selenge",
+   "atoms": [
+    "MNG-3326"
+   ],
+   "from": "1994-05-06",
+   "to": null,
+   "why": "Whether Darkhan-Uul's Orkhon, Khongor and Sharyngol sums passed from Selenge in 1994 or earlier, and on what day, is not established.",
+   "checked": [
+    "mn.wikipedia Дархан-Уул аймаг oldid 869057",
+    "en.wikipedia Darkhan-Uul Province"
+   ],
+   "needs": "the 1994 resolution text"
+  },
+  {
+   "what": "Darkhan-Uul 1994-05-06 → 2019",
+   "unit": "MNG:DarkhanUul",
+   "atoms": [
+    "MNG-3328"
+   ],
+   "from": "1994-05-06",
+   "to": null,
+   "why": "See Selenge.",
+   "checked": [
+    "mn.wikipedia Дархан-Уул аймаг oldid 869057"
+   ],
+   "needs": "the 1994 resolution text"
+  },
+  {
+   "what": "Mongolian aimag layouts before 1994-05-06",
+   "from": "1921",
+   "to": "1994-05-06",
+   "why": "1931 aimag reform and later creations (Bayan-Ölgii 1940, Selenge ~1956, Darkhan 1961, Erdenet 1976, Choir 1991) and sum transfers between aimags; no complete dated change list was reachable to prove any aimag unchanged before 1994.",
+   "checked": [
+    "statoids.com/umn.html (approximate years only)",
+    "en/mn.wikipedia aimag articles"
+   ],
+   "needs": "sum-level atoms and a dated sum-transfer list (NSO Mongolia)"
+  }
+ ]
+}

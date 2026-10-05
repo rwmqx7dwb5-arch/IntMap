@@ -1,0 +1,1481 @@
+{
+ "country": "CHN",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1979-07-01",
+  "to": "2019-12-31"
+ },
+ "polityNote": "People's Republic of China (proclaimed 1949-10-01), mainland province-level units. Taiwan (TWN), Hong Kong (HKG) and Macau (MAC) are separate NE countries, so no Taiwan/SAR atom sits in this catalogue and none is claimed. The Paracel atom (PFA+00?) was wholly PRC-held throughout the scope (since January 1974). Lines follow the de jure provincial boundaries that NE draws.",
+ "units": [
+  {
+   "id": "CHN:Beijing",
+   "names": {
+    "en": "Beijing Municipality",
+    "ja": "北京市",
+    "local": "北京市"
+   },
+   "wikidata": "Q956",
+   "spans": [
+    {
+     "from": "1979-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHN-1155"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1979.html",
+       "title": "1979年行政区划 — year-end figures",
+       "says": "End of 1979: 22 provinces, 5 autonomous regions, 3 municipalities, 30 in all — the count includes Taiwan Province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor, not a change date: no earlier extent is claimed (pre-1979 layouts are listed in unresolved)."
+    }
+   ]
+  },
+  {
+   "id": "CHN:Tianjin",
+   "names": {
+    "en": "Tianjin Municipality",
+    "ja": "天津市",
+    "local": "天津市"
+   },
+   "wikidata": "Q11736",
+   "spans": [
+    {
+     "from": "1979-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHN-1816"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1979.html",
+       "title": "1979年行政区划 — year-end figures",
+       "says": "End of 1979: 22 provinces, 5 autonomous regions, 3 municipalities, 30 in all — the count includes Taiwan Province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor, not a change date: no earlier extent is claimed (pre-1979 layouts are listed in unresolved)."
+    }
+   ]
+  },
+  {
+   "id": "CHN:Hebei",
+   "names": {
+    "en": "Hebei Province",
+    "ja": "河北省",
+    "local": "河北省"
+   },
+   "wikidata": "Q21208",
+   "spans": [
+    {
+     "from": "1979-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHN-1811"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1979.html",
+       "title": "1979年行政区划 — year-end figures",
+       "says": "End of 1979: 22 provinces, 5 autonomous regions, 3 municipalities, 30 in all — the count includes Taiwan Province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor, not a change date: no earlier extent is claimed (pre-1979 layouts are listed in unresolved)."
+    }
+   ]
+  },
+  {
+   "id": "CHN:Shanxi",
+   "names": {
+    "en": "Shanxi Province",
+    "ja": "山西省",
+    "local": "山西省"
+   },
+   "wikidata": "Q46913",
+   "spans": [
+    {
+     "from": "1979-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHN-1805"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1979.html",
+       "title": "1979年行政区划 — year-end figures",
+       "says": "End of 1979: 22 provinces, 5 autonomous regions, 3 municipalities, 30 in all — the count includes Taiwan Province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor, not a change date: no earlier extent is claimed (pre-1979 layouts are listed in unresolved)."
+    }
+   ]
+  },
+  {
+   "id": "CHN:Shanghai",
+   "names": {
+    "en": "Shanghai Municipality",
+    "ja": "上海市",
+    "local": "上海市"
+   },
+   "wikidata": "Q8686",
+   "spans": [
+    {
+     "from": "1979-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHN-1819"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1979.html",
+       "title": "1979年行政区划 — year-end figures",
+       "says": "End of 1979: 22 provinces, 5 autonomous regions, 3 municipalities, 30 in all — the count includes Taiwan Province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor, not a change date: no earlier extent is claimed (pre-1979 layouts are listed in unresolved)."
+    }
+   ]
+  },
+  {
+   "id": "CHN:Zhejiang",
+   "names": {
+    "en": "Zhejiang Province",
+    "ja": "浙江省",
+    "local": "浙江省"
+   },
+   "wikidata": "Q16967",
+   "spans": [
+    {
+     "from": "1979-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHN-1820"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1979.html",
+       "title": "1979年行政区划 — year-end figures",
+       "says": "End of 1979: 22 provinces, 5 autonomous regions, 3 municipalities, 30 in all — the count includes Taiwan Province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor, not a change date: no earlier extent is claimed (pre-1979 layouts are listed in unresolved)."
+    }
+   ]
+  },
+  {
+   "id": "CHN:Anhui",
+   "names": {
+    "en": "Anhui Province",
+    "ja": "安徽省",
+    "local": "安徽省"
+   },
+   "wikidata": "Q40956",
+   "spans": [
+    {
+     "from": "1979-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHN-1179"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1979.html",
+       "title": "1979年行政区划 — year-end figures",
+       "says": "End of 1979: 22 provinces, 5 autonomous regions, 3 municipalities, 30 in all — the count includes Taiwan Province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor, not a change date: no earlier extent is claimed (pre-1979 layouts are listed in unresolved)."
+    }
+   ]
+  },
+  {
+   "id": "CHN:Fujian",
+   "names": {
+    "en": "Fujian Province",
+    "ja": "福建省",
+    "local": "福建省"
+   },
+   "wikidata": "Q41705",
+   "spans": [
+    {
+     "from": "1979-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHN-1178"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1979.html",
+       "title": "1979年行政区划 — year-end figures",
+       "says": "End of 1979: 22 provinces, 5 autonomous regions, 3 municipalities, 30 in all — the count includes Taiwan Province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor, not a change date: no earlier extent is claimed (pre-1979 layouts are listed in unresolved)."
+    }
+   ]
+  },
+  {
+   "id": "CHN:Jiangxi",
+   "names": {
+    "en": "Jiangxi Province",
+    "ja": "江西省",
+    "local": "江西省"
+   },
+   "wikidata": "Q57052",
+   "spans": [
+    {
+     "from": "1979-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHN-1817"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1979.html",
+       "title": "1979年行政区划 — year-end figures",
+       "says": "End of 1979: 22 provinces, 5 autonomous regions, 3 municipalities, 30 in all — the count includes Taiwan Province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor, not a change date: no earlier extent is claimed (pre-1979 layouts are listed in unresolved)."
+    }
+   ]
+  },
+  {
+   "id": "CHN:Henan",
+   "names": {
+    "en": "Henan Province",
+    "ja": "河南省",
+    "local": "河南省"
+   },
+   "wikidata": "Q43684",
+   "spans": [
+    {
+     "from": "1979-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHN-1812"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1979.html",
+       "title": "1979年行政区划 — year-end figures",
+       "says": "End of 1979: 22 provinces, 5 autonomous regions, 3 municipalities, 30 in all — the count includes Taiwan Province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor, not a change date: no earlier extent is claimed (pre-1979 layouts are listed in unresolved)."
+    }
+   ]
+  },
+  {
+   "id": "CHN:Hubei",
+   "names": {
+    "en": "Hubei Province",
+    "ja": "湖北省",
+    "local": "湖北省"
+   },
+   "wikidata": "Q46862",
+   "spans": [
+    {
+     "from": "1979-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHN-1807"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1979.html",
+       "title": "1979年行政区划 — year-end figures",
+       "says": "End of 1979: 22 provinces, 5 autonomous regions, 3 municipalities, 30 in all — the count includes Taiwan Province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor, not a change date: no earlier extent is claimed (pre-1979 layouts are listed in unresolved)."
+    }
+   ]
+  },
+  {
+   "id": "CHN:Hunan",
+   "names": {
+    "en": "Hunan Province",
+    "ja": "湖南省",
+    "local": "湖南省"
+   },
+   "wikidata": "Q45761",
+   "spans": [
+    {
+     "from": "1979-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHN-1808"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1979.html",
+       "title": "1979年行政区划 — year-end figures",
+       "says": "End of 1979: 22 provinces, 5 autonomous regions, 3 municipalities, 30 in all — the count includes Taiwan Province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor, not a change date: no earlier extent is claimed (pre-1979 layouts are listed in unresolved)."
+    }
+   ]
+  },
+  {
+   "id": "CHN:Guangxi",
+   "names": {
+    "en": "Guangxi Zhuang Autonomous Region",
+    "ja": "広西チワン族自治区",
+    "local": "广西壮族自治区"
+   },
+   "wikidata": "Q15176",
+   "spans": [
+    {
+     "from": "1979-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHN-1152"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1979.html",
+       "title": "1979年行政区划 — year-end figures",
+       "says": "End of 1979: 22 provinces, 5 autonomous regions, 3 municipalities, 30 in all — the count includes Taiwan Province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor, not a change date: no earlier extent is claimed (pre-1979 layouts are listed in unresolved)."
+    }
+   ]
+  },
+  {
+   "id": "CHN:Guizhou",
+   "names": {
+    "en": "Guizhou Province",
+    "ja": "貴州省",
+    "local": "贵州省"
+   },
+   "wikidata": "Q47097",
+   "spans": [
+    {
+     "from": "1979-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHN-1153"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1979.html",
+       "title": "1979年行政区划 — year-end figures",
+       "says": "End of 1979: 22 provinces, 5 autonomous regions, 3 municipalities, 30 in all — the count includes Taiwan Province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor, not a change date: no earlier extent is claimed (pre-1979 layouts are listed in unresolved)."
+    }
+   ]
+  },
+  {
+   "id": "CHN:Yunnan",
+   "names": {
+    "en": "Yunnan Province",
+    "ja": "雲南省",
+    "local": "云南省"
+   },
+   "wikidata": "Q43194",
+   "spans": [
+    {
+     "from": "1979-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHN-1810"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1979.html",
+       "title": "1979年行政区划 — year-end figures",
+       "says": "End of 1979: 22 provinces, 5 autonomous regions, 3 municipalities, 30 in all — the count includes Taiwan Province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor, not a change date: no earlier extent is claimed (pre-1979 layouts are listed in unresolved)."
+    }
+   ]
+  },
+  {
+   "id": "CHN:Xizang",
+   "names": {
+    "en": "Tibet Autonomous Region",
+    "ja": "チベット自治区",
+    "local": "西藏自治区"
+   },
+   "wikidata": "Q17269",
+   "spans": [
+    {
+     "from": "1979-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHN-1662"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1979.html",
+       "title": "1979年行政区划 — year-end figures",
+       "says": "End of 1979: 22 provinces, 5 autonomous regions, 3 municipalities, 30 in all — the count includes Taiwan Province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor, not a change date: no earlier extent is claimed (pre-1979 layouts are listed in unresolved)."
+    }
+   ]
+  },
+  {
+   "id": "CHN:Shaanxi",
+   "names": {
+    "en": "Shaanxi Province",
+    "ja": "陝西省",
+    "local": "陕西省"
+   },
+   "wikidata": "Q47974",
+   "spans": [
+    {
+     "from": "1979-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHN-1804"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1979.html",
+       "title": "1979年行政区划 — year-end figures",
+       "says": "End of 1979: 22 provinces, 5 autonomous regions, 3 municipalities, 30 in all — the count includes Taiwan Province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor, not a change date: no earlier extent is claimed (pre-1979 layouts are listed in unresolved)."
+    }
+   ]
+  },
+  {
+   "id": "CHN:Qinghai",
+   "names": {
+    "en": "Qinghai Province",
+    "ja": "青海省",
+    "local": "青海省"
+   },
+   "wikidata": "Q45833",
+   "spans": [
+    {
+     "from": "1979-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHN-1151"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1979.html",
+       "title": "1979年行政区划 — year-end figures",
+       "says": "End of 1979: 22 provinces, 5 autonomous regions, 3 municipalities, 30 in all — the count includes Taiwan Province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor, not a change date: no earlier extent is claimed (pre-1979 layouts are listed in unresolved)."
+    }
+   ]
+  },
+  {
+   "id": "CHN:Liaoning",
+   "names": {
+    "en": "Liaoning Province",
+    "ja": "遼寧省",
+    "local": "辽宁省"
+   },
+   "wikidata": "Q43934",
+   "spans": [
+    {
+     "from": "1979-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHN-1813"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1979_2.html",
+       "title": "1979年行政区划 — 区划地名网 (annual change record)",
+       "says": "(79) Zhongfa No.42: leagues/banners moved to Liaoning, Jilin, Heilongjiang, Gansu and Ningxia in July 1969 return to Inner Mongolia from 1 July 1979.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1979-07-01 is the restoration of Inner Mongolia (decision of 1979-05-30, effective 1 July 1979), which moved this unit's boundary."
+    }
+   ]
+  },
+  {
+   "id": "CHN:Jilin",
+   "names": {
+    "en": "Jilin Province",
+    "ja": "吉林省",
+    "local": "吉林省"
+   },
+   "wikidata": "Q45208",
+   "spans": [
+    {
+     "from": "1979-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHN-1828"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1979_2.html",
+       "title": "1979年行政区划 — 区划地名网 (annual change record)",
+       "says": "(79) Zhongfa No.42: leagues/banners moved to Liaoning, Jilin, Heilongjiang, Gansu and Ningxia in July 1969 return to Inner Mongolia from 1 July 1979.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1979-07-01 is the restoration of Inner Mongolia (decision of 1979-05-30, effective 1 July 1979), which moved this unit's boundary."
+    }
+   ]
+  },
+  {
+   "id": "CHN:Gansu",
+   "names": {
+    "en": "Gansu Province",
+    "ja": "甘粛省",
+    "local": "甘肃省"
+   },
+   "wikidata": "Q42392",
+   "spans": [
+    {
+     "from": "1979-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHN-1150"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1979_2.html",
+       "title": "1979年行政区划 — 区划地名网 (annual change record)",
+       "says": "(79) Zhongfa No.42: leagues/banners moved to Liaoning, Jilin, Heilongjiang, Gansu and Ningxia in July 1969 return to Inner Mongolia from 1 July 1979.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://zh.wikipedia.org/w/index.php?oldid=88035747",
+       "title": "中国行政区域边界争议 (zh.wikipedia, permanent revision)",
+       "says": "Lists provincial boundary disputes (Jiagedaqi/Songling, Ejin middle section, Weishan Lake adjusted 1967 and 1984, Xingzi islands); provincial lines surveyed 1989–2002.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1979-07-01 is the restoration of Inner Mongolia (decision of 1979-05-30, effective 1 July 1979), which moved this unit's boundary. The middle section of the Gansu–Inner Mongolia line (Ejin/Jinta) was left undemarcated in the 2001 survey; NE draws one line there."
+    }
+   ]
+  },
+  {
+   "id": "CHN:Ningxia",
+   "names": {
+    "en": "Ningxia Hui Autonomous Region",
+    "ja": "寧夏回族自治区",
+    "local": "宁夏回族自治区"
+   },
+   "wikidata": "Q57448",
+   "spans": [
+    {
+     "from": "1979-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHN-1803"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1979_2.html",
+       "title": "1979年行政区划 — 区划地名网 (annual change record)",
+       "says": "(79) Zhongfa No.42: leagues/banners moved to Liaoning, Jilin, Heilongjiang, Gansu and Ningxia in July 1969 return to Inner Mongolia from 1 July 1979.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1979-07-01 is the restoration of Inner Mongolia (decision of 1979-05-30, effective 1 July 1979), which moved this unit's boundary."
+    }
+   ]
+  },
+  {
+   "id": "CHN:Heilongjiang",
+   "names": {
+    "en": "Heilongjiang Province",
+    "ja": "黒竜江省",
+    "local": "黑龙江省"
+   },
+   "wikidata": "Q19206",
+   "spans": [
+    {
+     "from": "1979-07-01",
+     "precision": "day",
+     "to": "2005",
+     "atoms": [
+      "CHN-1839"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1979_2.html",
+       "title": "1979年行政区划 — 区划地名网 (annual change record)",
+       "says": "(79) Zhongfa No.42: leagues/banners moved to Liaoning, Jilin, Heilongjiang, Gansu and Ningxia in July 1969 return to Inner Mongolia from 1 July 1979.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1357447554",
+       "title": "Bolshoy Ussuriysky Island (en.wikipedia, permanent revision)",
+       "says": "2004 complementary agreement, approved by both legislatures in 2005; about 170 km² of the island transferred to China on 14 October 2008.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://zh.wikipedia.org/w/index.php?oldid=88035747",
+       "title": "中国行政区域边界争议 (zh.wikipedia, permanent revision)",
+       "says": "Lists provincial boundary disputes (Jiagedaqi/Songling, Ejin middle section, Weishan Lake adjusted 1967 and 1984, Xingzi islands); provincial lines surveyed 1989–2002.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1979-07-01 is the restoration of Inner Mongolia (decision of 1979-05-30, effective 1 July 1979), which moved this unit's boundary. NE draws Jiagedaqi and Songling (Oroqen Banner land administered by Heilongjiang, before and after 1979) inside Inner Mongolia, i.e. the de jure line, unchanged across the span. Span ends at the start of 2005, the year the 2004 Russia agreement took legal effect (day not established); NE keeps the pre-2008 river line at Bolshoy Ussuriysky (measured)."
+    }
+   ]
+  },
+  {
+   "id": "CHN:NeiMongol",
+   "names": {
+    "en": "Inner Mongolia Autonomous Region",
+    "ja": "内モンゴル自治区",
+    "local": "内蒙古自治区"
+   },
+   "wikidata": "Q41079",
+   "spans": [
+    {
+     "from": "1979-07-01",
+     "precision": "day",
+     "to": "2005",
+     "atoms": [
+      "CHN-1838"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1979_2.html",
+       "title": "1979年行政区划 — 区划地名网 (annual change record)",
+       "says": "(79) Zhongfa No.42: leagues/banners moved to Liaoning, Jilin, Heilongjiang, Gansu and Ningxia in July 1969 return to Inner Mongolia from 1 July 1979.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1255785272",
+       "title": "Abagaitu Islet (en.wikipedia, permanent revision)",
+       "says": "58 km² Argun River islet held by the USSR/Russia since 1929; the 2004 agreement returned part of it to China; approved 2005.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://zh.wikipedia.org/w/index.php?oldid=88035747",
+       "title": "中国行政区域边界争议 (zh.wikipedia, permanent revision)",
+       "says": "Lists provincial boundary disputes (Jiagedaqi/Songling, Ejin middle section, Weishan Lake adjusted 1967 and 1984, Xingzi islands); provincial lines surveyed 1989–2002.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Restored to its pre-July-1969 extent on 1979-07-01. Includes Jiagedaqi/Songling de jure (administered by Heilongjiang). Span ends at the start of 2005 (2004 Russia agreement approved 2005); NE still draws Abagaitu as Russian (measured)."
+    }
+   ]
+  },
+  {
+   "id": "CHN:Xinjiang",
+   "names": {
+    "en": "Xinjiang Uygur Autonomous Region",
+    "ja": "新疆ウイグル自治区",
+    "local": "新疆维吾尔自治区"
+   },
+   "wikidata": "Q34800",
+   "spans": [
+    {
+     "from": "1979-07-01",
+     "precision": "day",
+     "to": "1995",
+     "atoms": [
+      "CHN-1756"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1312610767",
+       "title": "China–Kazakhstan border (en.wikipedia, permanent revision)",
+       "says": "1994 treaty, ratified by Kazakhstan 15 June 1995, recognised a strip east of Lake Zhalanashkol as Chinese; supplements 1997/1998; final protocol 10 May 2002.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1367020174",
+       "title": "China–Tajikistan border (en.wikipedia, permanent revision)",
+       "says": "In 2011 Tajikistan ratified the 1999 deal and 2002 supplement ceding about 200 and 1,122 km² in the Pamirs to China.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1979.html",
+       "title": "1979年行政区划 — year-end figures",
+       "says": "End of 1979: 22 provinces, 5 autonomous regions, 3 municipalities, 30 in all — the count includes Taiwan Province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor, not a change date: no earlier extent is claimed (pre-1979 layouts are listed in unresolved). Span ends at the start of 1995: NE keeps the pre-treaty Soviet-era lines (measured: ~1,030 km² of the Tajik cession and the strip east of Lake Zhalanashkol lie in NE neighbour atoms), and the first of these transfers, the 1994 Kazakhstan treaty, was ratified in 1995."
+    }
+   ]
+  },
+  {
+   "id": "CHN:Jiangsu",
+   "names": {
+    "en": "Jiangsu Province",
+    "ja": "江蘇省",
+    "local": "江苏省"
+   },
+   "wikidata": "Q16963",
+   "spans": [
+    {
+     "from": "1984-08",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "CHN-1818"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1984_5.html",
+       "title": "1984年行政区划 — 区划地名网",
+       "says": "August 1984: 14 villages of Pei County, Jiangsu, transferred to Weishan County, Shandong, to unify management of Weishan Lake.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://zh.wikipedia.org/w/index.php?oldid=88035747",
+       "title": "中国行政区域边界争议 (zh.wikipedia, permanent revision)",
+       "says": "Lists provincial boundary disputes (Jiagedaqi/Songling, Ejin middle section, Weishan Lake adjusted 1967 and 1984, Xingzi islands); provincial lines surveyed 1989–2002.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Month precision: the record gives August 1984 for the Weishan Lake village transfer, the last change of the Jiangsu–Shandong line it lists. The 2003–2006 Weishan settlement is described as dispute resolution, not a transfer."
+    }
+   ]
+  },
+  {
+   "id": "CHN:Shandong",
+   "names": {
+    "en": "Shandong Province",
+    "ja": "山東省",
+    "local": "山东省"
+   },
+   "wikidata": "Q43407",
+   "spans": [
+    {
+     "from": "1984-08",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "CHN-1814"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1984_5.html",
+       "title": "1984年行政区划 — 区划地名网",
+       "says": "August 1984: 14 villages of Pei County, Jiangsu, transferred to Weishan County, Shandong, to unify management of Weishan Lake.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://zh.wikipedia.org/w/index.php?oldid=88035747",
+       "title": "中国行政区域边界争议 (zh.wikipedia, permanent revision)",
+       "says": "Lists provincial boundary disputes (Jiagedaqi/Songling, Ejin middle section, Weishan Lake adjusted 1967 and 1984, Xingzi islands); provincial lines surveyed 1989–2002.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Month precision: August 1984 Weishan Lake village transfer from Jiangsu; no later transfer recorded."
+    }
+   ]
+  },
+  {
+   "id": "CHN:Guangdong",
+   "names": {
+    "en": "Guangdong Province",
+    "ja": "広東省",
+    "local": "广东省"
+   },
+   "wikidata": "Q15175",
+   "spans": [
+    {
+     "from": "1979-07-01",
+     "precision": "day",
+     "to": "1988-04-13",
+     "atoms": [
+      "CHN-1180",
+      "CHN-1775",
+      "PFA+00?"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1988_3.html",
+       "title": "1988年行政区划 — 区划地名网 (NPC decision of 1988-04-13)",
+       "says": "NPC approves Hainan Province, abolishing Hainan Administrative Region; it governs Hainan Island and the Xisha, Nansha, Zhongsha islands and waters.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1368459104",
+       "title": "Territorial changes of the People's Republic of China (en.wikipedia, permanent revision)",
+       "says": "PRC gained control of the Paracel Islands on 19 January 1974; Vietnam boundary line determined 31 December 2008; Tajik cession ratified 12 January 2011.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1979.html",
+       "title": "1979年行政区划 — year-end figures",
+       "says": "End of 1979: 22 provinces, 5 autonomous regions, 3 municipalities, 30 in all — the count includes Taiwan Province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor, not a change date: no earlier extent is claimed (pre-1979 layouts are listed in unresolved). Until 1988-04-13 Guangdong included the Hainan Administrative Region (Hainan Island and the Xisha/Paracel islands, the latter wholly held since January 1974)."
+    },
+    {
+     "from": "1988-04-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHN-1180"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1988_3.html",
+       "title": "1988年行政区划 — 区划地名网 (NPC decision of 1988-04-13)",
+       "says": "NPC approves Hainan Province, abolishing Hainan Administrative Region; it governs Hainan Island and the Xisha, Nansha, Zhongsha islands and waters.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Hainan separated by NPC decision of 1988-04-13. Sub-resolution leases not modelled: Shenzhen Bay Port area (HK law, 2007) and University of Macau Hengqin campus (Macau law, 2013)."
+    }
+   ]
+  },
+  {
+   "id": "CHN:Hainan",
+   "names": {
+    "en": "Hainan Province",
+    "ja": "海南省",
+    "local": "海南省"
+   },
+   "wikidata": "Q42200",
+   "spans": [
+    {
+     "from": "1988-04-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHN-1775",
+      "PFA+00?"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1988_3.html",
+       "title": "1988年行政区划 — 区划地名网 (NPC decision of 1988-04-13)",
+       "says": "NPC approves Hainan Province, abolishing Hainan Administrative Region; it governs Hainan Island and the Xisha, Nansha, Zhongsha islands and waters.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The NPC decision assigns the Xisha (Paracel) islands to Hainan; NE carries them as a separate atom."
+    }
+   ]
+  },
+  {
+   "id": "CHN:Sichuan",
+   "names": {
+    "en": "Sichuan Province",
+    "ja": "四川省",
+    "local": "四川省"
+   },
+   "wikidata": "Q19770",
+   "spans": [
+    {
+     "from": "1979-07-01",
+     "precision": "day",
+     "to": "1997-03-14",
+     "atoms": [
+      "CHN-1809",
+      "CHN-1154"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1997_2.html",
+       "title": "1997年行政区划 — 区划地名网 (NPC decision of 1997-03-14)",
+       "says": "NPC approves Chongqing municipality over former Chongqing, Wanxian and Fuling cities and Qianjiang prefecture; inaugurated 18 June 1997.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1979.html",
+       "title": "1979年行政区划 — year-end figures",
+       "says": "End of 1979: 22 provinces, 5 autonomous regions, 3 municipalities, 30 in all — the count includes Taiwan Province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope floor, not a change date: no earlier extent is claimed (pre-1979 layouts are listed in unresolved). Until 1997-03-14 Sichuan included all of present Chongqing (former Chongqing, Wanxian, Fuling cities, Qianjiang prefecture)."
+    },
+    {
+     "from": "1997-03-14",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHN-1809"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1997_2.html",
+       "title": "1997年行政区划 — 区划地名网 (NPC decision of 1997-03-14)",
+       "says": "NPC approves Chongqing municipality over former Chongqing, Wanxian and Fuling cities and Qianjiang prefecture; inaugurated 18 June 1997.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "NPC decision date; the municipality was inaugurated 1997-06-18."
+    }
+   ]
+  },
+  {
+   "id": "CHN:Chongqing",
+   "names": {
+    "en": "Chongqing Municipality",
+    "ja": "重慶市",
+    "local": "重庆市"
+   },
+   "wikidata": "Q11725",
+   "spans": [
+    {
+     "from": "1997-03-14",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHN-1154"
+     ],
+     "sources": [
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1997_2.html",
+       "title": "1997年行政区划 — 区划地名网 (NPC decision of 1997-03-14)",
+       "says": "NPC approves Chongqing municipality over former Chongqing, Wanxian and Fuling cities and Qianjiang prefecture; inaugurated 18 June 1997.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.xzqh.org/html/show/cn/1978.html",
+       "title": "区划地名网 annual records of county-level-and-above changes, 1978–2019 (one page per year, all read)",
+       "says": "Year-by-year State Council/MCA approvals; the only transfers between province-level units it records 1978–2019 are 1979-04, 1979-07, 1984-08, 1988 and 1997.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "NPC decision date (legal effect); inaugurated 1997-06-18."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1979-07-01",
+   "precision": "day",
+   "what": "Inner Mongolia restored: leagues/banners given to Liaoning, Jilin, Heilongjiang, Gansu, Ningxia in July 1969 returned",
+   "sources": [
+    {
+     "url": "https://www.xzqh.org/html/show/cn/1979_2.html",
+     "title": "1979年行政区划 — 区划地名网 (annual change record)",
+     "says": "(79) Zhongfa No.42: leagues/banners moved to Liaoning, Jilin, Heilongjiang, Gansu and Ningxia in July 1969 return to Inner Mongolia from 1 July 1979.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1984-08",
+   "precision": "month",
+   "what": "14 villages of Pei County (Jiangsu) transferred to Weishan County (Shandong)",
+   "sources": [
+    {
+     "url": "https://www.xzqh.org/html/show/cn/1984_5.html",
+     "title": "1984年行政区划 — 区划地名网",
+     "says": "August 1984: 14 villages of Pei County, Jiangsu, transferred to Weishan County, Shandong, to unify management of Weishan Lake.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1988-04-13",
+   "precision": "day",
+   "what": "Hainan Province created from Guangdong's Hainan Administrative Region, with the Xisha/Nansha/Zhongsha islands",
+   "sources": [
+    {
+     "url": "https://www.xzqh.org/html/show/cn/1988_3.html",
+     "title": "1988年行政区划 — 区划地名网 (NPC decision of 1988-04-13)",
+     "says": "NPC approves Hainan Province, abolishing Hainan Administrative Region; it governs Hainan Island and the Xisha, Nansha, Zhongsha islands and waters.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1995",
+   "precision": "year",
+   "what": "China–Kazakhstan 1994 treaty ratified (strip east of Lake Zhalanashkol to China); first of the 1995–2011 Central Asian transfers to Xinjiang",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1312610767",
+     "title": "China–Kazakhstan border (en.wikipedia, permanent revision)",
+     "says": "1994 treaty, ratified by Kazakhstan 15 June 1995, recognised a strip east of Lake Zhalanashkol as Chinese; supplements 1997/1998; final protocol 10 May 2002.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1997-03-14",
+   "precision": "day",
+   "what": "Chongqing municipality created from eastern Sichuan",
+   "sources": [
+    {
+     "url": "https://www.xzqh.org/html/show/cn/1997_2.html",
+     "title": "1997年行政区划 — 区划地名网 (NPC decision of 1997-03-14)",
+     "says": "NPC approves Chongqing municipality over former Chongqing, Wanxian and Fuling cities and Qianjiang prefecture; inaugurated 18 June 1997.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2005",
+   "precision": "year",
+   "what": "2004 China–Russia complementary agreement approved; western Bolshoy Ussuriysky (Heilongjiang) and part of Abagaitu (Inner Mongolia) to China, handed over 2008-10-14",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1357447554",
+     "title": "Bolshoy Ussuriysky Island (en.wikipedia, permanent revision)",
+     "says": "2004 complementary agreement, approved by both legislatures in 2005; about 170 km² of the island transferred to China on 14 October 2008.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1255785272",
+     "title": "Abagaitu Islet (en.wikipedia, permanent revision)",
+     "says": "58 km² Argun River islet held by the USSR/Russia since 1929; the 2004 agreement returned part of it to China; approved 2005.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2009",
+   "precision": "year",
+   "what": "China–Kyrgyzstan border finalised (Uzengi-Kush to China)",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1340117630",
+     "title": "China–Kyrgyzstan border (en.wikipedia, permanent revision)",
+     "says": "Border delimited 1996 and finalised 2009, Kyrgyzstan ceding the Uzengi-Kush area and China giving up part of Khan Tengri.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2011",
+   "precision": "year",
+   "what": "Tajikistan ratifies cession of ~1,100 km² in the Pamirs to Xinjiang",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1367020174",
+     "title": "China–Tajikistan border (en.wikipedia, permanent revision)",
+     "says": "In 2011 Tajikistan ratified the 1999 deal and 2002 supplement ceding about 200 and 1,122 km² in the Pamirs to China.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1979-12-31",
+   "n": 29,
+   "sources": [
+    {
+     "url": "https://www.xzqh.org/html/show/cn/1979.html",
+     "title": "1979年行政区划 — year-end figures",
+     "says": "End of 1979: 22 provinces, 5 autonomous regions, 3 municipalities, 30 in all — the count includes Taiwan Province.",
+     "accessed": "2026-10-05"
+    }
+   ],
+   "note": "30 stated, minus Taiwan Province"
+  },
+  {
+   "date": "1984-12-31",
+   "n": 29,
+   "sources": [
+    {
+     "url": "https://www.xzqh.org/html/show/cn/1984.html",
+     "title": "1984年行政区划 — year-end figures",
+     "says": "End of 1984: 22 provinces, 5 autonomous regions, 3 municipalities, 30 in all (Taiwan Province included).",
+     "accessed": "2026-10-05"
+    }
+   ],
+   "note": "30 stated, minus Taiwan Province"
+  },
+  {
+   "date": "1988-12-31",
+   "n": 30,
+   "sources": [
+    {
+     "url": "https://www.xzqh.org/html/show/cn/1988.html",
+     "title": "1988年行政区划 — year-end figures",
+     "says": "End of 1988: 23 provinces, 5 autonomous regions, 3 municipalities, 31 in all (Taiwan Province included).",
+     "accessed": "2026-10-05"
+    }
+   ],
+   "note": "31 stated, minus Taiwan Province"
+  },
+  {
+   "date": "1997-12-31",
+   "n": 31,
+   "sources": [
+    {
+     "url": "https://www.xzqh.org/html/show/cn/1997.html",
+     "title": "1997年行政区划 — year-end figures",
+     "says": "End of 1997: 4 municipalities, 23 provinces, 5 autonomous regions, 1 SAR, 33 in all (Taiwan and Hong Kong included).",
+     "accessed": "2026-10-05"
+    }
+   ],
+   "note": "33 stated, minus Taiwan and Hong Kong"
+  },
+  {
+   "date": "2008-12-31",
+   "n": 31,
+   "sources": [
+    {
+     "url": "https://www.xzqh.org/html/show/cn/2008.html",
+     "title": "2008年行政区划 — year-end figures",
+     "says": "End of 2008: 4 municipalities, 23 provinces, 5 autonomous regions, 2 SARs, 34 in all (Taiwan, Hong Kong, Macau included).",
+     "accessed": "2026-10-05"
+    }
+   ],
+   "note": "34 stated, minus Taiwan, Hong Kong, Macau"
+  },
+  {
+   "date": "2019-12-31",
+   "n": 31,
+   "sources": [
+    {
+     "url": "https://www.xzqh.org/html/show/cn/2019.html",
+     "title": "2019年行政区划 — year-end figures",
+     "says": "End of 2019: 4 municipalities, 23 provinces, 5 autonomous regions, 2 SARs, 34 in all (Taiwan, Hong Kong, Macau included).",
+     "accessed": "2026-10-05"
+    }
+   ],
+   "note": "34 stated, minus Taiwan, Hong Kong, Macau"
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Jiangsu Province 1979-07-01 → 1984-08",
+   "unit": "CHN:Jiangsu",
+   "atoms": [
+    "CHN-1818"
+   ],
+   "from": "1979-07-01",
+   "to": "1984-08",
+   "why": "The Jiangsu–Shandong line moved in August 1984 (14 Pei County villages to Weishan County), so before then it ran through what are now NE atoms.",
+   "checked": [
+    "xzqh.org annual records 1978–2019",
+    "zh.wikipedia 中国行政区域边界争议 oldid 88035747"
+   ],
+   "needs": "village/township-level atoms on the Pei–Weishan line (e.g. a township boundary set with pre-1984 lines; geoBoundaries CHN ADM3 — licence to be verified)"
+  },
+  {
+   "what": "Shandong Province 1979-07-01 → 1984-08",
+   "unit": "CHN:Shandong",
+   "atoms": [
+    "CHN-1814"
+   ],
+   "from": "1979-07-01",
+   "to": "1984-08",
+   "why": "Same August 1984 transfer: before it, 14 villages now in Shandong's atom were in Jiangsu.",
+   "checked": [
+    "xzqh.org annual records 1978–2019"
+   ],
+   "needs": "township-level atoms on the Pei–Weishan line"
+  },
+  {
+   "what": "Heilongjiang 2005 → 2019",
+   "unit": "CHN:Heilongjiang",
+   "atoms": [
+    "CHN-1839"
+   ],
+   "from": "2005",
+   "to": null,
+   "why": "Under the 2004 agreement (approved 2005, handed over 2008-10-14) about 170 km² of Bolshoy Ussuriysky became Chinese. Natural Earth at ca96624 still draws the whole island inside RUS-2614 (grid point-in-polygon test), so CHN-1839 lacks territory Heilongjiang administers.",
+   "checked": [
+    "NE ca96624 geometry, grid test 134.2–135.1E 48.24–48.50N",
+    "OSM relation 270056 comparison (NE RUS-2614 land that OSM gives China: 246 km² at 134.59E 48.35N)",
+    "en.wikipedia Bolshoy Ussuriysky Island oldid 1357447554"
+   ],
+   "needs": "an atom for the Chinese part of Bolshoy Ussuriysky (split of NE RUS-2614 along the 2008 line, e.g. OSM boundary relation, ODbL) and the agreement's entry-into-force day"
+  },
+  {
+   "what": "Inner Mongolia 2005 → 2019",
+   "unit": "CHN:NeiMongol",
+   "atoms": [
+    "CHN-1838"
+   ],
+   "from": "2005",
+   "to": null,
+   "why": "Part of Abagaitu Islet (Argun) became Chinese under the 2004 agreement; NE draws it inside RUS-2610 (grid test), so CHN-1838 lacks it.",
+   "checked": [
+    "NE ca96624 geometry, grid test 117.5–118.1E 49.45–49.75N",
+    "en.wikipedia Abagaitu Islet oldid 1255785272"
+   ],
+   "needs": "an atom for the Chinese part of Abagaitu (split of NE RUS-2610 along the OSM line, ODbL)"
+  },
+  {
+   "what": "Xinjiang 1995 → 2019",
+   "unit": "CHN:Xinjiang",
+   "atoms": [
+    "CHN-1756"
+   ],
+   "from": "1995",
+   "to": null,
+   "why": "Treaties with Kazakhstan (1994, ratified 1995; protocol 2002), Kyrgyzstan (1996/1999, finalised 2009) and Tajikistan (1999/2002, ratified 2011) moved land to Xinjiang. NE keeps the Soviet-era lines: about 877+150 km² of the Tajik cession and pieces near Lake Zhalanashkol and Uzengi-Kush lie in NE neighbour atoms. Exact entry-into-force days were not established.",
+   "checked": [
+    "NE ca96624 vs OSM relation 270056 (polygon difference; TJK-366 land OSM gives China 877 km² at 74.46E 38.48N)",
+    "en.wikipedia China–Kazakhstan / Kyrgyzstan / Tajikistan border, oldids 1312610767 / 1340117630 / 1367020174"
+   ],
+   "needs": "NE neighbour atoms split along the treaty lines (OSM ADM0 lines, ODbL) plus the treaty entry-into-force days"
+  },
+  {
+   "what": "PRC provincial layouts 1949-10-01 → 1979-07-01",
+   "from": "1949-10-01",
+   "to": "1979-07-01",
+   "why": "Every layout before the 1979 restoration of Inner Mongolia differs from the NE atoms along lines inside them: 1949–54 greater regions and abolished provinces (Chahar, Pingyuan, Suiyuan, Songjiang, Liaodong/Liaoxi, Rehe, Xikang, Ningxia Province), 1950–52 Sichuan and North/South Jiangsu/Anhui districts, Beijing/Shanghai/Tianjin county transfers 1958 and 1973, Qinzhou between Guangdong and Guangxi 1951–1965, the Inner Mongolia split 1969–79, and many county transfers. No complete pre-1978 annual change record was reachable to prove any unit unchanged before 1979.",
+   "checked": [
+    "xzqh.org annual pages exist only from 1978",
+    "zh.wikipedia 中华人民共和国行政区划 history section",
+    "statoids.com/ucn.html"
+   ],
+   "needs": "county-level atoms carrying 1950s–1970s county lines, plus a complete 1949–1978 change list (e.g. 《中华人民共和国行政区划沿革地图集》 / MCA records)"
+  },
+  {
+   "what": "Lines NE draws that the sources call disputed, undefined or changed below NE resolution (informational; no atom withheld)",
+   "from": "1979-07-01",
+   "to": null,
+   "why": "India LAC and Bhutan sectors of Tibet/Xinjiang (NE gives Bhutan/India land OSM gives China); Ejin middle section; Weishan; Zhejiang–Fujian Xingzi islands; Vietnam treaty (1999, line set 2008) and Russia 1991 island allocations; Zhenbao islet; Macau Hengqin campus 2013 and Shenzhen Bay Port 2007. Each moves under ~1 km² or lies within NE's own generalisation error (hundreds of km² vs OSM), so no NE atom shows it either way.",
+   "checked": [
+    "NE ca96624 vs OSM relation 270056 polygon difference per atom",
+    "zh.wikipedia 中国行政区域边界争议 oldid 88035747",
+    "en.wikipedia Territorial changes of the PRC oldid 1368459104"
+   ],
+   "needs": "a higher-precision atom set (OSM ADM1/ADM2, ODbL) if these lines are to be shown"
+  }
+ ]
+}

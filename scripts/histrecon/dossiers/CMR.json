@@ -1,0 +1,747 @@
+{
+ "country": "CMR",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1961-10-01",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Federal Republic of Cameroon from the reunification of 1961-10-01, United Republic from 1972, Republic of Cameroon from 1984. Units are drawn as actually administered: the Bakassi peninsula (in the NE Sud-Ouest atom) was administered by Nigeria until 2008-08-14, and Nigeria administered Darak and other Lake Chad villages (in the NE Extrême-Nord atom, which follows the ICJ line) until December 2003 / July 2004.",
+ "units": [
+  {
+   "id": "CMR:EastCameroon@1961",
+   "names": {
+    "en": "East Cameroon (federated state)",
+    "ja": "東カメルーン",
+    "local": "Cameroun oriental"
+   },
+   "wikidata": null,
+   "spans": [
+    {
+     "from": "1961-10-01",
+     "precision": "day",
+     "to": "1972-06-02",
+     "atoms": [
+      "CMR-1480",
+      "CMR-803",
+      "CMR-1476",
+      "CMR-798",
+      "CMR-1481",
+      "CMR-1482",
+      "CMR-1483",
+      "CMR-1462"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ucm.html",
+       "title": "Statoids — Regions of Cameroon (change history)",
+       "says": "Southern Cameroons united 1961-10-01 as West Cameroon beside East Cameroon; seven provinces after the 1972 unitary constitution; 1983-08-22 Centre-Sud and Nord split; 2008-11-12 provinces renamed regions.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=British_Cameroons&oldid=1377159908",
+       "title": "Wikipedia — British Cameroons (oldid 1377159908)",
+       "says": "Southern Cameroons became West Cameroon, a constituent state of the Federal Republic of Cameroon, on 1 October 1961.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.osidimbea.cm/cameroun-au-fil/cameroun-1972/",
+       "title": "Osidimbea — Le Cameroun en 1972",
+       "says": "Referendum of 20 May 1972 abolished the federation and the two federated states; decree 72-349 of 24 July 1972 reorganised the administration.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "East Cameroon = the former French Cameroun, i.e. everything outside the two NE atoms of the former Southern Cameroons. Lake Chad was not yet affected (Nigerian administration there dates from roughly two decades before 2002)."
+    }
+   ]
+  },
+  {
+   "id": "CMR:CentreSud@1972",
+   "names": {
+    "en": "Centre-South Province",
+    "ja": "中南部州",
+    "local": "Province du Centre-Sud"
+   },
+   "wikidata": null,
+   "spans": [
+    {
+     "from": "1973",
+     "precision": "year",
+     "to": "1983-08-22",
+     "atoms": [
+      "CMR-1480",
+      "CMR-803"
+     ],
+     "sources": [
+      {
+       "url": "https://s1084e755aa436055.jimcontent.com/download/version/1591429462/module/12316708657/name/DECRET%20N%2072_349%20Portant%20organisation%20administrative%20de%20la%20R%C3%A9publique%20Unie%20du%20Cameroun.pdf",
+       "title": "Décret n° 72/349 portant organisation administrative de la République Unie du Cameroun (text)",
+       "says": "Creates seven provinces and lists their departments; enters into force after the decree on organisation and the appointment of provincial governors.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ucm.html",
+       "title": "Statoids — Regions of Cameroon (change history)",
+       "says": "Southern Cameroons united 1961-10-01 as West Cameroon beside East Cameroon; seven provinces after the 1972 unitary constitution; 1983-08-22 Centre-Sud and Nord split; 2008-11-12 provinces renamed regions.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Decree 72/349 (24 Jul 1972) took effect only after governors were appointed (they served from 1972; day not established). The span starts conservatively on 1 Jan 1973; the 1972-06-02 → 1973 transition is withheld. Centre-Sud was divided into Centre and Sud on 1983-08-22."
+    }
+   ]
+  },
+  {
+   "id": "CMR:Nord@1972",
+   "names": {
+    "en": "North Province (incl. Adamaoua and Extrême-Nord)",
+    "ja": "北部州",
+    "local": "Province du Nord"
+   },
+   "wikidata": null,
+   "spans": [
+    {
+     "from": "1973",
+     "precision": "year",
+     "to": "1976",
+     "atoms": [
+      "CMR-1482",
+      "CMR-1483",
+      "CMR-1462"
+     ],
+     "sources": [
+      {
+       "url": "https://s1084e755aa436055.jimcontent.com/download/version/1591429462/module/12316708657/name/DECRET%20N%2072_349%20Portant%20organisation%20administrative%20de%20la%20R%C3%A9publique%20Unie%20du%20Cameroun.pdf",
+       "title": "Décret n° 72/349 portant organisation administrative de la République Unie du Cameroun (text)",
+       "says": "Creates seven provinces and lists their departments; enters into force after the decree on organisation and the appointment of provincial governors.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ucm.html",
+       "title": "Statoids — Regions of Cameroon (change history)",
+       "says": "Southern Cameroons united 1961-10-01 as West Cameroon beside East Cameroon; seven provinces after the 1972 unitary constitution; 1983-08-22 Centre-Sud and Nord split; 2008-11-12 provinces renamed regions.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icj-cij.org/node/103905",
+       "title": "ICJ — Summary of the Judgment of 10 October 2002 (Cameroon v. Nigeria)",
+       "says": "Nigeria invoked some twenty years of administration of Darak and Lake Chad villages; the Court held sovereignty Cameroonian (1931 Henderson-Fleuriau line).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Decree 72/349 (24 Jul 1972) took effect only after governors were appointed (they served from 1972; day not established). The span starts conservatively on 1 Jan 1973; the 1972-06-02 → 1973 transition is withheld. Ends conservatively at 1976, before the window in which Nigeria administered Lake Chad villages now in the Extrême-Nord atom."
+    }
+   ]
+  },
+  {
+   "id": "CMR:Est@1972",
+   "names": {
+    "en": "East Province / Region",
+    "ja": "東部州",
+    "local": "Province de l'Est"
+   },
+   "wikidata": "Q845168",
+   "spans": [
+    {
+     "from": "1973",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "CMR-1481"
+     ],
+     "sources": [
+      {
+       "url": "https://s1084e755aa436055.jimcontent.com/download/version/1591429462/module/12316708657/name/DECRET%20N%2072_349%20Portant%20organisation%20administrative%20de%20la%20R%C3%A9publique%20Unie%20du%20Cameroun.pdf",
+       "title": "Décret n° 72/349 portant organisation administrative de la République Unie du Cameroun (text)",
+       "says": "Creates seven provinces and lists their departments; enters into force after the decree on organisation and the appointment of provincial governors.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ucm.html",
+       "title": "Statoids — Regions of Cameroon (change history)",
+       "says": "Southern Cameroons united 1961-10-01 as West Cameroon beside East Cameroon; seven provinces after the 1972 unitary constitution; 1983-08-22 Centre-Sud and Nord split; 2008-11-12 provinces renamed regions.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Decree 72/349 (24 Jul 1972) took effect only after governors were appointed (they served from 1972; day not established). The span starts conservatively on 1 Jan 1973; the 1972-06-02 → 1973 transition is withheld. Unchanged by the 1983 split."
+    }
+   ]
+  },
+  {
+   "id": "CMR:Littoral@1972",
+   "names": {
+    "en": "Littoral Province / Region",
+    "ja": "リトラル州",
+    "local": "Province du Littoral"
+   },
+   "wikidata": "Q845172",
+   "spans": [
+    {
+     "from": "1973",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "CMR-1476"
+     ],
+     "sources": [
+      {
+       "url": "https://s1084e755aa436055.jimcontent.com/download/version/1591429462/module/12316708657/name/DECRET%20N%2072_349%20Portant%20organisation%20administrative%20de%20la%20R%C3%A9publique%20Unie%20du%20Cameroun.pdf",
+       "title": "Décret n° 72/349 portant organisation administrative de la République Unie du Cameroun (text)",
+       "says": "Creates seven provinces and lists their departments; enters into force after the decree on organisation and the appointment of provincial governors.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ucm.html",
+       "title": "Statoids — Regions of Cameroon (change history)",
+       "says": "Southern Cameroons united 1961-10-01 as West Cameroon beside East Cameroon; seven provinces after the 1972 unitary constitution; 1983-08-22 Centre-Sud and Nord split; 2008-11-12 provinces renamed regions.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Decree 72/349 (24 Jul 1972) took effect only after governors were appointed (they served from 1972; day not established). The span starts conservatively on 1 Jan 1973; the 1972-06-02 → 1973 transition is withheld."
+    }
+   ]
+  },
+  {
+   "id": "CMR:Ouest@1972",
+   "names": {
+    "en": "West Province / Region",
+    "ja": "西部州",
+    "local": "Province de l'Ouest"
+   },
+   "wikidata": "Q165784",
+   "spans": [
+    {
+     "from": "1973",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "CMR-798"
+     ],
+     "sources": [
+      {
+       "url": "https://s1084e755aa436055.jimcontent.com/download/version/1591429462/module/12316708657/name/DECRET%20N%2072_349%20Portant%20organisation%20administrative%20de%20la%20R%C3%A9publique%20Unie%20du%20Cameroun.pdf",
+       "title": "Décret n° 72/349 portant organisation administrative de la République Unie du Cameroun (text)",
+       "says": "Creates seven provinces and lists their departments; enters into force after the decree on organisation and the appointment of provincial governors.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ucm.html",
+       "title": "Statoids — Regions of Cameroon (change history)",
+       "says": "Southern Cameroons united 1961-10-01 as West Cameroon beside East Cameroon; seven provinces after the 1972 unitary constitution; 1983-08-22 Centre-Sud and Nord split; 2008-11-12 provinces renamed regions.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Decree 72/349 (24 Jul 1972) took effect only after governors were appointed (they served from 1972; day not established). The span starts conservatively on 1 Jan 1973; the 1972-06-02 → 1973 transition is withheld."
+    }
+   ]
+  },
+  {
+   "id": "CMR:NordOuest@1972",
+   "names": {
+    "en": "North-West Province / Region",
+    "ja": "北西州",
+    "local": "Province du Nord-Ouest"
+   },
+   "wikidata": "Q823946",
+   "spans": [
+    {
+     "from": "1973",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "CMR-1477"
+     ],
+     "sources": [
+      {
+       "url": "https://s1084e755aa436055.jimcontent.com/download/version/1591429462/module/12316708657/name/DECRET%20N%2072_349%20Portant%20organisation%20administrative%20de%20la%20R%C3%A9publique%20Unie%20du%20Cameroun.pdf",
+       "title": "Décret n° 72/349 portant organisation administrative de la République Unie du Cameroun (text)",
+       "says": "Creates seven provinces and lists their departments; enters into force after the decree on organisation and the appointment of provincial governors.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ucm.html",
+       "title": "Statoids — Regions of Cameroon (change history)",
+       "says": "Southern Cameroons united 1961-10-01 as West Cameroon beside East Cameroon; seven provinces after the 1972 unitary constitution; 1983-08-22 Centre-Sud and Nord split; 2008-11-12 provinces renamed regions.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Decree 72/349 (24 Jul 1972) took effect only after governors were appointed (they served from 1972; day not established). The span starts conservatively on 1 Jan 1973; the 1972-06-02 → 1973 transition is withheld. Former Bamenda province of Southern Cameroons."
+    }
+   ]
+  },
+  {
+   "id": "CMR:SudOuest@1972",
+   "names": {
+    "en": "South-West Province / Region",
+    "ja": "南西州",
+    "local": "Province du Sud-Ouest"
+   },
+   "wikidata": "Q607499",
+   "spans": [
+    {
+     "from": "2008-08-14",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CMR-799"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Bakassi&oldid=1374974435",
+       "title": "Wikipedia — Bakassi (oldid 1374974435)",
+       "says": "Nigeria administered Bakassi (Bakassi LGA, Cross River State) until the final handover to Cameroon on 14 August 2008 under the Greentree Agreement.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.ipinst.org/wp-content/uploads/publications/bakassipub.pdf",
+       "title": "International Peace Institute, Pacific Settlement of Border Disputes: Lessons from the Bakassi Affair (Oct 2008)",
+       "says": "Authority transferred in the Lake Chad area in December 2003, along the land boundary (Ndabakura, Narki, Bourha Wango) on 13 July 2004, Bakassi except Atabong/Abana on 14 August 2006.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Atom includes the Bakassi peninsula, under Cameroonian administration only since the final handover of 2008-08-14."
+    }
+   ]
+  },
+  {
+   "id": "CMR:Centre@1983",
+   "names": {
+    "en": "Centre Province / Region",
+    "ja": "中央州",
+    "local": "Région du Centre"
+   },
+   "wikidata": "Q739951",
+   "spans": [
+    {
+     "from": "1983-08-22",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CMR-1480"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ucm.html",
+       "title": "Statoids — Regions of Cameroon (change history)",
+       "says": "Southern Cameroons united 1961-10-01 as West Cameroon beside East Cameroon; seven provinces after the 1972 unitary constitution; 1983-08-22 Centre-Sud and Nord split; 2008-11-12 provinces renamed regions.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "CMR:Sud@1983",
+   "names": {
+    "en": "South Province / Region",
+    "ja": "南部州",
+    "local": "Région du Sud"
+   },
+   "wikidata": "Q857122",
+   "spans": [
+    {
+     "from": "1983-08-22",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CMR-803"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ucm.html",
+       "title": "Statoids — Regions of Cameroon (change history)",
+       "says": "Southern Cameroons united 1961-10-01 as West Cameroon beside East Cameroon; seven provinces after the 1972 unitary constitution; 1983-08-22 Centre-Sud and Nord split; 2008-11-12 provinces renamed regions.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "CMR:Adamaoua@1983",
+   "names": {
+    "en": "Adamawa Province / Region",
+    "ja": "アダマワ州",
+    "local": "Région de l'Adamaoua"
+   },
+   "wikidata": "Q351514",
+   "spans": [
+    {
+     "from": "1983-08-22",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CMR-1482"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ucm.html",
+       "title": "Statoids — Regions of Cameroon (change history)",
+       "says": "Southern Cameroons united 1961-10-01 as West Cameroon beside East Cameroon; seven provinces after the 1972 unitary constitution; 1983-08-22 Centre-Sud and Nord split; 2008-11-12 provinces renamed regions.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "CMR:Nord@1983",
+   "names": {
+    "en": "North Province / Region",
+    "ja": "北部州",
+    "local": "Région du Nord"
+   },
+   "wikidata": "Q502341",
+   "spans": [
+    {
+     "from": "1983-08-22",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CMR-1483"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ucm.html",
+       "title": "Statoids — Regions of Cameroon (change history)",
+       "says": "Southern Cameroons united 1961-10-01 as West Cameroon beside East Cameroon; seven provinces after the 1972 unitary constitution; 1983-08-22 Centre-Sud and Nord split; 2008-11-12 provinces renamed regions.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "CMR:ExtremeNord@1983",
+   "names": {
+    "en": "Far North Province / Region",
+    "ja": "極北州",
+    "local": "Région de l'Extrême-Nord"
+   },
+   "wikidata": "Q823976",
+   "spans": [
+    {
+     "from": "2004-07-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CMR-1462"
+     ],
+     "sources": [
+      {
+       "url": "https://www.ipinst.org/wp-content/uploads/publications/bakassipub.pdf",
+       "title": "International Peace Institute, Pacific Settlement of Border Disputes: Lessons from the Bakassi Affair (Oct 2008)",
+       "says": "Authority transferred in the Lake Chad area in December 2003, along the land boundary (Ndabakura, Narki, Bourha Wango) on 13 July 2004, Bakassi except Atabong/Abana on 14 August 2006.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icj-cij.org/node/103905",
+       "title": "ICJ — Summary of the Judgment of 10 October 2002 (Cameroon v. Nigeria)",
+       "says": "Nigeria invoked some twenty years of administration of Darak and Lake Chad villages; the Court held sovereignty Cameroonian (1931 Henderson-Fleuriau line).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Drawn from the last transfer of authority from Nigeria (land villages Ndabakura, Narki, Bourha Wango, 13 Jul 2004); Lake Chad area transferred Dec 2003."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1961-10-01",
+   "precision": "day",
+   "what": "Southern Cameroons unites with Cameroun: federated states East and West Cameroon",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=British_Cameroons&oldid=1377159908",
+     "title": "Wikipedia — British Cameroons (oldid 1377159908)",
+     "says": "Southern Cameroons became West Cameroon, a constituent state of the Federal Republic of Cameroon, on 1 October 1961.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://www.statoids.com/ucm.html",
+     "title": "Statoids — Regions of Cameroon (change history)",
+     "says": "Southern Cameroons united 1961-10-01 as West Cameroon beside East Cameroon; seven provinces after the 1972 unitary constitution; 1983-08-22 Centre-Sud and Nord split; 2008-11-12 provinces renamed regions.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1972-06-02",
+   "precision": "day",
+   "what": "Unitary constitution; federated states abolished",
+   "sources": [
+    {
+     "url": "https://www.osidimbea.cm/cameroun-au-fil/cameroun-1972/",
+     "title": "Osidimbea — Le Cameroun en 1972",
+     "says": "Referendum of 20 May 1972 abolished the federation and the two federated states; decree 72-349 of 24 July 1972 reorganised the administration.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://www.statoids.com/ucm.html",
+     "title": "Statoids — Regions of Cameroon (change history)",
+     "says": "Southern Cameroons united 1961-10-01 as West Cameroon beside East Cameroon; seven provinces after the 1972 unitary constitution; 1983-08-22 Centre-Sud and Nord split; 2008-11-12 provinces renamed regions.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1972-07-24",
+   "precision": "day",
+   "what": "Decree 72/349 creates seven provinces (in force after governors were appointed)",
+   "sources": [
+    {
+     "url": "https://s1084e755aa436055.jimcontent.com/download/version/1591429462/module/12316708657/name/DECRET%20N%2072_349%20Portant%20organisation%20administrative%20de%20la%20R%C3%A9publique%20Unie%20du%20Cameroun.pdf",
+     "title": "Décret n° 72/349 portant organisation administrative de la République Unie du Cameroun (text)",
+     "says": "Creates seven provinces and lists their departments; enters into force after the decree on organisation and the appointment of provincial governors.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://www.osidimbea.cm/cameroun-au-fil/cameroun-1972/",
+     "title": "Osidimbea — Le Cameroun en 1972",
+     "says": "Referendum of 20 May 1972 abolished the federation and the two federated states; decree 72-349 of 24 July 1972 reorganised the administration.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1983-08-22",
+   "precision": "day",
+   "what": "Centre-Sud split into Centre and Sud; Nord into Adamaoua, Nord, Extrême-Nord",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ucm.html",
+     "title": "Statoids — Regions of Cameroon (change history)",
+     "says": "Southern Cameroons united 1961-10-01 as West Cameroon beside East Cameroon; seven provinces after the 1972 unitary constitution; 1983-08-22 Centre-Sud and Nord split; 2008-11-12 provinces renamed regions.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2003-12",
+   "precision": "month",
+   "what": "Nigeria transfers authority over the Lake Chad villages to Cameroon",
+   "sources": [
+    {
+     "url": "https://www.ipinst.org/wp-content/uploads/publications/bakassipub.pdf",
+     "title": "International Peace Institute, Pacific Settlement of Border Disputes: Lessons from the Bakassi Affair (Oct 2008)",
+     "says": "Authority transferred in the Lake Chad area in December 2003, along the land boundary (Ndabakura, Narki, Bourha Wango) on 13 July 2004, Bakassi except Atabong/Abana on 14 August 2006.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2004-07-13",
+   "precision": "day",
+   "what": "Transfers along the land boundary (Ndabakura, Narki, Bourha Wango)",
+   "sources": [
+    {
+     "url": "https://www.ipinst.org/wp-content/uploads/publications/bakassipub.pdf",
+     "title": "International Peace Institute, Pacific Settlement of Border Disputes: Lessons from the Bakassi Affair (Oct 2008)",
+     "says": "Authority transferred in the Lake Chad area in December 2003, along the land boundary (Ndabakura, Narki, Bourha Wango) on 13 July 2004, Bakassi except Atabong/Abana on 14 August 2006.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2006-08-14",
+   "precision": "day",
+   "what": "Bakassi handed over except the Atabong/Abana zone",
+   "sources": [
+    {
+     "url": "https://www.ipinst.org/wp-content/uploads/publications/bakassipub.pdf",
+     "title": "International Peace Institute, Pacific Settlement of Border Disputes: Lessons from the Bakassi Affair (Oct 2008)",
+     "says": "Authority transferred in the Lake Chad area in December 2003, along the land boundary (Ndabakura, Narki, Bourha Wango) on 13 July 2004, Bakassi except Atabong/Abana on 14 August 2006.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2008-08-14",
+   "precision": "day",
+   "what": "Final handover of Bakassi to Cameroon",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Bakassi&oldid=1374974435",
+     "title": "Wikipedia — Bakassi (oldid 1374974435)",
+     "says": "Nigeria administered Bakassi (Bakassi LGA, Cross River State) until the final handover to Cameroon on 14 August 2008 under the Greentree Agreement.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2008-11-12",
+   "precision": "day",
+   "what": "Provinces renamed regions (no territorial change)",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ucm.html",
+     "title": "Statoids — Regions of Cameroon (change history)",
+     "says": "Southern Cameroons united 1961-10-01 as West Cameroon beside East Cameroon; seven provinces after the 1972 unitary constitution; 1983-08-22 Centre-Sud and Nord split; 2008-11-12 provinces renamed regions.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1965-01-01",
+   "n": 2,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ucm.html",
+     "title": "Statoids — Regions of Cameroon (change history)",
+     "says": "Southern Cameroons united 1961-10-01 as West Cameroon beside East Cameroon; seven provinces after the 1972 unitary constitution; 1983-08-22 Centre-Sud and Nord split; 2008-11-12 provinces renamed regions.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1980-01-01",
+   "n": 7,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ucm.html",
+     "title": "Statoids — Regions of Cameroon (change history)",
+     "says": "Southern Cameroons united 1961-10-01 as West Cameroon beside East Cameroon; seven provinces after the 1972 unitary constitution; 1983-08-22 Centre-Sud and Nord split; 2008-11-12 provinces renamed regions.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1990-01-01",
+   "n": 10,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ucm.html",
+     "title": "Statoids — Regions of Cameroon (change history)",
+     "says": "Southern Cameroons united 1961-10-01 as West Cameroon beside East Cameroon; seven provinces after the 1972 unitary constitution; 1983-08-22 Centre-Sud and Nord split; 2008-11-12 provinces renamed regions.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2010-01-01",
+   "n": 10,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ucm.html",
+     "title": "Statoids — Regions of Cameroon (change history)",
+     "says": "Southern Cameroons united 1961-10-01 as West Cameroon beside East Cameroon; seven provinces after the 1972 unitary constitution; 1983-08-22 Centre-Sud and Nord split; 2008-11-12 provinces renamed regions.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "West Cameroon (federated state) 1961–1972",
+   "unit": "CMR:WestCameroon@1961",
+   "atoms": [
+    "CMR-1477",
+    "CMR-799"
+   ],
+   "from": "1961-10-01",
+   "to": "1972-06-02",
+   "why": "West Cameroon = former Southern Cameroons = NE Nord-Ouest + Sud-Ouest, but the Sud-Ouest atom contains the Bakassi peninsula, which was administered by Nigeria (Cross River side) until 2008; the de facto line runs through the atom.",
+   "checked": [
+    "statoids ucm.html",
+    "Wikipedia Bakassi oldid 1374974435",
+    "IPI Bakassi report 2008",
+    "ICJ judgment summary 2002"
+   ],
+   "needs": "finer atoms: Cameroon arrondissements (Idabato and Kombo-Abedimo, Ndian) e.g. geoBoundaries CMR ADM3 (licence to be checked)"
+  },
+  {
+   "what": "Transition from federated states to provinces (1972)",
+   "atoms": [
+    "CMR-1480",
+    "CMR-803",
+    "CMR-1476",
+    "CMR-798",
+    "CMR-1481",
+    "CMR-1482",
+    "CMR-1483",
+    "CMR-1462"
+   ],
+   "from": "1972-06-02",
+   "to": "1973",
+   "why": "Federated states ended 1972-06-02; decree 72/349 (24 Jul 1972) took effect after the governors were appointed, on a day not established. Which first-level units applied between those dates is unsettled.",
+   "checked": [
+    "décret 72/349 text",
+    "Osidimbea 1972 chronology",
+    "statoids ucm.html"
+   ],
+   "needs": "the date of the decree appointing the first provincial governors (Journal officiel 1972)"
+  },
+  {
+   "what": "North-West and South-West during the 1972 transition",
+   "atoms": [
+    "CMR-1477"
+   ],
+   "from": "1972-06-02",
+   "to": "1973",
+   "why": "Same transition as above (South-West is withheld by the Bakassi entry).",
+   "checked": [
+    "décret 72/349 text"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "South-West Province 1973–2008 (with or without Bakassi)",
+   "unit": "CMR:SudOuest@1972",
+   "atoms": [
+    "CMR-799"
+   ],
+   "from": "1972-06-02",
+   "to": "2008-08-14",
+   "why": "The NE atom includes Bakassi, administered by Nigeria until 2006-08-14 (most of it) and 2008-08-14 (Atabong/Abana zone). The administered outline runs through the atom.",
+   "checked": [
+    "Wikipedia Bakassi oldid 1374974435",
+    "IPI Bakassi report 2008"
+   ],
+   "needs": "finer atoms: Cameroon arrondissements (Idabato, Kombo-Abedimo) (licence to be checked)"
+  },
+  {
+   "what": "North Province 1976–1983 (Lake Chad villages under Nigerian administration)",
+   "unit": "CMR:Nord@1972",
+   "atoms": [
+    "CMR-1482",
+    "CMR-1483",
+    "CMR-1462"
+   ],
+   "from": "1976",
+   "to": "1983-08-22",
+   "why": "Nigeria administered Darak and some 30 Lake Chad villages (inside the NE Extrême-Nord atom, which follows the ICJ line) for about twenty years before 2002; the start date is not established, so the window starts conservatively in 1976.",
+   "checked": [
+    "ICJ summary 2002",
+    "IPI Bakassi report 2008"
+   ],
+   "needs": "finer atoms: Lake Chad villages / Darak commune outline (e.g. geoBoundaries CMR ADM3) and the date Nigerian administration began"
+  },
+  {
+   "what": "Far North Province 1983–2004 (Lake Chad and land-boundary villages)",
+   "unit": "CMR:ExtremeNord@1983",
+   "atoms": [
+    "CMR-1462"
+   ],
+   "from": "1983-08-22",
+   "to": "2004-07-13",
+   "why": "As above; transfers to Cameroon took place in December 2003 (Lake Chad) and on 13 July 2004 (land villages).",
+   "checked": [
+    "IPI Bakassi report 2008",
+    "ICJ summary 2002"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "French Cameroun before reunification (1960-01-01 → 1961-10-01) and its 19 régions",
+   "from": "1960-01-01",
+   "to": "1961-10-01",
+   "why": "Before scope: the polity lacked the Southern Cameroons atoms; its régions (later departments) are finer than NE atoms.",
+   "checked": [
+    "statoids ucm.html"
+   ],
+   "needs": "department atoms"
+  }
+ ]
+}

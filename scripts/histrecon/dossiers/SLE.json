@@ -1,0 +1,245 @@
+{
+ "country": "SLE",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1961-04-27",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Sierra Leone since independence 1961-04-27. Before that the Colony (Western Area) and the Protectorate (three provinces) were British dependencies — a different polity, not covered. NE depicts the 1945/1961–2017 layout of three provinces plus the Western Area.",
+ "units": [
+  {
+   "id": "SLE:Northern@1961",
+   "names": {
+    "en": "Northern Province",
+    "ja": "北部州",
+    "local": "Northern Province"
+   },
+   "wikidata": "Q912359",
+   "spans": [
+    {
+     "from": "1961-04-27",
+     "precision": "day",
+     "to": "2017",
+     "atoms": [
+      "SLE-762"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/usl.html",
+       "title": "Statoids — Provinces of Sierra Leone (change history)",
+       "says": "Eastern province split from Southern 1945; at independence 1961-04-27 the colony became the Western Area; no later province change listed (page updated 2017-02).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ysl.html",
+       "title": "Statoids — Districts of Sierra Leone (change history, after J. I. Clarke, Sierra Leone in Maps, 1969)",
+       "says": "District changes end in 1949; the districts seem to have remained unchanged since 1949.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same territory since 1949 (district boundaries unchanged 1949 → 2017). The span ends at the start of 2017 because the day the Provinces (Administrative Division) Order 2017 took effect could not be established; the 2017 remainder is withheld in `unresolved`."
+    }
+   ]
+  },
+  {
+   "id": "SLE:Eastern@1961",
+   "names": {
+    "en": "Eastern Province",
+    "ja": "東部州",
+    "local": "Eastern Province"
+   },
+   "wikidata": "Q1050497",
+   "spans": [
+    {
+     "from": "1961-04-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SLE-790"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/usl.html",
+       "title": "Statoids — Provinces of Sierra Leone (change history)",
+       "says": "Eastern province split from Southern 1945; at independence 1961-04-27 the colony became the Western Area; no later province change listed (page updated 2017-02).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ysl.html",
+       "title": "Statoids — Districts of Sierra Leone (change history, after J. I. Clarke, Sierra Leone in Maps, 1969)",
+       "says": "District changes end in 1949; the districts seem to have remained unchanged since 1949.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Northern_Province,_Sierra_Leone&oldid=1378596584",
+       "title": "Wikipedia — Northern Province, Sierra Leone (oldid 1378596584)",
+       "says": "In 2017 Kambia and Port Loko districts left Northern Province for the new North West Province; Falaba split from Koinadugu.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Unchanged by the 2017 reform (Falaba and Karene came from Northern districts only). Note: Guinea has occupied the village of Yenga (Kailahun District) since the late 1990s; that change is below the resolution of the NE 10m atoms and is not represented."
+    }
+   ]
+  },
+  {
+   "id": "SLE:Southern@1961",
+   "names": {
+    "en": "Southern Province",
+    "ja": "南部州",
+    "local": "Southern Province"
+   },
+   "wikidata": "Q772185",
+   "spans": [
+    {
+     "from": "1961-04-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SLE-760"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/usl.html",
+       "title": "Statoids — Provinces of Sierra Leone (change history)",
+       "says": "Eastern province split from Southern 1945; at independence 1961-04-27 the colony became the Western Area; no later province change listed (page updated 2017-02).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ysl.html",
+       "title": "Statoids — Districts of Sierra Leone (change history, after J. I. Clarke, Sierra Leone in Maps, 1969)",
+       "says": "District changes end in 1949; the districts seem to have remained unchanged since 1949.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No change recorded since the 1945 Eastern split."
+    }
+   ]
+  },
+  {
+   "id": "SLE:Western@1961",
+   "names": {
+    "en": "Western Area",
+    "ja": "西部地域",
+    "local": "Western Area"
+   },
+   "wikidata": "Q1050475",
+   "spans": [
+    {
+     "from": "1961-04-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SLE-761"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/usl.html",
+       "title": "Statoids — Provinces of Sierra Leone (change history)",
+       "says": "Eastern province split from Southern 1945; at independence 1961-04-27 the colony became the Western Area; no later province change listed (page updated 2017-02).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ysl.html",
+       "title": "Statoids — Districts of Sierra Leone (change history, after J. I. Clarke, Sierra Leone in Maps, 1969)",
+       "says": "District changes end in 1949; the districts seem to have remained unchanged since 1949.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The former Colony of Sierra Leone (Freetown peninsula) became the Western Area at independence; no boundary change since."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1961-04-27",
+   "precision": "day",
+   "what": "Independence; the Colony becomes the Western Area beside the Northern, Eastern and Southern provinces",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/usl.html",
+     "title": "Statoids — Provinces of Sierra Leone (change history)",
+     "says": "Eastern province split from Southern 1945; at independence 1961-04-27 the colony became the Western Area; no later province change listed (page updated 2017-02).",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2017",
+   "precision": "year",
+   "what": "North West Province (Kambia, Port Loko, new Karene) split from Northern Province; Karene took chiefdoms of Bombali (which stays Northern), so neither 2017 province is a union of NE atoms",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/wiki/Karene_District",
+     "title": "Wikipedia — Karene District (no permanent revision id obtainable: API rate-limited; page cites Awoko, 17 July 2017)",
+     "says": "Karene District created 2017 in the North West Province from five Bombali and three Port Loko chiefdoms.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Northern_Province,_Sierra_Leone&oldid=1378596584",
+     "title": "Wikipedia — Northern Province, Sierra Leone (oldid 1378596584)",
+     "says": "In 2017 Kambia and Port Loko districts left Northern Province for the new North West Province; Falaba split from Koinadugu.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1970-01-01",
+   "n": 4,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/usl.html",
+     "title": "Statoids — Provinces of Sierra Leone (change history)",
+     "says": "Eastern province split from Southern 1945; at independence 1961-04-27 the colony became the Western Area; no later province change listed (page updated 2017-02).",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2019-12-31",
+   "n": 5,
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Northern_Province,_Sierra_Leone&oldid=1378596584",
+     "title": "Wikipedia — Northern Province, Sierra Leone (oldid 1378596584)",
+     "says": "In 2017 Kambia and Port Loko districts left Northern Province for the new North West Province; Falaba split from Koinadugu.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Northern Province after the 2017 reform (Bombali, Koinadugu, Falaba, Tonkolili)",
+   "unit": "SLE:Northern@2017",
+   "atoms": [
+    "SLE-762"
+   ],
+   "from": "2017",
+   "to": null,
+   "why": "The 2017 Order moved Kambia and Port Loko districts to the new North West Province and created Karene District from five Bombali and three Port Loko chiefdoms; the new Northern/North West line runs through the NE Northern atom. The exact day the Order took effect in 2017 was not established (Karene sources say ratified Dec 2017; the Local Government (Amendment) Act 2017 in Gazette No. 34 of 22 June 2017 already refers to it).",
+   "checked": [
+    "statoids usl.html / ysl.html",
+    "Wikipedia Northern Province, Sierra Leone oldid 1378596584",
+    "Wikipedia Karene District",
+    "parliament.gov.sl Local Government (Amendment) Act 2017 (PDF not retrievable)"
+   ],
+   "needs": "finer atoms: Sierra Leone chiefdoms (e.g. geoBoundaries SLE ADM3 / Stats SL 2015 census chiefdom boundaries; licence to be checked)"
+  },
+  {
+   "what": "North West Province (2017–): Kambia, Port Loko, Karene",
+   "unit": "SLE:NorthWest@2017",
+   "from": "2017",
+   "to": null,
+   "why": "Created inside the NE Northern atom (see previous entry); atoms withheld there.",
+   "checked": [
+    "Wikipedia Northern Province, Sierra Leone oldid 1378596584",
+    "Wikipedia Karene District"
+   ],
+   "needs": "chiefdom atoms (as above)"
+  }
+ ]
+}

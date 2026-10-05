@@ -1,0 +1,990 @@
+{
+ "country": "RUE",
+ "atomSet": "ristat-1897-uyezd@v3",
+ "atomGroups": [
+  "Tobolsk governorate",
+  "Tomsk governorate",
+  "Enisei governorate",
+  "Irkutsk governorate",
+  "Transbaikal region",
+  "Yakutsk region",
+  "Amur region",
+  "Primorskaya region",
+  "Sakhalin island"
+ ],
+ "scope": {
+  "from": "1822-08-03",
+  "to": "1917-11-06"
+ },
+ "polityNote": "Russian Empire (Siberia and the Far East) to 1917-11-06 (Provisional Government from March 1917). Amur lands Russian from the Aigun treaty (1858), Ussuri lands from Peking (1860), all Sakhalin from 1875, southern Sakhalin Japanese from 1905; Uryankhai a protectorate from 1914. Old Style decree dates converted to Gregorian (+12 days in the 19th century, +13 from 1900-03-01 O.S.).",
+ "units": [
+  {
+   "id": "RUE:Tobolsk@1887",
+   "names": {
+    "en": "Tobolsk Governorate",
+    "ja": "トボリスク県",
+    "local": "Тобольская губернія"
+   },
+   "wikidata": "Q1540322",
+   "spans": [
+    {
+     "from": "1887-06-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-731",
+      "U1897-739",
+      "U1897-732",
+      "U1897-733",
+      "U1897-734",
+      "U1897-740",
+      "U1897-735",
+      "U1897-736",
+      "U1897-737",
+      "U1897-738"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=155325789",
+       "title": "Тюкалинский уезд — Википедия (oldid 155325789)",
+       "says": "Yudinskaya volost passed from Tyukalinsk okrug (Tobolsk gub.) to Kainsk okrug (Tomsk gub.) on 5 June 1887; next change Dec 1917.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=152754514",
+       "title": "Тобольская губерния — Википедия (oldid 152754514)",
+       "says": "Tobolsk changes: Omsk to Akmolinsk 1868, Tyukalinsk okrug 1876, okrugs renamed uyezds 1898; next territorial change 1917-12/1918.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Opens when Yudinskaya volost (inside the 1897 Kainsk uyezd atom) left Tyukalinsk okrug: 5 June 1887, taken as O.S. (+12 days); the date rests on a Kainsk police report cited by ru.wikipedia. RISTAT draws Kainsk east of 75.75°E, i.e. with Yudino. No outer change until 1917-12 (Troitskaya volost to Tatarsk uyezd, outside scope)."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Tomsk@1887",
+   "names": {
+    "en": "Tomsk Governorate",
+    "ja": "トムスク県",
+    "local": "Томская губернія"
+   },
+   "wikidata": "Q1378406",
+   "spans": [
+    {
+     "from": "1887-06-17",
+     "precision": "day",
+     "to": "1917-06-30",
+     "atoms": [
+      "U1897-751",
+      "U1897-750",
+      "U1897-753",
+      "U1897-749",
+      "U1897-752",
+      "U1897-754",
+      "U1897-756",
+      "U1897-755"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=155325784",
+       "title": "Каинский уезд — Википедия (oldid 155325784)",
+       "says": "On 5 June 1887 Yudinskaya volost was transferred from Tyukalinsk okrug of Tobolsk governorate to Kainsk okrug.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikisource.org/w/index.php?oldid=4935256",
+       "title": "Постановление Временного правительства от 17 июня 1917 г. «Об образовании в Томской губернии 4 новых уездов и о разделении её на две губернии» (Викитека, oldid 4935256)",
+       "says": "Barnaul, Kainsk, Tomsk, Mariinsk uyezds re-cut into eight; Tomsk and Altai governorates formed; in force before promulgation.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Opens with the Yudinskaya volost transfer (5 June 1887, taken as O.S.). Closes 17 June 1917 O.S. = 30 June 1917: Provisional Government resolution splitting off Altai governorate, in force on adoption (published 17 July). Zmeinogorsk okrug (1894, from Biysk) was internal."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Yenisei@1822",
+   "names": {
+    "en": "Yeniseysk Governorate",
+    "ja": "エニセイ県",
+    "local": "Енисейская губернія"
+   },
+   "wikidata": "Q385163",
+   "spans": [
+    {
+     "from": "1822-08-03",
+     "precision": "day",
+     "to": "1914-04-17",
+     "atoms": [
+      "U1897-744",
+      "U1897-745",
+      "U1897-748",
+      "U1897-746",
+      "U1897-741",
+      "U1897-742",
+      "U1897-743",
+      "U1897-776",
+      "U1897-747"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=154900457",
+       "title": "Енисейская губерния — Википедия (oldid 154900457)",
+       "says": "Yenisei governorate formed 22 July 1822 from Tomsk gub. (and Nizhneudinsk volosts of Irkutsk gub.); its territory did not change thereafter.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=148785420",
+       "title": "Усинский пограничный округ — Википедия (oldid 148785420)",
+       "says": "Usinsk border okrug separated from Minusinsk okrug of Yenisei gub. 30 Dec 1885; merged with Uryankhai under Yenisei gub. 17 April 1914.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Учреждение для управления Сибирских губерний, 22 July 1822 O.S. (ПСЗ-1, т. 38) = 3 Aug 1822. Usinsk border okrug (1885) was carved from Minusinsk okrug — internal. Closes when the Uryankhai protectorate was attached (4 Apr 1914 O.S. = 17 Apr 1914), after which the governorate extent is unsettled."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Irkutsk@1851",
+   "names": {
+    "en": "Irkutsk Governorate",
+    "ja": "イルクーツク県",
+    "local": "Иркутская губернія"
+   },
+   "wikidata": "Q1143949",
+   "spans": [
+    {
+     "from": "1851-07-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-771",
+      "U1897-774",
+      "U1897-775",
+      "U1897-773",
+      "U1897-772"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=152486932",
+       "title": "Забайкальская область — Википедия (oldid 152486932)",
+       "says": "By decree of 11 July 1851 Verkhneudinsk and Nerchinsk okrugs were separated from Irkutsk governorate as Transbaikal oblast.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Decree of 11 July 1851 O.S. = 23 July 1851 separating Transbaikal oblast. No later change of the outer line found (okrugs became uyezds 1898)."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Transbaikal@1858",
+   "names": {
+    "en": "Transbaikal Oblast",
+    "ja": "ザバイカル州",
+    "local": "Забайкальская область"
+   },
+   "wikidata": "Q497643",
+   "spans": [
+    {
+     "from": "1858-12-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-764",
+      "U1897-765",
+      "U1897-769",
+      "U1897-763",
+      "U1897-768",
+      "U1897-766",
+      "U1897-767",
+      "U1897-770"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=146240074",
+       "title": "Амурская область (Российская империя) — Википедия (oldid 146240074)",
+       "says": "Formed 8 (20) Dec 1858, decree No. 33862, from left-bank Amur lands from the Shilka–Argun confluence / Transbaikal and Yakutsk borders.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Starts with the Amur oblast decree of 8 Dec 1858 O.S. (ПСЗ-2 № 33862) = 20 Dec 1858, which fixed the Transbaikal/Amur junction at the Shilka–Argun confluence. Internal re-cuts 1870 (Barguzin, Selenga) and 1872 (Troitskosavsk) do not touch the outer line."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Yakutsk@1857",
+   "names": {
+    "en": "Yakutsk Oblast",
+    "ja": "ヤクート州",
+    "local": "Якутская область"
+   },
+   "wikidata": "Q498207",
+   "spans": [
+    {
+     "from": "1857-11-12",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-785",
+      "U1897-786",
+      "U1897-787",
+      "U1897-788",
+      "U1897-784"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=150697315",
+       "title": "Якутская область — Википедия (oldid 150697315)",
+       "says": "On 31 October 1857 Udsky okrug was transferred from Yakutsk oblast to Primorskaya oblast.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Udsky okrug transferred to Primorskaya oblast on 31 Oct 1857 O.S. = 12 Nov 1857 (some sources place it with the 1856 creation of Primorskaya; starting at 1857 is valid either way). No later outer change found."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Amur@1858",
+   "names": {
+    "en": "Amur Oblast",
+    "ja": "アムール州",
+    "local": "Амурская область"
+   },
+   "wikidata": "Q4064576",
+   "spans": [
+    {
+     "from": "1858-12-20",
+     "precision": "day",
+     "to": "1904",
+     "atoms": [
+      "U1897-762"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=146240074",
+       "title": "Амурская область (Российская империя) — Википедия (oldid 146240074)",
+       "says": "Formed 8 (20) Dec 1858, decree No. 33862, from left-bank Amur lands from the Shilka–Argun confluence / Transbaikal and Yakutsk borders.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=154335287",
+       "title": "Административно-территориальное деление Амурской области — Википедия (oldid 154335287)",
+       "says": "In 1904 part of Amur oblast (Urmi and upper Amgun basins) passed to Primorskaya oblast.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Decree No. 33862 of 8 Dec 1858 O.S. = 20 Dec 1858. Ends at year precision 1904 (1 Jan 1904): part of the oblast (Urmi, upper Amgun) passed to Primorskaya in 1904, day not found."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Primorskaya@1856",
+   "names": {
+    "en": "Primorskaya (Maritime) Oblast",
+    "ja": "沿海州",
+    "local": "Приморская область"
+   },
+   "wikidata": "Q906245",
+   "spans": [
+    {
+     "from": "1875-08-22",
+     "precision": "day",
+     "to": "1880-05-10",
+     "atoms": [
+      "U1897-759",
+      "U1897-760",
+      "U1897-780",
+      "U1897-781",
+      "U1897-779",
+      "U1897-840",
+      "U1897-778",
+      "U1897-761",
+      "U1897-758",
+      "U1897-843",
+      "U1897-842",
+      "U1897-783"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1366887302",
+       "title": "Treaty of Saint Petersburg (1875) — Wikipedia (oldid 1366887302)",
+       "says": "Signed 7 May 1875; ratifications exchanged at Tokyo on 22 August 1875; Sakhalin to Russia in exchange for the Kurils.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=153576990",
+       "title": "Приморская область — Википедия (oldid 153576990)",
+       "says": "Sakhalin belonged to Primorskaya oblast until separated as a special department in 1884; Kamchatka and Sakhalin oblasts split off 17 June 1909.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Opens with the exchange of ratifications of the Treaty of St Petersburg (22 Aug 1875 N.S.), when all Sakhalin became Russian and part of Primorskaya oblast. Closes 28 Apr 1880 O.S. = 10 May 1880 (Vladivostok military governorate)."
+    },
+    {
+     "from": "1888-06-21",
+     "precision": "day",
+     "to": "1904",
+     "atoms": [
+      "U1897-759",
+      "U1897-760",
+      "U1897-780",
+      "U1897-781",
+      "U1897-779",
+      "U1897-840",
+      "U1897-778",
+      "U1897-761",
+      "U1897-758"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=154470994",
+       "title": "Владивостокское военное губернаторство — Википедия (oldid 154470994)",
+       "says": "Separated from Primorskaya 28 Apr (10 May) 1880: Vladivostok, Muravyov-Amursky peninsula, Russky island; abolished 9 (21) June 1888.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=154335287",
+       "title": "Административно-территориальное деление Амурской области — Википедия (oldid 154335287)",
+       "says": "In 1904 part of Amur oblast (Urmi and upper Amgun basins) passed to Primorskaya oblast.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Vladivostok military governorate abolished 9 June 1888 O.S. = 21 June 1888. Anadyr okrug (1888, from Gizhiga) internal. Ends at year precision 1904: Urmi/upper Amgun lands from Amur oblast joined Khabarovsk okrug."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Sakhalin@1884",
+   "names": {
+    "en": "Sakhalin Island (Sakhalin Department)",
+    "ja": "サハリン島",
+    "local": "Островъ Сахалинъ (Сахалинскій отдѣлъ)"
+   },
+   "wikidata": "Q4409418",
+   "spans": [
+    {
+     "from": "1884-05-27",
+     "precision": "day",
+     "to": "1905-07-07",
+     "atoms": [
+      "U1897-843",
+      "U1897-842",
+      "U1897-783"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=146300504",
+       "title": "Сахалинский отдел — Википедия (oldid 146300504)",
+       "says": "Sakhalin separated from Primorskaya as a special unit in 1884; Aleksandrovsk and Tymovsk okrugs formed 15 May 1884; south lost 1905.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1377003323",
+       "title": "Japanese invasion of Sakhalin — Wikipedia (oldid 1377003323)",
+       "says": "Japanese landings on Sakhalin began 7 July 1905; the island was occupied by 31 July 1905.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Separated from Primorskaya in 1884 (Положение об управлении о. Сахалином); starts at the formation of its okrugs, 15 May 1884 taken as O.S. = 27 May. Ends with the Japanese landing of 7 July 1905 N.S."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Kamchatka@1909",
+   "names": {
+    "en": "Kamchatka Oblast",
+    "ja": "カムチャツカ州",
+    "local": "Камчатская область"
+   },
+   "wikidata": "Q4211791",
+   "spans": [
+    {
+     "from": "1909-06-30",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-780",
+      "U1897-781",
+      "U1897-779",
+      "U1897-840",
+      "U1897-778"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=152425153",
+       "title": "Камчатская область (Российская империя) — Википедия (oldid 152425153)",
+       "says": "Law of 17 (30) June 1909: Petropavlovsk, Okhotsk, Gizhiga, Anadyr uyezds and Commander Islands form Kamchatka oblast; Chukotka uyezd carved from Anadyr.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Law of 17 June 1909 O.S. = 30 June 1909. Chukotka uyezd carved from Anadyr uyezd — internal."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1822-08-03",
+   "precision": "day",
+   "what": "Speransky reform: Yeniseysk governorate formed from Tomsk governorate (and Nizhneudinsk volosts of Irkutsk); Omsk oblast in being (to 1838)",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=154900457",
+     "title": "Енисейская губерния — Википедия (oldid 154900457)",
+     "says": "Yenisei governorate formed 22 July 1822 from Tomsk gub. (and Nizhneudinsk volosts of Irkutsk gub.); its territory did not change thereafter.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=146290624",
+     "title": "Омская область (Российская империя) — Википедия (oldid 146290624)",
+     "says": "Omsk oblast formed 26 Jan 1822 from parts of Tobolsk and Tomsk governorates; abolished 1838.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1851-07-23",
+   "precision": "day",
+   "what": "Transbaikal oblast separated from Irkutsk governorate (11 July 1851 O.S.)",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=152486932",
+     "title": "Забайкальская область — Википедия (oldid 152486932)",
+     "says": "By decree of 11 July 1851 Verkhneudinsk and Nerchinsk okrugs were separated from Irkutsk governorate as Transbaikal oblast.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1857-11-12",
+   "precision": "day",
+   "what": "Udsky okrug transferred from Yakutsk oblast to Primorskaya oblast (31 Oct 1857 O.S.)",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=150697315",
+     "title": "Якутская область — Википедия (oldid 150697315)",
+     "says": "On 31 October 1857 Udsky okrug was transferred from Yakutsk oblast to Primorskaya oblast.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1858-05-28",
+   "precision": "day",
+   "what": "Treaty of Aigun: left bank of the Amur to Russia",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1365512169",
+     "title": "Treaty of Aigun — Wikipedia (oldid 1365512169)",
+     "says": "Signed 28 May 1858 at Aigun; left bank of the Amur to Russia, Ussuri region held in common.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1858-12-20",
+   "precision": "day",
+   "what": "Amur oblast formed (8 Dec 1858 O.S., ПСЗ-2 № 33862)",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=146240074",
+     "title": "Амурская область (Российская империя) — Википедия (oldid 146240074)",
+     "says": "Formed 8 (20) Dec 1858, decree No. 33862, from left-bank Amur lands from the Shilka–Argun confluence / Transbaikal and Yakutsk borders.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1875-08-22",
+   "precision": "day",
+   "what": "Treaty of St Petersburg ratified: all Sakhalin Russian, part of Primorskaya oblast",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1366887302",
+     "title": "Treaty of Saint Petersburg (1875) — Wikipedia (oldid 1366887302)",
+     "says": "Signed 7 May 1875; ratifications exchanged at Tokyo on 22 August 1875; Sakhalin to Russia in exchange for the Kurils.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1880-05-10",
+   "precision": "day",
+   "what": "Vladivostok military governorate separated from Primorskaya (to 1888-06-21)",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=154470994",
+     "title": "Владивостокское военное губернаторство — Википедия (oldid 154470994)",
+     "says": "Separated from Primorskaya 28 Apr (10 May) 1880: Vladivostok, Muravyov-Amursky peninsula, Russky island; abolished 9 (21) June 1888.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1884-05-27",
+   "precision": "day",
+   "what": "Sakhalin department administered separately from Primorskaya; its okrugs formed",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=146300504",
+     "title": "Сахалинский отдел — Википедия (oldid 146300504)",
+     "says": "Sakhalin separated from Primorskaya as a special unit in 1884; Aleksandrovsk and Tymovsk okrugs formed 15 May 1884; south lost 1905.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1887-06-17",
+   "precision": "day",
+   "what": "Yudinskaya volost moved from Tyukalinsk okrug (Tobolsk) to Kainsk okrug (Tomsk)",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=155325789",
+     "title": "Тюкалинский уезд — Википедия (oldid 155325789)",
+     "says": "Yudinskaya volost passed from Tyukalinsk okrug (Tobolsk gub.) to Kainsk okrug (Tomsk gub.) on 5 June 1887; next change Dec 1917.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1904",
+   "precision": "year",
+   "what": "Urmi and upper Amgun lands moved from Amur oblast to Khabarovsk okrug of Primorskaya",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=154335287",
+     "title": "Административно-территориальное деление Амурской области — Википедия (oldid 154335287)",
+     "says": "In 1904 part of Amur oblast (Urmi and upper Amgun basins) passed to Primorskaya oblast.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1905-07-07",
+   "precision": "day",
+   "what": "Japanese invasion of Sakhalin; the Portsmouth treaty (50°N line) follows",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1377003323",
+     "title": "Japanese invasion of Sakhalin — Wikipedia (oldid 1377003323)",
+     "says": "Japanese landings on Sakhalin began 7 July 1905; the island was occupied by 31 July 1905.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1375195825",
+     "title": "Treaty of Portsmouth — Wikipedia (oldid 1375195825)",
+     "says": "Signed 5 Sept 1905, ratified October 1905, ratifications exchanged 25 Nov 1905; Sakhalin south of 50°N ceded to Japan.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://ru.wikisource.org/w/index.php?oldid=5352627",
+     "title": "ЭСБЕ, «Сахалин» (Викитека, oldid 5352627)",
+     "says": "Boundary at 50°N; Japan received all Korsakov okrug and most of Aleksandrovsk okrug; line not yet demarcated.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1909-06-30",
+   "precision": "day",
+   "what": "Kamchatka and Sakhalin oblasts split from Primorskaya (17 June 1909 O.S.)",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=152425153",
+     "title": "Камчатская область (Российская империя) — Википедия (oldid 152425153)",
+     "says": "Law of 17 (30) June 1909: Petropavlovsk, Okhotsk, Gizhiga, Anadyr uyezds and Commander Islands form Kamchatka oblast; Chukotka uyezd carved from Anadyr.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://www.prlib.ru/history/1181746",
+     "title": "Президентская библиотека — «Образована Сахалинская область в составе Приамурского генерал-губернаторства»",
+     "says": "Law of 17 (30) June 1909 formed Sakhalin oblast (Aleksandrovsk, Tymovsk sections); Udsky uyezd added 26 Feb (11 Mar) 1914.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1914-03-11",
+   "precision": "day",
+   "what": "Udsky uyezd of Primorskaya added to Sakhalin oblast (26 Feb 1914 O.S.)",
+   "sources": [
+    {
+     "url": "https://www.prlib.ru/history/1181746",
+     "title": "Президентская библиотека — «Образована Сахалинская область в составе Приамурского генерал-губернаторства»",
+     "says": "Law of 17 (30) June 1909 formed Sakhalin oblast (Aleksandrovsk, Tymovsk sections); Udsky uyezd added 26 Feb (11 Mar) 1914.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1914-04-17",
+   "precision": "day",
+   "what": "Russian protectorate over Uryankhai krai, attached to Yeniseysk governorate administration (4 Apr 1914 O.S.)",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=154810150",
+     "title": "Урянхайский край — Википедия (oldid 154810150)",
+     "says": "Qing territory until 1912; on 17 April 1914 a Russian protectorate was set up, the krai placed under Yenisei governorate.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1917-06-30",
+   "precision": "day",
+   "what": "Altai governorate split from Tomsk governorate; four new uyezds (17 June 1917 O.S.)",
+   "sources": [
+    {
+     "url": "https://ru.wikisource.org/w/index.php?oldid=4935256",
+     "title": "Постановление Временного правительства от 17 июня 1917 г. «Об образовании в Томской губернии 4 новых уездов и о разделении её на две губернии» (Викитека, oldid 4935256)",
+     "says": "Barnaul, Kainsk, Tomsk, Mariinsk uyezds re-cut into eight; Tomsk and Altai governorates formed; in force before promulgation.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=153606694",
+     "title": "Томская губерния — Википедия (oldid 153606694)",
+     "says": "Changes: 1856 Semipalatinsk lands out, 1894 Zmeinogorsk okrug, 1898 uyezds; 17 (30) June 1917 Altai governorate split off.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [
+  {
+   "atom": "U1897-777",
+   "from": "1822-08-03",
+   "to": "1914-04-17",
+   "why": "Tannu Uryankhai: Qing territory to 1912, then claimed by Mongolia; not under Russian administration before the protectorate of 4 (17) April 1914."
+  },
+  {
+   "atom": "U1897-843",
+   "from": "1905-11-25",
+   "why": "Southern Sakhalin ceded to Japan by the Treaty of Portsmouth (ratifications exchanged 25 Nov 1905); Karafuto."
+  }
+ ],
+ "unresolved": [
+  {
+   "what": "Tobolsk governorate before the 1887 transfer of Yudinskaya volost",
+   "unit": "RUE:Tobolsk@1887",
+   "atoms": [
+    "U1897-731",
+    "U1897-739",
+    "U1897-732",
+    "U1897-733",
+    "U1897-734",
+    "U1897-740",
+    "U1897-735",
+    "U1897-736",
+    "U1897-737",
+    "U1897-738"
+   ],
+   "from": "1822-08-03",
+   "to": "1887-06-17",
+   "why": "Until 1887 Tyukalinsk (earlier Omsk) okrug held Yudinskaya volost, which lies inside the 1897 Kainsk uyezd atom (Tomsk group); before that Omsk oblast 1822–1838 and the 1868 loss of Omsk also moved the outer line.",
+   "checked": [
+    "ru.wikipedia Тюкалинский уезд oldid 155325789",
+    "ru.wikipedia Тобольская губерния oldid 152754514",
+    "ru.wikipedia Омская область (Российская империя) oldid 146290624",
+    "ЭСБЕ Тобольская губерния (Викитека oldid 5368903)"
+   ],
+   "needs": "Yudinskaya volost as a separate atom (1897 Kainsk uyezd split along the pre-1887 line)"
+  },
+  {
+   "what": "Tomsk governorate before 1887",
+   "unit": "RUE:Tomsk@1887",
+   "atoms": [
+    "U1897-751",
+    "U1897-750",
+    "U1897-753",
+    "U1897-749",
+    "U1897-752",
+    "U1897-754",
+    "U1897-756",
+    "U1897-755"
+   ],
+   "from": "1822-08-03",
+   "to": "1887-06-17",
+   "why": "Tomsk lacked Yudinskaya volost (part of the Kainsk atom) before 1887; earlier also Omsk oblast 1822–1838 and the Semipalatinsk lands (1854/1856).",
+   "checked": [
+    "ru.wikipedia Каинский уезд oldid 155325784",
+    "ru.wikipedia Томская губерния oldid 153606694",
+    "ru.wikipedia Семипалатинская область (Российская империя) oldid 151483637"
+   ],
+   "needs": "Yudinskaya volost as a separate atom"
+  },
+  {
+   "what": "Tomsk and Altai governorates after the split of 17 (30) June 1917",
+   "unit": "RUE:Tomsk@1887",
+   "atoms": [
+    "U1897-751",
+    "U1897-750",
+    "U1897-753",
+    "U1897-749",
+    "U1897-752",
+    "U1897-754",
+    "U1897-756",
+    "U1897-755"
+   ],
+   "from": "1917-06-30",
+   "to": "1917-11-07",
+   "why": "The same resolution re-cut Barnaul, Kainsk, Tomsk and Mariinsk uyezds into eight (Novo-Nikolaevsk, Kamen, Slavgorod, Togur new); the Tomsk/Altai line runs inside 1897 uyezds (Novo-Nikolaevsk area of Barnaul uyezd). RISTAT’s Novo-Nikolaevsk atom is not a documented 1897 or 1917 line, so neither governorate can be written.",
+   "checked": [
+    "Викитека: Постановление Временного правительства 17.06.1917 oldid 4935256",
+    "ru.wikipedia Алтайская губерния oldid 155228678",
+    "ru.wikipedia Ново-Николаевский уезд oldid 155415071"
+   ],
+   "needs": "the 1917 temporary boundary description (annex to the resolution) as atoms"
+  },
+  {
+   "what": "Irkutsk governorate before 1851 (with Transbaikal, and Yakutsk/Okhotsk dependencies)",
+   "unit": "RUE:Irkutsk@1851",
+   "atoms": [
+    "U1897-771",
+    "U1897-774",
+    "U1897-775",
+    "U1897-773",
+    "U1897-772"
+   ],
+   "from": "1822-08-03",
+   "to": "1851-07-23",
+   "why": "Until 1851 the governorate also contained Verkhneudinsk and Nerchinsk okrugs, whose eastern edge was the Nerchinsk-treaty line (Gorbitsa), not the 1897 Transbaikal line.",
+   "checked": [
+    "ru.wikipedia Забайкальская область oldid 152486932",
+    "ru.wikipedia Иркутская губерния oldid 153528431"
+   ],
+   "needs": "the pre-1858 Gorbitsa–Argun strip as a separate atom"
+  },
+  {
+   "what": "Transbaikal lands 1822–1858",
+   "atoms": [
+    "U1897-764",
+    "U1897-765",
+    "U1897-769",
+    "U1897-763",
+    "U1897-768",
+    "U1897-766",
+    "U1897-767",
+    "U1897-770"
+   ],
+   "from": "1822-08-03",
+   "to": "1858-12-20",
+   "why": "Part of Irkutsk governorate to 1851; 1851–1858 the left bank of the Shilka east of the Gorbitsa was Qing under the Nerchinsk treaty until Aigun (1858) and the Amur decree, so the oblast was smaller than the 1897 atoms.",
+   "checked": [
+    "ru.wikipedia Забайкальская область oldid 152486932",
+    "ru.wikipedia Амурская область (Российская империя) oldid 146240074",
+    "en.wikipedia Treaty of Aigun oldid 1365512169"
+   ],
+   "needs": "the Gorbitsa–Ust-Strelka strip as a separate atom"
+  },
+  {
+   "what": "Yakutsk oblast before the Udsky transfer",
+   "unit": "RUE:Yakutsk@1857",
+   "atoms": [
+    "U1897-785",
+    "U1897-786",
+    "U1897-787",
+    "U1897-788",
+    "U1897-784"
+   ],
+   "from": "1822-08-03",
+   "to": "1857-11-12",
+   "why": "Until 1856/1857 Yakutsk oblast held Okhotsk (from 1849) and Udsky okrugs, which are 1897 Primorskaya atoms; before 1851 it was under Irkutsk governorate. The dates of 1849/1851/1856/1857 could not all be fixed to the day.",
+   "checked": [
+    "ru.wikipedia Якутская область oldid 150697315",
+    "ru.wikipedia Охотский уезд oldid 148432779",
+    "ru.wikipedia Приморская область oldid 153576990"
+   ]
+  },
+  {
+   "what": "Amur lands before the Amur oblast",
+   "atoms": [
+    "U1897-762"
+   ],
+   "from": "1822-08-03",
+   "to": "1858-12-20",
+   "why": "Qing territory under the Nerchinsk treaty, with Russian posts from 1854; ceded by the Aigun treaty of 28 May 1858; organised as an oblast only by the decree of 20 Dec 1858.",
+   "checked": [
+    "en.wikipedia Treaty of Aigun oldid 1365512169",
+    "ru.wikipedia Амурская область (Российская империя) oldid 146240074"
+   ]
+  },
+  {
+   "what": "Amur oblast after the 1904 cession to Primorskaya",
+   "unit": "RUE:Amur@1858",
+   "atoms": [
+    "U1897-762"
+   ],
+   "from": "1904",
+   "to": "1917-11-07",
+   "why": "Part of the Urmi and upper Amgun basins moved to Khabarovsk okrug in 1904; the new line runs through the 1897 Amur atom.",
+   "checked": [
+    "ru.wikipedia АТД Амурской области oldid 154335287",
+    "ru.wikipedia Хабаровский уезд oldid 151925306"
+   ],
+   "needs": "the 1904 Urmi/Amgun transfer area as a separate atom"
+  },
+  {
+   "what": "Primorskaya oblast and Sakhalin before 1875",
+   "unit": "RUE:Primorskaya@1856",
+   "atoms": [
+    "U1897-759",
+    "U1897-760",
+    "U1897-780",
+    "U1897-781",
+    "U1897-779",
+    "U1897-840",
+    "U1897-778",
+    "U1897-761",
+    "U1897-758",
+    "U1897-843",
+    "U1897-842",
+    "U1897-783"
+   ],
+   "from": "1822-08-03",
+   "to": "1875-08-22",
+   "why": "Kamchatka/Okhotsk units with other lines before 1856; Ussuri lands Qing until Aigun 1858 / Peking 1860; Sakhalin an undivided Russo-Japanese condominium (Shimoda 1855) to 1875, so the Primorskaya share of it has no line.",
+   "checked": [
+    "ru.wikipedia Приморская область oldid 153576990",
+    "ru.wikipedia Камчатская область (Российская империя) oldid 152425153",
+    "ru.wikipedia Петербургский договор (1875) oldid 153899758"
+   ],
+   "needs": "no atom set can carry the condominium"
+  },
+  {
+   "what": "Primorskaya oblast during the Vladivostok military governorate",
+   "unit": "RUE:Primorskaya@1856",
+   "atoms": [
+    "U1897-759",
+    "U1897-760",
+    "U1897-780",
+    "U1897-781",
+    "U1897-779",
+    "U1897-840",
+    "U1897-778",
+    "U1897-761",
+    "U1897-758"
+   ],
+   "from": "1880-05-10",
+   "to": "1888-06-21",
+   "why": "Vladivostok, the Muravyov-Amursky peninsula and Russky island formed a separate governorate inside the 1897 South Ussuri atom.",
+   "checked": [
+    "ru.wikipedia Владивостокское военное губернаторство oldid 154470994"
+   ],
+   "needs": "the Muravyov-Amursky peninsula + Russky island as a separate atom"
+  },
+  {
+   "what": "Sakhalin 1880–1884 (part of Primorskaya during the Vladivostok window, then separated)",
+   "atoms": [
+    "U1897-843",
+    "U1897-842",
+    "U1897-783"
+   ],
+   "from": "1880-05-10",
+   "to": "1884-05-27",
+   "why": "Belonged to Primorskaya, which cannot be drawn in this window; the day of the 1884 separation was not established (okrugs formed 15 May 1884).",
+   "checked": [
+    "ru.wikipedia Сахалинский отдел oldid 146300504",
+    "ru.wikipedia Приморская область oldid 153576990"
+   ]
+  },
+  {
+   "what": "Primorskaya oblast after 1904 (incl. Udsky uyezd to Sakhalin oblast 1914)",
+   "unit": "RUE:Primorskaya@1856",
+   "atoms": [
+    "U1897-759",
+    "U1897-760",
+    "U1897-761",
+    "U1897-758"
+   ],
+   "from": "1904",
+   "to": "1917-11-07",
+   "why": "From 1904 the oblast held Amur lands inside the 1897 Amur atom; from 1909 it lost Kamchatka, and on 26 Feb (11 Mar) 1914 Udsky uyezd went to Sakhalin oblast, itself undrawable.",
+   "checked": [
+    "ru.wikipedia АТД Амурской области oldid 154335287",
+    "prlib.ru/history/1181746",
+    "ru.wikipedia Приморская область oldid 153576990"
+   ],
+   "needs": "the 1904 transfer area as a separate atom"
+  },
+  {
+   "what": "Kamchatka lands 1904–1909 (still in Primorskaya)",
+   "atoms": [
+    "U1897-780",
+    "U1897-781",
+    "U1897-779",
+    "U1897-840",
+    "U1897-778"
+   ],
+   "from": "1904",
+   "to": "1909-06-30",
+   "why": "Part of Primorskaya oblast, which cannot be drawn from 1904.",
+   "checked": [
+    "ru.wikipedia Камчатская область (Российская империя) oldid 152425153"
+   ]
+  },
+  {
+   "what": "Northern Sakhalin from the Japanese invasion (Sakhalin department; Sakhalin oblast from 1909)",
+   "atoms": [
+    "U1897-842",
+    "U1897-783"
+   ],
+   "from": "1905-07-07",
+   "to": "1917-11-07",
+   "why": "Occupied from July 1905; Portsmouth set the line at 50°N, which runs through the 1897 Aleksandrovsk okrug atom (most of it went to Japan), so Sakhalin oblast (1909) cannot be written.",
+   "checked": [
+    "ЭСБЕ Сахалин (Викитека oldid 5352627)",
+    "en.wikipedia Treaty of Portsmouth oldid 1375195825",
+    "prlib.ru/history/1181746"
+   ],
+   "needs": "the 1897 Aleksandrovsk okrug split at 50°N"
+  },
+  {
+   "what": "Korsakov okrug between invasion and cession",
+   "atoms": [
+    "U1897-843"
+   ],
+   "from": "1905-07-07",
+   "to": "1905-11-25",
+   "why": "Japanese military occupation before the Portsmouth ratifications were exchanged (25 Nov 1905).",
+   "checked": [
+    "en.wikipedia Japanese invasion of Sakhalin oldid 1377003323",
+    "en.wikipedia Treaty of Portsmouth oldid 1375195825"
+   ]
+  },
+  {
+   "what": "Yeniseysk governorate after the Uryankhai protectorate",
+   "unit": "RUE:Yenisei@1822",
+   "atoms": [
+    "U1897-744",
+    "U1897-745",
+    "U1897-748",
+    "U1897-746",
+    "U1897-741",
+    "U1897-742",
+    "U1897-743",
+    "U1897-776",
+    "U1897-747"
+   ],
+   "from": "1914-04-17",
+   "to": "1917-11-07",
+   "why": "Sources disagree whether the Uryankhai protectorate (not annexed; political affairs under the Irkutsk governor-general) became part of the governorate; its extent was never demarcated, so the governorate territory in this window is unsettled.",
+   "checked": [
+    "ru.wikipedia Урянхайский край oldid 154810150",
+    "ru.wikipedia Енисейская губерния oldid 154900457",
+    "ru.wikipedia Усинский пограничный округ oldid 148785420"
+   ]
+  },
+  {
+   "what": "Uryankhai krai under the Russian protectorate",
+   "atoms": [
+    "U1897-777"
+   ],
+   "from": "1914-04-17",
+   "to": "1917-11-07",
+   "why": "A protectorate, not formally annexed; whether it was part of Yeniseysk governorate is disputed, and its boundary with Mongolia was never demarcated.",
+   "checked": [
+    "ru.wikipedia Урянхайский край oldid 154810150"
+   ]
+  }
+ ]
+}

@@ -87,6 +87,11 @@ const ALLOW = {
   /* a production file larger than this needs a reason of its own */
   sizeCeiling: 6 * 1024 * 1024,
   bigFile: [
+    /* (hist-reconstruction) IntMap's own reconstructed first-level divisions: 2,005 dated rows from 87 cited dossiers and
+       the Meiji record, simplified to the first tier's tolerance (0.004°, 4 decimals) — the same as the publisher records
+       beside it. One file is the record (data/hist-admin-recon.js, 6.8 MB measured 2026-10-05); the app reads it as
+       time-cut tiles (data/hvt/, by Range) and the full-precision outlines only when zoomed in (data/border-detail). */
+    { match: /^data\/hist-admin-recon\.js$/, why: 'IntMap reconstructed historical divisions — 2,005 dated rows at the simplification of the first tier; read as time-cut tiles (data/hvt/, by Range), never at start-up (docs/HIST-RECONSTRUCTION.md)' },
     /* (hist-vector-tiles) an archive is never fetched whole: js/hist-bundles.js reads the gzip members an
        instant needs with Range requests (1900 reads 0.96 MB of the cshapes archive and 1.34 MB of the
        first-tier one — dev-notes/2026-10-01-hist-vector-tiles.md). Its size is the record's, cut, not a

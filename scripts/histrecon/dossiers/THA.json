@@ -1,0 +1,2831 @@
+{
+  "country": "THA",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "1974-06-10",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Kingdom of Thailand. Scope starts after the last inter-province territorial transfer found before 2020 (Lop Buri/Saraburi, 10 Jun 1974).",
+  "units": [
+    {
+      "id": "THA:Surin",
+      "names": {
+        "en": "Surin Province",
+        "ja": "スリン県",
+        "local": "จังหวัดสุรินทร์"
+      },
+      "wikidata": "Q380757",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-443"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:SiSaKet",
+      "names": {
+        "en": "Si Sa Ket Province",
+        "ja": "シーサケート県",
+        "local": "จังหวัดศรีสะเกษ"
+      },
+      "wikidata": "Q380761",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-425"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:UbonRatchathani",
+      "names": {
+        "en": "Ubon Ratchathani Province",
+        "ja": "ウボンラーチャターニー県",
+        "local": "จังหวัดอุบลราชธานี"
+      },
+      "wikidata": "Q629024",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": "1993-12-01",
+          "atoms": [
+            "THA-426",
+            "THA-427"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/wiki/%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%E0%B8%AD%E0%B8%B3%E0%B8%99%E0%B8%B2%E0%B8%88%E0%B9%80%E0%B8%88%E0%B8%A3%E0%B8%B4%E0%B8%8D",
+              "title": "จังหวัดอำนาจเจริญ (th.wikipedia)",
+              "says": "Amnat Charoen Act B.E. 2536 took effect 1 Dec 1993, separating seven districts from Ubon Ratchathani (Royal Gazette 110/125, 2 Sep 1993).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Includes the districts that formed Amnat Charoen until it was split off."
+        },
+        {
+          "from": "1993-12-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-426"
+          ],
+          "sources": [
+            {
+              "url": "https://th.wikipedia.org/wiki/%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%E0%B8%AD%E0%B8%B3%E0%B8%99%E0%B8%B2%E0%B8%88%E0%B9%80%E0%B8%88%E0%B8%A3%E0%B8%B4%E0%B8%8D",
+              "title": "จังหวัดอำนาจเจริญ (th.wikipedia)",
+              "says": "Amnat Charoen Act B.E. 2536 took effect 1 Dec 1993, separating seven districts from Ubon Ratchathani (Royal Gazette 110/125, 2 Sep 1993).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:SaKaeo",
+      "names": {
+        "en": "Sa Kaeo Province",
+        "ja": "サケーオ県",
+        "local": "จังหวัดสระแก้ว"
+      },
+      "wikidata": "Q381889",
+      "spans": [
+        {
+          "from": "1993-12-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-433"
+          ],
+          "sources": [
+            {
+              "url": "https://th.wikipedia.org/w/index.php?oldid=13318816",
+              "title": "จังหวัดสระแก้ว (th.wikipedia, revision 13318816)",
+              "says": "Sa Kaeo was raised to a province, split from Prachin Buri, on 1 Dec 1993.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:BuriRam",
+      "names": {
+        "en": "Buri Ram Province",
+        "ja": "ブリーラム県",
+        "local": "จังหวัดบุรีรัมย์"
+      },
+      "wikidata": "Q327510",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-436"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Trat",
+      "names": {
+        "en": "Trat Province",
+        "ja": "トラート県",
+        "local": "จังหวัดตราด"
+      },
+      "wikidata": "Q241884",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-435"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Chanthaburi",
+      "names": {
+        "en": "Chanthaburi Province",
+        "ja": "チャンタブリー県",
+        "local": "จังหวัดจันทบุรี"
+      },
+      "wikidata": "Q327730",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-432"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Satun",
+      "names": {
+        "en": "Satun Province",
+        "ja": "サトゥーン県",
+        "local": "จังหวัดสตูล"
+      },
+      "wikidata": "Q236263",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-385"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Songkhla",
+      "names": {
+        "en": "Songkhla Province",
+        "ja": "ソンクラー県",
+        "local": "จังหวัดสงขลา"
+      },
+      "wikidata": "Q235574",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-386"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Yala",
+      "names": {
+        "en": "Yala Province",
+        "ja": "ヤラー県",
+        "local": "จังหวัดยะลา"
+      },
+      "wikidata": "Q242977",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-388"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Narathiwat",
+      "names": {
+        "en": "Narathiwat Province",
+        "ja": "ナラーティワート県",
+        "local": "จังหวัดนราธิวาส"
+      },
+      "wikidata": "Q271442",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-493"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:ChiangRai",
+      "names": {
+        "en": "Chiang Rai Province",
+        "ja": "チエンラーイ県",
+        "local": "จังหวัดเชียงราย"
+      },
+      "wikidata": "Q236419",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": "1977-08-28",
+          "atoms": [
+            "THA-389",
+            "THA-394"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?oldid=13060822",
+              "title": "จังหวัดพะเยา (th.wikipedia, revision 13060822)",
+              "says": "Phayao province formed on 28 Aug 1977 (B.E. 2520) by splitting from Chiang Rai (Act B.E. 2520, Royal Gazette 94/69 A).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Includes the districts that formed Phayao until it was split off."
+        },
+        {
+          "from": "1977-08-28",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-389"
+          ],
+          "sources": [
+            {
+              "url": "https://th.wikipedia.org/w/index.php?oldid=13060822",
+              "title": "จังหวัดพะเยา (th.wikipedia, revision 13060822)",
+              "says": "Phayao province formed on 28 Aug 1977 (B.E. 2520) by splitting from Chiang Rai (Act B.E. 2520, Royal Gazette 94/69 A).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:ChiangMai",
+      "names": {
+        "en": "Chiang Mai Province",
+        "ja": "チエンマイ県",
+        "local": "จังหวัดเชียงใหม่"
+      },
+      "wikidata": "Q233588",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-390"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:MaeHongSon",
+      "names": {
+        "en": "Mae Hong Son Province",
+        "ja": "メーホンソーン県",
+        "local": "จังหวัดแม่ฮ่องสอน"
+      },
+      "wikidata": "Q269270",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-374"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Tak",
+      "names": {
+        "en": "Tak Province",
+        "ja": "ターク県",
+        "local": "จังหวัดตาก"
+      },
+      "wikidata": "Q275758",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-404"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Kanchanaburi",
+      "names": {
+        "en": "Kanchanaburi Province",
+        "ja": "カーンチャナブリー県",
+        "local": "จังหวัดกาญจนบุรี"
+      },
+      "wikidata": "Q275740",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-399"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:PrachuapKhiriKhan",
+      "names": {
+        "en": "Prachuap Khiri Khan Province",
+        "ja": "プラチュワップキーリーカン県",
+        "local": "จังหวัดประจวบคีรีขันธ์"
+      },
+      "wikidata": "Q244628",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-420"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Phetchaburi",
+      "names": {
+        "en": "Phetchaburi Province",
+        "ja": "ペッチャブリー県",
+        "local": "จังหวัดเพชรบุรี"
+      },
+      "wikidata": "Q244699",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-419"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Ratchaburi",
+      "names": {
+        "en": "Ratchaburi Province",
+        "ja": "ラーチャブリー県",
+        "local": "จังหวัดราชบุรี"
+      },
+      "wikidata": "Q335492",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-421"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Chumphon",
+      "names": {
+        "en": "Chumphon Province",
+        "ja": "チュムポーン県",
+        "local": "จังหวัดชุมพร"
+      },
+      "wikidata": "Q244695",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-375"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Ranong",
+      "names": {
+        "en": "Ranong Province",
+        "ja": "ラノーン県",
+        "local": "จังหวัดระนอง"
+      },
+      "wikidata": "Q236802",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-379"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Phayao",
+      "names": {
+        "en": "Phayao Province",
+        "ja": "パヤオ県",
+        "local": "จังหวัดพะเยา"
+      },
+      "wikidata": "Q244618",
+      "spans": [
+        {
+          "from": "1977-08-28",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-394"
+          ],
+          "sources": [
+            {
+              "url": "https://th.wikipedia.org/w/index.php?oldid=13060822",
+              "title": "จังหวัดพะเยา (th.wikipedia, revision 13060822)",
+              "says": "Phayao province formed on 28 Aug 1977 (B.E. 2520) by splitting from Chiang Rai (Act B.E. 2520, Royal Gazette 94/69 A).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Nan",
+      "names": {
+        "en": "Nan Province",
+        "ja": "ナーン県",
+        "local": "จังหวัดน่าน"
+      },
+      "wikidata": "Q244698",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-393"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Uttaradit",
+      "names": {
+        "en": "Uttaradit Province",
+        "ja": "ウッタラディット県",
+        "local": "จังหวัดอุตรดิตถ์"
+      },
+      "wikidata": "Q273794",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-398"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Phitsanulok",
+      "names": {
+        "en": "Phitsanulok Province",
+        "ja": "ピッサヌローク県",
+        "local": "จังหวัดพิษณุโลก"
+      },
+      "wikidata": "Q275781",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-396"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Loei",
+      "names": {
+        "en": "Loei Province",
+        "ja": "ルーイ県",
+        "local": "จังหวัดเลย"
+      },
+      "wikidata": "Q275388",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-445"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:BuengKan",
+      "names": {
+        "en": "Bueng Kan Province",
+        "ja": "ブンカーン県",
+        "local": "จังหวัดบึงกาฬ"
+      },
+      "wikidata": "Q1001862",
+      "spans": [
+        {
+          "from": "2011-03-23",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-5499"
+          ],
+          "sources": [
+            {
+              "url": "https://th.wikipedia.org/w/index.php?oldid=13318295",
+              "title": "จังหวัดบึงกาฬ (th.wikipedia, revision 13318295)",
+              "says": "Bueng Kan Act B.E. 2554 in force from 23 Mar 2011; eight districts separated from Nong Khai.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:NongKhai",
+      "names": {
+        "en": "Nong Khai Province",
+        "ja": "ノーンカーイ県",
+        "local": "จังหวัดหนองคาย"
+      },
+      "wikidata": "Q327737",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": "2011-03-23",
+          "atoms": [
+            "THA-446",
+            "THA-5499"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?oldid=13318295",
+              "title": "จังหวัดบึงกาฬ (th.wikipedia, revision 13318295)",
+              "says": "Bueng Kan Act B.E. 2554 in force from 23 Mar 2011; eight districts separated from Nong Khai.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Includes the districts that formed Bueng Kan until it was split off."
+        },
+        {
+          "from": "2011-03-23",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-446"
+          ],
+          "sources": [
+            {
+              "url": "https://th.wikipedia.org/w/index.php?oldid=13318295",
+              "title": "จังหวัดบึงกาฬ (th.wikipedia, revision 13318295)",
+              "says": "Bueng Kan Act B.E. 2554 in force from 23 Mar 2011; eight districts separated from Nong Khai.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:NakhonPhanom",
+      "names": {
+        "en": "Nakhon Phanom Province",
+        "ja": "ナコーンパノム県",
+        "local": "จังหวัดนครพนม"
+      },
+      "wikidata": "Q468547",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": "1982-09-27",
+          "atoms": [
+            "THA-472",
+            "THA-473"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?oldid=13324405",
+              "title": "จังหวัดมุกดาหาร (th.wikipedia, revision 13324405)",
+              "says": "Mukdahan Act gazetted 27 Aug 1982, in force one month later: Mukdahan province from 27 Sep 1982, split from Nakhon Phanom.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Includes the districts that formed Mukdahan until it was split off."
+        },
+        {
+          "from": "1982-09-27",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-472"
+          ],
+          "sources": [
+            {
+              "url": "https://th.wikipedia.org/w/index.php?oldid=13324405",
+              "title": "จังหวัดมุกดาหาร (th.wikipedia, revision 13324405)",
+              "says": "Mukdahan Act gazetted 27 Aug 1982, in force one month later: Mukdahan province from 27 Sep 1982, split from Nakhon Phanom.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Mukdahan",
+      "names": {
+        "en": "Mukdahan Province",
+        "ja": "ムックダーハーン県",
+        "local": "จังหวัดมุกดาหาร"
+      },
+      "wikidata": "Q335119",
+      "spans": [
+        {
+          "from": "1982-09-27",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-473"
+          ],
+          "sources": [
+            {
+              "url": "https://th.wikipedia.org/w/index.php?oldid=13324405",
+              "title": "จังหวัดมุกดาหาร (th.wikipedia, revision 13324405)",
+              "says": "Mukdahan Act gazetted 27 Aug 1982, in force one month later: Mukdahan province from 27 Sep 1982, split from Nakhon Phanom.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:AmnatCharoen",
+      "names": {
+        "en": "Amnat Charoen Province",
+        "ja": "アムナートチャルーン県",
+        "local": "จังหวัดอำนาจเจริญ"
+      },
+      "wikidata": "Q243791",
+      "spans": [
+        {
+          "from": "1993-12-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-427"
+          ],
+          "sources": [
+            {
+              "url": "https://th.wikipedia.org/wiki/%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%E0%B8%AD%E0%B8%B3%E0%B8%99%E0%B8%B2%E0%B8%88%E0%B9%80%E0%B8%88%E0%B8%A3%E0%B8%B4%E0%B8%8D",
+              "title": "จังหวัดอำนาจเจริญ (th.wikipedia)",
+              "says": "Amnat Charoen Act B.E. 2536 took effect 1 Dec 1993, separating seven districts from Ubon Ratchathani (Royal Gazette 110/125, 2 Sep 1993).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:PhangNga",
+      "names": {
+        "en": "Phang Nga Province",
+        "ja": "パンガー県",
+        "local": "จังหวัดพังงา"
+      },
+      "wikidata": "Q273306",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-378"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Krabi",
+      "names": {
+        "en": "Krabi Province",
+        "ja": "クラビー県",
+        "local": "จังหวัดกระบี่"
+      },
+      "wikidata": "Q236769",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-382"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Trang",
+      "names": {
+        "en": "Trang Province",
+        "ja": "トラン県",
+        "local": "จังหวัดตรัง"
+      },
+      "wikidata": "Q243805",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-387"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Pattani",
+      "names": {
+        "en": "Pattani Province",
+        "ja": "パッターニー県",
+        "local": "จังหวัดปัตตานี"
+      },
+      "wikidata": "Q236781",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-494"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Phatthalung",
+      "names": {
+        "en": "Phatthalung Province",
+        "ja": "パッタルン県",
+        "local": "จังหวัดพัทลุง"
+      },
+      "wikidata": "Q243808",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-383"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:NakhonSiThammarat",
+      "names": {
+        "en": "Nakhon Si Thammarat Province",
+        "ja": "ナコーンシータンマラート県",
+        "local": "จังหวัดนครศรีธรรมราช"
+      },
+      "wikidata": "Q244691",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-376"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:SuratThani",
+      "names": {
+        "en": "Surat Thani Province",
+        "ja": "スラートターニー県",
+        "local": "จังหวัดสุราษฎร์ธานี"
+      },
+      "wikidata": "Q240463",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-380"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:SamutSongkhram",
+      "names": {
+        "en": "Samut Songkhram Province",
+        "ja": "サムットソンクラーム県",
+        "local": "จังหวัดสมุทรสงคราม"
+      },
+      "wikidata": "Q459742",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-424"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:SamutSakhon",
+      "names": {
+        "en": "Samut Sakhon Province",
+        "ja": "サムットサーコーン県",
+        "local": "จังหวัดสมุทรสาคร"
+      },
+      "wikidata": "Q334686",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-423"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Bangkok",
+      "names": {
+        "en": "Bangkok",
+        "ja": "バンコク",
+        "local": "กรุงเทพมหานคร"
+      },
+      "wikidata": "Q1861",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-416"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Bangkok Metropolis (merger of Phra Nakhon and Thon Buri 1971-72); no boundary change found since."
+        }
+      ]
+    },
+    {
+      "id": "THA:SamutPrakan",
+      "names": {
+        "en": "Samut Prakan Province",
+        "ja": "サムットプラーカーン県",
+        "local": "จังหวัดสมุทรปราการ"
+      },
+      "wikidata": "Q271529",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-422"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Chachoengsao",
+      "names": {
+        "en": "Chachoengsao Province",
+        "ja": "チャチューンサオ県",
+        "local": "จังหวัดฉะเชิงเทรา"
+      },
+      "wikidata": "Q334906",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-431"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:ChonBuri",
+      "names": {
+        "en": "Chon Buri Province",
+        "ja": "チョンブリー県",
+        "local": "จังหวัดชลบุรี"
+      },
+      "wikidata": "Q207068",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-430"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Rayong",
+      "names": {
+        "en": "Rayong Province",
+        "ja": "ラヨーン県",
+        "local": "จังหวัดระยอง"
+      },
+      "wikidata": "Q335221",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-434"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Phuket",
+      "names": {
+        "en": "Phuket Province",
+        "ja": "プーケット県",
+        "local": "จังหวัดภูเก็ต"
+      },
+      "wikidata": "Q182565",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-377"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:KhonKaen",
+      "names": {
+        "en": "Khon Kaen Province",
+        "ja": "コーンケン県",
+        "local": "จังหวัดขอนแก่น"
+      },
+      "wikidata": "Q327533",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-438"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:SakonNakhon",
+      "names": {
+        "en": "Sakon Nakhon Province",
+        "ja": "サコンナコーン県",
+        "local": "จังหวัดสกลนคร"
+      },
+      "wikidata": "Q382125",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-447"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:SuphanBuri",
+      "names": {
+        "en": "Suphan Buri Province",
+        "ja": "スパンブリー県",
+        "local": "จังหวัดสุพรรณบุรี"
+      },
+      "wikidata": "Q272247",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-403"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:SingBuri",
+      "names": {
+        "en": "Sing Buri Province",
+        "ja": "シンブリー県",
+        "local": "จังหวัดสิงห์บุรี"
+      },
+      "wikidata": "Q334836",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-414"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:ChaiNat",
+      "names": {
+        "en": "Chai Nat Province",
+        "ja": "チャイナート県",
+        "local": "จังหวัดชัยนาท"
+      },
+      "wikidata": "Q459759",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-407"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:AngThong",
+      "names": {
+        "en": "Ang Thong Province",
+        "ja": "アーントーン県",
+        "local": "จังหวัดอ่างทอง"
+      },
+      "wikidata": "Q243795",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-406"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Saraburi",
+      "names": {
+        "en": "Saraburi Province",
+        "ja": "サラブリー県",
+        "local": "จังหวัดสระบุรี"
+      },
+      "wikidata": "Q337627",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-415"
+          ],
+          "sources": [
+            {
+              "url": "https://th.wikipedia.org/wiki/%E0%B8%AD%E0%B8%B3%E0%B9%80%E0%B8%A0%E0%B8%AD%E0%B8%9E%E0%B8%B1%E0%B8%92%E0%B8%99%E0%B8%B2%E0%B8%99%E0%B8%B4%E0%B8%84%E0%B8%A1",
+              "title": "อำเภอพัฒนานิคม (th.wikipedia)",
+              "says": "10 Jun 1974: boundary of Lop Buri and Saraburi changed, villages of Than Kasem (Saraburi) moved to Chong Sarika (Lop Buri).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:NakhonRatchasima",
+      "names": {
+        "en": "Nakhon Ratchasima Province",
+        "ja": "ナコーンラーチャシーマー県",
+        "local": "จังหวัดนครราชสีมา"
+      },
+      "wikidata": "Q271737",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-441"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:NakhonNayok",
+      "names": {
+        "en": "Nakhon Nayok Province",
+        "ja": "ナコーンナーヨック県",
+        "local": "จังหวัดนครนายก"
+      },
+      "wikidata": "Q466212",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-409"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:PathumThani",
+      "names": {
+        "en": "Pathum Thani Province",
+        "ja": "パトゥムターニー県",
+        "local": "จังหวัดปทุมธานี"
+      },
+      "wikidata": "Q459748",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-413"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:UthaiThani",
+      "names": {
+        "en": "Uthai Thani Province",
+        "ja": "ウタイターニー県",
+        "local": "จังหวัดอุทัยธานี"
+      },
+      "wikidata": "Q244649",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-405"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Kalasin",
+      "names": {
+        "en": "Kalasin Province",
+        "ja": "カーラシン県",
+        "local": "จังหวัดกาฬสินธุ์"
+      },
+      "wikidata": "Q382144",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-439"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:RoiEt",
+      "names": {
+        "en": "Roi Et Province",
+        "ja": "ローイエット県",
+        "local": "จังหวัดร้อยเอ็ด"
+      },
+      "wikidata": "Q625463",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-442"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:MahaSarakham",
+      "names": {
+        "en": "Maha Sarakham Province",
+        "ja": "マハーサーラカーム県",
+        "local": "จังหวัดมหาสารคาม"
+      },
+      "wikidata": "Q468554",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-440"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:NongBuaLamPhu",
+      "names": {
+        "en": "Nong Bua Lam Phu Province",
+        "ja": "ノーンブワラムプー県",
+        "local": "จังหวัดหนองบัวลำภู"
+      },
+      "wikidata": "Q261241",
+      "spans": [
+        {
+          "from": "1993-12-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-449"
+          ],
+          "sources": [
+            {
+              "url": "https://th.wikipedia.org/w/index.php?oldid=13284551",
+              "title": "จังหวัดหนองบัวลำภู (th.wikipedia, revision 13284551)",
+              "says": "Nong Bua Lam Phu proclaimed a province on 1 Dec 1993 (Royal Gazette 110/125, 2 Sep 1993), split from Udon Thani.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Lopburi",
+      "names": {
+        "en": "Lopburi Province",
+        "ja": "ロッブリー県",
+        "local": "จังหวัดลพบุรี"
+      },
+      "wikidata": "Q336122",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-408"
+          ],
+          "sources": [
+            {
+              "url": "https://th.wikipedia.org/wiki/%E0%B8%AD%E0%B8%B3%E0%B9%80%E0%B8%A0%E0%B8%AD%E0%B8%9E%E0%B8%B1%E0%B8%92%E0%B8%99%E0%B8%B2%E0%B8%99%E0%B8%B4%E0%B8%84%E0%B8%A1",
+              "title": "อำเภอพัฒนานิคม (th.wikipedia)",
+              "says": "10 Jun 1974: boundary of Lop Buri and Saraburi changed, villages of Than Kasem (Saraburi) moved to Chong Sarika (Lop Buri).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:UdonThani",
+      "names": {
+        "en": "Udon Thani Province",
+        "ja": "ウドーンターニー県",
+        "local": "จังหวัดอุดรธานี"
+      },
+      "wikidata": "Q380752",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": "1993-12-01",
+          "atoms": [
+            "THA-448",
+            "THA-449"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?oldid=13284551",
+              "title": "จังหวัดหนองบัวลำภู (th.wikipedia, revision 13284551)",
+              "says": "Nong Bua Lam Phu proclaimed a province on 1 Dec 1993 (Royal Gazette 110/125, 2 Sep 1993), split from Udon Thani.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Includes the districts that formed Nong Bua Lam Phu until it was split off."
+        },
+        {
+          "from": "1993-12-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-448"
+          ],
+          "sources": [
+            {
+              "url": "https://th.wikipedia.org/w/index.php?oldid=13284551",
+              "title": "จังหวัดหนองบัวลำภู (th.wikipedia, revision 13284551)",
+              "says": "Nong Bua Lam Phu proclaimed a province on 1 Dec 1993 (Royal Gazette 110/125, 2 Sep 1993), split from Udon Thani.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:PhraNakhonSiAyutthaya",
+      "names": {
+        "en": "Phra Nakhon Si Ayutthaya Province",
+        "ja": "アユタヤ県",
+        "local": "จังหวัดพระนครศรีอยุธยา"
+      },
+      "wikidata": "Q476222",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-412"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Nonthaburi",
+      "names": {
+        "en": "Nonthaburi Province",
+        "ja": "ノンタブリー県",
+        "local": "จังหวัดนนทบุรี"
+      },
+      "wikidata": "Q242932",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-417"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:NakhonPathom",
+      "names": {
+        "en": "Nakhon Pathom Province",
+        "ja": "ナコーンパトム県",
+        "local": "จังหวัดนครปฐม"
+      },
+      "wikidata": "Q334841",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-418"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:KamphaengPhet",
+      "names": {
+        "en": "Kamphaeng Phet Province",
+        "ja": "カムペーンペット県",
+        "local": "จังหวัดกำแพงเพชร"
+      },
+      "wikidata": "Q273807",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-400"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Lampang",
+      "names": {
+        "en": "Lampang Province",
+        "ja": "ラムパーン県",
+        "local": "จังหวัดลำปาง"
+      },
+      "wikidata": "Q240495",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-391"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Sukhothai",
+      "names": {
+        "en": "Sukhothai Province",
+        "ja": "スコータイ県",
+        "local": "จังหวัดสุโขทัย"
+      },
+      "wikidata": "Q380764",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-397"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:NakhonSawan",
+      "names": {
+        "en": "Nakhon Sawan Province",
+        "ja": "ナコーンサワン県",
+        "local": "จังหวัดนครสวรรค์"
+      },
+      "wikidata": "Q239844",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-411"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Phetchabun",
+      "names": {
+        "en": "Phetchabun Province",
+        "ja": "ペッチャブーン県",
+        "local": "จังหวัดเพชรบูรณ์"
+      },
+      "wikidata": "Q240520",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-402"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Phichit",
+      "names": {
+        "en": "Phichit Province",
+        "ja": "ピチット県",
+        "local": "จังหวัดพิจิตร"
+      },
+      "wikidata": "Q237874",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-401"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Chaiyaphum",
+      "names": {
+        "en": "Chaiyaphum Province",
+        "ja": "チャイヤプーム県",
+        "local": "จังหวัดชัยภูมิ"
+      },
+      "wikidata": "Q275377",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-437"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Phrae",
+      "names": {
+        "en": "Phrae Province",
+        "ja": "プレー県",
+        "local": "จังหวัดแพร่"
+      },
+      "wikidata": "Q244652",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-395"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Lamphun",
+      "names": {
+        "en": "Lamphun Province",
+        "ja": "ラムプーン県",
+        "local": "จังหวัดลำพูน"
+      },
+      "wikidata": "Q240540",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-392"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:PrachinBuri",
+      "names": {
+        "en": "Prachin Buri Province",
+        "ja": "プラーチーンブリー県",
+        "local": "จังหวัดปราจีนบุรี"
+      },
+      "wikidata": "Q321324",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": "1993-12-01",
+          "atoms": [
+            "THA-410",
+            "THA-433"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?oldid=13318816",
+              "title": "จังหวัดสระแก้ว (th.wikipedia, revision 13318816)",
+              "says": "Sa Kaeo was raised to a province, split from Prachin Buri, on 1 Dec 1993.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Includes the districts that formed Sa Kaeo until it was split off."
+        },
+        {
+          "from": "1993-12-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-410"
+          ],
+          "sources": [
+            {
+              "url": "https://th.wikipedia.org/w/index.php?oldid=13318816",
+              "title": "จังหวัดสระแก้ว (th.wikipedia, revision 13318816)",
+              "says": "Sa Kaeo was raised to a province, split from Prachin Buri, on 1 Dec 1993.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "THA:Yasothon",
+      "names": {
+        "en": "Yasothon Province",
+        "ja": "ヤソートーン県",
+        "local": "จังหวัดยโสธร"
+      },
+      "wikidata": "Q506598",
+      "spans": [
+        {
+          "from": "1974-06-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "THA-428"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uth.html",
+              "title": "Statoids: Provinces of Thailand, change history",
+              "says": "Province splits after 1974: Phayao 1977, Mukdahan 1982, Amnat Charoen, Nong Bua Lam Phu, Sa Kaeo 1993, Bueng Kan 2011.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://th.wikipedia.org/w/index.php?search=%22%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B8%B5%E0%B9%88%E0%B8%A2%E0%B8%99%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%22&fulltext=1",
+              "title": "th.wikipedia full-text search for province-boundary changes (เปลี่ยนแปลงเขตจังหวัด / ไปขึ้นกับจังหวัด)",
+              "says": "District histories record inter-province transfers up to 10 Jun 1974 and none later before 2020 other than new provinces.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1977-08-28",
+      "precision": "day",
+      "what": "Phayao province split from Chiang Rai",
+      "sources": [
+        {
+          "url": "https://th.wikipedia.org/w/index.php?oldid=13060822",
+          "title": "จังหวัดพะเยา (th.wikipedia, revision 13060822)",
+          "says": "Phayao province formed on 28 Aug 1977 (B.E. 2520) by splitting from Chiang Rai (Act B.E. 2520, Royal Gazette 94/69 A).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1982-09-27",
+      "precision": "day",
+      "what": "Mukdahan province split from Nakhon Phanom",
+      "sources": [
+        {
+          "url": "https://th.wikipedia.org/w/index.php?oldid=13324405",
+          "title": "จังหวัดมุกดาหาร (th.wikipedia, revision 13324405)",
+          "says": "Mukdahan Act gazetted 27 Aug 1982, in force one month later: Mukdahan province from 27 Sep 1982, split from Nakhon Phanom.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1993-12-01",
+      "precision": "day",
+      "what": "Amnat Charoen province split from Ubon Ratchathani",
+      "sources": [
+        {
+          "url": "https://th.wikipedia.org/wiki/%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%E0%B8%AD%E0%B8%B3%E0%B8%99%E0%B8%B2%E0%B8%88%E0%B9%80%E0%B8%88%E0%B8%A3%E0%B8%B4%E0%B8%8D",
+          "title": "จังหวัดอำนาจเจริญ (th.wikipedia)",
+          "says": "Amnat Charoen Act B.E. 2536 took effect 1 Dec 1993, separating seven districts from Ubon Ratchathani (Royal Gazette 110/125, 2 Sep 1993).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1993-12-01",
+      "precision": "day",
+      "what": "Nong Bua Lam Phu province split from Udon Thani",
+      "sources": [
+        {
+          "url": "https://th.wikipedia.org/w/index.php?oldid=13284551",
+          "title": "จังหวัดหนองบัวลำภู (th.wikipedia, revision 13284551)",
+          "says": "Nong Bua Lam Phu proclaimed a province on 1 Dec 1993 (Royal Gazette 110/125, 2 Sep 1993), split from Udon Thani.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1993-12-01",
+      "precision": "day",
+      "what": "Sa Kaeo province split from Prachin Buri",
+      "sources": [
+        {
+          "url": "https://th.wikipedia.org/w/index.php?oldid=13318816",
+          "title": "จังหวัดสระแก้ว (th.wikipedia, revision 13318816)",
+          "says": "Sa Kaeo was raised to a province, split from Prachin Buri, on 1 Dec 1993.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2011-03-23",
+      "precision": "day",
+      "what": "Bueng Kan province split from Nong Khai",
+      "sources": [
+        {
+          "url": "https://th.wikipedia.org/w/index.php?oldid=13318295",
+          "title": "จังหวัดบึงกาฬ (th.wikipedia, revision 13318295)",
+          "says": "Bueng Kan Act B.E. 2554 in force from 23 Mar 2011; eight districts separated from Nong Khai.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1974-06-10",
+      "precision": "day",
+      "what": "Lop Buri / Saraburi boundary changed (villages of Than Kasem moved to Lop Buri) — last inter-province transfer found",
+      "sources": [
+        {
+          "url": "https://th.wikipedia.org/wiki/%E0%B8%AD%E0%B8%B3%E0%B9%80%E0%B8%A0%E0%B8%AD%E0%B8%9E%E0%B8%B1%E0%B8%92%E0%B8%99%E0%B8%B2%E0%B8%99%E0%B8%B4%E0%B8%84%E0%B8%A1",
+          "title": "อำเภอพัฒนานิคม (th.wikipedia)",
+          "says": "10 Jun 1974: boundary of Lop Buri and Saraburi changed, villages of Than Kasem (Saraburi) moved to Chong Sarika (Lop Buri).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "1975-01-01",
+      "n": 71,
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Thailand&action=raw",
+          "title": "Provinces of Thailand (en.wikipedia), section History",
+          "says": "New provinces after 1972: Phayao 1977, Mukdahan 1982, Sa Kaeo, Nong Bua Lamphu, Amnat Charoen 1993, Bueng Kan 2011 (77th).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1980-01-01",
+      "n": 72,
+      "sources": [
+        {
+          "url": "https://th.wikipedia.org/w/index.php?oldid=13060822",
+          "title": "จังหวัดพะเยา (th.wikipedia, revision 13060822)",
+          "says": "Phayao province formed on 28 Aug 1977 (B.E. 2520) by splitting from Chiang Rai (Act B.E. 2520, Royal Gazette 94/69 A).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1990-01-01",
+      "n": 73,
+      "sources": [
+        {
+          "url": "https://th.wikipedia.org/w/index.php?oldid=13324405",
+          "title": "จังหวัดมุกดาหาร (th.wikipedia, revision 13324405)",
+          "says": "Mukdahan Act gazetted 27 Aug 1982, in force one month later: Mukdahan province from 27 Sep 1982, split from Nakhon Phanom.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2000-01-01",
+      "n": 76,
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Thailand&action=raw",
+          "title": "Provinces of Thailand (en.wikipedia), section History",
+          "says": "1993: three provinces created; Bueng Kan in 2011 was the newest.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2019-12-31",
+      "n": 77,
+      "sources": [
+        {
+          "url": "https://th.wikipedia.org/w/index.php?oldid=13318295",
+          "title": "จังหวัดบึงกาฬ (th.wikipedia, revision 13318295)",
+          "says": "Bueng Kan Act B.E. 2554 in force from 23 Mar 2011; eight districts separated from Nong Khai.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Thai provinces before 10 Jun 1974",
+      "from": "1947",
+      "to": "1974-06-10",
+      "why": "Between 1947 (Kalasin re-established) and 1974 tambon/village transfers moved partial territory between provinces (e.g. Nakhon Sawan/Uthai Thani 1959, Lop Buri/Saraburi 1962, Phichit/Phetchabun 1968, Chiang Rai/Nan 1972, Nakhon Si Thammarat/Surat Thani 1972, Lop Buri/Saraburi 1974); Phra Nakhon and Thon Buri (merged 1971-72) share one NE atom. These lines run inside NE atoms.",
+      "checked": [
+        "th.wikipedia district histories (full-text search, 401 articles scanned)",
+        "statoids uth.html",
+        "en.wikipedia Provinces of Thailand"
+      ],
+      "needs": "tambon-level atoms (e.g. geoBoundaries THA ADM3 / OCHA HDX Thailand admin boundaries, check licence) plus the Royal Gazette notices"
+    }
+  ]
+}

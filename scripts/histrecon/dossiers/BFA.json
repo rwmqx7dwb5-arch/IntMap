@@ -1,0 +1,2181 @@
+{
+  "country": "BFA",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "1997-01",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Burkina Faso throughout the scope. NE atoms are the 45 provinces (with their 2001 region in the region field), unchanged 1997 → 2025; they are the first-level units until 2001-07-02 and the second level afterwards, when the 13 regions (unions of provinces) are first-level.",
+  "units": [
+    {
+      "id": "BFA:prov-Tapoa@1997",
+      "names": {
+        "en": "Tapoa Province",
+        "ja": "タポア県",
+        "local": "Province du Tapoa"
+      },
+      "wikidata": "Q621983",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2878"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Kompienga@1997",
+      "names": {
+        "en": "Kompienga Province",
+        "ja": "コンピエンガ県",
+        "local": "Province du Kompienga"
+      },
+      "wikidata": "Q1142059",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2183"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Léraba@1997",
+      "names": {
+        "en": "Léraba Province",
+        "ja": "レラバ県",
+        "local": "Province du Léraba"
+      },
+      "wikidata": "Q977607",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2835"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Comoé@1997",
+      "names": {
+        "en": "Comoé Province",
+        "ja": "コモエ県",
+        "local": "Province du Comoé"
+      },
+      "wikidata": "Q1074496",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2836"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Poni@1997",
+      "names": {
+        "en": "Poni Province",
+        "ja": "ポニ県",
+        "local": "Province du Poni"
+      },
+      "wikidata": "Q953657",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2837"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Noumbiel@1997",
+      "names": {
+        "en": "Noumbiel Province",
+        "ja": "ヌンビエル県",
+        "local": "Province du Noumbiel"
+      },
+      "wikidata": "Q646647",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-5989"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Oudalan@1997",
+      "names": {
+        "en": "Oudalan Province",
+        "ja": "ウダラン県",
+        "local": "Province du Oudalan"
+      },
+      "wikidata": "Q514173",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2805"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Soum@1997",
+      "names": {
+        "en": "Soum Province",
+        "ja": "スム県",
+        "local": "Province du Soum"
+      },
+      "wikidata": "Q385973",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2806"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Loroum@1997",
+      "names": {
+        "en": "Loroum Province",
+        "ja": "ロルム県",
+        "local": "Province du Loroum"
+      },
+      "wikidata": "Q1142054",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2822"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Yatenga@1997",
+      "names": {
+        "en": "Yatenga Province",
+        "ja": "ヤテンガ県",
+        "local": "Province du Yatenga"
+      },
+      "wikidata": "Q1074521",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2823"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Sourou@1997",
+      "names": {
+        "en": "Sourou Province",
+        "ja": "スル県",
+        "local": "Province du Sourou"
+      },
+      "wikidata": "Q558703",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2808"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Kossi@1997",
+      "names": {
+        "en": "Kossi Province",
+        "ja": "コッシ県",
+        "local": "Province du Kossi"
+      },
+      "wikidata": "Q1074485",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2802"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Banwa@1997",
+      "names": {
+        "en": "Banwa Province",
+        "ja": "バンワ県",
+        "local": "Province du Banwa"
+      },
+      "wikidata": "Q674664",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2801"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Houet@1997",
+      "names": {
+        "en": "Houet Province",
+        "ja": "ウエ県",
+        "local": "Province du Houet"
+      },
+      "wikidata": "Q1074161",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2799"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Kénédougou@1997",
+      "names": {
+        "en": "Kénédougou Province",
+        "ja": "ケネドゥグ県",
+        "local": "Province du Kénédougou"
+      },
+      "wikidata": "Q1150901",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2800"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Séno@1997",
+      "names": {
+        "en": "Séno Province",
+        "ja": "セノ県",
+        "local": "Province du Séno"
+      },
+      "wikidata": "Q1061214",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2876"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Yagha@1997",
+      "names": {
+        "en": "Yagha Province",
+        "ja": "ヤガ県",
+        "local": "Province du Yagha"
+      },
+      "wikidata": "Q1074466",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2877"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Komondjari@1997",
+      "names": {
+        "en": "Komondjari Province",
+        "ja": "コモンジャリ県",
+        "local": "Province du Komondjari"
+      },
+      "wikidata": "Q1074479",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2875"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Koulpélogo@1997",
+      "names": {
+        "en": "Koulpélogo Province",
+        "ja": "クルペロゴ県",
+        "local": "Province du Koulpélogo"
+      },
+      "wikidata": "Q934923",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2827"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Boulgou@1997",
+      "names": {
+        "en": "Boulgou Province",
+        "ja": "ブルグ県",
+        "local": "Province du Boulgou"
+      },
+      "wikidata": "Q895097",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2826"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Nahouri@1997",
+      "names": {
+        "en": "Nahouri Province",
+        "ja": "ナウリ県",
+        "local": "Province du Nahouri"
+      },
+      "wikidata": "Q1142003",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2830"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Sissili@1997",
+      "names": {
+        "en": "Sissili Province",
+        "ja": "シッシリ県",
+        "local": "Province du Sissili"
+      },
+      "wikidata": "Q964281",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2820"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Ioba@1997",
+      "names": {
+        "en": "Ioba Province",
+        "ja": "イオバ県",
+        "local": "Province du Ioba"
+      },
+      "wikidata": "Q1074154",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2833"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Balé@1997",
+      "names": {
+        "en": "Balé Province",
+        "ja": "バレ県",
+        "local": "Province du Balé"
+      },
+      "wikidata": "Q805913",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2803"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Sanguié@1997",
+      "names": {
+        "en": "Sanguié Province",
+        "ja": "サンギエ県",
+        "local": "Province du Sanguié"
+      },
+      "wikidata": "Q1142014",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2819"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Tuy@1997",
+      "names": {
+        "en": "Tuy Province",
+        "ja": "トゥイ県",
+        "local": "Province du Tuy"
+      },
+      "wikidata": "Q627844",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2834"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Bougouriba@1997",
+      "names": {
+        "en": "Bougouriba Province",
+        "ja": "ブグリバ県",
+        "local": "Province du Bougouriba"
+      },
+      "wikidata": "Q676641",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2832"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Mouhoun@1997",
+      "names": {
+        "en": "Mouhoun Province",
+        "ja": "ムフン県",
+        "local": "Province du Mouhoun"
+      },
+      "wikidata": "Q1142050",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2804"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Kouritenga@1997",
+      "names": {
+        "en": "Kouritenga Province",
+        "ja": "クリテンガ県",
+        "local": "Province du Kouritenga"
+      },
+      "wikidata": "Q1141767",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2829"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Ganzourgou@1997",
+      "names": {
+        "en": "Ganzourgou Province",
+        "ja": "ガンズル県",
+        "local": "Province du Ganzourgou"
+      },
+      "wikidata": "Q182889",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2828"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Zoundwéogo@1997",
+      "names": {
+        "en": "Zoundwéogo Province",
+        "ja": "ズンドウェオゴ県",
+        "local": "Province du Zoundwéogo"
+      },
+      "wikidata": "Q227059",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2831"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Ziro@1997",
+      "names": {
+        "en": "Ziro Province",
+        "ja": "ジロ県",
+        "local": "Province du Ziro"
+      },
+      "wikidata": "Q206019",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2821"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Boulkiemdé@1997",
+      "names": {
+        "en": "Boulkiemdé Province",
+        "ja": "ブルキアンデ県",
+        "local": "Province du Boulkiemdé"
+      },
+      "wikidata": "Q895102",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2812"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Kadiogo@1997",
+      "names": {
+        "en": "Kadiogo Province",
+        "ja": "カディオゴ県",
+        "local": "Province du Kadiogo"
+      },
+      "wikidata": "Q1074530",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2815"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Oubritenga@1997",
+      "names": {
+        "en": "Oubritenga Province",
+        "ja": "ウブリテンガ県",
+        "local": "Province du Oubritenga"
+      },
+      "wikidata": "Q1142026",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2816"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Gourma@1997",
+      "names": {
+        "en": "Gourma Province",
+        "ja": "グルマ県",
+        "local": "Province du Gourma"
+      },
+      "wikidata": "Q432317",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2184"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Gnagna@1997",
+      "names": {
+        "en": "Gnagna Province",
+        "ja": "グナグナ州",
+        "local": "Province du Gnagna"
+      },
+      "wikidata": "Q1074144",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2874"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Bazèga@1997",
+      "names": {
+        "en": "Bazèga Province",
+        "ja": "バゼガ県",
+        "local": "Province du Bazèga"
+      },
+      "wikidata": "Q619764",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2814"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Kourwéogo@1997",
+      "names": {
+        "en": "Kourwéogo Province",
+        "ja": "クルウェゴ県",
+        "local": "Province du Kourwéogo"
+      },
+      "wikidata": "Q661376",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2813"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Nayala@1997",
+      "names": {
+        "en": "Nayala Province",
+        "ja": "ナヤラ県",
+        "local": "Province du Nayala"
+      },
+      "wikidata": "Q1141776",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2807"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Passoré@1997",
+      "names": {
+        "en": "Passoré Province",
+        "ja": "パッソレ県",
+        "local": "Province du Passoré"
+      },
+      "wikidata": "Q1142008",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2817"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Zondoma@1997",
+      "names": {
+        "en": "Zondoma Province",
+        "ja": "ゾンドマ県",
+        "local": "Province du Zondoma"
+      },
+      "wikidata": "Q219859",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2818"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Namentenga@1997",
+      "names": {
+        "en": "Namentenga Province",
+        "ja": "ナメテンガ県",
+        "local": "Province du Namentenga"
+      },
+      "wikidata": "Q1142044",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2824"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Sanmatenga@1997",
+      "names": {
+        "en": "Sanmatenga Province",
+        "ja": "サンマテンガ県",
+        "local": "Province du Sanmatenga"
+      },
+      "wikidata": "Q1142039",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2825"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Bam@1997",
+      "names": {
+        "en": "Bam Province",
+        "ja": "バム県",
+        "local": "Province du Bam"
+      },
+      "wikidata": "Q620710",
+      "spans": [
+        {
+          "from": "1997-01",
+          "precision": "month",
+          "to": "2001-07-02",
+          "atoms": [
+            "BFA-2811"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "First-level unit until the 13 regions of 2001-07-02. Start: Statoids «1997-01»; other sources date the 15 new provinces to 1995 or 1996, so only their existence from 1997-01 is claimed."
+        }
+      ]
+    },
+    {
+      "id": "BFA:BoucleduMouhoun@2001",
+      "names": {
+        "en": "Boucle du Mouhoun Region",
+        "ja": "ブクル・デュ・ムウン地方",
+        "local": "Région du Boucle du Mouhoun"
+      },
+      "wikidata": "Q527093",
+      "spans": [
+        {
+          "from": "2001-07-02",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BFA-2808",
+            "BFA-2802",
+            "BFA-2801",
+            "BFA-2803",
+            "BFA-2804",
+            "BFA-2807"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239453033",
+              "title": "Régions du Burkina Faso — Wikipédia",
+              "says": "The 13 regions were created administratively on 2 July 2001 grouping provinces; unchanged until the July 2025 reform (17 regions, 47 provinces).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region = union of its provinces (Statoids table, Wikidata P131, NE region field agree); no province transfer between regions before 2025."
+        }
+      ]
+    },
+    {
+      "id": "BFA:Cascades@2001",
+      "names": {
+        "en": "Cascades Region",
+        "ja": "カスカード地方",
+        "local": "Région du Cascades"
+      },
+      "wikidata": "Q850043",
+      "spans": [
+        {
+          "from": "2001-07-02",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BFA-2835",
+            "BFA-2836"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239453033",
+              "title": "Régions du Burkina Faso — Wikipédia",
+              "says": "The 13 regions were created administratively on 2 July 2001 grouping provinces; unchanged until the July 2025 reform (17 regions, 47 provinces).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region = union of its provinces (Statoids table, Wikidata P131, NE region field agree); no province transfer between regions before 2025."
+        }
+      ]
+    },
+    {
+      "id": "BFA:Centre@2001",
+      "names": {
+        "en": "Centre Region",
+        "ja": "中部地方",
+        "local": "Région du Centre"
+      },
+      "wikidata": "Q515655",
+      "spans": [
+        {
+          "from": "2001-07-02",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BFA-2815"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239453033",
+              "title": "Régions du Burkina Faso — Wikipédia",
+              "says": "The 13 regions were created administratively on 2 July 2001 grouping provinces; unchanged until the July 2025 reform (17 regions, 47 provinces).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region = union of its provinces (Statoids table, Wikidata P131, NE region field agree); no province transfer between regions before 2025."
+        }
+      ]
+    },
+    {
+      "id": "BFA:Centre-Est@2001",
+      "names": {
+        "en": "Centre-Est Region",
+        "ja": "中東部地方",
+        "local": "Région du Centre-Est"
+      },
+      "wikidata": "Q543006",
+      "spans": [
+        {
+          "from": "2001-07-02",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BFA-2827",
+            "BFA-2826",
+            "BFA-2829"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239453033",
+              "title": "Régions du Burkina Faso — Wikipédia",
+              "says": "The 13 regions were created administratively on 2 July 2001 grouping provinces; unchanged until the July 2025 reform (17 regions, 47 provinces).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region = union of its provinces (Statoids table, Wikidata P131, NE region field agree); no province transfer between regions before 2025."
+        }
+      ]
+    },
+    {
+      "id": "BFA:Centre-Nord@2001",
+      "names": {
+        "en": "Centre-Nord Region",
+        "ja": "中北部地方",
+        "local": "Région du Centre-Nord"
+      },
+      "wikidata": "Q850064",
+      "spans": [
+        {
+          "from": "2001-07-02",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BFA-2824",
+            "BFA-2825",
+            "BFA-2811"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239453033",
+              "title": "Régions du Burkina Faso — Wikipédia",
+              "says": "The 13 regions were created administratively on 2 July 2001 grouping provinces; unchanged until the July 2025 reform (17 regions, 47 provinces).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region = union of its provinces (Statoids table, Wikidata P131, NE region field agree); no province transfer between regions before 2025."
+        }
+      ]
+    },
+    {
+      "id": "BFA:Centre-Ouest@2001",
+      "names": {
+        "en": "Centre-Ouest Region",
+        "ja": "中西部地方",
+        "local": "Région du Centre-Ouest"
+      },
+      "wikidata": "Q850075",
+      "spans": [
+        {
+          "from": "2001-07-02",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BFA-2820",
+            "BFA-2819",
+            "BFA-2821",
+            "BFA-2812"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239453033",
+              "title": "Régions du Burkina Faso — Wikipédia",
+              "says": "The 13 regions were created administratively on 2 July 2001 grouping provinces; unchanged until the July 2025 reform (17 regions, 47 provinces).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region = union of its provinces (Statoids table, Wikidata P131, NE region field agree); no province transfer between regions before 2025."
+        }
+      ]
+    },
+    {
+      "id": "BFA:Centre-Sud@2001",
+      "names": {
+        "en": "Centre-Sud Region",
+        "ja": "中南部地方",
+        "local": "Région du Centre-Sud"
+      },
+      "wikidata": "Q853405",
+      "spans": [
+        {
+          "from": "2001-07-02",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BFA-2830",
+            "BFA-2831",
+            "BFA-2814"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239453033",
+              "title": "Régions du Burkina Faso — Wikipédia",
+              "says": "The 13 regions were created administratively on 2 July 2001 grouping provinces; unchanged until the July 2025 reform (17 regions, 47 provinces).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region = union of its provinces (Statoids table, Wikidata P131, NE region field agree); no province transfer between regions before 2025."
+        }
+      ]
+    },
+    {
+      "id": "BFA:Est@2001",
+      "names": {
+        "en": "Est Region",
+        "ja": "東部地方",
+        "local": "Région de l'Est"
+      },
+      "wikidata": "Q850088",
+      "spans": [
+        {
+          "from": "2001-07-02",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BFA-2878",
+            "BFA-2183",
+            "BFA-2875",
+            "BFA-2184",
+            "BFA-2874"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239453033",
+              "title": "Régions du Burkina Faso — Wikipédia",
+              "says": "The 13 regions were created administratively on 2 July 2001 grouping provinces; unchanged until the July 2025 reform (17 regions, 47 provinces).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region = union of its provinces (Statoids table, Wikidata P131, NE region field agree); no province transfer between regions before 2025."
+        }
+      ]
+    },
+    {
+      "id": "BFA:Hauts-Bassins@2001",
+      "names": {
+        "en": "Hauts-Bassins Region",
+        "ja": "上流域地方",
+        "local": "Région du Hauts-Bassins"
+      },
+      "wikidata": "Q845303",
+      "spans": [
+        {
+          "from": "2001-07-02",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BFA-2799",
+            "BFA-2800",
+            "BFA-2834"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239453033",
+              "title": "Régions du Burkina Faso — Wikipédia",
+              "says": "The 13 regions were created administratively on 2 July 2001 grouping provinces; unchanged until the July 2025 reform (17 regions, 47 provinces).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region = union of its provinces (Statoids table, Wikidata P131, NE region field agree); no province transfer between regions before 2025."
+        }
+      ]
+    },
+    {
+      "id": "BFA:Nord@2001",
+      "names": {
+        "en": "Nord Region",
+        "ja": "北部地方",
+        "local": "Région du Nord"
+      },
+      "wikidata": "Q502320",
+      "spans": [
+        {
+          "from": "2001-07-02",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BFA-2822",
+            "BFA-2823",
+            "BFA-2817",
+            "BFA-2818"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239453033",
+              "title": "Régions du Burkina Faso — Wikipédia",
+              "says": "The 13 regions were created administratively on 2 July 2001 grouping provinces; unchanged until the July 2025 reform (17 regions, 47 provinces).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region = union of its provinces (Statoids table, Wikidata P131, NE region field agree); no province transfer between regions before 2025."
+        }
+      ]
+    },
+    {
+      "id": "BFA:Plateau-Central@2001",
+      "names": {
+        "en": "Plateau-Central Region",
+        "ja": "中央大地地方",
+        "local": "Région du Plateau-Central"
+      },
+      "wikidata": "Q862606",
+      "spans": [
+        {
+          "from": "2001-07-02",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BFA-2828",
+            "BFA-2816",
+            "BFA-2813"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239453033",
+              "title": "Régions du Burkina Faso — Wikipédia",
+              "says": "The 13 regions were created administratively on 2 July 2001 grouping provinces; unchanged until the July 2025 reform (17 regions, 47 provinces).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region = union of its provinces (Statoids table, Wikidata P131, NE region field agree); no province transfer between regions before 2025."
+        }
+      ]
+    },
+    {
+      "id": "BFA:Sahel@2001",
+      "names": {
+        "en": "Sahel Region",
+        "ja": "サヘル地方",
+        "local": "Région du Sahel"
+      },
+      "wikidata": "Q665514",
+      "spans": [
+        {
+          "from": "2001-07-02",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BFA-2805",
+            "BFA-2806",
+            "BFA-2876",
+            "BFA-2877"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239453033",
+              "title": "Régions du Burkina Faso — Wikipédia",
+              "says": "The 13 regions were created administratively on 2 July 2001 grouping provinces; unchanged until the July 2025 reform (17 regions, 47 provinces).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region = union of its provinces (Statoids table, Wikidata P131, NE region field agree); no province transfer between regions before 2025."
+        }
+      ]
+    },
+    {
+      "id": "BFA:Sud-Ouest@2001",
+      "names": {
+        "en": "Sud-Ouest Region",
+        "ja": "南西地方",
+        "local": "Région du Sud-Ouest"
+      },
+      "wikidata": "Q429149",
+      "spans": [
+        {
+          "from": "2001-07-02",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BFA-2837",
+            "BFA-5989",
+            "BFA-2833",
+            "BFA-2832"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239453033",
+              "title": "Régions du Burkina Faso — Wikipédia",
+              "says": "The 13 regions were created administratively on 2 July 2001 grouping provinces; unchanged until the July 2025 reform (17 regions, 47 provinces).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region = union of its provinces (Statoids table, Wikidata P131, NE region field agree); no province transfer between regions before 2025."
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1997-01",
+      "precision": "month",
+      "what": "Fifteen new provinces formed (45 provinces); some 1984 provinces exchanged departments",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ubf.html",
+          "title": "Regions of Burkina Faso (Statoids)",
+          "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://www.statoids.com/ybf.html",
+          "title": "Provinces of Burkina Faso (Statoids)",
+          "says": "Table of the 45 provinces with their region and the 1984 provinces each was formed from.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2001-07-02",
+      "precision": "day",
+      "what": "The 45 provinces grouped into 13 regions, which become the first level",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ubf.html",
+          "title": "Regions of Burkina Faso (Statoids)",
+          "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://fr.wikipedia.org/w/index.php?oldid=239453033",
+          "title": "Régions du Burkina Faso — Wikipédia",
+          "says": "The 13 regions were created administratively on 2 July 2001 grouping provinces; unchanged until the July 2025 reform (17 regions, 47 provinces).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "1997-01",
+      "n": 45,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ubf.html",
+          "title": "Regions of Burkina Faso (Statoids)",
+          "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2001-07-02",
+      "n": 13,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ubf.html",
+          "title": "Regions of Burkina Faso (Statoids)",
+          "says": "Change list: 1984-08-15 thirty provinces; 1997-01 fifteen new provinces, 45 total, still valid; 2001-07-02 the 45 provinces grouped into thirteen regions.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://fr.wikipedia.org/w/index.php?oldid=239453033",
+          "title": "Régions du Burkina Faso — Wikipédia",
+          "says": "The 13 regions were created administratively on 2 July 2001 grouping provinces; unchanged until the July 2025 reform (17 regions, 47 provinces).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "The 30 provinces of 1984-08-15 → 1995/1997 (and the 10 departments 1974-1984)",
+      "from": "1984-08-15",
+      "to": "1997-01",
+      "why": "The 1990s reform did not only split provinces: Statoids records Kadiogo formed from Bazéga, Kadiogo and Oubritenga, Balé from Mouhoun and Sissili, Tuy from Bougouriba and Houet, etc., so many 1984 lines run inside NE atoms. Provinces untouched by such exchanges (e.g. Yatenga = Yatenga+Loroum+Zondoma, Séno = Séno+Yagha) look expressible, but the end date (1995, 1996 or 1997-01 depending on the source) and the completeness of the «formerly» lists are unverified.",
+      "checked": [
+        "statoids.com/ubf.html",
+        "statoids.com/ybf.html («Formerly» column)",
+        "fr.wikipedia Provinces du Burkina Faso (says 1995)",
+        "fr.wikipedia Régions du Burkina Faso"
+      ],
+      "needs": "the creating law of the 15 provinces (1996, number not confirmed) with its department annex, and department atoms (geoBoundaries BFA ADM3, CC BY 4.0)"
+    }
+  ]
+}

@@ -1,0 +1,1959 @@
+{
+  "country": "ESP",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "1900-01-01",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Kingdom of Spain (monarchy, Second Republic 1931-39, Franco state, monarchy from 1975) throughout. First level modelled as the provinces of the 1833 division (NE atoms are provinces although typed \"Autonomous Community\"), plus Ceuta and Melilla as autonomous cities from 1995. Protectorate and colonial territories (Morocco zone, Ifni, Spanish Sahara, Guinea) are not in the ESP atoms and are not covered.",
+  "units": [
+    {
+      "id": "ESP:Alava@1833",
+      "names": {
+        "en": "Álava Province",
+        "ja": "アラバ県",
+        "local": "Araba/Álava"
+      },
+      "wikidata": "Q81801",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5801"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Albacete@1833",
+      "names": {
+        "en": "Albacete Province",
+        "ja": "アルバセテ県",
+        "local": "Albacete"
+      },
+      "wikidata": "Q54889",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5802"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Alicante@1833",
+      "names": {
+        "en": "Alicante Province",
+        "ja": "アリカンテ県",
+        "local": "Alicante/Alacant"
+      },
+      "wikidata": "Q54936",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5803"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Almeria@1833",
+      "names": {
+        "en": "Almería Province",
+        "ja": "アルメリア県",
+        "local": "Almería"
+      },
+      "wikidata": "Q81802",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5804"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Asturias@1833",
+      "names": {
+        "en": "Asturias Province (Oviedo until 1983)",
+        "ja": "アストゥリアス州",
+        "local": "Asturias"
+      },
+      "wikidata": "Q24004403",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5805"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Renamed without territorial change (statoids yes.html change history)."
+        }
+      ]
+    },
+    {
+      "id": "ESP:Avila@1833",
+      "names": {
+        "en": "Ávila Province",
+        "ja": "アビラ県",
+        "local": "Ávila"
+      },
+      "wikidata": "Q55288",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5806"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Badajoz@1833",
+      "names": {
+        "en": "Badajoz Province",
+        "ja": "バダホス県",
+        "local": "Badajoz"
+      },
+      "wikidata": "Q81803",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5807"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Baleares@1833",
+      "names": {
+        "en": "Balearic Islands Province",
+        "ja": "バレアレス諸島",
+        "local": "Illes Balears"
+      },
+      "wikidata": "Q5765",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5808"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Barcelona@1833",
+      "names": {
+        "en": "Barcelona Province",
+        "ja": "バルセロナ県",
+        "local": "Barcelona"
+      },
+      "wikidata": "Q81949",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5809"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Burgos@1833",
+      "names": {
+        "en": "Burgos Province",
+        "ja": "ブルゴス県",
+        "local": "Burgos"
+      },
+      "wikidata": "Q55271",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5810"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Caceres@1833",
+      "names": {
+        "en": "Cáceres Province",
+        "ja": "カセレス県",
+        "local": "Cáceres"
+      },
+      "wikidata": "Q81977",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5811"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Cadiz@1833",
+      "names": {
+        "en": "Cádiz Province",
+        "ja": "カディス県",
+        "local": "Cádiz"
+      },
+      "wikidata": "Q81978",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5812"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Peninsular Cádiz province only. Whether Ceuta (ESP-5815) belonged to Cádiz province 1900-1925 and 1932-1995 is contested and withheld (see unresolved); no line inside this atom moved."
+        }
+      ]
+    },
+    {
+      "id": "ESP:Cantabria@1833",
+      "names": {
+        "en": "Cantabria Province (Santander until 1982)",
+        "ja": "サンタンデール県",
+        "local": "Cantabria"
+      },
+      "wikidata": "Q95007",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5813"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Renamed without territorial change (statoids yes.html change history)."
+        }
+      ]
+    },
+    {
+      "id": "ESP:CiudadReal@1833",
+      "names": {
+        "en": "Ciudad Real Province",
+        "ja": "シウダ・レアル県",
+        "local": "Ciudad Real"
+      },
+      "wikidata": "Q54932",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5816"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Cordoba@1833",
+      "names": {
+        "en": "Córdoba Province",
+        "ja": "コルドバ県",
+        "local": "Córdoba"
+      },
+      "wikidata": "Q81972",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5817"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Cuenca@1833",
+      "names": {
+        "en": "Cuenca Province",
+        "ja": "クエンカ県",
+        "local": "Cuenca"
+      },
+      "wikidata": "Q54888",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5818"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Girona@1833",
+      "names": {
+        "en": "Girona Province",
+        "ja": "ジローナ県",
+        "local": "Girona"
+      },
+      "wikidata": "Q7194",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5820"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Granada@1833",
+      "names": {
+        "en": "Granada Province",
+        "ja": "グラナダ県",
+        "local": "Granada"
+      },
+      "wikidata": "Q82142",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5821"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Guadalajara@1833",
+      "names": {
+        "en": "Guadalajara Province",
+        "ja": "グアダラハラ県",
+        "local": "Guadalajara"
+      },
+      "wikidata": "Q54925",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5822"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Gipuzkoa@1833",
+      "names": {
+        "en": "Gipuzkoa Province",
+        "ja": "ギプスコア県",
+        "local": "Gipuzkoa"
+      },
+      "wikidata": "Q95010",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5823"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Huelva@1833",
+      "names": {
+        "en": "Huelva Province",
+        "ja": "ウエルバ県",
+        "local": "Huelva"
+      },
+      "wikidata": "Q95015",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5824"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Huesca@1833",
+      "names": {
+        "en": "Huesca Province",
+        "ja": "ウエスカ県",
+        "local": "Huesca"
+      },
+      "wikidata": "Q55182",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5825"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Jaen@1833",
+      "names": {
+        "en": "Jaén Province",
+        "ja": "ハエン県",
+        "local": "Jaén"
+      },
+      "wikidata": "Q95025",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5826"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:ACoruna@1833",
+      "names": {
+        "en": "A Coruña Province",
+        "ja": "ア・コルーニャ県",
+        "local": "A Coruña"
+      },
+      "wikidata": "Q82119",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5827"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:LaRioja@1833",
+      "names": {
+        "en": "La Rioja Province (Logroño until 1980)",
+        "ja": "ラ・リオハ州",
+        "local": "La Rioja"
+      },
+      "wikidata": "Q31844097",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5828"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Renamed without territorial change (statoids yes.html change history)."
+        }
+      ]
+    },
+    {
+      "id": "ESP:Leon@1833",
+      "names": {
+        "en": "León Province",
+        "ja": "レオン県",
+        "local": "León"
+      },
+      "wikidata": "Q71140",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5830"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Lleida@1833",
+      "names": {
+        "en": "Lleida Province",
+        "ja": "リェイダ県",
+        "local": "Lleida"
+      },
+      "wikidata": "Q13904",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5831"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Lugo@1833",
+      "names": {
+        "en": "Lugo Province",
+        "ja": "ルーゴ県",
+        "local": "Lugo"
+      },
+      "wikidata": "Q95027",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5832"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Madrid@1833",
+      "names": {
+        "en": "Madrid Province",
+        "ja": "マドリード州",
+        "local": "Madrid"
+      },
+      "wikidata": "Q28769526",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5833"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Malaga@1833",
+      "names": {
+        "en": "Málaga Province",
+        "ja": "マラガ県",
+        "local": "Málaga"
+      },
+      "wikidata": "Q95028",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5834"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Peninsular Málaga province only. Whether Melilla (ESP-5835) belonged to Málaga province before 1995 is contested and withheld (see unresolved)."
+        }
+      ]
+    },
+    {
+      "id": "ESP:Murcia@1833",
+      "names": {
+        "en": "Murcia Province",
+        "ja": "ムルシア州",
+        "local": "Murcia"
+      },
+      "wikidata": "Q5772",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5836"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Navarra@1833",
+      "names": {
+        "en": "Navarre Province",
+        "ja": "ナバラ州",
+        "local": "Navarra/Nafarroa"
+      },
+      "wikidata": "Q24004404",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5837"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Ourense@1833",
+      "names": {
+        "en": "Ourense Province",
+        "ja": "オウレンセ県",
+        "local": "Ourense"
+      },
+      "wikidata": "Q95038",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5838"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Palencia@1833",
+      "names": {
+        "en": "Palencia Province",
+        "ja": "パレンシア県",
+        "local": "Palencia"
+      },
+      "wikidata": "Q55269",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5839"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Pontevedra@1833",
+      "names": {
+        "en": "Pontevedra Province",
+        "ja": "ポンテベドラ県",
+        "local": "Pontevedra"
+      },
+      "wikidata": "Q95086",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5840"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Salamanca@1833",
+      "names": {
+        "en": "Salamanca Province",
+        "ja": "サラマンカ県",
+        "local": "Salamanca"
+      },
+      "wikidata": "Q71080",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5841"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Segovia@1833",
+      "names": {
+        "en": "Segovia Province",
+        "ja": "セゴビア県",
+        "local": "Segovia"
+      },
+      "wikidata": "Q55283",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5843"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Sevilla@1833",
+      "names": {
+        "en": "Seville Province",
+        "ja": "セビリア県",
+        "local": "Sevilla"
+      },
+      "wikidata": "Q95088",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5844"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Soria@1833",
+      "names": {
+        "en": "Soria Province",
+        "ja": "ソリア県",
+        "local": "Soria"
+      },
+      "wikidata": "Q55276",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5845"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Tarragona@1833",
+      "names": {
+        "en": "Tarragona Province",
+        "ja": "タラゴナ県",
+        "local": "Tarragona"
+      },
+      "wikidata": "Q98392",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5846"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Teruel@1833",
+      "names": {
+        "en": "Teruel Province",
+        "ja": "テルエル県",
+        "local": "Teruel"
+      },
+      "wikidata": "Q54955",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5847"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Toledo@1833",
+      "names": {
+        "en": "Toledo Province",
+        "ja": "トレド県",
+        "local": "Toledo"
+      },
+      "wikidata": "Q54929",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5848"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Valladolid@1833",
+      "names": {
+        "en": "Valladolid Province",
+        "ja": "バリャドリッド県",
+        "local": "Valladolid"
+      },
+      "wikidata": "Q71097",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5850"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Bizkaia@1833",
+      "names": {
+        "en": "Biscay Province",
+        "ja": "ビスカヤ県",
+        "local": "Bizkaia"
+      },
+      "wikidata": "Q93366",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5851"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Zamora@1833",
+      "names": {
+        "en": "Zamora Province",
+        "ja": "サモラ県",
+        "local": "Zamora"
+      },
+      "wikidata": "Q71113",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5852"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Zaragoza@1833",
+      "names": {
+        "en": "Zaragoza Province",
+        "ja": "サラゴサ県",
+        "local": "Zaragoza"
+      },
+      "wikidata": "Q55180",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5853"
+          ],
+          "sources": [
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Canarias@1833",
+      "names": {
+        "en": "Canary Islands Province",
+        "ja": "カナリア諸島県",
+        "local": "Provincia de Canarias"
+      },
+      "wikidata": "Q6088766",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": "1927-09-21",
+          "atoms": [
+            "ESP-5829",
+            "ESP-5842"
+          ],
+          "sources": [
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://statoids.com/yes.html",
+              "title": "Spain Provinces (Statoids, Gwillim Law)",
+              "says": "Change history: 1927-09-21 Canary Islands split into Las Palmas and Santa Cruz de Tenerife; later entries are renamings only (Logroño, Santander, Oviedo, etc.).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Single province covering the whole archipelago until the Real Decreto-ley of 21 Sept 1927 (Gaceta de Madrid núm. 266, 23 Sept 1927). 21 Sept is the decree date (statoids uses it); the exact entry-into-force day was not found."
+        }
+      ]
+    },
+    {
+      "id": "ESP:LasPalmas@1927",
+      "names": {
+        "en": "Las Palmas Province",
+        "ja": "ラス・パルマス県",
+        "local": "Las Palmas"
+      },
+      "wikidata": "Q95080",
+      "spans": [
+        {
+          "from": "1927-09-21",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5829"
+          ],
+          "sources": [
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://statoids.com/yes.html",
+              "title": "Spain Provinces (Statoids, Gwillim Law)",
+              "says": "Change history: 1927-09-21 Canary Islands split into Las Palmas and Santa Cruz de Tenerife; later entries are renamings only (Logroño, Santander, Oviedo, etc.).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Gran Canaria, Lanzarote, Fuerteventura and islets. Decree date; published 23 Sept 1927."
+        }
+      ]
+    },
+    {
+      "id": "ESP:SantaCruzDeTenerife@1927",
+      "names": {
+        "en": "Santa Cruz de Tenerife Province",
+        "ja": "サンタ・クルス・デ・テネリフェ県",
+        "local": "Santa Cruz de Tenerife"
+      },
+      "wikidata": "Q99976",
+      "spans": [
+        {
+          "from": "1927-09-21",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5842"
+          ],
+          "sources": [
+            {
+              "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+              "title": "Provincias: año de creación y evolución (vLex España)",
+              "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://statoids.com/yes.html",
+              "title": "Spain Provinces (Statoids, Gwillim Law)",
+              "says": "Change history: 1927-09-21 Canary Islands split into Las Palmas and Santa Cruz de Tenerife; later entries are renamings only (Logroño, Santander, Oviedo, etc.).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Tenerife, La Palma, La Gomera, El Hierro. Decree date; published 23 Sept 1927."
+        }
+      ]
+    },
+    {
+      "id": "ESP:Castellon@1995",
+      "names": {
+        "en": "Castellón Province",
+        "ja": "カステリョン",
+        "local": "Castelló/Castellón"
+      },
+      "wikidata": "Q54942",
+      "spans": [
+        {
+          "from": "1995-12-29",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5814"
+          ],
+          "sources": [
+            {
+              "url": "https://www.boe.es/buscar/doc.php?id=BOE-A-1995-27750",
+              "title": "Ley Orgánica 15/1995, de 27 de diciembre (BOE núm. 310, 28-12-1995)",
+              "says": "The municipality of Gátova, in Castellón province, is added to Valencia province; in force the day after publication in the BOE.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Valencia@1995",
+      "names": {
+        "en": "Valencia Province",
+        "ja": "バレンシア県",
+        "local": "València/Valencia"
+      },
+      "wikidata": "Q54939",
+      "spans": [
+        {
+          "from": "1995-12-29",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5849"
+          ],
+          "sources": [
+            {
+              "url": "https://www.boe.es/buscar/doc.php?id=BOE-A-1995-27750",
+              "title": "Ley Orgánica 15/1995, de 27 de diciembre (BOE núm. 310, 28-12-1995)",
+              "says": "The municipality of Gátova, in Castellón province, is added to Valencia province; in force the day after publication in the BOE.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.desdesoria.es/blog/un-libro-del-mundo/unico-pueblo-espanol-que-ha-cambiado-provincia-dos-siglos/20260303223945898553.html",
+              "title": "El único pueblo español que ha cambiado de provincia en dos siglos (Desde Soria)",
+              "says": "Gátova, moved from Castellón to Valencia in 1995, is the only Spanish municipality to have changed province since the 1833 map.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Ceuta@1995",
+      "names": {
+        "en": "Ceuta (autonomous city)",
+        "ja": "セウタ",
+        "local": "Ceuta"
+      },
+      "wikidata": "Q5823",
+      "spans": [
+        {
+          "from": "1995-03-15",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5815"
+          ],
+          "sources": [
+            {
+              "url": "https://www.boe.es/buscar/act.php?id=BOE-A-1995-6358",
+              "title": "Ley Orgánica 1/1995, de 13 de marzo, Estatuto de Autonomía de Ceuta (BOE núm. 62, 14-03-1995)",
+              "says": "Statute of Autonomy of Ceuta; territory is its present municipal territory; enters into force the day after BOE publication.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ESP:Melilla@1995",
+      "names": {
+        "en": "Melilla (autonomous city)",
+        "ja": "メリリャ",
+        "local": "Melilla"
+      },
+      "wikidata": "Q5831",
+      "spans": [
+        {
+          "from": "1995-03-15",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ESP-5835"
+          ],
+          "sources": [
+            {
+              "url": "https://www.boe.es/buscar/act.php?id=BOE-A-1995-6359",
+              "title": "Ley Orgánica 2/1995, de 13 de marzo, Estatuto de Autonomía de Melilla (BOE núm. 62, 14-03-1995)",
+              "says": "Statute of Autonomy of Melilla; enters into force the day after its publication in the BOE.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1927-09-21",
+      "precision": "day",
+      "what": "Canary Islands province split into Las Palmas and Santa Cruz de Tenerife (Real Decreto-ley, Gaceta 23-09-1927)",
+      "sources": [
+        {
+          "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+          "title": "Provincias: año de creación y evolución (vLex España)",
+          "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://statoids.com/yes.html",
+          "title": "Spain Provinces (Statoids, Gwillim Law)",
+          "says": "Change history: 1927-09-21 Canary Islands split into Las Palmas and Santa Cruz de Tenerife; later entries are renamings only (Logroño, Santander, Oviedo, etc.).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1980-11-15",
+      "precision": "day",
+      "what": "Logroño province renamed La Rioja (no territorial change)",
+      "sources": [
+        {
+          "url": "https://statoids.com/yes.html",
+          "title": "Spain Provinces (Statoids, Gwillim Law)",
+          "says": "Change history: 1927-09-21 Canary Islands split into Las Palmas and Santa Cruz de Tenerife; later entries are renamings only (Logroño, Santander, Oviedo, etc.).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1982-01-31",
+      "precision": "day",
+      "what": "Santander province renamed Cantabria (no territorial change)",
+      "sources": [
+        {
+          "url": "https://statoids.com/yes.html",
+          "title": "Spain Provinces (Statoids, Gwillim Law)",
+          "says": "Change history: 1927-09-21 Canary Islands split into Las Palmas and Santa Cruz de Tenerife; later entries are renamings only (Logroño, Santander, Oviedo, etc.).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1983-04-05",
+      "precision": "day",
+      "what": "Oviedo province renamed Asturias (no territorial change)",
+      "sources": [
+        {
+          "url": "https://statoids.com/yes.html",
+          "title": "Spain Provinces (Statoids, Gwillim Law)",
+          "says": "Change history: 1927-09-21 Canary Islands split into Las Palmas and Santa Cruz de Tenerife; later entries are renamings only (Logroño, Santander, Oviedo, etc.).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1995-03-15",
+      "precision": "day",
+      "what": "Statutes of Autonomy of Ceuta and Melilla in force (Organic Laws 1/1995 and 2/1995)",
+      "sources": [
+        {
+          "url": "https://www.boe.es/buscar/act.php?id=BOE-A-1995-6358",
+          "title": "Ley Orgánica 1/1995, de 13 de marzo, Estatuto de Autonomía de Ceuta (BOE núm. 62, 14-03-1995)",
+          "says": "Statute of Autonomy of Ceuta; territory is its present municipal territory; enters into force the day after BOE publication.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://www.boe.es/buscar/act.php?id=BOE-A-1995-6359",
+          "title": "Ley Orgánica 2/1995, de 13 de marzo, Estatuto de Autonomía de Melilla (BOE núm. 62, 14-03-1995)",
+          "says": "Statute of Autonomy of Melilla; enters into force the day after its publication in the BOE.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1995-12-29",
+      "precision": "day",
+      "what": "Municipality of Gátova transferred from Castellón to Valencia province (LO 15/1995)",
+      "sources": [
+        {
+          "url": "https://www.boe.es/buscar/doc.php?id=BOE-A-1995-27750",
+          "title": "Ley Orgánica 15/1995, de 27 de diciembre (BOE núm. 310, 28-12-1995)",
+          "says": "The municipality of Gátova, in Castellón province, is added to Valencia province; in force the day after publication in the BOE.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "1900-01-01",
+      "n": 49,
+      "sources": [
+        {
+          "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+          "title": "Provincias: año de creación y evolución (vLex España)",
+          "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1950-01-01",
+      "n": 50,
+      "sources": [
+        {
+          "url": "https://vlex.es/vid/provincias-ano-creacion-evolucion-701259277",
+          "title": "Provincias: año de creación y evolución (vLex España)",
+          "says": "The 1833 royal decree (Javier de Burgos) created 49 provinces; Real Decreto-ley of 21 Sept 1927 split the Canaries in two, giving 50.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2000-01-01",
+      "n": 52,
+      "sources": [
+        {
+          "url": "https://statoids.com/yes.html",
+          "title": "Spain Provinces (Statoids, Gwillim Law)",
+          "says": "Change history: 1927-09-21 Canary Islands split into Las Palmas and Santa Cruz de Tenerife; later entries are renamings only (Logroño, Santander, Oviedo, etc.).",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://www.boe.es/buscar/act.php?id=BOE-A-1995-6358",
+          "title": "Ley Orgánica 1/1995, de 13 de marzo, Estatuto de Autonomía de Ceuta (BOE núm. 62, 14-03-1995)",
+          "says": "Statute of Autonomy of Ceuta; territory is its present municipal territory; enters into force the day after BOE publication.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://www.boe.es/buscar/act.php?id=BOE-A-1995-6359",
+          "title": "Ley Orgánica 2/1995, de 13 de marzo, Estatuto de Autonomía de Melilla (BOE núm. 62, 14-03-1995)",
+          "says": "Statute of Autonomy of Melilla; enters into force the day after its publication in the BOE.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Castellón province before the Gátova transfer (included Gátova)",
+      "unit": "ESP:Castellon@1833",
+      "atoms": [
+        "ESP-5814",
+        "ESP-5849"
+      ],
+      "from": "1900-01-01",
+      "to": "1995-12-29",
+      "why": "Until 1995-12-29 the municipality of Gátova (~30 km2) belonged to Castellón; the old Castellón/Valencia line runs inside the present Valencia atom. The union of the two atoms is constant but the two provinces cannot be separated with NE atoms.",
+      "checked": [
+        "BOE LO 15/1995",
+        "Desde Soria article on Gátova",
+        "statoids yes.html (omits Gátova; its change list is not complete for municipal transfers)"
+      ],
+      "needs": "finer atoms: IGN-CNIG municipal boundaries (Líneas límite municipales), CC BY 4.0 per IGN licence page — Gátova + rest of Valencia province"
+    },
+    {
+      "what": "Valencia province before the Gátova transfer (without Gátova)",
+      "unit": "ESP:Valencia@1833",
+      "atoms": [],
+      "from": "1900-01-01",
+      "to": "1995-12-29",
+      "why": "Atoms withheld in the Castellón entry above. Same line: pre-1996 Valencia province = present Valencia atom minus Gátova, not expressible with NE atoms.",
+      "checked": [
+        "BOE LO 15/1995"
+      ],
+      "needs": "finer atoms: IGN-CNIG municipal boundaries, CC BY 4.0"
+    },
+    {
+      "what": "Ceuta before its 1995 Statute of Autonomy",
+      "atoms": [
+        "ESP-5815"
+      ],
+      "from": "1900-01-01",
+      "to": "1995-03-15",
+      "why": "Sources disagree on whether Ceuta was part of Cádiz province: separated from Cádiz by RD 20-03-1925, reattached \"for legal purposes\" by order of 21-01-1932, otherwise a plaza de soberanía with its own military/government delegation. No source settles its first-level membership for each window.",
+      "checked": [
+        "El Faro de Ceuta (A. Guerra Caballero)",
+        "BOE LO 1/1995 (silent on prior status)"
+      ],
+      "needs": "a primary legal source fixing Ceuta's provincial membership 1900-1995 (no finer atoms needed: the atom is the whole municipality)"
+    },
+    {
+      "what": "Melilla before its 1995 Statute of Autonomy",
+      "atoms": [
+        "ESP-5835"
+      ],
+      "from": "1900-01-01",
+      "to": "1995-03-15",
+      "why": "One secondary account says Melilla was a municipality of Málaga province until 1995; the 1943 REVL article says the 1927 Junta Municipal statute recognised no direct dependence on any province. Contradictory; unsettled.",
+      "checked": [
+        "REVL 1943 (Abellán y García Polo)",
+        "BOE LO 2/1995"
+      ],
+      "needs": "a primary legal source on Melilla's provincial membership 1900-1995"
+    }
+  ]
+}

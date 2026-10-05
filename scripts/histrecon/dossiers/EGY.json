@@ -1,0 +1,554 @@
+{
+  "country": "EGY",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "1960",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Egypt (United Arab Republic 1958-1971, Arab Republic of Egypt since). Sinai occupied by Israel 1967-1982 (returned in stages to 1982-04-25); Gaza (Egyptian-administered 1948-1967) is not an EGY atom; the Halaib triangle (claimed by Sudan) lies in NE's Red Sea feature.",
+  "units": [],
+  "events": [
+    {
+      "date": "1979",
+      "precision": "year",
+      "what": "Sinai governorate split into North and South Sinai; some parts added to the three Canal governorates",
+      "sources": [
+        {
+          "url": "https://ar.wikipedia.org/w/index.php?title=%D9%82%D8%A7%D8%A6%D9%85%D8%A9_%D9%85%D8%AD%D8%A7%D9%81%D8%B8%D8%A7%D8%AA_%D9%85%D8%B5%D8%B1&oldid=76453457",
+          "title": "قائمة محافظات مصر (ar.wikipedia oldid 76453457)",
+          "says": "Former governorates table: Sinai 1917-1979, split into North and South Sinai, parts added to Canal governorates.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2008-04-17",
+      "precision": "day",
+      "what": "Helwan split from Cairo and 6th of October from Giza",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ueg.html",
+          "title": "Statoids — Governorates of Egypt",
+          "says": "2008-04-17 presidential decree created Helwan and Sixth of October.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2009-12-07",
+      "precision": "day",
+      "what": "Luxor governorate split from Qena",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ueg.html",
+          "title": "Statoids — Governorates of Egypt",
+          "says": "2009-12-07 Luxor governorate officially split from Qina.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2011-04-12",
+      "precision": "day",
+      "what": "Helwan merged back into Cairo and 6th of October into Giza (SCAF decree 63)",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ueg.html",
+          "title": "Statoids — Governorates of Egypt",
+          "says": "SCAF decree 63 reversed the 2008 changes.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "North Sinai Governorate — every span 1960-2019",
+      "unit": "EGY:North_Sinai_Governorate",
+      "atoms": [
+        "EGY-1558"
+      ],
+      "from": "1960",
+      "to": null,
+      "why": "NE's Egyptian outlines do not match the official extents of any dated layout: official areas (SIS/CAPMAS, ar.wikipedia list) give e.g. Asyut 25,926, Sohag 11,022, Aswan 62,726, Giza 85,153 km² where NE has 2,607 / 2,651 / 15,592 / 37,595 km² — the desert hinterlands assigned to Nile governorates by presidential decrees sit in NE's Red Sea / New Valley features. The decrees could not be dated, so no NE line can be tied to a period.",
+      "checked": [
+        "statoids.com/ueg.html (change list: Sinai split 1979/~1984, Helwan & 6 October 2008-04-17 → 2011-04-12, Luxor 2009-12-07; «numerous border adjustments»)",
+        "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
+        "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
+        "NE admin-1 EGY areas (computed)",
+        "cc.gov.eg legislation database (unreachable from this environment)"
+      ],
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+    },
+    {
+      "what": "Aswan Governorate — every span 1960-2019",
+      "unit": "EGY:Aswan_Governorate",
+      "atoms": [
+        "EGY-1548"
+      ],
+      "from": "1960",
+      "to": null,
+      "why": "NE's Egyptian outlines do not match the official extents of any dated layout: official areas (SIS/CAPMAS, ar.wikipedia list) give e.g. Asyut 25,926, Sohag 11,022, Aswan 62,726, Giza 85,153 km² where NE has 2,607 / 2,651 / 15,592 / 37,595 km² — the desert hinterlands assigned to Nile governorates by presidential decrees sit in NE's Red Sea / New Valley features. The decrees could not be dated, so no NE line can be tied to a period.",
+      "checked": [
+        "statoids.com/ueg.html (change list: Sinai split 1979/~1984, Helwan & 6 October 2008-04-17 → 2011-04-12, Luxor 2009-12-07; «numerous border adjustments»)",
+        "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
+        "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
+        "NE admin-1 EGY areas (computed)",
+        "cc.gov.eg legislation database (unreachable from this environment)"
+      ],
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+    },
+    {
+      "what": "Red Sea Governorate — every span 1960-2019",
+      "unit": "EGY:Red_Sea_Governorate",
+      "atoms": [
+        "EGY-1556"
+      ],
+      "from": "1960",
+      "to": null,
+      "why": "NE's Egyptian outlines do not match the official extents of any dated layout: official areas (SIS/CAPMAS, ar.wikipedia list) give e.g. Asyut 25,926, Sohag 11,022, Aswan 62,726, Giza 85,153 km² where NE has 2,607 / 2,651 / 15,592 / 37,595 km² — the desert hinterlands assigned to Nile governorates by presidential decrees sit in NE's Red Sea / New Valley features. The decrees could not be dated, so no NE line can be tied to a period.",
+      "checked": [
+        "statoids.com/ueg.html (change list: Sinai split 1979/~1984, Helwan & 6 October 2008-04-17 → 2011-04-12, Luxor 2009-12-07; «numerous border adjustments»)",
+        "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
+        "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
+        "NE admin-1 EGY areas (computed)",
+        "cc.gov.eg legislation database (unreachable from this environment)"
+      ],
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+    },
+    {
+      "what": "Matruh Governorate — every span 1960-2019",
+      "unit": "EGY:Matruh_Governorate",
+      "atoms": [
+        "EGY-1540"
+      ],
+      "from": "1960",
+      "to": null,
+      "why": "NE's Egyptian outlines do not match the official extents of any dated layout: official areas (SIS/CAPMAS, ar.wikipedia list) give e.g. Asyut 25,926, Sohag 11,022, Aswan 62,726, Giza 85,153 km² where NE has 2,607 / 2,651 / 15,592 / 37,595 km² — the desert hinterlands assigned to Nile governorates by presidential decrees sit in NE's Red Sea / New Valley features. The decrees could not be dated, so no NE line can be tied to a period.",
+      "checked": [
+        "statoids.com/ueg.html (change list: Sinai split 1979/~1984, Helwan & 6 October 2008-04-17 → 2011-04-12, Luxor 2009-12-07; «numerous border adjustments»)",
+        "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
+        "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
+        "NE admin-1 EGY areas (computed)",
+        "cc.gov.eg legislation database (unreachable from this environment)"
+      ],
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+    },
+    {
+      "what": "New Valley Governorate — every span 1960-2019",
+      "unit": "EGY:New_Valley_Governorate",
+      "atoms": [
+        "EGY-1550"
+      ],
+      "from": "1960",
+      "to": null,
+      "why": "NE's Egyptian outlines do not match the official extents of any dated layout: official areas (SIS/CAPMAS, ar.wikipedia list) give e.g. Asyut 25,926, Sohag 11,022, Aswan 62,726, Giza 85,153 km² where NE has 2,607 / 2,651 / 15,592 / 37,595 km² — the desert hinterlands assigned to Nile governorates by presidential decrees sit in NE's Red Sea / New Valley features. The decrees could not be dated, so no NE line can be tied to a period.",
+      "checked": [
+        "statoids.com/ueg.html (change list: Sinai split 1979/~1984, Helwan & 6 October 2008-04-17 → 2011-04-12, Luxor 2009-12-07; «numerous border adjustments»)",
+        "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
+        "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
+        "NE admin-1 EGY areas (computed)",
+        "cc.gov.eg legislation database (unreachable from this environment)"
+      ],
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+    },
+    {
+      "what": "Suez Governorate — every span 1960-2019",
+      "unit": "EGY:Suez_Governorate",
+      "atoms": [
+        "EGY-1536"
+      ],
+      "from": "1960",
+      "to": null,
+      "why": "NE's Egyptian outlines do not match the official extents of any dated layout: official areas (SIS/CAPMAS, ar.wikipedia list) give e.g. Asyut 25,926, Sohag 11,022, Aswan 62,726, Giza 85,153 km² where NE has 2,607 / 2,651 / 15,592 / 37,595 km² — the desert hinterlands assigned to Nile governorates by presidential decrees sit in NE's Red Sea / New Valley features. The decrees could not be dated, so no NE line can be tied to a period.",
+      "checked": [
+        "statoids.com/ueg.html (change list: Sinai split 1979/~1984, Helwan & 6 October 2008-04-17 → 2011-04-12, Luxor 2009-12-07; «numerous border adjustments»)",
+        "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
+        "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
+        "NE admin-1 EGY areas (computed)",
+        "cc.gov.eg legislation database (unreachable from this environment)"
+      ],
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+    },
+    {
+      "what": "South Sinai Governorate — every span 1960-2019",
+      "unit": "EGY:South_Sinai_Governorate",
+      "atoms": [
+        "EGY-1557"
+      ],
+      "from": "1960",
+      "to": null,
+      "why": "NE's Egyptian outlines do not match the official extents of any dated layout: official areas (SIS/CAPMAS, ar.wikipedia list) give e.g. Asyut 25,926, Sohag 11,022, Aswan 62,726, Giza 85,153 km² where NE has 2,607 / 2,651 / 15,592 / 37,595 km² — the desert hinterlands assigned to Nile governorates by presidential decrees sit in NE's Red Sea / New Valley features. The decrees could not be dated, so no NE line can be tied to a period.",
+      "checked": [
+        "statoids.com/ueg.html (change list: Sinai split 1979/~1984, Helwan & 6 October 2008-04-17 → 2011-04-12, Luxor 2009-12-07; «numerous border adjustments»)",
+        "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
+        "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
+        "NE admin-1 EGY areas (computed)",
+        "cc.gov.eg legislation database (unreachable from this environment)"
+      ],
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+    },
+    {
+      "what": "Port Said Governorate — every span 1960-2019",
+      "unit": "EGY:Port_Said_Governorate",
+      "atoms": [
+        "EGY-1538"
+      ],
+      "from": "1960",
+      "to": null,
+      "why": "NE's Egyptian outlines do not match the official extents of any dated layout: official areas (SIS/CAPMAS, ar.wikipedia list) give e.g. Asyut 25,926, Sohag 11,022, Aswan 62,726, Giza 85,153 km² where NE has 2,607 / 2,651 / 15,592 / 37,595 km² — the desert hinterlands assigned to Nile governorates by presidential decrees sit in NE's Red Sea / New Valley features. The decrees could not be dated, so no NE line can be tied to a period.",
+      "checked": [
+        "statoids.com/ueg.html (change list: Sinai split 1979/~1984, Helwan & 6 October 2008-04-17 → 2011-04-12, Luxor 2009-12-07; «numerous border adjustments»)",
+        "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
+        "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
+        "NE admin-1 EGY areas (computed)",
+        "cc.gov.eg legislation database (unreachable from this environment)"
+      ],
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+    },
+    {
+      "what": "Dakahlia Governorate — every span 1960-2019",
+      "unit": "EGY:Dakahlia_Governorate",
+      "atoms": [
+        "EGY-1537"
+      ],
+      "from": "1960",
+      "to": null,
+      "why": "NE's Egyptian outlines do not match the official extents of any dated layout: official areas (SIS/CAPMAS, ar.wikipedia list) give e.g. Asyut 25,926, Sohag 11,022, Aswan 62,726, Giza 85,153 km² where NE has 2,607 / 2,651 / 15,592 / 37,595 km² — the desert hinterlands assigned to Nile governorates by presidential decrees sit in NE's Red Sea / New Valley features. The decrees could not be dated, so no NE line can be tied to a period.",
+      "checked": [
+        "statoids.com/ueg.html (change list: Sinai split 1979/~1984, Helwan & 6 October 2008-04-17 → 2011-04-12, Luxor 2009-12-07; «numerous border adjustments»)",
+        "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
+        "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
+        "NE admin-1 EGY areas (computed)",
+        "cc.gov.eg legislation database (unreachable from this environment)"
+      ],
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+    },
+    {
+      "what": "Sharqia Governorate — every span 1960-2019",
+      "unit": "EGY:Sharqia_Governorate",
+      "atoms": [
+        "EGY-1535"
+      ],
+      "from": "1960",
+      "to": null,
+      "why": "NE's Egyptian outlines do not match the official extents of any dated layout: official areas (SIS/CAPMAS, ar.wikipedia list) give e.g. Asyut 25,926, Sohag 11,022, Aswan 62,726, Giza 85,153 km² where NE has 2,607 / 2,651 / 15,592 / 37,595 km² — the desert hinterlands assigned to Nile governorates by presidential decrees sit in NE's Red Sea / New Valley features. The decrees could not be dated, so no NE line can be tied to a period.",
+      "checked": [
+        "statoids.com/ueg.html (change list: Sinai split 1979/~1984, Helwan & 6 October 2008-04-17 → 2011-04-12, Luxor 2009-12-07; «numerous border adjustments»)",
+        "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
+        "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
+        "NE admin-1 EGY areas (computed)",
+        "cc.gov.eg legislation database (unreachable from this environment)"
+      ],
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+    },
+    {
+      "what": "Ismailia Governorate — every span 1960-2019",
+      "unit": "EGY:Ismailia_Governorate",
+      "atoms": [
+        "EGY-1531"
+      ],
+      "from": "1960",
+      "to": null,
+      "why": "NE's Egyptian outlines do not match the official extents of any dated layout: official areas (SIS/CAPMAS, ar.wikipedia list) give e.g. Asyut 25,926, Sohag 11,022, Aswan 62,726, Giza 85,153 km² where NE has 2,607 / 2,651 / 15,592 / 37,595 km² — the desert hinterlands assigned to Nile governorates by presidential decrees sit in NE's Red Sea / New Valley features. The decrees could not be dated, so no NE line can be tied to a period.",
+      "checked": [
+        "statoids.com/ueg.html (change list: Sinai split 1979/~1984, Helwan & 6 October 2008-04-17 → 2011-04-12, Luxor 2009-12-07; «numerous border adjustments»)",
+        "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
+        "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
+        "NE admin-1 EGY areas (computed)",
+        "cc.gov.eg legislation database (unreachable from this environment)"
+      ],
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+    },
+    {
+      "what": "Damietta Governorate — every span 1960-2019",
+      "unit": "EGY:Damietta_Governorate",
+      "atoms": [
+        "EGY-1539"
+      ],
+      "from": "1960",
+      "to": null,
+      "why": "NE's Egyptian outlines do not match the official extents of any dated layout: official areas (SIS/CAPMAS, ar.wikipedia list) give e.g. Asyut 25,926, Sohag 11,022, Aswan 62,726, Giza 85,153 km² where NE has 2,607 / 2,651 / 15,592 / 37,595 km² — the desert hinterlands assigned to Nile governorates by presidential decrees sit in NE's Red Sea / New Valley features. The decrees could not be dated, so no NE line can be tied to a period.",
+      "checked": [
+        "statoids.com/ueg.html (change list: Sinai split 1979/~1984, Helwan & 6 October 2008-04-17 → 2011-04-12, Luxor 2009-12-07; «numerous border adjustments»)",
+        "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
+        "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
+        "NE admin-1 EGY areas (computed)",
+        "cc.gov.eg legislation database (unreachable from this environment)"
+      ],
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+    },
+    {
+      "what": "Kafr el-Sheikh Governorate — every span 1960-2019",
+      "unit": "EGY:Kafr_el-Sheikh_Governorate",
+      "atoms": [
+        "EGY-1547"
+      ],
+      "from": "1960",
+      "to": null,
+      "why": "NE's Egyptian outlines do not match the official extents of any dated layout: official areas (SIS/CAPMAS, ar.wikipedia list) give e.g. Asyut 25,926, Sohag 11,022, Aswan 62,726, Giza 85,153 km² where NE has 2,607 / 2,651 / 15,592 / 37,595 km² — the desert hinterlands assigned to Nile governorates by presidential decrees sit in NE's Red Sea / New Valley features. The decrees could not be dated, so no NE line can be tied to a period.",
+      "checked": [
+        "statoids.com/ueg.html (change list: Sinai split 1979/~1984, Helwan & 6 October 2008-04-17 → 2011-04-12, Luxor 2009-12-07; «numerous border adjustments»)",
+        "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
+        "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
+        "NE admin-1 EGY areas (computed)",
+        "cc.gov.eg legislation database (unreachable from this environment)"
+      ],
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+    },
+    {
+      "what": "Beheira Governorate — every span 1960-2019",
+      "unit": "EGY:Beheira_Governorate",
+      "atoms": [
+        "EGY-1541"
+      ],
+      "from": "1960",
+      "to": null,
+      "why": "NE's Egyptian outlines do not match the official extents of any dated layout: official areas (SIS/CAPMAS, ar.wikipedia list) give e.g. Asyut 25,926, Sohag 11,022, Aswan 62,726, Giza 85,153 km² where NE has 2,607 / 2,651 / 15,592 / 37,595 km² — the desert hinterlands assigned to Nile governorates by presidential decrees sit in NE's Red Sea / New Valley features. The decrees could not be dated, so no NE line can be tied to a period.",
+      "checked": [
+        "statoids.com/ueg.html (change list: Sinai split 1979/~1984, Helwan & 6 October 2008-04-17 → 2011-04-12, Luxor 2009-12-07; «numerous border adjustments»)",
+        "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
+        "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
+        "NE admin-1 EGY areas (computed)",
+        "cc.gov.eg legislation database (unreachable from this environment)"
+      ],
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+    },
+    {
+      "what": "Alexandria Governorate — every span 1960-2019",
+      "unit": "EGY:Alexandria_Governorate",
+      "atoms": [
+        "EGY-1543"
+      ],
+      "from": "1960",
+      "to": null,
+      "why": "NE's Egyptian outlines do not match the official extents of any dated layout: official areas (SIS/CAPMAS, ar.wikipedia list) give e.g. Asyut 25,926, Sohag 11,022, Aswan 62,726, Giza 85,153 km² where NE has 2,607 / 2,651 / 15,592 / 37,595 km² — the desert hinterlands assigned to Nile governorates by presidential decrees sit in NE's Red Sea / New Valley features. The decrees could not be dated, so no NE line can be tied to a period.",
+      "checked": [
+        "statoids.com/ueg.html (change list: Sinai split 1979/~1984, Helwan & 6 October 2008-04-17 → 2011-04-12, Luxor 2009-12-07; «numerous border adjustments»)",
+        "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
+        "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
+        "NE admin-1 EGY areas (computed)",
+        "cc.gov.eg legislation database (unreachable from this environment)"
+      ],
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+    },
+    {
+      "what": "Cairo Governorate — every span 1960-2019",
+      "unit": "EGY:Cairo_Governorate",
+      "atoms": [
+        "EGY-1533"
+      ],
+      "from": "1960",
+      "to": null,
+      "why": "NE's Egyptian outlines do not match the official extents of any dated layout: official areas (SIS/CAPMAS, ar.wikipedia list) give e.g. Asyut 25,926, Sohag 11,022, Aswan 62,726, Giza 85,153 km² where NE has 2,607 / 2,651 / 15,592 / 37,595 km² — the desert hinterlands assigned to Nile governorates by presidential decrees sit in NE's Red Sea / New Valley features. The decrees could not be dated, so no NE line can be tied to a period.",
+      "checked": [
+        "statoids.com/ueg.html (change list: Sinai split 1979/~1984, Helwan & 6 October 2008-04-17 → 2011-04-12, Luxor 2009-12-07; «numerous border adjustments»)",
+        "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
+        "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
+        "NE admin-1 EGY areas (computed)",
+        "cc.gov.eg legislation database (unreachable from this environment)"
+      ],
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+    },
+    {
+      "what": "Giza Governorate — every span 1960-2019",
+      "unit": "EGY:Giza_Governorate",
+      "atoms": [
+        "EGY-1544"
+      ],
+      "from": "1960",
+      "to": null,
+      "why": "NE's Egyptian outlines do not match the official extents of any dated layout: official areas (SIS/CAPMAS, ar.wikipedia list) give e.g. Asyut 25,926, Sohag 11,022, Aswan 62,726, Giza 85,153 km² where NE has 2,607 / 2,651 / 15,592 / 37,595 km² — the desert hinterlands assigned to Nile governorates by presidential decrees sit in NE's Red Sea / New Valley features. The decrees could not be dated, so no NE line can be tied to a period.",
+      "checked": [
+        "statoids.com/ueg.html (change list: Sinai split 1979/~1984, Helwan & 6 October 2008-04-17 → 2011-04-12, Luxor 2009-12-07; «numerous border adjustments»)",
+        "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
+        "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
+        "NE admin-1 EGY areas (computed)",
+        "cc.gov.eg legislation database (unreachable from this environment)"
+      ],
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+    },
+    {
+      "what": "Minya Governorate — every span 1960-2019",
+      "unit": "EGY:Minya_Governorate",
+      "atoms": [
+        "EGY-1545"
+      ],
+      "from": "1960",
+      "to": null,
+      "why": "NE's Egyptian outlines do not match the official extents of any dated layout: official areas (SIS/CAPMAS, ar.wikipedia list) give e.g. Asyut 25,926, Sohag 11,022, Aswan 62,726, Giza 85,153 km² where NE has 2,607 / 2,651 / 15,592 / 37,595 km² — the desert hinterlands assigned to Nile governorates by presidential decrees sit in NE's Red Sea / New Valley features. The decrees could not be dated, so no NE line can be tied to a period.",
+      "checked": [
+        "statoids.com/ueg.html (change list: Sinai split 1979/~1984, Helwan & 6 October 2008-04-17 → 2011-04-12, Luxor 2009-12-07; «numerous border adjustments»)",
+        "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
+        "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
+        "NE admin-1 EGY areas (computed)",
+        "cc.gov.eg legislation database (unreachable from this environment)"
+      ],
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+    },
+    {
+      "what": "Faiyum Governorate — every span 1960-2019",
+      "unit": "EGY:Faiyum_Governorate",
+      "atoms": [
+        "EGY-1542"
+      ],
+      "from": "1960",
+      "to": null,
+      "why": "NE's Egyptian outlines do not match the official extents of any dated layout: official areas (SIS/CAPMAS, ar.wikipedia list) give e.g. Asyut 25,926, Sohag 11,022, Aswan 62,726, Giza 85,153 km² where NE has 2,607 / 2,651 / 15,592 / 37,595 km² — the desert hinterlands assigned to Nile governorates by presidential decrees sit in NE's Red Sea / New Valley features. The decrees could not be dated, so no NE line can be tied to a period.",
+      "checked": [
+        "statoids.com/ueg.html (change list: Sinai split 1979/~1984, Helwan & 6 October 2008-04-17 → 2011-04-12, Luxor 2009-12-07; «numerous border adjustments»)",
+        "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
+        "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
+        "NE admin-1 EGY areas (computed)",
+        "cc.gov.eg legislation database (unreachable from this environment)"
+      ],
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+    },
+    {
+      "what": "Beni Suef Governorate — every span 1960-2019",
+      "unit": "EGY:Beni_Suef_Governorate",
+      "atoms": [
+        "EGY-1546"
+      ],
+      "from": "1960",
+      "to": null,
+      "why": "NE's Egyptian outlines do not match the official extents of any dated layout: official areas (SIS/CAPMAS, ar.wikipedia list) give e.g. Asyut 25,926, Sohag 11,022, Aswan 62,726, Giza 85,153 km² where NE has 2,607 / 2,651 / 15,592 / 37,595 km² — the desert hinterlands assigned to Nile governorates by presidential decrees sit in NE's Red Sea / New Valley features. The decrees could not be dated, so no NE line can be tied to a period.",
+      "checked": [
+        "statoids.com/ueg.html (change list: Sinai split 1979/~1984, Helwan & 6 October 2008-04-17 → 2011-04-12, Luxor 2009-12-07; «numerous border adjustments»)",
+        "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
+        "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
+        "NE admin-1 EGY areas (computed)",
+        "cc.gov.eg legislation database (unreachable from this environment)"
+      ],
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+    },
+    {
+      "what": "Monufia Governorate — every span 1960-2019",
+      "unit": "EGY:Monufia_Governorate",
+      "atoms": [
+        "EGY-1532"
+      ],
+      "from": "1960",
+      "to": null,
+      "why": "NE's Egyptian outlines do not match the official extents of any dated layout: official areas (SIS/CAPMAS, ar.wikipedia list) give e.g. Asyut 25,926, Sohag 11,022, Aswan 62,726, Giza 85,153 km² where NE has 2,607 / 2,651 / 15,592 / 37,595 km² — the desert hinterlands assigned to Nile governorates by presidential decrees sit in NE's Red Sea / New Valley features. The decrees could not be dated, so no NE line can be tied to a period.",
+      "checked": [
+        "statoids.com/ueg.html (change list: Sinai split 1979/~1984, Helwan & 6 October 2008-04-17 → 2011-04-12, Luxor 2009-12-07; «numerous border adjustments»)",
+        "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
+        "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
+        "NE admin-1 EGY areas (computed)",
+        "cc.gov.eg legislation database (unreachable from this environment)"
+      ],
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+    },
+    {
+      "what": "Qalyubia Governorate — every span 1960-2019",
+      "unit": "EGY:Qalyubia_Governorate",
+      "atoms": [
+        "EGY-1534"
+      ],
+      "from": "1960",
+      "to": null,
+      "why": "NE's Egyptian outlines do not match the official extents of any dated layout: official areas (SIS/CAPMAS, ar.wikipedia list) give e.g. Asyut 25,926, Sohag 11,022, Aswan 62,726, Giza 85,153 km² where NE has 2,607 / 2,651 / 15,592 / 37,595 km² — the desert hinterlands assigned to Nile governorates by presidential decrees sit in NE's Red Sea / New Valley features. The decrees could not be dated, so no NE line can be tied to a period.",
+      "checked": [
+        "statoids.com/ueg.html (change list: Sinai split 1979/~1984, Helwan & 6 October 2008-04-17 → 2011-04-12, Luxor 2009-12-07; «numerous border adjustments»)",
+        "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
+        "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
+        "NE admin-1 EGY areas (computed)",
+        "cc.gov.eg legislation database (unreachable from this environment)"
+      ],
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+    },
+    {
+      "what": "Gharbia Governorate — every span 1960-2019",
+      "unit": "EGY:Gharbia_Governorate",
+      "atoms": [
+        "EGY-1530"
+      ],
+      "from": "1960",
+      "to": null,
+      "why": "NE's Egyptian outlines do not match the official extents of any dated layout: official areas (SIS/CAPMAS, ar.wikipedia list) give e.g. Asyut 25,926, Sohag 11,022, Aswan 62,726, Giza 85,153 km² where NE has 2,607 / 2,651 / 15,592 / 37,595 km² — the desert hinterlands assigned to Nile governorates by presidential decrees sit in NE's Red Sea / New Valley features. The decrees could not be dated, so no NE line can be tied to a period.",
+      "checked": [
+        "statoids.com/ueg.html (change list: Sinai split 1979/~1984, Helwan & 6 October 2008-04-17 → 2011-04-12, Luxor 2009-12-07; «numerous border adjustments»)",
+        "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
+        "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
+        "NE admin-1 EGY areas (computed)",
+        "cc.gov.eg legislation database (unreachable from this environment)"
+      ],
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+    },
+    {
+      "what": "Sohag Governorate — every span 1960-2019",
+      "unit": "EGY:Sohag_Governorate",
+      "atoms": [
+        "EGY-1552"
+      ],
+      "from": "1960",
+      "to": null,
+      "why": "NE's Egyptian outlines do not match the official extents of any dated layout: official areas (SIS/CAPMAS, ar.wikipedia list) give e.g. Asyut 25,926, Sohag 11,022, Aswan 62,726, Giza 85,153 km² where NE has 2,607 / 2,651 / 15,592 / 37,595 km² — the desert hinterlands assigned to Nile governorates by presidential decrees sit in NE's Red Sea / New Valley features. The decrees could not be dated, so no NE line can be tied to a period.",
+      "checked": [
+        "statoids.com/ueg.html (change list: Sinai split 1979/~1984, Helwan & 6 October 2008-04-17 → 2011-04-12, Luxor 2009-12-07; «numerous border adjustments»)",
+        "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
+        "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
+        "NE admin-1 EGY areas (computed)",
+        "cc.gov.eg legislation database (unreachable from this environment)"
+      ],
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+    },
+    {
+      "what": "Qena Governorate — every span 1960-2019",
+      "unit": "EGY:Qena_Governorate",
+      "atoms": [
+        "EGY-1551"
+      ],
+      "from": "1960",
+      "to": null,
+      "why": "NE's Egyptian outlines do not match the official extents of any dated layout: official areas (SIS/CAPMAS, ar.wikipedia list) give e.g. Asyut 25,926, Sohag 11,022, Aswan 62,726, Giza 85,153 km² where NE has 2,607 / 2,651 / 15,592 / 37,595 km² — the desert hinterlands assigned to Nile governorates by presidential decrees sit in NE's Red Sea / New Valley features. The decrees could not be dated, so no NE line can be tied to a period.",
+      "checked": [
+        "statoids.com/ueg.html (change list: Sinai split 1979/~1984, Helwan & 6 October 2008-04-17 → 2011-04-12, Luxor 2009-12-07; «numerous border adjustments»)",
+        "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
+        "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
+        "NE admin-1 EGY areas (computed)",
+        "cc.gov.eg legislation database (unreachable from this environment)"
+      ],
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+    },
+    {
+      "what": "Asyut Governorate — every span 1960-2019",
+      "unit": "EGY:Asyut_Governorate",
+      "atoms": [
+        "EGY-1549"
+      ],
+      "from": "1960",
+      "to": null,
+      "why": "NE's Egyptian outlines do not match the official extents of any dated layout: official areas (SIS/CAPMAS, ar.wikipedia list) give e.g. Asyut 25,926, Sohag 11,022, Aswan 62,726, Giza 85,153 km² where NE has 2,607 / 2,651 / 15,592 / 37,595 km² — the desert hinterlands assigned to Nile governorates by presidential decrees sit in NE's Red Sea / New Valley features. The decrees could not be dated, so no NE line can be tied to a period.",
+      "checked": [
+        "statoids.com/ueg.html (change list: Sinai split 1979/~1984, Helwan & 6 October 2008-04-17 → 2011-04-12, Luxor 2009-12-07; «numerous border adjustments»)",
+        "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
+        "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
+        "NE admin-1 EGY areas (computed)",
+        "cc.gov.eg legislation database (unreachable from this environment)"
+      ],
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+    },
+    {
+      "what": "Luxor Governorate — every span 1960-2019",
+      "unit": "EGY:Luxor_Governorate",
+      "atoms": [
+        "EGY-5494"
+      ],
+      "from": "1960",
+      "to": null,
+      "why": "NE «Luxor» is a 12 km² polygon = the special-status City of Luxor (1989-2009), not the 2,410 km² Luxor governorate of 2009-12-07 (formed from Qena districts); neither era's Qena/Luxor line is carried by NE.",
+      "checked": [
+        "statoids.com/ueg.html (change list: Sinai split 1979/~1984, Helwan & 6 October 2008-04-17 → 2011-04-12, Luxor 2009-12-07; «numerous border adjustments»)",
+        "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
+        "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
+        "NE admin-1 EGY areas (computed)",
+        "cc.gov.eg legislation database (unreachable from this environment)"
+      ],
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+    }
+  ]
+}

@@ -1,0 +1,689 @@
+{
+ "country": "IRQ",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1977-01-01",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Republic of Iraq. De jure governorate layout (Iraqi law) is used; the Kurdistan Region's de facto lines (1991–) are not first-level boundaries. Iraq's 19th \"Kuwait governorate\" (1990-08-28 to 1991-02-26) lies outside the IRQ atoms.",
+ "units": [
+  {
+   "id": "IRQ:Duhok@1977",
+   "names": {
+    "en": "Duhok Governorate",
+    "ja": "ドホーク県",
+    "local": "محافظة دهوك"
+   },
+   "wikidata": "Q189541",
+   "spans": [
+    {
+     "from": "1977-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRQ-3046"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uiq.html",
+       "title": "Statoids — Governorates of Iraq (Gwillim Law, updated 2015-10-26)",
+       "says": "Dahuk created from Mosul (1969); no later boundary change listed.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start: the 1976 reorganisation (Najaf, Saladin created; Kirkuk districts redistributed) is dated only to 1976 (Statoids: 1976-02); claims begin 1977-01-01. NE Duhok follows the legal line (Akre, Shekhan in Ninawa)."
+    }
+   ]
+  },
+  {
+   "id": "IRQ:Kirkuk@1977",
+   "names": {
+    "en": "Kirkuk Governorate",
+    "ja": "キルクーク県",
+    "local": "محافظة كركوك"
+   },
+   "wikidata": "Q193268",
+   "spans": [
+    {
+     "from": "1977-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRQ-3049"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1373617456",
+       "title": "Kirkuk Governorate — Wikipedia (oldid 1373617456)",
+       "says": "Borders altered in 1976: four districts went to Sulaymaniyah, Diyala and Saladin; Kirkuk received Zab district from Mosul.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/uiq.html",
+       "title": "Statoids — Governorates of Iraq (Gwillim Law, updated 2015-10-26)",
+       "says": "1976-02: Kirkuk renamed At-Ta'mim; ~2006 renamed back to Kirkuk; no boundary change listed after 1976.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start: the 1976 reorganisation (Najaf, Saladin created; Kirkuk districts redistributed) is dated only to 1976 (Statoids: 1976-02); claims begin 1977-01-01. Point tests: Hawija, Daquq inside; Tuz Khurmatu, Kifri, Chamchamal, Kalar outside — the post-1976 legal layout. Renamings At-Ta'mim/Kirkuk do not change territory."
+    }
+   ]
+  },
+  {
+   "id": "IRQ:Qadisiyah@1977",
+   "names": {
+    "en": "Al-Qādisiyyah Governorate",
+    "ja": "カーディーシーヤ県",
+    "local": "محافظة القادسية"
+   },
+   "wikidata": "Q62987",
+   "spans": [
+    {
+     "from": "1977-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRQ-3224"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uiq.html",
+       "title": "Statoids — Governorates of Iraq (Gwillim Law, updated 2015-10-26)",
+       "says": "1976-02: Diwaniya renamed Al-Qadisiyah; no later boundary change listed.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start: the 1976 reorganisation (Najaf, Saladin created; Kirkuk districts redistributed) is dated only to 1976 (Statoids: 1976-02); claims begin 1977-01-01."
+    }
+   ]
+  },
+  {
+   "id": "IRQ:DhiQar@1977",
+   "names": {
+    "en": "Dhi Qar Governorate",
+    "ja": "ジーカール県",
+    "local": "محافظة ذي قار"
+   },
+   "wikidata": "Q215649",
+   "spans": [
+    {
+     "from": "1977-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRQ-3225"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uiq.html",
+       "title": "Statoids — Governorates of Iraq (Gwillim Law, updated 2015-10-26)",
+       "says": "1976-02: Nasiriya renamed Dhi Qar; no later boundary change listed.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start: the 1976 reorganisation (Najaf, Saladin created; Kirkuk districts redistributed) is dated only to 1976 (Statoids: 1976-02); claims begin 1977-01-01."
+    }
+   ]
+  },
+  {
+   "id": "IRQ:Najaf@1982",
+   "names": {
+    "en": "Najaf Governorate",
+    "ja": "ナジャフ県",
+    "local": "محافظة النجف"
+   },
+   "wikidata": "Q192882",
+   "spans": [
+    {
+     "from": "1982-07-30",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRQ-3061"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uiq.html",
+       "title": "Statoids — Governorates of Iraq (Gwillim Law, updated 2015-10-26)",
+       "says": "1976-02: An-Najaf province split off; no later change listed.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1364984888",
+       "title": "Iraq–Saudi Arabia border — Wikipedia (oldid 1364984888)",
+       "says": "The 1981 treaty split the neutral zone and appears to have ironed out the Saudi kink in the middle-south sector.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1338002913",
+       "title": "Saudi Arabian–Iraqi neutral zone — Wikipedia (oldid 1338002913)",
+       "says": "Partition agreed 26 Dec 1981, approved by Iraq 28 Jan 1982; divided between 28 Jan and 30 Jul 1982.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Borders Saudi Arabia; the 1981 Iraq–Saudi treaty re-aligned the middle-south sector, implemented by 30 July 1982 (latest bound)."
+    }
+   ]
+  },
+  {
+   "id": "IRQ:Muthanna@1982",
+   "names": {
+    "en": "Al Muthanna Governorate",
+    "ja": "ムサンナー県",
+    "local": "محافظة المثنى"
+   },
+   "wikidata": "Q212761",
+   "spans": [
+    {
+     "from": "1982-07-30",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRQ-3223"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uiq.html",
+       "title": "Statoids — Governorates of Iraq (Gwillim Law, updated 2015-10-26)",
+       "says": "Al-Muthanna includes the Iraqi half of the former Neutral Zone.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1338002913",
+       "title": "Saudi Arabian–Iraqi neutral zone — Wikipedia (oldid 1338002913)",
+       "says": "Partition agreed 26 Dec 1981, approved by Iraq 28 Jan 1982; divided between 28 Jan and 30 Jul 1982.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "NE Muthanna includes the Iraqi half of the neutral zone, divided between 28 Jan and 30 Jul 1982 (latest bound used). Its contact with Kuwait is a tripoint only."
+    }
+   ]
+  },
+  {
+   "id": "IRQ:Maysan@1977",
+   "names": {
+    "en": "Maysan Governorate",
+    "ja": "マイサーン県",
+    "local": "محافظة ميسان"
+   },
+   "wikidata": "Q213170",
+   "spans": [
+    {
+     "from": "1977-01-01",
+     "precision": "day",
+     "to": "1980-09-17",
+     "atoms": [
+      "IRQ-3226"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uiq.html",
+       "title": "Statoids — Governorates of Iraq (Gwillim Law, updated 2015-10-26)",
+       "says": "1976-02: Amara renamed Maysan; no later change listed.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1366753231",
+       "title": "1975 Algiers Agreement — Wikipedia (oldid 1366753231)",
+       "says": "Treaty in force 1976; abrogated by Iraq on 17 September 1980; war ended with return to the 1975 agreement.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start: the 1976 reorganisation (Najaf, Saladin created; Kirkuk districts redistributed) is dated only to 1976 (Statoids: 1976-02); claims begin 1977-01-01. Iran line per the 1975 Algiers treaty, in force 1976."
+    },
+    {
+     "from": "1991",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "IRQ-3226"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1366753231",
+       "title": "1975 Algiers Agreement — Wikipedia (oldid 1366753231)",
+       "says": "Treaty in force 1976; abrogated by Iraq on 17 September 1980; war ended with return to the 1975 agreement.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1350875567",
+       "title": "Iran–Iraq border — Wikipedia (oldid 1350875567)",
+       "says": "Algiers agreement 1975 and Baghdad treaty fixed the line; relations restored in 1990.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Iraq abrogated the Algiers line 1980-09-17; relations restored and the 1975 line resumed in 1990 (day not found) — span starts the following year."
+    }
+   ]
+  },
+  {
+   "id": "IRQ:Wasit@1977",
+   "names": {
+    "en": "Wasit Governorate",
+    "ja": "ワーシト県",
+    "local": "محافظة واسط"
+   },
+   "wikidata": "Q189747",
+   "spans": [
+    {
+     "from": "1977-01-01",
+     "precision": "day",
+     "to": "1980-09-17",
+     "atoms": [
+      "IRQ-3227"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uiq.html",
+       "title": "Statoids — Governorates of Iraq (Gwillim Law, updated 2015-10-26)",
+       "says": "1976-02: Kut renamed Wasit; no later change listed.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1366753231",
+       "title": "1975 Algiers Agreement — Wikipedia (oldid 1366753231)",
+       "says": "Treaty in force 1976; abrogated by Iraq on 17 September 1980; war ended with return to the 1975 agreement.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start: the 1976 reorganisation (Najaf, Saladin created; Kirkuk districts redistributed) is dated only to 1976 (Statoids: 1976-02); claims begin 1977-01-01."
+    },
+    {
+     "from": "1991",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "IRQ-3227"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1366753231",
+       "title": "1975 Algiers Agreement — Wikipedia (oldid 1366753231)",
+       "says": "Treaty in force 1976; abrogated by Iraq on 17 September 1980; war ended with return to the 1975 agreement.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1350875567",
+       "title": "Iran–Iraq border — Wikipedia (oldid 1350875567)",
+       "says": "Algiers agreement 1975 and Baghdad treaty fixed the line; relations restored in 1990.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "See Maysan."
+    }
+   ]
+  },
+  {
+   "id": "IRQ:Sulaymaniyah@1977",
+   "names": {
+    "en": "Sulaymaniyah Governorate",
+    "ja": "スレイマニヤ県",
+    "local": "محافظة السليمانية"
+   },
+   "wikidata": "Q213182",
+   "spans": [
+    {
+     "from": "1977-01-01",
+     "precision": "day",
+     "to": "1980-09-17",
+     "atoms": [
+      "IRQ-3242"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1373617456",
+       "title": "Kirkuk Governorate — Wikipedia (oldid 1373617456)",
+       "says": "Borders altered in 1976: four districts went to Sulaymaniyah, Diyala and Saladin; Kirkuk received Zab district from Mosul.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1366753231",
+       "title": "1975 Algiers Agreement — Wikipedia (oldid 1366753231)",
+       "says": "Treaty in force 1976; abrogated by Iraq on 17 September 1980; war ended with return to the 1975 agreement.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start: the 1976 reorganisation (Najaf, Saladin created; Kirkuk districts redistributed) is dated only to 1976 (Statoids: 1976-02); claims begin 1977-01-01. Includes Chamchamal and Kalar (from Kirkuk, 1976)."
+    },
+    {
+     "from": "1991",
+     "precision": "year",
+     "to": "2014-03-13",
+     "atoms": [
+      "IRQ-3242"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1350875567",
+       "title": "Iran–Iraq border — Wikipedia (oldid 1350875567)",
+       "says": "Algiers agreement 1975 and Baghdad treaty fixed the line; relations restored in 1990.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1376078645",
+       "title": "Halabja Governorate — Wikipedia (oldid 1376078645)",
+       "says": "Established 13 March 2014 by the Kurdistan Region, split from Sulaymaniyah; federal cabinet bill 31 Dec 2013, parliament never voted.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Ends when the Kurdistan Region established Halabja governorate."
+    }
+   ]
+  },
+  {
+   "id": "IRQ:Basra@1994",
+   "names": {
+    "en": "Basra Governorate",
+    "ja": "バスラ県",
+    "local": "محافظة البصرة"
+   },
+   "wikidata": "Q193551",
+   "spans": [
+    {
+     "from": "1994-12",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "IRQ-3222"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1366948448",
+       "title": "Iraq–Kuwait border — Wikipedia (oldid 1366948448)",
+       "says": "UN demarcation 1992–93 followed the 1932 line with minor adjustments; Iraq accepted the border in November 1994.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1350875567",
+       "title": "Iran–Iraq border — Wikipedia (oldid 1350875567)",
+       "says": "Algiers agreement 1975 and Baghdad treaty fixed the line; relations restored in 1990.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Kuwait line = UN 1993 demarcation (minor adjustments to the 1932 line), accepted by Iraq in November 1994; span starts the next month."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1976",
+   "precision": "year",
+   "what": "Reorganisation: An-Najaf and Salah ad-Din created, Kirkuk districts moved to Sulaymaniyah, Diyala, Salah ad-Din; Zab district Mosul→Kirkuk",
+   "sources": [
+    {
+     "url": "https://statoids.com/uiq.html",
+     "title": "Statoids — Governorates of Iraq (Gwillim Law, updated 2015-10-26)",
+     "says": "1976-02: renamings; An-Najaf split from Al-Muthanna; Salah ad-Din split from Baghdad.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1373617456",
+     "title": "Kirkuk Governorate — Wikipedia (oldid 1373617456)",
+     "says": "Borders altered in 1976: four districts went to Sulaymaniyah, Diyala and Saladin; Kirkuk received Zab district from Mosul.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1980-09-17",
+   "precision": "day",
+   "what": "Iraq abrogates the 1975 Algiers boundary",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1366753231",
+     "title": "1975 Algiers Agreement — Wikipedia (oldid 1366753231)",
+     "says": "Treaty in force 1976; abrogated by Iraq on 17 September 1980; war ended with return to the 1975 agreement.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1982-07-30",
+   "precision": "day",
+   "what": "Iraq–Saudi neutral zone divided (latest bound)",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1338002913",
+     "title": "Saudi Arabian–Iraqi neutral zone — Wikipedia (oldid 1338002913)",
+     "says": "Partition agreed 26 Dec 1981, approved by Iraq 28 Jan 1982; divided between 28 Jan and 30 Jul 1982.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1994-11",
+   "precision": "month",
+   "what": "Iraq accepts the UN-demarcated Kuwait boundary",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1366948448",
+     "title": "Iraq–Kuwait border — Wikipedia (oldid 1366948448)",
+     "says": "UN demarcation 1992–93 followed the 1932 line with minor adjustments; Iraq accepted the border in November 1994.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2014-03-13",
+   "precision": "day",
+   "what": "Kurdistan Region establishes Halabja governorate from Sulaymaniyah (no federal law)",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1376078645",
+     "title": "Halabja Governorate — Wikipedia (oldid 1376078645)",
+     "says": "Established 13 March 2014 by the Kurdistan Region, split from Sulaymaniyah; federal cabinet bill 31 Dec 2013, parliament never voted.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1987-10-17",
+   "n": 18,
+   "sources": [
+    {
+     "url": "https://statoids.com/uiq.html",
+     "title": "Statoids — Governorates of Iraq (Gwillim Law, updated 2015-10-26)",
+     "says": "Population table for the 1987-10-17 census lists 18 governorates.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Iraqi liwas/governorates before 1977 (14 liwas c.1955; Dahuk and Muthanna 1969; 1976 reorganisation)",
+   "from": "1932-10-03",
+   "to": "1977-01-01",
+   "why": "1976 changes moved whole districts between Kirkuk, Sulaymaniyah, Diyala, Salah ad-Din, Mosul and Baghdad, and the day is not established; earlier lines run inside modern atoms. Not attempted.",
+   "checked": [
+    "statoids.com/uiq.html",
+    "Kirkuk Governorate oldid 1373617456",
+    "Governorates of Iraq (Wikipedia)"
+   ],
+   "needs": "district atoms (OCHA COD-AB Iraq ADM2 or geoBoundaries IRQ ADM2 — check licence) and RCC decrees of 1969/1976"
+  },
+  {
+   "what": "Baghdad governorate",
+   "unit": "IRQ:Baghdad",
+   "atoms": [
+    "IRQ-3063"
+   ],
+   "from": "1977-01-01",
+   "to": null,
+   "why": "NE Baghdad (659 km²) is the city only: Mahmudiya falls in NE Babil, Abu Ghraib in NE Anbar, Tarmiyah and Taji in NE Salah ad-Din, Salman Pak in NE Diyala — all legally Baghdad governorate. The NE lines are not the governorate's lines at any date.",
+   "checked": [
+    "point-in-polygon tests on NE geometry",
+    "statoids.com/uiq.html"
+   ],
+   "needs": "district atoms (OCHA COD-AB Iraq ADM2 / geoBoundaries IRQ ADM2)"
+  },
+  {
+   "what": "Babil governorate",
+   "unit": "IRQ:Babil",
+   "atoms": [
+    "IRQ-3472"
+   ],
+   "from": "1977-01-01",
+   "to": null,
+   "why": "NE Babil contains Mahmudiya district of Baghdad governorate.",
+   "checked": [
+    "point-in-polygon tests"
+   ],
+   "needs": "district atoms"
+  },
+  {
+   "what": "Al Anbar governorate",
+   "unit": "IRQ:Anbar",
+   "atoms": [
+    "IRQ-3471"
+   ],
+   "from": "1977-01-01",
+   "to": null,
+   "why": "NE Anbar contains Abu Ghraib (Baghdad governorate); its line with Karbala depends on Nukhayb, administered by Karbala for a short undated period in the 1970s.",
+   "checked": [
+    "point-in-polygon tests",
+    "Nukhayb oldid 1376947735"
+   ],
+   "needs": "district atoms and the dates of the Nukhayb transfers"
+  },
+  {
+   "what": "Salah ad-Din governorate",
+   "unit": "IRQ:SalahAdDin",
+   "atoms": [
+    "IRQ-3052"
+   ],
+   "from": "1977-01-01",
+   "to": null,
+   "why": "NE Salah ad-Din contains Tarmiyah and Taji (Baghdad governorate).",
+   "checked": [
+    "point-in-polygon tests"
+   ],
+   "needs": "district atoms"
+  },
+  {
+   "what": "Diyala governorate",
+   "unit": "IRQ:Diyala",
+   "atoms": [
+    "IRQ-3243"
+   ],
+   "from": "1977-01-01",
+   "to": null,
+   "why": "NE Diyala contains Salman Pak / Mada'in (Baghdad governorate); Diyala also borders Iran where the Algiers line was not implemented (Zain al-Qaws, Saif Saad) before 1980.",
+   "checked": [
+    "point-in-polygon tests",
+    "1975 Algiers Agreement oldid 1366753231"
+   ],
+   "needs": "district atoms"
+  },
+  {
+   "what": "Karbala governorate",
+   "unit": "IRQ:Karbala",
+   "atoms": [
+    "IRQ-3062"
+   ],
+   "from": "1977-01-01",
+   "to": null,
+   "why": "Nukhayb (now Anbar, outside NE Karbala) was administered by Karbala for a short period in the 1970s; the end of that period is not dated, so no start for the NE outline can be given.",
+   "checked": [
+    "Nukhayb oldid 1376947735"
+   ],
+   "needs": "the decree returning Nukhayb to Anbar"
+  },
+  {
+   "what": "Erbil and Ninawa governorates",
+   "unit": "IRQ:Erbil",
+   "atoms": [
+    "IRQ-3050",
+    "IRQ-3051"
+   ],
+   "from": "1977-01-01",
+   "to": null,
+   "why": "NE puts Makhmur district in Arbil; legally it was Ninawa before 1991 and after 2008 (in Erbil 2003–2008, date of legal basis unclear). Neither governorate is an NE atom at a documented date.",
+   "checked": [
+    "Makhmur district oldid 1376445676",
+    "point-in-polygon test (Makhmur → IRQ-3050)"
+   ],
+   "needs": "Makhmur district atom (OCHA COD-AB Iraq ADM2)"
+  },
+  {
+   "what": "Maysan and Wasit during the abrogation of the Algiers line",
+   "unit": "IRQ:Maysan@1977",
+   "atoms": [
+    "IRQ-3226",
+    "IRQ-3227"
+   ],
+   "from": "1980-09-17",
+   "to": "1991",
+   "why": "Iraq repudiated the 1975 boundary; the line in force until its restoration (1990, day not found) is not the NE line.",
+   "checked": [
+    "1975 Algiers Agreement oldid 1366753231",
+    "Iran–Iraq border oldid 1350875567"
+   ],
+   "needs": "date of Iraq's 1990 acceptance of the 1975 line"
+  },
+  {
+   "what": "Sulaymaniyah during the abrogation of the Algiers line",
+   "unit": "IRQ:Sulaymaniyah@1977",
+   "atoms": [
+    "IRQ-3242"
+   ],
+   "from": "1980-09-17",
+   "to": "1991",
+   "why": "As Maysan.",
+   "checked": [
+    "1975 Algiers Agreement oldid 1366753231"
+   ],
+   "needs": "date of Iraq's 1990 acceptance"
+  },
+  {
+   "what": "Sulaymaniyah after Halabja (KRG governorate, not enacted federally)",
+   "unit": "IRQ:Sulaymaniyah@1977",
+   "atoms": [
+    "IRQ-3242"
+   ],
+   "from": "2014-03-13",
+   "to": null,
+   "why": "NE has no Halabja atom; whether Halabja is a first-level unit is itself contested (KRG yes, federal parliament never voted).",
+   "checked": [
+    "Halabja Governorate oldid 1376078645",
+    "statoids.com/uiq.html"
+   ],
+   "needs": "Halabja district atom and a decision on which legal order to draw"
+  },
+  {
+   "what": "Basra before Iraq accepted the UN Kuwait boundary",
+   "unit": "IRQ:Basra@1994",
+   "atoms": [
+    "IRQ-3222"
+   ],
+   "from": "1977-01-01",
+   "to": "1994-12",
+   "why": "Algiers line abrogated 1980–1990; Saddamiyat al-Mitla added to Basra 1990–91; UN demarcation (1993) adjusted the Kuwait line, accepted by Iraq only in November 1994.",
+   "checked": [
+    "Iraq–Kuwait border oldid 1366948448",
+    "1975 Algiers Agreement oldid 1366753231"
+   ],
+   "needs": "nothing finer for the international line; pre-1993 line needs the 1963 agreed minutes geometry"
+  },
+  {
+   "what": "Najaf and Muthanna before the neutral-zone partition",
+   "unit": "IRQ:Muthanna@1982",
+   "atoms": [
+    "IRQ-3061",
+    "IRQ-3223"
+   ],
+   "from": "1977-01-01",
+   "to": "1982-07-30",
+   "why": "Neutral zone (Iraqi half now inside NE Muthanna) was a condominium until 1982; the 1981 treaty also re-aligned the middle-south sector.",
+   "checked": [
+    "Saudi Arabian–Iraqi neutral zone oldid 1338002913",
+    "Iraq–Saudi Arabia border oldid 1364984888"
+   ],
+   "needs": "neutral-zone polygon (pre-1982)"
+  }
+ ]
+}

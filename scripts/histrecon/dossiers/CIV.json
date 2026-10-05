@@ -1,0 +1,1151 @@
+{
+ "country": "CIV",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1997-01-15",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Côte d'Ivoire. NE depicts the 19 regions of 2000-07-12 → 2011-09-28 (NE note: «Expired 2015.11.27»; CIV-3459 «Cavally» is Moyen-Cavally, CIV-3460 «Comoe» is Moyen-Comoé). Coverage starts with the 1997 regions; earlier layouts are listed in `unresolved`.",
+ "units": [
+  {
+   "id": "CIV:Agneby@1997",
+   "names": {
+    "en": "Agnéby Region",
+    "ja": "アニェビ州",
+    "local": "Agnéby Region"
+   },
+   "wikidata": "Q395166",
+   "spans": [
+    {
+     "from": "1997-01-15",
+     "precision": "day",
+     "to": "2011-09-28",
+     "atoms": [
+      "CIV-3451"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uci.html",
+       "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+       "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "CIV:BasSassandra@1997",
+   "names": {
+    "en": "Bas-Sassandra Region",
+    "ja": "低サッサンドラ州",
+    "local": "Bas-Sassandra Region"
+   },
+   "wikidata": "Q809733",
+   "spans": [
+    {
+     "from": "1997-01-15",
+     "precision": "day",
+     "to": "2011-09-28",
+     "atoms": [
+      "CIV-3448"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uci.html",
+       "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+       "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "CIV:Denguele@1997",
+   "names": {
+    "en": "Denguélé Region",
+    "ja": "デンゲレ州",
+    "local": "Denguélé Region"
+   },
+   "wikidata": "Q729010",
+   "spans": [
+    {
+     "from": "1997-01-15",
+     "precision": "day",
+     "to": "2011-09-28",
+     "atoms": [
+      "CIV-3437"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uci.html",
+       "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+       "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "CIV:DixHuitMontagnes@1997",
+   "names": {
+    "en": "Dix-Huit Montagnes Region",
+    "ja": "十八山州",
+    "local": "Dix-Huit Montagnes"
+   },
+   "wikidata": "Q820486",
+   "spans": [
+    {
+     "from": "1997-01-15",
+     "precision": "day",
+     "to": "2000-04-20",
+     "atoms": [
+      "CIV-3441",
+      "CIV-3459"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uci.html",
+       "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+       "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Moyen-Cavally (Duékoué, Guiglo, Toulépleu) was taken wholly from it on 2000-04-20."
+    },
+    {
+     "from": "2000-04-20",
+     "precision": "day",
+     "to": "2011-09-28",
+     "atoms": [
+      "CIV-3441"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uci.html",
+       "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+       "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "CIV:MoyenCavally@2000",
+   "names": {
+    "en": "Moyen-Cavally Region",
+    "ja": "中カヴァリ州",
+    "local": "Moyen-Cavally Region"
+   },
+   "wikidata": "Q842499",
+   "spans": [
+    {
+     "from": "2000-04-20",
+     "precision": "day",
+     "to": "2011-09-28",
+     "atoms": [
+      "CIV-3459"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uci.html",
+       "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+       "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "CIV:Fromager@2000",
+   "names": {
+    "en": "Fromager Region",
+    "ja": "フロマジェ州",
+    "local": "Fromager Region"
+   },
+   "wikidata": "Q818774",
+   "spans": [
+    {
+     "from": "2000-04-20",
+     "precision": "day",
+     "to": "2011-09-28",
+     "atoms": [
+      "CIV-3445"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uci.html",
+       "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+       "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "CIV:HautSassandra@2000",
+   "names": {
+    "en": "Haut-Sassandra Region",
+    "ja": "高サッサンドラ州",
+    "local": "Haut-Sassandra Region"
+   },
+   "wikidata": "Q845709",
+   "spans": [
+    {
+     "from": "2000-04-20",
+     "precision": "day",
+     "to": "2011-09-28",
+     "atoms": [
+      "CIV-3446"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uci.html",
+       "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+       "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "After Gagnoa department left for Fromager."
+    }
+   ]
+  },
+  {
+   "id": "CIV:Marahoue@2000",
+   "names": {
+    "en": "Marahoué Region",
+    "ja": "マラウェ州",
+    "local": "Marahoué Region"
+   },
+   "wikidata": "Q839083",
+   "spans": [
+    {
+     "from": "2000-04-20",
+     "precision": "day",
+     "to": "2011-09-28",
+     "atoms": [
+      "CIV-3444"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uci.html",
+       "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+       "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "After Oumé department left for Fromager."
+    }
+   ]
+  },
+  {
+   "id": "CIV:Lacs@1997",
+   "names": {
+    "en": "Lacs Region",
+    "ja": "ラック州",
+    "local": "Lacs Region"
+   },
+   "wikidata": "Q845706",
+   "spans": [
+    {
+     "from": "1997-01-15",
+     "precision": "day",
+     "to": "2011-09-28",
+     "atoms": [
+      "CIV-3461"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uci.html",
+       "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+       "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "CIV:Lagunes@1997",
+   "names": {
+    "en": "Lagunes Region",
+    "ja": "ラギューヌ州",
+    "local": "Lagunes Region"
+   },
+   "wikidata": "Q639491",
+   "spans": [
+    {
+     "from": "1997-01-15",
+     "precision": "day",
+     "to": "2011-09-28",
+     "atoms": [
+      "CIV-3458"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uci.html",
+       "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+       "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "CIV:MoyenComoe@1997",
+   "names": {
+    "en": "Moyen-Comoé Region",
+    "ja": "コモエ県",
+    "local": "Moyen-Comoé Region"
+   },
+   "wikidata": "Q1074496",
+   "spans": [
+    {
+     "from": "1997-01-15",
+     "precision": "day",
+     "to": "2011-09-28",
+     "atoms": [
+      "CIV-3460"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uci.html",
+       "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+       "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "CIV:NziComoe@1997",
+   "names": {
+    "en": "N'zi-Comoé Region",
+    "ja": "ンジ＝コモエ州",
+    "local": "N'zi-Comoé Region"
+   },
+   "wikidata": "Q842491",
+   "spans": [
+    {
+     "from": "1997-01-15",
+     "precision": "day",
+     "to": "2011-09-28",
+     "atoms": [
+      "CIV-3452"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uci.html",
+       "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+       "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "CIV:Savanes@1997",
+   "names": {
+    "en": "Savanes Region",
+    "ja": "サヴァヌ州",
+    "local": "Savanes Region"
+   },
+   "wikidata": "Q853460",
+   "spans": [
+    {
+     "from": "1997-01-15",
+     "precision": "day",
+     "to": "2011-09-28",
+     "atoms": [
+      "CIV-3431"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uci.html",
+       "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+       "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "CIV:SudBandama@1997",
+   "names": {
+    "en": "Sud-Bandama Region",
+    "ja": "南バンダマ州",
+    "local": "Sud-Bandama Region"
+   },
+   "wikidata": "Q845713",
+   "spans": [
+    {
+     "from": "1997-01-15",
+     "precision": "day",
+     "to": "2011-09-28",
+     "atoms": [
+      "CIV-3447"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uci.html",
+       "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+       "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "CIV:SudComoe@1997",
+   "names": {
+    "en": "Sud-Comoé Region",
+    "ja": "南コモエ州",
+    "local": "Sud-Comoé Region"
+   },
+   "wikidata": "Q842495",
+   "spans": [
+    {
+     "from": "1997-01-15",
+     "precision": "day",
+     "to": "2011-09-28",
+     "atoms": [
+      "CIV-3462"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uci.html",
+       "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+       "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "CIV:ValleeDuBandama@1997",
+   "names": {
+    "en": "Vallée du Bandama Region",
+    "ja": "バンダマ渓谷州",
+    "local": "Vallée du Bandama Region"
+   },
+   "wikidata": "Q845721",
+   "spans": [
+    {
+     "from": "1997-01-15",
+     "precision": "day",
+     "to": "2011-09-28",
+     "atoms": [
+      "CIV-3450"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uci.html",
+       "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+       "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "CIV:Worodougou@1997",
+   "names": {
+    "en": "Worodougou Region",
+    "ja": "ウォロドゥーグー州",
+    "local": "Worodougou"
+   },
+   "wikidata": "Q846056",
+   "spans": [
+    {
+     "from": "1997-01-15",
+     "precision": "day",
+     "to": "2000-07-12",
+     "atoms": [
+      "CIV-3443",
+      "CIV-3440"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uci.html",
+       "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+       "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Bafing (Touba department) taken wholly from it on 2000-07-12."
+    },
+    {
+     "from": "2000-07-12",
+     "precision": "day",
+     "to": "2011-09-28",
+     "atoms": [
+      "CIV-3443"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uci.html",
+       "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+       "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "CIV:Bafing@2000",
+   "names": {
+    "en": "Bafing Region",
+    "ja": "バフィン州",
+    "local": "Bafing Region"
+   },
+   "wikidata": "Q799800",
+   "spans": [
+    {
+     "from": "2000-07-12",
+     "precision": "day",
+     "to": "2011-09-28",
+     "atoms": [
+      "CIV-3440"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uci.html",
+       "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+       "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "CIV:Zanzan@1997",
+   "names": {
+    "en": "Zanzan Region",
+    "ja": "ザンザン州",
+    "local": "Zanzan Region"
+   },
+   "wikidata": "Q147081",
+   "spans": [
+    {
+     "from": "1997-01-15",
+     "precision": "day",
+     "to": "2011-09-28",
+     "atoms": [
+      "CIV-3449"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uci.html",
+       "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+       "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "CIV:Montagnes@2011",
+   "names": {
+    "en": "Montagnes District",
+    "ja": "モンターニュ地方",
+    "local": "Montagnes District"
+   },
+   "wikidata": "Q20980366",
+   "spans": [
+    {
+     "from": "2011-09-28",
+     "precision": "day",
+     "to": "2014-08-05",
+     "atoms": [
+      "CIV-3441",
+      "CIV-3459"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uci.html",
+       "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+       "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Ivory_Coast&oldid=1361100966",
+       "title": "Wikipedia — Districts of Ivory Coast (oldid 1361100966; cites decree 2011-263 of 28 Sep 2011)",
+       "says": "Gives each 2011 district as merger of former regions (Fresco moved to Bas-Sassandra); districts abolished in 2014 except Abidjan and Yamoussoukro.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?title=Districts_de_C%C3%B4te_d%27Ivoire&oldid=239817035",
+       "title": "Wikipédia (fr) — Districts de Côte d'Ivoire (oldid 239817035)",
+       "says": "Districts created 2011, suppressed by law 2014-451 of 5 August 2014 except the autonomous districts of Abidjan and Yamoussoukro; 31 regions below.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Composition per decree 2011-263; districts suppressed by law 2014-451 of 2014-08-05."
+    }
+   ]
+  },
+  {
+   "id": "CIV:Woroba@2011",
+   "names": {
+    "en": "Woroba District",
+    "ja": "ウォロバ地方",
+    "local": "Woroba District"
+   },
+   "wikidata": "Q20980371",
+   "spans": [
+    {
+     "from": "2011-09-28",
+     "precision": "day",
+     "to": "2014-08-05",
+     "atoms": [
+      "CIV-3440",
+      "CIV-3443"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uci.html",
+       "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+       "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Ivory_Coast&oldid=1361100966",
+       "title": "Wikipedia — Districts of Ivory Coast (oldid 1361100966; cites decree 2011-263 of 28 Sep 2011)",
+       "says": "Gives each 2011 district as merger of former regions (Fresco moved to Bas-Sassandra); districts abolished in 2014 except Abidjan and Yamoussoukro.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?title=Districts_de_C%C3%B4te_d%27Ivoire&oldid=239817035",
+       "title": "Wikipédia (fr) — Districts de Côte d'Ivoire (oldid 239817035)",
+       "says": "Districts created 2011, suppressed by law 2014-451 of 5 August 2014 except the autonomous districts of Abidjan and Yamoussoukro; 31 regions below.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Composition per decree 2011-263; districts suppressed by law 2014-451 of 2014-08-05."
+    }
+   ]
+  },
+  {
+   "id": "CIV:SassandraMarahoue@2011",
+   "names": {
+    "en": "Sassandra-Marahoué District",
+    "ja": "サッサンドラ＝マラウェ地方",
+    "local": "Sassandra-Marahoué District"
+   },
+   "wikidata": "Q20365127",
+   "spans": [
+    {
+     "from": "2011-09-28",
+     "precision": "day",
+     "to": "2014-08-05",
+     "atoms": [
+      "CIV-3446",
+      "CIV-3444"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uci.html",
+       "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+       "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Ivory_Coast&oldid=1361100966",
+       "title": "Wikipedia — Districts of Ivory Coast (oldid 1361100966; cites decree 2011-263 of 28 Sep 2011)",
+       "says": "Gives each 2011 district as merger of former regions (Fresco moved to Bas-Sassandra); districts abolished in 2014 except Abidjan and Yamoussoukro.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?title=Districts_de_C%C3%B4te_d%27Ivoire&oldid=239817035",
+       "title": "Wikipédia (fr) — Districts de Côte d'Ivoire (oldid 239817035)",
+       "says": "Districts created 2011, suppressed by law 2014-451 of 5 August 2014 except the autonomous districts of Abidjan and Yamoussoukro; 31 regions below.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Composition per decree 2011-263; districts suppressed by law 2014-451 of 2014-08-05."
+    }
+   ]
+  },
+  {
+   "id": "CIV:Comoe@2011",
+   "names": {
+    "en": "Comoé District",
+    "ja": "コモエ地方",
+    "local": "Comoé District"
+   },
+   "wikidata": "Q16629374",
+   "spans": [
+    {
+     "from": "2011-09-28",
+     "precision": "day",
+     "to": "2014-08-05",
+     "atoms": [
+      "CIV-3460",
+      "CIV-3462"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uci.html",
+       "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+       "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Ivory_Coast&oldid=1361100966",
+       "title": "Wikipedia — Districts of Ivory Coast (oldid 1361100966; cites decree 2011-263 of 28 Sep 2011)",
+       "says": "Gives each 2011 district as merger of former regions (Fresco moved to Bas-Sassandra); districts abolished in 2014 except Abidjan and Yamoussoukro.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?title=Districts_de_C%C3%B4te_d%27Ivoire&oldid=239817035",
+       "title": "Wikipédia (fr) — Districts de Côte d'Ivoire (oldid 239817035)",
+       "says": "Districts created 2011, suppressed by law 2014-451 of 5 August 2014 except the autonomous districts of Abidjan and Yamoussoukro; 31 regions below.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Composition per decree 2011-263; districts suppressed by law 2014-451 of 2014-08-05."
+    }
+   ]
+  },
+  {
+   "id": "CIV:Denguele@2011",
+   "names": {
+    "en": "Denguélé District",
+    "ja": "デンゲレ",
+    "local": "Denguélé District"
+   },
+   "wikidata": "Q20980374",
+   "spans": [
+    {
+     "from": "2011-09-28",
+     "precision": "day",
+     "to": "2014-08-05",
+     "atoms": [
+      "CIV-3437"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uci.html",
+       "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+       "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Ivory_Coast&oldid=1361100966",
+       "title": "Wikipedia — Districts of Ivory Coast (oldid 1361100966; cites decree 2011-263 of 28 Sep 2011)",
+       "says": "Gives each 2011 district as merger of former regions (Fresco moved to Bas-Sassandra); districts abolished in 2014 except Abidjan and Yamoussoukro.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?title=Districts_de_C%C3%B4te_d%27Ivoire&oldid=239817035",
+       "title": "Wikipédia (fr) — Districts de Côte d'Ivoire (oldid 239817035)",
+       "says": "Districts created 2011, suppressed by law 2014-451 of 5 August 2014 except the autonomous districts of Abidjan and Yamoussoukro; 31 regions below.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Composition per decree 2011-263; districts suppressed by law 2014-451 of 2014-08-05."
+    }
+   ]
+  },
+  {
+   "id": "CIV:Savanes@2011",
+   "names": {
+    "en": "Savanes District",
+    "ja": "サヴァヌ",
+    "local": "Savanes District"
+   },
+   "wikidata": "Q21002161",
+   "spans": [
+    {
+     "from": "2011-09-28",
+     "precision": "day",
+     "to": "2014-08-05",
+     "atoms": [
+      "CIV-3431"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uci.html",
+       "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+       "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Ivory_Coast&oldid=1361100966",
+       "title": "Wikipedia — Districts of Ivory Coast (oldid 1361100966; cites decree 2011-263 of 28 Sep 2011)",
+       "says": "Gives each 2011 district as merger of former regions (Fresco moved to Bas-Sassandra); districts abolished in 2014 except Abidjan and Yamoussoukro.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?title=Districts_de_C%C3%B4te_d%27Ivoire&oldid=239817035",
+       "title": "Wikipédia (fr) — Districts de Côte d'Ivoire (oldid 239817035)",
+       "says": "Districts created 2011, suppressed by law 2014-451 of 5 August 2014 except the autonomous districts of Abidjan and Yamoussoukro; 31 regions below.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Composition per decree 2011-263; districts suppressed by law 2014-451 of 2014-08-05."
+    }
+   ]
+  },
+  {
+   "id": "CIV:ValleeDuBandama@2011",
+   "names": {
+    "en": "Vallée du Bandama District",
+    "ja": "バンダマ渓谷地方",
+    "local": "Vallée du Bandama District"
+   },
+   "wikidata": "Q21002356",
+   "spans": [
+    {
+     "from": "2011-09-28",
+     "precision": "day",
+     "to": "2014-08-05",
+     "atoms": [
+      "CIV-3450"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uci.html",
+       "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+       "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Ivory_Coast&oldid=1361100966",
+       "title": "Wikipedia — Districts of Ivory Coast (oldid 1361100966; cites decree 2011-263 of 28 Sep 2011)",
+       "says": "Gives each 2011 district as merger of former regions (Fresco moved to Bas-Sassandra); districts abolished in 2014 except Abidjan and Yamoussoukro.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?title=Districts_de_C%C3%B4te_d%27Ivoire&oldid=239817035",
+       "title": "Wikipédia (fr) — Districts de Côte d'Ivoire (oldid 239817035)",
+       "says": "Districts created 2011, suppressed by law 2014-451 of 5 August 2014 except the autonomous districts of Abidjan and Yamoussoukro; 31 regions below.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Composition per decree 2011-263; districts suppressed by law 2014-451 of 2014-08-05."
+    }
+   ]
+  },
+  {
+   "id": "CIV:Zanzan@2011",
+   "names": {
+    "en": "Zanzan District",
+    "ja": "ザンザン地方",
+    "local": "Zanzan District"
+   },
+   "wikidata": "Q21003689",
+   "spans": [
+    {
+     "from": "2011-09-28",
+     "precision": "day",
+     "to": "2014-08-05",
+     "atoms": [
+      "CIV-3449"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uci.html",
+       "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+       "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Ivory_Coast&oldid=1361100966",
+       "title": "Wikipedia — Districts of Ivory Coast (oldid 1361100966; cites decree 2011-263 of 28 Sep 2011)",
+       "says": "Gives each 2011 district as merger of former regions (Fresco moved to Bas-Sassandra); districts abolished in 2014 except Abidjan and Yamoussoukro.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?title=Districts_de_C%C3%B4te_d%27Ivoire&oldid=239817035",
+       "title": "Wikipédia (fr) — Districts de Côte d'Ivoire (oldid 239817035)",
+       "says": "Districts created 2011, suppressed by law 2014-451 of 5 August 2014 except the autonomous districts of Abidjan and Yamoussoukro; 31 regions below.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Composition per decree 2011-263; districts suppressed by law 2014-451 of 2014-08-05."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1997-01-15",
+   "precision": "day",
+   "what": "Ten regions replaced by sixteen",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uci.html",
+     "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+     "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2000-04-20",
+   "precision": "day",
+   "what": "Fromager (Gagnoa dept of Haut-Sassandra + Oumé dept of Marahoué) and Moyen-Cavally (from Dix-Huit Montagnes) created",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uci.html",
+     "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+     "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2000-07-12",
+   "precision": "day",
+   "what": "Bafing (Touba dept) split from Worodougou",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uci.html",
+     "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+     "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2011-09-28",
+   "precision": "day",
+   "what": "Fourteen districts (12 + autonomous Abidjan and Yamoussoukro) replace the 19 regions; Fresco moves to Bas-Sassandra",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uci.html",
+     "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+     "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Ivory_Coast&oldid=1361100966",
+     "title": "Wikipedia — Districts of Ivory Coast (oldid 1361100966; cites decree 2011-263 of 28 Sep 2011)",
+     "says": "Gives each 2011 district as merger of former regions (Fresco moved to Bas-Sassandra); districts abolished in 2014 except Abidjan and Yamoussoukro.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2014-08-05",
+   "precision": "day",
+   "what": "Law 2014-451 suppresses the 12 districts; first level becomes 31 regions + 2 autonomous districts",
+   "sources": [
+    {
+     "url": "https://fr.wikipedia.org/w/index.php?title=Districts_de_C%C3%B4te_d%27Ivoire&oldid=239817035",
+     "title": "Wikipédia (fr) — Districts de Côte d'Ivoire (oldid 239817035)",
+     "says": "Districts created 2011, suppressed by law 2014-451 of 5 August 2014 except the autonomous districts of Abidjan and Yamoussoukro; 31 regions below.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Ivory_Coast&oldid=1361100966",
+     "title": "Wikipedia — Districts of Ivory Coast (oldid 1361100966; cites decree 2011-263 of 28 Sep 2011)",
+     "says": "Gives each 2011 district as merger of former regions (Fresco moved to Bas-Sassandra); districts abolished in 2014 except Abidjan and Yamoussoukro.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1998-01-01",
+   "n": 16,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uci.html",
+     "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+     "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2005-01-01",
+   "n": 19,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uci.html",
+     "title": "Statoids — Districts/Regions of Côte d'Ivoire (change history)",
+     "says": "1997-01-15 sixteen regions; 2000-04-20 Fromager (Gagnoa+Oumé depts) and Moyen-Cavally (from Dix-Huit Montagnes); 2000-07-12 Bafing (Touba from Worodougou); 2011-09-28 fourteen districts.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2012-01-01",
+   "n": 14,
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Ivory_Coast&oldid=1361100966",
+     "title": "Wikipedia — Districts of Ivory Coast (oldid 1361100966; cites decree 2011-263 of 28 Sep 2011)",
+     "says": "Gives each 2011 district as merger of former regions (Fresco moved to Bas-Sassandra); districts abolished in 2014 except Abidjan and Yamoussoukro.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Haut-Sassandra (with Gagnoa dept) 1997–2000",
+   "unit": "CIV:HautSassandra@1997",
+   "atoms": [
+    "CIV-3446",
+    "CIV-3444",
+    "CIV-3445"
+   ],
+   "from": "1997-01-15",
+   "to": "2000-04-20",
+   "why": "The NE Fromager atom is Gagnoa dept (then Haut-Sassandra) + Oumé dept (then Marahoué); the line between them runs through the atom.",
+   "checked": [
+    "statoids uci.html"
+   ],
+   "needs": "finer atoms: departments (e.g. geoBoundaries CIV ADM3 / 1998 census departments; licence to be checked)"
+  },
+  {
+   "what": "Marahoué (with Oumé dept) 1997–2000",
+   "unit": "CIV:Marahoue@1997",
+   "from": "1997-01-15",
+   "to": "2000-04-20",
+   "why": "Atoms withheld in the previous entry.",
+   "checked": [
+    "statoids uci.html"
+   ],
+   "needs": "department atoms"
+  },
+  {
+   "what": "Abidjan Autonomous District 2011–2014",
+   "unit": "CIV:Abidjan@2011",
+   "atoms": [
+    "CIV-3458",
+    "CIV-3451",
+    "CIV-3461",
+    "CIV-3452",
+    "CIV-3445",
+    "CIV-3447",
+    "CIV-3448"
+   ],
+   "from": "2011-09-28",
+   "to": "2014-08-05",
+   "why": "Abidjan was cut from the Lagunes atom and Yamoussoukro from the Lacs atom; Fresco department moved from the Sud-Bandama atom to Bas-Sassandra. Six of the 14 districts therefore cut through NE atoms.",
+   "checked": [
+    "statoids uci.html",
+    "Wikipedia Districts of Ivory Coast oldid 1361100966"
+   ],
+   "needs": "finer atoms: departments / sub-prefectures (Abidjan district, Yamoussoukro district, Fresco department)"
+  },
+  {
+   "what": "Lagunes District (Agnéby + Lagunes minus Abidjan) 2011–2014",
+   "unit": "CIV:Lagunes@2011",
+   "from": "2011-09-28",
+   "to": "2014-08-05",
+   "why": "Atoms withheld in the Abidjan entry.",
+   "checked": [
+    "Wikipedia Districts of Ivory Coast oldid 1361100966"
+   ],
+   "needs": "department atoms"
+  },
+  {
+   "what": "Yamoussoukro Autonomous District 2011–2014",
+   "unit": "CIV:Yamoussoukro@2011",
+   "from": "2011-09-28",
+   "to": "2014-08-05",
+   "why": "Atoms withheld in the Abidjan entry.",
+   "checked": [
+    "Wikipedia Districts of Ivory Coast oldid 1361100966"
+   ],
+   "needs": "department atoms"
+  },
+  {
+   "what": "Lacs District (N'zi-Comoé + Lacs minus Yamoussoukro) 2011–2014",
+   "unit": "CIV:Lacs@2011",
+   "from": "2011-09-28",
+   "to": "2014-08-05",
+   "why": "Atoms withheld in the Abidjan entry.",
+   "checked": [
+    "Wikipedia Districts of Ivory Coast oldid 1361100966"
+   ],
+   "needs": "department atoms"
+  },
+  {
+   "what": "Gôh-Djiboua District (Fromager + Sud-Bandama minus Fresco) 2011–2014",
+   "unit": "CIV:GohDjiboua@2011",
+   "from": "2011-09-28",
+   "to": "2014-08-05",
+   "why": "Atoms withheld in the Abidjan entry.",
+   "checked": [
+    "Wikipedia Districts of Ivory Coast oldid 1361100966"
+   ],
+   "needs": "department atoms"
+  },
+  {
+   "what": "Bas-Sassandra District (with Fresco) 2011–2014",
+   "unit": "CIV:BasSassandra@2011",
+   "from": "2011-09-28",
+   "to": "2014-08-05",
+   "why": "Atoms withheld in the Abidjan entry.",
+   "checked": [
+    "Wikipedia Districts of Ivory Coast oldid 1361100966"
+   ],
+   "needs": "department atoms"
+  },
+  {
+   "what": "First level after law 2014-451: 31 regions + autonomous districts of Abidjan and Yamoussoukro",
+   "atoms": [
+    "CIV-3437",
+    "CIV-3440",
+    "CIV-3441",
+    "CIV-3449",
+    "CIV-3460",
+    "CIV-3462",
+    "CIV-3431",
+    "CIV-3459",
+    "CIV-3448",
+    "CIV-3447",
+    "CIV-3458",
+    "CIV-3446",
+    "CIV-3451",
+    "CIV-3452",
+    "CIV-3444",
+    "CIV-3445",
+    "CIV-3450",
+    "CIV-3461",
+    "CIV-3443"
+   ],
+   "from": "2014-08-05",
+   "to": null,
+   "why": "The 31 regions of 2011/2012 are finer than the 19 NE atoms and their correspondence to them is not established region by region.",
+   "checked": [
+    "fr.wikipedia Districts de Côte d'Ivoire oldid 239817035",
+    "Wikipedia Districts of Ivory Coast oldid 1361100966"
+   ],
+   "needs": "finer atoms: the 31 regions (e.g. geoBoundaries CIV ADM2, licence to be checked)"
+  },
+  {
+   "what": "Earlier layouts: 4–6 départements (1961–1969), 24–49 departments (1969–1997), ten regions (~1991–1997)",
+   "from": "1961-01-03",
+   "to": "1997-01-15",
+   "why": "Before scope. The ten regions and the departments do not nest in the 1997 regions in any documented way (statoids found few references to the ten regions; their dates are uncertain).",
+   "checked": [
+    "statoids uci.html"
+   ],
+   "needs": "department atoms of the 1975/1988 censuses and a dated decree for the ten regions"
+  }
+ ]
+}

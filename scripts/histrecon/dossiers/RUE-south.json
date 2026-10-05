@@ -1,0 +1,970 @@
+{
+ "country": "RUE",
+ "atomSet": "ristat-1897-uyezd@v3",
+ "atomGroups": [
+  "Volhynian governorate",
+  "Podolsk governorate",
+  "Kiev governorate",
+  "Bessarabia governorate",
+  "Kherson governorate",
+  "Taurida governorate",
+  "Ekaterinoslav governorate",
+  "Poltava governorate",
+  "Chernigov governorate",
+  "Kharkov governorate"
+ ],
+ "scope": {
+  "from": "1802-03-18",
+  "to": "1917-11-06"
+ },
+ "polityNote": "Russian Empire (from March 1917 the Russian Republic): Little Russia, Sloboda Ukraine, New Russia, the right-bank (south-western) governorates and Bessarabia (Russian from 16/28 May 1812). Dates converted from Old Style. Gradonachalstvos with their own administration (Odessa, Nikolaev, Kerch-Enikale, Sevastopol) are drawn inside the governorate the 1897 census grouped them with. Wartime occupation (1915–17) not depicted.",
+ "units": [
+  {
+   "id": "RUE:SlobodaUkraine@1796",
+   "names": {
+    "en": "Sloboda Ukraine Governorate",
+    "ja": "スロボダ・ウクライナ県",
+    "local": "Слободско-Украинская губерния"
+   },
+   "wikidata": "Q4423717",
+   "spans": [
+    {
+     "from": "1802-03-18",
+     "precision": "day",
+     "to": "1824-01-21",
+     "atoms": [
+      "U1897-478",
+      "U1897-479",
+      "U1897-480",
+      "U1897-481",
+      "U1897-482",
+      "U1897-483",
+      "U1897-484",
+      "U1897-485",
+      "U1897-486",
+      "U1897-488"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/20251009174338/https://nlr.ru/res/refer/r_imp/gub/harkov.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (по В. Э. Дену, 1902) — Харьковская (Слободско-Украинская) губерния",
+       "says": "ПСЗ-1 № 20205 (6/29.03.1802): Bogucharsky, Ostrogozhsky, Starobelsky uyezds moved to Voronezh; 1803 division into 10 uyezds; next outer change 1824.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://web.archive.org/web/20251115224819/https://nlr.ru/res/refer/r_imp/gub/voron.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (по В. Э. Дену, 1902) — Воронежская губерния",
+       "says": "Voronezh received the three Sloboda uyezds in March 1802 and returned Starobelsk uyezd on 9 Jan 1824.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Report approved 1802-03-06 O.S., Senate decree published 1802-03-29 O.S. (ПСЗ-1 № 20205); approval date used (+12 → 1802-03-18). The 1803 re-division into 10 uyezds (ПСЗ-1 № 20660) was internal; the 1797–1802 composition (with Ostrogozhsk, Boguchar) is outside this span."
+    },
+    {
+     "from": "1824-01-21",
+     "precision": "day",
+     "to": "1835-12-17",
+     "atoms": [
+      "U1897-478",
+      "U1897-479",
+      "U1897-480",
+      "U1897-481",
+      "U1897-482",
+      "U1897-483",
+      "U1897-484",
+      "U1897-485",
+      "U1897-486",
+      "U1897-487",
+      "U1897-488"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/20251009174338/https://nlr.ru/res/refer/r_imp/gub/harkov.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (по В. Э. Дену, 1902) — Харьковская (Слободско-Украинская) губерния",
+       "says": "ПСЗ-1 № 29729 (09.01.1824): Starobelsk uyezd joined from Voronezh to Sloboda-Ukrainian governorate.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=153208688",
+       "title": "Старобельский уезд — Википедия (oldid 153208688)",
+       "says": "Starobelsk uyezd in Voronezh 1802–1824, returned to Sloboda governorate by decree of 9 January 1824.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Именной указ 1824-01-09 O.S. (ПСЗ-1 № 29729) → 1824-01-21."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Kharkov@1835",
+   "names": {
+    "en": "Kharkov Governorate",
+    "ja": "ハリコフ県",
+    "local": "Харьковская губерния"
+   },
+   "wikidata": "Q2363136",
+   "spans": [
+    {
+     "from": "1835-12-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-478",
+      "U1897-479",
+      "U1897-480",
+      "U1897-481",
+      "U1897-482",
+      "U1897-483",
+      "U1897-484",
+      "U1897-485",
+      "U1897-486",
+      "U1897-487",
+      "U1897-488"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/20251009174338/https://nlr.ru/res/refer/r_imp/gub/harkov.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (по В. Э. Дену, 1902) — Харьковская (Слободско-Украинская) губерния",
+       "says": "ПСЗ-2 № 8654 (5/20.12.1835): renamed Kharkov governorate; the only later entry (1861) moves villages between its own uyezds.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=153208694",
+       "title": "Харьковская губерния — Википедия (oldid 153208694)",
+       "says": "Formed 1835 with 11 uyezds; Izyum and Starobelsk uyezds left only in 1920 for Donetsk governorate.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Rename only (same territory): 1835-12-05 O.S. (published 20.12) → 1835-12-17. No outer change 1835–1897 in Den; none 1897–1917 per the Wikipedia history (first change 1920)."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Poltava@1802",
+   "names": {
+    "en": "Poltava Governorate",
+    "ja": "ポルタヴァ県",
+    "local": "Полтавская губерния"
+   },
+   "wikidata": "Q1271216",
+   "spans": [
+    {
+     "from": "1803-04-08",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-362",
+      "U1897-363",
+      "U1897-364",
+      "U1897-365",
+      "U1897-366",
+      "U1897-367",
+      "U1897-368",
+      "U1897-369",
+      "U1897-370",
+      "U1897-371",
+      "U1897-372",
+      "U1897-373",
+      "U1897-374",
+      "U1897-375",
+      "U1897-376"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/20240603033857/https://nlr.ru/res/refer/r_imp/gub/ekat.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (по В. Э. Дену, 1902) — Екатеринославская губерния",
+       "says": "ПСЗ-1 № 20684 (27.03.1803): all land between the Berestovaya and the Orel joined to Poltava governorate from Ekaterinoslav.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikisource.org/w/index.php?oldid=5335317",
+       "title": "ЭСБЕ / Черниговская губерния (Викитека, oldid 5335317), т. XXXVIIIa (1903), с. 590–599",
+       "says": "Chernigov’s southern border with Poltava and Kharkov was fixed in 1802 when Little Russia was split; unchanged since.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=155028573",
+       "title": "Полтавская губерния — Википедия (oldid 155028573)",
+       "says": "15 uyezds by 1803; this division lasted until 1920, when uyezds went to Kremenchug governorate.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Senate decree 1803-03-27 O.S. (ПСЗ-1 № 20684) → 1803-04-08. The 1803 creation of Zenkov, Kobelyaki, Lokhvitsa uyezds was internal. Den’s Kharkov and Ekaterinoslav lists show no later change on Poltava’s eastern/southern lines."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Chernigov@1802",
+   "names": {
+    "en": "Chernigov Governorate",
+    "ja": "チェルニゴフ県",
+    "local": "Черниговская губерния"
+   },
+   "wikidata": "Q545958",
+   "spans": [
+    {
+     "from": "1895-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-377",
+      "U1897-378",
+      "U1897-379",
+      "U1897-380",
+      "U1897-381",
+      "U1897-382",
+      "U1897-383",
+      "U1897-384",
+      "U1897-385",
+      "U1897-386",
+      "U1897-387",
+      "U1897-388",
+      "U1897-389",
+      "U1897-390",
+      "U1897-391"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikisource.org/w/index.php?oldid=5335317",
+       "title": "ЭСБЕ / Черниговская губерния (Викитека, oldid 5335317), т. XXXVIIIa (1903), с. 590–599",
+       "says": "Area excludes parcels ceded to Kiev and Mogilev governorates by Committee of Ministers decisions of 1889 and 1894; northern/eastern borders unchanged since 17th c.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Conservative start, not a change date: ESBE gives only the years (1889, 1894) of the last outer-line transfers; one search hit (unverified) dates a Novozybkov→Gomel parcel to 1894-02-18. 1 Jan 1895 is the first day certainly after both. No change 1895–1917 known (first change: four northern uyezds to Gomel governorate 1919)."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Kiev@1796",
+   "names": {
+    "en": "Kiev Governorate",
+    "ja": "キエフ県 (ロシア帝国)",
+    "local": "Киевская губерния"
+   },
+   "wikidata": "Q1437277",
+   "spans": [
+    {
+     "from": "1895-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-336",
+      "U1897-337",
+      "U1897-338",
+      "U1897-339",
+      "U1897-340",
+      "U1897-341",
+      "U1897-342",
+      "U1897-343",
+      "U1897-344",
+      "U1897-345",
+      "U1897-346",
+      "U1897-347"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikisource.org/w/index.php?oldid=5335317",
+       "title": "ЭСБЕ / Черниговская губерния (Викитека, oldid 5335317), т. XXXVIIIa (1903), с. 590–599",
+       "says": "Parcels of Chernigov governorate passed to Kiev (and Mogilev) governorate by Committee of Ministers decisions of 1889 and 1894.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=152619897",
+       "title": "Киевская губерния — Википедия (oldid 152619897)",
+       "says": "12 uyezds at the end of the 19th century; Berdichev entered the governorate in the 1840s and became an uyezd seat.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Conservative start after the 1889/1894 Chernigov parcels (day unknown). Earlier outer change: Berdichev from Volhynia 1844. No change 1895–1917 found."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Volhynia@1795",
+   "names": {
+    "en": "Volhynian Governorate",
+    "ja": "ヴォルィーニ県",
+    "local": "Волынская губерния"
+   },
+   "wikidata": "Q1333965",
+   "spans": [
+    {
+     "from": "1844-03-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-312",
+      "U1897-313",
+      "U1897-314",
+      "U1897-315",
+      "U1897-316",
+      "U1897-317",
+      "U1897-318",
+      "U1897-319",
+      "U1897-320",
+      "U1897-321",
+      "U1897-322",
+      "U1897-323"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=154747025",
+       "title": "История Бердичева — Википедия (oldid 154747025)",
+       "says": "In 1844 the town of Berdichev was cut off to Makhnovka uyezd of Kiev governorate; December 1845 made a town and uyezd seat.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://berdychiv.in.ua/%D0%B0%D0%B4%D0%BC%D1%96%D0%BD%D1%96%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%B8%D0%B2%D0%BD%D0%B8%D0%B9-%D1%81%D1%82%D0%B0%D1%82%D1%83%D1%81-%D0%B1%D0%B5%D1%80%D0%B4%D0%B8%D1%87%D0%B5%D0%B2%D0%B0/?lang=ru",
+       "title": "«Административный статус Бердичева» (berdychiv.in.ua)",
+       "says": "Senate decree of 21 Feb 1844 moved Berdichev from Zhitomir uyezd of Volhynia to Makhnovka uyezd of Kiev governorate.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://perspekt.org.ua/articles/administrativno-teritorialnij-podil-zaslavshhini-naprikinci-xviii-pochatku-hhi-stolittya",
+       "title": "«Адміністративно-територіальний поділ Заславщини наприкінці XVIII – початку XX ст.» (perspekt.org.ua)",
+       "says": "Volhynia and Podolia uyezds consolidated 1797–1803; final establishment (штат) of both governorates issued 19 July 1804; Volhynia 12 uyezds.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Senate decree 1844-02-21 O.S. → 1844-03-04 (the day is from a local-history page; the year is confirmed by Wikipedia). No later outer change found to 1917 (the 1912 Kholm governorate was cut from Lublin and Siedlce only)."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Podolia@1796",
+   "names": {
+    "en": "Podolia Governorate",
+    "ja": "ポドリスク県",
+    "local": "Подольская губерния"
+   },
+   "wikidata": "Q277861",
+   "spans": [
+    {
+     "from": "1804-07-31",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-324",
+      "U1897-325",
+      "U1897-326",
+      "U1897-327",
+      "U1897-328",
+      "U1897-329",
+      "U1897-330",
+      "U1897-331",
+      "U1897-332",
+      "U1897-333",
+      "U1897-334",
+      "U1897-335"
+     ],
+     "sources": [
+      {
+       "url": "https://resource.history.org.ua/cgi-bin/eiu/history.exe?&I21DBN=EIU&P21DBN=EIU&S21STN=1&S21REF=10&S21FMT=eiu_all&C21COM=S&S21CNR=20&S21P01=0&S21P02=0&S21P03=TRN=&S21COLORTERMS=0&S21STR=Podilska_huberniia",
+       "title": "О. Є. Маркова, «Подільська губернія», Енциклопедія історії України, дод. т. 1 (2021)",
+       "says": "Borders of the governorate and its division into 12 uyezds were finally settled in 1804; neighbours Volhynia, Kiev, Kherson, Bessarabia, Austrian Galicia.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://perspekt.org.ua/articles/administrativno-teritorialnij-podil-zaslavshhini-naprikinci-xviii-pochatku-hhi-stolittya",
+       "title": "«Адміністративно-територіальний поділ Заславщини наприкінці XVIII – початку XX ст.» (perspekt.org.ua)",
+       "says": "Final establishment (штат) of the Volhynia and Podolia governorates issued 19 July 1804 after the 1797–1803 consolidation.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Штат of 1804-07-19 O.S. → 1804-07-31. Kherson side: Den’s Kherson list shows no change after 1802. No later change found to 1917."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Bessarabia@1873",
+   "names": {
+    "en": "Bessarabia Governorate",
+    "ja": "ベッサラビア県",
+    "local": "Бессарабская губерния"
+   },
+   "wikidata": "Q1190582",
+   "spans": [
+    {
+     "from": "1878-10",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "U1897-348",
+      "U1897-349",
+      "U1897-350",
+      "U1897-351",
+      "U1897-352",
+      "U1897-353",
+      "U1897-354",
+      "U1897-355"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1371865043",
+       "title": "Southern Bessarabia — Wikipedia (oldid 1371865043)",
+       "says": "Transfer took place in October 1878: from 13 to 18 October Russia took over Southern Bessarabia as Romanian officials withdrew (Kellogg 1995).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=155147299",
+       "title": "Измаильский уезд — Википедия (oldid 155147299)",
+       "says": "In 1878 the territory ceded in 1856 was returned to Russia and formed Izmail uyezd.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Treaty of Berlin 1878-07-13 N.S.; actual takeover 13–18 Oct 1878 (calendar of the source not stated; October in either). Month precision. Izmail uyezd’s borders were reworked in 1904 but only against Akkerman/Bender (internal). Oblast renamed governorate 1873-10-28 O.S. (= 11-09)."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Nikolaev@1802",
+   "names": {
+    "en": "Nikolaev Governorate",
+    "ja": "ニコラエフ県",
+    "local": "Николаевская губерния"
+   },
+   "spans": [
+    {
+     "from": "1802-10-20",
+     "precision": "day",
+     "to": "1803-05-27",
+     "atoms": [
+      "U1897-356",
+      "U1897-357",
+      "U1897-358",
+      "U1897-359",
+      "U1897-360",
+      "U1897-361"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/20221221025139/https://nlr.ru/res/refer/r_imp/gub/herson.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (по В. Э. Дену, 1902) — Херсонская (Николаевская) губерния",
+       "says": "ПСЗ-1 № 20449 (08.10.1802): Nikolaev governorate formed from Novorossiya with Elisavetgrad, Olviopol, Tiraspol, Kherson uyezds; 1803 renamed Kherson.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Decree 1802-10-08 O.S. (ПСЗ-1 № 20449) → 1802-10-20. Den lists no later change of the outer line. In 1804 Taurida and Kherson negotiated the demarcation of the Dnieper/Konka floodplain (Kravchuk 2014) without a decree in ПСЗ; treated as demarcation of the 1802 line."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Kherson@1803",
+   "names": {
+    "en": "Kherson Governorate",
+    "ja": "ヘルソン県",
+    "local": "Херсонская губерния"
+   },
+   "wikidata": "Q1540289",
+   "spans": [
+    {
+     "from": "1803-05-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-356",
+      "U1897-357",
+      "U1897-358",
+      "U1897-359",
+      "U1897-360",
+      "U1897-361"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/20221221025139/https://nlr.ru/res/refer/r_imp/gub/herson.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (по В. Э. Дену, 1902) — Херсонская (Николаевская) губерния",
+       "says": "ПСЗ-1 № 20760 (15.05.1803): seat moved to Kherson, renamed Kherson governorate; later entries (1806, 1825, 1828, 1834) only re-cut its own uyezds.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Rename 1803-05-15 O.S. → 1803-05-27. Odessa and Nikolaev gradonachalstvos (separate administrations) lie inside the 1897 Odessa/Kherson uyezd atoms and are drawn within the governorate, as the 1897 census counted them."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Taurida@1802",
+   "names": {
+    "en": "Taurida Governorate",
+    "ja": "タヴリダ県",
+    "local": "Таврическая губерния"
+   },
+   "wikidata": "Q1540321",
+   "spans": [
+    {
+     "from": "1820-04-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-489",
+      "U1897-490",
+      "U1897-491",
+      "U1897-492",
+      "U1897-493",
+      "U1897-494",
+      "U1897-495",
+      "U1897-496",
+      "U1897-497",
+      "U1897-841"
+     ],
+     "sources": [
+      {
+       "url": "https://roskav.ru/bez-rubriki/general-a-p-ermolov-i-chernomorskoe-kazache-vojsko-izmenenie-organizatsionnyh-printsipov-kordonnoj-sluzhby/",
+       "title": "«Генерал А. П. Ермолов и Черноморское казачье войско…» (roskav.ru)",
+       "says": "Decree of 11 April 1820 subordinated the Black Sea Host to the Georgian Corps; its lands left Taurida for Caucasus governorate administration.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=153227734",
+       "title": "Таврическая губерния — Википедия (oldid 153227734)",
+       "says": "In 1820 Tmutarakan uyezd passed to the Black Sea Host oblast; Yalta uyezd formed 1838, Berdyansk 1843.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://web.archive.org/web/20221221035054/https://nlr.ru/res/refer/r_imp/gub/tavr.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (по В. Э. Дену, 1902) — Таврическая губерния",
+       "says": "After 1802 only internal entries: Kerch-Enikale gradonachalstvo 1821, Yalta 1838, Berdyansk 1842, Sevastopol gradonachalstvo 1873.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1820-04-11 O.S. → 1820-04-23. Kerch-Enikale (1821) and Sevastopol (1873) gradonachalstvos had their own administration but are separate 1897 atoms grouped under Taurida by the census; drawn inside Taurida. No change 1897–1917."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Ekaterinoslav@1802",
+   "names": {
+    "en": "Yekaterinoslav Governorate",
+    "ja": "エカテリノスラフ県",
+    "local": "Екатеринославская губерния"
+   },
+   "wikidata": "Q49518",
+   "spans": [
+    {
+     "from": "1888-01-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-498",
+      "U1897-499",
+      "U1897-500",
+      "U1897-501",
+      "U1897-502",
+      "U1897-503",
+      "U1897-504",
+      "U1897-505"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/20240603033857/https://nlr.ru/res/refer/r_imp/gub/ekat.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (по В. Э. Дену, 1902) — Екатеринославская губерния",
+       "says": "ПСЗ-3 № 4466 (19.05.1887): Taganrog gradonachalstvo and Rostov uyezd joined to the Don Host oblast; ПСЗ-3 № 4701 deferred execution to 01.01.1888.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://web.archive.org/web/20260206131136/https://nlr.ru/res/refer/r_imp/gub/ovd.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (по В. Э. Дену, 1902) — Область Войска Донского",
+       "says": "Same 1887 law re-cut Rostov and Taganrog okrugs from the gradonachalstvo, Rostov uyezd, Miussky okrug and part of Cherkassk okrug.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Effective 1888-01-01 O.S. (ПСЗ-3 № 4701) → 1888-01-13. No later outer change to 1917 (the 1872/1874 Aleksandrovsk–Mariupol re-cut is internal and earlier)."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1802-10-20",
+   "precision": "day",
+   "what": "Novorossiya governorate divided into Nikolaev, Ekaterinoslav and Taurida governorates",
+   "sources": [
+    {
+     "url": "https://web.archive.org/web/20240603033857/https://nlr.ru/res/refer/r_imp/gub/ekat.html",
+     "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (по В. Э. Дену, 1902) — Екатеринославская губерния",
+     "says": "ПСЗ-1 № 20449 (08.10.1802) divided Novorossiya into Nikolaev, Ekaterinoslav and Taurida governorates.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1803-04-08",
+   "precision": "day",
+   "what": "Land between the Berestovaya and the Orel moved from Ekaterinoslav to Poltava",
+   "sources": [
+    {
+     "url": "https://web.archive.org/web/20240603033857/https://nlr.ru/res/refer/r_imp/gub/ekat.html",
+     "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (по В. Э. Дену, 1902) — Екатеринославская губерния",
+     "says": "ПСЗ-1 № 20684 (27.03.1803).",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1820-04-23",
+   "precision": "day",
+   "what": "Tmutarakan uyezd leaves Taurida for the Black Sea Host",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=153227734",
+     "title": "Таврическая губерния — Википедия (oldid 153227734)",
+     "says": "In 1820 Tmutarakan uyezd passed to the Black Sea Host oblast.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1824-01-21",
+   "precision": "day",
+   "what": "Starobelsk uyezd returned from Voronezh to Sloboda Ukraine",
+   "sources": [
+    {
+     "url": "https://web.archive.org/web/20251009174338/https://nlr.ru/res/refer/r_imp/gub/harkov.html",
+     "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (по В. Э. Дену, 1902) — Харьковская (Слободско-Украинская) губерния",
+     "says": "ПСЗ-1 № 29729 (09.01.1824).",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1844-03-04",
+   "precision": "day",
+   "what": "Berdichev moved from Volhynia to Kiev governorate",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=154747025",
+     "title": "История Бердичева — Википедия (oldid 154747025)",
+     "says": "1844: Berdichev attached to Makhnovka uyezd of Kiev governorate.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1878-10",
+   "precision": "month",
+   "what": "Southern Bessarabia returned to Russia (Izmail uyezd)",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1371865043",
+     "title": "Southern Bessarabia — Wikipedia (oldid 1371865043)",
+     "says": "Russian takeover 13–18 October 1878.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1888-01-13",
+   "precision": "day",
+   "what": "Rostov uyezd and Taganrog gradonachalstvo pass from Ekaterinoslav to the Don Host oblast",
+   "sources": [
+    {
+     "url": "https://web.archive.org/web/20240603033857/https://nlr.ru/res/refer/r_imp/gub/ekat.html",
+     "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (по В. Э. Дену, 1902) — Екатеринославская губерния",
+     "says": "ПСЗ-3 № 4466, effective 01.01.1888 by ПСЗ-3 № 4701.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [
+  {
+   "atom": "U1897-348",
+   "to": "1812-05-28",
+   "why": "Ottoman Empire (Principality of Moldavia and Budjak) until the Treaty of Bucharest, 16/28 May 1812."
+  },
+  {
+   "atom": "U1897-349",
+   "to": "1812-05-28",
+   "why": "Ottoman Empire (Principality of Moldavia and Budjak) until the Treaty of Bucharest, 16/28 May 1812."
+  },
+  {
+   "atom": "U1897-350",
+   "to": "1812-05-28",
+   "why": "Ottoman Empire (Principality of Moldavia and Budjak) until the Treaty of Bucharest, 16/28 May 1812."
+  },
+  {
+   "atom": "U1897-351",
+   "to": "1812-05-28",
+   "why": "Ottoman Empire (Principality of Moldavia and Budjak) until the Treaty of Bucharest, 16/28 May 1812."
+  },
+  {
+   "atom": "U1897-352",
+   "to": "1812-05-28",
+   "why": "Ottoman Empire (Principality of Moldavia and Budjak) until the Treaty of Bucharest, 16/28 May 1812."
+  },
+  {
+   "atom": "U1897-353",
+   "to": "1812-05-28",
+   "why": "Ottoman Empire (Principality of Moldavia and Budjak) until the Treaty of Bucharest, 16/28 May 1812."
+  },
+  {
+   "atom": "U1897-354",
+   "to": "1812-05-28",
+   "why": "Ottoman Empire (Principality of Moldavia and Budjak) until the Treaty of Bucharest, 16/28 May 1812."
+  },
+  {
+   "atom": "U1897-355",
+   "to": "1812-05-28",
+   "why": "Ottoman Empire (Principality of Moldavia and Budjak) until the Treaty of Bucharest, 16/28 May 1812."
+  }
+ ],
+ "unresolved": [
+  {
+   "what": "Starobelsk uyezd while in Voronezh governorate",
+   "atoms": [
+    "U1897-487"
+   ],
+   "from": "1802-03-18",
+   "to": "1824-01-21",
+   "why": "The uyezd belonged to Voronezh governorate (atoms of another region’s dossier); it cannot be assigned to a unit in this region.",
+   "checked": [
+    "Den: Voronezh and Kharkov lists",
+    "ru.wikipedia Старобельский уезд"
+   ],
+   "needs": "the Voronezh governorate entry of the central-region dossier"
+  },
+  {
+   "what": "Poltava governorate before the Berestovaya–Orel transfer",
+   "unit": "RUE:Poltava@1802",
+   "atoms": [
+    "U1897-362",
+    "U1897-363",
+    "U1897-364",
+    "U1897-365",
+    "U1897-366",
+    "U1897-367",
+    "U1897-368",
+    "U1897-369",
+    "U1897-370",
+    "U1897-371",
+    "U1897-372",
+    "U1897-373",
+    "U1897-374",
+    "U1897-375",
+    "U1897-376"
+   ],
+   "from": "1802-03-18",
+   "to": "1803-04-08",
+   "why": "Until 27 Mar 1803 O.S. the land between the Berestovaya and the Orel (now inside Konstantinograd uyezd) belonged to Ekaterinoslav; the 1802 line runs through a 1897 uyezd.",
+   "checked": [
+    "Den: Ekaterinoslav list (ПСЗ-1 № 20684)",
+    "ru.wikipedia Полтавская губерния, Константиноградский уезд"
+   ],
+   "needs": "finer atoms (volost level)"
+  },
+  {
+   "what": "Chernigov governorate 1802–1894",
+   "unit": "RUE:Chernigov@1802",
+   "atoms": [
+    "U1897-377",
+    "U1897-378",
+    "U1897-379",
+    "U1897-380",
+    "U1897-381",
+    "U1897-382",
+    "U1897-383",
+    "U1897-384",
+    "U1897-385",
+    "U1897-386",
+    "U1897-387",
+    "U1897-388",
+    "U1897-389",
+    "U1897-390",
+    "U1897-391"
+   ],
+   "from": "1802-03-18",
+   "to": "1895-01-01",
+   "why": "Parcels later ceded to Kiev and Mogilev governorates (1889, 1894) lie inside 1897 Kiev/Mogilev uyezds; exact parcels and days not found.",
+   "checked": [
+    "ЭСБЕ Черниговская губерния",
+    "ru/uk.wikipedia Черниговская губерния, Остёрский, Новозыбковский, Гомельский уезды",
+    "web search for the Committee of Ministers decisions"
+   ],
+   "needs": "the 1889/1894 decisions (Собрание узаконений) and finer atoms"
+  },
+  {
+   "what": "Kiev governorate 1802–1894",
+   "unit": "RUE:Kiev@1796",
+   "atoms": [
+    "U1897-336",
+    "U1897-337",
+    "U1897-338",
+    "U1897-339",
+    "U1897-340",
+    "U1897-341",
+    "U1897-342",
+    "U1897-343",
+    "U1897-344",
+    "U1897-345",
+    "U1897-346",
+    "U1897-347"
+   ],
+   "from": "1802-03-18",
+   "to": "1895-01-01",
+   "why": "Berdichev joined from Volhynia in 1844 (partial uyezd) and Chernigov parcels in 1889/1894; earlier outlines are not unions of 1897 uyezds.",
+   "checked": [
+    "ru.wikipedia Киевская губерния, История Бердичева",
+    "ЭСБЕ Черниговская губерния"
+   ],
+   "needs": "finer atoms"
+  },
+  {
+   "what": "Volhynian governorate before Berdichev left (incl. the 1797–1804 consolidation)",
+   "unit": "RUE:Volhynia@1795",
+   "atoms": [
+    "U1897-312",
+    "U1897-313",
+    "U1897-314",
+    "U1897-315",
+    "U1897-316",
+    "U1897-317",
+    "U1897-318",
+    "U1897-319",
+    "U1897-320",
+    "U1897-321",
+    "U1897-322",
+    "U1897-323"
+   ],
+   "from": "1802-03-18",
+   "to": "1844-03-04",
+   "why": "Berdichev town (in Zhitomir uyezd until 1844) lies inside 1897 Berdichev uyezd of Kiev governorate; borders with Podolia settled only in 1804.",
+   "checked": [
+    "ru.wikipedia История Бердичева",
+    "berdychiv.in.ua",
+    "perspekt.org.ua"
+   ],
+   "needs": "finer atoms (town of Berdichev)"
+  },
+  {
+   "what": "Podolia governorate before the 1804 final establishment",
+   "unit": "RUE:Podolia@1796",
+   "atoms": [
+    "U1897-324",
+    "U1897-325",
+    "U1897-326",
+    "U1897-327",
+    "U1897-328",
+    "U1897-329",
+    "U1897-330",
+    "U1897-331",
+    "U1897-332",
+    "U1897-333",
+    "U1897-334",
+    "U1897-335"
+   ],
+   "from": "1802-03-18",
+   "to": "1804-07-31",
+   "why": "Uyezds of Podolia and Volhynia were still being consolidated 1797–1803; lines before the 1804 штат are not documented to match 1897 lines.",
+   "checked": [
+    "Енциклопедія історії України (Маркова 2021)",
+    "perspekt.org.ua"
+   ],
+   "needs": "the 1797–1804 decrees with uyezd lists"
+  },
+  {
+   "what": "Novorossiya governorate (until the 1802 tripartition)",
+   "unit": "RUE:Novorossiya@1796",
+   "atoms": [
+    "U1897-356",
+    "U1897-357",
+    "U1897-358",
+    "U1897-359",
+    "U1897-360",
+    "U1897-361",
+    "U1897-489",
+    "U1897-490",
+    "U1897-491",
+    "U1897-492",
+    "U1897-493",
+    "U1897-494",
+    "U1897-495",
+    "U1897-496",
+    "U1897-497",
+    "U1897-841",
+    "U1897-498",
+    "U1897-499",
+    "U1897-500",
+    "U1897-501",
+    "U1897-502",
+    "U1897-503",
+    "U1897-504",
+    "U1897-505"
+   ],
+   "from": "1802-03-18",
+   "to": "1802-10-20",
+   "why": "Novorossiya included Rostov uyezd and Black Sea Host lands (atoms outside this region) and the Berestovaya–Orel land now in Poltava.",
+   "checked": [
+    "Den: Ekaterinoslav, Taurida, Kherson lists"
+   ],
+   "needs": "atoms of the Don and Kuban groups and finer atoms"
+  },
+  {
+   "what": "Taurida governorate with Tmutarakan uyezd",
+   "unit": "RUE:Taurida@1802",
+   "atoms": [
+    "U1897-489",
+    "U1897-490",
+    "U1897-491",
+    "U1897-492",
+    "U1897-493",
+    "U1897-494",
+    "U1897-495",
+    "U1897-496",
+    "U1897-497",
+    "U1897-841"
+   ],
+   "from": "1802-10-20",
+   "to": "1820-04-23",
+   "why": "Tmutarakan uyezd (Taman and Black Sea Host lands) belonged to Taurida until April 1820; that land is outside this region’s atoms.",
+   "checked": [
+    "ru.wikipedia Таврическая губерния, Черноморское казачье войско",
+    "roskav.ru",
+    "Кравчук 2014 (cyberleninka)"
+   ],
+   "needs": "Kuban oblast atoms (other region)"
+  },
+  {
+   "what": "Ekaterinoslav governorate with Rostov uyezd and Taganrog gradonachalstvo",
+   "unit": "RUE:Ekaterinoslav@1802",
+   "atoms": [
+    "U1897-498",
+    "U1897-499",
+    "U1897-500",
+    "U1897-501",
+    "U1897-502",
+    "U1897-503",
+    "U1897-504",
+    "U1897-505"
+   ],
+   "from": "1802-10-20",
+   "to": "1888-01-13",
+   "why": "The 1887 law re-cut the ceded land into new Rostov and Taganrog okrugs mixed with Don lands, so the old line follows no 1897 uyezd/okrug line; also the 1803 Berestovaya–Orel transfer.",
+   "checked": [
+    "Den: Ekaterinoslav and Don lists (ПСЗ-3 № 4466, 4701)",
+    "ru.wikipedia Мариупольский уезд"
+   ],
+   "needs": "finer atoms (stan/volost level)"
+  },
+  {
+   "what": "Bessarabia oblast/governorate 1812–1878",
+   "unit": "RUE:BessarabiaOblast@1812",
+   "atoms": [
+    "U1897-348",
+    "U1897-349",
+    "U1897-350",
+    "U1897-351",
+    "U1897-352",
+    "U1897-353",
+    "U1897-354",
+    "U1897-355"
+   ],
+   "from": "1812-05-28",
+   "to": "1878-10",
+   "why": "1829–1857 the oblast included Danube delta islands (outside the atoms); 1812–1829 delta line unverified; 1857–1878 the handover date and whether the 1857 line equals the 1897 Izmail uyezd line are not established (Komrat uyezd split 1857–58).",
+   "checked": [
+    "ru/uk/en.wikipedia Бессарабская губерния, Измаильский/Аккерманский уезд, Southern Bessarabia"
+   ],
+   "needs": "1857 delimitation protocol and handover date; finer atoms"
+  }
+ ]
+}

@@ -1,0 +1,1213 @@
+{
+ "country": "IRN",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1993-04-12",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Islamic Republic of Iran (state continuous over the whole scope). Scope starts at the Ardabil split; earlier layouts are listed in unresolved.",
+ "units": [
+  {
+   "id": "IRN:WestAzarbaijan@1993",
+   "names": {
+    "en": "West Azerbaijan Province",
+    "ja": "西アーザルバーイジャーン州",
+    "local": "استان آذربایجان غربی"
+   },
+   "wikidata": "Q134411",
+   "spans": [
+    {
+     "from": "1993-04-12",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-3237"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
+       "says": "Change history after the ~1986 census table lists no boundary change for West Azarbaijan (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+    }
+   ]
+  },
+  {
+   "id": "IRN:Gilan@1993",
+   "names": {
+    "en": "Gilan Province",
+    "ja": "ギーラーン州",
+    "local": "استان گیلان"
+   },
+   "wikidata": "Q928828",
+   "spans": [
+    {
+     "from": "1993-04-12",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-3240"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
+       "says": "Change history after the ~1986 census table lists no boundary change for Gilan (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+    }
+   ]
+  },
+  {
+   "id": "IRN:Kordestan@1993",
+   "names": {
+    "en": "Kurdistan Province",
+    "ja": "コルデスターン州",
+    "local": "استان کردستان"
+   },
+   "wikidata": "Q134386",
+   "spans": [
+    {
+     "from": "1993-04-12",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-3241"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
+       "says": "Change history after the ~1986 census table lists no boundary change for Kordestan (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+    }
+   ]
+  },
+  {
+   "id": "IRN:Kermanshah@1993",
+   "names": {
+    "en": "Kermanshah Province",
+    "ja": "ケルマーンシャー州",
+    "local": "استان کرمانشاه"
+   },
+   "wikidata": "Q174010",
+   "spans": [
+    {
+     "from": "1993-04-12",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-3239"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
+       "says": "Change history after the ~1986 census table lists no boundary change for Kermanshah (Bakhtaran until ~1995, a renaming only) (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+    }
+   ]
+  },
+  {
+   "id": "IRN:Ilam@1993",
+   "names": {
+    "en": "Ilam Province",
+    "ja": "イーラーム州",
+    "local": "استان ایلام"
+   },
+   "wikidata": "Q170570",
+   "spans": [
+    {
+     "from": "1993-04-12",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-3221"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
+       "says": "Change history after the ~1986 census table lists no boundary change for Ilam (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+    }
+   ]
+  },
+  {
+   "id": "IRN:Khuzestan@1993",
+   "names": {
+    "en": "Khuzestan Province",
+    "ja": "フーゼスターン州",
+    "local": "استان خوزستان"
+   },
+   "wikidata": "Q241119",
+   "spans": [
+    {
+     "from": "1993-04-12",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-3219"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
+       "says": "Change history after the ~1986 census table lists no boundary change for Khuzestan (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+    }
+   ]
+  },
+  {
+   "id": "IRN:SistanBaluchestan@1993",
+   "names": {
+    "en": "Sistan and Baluchestan Province",
+    "ja": "スィースターン・バルーチェスターン州",
+    "local": "استان سیستان و بلوچستان"
+   },
+   "wikidata": "Q939575",
+   "spans": [
+    {
+     "from": "1993-04-12",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-3247"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
+       "says": "Change history after the ~1986 census table lists no boundary change for Sistan and Baluchestan (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+    }
+   ]
+  },
+  {
+   "id": "IRN:Bushehr@1993",
+   "names": {
+    "en": "Bushehr Province",
+    "ja": "ブーシェフル州",
+    "local": "استان بوشهر"
+   },
+   "wikidata": "Q132945",
+   "spans": [
+    {
+     "from": "1993-04-12",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-3210"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
+       "says": "Change history after the ~1986 census table lists no boundary change for Bushehr (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+    }
+   ]
+  },
+  {
+   "id": "IRN:Hormozgan@1993",
+   "names": {
+    "en": "Hormozgan Province",
+    "ja": "ホルモズガーン州",
+    "local": "استان هرمزگان"
+   },
+   "wikidata": "Q633659",
+   "spans": [
+    {
+     "from": "1993-04-12",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-3228"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
+       "says": "Change history after the ~1986 census table lists no boundary change for Hormozgan (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+    }
+   ]
+  },
+  {
+   "id": "IRN:Semnan@1993",
+   "names": {
+    "en": "Semnan Province",
+    "ja": "セムナーン州",
+    "local": "استان سمنان"
+   },
+   "wikidata": "Q168949",
+   "spans": [
+    {
+     "from": "1993-04-12",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-3215"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
+       "says": "Change history after the ~1986 census table lists no boundary change for Semnan (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+    }
+   ]
+  },
+  {
+   "id": "IRN:Markazi@1993",
+   "names": {
+    "en": "Markazi Province",
+    "ja": "マルキャズィー州",
+    "local": "استان مرکزی"
+   },
+   "wikidata": "Q134417",
+   "spans": [
+    {
+     "from": "1993-04-12",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-3231"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
+       "says": "Change history after the ~1986 census table lists no boundary change for Markazi (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+    }
+   ]
+  },
+  {
+   "id": "IRN:Esfahan@1993",
+   "names": {
+    "en": "Isfahan Province",
+    "ja": "エスファハーン州",
+    "local": "استان اصفهان"
+   },
+   "wikidata": "Q1367759",
+   "spans": [
+    {
+     "from": "1993-04-12",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-3211"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
+       "says": "Change history after the ~1986 census table lists no boundary change for Esfahan (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+    }
+   ]
+  },
+  {
+   "id": "IRN:ChaharmahalBakhtiari@1993",
+   "names": {
+    "en": "Chaharmahal and Bakhtiari Province",
+    "ja": "チャハール＝マハール・バフティヤーリー州",
+    "local": "استان چهارمحال و بختیاری"
+   },
+   "wikidata": "Q171702",
+   "spans": [
+    {
+     "from": "1993-04-12",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-3218"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
+       "says": "Change history after the ~1986 census table lists no boundary change for Chahar Mahall and Bakhtiari (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+    }
+   ]
+  },
+  {
+   "id": "IRN:KohgiluyehBoyerAhmad@1993",
+   "names": {
+    "en": "Kohgiluyeh and Boyer-Ahmad Province",
+    "ja": "コフギールーイェ・ブーイェル＝アフマド州",
+    "local": "استان کهگیلویه و بویراحمد"
+   },
+   "wikidata": "Q180068",
+   "spans": [
+    {
+     "from": "1993-04-12",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-3209"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
+       "says": "Change history after the ~1986 census table lists no boundary change for Kohgiluyeh and Buyer Ahmad (renaming ~1990 only) (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+    }
+   ]
+  },
+  {
+   "id": "IRN:Fars@1993",
+   "names": {
+    "en": "Fars Province",
+    "ja": "ファールス州",
+    "local": "استان فارس"
+   },
+   "wikidata": "Q1004666",
+   "spans": [
+    {
+     "from": "1993-04-12",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-3212"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
+       "says": "Change history after the ~1986 census table lists no boundary change for Fars (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+    }
+   ]
+  },
+  {
+   "id": "IRN:Kerman@1993",
+   "names": {
+    "en": "Kerman Province",
+    "ja": "ケルマーン州",
+    "local": "استان کرمان"
+   },
+   "wikidata": "Q165352",
+   "spans": [
+    {
+     "from": "1993-04-12",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-3248"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
+       "says": "Change history after the ~1986 census table lists no boundary change for Kerman (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+    }
+   ]
+  },
+  {
+   "id": "IRN:Hamadan@1993",
+   "names": {
+    "en": "Hamadan Province",
+    "ja": "ハマダーン州",
+    "local": "استان همدان"
+   },
+   "wikidata": "Q187373",
+   "spans": [
+    {
+     "from": "1993-04-12",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-3233"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
+       "says": "Change history after the ~1986 census table lists no boundary change for Hamadan (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+    }
+   ]
+  },
+  {
+   "id": "IRN:Lorestan@1993",
+   "names": {
+    "en": "Lorestan Province",
+    "ja": "ロレスターン州",
+    "local": "استان لرستان"
+   },
+   "wikidata": "Q1131727",
+   "spans": [
+    {
+     "from": "1993-04-12",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-3220"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
+       "says": "Change history after the ~1986 census table lists no boundary change for Lorestan (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+    }
+   ]
+  },
+  {
+   "id": "IRN:EastAzarbaijan@1993",
+   "names": {
+    "en": "East Azerbaijan Province",
+    "ja": "東アーザルバーイジャーン州",
+    "local": "استان آذربایجان شرقی"
+   },
+   "wikidata": "Q176081",
+   "spans": [
+    {
+     "from": "1993-04-12",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-3238"
+     ],
+     "sources": [
+      {
+       "url": "https://www.mefa.ir/news/644125/",
+       "title": "آشنایی با استان اردبیل (mefa.ir)",
+       "says": "Ardabil bill passed Majlis 22 Dey 1371; province separated from East Azerbaijan on 23 Farvardin 1372 (1993-04-12).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
+       "says": "Change history after the ~1986 census table lists no boundary change for East Azarbaijan after 1993 (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Outline after Ardabil left it on 1993-04-12 (23 Farvardin 1372)."
+    }
+   ]
+  },
+  {
+   "id": "IRN:Ardabil@1993",
+   "names": {
+    "en": "Ardabil Province",
+    "ja": "アルダビール州",
+    "local": "استان اردبیل"
+   },
+   "wikidata": "Q134228",
+   "spans": [
+    {
+     "from": "1993-04-12",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-3230"
+     ],
+     "sources": [
+      {
+       "url": "https://www.mefa.ir/news/644125/",
+       "title": "آشنایی با استان اردبیل (mefa.ir)",
+       "says": "Ardabil bill passed Majlis 22 Dey 1371; province separated from East Azerbaijan on 23 Farvardin 1372 (1993-04-12).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
+       "says": "1993: Ardebil province split from East Azarbaijan; no later change listed.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Date = separation date given by mefa.ir (23 Farvardin 1372); Majlis approval was 22 Dey 1371."
+    }
+   ]
+  },
+  {
+   "id": "IRN:Mazandaran@1993",
+   "names": {
+    "en": "Mazandaran Province",
+    "ja": "マーザンダラーン州",
+    "local": "استان مازندران"
+   },
+   "wikidata": "Q308864",
+   "spans": [
+    {
+     "from": "1993-04-12",
+     "precision": "day",
+     "to": "1997-05-31",
+     "atoms": [
+      "IRN-3214",
+      "IRN-3213"
+     ],
+     "sources": [
+      {
+       "url": "https://lamtakam.com/law/council_of_ministers/93027",
+       "title": "قانون تأسیس استان گلستان (Law on establishing Golestan province), Official Gazette no. 15412",
+       "says": "Seven counties taken from Mazandaran form Golestan; Majlis 1376/09/16, Guardian Council 1376/10/03, published 1376/10/29 (1998-01-19).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
+       "says": "1997-05-31: Golestan formed from six Mazandaran counties; no other change to Mazandaran listed.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Mazandaran before Golestan = union of the modern Mazandaran and Golestan atoms (Golestan made wholly of Mazandaran counties per the law). Ends at the earliest date any source gives for Golestan (Statoids/Wikipedia 1997-05-31)."
+    },
+    {
+     "from": "1998-01-19",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-3214"
+     ],
+     "sources": [
+      {
+       "url": "https://lamtakam.com/law/council_of_ministers/93027",
+       "title": "قانون تأسیس استان گلستان (Law on establishing Golestan province), Official Gazette no. 15412",
+       "says": "Seven counties taken from Mazandaran form Golestan; Majlis 1376/09/16, Guardian Council 1376/10/03, published 1376/10/29 (1998-01-19).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Begins at the official-gazette publication of the Golestan law (1376/10/29); window from 1997-05-31 is unresolved because sources disagree."
+    }
+   ]
+  },
+  {
+   "id": "IRN:Golestan@1998",
+   "names": {
+    "en": "Golestan Province",
+    "ja": "ゴレスターン州",
+    "local": "استان گلستان"
+   },
+   "wikidata": "Q170041",
+   "spans": [
+    {
+     "from": "1998-01-19",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-3213"
+     ],
+     "sources": [
+      {
+       "url": "https://lamtakam.com/law/council_of_ministers/93027",
+       "title": "قانون تأسیس استان گلستان (Law on establishing Golestan province), Official Gazette no. 15412",
+       "says": "Seven counties taken from Mazandaran form Golestan; Majlis 1376/09/16, Guardian Council 1376/10/03, published 1376/10/29 (1998-01-19).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1345255752",
+       "title": "Provinces of Iran — Wikipedia (oldid 1345255752)",
+       "says": "Table notes: Qazvin formed 31 Dec 1996 from Zanjan; Golestan 31 May 1997 from Mazandaran; Tabas moved Khorasan→Yazd 2002; 31 provinces.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Gazette publication date of the law; Statoids and en.Wikipedia give 31 May 1997 (unsourced) — the window between is unresolved."
+    }
+   ]
+  },
+  {
+   "id": "IRN:Zanjan@1997",
+   "names": {
+    "en": "Zanjan Province",
+    "ja": "ザンジャーン州",
+    "local": "استان زنجان"
+   },
+   "wikidata": "Q146726",
+   "spans": [
+    {
+     "from": "1997-06-29",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-3234"
+     ],
+     "sources": [
+      {
+       "url": "https://lamtakam.com/law/council_of_ministers/92861",
+       "title": "قانون ایجاد استان قزوین (Law on establishing Qazvin province), Official Gazette no. 15239",
+       "says": "Qazvin, Buin Zahra and Takestan counties form Qazvin province, taken from Tehran and Zanjan provinces; Majlis 1376/03/04, published 1376/04/08 (1997-06-29).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
+       "says": "1996-12-31: Qazvin province formed taking Qazvin and Takestan from Zanjan; no later change to Zanjan listed.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Gazette publication of the Qazvin law (1376/04/08); the law authorises the government, entry-into-force day not stated."
+    }
+   ]
+  },
+  {
+   "id": "IRN:Qazvin@1997",
+   "names": {
+    "en": "Qazvin Province",
+    "ja": "ガズヴィーン州",
+    "local": "استان قزوین"
+   },
+   "wikidata": "Q1105893",
+   "spans": [
+    {
+     "from": "1997-06-29",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-3235"
+     ],
+     "sources": [
+      {
+       "url": "https://lamtakam.com/law/council_of_ministers/92861",
+       "title": "قانون ایجاد استان قزوین (Law on establishing Qazvin province), Official Gazette no. 15239",
+       "says": "Qazvin, Buin Zahra and Takestan counties form Qazvin province, taken from Tehran and Zanjan provinces; Majlis 1376/03/04, published 1376/04/08 (1997-06-29).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Gazette publication date; Statoids/Wikipedia give 1996-12-31, which predates the Majlis vote (1997-05-25)."
+    }
+   ]
+  },
+  {
+   "id": "IRN:Qom@1997",
+   "names": {
+    "en": "Qom Province",
+    "ja": "ゴム州",
+    "local": "استان قم"
+   },
+   "wikidata": "Q131664",
+   "spans": [
+    {
+     "from": "1997-06-29",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-3232"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1376579684",
+       "title": "Qom province — Wikipedia (oldid 1376579684)",
+       "says": "Formed from part of Tehran province in 1996; cites the Law on the establishment of Qom province, approved 1375/02/04 (23 April 1996).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
+       "says": "1995: Qom province formed by taking Qom county from Tehran province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Qom province existed from 1996 (law approved 1996-04-23); the atom is left inside the unresolved Tehran–Zanjan block until the Qazvin law because Tehran's pre-1997 extent is unknown. Span start is therefore conservative, not the founding date."
+    }
+   ]
+  },
+  {
+   "id": "IRN:Tehran@1997",
+   "names": {
+    "en": "Tehran Province",
+    "ja": "テヘラン州",
+    "local": "استان تهران"
+   },
+   "wikidata": "Q590866",
+   "spans": [
+    {
+     "from": "1997-06-29",
+     "precision": "day",
+     "to": "2010-06-23",
+     "atoms": [
+      "IRN-3216",
+      "IRN-5490"
+     ],
+     "sources": [
+      {
+       "url": "https://lamtakam.com/law/council_of_ministers/92861",
+       "title": "قانون ایجاد استان قزوین (Law on establishing Qazvin province), Official Gazette no. 15239",
+       "says": "Qazvin, Buin Zahra and Takestan counties form Qazvin province, taken from Tehran and Zanjan provinces; Majlis 1376/03/04, published 1376/04/08 (1997-06-29).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1374586947",
+       "title": "Alborz province — Wikipedia (oldid 1374586947)",
+       "says": "In 2010 Karaj, Nazarabad and Savojbolagh counties were separated from Tehran province to form Alborz; law approval 1389/04/02 (23 June 2010).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Tehran province after the Qazvin law and before Alborz = union of the modern Tehran and Alborz atoms (Alborz made wholly of three Tehran counties)."
+    },
+    {
+     "from": "2010-06-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-3216"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1374586947",
+       "title": "Alborz province — Wikipedia (oldid 1374586947)",
+       "says": "In 2010 Karaj, Nazarabad and Savojbolagh counties were separated from Tehran province to form Alborz; law approval 1389/04/02 (23 June 2010).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
+       "says": "2010-06-23: Alborz province split from Tehran (Karaj, Nazarabad, Savojbolagh).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Majlis approval date of the Alborz law (1389/04/02), also given by Statoids as the change date."
+    }
+   ]
+  },
+  {
+   "id": "IRN:Alborz@2010",
+   "names": {
+    "en": "Alborz Province",
+    "ja": "アルボルズ州",
+    "local": "استان البرز"
+   },
+   "wikidata": "Q392522",
+   "spans": [
+    {
+     "from": "2010-06-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-5490"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1374586947",
+       "title": "Alborz province — Wikipedia (oldid 1374586947)",
+       "says": "In 2010 Karaj, Nazarabad and Savojbolagh counties were separated from Tehran province to form Alborz; law approval 1389/04/02 (23 June 2010).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Majlis approval date (1389/04/02); later additions (Eshtehard, Taleqan) were districts of the founding counties."
+    }
+   ]
+  },
+  {
+   "id": "IRN:Khorasan@2002",
+   "names": {
+    "en": "Khorasan Province",
+    "ja": "ホラーサーン",
+    "local": "استان خراسان"
+   },
+   "wikidata": "Q6178890",
+   "spans": [
+    {
+     "from": "2002-03-21",
+     "precision": "day",
+     "to": "2004-09-29",
+     "atoms": [
+      "IRN-3246",
+      "IRN-3245",
+      "IRN-3244"
+     ],
+     "sources": [
+      {
+       "url": "https://fa.wikipedia.org/w/index.php?oldid=44596070",
+       "title": "شهرستان طبس — ویکی‌پدیای فارسی (oldid 44596070)",
+       "says": "In SH 1380 Tabas county left Khorasan and joined Yazd province; in SH 1391 it joined South Khorasan.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1376937801",
+       "title": "North Khorasan province — Wikipedia (oldid 1376937801)",
+       "says": "Khorasan was divided into North, Razavi and South Khorasan on 29 September 2004 (law approved 18 and 29 May 2004).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
+       "says": "~2002: Tabas transferred Khorasan→Yazd; 2004-09-29 Khorasan divided into three provinces.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "After Tabas left (during SH 1380 = 2001-03-21…2002-03-20; day not found) Khorasan = union of the three successor atoms. Span starts 1 Farvardin 1381 so that nothing uncertain is claimed; the earlier window is unresolved."
+    }
+   ]
+  },
+  {
+   "id": "IRN:Yazd@2002",
+   "names": {
+    "en": "Yazd Province",
+    "ja": "ヤズド州",
+    "local": "استان یزد"
+   },
+   "wikidata": "Q170568",
+   "spans": [
+    {
+     "from": "2002-03-21",
+     "precision": "day",
+     "to": "2013-01-13",
+     "atoms": [
+      "IRN-3217"
+     ],
+     "sources": [
+      {
+       "url": "https://fa.wikipedia.org/w/index.php?oldid=44596070",
+       "title": "شهرستان طبس — ویکی‌پدیای فارسی (oldid 44596070)",
+       "says": "In SH 1380 Tabas county left Khorasan and joined Yazd province; in SH 1391 it joined South Khorasan.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375775611",
+       "title": "Deyhuk District — Wikipedia (oldid 1375775611)",
+       "says": "Cites approval letter 24/10/1391 (13 January 2013) detaching Tabas County from Yazd and annexing it to South Khorasan.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1345255752",
+       "title": "Provinces of Iran — Wikipedia (oldid 1345255752)",
+       "says": "Table notes: Qazvin formed 31 Dec 1996 from Zanjan; Golestan 31 May 1997 from Mazandaran; Tabas moved Khorasan→Yazd 2002; 31 provinces.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "NE Yazd contains Tabas (point-in-polygon test, Tabas and Deyhuk fall in IRN-3217). Valid only while Tabas was in Yazd: from the end of SH 1380 (conservative) to the cabinet approval of 2013-01-13 (announced 2013-03-13)."
+    }
+   ]
+  },
+  {
+   "id": "IRN:NorthKhorasan@2004",
+   "names": {
+    "en": "North Khorasan Province",
+    "ja": "北ホラーサーン州",
+    "local": "استان خراسان شمالی"
+   },
+   "wikidata": "Q180075",
+   "spans": [
+    {
+     "from": "2004-09-29",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-3246"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1376937801",
+       "title": "North Khorasan province — Wikipedia (oldid 1376937801)",
+       "says": "Khorasan was divided into North, Razavi and South Khorasan on 29 September 2004 (law approved 18 and 29 May 2004).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
+       "says": "2004-09-29: Bojnurd, Esfarayen, Jajarm, Maneh and Samalqan, Shirvan to North Khorasan; later transfers listed only between Razavi and South Khorasan.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1993-04-12",
+   "precision": "day",
+   "what": "Ardabil province separated from East Azerbaijan",
+   "sources": [
+    {
+     "url": "https://www.mefa.ir/news/644125/",
+     "title": "آشنایی با استان اردبیل (mefa.ir)",
+     "says": "Ardabil bill passed Majlis 22 Dey 1371; province separated from East Azerbaijan on 23 Farvardin 1372 (1993-04-12).",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1996-04-23",
+   "precision": "day",
+   "what": "Majlis approves law establishing Qom province from Qom county of Tehran province",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1376579684",
+     "title": "Qom province — Wikipedia (oldid 1376579684)",
+     "says": "Formed from part of Tehran province in 1996; cites the Law on the establishment of Qom province, approved 1375/02/04 (23 April 1996).",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1997-06-29",
+   "precision": "day",
+   "what": "Law establishing Qazvin province (from Tehran and Zanjan) published",
+   "sources": [
+    {
+     "url": "https://lamtakam.com/law/council_of_ministers/92861",
+     "title": "قانون ایجاد استان قزوین (Law on establishing Qazvin province), Official Gazette no. 15239",
+     "says": "Qazvin, Buin Zahra and Takestan counties form Qazvin province, taken from Tehran and Zanjan provinces; Majlis 1376/03/04, published 1376/04/08 (1997-06-29).",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1998-01-19",
+   "precision": "day",
+   "what": "Law establishing Golestan province (from Mazandaran) published",
+   "sources": [
+    {
+     "url": "https://lamtakam.com/law/council_of_ministers/93027",
+     "title": "قانون تأسیس استان گلستان (Law on establishing Golestan province), Official Gazette no. 15412",
+     "says": "Seven counties taken from Mazandaran form Golestan; Majlis 1376/09/16, Guardian Council 1376/10/03, published 1376/10/29 (1998-01-19).",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2001",
+   "precision": "year",
+   "what": "Tabas county moved from Khorasan to Yazd during SH 1380 (2001-03-21…2002-03-20)",
+   "sources": [
+    {
+     "url": "https://fa.wikipedia.org/w/index.php?oldid=44596070",
+     "title": "شهرستان طبس — ویکی‌پدیای فارسی (oldid 44596070)",
+     "says": "In SH 1380 Tabas county left Khorasan and joined Yazd province; in SH 1391 it joined South Khorasan.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2004-09-29",
+   "precision": "day",
+   "what": "Khorasan divided into North, Razavi and South Khorasan",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1376937801",
+     "title": "North Khorasan province — Wikipedia (oldid 1376937801)",
+     "says": "Khorasan was divided into North, Razavi and South Khorasan on 29 September 2004 (law approved 18 and 29 May 2004).",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2007-03-04",
+   "precision": "day",
+   "what": "Ferdows county moved from Razavi Khorasan to South Khorasan",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1375875565",
+     "title": "Ferdows County — Wikipedia (oldid 1375875565)",
+     "says": "Ferdows County was first in Razavi Khorasan (2004 law) and was incorporated into South Khorasan by an approval of 4 March 2007.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2010-06-23",
+   "precision": "day",
+   "what": "Alborz province formed from three Tehran counties",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1374586947",
+     "title": "Alborz province — Wikipedia (oldid 1374586947)",
+     "says": "In 2010 Karaj, Nazarabad and Savojbolagh counties were separated from Tehran province to form Alborz; law approval 1389/04/02 (23 June 2010).",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2013-01-13",
+   "precision": "day",
+   "what": "Cabinet approves moving Tabas county from Yazd to South Khorasan (announced 2013-03-13)",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1375775611",
+     "title": "Deyhuk District — Wikipedia (oldid 1375775611)",
+     "says": "Cites approval letter 24/10/1391 (13 January 2013) detaching Tabas County from Yazd and annexing it to South Khorasan.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://www.hamshahrionline.ir/news/205056/",
+     "title": "شهرستان طبس از استان یزد جدا شد — Hamshahri Online, 22 Esfand 1391 (2013-03-13)",
+     "says": "Government decision announced: Tabas county separated from Yazd province and annexed to South Khorasan.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "2019-01-01",
+   "n": 31,
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1345255752",
+     "title": "Provinces of Iran — Wikipedia (oldid 1345255752)",
+     "says": "Table notes: Qazvin formed 31 Dec 1996 from Zanjan; Golestan 31 May 1997 from Mazandaran; Tabas moved Khorasan→Yazd 2002; 31 provinces.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Iranian provincial layouts before 1993-04-12 (1950 ten numbered ostans; governorate promotions ~1960-1981; ~1986 Markazi/Tehran split with transfers to Esfahan, Semnan, Zanjan and Kerman→Yazd)",
+   "from": "1900",
+   "to": "1993-04-12",
+   "why": "Statoids records several partial transfers (parts of Markazi to Esfahan, Semnan, Zanjan; part of Kerman to Yazd, c.1986) with only approximate dates; these lines run inside modern atoms and the dates are not established. Not attempted.",
+   "checked": [
+    "statoids.com/uir.html",
+    "Provinces of Iran (Wikipedia oldid 1345255752)"
+   ],
+   "needs": "dated decrees for the 1986 reorganisation and county-level atoms (e.g. geoBoundaries IRN ADM2, check licence)"
+  },
+  {
+   "what": "Tehran province (with Qom county until 1996, and the Tehran-side units later given to Qazvin) and Zanjan province (with Qazvin county) before the Qazvin law",
+   "unit": "IRN:Tehran@1997",
+   "atoms": [
+    "IRN-3216",
+    "IRN-5490",
+    "IRN-3232",
+    "IRN-3235",
+    "IRN-3234"
+   ],
+   "from": "1993-04-12",
+   "to": "1997-06-29",
+   "why": "The Qazvin law takes its units from BOTH Tehran and Zanjan without saying which; Statoids and en.Wikipedia say all of Qazvin came from Zanjan, fa.Wikipedia and the Statoids county page say Qazvin county came from Tehran. The pre-1997 Tehran–Zanjan line therefore runs inside the Qazvin atom at an unknown place. Qom province (created 1996, law approved 1996-04-23, entry into force not found) is also inside this block.",
+   "checked": [
+    "Qazvin law (lamtakam 92861)",
+    "statoids.com/uir.html and yir.html (contradict each other)",
+    "Qazvin province en.Wikipedia oldid 1376561715",
+    "fa.Wikipedia استان قزوین",
+    "Qom province en.Wikipedia oldid 1376579684",
+    "fa.Wikipedia استان قم oldid 44260296 (gives SH 1375)"
+   ],
+   "needs": "1996 county lists of Tehran and Zanjan (Statistical Centre of Iran census atlas) and county atoms (geoBoundaries IRN ADM2)"
+  },
+  {
+   "what": "Mazandaran / Golestan between the earliest stated split date and the law's publication",
+   "unit": "IRN:Mazandaran@1993",
+   "atoms": [
+    "IRN-3214",
+    "IRN-3213"
+   ],
+   "from": "1997-05-31",
+   "to": "1998-01-19",
+   "why": "Statoids and en.Wikipedia date Golestan to 1997-05-31 (no primary source); the founding law was voted 1997-12-07 and published 1998-01-19 and only authorises the government to establish the province. The day the province actually came into being is not established.",
+   "checked": [
+    "Golestan law (lamtakam 93027)",
+    "statoids.com/uir.html",
+    "Golestan province en.Wikipedia oldid 1369317405"
+   ],
+   "needs": "the cabinet decision/decree implementing the Golestan law"
+  },
+  {
+   "what": "Khorasan (incl. Tabas) and Yazd (without Tabas) before Tabas moved to Yazd",
+   "unit": "IRN:Khorasan@2002",
+   "atoms": [
+    "IRN-3246",
+    "IRN-3245",
+    "IRN-3244",
+    "IRN-3217"
+   ],
+   "from": "1993-04-12",
+   "to": "2002-03-21",
+   "why": "Tabas county (~55,000 km²) lies inside NE Yazd. Before its transfer (SH 1380, day not found) neither Khorasan nor Yazd is a union of NE atoms.",
+   "checked": [
+    "fa.Wikipedia شهرستان طبس oldid 44596070",
+    "Tabas County en.Wikipedia oldid 1376943207 (says 2004)",
+    "Deyhuk District oldid 1375775611 (says 2001)",
+    "statoids.com/uir.html (~2002)"
+   ],
+   "needs": "Tabas county outline (geoBoundaries IRN ADM2) and the SH 1380 cabinet decision"
+  },
+  {
+   "what": "Razavi Khorasan and South Khorasan individually (2004-09-29 onward)",
+   "unit": "IRN:RazaviKhorasan@2004",
+   "atoms": [
+    "IRN-3245",
+    "IRN-3244"
+   ],
+   "from": "2004-09-29",
+   "to": null,
+   "why": "NE puts Ferdows, Boshruyeh and Sarayan inside IRN-3245 (Razavi), i.e. a line that matches neither the 2004 law (Sarayan already in South Khorasan; Qayenat moved to South Khorasan in SH 1383) nor the post-2007 layout (Ferdows in South Khorasan). South Khorasan also gained Tabas from Yazd in 2013. Neither province is a union of NE atoms at any instant.",
+   "checked": [
+    "Ferdows County oldid 1375875565",
+    "Sarayan County oldid 1376777547",
+    "statoids.com/uir.html",
+    "point-in-polygon tests on NE geometry (Ferdows, Sarayan, Boshruyeh → IRN-3245)"
+   ],
+   "needs": "county atoms (geoBoundaries IRN ADM2) for Ferdows, Sarayan, Qayenat, Tabas"
+  },
+  {
+   "what": "Yazd after Tabas left (2013 onward)",
+   "unit": "IRN:Yazd@2002",
+   "atoms": [
+    "IRN-3217"
+   ],
+   "from": "2013-01-13",
+   "to": null,
+   "why": "NE Yazd still contains Tabas, which belongs to South Khorasan from 2013. Yazd 2013+ = NE Yazd minus Tabas: needs a finer atom.",
+   "checked": [
+    "Deyhuk District oldid 1375775611",
+    "Hamshahri Online 2013-03-13",
+    "point-in-polygon test (Tabas → IRN-3217)"
+   ],
+   "needs": "Tabas county outline (geoBoundaries IRN ADM2)"
+  }
+ ]
+}

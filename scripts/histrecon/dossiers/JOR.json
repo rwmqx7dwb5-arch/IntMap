@@ -1,0 +1,482 @@
+{
+  "country": "JOR",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "2001-01-01",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Hashemite Kingdom of Jordan, East Bank only (the West Bank, administered 1950-1967 and claimed until 1988-07-31, is not among the JOR atoms).",
+  "units": [
+    {
+      "id": "JOR:Irbid_Governorate@2001",
+      "names": {
+        "en": "Irbid Governorate",
+        "ja": "イルビド県",
+        "local": "محافظة إربد"
+      },
+      "wikidata": "Q721441",
+      "spans": [
+        {
+          "from": "2001-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "JOR-854"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20231119173315/https://jordanianlaw.com/%D8%A7%D9%84%D8%A3%D9%86%D8%B8%D9%85%D8%A9/%D9%86%D8%B8%D8%A7%D9%85-%D8%A7%D9%84%D8%AA%D9%82%D8%B3%D9%8A%D9%85%D8%A7%D8%AA-%D8%A7%D9%84%D8%A7%D8%AF%D8%A7%D8%B1%D9%8A%D8%A9/",
+              "title": "Administrative Divisions Regulation of 2000 (نظام التقسيمات الإدارية لسنة 2000), consolidated text (jordanianlaw.com, archived 2023-11-19)",
+              "says": "Art. 1: in force 2001-01-01; art. 2 lists 12 governorates; art. 5 defines Irbid by its liwas and qadas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ujo.html",
+              "title": "Statoids — Provinces of Jordan",
+              "says": "Twelve provinces; last change listed 1996-01-01.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Start = commencement of the 2000 regulation (which repealed Regulation 31 of 1995); the consolidated text includes later amendments whose dates were not found (see unresolved)."
+        }
+      ]
+    },
+    {
+      "id": "JOR:Madaba_Governorate@2001",
+      "names": {
+        "en": "Madaba Governorate",
+        "ja": "マダバ県",
+        "local": "محافظة مادبا"
+      },
+      "wikidata": "Q750447",
+      "spans": [
+        {
+          "from": "2001-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "JOR-858"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20231119173315/https://jordanianlaw.com/%D8%A7%D9%84%D8%A3%D9%86%D8%B8%D9%85%D8%A9/%D9%86%D8%B8%D8%A7%D9%85-%D8%A7%D9%84%D8%AA%D9%82%D8%B3%D9%8A%D9%85%D8%A7%D8%AA-%D8%A7%D9%84%D8%A7%D8%AF%D8%A7%D8%B1%D9%8A%D8%A9/",
+              "title": "Administrative Divisions Regulation of 2000 (نظام التقسيمات الإدارية لسنة 2000), consolidated text (jordanianlaw.com, archived 2023-11-19)",
+              "says": "Art. 1: in force 2001-01-01; art. 2 lists 12 governorates; art. 12 defines Madaba by its liwas and qadas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ujo.html",
+              "title": "Statoids — Provinces of Jordan",
+              "says": "Twelve provinces; last change listed 1996-01-01.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Start = commencement of the 2000 regulation (which repealed Regulation 31 of 1995); the consolidated text includes later amendments whose dates were not found (see unresolved)."
+        }
+      ]
+    },
+    {
+      "id": "JOR:Karak_Governorate@2001",
+      "names": {
+        "en": "Karak Governorate",
+        "ja": "カラク県",
+        "local": "محافظة الكرك"
+      },
+      "wikidata": "Q735245",
+      "spans": [
+        {
+          "from": "2001-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "JOR-859"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20231119173315/https://jordanianlaw.com/%D8%A7%D9%84%D8%A3%D9%86%D8%B8%D9%85%D8%A9/%D9%86%D8%B8%D8%A7%D9%85-%D8%A7%D9%84%D8%AA%D9%82%D8%B3%D9%8A%D9%85%D8%A7%D8%AA-%D8%A7%D9%84%D8%A7%D8%AF%D8%A7%D8%B1%D9%8A%D8%A9/",
+              "title": "Administrative Divisions Regulation of 2000 (نظام التقسيمات الإدارية لسنة 2000), consolidated text (jordanianlaw.com, archived 2023-11-19)",
+              "says": "Art. 1: in force 2001-01-01; art. 2 lists 12 governorates; art. 7 defines Karak by its liwas and qadas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ujo.html",
+              "title": "Statoids — Provinces of Jordan",
+              "says": "Twelve provinces; last change listed 1996-01-01.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Start = commencement of the 2000 regulation (which repealed Regulation 31 of 1995); the consolidated text includes later amendments whose dates were not found (see unresolved)."
+        }
+      ]
+    },
+    {
+      "id": "JOR:Tafilah_Governorate@2001",
+      "names": {
+        "en": "Tafilah Governorate",
+        "ja": "タフィラ県",
+        "local": "محافظة الطفيلة"
+      },
+      "wikidata": "Q750259",
+      "spans": [
+        {
+          "from": "2001-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "JOR-852"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20231119173315/https://jordanianlaw.com/%D8%A7%D9%84%D8%A3%D9%86%D8%B8%D9%85%D8%A9/%D9%86%D8%B8%D8%A7%D9%85-%D8%A7%D9%84%D8%AA%D9%82%D8%B3%D9%8A%D9%85%D8%A7%D8%AA-%D8%A7%D9%84%D8%A7%D8%AF%D8%A7%D8%B1%D9%8A%D8%A9/",
+              "title": "Administrative Divisions Regulation of 2000 (نظام التقسيمات الإدارية لسنة 2000), consolidated text (jordanianlaw.com, archived 2023-11-19)",
+              "says": "Art. 1: in force 2001-01-01; art. 2 lists 12 governorates; art. 11 defines Tafilah by its liwas and qadas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ujo.html",
+              "title": "Statoids — Provinces of Jordan",
+              "says": "Twelve provinces; last change listed 1996-01-01.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Start = commencement of the 2000 regulation (which repealed Regulation 31 of 1995); the consolidated text includes later amendments whose dates were not found (see unresolved)."
+        }
+      ]
+    },
+    {
+      "id": "JOR:Aqaba_Governorate@2001",
+      "names": {
+        "en": "Aqaba Governorate",
+        "ja": "アカバ県",
+        "local": "محافظة العقبة"
+      },
+      "wikidata": "Q260796",
+      "spans": [
+        {
+          "from": "2001-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "JOR-849"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20231119173315/https://jordanianlaw.com/%D8%A7%D9%84%D8%A3%D9%86%D8%B8%D9%85%D8%A9/%D9%86%D8%B8%D8%A7%D9%85-%D8%A7%D9%84%D8%AA%D9%82%D8%B3%D9%8A%D9%85%D8%A7%D8%AA-%D8%A7%D9%84%D8%A7%D8%AF%D8%A7%D8%B1%D9%8A%D8%A9/",
+              "title": "Administrative Divisions Regulation of 2000 (نظام التقسيمات الإدارية لسنة 2000), consolidated text (jordanianlaw.com, archived 2023-11-19)",
+              "says": "Art. 1: in force 2001-01-01; art. 2 lists 12 governorates; art. 15 defines Aqaba by its liwas and qadas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ujo.html",
+              "title": "Statoids — Provinces of Jordan",
+              "says": "Twelve provinces; last change listed 1996-01-01.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Start = commencement of the 2000 regulation (which repealed Regulation 31 of 1995); the consolidated text includes later amendments whose dates were not found (see unresolved)."
+        }
+      ]
+    },
+    {
+      "id": "JOR:Balqa_Governorate@2001",
+      "names": {
+        "en": "Balqa Governorate",
+        "ja": "バルカ県",
+        "local": "محافظة البلقاء"
+      },
+      "wikidata": "Q721431",
+      "spans": [
+        {
+          "from": "2001-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "JOR-857"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20231119173315/https://jordanianlaw.com/%D8%A7%D9%84%D8%A3%D9%86%D8%B8%D9%85%D8%A9/%D9%86%D8%B8%D8%A7%D9%85-%D8%A7%D9%84%D8%AA%D9%82%D8%B3%D9%8A%D9%85%D8%A7%D8%AA-%D8%A7%D9%84%D8%A7%D8%AF%D8%A7%D8%B1%D9%8A%D8%A9/",
+              "title": "Administrative Divisions Regulation of 2000 (نظام التقسيمات الإدارية لسنة 2000), consolidated text (jordanianlaw.com, archived 2023-11-19)",
+              "says": "Art. 1: in force 2001-01-01; art. 2 lists 12 governorates; art. 6 defines Balqa by its liwas and qadas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ujo.html",
+              "title": "Statoids — Provinces of Jordan",
+              "says": "Twelve provinces; last change listed 1996-01-01.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Start = commencement of the 2000 regulation (which repealed Regulation 31 of 1995); the consolidated text includes later amendments whose dates were not found (see unresolved)."
+        }
+      ]
+    },
+    {
+      "id": "JOR:Mafraq_Governorate@2001",
+      "names": {
+        "en": "Mafraq Governorate",
+        "ja": "マフラク県",
+        "local": "محافظة المفرق"
+      },
+      "wikidata": "Q854871",
+      "spans": [
+        {
+          "from": "2001-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "JOR-850"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20231119173315/https://jordanianlaw.com/%D8%A7%D9%84%D8%A3%D9%86%D8%B8%D9%85%D8%A9/%D9%86%D8%B8%D8%A7%D9%85-%D8%A7%D9%84%D8%AA%D9%82%D8%B3%D9%8A%D9%85%D8%A7%D8%AA-%D8%A7%D9%84%D8%A7%D8%AF%D8%A7%D8%B1%D9%8A%D8%A9/",
+              "title": "Administrative Divisions Regulation of 2000 (نظام التقسيمات الإدارية لسنة 2000), consolidated text (jordanianlaw.com, archived 2023-11-19)",
+              "says": "Art. 1: in force 2001-01-01; art. 2 lists 12 governorates; art. 10 defines Mafraq by its liwas and qadas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ujo.html",
+              "title": "Statoids — Provinces of Jordan",
+              "says": "Twelve provinces; last change listed 1996-01-01.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Start = commencement of the 2000 regulation (which repealed Regulation 31 of 1995); the consolidated text includes later amendments whose dates were not found (see unresolved)."
+        }
+      ]
+    },
+    {
+      "id": "JOR:Ma'an_Governorate@2001",
+      "names": {
+        "en": "Ma'an Governorate",
+        "ja": "マアーン県",
+        "local": "محافظة معان"
+      },
+      "wikidata": "Q606340",
+      "spans": [
+        {
+          "from": "2001-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "JOR-853"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20231119173315/https://jordanianlaw.com/%D8%A7%D9%84%D8%A3%D9%86%D8%B8%D9%85%D8%A9/%D9%86%D8%B8%D8%A7%D9%85-%D8%A7%D9%84%D8%AA%D9%82%D8%B3%D9%8A%D9%85%D8%A7%D8%AA-%D8%A7%D9%84%D8%A7%D8%AF%D8%A7%D8%B1%D9%8A%D8%A9/",
+              "title": "Administrative Divisions Regulation of 2000 (نظام التقسيمات الإدارية لسنة 2000), consolidated text (jordanianlaw.com, archived 2023-11-19)",
+              "says": "Art. 1: in force 2001-01-01; art. 2 lists 12 governorates; art. 8 defines Ma'an by its liwas and qadas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ujo.html",
+              "title": "Statoids — Provinces of Jordan",
+              "says": "Twelve provinces; last change listed 1996-01-01.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Start = commencement of the 2000 regulation (which repealed Regulation 31 of 1995); the consolidated text includes later amendments whose dates were not found (see unresolved)."
+        }
+      ]
+    },
+    {
+      "id": "JOR:Amman_Governorate@2001",
+      "names": {
+        "en": "Amman Governorate",
+        "ja": "アンマン県",
+        "local": "محافظة عمان"
+      },
+      "wikidata": "Q472788",
+      "spans": [
+        {
+          "from": "2001-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "JOR-851"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20231119173315/https://jordanianlaw.com/%D8%A7%D9%84%D8%A3%D9%86%D8%B8%D9%85%D8%A9/%D9%86%D8%B8%D8%A7%D9%85-%D8%A7%D9%84%D8%AA%D9%82%D8%B3%D9%8A%D9%85%D8%A7%D8%AA-%D8%A7%D9%84%D8%A7%D8%AF%D8%A7%D8%B1%D9%8A%D8%A9/",
+              "title": "Administrative Divisions Regulation of 2000 (نظام التقسيمات الإدارية لسنة 2000), consolidated text (jordanianlaw.com, archived 2023-11-19)",
+              "says": "Art. 1: in force 2001-01-01; art. 2 lists 12 governorates; art. 4 defines Amman by its liwas and qadas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ujo.html",
+              "title": "Statoids — Provinces of Jordan",
+              "says": "Twelve provinces; last change listed 1996-01-01.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Start = commencement of the 2000 regulation (which repealed Regulation 31 of 1995); the consolidated text includes later amendments whose dates were not found (see unresolved)."
+        }
+      ]
+    },
+    {
+      "id": "JOR:Zarqa_Governorate@2001",
+      "names": {
+        "en": "Zarqa Governorate",
+        "ja": "ザルカ県",
+        "local": "محافظة الزرقاء"
+      },
+      "wikidata": "Q721445",
+      "spans": [
+        {
+          "from": "2001-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "JOR-860"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20231119173315/https://jordanianlaw.com/%D8%A7%D9%84%D8%A3%D9%86%D8%B8%D9%85%D8%A9/%D9%86%D8%B8%D8%A7%D9%85-%D8%A7%D9%84%D8%AA%D9%82%D8%B3%D9%8A%D9%85%D8%A7%D8%AA-%D8%A7%D9%84%D8%A7%D8%AF%D8%A7%D8%B1%D9%8A%D8%A9/",
+              "title": "Administrative Divisions Regulation of 2000 (نظام التقسيمات الإدارية لسنة 2000), consolidated text (jordanianlaw.com, archived 2023-11-19)",
+              "says": "Art. 1: in force 2001-01-01; art. 2 lists 12 governorates; art. 9 defines Zarqa by its liwas and qadas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ujo.html",
+              "title": "Statoids — Provinces of Jordan",
+              "says": "Twelve provinces; last change listed 1996-01-01.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Start = commencement of the 2000 regulation (which repealed Regulation 31 of 1995); the consolidated text includes later amendments whose dates were not found (see unresolved)."
+        }
+      ]
+    },
+    {
+      "id": "JOR:Ajloun_Governorate@2001",
+      "names": {
+        "en": "Ajloun Governorate",
+        "ja": "アジュルン県",
+        "local": "محافظة عجلون"
+      },
+      "wikidata": "Q506658",
+      "spans": [
+        {
+          "from": "2001-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "JOR-855"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20231119173315/https://jordanianlaw.com/%D8%A7%D9%84%D8%A3%D9%86%D8%B8%D9%85%D8%A9/%D9%86%D8%B8%D8%A7%D9%85-%D8%A7%D9%84%D8%AA%D9%82%D8%B3%D9%8A%D9%85%D8%A7%D8%AA-%D8%A7%D9%84%D8%A7%D8%AF%D8%A7%D8%B1%D9%8A%D8%A9/",
+              "title": "Administrative Divisions Regulation of 2000 (نظام التقسيمات الإدارية لسنة 2000), consolidated text (jordanianlaw.com, archived 2023-11-19)",
+              "says": "Art. 1: in force 2001-01-01; art. 2 lists 12 governorates; art. 14 defines Ajloun by its liwas and qadas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ujo.html",
+              "title": "Statoids — Provinces of Jordan",
+              "says": "Twelve provinces; last change listed 1996-01-01.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Start = commencement of the 2000 regulation (which repealed Regulation 31 of 1995); the consolidated text includes later amendments whose dates were not found (see unresolved)."
+        }
+      ]
+    },
+    {
+      "id": "JOR:Jerash_Governorate@2001",
+      "names": {
+        "en": "Jerash Governorate",
+        "ja": "ジェラシュ県",
+        "local": "محافظة جرش"
+      },
+      "wikidata": "Q750270",
+      "spans": [
+        {
+          "from": "2001-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "JOR-856"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/20231119173315/https://jordanianlaw.com/%D8%A7%D9%84%D8%A3%D9%86%D8%B8%D9%85%D8%A9/%D9%86%D8%B8%D8%A7%D9%85-%D8%A7%D9%84%D8%AA%D9%82%D8%B3%D9%8A%D9%85%D8%A7%D8%AA-%D8%A7%D9%84%D8%A7%D8%AF%D8%A7%D8%B1%D9%8A%D8%A9/",
+              "title": "Administrative Divisions Regulation of 2000 (نظام التقسيمات الإدارية لسنة 2000), consolidated text (jordanianlaw.com, archived 2023-11-19)",
+              "says": "Art. 1: in force 2001-01-01; art. 2 lists 12 governorates; art. 13 defines Jerash by its liwas and qadas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ujo.html",
+              "title": "Statoids — Provinces of Jordan",
+              "says": "Twelve provinces; last change listed 1996-01-01.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Start = commencement of the 2000 regulation (which repealed Regulation 31 of 1995); the consolidated text includes later amendments whose dates were not found (see unresolved)."
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "2001-01-01",
+      "precision": "day",
+      "what": "Administrative Divisions Regulation of 2000 in force (12 governorates), repealing Regulation 31 of 1995",
+      "sources": [
+        {
+          "url": "https://web.archive.org/web/20231119173315/https://jordanianlaw.com/%D8%A7%D9%84%D8%A3%D9%86%D8%B8%D9%85%D8%A9/%D9%86%D8%B8%D8%A7%D9%85-%D8%A7%D9%84%D8%AA%D9%82%D8%B3%D9%8A%D9%85%D8%A7%D8%AA-%D8%A7%D9%84%D8%A7%D8%AF%D8%A7%D8%B1%D9%8A%D8%A9/",
+          "title": "Administrative Divisions Regulation of 2000 (نظام التقسيمات الإدارية لسنة 2000), consolidated text (jordanianlaw.com, archived 2023-11-19)",
+          "says": "Arts 1, 2, 17.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "2004-10-01",
+      "n": 12,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ujo.html",
+          "title": "Statoids — Provinces of Jordan",
+          "says": "Jordan is divided into twelve provinces (2004 census).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Parcel-level amendments to governorate composition (2001-2019)",
+      "from": "2001-01-01",
+      "to": null,
+      "why": "The consolidated 2000 regulation assigns individual land basins/parcels across governorate lines (e.g. Amman's University liwa takes Ras al-Jundi, Abu Rukba and parts of Hasloun basins; Fuheis in Balqa «except» those parcels). Whether these are original or later amendments, and when, was not found; they are far below NE 1:10m resolution. No atoms withheld.",
+      "checked": [
+        "consolidated text (jordanianlaw.com archive 2023-11-19)"
+      ],
+      "needs": "dated amendment list of the 2000 regulation (Official Gazette) and basin/parcel geometry"
+    },
+    {
+      "what": "1995/1996 layout (Regulation 31 of 1995: Ajloun, Jerash from Irbid; Madaba from Amman; Aqaba from Ma'an; strip of Amman to Zarqa) up to 2001-01-01",
+      "from": "1994",
+      "to": "2001-01-01",
+      "why": "Same 12 names, but the 2000 regulation re-enumerated every governorate by liwa and parcel; not shown to be identical. Sources disagree on the year (Wikipedia 1994, statoids 1996-01-01).",
+      "checked": [
+        "Governorates of Jordan (Wikipedia oldid 1172243844)",
+        "statoids.com/ujo.html"
+      ],
+      "needs": "text of Regulation 31 of 1995 and its amendments"
+    },
+    {
+      "what": "Layouts before 1994 (5 governorates + desert 1946; Asimah ~1955; 1965-12-16 reform; ~1985 Mafraq/Tafilah/Zarqa creation)",
+      "from": "1946-05-25",
+      "to": "1994",
+      "why": "Mafraq (~1985) was formed from parts of Irbid and Asimah, and the 1996 strip moved from Amman to Zarqa runs inside NE atoms; dates are approximate (statoids ~1988, task brief 1985).",
+      "checked": [
+        "statoids.com/ujo.html"
+      ],
+      "needs": "liwa/qada geometry and dated regulations"
+    }
+  ]
+}

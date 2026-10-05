@@ -728,7 +728,7 @@ border-coast.js                   歴史的な輪郭のどの辺が「国境／�
                                   調査記録の索引は index.json が指す別ファイルで、その記録の行が詳細を要したときだけ読む。
                                   ⚠ 第1級の区分へ OpenHistoricalMap の隣に継ぎ足す記録の**唯一の一覧** HIST_ADMIN_GAPS もここにある
                                   （令制国 data/hist-kuni.js・出版元の記録 data/hist-admin-surveys.js と -nc.js・穴埋め
-                                  data/hist-admin-fill.js）。各記録はファイル・global・海岸線印の鍵・`derived`（true＝IntMap の導出／
+                                  data/hist-admin-fill.js・IntMap の復元 data/hist-admin-recon.js）。各記録はファイル・global・海岸線印の鍵・`derived`（true＝IntMap の導出／
                                   false＝出版元が日付を述べた記録）・`nonCommercial` を持つ。読み手は time-admin1.js（描く）・
                                   scripts/hist-fidelity.mjs（測る）・build-hist-admin-fill.mjs と build-hist-admin-surveys.mjs（譲る・書く）・
                                   build-border-detail.mjs（調査記録の詳細を作る）。別のモジュールにしないのは起動経路の
@@ -1694,7 +1694,7 @@ data/histnames.json               **歴史的な政体名の、記録をまた�
                                   ⚠ **上流が書いた名前は上書きしない**。⚠ **出荷する言語の方針は
                                   `scripts/histnames/langs.mjs` の 1 か所**（いまは en / jp）
 data/border-coast.js              歴史的な輪郭の各辺が「境界」か「その記録が持つ海岸線の写し」かの印（`data/` から
-                                  **発見された**束すべて・いまは11・全 78,464 リング分／
+                                  **発見された**束すべて・いまは14・全 82,131 リング分／
                                   `scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
                                   `imta2-line` はこの印の run だけを描く。読み手は js/border-coast.js
                                   （束の索引でも**環そのものの同一性**でも引ける）。⚠ 面積 0 のリングは
@@ -1760,6 +1760,10 @@ data/hist-admin-surveys.js        **出版元が測って日付を述べた**第
 data/hist-admin-surveys-nc.js     同じ形で、**CC BY-NC-SA 4.0** の出版元だけ（`window.__HISTADMSURVEYNC`・
                                   HGIS de las Indias＝スペイン領アメリカの provincia mayor 1701–1808）。data/cshapes.js と同じく
                                   開いた記録から分け、ファイル自身が `licence` を述べる
+data/hist-admin-recon.js          **IntMap 自身が史実から復元した**第1級区分（`window.__HISTADMRECON`）。区分＝部品の和集合、
+                                  所属＝出典つきの事実（調書 scripts/histrecon/dossiers/*.json と明治の府県 scripts/histrecon/meiji-*.json）。
+                                  部品は Natural Earth admin-1（全精度）・RISTAT 1897 年の郡・国土数値情報 N03 1920 と e-Stat 2020 小地域。
+                                  生成は scripts/build-hist-admin-recon.mjs、門は `npm run check:histrecon`（正本 docs/HIST-RECONSTRUCTION.md）
 data/hist-coverage-holes.json     歴史地図の**穴**の観測（目標値ではない）。測った 18 年それぞれで、第1級区分が
                                   丸ごと描かれていない政体ごとに、その記録の無い土地の下にある**現代の国**と、
                                   そこが空いている**理由**（data/hist-admin-fill.js の `refused`・最後の発足より前・

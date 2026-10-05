@@ -1,0 +1,2240 @@
+{
+  "country": "DZA",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "1984-02-07",
+    "to": "2019-12-31"
+  },
+  "polityNote": "People's Democratic Republic of Algeria (independent since 1962-07-05). NE's 48 wilayas are the layout of Loi 84-09 (1984-02-07) as it stood until Loi 19-12 (2019-12-18).",
+  "units": [
+    {
+      "id": "DZA:Adrar@1984",
+      "names": {
+        "en": "Adrar Province",
+        "ja": "アドラール県",
+        "local": "ولاية أدرار"
+      },
+      "wikidata": "Q188166",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": "2019-12-18",
+          "atoms": [
+            "DZA-2143"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 5 lists the communes constituting wilaya n° 01 (Adrar).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Art. 2 rewrites art. 5 of Loi 84-09 with fewer communes; art. 3 forms the new wilaya(s) of Timimoun and Bordj Badji Mokhtar from the removed communes.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers). End: publication date of Loi 19-12 (2019-12-18); art. 54 lets the old wilaya authorities manage the new wilayas until installation (by 2020-12-31), but the territory was legally redefined by the law."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Tamanghasset@1984",
+      "names": {
+        "en": "Tamanrasset Province",
+        "ja": "タマンラセット県",
+        "local": "ولاية تمنراست"
+      },
+      "wikidata": "Q229467",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": "2019-12-18",
+          "atoms": [
+            "DZA-2189"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 15 lists the communes constituting wilaya n° 11 (Tamanghasset).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Art. 2 rewrites art. 15 of Loi 84-09 with fewer communes; art. 3 forms the new wilaya(s) of In Salah and In Guezzam from the removed communes.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers). End: publication date of Loi 19-12 (2019-12-18); art. 54 lets the old wilaya authorities manage the new wilayas until installation (by 2020-12-31), but the territory was legally redefined by the law."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Tindouf@1984",
+      "names": {
+        "en": "Tindouf Province",
+        "ja": "ティンドゥフ県",
+        "local": "ولاية تندوف"
+      },
+      "wikidata": "Q231151",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2150"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 41 lists the communes constituting wilaya n° 37 (Tindouf).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 41 (Tindouf) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Béchar@1984",
+      "names": {
+        "en": "Béchar Province",
+        "ja": "ベシャール県",
+        "local": "ولاية بشار"
+      },
+      "wikidata": "Q215467",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": "2019-12-18",
+          "atoms": [
+            "DZA-2148"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 12 lists the communes constituting wilaya n° 08 (Béchar).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Art. 2 rewrites art. 12 of Loi 84-09 with fewer communes; art. 3 forms the new wilaya(s) of Béni Abbès from the removed communes.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers). End: publication date of Loi 19-12 (2019-12-18); art. 54 lets the old wilaya authorities manage the new wilayas until installation (by 2020-12-31), but the territory was legally redefined by the law."
+        }
+      ]
+    },
+    {
+      "id": "DZA:El_Tarf@1984",
+      "names": {
+        "en": "El Tarf Province",
+        "ja": "エル・タルフ県",
+        "local": "ولاية الطارف"
+      },
+      "wikidata": "Q236788",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2164"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 40 lists the communes constituting wilaya n° 36 (El Tarf).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 40 (El Tarf) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:El_Oued@1984",
+      "names": {
+        "en": "El Oued Province",
+        "ja": "エル・ウェッド県",
+        "local": "ولاية الوادي"
+      },
+      "wikidata": "Q233651",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": "2019-12-18",
+          "atoms": [
+            "DZA-2191"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 43 lists the communes constituting wilaya n° 39 (El Oued).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Art. 2 rewrites art. 43 of Loi 84-09 with fewer communes; art. 3 forms the new wilaya(s) of El M'Ghair from the removed communes.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers). End: publication date of Loi 19-12 (2019-12-18); art. 54 lets the old wilaya authorities manage the new wilayas until installation (by 2020-12-31), but the territory was legally redefined by the law."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Tébessa@1984",
+      "names": {
+        "en": "Tébessa Province",
+        "ja": "テベッサ県",
+        "local": "ولاية تبسة"
+      },
+      "wikidata": "Q267224",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2223"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 16 lists the communes constituting wilaya n° 12 (Tébessa).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 16 (Tébessa) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Souk_Ahras@1984",
+      "names": {
+        "en": "Souk Ahras Province",
+        "ja": "スーク・アフラース県",
+        "local": "ولاية سوق أهراس"
+      },
+      "wikidata": "Q236772",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2222"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 45 lists the communes constituting wilaya n° 41 (Souk Ahras).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 45 (Souk Ahras) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Ouargla@1984",
+      "names": {
+        "en": "Ouargla Province",
+        "ja": "ワルグラ県",
+        "local": "ولاية ورقلة"
+      },
+      "wikidata": "Q235709",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": "2019-12-18",
+          "atoms": [
+            "DZA-2194"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 34 lists the communes constituting wilaya n° 30 (Ouargla).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Art. 2 rewrites art. 34 of Loi 84-09 with fewer communes; art. 3 forms the new wilaya(s) of Touggourt from the removed communes.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers). End: publication date of Loi 19-12 (2019-12-18); art. 54 lets the old wilaya authorities manage the new wilayas until installation (by 2020-12-31), but the territory was legally redefined by the law."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Illizi@1984",
+      "names": {
+        "en": "Illizi Province",
+        "ja": "イリジ県",
+        "local": "ولاية إليزي"
+      },
+      "wikidata": "Q233659",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": "2019-12-18",
+          "atoms": [
+            "DZA-2188"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 37 lists the communes constituting wilaya n° 33 (Illizi).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Art. 2 rewrites art. 37 of Loi 84-09 with fewer communes; art. 3 forms the new wilaya(s) of Djanet from the removed communes.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers). End: publication date of Loi 19-12 (2019-12-18); art. 54 lets the old wilaya authorities manage the new wilayas until installation (by 2020-12-31), but the territory was legally redefined by the law."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Naama@1984",
+      "names": {
+        "en": "Naama Province",
+        "ja": "ナーマ県",
+        "local": "ولاية النعامة"
+      },
+      "wikidata": "Q233675",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2149"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 49 lists the communes constituting wilaya n° 45 (Naâma).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 49 (Naâma) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Tlemcen@1984",
+      "names": {
+        "en": "Tlemcen Province",
+        "ja": "トレムセン県",
+        "local": "ولاية تلمسان"
+      },
+      "wikidata": "Q233632",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2147"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 17 lists the communes constituting wilaya n° 13 (Tlemcen).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 17 (Tlemcen) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Annaba@1984",
+      "names": {
+        "en": "Annaba Province",
+        "ja": "アンナバ県",
+        "local": "ولاية عنابة"
+      },
+      "wikidata": "Q213944",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2163"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 27 lists the communes constituting wilaya n° 23 (Annaba).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 27 (Annaba) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Skikda@1984",
+      "names": {
+        "en": "Skikda Province",
+        "ja": "スキクダ県",
+        "local": "ولاية سكيكدة"
+      },
+      "wikidata": "Q234227",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2166"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 25 lists the communes constituting wilaya n° 21 (Skikda).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 25 (Skikda) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Jijel@1984",
+      "names": {
+        "en": "Jijel Province",
+        "ja": "ジジェル県",
+        "local": "ولاية جيجل"
+      },
+      "wikidata": "Q235718",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2165"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 22 lists the communes constituting wilaya n° 18 (Jijel).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 22 (Jijel) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Béjaïa@1984",
+      "names": {
+        "en": "Béjaïa Province",
+        "ja": "ベジャイア県",
+        "local": "ولاية بجاية"
+      },
+      "wikidata": "Q233665",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2208"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 10 lists the communes constituting wilaya n° 06 (Béjaïa).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 10 (Béjaïa) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Tizi_Ouzou@1984",
+      "names": {
+        "en": "Tizi Ouzou Province",
+        "ja": "ティジ・ウズー県",
+        "local": "ولاية تيزي وزو"
+      },
+      "wikidata": "Q233645",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2197"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 19 lists the communes constituting wilaya n° 15 (Tizi Ouzou).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 19 (Tizi Ouzou) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Boumerdès@1984",
+      "names": {
+        "en": "Boumerdès Province",
+        "ja": "ブメルデス県",
+        "local": "ولاية بومرداس"
+      },
+      "wikidata": "Q236752",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2196"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 39 lists the communes constituting wilaya n° 35 (Boumerdès).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 39 (Boumerdès) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Algiers@1984",
+      "names": {
+        "en": "Algiers Province",
+        "ja": "アルジェ県",
+        "local": "ولاية الجزائر"
+      },
+      "wikidata": "Q141026",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2195"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 20 lists the communes constituting wilaya n° 16 (Alger).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 20 (Alger) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Tipasa@1984",
+      "names": {
+        "en": "Tipasa Province",
+        "ja": "ティパザ県",
+        "local": "ولاية تيبازة"
+      },
+      "wikidata": "Q235814",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2198"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 46 lists the communes constituting wilaya n° 42 (Tipaza).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 46 (Tipaza) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Chlef@1984",
+      "names": {
+        "en": "Chlef Province",
+        "ja": "シュレフ県",
+        "local": "ولاية الشلف"
+      },
+      "wikidata": "Q231752",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2200"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 6 lists the communes constituting wilaya n° 02 (Chlef).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 6 (Chlef) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Mostaganem@1984",
+      "names": {
+        "en": "Mostaganem Province",
+        "ja": "モスタガネム県",
+        "local": "ولاية مستغانم"
+      },
+      "wikidata": "Q221445",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2202"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 31 lists the communes constituting wilaya n° 27 (Mostaganem).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 31 (Mostaganem) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Oran@1984",
+      "names": {
+        "en": "Oran Province",
+        "ja": "オラン県",
+        "local": "ولاية وهران"
+      },
+      "wikidata": "Q231331",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2145"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 35 lists the communes constituting wilaya n° 31 (Oran).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 35 (Oran) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Aïn_Témouchent@1984",
+      "names": {
+        "en": "Aïn Témouchent Province",
+        "ja": "アイン・ティムシェント県",
+        "local": "ولاية عين تموشنت"
+      },
+      "wikidata": "Q233670",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2144"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 50 lists the communes constituting wilaya n° 46 (Aïn Témouchent).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 50 (Aïn Témouchent) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Sétif@1984",
+      "names": {
+        "en": "Sétif Province",
+        "ja": "セティフ県",
+        "local": "ولاية سطيف"
+      },
+      "wikidata": "Q237164",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2215"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 23 lists the communes constituting wilaya n° 19 (Sétif).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 23 (Sétif) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Bordj_Bou_Arréridj@1984",
+      "names": {
+        "en": "Bordj Bou Arréridj Province",
+        "ja": "ボルジ・ブ・アレリジ県",
+        "local": "ولاية برج بوعريريج"
+      },
+      "wikidata": "Q266411",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2207"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 38 lists the communes constituting wilaya n° 34 (Bordj Bou Arréridj).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 38 (Bordj Bou Arréridj) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Bouïra@1984",
+      "names": {
+        "en": "Bouira Province",
+        "ja": "ブイラ県",
+        "local": "ولاية البويرة"
+      },
+      "wikidata": "Q233655",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2210"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 14 lists the communes constituting wilaya n° 10 (Bouira).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 14 (Bouira) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Blida@1984",
+      "names": {
+        "en": "Blida Province",
+        "ja": "ブリダ県",
+        "local": "ولاية البليدة"
+      },
+      "wikidata": "Q233637",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2209"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 13 lists the communes constituting wilaya n° 09 (Blida).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 13 (Blida) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Tissemsilt@1984",
+      "names": {
+        "en": "Tissemsilt Province",
+        "ja": "ティセムシルト県",
+        "local": "ولاية تيسمسيلت"
+      },
+      "wikidata": "Q235805",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2206"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 42 lists the communes constituting wilaya n° 38 (Tissemsilt).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 42 (Tissemsilt) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Aïn_Defla@1984",
+      "names": {
+        "en": "Aïn Defla Province",
+        "ja": "アインデフラ県",
+        "local": "ولاية عين الدفلى"
+      },
+      "wikidata": "Q168953",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2199"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 48 lists the communes constituting wilaya n° 44 (Aïn Defla).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 48 (Aïn Defla) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Relizane@1984",
+      "names": {
+        "en": "Relizane Province",
+        "ja": "ルリザンヌ県",
+        "local": "ولاية غليزان"
+      },
+      "wikidata": "Q236758",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2203"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 52 lists the communes constituting wilaya n° 48 (Relizane).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 52 (Relizane) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:El_Bayadh@1984",
+      "names": {
+        "en": "El Bayadh Province",
+        "ja": "エル・バヤード県",
+        "local": "ولاية البيض"
+      },
+      "wikidata": "Q235703",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2190"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 36 lists the communes constituting wilaya n° 32 (El Bayadh).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 36 (El Bayadh) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Saïda@1984",
+      "names": {
+        "en": "Saïda Province",
+        "ja": "サイダ県",
+        "local": "ولاية سعيدة"
+      },
+      "wikidata": "Q233640",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2204"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 24 lists the communes constituting wilaya n° 20 (Saïda).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 24 (Saïda) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Sidi_Bel_Abbès@1984",
+      "names": {
+        "en": "Sidi Bel Abbès Province",
+        "ja": "シディ・ベル・アッベス県",
+        "local": "ولاية سيدي بلعباس"
+      },
+      "wikidata": "Q235714",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2146"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 26 lists the communes constituting wilaya n° 22 (Sidi Bel Abbès).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 26 (Sidi Bel Abbès) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Mascara@1984",
+      "names": {
+        "en": "Mascara Province",
+        "ja": "マスカラ県",
+        "local": "ولاية معسكر"
+      },
+      "wikidata": "Q236776",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2201"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 33 lists the communes constituting wilaya n° 29 (Mascara).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 33 (Mascara) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Ghardaïa@1984",
+      "names": {
+        "en": "Ghardaïa Province",
+        "ja": "ガルダイア県",
+        "local": "ولاية غرداية"
+      },
+      "wikidata": "Q17601",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": "2019-12-18",
+          "atoms": [
+            "DZA-2192"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 51 lists the communes constituting wilaya n° 47 (Ghardaïa).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Art. 2 rewrites art. 51 of Loi 84-09 with fewer communes; art. 3 forms the new wilaya(s) of El Meniaa from the removed communes.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers). End: publication date of Loi 19-12 (2019-12-18); art. 54 lets the old wilaya authorities manage the new wilayas until installation (by 2020-12-31), but the territory was legally redefined by the law."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Laghouat@1984",
+      "names": {
+        "en": "Laghouat Province",
+        "ja": "ラグアット県",
+        "local": "ولاية الأغواط"
+      },
+      "wikidata": "Q231748",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2193"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 7 lists the communes constituting wilaya n° 03 (Laghouat).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 7 (Laghouat) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Médéa@1984",
+      "names": {
+        "en": "Médéa Province",
+        "ja": "メデア県",
+        "local": "ولاية المدية"
+      },
+      "wikidata": "Q235810",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2213"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 30 lists the communes constituting wilaya n° 26 (Médéa).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 30 (Médéa) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Tiaret@1984",
+      "names": {
+        "en": "Tiaret Province",
+        "ja": "ティアレット県",
+        "local": "ولاية تيارت"
+      },
+      "wikidata": "Q233258",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2205"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 18 lists the communes constituting wilaya n° 14 (Tiaret).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 18 (Tiaret) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:M'Sila@1984",
+      "names": {
+        "en": "M'Sila Province",
+        "ja": "ムシラ県",
+        "local": "ولاية المسيلة"
+      },
+      "wikidata": "Q240870",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2214"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 32 lists the communes constituting wilaya n° 28 (M'Sila).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 32 (M'Sila) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Batna@1984",
+      "names": {
+        "en": "Batna Province",
+        "ja": "バトナ県",
+        "local": "ولاية باتنة"
+      },
+      "wikidata": "Q215452",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2216"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 9 lists the communes constituting wilaya n° 05 (Batna).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 9 (Batna) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Khenchela@1984",
+      "names": {
+        "en": "Khenchela Province",
+        "ja": "ヘンシュラ県",
+        "local": "ولاية خنشلة"
+      },
+      "wikidata": "Q213950",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2219"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 44 lists the communes constituting wilaya n° 40 (Khenchela).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 44 (Khenchela) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Guelma@1984",
+      "names": {
+        "en": "Guelma Province",
+        "ja": "ゲルマ県",
+        "local": "ولاية قالمة"
+      },
+      "wikidata": "Q235727",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2218"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 28 lists the communes constituting wilaya n° 24 (Guelma).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 28 (Guelma) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Constantine@1984",
+      "names": {
+        "en": "Constantine Province",
+        "ja": "コンスタンティーヌ県",
+        "local": "ولاية قسنطينة"
+      },
+      "wikidata": "Q232043",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2217"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 29 lists the communes constituting wilaya n° 25 (Constantine).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 29 (Constantine) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Mila@1984",
+      "names": {
+        "en": "Mila Province",
+        "ja": "ミラ県",
+        "local": "ولاية ميلة"
+      },
+      "wikidata": "Q235723",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2220"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 47 lists the communes constituting wilaya n° 43 (Mila).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 47 (Mila) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Oum_El_Bouaghi@1984",
+      "names": {
+        "en": "Oum El Bouaghi Province",
+        "ja": "ウメル・ブアーギ県",
+        "local": "ولاية أم البواقي"
+      },
+      "wikidata": "Q235705",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2221"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 8 lists the communes constituting wilaya n° 04 (Oum el Bouaghi).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 8 (Oum el Bouaghi) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Biskra@1984",
+      "names": {
+        "en": "Biskra Province",
+        "ja": "ビスクラ県",
+        "local": "ولاية بسكرة"
+      },
+      "wikidata": "Q458402",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": "2019-12-18",
+          "atoms": [
+            "DZA-2211"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 11 lists the communes constituting wilaya n° 07 (Biskra).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Art. 2 rewrites art. 11 of Loi 84-09 with fewer communes; art. 3 forms the new wilaya(s) of Ouled Djellal from the removed communes.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers). End: publication date of Loi 19-12 (2019-12-18); art. 54 lets the old wilaya authorities manage the new wilayas until installation (by 2020-12-31), but the territory was legally redefined by the law."
+        }
+      ]
+    },
+    {
+      "id": "DZA:Djelfa@1984",
+      "names": {
+        "en": "Djelfa Province",
+        "ja": "ジェルファ県",
+        "local": "ولاية الجلفة"
+      },
+      "wikidata": "Q233233",
+      "spans": [
+        {
+          "from": "1984-02-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "DZA-2212"
+          ],
+          "sources": [
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+              "title": "Loi n° 84-09 du 4 février 1984 relative à l'organisation territoriale du pays (JORADP n°6, 7 février 1984)",
+              "says": "Art. 3: 48 wilayas; art. 21 lists the communes constituting wilaya n° 17 (Djelfa).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+              "title": "Loi n° 19-12 du 11 décembre 2019 modifiant et complétant la loi 84-09 (JORADP n°78, 18 décembre 2019)",
+              "says": "Amends only arts 3, 5, 11, 12, 15, 34, 37, 43, 51 of Loi 84-09; art. 21 (Djelfa) is untouched; visa cites 84-09 as unamended.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/udz.html",
+              "title": "Statoids — Provinces of Algeria",
+              "says": "Change history: 1983/84 reorganisation of 31 departments into 48 provinces; no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Loi 84-09 promulgated 1984-02-04, published JORADP n°6 of 1984-02-07; the law states no own commencement date, so publication is used (Civil Code art. 4 makes laws enforceable one clear day after publication in Algiers)."
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1984-02-07",
+      "precision": "day",
+      "what": "Loi 84-09: 31 wilayas reorganised into 48 wilayas and 1540 communes",
+      "sources": [
+        {
+          "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+          "title": "Loi n° 84-09 (JORADP n°6, 1984-02-07)",
+          "says": "Arts 2-3: new wilayas by merging/dividing; 48 wilayas and 1540 communes.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2019-12-18",
+      "precision": "day",
+      "what": "Loi 19-12: 10 new wilayas formed from communes of Adrar, Biskra, Béchar, Tamanrasset, Ouargla, Illizi, El Oued, Ghardaïa (58 wilayas)",
+      "sources": [
+        {
+          "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+          "title": "Loi n° 19-12 (JORADP n°78, 2019-12-18)",
+          "says": "Art. 3 of 84-09 rewritten: 58 wilayas and 1541 communes; arts 52 bis–52 bis 9 list the new wilayas.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "1990-01-01",
+      "n": 48,
+      "sources": [
+        {
+          "url": "https://www.joradp.dz/FTP/jo-francais/1984/F1984006.pdf",
+          "title": "Loi n° 84-09",
+          "says": "Art. 3: the territorial organisation comprises 48 wilayas.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2019-12-20",
+      "n": 58,
+      "sources": [
+        {
+          "url": "https://www.joradp.dz/FTP/jo-francais/2019/F2019078.pdf",
+          "title": "Loi n° 19-12",
+          "says": "New art. 3: 58 wilayas.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Adrar wilaya after Loi 19-12 (reduced territory) — the communes ceded to Timimoun and Bordj Badji Mokhtar lie inside the NE atom",
+      "unit": "DZA:Adrar@2019",
+      "atoms": [
+        "DZA-2143"
+      ],
+      "from": "2019-12-18",
+      "to": null,
+      "why": "Loi 19-12 moved whole communes of this wilaya into new wilaya(s); the new line runs through the inside of the NE atom.",
+      "checked": [
+        "JORADP n°78 of 2019-12-18 (Loi 19-12, arts 2-3, commune lists)",
+        "Natural Earth admin-1 (48 wilayas, pre-2019)"
+      ],
+      "needs": "commune-level atoms carrying the 2019 lines: e.g. geoBoundaries DZA ADM2 or OCHA COD-AB Algeria communes (licence to check), or an atom set of the 1541 communes"
+    },
+    {
+      "what": "Tamanghasset wilaya after Loi 19-12 (reduced territory) — the communes ceded to In Salah and In Guezzam lie inside the NE atom",
+      "unit": "DZA:Tamanghasset@2019",
+      "atoms": [
+        "DZA-2189"
+      ],
+      "from": "2019-12-18",
+      "to": null,
+      "why": "Loi 19-12 moved whole communes of this wilaya into new wilaya(s); the new line runs through the inside of the NE atom.",
+      "checked": [
+        "JORADP n°78 of 2019-12-18 (Loi 19-12, arts 2-3, commune lists)",
+        "Natural Earth admin-1 (48 wilayas, pre-2019)"
+      ],
+      "needs": "commune-level atoms carrying the 2019 lines: e.g. geoBoundaries DZA ADM2 or OCHA COD-AB Algeria communes (licence to check), or an atom set of the 1541 communes"
+    },
+    {
+      "what": "Béchar wilaya after Loi 19-12 (reduced territory) — the communes ceded to Béni Abbès lie inside the NE atom",
+      "unit": "DZA:Béchar@2019",
+      "atoms": [
+        "DZA-2148"
+      ],
+      "from": "2019-12-18",
+      "to": null,
+      "why": "Loi 19-12 moved whole communes of this wilaya into new wilaya(s); the new line runs through the inside of the NE atom.",
+      "checked": [
+        "JORADP n°78 of 2019-12-18 (Loi 19-12, arts 2-3, commune lists)",
+        "Natural Earth admin-1 (48 wilayas, pre-2019)"
+      ],
+      "needs": "commune-level atoms carrying the 2019 lines: e.g. geoBoundaries DZA ADM2 or OCHA COD-AB Algeria communes (licence to check), or an atom set of the 1541 communes"
+    },
+    {
+      "what": "El Oued wilaya after Loi 19-12 (reduced territory) — the communes ceded to El M'Ghair lie inside the NE atom",
+      "unit": "DZA:El_Oued@2019",
+      "atoms": [
+        "DZA-2191"
+      ],
+      "from": "2019-12-18",
+      "to": null,
+      "why": "Loi 19-12 moved whole communes of this wilaya into new wilaya(s); the new line runs through the inside of the NE atom.",
+      "checked": [
+        "JORADP n°78 of 2019-12-18 (Loi 19-12, arts 2-3, commune lists)",
+        "Natural Earth admin-1 (48 wilayas, pre-2019)"
+      ],
+      "needs": "commune-level atoms carrying the 2019 lines: e.g. geoBoundaries DZA ADM2 or OCHA COD-AB Algeria communes (licence to check), or an atom set of the 1541 communes"
+    },
+    {
+      "what": "Ouargla wilaya after Loi 19-12 (reduced territory) — the communes ceded to Touggourt lie inside the NE atom",
+      "unit": "DZA:Ouargla@2019",
+      "atoms": [
+        "DZA-2194"
+      ],
+      "from": "2019-12-18",
+      "to": null,
+      "why": "Loi 19-12 moved whole communes of this wilaya into new wilaya(s); the new line runs through the inside of the NE atom.",
+      "checked": [
+        "JORADP n°78 of 2019-12-18 (Loi 19-12, arts 2-3, commune lists)",
+        "Natural Earth admin-1 (48 wilayas, pre-2019)"
+      ],
+      "needs": "commune-level atoms carrying the 2019 lines: e.g. geoBoundaries DZA ADM2 or OCHA COD-AB Algeria communes (licence to check), or an atom set of the 1541 communes"
+    },
+    {
+      "what": "Illizi wilaya after Loi 19-12 (reduced territory) — the communes ceded to Djanet lie inside the NE atom",
+      "unit": "DZA:Illizi@2019",
+      "atoms": [
+        "DZA-2188"
+      ],
+      "from": "2019-12-18",
+      "to": null,
+      "why": "Loi 19-12 moved whole communes of this wilaya into new wilaya(s); the new line runs through the inside of the NE atom.",
+      "checked": [
+        "JORADP n°78 of 2019-12-18 (Loi 19-12, arts 2-3, commune lists)",
+        "Natural Earth admin-1 (48 wilayas, pre-2019)"
+      ],
+      "needs": "commune-level atoms carrying the 2019 lines: e.g. geoBoundaries DZA ADM2 or OCHA COD-AB Algeria communes (licence to check), or an atom set of the 1541 communes"
+    },
+    {
+      "what": "Ghardaïa wilaya after Loi 19-12 (reduced territory) — the communes ceded to El Meniaa lie inside the NE atom",
+      "unit": "DZA:Ghardaïa@2019",
+      "atoms": [
+        "DZA-2192"
+      ],
+      "from": "2019-12-18",
+      "to": null,
+      "why": "Loi 19-12 moved whole communes of this wilaya into new wilaya(s); the new line runs through the inside of the NE atom.",
+      "checked": [
+        "JORADP n°78 of 2019-12-18 (Loi 19-12, arts 2-3, commune lists)",
+        "Natural Earth admin-1 (48 wilayas, pre-2019)"
+      ],
+      "needs": "commune-level atoms carrying the 2019 lines: e.g. geoBoundaries DZA ADM2 or OCHA COD-AB Algeria communes (licence to check), or an atom set of the 1541 communes"
+    },
+    {
+      "what": "Biskra wilaya after Loi 19-12 (reduced territory) — the communes ceded to Ouled Djellal lie inside the NE atom",
+      "unit": "DZA:Biskra@2019",
+      "atoms": [
+        "DZA-2211"
+      ],
+      "from": "2019-12-18",
+      "to": null,
+      "why": "Loi 19-12 moved whole communes of this wilaya into new wilaya(s); the new line runs through the inside of the NE atom.",
+      "checked": [
+        "JORADP n°78 of 2019-12-18 (Loi 19-12, arts 2-3, commune lists)",
+        "Natural Earth admin-1 (48 wilayas, pre-2019)"
+      ],
+      "needs": "commune-level atoms carrying the 2019 lines: e.g. geoBoundaries DZA ADM2 or OCHA COD-AB Algeria communes (licence to check), or an atom set of the 1541 communes"
+    },
+    {
+      "what": "Timimoun wilaya, created by Loi 19-12 from whole communes of one older wilaya",
+      "unit": "DZA:Timimoun@2019",
+      "from": "2019-12-18",
+      "to": null,
+      "why": "Its territory is a set of communes inside one NE atom; no NE boundary carries it.",
+      "checked": [
+        "JORADP n°78 of 2019-12-18 (Loi 19-12, art. 3, arts 52 bis to 52 bis 9)"
+      ],
+      "needs": "commune-level atoms (see above)"
+    },
+    {
+      "what": "Bordj Badji Mokhtar wilaya, created by Loi 19-12 from whole communes of one older wilaya",
+      "unit": "DZA:Bordj_Badji_Mokhtar@2019",
+      "from": "2019-12-18",
+      "to": null,
+      "why": "Its territory is a set of communes inside one NE atom; no NE boundary carries it.",
+      "checked": [
+        "JORADP n°78 of 2019-12-18 (Loi 19-12, art. 3, arts 52 bis to 52 bis 9)"
+      ],
+      "needs": "commune-level atoms (see above)"
+    },
+    {
+      "what": "Ouled Djellal wilaya, created by Loi 19-12 from whole communes of one older wilaya",
+      "unit": "DZA:Ouled_Djellal@2019",
+      "from": "2019-12-18",
+      "to": null,
+      "why": "Its territory is a set of communes inside one NE atom; no NE boundary carries it.",
+      "checked": [
+        "JORADP n°78 of 2019-12-18 (Loi 19-12, art. 3, arts 52 bis to 52 bis 9)"
+      ],
+      "needs": "commune-level atoms (see above)"
+    },
+    {
+      "what": "Béni Abbès wilaya, created by Loi 19-12 from whole communes of one older wilaya",
+      "unit": "DZA:Béni_Abbès@2019",
+      "from": "2019-12-18",
+      "to": null,
+      "why": "Its territory is a set of communes inside one NE atom; no NE boundary carries it.",
+      "checked": [
+        "JORADP n°78 of 2019-12-18 (Loi 19-12, art. 3, arts 52 bis to 52 bis 9)"
+      ],
+      "needs": "commune-level atoms (see above)"
+    },
+    {
+      "what": "In Salah wilaya, created by Loi 19-12 from whole communes of one older wilaya",
+      "unit": "DZA:In_Salah@2019",
+      "from": "2019-12-18",
+      "to": null,
+      "why": "Its territory is a set of communes inside one NE atom; no NE boundary carries it.",
+      "checked": [
+        "JORADP n°78 of 2019-12-18 (Loi 19-12, art. 3, arts 52 bis to 52 bis 9)"
+      ],
+      "needs": "commune-level atoms (see above)"
+    },
+    {
+      "what": "In Guezzam wilaya, created by Loi 19-12 from whole communes of one older wilaya",
+      "unit": "DZA:In_Guezzam@2019",
+      "from": "2019-12-18",
+      "to": null,
+      "why": "Its territory is a set of communes inside one NE atom; no NE boundary carries it.",
+      "checked": [
+        "JORADP n°78 of 2019-12-18 (Loi 19-12, art. 3, arts 52 bis to 52 bis 9)"
+      ],
+      "needs": "commune-level atoms (see above)"
+    },
+    {
+      "what": "Touggourt wilaya, created by Loi 19-12 from whole communes of one older wilaya",
+      "unit": "DZA:Touggourt@2019",
+      "from": "2019-12-18",
+      "to": null,
+      "why": "Its territory is a set of communes inside one NE atom; no NE boundary carries it.",
+      "checked": [
+        "JORADP n°78 of 2019-12-18 (Loi 19-12, art. 3, arts 52 bis to 52 bis 9)"
+      ],
+      "needs": "commune-level atoms (see above)"
+    },
+    {
+      "what": "Djanet wilaya, created by Loi 19-12 from whole communes of one older wilaya",
+      "unit": "DZA:Djanet@2019",
+      "from": "2019-12-18",
+      "to": null,
+      "why": "Its territory is a set of communes inside one NE atom; no NE boundary carries it.",
+      "checked": [
+        "JORADP n°78 of 2019-12-18 (Loi 19-12, art. 3, arts 52 bis to 52 bis 9)"
+      ],
+      "needs": "commune-level atoms (see above)"
+    },
+    {
+      "what": "El M'Ghair wilaya, created by Loi 19-12 from whole communes of one older wilaya",
+      "unit": "DZA:El_M_Ghair@2019",
+      "from": "2019-12-18",
+      "to": null,
+      "why": "Its territory is a set of communes inside one NE atom; no NE boundary carries it.",
+      "checked": [
+        "JORADP n°78 of 2019-12-18 (Loi 19-12, art. 3, arts 52 bis to 52 bis 9)"
+      ],
+      "needs": "commune-level atoms (see above)"
+    },
+    {
+      "what": "El Meniaa wilaya, created by Loi 19-12 from whole communes of one older wilaya",
+      "unit": "DZA:El_Meniaa@2019",
+      "from": "2019-12-18",
+      "to": null,
+      "why": "Its territory is a set of communes inside one NE atom; no NE boundary carries it.",
+      "checked": [
+        "JORADP n°78 of 2019-12-18 (Loi 19-12, art. 3, arts 52 bis to 52 bis 9)"
+      ],
+      "needs": "commune-level atoms (see above)"
+    },
+    {
+      "what": "31 wilayas of Ordonnance 74-69 (1974-07-09 → 1984-02-07)",
+      "from": "1974-07-09",
+      "to": "1984-02-07",
+      "why": "Not expressible as unions of 1984 wilayas. Loi 84-09 art. 2 says 1984 wilayas were made by merging parts of wilayas AND by re-drawing the limits of certain existing wilayas, and created communes by dividing/merging parts of communes, without listing which; statoids lists 1984 wilayas formed from parts of 2-4 older ones (Boumerdès, El Tarf, Khenchela, Mila, Tissemsilt); 1974 vs 1984 areas disagree for Adrar/Béchar/Tindouf (422,498 vs 464,900 km² for Adrar). Ord. 74-69 art. 2 leaves each wilaya's limits to separate decrees.",
+      "checked": [
+        "JORADP n°55 of 1974-07-09 (Ordonnance 74-69, arts 1-4: list of 31 wilayas, limits by decree)",
+        "JORADP n°6 of 1984-02-07 (Loi 84-09, arts 1-4)",
+        "statoids.com/udz.html (1974 table with contributing departments; 1983-12-15 change list and areas)"
+      ],
+      "needs": "1974 wilaya composition decrees (daïras/communes) and 1974-1984 commune geometry — no open atom set found"
+    },
+    {
+      "what": "15 departments inherited at independence (1962-07-05 → 1974-07-09)",
+      "from": "1962-07-05",
+      "to": "1974-07-09",
+      "why": "Departments of 1959 (Alger, Batna, Bône/Annaba, … Oasis, Saoura) were reorganised in 1974 by commune transfers; their lines do not follow 1984 wilaya boundaries.",
+      "checked": [
+        "statoids.com/udz.html (1959-11-07 table, 1974 contributors)"
+      ],
+      "needs": "1959-1974 arrondissement/commune geometry"
+    }
+  ]
+}

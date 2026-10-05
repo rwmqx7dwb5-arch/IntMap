@@ -1939,9 +1939,9 @@ internal consistency is not geographic accuracy.
 
 ⚠ **こちらは再導出する。** `scripts/build-border-coast.mjs --check` は上流を必要としない——
 入力は `data/` から**発見された**束（いまは6つ——`cshapes` / `hist-borders` / `hist-admin1` / `hist-admin2` / `hist-eras` / `hist-kuni`）と
-`data/coastline.json.gz` だけなので、**全 78,464 リングを判定し直して `data/border-coast.js` と
+`data/coastline.json.gz` だけなので、**全 82,131 リングを判定し直して `data/border-coast.js` と
 バイト単位で突き合わせる**。⚠ **束の母集合そのものも門である**——印されている集合が `data/` の束の集合と一致しなければ落ちるので、束を1つ足して印を忘れることができない（`data/hist-eras.js` は、手で並べた一覧だったころ気づかれずに抜けていた）。⚠ **`npm test` の中の写しは `--sample 8`**
-（#R564。この回で印す対象が 4,830 本から 25,506 本へ一桁増え（束が育った現在は上の 78,464 リング）ので、網羅版は CI の
+（#R564。この回で印す対象が 4,830 本から 25,506 本へ一桁増え（束が育った現在は上の 82,131 リング）ので、網羅版は CI の
 `npm run check:bordercoast` に置き、suite の中は 8 本に 1 本を再導出する。形の検査は
 **全件**を歩いたままなので、抜けるのは「再導出」の母数だけ）。
 上の門が「記録が自分自身と整合するか」を問うのに対し、ここは
@@ -2306,6 +2306,22 @@ span が順序どおりであること／そして**どの行も出版元が述�
 出版元の記録にあるか」は確かめない。② OpenHistoricalMap と先の出版元に譲ったかは、`data/hist-admin1.js` との
 重なりを測り直さないと分からず、`--check` はしない（二重主張の件数は `npm run check:histfidelity` が測る）。
 ③ 出版元の測量が史実として正しいかは測れない（`.agents/rules/historical-verification.md`）。
+
+### `npm run check:histrecon` — IntMap が復元した区分の調書と、出荷した行が調書の内にあること
+
+`scripts/build-hist-admin-recon.mjs --check` は、調書（`scripts/histrecon/dossiers/*.json`）を 1 本ずつ
+`scripts/histrecon/dossier-check.mjs` に通す: ③ **各時点で各部品がちょうど 1 つの区分に属す**（「国外」
+`atomsOutside` と「未解決」`unresolved` は期間と部品を名指しした場合だけ受け付け、未解決は何を調べたかを要求する）／
+② 史料が述べる区分数と描く区分数が一致する（未解決の区分は報告して隠さない）／④ 全ての期間が URL と「何を述べるか」
+を持つ出典を持つ／期間が重ならず、日付が書かれた精度と一致し、部品が部品の集合に実在する。同じ政体の 2 本の調書が
+同じ部品を扱えば落ちる。そのうえで出荷した `data/hist-admin-recon.js` の**どの行も、その調書が述べる期間の内にある**
+ことを照合する。`tests/hist-reconstruction-checks.test.mjs` は、通る調書を 1 か所ずつ壊して（隙間・二重の所属・
+史料と違う区分数・出典なし・期間の重なり・存在しない部品・精度の偽り）**全部が赤になる**ことと、穴埋め記録が復元に譲り、
+復元が自分の前回の出力に譲らないことを測る。
+
+⚠ 残余: ① 部品の取得と多角形の和が要るので `--check` は**再生成しない**（検査 3・4 の結果は組み立て時の報告にだけ出る）。
+② 出典が本当にそう述べているか・史実として正しいかは機械には測れない——調書は研究の結果で、門は形式と整合だけを測る
+（`.agents/rules/historical-verification.md`。方法の正本は `docs/HIST-RECONSTRUCTION.md`）。
 
 ### The September 2026 security audit — `tests/r801-*-checks.test.mjs` (#R801)
 

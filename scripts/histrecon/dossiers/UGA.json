@@ -1,0 +1,5440 @@
+{
+  "country": "UGA",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "1997-03-20",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Republic of Uganda. First level = districts (plus Kampala); the four regions are statistical. NE depicts the 112 units of 2010-07-01 (UGA-3371 named \"Mbarara\" is Kiruhura District, gn_name Kiruhura).",
+  "units": [
+    {
+      "id": "UGA:Ntungamo@1997",
+      "names": {
+        "en": "Ntungamo District",
+        "ja": "ントゥンガモ県",
+        "local": "Ntungamo District"
+      },
+      "wikidata": "Q204642",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3372"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        }
+      ]
+    },
+    {
+      "id": "UGA:Isingiro@2005",
+      "names": {
+        "en": "Isingiro District",
+        "ja": "イシンギロ県",
+        "local": "Isingiro District"
+      },
+      "wikidata": "Q1318887",
+      "spans": [
+        {
+          "from": "2005-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3370"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Kabale@1997",
+      "names": {
+        "en": "Kabale District",
+        "ja": "カバレ県",
+        "local": "Kabale District"
+      },
+      "wikidata": "Q3526470",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2016-07-01",
+          "atoms": [
+            "UGA-3375"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Uganda&oldid=1374679796",
+              "title": "Wikipedia: Districts of Uganda (rev 1374679796)",
+              "says": "Table of districts created 2016–2020 with effective dates (1 July each year) and parent districts.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        }
+      ]
+    },
+    {
+      "id": "UGA:Kisoro@1997",
+      "names": {
+        "en": "Kisoro District",
+        "ja": "キソロ県",
+        "local": "Kisoro District"
+      },
+      "wikidata": "Q580538",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3376"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        }
+      ]
+    },
+    {
+      "id": "UGA:Rakai@1997",
+      "names": {
+        "en": "Rakai District",
+        "ja": "ラカイ県",
+        "local": "Rakai District"
+      },
+      "wikidata": "Q976873",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2007-07-01",
+          "atoms": [
+            "UGA-3361",
+            "UGA-5618"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2007-07-01: Bukedea from Kumi, Bududa from Manafwa, Lyantonde from Rakai; 79 districts plus Kampala.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        },
+        {
+          "from": "2007-07-01",
+          "precision": "day",
+          "to": "2017-07-01",
+          "atoms": [
+            "UGA-3361"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2007-07-01: Bukedea from Kumi, Bududa from Manafwa, Lyantonde from Rakai; 79 districts plus Kampala.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Uganda&oldid=1374679796",
+              "title": "Wikipedia: Districts of Uganda (rev 1374679796)",
+              "says": "Table of districts created 2016–2020 with effective dates (1 July each year) and parent districts.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Kalangala@1997",
+      "names": {
+        "en": "Kalangala District",
+        "ja": "カランガラ県",
+        "local": "Kalangala District"
+      },
+      "wikidata": "Q867219",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-2631"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        }
+      ]
+    },
+    {
+      "id": "UGA:Buvuma@2010",
+      "names": {
+        "en": "Buvuma District",
+        "ja": "ブヴァマ県",
+        "local": "Buvuma District"
+      },
+      "wikidata": "Q3321608",
+      "spans": [
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5598"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Mayuge@2000",
+      "names": {
+        "en": "Mayuge District",
+        "ja": "マユゲ県",
+        "local": "Mayuge District"
+      },
+      "wikidata": "Q1364824",
+      "spans": [
+        {
+          "from": "2000-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3120"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "Motion of 2000-11-28 created Kamwenge, Kyenjojo (Kabarole), Kayunga (Mukono), Mayuge (Iganga), Pader (Kitgum), Sironko (Mbale), Wakiso (Mpigi), Yumbe (Arua), retroactive to 2000-07-01.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Parliament motion of 2000-11-28, retroactive to 2000-07-01."
+        }
+      ]
+    },
+    {
+      "id": "UGA:Namayingo@2010",
+      "names": {
+        "en": "Namayingo District",
+        "ja": "ナマインゴ県",
+        "local": "Namayingo District"
+      },
+      "wikidata": "Q1114915",
+      "spans": [
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5614"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Kaabong@2005",
+      "names": {
+        "en": "Kaabong District",
+        "ja": "カボング県",
+        "local": "Kaabong District"
+      },
+      "wikidata": "Q1229881",
+      "spans": [
+        {
+          "from": "2005-07-01",
+          "precision": "day",
+          "to": "2019-07-01",
+          "atoms": [
+            "UGA-3125"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Uganda&oldid=1374679796",
+              "title": "Wikipedia: Districts of Uganda (rev 1374679796)",
+              "says": "Table of districts created 2016–2020 with effective dates (1 July each year) and parent districts.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Kitgum@1997",
+      "names": {
+        "en": "Kitgum District",
+        "ja": "キトゥグム県",
+        "local": "Kitgum District"
+      },
+      "wikidata": "Q500162",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2000-07-01",
+          "atoms": [
+            "UGA-3096",
+            "UGA-3101",
+            "UGA-5608",
+            "UGA-5603"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "Motion of 2000-11-28 created Kamwenge, Kyenjojo (Kabarole), Kayunga (Mukono), Mayuge (Iganga), Pader (Kitgum), Sironko (Mbale), Wakiso (Mpigi), Yumbe (Arua), retroactive to 2000-07-01.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        },
+        {
+          "from": "2000-07-01",
+          "precision": "day",
+          "to": "2009-07-01",
+          "atoms": [
+            "UGA-3096",
+            "UGA-5603"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "Motion of 2000-11-28 created Kamwenge, Kyenjojo (Kabarole), Kayunga (Mukono), Mayuge (Iganga), Pader (Kitgum), Sironko (Mbale), Wakiso (Mpigi), Yumbe (Arua), retroactive to 2000-07-01.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2009-07-01: Amudat, Buikwe, Buyende, Kyegegwa, Lamwo, Otuke, Zombo, each one county of a single parent district.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Parliament motion of 2000-11-28, retroactive to 2000-07-01."
+        },
+        {
+          "from": "2009-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3096"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2009-07-01: Amudat, Buikwe, Buyende, Kyegegwa, Lamwo, Otuke, Zombo, each one county of a single parent district.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Lamwo@2009",
+      "names": {
+        "en": "Lamwo District",
+        "ja": "ランウォ県",
+        "local": "Lamwo District"
+      },
+      "wikidata": "Q3539277",
+      "spans": [
+        {
+          "from": "2009-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5603"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2009-07-01: Amudat, Buikwe, Buyende, Kyegegwa, Lamwo, Otuke, Zombo, each one county of a single parent district.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Amuru@2006",
+      "names": {
+        "en": "Amuru District",
+        "ja": "アムル県",
+        "local": "Amuru District"
+      },
+      "wikidata": "Q1375771",
+      "spans": [
+        {
+          "from": "2006-07-01",
+          "precision": "day",
+          "to": "2010-07-01",
+          "atoms": [
+            "UGA-5601",
+            "UGA-5625"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2006-07-01: Abim (Kotido), Buliisa (Masindi), Namutumba (Iganga), Dokolo (Lira), Amuru (Gulu), Nyadri/Maracha (Arua: Maracha+Terego), Oyam (Apac).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        },
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5601"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Adjumani@1997",
+      "names": {
+        "en": "Adjumani District",
+        "ja": "アジュマニ県",
+        "local": "Adjumani District"
+      },
+      "wikidata": "Q1229734",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3079"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        }
+      ]
+    },
+    {
+      "id": "UGA:Moyo@1997",
+      "names": {
+        "en": "Moyo District",
+        "ja": "モヨ県",
+        "local": "Moyo District"
+      },
+      "wikidata": "Q2183668",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2019-07-01",
+          "atoms": [
+            "UGA-3085"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Uganda&oldid=1374679796",
+              "title": "Wikipedia: Districts of Uganda (rev 1374679796)",
+              "says": "Table of districts created 2016–2020 with effective dates (1 July each year) and parent districts.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        }
+      ]
+    },
+    {
+      "id": "UGA:Yumbe@2000",
+      "names": {
+        "en": "Yumbe District",
+        "ja": "ユンベ県",
+        "local": "Yumbe District"
+      },
+      "wikidata": "Q1362587",
+      "spans": [
+        {
+          "from": "2000-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3086"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "Motion of 2000-11-28 created Kamwenge, Kyenjojo (Kabarole), Kayunga (Mukono), Mayuge (Iganga), Pader (Kitgum), Sironko (Mbale), Wakiso (Mpigi), Yumbe (Arua), retroactive to 2000-07-01.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Parliament motion of 2000-11-28, retroactive to 2000-07-01."
+        }
+      ]
+    },
+    {
+      "id": "UGA:Koboko@2005",
+      "names": {
+        "en": "Koboko District",
+        "ja": "コボコ県",
+        "local": "Koboko District"
+      },
+      "wikidata": "Q1318857",
+      "spans": [
+        {
+          "from": "2005-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3081"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Moroto@1997",
+      "names": {
+        "en": "Moroto District",
+        "ja": "モロト県",
+        "local": "Moroto District"
+      },
+      "wikidata": "Q1375850",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2001-07-01",
+          "atoms": [
+            "UGA-3127",
+            "UGA-3128",
+            "UGA-5616",
+            "UGA-5615"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2001-07-01: Kaberamaido from Soroti, Kanungu from Rukungiri, Nakapiripirit from Moroto; 56 districts.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        },
+        {
+          "from": "2001-07-01",
+          "precision": "day",
+          "to": "2010-07-01",
+          "atoms": [
+            "UGA-3127",
+            "UGA-5615"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2001-07-01: Kaberamaido from Soroti, Kanungu from Rukungiri, Nakapiripirit from Moroto; 56 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        },
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3127"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Kapchorwa@1997",
+      "names": {
+        "en": "Kapchorwa District",
+        "ja": "カプチョルワ県",
+        "local": "Kapchorwa District"
+      },
+      "wikidata": "Q1229921",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2005-07-01",
+          "atoms": [
+            "UGA-3112",
+            "UGA-3113",
+            "UGA-5612"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        },
+        {
+          "from": "2005-07-01",
+          "precision": "day",
+          "to": "2010-07-01",
+          "atoms": [
+            "UGA-3112",
+            "UGA-5612"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        },
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3112"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Bukwa@2005",
+      "names": {
+        "en": "Bukwo District",
+        "ja": "ブクウォ県",
+        "local": "Bukwo District"
+      },
+      "wikidata": "Q1375868",
+      "spans": [
+        {
+          "from": "2005-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3113"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Amudat@2009",
+      "names": {
+        "en": "Amudat District",
+        "ja": "アムダット県",
+        "local": "Amudat District"
+      },
+      "wikidata": "Q3536116",
+      "spans": [
+        {
+          "from": "2009-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5616"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2009-07-01: Amudat, Buikwe, Buyende, Kyegegwa, Lamwo, Otuke, Zombo, each one county of a single parent district.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Busia@1997",
+      "names": {
+        "en": "Busia District",
+        "ja": "ブシア県",
+        "local": "Busia District"
+      },
+      "wikidata": "Q1229800",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3118"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        }
+      ]
+    },
+    {
+      "id": "UGA:Tororo@1997",
+      "names": {
+        "en": "Tororo District",
+        "ja": "トロロ県",
+        "local": "Tororo District"
+      },
+      "wikidata": "Q1186541",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2005-07-01",
+          "atoms": [
+            "UGA-3121",
+            "UGA-3119"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        },
+        {
+          "from": "2005-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3121"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Manafwa@2005",
+      "names": {
+        "en": "Manafwa District",
+        "ja": "マナフワ県",
+        "local": "Manafwa District"
+      },
+      "wikidata": "Q1375789",
+      "spans": [
+        {
+          "from": "2005-07-01",
+          "precision": "day",
+          "to": "2007-07-01",
+          "atoms": [
+            "UGA-3116",
+            "UGA-5626"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2007-07-01: Bukedea from Kumi, Bududa from Manafwa, Lyantonde from Rakai; 79 districts plus Kampala.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        },
+        {
+          "from": "2007-07-01",
+          "precision": "day",
+          "to": "2017-07-01",
+          "atoms": [
+            "UGA-3116"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2007-07-01: Bukedea from Kumi, Bududa from Manafwa, Lyantonde from Rakai; 79 districts plus Kampala.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Uganda&oldid=1374679796",
+              "title": "Wikipedia: Districts of Uganda (rev 1374679796)",
+              "says": "Table of districts created 2016–2020 with effective dates (1 July each year) and parent districts.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Bududa@2007",
+      "names": {
+        "en": "Bududa District",
+        "ja": "ブドゥダ県",
+        "local": "Bududa District"
+      },
+      "wikidata": "Q1365449",
+      "spans": [
+        {
+          "from": "2007-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5626"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2007-07-01: Bukedea from Kumi, Bududa from Manafwa, Lyantonde from Rakai; 79 districts plus Kampala.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Maracha@2010",
+      "names": {
+        "en": "Maracha District",
+        "ja": "マラチャ県",
+        "local": "Maracha District"
+      },
+      "wikidata": "Q588927",
+      "spans": [
+        {
+          "from": "2010-05-03",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3087"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Maracha_District&oldid=1378546613",
+              "title": "Wikipedia: Maracha District (rev 1378546613)",
+              "says": "Maracha and Terego counties left Arua in 2006 as one district; after years of dispute Terego returned to Arua and Maracha stayed a district alone.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.newvision.co.ug/new_vision/news/1288362/arua-rejects-terego-county",
+              "title": "New Vision, \"Arua rejects Terego county\" (2010-06-15)",
+              "says": "Parliament decided on May 3 that Maracha remains a district and Terego returns to Arua district.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Maracha county alone from the Parliament decision of 2010-05-03; 2006-07-01 → 2010-05-03 the district (Nyadri / Maracha-Terego) also held Terego."
+        }
+      ]
+    },
+    {
+      "id": "UGA:Arua@1997",
+      "names": {
+        "en": "Arua District",
+        "ja": "アルア県",
+        "local": "Arua District"
+      },
+      "wikidata": "Q1229758",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2000-07-01",
+          "atoms": [
+            "UGA-3080",
+            "UGA-3086",
+            "UGA-3081",
+            "UGA-3087"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "Motion of 2000-11-28 created Kamwenge, Kyenjojo (Kabarole), Kayunga (Mukono), Mayuge (Iganga), Pader (Kitgum), Sironko (Mbale), Wakiso (Mpigi), Yumbe (Arua), retroactive to 2000-07-01.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        },
+        {
+          "from": "2000-07-01",
+          "precision": "day",
+          "to": "2005-07-01",
+          "atoms": [
+            "UGA-3080",
+            "UGA-3081",
+            "UGA-3087"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "Motion of 2000-11-28 created Kamwenge, Kyenjojo (Kabarole), Kayunga (Mukono), Mayuge (Iganga), Pader (Kitgum), Sironko (Mbale), Wakiso (Mpigi), Yumbe (Arua), retroactive to 2000-07-01.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Parliament motion of 2000-11-28, retroactive to 2000-07-01."
+        },
+        {
+          "from": "2005-07-01",
+          "precision": "day",
+          "to": "2006-07-01",
+          "atoms": [
+            "UGA-3080",
+            "UGA-3087"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2006-07-01: Abim (Kotido), Buliisa (Masindi), Namutumba (Iganga), Dokolo (Lira), Amuru (Gulu), Nyadri/Maracha (Arua: Maracha+Terego), Oyam (Apac).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        },
+        {
+          "from": "2010-05-03",
+          "precision": "day",
+          "to": "2019-07-01",
+          "atoms": [
+            "UGA-3080"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Maracha_District&oldid=1378546613",
+              "title": "Wikipedia: Maracha District (rev 1378546613)",
+              "says": "Maracha and Terego counties left Arua in 2006 as one district; after years of dispute Terego returned to Arua and Maracha stayed a district alone.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.newvision.co.ug/new_vision/news/1288362/arua-rejects-terego-county",
+              "title": "New Vision, \"Arua rejects Terego county\" (2010-06-15)",
+              "says": "Parliament decided on May 3 that Maracha remains a district and Terego returns to Arua district.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Uganda&oldid=1374679796",
+              "title": "Wikipedia: Districts of Uganda (rev 1374679796)",
+              "says": "Table of districts created 2016–2020 with effective dates (1 July each year) and parent districts.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "From the Parliament decision of 2010-05-03 returning Terego county to Arua (date of the decision; a separate entry-into-force day was not found)."
+        }
+      ]
+    },
+    {
+      "id": "UGA:Zombo@2009",
+      "names": {
+        "en": "Zombo District",
+        "ja": "ゾンボ県",
+        "local": "Zombo District"
+      },
+      "wikidata": "Q3539730",
+      "spans": [
+        {
+          "from": "2009-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5589"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2009-07-01: Amudat, Buikwe, Buyende, Kyegegwa, Lamwo, Otuke, Zombo, each one county of a single parent district.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Nebbi@1997",
+      "names": {
+        "en": "Nebbi District",
+        "ja": "ネビ県",
+        "local": "Nebbi District"
+      },
+      "wikidata": "Q1375825",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2009-07-01",
+          "atoms": [
+            "UGA-3084",
+            "UGA-5589"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2009-07-01: Amudat, Buikwe, Buyende, Kyegegwa, Lamwo, Otuke, Zombo, each one county of a single parent district.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        },
+        {
+          "from": "2009-07-01",
+          "precision": "day",
+          "to": "2017-07-01",
+          "atoms": [
+            "UGA-3084"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2009-07-01: Amudat, Buikwe, Buyende, Kyegegwa, Lamwo, Otuke, Zombo, each one county of a single parent district.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Uganda&oldid=1374679796",
+              "title": "Wikipedia: Districts of Uganda (rev 1374679796)",
+              "says": "Table of districts created 2016–2020 with effective dates (1 July each year) and parent districts.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Buliisa@2006",
+      "names": {
+        "en": "Buliisa District",
+        "ja": "ブリサ県",
+        "local": "Buliisa District"
+      },
+      "wikidata": "Q1229793",
+      "spans": [
+        {
+          "from": "2006-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3082"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2006-07-01: Abim (Kotido), Buliisa (Masindi), Namutumba (Iganga), Dokolo (Lira), Amuru (Gulu), Nyadri/Maracha (Arua: Maracha+Terego), Oyam (Apac).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Hoima@1997",
+      "names": {
+        "en": "Hoima District",
+        "ja": "ホイマ県",
+        "local": "Hoima District"
+      },
+      "wikidata": "Q1186535",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2018-07-01",
+          "atoms": [
+            "UGA-3105"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Uganda&oldid=1374679796",
+              "title": "Wikipedia: Districts of Uganda (rev 1374679796)",
+              "says": "Table of districts created 2016–2020 with effective dates (1 July each year) and parent districts.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        }
+      ]
+    },
+    {
+      "id": "UGA:Ntoroko@2010",
+      "names": {
+        "en": "Ntoroko District",
+        "ja": "ントロコ県",
+        "local": "Ntoroko District"
+      },
+      "wikidata": "Q3539547",
+      "spans": [
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5610"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Bundibugyo@1997",
+      "names": {
+        "en": "Bundibugyo District",
+        "ja": "ブンディブギョ県",
+        "local": "Bundibugyo District"
+      },
+      "wikidata": "Q1362129",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2010-07-01",
+          "atoms": [
+            "UGA-3104",
+            "UGA-5610"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        },
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3104"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Kabarole@1997",
+      "names": {
+        "en": "Kabarole District",
+        "ja": "カバロレ県",
+        "local": "Kabarole District"
+      },
+      "wikidata": "Q1229910",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2000-07-01",
+          "atoms": [
+            "UGA-3106",
+            "UGA-3368",
+            "UGA-3107",
+            "UGA-5611"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "Motion of 2000-11-28 created Kamwenge, Kyenjojo (Kabarole), Kayunga (Mukono), Mayuge (Iganga), Pader (Kitgum), Sironko (Mbale), Wakiso (Mpigi), Yumbe (Arua), retroactive to 2000-07-01.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        },
+        {
+          "from": "2000-07-01",
+          "precision": "day",
+          "to": "2017-07-01",
+          "atoms": [
+            "UGA-3106"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "Motion of 2000-11-28 created Kamwenge, Kyenjojo (Kabarole), Kayunga (Mukono), Mayuge (Iganga), Pader (Kitgum), Sironko (Mbale), Wakiso (Mpigi), Yumbe (Arua), retroactive to 2000-07-01.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Uganda&oldid=1374679796",
+              "title": "Wikipedia: Districts of Uganda (rev 1374679796)",
+              "says": "Table of districts created 2016–2020 with effective dates (1 July each year) and parent districts.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Parliament motion of 2000-11-28, retroactive to 2000-07-01."
+        }
+      ]
+    },
+    {
+      "id": "UGA:Kasese@1997",
+      "names": {
+        "en": "Kasese District",
+        "ja": "カセセ県",
+        "local": "Kasese District"
+      },
+      "wikidata": "Q1229919",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3367"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        }
+      ]
+    },
+    {
+      "id": "UGA:Rubirizi@2010",
+      "names": {
+        "en": "Rubirizi District",
+        "ja": "ルビリジ県",
+        "local": "Rubirizi District"
+      },
+      "wikidata": "Q3539648",
+      "spans": [
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5621"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Rukungiri@1997",
+      "names": {
+        "en": "Rukungiri District",
+        "ja": "ルクンギリ県",
+        "local": "Rukungiri District"
+      },
+      "wikidata": "Q289419",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2001-07-01",
+          "atoms": [
+            "UGA-3373",
+            "UGA-3377"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2001-07-01: Kaberamaido from Soroti, Kanungu from Rukungiri, Nakapiripirit from Moroto; 56 districts.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        },
+        {
+          "from": "2001-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3373"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2001-07-01: Kaberamaido from Soroti, Kanungu from Rukungiri, Nakapiripirit from Moroto; 56 districts.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Kanungu@2001",
+      "names": {
+        "en": "Kanungu District",
+        "ja": "カヌング県",
+        "local": "Kanungu District"
+      },
+      "wikidata": "Q1032245",
+      "spans": [
+        {
+          "from": "2001-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3377"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2001-07-01: Kaberamaido from Soroti, Kanungu from Rukungiri, Nakapiripirit from Moroto; 56 districts.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Kamuli@1997",
+      "names": {
+        "en": "Kamuli District",
+        "ja": "カムリ県",
+        "local": "Kamuli District"
+      },
+      "wikidata": "Q164474",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2005-07-01",
+          "atoms": [
+            "UGA-3069",
+            "UGA-3071",
+            "UGA-5593"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        },
+        {
+          "from": "2005-07-01",
+          "precision": "day",
+          "to": "2009-07-01",
+          "atoms": [
+            "UGA-3069",
+            "UGA-5593"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2009-07-01: Amudat, Buikwe, Buyende, Kyegegwa, Lamwo, Otuke, Zombo, each one county of a single parent district.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        },
+        {
+          "from": "2009-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3069"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2009-07-01: Amudat, Buikwe, Buyende, Kyegegwa, Lamwo, Otuke, Zombo, each one county of a single parent district.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Luuka@2010",
+      "names": {
+        "en": "Luuka District",
+        "ja": "ルッカ県",
+        "local": "Luuka District"
+      },
+      "wikidata": "Q1114977",
+      "spans": [
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5592"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Buyende@2009",
+      "names": {
+        "en": "Buyende District",
+        "ja": "ブイェンデ県",
+        "local": "Buyende District"
+      },
+      "wikidata": "Q1114938",
+      "spans": [
+        {
+          "from": "2009-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5593"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2009-07-01: Amudat, Buikwe, Buyende, Kyegegwa, Lamwo, Otuke, Zombo, each one county of a single parent district.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Jinja@1997",
+      "names": {
+        "en": "Jinja District",
+        "ja": "ジンジャ県",
+        "local": "Jinja District"
+      },
+      "wikidata": "Q983748",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3064"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        }
+      ]
+    },
+    {
+      "id": "UGA:Apac@1997",
+      "names": {
+        "en": "Apac District",
+        "ja": "アパッチ県",
+        "local": "Apac District"
+      },
+      "wikidata": "Q1229750",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2006-07-01",
+          "atoms": [
+            "UGA-5604",
+            "UGA-3103",
+            "UGA-5605"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2006-07-01: Abim (Kotido), Buliisa (Masindi), Namutumba (Iganga), Dokolo (Lira), Amuru (Gulu), Nyadri/Maracha (Arua: Maracha+Terego), Oyam (Apac).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        },
+        {
+          "from": "2006-07-01",
+          "precision": "day",
+          "to": "2010-07-01",
+          "atoms": [
+            "UGA-5604",
+            "UGA-5605"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2006-07-01: Abim (Kotido), Buliisa (Masindi), Namutumba (Iganga), Dokolo (Lira), Amuru (Gulu), Nyadri/Maracha (Arua: Maracha+Terego), Oyam (Apac).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        },
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": "2018-07-01",
+          "atoms": [
+            "UGA-5604"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Uganda&oldid=1374679796",
+              "title": "Wikipedia: Districts of Uganda (rev 1374679796)",
+              "says": "Table of districts created 2016–2020 with effective dates (1 July each year) and parent districts.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Nakasongola@1997",
+      "names": {
+        "en": "Nakasongola District",
+        "ja": "ナカソンゴラ県",
+        "local": "Nakasongola District"
+      },
+      "wikidata": "Q976859",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3090"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        }
+      ]
+    },
+    {
+      "id": "UGA:Masindi@1997",
+      "names": {
+        "en": "Masindi District",
+        "ja": "マシンディ県",
+        "local": "Masindi District"
+      },
+      "wikidata": "Q1032238",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2006-07-01",
+          "atoms": [
+            "UGA-3102",
+            "UGA-3082",
+            "UGA-5609"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2006-07-01: Abim (Kotido), Buliisa (Masindi), Namutumba (Iganga), Dokolo (Lira), Amuru (Gulu), Nyadri/Maracha (Arua: Maracha+Terego), Oyam (Apac).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        },
+        {
+          "from": "2006-07-01",
+          "precision": "day",
+          "to": "2010-07-01",
+          "atoms": [
+            "UGA-3102",
+            "UGA-5609"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2006-07-01: Abim (Kotido), Buliisa (Masindi), Namutumba (Iganga), Dokolo (Lira), Amuru (Gulu), Nyadri/Maracha (Arua: Maracha+Terego), Oyam (Apac).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        },
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3102"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Kayunga@2000",
+      "names": {
+        "en": "Kayunga District",
+        "ja": "カユンガ県",
+        "local": "Kayunga District"
+      },
+      "wikidata": "Q1207391",
+      "spans": [
+        {
+          "from": "2000-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3067"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "Motion of 2000-11-28 created Kamwenge, Kyenjojo (Kabarole), Kayunga (Mukono), Mayuge (Iganga), Pader (Kitgum), Sironko (Mbale), Wakiso (Mpigi), Yumbe (Arua), retroactive to 2000-07-01.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Parliament motion of 2000-11-28, retroactive to 2000-07-01."
+        }
+      ]
+    },
+    {
+      "id": "UGA:Luweero@1997",
+      "names": {
+        "en": "Luweero District",
+        "ja": "ルウェロ県",
+        "local": "Luweero District"
+      },
+      "wikidata": "Q1364817",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2005-07-01",
+          "atoms": [
+            "UGA-3092",
+            "UGA-3095"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        },
+        {
+          "from": "2005-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3092"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Amolatar@2005",
+      "names": {
+        "en": "Amolatar District",
+        "ja": "アモラタル県",
+        "local": "Amolatar District"
+      },
+      "wikidata": "Q1318822",
+      "spans": [
+        {
+          "from": "2005-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3070"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Mityana@2005",
+      "names": {
+        "en": "Mityana District",
+        "ja": "ミティアナ県",
+        "local": "Mityana District"
+      },
+      "wikidata": "Q1230005",
+      "spans": [
+        {
+          "from": "2005-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3094"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Kiboga@1997",
+      "names": {
+        "en": "Kiboga District",
+        "ja": "キボガ県",
+        "local": "Kiboga District"
+      },
+      "wikidata": "Q892064",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2010-07-01",
+          "atoms": [
+            "UGA-3089",
+            "UGA-5602"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        },
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3089"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Mpigi@1997",
+      "names": {
+        "en": "Mpigi District",
+        "ja": "ムピジ県",
+        "local": "Mpigi District"
+      },
+      "wikidata": "Q1362109",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2000-07-01",
+          "atoms": [
+            "UGA-3078",
+            "UGA-3091",
+            "UGA-5599",
+            "UGA-5600"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "Motion of 2000-11-28 created Kamwenge, Kyenjojo (Kabarole), Kayunga (Mukono), Mayuge (Iganga), Pader (Kitgum), Sironko (Mbale), Wakiso (Mpigi), Yumbe (Arua), retroactive to 2000-07-01.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        },
+        {
+          "from": "2000-07-01",
+          "precision": "day",
+          "to": "2010-07-01",
+          "atoms": [
+            "UGA-3078",
+            "UGA-5599",
+            "UGA-5600"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "Motion of 2000-11-28 created Kamwenge, Kyenjojo (Kabarole), Kayunga (Mukono), Mayuge (Iganga), Pader (Kitgum), Sironko (Mbale), Wakiso (Mpigi), Yumbe (Arua), retroactive to 2000-07-01.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Parliament motion of 2000-11-28, retroactive to 2000-07-01."
+        },
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3078"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Butambala@2010",
+      "names": {
+        "en": "Butambala District",
+        "ja": "ブタンバラ県",
+        "local": "Butambala District"
+      },
+      "wikidata": "Q3321622",
+      "spans": [
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5599"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Gomba@2010",
+      "names": {
+        "en": "Gomba District",
+        "ja": "ゴンバ県",
+        "local": "Gomba District"
+      },
+      "wikidata": "Q3321637",
+      "spans": [
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5600"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Wakiso@2000",
+      "names": {
+        "en": "Wakiso District",
+        "ja": "ワキソ県",
+        "local": "Wakiso District"
+      },
+      "wikidata": "Q976848",
+      "spans": [
+        {
+          "from": "2000-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3091"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "Motion of 2000-11-28 created Kamwenge, Kyenjojo (Kabarole), Kayunga (Mukono), Mayuge (Iganga), Pader (Kitgum), Sironko (Mbale), Wakiso (Mpigi), Yumbe (Arua), retroactive to 2000-07-01.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Parliament motion of 2000-11-28, retroactive to 2000-07-01."
+        }
+      ]
+    },
+    {
+      "id": "UGA:Nakaseke@2005",
+      "names": {
+        "en": "Nakaseke District",
+        "ja": "ナカセケ県",
+        "local": "Nakaseke District"
+      },
+      "wikidata": "Q432438",
+      "spans": [
+        {
+          "from": "2005-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3095"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Kyankwanzi@2010",
+      "names": {
+        "en": "Kyankwanzi District",
+        "ja": "キャンクァンジ県",
+        "local": "Kyankwanzi District"
+      },
+      "wikidata": "Q534203",
+      "spans": [
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5602"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Kaberamaido@2001",
+      "names": {
+        "en": "Kaberamaido District",
+        "ja": "カベラマイド県",
+        "local": "Kaberamaido District"
+      },
+      "wikidata": "Q1229906",
+      "spans": [
+        {
+          "from": "2001-07-01",
+          "precision": "day",
+          "to": "2019-07-01",
+          "atoms": [
+            "UGA-3066"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2001-07-01: Kaberamaido from Soroti, Kanungu from Rukungiri, Nakapiripirit from Moroto; 56 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Uganda&oldid=1374679796",
+              "title": "Wikipedia: Districts of Uganda (rev 1374679796)",
+              "says": "Table of districts created 2016–2020 with effective dates (1 July each year) and parent districts.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Dokolo@2006",
+      "names": {
+        "en": "Dokolo District",
+        "ja": "ドコロ県",
+        "local": "Dokolo District"
+      },
+      "wikidata": "Q1318872",
+      "spans": [
+        {
+          "from": "2006-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3100"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2006-07-01: Abim (Kotido), Buliisa (Masindi), Namutumba (Iganga), Dokolo (Lira), Amuru (Gulu), Nyadri/Maracha (Arua: Maracha+Terego), Oyam (Apac).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Kyenjojo@2000",
+      "names": {
+        "en": "Kyenjojo District",
+        "ja": "キエンジョジョ県",
+        "local": "Kyenjojo District"
+      },
+      "wikidata": "Q1318815",
+      "spans": [
+        {
+          "from": "2000-07-01",
+          "precision": "day",
+          "to": "2009-07-01",
+          "atoms": [
+            "UGA-3107",
+            "UGA-5611"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "Motion of 2000-11-28 created Kamwenge, Kyenjojo (Kabarole), Kayunga (Mukono), Mayuge (Iganga), Pader (Kitgum), Sironko (Mbale), Wakiso (Mpigi), Yumbe (Arua), retroactive to 2000-07-01.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2009-07-01: Amudat, Buikwe, Buyende, Kyegegwa, Lamwo, Otuke, Zombo, each one county of a single parent district.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Parliament motion of 2000-11-28, retroactive to 2000-07-01."
+        },
+        {
+          "from": "2009-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3107"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2009-07-01: Amudat, Buikwe, Buyende, Kyegegwa, Lamwo, Otuke, Zombo, each one county of a single parent district.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Kamwenge@2000",
+      "names": {
+        "en": "Kamwenge District",
+        "ja": "カムウェンゲ県",
+        "local": "Kamwenge District"
+      },
+      "wikidata": "Q1318806",
+      "spans": [
+        {
+          "from": "2000-07-01",
+          "precision": "day",
+          "to": "2019-07-01",
+          "atoms": [
+            "UGA-3368"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "Motion of 2000-11-28 created Kamwenge, Kyenjojo (Kabarole), Kayunga (Mukono), Mayuge (Iganga), Pader (Kitgum), Sironko (Mbale), Wakiso (Mpigi), Yumbe (Arua), retroactive to 2000-07-01.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Uganda&oldid=1374679796",
+              "title": "Wikipedia: Districts of Uganda (rev 1374679796)",
+              "says": "Table of districts created 2016–2020 with effective dates (1 July each year) and parent districts.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Parliament motion of 2000-11-28, retroactive to 2000-07-01."
+        }
+      ]
+    },
+    {
+      "id": "UGA:Kyegegwa@2009",
+      "names": {
+        "en": "Kyegegwa District",
+        "ja": "キェゲグワ県",
+        "local": "Kyegegwa District"
+      },
+      "wikidata": "Q3539256",
+      "spans": [
+        {
+          "from": "2009-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5611"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2009-07-01: Amudat, Buikwe, Buyende, Kyegegwa, Lamwo, Otuke, Zombo, each one county of a single parent district.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Sembabule@1997",
+      "names": {
+        "en": "Sembabule District",
+        "ja": "センバブレ県",
+        "local": "Sembabule District"
+      },
+      "wikidata": "Q976883",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3077"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        }
+      ]
+    },
+    {
+      "id": "UGA:Kibale@1997",
+      "names": {
+        "en": "Kibaale District",
+        "ja": "キバレ県",
+        "local": "Kibale District"
+      },
+      "wikidata": "Q604966",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2016-07-01",
+          "atoms": [
+            "UGA-3108"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Uganda&oldid=1374679796",
+              "title": "Wikipedia: Districts of Uganda (rev 1374679796)",
+              "says": "Table of districts created 2016–2020 with effective dates (1 July each year) and parent districts.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        }
+      ]
+    },
+    {
+      "id": "UGA:Mubende@1997",
+      "names": {
+        "en": "Mubende District",
+        "ja": "ムベンデ県",
+        "local": "Mubende District"
+      },
+      "wikidata": "Q891962",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2005-07-01",
+          "atoms": [
+            "UGA-3093",
+            "UGA-3094"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        },
+        {
+          "from": "2005-07-01",
+          "precision": "day",
+          "to": "2018-07-01",
+          "atoms": [
+            "UGA-3093"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Uganda&oldid=1374679796",
+              "title": "Wikipedia: Districts of Uganda (rev 1374679796)",
+              "says": "Table of districts created 2016–2020 with effective dates (1 July each year) and parent districts.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Oyam@2006",
+      "names": {
+        "en": "Oyam District",
+        "ja": "オヤム県",
+        "local": "Oyam District"
+      },
+      "wikidata": "Q1318833",
+      "spans": [
+        {
+          "from": "2006-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3103"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2006-07-01: Abim (Kotido), Buliisa (Masindi), Namutumba (Iganga), Dokolo (Lira), Amuru (Gulu), Nyadri/Maracha (Arua: Maracha+Terego), Oyam (Apac).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Lira@1997",
+      "names": {
+        "en": "Lira District",
+        "ja": "リラ県",
+        "local": "Lira District"
+      },
+      "wikidata": "Q206519",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2005-07-01",
+          "atoms": [
+            "UGA-3099",
+            "UGA-3070",
+            "UGA-3100",
+            "UGA-5607",
+            "UGA-5606"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        },
+        {
+          "from": "2005-07-01",
+          "precision": "day",
+          "to": "2006-07-01",
+          "atoms": [
+            "UGA-3099",
+            "UGA-3100",
+            "UGA-5607",
+            "UGA-5606"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2006-07-01: Abim (Kotido), Buliisa (Masindi), Namutumba (Iganga), Dokolo (Lira), Amuru (Gulu), Nyadri/Maracha (Arua: Maracha+Terego), Oyam (Apac).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        },
+        {
+          "from": "2006-07-01",
+          "precision": "day",
+          "to": "2009-07-01",
+          "atoms": [
+            "UGA-3099",
+            "UGA-5607",
+            "UGA-5606"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2006-07-01: Abim (Kotido), Buliisa (Masindi), Namutumba (Iganga), Dokolo (Lira), Amuru (Gulu), Nyadri/Maracha (Arua: Maracha+Terego), Oyam (Apac).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2009-07-01: Amudat, Buikwe, Buyende, Kyegegwa, Lamwo, Otuke, Zombo, each one county of a single parent district.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        },
+        {
+          "from": "2009-07-01",
+          "precision": "day",
+          "to": "2010-07-01",
+          "atoms": [
+            "UGA-3099",
+            "UGA-5606"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2009-07-01: Amudat, Buikwe, Buyende, Kyegegwa, Lamwo, Otuke, Zombo, each one county of a single parent district.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        },
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3099"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Kole@2010",
+      "names": {
+        "en": "Kole District",
+        "ja": "コレ県",
+        "local": "Kole District"
+      },
+      "wikidata": "Q3539151",
+      "spans": [
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5605"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Pader@2000",
+      "names": {
+        "en": "Pader District",
+        "ja": "パデル県",
+        "local": "Pader District"
+      },
+      "wikidata": "Q1230035",
+      "spans": [
+        {
+          "from": "2000-07-01",
+          "precision": "day",
+          "to": "2010-07-01",
+          "atoms": [
+            "UGA-3101",
+            "UGA-5608"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "Motion of 2000-11-28 created Kamwenge, Kyenjojo (Kabarole), Kayunga (Mukono), Mayuge (Iganga), Pader (Kitgum), Sironko (Mbale), Wakiso (Mpigi), Yumbe (Arua), retroactive to 2000-07-01.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Parliament motion of 2000-11-28, retroactive to 2000-07-01."
+        },
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3101"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Ibanda@2005",
+      "names": {
+        "en": "Ibanda District",
+        "ja": "イバンダ県",
+        "local": "Ibanda District"
+      },
+      "wikidata": "Q1318877",
+      "spans": [
+        {
+          "from": "2005-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3369"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Mbarara@1997",
+      "names": {
+        "en": "Mbarara District",
+        "ja": "ムバララ県",
+        "local": "Mbarara District"
+      },
+      "wikidata": "Q1091595",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2005-07-01",
+          "atoms": [
+            "UGA-3374",
+            "UGA-3369",
+            "UGA-3370",
+            "UGA-3371"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        },
+        {
+          "from": "2005-07-01",
+          "precision": "day",
+          "to": "2019-07-01",
+          "atoms": [
+            "UGA-3374"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Uganda&oldid=1374679796",
+              "title": "Wikipedia: Districts of Uganda (rev 1374679796)",
+              "says": "Table of districts created 2016–2020 with effective dates (1 July each year) and parent districts.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Gulu@1997",
+      "names": {
+        "en": "Gulu District",
+        "ja": "グル県",
+        "local": "Gulu District"
+      },
+      "wikidata": "Q1028215",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2006-07-01",
+          "atoms": [
+            "UGA-3098",
+            "UGA-5601",
+            "UGA-5625"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2006-07-01: Abim (Kotido), Buliisa (Masindi), Namutumba (Iganga), Dokolo (Lira), Amuru (Gulu), Nyadri/Maracha (Arua: Maracha+Terego), Oyam (Apac).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        },
+        {
+          "from": "2006-07-01",
+          "precision": "day",
+          "to": "2016-07-01",
+          "atoms": [
+            "UGA-3098"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2006-07-01: Abim (Kotido), Buliisa (Masindi), Namutumba (Iganga), Dokolo (Lira), Amuru (Gulu), Nyadri/Maracha (Arua: Maracha+Terego), Oyam (Apac).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Uganda&oldid=1374679796",
+              "title": "Wikipedia: Districts of Uganda (rev 1374679796)",
+              "says": "Table of districts created 2016–2020 with effective dates (1 July each year) and parent districts.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Kiryandongo@2010",
+      "names": {
+        "en": "Kiryandongo District",
+        "ja": "キリャンドンゴ県",
+        "local": "Kiryandongo District"
+      },
+      "wikidata": "Q3539116",
+      "spans": [
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5609"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Iganga@1997",
+      "names": {
+        "en": "Iganga District",
+        "ja": "イガンガ県",
+        "local": "Iganga District"
+      },
+      "wikidata": "Q1229869",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2000-07-01",
+          "atoms": [
+            "UGA-3068",
+            "UGA-3120",
+            "UGA-3073",
+            "UGA-5592"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "Motion of 2000-11-28 created Kamwenge, Kyenjojo (Kabarole), Kayunga (Mukono), Mayuge (Iganga), Pader (Kitgum), Sironko (Mbale), Wakiso (Mpigi), Yumbe (Arua), retroactive to 2000-07-01.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        },
+        {
+          "from": "2000-07-01",
+          "precision": "day",
+          "to": "2006-07-01",
+          "atoms": [
+            "UGA-3068",
+            "UGA-3073",
+            "UGA-5592"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "Motion of 2000-11-28 created Kamwenge, Kyenjojo (Kabarole), Kayunga (Mukono), Mayuge (Iganga), Pader (Kitgum), Sironko (Mbale), Wakiso (Mpigi), Yumbe (Arua), retroactive to 2000-07-01.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2006-07-01: Abim (Kotido), Buliisa (Masindi), Namutumba (Iganga), Dokolo (Lira), Amuru (Gulu), Nyadri/Maracha (Arua: Maracha+Terego), Oyam (Apac).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Parliament motion of 2000-11-28, retroactive to 2000-07-01."
+        },
+        {
+          "from": "2006-07-01",
+          "precision": "day",
+          "to": "2010-07-01",
+          "atoms": [
+            "UGA-3068",
+            "UGA-5592"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2006-07-01: Abim (Kotido), Buliisa (Masindi), Namutumba (Iganga), Dokolo (Lira), Amuru (Gulu), Nyadri/Maracha (Arua: Maracha+Terego), Oyam (Apac).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        },
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": "2018-07-01",
+          "atoms": [
+            "UGA-3068"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Uganda&oldid=1374679796",
+              "title": "Wikipedia: Districts of Uganda (rev 1374679796)",
+              "says": "Table of districts created 2016–2020 with effective dates (1 July each year) and parent districts.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Lwengo@2010",
+      "names": {
+        "en": "Lwengo District",
+        "ja": "ルウェンゴ県",
+        "local": "Lwengo District"
+      },
+      "wikidata": "Q1114954",
+      "spans": [
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5617"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Bukomansimbi@2010",
+      "names": {
+        "en": "Bukomansimbi District",
+        "ja": "ブコマンシンビ県",
+        "local": "Bukomansimbi District"
+      },
+      "wikidata": "Q3321599",
+      "spans": [
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5619"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Kalungu@2010",
+      "names": {
+        "en": "Kalungu District",
+        "ja": "カルング県",
+        "local": "Kalungu District"
+      },
+      "wikidata": "Q3321614",
+      "spans": [
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5620"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Kampala@1997",
+      "names": {
+        "en": "Kampala District",
+        "ja": "カンパラ県",
+        "local": "Kampala District"
+      },
+      "wikidata": "Q926417",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3088"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        }
+      ]
+    },
+    {
+      "id": "UGA:Kaliro@2005",
+      "names": {
+        "en": "Kaliro District",
+        "ja": "カリロ県",
+        "local": "Kaliro District"
+      },
+      "wikidata": "Q1375859",
+      "spans": [
+        {
+          "from": "2005-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3071"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Agago@2010",
+      "names": {
+        "en": "Agago District",
+        "ja": "アガゴ県",
+        "local": "Agago District"
+      },
+      "wikidata": "Q3536053",
+      "spans": [
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5608"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Kotido@1997",
+      "names": {
+        "en": "Kotido District",
+        "ja": "コティド県",
+        "local": "Kotido District"
+      },
+      "wikidata": "Q1318843",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2005-07-01",
+          "atoms": [
+            "UGA-3123",
+            "UGA-3125",
+            "UGA-3126"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        },
+        {
+          "from": "2005-07-01",
+          "precision": "day",
+          "to": "2006-07-01",
+          "atoms": [
+            "UGA-3123",
+            "UGA-3126"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2006-07-01: Abim (Kotido), Buliisa (Masindi), Namutumba (Iganga), Dokolo (Lira), Amuru (Gulu), Nyadri/Maracha (Arua: Maracha+Terego), Oyam (Apac).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        },
+        {
+          "from": "2006-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3123"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2006-07-01: Abim (Kotido), Buliisa (Masindi), Namutumba (Iganga), Dokolo (Lira), Amuru (Gulu), Nyadri/Maracha (Arua: Maracha+Terego), Oyam (Apac).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Abim@2006",
+      "names": {
+        "en": "Abim District",
+        "ja": "アビム県",
+        "local": "Abim District"
+      },
+      "wikidata": "Q1375780",
+      "spans": [
+        {
+          "from": "2006-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3126"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2006-07-01: Abim (Kotido), Buliisa (Masindi), Namutumba (Iganga), Dokolo (Lira), Amuru (Gulu), Nyadri/Maracha (Arua: Maracha+Terego), Oyam (Apac).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Otuke@2009",
+      "names": {
+        "en": "Otuke District",
+        "ja": "オツケ県",
+        "local": "Otuke District"
+      },
+      "wikidata": "Q3539602",
+      "spans": [
+        {
+          "from": "2009-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5607"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2009-07-01: Amudat, Buikwe, Buyende, Kyegegwa, Lamwo, Otuke, Zombo, each one county of a single parent district.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Alebtong@2010",
+      "names": {
+        "en": "Alebtong District",
+        "ja": "アレブトング県",
+        "local": "Alebtong District"
+      },
+      "wikidata": "Q3536082",
+      "spans": [
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5606"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Amuria@2005",
+      "names": {
+        "en": "Amuria District",
+        "ja": "アムリア県",
+        "local": "Amuria District"
+      },
+      "wikidata": "Q1375762",
+      "spans": [
+        {
+          "from": "2005-07-01",
+          "precision": "day",
+          "to": "2018-07-01",
+          "atoms": [
+            "UGA-3124"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Uganda&oldid=1374679796",
+              "title": "Wikipedia: Districts of Uganda (rev 1374679796)",
+              "says": "Table of districts created 2016–2020 with effective dates (1 July each year) and parent districts.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Katakwi@1997",
+      "names": {
+        "en": "Katakwi District",
+        "ja": "カタクイ県",
+        "local": "Katakwi District"
+      },
+      "wikidata": "Q1229930",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2005-07-01",
+          "atoms": [
+            "UGA-3122",
+            "UGA-3124"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        },
+        {
+          "from": "2005-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3122"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Serere@2010",
+      "names": {
+        "en": "Serere District",
+        "ja": "セレレ県",
+        "local": "Serere District"
+      },
+      "wikidata": "Q1114927",
+      "spans": [
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5596"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Soroti@1997",
+      "names": {
+        "en": "Soroti District",
+        "ja": "ソロティ県",
+        "local": "Soroti District"
+      },
+      "wikidata": "Q1091337",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2001-07-01",
+          "atoms": [
+            "UGA-3074",
+            "UGA-3066",
+            "UGA-5596"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2001-07-01: Kaberamaido from Soroti, Kanungu from Rukungiri, Nakapiripirit from Moroto; 56 districts.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        },
+        {
+          "from": "2001-07-01",
+          "precision": "day",
+          "to": "2010-07-01",
+          "atoms": [
+            "UGA-3074",
+            "UGA-5596"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2001-07-01: Kaberamaido from Soroti, Kanungu from Rukungiri, Nakapiripirit from Moroto; 56 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        },
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3074"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Pallisa@1997",
+      "names": {
+        "en": "Pallisa District",
+        "ja": "パリサ県",
+        "local": "Pallisa District"
+      },
+      "wikidata": "Q1375843",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2005-07-01",
+          "atoms": [
+            "UGA-3076",
+            "UGA-5594",
+            "UGA-5595"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        },
+        {
+          "from": "2005-07-01",
+          "precision": "day",
+          "to": "2010-07-01",
+          "atoms": [
+            "UGA-3076",
+            "UGA-5595"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        },
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": "2017-07-01",
+          "atoms": [
+            "UGA-3076"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Uganda&oldid=1374679796",
+              "title": "Wikipedia: Districts of Uganda (rev 1374679796)",
+              "says": "Table of districts created 2016–2020 with effective dates (1 July each year) and parent districts.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Kiruhura@2005",
+      "names": {
+        "en": "Kiruhura District",
+        "ja": "キルフラ県",
+        "local": "Kiruhura District"
+      },
+      "wikidata": "Q1318865",
+      "spans": [
+        {
+          "from": "2005-07-01",
+          "precision": "day",
+          "to": "2019-07-01",
+          "atoms": [
+            "UGA-3371"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Uganda&oldid=1374679796",
+              "title": "Wikipedia: Districts of Uganda (rev 1374679796)",
+              "says": "Table of districts created 2016–2020 with effective dates (1 July each year) and parent districts.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Lyantonde@2007",
+      "names": {
+        "en": "Lyantonde District",
+        "ja": "リャントンデ県",
+        "local": "Lyantonde District"
+      },
+      "wikidata": "Q1375878",
+      "spans": [
+        {
+          "from": "2007-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5618"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2007-07-01: Bukedea from Kumi, Bududa from Manafwa, Lyantonde from Rakai; 79 districts plus Kampala.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Masaka@1997",
+      "names": {
+        "en": "Masaka District",
+        "ja": "マサカ県",
+        "local": "Masaka District"
+      },
+      "wikidata": "Q1032233",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2010-07-01",
+          "atoms": [
+            "UGA-3362",
+            "UGA-5619",
+            "UGA-5620",
+            "UGA-5617"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        },
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3362"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Mukono@1997",
+      "names": {
+        "en": "Mukono District",
+        "ja": "ムコノ県",
+        "local": "Mukono District"
+      },
+      "wikidata": "Q1151066",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2000-07-01",
+          "atoms": [
+            "UGA-3075",
+            "UGA-3067",
+            "UGA-5597",
+            "UGA-5598"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "Motion of 2000-11-28 created Kamwenge, Kyenjojo (Kabarole), Kayunga (Mukono), Mayuge (Iganga), Pader (Kitgum), Sironko (Mbale), Wakiso (Mpigi), Yumbe (Arua), retroactive to 2000-07-01.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        },
+        {
+          "from": "2000-07-01",
+          "precision": "day",
+          "to": "2009-07-01",
+          "atoms": [
+            "UGA-3075",
+            "UGA-5597",
+            "UGA-5598"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "Motion of 2000-11-28 created Kamwenge, Kyenjojo (Kabarole), Kayunga (Mukono), Mayuge (Iganga), Pader (Kitgum), Sironko (Mbale), Wakiso (Mpigi), Yumbe (Arua), retroactive to 2000-07-01.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2009-07-01: Amudat, Buikwe, Buyende, Kyegegwa, Lamwo, Otuke, Zombo, each one county of a single parent district.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Parliament motion of 2000-11-28, retroactive to 2000-07-01."
+        },
+        {
+          "from": "2009-07-01",
+          "precision": "day",
+          "to": "2010-07-01",
+          "atoms": [
+            "UGA-3075",
+            "UGA-5598"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2009-07-01: Amudat, Buikwe, Buyende, Kyegegwa, Lamwo, Otuke, Zombo, each one county of a single parent district.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        },
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3075"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Buikwe@2009",
+      "names": {
+        "en": "Buikwe District",
+        "ja": "ブイクウェ県",
+        "local": "Buikwe District"
+      },
+      "wikidata": "Q3321631",
+      "spans": [
+        {
+          "from": "2009-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5597"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2009-07-01: Amudat, Buikwe, Buyende, Kyegegwa, Lamwo, Otuke, Zombo, each one county of a single parent district.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Nakapiripirit@2001",
+      "names": {
+        "en": "Nakapiripirit District",
+        "ja": "ナカピリピリ県",
+        "local": "Nakapiripirit District"
+      },
+      "wikidata": "Q1375853",
+      "spans": [
+        {
+          "from": "2001-07-01",
+          "precision": "day",
+          "to": "2009-07-01",
+          "atoms": [
+            "UGA-3128",
+            "UGA-5616"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2001-07-01: Kaberamaido from Soroti, Kanungu from Rukungiri, Nakapiripirit from Moroto; 56 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2009-07-01: Amudat, Buikwe, Buyende, Kyegegwa, Lamwo, Otuke, Zombo, each one county of a single parent district.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        },
+        {
+          "from": "2009-07-01",
+          "precision": "day",
+          "to": "2018-07-01",
+          "atoms": [
+            "UGA-3128"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2009-07-01: Amudat, Buikwe, Buyende, Kyegegwa, Lamwo, Otuke, Zombo, each one county of a single parent district.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Uganda&oldid=1374679796",
+              "title": "Wikipedia: Districts of Uganda (rev 1374679796)",
+              "says": "Table of districts created 2016–2020 with effective dates (1 July each year) and parent districts.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Kween@2010",
+      "names": {
+        "en": "Kween District",
+        "ja": "クウェエン県",
+        "local": "Kween District"
+      },
+      "wikidata": "Q3321998",
+      "spans": [
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5612"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Buhweju@2010",
+      "names": {
+        "en": "Buhweju District",
+        "ja": "ブフウェジュ県",
+        "local": "Buhweju District"
+      },
+      "wikidata": "Q3537661",
+      "spans": [
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5624"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Sheema@2010",
+      "names": {
+        "en": "Sheema District",
+        "ja": "シェエマ県",
+        "local": "Sheema District"
+      },
+      "wikidata": "Q3539711",
+      "spans": [
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5623"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Mitooma@2010",
+      "names": {
+        "en": "Mitooma District",
+        "ja": "ミトマ県",
+        "local": "Mitooma District"
+      },
+      "wikidata": "Q3539414",
+      "spans": [
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5622"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Bushenyi@1997",
+      "names": {
+        "en": "Bushenyi District",
+        "ja": "ブシェニ県",
+        "local": "Bushenyi District"
+      },
+      "wikidata": "Q1229797",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2010-07-01",
+          "atoms": [
+            "UGA-3366",
+            "UGA-5624",
+            "UGA-5622",
+            "UGA-5621",
+            "UGA-5623"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        },
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3366"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Bulambuli@2010",
+      "names": {
+        "en": "Bulambuli District",
+        "ja": "ブランブリ県",
+        "local": "Bulambuli District"
+      },
+      "wikidata": "Q1114868",
+      "spans": [
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5613"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Sironko@2000",
+      "names": {
+        "en": "Sironko District",
+        "ja": "シロンコ県",
+        "local": "Sironko District"
+      },
+      "wikidata": "Q1375835",
+      "spans": [
+        {
+          "from": "2000-07-01",
+          "precision": "day",
+          "to": "2010-07-01",
+          "atoms": [
+            "UGA-3114",
+            "UGA-5613"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "Motion of 2000-11-28 created Kamwenge, Kyenjojo (Kabarole), Kayunga (Mukono), Mayuge (Iganga), Pader (Kitgum), Sironko (Mbale), Wakiso (Mpigi), Yumbe (Arua), retroactive to 2000-07-01.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Parliament motion of 2000-11-28, retroactive to 2000-07-01."
+        },
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3114"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Bugiri@1997",
+      "names": {
+        "en": "Bugiri District",
+        "ja": "ブギリ県",
+        "local": "Bugiri District"
+      },
+      "wikidata": "Q1229798",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2010-07-01",
+          "atoms": [
+            "UGA-3117",
+            "UGA-5614"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        },
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3117"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Nwoya@2010",
+      "names": {
+        "en": "Nwoya District",
+        "ja": "ナウォヤ県",
+        "local": "Nwoya District"
+      },
+      "wikidata": "Q3539572",
+      "spans": [
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5625"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Mbale@1997",
+      "names": {
+        "en": "Mbale District",
+        "ja": "ムバレ県",
+        "local": "Mbale District"
+      },
+      "wikidata": "Q581822",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2000-07-01",
+          "atoms": [
+            "UGA-3115",
+            "UGA-3114",
+            "UGA-5613",
+            "UGA-3116",
+            "UGA-5626"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "Motion of 2000-11-28 created Kamwenge, Kyenjojo (Kabarole), Kayunga (Mukono), Mayuge (Iganga), Pader (Kitgum), Sironko (Mbale), Wakiso (Mpigi), Yumbe (Arua), retroactive to 2000-07-01.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        },
+        {
+          "from": "2000-07-01",
+          "precision": "day",
+          "to": "2005-07-01",
+          "atoms": [
+            "UGA-3115",
+            "UGA-3116",
+            "UGA-5626"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "Motion of 2000-11-28 created Kamwenge, Kyenjojo (Kabarole), Kayunga (Mukono), Mayuge (Iganga), Pader (Kitgum), Sironko (Mbale), Wakiso (Mpigi), Yumbe (Arua), retroactive to 2000-07-01.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Parliament motion of 2000-11-28, retroactive to 2000-07-01."
+        },
+        {
+          "from": "2005-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3115"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Budaka@2005",
+      "names": {
+        "en": "Budaka District",
+        "ja": "ブダカ県",
+        "local": "Budaka District"
+      },
+      "wikidata": "Q1362085",
+      "spans": [
+        {
+          "from": "2005-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5594"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Butaleja@2005",
+      "names": {
+        "en": "Butaleja District",
+        "ja": "ブタレジャ県",
+        "local": "Butaleja District"
+      },
+      "wikidata": "Q1375755",
+      "spans": [
+        {
+          "from": "2005-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3119"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Kibuku@2010",
+      "names": {
+        "en": "Kibuku District",
+        "ja": "キブク県",
+        "local": "Kibuku District"
+      },
+      "wikidata": "Q1114885",
+      "spans": [
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5595"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Napak@2010",
+      "names": {
+        "en": "Napak District",
+        "ja": "ナパック県",
+        "local": "Napak District"
+      },
+      "wikidata": "Q3539495",
+      "spans": [
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5615"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Kumi@1997",
+      "names": {
+        "en": "Kumi District",
+        "ja": "クミ県",
+        "local": "Kumi District"
+      },
+      "wikidata": "Q1151062",
+      "spans": [
+        {
+          "from": "1997-03-20",
+          "precision": "day",
+          "to": "2007-07-01",
+          "atoms": [
+            "UGA-3065",
+            "UGA-5591",
+            "UGA-5590"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2007-07-01: Bukedea from Kumi, Bududa from Manafwa, Lyantonde from Rakai; 79 districts plus Kampala.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Scope start: layout of 45 districts after the 1997-03-20 creations. The district itself may be older; not claimed earlier."
+        },
+        {
+          "from": "2007-07-01",
+          "precision": "day",
+          "to": "2010-07-01",
+          "atoms": [
+            "UGA-3065",
+            "UGA-5590"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2007-07-01: Bukedea from Kumi, Bududa from Manafwa, Lyantonde from Rakai; 79 districts plus Kampala.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        },
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3065"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Ngora@2010",
+      "names": {
+        "en": "Ngora District",
+        "ja": "ンゴラ県",
+        "local": "Ngora District"
+      },
+      "wikidata": "Q1114903",
+      "spans": [
+        {
+          "from": "2010-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5590"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Bukedea@2007",
+      "names": {
+        "en": "Bukedea District",
+        "ja": "ブケデア県",
+        "local": "Bukedea District"
+      },
+      "wikidata": "Q1375812",
+      "spans": [
+        {
+          "from": "2007-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-5591"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2007-07-01: Bukedea from Kumi, Bududa from Manafwa, Lyantonde from Rakai; 79 districts plus Kampala.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UGA:Namutumba@2006",
+      "names": {
+        "en": "Namutumba District",
+        "ja": "ナムトゥンバ県",
+        "local": "Namutumba District"
+      },
+      "wikidata": "Q1375819",
+      "spans": [
+        {
+          "from": "2006-07-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "UGA-3073"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uug.html",
+              "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+              "says": "2006-07-01: Abim (Kotido), Buliisa (Masindi), Namutumba (Iganga), Dokolo (Lira), Amuru (Gulu), Nyadri/Maracha (Arua: Maracha+Terego), Oyam (Apac).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1997-03-20",
+      "precision": "day",
+      "what": "Six districts created; 45 districts.",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uug.html",
+          "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+          "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2000-07-01",
+      "precision": "day",
+      "what": "District creations (see source).",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uug.html",
+          "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+          "says": "Motion of 2000-11-28 created Kamwenge, Kyenjojo (Kabarole), Kayunga (Mukono), Mayuge (Iganga), Pader (Kitgum), Sironko (Mbale), Wakiso (Mpigi), Yumbe (Arua), retroactive to 2000-07-01.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2001-07-01",
+      "precision": "day",
+      "what": "District creations (see source).",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uug.html",
+          "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+          "says": "2001-07-01: Kaberamaido from Soroti, Kanungu from Rukungiri, Nakapiripirit from Moroto; 56 districts.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2005-07-01",
+      "precision": "day",
+      "what": "District creations (see source).",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uug.html",
+          "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+          "says": "2005-07-01: fourteen districts each made of named counties of one parent (e.g. Kiruhura from Mbarara, Budaka from Pallisa, Koboko from Arua).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2006-07-01",
+      "precision": "day",
+      "what": "District creations (see source).",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uug.html",
+          "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+          "says": "2006-07-01: Abim (Kotido), Buliisa (Masindi), Namutumba (Iganga), Dokolo (Lira), Amuru (Gulu), Nyadri/Maracha (Arua: Maracha+Terego), Oyam (Apac).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2007-07-01",
+      "precision": "day",
+      "what": "District creations (see source).",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uug.html",
+          "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+          "says": "2007-07-01: Bukedea from Kumi, Bududa from Manafwa, Lyantonde from Rakai; 79 districts plus Kampala.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2009-07-01",
+      "precision": "day",
+      "what": "District creations (see source).",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uug.html",
+          "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+          "says": "2009-07-01: Amudat, Buikwe, Buyende, Kyegegwa, Lamwo, Otuke, Zombo, each one county of a single parent district.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2010-07-01",
+      "precision": "day",
+      "what": "District creations (see source).",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uug.html",
+          "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+          "says": "2010-07-01: 25 districts created, each from one parent (e.g. Agago from Pader, Nwoya from Amuru, Serere from Soroti).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2010-05-03",
+      "precision": "day",
+      "what": "Parliament returns Terego county from Maracha-Terego (Nyadri) to Arua.",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/w/index.php?title=Maracha_District&oldid=1378546613",
+          "title": "Wikipedia: Maracha District (rev 1378546613)",
+          "says": "Maracha and Terego counties left Arua in 2006 as one district; after years of dispute Terego returned to Arua and Maracha stayed a district alone.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://www.newvision.co.ug/new_vision/news/1288362/arua-rejects-terego-county",
+          "title": "New Vision, \"Arua rejects Terego county\" (2010-06-15)",
+          "says": "Parliament decided on May 3 that Maracha remains a district and Terego returns to Arua district.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2016-07-01",
+      "precision": "day",
+      "what": "New districts take effect (see source).",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Uganda&oldid=1374679796",
+          "title": "Wikipedia: Districts of Uganda (rev 1374679796)",
+          "says": "Table of districts created 2016–2020 with effective dates (1 July each year) and parent districts.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2017-07-01",
+      "precision": "day",
+      "what": "New districts take effect (see source).",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Uganda&oldid=1374679796",
+          "title": "Wikipedia: Districts of Uganda (rev 1374679796)",
+          "says": "Table of districts created 2016–2020 with effective dates (1 July each year) and parent districts.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2018-07-01",
+      "precision": "day",
+      "what": "New districts take effect (see source).",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Uganda&oldid=1374679796",
+          "title": "Wikipedia: Districts of Uganda (rev 1374679796)",
+          "says": "Table of districts created 2016–2020 with effective dates (1 July each year) and parent districts.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2019-07-01",
+      "precision": "day",
+      "what": "New districts take effect (see source).",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Uganda&oldid=1374679796",
+          "title": "Wikipedia: Districts of Uganda (rev 1374679796)",
+          "says": "Table of districts created 2016–2020 with effective dates (1 July each year) and parent districts.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "1997-03-20",
+      "n": 45,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uug.html",
+          "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+          "says": "1997-03-20: Adjumani from Moyo, Bugiri from Iganga, Busia from Tororo, Katakwi from Soroti, Nakasongola from Luwero, Sembabule from Masaka; 45 districts.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2001-07-01",
+      "n": 56,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uug.html",
+          "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+          "says": "2001-07-01: Kaberamaido from Soroti, Kanungu from Rukungiri, Nakapiripirit from Moroto; 56 districts.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2007-07-01",
+      "n": 80,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uug.html",
+          "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+          "says": "2007-07-01: Bukedea from Kumi, Bududa from Manafwa, Lyantonde from Rakai; 79 districts plus Kampala.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2010-07-01",
+      "n": 112,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uug.html",
+          "title": "Statoids — Districts of Uganda (Gwillim Law, updated 2016-04-01)",
+          "says": "Uganda is divided into 111 districts and 1 city (Kampala).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2019-07-01",
+      "n": 135,
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Uganda&oldid=1374679796",
+          "title": "Wikipedia: Districts of Uganda (rev 1374679796)",
+          "says": "Table of districts created 2016–2020 with effective dates (1 July each year) and parent districts.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Arua and Nyadri (Maracha–Terego) districts 2006-07-01 → 2010-05-03",
+      "unit": "UGA:Nyadri@2006",
+      "atoms": [
+        "UGA-3080",
+        "UGA-3087"
+      ],
+      "from": "2006-07-01",
+      "to": "2010-05-03",
+      "why": "Nyadri held Maracha AND Terego counties; NE draws Terego inside Arua, so the Arua–Nyadri line of 2006–10 runs inside the NE Arua atom.",
+      "checked": [
+        "statoids uug.html",
+        "Wikipedia Maracha District rev 1378546613",
+        "New Vision 2010-06-15"
+      ],
+      "needs": "county atoms (UBOS county boundaries / geoBoundaries UGA ADM3-4, licence to check)"
+    },
+    {
+      "what": "Arua district 2006-07-01 → 2010-05-03",
+      "unit": "UGA:Arua@2006",
+      "from": "2006-07-01",
+      "to": "2010-05-03",
+      "why": "See previous entry (atoms withheld there).",
+      "checked": [
+        "statoids uug.html"
+      ],
+      "needs": "county atoms"
+    },
+    {
+      "what": "Kibale district after the 2016 split (Kagadi, Kakumiro)",
+      "unit": "UGA:Kibale@2016",
+      "atoms": [
+        "UGA-3108"
+      ],
+      "from": "2016-07-01",
+      "to": null,
+      "why": "The new district(s) are not NE atoms; the new line runs inside the NE Kibale atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "geoBoundaries UGA ADM2 of 2016–2019 vintage (licence to check) or UBOS district boundaries"
+    },
+    {
+      "what": "Kagadi district",
+      "unit": "UGA:Kagadi@2016",
+      "from": "2016-07-01",
+      "to": null,
+      "why": "Created from Kibale; carried inside the NE Kibale atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "district atoms of 2016–2019 vintage"
+    },
+    {
+      "what": "Kakumiro district",
+      "unit": "UGA:Kakumiro@2016",
+      "from": "2016-07-01",
+      "to": null,
+      "why": "Created from Kibale; carried inside the NE Kibale atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "district atoms of 2016–2019 vintage"
+    },
+    {
+      "what": "Gulu district after the 2016 split (Omoro)",
+      "unit": "UGA:Gulu@2016",
+      "atoms": [
+        "UGA-3098"
+      ],
+      "from": "2016-07-01",
+      "to": null,
+      "why": "The new district(s) are not NE atoms; the new line runs inside the NE Gulu atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "geoBoundaries UGA ADM2 of 2016–2019 vintage (licence to check) or UBOS district boundaries"
+    },
+    {
+      "what": "Omoro district",
+      "unit": "UGA:Omoro@2016",
+      "from": "2016-07-01",
+      "to": null,
+      "why": "Created from Gulu; carried inside the NE Gulu atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "district atoms of 2016–2019 vintage"
+    },
+    {
+      "what": "Kabale district after the 2016 split (Rubanda, Rukiga)",
+      "unit": "UGA:Kabale@2016",
+      "atoms": [
+        "UGA-3375"
+      ],
+      "from": "2016-07-01",
+      "to": null,
+      "why": "The new district(s) are not NE atoms; the new line runs inside the NE Kabale atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "geoBoundaries UGA ADM2 of 2016–2019 vintage (licence to check) or UBOS district boundaries"
+    },
+    {
+      "what": "Rubanda district",
+      "unit": "UGA:Rubanda@2016",
+      "from": "2016-07-01",
+      "to": null,
+      "why": "Created from Kabale; carried inside the NE Kabale atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "district atoms of 2016–2019 vintage"
+    },
+    {
+      "what": "Rukiga district",
+      "unit": "UGA:Rukiga@2017",
+      "from": "2017-07-01",
+      "to": null,
+      "why": "Created from Kabale; carried inside the NE Kabale atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "district atoms of 2016–2019 vintage"
+    },
+    {
+      "what": "Manafwa district after the 2017 split (Namisindwa)",
+      "unit": "UGA:Manafwa@2017",
+      "atoms": [
+        "UGA-3116"
+      ],
+      "from": "2017-07-01",
+      "to": null,
+      "why": "The new district(s) are not NE atoms; the new line runs inside the NE Manafwa atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "geoBoundaries UGA ADM2 of 2016–2019 vintage (licence to check) or UBOS district boundaries"
+    },
+    {
+      "what": "Namisindwa district",
+      "unit": "UGA:Namisindwa@2017",
+      "from": "2017-07-01",
+      "to": null,
+      "why": "Created from Manafwa; carried inside the NE Manafwa atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "district atoms of 2016–2019 vintage"
+    },
+    {
+      "what": "Nebbi district after the 2017 split (Pakwach)",
+      "unit": "UGA:Nebbi@2017",
+      "atoms": [
+        "UGA-3084"
+      ],
+      "from": "2017-07-01",
+      "to": null,
+      "why": "The new district(s) are not NE atoms; the new line runs inside the NE Nebbi atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "geoBoundaries UGA ADM2 of 2016–2019 vintage (licence to check) or UBOS district boundaries"
+    },
+    {
+      "what": "Pakwach district",
+      "unit": "UGA:Pakwach@2017",
+      "from": "2017-07-01",
+      "to": null,
+      "why": "Created from Nebbi; carried inside the NE Nebbi atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "district atoms of 2016–2019 vintage"
+    },
+    {
+      "what": "Pallisa district after the 2017 split (Butebo)",
+      "unit": "UGA:Pallisa@2017",
+      "atoms": [
+        "UGA-3076"
+      ],
+      "from": "2017-07-01",
+      "to": null,
+      "why": "The new district(s) are not NE atoms; the new line runs inside the NE Pallisa atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "geoBoundaries UGA ADM2 of 2016–2019 vintage (licence to check) or UBOS district boundaries"
+    },
+    {
+      "what": "Butebo district",
+      "unit": "UGA:Butebo@2017",
+      "from": "2017-07-01",
+      "to": null,
+      "why": "Created from Pallisa; carried inside the NE Pallisa atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "district atoms of 2016–2019 vintage"
+    },
+    {
+      "what": "Rakai district after the 2017 split (Kyotera)",
+      "unit": "UGA:Rakai@2017",
+      "atoms": [
+        "UGA-3361"
+      ],
+      "from": "2017-07-01",
+      "to": null,
+      "why": "The new district(s) are not NE atoms; the new line runs inside the NE Rakai atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "geoBoundaries UGA ADM2 of 2016–2019 vintage (licence to check) or UBOS district boundaries"
+    },
+    {
+      "what": "Kyotera district",
+      "unit": "UGA:Kyotera@2017",
+      "from": "2017-07-01",
+      "to": null,
+      "why": "Created from Rakai; carried inside the NE Rakai atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "district atoms of 2016–2019 vintage"
+    },
+    {
+      "what": "Kabarole district after the 2017 split (Bunyangabu)",
+      "unit": "UGA:Kabarole@2017",
+      "atoms": [
+        "UGA-3106"
+      ],
+      "from": "2017-07-01",
+      "to": null,
+      "why": "The new district(s) are not NE atoms; the new line runs inside the NE Kabarole atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "geoBoundaries UGA ADM2 of 2016–2019 vintage (licence to check) or UBOS district boundaries"
+    },
+    {
+      "what": "Bunyangabu district",
+      "unit": "UGA:Bunyangabu@2017",
+      "from": "2017-07-01",
+      "to": null,
+      "why": "Created from Kabarole; carried inside the NE Kabarole atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "district atoms of 2016–2019 vintage"
+    },
+    {
+      "what": "Nakapiripirit district after the 2018 split (Nabilatuk)",
+      "unit": "UGA:Nakapiripirit@2018",
+      "atoms": [
+        "UGA-3128"
+      ],
+      "from": "2018-07-01",
+      "to": null,
+      "why": "The new district(s) are not NE atoms; the new line runs inside the NE Nakapiripirit atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "geoBoundaries UGA ADM2 of 2016–2019 vintage (licence to check) or UBOS district boundaries"
+    },
+    {
+      "what": "Nabilatuk district",
+      "unit": "UGA:Nabilatuk@2018",
+      "from": "2018-07-01",
+      "to": null,
+      "why": "Created from Nakapiripirit; carried inside the NE Nakapiripirit atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "district atoms of 2016–2019 vintage"
+    },
+    {
+      "what": "Iganga district after the 2018 split (Bugweri)",
+      "unit": "UGA:Iganga@2018",
+      "atoms": [
+        "UGA-3068"
+      ],
+      "from": "2018-07-01",
+      "to": null,
+      "why": "The new district(s) are not NE atoms; the new line runs inside the NE Iganga atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "geoBoundaries UGA ADM2 of 2016–2019 vintage (licence to check) or UBOS district boundaries"
+    },
+    {
+      "what": "Bugweri district",
+      "unit": "UGA:Bugweri@2018",
+      "from": "2018-07-01",
+      "to": null,
+      "why": "Created from Iganga; carried inside the NE Iganga atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "district atoms of 2016–2019 vintage"
+    },
+    {
+      "what": "Mubende district after the 2018 split (Kasanda)",
+      "unit": "UGA:Mubende@2018",
+      "atoms": [
+        "UGA-3093"
+      ],
+      "from": "2018-07-01",
+      "to": null,
+      "why": "The new district(s) are not NE atoms; the new line runs inside the NE Mubende atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "geoBoundaries UGA ADM2 of 2016–2019 vintage (licence to check) or UBOS district boundaries"
+    },
+    {
+      "what": "Kasanda district",
+      "unit": "UGA:Kasanda@2018",
+      "from": "2018-07-01",
+      "to": null,
+      "why": "Created from Mubende; carried inside the NE Mubende atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "district atoms of 2016–2019 vintage"
+    },
+    {
+      "what": "Apac district after the 2018 split (Kwania)",
+      "unit": "UGA:Apac@2018",
+      "atoms": [
+        "UGA-5604"
+      ],
+      "from": "2018-07-01",
+      "to": null,
+      "why": "The new district(s) are not NE atoms; the new line runs inside the NE Apac atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "geoBoundaries UGA ADM2 of 2016–2019 vintage (licence to check) or UBOS district boundaries"
+    },
+    {
+      "what": "Kwania district",
+      "unit": "UGA:Kwania@2018",
+      "from": "2018-07-01",
+      "to": null,
+      "why": "Created from Apac; carried inside the NE Apac atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "district atoms of 2016–2019 vintage"
+    },
+    {
+      "what": "Amuria district after the 2018 split (Kapelebyong)",
+      "unit": "UGA:Amuria@2018",
+      "atoms": [
+        "UGA-3124"
+      ],
+      "from": "2018-07-01",
+      "to": null,
+      "why": "The new district(s) are not NE atoms; the new line runs inside the NE Amuria atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "geoBoundaries UGA ADM2 of 2016–2019 vintage (licence to check) or UBOS district boundaries"
+    },
+    {
+      "what": "Kapelebyong district",
+      "unit": "UGA:Kapelebyong@2018",
+      "from": "2018-07-01",
+      "to": null,
+      "why": "Created from Amuria; carried inside the NE Amuria atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "district atoms of 2016–2019 vintage"
+    },
+    {
+      "what": "Hoima district after the 2018 split (Kikuube)",
+      "unit": "UGA:Hoima@2018",
+      "atoms": [
+        "UGA-3105"
+      ],
+      "from": "2018-07-01",
+      "to": null,
+      "why": "The new district(s) are not NE atoms; the new line runs inside the NE Hoima atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "geoBoundaries UGA ADM2 of 2016–2019 vintage (licence to check) or UBOS district boundaries"
+    },
+    {
+      "what": "Kikuube district",
+      "unit": "UGA:Kikuube@2018",
+      "from": "2018-07-01",
+      "to": null,
+      "why": "Created from Hoima; carried inside the NE Hoima atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "district atoms of 2016–2019 vintage"
+    },
+    {
+      "what": "Moyo district after the 2019 split (Obongi)",
+      "unit": "UGA:Moyo@2019",
+      "atoms": [
+        "UGA-3085"
+      ],
+      "from": "2019-07-01",
+      "to": null,
+      "why": "The new district(s) are not NE atoms; the new line runs inside the NE Moyo atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "geoBoundaries UGA ADM2 of 2016–2019 vintage (licence to check) or UBOS district boundaries"
+    },
+    {
+      "what": "Obongi district",
+      "unit": "UGA:Obongi@2019",
+      "from": "2019-07-01",
+      "to": null,
+      "why": "Created from Moyo; carried inside the NE Moyo atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "district atoms of 2016–2019 vintage"
+    },
+    {
+      "what": "Kiruhura district after the 2019 split (Kazo)",
+      "unit": "UGA:Kiruhura@2019",
+      "atoms": [
+        "UGA-3371"
+      ],
+      "from": "2019-07-01",
+      "to": null,
+      "why": "The new district(s) are not NE atoms; the new line runs inside the NE Kiruhura atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "geoBoundaries UGA ADM2 of 2016–2019 vintage (licence to check) or UBOS district boundaries"
+    },
+    {
+      "what": "Kazo district",
+      "unit": "UGA:Kazo@2019",
+      "from": "2019-07-01",
+      "to": null,
+      "why": "Created from Kiruhura; carried inside the NE Kiruhura atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "district atoms of 2016–2019 vintage"
+    },
+    {
+      "what": "Mbarara district after the 2019 split (Rwampara)",
+      "unit": "UGA:Mbarara@2019",
+      "atoms": [
+        "UGA-3374"
+      ],
+      "from": "2019-07-01",
+      "to": null,
+      "why": "The new district(s) are not NE atoms; the new line runs inside the NE Mbarara atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "geoBoundaries UGA ADM2 of 2016–2019 vintage (licence to check) or UBOS district boundaries"
+    },
+    {
+      "what": "Rwampara district",
+      "unit": "UGA:Rwampara@2019",
+      "from": "2019-07-01",
+      "to": null,
+      "why": "Created from Mbarara; carried inside the NE Mbarara atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "district atoms of 2016–2019 vintage"
+    },
+    {
+      "what": "Kamwenge district after the 2019 split (Kitagwenda)",
+      "unit": "UGA:Kamwenge@2019",
+      "atoms": [
+        "UGA-3368"
+      ],
+      "from": "2019-07-01",
+      "to": null,
+      "why": "The new district(s) are not NE atoms; the new line runs inside the NE Kamwenge atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "geoBoundaries UGA ADM2 of 2016–2019 vintage (licence to check) or UBOS district boundaries"
+    },
+    {
+      "what": "Kitagwenda district",
+      "unit": "UGA:Kitagwenda@2019",
+      "from": "2019-07-01",
+      "to": null,
+      "why": "Created from Kamwenge; carried inside the NE Kamwenge atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "district atoms of 2016–2019 vintage"
+    },
+    {
+      "what": "Arua district after the 2019 split (Madi-Okollo)",
+      "unit": "UGA:Arua@2019",
+      "atoms": [
+        "UGA-3080"
+      ],
+      "from": "2019-07-01",
+      "to": null,
+      "why": "The new district(s) are not NE atoms; the new line runs inside the NE Arua atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "geoBoundaries UGA ADM2 of 2016–2019 vintage (licence to check) or UBOS district boundaries"
+    },
+    {
+      "what": "Madi-Okollo district",
+      "unit": "UGA:Madi-Okollo@2019",
+      "from": "2019-07-01",
+      "to": null,
+      "why": "Created from Arua; carried inside the NE Arua atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "district atoms of 2016–2019 vintage"
+    },
+    {
+      "what": "Kaabong district after the 2019 split (Karenga)",
+      "unit": "UGA:Kaabong@2019",
+      "atoms": [
+        "UGA-3125"
+      ],
+      "from": "2019-07-01",
+      "to": null,
+      "why": "The new district(s) are not NE atoms; the new line runs inside the NE Kaabong atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "geoBoundaries UGA ADM2 of 2016–2019 vintage (licence to check) or UBOS district boundaries"
+    },
+    {
+      "what": "Karenga district",
+      "unit": "UGA:Karenga@2019",
+      "from": "2019-07-01",
+      "to": null,
+      "why": "Created from Kaabong; carried inside the NE Kaabong atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "district atoms of 2016–2019 vintage"
+    },
+    {
+      "what": "Kaberamaido district after the 2019 split (Kalaki)",
+      "unit": "UGA:Kaberamaido@2019",
+      "atoms": [
+        "UGA-3066"
+      ],
+      "from": "2019-07-01",
+      "to": null,
+      "why": "The new district(s) are not NE atoms; the new line runs inside the NE Kaberamaido atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "geoBoundaries UGA ADM2 of 2016–2019 vintage (licence to check) or UBOS district boundaries"
+    },
+    {
+      "what": "Kalaki district",
+      "unit": "UGA:Kalaki@2019",
+      "from": "2019-07-01",
+      "to": null,
+      "why": "Created from Kaberamaido; carried inside the NE Kaberamaido atom.",
+      "checked": [
+        "Wikipedia Districts of Uganda rev 1374679796"
+      ],
+      "needs": "district atoms of 2016–2019 vintage"
+    },
+    {
+      "what": "Districts before 1997-03-20 (1991: 38 districts; 1994 Ntungamo from parts of Bushenyi AND Mbarara; 1991 314 km² Masindi→Hoima)",
+      "from": "1962-10-09",
+      "to": "1997-03-20",
+      "why": "Before scope: Ntungamo (1994) and the 1991 Masindi–Hoima transfer put pre-1997 lines inside NE atoms; 1974–80 provinces were a different level.",
+      "checked": [
+        "statoids uug.html"
+      ],
+      "needs": "county/sub-county atoms"
+    }
+  ]
+}

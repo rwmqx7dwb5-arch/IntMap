@@ -1,0 +1,227 @@
+{
+ "country": "PRK",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1954-10-30",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Democratic People's Republic of Korea (1948-09-09), territory as fixed by the 1953-07-27 armistice line.",
+ "units": [
+  {
+   "id": "PRK:Chagang",
+   "names": {
+    "en": "Chagang Province",
+    "ja": "慈江道",
+    "local": "자강도"
+   },
+   "wikidata": "Q272406",
+   "spans": [
+    {
+     "from": "1954-10-30",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PRK-3310"
+     ],
+     "sources": [
+      {
+       "url": "https://ko.wikipedia.org/w/index.php?oldid=42124936",
+       "title": "자강도 (ko.wikipedia, permanent revision)",
+       "says": "Created Jan 1949 from North Pyongan counties; Oct 1954 Huchang to Ryanggang, Rangnim and Usi added; next transfer is Hyangsan from North Pyongan in Feb 2023.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ukp.html",
+       "title": "Provinces of North Korea — statoids.com",
+       "says": "Yanggang-do formed 1954-10 from parts of Chagang-do and Hamgyong-namdo; later changes listed concern Kaesong, Nampo, Chongjin, Hamhung, Rason, Sinuiju, Kumgang.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1954-10-30 is the creation of Ryanggang, which took Huchang from Chagang while Chagang gained Rangnim and Usi; the next listed change (Hyangsan, 2023) is after scope."
+    }
+   ]
+  },
+  {
+   "id": "PRK:Ryanggang",
+   "names": {
+    "en": "Ryanggang Province",
+    "ja": "両江道",
+    "local": "량강도"
+   },
+   "wikidata": "Q110171",
+   "spans": [
+    {
+     "from": "1966",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "PRK-3314"
+     ],
+     "sources": [
+      {
+       "url": "https://ko.wikipedia.org/w/index.php?oldid=42124918",
+       "title": "량강도 (ko.wikipedia, permanent revision)",
+       "says": "Created 30 Oct 1954 from South Hamgyong counties, Samsu (North Hamgyong) and Huchang (Chagang); 1965 Pujon county moved to South Hamgyong; later only new counties and renamings.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ukp.html",
+       "title": "Provinces of North Korea — statoids.com",
+       "says": "Yanggang-do formed 1954-10 from parts of Chagang-do and Hamgyong-namdo; later changes listed concern Kaesong, Nampo, Chongjin, Hamhung, Rason, Sinuiju, Kumgang.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Year precision, conservative: Pujon county left for South Hamgyong in 1965 (month not given), so the span starts 1 Jan 1966. Also after the 1962 China–DPRK treaty / 1964 protocol at Paektu-san."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1954-10-30",
+   "precision": "day",
+   "what": "Ryanggang created; Chagang reshaped (Huchang out, Rangnim and Usi in)",
+   "sources": [
+    {
+     "url": "https://ko.wikipedia.org/w/index.php?oldid=42124918",
+     "title": "량강도 (ko.wikipedia, permanent revision)",
+     "says": "Created 30 Oct 1954 from South Hamgyong counties, Samsu (North Hamgyong) and Huchang (Chagang); 1965 Pujon county moved to South Hamgyong; later only new counties and renamings.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://ko.wikipedia.org/w/index.php?oldid=42124936",
+     "title": "자강도 (ko.wikipedia, permanent revision)",
+     "says": "Created Jan 1949 from North Pyongan counties; Oct 1954 Huchang to Ryanggang, Rangnim and Usi added; next transfer is Hyangsan from North Pyongan in Feb 2023.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1965",
+   "precision": "year",
+   "what": "Pujon county transferred from Ryanggang to South Hamgyong",
+   "sources": [
+    {
+     "url": "https://ko.wikipedia.org/w/index.php?oldid=42124918",
+     "title": "량강도 (ko.wikipedia, permanent revision)",
+     "says": "Created 30 Oct 1954 from South Hamgyong counties, Samsu (North Hamgyong) and Huchang (Chagang); 1965 Pujon county moved to South Hamgyong; later only new counties and renamings.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Ryanggang 1954-10-30 → 1966",
+   "unit": "PRK:Ryanggang",
+   "atoms": [
+    "PRK-3314"
+   ],
+   "from": "1954-10-30",
+   "to": "1966",
+   "why": "Until 1965 Ryanggang included Pujon county, now inside the South Hamgyong atom; the Paektu-san segment of the outer line also changed under the 1962 treaty / 1964 protocol.",
+   "checked": [
+    "ko.wikipedia 량강도 oldid 42124918"
+   ],
+   "needs": "county-level atoms (Pujon)"
+  },
+  {
+   "what": "South Hamgyong 1954-10-30 → 2019",
+   "atoms": [
+    "PRK-3311"
+   ],
+   "from": "1954-10-30",
+   "to": null,
+   "why": "Gained Pujon 1965; Hamhung was a separate city in 1960–67 and briefly ~1981 (statoids gives approximate years only); no dated complete list of county transfers since 1966.",
+   "checked": [
+    "statoids.com/ukp.html",
+    "ko.wikipedia 량강도"
+   ],
+   "needs": "a dated county-transfer list (조선향토대백과 or official gazette)"
+  },
+  {
+   "what": "North Hamgyong and Rason 1954-10-30 → 2019",
+   "atoms": [
+    "PRK-3307",
+    "PRK-5495"
+   ],
+   "from": "1954-10-30",
+   "to": null,
+   "why": "Chongjin separate 1960–67 and 1977–85; Rajin-Sonbong split 1993 and its status/extent changed later (2010 special city); the NE Rason outline's date is not established.",
+   "checked": [
+    "statoids.com/ukp.html"
+   ],
+   "needs": "dated Rason boundary acts"
+  },
+  {
+   "what": "Pyongyang, South Pyongan 1954-10-30 → 2019",
+   "atoms": [
+    "PRK-3305",
+    "PRK-3313"
+   ],
+   "from": "1954-10-30",
+   "to": null,
+   "why": "NE depicts Nampo merged into South Pyongan (2004–2010 layout) and a Pyongyang still holding Kangnam, Junghwa, Sangwon, Sungho (pre-2010). Pyongyang's extent changed repeatedly and the 2004/2010 days are not established, so no window can be proved.",
+   "checked": [
+    "NE ca96624 point-in-polygon at Nampo, Kangnam, Junghwa, Sangwon, Sungho",
+    "statoids.com/ukp.html (Nampo 1980/2004)"
+   ],
+   "needs": "dated acts for Pyongyang–South Pyongan–North Hwanghae transfers and county-level atoms"
+  },
+  {
+   "what": "North Pyongan 1954-10-30 → 2019",
+   "atoms": [
+    "PRK-3312"
+   ],
+   "from": "1954-10-30",
+   "to": null,
+   "why": "Sinuiju Special Administrative Region (2002-09) carved from it, a first-level unit on paper; county transfers with Chagang/South Pyongan before 2023 not listed with dates for North Pyongan itself.",
+   "checked": [
+    "statoids.com/ukp.html",
+    "en.wikipedia Administrative divisions of North Korea oldid 1378388219"
+   ],
+   "needs": "Sinuiju SAR boundary and county-level atoms"
+  },
+  {
+   "what": "North and South Hwanghae 1954-10-30 → 2019",
+   "atoms": [
+    "PRK-3303",
+    "PRK-3304"
+   ],
+   "from": "1954-10-30",
+   "to": null,
+   "why": "Kaesong separate 1955–2003 (inside NE's North Hwanghae atom); Kaesong Industrial Region from 2002; 2010 counties from Pyongyang; South Hwanghae's own transfer history not found.",
+   "checked": [
+    "statoids.com/ukp.html",
+    "ko.wikipedia 황해남도 (no history section)"
+   ],
+   "needs": "Kaesong/KIR boundaries and dated county transfers"
+  },
+  {
+   "what": "Kangwon 1954-10-30 → 2019",
+   "atoms": [
+    "PRK-3308"
+   ],
+   "from": "1954-10-30",
+   "to": null,
+   "why": "Mount Kumgang Tourist Region carved out 2002-10 (inside NE's Kangwon atom); earlier county transfers not dated.",
+   "checked": [
+    "statoids.com/ukp.html"
+   ],
+   "needs": "Kumgang region boundary"
+  },
+  {
+   "what": "Layouts 1945-08 → 1954-10-30",
+   "from": "1945-08-15",
+   "to": "1954-10-30",
+   "why": "Pre-armistice front lines, Chagang 1949, the 1952 county reorganisation and 1954 split run inside NE atoms.",
+   "checked": [
+    "ko.wikipedia 자강도 / 량강도",
+    "statoids.com/ukp.html"
+   ],
+   "needs": "county-level atoms with 1945–54 lines"
+  }
+ ]
+}

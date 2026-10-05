@@ -1,0 +1,598 @@
+{
+  "country": "NAM",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "1992-08-31",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Republic of Namibia (independent 1990-03-21); Walvis Bay and the offshore Penguin Islands were South African until 1994-03-01. The regions date from 1992.",
+  "units": [
+    {
+      "id": "NAM:Karas@1992",
+      "names": {
+        "en": "//Karas Region (Karas until 2013)",
+        "ja": "カラス州",
+        "local": "//Karas Region (Karas until 2013)"
+      },
+      "wikidata": "Q573467",
+      "spans": [
+        {
+          "from": "1992-08-31",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "NAM-3338"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/una.html",
+              "title": "Statoids: Regions of Namibia (G. Law)",
+              "says": "1992-08-31 Regional Councils Act: 26 districts → 13 regions; 1994-03-01 Walvis Bay incorporated into Erongo; 2013-08-08 Kavango split, Caprivi renamed Zambezi.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.lac.org.na/laws/annoSTAT/Regional%20Councils%20Act%2022%20of%201992.pdf",
+              "title": "Regional Councils Act 22 of 1992, annotated (Legal Assistance Centre)",
+              "says": "In force 31 Aug 1992 (GN 117/1992); region boundaries from Proclamation 6 of 1992; Schedules replaced by Proclamation 25 of 2013, in force 9 Aug 2013.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Regions' boundaries were proclaimed by Proclamation 6 of 1992 (day not found); 1992-08-31 is the commencement of the Regional Councils Act. Proclamation 25 of 2013 split Kavango and renamed Caprivi/Karas; no other regional boundary change is recorded by the sources consulted."
+        }
+      ]
+    },
+    {
+      "id": "NAM:Kunene@1992",
+      "names": {
+        "en": "Kunene Region",
+        "ja": "クネネ州",
+        "local": "Kunene Region"
+      },
+      "wikidata": "Q834513",
+      "spans": [
+        {
+          "from": "1992-08-31",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "NAM-3347"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/una.html",
+              "title": "Statoids: Regions of Namibia (G. Law)",
+              "says": "1992-08-31 Regional Councils Act: 26 districts → 13 regions; 1994-03-01 Walvis Bay incorporated into Erongo; 2013-08-08 Kavango split, Caprivi renamed Zambezi.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.lac.org.na/laws/annoSTAT/Regional%20Councils%20Act%2022%20of%201992.pdf",
+              "title": "Regional Councils Act 22 of 1992, annotated (Legal Assistance Centre)",
+              "says": "In force 31 Aug 1992 (GN 117/1992); region boundaries from Proclamation 6 of 1992; Schedules replaced by Proclamation 25 of 2013, in force 9 Aug 2013.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Regions' boundaries were proclaimed by Proclamation 6 of 1992 (day not found); 1992-08-31 is the commencement of the Regional Councils Act. Proclamation 25 of 2013 split Kavango and renamed Caprivi/Karas; no other regional boundary change is recorded by the sources consulted."
+        }
+      ]
+    },
+    {
+      "id": "NAM:Omusati@1992",
+      "names": {
+        "en": "Omusati Region",
+        "ja": "オムサティ州",
+        "local": "Omusati Region"
+      },
+      "wikidata": "Q764385",
+      "spans": [
+        {
+          "from": "1992-08-31",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "NAM-3350"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/una.html",
+              "title": "Statoids: Regions of Namibia (G. Law)",
+              "says": "1992-08-31 Regional Councils Act: 26 districts → 13 regions; 1994-03-01 Walvis Bay incorporated into Erongo; 2013-08-08 Kavango split, Caprivi renamed Zambezi.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.lac.org.na/laws/annoSTAT/Regional%20Councils%20Act%2022%20of%201992.pdf",
+              "title": "Regional Councils Act 22 of 1992, annotated (Legal Assistance Centre)",
+              "says": "In force 31 Aug 1992 (GN 117/1992); region boundaries from Proclamation 6 of 1992; Schedules replaced by Proclamation 25 of 2013, in force 9 Aug 2013.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Regions' boundaries were proclaimed by Proclamation 6 of 1992 (day not found); 1992-08-31 is the commencement of the Regional Councils Act. Proclamation 25 of 2013 split Kavango and renamed Caprivi/Karas; no other regional boundary change is recorded by the sources consulted."
+        }
+      ]
+    },
+    {
+      "id": "NAM:Ohangwena@1992",
+      "names": {
+        "en": "Ohangwena Region",
+        "ja": "オハングウェナ州",
+        "local": "Ohangwena Region"
+      },
+      "wikidata": "Q845702",
+      "spans": [
+        {
+          "from": "1992-08-31",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "NAM-3352"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/una.html",
+              "title": "Statoids: Regions of Namibia (G. Law)",
+              "says": "1992-08-31 Regional Councils Act: 26 districts → 13 regions; 1994-03-01 Walvis Bay incorporated into Erongo; 2013-08-08 Kavango split, Caprivi renamed Zambezi.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.lac.org.na/laws/annoSTAT/Regional%20Councils%20Act%2022%20of%201992.pdf",
+              "title": "Regional Councils Act 22 of 1992, annotated (Legal Assistance Centre)",
+              "says": "In force 31 Aug 1992 (GN 117/1992); region boundaries from Proclamation 6 of 1992; Schedules replaced by Proclamation 25 of 2013, in force 9 Aug 2013.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Regions' boundaries were proclaimed by Proclamation 6 of 1992 (day not found); 1992-08-31 is the commencement of the Regional Councils Act. Proclamation 25 of 2013 split Kavango and renamed Caprivi/Karas; no other regional boundary change is recorded by the sources consulted."
+        }
+      ]
+    },
+    {
+      "id": "NAM:Hardap@1992",
+      "names": {
+        "en": "Hardap Region",
+        "ja": "ハルダプ州",
+        "local": "Hardap Region"
+      },
+      "wikidata": "Q752676",
+      "spans": [
+        {
+          "from": "1992-08-31",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "NAM-3339"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/una.html",
+              "title": "Statoids: Regions of Namibia (G. Law)",
+              "says": "1992-08-31 Regional Councils Act: 26 districts → 13 regions; 1994-03-01 Walvis Bay incorporated into Erongo; 2013-08-08 Kavango split, Caprivi renamed Zambezi.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.lac.org.na/laws/annoSTAT/Regional%20Councils%20Act%2022%20of%201992.pdf",
+              "title": "Regional Councils Act 22 of 1992, annotated (Legal Assistance Centre)",
+              "says": "In force 31 Aug 1992 (GN 117/1992); region boundaries from Proclamation 6 of 1992; Schedules replaced by Proclamation 25 of 2013, in force 9 Aug 2013.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Regions' boundaries were proclaimed by Proclamation 6 of 1992 (day not found); 1992-08-31 is the commencement of the Regional Councils Act. Proclamation 25 of 2013 split Kavango and renamed Caprivi/Karas; no other regional boundary change is recorded by the sources consulted."
+        }
+      ]
+    },
+    {
+      "id": "NAM:Otjozondjupa@1992",
+      "names": {
+        "en": "Otjozondjupa Region",
+        "ja": "オチョソンデュパ州",
+        "local": "Otjozondjupa Region"
+      },
+      "wikidata": "Q876506",
+      "spans": [
+        {
+          "from": "1992-08-31",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "NAM-3349"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/una.html",
+              "title": "Statoids: Regions of Namibia (G. Law)",
+              "says": "1992-08-31 Regional Councils Act: 26 districts → 13 regions; 1994-03-01 Walvis Bay incorporated into Erongo; 2013-08-08 Kavango split, Caprivi renamed Zambezi.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.lac.org.na/laws/annoSTAT/Regional%20Councils%20Act%2022%20of%201992.pdf",
+              "title": "Regional Councils Act 22 of 1992, annotated (Legal Assistance Centre)",
+              "says": "In force 31 Aug 1992 (GN 117/1992); region boundaries from Proclamation 6 of 1992; Schedules replaced by Proclamation 25 of 2013, in force 9 Aug 2013.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Regions' boundaries were proclaimed by Proclamation 6 of 1992 (day not found); 1992-08-31 is the commencement of the Regional Councils Act. Proclamation 25 of 2013 split Kavango and renamed Caprivi/Karas; no other regional boundary change is recorded by the sources consulted."
+        }
+      ]
+    },
+    {
+      "id": "NAM:Omaheke@1992",
+      "names": {
+        "en": "Omaheke Region",
+        "ja": "オマヘケ州",
+        "local": "Omaheke Region"
+      },
+      "wikidata": "Q838775",
+      "spans": [
+        {
+          "from": "1992-08-31",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "NAM-3353"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/una.html",
+              "title": "Statoids: Regions of Namibia (G. Law)",
+              "says": "1992-08-31 Regional Councils Act: 26 districts → 13 regions; 1994-03-01 Walvis Bay incorporated into Erongo; 2013-08-08 Kavango split, Caprivi renamed Zambezi.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.lac.org.na/laws/annoSTAT/Regional%20Councils%20Act%2022%20of%201992.pdf",
+              "title": "Regional Councils Act 22 of 1992, annotated (Legal Assistance Centre)",
+              "says": "In force 31 Aug 1992 (GN 117/1992); region boundaries from Proclamation 6 of 1992; Schedules replaced by Proclamation 25 of 2013, in force 9 Aug 2013.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Regions' boundaries were proclaimed by Proclamation 6 of 1992 (day not found); 1992-08-31 is the commencement of the Regional Councils Act. Proclamation 25 of 2013 split Kavango and renamed Caprivi/Karas; no other regional boundary change is recorded by the sources consulted."
+        }
+      ]
+    },
+    {
+      "id": "NAM:Khomas@1992",
+      "names": {
+        "en": "Khomas Region",
+        "ja": "ホマス州",
+        "local": "Khomas Region"
+      },
+      "wikidata": "Q834508",
+      "spans": [
+        {
+          "from": "1992-08-31",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "NAM-3340"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/una.html",
+              "title": "Statoids: Regions of Namibia (G. Law)",
+              "says": "1992-08-31 Regional Councils Act: 26 districts → 13 regions; 1994-03-01 Walvis Bay incorporated into Erongo; 2013-08-08 Kavango split, Caprivi renamed Zambezi.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.lac.org.na/laws/annoSTAT/Regional%20Councils%20Act%2022%20of%201992.pdf",
+              "title": "Regional Councils Act 22 of 1992, annotated (Legal Assistance Centre)",
+              "says": "In force 31 Aug 1992 (GN 117/1992); region boundaries from Proclamation 6 of 1992; Schedules replaced by Proclamation 25 of 2013, in force 9 Aug 2013.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Regions' boundaries were proclaimed by Proclamation 6 of 1992 (day not found); 1992-08-31 is the commencement of the Regional Councils Act. Proclamation 25 of 2013 split Kavango and renamed Caprivi/Karas; no other regional boundary change is recorded by the sources consulted."
+        }
+      ]
+    },
+    {
+      "id": "NAM:Oshana@1992",
+      "names": {
+        "en": "Oshana Region",
+        "ja": "オシャナ州",
+        "local": "Oshana Region"
+      },
+      "wikidata": "Q534528",
+      "spans": [
+        {
+          "from": "1992-08-31",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "NAM-3351"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/una.html",
+              "title": "Statoids: Regions of Namibia (G. Law)",
+              "says": "1992-08-31 Regional Councils Act: 26 districts → 13 regions; 1994-03-01 Walvis Bay incorporated into Erongo; 2013-08-08 Kavango split, Caprivi renamed Zambezi.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.lac.org.na/laws/annoSTAT/Regional%20Councils%20Act%2022%20of%201992.pdf",
+              "title": "Regional Councils Act 22 of 1992, annotated (Legal Assistance Centre)",
+              "says": "In force 31 Aug 1992 (GN 117/1992); region boundaries from Proclamation 6 of 1992; Schedules replaced by Proclamation 25 of 2013, in force 9 Aug 2013.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Regions' boundaries were proclaimed by Proclamation 6 of 1992 (day not found); 1992-08-31 is the commencement of the Regional Councils Act. Proclamation 25 of 2013 split Kavango and renamed Caprivi/Karas; no other regional boundary change is recorded by the sources consulted."
+        }
+      ]
+    },
+    {
+      "id": "NAM:Oshikoto@1992",
+      "names": {
+        "en": "Oshikoto Region",
+        "ja": "オシコト州",
+        "local": "Oshikoto Region"
+      },
+      "wikidata": "Q876512",
+      "spans": [
+        {
+          "from": "1992-08-31",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "NAM-3355"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/una.html",
+              "title": "Statoids: Regions of Namibia (G. Law)",
+              "says": "1992-08-31 Regional Councils Act: 26 districts → 13 regions; 1994-03-01 Walvis Bay incorporated into Erongo; 2013-08-08 Kavango split, Caprivi renamed Zambezi.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.lac.org.na/laws/annoSTAT/Regional%20Councils%20Act%2022%20of%201992.pdf",
+              "title": "Regional Councils Act 22 of 1992, annotated (Legal Assistance Centre)",
+              "says": "In force 31 Aug 1992 (GN 117/1992); region boundaries from Proclamation 6 of 1992; Schedules replaced by Proclamation 25 of 2013, in force 9 Aug 2013.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Regions' boundaries were proclaimed by Proclamation 6 of 1992 (day not found); 1992-08-31 is the commencement of the Regional Councils Act. Proclamation 25 of 2013 split Kavango and renamed Caprivi/Karas; no other regional boundary change is recorded by the sources consulted."
+        }
+      ]
+    },
+    {
+      "id": "NAM:Zambezi@1992",
+      "names": {
+        "en": "Zambezi Region (Caprivi Region until 2013-08-09)",
+        "ja": "ザンベジ州",
+        "local": "Zambezi Region (Caprivi Region until 2013-08-09)"
+      },
+      "wikidata": "Q473190",
+      "spans": [
+        {
+          "from": "1992-08-31",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "NAM-3356"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/una.html",
+              "title": "Statoids: Regions of Namibia (G. Law)",
+              "says": "1992-08-31 Regional Councils Act: 26 districts → 13 regions; 1994-03-01 Walvis Bay incorporated into Erongo; 2013-08-08 Kavango split, Caprivi renamed Zambezi.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.lac.org.na/laws/annoSTAT/Regional%20Councils%20Act%2022%20of%201992.pdf",
+              "title": "Regional Councils Act 22 of 1992, annotated (Legal Assistance Centre)",
+              "says": "In force 31 Aug 1992 (GN 117/1992); region boundaries from Proclamation 6 of 1992; Schedules replaced by Proclamation 25 of 2013, in force 9 Aug 2013.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Regions' boundaries were proclaimed by Proclamation 6 of 1992 (day not found); 1992-08-31 is the commencement of the Regional Councils Act. Proclamation 25 of 2013 split Kavango and renamed Caprivi/Karas; no other regional boundary change is recorded by the sources consulted."
+        }
+      ]
+    },
+    {
+      "id": "NAM:Erongo@1994",
+      "names": {
+        "en": "Erongo Region (with Walvis Bay)",
+        "ja": "エロンゴ州",
+        "local": "Erongo"
+      },
+      "wikidata": "Q648753",
+      "spans": [
+        {
+          "from": "1994-03-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "NAM-3348"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/una.html",
+              "title": "Statoids: Regions of Namibia (G. Law)",
+              "says": "1992-08-31 Regional Councils Act: 26 districts → 13 regions; 1994-03-01 Walvis Bay incorporated into Erongo; 2013-08-08 Kavango split, Caprivi renamed Zambezi.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "NE Erongo contains Walvis Bay (point test), so the atom is valid only from the incorporation."
+        }
+      ]
+    },
+    {
+      "id": "NAM:Kavango@1992",
+      "names": {
+        "en": "Kavango Region",
+        "ja": "カバンゴ州",
+        "local": "Kavango"
+      },
+      "wikidata": "Q13156669",
+      "spans": [
+        {
+          "from": "1992-08-31",
+          "precision": "day",
+          "to": "2013-08-09",
+          "atoms": [
+            "NAM-3354"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/una.html",
+              "title": "Statoids: Regions of Namibia (G. Law)",
+              "says": "1992-08-31 Regional Councils Act: 26 districts → 13 regions; 1994-03-01 Walvis Bay incorporated into Erongo; 2013-08-08 Kavango split, Caprivi renamed Zambezi.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.lac.org.na/laws/annoSTAT/Regional%20Councils%20Act%2022%20of%201992.pdf",
+              "title": "Regional Councils Act 22 of 1992, annotated (Legal Assistance Centre)",
+              "says": "In force 31 Aug 1992 (GN 117/1992); region boundaries from Proclamation 6 of 1992; Schedules replaced by Proclamation 25 of 2013, in force 9 Aug 2013.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Proclamation 25 of 2013 came into force on its publication date, 9 Aug 2013 (statoids gives 2013-08-08)."
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1992-08-31",
+      "precision": "day",
+      "what": "Regional Councils Act 22 of 1992 in force; 13 regions (boundaries per Proclamation 6 of 1992)",
+      "sources": [
+        {
+          "url": "https://www.lac.org.na/laws/annoSTAT/Regional%20Councils%20Act%2022%20of%201992.pdf",
+          "title": "Regional Councils Act 22 of 1992, annotated (Legal Assistance Centre)",
+          "says": "In force 31 Aug 1992 (GN 117/1992); region boundaries from Proclamation 6 of 1992; Schedules replaced by Proclamation 25 of 2013, in force 9 Aug 2013.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://www.statoids.com/una.html",
+          "title": "Statoids: Regions of Namibia (G. Law)",
+          "says": "1992-08-31 Regional Councils Act: 26 districts → 13 regions; 1994-03-01 Walvis Bay incorporated into Erongo; 2013-08-08 Kavango split, Caprivi renamed Zambezi.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1994-03-01",
+      "precision": "day",
+      "what": "Walvis Bay incorporated into Namibia as part of Erongo",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/una.html",
+          "title": "Statoids: Regions of Namibia (G. Law)",
+          "says": "1992-08-31 Regional Councils Act: 26 districts → 13 regions; 1994-03-01 Walvis Bay incorporated into Erongo; 2013-08-08 Kavango split, Caprivi renamed Zambezi.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2013-08-09",
+      "precision": "day",
+      "what": "Proclamation 25 of 2013: Kavango split into Kavango East and West; Caprivi renamed Zambezi; Karas → //Karas",
+      "sources": [
+        {
+          "url": "https://www.lac.org.na/laws/annoSTAT/Regional%20Councils%20Act%2022%20of%201992.pdf",
+          "title": "Regional Councils Act 22 of 1992, annotated (Legal Assistance Centre)",
+          "says": "In force 31 Aug 1992 (GN 117/1992); region boundaries from Proclamation 6 of 1992; Schedules replaced by Proclamation 25 of 2013, in force 9 Aug 2013.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://www.lac.org.na/laws/annoSTAT/Regional%20Councils%20Act%2022%20of%201992.pdf",
+          "title": "Regional Councils Act 22 of 1992, annotated — Schedule 1 as substituted by Proc. 25 of 2013",
+          "says": "Lists 14 regions including Kavango East, Kavango West and Zambezi; s.45(2) renamed Liambezi to Caprivi in 1992.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://www.statoids.com/una.html",
+          "title": "Statoids: Regions of Namibia (G. Law)",
+          "says": "1992-08-31 Regional Councils Act: 26 districts → 13 regions; 1994-03-01 Walvis Bay incorporated into Erongo; 2013-08-08 Kavango split, Caprivi renamed Zambezi.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "1992-08-31",
+      "n": 13,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/una.html",
+          "title": "Statoids: Regions of Namibia (G. Law)",
+          "says": "1992-08-31 Regional Councils Act: 26 districts → 13 regions; 1994-03-01 Walvis Bay incorporated into Erongo; 2013-08-08 Kavango split, Caprivi renamed Zambezi.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?oldid=1284513532",
+          "title": "Wikipedia: Regions of Namibia, rev. 1284513532",
+          "says": "First Delimitation Commission proposed 13 regions in 1992; the 4th Delimitation Commission increased the number to 14.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2014-01-01",
+      "n": 14,
+      "sources": [
+        {
+          "url": "https://www.lac.org.na/laws/annoSTAT/Regional%20Councils%20Act%2022%20of%201992.pdf",
+          "title": "Regional Councils Act 22 of 1992, annotated — Schedule 1 as substituted by Proc. 25 of 2013",
+          "says": "Lists 14 regions including Kavango East, Kavango West and Zambezi; s.45(2) renamed Liambezi to Caprivi in 1992.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?oldid=1284513532",
+          "title": "Wikipedia: Regions of Namibia, rev. 1284513532",
+          "says": "First Delimitation Commission proposed 13 regions in 1992; the 4th Delimitation Commission increased the number to 14.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Erongo before Walvis Bay was incorporated",
+      "unit": "NAM:Erongo@1992",
+      "atoms": [
+        "NAM-3348"
+      ],
+      "from": "1992-08-31",
+      "to": "1994-03-01",
+      "why": "Walvis Bay (South African until 1994-03-01; joint administration from 1992-08) lies inside the NE Erongo atom; Erongo without it needs the Walvis Bay line.",
+      "checked": [
+        "statoids una.html",
+        "Natural Earth point test (Walvis Bay → NAM-3348)"
+      ],
+      "needs": "geoBoundaries NAM ADM2 constituencies (Walvis Bay Urban / Rural), CC BY 4.0"
+    },
+    {
+      "what": "Kavango East and Kavango West",
+      "unit": "NAM:KavangoEast@2013",
+      "atoms": [
+        "NAM-3354"
+      ],
+      "from": "2013-08-09",
+      "to": null,
+      "why": "NE has only the undivided Kavango; the East/West line runs through the atom.",
+      "checked": [
+        "Regional Councils Act annotated (Proc. 25 of 2013)",
+        "statoids una.html"
+      ],
+      "needs": "geoBoundaries NAM ADM1 (2013+) or ADM2 constituencies, CC BY 4.0"
+    },
+    {
+      "what": "Kavango West",
+      "unit": "NAM:KavangoWest@2013",
+      "from": "2013-08-09",
+      "to": null,
+      "why": "see previous entry",
+      "checked": [
+        "Regional Councils Act annotated"
+      ],
+      "needs": "geoBoundaries NAM ADM2"
+    },
+    {
+      "what": "The 26 districts / homelands in force at independence (1990-03-21 → regions 1992)",
+      "from": "1990-03-21",
+      "to": "1992-08-31",
+      "why": "Outside scope; the 1977-era districts do not follow region lines (statoids \"Became\" column: several districts map to two or three regions).",
+      "checked": [
+        "statoids una.html"
+      ],
+      "needs": "magisterial district boundaries (no redistributable dataset found)"
+    }
+  ]
+}

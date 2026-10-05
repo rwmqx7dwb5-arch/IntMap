@@ -1,0 +1,625 @@
+{
+  "country": "MLI",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "1977-07-12",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Republic of Mali throughout the scope. NE depicts the 8 regions + District of Bamako layout of 1992 → 2016 (before Taoudénit and Ménaka were set up). The Mali–Burkina Faso frontier in the Agacher strip was disputed until the ICJ judgment of 1986-12-22; NE draws the post-judgment line (polity-level, see unresolved).",
+  "units": [
+    {
+      "id": "MLI:Kayes@1977",
+      "names": {
+        "en": "Kayes Region",
+        "ja": "カイ州",
+        "local": "Région de Kayes"
+      },
+      "wikidata": "Q332113",
+      "spans": [
+        {
+          "from": "1977-07-12",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MLI-2793"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uml.html",
+              "title": "Regions of Mali (Statoids)",
+              "says": "Change list: 1959 six regions; Timbuktu split from Gao; Bamako district, old Bamako region renamed Koulikoro; 1991 Kidal from Gao; 2016-01-19 Taoudenni and Ménaka.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=238345529",
+              "title": "Organisation territoriale du Mali — Wikipédia",
+              "says": "Ordinance 77-44 of 12 July 1977 (regions and District of Bamako); ordinance 91-039 of 8 Aug 1991: District plus eight regions; Taoudénit and Ménaka set up 19 Jan 2016.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "No change to Kayes in the change lists between 1977 and 2019 (next change: 2023 reform)."
+        }
+      ]
+    },
+    {
+      "id": "MLI:Koulikoro@1977",
+      "names": {
+        "en": "Koulikoro Region",
+        "ja": "クリコロ州",
+        "local": "Région de Koulikoro"
+      },
+      "wikidata": "Q287789",
+      "spans": [
+        {
+          "from": "1978-08-18",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MLI-4860"
+          ],
+          "sources": [
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=236843188",
+              "title": "Région de Koulikoro — Wikipédia",
+              "says": "Created by ordinance 77-044/CMLN of 12 July 1977 dividing the former Bamako region; Bamako city became the enclaved District; region unchanged until the 2023 reform.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://bamada.net/regions-et-cercles-du-mali-60-ans-de-decoupage",
+              "title": "Régions et cercles du Mali: 60 ans de découpage (Bamada.net)",
+              "says": "Ordinance 77-44/CMLN of 12 July 1977 split Gao into Gao and Tombouctou, created Koulikoro and made Bamako a district; ordinance 91-039 created Kidal.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://sgg-mali.ml/JO/2023/mali-jo-2023-10.pdf",
+              "title": "Journal officiel du Mali 2023 n°10 — Loi 2023-005 (statut particulier du District de Bamako)",
+              "says": "Art. 103 repeals ordinance 78-34/CMLN of 18 Aug 1978, as amended, which determined the limits of the communes of the District of Bamako.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Line with the District fixed by ordinance 78-34 of 18 Aug 1978; Kalabancoro moved to Bamako only in 2023."
+        }
+      ]
+    },
+    {
+      "id": "MLI:Bamako@1977",
+      "names": {
+        "en": "Bamako Capital District",
+        "ja": "バマコ",
+        "local": "District de Bamako"
+      },
+      "wikidata": "Q55747201",
+      "spans": [
+        {
+          "from": "1978-08-18",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MLI-2792"
+          ],
+          "sources": [
+            {
+              "url": "https://sgg-mali.ml/JO/2023/mali-jo-2023-10.pdf",
+              "title": "Journal officiel du Mali 2023 n°10 — Loi 2023-005 (statut particulier du District de Bamako)",
+              "says": "Art. 103 repeals ordinance 78-34/CMLN of 18 Aug 1978, as amended, which determined the limits of the communes of the District of Bamako.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://bamada.net/regions-et-cercles-du-mali-60-ans-de-decoupage",
+              "title": "Régions et cercles du Mali: 60 ans de découpage (Bamada.net)",
+              "says": "Ordinance 77-44/CMLN of 12 July 1977 split Gao into Gao and Tombouctou, created Koulikoro and made Bamako a district; ordinance 91-039 created Kidal.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=236843188",
+              "title": "Région de Koulikoro — Wikipédia",
+              "says": "Created by ordinance 77-044/CMLN of 12 July 1977 dividing the former Bamako region; Bamako city became the enclaved District; region unchanged until the 2023 reform.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "District created 12 July 1977; its limits are those of ordinance 78-34/CMLN of 18 Aug 1978 (as amended) until law 2023-005."
+        }
+      ]
+    },
+    {
+      "id": "MLI:Sikasso@1977",
+      "names": {
+        "en": "Sikasso Region",
+        "ja": "シカソ州",
+        "local": "Région de Sikasso"
+      },
+      "wikidata": "Q461298",
+      "spans": [
+        {
+          "from": "1977-07-12",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MLI-2794"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uml.html",
+              "title": "Regions of Mali (Statoids)",
+              "says": "Change list: 1959 six regions; Timbuktu split from Gao; Bamako district, old Bamako region renamed Koulikoro; 1991 Kidal from Gao; 2016-01-19 Taoudenni and Ménaka.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=238345529",
+              "title": "Organisation territoriale du Mali — Wikipédia",
+              "says": "Ordinance 77-44 of 12 July 1977 (regions and District of Bamako); ordinance 91-039 of 8 Aug 1991: District plus eight regions; Taoudénit and Ménaka set up 19 Jan 2016.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "NE name_en «Wassoulou» is an NE quirk; the atom is Sikasso region (HASC ML.SK)."
+        }
+      ]
+    },
+    {
+      "id": "MLI:Segou@1977",
+      "names": {
+        "en": "Ségou Region",
+        "ja": "セグー州",
+        "local": "Région de Ségou"
+      },
+      "wikidata": "Q656845",
+      "spans": [
+        {
+          "from": "1977-07-12",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MLI-2810"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uml.html",
+              "title": "Regions of Mali (Statoids)",
+              "says": "Change list: 1959 six regions; Timbuktu split from Gao; Bamako district, old Bamako region renamed Koulikoro; 1991 Kidal from Gao; 2016-01-19 Taoudenni and Ménaka.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=238345529",
+              "title": "Organisation territoriale du Mali — Wikipédia",
+              "says": "Ordinance 77-44 of 12 July 1977 (regions and District of Bamako); ordinance 91-039 of 8 Aug 1991: District plus eight regions; Taoudénit and Ménaka set up 19 Jan 2016.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MLI:Mopti@1977",
+      "names": {
+        "en": "Mopti Region",
+        "ja": "モプティ州",
+        "local": "Région de Mopti"
+      },
+      "wikidata": "Q214155",
+      "spans": [
+        {
+          "from": "1977-07-12",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MLI-2809"
+          ],
+          "sources": [
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=238441597",
+              "title": "Région de Tombouctou — Wikipédia",
+              "says": "Created 12 July 1977: Goundam and Tombouctou cercles taken from Gao region, Niafunké cercle from Mopti region; Taoudénit later took its northern part.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uml.html",
+              "title": "Regions of Mali (Statoids)",
+              "says": "Change list: 1959 six regions; Timbuktu split from Gao; Bamako district, old Bamako region renamed Koulikoro; 1991 Kidal from Gao; 2016-01-19 Taoudenni and Ménaka.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Mopti lost Niafunké cercle to Tombouctou on 12 July 1977; unchanged afterwards until 2023."
+        }
+      ]
+    },
+    {
+      "id": "MLI:Tombouctou@1977",
+      "names": {
+        "en": "Tombouctou Region",
+        "ja": "トンブクトゥ州",
+        "local": "Région de Tombouctou"
+      },
+      "wikidata": "Q339462",
+      "spans": [
+        {
+          "from": "1977-07-12",
+          "precision": "day",
+          "to": "2016-01-19",
+          "atoms": [
+            "MLI-2688"
+          ],
+          "sources": [
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=238441597",
+              "title": "Région de Tombouctou — Wikipédia",
+              "says": "Created 12 July 1977: Goundam and Tombouctou cercles taken from Gao region, Niafunké cercle from Mopti region; Taoudénit later took its northern part.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://bamada.net/regions-et-cercles-du-mali-60-ans-de-decoupage",
+              "title": "Régions et cercles du Mali: 60 ans de découpage (Bamada.net)",
+              "says": "Ordinance 77-44/CMLN of 12 July 1977 split Gao into Gao and Tombouctou, created Koulikoro and made Bamako a district; ordinance 91-039 created Kidal.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uml.html",
+              "title": "Regions of Mali (Statoids)",
+              "says": "Change list: 1959 six regions; Timbuktu split from Gao; Bamako district, old Bamako region renamed Koulikoro; 1991 Kidal from Gao; 2016-01-19 Taoudenni and Ménaka.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Ordinance 77-44/CMLN dated 12 July 1977 (Wikipedia cites 77-45 for Tombouctou); entry-into-force date not found, the ordinance date is used."
+        }
+      ]
+    },
+    {
+      "id": "MLI:Gao@1977",
+      "names": {
+        "en": "Gao Region",
+        "ja": "ガオ州",
+        "local": "Région de Gao"
+      },
+      "wikidata": "Q332392",
+      "spans": [
+        {
+          "from": "1977-07-12",
+          "precision": "day",
+          "to": "1991-08-08",
+          "atoms": [
+            "MLI-2690",
+            "MLI-2689"
+          ],
+          "sources": [
+            {
+              "url": "https://bamada.net/regions-et-cercles-du-mali-60-ans-de-decoupage",
+              "title": "Régions et cercles du Mali: 60 ans de découpage (Bamada.net)",
+              "says": "Ordinance 77-44/CMLN of 12 July 1977 split Gao into Gao and Tombouctou, created Koulikoro and made Bamako a district; ordinance 91-039 created Kidal.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=236773876",
+              "title": "Région de Kidal — Wikipédia",
+              "says": "Ordinance 91-039 of 8 Aug 1991 erected the former Kidal cercle of Gao region into a region; implemented by decree 92-121/P-CTSP of 11 Apr 1992.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uml.html",
+              "title": "Regions of Mali (Statoids)",
+              "says": "Change list: 1959 six regions; Timbuktu split from Gao; Bamako district, old Bamako region renamed Koulikoro; 1991 Kidal from Gao; 2016-01-19 Taoudenni and Ménaka.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Gao 1977-1991 = present Gao + present Kidal (Kidal region = the former Kidal cercle of Gao)."
+        },
+        {
+          "from": "1992-04-11",
+          "precision": "day",
+          "to": "2016-01-19",
+          "atoms": [
+            "MLI-2690"
+          ],
+          "sources": [
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=236773876",
+              "title": "Région de Kidal — Wikipédia",
+              "says": "Ordinance 91-039 of 8 Aug 1991 erected the former Kidal cercle of Gao region into a region; implemented by decree 92-121/P-CTSP of 11 Apr 1992.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=238345529",
+              "title": "Organisation territoriale du Mali — Wikipédia",
+              "says": "Ordinance 77-44 of 12 July 1977 (regions and District of Bamako); ordinance 91-039 of 8 Aug 1991: District plus eight regions; Taoudénit and Ménaka set up 19 Jan 2016.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uml.html",
+              "title": "Regions of Mali (Statoids)",
+              "says": "Change list: 1959 six regions; Timbuktu split from Gao; Bamako district, old Bamako region renamed Koulikoro; 1991 Kidal from Gao; 2016-01-19 Taoudenni and Ménaka.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MLI:Kidal@1991",
+      "names": {
+        "en": "Kidal Region",
+        "ja": "キダル州",
+        "local": "Région de Kidal"
+      },
+      "wikidata": "Q338988",
+      "spans": [
+        {
+          "from": "1992-04-11",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MLI-2689"
+          ],
+          "sources": [
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=236773876",
+              "title": "Région de Kidal — Wikipédia",
+              "says": "Ordinance 91-039 of 8 Aug 1991 erected the former Kidal cercle of Gao region into a region; implemented by decree 92-121/P-CTSP of 11 Apr 1992.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=238345529",
+              "title": "Organisation territoriale du Mali — Wikipédia",
+              "says": "Ordinance 77-44 of 12 July 1977 (regions and District of Bamako); ordinance 91-039 of 8 Aug 1991: District plus eight regions; Taoudénit and Ménaka set up 19 Jan 2016.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1376950329",
+              "title": "Taoudénit Region — Wikipedia",
+              "says": "Created by law 2012-017 of 2 March 2012 from the northern part of Timbuktu cercle; implementation began 19 Jan 2016 with the governor's appointment.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Taoudénit (2016) was taken from Timbuktu cercle only, so Kidal is untouched until the 2023 reform."
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1977-07-12",
+      "precision": "day",
+      "what": "Ordinance 77-44/CMLN: Tombouctou region (from Gao, plus Niafunké from Mopti), Koulikoro region and District of Bamako replace the old Bamako region",
+      "sources": [
+        {
+          "url": "https://bamada.net/regions-et-cercles-du-mali-60-ans-de-decoupage",
+          "title": "Régions et cercles du Mali: 60 ans de découpage (Bamada.net)",
+          "says": "Ordinance 77-44/CMLN of 12 July 1977 split Gao into Gao and Tombouctou, created Koulikoro and made Bamako a district; ordinance 91-039 created Kidal.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://fr.wikipedia.org/w/index.php?oldid=238441597",
+          "title": "Région de Tombouctou — Wikipédia",
+          "says": "Created 12 July 1977: Goundam and Tombouctou cercles taken from Gao region, Niafunké cercle from Mopti region; Taoudénit later took its northern part.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://fr.wikipedia.org/w/index.php?oldid=236843188",
+          "title": "Région de Koulikoro — Wikipédia",
+          "says": "Created by ordinance 77-044/CMLN of 12 July 1977 dividing the former Bamako region; Bamako city became the enclaved District; region unchanged until the 2023 reform.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1978-08-18",
+      "precision": "day",
+      "what": "Ordinance 78-34/CMLN fixes the limits of the communes of the District of Bamako",
+      "sources": [
+        {
+          "url": "https://sgg-mali.ml/JO/2023/mali-jo-2023-10.pdf",
+          "title": "Journal officiel du Mali 2023 n°10 — Loi 2023-005 (statut particulier du District de Bamako)",
+          "says": "Art. 103 repeals ordinance 78-34/CMLN of 18 Aug 1978, as amended, which determined the limits of the communes of the District of Bamako.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1991-08-08",
+      "precision": "day",
+      "what": "Ordinance 91-039/P-CTSP erects the Kidal cercle of Gao into the Kidal region",
+      "sources": [
+        {
+          "url": "https://fr.wikipedia.org/w/index.php?oldid=236773876",
+          "title": "Région de Kidal — Wikipédia",
+          "says": "Ordinance 91-039 of 8 Aug 1991 erected the former Kidal cercle of Gao region into a region; implemented by decree 92-121/P-CTSP of 11 Apr 1992.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://fr.wikipedia.org/w/index.php?oldid=238345529",
+          "title": "Organisation territoriale du Mali — Wikipédia",
+          "says": "Ordinance 77-44 of 12 July 1977 (regions and District of Bamako); ordinance 91-039 of 8 Aug 1991: District plus eight regions; Taoudénit and Ménaka set up 19 Jan 2016.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1992-04-11",
+      "precision": "day",
+      "what": "Decree 92-121/P-CTSP implements the Kidal region",
+      "sources": [
+        {
+          "url": "https://fr.wikipedia.org/w/index.php?oldid=236773876",
+          "title": "Région de Kidal — Wikipédia",
+          "says": "Ordinance 91-039 of 8 Aug 1991 erected the former Kidal cercle of Gao region into a region; implemented by decree 92-121/P-CTSP of 11 Apr 1992.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2012-03-02",
+      "precision": "day",
+      "what": "Law 2012-017 creates 11 new regions on paper (only Taoudénit and Ménaka set up before 2023)",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/w/index.php?oldid=1376950329",
+          "title": "Taoudénit Region — Wikipedia",
+          "says": "Created by law 2012-017 of 2 March 2012 from the northern part of Timbuktu cercle; implementation began 19 Jan 2016 with the governor's appointment.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?oldid=1378297846",
+          "title": "Ménaka Region — Wikipedia",
+          "says": "Created by law 2012-017 of 2 March 2012 from Ménaka cercle of Gao region; implementation began 19 Jan 2016.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://bamada.net/regions-et-cercles-du-mali-60-ans-de-decoupage",
+          "title": "Régions et cercles du Mali: 60 ans de découpage (Bamada.net)",
+          "says": "Ordinance 77-44/CMLN of 12 July 1977 split Gao into Gao and Tombouctou, created Koulikoro and made Bamako a district; ordinance 91-039 created Kidal.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2016-01-19",
+      "precision": "day",
+      "what": "Governors appointed: Taoudénit (from Tombouctou) and Ménaka (from Gao) regions set up",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/w/index.php?oldid=1376950329",
+          "title": "Taoudénit Region — Wikipedia",
+          "says": "Created by law 2012-017 of 2 March 2012 from the northern part of Timbuktu cercle; implementation began 19 Jan 2016 with the governor's appointment.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?oldid=1378297846",
+          "title": "Ménaka Region — Wikipedia",
+          "says": "Created by law 2012-017 of 2 March 2012 from Ménaka cercle of Gao region; implementation began 19 Jan 2016.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://www.statoids.com/uml.html",
+          "title": "Regions of Mali (Statoids)",
+          "says": "Change list: 1959 six regions; Timbuktu split from Gao; Bamako district, old Bamako region renamed Koulikoro; 1991 Kidal from Gao; 2016-01-19 Taoudenni and Ménaka.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "1978-08-18",
+      "n": 8,
+      "sources": [
+        {
+          "url": "https://bamada.net/regions-et-cercles-du-mali-60-ans-de-decoupage",
+          "title": "Régions et cercles du Mali: 60 ans de découpage (Bamada.net)",
+          "says": "Ordinance 77-44/CMLN of 12 July 1977 split Gao into Gao and Tombouctou, created Koulikoro and made Bamako a district; ordinance 91-039 created Kidal.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://fr.wikipedia.org/w/index.php?oldid=238345529",
+          "title": "Organisation territoriale du Mali — Wikipédia",
+          "says": "Ordinance 77-44 of 12 July 1977 (regions and District of Bamako); ordinance 91-039 of 8 Aug 1991: District plus eight regions; Taoudénit and Ménaka set up 19 Jan 2016.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1992-04-11",
+      "n": 9,
+      "sources": [
+        {
+          "url": "https://fr.wikipedia.org/w/index.php?oldid=238345529",
+          "title": "Organisation territoriale du Mali — Wikipédia",
+          "says": "Ordinance 77-44 of 12 July 1977 (regions and District of Bamako); ordinance 91-039 of 8 Aug 1991: District plus eight regions; Taoudénit and Ménaka set up 19 Jan 2016.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://fr.wikipedia.org/w/index.php?oldid=236773876",
+          "title": "Région de Kidal — Wikipédia",
+          "says": "Ordinance 91-039 of 8 Aug 1991 erected the former Kidal cercle of Gao region into a region; implemented by decree 92-121/P-CTSP of 11 Apr 1992.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Koulikoro region / District of Bamako line 1977-07-12 → 1978-08-18",
+      "unit": "MLI:Koulikoro@1977",
+      "atoms": [
+        "MLI-4860",
+        "MLI-2792"
+      ],
+      "from": "1977-07-12",
+      "to": "1978-08-18",
+      "why": "The District was created by ordinance 77-44 but its limits were fixed by ordinance 78-34 of 18 Aug 1978; whether the 1977-78 line equals the NE line is not established. (District of Bamako, unit MLI:Bamako@1977, also withheld.)",
+      "checked": [
+        "Journal officiel du Mali 2023 n°10 (law 2023-005 art. 103)",
+        "fr.wikipedia Région de Koulikoro oldid 236843188",
+        "bamada.net 60 ans de découpage"
+      ],
+      "needs": "text of ordinance 77-44 annex on the District limits"
+    },
+    {
+      "what": "Gao / Kidal 1991-08-08 → 1992-04-11: which layout was in force",
+      "unit": "MLI:Kidal@1991",
+      "atoms": [
+        "MLI-2690",
+        "MLI-2689"
+      ],
+      "from": "1991-08-08",
+      "to": "1992-04-11",
+      "why": "Kidal region was created by ordinance 91-039 of 8 Aug 1991 but implemented by decree 92-121 of 11 Apr 1992; sources date the eighth region «since 1992». Both layouts are unions of these atoms; the date is not settled. (Gao, unit MLI:Gao@1977, also withheld.)",
+      "checked": [
+        "fr.wikipedia Région de Kidal oldid 236773876",
+        "fr.wikipedia Organisation territoriale du Mali oldid 238345529",
+        "statoids.com/uml.html (gives 1991)"
+      ],
+      "needs": "Journal officiel 1991/1992 text stating the date of effect"
+    },
+    {
+      "what": "Tombouctou and Taoudénit regions 2016-01-19 → 2019-12-31",
+      "unit": "MLI:Tombouctou@1977",
+      "atoms": [
+        "MLI-2688"
+      ],
+      "from": "2016-01-19",
+      "to": null,
+      "why": "Taoudénit was carved from the northern part of Timbuktu cercle; the new line runs inside the NE Timbuktu atom. (Taoudénit, unit MLI:Taoudenit@2016, also withheld.)",
+      "checked": [
+        "en.wikipedia Taoudénit Region oldid 1376950329",
+        "fr.wikipedia Région de Tombouctou oldid 238441597",
+        "statoids.com/uml.html"
+      ],
+      "needs": "cercle/commune atoms with the 2012/2016 lineage (geoBoundaries MLI ADM2 reflects the pre-2016 cercles only; an OCHA COD-AB with Taoudénit cercles, licence to check)"
+    },
+    {
+      "what": "Gao and Ménaka regions 2016-01-19 → 2019-12-31",
+      "unit": "MLI:Gao@1977",
+      "atoms": [
+        "MLI-2690"
+      ],
+      "from": "2016-01-19",
+      "to": null,
+      "why": "Ménaka region = the former Ménaka cercle of Gao; NE has a single Gao atom. Union Gao+Ménaka would equal the atom but neither unit can be drawn alone. (Ménaka, unit MLI:Menaka@2016, also withheld.)",
+      "checked": [
+        "en.wikipedia Ménaka Region oldid 1378297846",
+        "statoids.com/uml.html"
+      ],
+      "needs": "cercle atoms: geoBoundaries MLI ADM2 (CC BY 4.0) carries Ménaka cercle"
+    },
+    {
+      "what": "Mali before 1977-07-12 (six regions 1960-1977)",
+      "from": "1960-06-20",
+      "to": "1977-07-12",
+      "why": "In 1977 Niafunké cercle moved from Mopti to Tombouctou, so pre-1977 Mopti and Gao run through the NE Timbuktu atom; and the old Bamako region = Koulikoro + District only if the District was carved wholly from it (not verified for 1960-77).",
+      "checked": [
+        "fr.wikipedia Région de Tombouctou oldid 238441597",
+        "bamada.net 60 ans de découpage",
+        "statoids.com/uml.html"
+      ],
+      "needs": "cercle atoms (geoBoundaries MLI ADM2, CC BY 4.0) plus a cercle change list 1960-1977"
+    },
+    {
+      "what": "Agacher strip (Mali–Burkina Faso frontier) before 1986-12-22",
+      "from": "1977-07-12",
+      "to": "1986-12-22",
+      "why": "The frontier between Mopti/Gao/Tombouctou and Burkina Faso in the Agacher strip was disputed until the ICJ judgment; the NE outline is the post-judgment line. This is a polity-level outline question; the region atoms are not withheld for it.",
+      "checked": [
+        "general knowledge of ICJ Frontier Dispute (Burkina Faso/Mali) judgment 1986-12-22 — not separately sourced here"
+      ],
+      "needs": "polity outline for the disputed strip (country layer)"
+    }
+  ]
+}

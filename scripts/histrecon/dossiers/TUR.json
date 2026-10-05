@@ -1,0 +1,3669 @@
+{
+ "country": "TUR",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1987-07-04",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Republic of Turkey throughout. Scope starts 04.07.1987 (Law 3392); earlier layouts (63–67 provinces, 1926–1957 changes) are not covered. Village-level transfers decided by laws other than the province/district-creation laws were not exhaustively searched; Laws 5747 (2008), 6360 (2012), 6447 (2013), KHK 694 (2017) and Law 7148 (2018) create districts inside one named province.",
+ "units": [
+  {
+   "id": "TUR:Artvin",
+   "names": {
+    "en": "Artvin Province",
+    "ja": "アルトヴィン県",
+    "local": "Artvin ili"
+   },
+   "wikidata": "Q43745",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2298"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Artvin after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Artvin.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Şırnak",
+   "names": {
+    "en": "Şırnak Province",
+    "ja": "シュルナク県",
+    "local": "Şırnak ili"
+   },
+   "wikidata": "Q647378",
+   "spans": [
+    {
+     "from": "1990-05-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-3044"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20522_1.pdf",
+       "title": "Resmî Gazete 18.05.1990 no. 20522 (mükerrer) — Law 3647",
+       "says": "Creates Batman and Şırnak provinces from Siirt districts plus listed districts; moves two Çukurca (Hakkari) villages to Uludere; in force on publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644",
+       "says": "Law 3644 list 106 creates Güçlükonak from Eruh (Siirt) villages; Güçlükonak lies in Şırnak, so Şırnak’s line is final only from 20.05.1990.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Hakkâri",
+   "names": {
+    "en": "Hakkâri Province",
+    "ja": "ハッキャリ県",
+    "local": "Hakkâri ili"
+   },
+   "wikidata": "Q93209",
+   "spans": [
+    {
+     "from": "1990-05-18",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-3047"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20522_1.pdf",
+       "title": "Resmî Gazete 18.05.1990 no. 20522 (mükerrer) — Law 3647",
+       "says": "Creates Batman and Şırnak provinces from Siirt districts plus listed districts; moves two Çukurca (Hakkari) villages to Uludere; in force on publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Lists province creations 1953–1999 with their parents (e.g. Karabük from Çankırı and Zonguldak, Yalova from İstanbul, Bursa, Kocaeli).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Ağrı",
+   "names": {
+    "en": "Ağrı Province",
+    "ja": "アール県",
+    "local": "Ağrı ili"
+   },
+   "wikidata": "Q80051",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2307"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Ağrı after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Ağrı.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Van",
+   "names": {
+    "en": "Van Province",
+    "ja": "ヴァン県",
+    "local": "Van ili"
+   },
+   "wikidata": "Q80550",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-3048"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Van after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Van.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Kırklareli",
+   "names": {
+    "en": "Kırklareli Province",
+    "ja": "クルクラーレリ県",
+    "local": "Kırklareli ili"
+   },
+   "wikidata": "Q131597",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2241"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Kırklareli after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Kırklareli.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Edirne",
+   "names": {
+    "en": "Edirne Province",
+    "ja": "エディルネ県",
+    "local": "Edirne ili"
+   },
+   "wikidata": "Q83102",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2240"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Edirne after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Edirne.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Kars",
+   "names": {
+    "en": "Kars Province",
+    "ja": "カルス県",
+    "local": "Kars ili"
+   },
+   "wikidata": "Q83077",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": "1992-06-03",
+     "atoms": [
+      "TUR-3040",
+      "TUR-4839",
+      "TUR-4840"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/21247_1.pdf",
+       "title": "Resmî Gazete 03.06.1992 no. 21247 (mükerrer) — Law 3806",
+       "says": "Creates Ardahan and Iğdır provinces from districts of Kars; in force on publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Lists province creations 1953–1999 with their parents (e.g. Karabük from Çankırı and Zonguldak, Yalova from İstanbul, Bursa, Kocaeli).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Parent before the split = this province plus Ardahan and Iğdır, which were formed wholly from its districts; no other territorial change touched it from 04.07.1987 (scope start) to the split."
+    },
+    {
+     "from": "1992-06-03",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-3040"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/21247_1.pdf",
+       "title": "Resmî Gazete 03.06.1992 no. 21247 (mükerrer) — Law 3806",
+       "says": "Creates Ardahan and Iğdır provinces from districts of Kars; in force on publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Mardin",
+   "names": {
+    "en": "Mardin Province",
+    "ja": "マルディン県",
+    "local": "Mardin ili"
+   },
+   "wikidata": "Q131293",
+   "spans": [
+    {
+     "from": "1990-05-18",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-3041"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20522_1.pdf",
+       "title": "Resmî Gazete 18.05.1990 no. 20522 (mükerrer) — Law 3647",
+       "says": "Creates Batman and Şırnak provinces from Siirt districts plus listed districts; moves two Çukurca (Hakkari) villages to Uludere; in force on publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Lists province creations 1953–1999 with their parents (e.g. Karabük from Çankırı and Zonguldak, Yalova from İstanbul, Bursa, Kocaeli).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Şanlıurfa",
+   "names": {
+    "en": "Şanlıurfa Province",
+    "ja": "シャンルウルファ県",
+    "local": "Şanlıurfa ili"
+   },
+   "wikidata": "Q388469",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-3017"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Şanlıurfa after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Şanlıurfa.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Gaziantep",
+   "names": {
+    "en": "Gaziantep Province",
+    "ja": "ガズィアンテプ県",
+    "local": "Gaziantep ili"
+   },
+   "wikidata": "Q483154",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": "1995-06-06",
+     "atoms": [
+      "TUR-3016",
+      "TUR-4841"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/22305.pdf",
+       "title": "Resmî Gazete 06.06.1995 no. 22305 — Decree-law (KHK) 550",
+       "says": "Kilis province created from Gaziantep’s Kilis district (Musabeyli, Polateli, Elbeyli villages from Gaziantep districts).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Lists province creations 1953–1999 with their parents (e.g. Karabük from Çankırı and Zonguldak, Yalova from İstanbul, Bursa, Kocaeli).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Parent before the split = this province plus Kilis, which were formed wholly from its districts; no other territorial change touched it from 04.07.1987 (scope start) to the split."
+    },
+    {
+     "from": "1995-06-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-3016"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/22305.pdf",
+       "title": "Resmî Gazete 06.06.1995 no. 22305 — Decree-law (KHK) 550",
+       "says": "Creates Karabük, Kilis and Yalova provinces; Armutlu (from Bursa’s Gemlik) and Altınova (from Kocaeli’s Karamürsel) join Yalova; in force on publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Hatay",
+   "names": {
+    "en": "Hatay Province",
+    "ja": "ハタイ県",
+    "local": "Hatay ili"
+   },
+   "wikidata": "Q83274",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2289"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Hatay after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Hatay.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:İstanbul",
+   "names": {
+    "en": "İstanbul Province",
+    "ja": "イスタンブール県",
+    "local": "İstanbul ili"
+   },
+   "wikidata": "Q534799",
+   "spans": [
+    {
+     "from": "1995-06-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2265"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/22305.pdf",
+       "title": "Resmî Gazete 06.06.1995 no. 22305 — Decree-law (KHK) 550",
+       "says": "Creates Karabük, Kilis and Yalova provinces; Armutlu (from Bursa’s Gemlik) and Altınova (from Kocaeli’s Karamürsel) join Yalova; in force on publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Lists province creations 1953–1999 with their parents (e.g. Karabük from Çankırı and Zonguldak, Yalova from İstanbul, Bursa, Kocaeli).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Tekirdağ",
+   "names": {
+    "en": "Tekirdağ Province",
+    "ja": "テキルダー県",
+    "local": "Tekirdağ ili"
+   },
+   "wikidata": "Q129387",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2242"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Tekirdağ after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Tekirdağ.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Çanakkale",
+   "names": {
+    "en": "Çanakkale Province",
+    "ja": "チャナッカレ県",
+    "local": "Çanakkale ili"
+   },
+   "wikidata": "Q47813",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2239"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Çanakkale after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Çanakkale.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Rize",
+   "names": {
+    "en": "Rize Province",
+    "ja": "リゼ県",
+    "local": "Rize ili"
+   },
+   "wikidata": "Q483481",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2301"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Rize after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Rize.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Trabzon",
+   "names": {
+    "en": "Trabzon Province",
+    "ja": "トラブゾン県",
+    "local": "Trabzon ili"
+   },
+   "wikidata": "Q388995",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2302"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Trabzon after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Trabzon.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Giresun",
+   "names": {
+    "en": "Giresun Province",
+    "ja": "ギレスン県",
+    "local": "Giresun ili"
+   },
+   "wikidata": "Q482779",
+   "spans": [
+    {
+     "from": "1990-05-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2292"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644",
+       "says": "Law 3644 list 50: two Tirebolu (Giresun) villages are attached to Gümüşhane’s new Kürtün district.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Lists province creations 1953–1999 with their parents (e.g. Karabük from Çankırı and Zonguldak, Yalova from İstanbul, Bursa, Kocaeli).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Ordu",
+   "names": {
+    "en": "Ordu Province",
+    "ja": "オルドゥ県",
+    "local": "Ordu ili"
+   },
+   "wikidata": "Q483180",
+   "spans": [
+    {
+     "from": "1990-05-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2293"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644",
+       "says": "Law 3644 list 96: İkizce (Ordu) receives three villages of Terme district (Samsun).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Lists province creations 1953–1999 with their parents (e.g. Karabük from Çankırı and Zonguldak, Yalova from İstanbul, Bursa, Kocaeli).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Samsun",
+   "names": {
+    "en": "Samsun Province",
+    "ja": "サムスン県",
+    "local": "Samsun ili"
+   },
+   "wikidata": "Q483040",
+   "spans": [
+    {
+     "from": "1990-05-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2296"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644",
+       "says": "Law 3644 list 96: three Terme (Samsun) villages are attached to Ordu’s new İkizce district.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Lists province creations 1953–1999 with their parents (e.g. Karabük from Çankırı and Zonguldak, Yalova from İstanbul, Bursa, Kocaeli).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Sinop",
+   "names": {
+    "en": "Sinop Province",
+    "ja": "スィノプ県",
+    "local": "Sinop ili"
+   },
+   "wikidata": "Q134413",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2294"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Sinop after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Sinop.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Kastamonu",
+   "names": {
+    "en": "Kastamonu Province",
+    "ja": "カスタモヌ県",
+    "local": "Kastamonu ili"
+   },
+   "wikidata": "Q483191",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2270"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Kastamonu after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Kastamonu.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Bartın",
+   "names": {
+    "en": "Bartın Province",
+    "ja": "バルトゥン県",
+    "local": "Bartın ili"
+   },
+   "wikidata": "Q83342",
+   "spans": [
+    {
+     "from": "1991-09-07",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-5521"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20984.pdf",
+       "title": "Resmî Gazete 07.09.1991 no. 20984 — Law 3760",
+       "says": "Creates Bartın province from Zonguldak’s Bartın district with Amasra, Kurucaşile and Ulus; in force on publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://tr.wikipedia.org/w/index.php?title=Kuruca%C5%9File&oldid=37725087",
+       "title": "Vikipedi — Kurucaşile",
+       "says": "Kurucaşile was a district of Zonguldak (law 7033, 1957) and became Bartın’s district in 1991.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Zonguldak",
+   "names": {
+    "en": "Zonguldak Province",
+    "ja": "ゾングルダク県",
+    "local": "Zonguldak ili"
+   },
+   "wikidata": "Q219956",
+   "spans": [
+    {
+     "from": "1995-06-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-3010"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/22305.pdf",
+       "title": "Resmî Gazete 06.06.1995 no. 22305 — Decree-law (KHK) 550",
+       "says": "Creates Karabük, Kilis and Yalova provinces; Armutlu (from Bursa’s Gemlik) and Altınova (from Kocaeli’s Karamürsel) join Yalova; in force on publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://tr.wikipedia.org/w/index.php?title=Eflani&oldid=37837650",
+       "title": "Vikipedi — Eflani",
+       "says": "Eflani belonged to Zonguldak from 1927 and passed to Karabük when Karabük became a province in 1995.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Sakarya",
+   "names": {
+    "en": "Sakarya Province",
+    "ja": "サカリヤ県",
+    "local": "Sakarya ili"
+   },
+   "wikidata": "Q83069",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2267"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Sakarya after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Sakarya.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Kocaeli",
+   "names": {
+    "en": "Kocaeli Province",
+    "ja": "コジャエリ県",
+    "local": "Kocaeli ili"
+   },
+   "wikidata": "Q83965",
+   "spans": [
+    {
+     "from": "1995-06-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2266"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/22305.pdf",
+       "title": "Resmî Gazete 06.06.1995 no. 22305 — Decree-law (KHK) 550",
+       "says": "Creates Karabük, Kilis and Yalova provinces; Armutlu (from Bursa’s Gemlik) and Altınova (from Kocaeli’s Karamürsel) join Yalova; in force on publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Lists province creations 1953–1999 with their parents (e.g. Karabük from Çankırı and Zonguldak, Yalova from İstanbul, Bursa, Kocaeli).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Yalova",
+   "names": {
+    "en": "Yalova Province",
+    "ja": "ヤロヴァ県",
+    "local": "Yalova ili"
+   },
+   "wikidata": "Q483083",
+   "spans": [
+    {
+     "from": "1995-06-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-5518"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/22305.pdf",
+       "title": "Resmî Gazete 06.06.1995 no. 22305 — Decree-law (KHK) 550",
+       "says": "Creates Karabük, Kilis and Yalova provinces; Armutlu (from Bursa’s Gemlik) and Altınova (from Kocaeli’s Karamürsel) join Yalova; in force on publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Lists province creations 1953–1999 with their parents (e.g. Karabük from Çankırı and Zonguldak, Yalova from İstanbul, Bursa, Kocaeli).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Bursa",
+   "names": {
+    "en": "Bursa Province",
+    "ja": "ブルサ県",
+    "local": "Bursa ili"
+   },
+   "wikidata": "Q43690",
+   "spans": [
+    {
+     "from": "1995-06-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2264"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/22305.pdf",
+       "title": "Resmî Gazete 06.06.1995 no. 22305 — Decree-law (KHK) 550",
+       "says": "Creates Karabük, Kilis and Yalova provinces; Armutlu (from Bursa’s Gemlik) and Altınova (from Kocaeli’s Karamürsel) join Yalova; in force on publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Lists province creations 1953–1999 with their parents (e.g. Karabük from Çankırı and Zonguldak, Yalova from İstanbul, Bursa, Kocaeli).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Balıkesir",
+   "names": {
+    "en": "Balıkesir Province",
+    "ja": "バルケスィル県",
+    "local": "Balıkesir ili"
+   },
+   "wikidata": "Q47117",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2238"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Balıkesir after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Balıkesir.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:İzmir",
+   "names": {
+    "en": "İzmir Province",
+    "ja": "イズミル県",
+    "local": "İzmir ili"
+   },
+   "wikidata": "Q344490",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2230"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving İzmir after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of İzmir.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Aydın",
+   "names": {
+    "en": "Aydın Province",
+    "ja": "アイドゥン県",
+    "local": "Aydın ili"
+   },
+   "wikidata": "Q79846",
+   "spans": [
+    {
+     "from": "1990-05-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2229"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644",
+       "says": "Law 3644 list 17: Yenihisar (Aydın) receives Akbük village of Milas district (Muğla).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Lists province creations 1953–1999 with their parents (e.g. Karabük from Çankırı and Zonguldak, Yalova from İstanbul, Bursa, Kocaeli).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Muğla",
+   "names": {
+    "en": "Muğla Province",
+    "ja": "ムーラ県",
+    "local": "Muğla ili"
+   },
+   "wikidata": "Q123934",
+   "spans": [
+    {
+     "from": "1990-05-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2278"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644",
+       "says": "Law 3644 list 17: Akbük village of Milas (Muğla) is attached to Aydın’s new Yenihisar district.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Lists province creations 1953–1999 with their parents (e.g. Karabük from Çankırı and Zonguldak, Yalova from İstanbul, Bursa, Kocaeli).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Antalya",
+   "names": {
+    "en": "Antalya Province",
+    "ja": "アンタルヤ県",
+    "local": "Antalya ili"
+   },
+   "wikidata": "Q40249",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2271"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Antalya after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Antalya.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Mersin",
+   "names": {
+    "en": "Mersin Province",
+    "ja": "メルスィン県",
+    "local": "Mersin ili"
+   },
+   "wikidata": "Q132637",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2285"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Mersin after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Mersin.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Adana",
+   "names": {
+    "en": "Adana Province",
+    "ja": "アダナ県",
+    "local": "Adana ili"
+   },
+   "wikidata": "Q40549",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": "1996-10-28",
+     "atoms": [
+      "TUR-3018",
+      "TUR-4842"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/22801.pdf",
+       "title": "Resmî Gazete 28.10.1996 no. 22801 — Law 4200",
+       "says": "Creates Osmaniye province; all its listed districts and villages (Osmaniye, Kadirli, Bahçe, Düziçi) were Adana’s; in force on publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Lists province creations 1953–1999 with their parents (e.g. Karabük from Çankırı and Zonguldak, Yalova from İstanbul, Bursa, Kocaeli).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Parent before the split = this province plus Osmaniye, which were formed wholly from its districts; no other territorial change touched it from 04.07.1987 (scope start) to the split."
+    },
+    {
+     "from": "1996-10-28",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-3018"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/22801.pdf",
+       "title": "Resmî Gazete 28.10.1996 no. 22801 — Law 4200",
+       "says": "Creates Osmaniye province; all its listed districts and villages (Osmaniye, Kadirli, Bahçe, Düziçi) were Adana’s; in force on publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Bolu",
+   "names": {
+    "en": "Bolu Province",
+    "ja": "ボル県",
+    "local": "Bolu ili"
+   },
+   "wikidata": "Q82089",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": "1999-12-09",
+     "atoms": [
+      "TUR-2268",
+      "TUR-5519"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/23901.pdf",
+       "title": "Resmî Gazete 09.12.1999 no. 23901 — Decree-law (KHK) 584",
+       "says": "Creates Düzce province from Bolu’s Düzce district and the listed districts of Bolu.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Lists province creations 1953–1999 with their parents (e.g. Karabük from Çankırı and Zonguldak, Yalova from İstanbul, Bursa, Kocaeli).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Parent before the split = this province plus Düzce, which were formed wholly from its districts; no other territorial change touched it from 04.07.1987 (scope start) to the split."
+    },
+    {
+     "from": "1999-12-09",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2268"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/23901.pdf",
+       "title": "Resmî Gazete 09.12.1999 no. 23901 — Decree-law (KHK) 584",
+       "says": "Creates Düzce province from Bolu’s Düzce district and the listed districts of Bolu.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Ankara",
+   "names": {
+    "en": "Ankara Province",
+    "ja": "アンカラ県",
+    "local": "Ankara ili"
+   },
+   "wikidata": "Q2297724",
+   "spans": [
+    {
+     "from": "1990-05-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-3008"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20202.pdf",
+       "title": "Resmî Gazete 21.06.1989 no. 20202 — Law 3578 (4 provinces, 5 districts)",
+       "says": "Creates Kırıkkale (from Ankara), Aksaray (from Niğde, plus Ağaçören and Sarıyahşi formed from Ankara villages), Bayburt (Gümüşhane), Karaman (Konya); in force on publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644",
+       "says": "Law 3644 list 69: three Bala (Ankara) villages are attached to Kırıkkale’s new Karakeçili district.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Bilecik",
+   "names": {
+    "en": "Bilecik Province",
+    "ja": "ビレジク県",
+    "local": "Bilecik ili"
+   },
+   "wikidata": "Q46763",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2263"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Bilecik after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Bilecik.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Eskişehir",
+   "names": {
+    "en": "Eskişehir Province",
+    "ja": "エスキシェヒル県",
+    "local": "Eskişehir ili"
+   },
+   "wikidata": "Q483053",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2269"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Eskişehir after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Eskişehir.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Çankırı",
+   "names": {
+    "en": "Çankırı Province",
+    "ja": "チャンクル県",
+    "local": "Çankırı ili"
+   },
+   "wikidata": "Q272662",
+   "spans": [
+    {
+     "from": "1995-06-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-3009"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/22305.pdf",
+       "title": "Resmî Gazete 06.06.1995 no. 22305 — Decree-law (KHK) 550",
+       "says": "Creates Karabük, Kilis and Yalova provinces; Armutlu (from Bursa’s Gemlik) and Altınova (from Kocaeli’s Karamürsel) join Yalova; in force on publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Lists province creations 1953–1999 with their parents (e.g. Karabük from Çankırı and Zonguldak, Yalova from İstanbul, Bursa, Kocaeli).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Karabük",
+   "names": {
+    "en": "Karabük Province",
+    "ja": "カラビュック県",
+    "local": "Karabük ili"
+   },
+   "wikidata": "Q483168",
+   "spans": [
+    {
+     "from": "1995-06-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-5520"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/22305.pdf",
+       "title": "Resmî Gazete 06.06.1995 no. 22305 — Decree-law (KHK) 550",
+       "says": "Creates Karabük, Kilis and Yalova provinces; Armutlu (from Bursa’s Gemlik) and Altınova (from Kocaeli’s Karamürsel) join Yalova; in force on publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://tr.wikipedia.org/w/index.php?title=Eflani&oldid=37837650",
+       "title": "Vikipedi — Eflani",
+       "says": "Eflani belonged to Zonguldak from 1927 and passed to Karabük when Karabük became a province in 1995.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Tokat",
+   "names": {
+    "en": "Tokat Province",
+    "ja": "トカト県",
+    "local": "Tokat ili"
+   },
+   "wikidata": "Q483195",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2297"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Tokat after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Tokat.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Sivas",
+   "names": {
+    "en": "Sivas Province",
+    "ja": "スィヴァス県",
+    "local": "Sivas ili"
+   },
+   "wikidata": "Q483100",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2295"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Sivas after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Sivas.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Çorum",
+   "names": {
+    "en": "Çorum Province",
+    "ja": "チョルム県",
+    "local": "Çorum ili"
+   },
+   "wikidata": "Q272947",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2291"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Çorum after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Çorum.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Amasya",
+   "names": {
+    "en": "Amasya Province",
+    "ja": "アマスィヤ県",
+    "local": "Amasya ili"
+   },
+   "wikidata": "Q80036",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2290"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Amasya after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Amasya.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Kütahya",
+   "names": {
+    "en": "Kütahya Province",
+    "ja": "キュタヒヤ県",
+    "local": "Kütahya ili"
+   },
+   "wikidata": "Q126874",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2276"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Kütahya after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Kütahya.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Konya",
+   "names": {
+    "en": "Konya Province",
+    "ja": "コンヤ県",
+    "local": "Konya ili"
+   },
+   "wikidata": "Q81551",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": "1989-06-21",
+     "atoms": [
+      "TUR-3011",
+      "TUR-3012"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20202.pdf",
+       "title": "Resmî Gazete 21.06.1989 no. 20202 — Law 3578 (4 provinces, 5 districts)",
+       "says": "Creates Kırıkkale (from Ankara), Aksaray (from Niğde, plus Ağaçören and Sarıyahşi formed from Ankara villages), Bayburt (Gümüşhane), Karaman (Konya); in force on publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Lists province creations 1953–1999 with their parents (e.g. Karabük from Çankırı and Zonguldak, Yalova from İstanbul, Bursa, Kocaeli).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Parent before the split = this province plus Karaman, which were formed wholly from its districts; no other territorial change touched it from 04.07.1987 (scope start) to the split."
+    },
+    {
+     "from": "1989-06-21",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-3011"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20202.pdf",
+       "title": "Resmî Gazete 21.06.1989 no. 20202 — Law 3578 (4 provinces, 5 districts)",
+       "says": "Creates Kırıkkale (from Ankara), Aksaray (from Niğde, plus Ağaçören and Sarıyahşi formed from Ankara villages), Bayburt (Gümüşhane), Karaman (Konya); in force on publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Niğde",
+   "names": {
+    "en": "Niğde Province",
+    "ja": "ニーデ県",
+    "local": "Niğde ili"
+   },
+   "wikidata": "Q155219",
+   "spans": [
+    {
+     "from": "1989-06-21",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-3020"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20202.pdf",
+       "title": "Resmî Gazete 21.06.1989 no. 20202 — Law 3578 (4 provinces, 5 districts)",
+       "says": "Creates Kırıkkale (from Ankara), Aksaray (from Niğde, plus Ağaçören and Sarıyahşi formed from Ankara villages), Bayburt (Gümüşhane), Karaman (Konya); in force on publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Kayseri",
+   "names": {
+    "en": "Kayseri Province",
+    "ja": "カイセリ県",
+    "local": "Kayseri ili"
+   },
+   "wikidata": "Q483472",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2287"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Kayseri after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Kayseri.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Isparta",
+   "names": {
+    "en": "Isparta Province",
+    "ja": "ウスパルタ県",
+    "local": "Isparta ili"
+   },
+   "wikidata": "Q268043",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2275"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Isparta after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Isparta.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Manisa",
+   "names": {
+    "en": "Manisa Province",
+    "ja": "マニサ県",
+    "local": "Manisa ili"
+   },
+   "wikidata": "Q130553",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2277"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Manisa after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Manisa.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Denizli",
+   "names": {
+    "en": "Denizli Province",
+    "ja": "デニズリ県",
+    "local": "Denizli ili"
+   },
+   "wikidata": "Q82096",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2274"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Denizli after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Denizli.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Burdur",
+   "names": {
+    "en": "Burdur Province",
+    "ja": "ブルドゥル県",
+    "local": "Burdur ili"
+   },
+   "wikidata": "Q80088",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2273"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Burdur after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Burdur.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Aksaray",
+   "names": {
+    "en": "Aksaray Province",
+    "ja": "アクサライ県",
+    "local": "Aksaray ili"
+   },
+   "wikidata": "Q83073",
+   "spans": [
+    {
+     "from": "1989-06-21",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-3021"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20202.pdf",
+       "title": "Resmî Gazete 21.06.1989 no. 20202 — Law 3578 (4 provinces, 5 districts)",
+       "says": "Creates Kırıkkale (from Ankara), Aksaray (from Niğde, plus Ağaçören and Sarıyahşi formed from Ankara villages), Bayburt (Gümüşhane), Karaman (Konya); in force on publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Nevşehir",
+   "names": {
+    "en": "Nevşehir Province",
+    "ja": "ネヴシェヒル県",
+    "local": "Nevşehir ili"
+   },
+   "wikidata": "Q430693",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2288"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Nevşehir after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Nevşehir.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Yozgat",
+   "names": {
+    "en": "Yozgat Province",
+    "ja": "ヨズガト県",
+    "local": "Yozgat ili"
+   },
+   "wikidata": "Q75445",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-3026"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Yozgat after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Yozgat.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Kırşehir",
+   "names": {
+    "en": "Kırşehir Province",
+    "ja": "クルシェヒル県",
+    "local": "Kırşehir ili"
+   },
+   "wikidata": "Q134187",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2286"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Kırşehir after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Kırşehir.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Uşak",
+   "names": {
+    "en": "Uşak Province",
+    "ja": "ウシャク県",
+    "local": "Uşak ili"
+   },
+   "wikidata": "Q483078",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-3014"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Uşak after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Uşak.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Erzincan",
+   "names": {
+    "en": "Erzincan Province",
+    "ja": "エルズィンジャン県",
+    "local": "Erzincan ili"
+   },
+   "wikidata": "Q483173",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2300"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Erzincan after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Erzincan.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Tunceli",
+   "names": {
+    "en": "Tunceli Province",
+    "ja": "トゥンジェリ県",
+    "local": "Tunceli ili"
+   },
+   "wikidata": "Q620742",
+   "spans": [
+    {
+     "from": "1990-05-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-3045"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644",
+       "says": "Law 3644 list 20: villages of Pülümür (Tunceli) are attached to Bingöl’s new Yedisu district.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Lists province creations 1953–1999 with their parents (e.g. Karabük from Çankırı and Zonguldak, Yalova from İstanbul, Bursa, Kocaeli).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Afyonkarahisar",
+   "names": {
+    "en": "Afyonkarahisar Province",
+    "ja": "アフィヨンカラヒサール県",
+    "local": "Afyonkarahisar ili"
+   },
+   "wikidata": "Q45220",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2272"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Afyonkarahisar after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Afyonkarahisar.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Kırıkkale",
+   "names": {
+    "en": "Kırıkkale Province",
+    "ja": "クルッカレ県",
+    "local": "Kırıkkale ili"
+   },
+   "wikidata": "Q484392",
+   "spans": [
+    {
+     "from": "1990-05-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-3019"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20202.pdf",
+       "title": "Resmî Gazete 21.06.1989 no. 20202 — Law 3578 (4 provinces, 5 districts)",
+       "says": "Creates Kırıkkale (from Ankara), Aksaray (from Niğde, plus Ağaçören and Sarıyahşi formed from Ankara villages), Bayburt (Gümüşhane), Karaman (Konya); in force on publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644",
+       "says": "Law 3644 list 69: Karakeçili (Kırıkkale) receives three villages of Bala district (Ankara).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Kahramanmaraş",
+   "names": {
+    "en": "Kahramanmaraş Province",
+    "ja": "カフラマンマラシュ県",
+    "local": "Kahramanmaraş ili"
+   },
+   "wikidata": "Q482834",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2283"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Kahramanmaraş after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Kahramanmaraş.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Muş",
+   "names": {
+    "en": "Muş Province",
+    "ja": "ムシュ県",
+    "local": "Muş ili"
+   },
+   "wikidata": "Q131387",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2310"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Muş after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Muş.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Erzurum",
+   "names": {
+    "en": "Erzurum Province",
+    "ja": "エルズルム県",
+    "local": "Erzurum ili"
+   },
+   "wikidata": "Q376797",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2299"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Erzurum after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Erzurum.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Malatya",
+   "names": {
+    "en": "Malatya Province",
+    "ja": "マラティヤ県",
+    "local": "Malatya ili"
+   },
+   "wikidata": "Q131384",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2284"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Malatya after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Malatya.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Elazığ",
+   "names": {
+    "en": "Elazığ Province",
+    "ja": "エラズー県",
+    "local": "Elazığ ili"
+   },
+   "wikidata": "Q483091",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2282"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Elazığ after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Elazığ.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Bitlis",
+   "names": {
+    "en": "Bitlis Province",
+    "ja": "ビトリス県",
+    "local": "Bitlis ili"
+   },
+   "wikidata": "Q83239",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2311"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Bitlis after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Bitlis.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Bingöl",
+   "names": {
+    "en": "Bingöl Province",
+    "ja": "ビンギョル県",
+    "local": "Bingöl ili"
+   },
+   "wikidata": "Q79760",
+   "spans": [
+    {
+     "from": "1990-05-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2308"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644",
+       "says": "Law 3644 list 20: Yedisu (Bingöl) receives villages of Pülümür district (Tunceli).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Lists province creations 1953–1999 with their parents (e.g. Karabük from Çankırı and Zonguldak, Yalova from İstanbul, Bursa, Kocaeli).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Adıyaman",
+   "names": {
+    "en": "Adıyaman Province",
+    "ja": "アドゥヤマン県",
+    "local": "Adıyaman ili"
+   },
+   "wikidata": "Q43924",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2281"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Adıyaman after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Adıyaman.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Diyarbakır",
+   "names": {
+    "en": "Diyarbakır Province",
+    "ja": "ディヤルバクル県",
+    "local": "Diyarbakır ili"
+   },
+   "wikidata": "Q83081",
+   "spans": [
+    {
+     "from": "1987-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-2309"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Change list names no creation, split or transfer involving Diyarbakır after 1957.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+       "says": "None of the 130 village lists of Law 3644 (1990) moves villages into or out of Diyarbakır.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Batman",
+   "names": {
+    "en": "Batman Province",
+    "ja": "バトマン県",
+    "local": "Batman ili"
+   },
+   "wikidata": "Q80370",
+   "spans": [
+    {
+     "from": "1990-05-18",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-3042"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20522_1.pdf",
+       "title": "Resmî Gazete 18.05.1990 no. 20522 (mükerrer) — Law 3647",
+       "says": "Creates Batman and Şırnak provinces from Siirt districts plus listed districts; moves two Çukurca (Hakkari) villages to Uludere; in force on publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Siirt",
+   "names": {
+    "en": "Siirt Province",
+    "ja": "スィイルト県",
+    "local": "Siirt ili"
+   },
+   "wikidata": "Q482825",
+   "spans": [
+    {
+     "from": "1990-05-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-3043"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20522_1.pdf",
+       "title": "Resmî Gazete 18.05.1990 no. 20522 (mükerrer) — Law 3647",
+       "says": "Creates Batman and Şırnak provinces from Siirt districts plus listed districts; moves two Çukurca (Hakkari) villages to Uludere; in force on publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644",
+       "says": "Law 3644 list 106 creates Güçlükonak from Eruh (Siirt) villages; Güçlükonak lies in Şırnak, so Siirt’s line is final only from 20.05.1990.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Bayburt",
+   "names": {
+    "en": "Bayburt Province",
+    "ja": "バイブルト県",
+    "local": "Bayburt ili"
+   },
+   "wikidata": "Q483063",
+   "spans": [
+    {
+     "from": "1989-06-21",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-3032"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20202.pdf",
+       "title": "Resmî Gazete 21.06.1989 no. 20202 — Law 3578 (4 provinces, 5 districts)",
+       "says": "Creates Kırıkkale (from Ankara), Aksaray (from Niğde, plus Ağaçören and Sarıyahşi formed from Ankara villages), Bayburt (Gümüşhane), Karaman (Konya); in force on publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Gümüşhane",
+   "names": {
+    "en": "Gümüşhane Province",
+    "ja": "ギュミュシュハーネ県",
+    "local": "Gümüşhane ili"
+   },
+   "wikidata": "Q482788",
+   "spans": [
+    {
+     "from": "1990-05-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-3031"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20202.pdf",
+       "title": "Resmî Gazete 21.06.1989 no. 20202 — Law 3578 (4 provinces, 5 districts)",
+       "says": "Creates Kırıkkale (from Ankara), Aksaray (from Niğde, plus Ağaçören and Sarıyahşi formed from Ankara villages), Bayburt (Gümüşhane), Karaman (Konya); in force on publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+       "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644",
+       "says": "Law 3644 list 50: Kürtün (Gümüşhane) receives Günyüzü and Güvenlik villages of Tirebolu (Giresun).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Kilis",
+   "names": {
+    "en": "Kilis Province",
+    "ja": "キリス県",
+    "local": "Kilis ili"
+   },
+   "wikidata": "Q128978",
+   "spans": [
+    {
+     "from": "1995-06-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-4841"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/22305.pdf",
+       "title": "Resmî Gazete 06.06.1995 no. 22305 — Decree-law (KHK) 550",
+       "says": "Creates Karabük, Kilis and Yalova provinces; Armutlu (from Bursa’s Gemlik) and Altınova (from Kocaeli’s Karamürsel) join Yalova; in force on publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Osmaniye",
+   "names": {
+    "en": "Osmaniye Province",
+    "ja": "オスマニエ県",
+    "local": "Osmaniye ili"
+   },
+   "wikidata": "Q281206",
+   "spans": [
+    {
+     "from": "1996-10-28",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-4842"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/22801.pdf",
+       "title": "Resmî Gazete 28.10.1996 no. 22801 — Law 4200",
+       "says": "Creates Osmaniye province; all its listed districts and villages (Osmaniye, Kadirli, Bahçe, Düziçi) were Adana’s; in force on publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Karaman",
+   "names": {
+    "en": "Karaman Province",
+    "ja": "カラマン県",
+    "local": "Karaman ili"
+   },
+   "wikidata": "Q482975",
+   "spans": [
+    {
+     "from": "1989-06-21",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-3012"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/20202.pdf",
+       "title": "Resmî Gazete 21.06.1989 no. 20202 — Law 3578 (4 provinces, 5 districts)",
+       "says": "Creates Kırıkkale (from Ankara), Aksaray (from Niğde, plus Ağaçören and Sarıyahşi formed from Ankara villages), Bayburt (Gümüşhane), Karaman (Konya); in force on publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Ardahan",
+   "names": {
+    "en": "Ardahan Province",
+    "ja": "アルダハン県",
+    "local": "Ardahan ili"
+   },
+   "wikidata": "Q79840",
+   "spans": [
+    {
+     "from": "1992-06-03",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-4839"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/21247_1.pdf",
+       "title": "Resmî Gazete 03.06.1992 no. 21247 (mükerrer) — Law 3806",
+       "says": "Creates Ardahan and Iğdır provinces from districts of Kars; in force on publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Iğdır",
+   "names": {
+    "en": "Iğdır Province",
+    "ja": "ウードゥル県",
+    "local": "Iğdır ili"
+   },
+   "wikidata": "Q125506",
+   "spans": [
+    {
+     "from": "1992-06-03",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-4840"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/21247_1.pdf",
+       "title": "Resmî Gazete 03.06.1992 no. 21247 (mükerrer) — Law 3806",
+       "says": "Creates Ardahan and Iğdır provinces from districts of Kars; in force on publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TUR:Düzce",
+   "names": {
+    "en": "Düzce Province",
+    "ja": "デュズジェ県",
+    "local": "Düzce ili"
+   },
+   "wikidata": "Q432391",
+   "spans": [
+    {
+     "from": "1999-12-09",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TUR-5519"
+     ],
+     "sources": [
+      {
+       "url": "https://www.resmigazete.gov.tr/arsiv/23901.pdf",
+       "title": "Resmî Gazete 09.12.1999 no. 23901 — Decree-law (KHK) 584",
+       "says": "Creates Düzce province from Bolu’s Düzce district and the listed districts of Bolu.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icisleri.gov.tr/illeridaresi/il-ve-ilce-kurulus-tarihleri",
+       "title": "İçişleri Bakanlığı — İl ve ilçe kuruluş tarihleri",
+       "says": "Gives every province and district its founding date, founding law number and Official Gazette date/number.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1989-06-21",
+   "precision": "day",
+   "what": "Law 3578: Kırıkkale, Aksaray, Bayburt, Karaman provinces created",
+   "sources": [
+    {
+     "url": "https://www.resmigazete.gov.tr/arsiv/20202.pdf",
+     "title": "Resmî Gazete 21.06.1989 no. 20202 — Law 3578 (4 provinces, 5 districts)",
+     "says": "Creates Kırıkkale (from Ankara), Aksaray (from Niğde, plus Ağaçören and Sarıyahşi formed from Ankara villages), Bayburt (Gümüşhane), Karaman (Konya); in force on publication.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1990-05-18",
+   "precision": "day",
+   "what": "Law 3647: Batman and Şırnak provinces created",
+   "sources": [
+    {
+     "url": "https://www.resmigazete.gov.tr/arsiv/20522_1.pdf",
+     "title": "Resmî Gazete 18.05.1990 no. 20522 (mükerrer) — Law 3647",
+     "says": "Creates Batman and Şırnak provinces from Siirt districts plus listed districts; moves two Çukurca (Hakkari) villages to Uludere; in force on publication.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1990-05-20",
+   "precision": "day",
+   "what": "Law 3644: 130 districts; villages moved Tunceli→Bingöl, Ankara→Kırıkkale, Giresun→Gümüşhane, Samsun→Ordu, Muğla→Aydın",
+   "sources": [
+    {
+     "url": "https://www.resmigazete.gov.tr/arsiv/20523.pdf",
+     "title": "Resmî Gazete 20.05.1990 no. 20523 — Law 3644 (130 districts)",
+     "says": "Creates 130 districts, in force on publication; some annexed village lists cross province lines (see per-unit notes).",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1991-09-07",
+   "precision": "day",
+   "what": "Law 3760: Bartın province created from Zonguldak",
+   "sources": [
+    {
+     "url": "https://www.resmigazete.gov.tr/arsiv/20984.pdf",
+     "title": "Resmî Gazete 07.09.1991 no. 20984 — Law 3760",
+     "says": "Creates Bartın province from Zonguldak’s Bartın district with Amasra, Kurucaşile and Ulus; in force on publication.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1992-06-03",
+   "precision": "day",
+   "what": "Law 3806: Ardahan and Iğdır created from Kars",
+   "sources": [
+    {
+     "url": "https://www.resmigazete.gov.tr/arsiv/21247_1.pdf",
+     "title": "Resmî Gazete 03.06.1992 no. 21247 (mükerrer) — Law 3806",
+     "says": "Creates Ardahan and Iğdır provinces from districts of Kars; in force on publication.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1995-06-06",
+   "precision": "day",
+   "what": "KHK 550: Karabük, Kilis, Yalova created",
+   "sources": [
+    {
+     "url": "https://www.resmigazete.gov.tr/arsiv/22305.pdf",
+     "title": "Resmî Gazete 06.06.1995 no. 22305 — Decree-law (KHK) 550",
+     "says": "Creates Karabük, Kilis and Yalova provinces; Armutlu (from Bursa’s Gemlik) and Altınova (from Kocaeli’s Karamürsel) join Yalova; in force on publication.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1996-10-28",
+   "precision": "day",
+   "what": "Law 4200: Osmaniye created from Adana",
+   "sources": [
+    {
+     "url": "https://www.resmigazete.gov.tr/arsiv/22801.pdf",
+     "title": "Resmî Gazete 28.10.1996 no. 22801 — Law 4200",
+     "says": "Creates Osmaniye province; all its listed districts and villages (Osmaniye, Kadirli, Bahçe, Düziçi) were Adana’s; in force on publication.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1999-12-09",
+   "precision": "day",
+   "what": "KHK 584: Düzce created from Bolu",
+   "sources": [
+    {
+     "url": "https://www.resmigazete.gov.tr/arsiv/23901.pdf",
+     "title": "Resmî Gazete 09.12.1999 no. 23901 — Decree-law (KHK) 584",
+     "says": "Creates Düzce province from Bolu’s Düzce district and the listed districts of Bolu.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1987-07-04",
+   "n": 67,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/utr.html",
+     "title": "Statoids — Provinces of Turkey, change history",
+     "says": "Turkey had 67 provinces from 1957 until the 1989 creations.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1989-06-21",
+   "n": 71,
+   "sources": [
+    {
+     "url": "https://www.resmigazete.gov.tr/arsiv/20202.pdf",
+     "title": "Resmî Gazete 21.06.1989 no. 20202 — Law 3578 (4 provinces, 5 districts)",
+     "says": "Creates Kırıkkale (from Ankara), Aksaray (from Niğde, plus Ağaçören and Sarıyahşi formed from Ankara villages), Bayburt (Gümüşhane), Karaman (Konya); in force on publication.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1990-05-20",
+   "n": 73,
+   "sources": [
+    {
+     "url": "https://www.resmigazete.gov.tr/arsiv/20522_1.pdf",
+     "title": "Resmî Gazete 18.05.1990 no. 20522 (mükerrer) — Law 3647",
+     "says": "Creates Batman and Şırnak provinces from Siirt districts plus listed districts; moves two Çukurca (Hakkari) villages to Uludere; in force on publication.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1991-09-07",
+   "n": 74,
+   "sources": [
+    {
+     "url": "https://www.resmigazete.gov.tr/arsiv/20984.pdf",
+     "title": "Resmî Gazete 07.09.1991 no. 20984 — Law 3760",
+     "says": "Creates Bartın province from Zonguldak’s Bartın district with Amasra, Kurucaşile and Ulus; in force on publication.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1992-06-03",
+   "n": 76,
+   "sources": [
+    {
+     "url": "https://www.resmigazete.gov.tr/arsiv/21247_1.pdf",
+     "title": "Resmî Gazete 03.06.1992 no. 21247 (mükerrer) — Law 3806",
+     "says": "Creates Ardahan and Iğdır provinces from districts of Kars; in force on publication.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1995-06-06",
+   "n": 79,
+   "sources": [
+    {
+     "url": "https://www.resmigazete.gov.tr/arsiv/22305.pdf",
+     "title": "Resmî Gazete 06.06.1995 no. 22305 — Decree-law (KHK) 550",
+     "says": "Creates Karabük, Kilis and Yalova provinces; Armutlu (from Bursa’s Gemlik) and Altınova (from Kocaeli’s Karamürsel) join Yalova; in force on publication.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1996-10-28",
+   "n": 80,
+   "sources": [
+    {
+     "url": "https://www.resmigazete.gov.tr/arsiv/22801.pdf",
+     "title": "Resmî Gazete 28.10.1996 no. 22801 — Law 4200",
+     "says": "Creates Osmaniye province; all its listed districts and villages (Osmaniye, Kadirli, Bahçe, Düziçi) were Adana’s; in force on publication.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1999-12-09",
+   "n": 81,
+   "sources": [
+    {
+     "url": "https://www.resmigazete.gov.tr/arsiv/23901.pdf",
+     "title": "Resmî Gazete 09.12.1999 no. 23901 — Decree-law (KHK) 584",
+     "says": "Creates Düzce province from Bolu’s Düzce district and the listed districts of Bolu.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Ankara and Niğde before Law 3578",
+   "unit": "TUR:Ankara",
+   "atoms": [
+    "TUR-3008",
+    "TUR-3019",
+    "TUR-3021"
+   ],
+   "from": "1987-07-04",
+   "to": "1989-06-21",
+   "why": "Aksaray province (1989) took districts of Niğde AND the new Ağaçören and Sarıyahşi districts formed from Şereflikoçhisar (Ankara) villages, so neither parent is a union of modern provinces. Aksaray atom listed here although part of it was Niğde’s.",
+   "checked": [
+    "statoids.com/utr.html",
+    "İçişleri Bakanlığı il/ilçe kuruluş tarihleri (2018/2019 list)",
+    "Resmî Gazete texts of Laws 3392, 3578, 3644, 3647, 3760, 3806, 4200 and KHK 550, 584 with their village lists"
+   ],
+   "needs": "finer atoms: Turkish district (ilçe) or village boundaries, e.g. geoBoundaries TUR ADM2 (ODbL) plus village-level lines for the moved villages"
+  },
+  {
+   "what": "Niğde before Law 3578",
+   "unit": "TUR:Niğde",
+   "atoms": [
+    "TUR-3020"
+   ],
+   "from": "1987-07-04",
+   "to": "1989-06-21",
+   "why": "Niğde’s pre-1989 territory includes the Niğde part of the modern Aksaray atom, which also holds former Ankara villages.",
+   "checked": [
+    "statoids.com/utr.html",
+    "İçişleri Bakanlığı il/ilçe kuruluş tarihleri (2018/2019 list)",
+    "Resmî Gazete texts of Laws 3392, 3578, 3644, 3647, 3760, 3806, 4200 and KHK 550, 584 with their village lists"
+   ],
+   "needs": "finer atoms: Turkish district (ilçe) or village boundaries, e.g. geoBoundaries TUR ADM2 (ODbL) plus village-level lines for the moved villages"
+  },
+  {
+   "what": "Ankara and Kırıkkale 1989–1990",
+   "unit": "TUR:Ankara",
+   "atoms": [
+    "TUR-3008"
+   ],
+   "from": "1989-06-21",
+   "to": "1990-05-20",
+   "why": "Law 3644 list 69: three Bala (Ankara) villages are attached to Kırıkkale’s new Karakeçili district. The modern line exists only from 20.05.1990.",
+   "checked": [
+    "statoids.com/utr.html",
+    "İçişleri Bakanlığı il/ilçe kuruluş tarihleri (2018/2019 list)",
+    "Resmî Gazete texts of Laws 3392, 3578, 3644, 3647, 3760, 3806, 4200 and KHK 550, 584 with their village lists"
+   ],
+   "needs": "finer atoms: Turkish district (ilçe) or village boundaries, e.g. geoBoundaries TUR ADM2 (ODbL) plus village-level lines for the moved villages"
+  },
+  {
+   "what": "Kırıkkale 1989–1990",
+   "unit": "TUR:Kırıkkale",
+   "atoms": [
+    "TUR-3019"
+   ],
+   "from": "1989-06-21",
+   "to": "1990-05-20",
+   "why": "Law 3644 list 69: Karakeçili (Kırıkkale) receives three villages of Bala district (Ankara).",
+   "checked": [
+    "statoids.com/utr.html",
+    "İçişleri Bakanlığı il/ilçe kuruluş tarihleri (2018/2019 list)",
+    "Resmî Gazete texts of Laws 3392, 3578, 3644, 3647, 3760, 3806, 4200 and KHK 550, 584 with their village lists"
+   ],
+   "needs": "finer atoms: Turkish district (ilçe) or village boundaries, e.g. geoBoundaries TUR ADM2 (ODbL) plus village-level lines for the moved villages"
+  },
+  {
+   "what": "Gümüşhane (with Bayburt) before 1989 and Gümüşhane 1989–1990",
+   "unit": "TUR:Gümüşhane",
+   "atoms": [
+    "TUR-3031",
+    "TUR-3032"
+   ],
+   "from": "1987-07-04",
+   "to": "1989-06-21",
+   "why": "Law 3644 list 50: Kürtün (Gümüşhane) receives Günyüzü and Güvenlik villages of Tirebolu (Giresun). Gümüşhane∪Bayburt therefore differs from the pre-1989 province by the two villages.",
+   "checked": [
+    "statoids.com/utr.html",
+    "İçişleri Bakanlığı il/ilçe kuruluş tarihleri (2018/2019 list)",
+    "Resmî Gazete texts of Laws 3392, 3578, 3644, 3647, 3760, 3806, 4200 and KHK 550, 584 with their village lists"
+   ],
+   "needs": "finer atoms: Turkish district (ilçe) or village boundaries, e.g. geoBoundaries TUR ADM2 (ODbL) plus village-level lines for the moved villages"
+  },
+  {
+   "what": "Gümüşhane 1989–1990",
+   "unit": "TUR:Gümüşhane",
+   "atoms": [
+    "TUR-3031"
+   ],
+   "from": "1989-06-21",
+   "to": "1990-05-20",
+   "why": "Law 3644 list 50: Kürtün (Gümüşhane) receives Günyüzü and Güvenlik villages of Tirebolu (Giresun).",
+   "checked": [
+    "statoids.com/utr.html",
+    "İçişleri Bakanlığı il/ilçe kuruluş tarihleri (2018/2019 list)",
+    "Resmî Gazete texts of Laws 3392, 3578, 3644, 3647, 3760, 3806, 4200 and KHK 550, 584 with their village lists"
+   ],
+   "needs": "finer atoms: Turkish district (ilçe) or village boundaries, e.g. geoBoundaries TUR ADM2 (ODbL) plus village-level lines for the moved villages"
+  },
+  {
+   "what": "Giresun before 20.05.1990",
+   "unit": "TUR:Giresun",
+   "atoms": [
+    "TUR-2292"
+   ],
+   "from": "1987-07-04",
+   "to": "1990-05-20",
+   "why": "Law 3644 list 50: two Tirebolu (Giresun) villages are attached to Gümüşhane’s new Kürtün district.",
+   "checked": [
+    "statoids.com/utr.html",
+    "İçişleri Bakanlığı il/ilçe kuruluş tarihleri (2018/2019 list)",
+    "Resmî Gazete texts of Laws 3392, 3578, 3644, 3647, 3760, 3806, 4200 and KHK 550, 584 with their village lists"
+   ],
+   "needs": "finer atoms: Turkish district (ilçe) or village boundaries, e.g. geoBoundaries TUR ADM2 (ODbL) plus village-level lines for the moved villages"
+  },
+  {
+   "what": "Samsun before 20.05.1990",
+   "unit": "TUR:Samsun",
+   "atoms": [
+    "TUR-2296"
+   ],
+   "from": "1987-07-04",
+   "to": "1990-05-20",
+   "why": "Law 3644 list 96: three Terme (Samsun) villages are attached to Ordu’s new İkizce district.",
+   "checked": [
+    "statoids.com/utr.html",
+    "İçişleri Bakanlığı il/ilçe kuruluş tarihleri (2018/2019 list)",
+    "Resmî Gazete texts of Laws 3392, 3578, 3644, 3647, 3760, 3806, 4200 and KHK 550, 584 with their village lists"
+   ],
+   "needs": "finer atoms: Turkish district (ilçe) or village boundaries, e.g. geoBoundaries TUR ADM2 (ODbL) plus village-level lines for the moved villages"
+  },
+  {
+   "what": "Ordu before 20.05.1990",
+   "unit": "TUR:Ordu",
+   "atoms": [
+    "TUR-2293"
+   ],
+   "from": "1987-07-04",
+   "to": "1990-05-20",
+   "why": "Law 3644 list 96: İkizce (Ordu) receives three villages of Terme district (Samsun).",
+   "checked": [
+    "statoids.com/utr.html",
+    "İçişleri Bakanlığı il/ilçe kuruluş tarihleri (2018/2019 list)",
+    "Resmî Gazete texts of Laws 3392, 3578, 3644, 3647, 3760, 3806, 4200 and KHK 550, 584 with their village lists"
+   ],
+   "needs": "finer atoms: Turkish district (ilçe) or village boundaries, e.g. geoBoundaries TUR ADM2 (ODbL) plus village-level lines for the moved villages"
+  },
+  {
+   "what": "Tunceli before 20.05.1990",
+   "unit": "TUR:Tunceli",
+   "atoms": [
+    "TUR-3045"
+   ],
+   "from": "1987-07-04",
+   "to": "1990-05-20",
+   "why": "Law 3644 list 20: villages of Pülümür (Tunceli) are attached to Bingöl’s new Yedisu district.",
+   "checked": [
+    "statoids.com/utr.html",
+    "İçişleri Bakanlığı il/ilçe kuruluş tarihleri (2018/2019 list)",
+    "Resmî Gazete texts of Laws 3392, 3578, 3644, 3647, 3760, 3806, 4200 and KHK 550, 584 with their village lists"
+   ],
+   "needs": "finer atoms: Turkish district (ilçe) or village boundaries, e.g. geoBoundaries TUR ADM2 (ODbL) plus village-level lines for the moved villages"
+  },
+  {
+   "what": "Bingöl before 20.05.1990",
+   "unit": "TUR:Bingöl",
+   "atoms": [
+    "TUR-2308"
+   ],
+   "from": "1987-07-04",
+   "to": "1990-05-20",
+   "why": "Law 3644 list 20: Yedisu (Bingöl) receives villages of Pülümür district (Tunceli).",
+   "checked": [
+    "statoids.com/utr.html",
+    "İçişleri Bakanlığı il/ilçe kuruluş tarihleri (2018/2019 list)",
+    "Resmî Gazete texts of Laws 3392, 3578, 3644, 3647, 3760, 3806, 4200 and KHK 550, 584 with their village lists"
+   ],
+   "needs": "finer atoms: Turkish district (ilçe) or village boundaries, e.g. geoBoundaries TUR ADM2 (ODbL) plus village-level lines for the moved villages"
+  },
+  {
+   "what": "Muğla before 20.05.1990",
+   "unit": "TUR:Muğla",
+   "atoms": [
+    "TUR-2278"
+   ],
+   "from": "1987-07-04",
+   "to": "1990-05-20",
+   "why": "Law 3644 list 17: Akbük village of Milas (Muğla) is attached to Aydın’s new Yenihisar district.",
+   "checked": [
+    "statoids.com/utr.html",
+    "İçişleri Bakanlığı il/ilçe kuruluş tarihleri (2018/2019 list)",
+    "Resmî Gazete texts of Laws 3392, 3578, 3644, 3647, 3760, 3806, 4200 and KHK 550, 584 with their village lists"
+   ],
+   "needs": "finer atoms: Turkish district (ilçe) or village boundaries, e.g. geoBoundaries TUR ADM2 (ODbL) plus village-level lines for the moved villages"
+  },
+  {
+   "what": "Aydın before 20.05.1990",
+   "unit": "TUR:Aydın",
+   "atoms": [
+    "TUR-2229"
+   ],
+   "from": "1987-07-04",
+   "to": "1990-05-20",
+   "why": "Law 3644 list 17: Yenihisar (Aydın) receives Akbük village of Milas district (Muğla).",
+   "checked": [
+    "statoids.com/utr.html",
+    "İçişleri Bakanlığı il/ilçe kuruluş tarihleri (2018/2019 list)",
+    "Resmî Gazete texts of Laws 3392, 3578, 3644, 3647, 3760, 3806, 4200 and KHK 550, 584 with their village lists"
+   ],
+   "needs": "finer atoms: Turkish district (ilçe) or village boundaries, e.g. geoBoundaries TUR ADM2 (ODbL) plus village-level lines for the moved villages"
+  },
+  {
+   "what": "Siirt before Batman/Şırnak",
+   "unit": "TUR:Siirt",
+   "atoms": [
+    "TUR-3043",
+    "TUR-3042",
+    "TUR-3044"
+   ],
+   "from": "1987-07-04",
+   "to": "1990-05-18",
+   "why": "Batman took Siirt districts and Gercüş/Hasankeyf (Mardin); Şırnak took Siirt, Mardin (Cizre, İdil, Silopi) and Hakkari (Uludere, Beytüşşebap) districts — several parents.",
+   "checked": [
+    "statoids.com/utr.html",
+    "İçişleri Bakanlığı il/ilçe kuruluş tarihleri (2018/2019 list)",
+    "Resmî Gazete texts of Laws 3392, 3578, 3644, 3647, 3760, 3806, 4200 and KHK 550, 584 with their village lists"
+   ],
+   "needs": "finer atoms: Turkish district (ilçe) or village boundaries, e.g. geoBoundaries TUR ADM2 (ODbL) plus village-level lines for the moved villages"
+  },
+  {
+   "what": "Mardin before Batman/Şırnak",
+   "unit": "TUR:Mardin",
+   "atoms": [
+    "TUR-3041"
+   ],
+   "from": "1987-07-04",
+   "to": "1990-05-18",
+   "why": "Mardin lost Gercüş, Cizre, İdil, Silopi to provinces that also took territory from Siirt and Hakkari.",
+   "checked": [
+    "statoids.com/utr.html",
+    "İçişleri Bakanlığı il/ilçe kuruluş tarihleri (2018/2019 list)",
+    "Resmî Gazete texts of Laws 3392, 3578, 3644, 3647, 3760, 3806, 4200 and KHK 550, 584 with their village lists"
+   ],
+   "needs": "finer atoms: Turkish district (ilçe) or village boundaries, e.g. geoBoundaries TUR ADM2 (ODbL) plus village-level lines for the moved villages"
+  },
+  {
+   "what": "Hakkari before Şırnak",
+   "unit": "TUR:Hakkâri",
+   "atoms": [
+    "TUR-3047"
+   ],
+   "from": "1987-07-04",
+   "to": "1990-05-18",
+   "why": "Hakkari lost Uludere, Beytüşşebap and two Çukurca villages to Şırnak, which also took territory from Siirt and Mardin.",
+   "checked": [
+    "statoids.com/utr.html",
+    "İçişleri Bakanlığı il/ilçe kuruluş tarihleri (2018/2019 list)",
+    "Resmî Gazete texts of Laws 3392, 3578, 3644, 3647, 3760, 3806, 4200 and KHK 550, 584 with their village lists"
+   ],
+   "needs": "finer atoms: Turkish district (ilçe) or village boundaries, e.g. geoBoundaries TUR ADM2 (ODbL) plus village-level lines for the moved villages"
+  },
+  {
+   "what": "Siirt 18–20.05.1990",
+   "unit": "TUR:Siirt",
+   "atoms": [
+    "TUR-3043"
+   ],
+   "from": "1990-05-18",
+   "to": "1990-05-20",
+   "why": "Law 3644 list 106 creates Güçlükonak from Eruh (Siirt) villages; Güçlükonak lies in Şırnak, so Siirt’s line is final only from 20.05.1990.",
+   "checked": [
+    "statoids.com/utr.html",
+    "İçişleri Bakanlığı il/ilçe kuruluş tarihleri (2018/2019 list)",
+    "Resmî Gazete texts of Laws 3392, 3578, 3644, 3647, 3760, 3806, 4200 and KHK 550, 584 with their village lists"
+   ],
+   "needs": "finer atoms: Turkish district (ilçe) or village boundaries, e.g. geoBoundaries TUR ADM2 (ODbL) plus village-level lines for the moved villages"
+  },
+  {
+   "what": "Şırnak 18–20.05.1990",
+   "unit": "TUR:Şırnak",
+   "atoms": [
+    "TUR-3044"
+   ],
+   "from": "1990-05-18",
+   "to": "1990-05-20",
+   "why": "Law 3644 list 106 creates Güçlükonak from Eruh (Siirt) villages; Güçlükonak lies in Şırnak, so Şırnak’s line is final only from 20.05.1990.",
+   "checked": [
+    "statoids.com/utr.html",
+    "İçişleri Bakanlığı il/ilçe kuruluş tarihleri (2018/2019 list)",
+    "Resmî Gazete texts of Laws 3392, 3578, 3644, 3647, 3760, 3806, 4200 and KHK 550, 584 with their village lists"
+   ],
+   "needs": "finer atoms: Turkish district (ilçe) or village boundaries, e.g. geoBoundaries TUR ADM2 (ODbL) plus village-level lines for the moved villages"
+  },
+  {
+   "what": "Zonguldak before Bartın and Karabük",
+   "unit": "TUR:Zonguldak",
+   "atoms": [
+    "TUR-3010",
+    "TUR-5521",
+    "TUR-5520"
+   ],
+   "from": "1987-07-04",
+   "to": "1991-09-07",
+   "why": "Karabük (1995) took Zonguldak districts and Eskipazar/Ovacık from Çankırı, so pre-1995 Zonguldak is not a union of modern provinces.",
+   "checked": [
+    "statoids.com/utr.html",
+    "İçişleri Bakanlığı il/ilçe kuruluş tarihleri (2018/2019 list)",
+    "Resmî Gazete texts of Laws 3392, 3578, 3644, 3647, 3760, 3806, 4200 and KHK 550, 584 with their village lists"
+   ],
+   "needs": "finer atoms: Turkish district (ilçe) or village boundaries, e.g. geoBoundaries TUR ADM2 (ODbL) plus village-level lines for the moved villages"
+  },
+  {
+   "what": "Zonguldak 1991–1995",
+   "unit": "TUR:Zonguldak",
+   "atoms": [
+    "TUR-3010",
+    "TUR-5520"
+   ],
+   "from": "1991-09-07",
+   "to": "1995-06-06",
+   "why": "As above: the Zonguldak part of the Karabük atom is not separable.",
+   "checked": [
+    "statoids.com/utr.html",
+    "İçişleri Bakanlığı il/ilçe kuruluş tarihleri (2018/2019 list)",
+    "Resmî Gazete texts of Laws 3392, 3578, 3644, 3647, 3760, 3806, 4200 and KHK 550, 584 with their village lists"
+   ],
+   "needs": "finer atoms: Turkish district (ilçe) or village boundaries, e.g. geoBoundaries TUR ADM2 (ODbL) plus village-level lines for the moved villages"
+  },
+  {
+   "what": "Çankırı before Karabük",
+   "unit": "TUR:Çankırı",
+   "atoms": [
+    "TUR-3009"
+   ],
+   "from": "1987-07-04",
+   "to": "1995-06-06",
+   "why": "Eskipazar and Ovacık went from Çankırı to Karabük, which also took Zonguldak districts.",
+   "checked": [
+    "statoids.com/utr.html",
+    "İçişleri Bakanlığı il/ilçe kuruluş tarihleri (2018/2019 list)",
+    "Resmî Gazete texts of Laws 3392, 3578, 3644, 3647, 3760, 3806, 4200 and KHK 550, 584 with their village lists"
+   ],
+   "needs": "finer atoms: Turkish district (ilçe) or village boundaries, e.g. geoBoundaries TUR ADM2 (ODbL) plus village-level lines for the moved villages"
+  },
+  {
+   "what": "İstanbul before Yalova",
+   "unit": "TUR:İstanbul",
+   "atoms": [
+    "TUR-2265",
+    "TUR-5518"
+   ],
+   "from": "1987-07-04",
+   "to": "1995-06-06",
+   "why": "Yalova (1995) took İstanbul districts plus Armutlu (Bursa) and Altınova (Kocaeli) — several parents.",
+   "checked": [
+    "statoids.com/utr.html",
+    "İçişleri Bakanlığı il/ilçe kuruluş tarihleri (2018/2019 list)",
+    "Resmî Gazete texts of Laws 3392, 3578, 3644, 3647, 3760, 3806, 4200 and KHK 550, 584 with their village lists"
+   ],
+   "needs": "finer atoms: Turkish district (ilçe) or village boundaries, e.g. geoBoundaries TUR ADM2 (ODbL) plus village-level lines for the moved villages"
+  },
+  {
+   "what": "Kocaeli before Yalova",
+   "unit": "TUR:Kocaeli",
+   "atoms": [
+    "TUR-2266"
+   ],
+   "from": "1987-07-04",
+   "to": "1995-06-06",
+   "why": "Altınova (Karamürsel villages) went from Kocaeli to Yalova, which also took İstanbul and Bursa territory.",
+   "checked": [
+    "statoids.com/utr.html",
+    "İçişleri Bakanlığı il/ilçe kuruluş tarihleri (2018/2019 list)",
+    "Resmî Gazete texts of Laws 3392, 3578, 3644, 3647, 3760, 3806, 4200 and KHK 550, 584 with their village lists"
+   ],
+   "needs": "finer atoms: Turkish district (ilçe) or village boundaries, e.g. geoBoundaries TUR ADM2 (ODbL) plus village-level lines for the moved villages"
+  },
+  {
+   "what": "Bursa before Yalova",
+   "unit": "TUR:Bursa",
+   "atoms": [
+    "TUR-2264"
+   ],
+   "from": "1987-07-04",
+   "to": "1995-06-06",
+   "why": "Armutlu (Gemlik villages) went from Bursa to Yalova, which also took İstanbul and Kocaeli territory.",
+   "checked": [
+    "statoids.com/utr.html",
+    "İçişleri Bakanlığı il/ilçe kuruluş tarihleri (2018/2019 list)",
+    "Resmî Gazete texts of Laws 3392, 3578, 3644, 3647, 3760, 3806, 4200 and KHK 550, 584 with their village lists"
+   ],
+   "needs": "finer atoms: Turkish district (ilçe) or village boundaries, e.g. geoBoundaries TUR ADM2 (ODbL) plus village-level lines for the moved villages"
+  }
+ ]
+}

@@ -1,0 +1,556 @@
+{
+ "country": "COG",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1960-08-15",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Republic of the Congo since 1960-08-15 (People's Republic 1969/70–1991). Regions (régions) from 1967, departments (départements) from 2003. The 2024 creation of Congo-Oubangui, Djoué-Léfini etc. is outside scope.",
+ "units": [
+  {
+   "id": "COG:Likouala@1967",
+   "names": {
+    "en": "Likouala",
+    "ja": "リクアラ地方",
+    "local": "Likouala"
+   },
+   "wikidata": "Q863554",
+   "spans": [
+    {
+     "from": "1967",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "COG-2838"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/ucg.html",
+       "title": "Departments of the Republic of Congo — Statoids (Gwillim Law, last updated 2015-12-19)",
+       "says": "1967: fifteen prefectures reorganised into nine regions; 1995-02-18 Cuvette-Ouest split from Cuvette (Law 002/95); 2003-02-06 Pointe-Noire split from Kouilou.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Regions created 1967 (year only in sources); no later change of this unit's territory is recorded."
+    }
+   ]
+  },
+  {
+   "id": "COG:Sangha@1967",
+   "names": {
+    "en": "Sangha",
+    "ja": "サンガ地方",
+    "local": "Sangha"
+   },
+   "wikidata": "Q775410",
+   "spans": [
+    {
+     "from": "1967",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "COG-2880"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/ucg.html",
+       "title": "Departments of the Republic of Congo — Statoids (Gwillim Law, last updated 2015-12-19)",
+       "says": "1967: fifteen prefectures reorganised into nine regions; 1995-02-18 Cuvette-Ouest split from Cuvette (Law 002/95); 2003-02-06 Pointe-Noire split from Kouilou.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Regions created 1967 (year only in sources); no later change of this unit's territory is recorded."
+    }
+   ]
+  },
+  {
+   "id": "COG:Plateaux@1967",
+   "names": {
+    "en": "Plateaux",
+    "ja": "プラトー地方",
+    "local": "Plateaux"
+   },
+   "wikidata": "Q765370",
+   "spans": [
+    {
+     "from": "1967",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "COG-3346"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/ucg.html",
+       "title": "Departments of the Republic of Congo — Statoids (Gwillim Law, last updated 2015-12-19)",
+       "says": "1967: fifteen prefectures reorganised into nine regions; 1995-02-18 Cuvette-Ouest split from Cuvette (Law 002/95); 2003-02-06 Pointe-Noire split from Kouilou.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Regions created 1967 (year only in sources); no later change of this unit's territory is recorded."
+    }
+   ]
+  },
+  {
+   "id": "COG:Lekoumou@1967",
+   "names": {
+    "en": "Lékoumou",
+    "ja": "レクム地方",
+    "local": "Lékoumou"
+   },
+   "wikidata": "Q862753",
+   "spans": [
+    {
+     "from": "1967",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "COG-3344"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/ucg.html",
+       "title": "Departments of the Republic of Congo — Statoids (Gwillim Law, last updated 2015-12-19)",
+       "says": "1967: fifteen prefectures reorganised into nine regions; 1995-02-18 Cuvette-Ouest split from Cuvette (Law 002/95); 2003-02-06 Pointe-Noire split from Kouilou.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Regions created 1967 (year only in sources); no later change of this unit's territory is recorded."
+    }
+   ]
+  },
+  {
+   "id": "COG:Bouenza@1967",
+   "names": {
+    "en": "Bouenza",
+    "ja": "ブエンザ地方",
+    "local": "Bouenza"
+   },
+   "wikidata": "Q827015",
+   "spans": [
+    {
+     "from": "1967",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "COG-2626"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/ucg.html",
+       "title": "Departments of the Republic of Congo — Statoids (Gwillim Law, last updated 2015-12-19)",
+       "says": "1967: fifteen prefectures reorganised into nine regions; 1995-02-18 Cuvette-Ouest split from Cuvette (Law 002/95); 2003-02-06 Pointe-Noire split from Kouilou.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Regions created 1967 (year only in sources); no later change of this unit's territory is recorded."
+    }
+   ]
+  },
+  {
+   "id": "COG:Niari@1967",
+   "names": {
+    "en": "Niari",
+    "ja": "ニアリ地方",
+    "local": "Niari"
+   },
+   "wikidata": "Q969317",
+   "spans": [
+    {
+     "from": "1967",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "COG-3345"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/ucg.html",
+       "title": "Departments of the Republic of Congo — Statoids (Gwillim Law, last updated 2015-12-19)",
+       "says": "1967: fifteen prefectures reorganised into nine regions; 1995-02-18 Cuvette-Ouest split from Cuvette (Law 002/95); 2003-02-06 Pointe-Noire split from Kouilou.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Regions created 1967 (year only in sources); no later change of this unit's territory is recorded."
+    }
+   ]
+  },
+  {
+   "id": "COG:Cuvette",
+   "names": {
+    "en": "Cuvette",
+    "ja": "キュヴェト地方",
+    "local": "Cuvette"
+   },
+   "wikidata": "Q780884",
+   "spans": [
+    {
+     "from": "1967",
+     "precision": "year",
+     "to": "1995-02-18",
+     "atoms": [
+      "COG-3342",
+      "COG-2185"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/ucg.html",
+       "title": "Departments of the Republic of Congo — Statoids (Gwillim Law, last updated 2015-12-19)",
+       "says": "1967: fifteen prefectures reorganised into nine regions; 1995-02-18 Cuvette-Ouest split from Cuvette (Law 002/95); 2003-02-06 Pointe-Noire split from Kouilou.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/ucg.html",
+       "title": "Departments of the Republic of Congo — Statoids, Cuvette-Ouest note",
+       "says": "Cuvette-Ouest created by Law 002/95 of 1995-02-18 from Cuvette; former combined area 74,850 km² = 48,250 + 26,600.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Cuvette (merger of Alima, Équateur, Likouala-Mossaka prefectures) included Cuvette-Ouest until 1995."
+    },
+    {
+     "from": "1995-02-18",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COG-3342"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/ucg.html",
+       "title": "Departments of the Republic of Congo — Statoids, Cuvette-Ouest note",
+       "says": "Cuvette-Ouest created by Law 002/95 of 1995-02-18 from Cuvette; former combined area 74,850 km² = 48,250 + 26,600.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=236839395",
+       "title": "Subdivisions de la république du Congo — fr.wikipedia, oldid 236839395",
+       "says": "Before 2003 ten regions (incl. Cuvette-Ouest, Kouilou); twelve when Brazzaville and Pointe-Noire became departments; Law 3-2003 of 17 Jan 2003 on territorial organisation.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Law 002/95 of 1995-02-18 (date of the law)."
+    }
+   ]
+  },
+  {
+   "id": "COG:CuvetteOuest@1995",
+   "names": {
+    "en": "Cuvette-Ouest",
+    "ja": "西キュヴェト地方",
+    "local": "Cuvette-Ouest"
+   },
+   "wikidata": "Q125711",
+   "spans": [
+    {
+     "from": "1995-02-18",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COG-2185"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/ucg.html",
+       "title": "Departments of the Republic of Congo — Statoids, Cuvette-Ouest note",
+       "says": "Cuvette-Ouest created by Law 002/95 of 1995-02-18 from Cuvette; former combined area 74,850 km² = 48,250 + 26,600.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=236839395",
+       "title": "Subdivisions de la république du Congo — fr.wikipedia, oldid 236839395",
+       "says": "Before 2003 ten regions (incl. Cuvette-Ouest, Kouilou); twelve when Brazzaville and Pointe-Noire became departments; Law 3-2003 of 17 Jan 2003 on territorial organisation.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Law 002/95 of 1995-02-18 (date of the law)."
+    }
+   ]
+  },
+  {
+   "id": "COG:Kouilou",
+   "names": {
+    "en": "Kouilou",
+    "ja": "クイル地方",
+    "local": "Kouilou"
+   },
+   "wikidata": "Q855327",
+   "spans": [
+    {
+     "from": "1967",
+     "precision": "year",
+     "to": "2003-01-17",
+     "atoms": [
+      "COG-3343",
+      "COG-5855"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/ucg.html",
+       "title": "Departments of the Republic of Congo — Statoids (Gwillim Law, last updated 2015-12-19)",
+       "says": "1967: fifteen prefectures reorganised into nine regions; 1995-02-18 Cuvette-Ouest split from Cuvette (Law 002/95); 2003-02-06 Pointe-Noire split from Kouilou.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=236839395",
+       "title": "Subdivisions de la république du Congo — fr.wikipedia, oldid 236839395",
+       "says": "Before 2003 ten regions (incl. Cuvette-Ouest, Kouilou); twelve when Brazzaville and Pointe-Noire became departments; Law 3-2003 of 17 Jan 2003 on territorial organisation.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Pointe-Noire city was inside Kouilou (its capital) until made a department in 2003; ended at the earlier of the two 2003 law dates."
+    },
+    {
+     "from": "2003-02-06",
+     "precision": "day",
+     "to": "2011-05-17",
+     "atoms": [
+      "COG-3343"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/ucg.html",
+       "title": "Departments of the Republic of Congo — Statoids (Gwillim Law, last updated 2015-12-19)",
+       "says": "1967: fifteen prefectures reorganised into nine regions; 1995-02-18 Cuvette-Ouest split from Cuvette (Law 002/95); 2003-02-06 Pointe-Noire split from Kouilou.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=235851828",
+       "title": "Pointe-Noire (département) — fr.wikipedia, oldid 235851828",
+       "says": "Department created 2003 from the city; in 2011 Tchiamba-Nzassi district, formerly in Kouilou, was integrated into it (Law 19-2011 of 17 May 2011).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "NE Kouilou (13,642 km²) matches the pre-2011 extent with Tchiamba-Nzassi; started at the later of the two 2003 law dates."
+    }
+   ]
+  },
+  {
+   "id": "COG:PointeNoire@2003",
+   "names": {
+    "en": "Pointe-Noire Department",
+    "ja": "ポワントノワール県",
+    "local": "Département de Pointe-Noire"
+   },
+   "spans": [
+    {
+     "from": "2003-02-06",
+     "precision": "day",
+     "to": "2011-05-17",
+     "atoms": [
+      "COG-5855"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/ucg.html",
+       "title": "Departments of the Republic of Congo — Statoids (Gwillim Law, last updated 2015-12-19)",
+       "says": "1967: fifteen prefectures reorganised into nine regions; 1995-02-18 Cuvette-Ouest split from Cuvette (Law 002/95); 2003-02-06 Pointe-Noire split from Kouilou.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=235851828",
+       "title": "Pointe-Noire (département) — fr.wikipedia, oldid 235851828",
+       "says": "Department created 2003 from the city; in 2011 Tchiamba-Nzassi district, formerly in Kouilou, was integrated into it (Law 19-2011 of 17 May 2011).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "NE atom (67 km²) is the city before the 2011 enlargement."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1967",
+   "precision": "year",
+   "what": "Fifteen prefectures reorganised into nine regions and a capital district",
+   "sources": [
+    {
+     "url": "http://www.statoids.com/ucg.html",
+     "title": "Departments of the Republic of Congo — Statoids (Gwillim Law, last updated 2015-12-19)",
+     "says": "1967: fifteen prefectures reorganised into nine regions; 1995-02-18 Cuvette-Ouest split from Cuvette (Law 002/95); 2003-02-06 Pointe-Noire split from Kouilou.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1995-02-18",
+   "precision": "day",
+   "what": "Cuvette-Ouest split from Cuvette (Law 002/95)",
+   "sources": [
+    {
+     "url": "http://www.statoids.com/ucg.html",
+     "title": "Departments of the Republic of Congo — Statoids, Cuvette-Ouest note",
+     "says": "Cuvette-Ouest created by Law 002/95 of 1995-02-18 from Cuvette; former combined area 74,850 km² = 48,250 + 26,600.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2003-02-06",
+   "precision": "day",
+   "what": "Pointe-Noire department split from Kouilou; Brazzaville becomes a department (Laws 3-2003 of 17 Jan and 10/11-2003 of 6 Feb 2003)",
+   "sources": [
+    {
+     "url": "http://www.statoids.com/ucg.html",
+     "title": "Departments of the Republic of Congo — Statoids (Gwillim Law, last updated 2015-12-19)",
+     "says": "1967: fifteen prefectures reorganised into nine regions; 1995-02-18 Cuvette-Ouest split from Cuvette (Law 002/95); 2003-02-06 Pointe-Noire split from Kouilou.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://fr.wikipedia.org/w/index.php?oldid=236839395",
+     "title": "Subdivisions de la république du Congo — fr.wikipedia, oldid 236839395",
+     "says": "Before 2003 ten regions (incl. Cuvette-Ouest, Kouilou); twelve when Brazzaville and Pointe-Noire became departments; Law 3-2003 of 17 Jan 2003 on territorial organisation.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2011-05-17",
+   "precision": "day",
+   "what": "Tchiamba-Nzassi district moved from Kouilou to Pointe-Noire (Laws 19-2011 and 21-2011)",
+   "sources": [
+    {
+     "url": "https://fr.wikipedia.org/w/index.php?oldid=235851828",
+     "title": "Pointe-Noire (département) — fr.wikipedia, oldid 235851828",
+     "says": "Department created 2003 from the city; in 2011 Tchiamba-Nzassi district, formerly in Kouilou, was integrated into it (Law 19-2011 of 17 May 2011).",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://www.finances.gouv.cg/fr/loi-n%C2%B019-2011-du-17-mai-2011-portant-red%C3%A9finition-des-limites-du-d%C3%A9partement-de-pointe-noire",
+     "title": "Loi n°19-2011 du 17 mai 2011 portant redéfinition des limites du département de Pointe-Noire — Ministère des Finances, register of laws",
+     "says": "Law 19-2011 of 17 May 2011 redefines the limits of Pointe-Noire department.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1998-12-15",
+   "n": 11,
+   "sources": [
+    {
+     "url": "http://www.statoids.com/ucg.html",
+     "title": "Departments of the Republic of Congo — Statoids (Gwillim Law, last updated 2015-12-19)",
+     "says": "1967: fifteen prefectures reorganised into nine regions; 1995-02-18 Cuvette-Ouest split from Cuvette (Law 002/95); 2003-02-06 Pointe-Noire split from Kouilou.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2007-04-28",
+   "n": 12,
+   "sources": [
+    {
+     "url": "http://www.statoids.com/ucg.html",
+     "title": "Departments of the Republic of Congo — Statoids (Gwillim Law, last updated 2015-12-19)",
+     "says": "1967: fifteen prefectures reorganised into nine regions; 1995-02-18 Cuvette-Ouest split from Cuvette (Law 002/95); 2003-02-06 Pointe-Noire split from Kouilou.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Prefecture layout 1960–1967 (12 prefectures + Mossaka autonomous sub-prefecture: Alima, Bouenza-Louessé, Djoué, Kouilou, Léfini, Likouala, Likouala-Mossaka, Mossaka, Niari, Niari-Bouenza, Nyanga-Louessé, Pool, Sangha)",
+   "atoms": [
+    "COG-2838",
+    "COG-3342",
+    "COG-3346",
+    "COG-3341",
+    "COG-4855",
+    "COG-2626",
+    "COG-3345",
+    "COG-3343",
+    "COG-2880",
+    "COG-2185",
+    "COG-3344",
+    "COG-5855"
+   ],
+   "from": "1960-08-15",
+   "to": "1967",
+   "why": "The prefectures were merged and redrawn into the 1967 regions (e.g. Alima+Équateur+Likouala-Mossaka → Cuvette; Bouenza-Louessé, Niari-Bouenza, Nyanga-Louessé straddle Niari/Bouenza/Lékoumou); no prefecture is shown to equal a union of NE atoms.",
+   "checked": [
+    "statoids ucg (Britannica 1964 list, 1967 note)",
+    "fr.wikipedia Subdivisions oldid 236839395"
+   ],
+   "needs": "district atoms of the Republic of Congo with 1960s district lines (none open found)"
+  },
+  {
+   "what": "Pool and Brazzaville (all periods from 1967)",
+   "unit": "COG:Pool",
+   "atoms": [
+    "COG-3341",
+    "COG-4855"
+   ],
+   "from": "1967",
+   "to": null,
+   "why": "NE quirk: the NE \"Brazzaville\" atom measures ≈6,040 km² (real commune ≈100 km²), so it swallows part of Pool; neither atom alone is a real unit. Sources also conflict whether Brazzaville was a separate capital district from 1967 or split from Pool in 1980.",
+   "checked": [
+    "NE geometry measured (COG-4855 bbox 14.96–15.96E, 3.45–4.52S)",
+    "statoids ucg (1967 \"capital district\" vs 1980 \"split from Pool\")",
+    "fr.wikipedia oldid 236839395"
+   ],
+   "needs": "a correct Brazzaville/Pool boundary, e.g. geoBoundaries COG ADM1 (OSM-derived, ODbL) or the 2003/2017 laws on the Brazzaville limits"
+  },
+  {
+   "what": "Brazzaville capital district / commune / department",
+   "unit": "COG:Brazzaville",
+   "atoms": [],
+   "from": "1967",
+   "to": null,
+   "why": "Drawn by no atom (see Pool entry).",
+   "checked": [
+    "as above"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "Kouilou / Pointe-Noire between the two 2003 law dates",
+   "atoms": [
+    "COG-3343",
+    "COG-5855"
+   ],
+   "from": "2003-01-17",
+   "to": "2003-02-06",
+   "why": "Sources give Law 3-2003 (17 Jan 2003) or Law 10-2003 (6 Feb 2003) as the act creating the department of Pointe-Noire; the exact effective date is not settled.",
+   "checked": [
+    "statoids ucg",
+    "fr.wikipedia Subdivisions oldid 236839395",
+    "fr.wikipedia Pointe-Noire (département) oldid 235851828"
+   ],
+   "needs": "the Journal officiel text of Laws 3-2003 and 10-2003"
+  },
+  {
+   "what": "Kouilou and Pointe-Noire after the 2011 boundary change",
+   "unit": "COG:Kouilou",
+   "atoms": [
+    "COG-3343",
+    "COG-5855"
+   ],
+   "from": "2011-05-17",
+   "to": null,
+   "why": "Tchiamba-Nzassi district moved from Kouilou to Pointe-Noire; the new line runs inside the NE Kouilou atom.",
+   "checked": [
+    "Law 19-2011 (finances.gouv.cg)",
+    "fr.wikipedia Pointe-Noire (département) oldid 235851828",
+    "statoids ucg (Law 21-2011, Kouilou 12,516.8 km²)"
+   ],
+   "needs": "district atoms (Tchiamba-Nzassi) e.g. geoBoundaries COG ADM2 (OSM, ODbL)"
+  },
+  {
+   "what": "Pointe-Noire after 2011",
+   "unit": "COG:PointeNoire@2003",
+   "atoms": [],
+   "from": "2011-05-17",
+   "to": null,
+   "why": "see Kouilou entry",
+   "checked": [
+    "as above"
+   ],
+   "needs": "as above"
+  }
+ ]
+}

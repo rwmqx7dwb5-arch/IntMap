@@ -1,0 +1,636 @@
+{
+ "country": "AUS",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1901-01-01",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Commonwealth of Australia since 1901-01-01 (federation of six colonies). The colonies before 1901 are separate polities and are not covered. External territories (Papua, New Guinea, Norfolk, Ashmore and Cartier, Coral Sea, etc.) are not NE AUS admin-1 atoms.",
+ "units": [
+  {
+   "id": "AUS:NSW@1901",
+   "names": {
+    "en": "New South Wales",
+    "ja": "ニューサウスウェールズ州",
+    "local": "New South Wales"
+   },
+   "wikidata": "Q3224",
+   "spans": [
+    {
+     "from": "1901-01-01",
+     "precision": "day",
+     "to": "1911-01-01",
+     "atoms": [
+      "AUS-2654",
+      "AUS-2659",
+      "AUS-2653",
+      "AUS-1932"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uau.html",
+       "title": "Statoids — States of Australia (change history, territorial extent)",
+       "says": "Lists 1901-01-01 federation of six colonies; 1911-01-01 NT split from SA and FCT from NSW; 1927 split and 1931 reunion of NT; NSW includes Lord Howe Island.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Territorial_evolution_of_Australia&oldid=1378448577",
+       "title": "Wikipedia — Territorial evolution of Australia (oldid 1378448577; each row cites the Act and the Commonwealth Gazette proclamation)",
+       "says": "Chronology: FCT split from NSW 1911-01-01; Jervis Bay ceded to FCT 1915-09-04; NT split at 20°S 1927, merged 1931-06-12; JBT separated from ACT 1989-05-11.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Before 1911 the later Federal Capital Territory and the Jervis Bay land were under NSW government; Lord Howe Island is part of NSW throughout."
+    },
+    {
+     "from": "1911-01-01",
+     "precision": "day",
+     "to": "1915-09-04",
+     "atoms": [
+      "AUS-2654",
+      "AUS-2659",
+      "AUS-1932"
+     ],
+     "sources": [
+      {
+       "url": "https://abs.gov.au/ausstats/abs@.nsf/2f762f95845417aeca25706c00834efa/E6F95FD7187407B4CA2573A1007B2020?opendocument=",
+       "title": "ABS 1307.8 Australian Capital Territory in Focus, 2007",
+       "says": "On 1 January 1911 New South Wales ceded its government authority over the area and power over the Territory vested in the Commonwealth.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.legislation.gov.au/files/JERVIS_BAY_TERRITORY_ACCEPTANCE_ACT_1915RP.pdf",
+       "title": "Jervis Bay Territory Acceptance Act 1915 (No. 19, 1915), reprint as at 30 Sep 1982",
+       "says": "Commenced 4 Sept 1915 (Gazette 1915 p.1710); Jervis Bay land (Parish of Bherwerre, to Bowen Island) accepted and annexed to, deemed part of, the Capital Territory.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Territorial_evolution_of_Australia&oldid=1378448577",
+       "title": "Wikipedia — Territorial evolution of Australia (oldid 1378448577; each row cites the Act and the Commonwealth Gazette proclamation)",
+       "says": "Chronology: FCT split from NSW 1911-01-01; Jervis Bay ceded to FCT 1915-09-04; NT split at 20°S 1927, merged 1931-06-12; JBT separated from ACT 1989-05-11.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The NSW Seat of Government Surrender Act 1915 commenced 21 Apr 1915, but jurisdiction passed only when the Commonwealth Acceptance Act commenced on 4 Sep 1915."
+    },
+    {
+     "from": "1915-09-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AUS-2654",
+      "AUS-2659"
+     ],
+     "sources": [
+      {
+       "url": "https://www.legislation.gov.au/files/JERVIS_BAY_TERRITORY_ACCEPTANCE_ACT_1915RP.pdf",
+       "title": "Jervis Bay Territory Acceptance Act 1915 (No. 19, 1915), reprint as at 30 Sep 1982",
+       "says": "Commenced 4 Sept 1915 (Gazette 1915 p.1710); Jervis Bay land (Parish of Bherwerre, to Bowen Island) accepted and annexed to, deemed part of, the Capital Territory.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Territorial_evolution_of_Australia&oldid=1378448577",
+       "title": "Wikipedia — Territorial evolution of Australia (oldid 1378448577; each row cites the Act and the Commonwealth Gazette proclamation)",
+       "says": "Chronology: FCT split from NSW 1911-01-01; Jervis Bay ceded to FCT 1915-09-04; NT split at 20°S 1927, merged 1931-06-12; JBT separated from ACT 1989-05-11.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uau.html",
+       "title": "Statoids — States of Australia (change history, territorial extent)",
+       "says": "Lists 1901-01-01 federation of six colonies; 1911-01-01 NT split from SA and FCT from NSW; 1927 split and 1931 reunion of NT; NSW includes Lord Howe Island.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "On 1997-07-07 Elizabeth and Middleton Reefs passed from NSW to the Coral Sea Islands Territory; they belong to no NE atom, so this atom union is unaffected."
+    }
+   ]
+  },
+  {
+   "id": "AUS:VIC@1901",
+   "names": {
+    "en": "Victoria",
+    "ja": "ビクトリア州",
+    "local": "Victoria"
+   },
+   "wikidata": "Q36687",
+   "spans": [
+    {
+     "from": "1901-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AUS-2656"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uau.html",
+       "title": "Statoids — States of Australia (change history, territorial extent)",
+       "says": "Lists 1901-01-01 federation of six colonies; 1911-01-01 NT split from SA and FCT from NSW; 1927 split and 1931 reunion of NT; NSW includes Lord Howe Island.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Territorial_evolution_of_Australia&oldid=1378448577",
+       "title": "Wikipedia — Territorial evolution of Australia (oldid 1378448577; each row cites the Act and the Commonwealth Gazette proclamation)",
+       "says": "Chronology: FCT split from NSW 1911-01-01; Jervis Bay ceded to FCT 1915-09-04; NT split at 20°S 1927, merged 1931-06-12; JBT separated from ACT 1989-05-11.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AUS:QLD@1901",
+   "names": {
+    "en": "Queensland",
+    "ja": "クイーンズランド州",
+    "local": "Queensland"
+   },
+   "wikidata": "Q36074",
+   "spans": [
+    {
+     "from": "1901-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AUS-2657"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uau.html",
+       "title": "Statoids — States of Australia (change history, territorial extent)",
+       "says": "Lists 1901-01-01 federation of six colonies; 1911-01-01 NT split from SA and FCT from NSW; 1927 split and 1931 reunion of NT; NSW includes Lord Howe Island.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Territorial_evolution_of_Australia&oldid=1378448577",
+       "title": "Wikipedia — Territorial evolution of Australia (oldid 1378448577; each row cites the Act and the Commonwealth Gazette proclamation)",
+       "says": "Chronology: FCT split from NSW 1911-01-01; Jervis Bay ceded to FCT 1915-09-04; NT split at 20°S 1927, merged 1931-06-12; JBT separated from ACT 1989-05-11.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The Coral Sea Islands Territory was created from Queensland on 1969-09-30; those islands lie east of the NE Queensland atom (bbox ends 153.55°E), so the union is unaffected."
+    }
+   ]
+  },
+  {
+   "id": "AUS:WA@1901",
+   "names": {
+    "en": "Western Australia",
+    "ja": "西オーストラリア州",
+    "local": "Western Australia"
+   },
+   "wikidata": "Q3206",
+   "spans": [
+    {
+     "from": "1901-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AUS-2651"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uau.html",
+       "title": "Statoids — States of Australia (change history, territorial extent)",
+       "says": "Lists 1901-01-01 federation of six colonies; 1911-01-01 NT split from SA and FCT from NSW; 1927 split and 1931 reunion of NT; NSW includes Lord Howe Island.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Territorial_evolution_of_Australia&oldid=1378448577",
+       "title": "Wikipedia — Territorial evolution of Australia (oldid 1378448577; each row cites the Act and the Commonwealth Gazette proclamation)",
+       "says": "Chronology: FCT split from NSW 1911-01-01; Jervis Bay ceded to FCT 1915-09-04; NT split at 20°S 1927, merged 1931-06-12; JBT separated from ACT 1989-05-11.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AUS:TAS@1901",
+   "names": {
+    "en": "Tasmania",
+    "ja": "タスマニア州",
+    "local": "Tasmania"
+   },
+   "wikidata": "Q34366",
+   "spans": [
+    {
+     "from": "1901-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AUS-2660",
+      "AUS+00?"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uau.html",
+       "title": "Statoids — States of Australia (change history, territorial extent)",
+       "says": "Lists 1901-01-01 federation of six colonies; 1911-01-01 NT split from SA and FCT from NSW; 1927 split and 1931 reunion of NT; NSW includes Lord Howe Island.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Macquarie_Island&oldid=1376823802",
+       "title": "Wikipedia — Macquarie Island (oldid 1376823802; cites the 1880 Letters Patent for the Governor of Tasmania, UTAS item BB-AU-490)",
+       "says": "Macquarie Island was made a constituent part of Tasmania on 17 June 1880 by Letters Patent and has been governed as part of Tasmania since.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Territorial_evolution_of_Australia&oldid=1378448577",
+       "title": "Wikipedia — Territorial evolution of Australia (oldid 1378448577; each row cites the Act and the Commonwealth Gazette proclamation)",
+       "says": "Chronology: FCT split from NSW 1911-01-01; Jervis Bay ceded to FCT 1915-09-04; NT split at 20°S 1927, merged 1931-06-12; JBT separated from ACT 1989-05-11.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AUS:SA@1901",
+   "names": {
+    "en": "South Australia",
+    "ja": "南オーストラリア州",
+    "local": "South Australia"
+   },
+   "wikidata": "Q35715",
+   "spans": [
+    {
+     "from": "1901-01-01",
+     "precision": "day",
+     "to": "1911-01-01",
+     "atoms": [
+      "AUS-2655",
+      "AUS-2650"
+     ],
+     "sources": [
+      {
+       "url": "https://www.foundingdocs.gov.au/item-did-52.html",
+       "title": "Museum of Australian Democracy — Northern Territory Acceptance Act 1910 (Cth)",
+       "says": "From 1 January 1911 the Northern Territory, surrendered by South Australia, became the exclusive responsibility of the Commonwealth.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uau.html",
+       "title": "Statoids — States of Australia (change history, territorial extent)",
+       "says": "Lists 1901-01-01 federation of six colonies; 1911-01-01 NT split from SA and FCT from NSW; 1927 split and 1931 reunion of NT; NSW includes Lord Howe Island.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    },
+    {
+     "from": "1911-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AUS-2655"
+     ],
+     "sources": [
+      {
+       "url": "https://www.foundingdocs.gov.au/item-did-52.html",
+       "title": "Museum of Australian Democracy — Northern Territory Acceptance Act 1910 (Cth)",
+       "says": "From 1 January 1911 the Northern Territory, surrendered by South Australia, became the exclusive responsibility of the Commonwealth.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uau.html",
+       "title": "Statoids — States of Australia (change history, territorial extent)",
+       "says": "Lists 1901-01-01 federation of six colonies; 1911-01-01 NT split from SA and FCT from NSW; 1927 split and 1931 reunion of NT; NSW includes Lord Howe Island.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Territorial_evolution_of_Australia&oldid=1378448577",
+       "title": "Wikipedia — Territorial evolution of Australia (oldid 1378448577; each row cites the Act and the Commonwealth Gazette proclamation)",
+       "says": "Chronology: FCT split from NSW 1911-01-01; Jervis Bay ceded to FCT 1915-09-04; NT split at 20°S 1927, merged 1931-06-12; JBT separated from ACT 1989-05-11.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AUS:NT@1911",
+   "names": {
+    "en": "Northern Territory",
+    "ja": "ノーザンテリトリー",
+    "local": "Northern Territory"
+   },
+   "wikidata": "Q3235",
+   "spans": [
+    {
+     "from": "1911-01-01",
+     "precision": "day",
+     "to": "1927-02-01",
+     "atoms": [
+      "AUS-2650"
+     ],
+     "sources": [
+      {
+       "url": "https://www.foundingdocs.gov.au/item-did-52.html",
+       "title": "Museum of Australian Democracy — Northern Territory Acceptance Act 1910 (Cth)",
+       "says": "From 1 January 1911 the Northern Territory, surrendered by South Australia, became the exclusive responsibility of the Commonwealth.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Territorial_evolution_of_Australia&oldid=1378448577",
+       "title": "Wikipedia — Territorial evolution of Australia (oldid 1378448577; each row cites the Act and the Commonwealth Gazette proclamation)",
+       "says": "Chronology: FCT split from NSW 1911-01-01; Jervis Bay ceded to FCT 1915-09-04; NT split at 20°S 1927, merged 1931-06-12; JBT separated from ACT 1989-05-11.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    },
+    {
+     "from": "1931-06-12",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AUS-2650"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Territorial_evolution_of_Australia&oldid=1378448577",
+       "title": "Wikipedia — Territorial evolution of Australia (oldid 1378448577; each row cites the Act and the Commonwealth Gazette proclamation)",
+       "says": "Chronology: FCT split from NSW 1911-01-01; Jervis Bay ceded to FCT 1915-09-04; NT split at 20°S 1927, merged 1931-06-12; JBT separated from ACT 1989-05-11.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uau.html",
+       "title": "Statoids — States of Australia (change history, territorial extent)",
+       "says": "Lists 1901-01-01 federation of six colonies; 1911-01-01 NT split from SA and FCT from NSW; 1927 split and 1931 reunion of NT; NSW includes Lord Howe Island.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Proclamation in Commonwealth Gazette No. 46 of 11 June 1931; sources give 11 or 12 June. The later date is used. Ashmore and Cartier Islands (annexed to NT 1938–1978) are not part of this atom."
+    }
+   ]
+  },
+  {
+   "id": "AUS:ACT@1911",
+   "names": {
+    "en": "Australian Capital Territory (Federal Capital Territory until 1938)",
+    "ja": "オーストラリア首都特別地域",
+    "local": "Australian Capital Territory"
+   },
+   "wikidata": "Q3258",
+   "spans": [
+    {
+     "from": "1911-01-01",
+     "precision": "day",
+     "to": "1915-09-04",
+     "atoms": [
+      "AUS-2653"
+     ],
+     "sources": [
+      {
+       "url": "https://abs.gov.au/ausstats/abs@.nsf/2f762f95845417aeca25706c00834efa/E6F95FD7187407B4CA2573A1007B2020?opendocument=",
+       "title": "ABS 1307.8 Australian Capital Territory in Focus, 2007",
+       "says": "On 1 January 1911 New South Wales ceded its government authority over the area and power over the Territory vested in the Commonwealth.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Territorial_evolution_of_Australia&oldid=1378448577",
+       "title": "Wikipedia — Territorial evolution of Australia (oldid 1378448577; each row cites the Act and the Commonwealth Gazette proclamation)",
+       "says": "Chronology: FCT split from NSW 1911-01-01; Jervis Bay ceded to FCT 1915-09-04; NT split at 20°S 1927, merged 1931-06-12; JBT separated from ACT 1989-05-11.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The Seat of Government Acts 1909 commenced 22 Jan 1910 (land transfer); NSW ceded government authority on 1 Jan 1911, the administrative date used here."
+    },
+    {
+     "from": "1915-09-04",
+     "precision": "day",
+     "to": "1989-05-11",
+     "atoms": [
+      "AUS-2653",
+      "AUS-1932"
+     ],
+     "sources": [
+      {
+       "url": "https://www.legislation.gov.au/files/JERVIS_BAY_TERRITORY_ACCEPTANCE_ACT_1915RP.pdf",
+       "title": "Jervis Bay Territory Acceptance Act 1915 (No. 19, 1915), reprint as at 30 Sep 1982",
+       "says": "Commenced 4 Sept 1915 (Gazette 1915 p.1710); Jervis Bay land (Parish of Bherwerre, to Bowen Island) accepted and annexed to, deemed part of, the Capital Territory.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Territorial_evolution_of_Australia&oldid=1378448577",
+       "title": "Wikipedia — Territorial evolution of Australia (oldid 1378448577; each row cites the Act and the Commonwealth Gazette proclamation)",
+       "says": "Chronology: FCT split from NSW 1911-01-01; Jervis Bay ceded to FCT 1915-09-04; NT split at 20°S 1927, merged 1931-06-12; JBT separated from ACT 1989-05-11.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Act s.4(2): the accepted territory is annexed to and deemed to form part of the Capital Territory. Statoids instead treats JBT as legally separate from 1915 (see report)."
+    },
+    {
+     "from": "1989-05-11",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AUS-2653"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Territorial_evolution_of_Australia&oldid=1378448577#Since_federation",
+       "title": "Wikipedia — Territorial evolution of Australia (oldid 1378448577), row 11 May 1989 citing the A.C.T. Self-Government (Consequential Provisions) Act 1988",
+       "says": "Jervis Bay Territory was split from the Australian Capital Territory to become its own territory on 11 May 1989.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AUS:JBT@1989",
+   "names": {
+    "en": "Jervis Bay Territory",
+    "ja": "ジャービス湾特別地域",
+    "local": "Jervis Bay Territory"
+   },
+   "wikidata": "Q15577",
+   "spans": [
+    {
+     "from": "1989-05-11",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AUS-1932"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Territorial_evolution_of_Australia&oldid=1378448577#Since_federation",
+       "title": "Wikipedia — Territorial evolution of Australia (oldid 1378448577), row 11 May 1989 citing the A.C.T. Self-Government (Consequential Provisions) Act 1988",
+       "says": "Jervis Bay Territory was split from the Australian Capital Territory to become its own territory on 11 May 1989.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uau.html",
+       "title": "Statoids — States of Australia (change history, territorial extent)",
+       "says": "Lists 1901-01-01 federation of six colonies; 1911-01-01 NT split from SA and FCT from NSW; 1927 split and 1931 reunion of NT; NSW includes Lord Howe Island.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1901-01-01",
+   "precision": "day",
+   "what": "Federation: six colonies become the six original states",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uau.html",
+     "title": "Statoids — States of Australia (change history, territorial extent)",
+     "says": "Lists 1901-01-01 federation of six colonies; 1911-01-01 NT split from SA and FCT from NSW; 1927 split and 1931 reunion of NT; NSW includes Lord Howe Island.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1911-01-01",
+   "precision": "day",
+   "what": "Northern Territory surrendered by South Australia to the Commonwealth; Federal Capital Territory excised from New South Wales",
+   "sources": [
+    {
+     "url": "https://www.foundingdocs.gov.au/item-did-52.html",
+     "title": "Museum of Australian Democracy — Northern Territory Acceptance Act 1910 (Cth)",
+     "says": "From 1 January 1911 the Northern Territory, surrendered by South Australia, became the exclusive responsibility of the Commonwealth.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://abs.gov.au/ausstats/abs@.nsf/2f762f95845417aeca25706c00834efa/E6F95FD7187407B4CA2573A1007B2020?opendocument=",
+     "title": "ABS 1307.8 Australian Capital Territory in Focus, 2007",
+     "says": "On 1 January 1911 New South Wales ceded its government authority over the area and power over the Territory vested in the Commonwealth.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Territorial_evolution_of_Australia&oldid=1378448577",
+     "title": "Wikipedia — Territorial evolution of Australia (oldid 1378448577; each row cites the Act and the Commonwealth Gazette proclamation)",
+     "says": "Chronology: FCT split from NSW 1911-01-01; Jervis Bay ceded to FCT 1915-09-04; NT split at 20°S 1927, merged 1931-06-12; JBT separated from ACT 1989-05-11.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1915-09-04",
+   "precision": "day",
+   "what": "Jervis Bay land accepted by the Commonwealth and annexed to the Federal Capital Territory",
+   "sources": [
+    {
+     "url": "https://www.legislation.gov.au/files/JERVIS_BAY_TERRITORY_ACCEPTANCE_ACT_1915RP.pdf",
+     "title": "Jervis Bay Territory Acceptance Act 1915 (No. 19, 1915), reprint as at 30 Sep 1982",
+     "says": "Commenced 4 Sept 1915 (Gazette 1915 p.1710); Jervis Bay land (Parish of Bherwerre, to Bowen Island) accepted and annexed to, deemed part of, the Capital Territory.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Territorial_evolution_of_Australia&oldid=1378448577",
+     "title": "Wikipedia — Territorial evolution of Australia (oldid 1378448577; each row cites the Act and the Commonwealth Gazette proclamation)",
+     "says": "Chronology: FCT split from NSW 1911-01-01; Jervis Bay ceded to FCT 1915-09-04; NT split at 20°S 1927, merged 1931-06-12; JBT separated from ACT 1989-05-11.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1927-02-01",
+   "precision": "day",
+   "what": "Northern Territory divided at 20°S into North Australia and Central Australia (commencement given as 1 Feb or 1 Mar 1927 by different sources)",
+   "sources": [
+    {
+     "url": "https://www.findandconnect.gov.au/guide/nt/YE00178",
+     "title": "Find & Connect — Northern Australia Act 1926",
+     "says": "Act took effect from 1 February 1927, dividing the Northern Territory into North and Central Australia along the 20th parallel; repealed 1931.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Central_Australia_(territory)&oldid=1372888693",
+     "title": "Wikipedia — Central Australia (territory) (oldid 1372888693; cites Commonwealth Gazette No. 19, 24 Feb 1927 and No. 46, 11 Jun 1931)",
+     "says": "Northern Australia Act took effect 1 March 1927, splitting the NT at 20°S; the territory was disestablished in June 1931.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1931-06-12",
+   "precision": "day",
+   "what": "North Australia and Central Australia reunited as the Northern Territory",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Territorial_evolution_of_Australia&oldid=1378448577",
+     "title": "Wikipedia — Territorial evolution of Australia (oldid 1378448577; each row cites the Act and the Commonwealth Gazette proclamation)",
+     "says": "Chronology: FCT split from NSW 1911-01-01; Jervis Bay ceded to FCT 1915-09-04; NT split at 20°S 1927, merged 1931-06-12; JBT separated from ACT 1989-05-11.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1938",
+   "precision": "year",
+   "what": "Federal Capital Territory renamed Australian Capital Territory (no territorial change)",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uau.html",
+     "title": "Statoids — States of Australia (change history, territorial extent)",
+     "says": "Lists 1901-01-01 federation of six colonies; 1911-01-01 NT split from SA and FCT from NSW; 1927 split and 1931 reunion of NT; NSW includes Lord Howe Island.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1989-05-11",
+   "precision": "day",
+   "what": "ACT self-government: Jervis Bay Territory separated from the ACT",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Territorial_evolution_of_Australia&oldid=1378448577#Since_federation",
+     "title": "Wikipedia — Territorial evolution of Australia (oldid 1378448577), row 11 May 1989 citing the A.C.T. Self-Government (Consequential Provisions) Act 1988",
+     "says": "Jervis Bay Territory was split from the Australian Capital Territory to become its own territory on 11 May 1989.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1901-01-01",
+   "n": 6,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uau.html",
+     "title": "Statoids — States of Australia (change history, territorial extent)",
+     "says": "Lists 1901-01-01 federation of six colonies; 1911-01-01 NT split from SA and FCT from NSW; 1927 split and 1931 reunion of NT; NSW includes Lord Howe Island.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "North Australia (north of 20°S) 1927–1931",
+   "unit": "AUS:NorthAustralia@1927",
+   "atoms": [
+    "AUS-2650"
+   ],
+   "from": "1927-02-01",
+   "to": "1931-06-12",
+   "why": "The Northern Territory was split along the parallel 20°S into North Australia and Central Australia. That line runs through the single NE Northern Territory atom, so neither territory is a union of NE atoms. The window starts at the earlier of the two commencement dates in the sources (1 Feb vs 1 Mar 1927), so no unverified NT span is claimed.",
+   "checked": [
+    "Northern Australia Act 1926 (Find & Connect YE00178)",
+    "Wikipedia Central Australia (territory) oldid 1372888693; North Australia oldid 1360100698",
+    "Wikipedia Territorial evolution of Australia oldid 1378448577",
+    "statoids uau.html"
+   ],
+   "needs": "a split of atom AUS-2650 along latitude 20°S (the line is defined exactly by the Act, but it is not an NE atom boundary)"
+  },
+  {
+   "what": "Central Australia (south of 20°S) 1927–1931",
+   "unit": "AUS:CentralAustralia@1927",
+   "from": "1927-02-01",
+   "to": "1931-06-12",
+   "why": "See the North Australia entry: both share atom AUS-2650, which is withheld there.",
+   "checked": [
+    "as for North Australia"
+   ],
+   "needs": "a split of atom AUS-2650 along latitude 20°S"
+  }
+ ]
+}

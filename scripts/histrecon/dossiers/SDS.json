@@ -1,0 +1,608 @@
+{
+ "country": "SDS",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1991",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Territory of the NE SDS atoms (South Sudan, ISO SSD; NE adm0_a3 SDS). Part of the Republic of the Sudan until 2011-07-09 (much of it SPLA-held during 1991–2005), Republic of South Sudan since. Abyei and Kafia Kingi are not in these atoms (NE puts both in SDN).",
+ "units": [
+  {
+   "id": "SDS:BahrElGhazal@1991",
+   "names": {
+    "en": "Bahr al-Ghazal State (1991–94)",
+    "ja": "バハル・アル・ガザール州（1991–94年）",
+    "local": "ولاية بحر الغزال"
+   },
+   "spans": [
+    {
+     "from": "1991",
+     "precision": "year",
+     "to": "1994-02-14",
+     "atoms": [
+      "SDS-873",
+      "SDS-147",
+      "SDS-863",
+      "SDS-872"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1366540825",
+       "title": "States of Sudan — en.wikipedia, oldid 1366540825",
+       "says": "1991: nine federal states matching the 1948–73 provinces; 14 Feb 1994: 26 states; Jan 2012 Central and East Darfur (17 states); Jul 2013 West Kordofan restored.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Decree year only; union of its 1994 successors (Western and Northern Bahr el Ghazal, Lakes, Warrap)."
+    }
+   ]
+  },
+  {
+   "id": "SDS:Equatoria@1991",
+   "names": {
+    "en": "Equatoria State (1991–94)",
+    "ja": "エクアトリア州（1991–94年）",
+    "local": "ولاية الاستوائية"
+   },
+   "spans": [
+    {
+     "from": "1991",
+     "precision": "year",
+     "to": "1994-02-14",
+     "atoms": [
+      "SDS-865",
+      "SDS-892",
+      "SDS-864"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1366540825",
+       "title": "States of Sudan — en.wikipedia, oldid 1366540825",
+       "says": "1991: nine federal states matching the 1948–73 provinces; 14 Feb 1994: 26 states; Jan 2012 Central and East Darfur (17 states); Jul 2013 West Kordofan restored.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Union of its 1994 successors (Bahr al-Jabal/Central, Eastern, Western Equatoria)."
+    }
+   ]
+  },
+  {
+   "id": "SDS:UpperNile@1991",
+   "names": {
+    "en": "Upper Nile State (1991–94)",
+    "ja": "上ナイル州（1991–94年）",
+    "local": "ولاية أعالي النيل"
+   },
+   "spans": [
+    {
+     "from": "1991",
+     "precision": "year",
+     "to": "1994-02-14",
+     "atoms": [
+      "SDS-869",
+      "SDS-870",
+      "SDS-871"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1366540825",
+       "title": "States of Sudan — en.wikipedia, oldid 1366540825",
+       "says": "1991: nine federal states matching the 1948–73 provinces; 14 Feb 1994: 26 states; Jan 2012 Central and East Darfur (17 states); Jul 2013 West Kordofan restored.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Union of its 1994 successors (Upper Nile, Jonglei, Unity)."
+    }
+   ]
+  },
+  {
+   "id": "SDS:CentralEquatoria@1994",
+   "names": {
+    "en": "Central Equatoria (Bahr al-Jabal until 2005)",
+    "ja": "中央エクアトリア州",
+    "local": "ولاية وسط الاستوائية"
+   },
+   "wikidata": "Q487709",
+   "spans": [
+    {
+     "from": "1994-02-14",
+     "precision": "day",
+     "to": "2015-10",
+     "atoms": [
+      "SDS-865"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/uss.html",
+       "title": "States of South Sudan — Statoids (Gwillim Law, last updated 2015-11-04)",
+       "says": "2011-07-09: South Sudan split from Sudan; ten states, HASC codes changed from SD to SS. 2015-10: 28 new states announced.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Created 1994-02-14 as a state of Sudan (statoids, en.wikipedia); same territory on independence 2011-07-09; no change recorded until the 2015 reform. Ended at the month of the 28-state decree (October 2015)."
+    }
+   ]
+  },
+  {
+   "id": "SDS:EasternEquatoria@1994",
+   "names": {
+    "en": "Eastern Equatoria",
+    "ja": "東エクアトリア州",
+    "local": "ولاية شرق الاستوائية"
+   },
+   "wikidata": "Q488519",
+   "spans": [
+    {
+     "from": "1994-02-14",
+     "precision": "day",
+     "to": "2015-10",
+     "atoms": [
+      "SDS-892"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/uss.html",
+       "title": "States of South Sudan — Statoids (Gwillim Law, last updated 2015-11-04)",
+       "says": "2011-07-09: South Sudan split from Sudan; ten states, HASC codes changed from SD to SS. 2015-10: 28 new states announced.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Created 1994-02-14 as a state of Sudan (statoids, en.wikipedia); same territory on independence 2011-07-09; no change recorded until the 2015 reform. Ended at the month of the 28-state decree (October 2015)."
+    }
+   ]
+  },
+  {
+   "id": "SDS:WesternEquatoria@1994",
+   "names": {
+    "en": "Western Equatoria",
+    "ja": "西エクアトリア州",
+    "local": "ولاية غرب الاستوائية"
+   },
+   "wikidata": "Q319979",
+   "spans": [
+    {
+     "from": "1994-02-14",
+     "precision": "day",
+     "to": "2015-10",
+     "atoms": [
+      "SDS-864"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/uss.html",
+       "title": "States of South Sudan — Statoids (Gwillim Law, last updated 2015-11-04)",
+       "says": "2011-07-09: South Sudan split from Sudan; ten states, HASC codes changed from SD to SS. 2015-10: 28 new states announced.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Created 1994-02-14 as a state of Sudan (statoids, en.wikipedia); same territory on independence 2011-07-09; no change recorded until the 2015 reform. Ended at the month of the 28-state decree (October 2015)."
+    }
+   ]
+  },
+  {
+   "id": "SDS:Jonglei@1994",
+   "names": {
+    "en": "Jonglei",
+    "ja": "ジョングレイ州",
+    "local": "ولاية جونقلي"
+   },
+   "wikidata": "Q488904",
+   "spans": [
+    {
+     "from": "1994-02-14",
+     "precision": "day",
+     "to": "2015-10",
+     "atoms": [
+      "SDS-870"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/uss.html",
+       "title": "States of South Sudan — Statoids (Gwillim Law, last updated 2015-11-04)",
+       "says": "2011-07-09: South Sudan split from Sudan; ten states, HASC codes changed from SD to SS. 2015-10: 28 new states announced.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Created 1994-02-14 as a state of Sudan (statoids, en.wikipedia); same territory on independence 2011-07-09; no change recorded until the 2015 reform. Ended at the month of the 28-state decree (October 2015)."
+    }
+   ]
+  },
+  {
+   "id": "SDS:UpperNile@1994",
+   "names": {
+    "en": "Upper Nile",
+    "ja": "上ナイル州",
+    "local": "ولاية أعالي النيل"
+   },
+   "wikidata": "Q487702",
+   "spans": [
+    {
+     "from": "1994-02-14",
+     "precision": "day",
+     "to": "2015-10",
+     "atoms": [
+      "SDS-869"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/uss.html",
+       "title": "States of South Sudan — Statoids (Gwillim Law, last updated 2015-11-04)",
+       "says": "2011-07-09: South Sudan split from Sudan; ten states, HASC codes changed from SD to SS. 2015-10: 28 new states announced.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Created 1994-02-14 as a state of Sudan (statoids, en.wikipedia); same territory on independence 2011-07-09; no change recorded until the 2015 reform. Ended at the month of the 28-state decree (October 2015)."
+    }
+   ]
+  },
+  {
+   "id": "SDS:Unity@1994",
+   "names": {
+    "en": "Unity",
+    "ja": "ユニティ州",
+    "local": "ولاية الوحدة"
+   },
+   "wikidata": "Q319965",
+   "spans": [
+    {
+     "from": "1994-02-14",
+     "precision": "day",
+     "to": "2015-10",
+     "atoms": [
+      "SDS-871"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/uss.html",
+       "title": "States of South Sudan — Statoids (Gwillim Law, last updated 2015-11-04)",
+       "says": "2011-07-09: South Sudan split from Sudan; ten states, HASC codes changed from SD to SS. 2015-10: 28 new states announced.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Created 1994-02-14 as a state of Sudan (statoids, en.wikipedia); same territory on independence 2011-07-09; no change recorded until the 2015 reform. Ended at the month of the 28-state decree (October 2015)."
+    }
+   ]
+  },
+  {
+   "id": "SDS:Lakes@1994",
+   "names": {
+    "en": "Lakes",
+    "ja": "レイク州",
+    "local": "ولاية البحيرات"
+   },
+   "wikidata": "Q491096",
+   "spans": [
+    {
+     "from": "1994-02-14",
+     "precision": "day",
+     "to": "2015-10",
+     "atoms": [
+      "SDS-863"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/uss.html",
+       "title": "States of South Sudan — Statoids (Gwillim Law, last updated 2015-11-04)",
+       "says": "2011-07-09: South Sudan split from Sudan; ten states, HASC codes changed from SD to SS. 2015-10: 28 new states announced.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Created 1994-02-14 as a state of Sudan (statoids, en.wikipedia); same territory on independence 2011-07-09; no change recorded until the 2015 reform. Ended at the month of the 28-state decree (October 2015)."
+    }
+   ]
+  },
+  {
+   "id": "SDS:Warrap@1994",
+   "names": {
+    "en": "Warrap",
+    "ja": "ワラブ州",
+    "local": "ولاية واراب"
+   },
+   "wikidata": "Q491138",
+   "spans": [
+    {
+     "from": "1994-02-14",
+     "precision": "day",
+     "to": "2015-10",
+     "atoms": [
+      "SDS-872"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/uss.html",
+       "title": "States of South Sudan — Statoids (Gwillim Law, last updated 2015-11-04)",
+       "says": "2011-07-09: South Sudan split from Sudan; ten states, HASC codes changed from SD to SS. 2015-10: 28 new states announced.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Created 1994-02-14 as a state of Sudan (statoids, en.wikipedia); same territory on independence 2011-07-09; no change recorded until the 2015 reform. Ended at the month of the 28-state decree (October 2015)."
+    }
+   ]
+  },
+  {
+   "id": "SDS:NorthernBahrElGhazal@1994",
+   "names": {
+    "en": "Northern Bahr el Ghazal",
+    "ja": "北バハル・アル・ガザール州",
+    "local": "ولاية شمال بحر الغزال"
+   },
+   "wikidata": "Q491111",
+   "spans": [
+    {
+     "from": "1994-02-14",
+     "precision": "day",
+     "to": "2015-10",
+     "atoms": [
+      "SDS-147"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/uss.html",
+       "title": "States of South Sudan — Statoids (Gwillim Law, last updated 2015-11-04)",
+       "says": "2011-07-09: South Sudan split from Sudan; ten states, HASC codes changed from SD to SS. 2015-10: 28 new states announced.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Created 1994-02-14 as a state of Sudan (statoids, en.wikipedia); same territory on independence 2011-07-09; no change recorded until the 2015 reform. Ended at the month of the 28-state decree (October 2015)."
+    }
+   ]
+  },
+  {
+   "id": "SDS:WesternBahrElGhazal@1994",
+   "names": {
+    "en": "Western Bahr el Ghazal",
+    "ja": "西バハル・アル・ガザール州",
+    "local": "ولاية غرب بحر الغزال"
+   },
+   "wikidata": "Q332095",
+   "spans": [
+    {
+     "from": "1994-02-14",
+     "precision": "day",
+     "to": "2015-10",
+     "atoms": [
+      "SDS-873"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/uss.html",
+       "title": "States of South Sudan — Statoids (Gwillim Law, last updated 2015-11-04)",
+       "says": "2011-07-09: South Sudan split from Sudan; ten states, HASC codes changed from SD to SS. 2015-10: 28 new states announced.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Created 1994-02-14 as a state of Sudan (statoids, en.wikipedia); same territory on independence 2011-07-09; no change recorded until the 2015 reform. Ended at the month of the 28-state decree (October 2015)."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1991",
+   "precision": "year",
+   "what": "Sudan federal system: Bahr al-Ghazal, Equatoria, Upper Nile states",
+   "sources": [
+    {
+     "url": "http://www.statoids.com/usd.html",
+     "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+     "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1366540825",
+     "title": "States of Sudan — en.wikipedia, oldid 1366540825",
+     "says": "1991: nine federal states matching the 1948–73 provinces; 14 Feb 1994: 26 states; Jan 2012 Central and East Darfur (17 states); Jul 2013 West Kordofan restored.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1994-02-14",
+   "precision": "day",
+   "what": "Ten southern states created (of 26 in Sudan)",
+   "sources": [
+    {
+     "url": "http://www.statoids.com/usd.html",
+     "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+     "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1366540825",
+     "title": "States of Sudan — en.wikipedia, oldid 1366540825",
+     "says": "1991: nine federal states matching the 1948–73 provinces; 14 Feb 1994: 26 states; Jan 2012 Central and East Darfur (17 states); Jul 2013 West Kordofan restored.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2005-04-01",
+   "precision": "day",
+   "what": "Bahr al-Jabal renamed Central Equatoria (name only)",
+   "sources": [
+    {
+     "url": "http://www.statoids.com/usd.html",
+     "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+     "says": "2005-04-01: Name of Bahr-al-Jabal state changed to Central Equatoria.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2011-07-09",
+   "precision": "day",
+   "what": "Independence of South Sudan with the ten states",
+   "sources": [
+    {
+     "url": "http://www.statoids.com/uss.html",
+     "title": "States of South Sudan — Statoids (Gwillim Law, last updated 2015-11-04)",
+     "says": "2011-07-09: South Sudan split from Sudan.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2015-10",
+   "precision": "month",
+   "what": "28 states decreed (Establishment Order, Oct 2015; referred to parliament)",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1377831384",
+     "title": "States of South Sudan — en.wikipedia, oldid 1377831384",
+     "says": "October 2015 decree set 28 states replacing the 10; 14 Jan 2017 raised to 32; February 2020 back to 10 states plus administrative areas.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "http://www.statoids.com/uss.html",
+     "title": "States of South Sudan — Statoids (Gwillim Law, last updated 2015-11-04)",
+     "says": "Sources dated 2015-10-02/04 list counties of the 28 new states.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2017-01-14",
+   "precision": "day",
+   "what": "32 states",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1377831384",
+     "title": "States of South Sudan — en.wikipedia, oldid 1377831384",
+     "says": "October 2015 decree set 28 states replacing the 10; 14 Jan 2017 raised to 32; February 2020 back to 10 states plus administrative areas.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "2011-07-09",
+   "n": 10,
+   "sources": [
+    {
+     "url": "http://www.statoids.com/uss.html",
+     "title": "States of South Sudan — Statoids (Gwillim Law, last updated 2015-11-04)",
+     "says": "South Sudan is divided into 10 wilayat (states).",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "28 states (2015–2017) and 32 states (2017–2020)",
+   "atoms": [
+    "SDS-892",
+    "SDS-873",
+    "SDS-864",
+    "SDS-865",
+    "SDS-869",
+    "SDS-870",
+    "SDS-871",
+    "SDS-147",
+    "SDS-863",
+    "SDS-872"
+   ],
+   "from": "2015-10",
+   "to": null,
+   "why": "The new states are groupings of counties (including new counties) that cut across the ten old states; their lines run inside the NE atoms. The exact entry-into-force day of the 28 states (decree vs. parliamentary approval / governors appointed) was not settled, so the ten states are withheld from October 2015.",
+   "checked": [
+    "statoids uss (2015 note on 28 states)",
+    "en.wikipedia States of South Sudan oldid 1377831384"
+   ],
+   "needs": "South Sudan county atoms with 2015 and 2017 county-to-state lists (e.g. OCHA COD-AB SSD ADM2, licence to check)"
+  },
+  {
+   "what": "Layouts before 1991 (Southern Region 1972–83; Bahr el Ghazal, Equatoria, Upper Nile regions 1983–91; provinces 1948–76)",
+   "atoms": [],
+   "from": "1956-01-01",
+   "to": "1991",
+   "why": "Out of scope here: the pre-1991 north–south line differs from NE at Kafia Kingi (Bahr el Ghazal until 1960) and is disputed elsewhere (CPA 1956 line); internal 1976 province lines (e.g. Eastern/Western Equatoria vs. 1994 Bahr al-Jabal) not shown to coincide with NE lines.",
+   "checked": [
+    "statoids usd (change history 1919–2013)",
+    "en.wikipedia States of Sudan oldid 1366540825",
+    "en.wikipedia Kafia Kingi oldid 1377801384"
+   ],
+   "needs": "district atoms with 1956–1991 lines (none open found)"
+  }
+ ]
+}

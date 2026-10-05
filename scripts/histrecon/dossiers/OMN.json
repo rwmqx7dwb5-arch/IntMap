@@ -1,0 +1,702 @@
+{
+ "country": "OMN",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1991-02-03",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Sultanate of Oman (over the whole scope). Musandam and Madha are exclaves; the UAE counter-enclave of Nahwa is not an Omani atom.",
+ "units": [
+  {
+   "id": "OMN:Muscat@1991",
+   "names": {
+    "en": "Muscat Governorate",
+    "ja": "マスカット特別行政区",
+    "local": "محافظة مسقط"
+   },
+   "wikidata": "Q544762",
+   "spans": [
+    {
+     "from": "1991-02-03",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "OMN-2426"
+     ],
+     "sources": [
+      {
+       "url": "https://qanoon.om/p/1991/rd1991006/",
+       "title": "Royal Decree 6/91 approving the administrative division of the Sultanate (qanoon.om), Official Gazette 449",
+       "says": "Effective 3 Feb 1991: Muscat, Batinah, Musandam, Dhahirah (incl. Buraimi, Mahdah), Dakhiliyah, Sharqiyah, Wusta, Dhofar with their wilayats.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://qanoon.om/p/2011/rd2011114/",
+       "title": "Royal Decree 114/2011 (qanoon.om), Official Gazette 949",
+       "says": "Eleven governorates with their wilayats (Batinah and Sharqiyah each split North/South); in force from issue, 26 Oct 2011.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same six wilayats in 1991 and 2011 (Al-Hajer = Al Amarat); no international border."
+    }
+   ]
+  },
+  {
+   "id": "OMN:Dakhiliyah@1991",
+   "names": {
+    "en": "Ad Dakhiliyah Governorate",
+    "ja": "ダーヒリーヤ行政区",
+    "local": "محافظة الداخلية"
+   },
+   "wikidata": "Q792550",
+   "spans": [
+    {
+     "from": "1991-02-03",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "OMN-2404"
+     ],
+     "sources": [
+      {
+       "url": "https://qanoon.om/p/1991/rd1991006/",
+       "title": "Royal Decree 6/91 approving the administrative division of the Sultanate (qanoon.om), Official Gazette 449",
+       "says": "Effective 3 Feb 1991: Muscat, Batinah, Musandam, Dhahirah (incl. Buraimi, Mahdah), Dakhiliyah, Sharqiyah, Wusta, Dhofar with their wilayats.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://qanoon.om/p/2011/rd2011114/",
+       "title": "Royal Decree 114/2011 (qanoon.om), Official Gazette 949",
+       "says": "Eleven governorates with their wilayats (Batinah and Sharqiyah each split North/South); in force from issue, 26 Oct 2011.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same eight wilayats in 1991 and 2011; no international border."
+    }
+   ]
+  },
+  {
+   "id": "OMN:Sharqiyah@1991",
+   "names": {
+    "en": "Ash Sharqiyah Region",
+    "ja": "シャルキーヤ地方",
+    "local": "المنطقة الشرقية"
+   },
+   "wikidata": "Q1106416",
+   "spans": [
+    {
+     "from": "1991-02-03",
+     "precision": "day",
+     "to": "2011-10-26",
+     "atoms": [
+      "OMN-5496",
+      "OMN-2406"
+     ],
+     "sources": [
+      {
+       "url": "https://qanoon.om/p/1991/rd1991006/",
+       "title": "Royal Decree 6/91 approving the administrative division of the Sultanate (qanoon.om), Official Gazette 449",
+       "says": "Effective 3 Feb 1991: Muscat, Batinah, Musandam, Dhahirah (incl. Buraimi, Mahdah), Dakhiliyah, Sharqiyah, Wusta, Dhofar with their wilayats.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://qanoon.om/p/2011/rd2011114/",
+       "title": "Royal Decree 114/2011 (qanoon.om), Official Gazette 949",
+       "says": "Eleven governorates with their wilayats (Batinah and Sharqiyah each split North/South); in force from issue, 26 Oct 2011.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 11 Sharqiyah wilayats of 1991 = the 6 of North + 5 of South Sharqiyah in 2011."
+    }
+   ]
+  },
+  {
+   "id": "OMN:SharqiyahNorth@2011",
+   "names": {
+    "en": "Ash Sharqiyah North Governorate",
+    "ja": "北シャルキーヤ地方",
+    "local": "محافظة شمال الشرقية"
+   },
+   "wikidata": "Q4501876",
+   "spans": [
+    {
+     "from": "2011-10-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "OMN-5496"
+     ],
+     "sources": [
+      {
+       "url": "https://qanoon.om/p/2011/rd2011114/",
+       "title": "Royal Decree 114/2011 (qanoon.om), Official Gazette 949",
+       "says": "Eleven governorates with their wilayats (Batinah and Sharqiyah each split North/South); in force from issue, 26 Oct 2011.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "OMN:SharqiyahSouth@2011",
+   "names": {
+    "en": "South Ash Sharqiyah Governorate",
+    "ja": "南シャルキーヤ地方",
+    "local": "محافظة جنوب الشرقية"
+   },
+   "spans": [
+    {
+     "from": "2011-10-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "OMN-2406"
+     ],
+     "sources": [
+      {
+       "url": "https://qanoon.om/p/2011/rd2011114/",
+       "title": "Royal Decree 114/2011 (qanoon.om), Official Gazette 949",
+       "says": "Eleven governorates with their wilayats (Batinah and Sharqiyah each split North/South); in force from issue, 26 Oct 2011.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "OMN:Batinah@2002",
+   "names": {
+    "en": "Al Batinah Region",
+    "ja": "バーティナ地方",
+    "local": "منطقة الباطنة"
+   },
+   "wikidata": "Q264245",
+   "spans": [
+    {
+     "from": "2002-06-22",
+     "precision": "day",
+     "to": "2011-10-26",
+     "atoms": [
+      "OMN-2424",
+      "OMN-5497"
+     ],
+     "sources": [
+      {
+       "url": "https://qanoon.om/p/1991/rd1991006/",
+       "title": "Royal Decree 6/91 approving the administrative division of the Sultanate (qanoon.om), Official Gazette 449",
+       "says": "Effective 3 Feb 1991: Muscat, Batinah, Musandam, Dhahirah (incl. Buraimi, Mahdah), Dakhiliyah, Sharqiyah, Wusta, Dhofar with their wilayats.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://qanoon.om/p/2011/rd2011114/",
+       "title": "Royal Decree 114/2011 (qanoon.om), Official Gazette 949",
+       "says": "Eleven governorates with their wilayats (Batinah and Sharqiyah each split North/South); in force from issue, 26 Oct 2011.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375870416",
+       "title": "Oman–United Arab Emirates border — Wikipedia (oldid 1375870416)",
+       "says": "Ras al-Khaimah section settled 1979; southern section 1999; complete delimitation ratified in Abu Dhabi on 22 June 2002.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 12 Batinah wilayats of 1991 = 6 North + 6 South in 2011. Starts at the Oman–UAE complete delimitation (outer line not defined before)."
+    }
+   ]
+  },
+  {
+   "id": "OMN:BatinahNorth@2011",
+   "names": {
+    "en": "Al Batinah North Governorate",
+    "ja": "北バーティナ地方",
+    "local": "محافظة شمال الباطنة"
+   },
+   "wikidata": "Q4703564",
+   "spans": [
+    {
+     "from": "2011-10-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "OMN-2424"
+     ],
+     "sources": [
+      {
+       "url": "https://qanoon.om/p/2011/rd2011114/",
+       "title": "Royal Decree 114/2011 (qanoon.om), Official Gazette 949",
+       "says": "Eleven governorates with their wilayats (Batinah and Sharqiyah each split North/South); in force from issue, 26 Oct 2011.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "OMN:BatinahSouth@2011",
+   "names": {
+    "en": "Al Batinah South Governorate",
+    "ja": "南バーティナ地方",
+    "local": "محافظة جنوب الباطنة"
+   },
+   "wikidata": "Q4703565",
+   "spans": [
+    {
+     "from": "2011-10-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "OMN-5497"
+     ],
+     "sources": [
+      {
+       "url": "https://qanoon.om/p/2011/rd2011114/",
+       "title": "Royal Decree 114/2011 (qanoon.om), Official Gazette 949",
+       "says": "Eleven governorates with their wilayats (Batinah and Sharqiyah each split North/South); in force from issue, 26 Oct 2011.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "OMN:Musandam@2002",
+   "names": {
+    "en": "Musandam Governorate",
+    "ja": "ムサンダム特別行政区",
+    "local": "محافظة مسندم"
+   },
+   "wikidata": "Q372144",
+   "spans": [
+    {
+     "from": "2002-06-22",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "OMN-2425"
+     ],
+     "sources": [
+      {
+       "url": "https://qanoon.om/p/1991/rd1991006/",
+       "title": "Royal Decree 6/91 approving the administrative division of the Sultanate (qanoon.om), Official Gazette 449",
+       "says": "Effective 3 Feb 1991: Muscat, Batinah, Musandam, Dhahirah (incl. Buraimi, Mahdah), Dakhiliyah, Sharqiyah, Wusta, Dhofar with their wilayats.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://qanoon.om/p/2011/rd2011114/",
+       "title": "Royal Decree 114/2011 (qanoon.om), Official Gazette 949",
+       "says": "Eleven governorates with their wilayats (Batinah and Sharqiyah each split North/South); in force from issue, 26 Oct 2011.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375870416",
+       "title": "Oman–United Arab Emirates border — Wikipedia (oldid 1375870416)",
+       "says": "Ras al-Khaimah section settled 1979; southern section 1999; complete delimitation ratified in Abu Dhabi on 22 June 2002.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same four wilayats 1991/2011; outer line with the UAE fixed by the 2002 delimitation."
+    }
+   ]
+  },
+  {
+   "id": "OMN:Dhahirah@2002",
+   "names": {
+    "en": "Ad Dhahirah Governorate",
+    "ja": "ザーヒラ行政区",
+    "local": "محافظة الظاهرة"
+   },
+   "wikidata": "Q1468596",
+   "spans": [
+    {
+     "from": "2002-06-22",
+     "precision": "day",
+     "to": "2006-10-15",
+     "atoms": [
+      "OMN-2414",
+      "OMN-4836"
+     ],
+     "sources": [
+      {
+       "url": "https://qanoon.om/p/1991/rd1991006/",
+       "title": "Royal Decree 6/91 approving the administrative division of the Sultanate (qanoon.om), Official Gazette 449",
+       "says": "Effective 3 Feb 1991: Muscat, Batinah, Musandam, Dhahirah (incl. Buraimi, Mahdah), Dakhiliyah, Sharqiyah, Wusta, Dhofar with their wilayats.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://qanoon.om/p/2006/rd2006108/",
+       "title": "Royal Decree 108/2006 establishing Al Buraimi Governorate (qanoon.om), Official Gazette 826",
+       "says": "Buraimi governorate of Buraimi, Mahdah and As Sunaynah wilayats; in force from issue, 15 Oct 2006.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375870416",
+       "title": "Oman–United Arab Emirates border — Wikipedia (oldid 1375870416)",
+       "says": "Ras al-Khaimah section settled 1979; southern section 1999; complete delimitation ratified in Abu Dhabi on 22 June 2002.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1340135286",
+       "title": "Oman–Saudi Arabia border — Wikipedia (oldid 1340135286)",
+       "says": "Treaty signed 21 March 1990, ratified May 1991, demarcated by 1995 at the modified Riyadh line.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Dhahirah incl. Buraimi and Mahdah = union of the modern Dhahirah and Buraimi atoms (As Sunaynah was carved from those two). Starts at the 2002 Oman–UAE delimitation."
+    },
+    {
+     "from": "2006-10-15",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "OMN-2414"
+     ],
+     "sources": [
+      {
+       "url": "https://qanoon.om/p/2006/rd2006108/",
+       "title": "Royal Decree 108/2006 establishing Al Buraimi Governorate (qanoon.om), Official Gazette 826",
+       "says": "Buraimi governorate of Buraimi, Mahdah and As Sunaynah wilayats; in force from issue, 15 Oct 2006.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://qanoon.om/p/2011/rd2011114/",
+       "title": "Royal Decree 114/2011 (qanoon.om), Official Gazette 949",
+       "says": "Eleven governorates with their wilayats (Batinah and Sharqiyah each split North/South); in force from issue, 26 Oct 2011.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Ibri, Yanqul, Dank."
+    }
+   ]
+  },
+  {
+   "id": "OMN:Buraimi@2006",
+   "names": {
+    "en": "Al Buraimi Governorate",
+    "ja": "ブライミ特別行政区",
+    "local": "محافظة البريمي"
+   },
+   "wikidata": "Q852039",
+   "spans": [
+    {
+     "from": "2006-10-15",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "OMN-4836"
+     ],
+     "sources": [
+      {
+       "url": "https://qanoon.om/p/2006/rd2006108/",
+       "title": "Royal Decree 108/2006 establishing Al Buraimi Governorate (qanoon.om), Official Gazette 826",
+       "says": "Buraimi governorate of Buraimi, Mahdah and As Sunaynah wilayats; in force from issue, 15 Oct 2006.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://qanoon.om/p/2011/rd2011114/",
+       "title": "Royal Decree 114/2011 (qanoon.om), Official Gazette 949",
+       "says": "Eleven governorates with their wilayats (Batinah and Sharqiyah each split North/South); in force from issue, 26 Oct 2011.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "OMN:Wusta@1991",
+   "names": {
+    "en": "Al Wusta Governorate",
+    "ja": "ウスタ行政区",
+    "local": "محافظة الوسطى"
+   },
+   "wikidata": "Q958518",
+   "spans": [
+    {
+     "from": "1991-06",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "OMN-2405"
+     ],
+     "sources": [
+      {
+       "url": "https://qanoon.om/p/1991/rd1991006/",
+       "title": "Royal Decree 6/91 approving the administrative division of the Sultanate (qanoon.om), Official Gazette 449",
+       "says": "Effective 3 Feb 1991: Muscat, Batinah, Musandam, Dhahirah (incl. Buraimi, Mahdah), Dakhiliyah, Sharqiyah, Wusta, Dhofar with their wilayats.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://qanoon.om/p/2011/rd2011114/",
+       "title": "Royal Decree 114/2011 (qanoon.om), Official Gazette 949",
+       "says": "Eleven governorates with their wilayats (Batinah and Sharqiyah each split North/South); in force from issue, 26 Oct 2011.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1340135286",
+       "title": "Oman–Saudi Arabia border — Wikipedia (oldid 1340135286)",
+       "says": "Treaty signed 21 March 1990, ratified May 1991, demarcated by 1995 at the modified Riyadh line.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Outer line with Saudi Arabia from the 1990 treaty, ratified May 1991 (day not found) — span starts the month after."
+    }
+   ]
+  },
+  {
+   "id": "OMN:Dhofar@1992",
+   "names": {
+    "en": "Dhofar Governorate",
+    "ja": "ドファール特別行政区",
+    "local": "محافظة ظفار"
+   },
+   "wikidata": "Q1207752",
+   "spans": [
+    {
+     "from": "1992-10-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "OMN-2411"
+     ],
+     "sources": [
+      {
+       "url": "https://qanoon.om/p/1991/rd1991006/",
+       "title": "Royal Decree 6/91 approving the administrative division of the Sultanate (qanoon.om), Official Gazette 449",
+       "says": "Effective 3 Feb 1991: Muscat, Batinah, Musandam, Dhahirah (incl. Buraimi, Mahdah), Dakhiliyah, Sharqiyah, Wusta, Dhofar with their wilayats.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://qanoon.om/p/2011/rd2011114/",
+       "title": "Royal Decree 114/2011 (qanoon.om), Official Gazette 949",
+       "says": "Eleven governorates with their wilayats (Batinah and Sharqiyah each split North/South); in force from issue, 26 Oct 2011.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1378464985",
+       "title": "Oman–Yemen border — Wikipedia (oldid 1378464985)",
+       "says": "Border agreement signed 1 October 1992 finalised the frontier at its current position.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1340135286",
+       "title": "Oman–Saudi Arabia border — Wikipedia (oldid 1340135286)",
+       "says": "Treaty signed 21 March 1990, ratified May 1991, demarcated by 1995 at the modified Riyadh line.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Outer line with Yemen from the agreement signed 1992-10-01 (ratification date not found; signature date used)."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1991-02-03",
+   "precision": "day",
+   "what": "Royal Decree 6/91: administrative division into 8 regions/governorates",
+   "sources": [
+    {
+     "url": "https://qanoon.om/p/1991/rd1991006/",
+     "title": "Royal Decree 6/91 approving the administrative division of the Sultanate (qanoon.om), Official Gazette 449",
+     "says": "Effective 3 Feb 1991: Muscat, Batinah, Musandam, Dhahirah (incl. Buraimi, Mahdah), Dakhiliyah, Sharqiyah, Wusta, Dhofar with their wilayats.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1991-05",
+   "precision": "month",
+   "what": "Oman–Saudi boundary treaty ratified",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1340135286",
+     "title": "Oman–Saudi Arabia border — Wikipedia (oldid 1340135286)",
+     "says": "Treaty signed 21 March 1990, ratified May 1991, demarcated by 1995 at the modified Riyadh line.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1992-10-01",
+   "precision": "day",
+   "what": "Oman–Yemen boundary agreement signed",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1378464985",
+     "title": "Oman–Yemen border — Wikipedia (oldid 1378464985)",
+     "says": "Border agreement signed 1 October 1992 finalised the frontier at its current position.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2002-06-22",
+   "precision": "day",
+   "what": "Complete Oman–UAE delimitation ratified",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1375870416",
+     "title": "Oman–United Arab Emirates border — Wikipedia (oldid 1375870416)",
+     "says": "Ras al-Khaimah section settled 1979; southern section 1999; complete delimitation ratified in Abu Dhabi on 22 June 2002.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2006-10-15",
+   "precision": "day",
+   "what": "Al Buraimi governorate formed from Ad Dhahirah",
+   "sources": [
+    {
+     "url": "https://qanoon.om/p/2006/rd2006108/",
+     "title": "Royal Decree 108/2006 establishing Al Buraimi Governorate (qanoon.om), Official Gazette 826",
+     "says": "Buraimi governorate of Buraimi, Mahdah and As Sunaynah wilayats; in force from issue, 15 Oct 2006.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2011-10-26",
+   "precision": "day",
+   "what": "Eleven governorates (Batinah and Sharqiyah split)",
+   "sources": [
+    {
+     "url": "https://qanoon.om/p/2011/rd2011114/",
+     "title": "Royal Decree 114/2011 (qanoon.om), Official Gazette 949",
+     "says": "Eleven governorates with their wilayats (Batinah and Sharqiyah each split North/South); in force from issue, 26 Oct 2011.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1991-02-03",
+   "n": 8,
+   "sources": [
+    {
+     "url": "https://qanoon.om/p/1991/rd1991006/",
+     "title": "Royal Decree 6/91 approving the administrative division of the Sultanate (qanoon.om), Official Gazette 449",
+     "says": "Effective 3 Feb 1991: Muscat, Batinah, Musandam, Dhahirah (incl. Buraimi, Mahdah), Dakhiliyah, Sharqiyah, Wusta, Dhofar with their wilayats.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2010-01-01",
+   "n": 9,
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1368457611",
+     "title": "Governorates of Oman — Wikipedia (oldid 1368457611)",
+     "says": "Before 28 Oct 2011: five regions and four governorates; since then eleven governorates.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2012-01-01",
+   "n": 11,
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1368457611",
+     "title": "Governorates of Oman — Wikipedia (oldid 1368457611)",
+     "says": "Before 28 Oct 2011: five regions and four governorates; since then eleven governorates.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://qanoon.om/p/2011/rd2011114/",
+     "title": "Royal Decree 114/2011 (qanoon.om), Official Gazette 949",
+     "says": "Eleven governorates with their wilayats (Batinah and Sharqiyah each split North/South); in force from issue, 26 Oct 2011.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Omani regions before Royal Decree 6/91",
+   "from": "1970",
+   "to": "1991-02-03",
+   "why": "Statoids: divisions varied from eight to ten liwas c.1960–1990 with little definition; no dated layout found.",
+   "checked": [
+    "statoids.com/uom.html",
+    "qanoon.om"
+   ],
+   "needs": "pre-1991 decrees (Royal Decree 26/75 and amendments)"
+  },
+  {
+   "what": "Batinah region before the Oman–UAE delimitation",
+   "unit": "OMN:Batinah@2002",
+   "atoms": [
+    "OMN-2424",
+    "OMN-5497"
+   ],
+   "from": "1991-02-03",
+   "to": "2002-06-22",
+   "why": "Batinah North borders Ras al-Khaimah, Fujairah, Sharjah and Dubai (Hatta); the Oman–UAE line was delimited only in 1999/2002 and the treaty details are unpublished, so the pre-2002 outer line cannot be shown to equal the NE line.",
+   "checked": [
+    "Oman–United Arab Emirates border oldid 1375870416"
+   ],
+   "needs": "the 2002 delimitation maps (unpublished)"
+  },
+  {
+   "what": "Musandam before the Oman–UAE delimitation",
+   "unit": "OMN:Musandam@2002",
+   "atoms": [
+    "OMN-2425"
+   ],
+   "from": "1991-02-03",
+   "to": "2002-06-22",
+   "why": "Same as Batinah; only the Ras al-Khaimah sector was settled earlier (1979).",
+   "checked": [
+    "Oman–United Arab Emirates border oldid 1375870416"
+   ],
+   "needs": "the 2002 delimitation maps"
+  },
+  {
+   "what": "Ad Dhahirah (with Buraimi) before the Oman–UAE delimitation",
+   "unit": "OMN:Dhahirah@2002",
+   "atoms": [
+    "OMN-2414",
+    "OMN-4836"
+   ],
+   "from": "1991-02-03",
+   "to": "2002-06-22",
+   "why": "Borders Abu Dhabi and Sharjah; southern sector delimited 1999, whole line 2002.",
+   "checked": [
+    "Oman–United Arab Emirates border oldid 1375870416",
+    "Oman–Saudi Arabia border oldid 1340135286"
+   ],
+   "needs": "the 1999/2002 delimitation maps"
+  },
+  {
+   "what": "Al Wusta before the Saudi treaty took effect",
+   "unit": "OMN:Wusta@1991",
+   "atoms": [
+    "OMN-2405"
+   ],
+   "from": "1991-02-03",
+   "to": "1991-06",
+   "why": "Saudi–Omani line ratified May 1991 (day not found).",
+   "checked": [
+    "Oman–Saudi Arabia border oldid 1340135286"
+   ],
+   "needs": "ratification instrument date"
+  },
+  {
+   "what": "Dhofar before the Oman–Yemen agreement",
+   "unit": "OMN:Dhofar@1992",
+   "atoms": [
+    "OMN-2411"
+   ],
+   "from": "1991-02-03",
+   "to": "1992-10-01",
+   "why": "Oman–Yemen frontier undefined until the 1992 agreement.",
+   "checked": [
+    "Oman–Yemen border oldid 1378464985"
+   ],
+   "needs": "nothing finer: the pre-1992 line was undefined"
+  }
+ ]
+}

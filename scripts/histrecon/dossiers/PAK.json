@@ -1,0 +1,405 @@
+{
+ "country": "PAK",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1970-07-01",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Pakistan from 1 Jul 1970 (dissolution of One Unit). Gilgit-Baltistan and Azad Kashmir are Pakistani-administered parts of the disputed Kashmir region, drawn as NE assigns them.",
+ "units": [
+  {
+   "id": "PAK:Punjab",
+   "names": {
+    "en": "Punjab Province",
+    "ja": "パンジャーブ州",
+    "local": "پنجاب"
+   },
+   "wikidata": "Q4478",
+   "spans": [
+    {
+     "from": "1970-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PAK-1113"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upk.html",
+       "title": "Statoids — Provinces of Pakistan, change history",
+       "says": "1970-07-01: West Pakistan split into Baluchistan, North-West Frontier, Punjab and Sind provinces and the centrally administered area of Islamabad.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upk.html",
+       "title": "Statoids — Provinces of Pakistan, change history",
+       "says": "Lists no boundary change between the provinces after 1970 (only renamings: Balochistan, Sindh ~1990; Khyber-Pakhtunkhwa 2010).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PAK:Sindh",
+   "names": {
+    "en": "Sindh Province",
+    "ja": "シンド州",
+    "local": "سندھ"
+   },
+   "wikidata": "Q37211",
+   "spans": [
+    {
+     "from": "1970-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PAK-1114"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upk.html",
+       "title": "Statoids — Provinces of Pakistan, change history",
+       "says": "1970-07-01: West Pakistan split into Baluchistan, North-West Frontier, Punjab and Sind provinces and the centrally administered area of Islamabad.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upk.html",
+       "title": "Statoids — Provinces of Pakistan, change history",
+       "says": "Lists no boundary change between the provinces after 1970 (only renamings: Balochistan, Sindh ~1990; Khyber-Pakhtunkhwa 2010).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PAK:Balochistan",
+   "names": {
+    "en": "Balochistan Province",
+    "ja": "バローチスターン州",
+    "local": "بلوچستان"
+   },
+   "wikidata": "Q163239",
+   "spans": [
+    {
+     "from": "1970-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PAK-1108"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upk.html",
+       "title": "Statoids — Provinces of Pakistan, change history",
+       "says": "1970-07-01: West Pakistan split into Baluchistan, North-West Frontier, Punjab and Sind provinces and the centrally administered area of Islamabad.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upk.html",
+       "title": "Statoids — Provinces of Pakistan, change history",
+       "says": "Lists no boundary change between the provinces after 1970 (only renamings: Balochistan, Sindh ~1990; Khyber-Pakhtunkhwa 2010).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PAK:Islamabad",
+   "names": {
+    "en": "Islamabad Capital Territory",
+    "ja": "イスラーマーバード首都圏",
+    "local": "اسلام آباد وفاقی دارالحکومت علاقہ"
+   },
+   "wikidata": "Q848613",
+   "spans": [
+    {
+     "from": "1970-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PAK-1110"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upk.html",
+       "title": "Statoids — Provinces of Pakistan, change history",
+       "says": "1970-07-01: West Pakistan split into Baluchistan, North-West Frontier, Punjab and Sind provinces and the centrally administered area of Islamabad.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Islamabad_Capital_Territory&oldid=1378250525",
+       "title": "Wikipedia — Islamabad Capital Territory",
+       "says": "The area was separated from Rawalpindi District in 1967 to form a separate federally administered territory.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upk.html",
+       "title": "Statoids — Provinces of Pakistan, change history",
+       "says": "1981: status of the Islamabad administered area changed to capital territory (no territorial change stated).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PAK:Khyber Pakhtunkhwa",
+   "names": {
+    "en": "Khyber Pakhtunkhwa Province",
+    "ja": "カイバル・パクトゥンクワ州",
+    "local": "خیبر پختونخوا"
+   },
+   "wikidata": "Q183314",
+   "spans": [
+    {
+     "from": "1970-07-01",
+     "precision": "day",
+     "to": "2018-05-31",
+     "atoms": [
+      "PAK-1123"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upk.html",
+       "title": "Statoids — Provinces of Pakistan, change history",
+       "says": "1970-07-01: West Pakistan split into Baluchistan, North-West Frontier, Punjab and Sind provinces and the centrally administered area of Islamabad.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upk.html",
+       "title": "Statoids — Provinces of Pakistan, change history",
+       "says": "Lists no boundary change between the provinces after 1970 (only renamings: Balochistan, Sindh ~1990; Khyber-Pakhtunkhwa 2010).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Named North-West Frontier Province until 19 Apr 2010 (same territory)."
+    },
+    {
+     "from": "2018-05-31",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PAK-1123",
+      "PAK-1112"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Federally_Administered_Tribal_Areas&oldid=1375662241",
+       "title": "Wikipedia — Federally Administered Tribal Areas",
+       "says": "The 25th Amendment received presidential assent on 31 May 2018, after which FATA was officially merged with Khyber Pakhtunkhwa.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Twenty-fifth_Amendment_to_the_Constitution_of_Pakistan&oldid=1341019924",
+       "title": "Wikipedia — Twenty-fifth Amendment to the Constitution of Pakistan",
+       "says": "Assented on 31 May 2018.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upk.html",
+       "title": "Statoids — Provinces of Pakistan, change history",
+       "says": "Note 8: the 2018 amendment merged FATA into Khyber Pakhtunkhwa, effective 13 Aug 2018 when the new provincial assembly first sat.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Sources differ on the merger date: the amendment took effect on assent 31 May 2018 (used); statoids gives 13 Aug 2018 (first sitting of the enlarged assembly)."
+    }
+   ]
+  },
+  {
+   "id": "PAK:Federally Administered Tribal Areas",
+   "names": {
+    "en": "Federally Administered Tribal Areas",
+    "ja": "連邦直轄部族地域",
+    "local": "قبائلی علاقہ جات"
+   },
+   "wikidata": "Q208270",
+   "spans": [
+    {
+     "from": "1970-07-01",
+     "precision": "day",
+     "to": "2018-05-31",
+     "atoms": [
+      "PAK-1112"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upk.html",
+       "title": "Statoids — Provinces of Pakistan, change history",
+       "says": "FATA corresponds to the Khyber, Kurram, Malakand, North and South Waziristan agencies; federally administered since independence.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Federally_Administered_Tribal_Areas&oldid=1375662241",
+       "title": "Wikipedia — Federally Administered Tribal Areas",
+       "says": "The 25th Amendment received presidential assent on 31 May 2018, after which FATA was officially merged with Khyber Pakhtunkhwa.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Formalised as «Federally Administered Tribal Areas» by the 1973 constitution; tribal agencies were already centrally administered in 1970. Internal agency/FR changes (Bajaur 1973, Orakzai 1973, FR Tank/Lakki) stay inside the atom."
+    }
+   ]
+  },
+  {
+   "id": "PAK:Gilgit-Baltistan",
+   "names": {
+    "en": "Gilgit-Baltistan",
+    "ja": "ギルギット・バルティスタン州",
+    "local": "گلگت بلتستان"
+   },
+   "wikidata": "Q200697",
+   "spans": [
+    {
+     "from": "1972-12-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PAK-1111"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Gilgit-Baltistan&oldid=1374417251",
+       "title": "Wikipedia — Gilgit-Baltistan",
+       "says": "Infobox: Northern Areas established August 1972; renamed Gilgit-Baltistan 29 August 2009.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uin.html",
+       "title": "Statoids — States of India, change history",
+       "says": "1972-12-17: a new line of control between India and Pakistan in Jammu and Kashmir took effect.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Northern Areas until 29 Aug 2009 (same territory). Siachen is a separate NE feature (KAS) and not in this atom."
+    }
+   ]
+  },
+  {
+   "id": "PAK:Azad Jammu and Kashmir",
+   "names": {
+    "en": "Azad Jammu and Kashmir",
+    "ja": "アザド・カシミール",
+    "local": "آزاد جموں کشمیر"
+   },
+   "wikidata": "Q200130",
+   "spans": [
+    {
+     "from": "1972-12-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PAK-1109"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uin.html",
+       "title": "Statoids — States of India, change history",
+       "says": "1972-12-17: a new line of control between India and Pakistan in Jammu and Kashmir took effect.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upk.html",
+       "title": "Statoids — Provinces of Pakistan, change history",
+       "says": "Azad Kashmir: part of the former Kashmir state, listed as a division of Pakistan.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1970-07-01",
+   "precision": "day",
+   "what": "One Unit dissolved: four provinces and Islamabad",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/upk.html",
+     "title": "Statoids — Provinces of Pakistan, change history",
+     "says": "1970-07-01: West Pakistan split into Baluchistan, North-West Frontier, Punjab and Sind provinces and the centrally administered area of Islamabad.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1972-12-17",
+   "precision": "day",
+   "what": "Line of Control in Kashmir takes effect (Chhamb to AJK, Turtuk area to India in the 1971 war)",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uin.html",
+     "title": "Statoids — States of India, change history",
+     "says": "1972-12-17: a new line of control between India and Pakistan in Jammu and Kashmir took effect.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2018-05-31",
+   "precision": "day",
+   "what": "FATA merged into Khyber Pakhtunkhwa",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Federally_Administered_Tribal_Areas&oldid=1375662241",
+     "title": "Wikipedia — Federally Administered Tribal Areas",
+     "says": "The 25th Amendment received presidential assent on 31 May 2018, after which FATA was officially merged with Khyber Pakhtunkhwa.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Twenty-fifth_Amendment_to_the_Constitution_of_Pakistan&oldid=1341019924",
+     "title": "Wikipedia — Twenty-fifth Amendment to the Constitution of Pakistan",
+     "says": "Assented on 31 May 2018.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Northern Areas 1970–1972",
+   "unit": "PAK:Gilgit-Baltistan",
+   "atoms": [
+    "PAK-1111"
+   ],
+   "from": "1970-07-01",
+   "to": "1972-12-17",
+   "why": "The 1971 war moved the Turtuk–Thang area from Baltistan to Indian Ladakh; the pre-war outer line is not the NE line.",
+   "checked": [
+    "statoids.com/upk.html, uin.html",
+    "Wikipedia Gilgit-Baltistan, Azad Kashmir"
+   ],
+   "needs": "the 1949 Karachi ceasefire line geometry"
+  },
+  {
+   "what": "Azad Kashmir 1970–1972",
+   "unit": "PAK:Azad Jammu and Kashmir",
+   "atoms": [
+    "PAK-1109"
+   ],
+   "from": "1970-07-01",
+   "to": "1972-12-17",
+   "why": "The 1971 war added the Chhamb sector to AJK; the pre-war outer line is not the NE line.",
+   "checked": [
+    "statoids.com/upk.html, uin.html",
+    "Wikipedia Gilgit-Baltistan, Azad Kashmir"
+   ],
+   "needs": "the 1949 ceasefire line geometry"
+  },
+  {
+   "what": "West Pakistan 1955–1970 and earlier provinces",
+   "from": null,
+   "to": null,
+   "why": "Outside scope. Before 1970 West Pakistan was one province (Karachi federal area until 1961, Gwadar from 1958, Rann of Kutch award 1968 changed Sindh); not built here.",
+   "checked": [
+    "statoids.com/upk.html"
+   ],
+   "needs": "pre-1970 outer lines (Kutch award, ceasefire line)"
+  }
+ ]
+}
