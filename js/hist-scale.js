@@ -306,7 +306,32 @@ window.IntMapHistScale = (function () {
       ['==', ['get', 'start_date'], ['get', 'end_date']],
       ['any', ...dayDates(t).map(d => ['==', ['get', 'start_date'], d])]];
   }
-  function ohmFilter(lo, hi, t) {
+  /* ══ (meiji-lunisolar-dates) A REVIEWED DAY FOR A LINE UPSTREAM MISDATED ═══════════════════
+     OpenHistoricalMap holds 滋賀県 from 1872-09-28; the merger is 明治5年9月28日, 1872-10-30 — a lunisolar
+     month and day written as a Gregorian date. The bundle's row is corrected by the reviewed ledger
+     (data/hist-admin-edges.json `calendar`), and the TILES draw the same relation's ways with the same wrong
+     string, so the correction must reach this reader too (.agents/rules/historical-verification.md §2b).
+     `rev` is the tier's `lines` (scripts/histadmin/calendar.mjs linesFor): each names the ways a relation is
+     drawn with, the edge, upstream's exact string and the reviewed day. A feature is revised only where BOTH
+     its way and its string match — a way shared with another relation carries that relation's own dates
+     (`group_id`) and is left as it is. With no `rev` the rule is exactly what it was. */
+  function revisedAt(rev, edge, p) {
+    if (!rev || !rev.length) return null;
+    const id = Number(p.osm_id), raw = String(p[edge + '_date'] == null ? '' : p[edge + '_date']);
+    for (const r of rev) if (r.edge === edge && r.raw === raw && r.ways.indexOf(id) >= 0) return r;
+    return null;
+  }
+  const decAt = (at) => { const [y, m, d] = String(at).split('-').map(Number); return decYear(y, m, d); };
+  function revisedClause(rev, edge, t, clause) {
+    let out = clause;
+    for (const r of (rev || [])) {
+      if (r.edge !== edge) continue;
+      const now = edge === 'start' ? decAt(r.at) <= t : decAt(r.at) > t;
+      out = ['case', ['all', ['in', ['get', 'osm_id'], ['literal', r.ways]], ['==', ['to-string', ['get', edge + '_date']], r.raw]], now, out];
+    }
+    return out;
+  }
+  function ohmFilter(lo, hi, t, rev) {
     return ['all',
       ['==', ['get', 'type'], 'administrative'],
       ['>=', ['to-number', ['get', 'admin_level'], -1], lo],
@@ -332,10 +357,12 @@ window.IntMapHistScale = (function () {
          state a start that this expression cannot order against `t`, so they are kept — what is
          dropped is the record that states nothing at all. */
       ['any', oneDayFilter(t), ['all',
+        revisedClause(rev, 'start', t,
         ['any', ['all', dated('start_decdate'), ['<=', ['to-number', ['get', 'start_decdate'], 0], t]],
                 ['all', ['!', dated('start_decdate')], ['has', 'start_date'],
-                        ['!=', ['to-string', ['get', 'start_date']], '']]],   /* an empty string is not a statement */
-        ['any', ['!', ['has', 'end_decdate']], ['!', dated('end_decdate')], ['>', ['to-number', ['get', 'end_decdate'], 0], t]]]]
+                        ['!=', ['to-string', ['get', 'start_date']], '']]]),   /* an empty string is not a statement */
+        revisedClause(rev, 'end', t,
+        ['any', ['!', ['has', 'end_decdate']], ['!', dated('end_decdate')], ['>', ['to-number', ['get', 'end_decdate'], 0], t]])]]
     ];
   }
   /* ⚠ A NUMBER THAT CANNOT BE A YEAR IS NOT A DATE — it is the ABSENCE of one.
@@ -356,7 +383,7 @@ window.IntMapHistScale = (function () {
   /* the same decision, evaluated rather than described — so a test can ask
      "would this record be drawn?" without a renderer, and so the expression above
      can never quietly stop meaning what this says. One rule, two readers. */
-  function inForce(props, lo, hi, t) {
+  function inForce(props, lo, hi, t, rev) {
     const p = props || {};
     if (p.type !== 'administrative') return false;
     const lv = Number(p.admin_level);
@@ -367,9 +394,12 @@ window.IntMapHistScale = (function () {
     /* (#R730) the same start rule the expression above carries: a record states a start, or it is
        not placed in time at all. A `*_decdate` this cannot order still counts as a stated start
        when the `*_date` string beside it exists. */
-    if (p.start_decdate != null && yr(p.start_decdate)) { if (Number(p.start_decdate) > t) return false; }
+    const rs = revisedAt(rev, 'start', p), re = revisedAt(rev, 'end', p);
+    if (rs) { if (decAt(rs.at) > t) return false; }
+    else if (p.start_decdate != null && yr(p.start_decdate)) { if (Number(p.start_decdate) > t) return false; }
     else if (p.start_date == null || p.start_date === '') return false;
-    if (p.end_decdate != null && yr(p.end_decdate) && Number(p.end_decdate) <= t) return false;
+    if (re) { if (decAt(re.at) <= t) return false; }
+    else if (p.end_decdate != null && yr(p.end_decdate) && Number(p.end_decdate) <= t) return false;
     return true;
   }
 

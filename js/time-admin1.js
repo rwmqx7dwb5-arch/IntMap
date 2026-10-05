@@ -251,7 +251,7 @@ export function timeAdmin1(HOST) {
     function eraBorders() { return window.IntMapTimeBorders; }
     const readerFont = () => { try { return window.IntMapMapTypography.readerFont(); } catch (_) { return ['Noto Sans SC']; } };
     const _dec = (y, m, d) => HS().decYear(y, m, d);
-    const _vtFilter = (lo, hi, t) => HS().ohmFilter(lo, hi, t);
+    const _vtFilter = (lo, hi, t, rev) => HS().ohmFilter(lo, hi, t, rev);
     function ensureVTSource() {
       try {
         if (GE().layers.hasSource(VT_SRC)) return true;
@@ -547,6 +547,10 @@ export function timeAdmin1(HOST) {
          something to draw — i.e. on evidence, and it is given up again the moment a tile does paint,
          because a reader who walks back into coverage must not keep the coarse line. */
       let vtState = 'unknown', vtAt = null, vtSince = 0;
+      /* (meiji-lunisolar-dates) the reviewed days for lines upstream misdated — the tier's own `lines`
+         (scripts/histadmin/calendar.mjs). They arrive with the bundle, after the first aim; the aim is
+         taken again once they do (see go()). */
+      let vtRev = null;
       /* ⚠ MEASURED, NOT GUESSED: on this machine a cold z5 view over Germany has the first OHM tile
          painting 0.9-2.1 s after the clock moves. Six seconds is that with room for a slow link;
          below the round trip it would declare failure on a page that was merely loading, and far
@@ -559,7 +563,7 @@ export function timeAdmin1(HOST) {
           const t = _dec(y, m, dd);
           if (vtAt === t) return;
           vtAt = t; if (!vtSince) vtSince = Date.now();
-          GE().layers.setFilter(cfg.vtLine, _vtFilter(cfg.lo, cfg.hi, t));
+          GE().layers.setFilter(cfg.vtLine, _vtFilter(cfg.lo, cfg.hi, t, vtRev));
           vtPoll();
         } catch (_) {}
       }
@@ -720,6 +724,7 @@ export function timeAdmin1(HOST) {
         const d = (await Promise.all([load(), BC() ? BC().load() : null]))[0];   /* (#R564) the marks settle before the first collection is built, so nothing is cached unmarked */
         if (my !== seq || !active) return;
         if (!d) { setTimeout(() => { try { if (active && my === seq) go(when); } catch (_) {} }, 4000); return; }
+        if (d.lines && vtRev !== d.lines) { vtRev = d.lines; vtAt = null; vtAim(y, m, dd); }
         let key; try { key = 'a' + epoch(d, y, m, dd); } catch (_) { key = 'a' + y; }
         if (shownKey === key) {
           try { if (ensure()) _applyNow(); else whenStyleReady().then(() => { if (active && shownKey === key && ensure()) _applyNow(); }); } catch (_) {}

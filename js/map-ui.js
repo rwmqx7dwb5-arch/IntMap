@@ -2678,6 +2678,13 @@ export function labelPopup(HOST){
         if(d&&d.derived&&typeof d.basis==='string'&&d.basis.trim()) basis.push(IntMapLang.t(HOST.lang,
           (edge==='start'?'start':'end')+' derived: '+d.basis,
           (edge==='start'?'始まり':'終わり')+'は導出: '+d.basis)); }
+      /* (meiji-lunisolar-dates) A REVIEWED CORRECTION IS SAID BESIDE THE SOURCE'S OWN DATE. The map draws the edge
+         from the reviewed day (data/hist-admin-edges.json) while «Source dates» above prints upstream's words — 滋賀県's
+         1872-09-28 is the lunisolar 明治5年9月28日, drawn from 1872-10-30 — so the popup says which day it draws. */
+      for(const edge of ['start','end']){ const d=dates&&dates[edge], c=d&&d.corrected;
+        if(c&&typeof c.at==='string'&&c.at) basis.push(IntMapLang.t(HOST.lang,
+          (edge==='start'?'start':'end')+' drawn from the reviewed date '+c.at+(c.wareki?' ('+c.wareki+')':''),
+          (edge==='start'?'始まり':'終わり')+'は査読済みの日付 '+c.at+(c.wareki?'（'+c.wareki+'）':'')+' で描いている')); }
       const tail=basis.length?' · '+basis.join(' · '):'';
       if(!how.length) return line+tail;
       return line+tail+' · '+IntMapLang.t(HOST.lang,

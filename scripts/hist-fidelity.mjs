@@ -46,6 +46,7 @@ import { fileURLToPath } from 'node:url';
 import { DERIVED_FROM_THE_REPOSITORY } from './lib/upstream-cadence.mjs';
 import { readLedger, displayRanges, candidates, judged, LEDGER } from './histeras/spans.mjs';
 import { readEdges, edgeProblems } from './histadmin/edges.mjs';
+import { calendarProblems, REGIMES as CAL_REGIMES } from './histadmin/calendar.mjs';
 import { pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import zlib from 'node:zlib';
@@ -821,6 +822,12 @@ async function main() {
   const edp = edgeProblems(bs, edges, historyNames);
   for (const [tag, msg] of edp) say(false, tag, msg);
   if (!edp.length) say(true, 'edge-handover', (edges.found || []).length + ' succession(s) upstream ties by one event while naming two years, every one judged — ' + (edges.reviewed || []).length + ' moved to the day Wikidata states and history agrees with, ' + (edges.refuted || []).length + ' left as upstream wrote it');
+
+  /* ⑦b (meiji-lunisolar-dates) a lunisolar date written as if it were Gregorian — scripts/histadmin/calendar.mjs */
+  const cap = calendarProblems(bs, edges, historyNames);
+  for (const [tag, msg] of cap) say(false, tag, msg);
+  if (!cap.length) { const c = edges.calendar || {};
+    say(true, 'calendar', (c.found || []).length + ' date(s) stated to the day or month before ' + CAL_REGIMES.map((r) => r.until + ' on ' + r.ground).join(', ') + ', every one judged — ' + (c.reviewed || []).length + ' converted from the lunisolar date a cited source states, ' + (c.refuted || []).reduce((n, x) => n + (x.ids || []).length, 0) + ' already the Gregorian day'); }
 
   const fip = fillInceptionProblems(bs);
   for (const [tag, msg] of fip) say(false, tag, msg);
