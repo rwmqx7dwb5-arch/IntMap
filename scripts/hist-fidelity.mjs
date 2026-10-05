@@ -50,6 +50,8 @@ import { pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import zlib from 'node:zlib';
 import { measure, status as knowStatus, KNOW, grid as kGrid, scan as kScan } from '../js/hist-knowledge.js';
+/* (hist-coverage-depth) the records spliced into the first tier — the one list js/time-admin1.js draws */
+import { HIST_ADMIN_GAPS } from '../js/border-coast.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 && process.argv[i + 1] ? process.argv[i + 1] : d; };
@@ -83,13 +85,30 @@ const load = (rel) => {
   const s = fs.readFileSync(path.join(ROOT, rel), 'utf8');
   return JSON.parse(s.slice(s.indexOf('=') + 1).replace(/;\s*$/, ''));
 };
-/* ⚠ THE TIERS AND THE GAP RECORDS ARE DISCOVERED FROM data/, NOT LISTED HERE. js/time-admin1.js
-   builds T1/T2/T3 and its GAPS list from the bundles present; a hand-written copy of that list
-   silently drops the fourth record the day one is added (.agents/rules/no-ad-hoc-hardcoding.md §2-4). */
-export const bundles = () => fs.readdirSync(path.join(ROOT, 'data'))
-  .filter((f) => /^hist-(admin\d|admin-fill|kuni)\.js$/.test(f))
-  .map((f) => ({ file: 'data/' + f, b: load('data/' + f) }))
-  .sort((a, b) => Math.min(...a.b.levels) - Math.min(...b.b.levels));
+/* ⚠ THE TIERS ARE DISCOVERED FROM data/, AND THE GAP RECORDS ARE THE LIST THE PAGE DRAWS.
+   A hand-written copy of either silently drops the next record the day one is added
+   (.agents/rules/no-ad-hoc-hardcoding.md §2-4). ⚠ (hist-coverage-depth) The gap records used to be
+   a regex here — `hist-(admin-fill|kuni)` — beside the list in js/time-admin1.js: two copies of one
+   judgement, so a surveyed record added to the page would have been drawn and never measured. They
+   are read from HIST_ADMIN_GAPS (js/border-coast.js), the list the page itself imports; a record not built yet (or
+   not built on this machine) is absent from data/ and is skipped, exactly as the page skips it. */
+export const bundles = () => {
+  const tiers = fs.readdirSync(path.join(ROOT, 'data')).filter((f) => /^hist-admin\d+\.js$/.test(f)).map((f) => 'data/' + f);
+  const gaps = HIST_ADMIN_GAPS.map((g) => g.file).filter((f) => fs.existsSync(path.join(ROOT, f)));
+  /* by name, then by level (stable) — the order the directory listing gave before, so the ledgers this
+     writes do not reorder because the list moved */
+  return [...tiers, ...gaps].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+    .map((f) => ({ file: f, b: load(f) }))
+    .sort((a, b) => Math.min(...a.b.levels) - Math.min(...b.b.levels));
+};
+/* ⚠ (hist-coverage-depth) WHERE A ROW'S SOURCE DATES ARE. A tier keys `dates` by the OpenHistoricalMap
+   relation id in column 10; a surveyed gap record has no relation id (its column 10 is the publisher's
+   key) and keys them by its own row. Reading `dates[f[10]]` there asked the table for «ahcb» and found
+   nothing, so its rows were never measured for a stated start. The fact decided on is the row's id. */
+export const datesOf = (b, f, i) => {
+  const D = b && b.dates; if (!D) return undefined;
+  return (typeof f[10] === 'number') ? D[f[10]] : D[i];
+};
 
 /* ── dates ─────────────────────────────────────────────────────────────────────────────── */
 const cmp = (a, b) => (a[0] !== b[0] ? a[0] - b[0] : a[1] !== b[1] ? a[1] - b[1] : a[2] - b[2]);
@@ -108,9 +127,8 @@ const spanOverlap = (a, b) => cmp([a[2], a[3], a[4]], [b[5], b[6], b[7]]) < 0 &&
 function unsourcedSpans(bs) {
   const rows = [];
   for (const { file, b } of bs) {
-    const dates = b.dates || {};
-    for (const f of b.feats) {
-      const d = dates[f[10]];
+    for (let i = 0; i < b.feats.length; i++) {
+      const f = b.feats[i], d = datesOf(b, f, i);
       if (!d) continue;
       /* ⚠ «STATED» AND «DERIVED» ARE BOTH ANSWERS; «INHERITED FROM AN OLD BUILD» IS NOT.
          A start upstream wrote is a statement. A start histadmin/class-dates.mjs derived from the
@@ -698,7 +716,7 @@ function listYear(bs, y, box) {
       for (const poly of f[8]) for (const ri of poly) for (const p of b.rings[ri]) { sx += p[0]; sy += p[1]; n++; }
       const cx = sx / n, cy = sy / n;
       if (cx < box[0] || cx > box[2] || cy < box[1] || cy > box[3]) continue;
-      const d = (b.dates || {})[f[10]];
+      const d = datesOf(b, f, i);
       const mark = !d || (d.start && d.start.raw) ? ''
         : d.start && d.start.derived ? '   · 開始日は上流に無く、同じ制度の他の単位から導出（' + d.start.bound + '）'
         : '   ⚠ 開始日を誰も述べていない';

@@ -25,6 +25,7 @@ import { join } from 'node:path';
 import { refineCShapes, cutCShapesRing } from '../scripts/build-cshapes.mjs';
 import { geometryOf, repoolGeometry, previousPrecision, generatedPrecision } from '../scripts/histborders/precision.mjs';
 import { eligible, check, planDetailBuild, detailAssets } from '../scripts/build-border-detail.mjs';
+import { HIST_ADMIN_GAPS } from '../js/border-coast.js';
 import { detailPolys } from '../scripts/build-hist-admin1.mjs';
 import { importModule } from './helpers/import-module.mjs';
 
@@ -336,7 +337,9 @@ test('#R712 partial builds reject incompatible shared provenance before writing'
 
 test('#R712 full rebuild starts every set fresh and does not inherit stale index metadata', () => {
   const { index, selected } = planDetailBuild({ broken: true });
-  assert.equal(selected.length, 3);
+  /* every OpenHistoricalMap set and every surveyed gap record (derived:false), discovered from the one list */
+  assert.deepEqual(selected.map(s => s[0]), ['hist-borders', 'hist-admin1', 'hist-admin2',
+    ...HIST_ADMIN_GAPS.filter(g => g.derived === false).map(g => g.file.replace(/^.*\//, '').replace(/\.js$/, ''))]);
   assert.deepEqual(index.sets, {});
   assert.deepEqual(index.stats, {});
   assert.equal(index.broken, undefined);

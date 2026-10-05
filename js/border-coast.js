@@ -27,6 +27,34 @@
  * ==========================================================================*/
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
+
+/* ══ (hist-coverage-depth) THE RECORDS THE FIRST SUBDIVISION TIER SPLICES IN BESIDE OPENHISTORICALMAP ══
+   ⚠ ONE LIST, READ BY EVERY READER. js/time-admin1.js draws these rows, scripts/hist-fidelity.mjs
+   measures them, scripts/build-hist-admin-fill.mjs and scripts/build-hist-admin-surveys.mjs yield to
+   the ones that are records, and scripts/build-border-detail.mjs builds the zoomed-in detail of the
+   surveyed ones. Before (hist-coverage-depth) the list was written in js/time-admin1.js and a regex in
+   scripts/hist-fidelity.mjs held a second copy of it; a third record would have been drawn and not
+   measured, or measured and not drawn (.agents/rules/no-ad-hoc-hardcoding.md §1 — the same judgement
+   in two places).
+   ⚠ IT LIVES HERE, NOT IN A FILE OF ITS OWN: this module already owns each record's `set` key (the
+   marks below are read by it) and is already on the boot path, so a separate module was one more
+   eager module for one array (check:perf eager.modules, measured 314 > 313).
+   Each entry carries what differs between them:
+     set      the key data/border-coast.js marks this file's rings under
+     derived  true  — IntMap assembled the row itself (a present-day outline carried back, a raster
+                      vectorised); the reader is told so, and a record that is not derived outranks it
+              false — the row is a dated record a publisher surveyed; it is a record in its own right
+                      and only lacks an OpenHistoricalMap relation (so the tiles cannot draw its line)
+     nonCommercial  the record carries sources licensed for non-commercial use only (share-alike, so
+                    the file itself is under that licence) — kept apart from the open record exactly as
+                    data/cshapes.js keeps CShapes apart; scripts/build-hist-admin-surveys.mjs sorts the
+                    publishers into the two by their own licence */
+export const HIST_ADMIN_GAPS = [
+  { file: 'data/hist-kuni.js',             global: '__HISTKUNI',        set: 'hk',              derived: true },
+  { file: 'data/hist-admin-surveys.js',    global: '__HISTADMSURVEY',   set: 'histadmsurvey',   derived: false },
+  { file: 'data/hist-admin-surveys-nc.js', global: '__HISTADMSURVEYNC', set: 'histadmsurveync', derived: false, nonCommercial: true },
+  { file: 'data/hist-admin-fill.js',       global: '__HISTADMFILL',     set: 'histadmfill',     derived: true },
+];
 export const IntMapBorderCoast = (function () {
   let _D = null, _P = null;
   const _arrived = [];
@@ -261,6 +289,20 @@ export const IntMapBorderCoast = (function () {
     let global = null, named = null;
     try { named = _HB() ? _HB().globalOf(d) : null; } catch (_) { named = null; }
     for (const s of Object.values((_D && _D.sets) || {})) if (window[s.global] === d || (named && named === s.global)) { global = s.global; break; }
+    /* (hist-coverage-depth) a surveyed record's entries are an index of their own, which index.json only
+       points to (scripts/build-border-detail.mjs writeIndex) — fetched the first time a row of THAT set
+       needs detail, so a zoomed view with no surveyed row in it pays nothing for them. A failed fetch is
+       retried only on a new view, as a failed fragment is (`attempted`). */
+    const ext = global && !detailIndex.sets[global] && detailIndex.external && detailIndex.external[global];
+    if (ext) {
+      if (!pending.has(ext) && !attempted.has(ext)) {
+        attempted.add(ext); pending.add(ext);
+        detailJSON(ext).then(data => {
+          if (data && data.v === 1 && data.global === global && data.sets && data.sets[global]) { detailIndex.sets[global] = data.sets[global]; detailArrived(); }
+        }).catch(() => {}).finally(() => { pending.delete(ext); });
+      }
+      return undefined;
+    }
     const entry = global && detailIndex.sets[global] && detailIndex.sets[global][idx];
     if (!entry) return undefined;
     let keyed = fingerprints.get(d); if (!keyed) { keyed = new Map(); fingerprints.set(d, keyed); }

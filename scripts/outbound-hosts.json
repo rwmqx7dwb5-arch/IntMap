@@ -719,6 +719,11 @@
       }
     },
     {
+      "host": "doi.org",
+      "what": "dataset DOI citations (Harvard Dataverse, DataverseNL, heiDATA)",
+      "link": "the persistent identifier of a dataset IntMap draws (RISTAT 1897, Transcultural Empire, Nejjar, HGIS de las Indias), shown as text and a hyperlink (<a href>) on the sources page and in the map attribution (js/reference-data.js, the cite/u of that publisher's DATA_SOURCES row); never fetched"
+    },
+    {
       "host": "donate.stripe.com",
       "what": "Stripe donation pages",
       "link": "the Donate button opens it when the reader clicks it (a navigation); the page never requests it"
@@ -1437,6 +1442,11 @@
       }
     },
     {
+      "host": "ristat.org",
+      "what": "RISTAT (Electronic Repository of Russian Historical Statistics) source citation",
+      "link": "the publisher's home page, named in its required citation, shown as text and a hyperlink (<a href>) on the sources page and in the map attribution (js/reference-data.js, the cite/u of that publisher's DATA_SOURCES row); never fetched"
+    },
+    {
       "host": "rackcentre.com",
       "what": "data-centre source citation",
       "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
@@ -2147,6 +2157,11 @@
       "host": "www.tesla.com",
       "what": "data-centre source citation",
       "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
+    },
+    {
+      "host": "www.virtualshanghai.net",
+      "what": "Virtual Shanghai (ENP-China Project) source citation",
+      "link": "the publisher's dataset page and citation, shown as text and a hyperlink (<a href>) on the sources page and in the map attribution (js/reference-data.js, the cite/u of that publisher's DATA_SOURCES row); never fetched"
     },
     {
       "host": "www.westinbldg.com",

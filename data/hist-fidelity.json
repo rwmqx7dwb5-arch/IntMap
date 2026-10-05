@@ -86,12 +86,12 @@
     },
     {
       "year": 1800,
-      "pct": 23.01,
-      "pctArea": 22.14,
+      "pct": 26.21,
+      "pctArea": 26.56,
       "polityLand": 78.19,
-      "unitLand": 17.3,
-      "zero": 342,
-      "partial": 33,
+      "unitLand": 20.88,
+      "zero": 339,
+      "partial": 36,
       "full": 9
     },
     {
@@ -106,43 +106,43 @@
     },
     {
       "year": 1886,
-      "pct": 50.38,
-      "pctArea": 45.18,
+      "pct": 50.51,
+      "pctArea": 45.3,
       "polityLand": 83.68,
-      "unitLand": 38.52,
+      "unitLand": 38.62,
       "zero": 135,
-      "partial": 36,
-      "full": 35
+      "partial": 35,
+      "full": 36
     },
     {
       "year": 1900,
-      "pct": 49.61,
-      "pctArea": 44.42,
+      "pct": 49.74,
+      "pctArea": 44.53,
       "polityLand": 90.78,
-      "unitLand": 41.03,
+      "unitLand": 41.13,
       "zero": 107,
-      "partial": 38,
-      "full": 47
+      "partial": 37,
+      "full": 48
     },
     {
       "year": 1914,
-      "pct": 55.54,
-      "pctArea": 52.71,
+      "pct": 60.03,
+      "pctArea": 57.78,
       "polityLand": 90.66,
-      "unitLand": 48.58,
+      "unitLand": 53.2,
       "zero": 100,
-      "partial": 44,
-      "full": 50
+      "partial": 43,
+      "full": 51
     },
     {
       "year": 1938,
-      "pct": 69.05,
-      "pctArea": 62.57,
+      "pct": 72.78,
+      "pctArea": 66.85,
       "polityLand": 91.39,
-      "unitLand": 58.61,
-      "zero": 93,
-      "partial": 36,
-      "full": 55
+      "unitLand": 62.54,
+      "zero": 90,
+      "partial": 38,
+      "full": 56
     },
     {
       "year": 1950,
@@ -166,28 +166,28 @@
     },
     {
       "year": 2000,
-      "pct": 63.96,
-      "pctArea": 58.54,
+      "pct": 64.33,
+      "pctArea": 58.92,
       "polityLand": 91.4,
-      "unitLand": 54.91,
-      "zero": 100,
-      "partial": 22,
-      "full": 68
+      "unitLand": 55.26,
+      "zero": 99,
+      "partial": 20,
+      "full": 71
     },
     {
       "year": 2019,
-      "pct": 66.21,
-      "pctArea": 61.06,
+      "pct": 71.64,
+      "pctArea": 64.48,
       "polityLand": 91.4,
-      "unitLand": 57.25,
-      "zero": 102,
-      "partial": 21,
-      "full": 71
+      "unitLand": 60.4,
+      "zero": 99,
+      "partial": 19,
+      "full": 76
     }
   ],
   "claims": {
     "seam": 1986,
-    "duplicate": 151,
-    "contested": 1710
+    "duplicate": 149,
+    "contested": 1733
   }
 }

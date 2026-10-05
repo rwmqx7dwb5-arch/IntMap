@@ -25,7 +25,7 @@
 import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { readFileSync, mkdtempSync, rmSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -33,12 +33,15 @@ import { spawn } from 'node:child_process';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { Worker as NodeWorker } from 'node:worker_threads';
 import { buildTiles, loadDoor, tileRecord, verifyRecord } from '../scripts/build-hist-tiles.mjs';
+import { HIST_ADMIN_GAPS } from '../js/border-coast.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
 const YEARS = [-200, 1000, 1600, 1871, 1900, 1918, 1945, 2000];
 const t615 = (y) => y * 10000 + 615;
-const GAPS = [{ file: 'data/hist-kuni.js', global: '__HISTKUNI' }, { file: 'data/hist-admin-fill.js', global: '__HISTADMFILL' }];
+/* (hist-coverage-depth) the gap records are HIST_ADMIN_GAPS (js/border-coast.js) — the one the page imports —
+   narrowed to the ones built here: a record absent from data/ is one the page also opens without */
+const GAPS = HIST_ADMIN_GAPS.filter((g) => existsSync(join(ROOT, g.file)));
 const RECORDS = [
   { file: 'data/cshapes.js', global: '__CSHAPES', end: 'inclusive' },
   { file: 'data/hist-borders.js', global: '__HISTB', end: 'exclusive' },

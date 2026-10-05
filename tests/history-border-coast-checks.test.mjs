@@ -31,6 +31,7 @@ import { buildWater } from '../scripts/bordercoast/water.mjs';
 import { discoverBundles, closedRing } from '../scripts/build-border-coast.mjs';
 import { ringArea } from '../scripts/histborders/geom.mjs';
 import { importModule } from './helpers/import-module.mjs';
+import { HIST_ADMIN_GAPS } from '../js/border-coast.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -235,6 +236,17 @@ test('#R695 ① the keys the runtime asks for by name are still those names', ()
   assert.equal(byFile['hist-admin1.js'], 'ha');
   assert.equal(byFile['hist-admin2.js'], 'ha2');
   assert.equal(byFile['hist-kuni.js'], 'hk');
+});
+/* (hist-coverage-depth) js/time-admin1.js asks for a gap record's marks by the `set` its entry in
+   HIST_ADMIN_GAPS (js/border-coast.js) names, and the discovery publishes the record under a key derived from its
+   global — so the two must agree for EVERY entry, built or not. Asked of the discovery itself, over a
+   stand-in file per entry with that entry's global, so a record not built on this machine is held too. */
+test('hist-coverage-depth: every gap record is marked under the set the layer asks for', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'intmap-gapset-'));
+  for (const g of HIST_ADMIN_GAPS) writeFileSync(join(dir, g.file.replace(/^data\//, '')),
+    'window.' + g.global + '={"v":1,"rings":[[[10,10],[10,11],[11,11],[11,10]]],"feats":[]};\n');
+  const byGlobal = Object.fromEntries(discoverBundles(dir).map((s) => [s.global, s.key]));
+  for (const g of HIST_ADMIN_GAPS) assert.equal(byGlobal[g.global], g.set, g.file + ' would be marked under «' + byGlobal[g.global] + '», but the layer asks for «' + g.set + '»');
 });
 
 /* ── ② every bundle data/ holds is marked, hist-eras included ─────────────────────────────────── */

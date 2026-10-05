@@ -111,7 +111,9 @@
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
-import { IntMapBorderCoast } from './border-coast.js';
+/* (#R564) which edges are border; (hist-coverage-depth) and the records spliced in beside OpenHistoricalMap —
+   ONE list, read by this file, scripts/hist-fidelity.mjs and the builders that yield to the records (see GAPS below) */
+import { IntMapBorderCoast, HIST_ADMIN_GAPS } from './border-coast.js';
 /* (hist-coverage) the subdivision line's colour from its owner (the hatch and the coverage label are drawn in it),
    and the one clock on a read with the host's own budget for it */
 import { ADMIN1_COLOR } from './border-style.js';
@@ -428,8 +430,14 @@ export function timeAdmin1(HOST) {
           const NAME = nameOf(f);
           /* Keep the source's precision beside the rendered feature. The normalized bounds
              select geometry; they must never masquerade as day-exact source dates. */
-          const dates = d.dates && d.dates[f[10]];
-          feats.push({ type: 'Feature', geometry: geomOf(d, i), properties: { NAME: NAME, name: NAME, ...(dates ? { dates: dates, dateSemantics: d.dateSemantics } : {}), _lvl: f[1], _ix: i, _tier: cfg.key, _gap: (f[10] == null) ? 1 : 0, _gapIx: (f[11] == null) ? -1 : f[11], _gapSet: (f[12] == null) ? -1 : f[12],
+          /* ⚠ (hist-coverage-depth) A GAP ROW HAS NO RELATION ID, SO IT CANNOT ADDRESS `d.dates` — but a
+             surveyed record states its own dates, by ITS OWN row (column 11), and the door carries them
+             as `d.gapDates[<record>]` (js/hist-bundles.js). Without this the popup would print «? – ?»
+             under a unit whose publisher dated it to the day. A derived record has none and stays «?». */
+          const gd = (f[10] == null && f[12] != null && d.gapDates) ? d.gapDates[f[12]] : null;
+          const dates = (f[10] != null) ? (d.dates && d.dates[f[10]]) : (gd && f[11] != null ? gd[f[11]] : null);
+          const sem = (f[10] == null && f[12] != null && d.gapPools && d.gapPools[f[12]] && d.gapPools[f[12]].dateSemantics) || d.dateSemantics;
+          feats.push({ type: 'Feature', geometry: geomOf(d, i), properties: { NAME: NAME, name: NAME, ...(dates ? { dates: dates, dateSemantics: sem } : {}), _lvl: f[1], _ix: i, _tier: cfg.key, _gap: (f[10] == null) ? 1 : 0, _gapIx: (f[11] == null) ? -1 : f[11], _gapSet: (f[12] == null) ? -1 : f[12],
             /* (#R707) the collision order of the NAME — see sortKeyOf above. Stamped here, on the
                feature, because the layer must not have to know which bundle it is drawing. */
             [SORT_PROP]: sortKeyOf(areaOf(d, i)),
@@ -785,10 +793,16 @@ export function timeAdmin1(HOST) {
        second source, a second layer, a second count, a second click path. It is a list instead, and
        each entry carries the ONE thing that differs between them — which set of coastline marks
        addresses its rings. */
-    const GAPS = [
-      { file: 'data/hist-kuni.js',       global: '__HISTKUNI',    set: 'hk' },
-      { file: 'data/hist-admin-fill.js', global: '__HISTADMFILL', set: 'histadmfill' },
-    ];
+    /* ⚠ (hist-coverage-depth) …AND THE LIST IS NOT WRITTEN HERE ANY MORE. It lived in this file and a
+       regex in scripts/hist-fidelity.mjs held a second copy of it, so a third record would have been
+       drawn and not measured, or measured and not drawn (.agents/rules/no-ad-hoc-hardcoding.md §1).
+       HIST_ADMIN_GAPS (js/border-coast.js) is the one list; it now names records that are NOT derived as well — the
+       national and research atlases scripts/build-hist-admin-surveys.mjs reads, which state their own
+       dates — and each entry says which of the two it is (`derived`), because `note()` tells the reader
+       which rows IntMap assembled and which a publisher surveyed. Nothing here may assume how many
+       there are or which ordinal is which: a row says its record by column 12, and the record says
+       what it is by its entry. */
+    const GAPS = HIST_ADMIN_GAPS;
     const T1 = makeTier({ key: 'a1', file: 'data/hist-admin1.js', global: '__HISTADM1', set: 'ha', lo: 3, hi: 4,
                           gaps: GAPS, gapSrc: 'imta-gap-src', gapLine: 'imta-gap-line', onApply: () => _know.schedule(),
                           src: 'imta-src', lnSrc: 'imta-ln-src', line: 'imta-line', vtLine: 'imta-vt-line', lbl: 'imta-lbl', deep: false, minZ: 0 });
@@ -1126,9 +1140,18 @@ export function timeAdmin1(HOST) {
          force depends on the date the reader is standing on — a literal «15» would be a fact about
          one instant printed at every instant. _gap is the same flag the gap LINE is drawn from
          («this row has no relation id»), so the sentence and the line can never disagree. */
-      let g = 0;
-      try { const fc = T1.fc(); if (fc) for (const f of fc.features) if (f.properties && f.properties._gap) g++; } catch (_) { g = 0; }
-      const gs = String(g);
+      /* ⚠ (hist-coverage-depth) …AND DERIVED AND SURVEYED ARE COUNTED APART. The sentence below says the
+         gap rows were «derived by IntMap from open data», which was true while every gap record was a
+         derivation and is false for a row a publisher surveyed and dated. The row's record (_gapSet)
+         says which it is through its entry in the one list (`derived`); a row whose record is unknown
+         is not counted as either rather than guessed into one. */
+      let g = 0, sv = 0;
+      try { const fc = T1.fc(); if (fc) for (const f of fc.features) {
+        if (!f.properties || !f.properties._gap) continue;
+        const e = (f.properties._gapSet >= 0) ? GAPS[f.properties._gapSet] : null;
+        if (e && e.derived === false) sv++; else if (e && e.derived === true) g++;
+      } } catch (_) { g = 0; sv = 0; }
+      const gs = String(g), svs = String(sv);
       /* (hist-coverage) the share of the land the record covers, and the double claims by kind — the
          same numbers the hatch and the gate are drawn from (js/hist-knowledge.js, data/hist-claims.json) */
       const K = c.known;
@@ -1143,7 +1166,7 @@ export function timeAdmin1(HOST) {
           '同じ土地を二つの単位が同時に主張している箇所がある：継ぎ目 ' + cs + '（両方の記録が年までしか述べない引き継ぎ）・重複 ' + cd + '（上流が一つの単位を二度持つ）・係争 ' + cc + '（別々の単位が同じ土地を主張する。係争・管轄の重なり・終わりが記録されていない変更のいずれかで、IntMap はどちらが治めたかを判定していない）。'));
       }
       const base = _LT.arr(LA(
-        n + ' subdivisions are in force on this date. The older the year, the more geographically uneven the record is, so an area with no line here is one OpenHistoricalMap is still silent about — not one without subdivisions. Zoom in for the second-level units the record also holds.' + (g ? ' ' + gs + ' of them are outlines OpenHistoricalMap holds no record for, derived by IntMap from open data (Natural Earth, Wikidata, Asukana/Ryoseikoku) and drawn in their own style; the credit under the map names each source.' : ''),
+        n + ' subdivisions are in force on this date. The older the year, the more geographically uneven the record is, so an area with no line here is one the records are still silent about — not one without subdivisions. Zoom in for the second-level units the record also holds.' + (g ? ' ' + gs + ' of them are outlines OpenHistoricalMap holds no record for, derived by IntMap from open data (Natural Earth, Wikidata, Asukana/Ryoseikoku) and drawn in their own style; the credit under the map names each source.' : ''),
         'この日付で有効な地方区分は ' + n + ' 件。古い年代ほど記録は地理的に偏るため、境界線が無い地域は「区分が無かった」のではなく「記録がまだ無い」。拡大すると、記録が持つ下位の区分も出る。' + (g ? 'うち ' + gs + ' 件は OpenHistoricalMap に記録が無いため、公開データ（Natural Earth・Wikidata・Asukana/Ryoseikoku）から IntMap 自身が導出し、別の線種で描いたもの。出典は地図下の帰属表示に出る。' : ''),
         n + ' Verwaltungseinheiten gelten an diesem Datum. Je weiter das Jahr zurückliegt, desto ungleichmäßiger ist die Überlieferung geografisch verteilt: Ein Gebiet ohne Linie ist eines, zu dem die Quelle noch schweigt — nicht eines ohne Untergliederungen. Hineinzoomen zeigt die Einheiten der zweiten Ebene.' + (g ? ' ' + gs + ' davon sind Umrisse, zu denen OpenHistoricalMap keinen Eintrag hat; IntMap leitet sie aus offenen Daten (Natural Earth, Wikidata, Asukana/Ryoseikoku) ab und zeichnet sie in eigenem Stil. Die Quellenangabe unter der Karte nennt jede Quelle.' : ''),
         'На эту дату действует ' + n + ' единиц. Чем древнее год, тем неравномернее записи распределены географически: местность без линии — это местность, о которой источник пока молчит, а не местность без единиц. При приближении показываются единицы второго уровня.' + (g ? ' Из них ' + gs + ' — контуры, которых нет в OpenHistoricalMap: IntMap выводит их из открытых данных (Natural Earth, Wikidata, Asukana/Ryoseikoku) и рисует отдельным стилем. Источники указаны в подписи под картой.' : ''),
@@ -1153,7 +1176,12 @@ export function timeAdmin1(HOST) {
         n + ' subdivisions sont en vigueur à cette date. Plus l’année est ancienne, plus la couverture du registre est géographiquement inégale : une zone sans tracé est une zone sur laquelle la source se tait encore, non une zone sans subdivisions. En zoomant apparaissent les unités de second niveau.' + (g ? ' ' + gs + ' d’entre elles sont des tracés qu’OpenHistoricalMap ne conserve pas : IntMap les dérive de données ouvertes (Natural Earth, Wikidata, Asukana/Ryoseikoku) et les dessine dans un style distinct. L’attribution sous la carte nomme chaque source.' : ''),
         '이 날짜에 유효한 행정구역은 ' + n + '개입니다. 연대가 오래될수록 기록은 지리적으로 치우치므로, 경계선이 없는 지역은 구역이 없었던 것이 아니라 기록이 아직 없는 것입니다. 확대하면 기록이 가진 하위 행정구역도 나타납니다.' + (g ? ' 그중 ' + gs + '개는 OpenHistoricalMap에 기록이 없어, IntMap이 공개 데이터(Natural Earth, Wikidata, Asukana/Ryoseikoku)에서 직접 도출해 다른 선으로 그린 것입니다. 지도 아래 출처 표시에 각 출처가 나옵니다.' : '')
       ));
-      return base + kn;
+      /* the surveyed rows — IntMap-authored, so en + jp (AGENTS.md §3-5); the other languages fall
+         back through `pick` as every two-argument tuple does */
+      const sur = sv ? ' ' + _LT.arr(LA(
+        svs + ' of them are dated records published by national and research atlases (named in the credit under the map) that OpenHistoricalMap does not hold.',
+        'うち ' + svs + ' 件は、OpenHistoricalMap に無い単位を、各国・研究機関の歴史地図が日付とともに記録したもの（出典は地図下の帰属表示）。')) : '';
+      return base + sur + kn;
     }
 
     /* ══ (#R564) THE ERA UNIT'S OWN OUTLINE, FOR THE POPUP ═════════════════════════════════════════

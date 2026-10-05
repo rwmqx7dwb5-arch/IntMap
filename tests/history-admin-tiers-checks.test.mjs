@@ -30,6 +30,7 @@ import { fileURLToPath } from 'node:url';
 import { createExpression } from '@maplibre/maplibre-gl-style-spec';
 import { asClassicScript } from './app-source.mjs';
 import { importModule, langRegistry } from './helpers/import-module.mjs';
+import { HIST_ADMIN_GAPS } from '../js/border-coast.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -321,6 +322,7 @@ function tierHarness(opts = {}) {
   };
   const win = {}; win.window = win; win.addEventListener = () => {};
   win.IntMapGeoEngine = GE;
+  win.HIST_ADMIN_GAPS = HIST_ADMIN_GAPS;   /* the HIST_ADMIN_GAPS import edge of js/border-coast.js, handed in like the others */
   win.IntMapTime = { on: (f) => { win.__clock = f; }, min: 1 };
   win.IntMapLang = { pickArgs: () => ((...a) => a), pick: () => ({ arr: (a) => a[0] }), htmlTag: () => 'en' };
   win.IntMapMemBudget = { deviceIsPhone: () => true };
@@ -633,7 +635,9 @@ async function orderHarness(n, counted) {
       'js/chronos.js': { IntMapTime: { on: () => {}, min: 1 } },
       'js/lang-registry.js': { IntMapLang: { pickArgs: () => ((...a) => a), pick: () => ({ arr: (a) => a[0] }), htmlTag: () => 'en' } },
       'js/border-coast.js': { IntMapBorderCoast: { marks: () => null, lineGeom: () => null, load: () => Promise.resolve(null),
-                                                   onArrive: () => {}, wholeLines: () => ({ type: 'FeatureCollection', features: [] }) } },
+                                                   onArrive: () => {}, wholeLines: () => ({ type: 'FeatureCollection', features: [] }) },
+                              /* (hist-coverage-depth) the gap list is this module's other export: the real one */
+                              HIST_ADMIN_GAPS },
     },
   });
   const mod = timeAdmin1({ canDraw: () => true, lang: 'en', isMobile: () => true });

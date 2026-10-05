@@ -26,6 +26,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, copyFileSync, rmSync, readFileSy
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { HIST_ADMIN_GAPS } from '../js/border-coast.js';
 import { registry, shipTags } from '../scripts/histadmin/langs.mjs';
 import { ciRuns } from './helpers/ci-reach.mjs';
 import { publishedList } from './helpers/layer-groups.mjs';   /* the default lists are views of js/layer-manifest.js */
@@ -386,7 +387,10 @@ test('#R719 ⑥ js/time-admin1.js splices every gap record and tags each row wit
      runs the splice itself against the shipped files.) */
   const s = read('js/time-admin1.js'), door = read('js/hist-bundles.js');
   assert.ok(!/cfg\.gapGlobal|cfg\.gapFile/.test(s), 'the single-gap spelling is gone — a second record may not need a second mechanism');
-  assert.match(s, /const GAPS = \[[\s\S]*data\/hist-kuni\.js[\s\S]*data\/hist-admin-fill\.js[\s\S]*\];/,
+  assert.match(s, /import \{[^}]*\bHIST_ADMIN_GAPS\b[^}]*\} from '\.\/border-coast\.js';/, 'the list is imported, not held as a literal in the layer');
+  assert.ok(!/const GAPS = \[/.test(s), 'js/time-admin1.js holds no literal gap list of its own');
+  const files = HIST_ADMIN_GAPS.map((e) => e.file);
+  assert.ok(files.includes('data/hist-kuni.js') && files.includes('data/hist-admin-fill.js'),
     'both derived records are spliced into the first tier');
   assert.match(door, /f\[9\], null, k, gi\]/, 'each spliced row carries the ORDINAL of the record it came from');
   assert.match(s, /_gapSet: \(f\[12\] == null\) \? -1 : f\[12\]/, 'and the feature carries it to the line builder');
@@ -395,11 +399,11 @@ test('#R719 ⑥ js/time-admin1.js splices every gap record and tags each row wit
   assert.match(s, /d\.gapSrcs/, '…from the sources the splice carried onto the record, since the records are not on window');
   assert.ok(!/Asukana\/Ryoseikoku<\/a>/.test(s), 'no bundle is credited by a string hard-written into the renderer');
   /* and every record named in the list is a file that exists and states its own provenance */
-  for (const m of s.matchAll(/\{ file: '(data\/[a-z0-9-]+\.js)',\s*global: '(__[A-Z0-9]+)',\s*set: '([a-z0-9]+)' \}/g)) {
-    const w = {}; vm.runInNewContext(read(m[1]), { window: w });
-    const d = w[m[2]];
-    assert.ok(d && d.rings && d.feats, `${m[1]} must define ${m[2]} with rings and feats`);
-    assert.ok(d.src && /CC0|public domain/i.test(d.src), `${m[1]} must state its own provenance and licence in src`);
+  for (const e of HIST_ADMIN_GAPS) {
+    const w = {}; vm.runInNewContext(read(e.file), { window: w });
+    const d = w[e.global];
+    assert.ok(d && d.rings && d.feats, `${e.file} must define ${e.global} with rings and feats`);
+    assert.ok(d.src && /CC0|public domain|CC BY/i.test(d.src), `${e.file} must state its own provenance and licence in src`);
   }
 });
 

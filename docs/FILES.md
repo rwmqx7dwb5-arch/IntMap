@@ -702,7 +702,7 @@ beta-overlays.js                  ベータのオーバーレイ（export betaOv
 volcano-intel.js                  火山の深さ window.IntMapVolcano（遅延）——噴火履歴11,043件・警戒レベルの4段・気象庁↔GVPの結合・詳細カード
 volcano-layers.js                 火山の3レイヤー window.IntMapVolcanoLayers（遅延）——火山灰SIGMET・USGSハザード域・衛星SO₂
 hist-bundles.js                   リングプールした歴史記録（data/cshapes.js・hist-borders.js・hist-eras.js・
-                                  hist-admin1〜3.js と穴埋めの hist-kuni.js・hist-admin-fill.js）を読む**唯一の扉**
+                                  hist-admin1〜3.js と、border-coast.js の HIST_ADMIN_GAPS が列挙する継ぎ足しの記録）を読む**唯一の扉**
                                   window.IntMapHistBundles。束は Blob Worker で取得・JSON.parse・保持し、
                                   「その日に有効な行」「エポックの境目」「時代の1枚」を向こうで答え、ページには
                                   **その瞬間に描く行と環だけ**を同じ形の疎な写し（mirror）へ送る（環は1回だけ・
@@ -716,7 +716,15 @@ border-coast.js                   歴史的な輪郭のどの辺が「国境／�
                                   写し」かの**読み手** window.IntMapBorderCoast。印そのものは data/border-coast.js
                                   （規則と定数は scripts/build-border-coast.mjs）。#R564 で time-borders.js から
                                   切り出した——同じ読み方を time-admin1.js にも配るため（写さない）
-                                  拡大時のOHM詳細境界も読み込み、形状の一致を確認して同じ境界経路へ渡す。
+                                  拡大時の詳細境界（OHM と、出版元の調査記録）も読み込み、形状の一致を確認して同じ境界経路へ渡す。
+                                  調査記録の索引は index.json が指す別ファイルで、その記録の行が詳細を要したときだけ読む。
+                                  ⚠ 第1級の区分へ OpenHistoricalMap の隣に継ぎ足す記録の**唯一の一覧** HIST_ADMIN_GAPS もここにある
+                                  （令制国 data/hist-kuni.js・出版元の記録 data/hist-admin-surveys.js と -nc.js・穴埋め
+                                  data/hist-admin-fill.js）。各記録はファイル・global・海岸線印の鍵・`derived`（true＝IntMap の導出／
+                                  false＝出版元が日付を述べた記録）・`nonCommercial` を持つ。読み手は time-admin1.js（描く）・
+                                  scripts/hist-fidelity.mjs（測る）・build-hist-admin-fill.mjs と build-hist-admin-surveys.mjs（譲る・書く）・
+                                  build-border-detail.mjs（調査記録の詳細を作る）。別のモジュールにしないのは起動経路の
+                                  モジュールを 1 つ増やさないため（鍵 `set` はこのファイルが読むもの）
                                   ⚠ 印は環の索引でも**環そのものの同一性**でも引ける——時代帯は
                                   collection を丸ごと渡してくるので、束の名前を知らずに印へ辿り着く
 radiation-obs-core.js             実測放射線の**データ**——feed の 2 つの主張（stations／reference）・日付モードの
@@ -735,12 +743,13 @@ time-admin1.js                    時間軸の上の歴史的**地方区分**（
                                   `imta-line` / `imta-lbl`（第1級）と、z6 以上では `imta2-line` / `imta2-lbl`
                                   （第2級・別束・ズームで初めて取得）を描く。線は多角形ではなく
                                   `imta-ln-src` / `imta2-ln-src`＝**国境の run だけ**（js/border-coast.js）。
-                                  relation id を持たない単位（data/hist-kuni.js）はタイルが運びようがないので、
+                                  relation id を持たない単位（js/border-coast.js の HIST_ADMIN_GAPS の記録）はタイルが運びようがないので、
                                   `imta-gap-line`（source `imta-gap-src`）が**タイルの生死に関係なく**描く——
                                   塗りは `imta-line` / `imta-vt-line` と同一（docs/MAP-LAYERS.md §7.7）。
                                   切替盤 `window._applyAdmin1` もここが持つ
                                   （app-shell に行数の余白が無い）。被覆は部分的なので `coverage()` /
-                                  `note()`（9言語）が「線が無い国は記録がまだ無い」と言う。
+                                  `note()`（9言語）が「線が無い国は記録がまだ無い」と言い、IntMap の導出と
+                                  出版元の記録を別に数える。
                                   **記録の無い土地は地図の上に斜線で描く**（`imta-know-fill` / `imta-know-lbl`・
                                   source `imta-know-src` / `imta-know-lbl-src`・js/hist-knowledge.js を旅行時に
                                   動的 import）。`coverage().known` がその日付の割合と、同じ土地の二重主張の
@@ -1677,13 +1686,17 @@ data/histnames.json               **歴史的な政体名の、記録をまた�
                                   ⚠ **上流が書いた名前は上書きしない**。⚠ **出荷する言語の方針は
                                   `scripts/histnames/langs.mjs` の 1 か所**（いまは en / jp）
 data/border-coast.js              歴史的な輪郭の各辺が「境界」か「その記録が持つ海岸線の写し」かの印（`data/` から
-                                  **発見された**束すべて・いまは11・全 75,327 リング分／
+                                  **発見された**束すべて・いまは11・全 78,319 リング分／
                                   `scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
                                   `imta2-line` はこの印の run だけを描く。読み手は js/border-coast.js
                                   （束の索引でも**環そのものの同一性**でも引ける）。⚠ 面積 0 のリングは
                                   内部を持たないので描かない
-data/border-detail/               OHM原典と同梱形状を照合した拡大表示用の境界線。索引と空間別の断片を
-                                  js/border-coast.jsが表示範囲に応じて読み、元の境界線と置き換える。
+data/border-detail/               拡大表示用の境界線。OHM の 3 層は OHM 原典と同梱形状を照合したもの、
+                                  出版元の調査記録（hist-admin-surveys・-nc）は出版元自身の座標を単純化せずに
+                                  運んだもの。索引と空間別の断片を js/border-coast.js が表示範囲に応じて読み、
+                                  元の境界線と置き換える。調査記録の索引は index-<記録>.json に分け、index.json は
+                                  それを指すだけ。⚠ CC BY-NC-SA の記録（-nc）は断片も索引も別ファイルで、各断片が
+                                  自分のライセンスを述べる（開いた形状と 1 つの断片に混ざらない）。
                                   ⚠ **git の外**（`data-assets.json`）。`npm run data:pull` が共有ストアへの
                                   リンクを置く。再生成の前に `node scripts/data-assets.mjs materialize border-detail`
 data/hist-admin1.js               歴史的な第1級行政区分（OpenHistoricalMap・CC0 1.0・`window.__HISTADM1`・
@@ -1719,10 +1732,20 @@ data/hist-admin-fill.js           **IntMap 自身が遡らせた**現代の第1�
                                   ⚠ 5 つの条件を全部満たす区間だけを出す: ①上流が日付を**述べている**
                                   ②**その国自身の発足日より前には描かない**（区分は国より前には無い）
                                   ③その国の区分が**1つ残らず描ける日付**にだけその国を描く（出力側で交差）
-                                  ④その年にその土地が**1つの政体の中にあった**（時代の国境記録に照合）
-                                  ⑤OHM の記録が既に答えている区間は**黙る**。
+                                  ④その年にその土地が**1つの政体の中にあった**（読者が見る国境の合成——CShapes・
+                                  OHM の国境・Cliopatria・年ごとの枚の残り——に照合。CShapes の窓の後は今日の地図）
+                                  ⑤OHM の記録と出版元の記録（data/hist-admin-surveys*.js）が既に答えている区間は**黙る**。
+                                  どの政体も覆わない土地の単位は国の完全性を止めず、`unplaced` 欄に載る。
                                   hist-kuni と同じく束（__HISTADM1）に**追記**され、列 10 は null なので
                                   線は `imta-gap-line` が描く。門は `npm run check:histfill`
+data/hist-admin-surveys.js        **出版元が測って日付を述べた**第1級区分のうち OHM に無いもの（`window.__HISTADMSURVEY`）。
+                                  NRCan（カナダ 1867–2003）・Virtual Shanghai（中華民国の省 1912–49）・RISTAT（ロシア帝国の県 1897）・
+                                  Nejjar（1896 のオスマン／1926 のフランス委任統治）・Pelagios MAGIS（ローマの属州 117 と 303–324 頃）。
+                                  行ごとに出版元の日付と精度（`dates`。導出した端は根拠つき）を持つ。derived ではない記録。
+                                  生成は scripts/build-hist-admin-surveys.mjs、門は `npm run check:histsurveys`（docs/MAP-LAYERS.md §7.7）
+data/hist-admin-surveys-nc.js     同じ形で、**CC BY-NC-SA 4.0** の出版元だけ（`window.__HISTADMSURVEYNC`・
+                                  HGIS de las Indias＝スペイン領アメリカの provincia mayor 1701–1808）。data/cshapes.js と同じく
+                                  開いた記録から分け、ファイル自身が `licence` を述べる
 data/hist-coverage-holes.json     歴史地図の**穴**の観測（目標値ではない）。測った 18 年それぞれで、第1級区分が
                                   丸ごと描かれていない政体ごとに、その記録の無い土地の下にある**現代の国**と、
                                   そこが空いている**理由**（data/hist-admin-fill.js の `refused`・最後の発足より前・
@@ -1979,7 +2002,9 @@ scripts/
                                   `--fetch` が取得、無印がビルド、`--report` が被覆表。
   build-hist-admin-fill.mjs       同梱の Natural Earth 10m（data/admin1-world.json.gz）と Wikidata の発足日から
                                   `data/hist-admin-fill.js`。**上流が日付を述べ、その国が丸ごと日付を持ち、
-                                  その年にその土地が1つの政体の中にあり、OHM が黙っている**区間だけを出す。
+                                  その年にその土地が1つの政体の中にあり、OHM と出版元の記録が黙っている**区間だけを出す。
+                                  政体は読者が見る国境の合成（data/cshapes.js・hist-borders.js・hist-clio.js・hist-eras-rest.js。
+                                  hist-fidelity の `politiesAt` と同じ）に訊く。
                                   `--check` は出荷バイトだけを見る（「1国は丸ごと答えるか1件も答えないか」を再導出）。
                                   Wikidata との結合は **ISO 3166-2 の全ランク**（preferred を優先・ISO が改番した
                                   旧コードも同じ項目に届く）、ISO が黙るときだけ **HASC（P8119）**。描かない国は
@@ -1987,6 +2012,15 @@ scripts/
                                   ので読まない（実測で日本の床が 1946 年に動いた）。キャッシュの置き場は
                                   `INTMAP_HISTFILL_CACHE` / `INTMAP_HISTADMIN_CACHE`（worktree から原本の
                                   node_modules へ書かないため）
+  build-hist-admin-surveys.mjs    scripts/histsurveys/ の収穫器（**発見する**）から `data/hist-admin-surveys.js` と
+                                  `data/hist-admin-surveys-nc.js`。OHM に譲り（標本点の 25%・穴埋めと同じ割合と標本）、日付の精度が
+                                  高い出版元から置いて後の出版元は譲り、記録が一部に答えた単位の 1 年未満の切れ端は落とし、
+                                  出版元が述べない日を作らない。非営利の出版元は `-nc` の束へ。帰属表示は行を出した出版元だけ。
+                                  `--fetch` が取得、無印がビルド、`--check` は出荷バイトだけを見る
+  histsurveys/                    出版元 1 つにつき 1 ファイル（`SOURCE`＝出版元・ライセンス・引用文、`fetchRaw`・`harvest`・
+                                  `admits`＝どの単位が第1級か）。`nrcan` `virtualshanghai` `ristat` `nejjar` `magis` `hgisindias`
+                                  `newberry`（アメリカの州・準州）`transcultural`（heiDATA の 1926 年ソ連）。最後の 2 つはいま 0 行
+                                  （その土地は OHM が答えている）
   build-hist-admin1.mjs           OpenHistoricalMap の `admin_level` 3–6 の境界関係 → `data/hist-admin1.js`
                                   （`--levels 3,4`）と `data/hist-admin2.js`（`--levels 5,6`）。**1 本の build が
                                   両方の層を焼く**ので、門も 1 本（`npm run check:histadmin`）。⚠ 出力の global は
@@ -2014,6 +2048,8 @@ scripts/
                                   （上流不要）。`--report` が唯一の定数 `INLAND_KM` を読み取る分布を出す
   build-border-detail.mjs         同じOHM原典を既存形状と照合し、拡大表示用の詳細な境界線を
                                   data/border-detail/へ分割生成する。既存の補正形状・年代・身元は保持する。
+                                  出版元の調査記録（HIST_ADMIN_GAPS の derived:false）は harvester を読み直し、
+                                  同じ単純化で同梱の形が再現できた単位だけ、出版元の座標をそのまま詳細にする。
   bordercoast/                    その部品（`water.mjs` 海岸線の記録から陸／海の判定と最寄りの水際までの距離）
   histborders/                    その部品（`fetch.mjs` Overpass の取得とキャッシュ／`geom.mjs` リングの縫合と簡略化。
                                   ⚠ 縫合は**前後両方向へ伸ばす**——片方向だと穴の開いた輪郭が種を置いた場所で刻まれ、

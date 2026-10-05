@@ -569,6 +569,28 @@ export const IntMapRefData = (function(){
        not at all, and a unit is withheld on any span where its ground straddled two polities of
        that era, or where the OHM record already answers. Both publishers have a row above; the
        derivation is IntMap's and the map draws these lines in the derived style, not OHM's. */
+    /* ⚠⚠ (hist-coverage-depth) AND WHERE A PUBLISHER SURVEYED AND DATED THE UNITS, THE MAP DRAWS THEIR
+       RECORD — NOT A DERIVATION. data/hist-admin-surveys.js (open licences) and
+       data/hist-admin-surveys-nc.js (non-commercial, kept apart as data/cshapes.js is) carry
+       first-level units that national and research atlases state with their own dates, where
+       OpenHistoricalMap holds none (scripts/build-hist-admin-surveys.mjs; one harvester per
+       publisher in scripts/histsurveys/). ONE ROW PER PUBLISHER, because each is its own licence:
+       the values below are the harvesters' own `SOURCE` (licence, its URL, the citation the
+       publisher asks for), not a sentence written here. `credit` is true where naming the source is
+       a condition (CC BY, the Open Government Licence – Canada, CC BY-NC-SA); RISTAT's CC0 carries
+       a REQUEST for attribution, which is not a condition, and its citation is given anyway. */
+    {n:'Natural Resources Canada — Territorial Evolution, 1867 to 2003 (Open Government Licence – Canada)',u:'https://open.canada.ca/data/en/dataset/e88ce995-b69a-4595-a752-bb06b061b5a3',lic:'Open Government Licence - Canada',licUrl:'https://open.canada.ca/en/open-government-licence-canada',credit:true,
+     cite:'Natural Resources Canada, Territorial Evolution of Canada, 1867 to 2003. Contains information licensed under the Open Government Licence – Canada.'},
+    {n:'Virtual Shanghai (ENP-China Project) — Provinces in Republican China, 1912-1949 (CC0 1.0)',u:'https://www.virtualshanghai.net/Maps/Base?ID=2210',lic:'CC0 1.0',licUrl:'https://creativecommons.org/publicdomain/zero/1.0/',credit:false,
+     cite:'Christian Henriot (author), Pierre-Henri Dubois (cartographer), Provinces in Republican China, Virtual Shanghai / ENP-China Project, https://www.virtualshanghai.net/Maps/Base?ID=2210.'},
+    {n:'Electronic Repository of Russian Historical Statistics (RISTAT) — Russian Empire Historical GIS Maps, 1897 (CC0 1.0)',u:'https://doi.org/10.34894/NQOASN',lic:'CC0 1.0 with a request for attribution',licUrl:'https://creativecommons.org/publicdomain/zero/1.0/',credit:false,
+     cite:'Electronic Repository of Russian Historical Statistics, 18th - 21st centuries, https://ristat.org/, Version I (2020): Russian Empire Historical GIS Maps (1897). DataverseNL, https://doi.org/10.34894/NQOASN.'},
+    {n:'Nejjar (University of Oxford) — Palestine 1896 and Syria and Lebanon 1926 administrative boundaries (CC0 1.0)',u:'https://doi.org/10.7910/DVN/YOHIFN',lic:'CC0 1.0',licUrl:'https://creativecommons.org/publicdomain/zero/1.0/',credit:false,
+     cite:'Nejjar. Palestine administrative boundaries 1896 (doi:10.7910/DVN/YOHIFN) and Syria and Lebanon administrative boundaries 1926 (doi:10.7910/DVN/ZDC06B). Harvard Dataverse, 2024.'},
+    {n:'HGIS de las Indias (Werner Stangl, University of Graz) — Territorial gazetteer for Spanish America, 1701-1808',u:'https://doi.org/10.7910/DVN/YPEU5E',lic:'CC BY-NC-SA 4.0',licUrl:'https://creativecommons.org/licenses/by-nc-sa/4.0/',credit:true,
+     cite:'Stangl, Werner, 2019, "Data: Territorial gazetteer for Spanish America, 1701-1808", https://doi.org/10.7910/DVN/YPEU5E, Harvard Dataverse, V4. Werner Stangl (ed.), HGIS de las Indias (2015ff.).'},
+    {n:'Pelagios MAGIS — Pleiades Regions (Roman provinces digitised by Pedar Foss from the Barrington Atlas; CC BY) with Pleiades (CC BY 3.0)',u:'https://github.com/pelagios/magis-pleiades-regions',lic:'CC BY (version not stated by the publisher)',licUrl:'https://github.com/pelagios/magis-pleiades-regions#readme',credit:true,
+     cite:'Copyright AWMC & Foss, CC-BY (Pelagios MAGIS, Pleiades Regions); dates and names from Pleiades, https://pleiades.stoa.org/ (CC BY 3.0).'},
     /* ⚠⚠⚠ (#R700) THE LICENCE AND THE CITATION ARE VALUES ON THE ROW, NOT A SENTENCE SOMEBODY
        REMEMBERED TO WRITE. CShapes is CC BY-NC-SA 4.0 — attribution is a CONDITION of redistributing
        it, and IntMap redistributes it as 5.6 MB of committed bytes (data/cshapes.js) rather than as

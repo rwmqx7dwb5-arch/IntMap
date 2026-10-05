@@ -2668,8 +2668,19 @@ export function labelPopup(HOST){
       const how=[];
       for(const edge of ['start','end']){ const d=dates&&dates[edge];
         if(d&&!d.raw&&d.derived&&d.bound) how.push(edge+' '+d.bound); }
-      if(!how.length) return line;
-      return line+' · '+IntMapLang.t(HOST.lang,
+      /* ⚠ (hist-coverage-depth) A SURVEYED RECORD SAYS HOW IT GOT AN EDGE IT DID NOT STATE. A publisher's
+         snapshot atlas (scripts/build-hist-admin-surveys.mjs) dates a unit's end from the next survey
+         that no longer shows it, and writes that edge as `derived` with its `basis`. Printing the raw
+         alone would present the inference as the publisher's statement; the basis goes beside it, in
+         the record's own words. A null raw is still «?» above — nothing here invents a date. */
+      const basis=[];
+      for(const edge of ['start','end']){ const d=dates&&dates[edge];
+        if(d&&d.derived&&typeof d.basis==='string'&&d.basis.trim()) basis.push(IntMapLang.t(HOST.lang,
+          (edge==='start'?'start':'end')+' derived: '+d.basis,
+          (edge==='start'?'始まり':'終わり')+'は導出: '+d.basis)); }
+      const tail=basis.length?' · '+basis.join(' · '):'';
+      if(!how.length) return line+tail;
+      return line+tail+' · '+IntMapLang.t(HOST.lang,
         'undated upstream; drawn from '+how.join(', ')+', taken from other units of the same system',
         '上流は日付を述べていない。同じ制度の他の単位が述べる '+how.join('、')+' から描いている',
         'stromaufwärts undatiert; gezeichnet ab '+how.join(', ')+', von anderen Einheiten desselben Systems',
