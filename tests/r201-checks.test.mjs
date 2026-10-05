@@ -139,7 +139,9 @@ test('r201 ②a ofm-admin1 is wired for click, cursor, exact hit and padded tap'
     assert.equal(canvas.style.cursor, type === 'mouseenter' ? 'pointer' : '');
   }
   /* the padded-tap fallback must NOT treat it as a water/terrain label (those lose the area tools) */
-  const geo = fn.match(/const geoLbl=\/\^\(([^)]*)\)/);
+  /* (poi-label-click) the area-less group is ONE list now (GEO_LBL), and the padded tap reads it; the province is not in it */
+  assert.match(fn, /const geoLbl=GEO_LBL\.includes\(lid\);/, 'the padded tap reads the one area-less list');
+  const geo = fn.match(/const GEO_LBL=\[([^\]]*)\]/);
   assert.ok(geo && !geo[1].includes('admin1'), 'a region HAS an area, so Isolate/Move stay');
 });
 

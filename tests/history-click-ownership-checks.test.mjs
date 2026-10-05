@@ -39,7 +39,7 @@ function fillBinding() {
   assert.ok(found, 'the historical fill has a real reader'); return found;
 }
 const labelModule = exported(ui, 'labelPopup');
-const labelDeclarations = ['PLACE_LBL', 'ALL_LBL'].map(n => declaration(ui, n)).join('\n');
+const labelDeclarations = ['PLACE_LBL', 'GEO_LBL', 'ALL_LBL'].map(n => declaration(ui, n)).join('\n');
 const blankWiring = ['_tapPad', '_ERA_LAYERS', '_ownedElsewhere', '_named'].map(n => declaration(borders, n)).join('\n') + '\n' + fillBinding();
 
 async function harness({ mount = true, backgroundFirst = false } = {}) {
