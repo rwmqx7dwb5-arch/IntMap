@@ -594,7 +594,10 @@ layer-rows.js                     manifest の DOM 側 — 基本表示 10 行�
                                   `whenBoxes`（行が挿入された瞬間に適用する。セッション復元の 220ms×25 回ポーリングの後継）＋
                                   `holdUntilDrawable`（スタイルが受け取れる前のレイヤーの `change` を預かり、受け取れる
                                   ようになってから箱ごとに1回配る。docs/MAP-LAYERS.md §7.2）＋`inFlight(watch)`（追跡した要求を
-                                  `layer-state.js` にも渡す）
+                                  `layer-state.js` にも渡す）＋`ownershipLearner(store)`（表の無い箱がどの描画レイヤーを持つかを、
+                                  その箱の OFF の `change` を配送している最中に描かれていた層を隠した・外した書き込み
+                                  ＝`GE().layers.onVisibility` だけから学ぶ。同じ数秒に現れた層は持ち物にならない。読み手は
+                                  `data-layers.js` の `IntMapLayerAudit`。docs/architecture/08-ui.md）
 layer-state.js                    **レイヤーの状態の唯一の持ち主** `layerState`（window.IntMapLayerState）。箱ごとに
                                   loading / ok / failed（答えが「否」だった）/ unobserved（時間内に何も届かなかった）と理由を持ち、
                                   行に en+jp の印を出し、状態に入ったときに1回だけ `notify.js` で告げ、Atlas に `snapshot()` を渡す。

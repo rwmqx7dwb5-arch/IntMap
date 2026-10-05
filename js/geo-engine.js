@@ -2471,6 +2471,9 @@ function _redrawLocalGlyphs(m,cover){
    const _claims=new Map();   /* this view's claimed surfaces — see surfacesDrawn above */
    const _drawWaiters=[];     /* this view's whenCanDraw() callers still waiting — see whenCanDraw below */
    let _looking=null;         /* the layers.witness() pass running now, told every layer id it asks about — see there */
+   const _shownBy=new Set();  /* layers.onVisibility() subscribers — told every write that shows or hides a layer, see there */
+   const _was=(id)=>{ if(!_shownBy.size||id==null) return false; try{ return !!A().isVisible(id); }catch(_){ return false; } };   /* drawn before the write — asked only while someone listens */
+   const _shown=(id,on,was)=>{ if(!_shownBy.size||id==null) return; for(const fn of _shownBy){ try{ fn(id,on,!!was); }catch(_){} } };
    /* (a11y-shared-dialog) THE ONE DOOR EVERY CAMERA MOVE GOES THROUGH honours prefers-reduced-motion: the move is
       made, only not animated (duration 0 = arrive). MapLibre already skips its own animation for that setting —
       except when a caller passes essential:true (search does) — and the Cesium adapter never read it, so the two
@@ -2574,7 +2577,7 @@ function _redrawLocalGlyphs(m,cover){
         (function poll(){ if(!_drawWaiters.length) return; listen(); if(!drain()) setTimeout(poll,150); })();
       });
     },
-    layers:{ hasSource:id=>A().hasSource(id), addSource:(id,d)=>A().addSource(id,d), setSourceData:(id,d,o)=>A().setSourceData(id,d,o), removeSource:id=>A().removeSource(id), has:id=>{ if(_looking) _looking(id); return A().hasLayer(id); }, add:(d,b)=>A().addLayer(d,b), remove:id=>A().removeLayer(id), setVisible:(id,v)=>A().setVisible(id,v), isVisible:id=>A().isVisible(id), setPaint:(id,p,v)=>A().setPaint(id,p,v), setLayout:(id,p,v,o)=>A().setLayout(id,p,v,o), setOpacity:(id,v)=>A().setOpacity(id,v),
+    layers:{ hasSource:id=>A().hasSource(id), addSource:(id,d)=>A().addSource(id,d), setSourceData:(id,d,o)=>A().setSourceData(id,d,o), removeSource:id=>A().removeSource(id), has:id=>{ if(_looking) _looking(id); return A().hasLayer(id); }, add:(d,b)=>{ const w=_was(d&&d.id); const r=A().addLayer(d,b); try{ if(d) _shown(d.id,!(d.layout&&d.layout.visibility==='none'),w); }catch(_){} return r; }, remove:id=>{ const w=_was(id); const r=A().removeLayer(id); _shown(id,false,w); return r; }, setVisible:(id,v)=>{ const w=_was(id); const r=A().setVisible(id,v); _shown(id,!!v,w); return r; }, isVisible:id=>A().isVisible(id), setPaint:(id,p,v)=>A().setPaint(id,p,v), setLayout:(id,p,v,o)=>{ const w=p==='visibility'&&_was(id); const r=A().setLayout(id,p,v,o); if(p==='visibility') _shown(id,v!=='none',w); return r; }, setOpacity:(id,v)=>A().setOpacity(id,v),
       /* (#R170) real-scale 3-D volumes (metres above ground) */
       addExtrusion:(d,b)=>A().addExtrusion(d,b), setExtrusionRange:(id,a,b)=>A().setExtrusionRange(id,a,b),
       /* (#R173) a CLOSED body (floor + filled interior), which an extrusion cannot be */
@@ -2630,6 +2633,15 @@ function _redrawLocalGlyphs(m,cover){
             _looking=id=>{ ids.add(id); if(outer) outer(id); };
             try{ const r=fn(); ok=true; return r; }
             finally{ _looking=outer; if(ok){ const m=new Map(); for(const id of ids) m.set(id,now(id)); seen=m; } } } }; },
+      /* ══ «WHO SHOWED OR HID THIS LAYER?» — EVERY WRITE THAT CHANGES WHETHER A LAYER IS DRAWN ══════════════
+         `onVisibility(fn)` calls fn(id, shown, was) after each add (shown unless it is born `visibility:'none'`),
+         remove (false), setVisible and setLayout('visibility'), `was` being whether the layer was drawn just
+         before the write; returns the unsubscribe. A write that re-asserts a state already in force says
+         was === shown — a pass that re-hides what is already hidden has changed nothing. It runs synchronously inside the caller's write, so
+         a subscriber can ask what the caller was doing at that instant. That is the whole point: which layers a
+         Layers box owns is answered by what that box's own handler wrote while its `change` was being
+         dispatched (js/data-layers.js), never by what else happened to change the style in the same seconds. */
+      onVisibility:(fn)=>{ _shownBy.add(fn); return ()=>{ _shownBy.delete(fn); }; },
       get:id=>{ if(_looking) _looking(id); return A().getLayer(id); }, getLayout:(id,p)=>A().getLayout(id,p),
       move:(id,before)=>A().moveLayer(id,before),
       setFilter:(id,f)=>A().setFilter(id,f), getFilter:id=>A().getFilter(id),

@@ -397,6 +397,8 @@ export interface GeoEngineLayers {
   getFeatureState(f?: any): any;
   /** «Is any layer this pass looked at not the one it last found?» — see `witness` in js/geo-engine.js. */
   witness(): GeoEngineLayerWitness;
+  /** Told `(id, shown, was)` after every write that shows or hides a layer; returns the unsubscribe — see `onVisibility` in js/geo-engine.js. */
+  onVisibility(fn: (id: string, shown: boolean, was: boolean) => void): () => void;
   updateImage(id?: any, o?: any): any;
   addDynamicImage(id?: any, o?: any, b?: any): any;
   imageRowLatitudes(c?: any, h?: any): any;

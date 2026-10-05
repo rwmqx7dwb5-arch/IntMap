@@ -15,7 +15,7 @@
 import { everyTick, stopTick, afterTick, tickKey } from './runtime.js';   /* the one timer wheel — js/runtime.js */
 import { readWorldBank, wbClock, wbIndicator } from './wb-indicators.js';   /* (country-analysis-unify) the fertility row's World Bank read — the one read, under the host's clock (stalled-fetch). (layer-packages) The relay rung of the cable ladder (ownRelayUrl) went with the cables to js/layer-pkg-subcables.js */
 import './night-lights.js';   /* (#R550) which night-lights epoch is on screen — window.IntMapNightLights */
-import { layerInflight } from './layer-rows.js';   /* (heal-waits-for-inflight) the request a row started and has not finished — see ④ there */
+import { layerInflight, ownershipLearner } from './layer-rows.js';   /* (heal-waits-for-inflight) the request a row started and has not finished — see ④ there; (layer-ownership-by-declaration) which layers a box owns: what its own OFF took off the map */
 import { layerState } from './layer-state.js';   /* (layer-failure-state) what became of a row's request — failed / unobserved and why — kept, shown on the row, told once, readable by Atlas */
 import { untilObserved, isUnobserved } from './fetch-deadline.js';   /* (stalled-fetch) every read a row's request waits on, under a clock (the radar's rvFetch is js/layer-pkg-radar.js now); (unobserved-is-not-refused) and what a row does when that clock runs out — see rowUntilObserved */
 /* (layer-manifest) WHICH LAYERS EXIST, their shelves and their defaults are js/layer-manifest.js. The five lists
@@ -5004,34 +5004,12 @@ export function dataLayers(HOST){
        zoom-gated live traffic are intentionally excluded (their emptiness is legitimate).
        Diagnostics: window.IntMapLayerAudit.{run,check,log} — Atlas reads check() for honest state. */
     window._imAuditReg=window._imAuditReg||{};
-    /* (#R81) AUTO-LEARN layer ownership so the reconciler covers EVERY layer, not only the hand-maintained
-       tables. Empirically only 31 of 129 checkboxes were audit-covered — the rest (World-Bank, GIBS, ECMWF,
-       geo-theory, NATO/EU, …) had NO "checked-but-blank" self-heal, so an occasional wipe left the box ON with
-       nothing painted and nothing corrected it (the residual "レイヤーのオンオフと実態が乖離" the user still hit).
-       On every toggle-ON we diff the style's layer list to learn which real layer ids that checkbox added and
-       feed them to the SAME reconciler. STRICTLY additive + safe: the learned ids are used ONLY for the
-       "checked-but-blank" (direction-a) heal — a harmless idempotent re-fire of the box's OWN change handler —
-       NEVER to hide a layer (hiding stays with the id-table path + _sweepOrphanLayers), so a mis-attribution can
-       at worst cause a needless re-fire of the correct checkbox, never hide the wrong layer. Attribution is
-       skipped whenever another checkbox toggles during the capture window (ambiguous → conservative miss, which
-       is safe: it just falls back to today's behaviour). */
+    /* (#R81) LEARNED layer ownership for the boxes no id table names — learned from what the box's own OFF took off the
+       map, never from what appeared in the same seconds (js/layer-rows.js `ownershipLearner` says why, and what it measured). */
     window._imLayerOwn=window._imLayerOwn||{};
-    (function(){
-      if(!GE()||!GE().events) return;
-      const SKIP=/^(ofm-|country-|borders-|ref-|gl-|background$|land$|water$|waterway|admin|place-|poi-|road|bridge|tunnel|building|boundary|natural|landcover|landuse|coastline|sat$|layer-sat|nlq-|pl-outline|tool-|measure|radius|user-pin|news-|hl-|highlight|iso-mask|contour-label|imcmp-|imrad-|imroute-|sv-cov-|wind-field)/;   /* (#R84) exclude Atlas overlay layers + the wind colour-field from checkbox ownership learning */
-      const snap=()=>{ const s=new Set(); try{ (GE().scene.getStyle().layers||[]).forEach(l=>s.add(l.id)); }catch(_){} return s; };
-      let _seq=0;
-      function learn(cbId){ const mine=++_seq; const before=snap();
-        [500,1800,4000].forEach(ms=>setTimeout(()=>{ try{
-          if(mine!==_seq) return;                 /* another checkbox toggled since → ambiguous window, skip */
-          const cb=document.getElementById(cbId); if(!cb||!cb.checked) return;
-          const now=snap(), own=window._imLayerOwn[cbId]=window._imLayerOwn[cbId]||new Set();
-          now.forEach(id=>{ if(before.has(id)||SKIP.test(id)) return;
-            for(const k in window._imLayerOwn){ if(k!==cbId&&window._imLayerOwn[k]&&window._imLayerOwn[k].has(id)) return; }   /* first owner keeps it — never steal */
-            own.add(id); });
-        }catch(_){} },ms)); }
-      try{ const dd=document.getElementById('layer-dropdown'); if(dd) dd.addEventListener('change',e=>{ const cb=e.target; if(cb&&cb.type==='checkbox'&&cb.id){ if(cb.checked) learn(cb.id); else _seq++; } }); }catch(_){}
-    })();
+    try{ if(GE()&&GE().layers&&typeof GE().layers.onVisibility==='function'){ const own=ownershipLearner(window._imLayerOwn);
+      window.addEventListener('change',e=>{ const t=e.target; if(t&&t.type==='checkbox'&&t.id&&t.closest&&t.closest('#layer-dropdown')) own.dispatching(e); },true);
+      GE().layers.onVisibility(own.wrote); } }catch(_){}
     (function(){
       const STATIC={
         'dl-climate':['lyr-climate'],'dl-precip':['lyr-precip'],'dl-sst':['lyr-sst'],
@@ -5121,11 +5099,15 @@ export function dataLayers(HOST){
          The post-toggle look WAITS for that request and looks once when it has settled (fulfilled or
          rejected); the periodic audit just does not count a box while it is in flight. */
       function inFlightNow(cb){ try{ return layerInflight.has(cb.id); }catch(_){ return false; } }
-      const idsFor=cbId=>STATIC[cbId]||BASE[cbId]||window._imAuditReg[cbId]||null;
+      const TABLES=()=>[STATIC,BASE,window._imAuditReg];   /* every id table, the registered one read live */ const idsFor=cbId=>{ for(const T of TABLES()){ if(T&&T[cbId]) return T[cbId]; } return null; };
       function painted(ids){ try{ for(const lid of ids){ if(GE().layers.has(lid)&&GE().layers.getLayout(lid,'visibility')!=='none') return true; } }catch(_){} return false; }
       /* which renderer layers a box owns — the id tables, then the learned ownership. (world-at-time) also handed out
          read-only as IntMapLayerAudit.owned, so a reader can tell a layer held for the instant from one the style hold lost */
-      function owned(cbId){ let ids=idsFor(cbId); if(!ids||!ids.length){ const own=window._imLayerOwn&&window._imLayerOwn[cbId]; ids=(own&&own.size)?Array.from(own):[]; } return ids.slice(); }
+      /* (layer-ownership-by-declaration) a layer an id table gives to ANOTHER box is that box's, whatever this box's
+         handler did to it — the declaration outranks the observation (see the learner above). */
+      function declaredElsewhere(cbId,lid){ for(const T of TABLES()){ for(const k in T){ if(k!==cbId&&T[k]&&T[k].indexOf(lid)>=0) return true; } } return false; }
+      function learned(cbId){ const own=window._imLayerOwn&&window._imLayerOwn[cbId]; return own&&own.size?Array.from(own).filter(lid=>!declaredElsewhere(cbId,lid)):[]; }
+      function owned(cbId){ const ids=idsFor(cbId); return (ids&&ids.length)?ids.slice():learned(cbId); }
       function check(cbId){ const ids=owned(cbId); if(!ids.length) return null; return painted(ids); }
       /* (#R190) "is this checkbox's layer really on the map?" — the launch screen asks it too, to
          decide when the map is FINISHED rather than merely quiet (js/app-body.js). Exposing the
@@ -5150,8 +5132,7 @@ export function dataLayers(HOST){
          hid it (the id-table hide branch never sees it; _sweepOrphanLayers only covers dl-* standard names). Now both
          directions are handled: OFF + still-painted owned layers → hide them (minus any a checked sibling legitimately owns). */
       function _auditLearned(cb){ try{ if(_LEARN_SKIP.test(cb.id)||userTouched(cb)) { sus[cb.id]=0; return; }
-        const own=window._imLayerOwn&&window._imLayerOwn[cb.id]; if(!own||!own.size) return;
-        const ownArr=Array.from(own);
+        const ownArr=learned(cb.id); if(!ownArr.length) return;
         if(!cb.checked){
           if(painted(ownArr)){ const safe=ownArr.filter(lid=>!_ownedByCheckedOther(cb.id,lid));
             if(safe.length){ log.push({id:cb.id,t:Date.now(),fix:'hide-learned'}); if(log.length>60) log.shift();
@@ -5217,7 +5198,7 @@ export function dataLayers(HOST){
       function toggleLook(cb,t0){ try{ if(!cb.checked) return; if(cb.__userChangeT&&cb.__userChangeT>t0) return;   /* user re-toggled → respect it */
           if(inFlightNow(cb)){ layerInflight.idle(cb.id).then(()=>toggleLook(cb,t0)); return; }   /* still being answered → look once, when it has settled (see `inFlightNow`) */
           if(!observable(cb)) return;   /* held → its delivery starts a look of its own; undrawable → the periodic audit looks once it can (see `observable`) */
-          let ids=idsFor(cb.id); if(!ids||!ids.length){ const own=window._imLayerOwn&&window._imLayerOwn[cb.id]; ids=(own&&own.size)?Array.from(own):null; } if(!ids||!ids.length) return;
+          const ids=owned(cb.id); if(!ids.length) return;
           if(painted(ids)) return; if(healed[cb.id]&&Date.now()-healed[cb.id]<240000) return; healed[cb.id]=Date.now();
           log.push({id:cb.id,t:Date.now(),fix:'toggle-heal'}); if(log.length>60) log.shift();
           if(BASE[cb.id]) fireSyn(cb); else rearm(cb); }catch(_){} }
