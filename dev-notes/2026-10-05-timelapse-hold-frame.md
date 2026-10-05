@@ -1,6 +1,7 @@
 ---
 title: タイムラプスの動画がコマを落としていた——MediaRecorder は一時停止の時点で符号化中のコマを捨てる。WebCodecs でコマの時刻を自分で決め、全コマの返りを数えてから容器を自前で書く
 date: 2026-10-05
+pr: 998
 newsen: Time-lapse videos no longer lose a frame on a busy computer, and they are written faster — every instant and the final hold are always in the file, each for exactly its share of a second.
 newsjp: タイムラプスの動画が、重い計算機でもコマを落とさなくなり、書き出しも速くなりました。すべての瞬間と最後の静止コマが、それぞれちょうどの長さで必ずファイルに入ります。
 ---
