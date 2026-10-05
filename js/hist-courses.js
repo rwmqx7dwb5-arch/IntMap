@@ -28,7 +28,7 @@ export function open(win, doc) {
   });
 }
 
-export function reader(win, C) {
+function reader(win, C) {
   const active = (x, t) => { const c = C.courses && C.courses[x[2]]; return !!(c && c.days && t >= c.days[0] && t < c.days[1]); };
   /* the substitutions for ring `ri` of the pool `global` holds at `t` — only if that pool is the one they were
      derived from (same length), as a mark is */
