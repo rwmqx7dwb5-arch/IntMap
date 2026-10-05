@@ -41,23 +41,27 @@
 #   tokens  hand-written text that states counts: an integer both sides moved → base + both moves,
 #           an insertion both sides made at one place → both (main's first). Anything else is a conflict.
 # intmap-regen: commands separated by `;`, words by `,` (an attribute value has no spaces).
+# intmap-tighten=<writer> (proportional-finish): on a ratchet ledger, the command that rewrites it from the
+#           tree. The merge never runs it; `npm run regen` (scripts/regen.mjs) runs it and keeps the result only
+#           when every move tightens (a count down, a name or key gone) — a rise is put back and named.
+#           intmap-tighten-info=<key>,… names top-level keys the writer keeps as context (no gate reads them).
 
 # ledgers
 tests/perf-baseline.json                 merge=intmap-generated intmap-merge=json intmap-clash=upstream intmap-clash-by=scripts/perf-budget.mjs intmap-regen=!npm,run,build,&&,node,scripts/perf-budget.mjs,--update
 tests/durations.json                     merge=intmap-generated intmap-merge=json intmap-clash=upstream
 tests/perf-phone-ledger.json             merge=intmap-generated intmap-merge=json intmap-clash=upstream
-tests/global-surface-baseline.json       merge=intmap-generated intmap-merge=json intmap-clash=sum
-tests/control-names-baseline.json        merge=intmap-generated intmap-merge=json intmap-clash=sum
-tests/data-effect-baseline.json          merge=intmap-generated intmap-merge=json intmap-clash=sum
-tests/fetch-deadline-baseline.json       merge=intmap-generated intmap-merge=json intmap-clash=sum
-tests/keyboard-reach-baseline.json       merge=intmap-generated intmap-merge=json intmap-clash=sum
-tests/output-taint-baseline.json         merge=intmap-generated intmap-merge=json intmap-clash=sum
-tests/data-layers-baseline.json          merge=intmap-generated intmap-merge=json intmap-clash=sum
-tests/ui-owners-baseline.json            merge=intmap-generated intmap-merge=json intmap-clash=sum
-tests/z-layers-baseline.json             merge=intmap-generated intmap-merge=json intmap-clash=sum
+tests/global-surface-baseline.json       merge=intmap-generated intmap-merge=json intmap-clash=sum intmap-tighten=scripts/global-surface.mjs,--update
+tests/control-names-baseline.json        merge=intmap-generated intmap-merge=json intmap-clash=sum intmap-tighten=scripts/control-names.mjs,--update
+tests/data-effect-baseline.json          merge=intmap-generated intmap-merge=json intmap-clash=sum intmap-tighten=scripts/data-effects.mjs,--update intmap-tighten-info=reaching
+tests/fetch-deadline-baseline.json       merge=intmap-generated intmap-merge=json intmap-clash=sum intmap-tighten=scripts/fetch-deadlines.mjs,--update
+tests/keyboard-reach-baseline.json       merge=intmap-generated intmap-merge=json intmap-clash=sum intmap-tighten=scripts/keyboard-reach.mjs,--update
+tests/output-taint-baseline.json         merge=intmap-generated intmap-merge=json intmap-clash=sum intmap-tighten=scripts/output-taint.mjs,--update intmap-tighten-info=sinks
+tests/data-layers-baseline.json          merge=intmap-generated intmap-merge=json intmap-clash=sum intmap-tighten=scripts/layer-packages.mjs,--update
+tests/ui-owners-baseline.json            merge=intmap-generated intmap-merge=json intmap-clash=sum intmap-tighten=scripts/ui-owners.mjs,--update
+tests/z-layers-baseline.json             merge=intmap-generated intmap-merge=json intmap-clash=sum intmap-tighten=scripts/z-layers.mjs,--update
 tests/i18n-coverage-floor.json           merge=intmap-generated intmap-merge=json intmap-clash=sum
-scripts/comment-strippers-ledger.json    merge=intmap-generated intmap-merge=json intmap-clash=sum
-scripts/safe-output-ledger.json          merge=intmap-generated intmap-merge=json intmap-clash=sum
+scripts/comment-strippers-ledger.json    merge=intmap-generated intmap-merge=json intmap-clash=sum intmap-tighten=scripts/comment-strippers.mjs,--write
+scripts/safe-output-ledger.json          merge=intmap-generated intmap-merge=json intmap-clash=sum intmap-tighten=scripts/safe-output.mjs,--write
 
 # generated from tracked inputs
 js/atlas-capabilities.js                 merge=intmap-generated intmap-merge=regen intmap-regen=scripts/atlas-caps.mjs,--write

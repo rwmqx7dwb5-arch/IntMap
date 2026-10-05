@@ -482,3 +482,11 @@ CI も同じ旗で出す（runner の Docker に依存しない）。
 - 古い branch（この宣言より前に切ったもの）を `git merge` すると、その branch の `.gitattributes` が読まれる
   ので driver は呼ばれない（実測）。`git rebase origin/main` なら main 側の宣言が効く。script の無い
   checkout で呼ばれたときは、登録コマンド自身が `git merge-file` に戻り、普通の衝突マーカーを残す。
+- **同じ宣言を衝突の外でも使う: `npm run regen`**（`scripts/regen.mjs`）。全件テストを PR の CI に
+  任せたので、帳簿のずれ（古い生成物・下げ忘れた台帳）は commit の前にこれで消す。`intmap-regen` の
+  生成器を全部走らせ、`intmap-tighten=<writer>` を持つ台帳は writer を走らせて、**全部の動きが締める
+  方向（数が減る・名前やキーが消える）のときだけ**結果を残す。緩む方向は元のバイトに戻して名指す
+  ——merge で台帳を作り直さない理由（`--update` は木にあるものを何でも受け入れる）と同じ問いだから。
+  `intmap-tighten-info=<key>` は書き手が参考値として持つ欄（門が読まない）で、どちらへ動いてもよい。
+  宣言の無い台帳（実測値・上へ締める床）には触れない。全部を並列に走らせて約 25 秒（直列で 2 分 13 秒、
+  うち `global-surface.mjs --update` が 53 秒。2026-10-05 実測）。

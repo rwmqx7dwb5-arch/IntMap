@@ -48,7 +48,7 @@
 | 0 | 編集の直後 | 触った検査だけ `node --test tests/<slug>-checks.test.mjs` |
 | 1 | 主題のゲート | 下の表から**触った主題のものだけ** |
 | 2 | 該当 spec だけ | `npx playwright test tests/<slug>.spec.js` |
-| 3 | **push の直前に 1 回** | `npm test` |
+| 3 | **PR の CI** | `npm test` 相当 |
 | 4 | 3-D・Cesium・物理・シミュレータを触ったとき | `npm run test:deep` |
 
 ⚠ **下の表が段 1 の全部である**（`package.json` の `check:*` が正本で、
@@ -85,7 +85,7 @@
 | 起動費用・配られる資産（**build が要る**） | `npm run check:perf` `npm run check:assets` |
 | spec を足した・組み替えた | `npm run check:testbudget` |
 
-⚠ 段 3 を作業の途中で何度も回さない（`AGENTS.md` §4）。⚠ 段を飛ばして push しない。
+⚠ 段 3 は CI だけ（`AGENTS.md` §4）。⚠ 段 0〜2 を飛ばして push しない。
 ⚠ **速度のために品質を落とさない。** 段を省くのではなく、**段の中を並列にする**。
 
 ## 5. context を太らせない
