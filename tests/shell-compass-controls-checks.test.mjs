@@ -287,11 +287,12 @@ test('R504 ⑥ one rose, drawn at two sizes — the desktop and the phone cannot
 
   for (const [name, svg] of [['desktop', desk], ['phone', phone]]) {
     assert.match(svg, /viewBox="0 0 40 40"/, `${name}: the rose is drawn in the 40×40 dial box`);
-    /* リング・目盛り・二面取りの針・軸受け。二枚合わせの針は「点対称の三角形2枚」ではないので、
-       4 枚の polygon があることが「面取りされている」の機械的な言い方になる。 */
-    assert.equal(count(svg, /<polygon /g), 4, `${name}: the needle is four facets, not two flat triangles`);
-    assert.equal(count(svg, /<circle /g), 3, `${name}: the dial ring and the two-part pivot`);
-    assert.equal(count(svg, /<path /g), 2, `${name}: cardinal and intercardinal ticks`);
+    /* (compass-redesign) 「方位磁針ボタン、デザインがダサい。」 — a thin ring, one slim needle (north red, south the theme's
+       colour), a small north pointer above it and a pivot. No ticks, no faceted needle: those are what read as clutter. */
+    assert.equal(count(svg, /<polygon /g), 0, `${name}: the needle is flat paths, not faceted polygons`);
+    assert.equal(count(svg, /<circle /g), 2, `${name}: the ring and the pivot`);
+    assert.equal(count(svg, /<path /g), 3, `${name}: the north pointer, the north half and the south half of the needle`);
+    assert.ok(!/stroke-linecap/.test(svg), `${name}: no tick marks`);
   }
   assert.equal(geometryOf(desk), geometryOf(phone),
     'the two copies must be the same artwork — only class/width/height may differ');
@@ -304,13 +305,13 @@ test('R504 ⑦ every part of the rose but the north needle follows the theme', (
 
   for (const cls of ['compass-svg', 'm-compass-svg']) {
     const svg = roseOf(html, cls);
-    /* 固定色は北の針の2面だけ。#9aa0a6 は「明るい背景のために選ばれた中間灰」で、
+    /* 固定色は北の2つ（針の北半分と北の小三角）だけで、同じ赤。#9aa0a6 は「明るい背景のために選ばれた中間灰」で、
        #R480 以来この釦が着ている暗いガラスの上では泥になる。 */
     const fixed = (svg.match(/#[0-9a-fA-F]{3,8}/g) || []);
-    assert.equal(fixed.length, 2, `${cls}: only the two north facets may carry a fixed colour — found ${fixed.join(', ')}`);
-    for (const c of fixed) assert.match(c, /^#(ff453a|d2312a)$/i, `${cls}: ${c} is not one of the two reds`);
+    assert.equal(fixed.length, 2, `${cls}: only the north pointer and the north half may carry a fixed colour — found ${fixed.join(', ')}`);
+    for (const c of fixed) assert.match(c, /^#ff3b30$/i, `${cls}: ${c} is not the north red`);
     assert.ok(!/#9aa0a6/i.test(svg), `${cls}: the old fixed grey must be gone`);
-    assert.ok(count(svg, /currentColor/g) >= 6, `${cls}: the ring, ticks, south needle and pivot all take currentColor`);
+    assert.ok(count(svg, /currentColor/g) >= 3, `${cls}: the ring, the south needle and the pivot all take currentColor`);
   }
 
   /* …そして currentColor が何かに解決される。ボタンが color を持たなければ、
