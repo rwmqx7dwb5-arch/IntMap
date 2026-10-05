@@ -144,4 +144,4 @@ generatedAt・asOf（Overpass の osm_base）・cadence・builtBy・schema・qua
 21 区間を測った行数・欠損・範囲外・重複））。記録したのは書き手 `scripts/build-hist-courses.mjs` の側の 7 facet（retrievedAt・
 generatedAt・asOf・quality の 4 つ）で、これらは取得と生成のたびに変わる値なので、check:datagov が実行せずに読む純データの
 `GOVERNANCE` 宣言には書けない——同じ値は束の先頭が述べている。初回の `npm test` はこの 2 件（束と書き手）を新しい未宣言として
-落とし（束の側は attribution を真偽値で書いていなかった）、束の側は直し、書き手の側だけを記録した（181 件・2,389 facet）。
+落とし（束の側は attribution を真偽値で書いていなかった）、束の側は直し、書き手の側の 7 facet だけを記録した（main への rebase 後の台帳で 185 件・2,444 facet）。
