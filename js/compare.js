@@ -677,10 +677,14 @@ export function compare(HOST){
       try{ return HSc().yearText(y,IntMapLang.htmlTag(HOST.lang)||'en',HOST.lang==='jp'?'年':null); }catch(_){ return String(y); } }
     function paintTime(){ if(!win) return;
       const w=win.querySelector('#cmp-when');
-      if(w){ w.textContent=''; const b=document.createElement('b'); b.textContent=clockLabel(CT);
-        const sep=document.createElement('span'); sep.className='cmp-when-sep'; sep.textContent='|';
-        const m=document.createElement('span'); m.textContent=clockLabel(IntMapTime);
-        w.append(b,sep,m); w.classList.toggle('cmp-when-own',!follow); }
+      /* (compare-window-bounds) «謎のToday/Today表示»: the pill compares the window's instant with the main map's, and while
+         the two read the same (following, or an own clock at the same instant) it printed the one word twice. One
+         label when they agree; the pair only when there is a difference to show. */
+      if(w){ w.textContent=''; const own=clockLabel(CT), main=clockLabel(IntMapTime); const b=document.createElement('b'); b.textContent=own; w.append(b);
+        if(own!==main){ const sep=document.createElement('span'); sep.className='cmp-when-sep'; sep.textContent='|';
+          const m=document.createElement('span'); m.textContent=main; w.append(sep,m); }
+        w.title=own!==main?IntMapLang.t(HOST.lang,"This window | the main map","このウィンドウ｜メイン地図"):IntMapLang.t(HOST.lang,"This window and the main map","このウィンドウとメイン地図");
+        w.classList.toggle('cmp-when-own',!follow); }
       win.querySelectorAll('[data-t]').forEach(x=>x.classList.toggle('on',(x.getAttribute('data-t')==='follow')===follow));
       const yIn=win.querySelector('#cmp-year');
       if(yIn&&document.activeElement!==yIn){ yIn.value=CT.isLive()?'':String(CT.when().getUTCFullYear());
@@ -828,11 +832,25 @@ export function compare(HOST){
       /* (#R26) The compare window must not sit ON TOP OF the sidebar — clamp its left edge to the sidebar's
          right edge (desktop, sidebar visible on the left). On mobile it's a full-width sheet → no clamp. */
       const _sbRight=()=>{ try{ if(_compact()) return 0; const sb=document.getElementById('sidebar'); if(!sb||sb.classList.contains('collapsed')) return 0; const r=sb.getBoundingClientRect(); return (r.width>0 && r.left<=2)?(r.right+8):0; }catch(_){ return 0; } };
+      /* (compare-window-bounds) THE WHOLE WINDOW STAYS ON SCREEN, ON ALL FOUR SIDES. 「ウィンドウは画面左上にはそれ以上外に
+         行かないようにちゃんとなってるのに、右下には埋もれてしまう」 (2026-10-05): the drag stopped the left/top edges at the
+         sidebar and 0, but the right/bottom at «60 px / 30 px still showing» (measured 1280×800: dragged to [1220,770,1661,1111]).
+         One rule now — the window's own box inside the viewport, its left edge right of the sidebar — and the same rule
+         re-applies when the viewport or the sidebar changes (`_cmpReclamp`) and bounds the edge-resize (`bounds` below). */
+      const _vp=()=>{ const de=document.documentElement; return [de.clientWidth||window.innerWidth, de.clientHeight||window.innerHeight]; };
+      const _fitPos=(l,t,w,h)=>{ const v=_vp(); return [Math.max(_sbRight(),Math.min(v[0]-w,l)), Math.max(0,Math.min(v[1]-h,t))]; };
+      win.__cmpFitPos=_fitPos;   /* `_cmpReclamp` (outside this closure) asks the same rule */
       /* drag by header */
       (function(){ const h=win.querySelector('.cmp-head'); let dx=0,dy=0,drag=false;
-        h.addEventListener('pointerdown',e=>{ if(e.target.closest('.cmp-btn')) return; drag=true; const r=win.getBoundingClientRect(); dx=e.clientX-r.left; dy=e.clientY-r.top; win.style.right='auto'; win.style.bottom='auto'; win.style.left=r.left+'px'; win.style.top=r.top+'px'; try{h.setPointerCapture(e.pointerId);}catch(_){} });
-        h.addEventListener('pointermove',e=>{ if(!drag) return; win.style.left=Math.max(_sbRight(),Math.min(window.innerWidth-60,e.clientX-dx))+'px'; win.style.top=Math.max(0,Math.min(window.innerHeight-30,e.clientY-dy))+'px'; if(mode!=='free') syncFromMain(); /* lens/centroid follow the window */ });
-        h.addEventListener('pointerup',()=>drag=false); h.addEventListener('pointercancel',()=>drag=false);
+        /* (compare-window-bounds) «リサイズの挙動がバグってる»: the header IS the top 9 px edge zone, and its listener runs
+           before the window's edge-resize one — so a press on the top edge started BOTH, and the edge-resize's pointer
+           capture swallowed the header's pointerup: `drag` stayed true and the window then followed the bare pointer
+           (measured: a top-edge resize, then a hover over the header moved the window 121 px left / 197 px down). The
+           press belongs to the edge when the edge claims it, and a move with no button down ends any drag. */
+        const _onEdge=e=>{ try{ const E=win.__imEdge; return !!(E&&!(E.skip&&E.skip())&&E.edgeAt(e.clientX,e.clientY)); }catch(_){ return false; } };
+        h.addEventListener('pointerdown',e=>{ if(e.target.closest('.cmp-btn')||win.dataset.resizing||_onEdge(e)) return; drag=true; const r=win.getBoundingClientRect(); dx=e.clientX-r.left; dy=e.clientY-r.top; win.style.right='auto'; win.style.bottom='auto'; win.style.left=r.left+'px'; win.style.top=r.top+'px'; try{h.setPointerCapture(e.pointerId);}catch(_){} });
+        h.addEventListener('pointermove',e=>{ if(!drag) return; if(!(e.buttons&1)){ drag=false; return; } const r=win.getBoundingClientRect(), p=_fitPos(e.clientX-dx,e.clientY-dy,r.width,r.height); win.style.left=p[0]+'px'; win.style.top=p[1]+'px'; if(mode!=='free') syncFromMain(); /* lens/centroid follow the window */ });
+        const _end=()=>drag=false; h.addEventListener('pointerup',_end); h.addEventListener('pointercancel',_end); h.addEventListener('lostpointercapture',_end);
       })();
       /* (compare-window-resize) RESIZE FROM ANY EDGE OR CORNER — the app's one edge-resize (js/window-manager.js
          addEdgeResize), the same the Atlas window and the route card use. 「compare viewのウィンドウ、サイズ変更ができない。」
@@ -842,7 +860,7 @@ export function compare(HOST){
          and corner, the resize cursor on hover, a minimum size. On a phone the window is pinned full-width by the
          COMPACT rule and its height has the grip below (.cmp-resize), so the edge zone stands aside there (`skip`):
          it would only swallow the first pixels of a pan. The ResizeObserver below resizes the map whichever path moved it. */
-      try{ if(typeof HOST.addEdgeResize==='function') HOST.addEdgeResize(win,{ min:[260,200], skip:()=>_compact() }); }catch(_){}
+      try{ if(typeof HOST.addEdgeResize==='function') HOST.addEdgeResize(win,{ min:[260,200], skip:()=>_compact(), bounds:()=>({l:_sbRight()}) }); }catch(_){}
       /* resize observer → resize the map (+ re-aim the lens/centroid) */
       try{ ro=new ResizeObserver(()=>{ try{ cmap.render.resize(); }catch(_){} if(mode!=='free') syncFromMain(); }); ro.observe(win); }catch(_){}
       /* (#R16) touch resize grip (mobile height) */
@@ -897,10 +915,11 @@ export function compare(HOST){
        didn't cover a LIVE sidebar resize, so widening the sidebar slid it under the window ("サイドバーを
        広げるとCompare view windowがサイドバーの上に載る"). Pushes the window right if the now-wider sidebar
        would overlap it. */
-    window._cmpReclamp=function(){ try{ if(!win||win.style.display==='none') return; if(_compact()) return;
-      const sb=document.getElementById('sidebar'); if(!sb||sb.classList.contains('collapsed')) return;
-      const sr=sb.getBoundingClientRect(), wr=win.getBoundingClientRect();
-      if(sr.width>0 && sr.left<=2 && wr.left < sr.right+8){ win.style.right='auto'; win.style.left=(sr.right+12)+'px'; try{ cmap.render.resize(); }catch(_){} if(mode!=='free') syncFromMain(); } }catch(_){} };
+    /* (compare-window-bounds) …and the same for every side: a narrowed browser window left it below/right of the
+       screen. The rule is the drag's (`_fitPos`), so the two cannot disagree about where the window may be. */
+    window._cmpReclamp=function(){ try{ if(!win||win.style.display==='none') return; if(_compact()||!win.__cmpFitPos) return;
+      const wr=win.getBoundingClientRect(), p=win.__cmpFitPos(wr.left,wr.top,wr.width,wr.height);
+      if(p[0]!==wr.left||p[1]!==wr.top){ win.style.right='auto'; win.style.bottom='auto'; win.style.setProperty('left',p[0]+'px','important'); win.style.setProperty('top',p[1]+'px','important'); try{ cmap.render.resize(); }catch(_){} if(mode!=='free') syncFromMain(); } }catch(_){} };
     /* entry button in the Layers dropdown */
     /* (#R17) Dedupe by the BUTTON, not the #cmp-mount wrapper — reorganizeLayerPanel MOVES the button into
        #layer-tools and removes the wrapper, so the old wrapper-guard let a later call create a SECOND button
@@ -922,6 +941,7 @@ export function compare(HOST){
     try{
       const _reclampSoon=()=>{ try{ window._cmpReclamp&&window._cmpReclamp(); }catch(_){} setTimeout(()=>{ try{ window._cmpReclamp&&window._cmpReclamp(); }catch(_){} },450); };
       bus.on('intmap-sidebar-resize',_reclampSoon);
+      window.addEventListener('resize',_reclampSoon);   /* (compare-window-bounds) a narrowed browser window must not leave it off-screen */
       document.addEventListener('click',(e)=>{ try{ if(e.target.closest&&e.target.closest('.btn-toggle-sidebar')) _reclampSoon(); }catch(_){} });
       const _sbEl=document.getElementById('sidebar'); if(_sbEl) _sbEl.addEventListener('transitionend',(e)=>{ if(e.propertyName==='margin-left'||e.propertyName==='width') _reclampSoon(); });
     }catch(_){}

@@ -2733,3 +2733,58 @@ test('installable-app ⑤ with the shell filled, the app opens offline and says 
     await expect(p.locator('#im-offline-reload')).toBeVisible();
   } finally { await context.close().catch(() => {}); }
 });
+
+/* ══ (compare-window-bounds) 「ウィンドウは画面左上にはそれ以上外に行かないのに、右下には埋もれてしまう」「リサイズ、挙動がバグってる」
+   「謎のToday/Today表示」 — on this suite's booted page, putting back what it moved. Measured before the fix at 1280×800: a header
+   drag to the bottom-right left the window at [1220,770,1661,1111]; a press on the top edge started the header drag AND the
+   resize, and after release the window followed the bare pointer; every edge grab grew it by its 2 px border; the time pill
+   read «Today|Today» while following the main map. */
+test('compare-window-bounds the compare window stays on screen on all four sides, and the top edge only resizes', async () => {
+  const before = page.viewportSize();
+  await page.setViewportSize({ width: 1280, height: 800 });
+  try {
+    await page.evaluate(() => window.IntMapCompare.open());
+    await expect(page.locator('#compare-window')).toBeVisible();
+    const out = await page.evaluate(() => {
+      const win = document.getElementById('compare-window'), h = win.querySelector('.cmp-head');
+      const R = () => { const r = win.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom, w: r.width, h: r.height }; };
+      const P = (el, type, x, y, b) => el.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y, pointerId: 1, buttons: b ? 1 : 0, isPrimary: true, pointerType: 'mouse' }));
+      const vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight, o = { vw, vh };
+      const drag = (tx, ty) => { const r = win.getBoundingClientRect(); P(h, 'pointerdown', r.left + 100, r.top + 20, 1); P(h, 'pointermove', tx, ty, 1); P(h, 'pointerup', tx, ty, 0); };
+      drag(vw + 600, vh + 600); o.br = R();
+      drag(-600, -600); o.tl = R();
+      drag(500, 300);
+      /* the top edge: a resize, and nothing of the header drag survives the release */
+      let r = R(); let x = r.l + r.w / 2, y = r.t + 3;
+      P(document.elementFromPoint(x, y), 'pointerdown', x, y, 1); P(document, 'pointermove', x, y - 40, 1); P(document, 'pointerup', x, y - 40, 0);
+      o.n0 = r; o.n1 = R();
+      P(h, 'pointermove', o.n1.l + 150, o.n1.t + 200, 0); o.hover = R();
+      /* the corner past the screen stops at the screen */
+      r = R(); x = r.r - 3; y = r.b - 3;
+      P(document.elementFromPoint(x, y), 'pointerdown', x, y, 1); P(document, 'pointermove', vw + 900, vh + 900, 1); P(document, 'pointerup', vw + 900, vh + 900, 0);
+      o.se = R();
+      return o;
+    });
+    expect(out.br.r).toBeLessThanOrEqual(out.vw + 0.5);
+    expect(out.br.b).toBeLessThanOrEqual(out.vh + 0.5);
+    expect(out.tl.l).toBeGreaterThanOrEqual(-0.5);
+    expect(out.tl.t).toBeGreaterThanOrEqual(-0.5);
+    expect(Math.abs(out.n1.t - (out.n0.t - 40))).toBeLessThan(1);
+    expect(Math.abs(out.n1.b - out.n0.b)).toBeLessThan(1);
+    expect(Math.abs(out.n1.w - out.n0.w)).toBeLessThan(1);
+    expect(out.hover).toEqual(out.n1);
+    expect(out.se.r).toBeLessThanOrEqual(out.vw + 0.5);
+    expect(out.se.b).toBeLessThanOrEqual(out.vh + 0.5);
+    /* one label while the two instants read the same, two when they differ */
+    await page.evaluate(() => window.IntMapCompare.setTime({ follow: true }));
+    expect(await page.locator('#cmp-when').textContent()).not.toContain('|');
+    /* a year the main map is not at, whatever an earlier test left it on */
+    const yr = await page.evaluate(() => { const y = window.IntMapTime.isLive() ? 1914 : (window.IntMapTime.when().getUTCFullYear() === 1914 ? 1915 : 1914); window.IntMapCompare.setTime({ year: y }); return y; });
+    const diff = await page.locator('#cmp-when').textContent();
+    expect(diff).toContain(String(yr));
+    expect(diff).toContain('|');
+  } finally {
+    await page.evaluate(() => { try { window.IntMapCompare.setTime({ follow: true }); window.IntMapCompare.close(); } catch (_) {} });
+    if (before) await page.setViewportSize(before);
+  }
+});
