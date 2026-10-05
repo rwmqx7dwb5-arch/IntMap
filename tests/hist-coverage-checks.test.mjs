@@ -20,6 +20,7 @@ import os from 'node:os';
 import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { HIST_ADMIN_GAPS } from '../js/border-coast.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -275,7 +276,9 @@ test('⑤ travelled to 1900, the page hatches the ground the record is silent ab
       'js/chronos.js': { IntMapTime: { on: () => {}, min: 1, onIntent: () => {} } },
       'js/lang-registry.js': { IntMapLang: { pickArgs: () => ((...a) => a), pick: () => ({ arr: (a) => a[0] }), htmlTag: () => 'en' } },
       'js/border-coast.js': { IntMapBorderCoast: { marks: () => null, lineGeom: () => null, load: () => Promise.resolve(null),
-                                                   onArrive: () => {}, wholeLines: () => ({ type: 'FeatureCollection', features: [] }) } },
+                                                   onArrive: () => {}, wholeLines: () => ({ type: 'FeatureCollection', features: [] }) },
+                              /* (hist-coverage-depth) the gap list is this module's other export: the real one */
+                              HIST_ADMIN_GAPS },
       'js/fetch-deadline.js': { jsonWithin: async (u) => { read = u; return ledgerFor(); } },
       'js/proxy-fetch.js': { clockFor: () => 9000 },
     },

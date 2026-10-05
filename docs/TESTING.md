@@ -2031,8 +2031,11 @@ way が 1 本のリングに閉じるか／内側のリングが**穴**になり
 ### `npm run check:borderdetail` — リポジトリ最大の出荷面に、名前のある門を付ける (#R716)
 
 `scripts/build-border-detail.mjs --check` は `data/border-detail/`（**リポジトリ最大の出荷面**。件数・バイト数・sha256 の正本は `data-assets.json`——この束は git の外にある（下の「git の外にあるデータ」）。
-拡大したときに `hist-borders`・`hist-admin1`・`hist-admin2` の代わりに実際に描かれる
-精密な輪郭）を測る。
+拡大したときに `hist-borders`・`hist-admin1`・`hist-admin2`、および出版元の調査記録
+（`hist-admin-surveys`・CC BY-NC-SA の `hist-admin-surveys-nc`）の代わりに実際に描かれる
+精密な輪郭）を測る。調査記録については、その記録自身の索引（`index-<記録>.json`）が許容幅 0・
+出版元・記録のライセンスを述べること、各断片がその記録のライセンスだけを述べること（非営利の形状が
+開いた断片に混ざらない）も測る。
 
 ⚠ **この束は「無防備だった」のではない。** #R711 以降
 `tests/history-boundary-precision-checks.test.mjs` (#R711) が `check()` を**関数として import して走らせていた**ので、
@@ -2251,9 +2254,38 @@ Natural Earth の単位は出典自身の代替コード（末尾が `~`）で�
 `check:kuni` と同じ形の残余）。上流が日付を述べない単位が**同じ国の単位が述べる最も遅い発足日**を
 継いでいること、国の床がその同じ日付であることも、同じ理由で `--check` からは再導出できない
 （⚠ 床は**現在の国家の成立日ではない**——それだと 19 世紀を埋める記録が 19 世紀を全部禁じる）。② 地理の条件（その年その土地が1つの政体の中にあったか）は
-**時代の国境記録 3 本を読み直す**必要があり、`--check` はそれもしない。③ **輪郭は今日のもの**である
+**読者が見る国境の合成（`data/cshapes.js`・`data/hist-borders.js`・`data/hist-clio.js`・`data/hist-eras-rest.js`）を
+読み直す**必要があり、`--check` はそれもしない。その合成を読んでいること自体は
+`tests/hist-coverage-depth-checks.test.mjs` ⑩ が `eraIndex` を評価して測る。⑤ どの政体も覆わない土地の単位は
+束の `unplaced` 欄に載るが、`--check` はその申告を `deferred` のように幾何で検証していない。③ **輪郭は今日のもの**である
 ——「その年に存在した単位」であることは上流が述べているが、「その年もこの形だった」とは誰も
 述べていない。だから線は導出線として描かれ、レイヤー行の説明がそう言う（`docs/MAP-LAYERS.md` §7.7）。
+
+### `npm run check:histsurveys` — 出版元が述べた日付と、出版元のライセンスを出荷バイトの側から測る
+
+`scripts/build-hist-admin-surveys.mjs --check` は、`js/border-coast.js` の `HIST_ADMIN_GAPS` が `derived: false` とする記録
+（`data/hist-admin-surveys.js` と `data/hist-admin-surveys-nc.js`）を 1 本ずつ測る: `v`・`built`・`levels` が形を
+満たすこと／非営利の記録はファイル自身が `licence` を述べること／**各出版元の `nonCommercial` がその記録の
+`nonCommercial` と一致する**こと（非営利の出版元を開いた記録に混ぜない）／各出版元がライセンス・ライセンスの URL・
+それを読んだ場所・引用文を述べ、`src` がその出版元を名乗り、出典ページ（`js/reference-data.js`）に同じ URL の行が
+あること／リングが閉じて 1 本残らず参照されること／列が 13 で、名前があり、出版元が `sources` に宣言され、
+span が順序どおりであること／そして**どの行も出版元が述べた日に始まる**こと——年しか述べない出版元の行は
+その年の 1 月 1 日に、月まで述べる行はその月の 1 日に始まり、それ以外の日は作られた日である（導出した端は
+`derived` とその根拠を持つ）。
+
+`tests/hist-coverage-depth-checks.test.mjs` は同じ記録をページと同じ読み方で読み、⑴ 継ぎ足す記録の一覧が
+`js/border-coast.js` の `HIST_ADMIN_GAPS` の 1 か所にあり、描く `js/time-admin1.js` と測る `scripts/hist-fidelity.mjs` がそれを読むこと、
+⑵ レイヤーの注記（`note()` を評価）が IntMap の導出と出版元の記録を別に数えること、⑶ 出版元の日付が継ぎ足しから
+ポップアップまで届き、導出した端がその根拠とともに出ること、⑷ 出荷した束で、各出版元が自分の `SOURCE` の
+ライセンスが許す記録にだけ入り、行を出した出版元だけが帰属表示に載ること・どの行も出版元が述べた日に始まるか
+根拠つきで導出であること・穴埋めが `unplaced` 欄を持ちロシア・グリーンランド・オーストラリアを 2020-07-01 に
+答えること・穴埋めの `eraIndex`（評価する）が合成の束を読むこと・一覧の記録が survey のビルダーの統治する
+ファイルとちょうど一致することを測る。束が無い木では理由を述べて飛ばす。
+
+⚠ **残余を、隠さずここに書く。** ① 出版元ごとの取得が要るので `--check` は**再生成しない**——「その行が本当に
+出版元の記録にあるか」は確かめない。② OpenHistoricalMap と先の出版元に譲ったかは、`data/hist-admin1.js` との
+重なりを測り直さないと分からず、`--check` はしない（二重主張の件数は `npm run check:histfidelity` が測る）。
+③ 出版元の測量が史実として正しいかは測れない（`.agents/rules/historical-verification.md`）。
 
 ### The September 2026 security audit — `tests/r801-*-checks.test.mjs` (#R801)
 

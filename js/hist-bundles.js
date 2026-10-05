@@ -104,6 +104,18 @@ window.IntMapHistBundles = (function () {
     function head(d) {
       var h = {}, k;
       for (k in d) if (k !== 'rings' && k !== 'feats' && k !== 'snaps' && k !== 'dates') h[k] = d[k];
+      /* ⚠ (hist-coverage-depth) A RECORD WHOSE ROWS CANNOT ADDRESS ITS DATES HOLDS THEM IN THE HEAD. The
+         tiers key `dates` by the OpenHistoricalMap relation id in column 10, and the rows carry them to
+         the page one by one (`ship`, and the tile builder's chunks, both by `d.dates[row[10]]`). A
+         surveyed gap record (scripts/build-hist-admin-surveys.mjs) has no relation id — its column 10
+         is the publisher's key — and keys its dates by its OWN row, so no row would ever carry one: the
+         tiled path dropped them and the popup said «? – ?» under a unit dated to the day. The fact
+         asked is the rows', not the file's name: no row holds a numeric id, so the table goes whole
+         (one entry per row of a gap record — `openTiled` reads it as `rowDates`, the whole-file
+         `splice` reads the record's own `dates`; both land in `gapDates`).
+         ⚠ BEFORE the counts: `openTiled` rebuilds a head from an index head key by key, and a tiled head
+         must be the whole one key for key (the tile builder compares them as text). */
+      if (d.dates && Array.isArray(d.feats) && d.feats.length && !d.feats.some(function (f) { return f && typeof f[10] === 'number'; })) h.rowDates = d.dates;
       h.nRings = Array.isArray(d.rings) ? d.rings.length : 0;
       h.nFeats = Array.isArray(d.feats) ? d.feats.length : 0;
       h.hasDates = !!d.dates;
@@ -156,7 +168,9 @@ window.IntMapHistBundles = (function () {
           parts.push({ dir: g, rOff: nR, fOff: nF, cOff: nC, gi: gi });
           h.gapSrcs = (h.gapSrcs || []).concat(g.head.src ? [g.head.src] : []);
           h.gapSrc = h.gapSrcs.join(' · ') || null;
-          h.gapPools.push({ global: g.global, off: nR, nRings: g.head.nRings, nFeats: g.head.nFeats, gi: gi, precision: g.head.precision || null });
+          h.gapPools.push({ global: g.global, off: nR, nRings: g.head.nRings, nFeats: g.head.nFeats, gi: gi, precision: g.head.precision || null, dateSemantics: g.head.dateSemantics || null });
+          /* the record's own dates, by its own row — `head` put them there (see `rowDates`) */
+          (h.gapDates || (h.gapDates = []))[gi] = g.head.rowDates || null;
           for (k = 0; k < g.span.length; k++) span.push(g.span[k]);
           nR += g.head.nRings; nF += g.head.nFeats; nC += g.chunks.length;
         }
@@ -254,9 +268,14 @@ window.IntMapHistBundles = (function () {
                 f[8].map(function (poly) { return poly.map(function (ri) { return ri + off; }); }), f[9], null, k, gi]); }
             d.gapSrcs = (d.gapSrcs || []).concat(X.src ? [X.src] : []);
             d.gapSrc = d.gapSrcs.join(' · ') || null;
-            d.gapPools.push({ global: g.global, off: off, nRings: X.rings.length, nFeats: X.feats.length, gi: gi, precision: X.precision || null });
-          } else d.gapPools.push(null);
-        }, function () { d.gapPools.push(null); }).then(next);
+            d.gapPools.push({ global: g.global, off: off, nRings: X.rings.length, nFeats: X.feats.length, gi: gi, precision: X.precision || null, dateSemantics: X.dateSemantics || null });
+            /* ⚠ (hist-coverage-depth) a gap row's column 10 is null after the splice, so it cannot address
+               `d.dates`; a record that states its own dates (a surveyed one) keys them by its own row, which
+               is column 11. They ride on the head as plain data — this runs on another thread, and the
+               head crosses by structured clone. A derived record has none: null, and the popup says «?». */
+            (d.gapDates || (d.gapDates = []))[gi] = X.dates || null;
+          } else { d.gapPools.push(null); (d.gapDates || (d.gapDates = []))[gi] = null; }
+        }, function () { d.gapPools.push(null); (d.gapDates || (d.gapDates = []))[gi] = null; }).then(next);
       };
       return Promise.resolve().then(next);
     }

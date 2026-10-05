@@ -743,7 +743,7 @@ Atlas の `research.related` / `research.impact` / 実世界オブジェクト�
 
 - **歴史データは起動時に読まない。読むのは「過去へ行こうとしている」ときだけ。** 国境の束
   （`data/cshapes.js`・印 `data/border-coast.js`・名前 `data/histnames.json`。失敗時は `data/hist-eras.js`）と
-  第 1 層の歴史的行政区分（`data/hist-admin1.js` と穴埋め `data/hist-kuni.js`・`data/hist-admin-fill.js`）の
+  第 1 層の歴史的行政区分（`data/hist-admin1.js` と、`js/border-coast.js` の `HIST_ADMIN_GAPS` が列挙する継ぎ足しの記録）の
   **先読み**は、`window.IntMapTime.onIntent(fn)`（`js/chronos.js`）が呼ばれてから始まる。
   意図は 1 回だけ立ち、あとから購読した者には即座に届く（読み込み順で先読みの有無が決まらないため）。
   立てるのは ⑴ **時計そのもの**——`set` が**今年より前の年**を受けたとき（Atlas・共有リンク・セッション
@@ -761,7 +761,7 @@ Atlas の `research.related` / `research.impact` / 実世界オブジェクト�
   ⚠ 第 2 層以下（`data/hist-admin2.js` ほか）は先読みしない（描かれるのはそのズームに達してから）。
 - **歴史の束はメインスレッドで評価しない。** リングプールした記録（`data/cshapes.js`・
   `data/hist-borders.js`・`data/hist-eras.js`・`data/hist-admin1.js`〜`hist-admin3.js` と、第 1 層へ継ぎ足す
-  `data/hist-kuni.js`・`data/hist-admin-fill.js`）を読むのは **`js/hist-bundles.js`（`window.IntMapHistBundles`）
+  `js/border-coast.js` の `HIST_ADMIN_GAPS` の記録）を読むのは **`js/hist-bundles.js`（`window.IntMapHistBundles`）
   だけ**で、束は Blob Worker が取得・`JSON.parse`（ファイルは `window.__X=` ＋厳密な JSON で、形式も
   ビルダーも変えていない）・保持する。問いは向こうで答える——`at(t, end)`（その日に有効な行。
   `end` は CShapes が `inclusive`、OHM 系が `exclusive`）・`during(t0, t1)`（戦争の層）・`snap(y)`（時代の
@@ -915,6 +915,12 @@ Atlas の `research.related` / `research.impact` / 実世界オブジェクト�
   IntMap が CC0 の出典から自分で導いた区分（`data/hist-kuni.js`＝日本の令制国 16 国、および
   `data/hist-admin-fill.js`＝今日も立っている第1級区分を上流が述べる発足日まで遡らせたもの）が
   `imta-gap-line` で埋め、塗りは上流由来の線と同一である——どの供給が答えたかは読者に見えない。
+  上流が単位を持たないが**出版元が自分で測って日付を述べた**範囲は、その出版元の記録が埋める
+  （`data/hist-admin-surveys.js`、CC BY-NC-SA の出版元だけを分けた `data/hist-admin-surveys-nc.js`。
+  どの出版元か・何年かは `docs/MAP-LAYERS.md` §7.7）。これは IntMap の導出ではなく**出版元の記録**で、
+  遡らせた区分はそれにも譲る。継ぎ足す記録の一覧は **`js/border-coast.js` の `HIST_ADMIN_GAPS` ただ 1 か所**にあり、
+  描く `js/time-admin1.js`・測る `scripts/hist-fidelity.mjs`・譲る側のビルダーがそれを読む。各記録の
+  `derived` が「IntMap の導出（true）か出版元の記録（false）か」を述べ、レイヤーの注記は両者を別に数える。
   ⚠ **遡らせる区間の規則は `docs/MAP-LAYERS.md` §7.7 が正本**（門は `npm run check:histfill`）。
   ここに書き写さないが、読み違えやすい 3 点だけ述べる: ⑴ **完全性は「この束が描くか」ではなく
   「読者が見るか」で測る**——穴埋めの区間と上流（`data/hist-admin{1,2,3}.js`）が答える区間の**和**で

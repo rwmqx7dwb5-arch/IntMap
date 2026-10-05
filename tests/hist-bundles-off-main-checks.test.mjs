@@ -30,7 +30,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import { readFileSync, readdirSync, openSync, readSync, closeSync } from 'node:fs';
+import { readFileSync, readdirSync, openSync, readSync, closeSync, existsSync } from 'node:fs';
+import { HIST_ADMIN_GAPS } from '../js/border-coast.js';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Worker as NodeWorker } from 'node:worker_threads';
@@ -99,6 +100,8 @@ function oldSplice(base, gaps) {
       f[8].map((p) => p.map((ri) => ri + off)), f[9], null, k, gi]));
     d.gapSrcs = (d.gapSrcs || []).concat(X.src ? [X.src] : []);
     d.gapSrc = d.gapSrcs.join(' · ') || null;
+    /* (hist-coverage-depth) and each record's own dates, by its own row — a surveyed record states them */
+    (d.gapDates || (d.gapDates = []))[gi] = X.dates || null;
   });
   return d;
 }
@@ -106,7 +109,9 @@ function oldSplice(base, gaps) {
 const inForce = (d, t, end) => d.feats.map((f, i) => [f, i])
   .filter(([f]) => ymd(f[2], f[3], f[4]) <= t && (end === 'inclusive' ? ymd(f[5], f[6], f[7]) >= t : ymd(f[5], f[6], f[7]) > t))
   .map(([, i]) => i);
-const GAPS = [{ file: 'data/hist-kuni.js', global: '__HISTKUNI' }, { file: 'data/hist-admin-fill.js', global: '__HISTADMFILL' }];
+/* (hist-coverage-depth) the gap records are HIST_ADMIN_GAPS (js/border-coast.js) — the one the page imports —
+   narrowed to the ones built here: a record absent from data/ is one the page also opens without */
+const GAPS = HIST_ADMIN_GAPS.filter((g) => existsSync(join(ROOT, g.file)));
 const RECORDS = [
   { file: 'cshapes.js', global: '__CSHAPES', end: 'inclusive' },
   { file: 'hist-borders.js', global: '__HISTB', end: 'exclusive' },
@@ -185,7 +190,7 @@ test('hist-bundles-off-main ④: the gap records are spliced where the record is
   const D = door();
   const h = await D.open({ file: 'data/hist-admin1.js', global: '__HISTADM1', gaps: GAPS });
   const own = bundle('hist-admin1.js'), gaps = GAPS.map((g) => bundle(g.file.slice(5)));
-  assert.equal(h.data.gapPools.length, 2);
+  assert.equal(h.data.gapPools.length, GAPS.length);
   assert.equal(h.data.gapSrc, gaps.map((g) => g.src).join(' · '), 'the credit the gap line carries');
   let seen = 0;
   for (const y of [1000, 1600, 1871, 1990]) {
@@ -281,6 +286,9 @@ function adminHarness({ publish }) {
     win.__HISTADM1 = oldSplice(bundle('hist-admin1.js'), GAPS.map((g) => bundle(g.file.slice(5))));
     for (const g of GAPS) win[g.global] = bundle(g.file.slice(5));
   }
+  /* (hist-coverage-depth) js/time-admin1.js imports its gap list; as a classic script the import binds to
+     what this page's window holds under the name — the same records the two pages splice */
+  win.HIST_ADMIN_GAPS = GAPS;
   vm.runInContext(asClassicScript(rd('js/time-admin1.js')), ctx, { filename: 'js/time-admin1.js' });
   const mod = ctx.timeAdmin1({ canDraw: () => true, lang: 'en', isMobile: () => true });   /* (module-graph) the exported factory */
   return { mod, sources, win, ctx };

@@ -115,6 +115,7 @@ import { registry, shipTags, harvestTags } from './histadmin/langs.mjs';
 import { labelsFor, labelsByTag } from './histadmin/wikidata.mjs';
 import { WIKIDATA } from './lib/upstream-cadence.mjs';
 import { scan as latticeScan } from '../js/hist-knowledge.js';
+import { HIST_ADMIN_GAPS } from '../js/border-coast.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -147,7 +148,7 @@ const LICENCE = 'Derived: Natural Earth 10m admin-1 (public domain) via data/adm
    least one point inside the great majority of units outright, and `samplePoints` falls back to
    the unit's OWN VERTICES for the rest — no unit is ever tested on an empty sample, which would
    read as a pass. It expires the day the shipped outline set changes its simplification. */
-const GRID = parseFloat(argOf('--grid', '0.1'));
+export const GRID = parseFloat(argOf('--grid', '0.1'));
 /* ⚠ (#R719) AND THESE TWO SHARES ARE MEASURED, NOT PREFERRED — see `--check`'s printout, which
    re-derives both from the shipped bundle. The era outlines are 19.4 pts/deg where the unit
    outlines are 100, so a coastal unit always has sample points the era polygon puts in the sea;
@@ -165,8 +166,8 @@ const STRADDLE_MAX = 0.20;
 const LOCATED_MIN = 0.60;
 /* ⚠ overlap is the OTHER direction: a record unit that covers a quarter of this ground is already
    answering for it, and two lines over one province is the thing #R530 removed. */
-const OVERLAP_MIN = 0.25;
-const MAX_SAMPLE = 240;
+export const OVERLAP_MIN = 0.25;
+export const MAX_SAMPLE = 240;
 /* diagnosis: build one country and print why each of its units was kept or withheld */
 const ONLY = argOf('--only', null);
 const DIAG = args.includes('--diagnose');
@@ -243,7 +244,7 @@ function inPolys(polys, x, y) {
 }
 /* the points test 3 and test 4 are asked of. A grid inside the unit, falling back to the unit's
    own vertices when the unit is smaller than the grid — an empty sample must never read as a pass. */
-function samplePoints(polys) {
+export function samplePoints(polys) {
   const rings = polys.map((p) => p[0]);
   let [mnx, mny, mxx, mxy] = [Infinity, Infinity, -Infinity, -Infinity];
   for (const r of rings) { const b = bbox(r); mnx = Math.min(mnx, b[0]); mny = Math.min(mny, b[1]); mxx = Math.max(mxx, b[2]); mxy = Math.max(mxy, b[3]); }
@@ -254,19 +255,21 @@ function samplePoints(polys) {
   for (let x = mnx + GRID / 2; x <= mxx; x += GRID, i++) { let j = 0; for (let y = mny + GRID / 2; y <= mxy; y += GRID, j++) if (inPolys(polys, x, y)) out.push([x, y, i, j]); }
   let ny = 0; for (let y = mny + GRID / 2; y <= mxy; y += GRID) ny++;
   const win = { x0: mnx, y0: mny, res: GRID, NX: Math.max(1, i), NY: Math.max(1, ny) };
-  if (!out.length) for (const r of rings) for (const p of r) out.push([p[0], p[1], -1, -1]);
+  if (!out.length) { for (const r of rings) for (const p of r) out.push([p[0], p[1], -1, -1]); out.vertex = true; }
   /* ⚠ (#R719) AND THE SAMPLE IS CAPPED, BECAUSE THE TESTS ARE SHARES AND NOT AREAS. Russia's
      units put tens of thousands of cells on a 0.1° grid, and every one of them is then asked of
      every era polygon that meets the box; the first build of this file did not come back. What
      tests 3 and 4 read off the sample is a PROPORTION (5% straddling, 60% located, 25% overlapped),
      and a 240-point stride estimates each of those to within a few points either way while making
      the run finite. The stride is even over the grid, so it does not favour one end of a unit. */
+  const vertex = !!out.vertex;
   if (out.length > MAX_SAMPLE) {
     const step = out.length / MAX_SAMPLE, cut = [];
     for (let i = 0; i < MAX_SAMPLE; i++) cut.push(out[Math.floor(i * step)]);
     out = cut;
   }
   out.win = win;
+  if (vertex) out.vertex = true;
   return out;
 }
 /* ══ (hist-coverage) WHICH SAMPLE POINTS A POLYGON HOLDS — ONE SCANLINE PASS, NOT A RAY PER POINT ═════
@@ -286,7 +289,7 @@ function rowsOf(pts) {
   for (let k = 0; k < pts.length; k++) { const q = pts[k]; if (q[2] < 0) continue; if (!m.has(q[3])) m.set(q[3], []); m.get(q[3]).push(k); }
   return (pts.rows = m);
 }
-function hitMask(polys, pts) {
+export function hitMask(polys, pts) {
   const out = new Uint8Array(pts.length), W = pts.win;
   if (!W) { for (let k = 0; k < pts.length; k++) if (inPolys(polys, pts[k][0], pts[k][1])) out[k] = 1; return out; }
   const rows = rowsOf(pts);
@@ -308,7 +311,19 @@ const ymd = (y, m, d) => y * 10000 + m * 100 + d;
 function eraIndex() {
   const cs = loadBundle('data/cshapes.js').data;
   const hb = loadBundle('data/hist-borders.js').data;
-  const he = loadBundle('data/hist-eras.js').data;
+  /* ══ ⚠⚠⚠ (hist-coverage-depth) THE ERA RECORD IS THE ONE THE READER SEES, NOT THE BAND CHAIN ══════
+     #991 made the page draw a COMPOSITION (js/time-borders.js `compositeAt` / `csComposite`): below
+     CShapes, OpenHistoricalMap in its band, Seshat's Cliopatria on the ground OHM leaves, and the
+     yearly sheet less both (data/hist-eras-rest.js); from 1886, CShapes and Cliopatria on the ground
+     CShapes leaves. This file kept asking the chain as it was BEFORE that — one record per band —
+     so on ground only Cliopatria places, test 3 read «no polity here» and withheld the unit.
+     MEASURED 2026-10-05 (`--only GRL --diagnose`): all five Greenland kommuner `located 0%` on every
+     date 2009-2019, because CShapes does not draw Greenland and Cliopatria does — the reader saw
+     Greenland drawn and no unit on it. ⇒ the same composition scripts/hist-fidelity.mjs
+     `politiesAt` measures; the band chain answers only if the composed files are absent. */
+  const cl = fs.existsSync(path.join(ROOT, 'data/hist-clio.js')) ? loadBundle('data/hist-clio.js').data : null;
+  const rs = fs.existsSync(path.join(ROOT, 'data/hist-eras-rest.js')) ? loadBundle('data/hist-eras-rest.js').data : null;
+  const he = (cl && rs) ? rs : loadBundle('data/hist-eras.js').data;
 
   const pack = (d, feats, nameOf) => feats.map((f, i) => {
     const polys = f[8].map((poly) => poly.map((ri) => d.rings[ri]).filter((r) => r && r.length >= 4)).filter((p) => p.length);
@@ -319,6 +334,9 @@ function eraIndex() {
 
   const csU = pack(cs, cs.feats, (f, i) => 'cs' + i).map((u) => ({ ...u, rec: 'cs' }));
   const hbU = pack(hb, hb.feats, (f, i) => 'hb' + i).map((u) => ({ ...u, rec: 'hb' }));
+  /* a realm (`r`) is the union of member rows drawn beside it — its ground is answered through them,
+     exactly as `politiesAt` counts it */
+  const clU = cl && rs ? pack(cl, cl.feats.filter((f) => !(f[9] && f[9].r)), (f, i) => 'cl' + i).map((u) => ({ ...u, rec: 'cl' })) : [];
   let csMin = Infinity, csMax = -Infinity;
   for (const f of cs.feats) { csMin = Math.min(csMin, f[2]); csMax = Math.max(csMax, f[5]); }
   const hbWin = hb.window || [Infinity, -Infinity];
@@ -330,7 +348,7 @@ function eraIndex() {
   const heU = [];
   he.snaps.forEach((s, i) => {
     const from = ymd(s.y, 1, 1);
-    const to = (i + 1 < he.snaps.length) ? ymd(he.snaps[i + 1].y, 1, 1) : ymd(hbWin[0], 1, 1);
+    const to = (i + 1 < he.snaps.length) ? ymd(he.snaps[i + 1].y, 1, 1) : (clU.length ? ymd(csMin, 1, 1) : ymd(hbWin[0], 1, 1));
     s.feats.forEach((f, k) => {
       const polys = f[2].map((poly) => poly.map((ri) => he.rings[ri]).filter((r) => r && r.length >= 4)).filter((p) => p.length);
       if (!polys.length) return;
@@ -349,9 +367,16 @@ function eraIndex() {
      on that build: 1,480 intervals were withheld for «ground the era record does not place», almost
      all of them before 1689, where the record that could have placed them had been silenced by a
      string comparison. .agents/rules/no-ad-hoc-hardcoding.md §1: an identifier is not a spelling. */
-  const bandOf = (u) => (u.rec === 'cs' ? [csFrom, ymd(csMax, 12, 31) + 1]
+  /* (hist-coverage-depth) Cliopatria answers on both sides of 1886 (the files already hold only the
+     ground the record above it leaves), up to the end of CShapes' window — after it the page draws the
+     present-day map. Under the composition the sheet's remainder answers all the way up to CShapes. */
+  /* ⚠ (hist-coverage-depth) the first day of the year after CShapes' last year — the day js/time-borders.js
+     switches to the present-day map (`year > CS_MAX`), as a real date (20191231+1 was not one) */
+  const ceil = ymd(csMax + 1, 1, 1);
+  const bandOf = (u) => (u.rec === 'cs' ? [csFrom, ceil]
                        : u.rec === 'hb' ? [hbFrom, csFrom]
-                       : [ymd(he.snaps[0].y, 1, 1), hbFrom]);
+                       : u.rec === 'cl' ? [ymd(-999999, 1, 1), ceil]
+                       : [ymd(he.snaps[0].y, 1, 1), clU.length ? csFrom : hbFrom]);
 
   /** every polity from any of the three records whose box meets this one, with its span clipped to
       the band its record answers for. Computed ONCE per fill unit. */
@@ -359,11 +384,12 @@ function eraIndex() {
     const out = [];
     for (const u of csU) if (meets(u.bb, box)) out.push(u);
     for (const u of hbU) if (meets(u.bb, box)) out.push(u);
+    for (const u of clU) if (meets(u.bb, box)) out.push(u);
     for (const u of heU) if (meets(u.bb, box)) out.push(u);
     return out.map((u) => { const b = bandOf(u); return { id: u.id, rec: u.rec, polys: u.polys, bb: u.bb, s: Math.max(u.s, b[0]), e: Math.min(u.e, b[1]) }; })
       .filter((u) => u.e > u.s);
   }
-  return { meeting, floor: he.snaps[0].y, ceiling: ymd(csMax, 12, 31) };
+  return { meeting, floor: he.snaps[0].y, ceiling: ymd(csMax, 12, 31), present: ceil };
 }
 const meets = (a, b) => !(a[2] < b[0] || a[0] > b[2] || a[3] < b[1] || a[1] > b[3]);
 
@@ -371,11 +397,19 @@ const meets = (a, b) => !(a[2] < b[0] || a[0] > b[2] || a[3] < b[1] || a[1] > b[
    Discovered from data/ rather than listed, for the reason build-border-coast.mjs discovers the
    same population: a tier that lands there tomorrow has to be consulted without anyone
    remembering to come back here. */
+/* ⚠ (hist-coverage-depth) THE RECORDS ARE OHM'S TIERS AND EVERY GAP RECORD THAT IS NOT DERIVED.
+   HIST_ADMIN_GAPS (js/border-coast.js) marks a publisher's dated record (data/hist-admin-surveys*.js — Newberry,
+   NRCan, RISTAT, …) as a record in its own right: where it states a unit, a present-day outline
+   carried back is the weaker claim and keeps silent, exactly as it does for OpenHistoricalMap. */
+export function recordFiles() {
+  const tiers = fs.readdirSync(path.join(ROOT, 'data')).filter((n) => /^hist-admin\d+\.js$/.test(n)).sort().map((n) => 'data/' + n);
+  const surveyed = HIST_ADMIN_GAPS.filter((g) => g.derived === false && fs.existsSync(path.join(ROOT, g.file))).map((g) => g.file);
+  return tiers.concat(surveyed);
+}
 function recordUnits() {
   const out = [];
-  for (const file of fs.readdirSync(path.join(ROOT, 'data')).sort()) {
-    if (!/^hist-admin\d+\.js$/.test(file)) continue;
-    const { data: d } = loadBundle('data/' + file);
+  for (const rel of recordFiles()) {
+    const { data: d } = loadBundle(rel);
     for (const f of d.feats) {
       const polys = f[8].map((poly) => poly.map((ri) => d.rings[ri]).filter((r) => r && r.length >= 4)).filter((p) => p.length);
       if (!polys.length) continue;
@@ -613,6 +647,41 @@ async function redate() {
 
 /* ── interval arithmetic on [start, end) stamps ─────────────────────────────────────────── */
 /** the intervals either set covers, merged — the reader sees a unit where EITHER record draws it */
+/* ══ ⚠⚠ (hist-coverage-depth) THE RECORD ANSWERS GROUND TOGETHER, NOT ONE UNIT AT A TIME ═══════════════
+   The yield used to ask each record unit alone «do you cover a quarter of this ground». A record that
+   divides the same ground FINER answers it with many small units, none of which reaches a quarter —
+   so the coarser unit was drawn over all of them: two levels on one map. MEASURED 2026-10-05 on the
+   double-claim ledger (scripts/hist-fidelity.mjs): +246 «contested» pairs were HGIS de las Indias'
+   provincia mayor «Nueva España» over OpenHistoricalMap's Puebla, Oaxaca, Querétaro, Valladolid, San
+   Luis Potosí…, and +25 were present-day Stockholm and Uppsala counties over OHM's härad. Neither is a
+   dispute; both are a coarser unit drawn over a finer record. ⇒ On every interval between the record's
+   own change dates, the ground ALL in-force record units hold is unioned, and the interval is the
+   record's when that union reaches the share. A genuinely contested sliver (the Kwantung Leased
+   Territory inside Liaoning, the Falklands beside Buenos Aires) stays a claim of both, as it should.
+   Shared with scripts/build-hist-admin-surveys.mjs, so the two yields cannot disagree. */
+export function answeredSpans(pts, box, rec, from, to) {
+  const need = Math.max(1, Math.ceil(OVERLAP_MIN * pts.length));
+  const hits = [];
+  for (const r of rec) {
+    if (r.e <= from || r.s >= to || !meets(r.bb, box)) continue;
+    const m = hitMask(r.polys, pts);
+    let n = 0; for (let i = 0; i < m.length; i++) n += m[i];
+    if (n) hits.push({ r, m });
+  }
+  const cuts = new Set([from, to]);
+  for (const { r } of hits) { if (r.s > from && r.s < to) cuts.add(r.s); if (r.e > from && r.e < to) cuts.add(r.e); }
+  const xs = [...cuts].sort((a, b) => a - b), spans = [], who = [];
+  for (let k = 0; k + 1 < xs.length; k++) {
+    const a = xs[k], b = xs[k + 1], u = new Uint8Array(pts.length), by = [];
+    for (const { r, m } of hits) if (r.s <= a && r.e >= b) { for (let i = 0; i < m.length; i++) if (m[i]) u[i] = 1; by.push(r); }
+    let n = 0; for (let i = 0; i < u.length; i++) n += u[i];
+    if (n < need) continue;
+    const last = spans[spans.length - 1];
+    if (last && last[1] === a) last[1] = b; else spans.push([a, b]);
+    who.push(...by);
+  }
+  return { spans, who };
+}
 function union(a, b) {
   const all = a.concat(b).filter((iv) => iv[1] > iv[0]).sort((x, y) => x[0] - y[0]);
   const out = [];
@@ -736,6 +805,8 @@ async function main() {
     + (byCountry.size - admitted.length - refusedPartial.length) + ' with no dated unit at all');
 
   const deferred = new Set();   /* (#R730) units left to data/hist-admin*.js — stated in the bundle */
+  /* (hist-coverage-depth) units whose ground the era record never places while their country is drawn */
+  const unplaced = new Set();
   const era = eraIndex();
   const rec = recordUnits();
   console.error('· record units consulted for overlap: ' + rec.length);
@@ -785,7 +856,10 @@ async function main() {
       });
       const bps = new Set();
       for (const eu of near) { if (eu.s > start && eu.s < end) bps.add(eu.s); if (eu.e > start && eu.e < end) bps.add(eu.e); }
+      if (era.present > start && era.present < end) bps.add(era.present);
       let alive = [];
+      /* (hist-coverage-depth) the intervals on which the era record places NONE of this ground */
+      const silent = [];
       /* ⚠ the first interval has nothing behind it, so «no record answers» means «not drawn» there
          — the fill never starts on a date the era record is silent about. */
       let lastVerdict = false;
@@ -814,8 +888,24 @@ async function main() {
            last verdict it did give stands. ⚠ That is not an assumption about the world: the first
            interval of every unit begins at the LATER of its own stated inception and its COUNTRY's
            (test 2), so an unanswered interval can never carry a verdict from before either. */
-        const answered = located > 0 && located / pts.length >= LOCATED_MIN;
-        const ok = answered ? (located - best) / located <= STRADDLE_MAX : lastVerdict;
+        /* ══ ⚠⚠ (hist-coverage-depth) AFTER THE ERA RECORD ENDS, THE PAGE DRAWS THE PRESENT-DAY MAP ══
+           js/time-borders.js keeps the MODERN borders for every date after CShapes' window, and this
+           outline set IS the present-day map's first level: on those dates the ground is in this unit's
+           own country by the definition of the set, not by a guess. MEASURED 2026-10-05
+           (`--only IND --diagnose`): India's set is complete only from 2020-01-26 (Dadra and Nagar Haveli
+           and Daman and Diu), every one of its 36 units' first interval began after 2019-12-31, met
+           «no record answers» with nothing behind it, and India was refused whole on every date. */
+        const present = cur >= era.present;
+        /* ⚠ (hist-coverage-depth) A UNIT SMALLER THAN THE SAMPLE GRID IS SAMPLED ON ITS OWN VERTICES — on
+           its boundary — and for a coastal one about half of those lie in the sea of the coarser era
+           outline (19.4 points per degree against the unit's ~100) by construction, not by history.
+           MEASURED 2026-10-05 (`--only AUS --diagnose`): Jervis Bay Territory (0.16° × 0.08°, nine
+           vertices) read `located 50% straddle 0%` on every date 1915-2019 and withheld all of
+           Australia. LOCATED_MIN is a share of an INTERIOR lattice; on a boundary sample the era record
+           answers as soon as it places any of it, and the straddle test below still decides. */
+        const answered = present || (located > 0 && (pts.vertex || located / pts.length >= LOCATED_MIN));
+        const ok = present ? true : answered ? (located - best) / located <= STRADDLE_MAX : lastVerdict;
+        if (!ok && !present && located === 0) silent.push([cur, stop]);
         if (DIAG) console.error('    ' + u.code + ' ' + splitYmd(cur)[0] + '..' + splitYmd(stop)[0]
           + ' located ' + (located / pts.length * 100).toFixed(0) + '% straddle '
           + (located ? ((located - best) / located * 100).toFixed(0) : '—') + '% ' + (ok ? 'KEEP' : 'drop'));
@@ -827,7 +917,17 @@ async function main() {
       }
       /* merge the intervals the era map happened to split but the verdict did not */
       alive = alive.reduce((acc, iv) => { const last = acc[acc.length - 1]; if (last && last[1] === iv[0]) last[1] = iv[1]; else acc.push(iv.slice()); return acc; }, []);
-      if (!alive.length) continue;
+      /* ══ ⚠⚠⚠ (hist-coverage-depth) GROUND NO POLITY IS DRAWN ON CANNOT MAKE A COUNTRY LOOK PARTIAL ══
+         The whole-country rule exists for what the reader SEES: a country drawn with provinces over
+         part of it. Where the era record places none of a unit's ground, the reader sees no country
+         there at all — so that unit being silent is not a hole in the country, and it must not empty
+         the country's intersection. MEASURED 2026-10-05 (`--only RUS --diagnose`): Natural Earth's
+         `RU-X01~` — a nameless nine-vertex sliver at 67.1-67.4°E 68.8°N that the coarser era outline
+         leaves in the sea — was `located 0%` on every date, and it withheld all 85 other units of
+         Russia: 46,453 cells, the largest single hole in the 2019 first-level record.
+         ⚠ ONLY `located === 0` QUALIFIES. A unit the era record places partly (Jervis Bay at 50%) is
+         ground the reader sees under a country, and the rule stands for it. */
+      if (!alive.length && !silent.length) continue;
 
       /* ⚠⚠⚠ (#R730) WHAT THE RECORD ANSWERS IS COVERAGE, NOT A GAP. Test 4 below hands ground back
          to data/hist-admin{1,2,3}.js so nothing is drawn twice — but #R719 then intersected the
@@ -839,24 +939,20 @@ async function main() {
       const alive3 = alive.map((iv) => iv.slice());
       const answeredIv = [];
 
-      /* test 4 — the record's own units take the ground back for their own spans. */
-      for (const r of rec) {
-        if (!meets(r.bb, box)) continue;
-        const need = Math.ceil(OVERLAP_MIN * pts.length);
-        const m = hitMask(r.polys, pts);
-        let hit = 0; for (let i = 0; i < m.length; i++) hit += m[i];
-        if (hit < need) continue;
-        answeredIv.push([r.s, r.e]);
+      /* test 4 — the record's own units take the ground back for their own spans (`answeredSpans`). */
+      for (const iv of answeredSpans(pts, box, rec, ymd(-999999, 1, 1), ymd(9999, 1, 1)).spans) {
+        answeredIv.push(iv);
         const before = alive.length;
-        alive = subtract(alive, [r.s, r.e]);
+        alive = subtract(alive, iv);
         if (alive.length !== before || !alive.length) stats.droppedOverlap++;
       }
       /* ⚠ A UNIT WHOSE WHOLE SPAN THE RECORD ANSWERS STAYS IN `live`. Dropping it here is what
          made `live.length === all.length` false and took the country with it. */
       const shown = union(alive3, answeredIv);
-      if (!shown.length) continue;
+      const cover = union(shown, silent);
+      if (!cover.length) continue;
 
-      live.push({ u, polys, alive, shown });
+      live.push({ u, polys, alive, shown, cover, answeredIv });
     }
 
     /* ══ ⚠⚠⚠ THE WHOLE-COUNTRY RULE IS ABOUT THE OUTPUT, NOT THE INPUT ════════════════════════
@@ -868,7 +964,7 @@ async function main() {
        country: a country is drawn on the dates where ALL of its units may be drawn, and on no
        others. A country whose intersection is empty ships nothing at all. */
     let whole = live.length === byCountry.get(iso3).all.length ? [[ymd(-122999, 1, 1), ymd(9999, 1, 1)]] : [];
-    for (const L of live) whole = intersect(whole, L.shown);   /* (#R730) what the reader sees, both records together */
+    for (const L of live) whole = intersect(whole, L.cover);   /* (#R730) what the reader sees, both records together — (hist-coverage-depth) and where they see no country */
     if (!whole.length) { stats.droppedWhole += live.length; refused[iso3] = ['never-whole', stated(byCountry.get(iso3)), byCountry.get(iso3).all.length]; continue; }
 
     for (const L of live) {
@@ -877,7 +973,12 @@ async function main() {
          answers, and the reader sees it there. `--check` re-derives the whole-country rule from the
          shipped bytes, so the bytes have to SAY which units those are; otherwise the gate reads
          Japan as 46 of 47 and refuses the very thing this round fixed. */
-      if (!spans.length) { deferred.add(L.u.code); continue; }
+      if (!spans.length) {
+        /* (hist-coverage-depth) a unit the record answers is DEFERRED to it; one the era record never
+           places while its country is drawn is UNPLACED — the reader sees no country over it */
+        if (intersect(whole, L.answeredIv).length) deferred.add(L.u.code); else unplaced.add(L.u.code);
+        continue;
+      }
       const ringIx = L.polys.map((poly) => poly.map(poolRing));
       const en = L.u.f.n.split('|')[0];
       stats.units++;
@@ -910,6 +1011,9 @@ async function main() {
        can re-derive «a country is answered whole» over what the READER sees rather than over one
        record's half of it. */
     deferred: [...deferred].sort(),
+    /* (hist-coverage-depth) units the era record places nowhere on every date their country is drawn:
+       no country is drawn over them, so they are not a hole in one. `--check` re-verifies it. */
+    unplaced: [...unplaced].sort(),
     inception: inceptionOf(admitted, byCountry, spans),
     /* (hist-coverage) the units dated through their HASC code rather than their ISO 3166-2 one */
     inceptionVia: inceptionViaOf(admitted, byCountry, spans),
@@ -988,11 +1092,15 @@ function check() {
      country nobody answers for. */
   const drawn = new Set(d.feats.map((f) => f[10]));
   const defer = new Set(d.deferred || []);
+  /* (hist-coverage-depth) a unit the era record places nowhere while its country is drawn is not a hole the
+     reader can see — it counts toward «answered whole», and it may never also be drawn */
+  const unplaced = new Set(d.unplaced || []);
+  for (const code of unplaced) if (drawn.has(code) || defer.has(code)) { fail.push(code + ' is listed as unplaced and also drawn or deferred'); break; }
   const byC = new Map();
   for (const f of ne.f) {
     const code = f.n.split('|').find((p) => ISO2.test(p)) || null;
     const c = byC.get(f.i) || { all: 0, drawn: 0, deferred: 0 };
-    c.all++; if (code && drawn.has(code)) c.drawn++; else if (code && defer.has(code)) c.deferred++;
+    c.all++; if (code && drawn.has(code)) c.drawn++; else if (code && defer.has(code)) c.deferred++; else if (code && unplaced.has(code)) c.deferred++;
     byC.set(f.i, c);
   }
   const partial = [...byC].filter(([, c]) => (c.drawn || c.deferred) && c.drawn + c.deferred < c.all)
@@ -1004,24 +1112,29 @@ function check() {
   /* ⚠ THE GEOMETRY HALF RUNS WHERE THE RECORD IS, AND SAYS WHICH HALF RAN. The bundles it reads are
      82 MB, so a synthetic world (tests/history-admin-coverage-gate-checks.test.mjs (#R719)) holds the outline set and this
      record and nothing else — the same split build-hist-kuni.mjs states for its raster. */
-  const recFiles = fs.readdirSync(path.join(ROOT, 'data')).filter((n) => /^hist-admin[0-9]\.js$/.test(n));
+  const recFiles = recordFiles();
   if (defer.size && !recFiles.length) console.log('· ' + defer.size + ' deferred unit(s) not verified against the record — data/hist-admin*.js is not on disk');
   if (defer.size && recFiles.length) {
     const recPolys = [];
-    for (const nm of recFiles) {
-      const wv = {}; vm.runInNewContext(fs.readFileSync(path.join(ROOT, 'data', nm), 'utf8'), { window: wv });
-      const dd = wv['__HISTADM' + nm.match(/[0-9]/)[0]];
+    for (const rel of recFiles) {
+      const dd = loadBundle(rel).data;
       for (const r of dd.feats) recPolys.push(r[8].map((poly) => poly.map((ri) => dd.rings[ri])));
     }
     const orphan = [];
     for (const code of defer) {
-      const unit = ne.f.find((f) => String(f.n || '').split('|').includes(code));
-      if (!unit) { orphan.push(code + ' (no outline)'); continue; }
-      const g = unit.g;
-      const polys = (g.type === 'Polygon' ? [g.coordinates] : g.coordinates)
-        .map((poly) => poly.filter((r) => r && r.length >= 4)).filter((pp) => pp.length);
-      const pts = polys.length ? samplePoints(polys) : [];
-      if (!pts.some((pt) => recPolys.some((polys) => inPolys(polys, pt[0], pt[1])))) orphan.push(code);
+      /* ⚠ (hist-coverage-depth) ONE CODE CAN BE SEVERAL OUTLINES. Natural Earth carries Metro Manila as four
+         polygons that all say PH-MNL; the build defers whichever of them the record answers, and asking only the
+         FIRST one (`find`) reported a covered unit as an orphan. Every outline with the code is asked. */
+      const units = ne.f.filter((f) => String(f.n || '').split('|').includes(code));
+      if (!units.length) { orphan.push(code + ' (no outline)'); continue; }
+      const covered = units.some((unit) => {
+        const g = unit.g;
+        const polys = (g.type === 'Polygon' ? [g.coordinates] : g.coordinates)
+          .map((poly) => poly.filter((r) => r && r.length >= 4)).filter((pp) => pp.length);
+        const pts = polys.length ? samplePoints(polys) : [];
+        return pts.some((pt) => recPolys.some((polys) => inPolys(polys, pt[0], pt[1])));
+      });
+      if (!covered) orphan.push(code);
     }
     ok(!orphan.length, orphan.length + ' unit(s) are deferred to the record but no record row covers them: ' + orphan.slice(0, 8).join(', '));
   }

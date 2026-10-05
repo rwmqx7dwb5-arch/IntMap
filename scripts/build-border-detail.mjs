@@ -2,10 +2,13 @@
 /* R711. Same-source, geometry-only detail for the OHM fallback. Never downloads,
    invents missing boundaries, or replaces a corrected/non-reproducible outline.
    Spatial fragments share a 256 KiB target and split long lines at existing
-   vertices, so a visible part of an empire never fetches its entire outline. */
+   vertices, so a visible part of an empire never fetches its entire outline.
+   (hist-coverage-depth) The surveyed gap records (HIST_ADMIN_GAPS (js/border-coast.js), derived:false) are sets too:
+   their detail is the publisher's own geometry from its harvester's local cache, unsimplified, in
+   fragment families of their own — see SURVEY_SETS below. */
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, unlinkSync } from 'node:fs';
-import { join, dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join, dirname, resolve, basename } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { tmpdir } from 'node:os';
 import { createHash } from 'node:crypto';
 import { readLF } from './eol.mjs';
@@ -17,11 +20,18 @@ import { markRing, water, closedRing, INLAND_KM } from './build-border-coast.mjs
 import { requireData, placed, readManifest } from './data-assets.mjs';
 import { OPENHISTORICALMAP } from './lib/upstream-cadence.mjs';
 import { requireModule } from './lib/import-module.mjs';
+import { simplifyGeoJSON } from './lib/elections-geo.mjs';
+import { HIST_ADMIN_GAPS } from '../js/border-coast.js';
 
 /* ⚠ (upstream-liveness) 出自は値である。読むのは js/data-governance.js の read() と
    npm run check:datagov（scripts/data-governance.mjs）。この宣言は少なくとも「どの bundle を書くか」と
    「上流がどの周期で新しいものを出すか」（cadence と、その根拠 cadenceBasis）を述べる。
-   ⚠ ここに無い facet は「述べていない」であって「無い」ではない——data/governance-ledger.json が数える。 */
+   ⚠ ここに無い facet は「述べていない」であって「無い」ではない——data/governance-ledger.json が数える。
+   ⚠ (hist-coverage-depth) 調査記録の詳細（index-hist-admin-surveys*.json と、その断片）の出自は、その
+   per-set 索引が値として持つ（sources の出版元とライセンス、NC は licence）。ここで
+   scripts/build-hist-admin-surveys.mjs の GOVERNANCE を import して upstreams に足すと、check:datagov の
+   静的読み取り（純データしか束縛しない）が「読めない宣言」と判定する——実測 2026-10-05:
+   unreadableDeclaration 0→1・freshness-stated ✖。だから写しも import もせず、ここは OHM のまま。 */
 export const GOVERNANCE = {
   'data/border-detail/index.json': {
     /* geometry-only detail for the OHM-derived bundles in this tree (it never downloads), so it
@@ -40,7 +50,22 @@ const read = file => { const w = {}; new Function('window', readFileSync(file, '
 const BC = requireModule('js/border-coast.js').IntMapBorderCoast;
 const TOL = 0.0005, DEC = 5;
 const fp = polys => BC.geometryKey(polys);
-const SETS = [ ['hist-borders', '__HISTB', 'intmap-histb-cache'], ['hist-admin1', '__HISTADM1', 'ohm-adm34-cache'], ['hist-admin2', '__HISTADM2', 'ohm-adm56-cache'] ];
+const OHM_SETS = [ ['hist-borders', '__HISTB', 'intmap-histb-cache'], ['hist-admin1', '__HISTADM1', 'ohm-adm34-cache'], ['hist-admin2', '__HISTADM2', 'ohm-adm56-cache'] ];
+/* ══ (hist-coverage-depth) THE SURVEYED GAP RECORDS, DISCOVERED FROM THE ONE LIST ════════════════════
+   HIST_ADMIN_GAPS (js/border-coast.js) marks as `derived: false` the records a publisher surveyed and dated
+   (scripts/build-hist-admin-surveys.mjs). Their shipped rings are simplified to the first tier's
+   overview tolerance (0.004°), while the publisher's own outline is far finer — so zoomed in, the
+   reader saw a 400 m caricature of a surveyed boundary. Their detail is the PUBLISHER'S geometry as
+   its harvester (scripts/histsurveys/<key>.mjs) returns it: NO tolerance, no rounding beyond the
+   harvester's own. A derived record is not listed here — its overview IS its claim.
+   ⚠ Each record is its own set and its own fragment family (`<file>-<hash>.json`): the non-commercial
+   record's geometry never shares a fragment with open geometry, and its fragments and its index entry
+   state its licence (read from the bundle's own `licence`, not typed here). */
+const SURVEY_SETS = HIST_ADMIN_GAPS.filter(g => g.derived === false).map(g => [basename(g.file, '.js'), g.global, null, g]);
+const SETS = [...OHM_SETS, ...SURVEY_SETS];
+const isSurvey = global => SURVEY_SETS.some(s => s[1] === global);
+/* a fragment this builder owns: one of the sets' own families, by name */
+const ownAsset = name => SETS.some(([file]) => new RegExp('^' + file + '-[a-f0-9]{16}\\.json$').test(name));
 const metadata = () => ({ v: 1, source: 'OpenHistoricalMap (CC0), cached relation geometry matching the shipped coarse outline',
   targetTolerance: TOL, decimals: DEC, inlandKm: INLAND_KM });
 
@@ -48,24 +73,77 @@ const metadata = () => ({ v: 1, source: 'OpenHistoricalMap (CC0), cached relatio
    and coast semantics must agree before any chunk is written: otherwise one
    manifest would make conflicting claims about the sets it combines. */
 export function planDetailBuild(previous, names = null) {
-  if (names === null) return { selected: SETS, index: { ...metadata(), sets: {}, stats: {} } };
+  if (names === null) return { selected: SETS, index: { ...metadata(), sets: {}, stats: {}, publishers: {} } };
   if (!Array.isArray(names) || !names.length || names.some(name => !SETS.some(s => s[0] === name)))
     throw new Error('--sets requires known comma-separated set names: ' + SETS.map(s => s[0]).join(','));
   if (new Set(names).size !== names.length) throw new Error('--sets contains duplicate set names');
   if (!previous || typeof previous !== 'object') throw new Error('partial detail build requires an existing index');
   for (const [key, value] of Object.entries(metadata()))
     if (previous[key] !== value) throw new Error('partial detail build has incompatible ' + key + '; rebuild every set');
+  /* ⚠ (hist-coverage-depth) a set may be ABSENT from the previous index only when this build writes it
+     — the first build of a surveyed record onto an index that predates it. Every set this build does
+     not write must already be there, so the manifest still describes every set it combines. */
   for (const group of ['sets', 'stats']) {
     if (!previous[group] || typeof previous[group] !== 'object' || Array.isArray(previous[group]))
       throw new Error('partial detail build has no ' + group);
     if (Object.keys(previous[group]).some(global => !SETS.some(s => s[1] === global)))
       throw new Error('partial detail build has an unknown ' + group + ' member');
-    for (const [, global] of SETS)
+    for (const [file, global] of SETS) {
+      if (names.includes(file) && previous[group][global] === undefined) continue;
       if (!previous[group][global] || typeof previous[group][global] !== 'object' || Array.isArray(previous[group][global]))
         throw new Error('partial detail build has no ' + group + ' for ' + global);
+    }
   }
+  /* a surveyed set's provenance travels with it (check() requires it beside every surveyed set); here
+     only a member naming no surveyed set is refused */
+  const publishers = previous.publishers === undefined ? {} : previous.publishers;
+  if (!publishers || typeof publishers !== 'object' || Array.isArray(publishers) || Object.keys(publishers).some(global => !isSurvey(global)))
+    throw new Error('partial detail build has an unknown publishers member');
   return { selected: SETS.filter(s => names.includes(s[0])),
-    index: { ...previous, sets: { ...previous.sets }, stats: { ...previous.stats } } };
+    index: { ...previous, sets: { ...previous.sets }, stats: { ...previous.stats }, publishers: { ...publishers } } };
+}
+
+/* ══ (hist-coverage-depth) A SURVEYED SET'S INDEX IS A FILE OF ITS OWN, POINTED TO FROM index.json ══════
+   index.json is read by every zoomed-in view that draws any historical outline. The surveyed sets'
+   entries (+121 KB measured 2026-10-05) would be paid by every one of those views, though only a view
+   with a surveyed row in it can use them — so each surveyed set's entries, stats and provenance live in
+   `index-<file>.json` and index.json carries only `external: { <global>: <that name> }` (js/border-coast.js
+   fetches it the first time a row of that set needs detail). In memory the builder and the gate hold
+   ONE merged view (loadIndex) and split it only when writing (writeIndex), so every invariant below is
+   stated once, over all sets. */
+export const externalName = file => 'index-' + file + '.json';
+export function loadIndex(out) {
+  const index = JSON.parse(readLF(join(out, 'index.json')));
+  const external = index.external || {};
+  delete index.external;
+  if (Object.keys(external).length || SURVEY_SETS.length) index.publishers = {};
+  for (const [global, name] of Object.entries(external)) {
+    const set = SURVEY_SETS.find(s => s[1] === global);
+    if (!set || name !== externalName(set[0])) throw new Error('index.json points ' + global + ' at ' + name + ', not a surveyed set\'s own index');
+    const sub = JSON.parse(readLF(join(out, name)));
+    if (sub.v !== 1 || sub.global !== global || !sub.sets || !sub.stats || Object.keys(sub.sets).join() !== global || Object.keys(sub.stats).join() !== global)
+      throw new Error(name + ' is not the index of ' + global + ' alone');
+    index.sets[global] = sub.sets[global]; index.stats[global] = sub.stats[global];
+    const { v, global: g, sets, stats, ...provenance } = sub;
+    index.publishers[global] = provenance;
+  }
+  return index;
+}
+export function writeIndex(out, index) {
+  const { publishers = {}, ...top } = index;
+  top.sets = { ...index.sets }; top.stats = { ...index.stats };
+  const external = {};
+  for (const [file, global] of SURVEY_SETS) {
+    if (top.sets[global] === undefined) continue;
+    writeFileSync(join(out, externalName(file)), JSON.stringify({ v: 1, global, ...publishers[global],
+      sets: { [global]: top.sets[global] }, stats: { [global]: top.stats[global] } }) + '\n');
+    delete top.sets[global]; delete top.stats[global];
+    external[global] = externalName(file);
+  }
+  if (Object.keys(external).length) top.external = external;
+  writeFileSync(join(out, 'index.json'), JSON.stringify(top) + '\n');
+  /* a surveyed set's index nobody points to any more is removed, as an unused fragment is */
+  for (const name of readdirSync(out)) if (/^index-.+\.json$/.test(name) && !Object.values(external).includes(name)) unlinkSync(join(out, name));
 }
 
 export function detailAssets(index) {
@@ -101,20 +179,50 @@ export function eligible(before, coarse, fine) {
   return true;
 }
 
+/* ── the surveyed records' source: the harvesters, discovered (scripts/build-hist-admin-surveys.mjs does
+   the same; a harvester is a module that exports SOURCE and harvest()) ───────────────────────────── */
+async function surveyHarvesters() {
+  const dir = join(ROOT, 'scripts', 'histsurveys'), out = new Map();
+  for (const f of readdirSync(dir).filter(n => n.endsWith('.mjs')).sort()) {
+    const mod = await import(pathToFileURL(join(dir, f)).href);
+    if (mod.SOURCE && typeof mod.harvest === 'function') out.set(mod.SOURCE.key, mod);
+  }
+  return out;
+}
+/* the unit's polygons as scripts/build-hist-admin-surveys.mjs reads them (MultiPolygon coordinates or a
+   GeoJSON geometry; rings of fewer than four points left out). ⚠ This is a second reading of the same
+   coordinates, and it cannot disagree silently: a row is refined only if simplifying THIS reading the
+   way that builder does reproduces the shipped geometry exactly (surveySimplify + the fingerprint). */
+export function surveyPolys(c) {
+  const m = Array.isArray(c) ? c : c && c.type === 'Polygon' ? [c.coordinates] : c && c.type === 'MultiPolygon' ? c.coordinates : [];
+  return m.map(poly => poly.filter(r => r && r.length >= 4)).filter(p => p.length);
+}
+export function surveySimplify(polys, tolerance, decimals) {
+  const g = simplifyGeoJSON({ type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry: { type: 'MultiPolygon', coordinates: polys } }] }, { tolerance, decimals }).features[0].geometry;
+  return g.type === 'Polygon' ? [g.coordinates] : g.coordinates;
+}
+const decimalsOf = v => { const t = String(v), e = t.indexOf('e-'); if (e >= 0) return +t.slice(e + 2) + Math.max(0, t.slice(0, e).replace(/^-?\d+\.?/, '').length); const dot = t.indexOf('.'); return dot < 0 ? 0 : t.length - dot - 1; };
+
 async function build(names = null) {
-  const previous = names === null ? null : existsSync(join(OUT, 'index.json')) ? JSON.parse(readFileSync(join(OUT, 'index.json'), 'utf8')) : null;
+  const previous = names === null ? null : existsSync(join(OUT, 'index.json')) ? loadIndex(OUT) : null;
   const { index, selected } = planDetailBuild(previous, names);
   mkdirSync(OUT, { recursive: true });
   const W = water();
-  for (const [file, global, cacheDir] of selected) {
-    const d = read(join(ROOT, 'data', file + '.js')), cache = join(tmpdir(), cacheDir);
+  for (const [file, global, cacheDir, gap] of selected) {
+    const d = read(join(ROOT, 'data', file + '.js')), cache = cacheDir ? join(tmpdir(), cacheDir) : null;
+    /* a surveyed record's fragments state the record's own licence when it has one (the non-commercial
+       record: CC BY-NC-SA, read from the bundle) — and its index entry says the same */
+    const licence = gap ? (d.licence || null) : null;
+    if (gap && !!gap.nonCommercial !== !!licence) throw new Error(file + ': HIST_ADMIN_GAPS (js/border-coast.js) says nonCommercial=' + !!gap.nonCommercial + ' but the bundle states licence ' + licence);
     const wanted = new Map();
     const rowKeys = d.feats.map((f, i) => { const p = geometryOf(d, f), key = fp(p); if (!wanted.has(key)) wanted.set(key, { p, rows: [] }); wanted.get(key).rows.push(i); return key; });
     const entries = index.sets[global] = {}, stats = index.stats[global] = { records: d.feats.length, refined: 0, retained: 0, vertices: 0, bytes: 0, chunks: 0 };
     const buffers = new Map();
     function flush(cell) {
       const chunk = buffers.get(cell); if (!chunk) return; buffers.delete(cell);
-      const body = JSON.stringify({ lines: chunk.lines, relations: chunk.relations }), name = file + '-' + createHash('sha256').update(body).digest('hex').slice(0, 16) + '.json';
+      /* OHM fragments: { lines, relations } exactly as before. A surveyed record's: its licence (if any),
+         the lines, and for each geometry the [publisher key, upstream id] it was taken from. */
+      const body = JSON.stringify(gap ? { ...(licence ? { licence } : {}), lines: chunk.lines, records: chunk.relations } : { lines: chunk.lines, relations: chunk.relations }), name = file + '-' + createHash('sha256').update(body).digest('hex').slice(0, 16) + '.json';
       writeFileSync(join(OUT, name), body + '\n');
       for (const [key, rows] of chunk.rows) for (const i of rows) entries[i][1].push([name, chunk.bounds[key]]);
       stats.bytes += Buffer.byteLength(body) + 1; stats.chunks++;
@@ -158,7 +266,41 @@ async function build(names = null) {
       }
       stats.refined += item.rows.length;
     }
-    if (file === 'hist-borders') {
+    if (gap) {
+      /* ══ THE PUBLISHER'S OUTLINE, PROVEN TO BE THE SOURCE OF THE SHIPPED ONE ═══════════════════════
+         Each row names its publisher (col 10) and that publisher's own id for the unit (col 11). The
+         harvester is asked again (it reads only its local cache) and the unit with that id is taken —
+         and accepted only if simplifying it EXACTLY as scripts/build-hist-admin-surveys.mjs does (the
+         bundle's own tolerance and decimals) reproduces the shipped geometry byte for byte. That is the
+         proof that the fine outline is the one the coarse was made from; a unit that does not reproduce
+         keeps its coarse line. The fine geometry is carried as the harvester returns it: no tolerance,
+         no rounding coarser than the harvester's own. */
+      const harvesters = await surveyHarvesters(), harvested = new Map();
+      const unitsOf = async key => {
+        if (!harvested.has(key)) {
+          const h = harvesters.get(key); if (!h) throw new Error(file + ': no harvester in scripts/histsurveys/ declares SOURCE.key ' + key);
+          const byId = new Map();
+          for (const u of (await h.harvest()).units) { if (!byId.has(u.id)) byId.set(u.id, []); byId.get(u.id).push(u); }
+          harvested.set(key, byId);
+        }
+        return harvested.get(key);
+      };
+      let decimals = 0;
+      for (let i = 0; i < d.feats.length; i++) {
+        if (!wanted.has(rowKeys[i])) continue;
+        const f = d.feats[i], src = f[10], uid = f[11];
+        for (const u of ((await unitsOf(src)).get(uid) || [])) {
+          const fine = surveyPolys(u.coords), coarse = surveySimplify(fine, d.tolerance, d.decimals);
+          if (fp(coarse) !== rowKeys[i]) continue;
+          for (const p of fine) for (const r of p) for (const c of r) for (const v of c) decimals = Math.max(decimals, decimalsOf(v));
+          accept([src, uid], coarse, fine);
+          break;
+        }
+      }
+      index.publishers[global] = { file: 'data/' + file + '.js', licence,
+        sources: Object.fromEntries(Object.entries(d.sources || {}).map(([k, v]) => [k, { publisher: v.publisher, licence: v.licence }])),
+        targetTolerance: 0, decimals, inlandKm: INLAND_KM };
+    } else if (file === 'hist-borders') {
       const ids = JSON.parse(readFileSync(join(cache, 'index.json'), 'utf8')).elements.map(el => el.id);
       for (let n = 0; n < ids.length; n++) {
         const id = ids[n], rel = loadGeom(cache, id); if (!rel) continue;
@@ -181,27 +323,40 @@ async function build(names = null) {
     for (const cell of [...buffers.keys()]) flush(cell); stats.retained = stats.records - stats.refined;
     console.log(global, JSON.stringify(stats));
   }
-  writeFileSync(join(OUT, 'index.json'), JSON.stringify(index) + '\n');
+  writeIndex(OUT, index);
   const used = detailAssets(index);
-  for (const name of readdirSync(OUT)) if (/^hist-(?:borders|admin[12])-[a-f0-9]{16}\.json$/.test(name) && !used.has(name)) unlinkSync(join(OUT,name));
+  for (const name of readdirSync(OUT)) if (ownAsset(name) && !used.has(name)) unlinkSync(join(OUT,name));
   console.log('detail index written', JSON.stringify(index.stats));
 }
 
 export function check(root = ROOT) {
-  const out = join(root,'data/border-detail'), index = JSON.parse(readFileSync(join(out,'index.json'),'utf8'));
+  const out = join(root,'data/border-detail'), index = loadIndex(out);
+  const pointed = new Set(Object.values(JSON.parse(readLF(join(out,'index.json'))).external || {}));
   const ok = (value, message) => { if (!value) throw new Error(message); };
   ok(index.v===1 && index.targetTolerance===TOL && index.decimals===DEC && index.inlandKm===INLAND_KM,'detail precision or coast provenance differs from builder');
   ok(/OpenHistoricalMap.*CC0/.test(index.source),'detail source attribution missing');
   const all = new Set();
-  for (const [file,global] of SETS) {
+  for (const [file,global,,gap] of SETS) {
+    /* (hist-coverage-depth) a surveyed record is checked when it is built in this tree (as
+       tests/hist-coverage-depth-checks.test.mjs ③ does) — and then its detail must be there */
+    if (gap && !existsSync(join(root,'data',file+'.js'))) continue;
     const data = read(join(root,'data',file+'.js')), entries = index.sets[global];
     ok(entries && typeof entries==='object',global+' index missing');
+    /* a surveyed record's entry states where its geometry comes from: no tolerance, its publishers,
+       and the bundle's own licence — so the non-commercial record's index entry says CC BY-NC-SA */
+    const pub = gap ? index.publishers && index.publishers[global] : null;
+    if (gap) {
+      ok(pub && pub.file==='data/'+file+'.js' && pub.targetTolerance===0 && pub.inlandKm===INLAND_KM && Number.isInteger(pub.decimals),global+' publisher provenance missing or not the publisher\'s precision');
+      ok((pub.licence||null)===(data.licence||null) && !!gap.nonCommercial===!!pub.licence,global+' index licence «'+pub.licence+'» is not the record\'s own «'+data.licence+'»');
+      for (const k of Object.keys(data.sources||{})) ok(pub.sources && pub.sources[k] && pub.sources[k].publisher===data.sources[k].publisher,global+' does not name publisher '+k);
+    }
+    const relOf = (row) => gap ? (row ? row[10]+'\u0001'+row[11] : undefined) : row?.[10];
     // Identical geometry may legitimately be shared by differently dated relations.
     // The source relation must belong to one of those exact-geometry records.
     const allowedRelations=new Map();
     if(file!=='hist-borders')for(const [i,e]of Object.entries(entries)) {
       if(!allowedRelations.has(e[0]))allowedRelations.set(e[0],new Set());
-      allowedRelations.get(e[0]).add(data.feats[i]?.[10]);
+      allowedRelations.get(e[0]).add(relOf(data.feats[i]));
     }
     const chunks = new Map();
     for (const [i,entry] of Object.entries(entries)) {
@@ -215,9 +370,16 @@ export function check(root = ROOT) {
           ok(Buffer.byteLength(body)<=512*1024,'chunk exceeds 512 KiB: '+path);
           ok(path.includes(createHash('sha256').update(body.trimEnd()).digest('hex').slice(0,16)),'chunk content hash differs: '+path);
           let points=0;
+          /* ⚠ a surveyed fragment carries its record's licence and nothing else's: the non-commercial
+             record's geometry never sits in a fragment without CC BY-NC-SA, nor open geometry in one with it */
+          if (gap) ok((d.licence||null)===(pub.licence||null) && !d.relations,'fragment licence «'+d.licence+'» is not its record\'s: '+path);
+          else ok(d.licence===undefined && !d.records,'an OpenHistoricalMap fragment carries a survey record\'s fields: '+path);
+          const refs = gap ? d.records||{} : d.relations;
           for (const [key,lines] of Object.entries(d.lines||{})) {
-            ok(Number.isSafeInteger(d.relations[key]),'source relation id missing: '+path);
-            if(file!=='hist-borders')ok(allowedRelations.get(key)?.has(d.relations[key]),'source relation does not belong to this exact geometry: '+path);
+            if (gap) ok(Array.isArray(refs[key]) && refs[key].length===2 && data.sources?.[refs[key][0]],'source publisher and upstream id missing: '+path);
+            else ok(Number.isSafeInteger(refs[key]),'source relation id missing: '+path);
+            const ref = gap ? refs[key][0]+'\u0001'+refs[key][1] : refs[key];
+            if(file!=='hist-borders')ok(allowedRelations.get(key)?.has(ref),'source relation does not belong to this exact geometry: '+path);
             ok(Array.isArray(lines),'invalid lines: '+path);
             for(const line of lines) { ok(Array.isArray(line)&&line.length>=2,'short line: '+path);for(const p of line){ok(p.length===2&&p.every(Number.isFinite)&&Math.abs(p[0])<=180&&Math.abs(p[1])<=90,'invalid coordinate: '+path);points++;} }
           }
@@ -236,7 +398,7 @@ export function check(root = ROOT) {
     ok(stats.bytes===values.reduce((n,c)=>n+c.bytes,0) && stats.vertices===values.reduce((n,c)=>n+c.points,0) && stats.chunks===chunks.size,'chunk measurements differ: '+global);
     console.log(global,JSON.stringify({...stats,maxChunkBytes:Math.max(...values.map(c=>c.bytes))}));
   }
-  for (const path of readdirSync(out)) if(path!=='index.json')ok(all.has(path),'orphan detail asset: '+path);
+  for (const path of readdirSync(out)) if(path!=='index.json'&&!pointed.has(path))ok(all.has(path),'orphan detail asset: '+path);
   return index.stats;
 }
 
@@ -270,16 +432,16 @@ function retainUnsafe(index, rejected) {
       for(const lines of Object.values(d.lines))for(const line of lines)stats.vertices+=line.length;
     }
   }
-  writeFileSync(join(OUT,'index.json'),JSON.stringify(index)+'\n');
-  for(const path of readdirSync(OUT))if(/^hist-(?:borders|admin[12])-[a-f0-9]{16}\.json$/.test(path)&&!used.has(path))unlinkSync(join(OUT,path));
+  writeIndex(OUT,index);
+  for(const path of readdirSync(OUT))if(ownAsset(path)&&!used.has(path))unlinkSync(join(OUT,path));
   check();
 }
 
 async function checkSource(repair = false) {
-  const index = JSON.parse(readFileSync(join(OUT,'index.json'),'utf8'));
+  const index = loadIndex(OUT);
   const onlyAt=process.argv.indexOf('--only'),only=onlyAt>=0?process.argv[onlyAt+1]:null,rejected=new Map();
-  if(only&&!SETS.some(s=>s[0]===only))throw new Error('unknown source set: '+only);
-  for(const [file,global,cacheDir] of SETS) {
+  if(only&&!OHM_SETS.some(s=>s[0]===only))throw new Error('unknown source set: '+only);
+  for(const [file,global,cacheDir] of OHM_SETS) {
     if(only&&only!==file)continue;
     const data=read(join(ROOT,'data',file+'.js')), cache=join(tmpdir(),cacheDir), checked=new Set();let count=0;
     const coastIds=new Map();
