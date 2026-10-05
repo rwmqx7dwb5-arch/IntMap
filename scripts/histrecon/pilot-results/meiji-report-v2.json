@@ -1,0 +1,6373 @@
+{
+ "built": "2026-10-05T05:35:40.877Z",
+ "scope": {
+  "from": "1872-01-02",
+  "fromNote": "complete coverage from the last 第1次府県統合 announcement (明治4年11月22日 = 1872-01-02); rows of earlier-announced groups start at their own dates (1871-12-10 …)",
+  "to": "1890-12-31"
+ },
+ "intervals": 97,
+ "sizes": {
+  "full": {
+   "file": "C:\\Users\\gyuuk\\AppData\\Local\\Temp\\claude\\C--Users-gyuuk-OneDrive-IntMap\\dfc24dbe-735e-43ba-a35e-b14d6a7d3405\\scratchpad\\meiji-pilot\\hist-admin-recon-meiji-v2.js",
+   "bytes": 42486842,
+   "feats": 178,
+   "rings": 5866,
+   "vertices": 2032861
+  },
+  "coarse": {
+   "file": "C:\\Users\\gyuuk\\AppData\\Local\\Temp\\claude\\C--Users-gyuuk-OneDrive-IntMap\\dfc24dbe-735e-43ba-a35e-b14d6a7d3405\\scratchpad\\meiji-pilot\\hist-admin-recon-meiji-coarse-v2.js",
+   "bytes": 545271,
+   "feats": 178,
+   "rings": 171,
+   "vertices": 38780
+  }
+ },
+ "estat": {
+  "publisher": "政府統計の総合窓口(e-Stat) 統計地理情報システム 境界データ「国勢調査 2020年 小地域（町丁・字等別）」",
+  "url": "https://www.e-stat.go.jp/gis/statmap-search?page=1&type=2&aggregateUnitForBoundary=A&toukeiCode=00200521&toukeiYear=2020&serveyId=A002005212020&coordsys=1&format=shape&datum=2000",
+  "terms": "https://www.e-stat.go.jp/terms-of-use",
+  "gisTerms": "https://www.e-stat.go.jp/gis-terms",
+  "observed": "2026-10-05",
+  "quotes": [
+   "統計地理情報システム機能利用規約 第６条（コンテンツの利用）「本機能が提供する情報（以下「コンテンツ」という。）の利用条件等は、「政府統計の総合窓口（e-Stat）利用規約」に準じるものとします。」",
+   "利用規約 ６）イ「本利用ルールは、平成２８年１月２９日に定めたものです。本利用ルールは、政府標準利用規約（第2.0版）に準拠しています。」",
+   "利用規約 ６）ウ「本利用ルールは、クリエイティブ・コモンズ・ライセンスの表示 4.0 国際（https://creativecommons.org/licenses/by/4.0/legalcode.ja に規定される著作権利用許諾条件。以下「CC BY」といいます。）と互換性があり、本利用ルールが適用されるコンテンツはCC BYに従うことでも利用することができます。」",
+   "利用規約 １）イ「コンテンツを編集・加工等して利用する場合は、上記出典とは別に、編集・加工等を行ったことを記載してください。」"
+  ],
+  "citation": "出典：政府統計の総合窓口(e-Stat)（https://www.e-stat.go.jp/）「国勢調査 2020年 小地域（町丁・字等別）境界データ」を加工して作成。"
+ },
+ "appliedOps": [
+  {
+   "id": "C29",
+   "op": "drop",
+   "rows": 4,
+   "basis": "C29: the «陸中国和賀郡（東和賀郡に当たる部分）in 盛岡県/岩手県» rows are spurious (金ケ崎町六原 = old 相去村 land, moved only in 1954). Whole block: 一関県 → 水沢県 → 磐井県 → 岩手県."
+  },
+  {
+   "id": "C29",
+   "op": "unsplit",
+   "rows": 4,
+   "basis": "C29 (the remaining 胆沢郡 rows hold the whole block)"
+  },
+  {
+   "id": "D31/C52",
+   "op": "drop",
+   "rows": 5,
+   "basis": "D31: until 明治5年9月14日 (1872-10-16) 琉球 was a 付庸国 under 鹿児島県 所管 — «no 郡, not 県 territory»; drawn as land without a prefecture, not as 鹿児島県."
+  },
+  {
+   "id": "C43",
+   "op": "redate",
+   "rows": 3,
+   "basis": "C43/D25: 明治5年1月25日 = 1872-03-04 (北条県 article); 小豆郡 article's 3月5日 is a one-day slip."
+  }
+ ],
+ "issues": [],
+ "earlyHolders": [
+  "青森県 named by the research before its table start 1871-12-13: left unrecorded there, like the rest of its land",
+  "開拓使 named by the research before its table start 1872-01-02: left unrecorded there, like the rest of its land"
+ ],
+ "conflicts": [
+  {
+   "interval": [
+    "1872-06-20",
+    "1872-07-04"
+   ],
+   "muni": "愛媛県/温泉郡/垣生村",
+   "split": "石鉄県",
+   "transfer": "宇和島県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1872-06-20",
+    "1872-07-04"
+   ],
+   "muni": "愛媛県/温泉郡/余土村",
+   "split": "石鉄県",
+   "transfer": "宇和島県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1872-07-04",
+    "1872-07-10"
+   ],
+   "muni": "愛媛県/温泉郡/垣生村",
+   "split": "石鉄県",
+   "transfer": "宇和島県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1872-07-04",
+    "1872-07-10"
+   ],
+   "muni": "愛媛県/温泉郡/余土村",
+   "split": "石鉄県",
+   "transfer": "宇和島県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1872-07-10",
+    "1872-07-19"
+   ],
+   "muni": "愛媛県/温泉郡/垣生村",
+   "split": "石鉄県",
+   "transfer": "宇和島県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1872-07-10",
+    "1872-07-19"
+   ],
+   "muni": "愛媛県/温泉郡/余土村",
+   "split": "石鉄県",
+   "transfer": "宇和島県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1872-07-19",
+    "1872-07-28"
+   ],
+   "muni": "愛媛県/温泉郡/垣生村",
+   "split": "石鉄県",
+   "transfer": "宇和島県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1872-07-19",
+    "1872-07-28"
+   ],
+   "muni": "愛媛県/温泉郡/余土村",
+   "split": "石鉄県",
+   "transfer": "宇和島県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1872-07-28",
+    "1872-09-19"
+   ],
+   "muni": "愛媛県/温泉郡/垣生村",
+   "split": "石鉄県",
+   "transfer": "神山県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1872-07-28",
+    "1872-09-19"
+   ],
+   "muni": "愛媛県/温泉郡/余土村",
+   "split": "石鉄県",
+   "transfer": "神山県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1872-09-19",
+    "1872-09-21"
+   ],
+   "muni": "愛媛県/温泉郡/垣生村",
+   "split": "石鉄県",
+   "transfer": "神山県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1872-09-19",
+    "1872-09-21"
+   ],
+   "muni": "愛媛県/温泉郡/余土村",
+   "split": "石鉄県",
+   "transfer": "神山県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1872-09-21",
+    "1872-10-12"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "入間県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1872-09-21",
+    "1872-10-12"
+   ],
+   "muni": "東京府/北多摩郡/保谷村",
+   "split": "埼玉県",
+   "transfer": "入間県",
+   "event": "1907-04-01 北多摩郡"
+  },
+  {
+   "interval": [
+    "1872-09-21",
+    "1872-10-12"
+   ],
+   "muni": "愛媛県/温泉郡/垣生村",
+   "split": "石鉄県",
+   "transfer": "神山県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1872-09-21",
+    "1872-10-12"
+   ],
+   "muni": "愛媛県/温泉郡/余土村",
+   "split": "石鉄県",
+   "transfer": "神山県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1872-10-12",
+    "1872-10-16"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "入間県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1872-10-12",
+    "1872-10-16"
+   ],
+   "muni": "東京府/北多摩郡/保谷村",
+   "split": "埼玉県",
+   "transfer": "入間県",
+   "event": "1907-04-01 北多摩郡"
+  },
+  {
+   "interval": [
+    "1872-10-12",
+    "1872-10-16"
+   ],
+   "muni": "愛媛県/温泉郡/垣生村",
+   "split": "石鉄県",
+   "transfer": "神山県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1872-10-12",
+    "1872-10-16"
+   ],
+   "muni": "愛媛県/温泉郡/余土村",
+   "split": "石鉄県",
+   "transfer": "神山県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1872-10-16",
+    "1872-10-22"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "入間県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1872-10-16",
+    "1872-10-22"
+   ],
+   "muni": "東京府/北多摩郡/保谷村",
+   "split": "埼玉県",
+   "transfer": "入間県",
+   "event": "1907-04-01 北多摩郡"
+  },
+  {
+   "interval": [
+    "1872-10-16",
+    "1872-10-22"
+   ],
+   "muni": "愛媛県/温泉郡/垣生村",
+   "split": "石鉄県",
+   "transfer": "神山県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1872-10-16",
+    "1872-10-22"
+   ],
+   "muni": "愛媛県/温泉郡/余土村",
+   "split": "石鉄県",
+   "transfer": "神山県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1872-10-22",
+    "1872-10-25"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "入間県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1872-10-22",
+    "1872-10-25"
+   ],
+   "muni": "東京府/北多摩郡/保谷村",
+   "split": "埼玉県",
+   "transfer": "入間県",
+   "event": "1907-04-01 北多摩郡"
+  },
+  {
+   "interval": [
+    "1872-10-22",
+    "1872-10-25"
+   ],
+   "muni": "愛媛県/温泉郡/垣生村",
+   "split": "石鉄県",
+   "transfer": "神山県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1872-10-22",
+    "1872-10-25"
+   ],
+   "muni": "愛媛県/温泉郡/余土村",
+   "split": "石鉄県",
+   "transfer": "神山県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1872-10-25",
+    "1872-10-29"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "入間県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1872-10-25",
+    "1872-10-29"
+   ],
+   "muni": "東京府/北多摩郡/保谷村",
+   "split": "埼玉県",
+   "transfer": "入間県",
+   "event": "1907-04-01 北多摩郡"
+  },
+  {
+   "interval": [
+    "1872-10-25",
+    "1872-10-29"
+   ],
+   "muni": "愛媛県/温泉郡/垣生村",
+   "split": "石鉄県",
+   "transfer": "神山県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1872-10-25",
+    "1872-10-29"
+   ],
+   "muni": "愛媛県/温泉郡/余土村",
+   "split": "石鉄県",
+   "transfer": "神山県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1872-10-29",
+    "1872-10-30"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "入間県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1872-10-29",
+    "1872-10-30"
+   ],
+   "muni": "東京府/北多摩郡/保谷村",
+   "split": "埼玉県",
+   "transfer": "入間県",
+   "event": "1907-04-01 北多摩郡"
+  },
+  {
+   "interval": [
+    "1872-10-29",
+    "1872-10-30"
+   ],
+   "muni": "愛媛県/温泉郡/垣生村",
+   "split": "石鉄県",
+   "transfer": "神山県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1872-10-29",
+    "1872-10-30"
+   ],
+   "muni": "愛媛県/温泉郡/余土村",
+   "split": "石鉄県",
+   "transfer": "神山県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1872-10-30",
+    "1872-12-17"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "入間県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1872-10-30",
+    "1872-12-17"
+   ],
+   "muni": "東京府/北多摩郡/保谷村",
+   "split": "埼玉県",
+   "transfer": "入間県",
+   "event": "1907-04-01 北多摩郡"
+  },
+  {
+   "interval": [
+    "1872-10-30",
+    "1872-12-17"
+   ],
+   "muni": "愛媛県/温泉郡/垣生村",
+   "split": "石鉄県",
+   "transfer": "神山県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1872-10-30",
+    "1872-12-17"
+   ],
+   "muni": "愛媛県/温泉郡/余土村",
+   "split": "石鉄県",
+   "transfer": "神山県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1872-12-17",
+    "1872-12-27"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "入間県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1872-12-17",
+    "1872-12-27"
+   ],
+   "muni": "東京府/北多摩郡/保谷村",
+   "split": "埼玉県",
+   "transfer": "入間県",
+   "event": "1907-04-01 北多摩郡"
+  },
+  {
+   "interval": [
+    "1872-12-17",
+    "1872-12-27"
+   ],
+   "muni": "愛媛県/温泉郡/垣生村",
+   "split": "石鉄県",
+   "transfer": "神山県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1872-12-17",
+    "1872-12-27"
+   ],
+   "muni": "愛媛県/温泉郡/余土村",
+   "split": "石鉄県",
+   "transfer": "神山県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1872-12-27",
+    "1873-01-01"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "入間県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1872-12-27",
+    "1873-01-01"
+   ],
+   "muni": "東京府/北多摩郡/保谷村",
+   "split": "埼玉県",
+   "transfer": "入間県",
+   "event": "1907-04-01 北多摩郡"
+  },
+  {
+   "interval": [
+    "1872-12-27",
+    "1873-01-01"
+   ],
+   "muni": "愛媛県/温泉郡/垣生村",
+   "split": "石鉄県",
+   "transfer": "神山県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1872-12-27",
+    "1873-01-01"
+   ],
+   "muni": "愛媛県/温泉郡/余土村",
+   "split": "石鉄県",
+   "transfer": "神山県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1873-01-01",
+    "1873-01-14"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "入間県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1873-01-01",
+    "1873-01-14"
+   ],
+   "muni": "東京府/北多摩郡/保谷村",
+   "split": "埼玉県",
+   "transfer": "入間県",
+   "event": "1907-04-01 北多摩郡"
+  },
+  {
+   "interval": [
+    "1873-01-01",
+    "1873-01-14"
+   ],
+   "muni": "愛媛県/温泉郡/垣生村",
+   "split": "石鉄県",
+   "transfer": "神山県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1873-01-01",
+    "1873-01-14"
+   ],
+   "muni": "愛媛県/温泉郡/余土村",
+   "split": "石鉄県",
+   "transfer": "神山県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1873-01-14",
+    "1873-01-15"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "入間県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1873-01-14",
+    "1873-01-15"
+   ],
+   "muni": "東京府/北多摩郡/保谷村",
+   "split": "埼玉県",
+   "transfer": "入間県",
+   "event": "1907-04-01 北多摩郡"
+  },
+  {
+   "interval": [
+    "1873-01-14",
+    "1873-01-15"
+   ],
+   "muni": "愛媛県/温泉郡/垣生村",
+   "split": "石鉄県",
+   "transfer": "神山県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1873-01-14",
+    "1873-01-15"
+   ],
+   "muni": "愛媛県/温泉郡/余土村",
+   "split": "石鉄県",
+   "transfer": "神山県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1873-01-15",
+    "1873-02-20"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "入間県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1873-01-15",
+    "1873-02-20"
+   ],
+   "muni": "東京府/北多摩郡/保谷村",
+   "split": "埼玉県",
+   "transfer": "入間県",
+   "event": "1907-04-01 北多摩郡"
+  },
+  {
+   "interval": [
+    "1873-01-15",
+    "1873-02-20"
+   ],
+   "muni": "愛媛県/温泉郡/垣生村",
+   "split": "石鉄県",
+   "transfer": "神山県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1873-01-15",
+    "1873-02-20"
+   ],
+   "muni": "愛媛県/温泉郡/余土村",
+   "split": "石鉄県",
+   "transfer": "神山県",
+   "event": "1897 伊予郡"
+  },
+  {
+   "interval": [
+    "1873-02-20",
+    "1873-06-10"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "入間県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1873-02-20",
+    "1873-06-10"
+   ],
+   "muni": "東京府/北多摩郡/保谷村",
+   "split": "埼玉県",
+   "transfer": "入間県",
+   "event": "1907-04-01 北多摩郡"
+  },
+  {
+   "interval": [
+    "1873-06-10",
+    "1873-06-15"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "入間県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1873-06-10",
+    "1873-06-15"
+   ],
+   "muni": "東京府/北多摩郡/保谷村",
+   "split": "埼玉県",
+   "transfer": "入間県",
+   "event": "1907-04-01 北多摩郡"
+  },
+  {
+   "interval": [
+    "1873-06-15",
+    "1874-08-04"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1873-06-15",
+    "1874-08-04"
+   ],
+   "muni": "東京府/北多摩郡/保谷村",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1907-04-01 北多摩郡"
+  },
+  {
+   "interval": [
+    "1874-08-04",
+    "1875-05-07"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1874-08-04",
+    "1875-05-07"
+   ],
+   "muni": "東京府/北多摩郡/保谷村",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1907-04-01 北多摩郡"
+  },
+  {
+   "interval": [
+    "1875-05-07",
+    "1875-08-31"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1875-05-07",
+    "1875-08-31"
+   ],
+   "muni": "東京府/北多摩郡/保谷村",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1907-04-01 北多摩郡"
+  },
+  {
+   "interval": [
+    "1875-08-31",
+    "1875-09-05"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1875-08-31",
+    "1875-09-05"
+   ],
+   "muni": "東京府/北多摩郡/保谷村",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1907-04-01 北多摩郡"
+  },
+  {
+   "interval": [
+    "1875-09-05",
+    "1875-11-18"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1875-09-05",
+    "1875-11-18"
+   ],
+   "muni": "東京府/北多摩郡/保谷村",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1907-04-01 北多摩郡"
+  },
+  {
+   "interval": [
+    "1875-11-18",
+    "1875-11-22"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1875-11-18",
+    "1875-11-22"
+   ],
+   "muni": "東京府/北多摩郡/保谷村",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1907-04-01 北多摩郡"
+  },
+  {
+   "interval": [
+    "1875-11-22",
+    "1875-12-10"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1875-11-22",
+    "1875-12-10"
+   ],
+   "muni": "東京府/北多摩郡/保谷村",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1907-04-01 北多摩郡"
+  },
+  {
+   "interval": [
+    "1875-12-10",
+    "1875-12-20"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1875-12-10",
+    "1875-12-20"
+   ],
+   "muni": "東京府/北多摩郡/保谷村",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1907-04-01 北多摩郡"
+  },
+  {
+   "interval": [
+    "1875-12-20",
+    "1875-12-24"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1875-12-20",
+    "1875-12-24"
+   ],
+   "muni": "東京府/北多摩郡/保谷村",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1907-04-01 北多摩郡"
+  },
+  {
+   "interval": [
+    "1875-12-24",
+    "1876-01-14"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1875-12-24",
+    "1876-01-14"
+   ],
+   "muni": "東京府/北多摩郡/保谷村",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1907-04-01 北多摩郡"
+  },
+  {
+   "interval": [
+    "1876-01-14",
+    "1876-02-25"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1876-01-14",
+    "1876-02-25"
+   ],
+   "muni": "東京府/北多摩郡/保谷村",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1907-04-01 北多摩郡"
+  },
+  {
+   "interval": [
+    "1876-02-25",
+    "1876-03-01"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1876-02-25",
+    "1876-03-01"
+   ],
+   "muni": "東京府/北多摩郡/保谷村",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1907-04-01 北多摩郡"
+  },
+  {
+   "interval": [
+    "1876-03-01",
+    "1876-04-18"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1876-03-01",
+    "1876-04-18"
+   ],
+   "muni": "東京府/北多摩郡/保谷村",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1907-04-01 北多摩郡"
+  },
+  {
+   "interval": [
+    "1876-04-18",
+    "1876-05-24"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1876-04-18",
+    "1876-05-24"
+   ],
+   "muni": "東京府/北多摩郡/保谷村",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1907-04-01 北多摩郡"
+  },
+  {
+   "interval": [
+    "1876-05-24",
+    "1876-05-25"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1876-05-24",
+    "1876-05-25"
+   ],
+   "muni": "東京府/北多摩郡/保谷村",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1907-04-01 北多摩郡"
+  },
+  {
+   "interval": [
+    "1876-05-25",
+    "1876-06-21"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1876-05-25",
+    "1876-06-21"
+   ],
+   "muni": "東京府/北多摩郡/保谷村",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1907-04-01 北多摩郡"
+  },
+  {
+   "interval": [
+    "1876-06-21",
+    "1876-08-21"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1876-06-21",
+    "1876-08-21"
+   ],
+   "muni": "東京府/北多摩郡/保谷村",
+   "split": "埼玉県",
+   "transfer": "熊谷県",
+   "event": "1907-04-01 北多摩郡"
+  },
+  {
+   "interval": [
+    "1880-02-07",
+    "1880-03-02"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "神奈川県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1880-03-02",
+    "1880-05-07"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "神奈川県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1880-05-07",
+    "1880-10-08"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "神奈川県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1880-10-08",
+    "1881-02-07"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "神奈川県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1881-02-07",
+    "1881-02-21"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "神奈川県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1881-02-21",
+    "1881-07-27"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "神奈川県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1881-07-27",
+    "1881-09-12"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "神奈川県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1881-09-12",
+    "1882-01-01"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "神奈川県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1882-01-01",
+    "1882-02-08"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "神奈川県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1882-02-08",
+    "1883-01-01"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "神奈川県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1883-01-01",
+    "1883-05-09"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "神奈川県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1883-05-09",
+    "1883-11-01"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "神奈川県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1883-11-01",
+    "1884-01-01"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "神奈川県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1884-01-01",
+    "1885-01-01"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "神奈川県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1885-01-01",
+    "1885-08-31"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "神奈川県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1885-08-31",
+    "1886-01-01"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "神奈川県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1886-01-01",
+    "1886-01-26"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "神奈川県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1886-01-26",
+    "1886-05-25"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "神奈川県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1886-05-25",
+    "1887-01-01"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "神奈川県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1887-01-01",
+    "1887-07-12"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "神奈川県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1887-07-12",
+    "1887-11-04"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "神奈川県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1887-11-04",
+    "1888-01-01"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "神奈川県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1888-01-01",
+    "1888-12-03"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "神奈川県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1888-12-03",
+    "1889-04-01"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "神奈川県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1889-04-01",
+    "1889-07-01"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "神奈川県",
+   "event": "1880 北多摩郡"
+  },
+  {
+   "interval": [
+    "1889-07-01",
+    "1891-01-01"
+   ],
+   "muni": "東京府/北多摩郡/東村山村#loc",
+   "split": "埼玉県",
+   "transfer": "神奈川県",
+   "event": "1880 北多摩郡"
+  }
+ ],
+ "snapped": [
+  "union snapped to 1/1000000° ×2",
+  "difference snapped to 1/1000000° ×1",
+  "union snapped to 1/20000° ×6"
+ ],
+ "join": {
+  "units": 720,
+  "joined": 713,
+  "unresolvedPrefRows": 0
+ },
+ "A": {
+  "1889-07-01": {
+   "prefectures": 47,
+   "iouMedian": 1,
+   "below1": [
+    {
+     "pref": "東京府",
+     "pref1920": "東京府",
+     "iou": 0.3017,
+     "km2": 638,
+     "drawn": true
+    },
+    {
+     "pref": "神奈川県",
+     "pref1920": "神奈川県",
+     "iou": 0.6727,
+     "km2": 3565,
+     "drawn": true
+    },
+    {
+     "pref": "千葉県",
+     "pref1920": "千葉県",
+     "iou": 0.9893,
+     "km2": 5213,
+     "drawn": true
+    },
+    {
+     "pref": "茨城県",
+     "pref1920": "茨城県",
+     "iou": 0.9906,
+     "km2": 5833,
+     "drawn": true
+    },
+    {
+     "pref": "岡山県",
+     "pref1920": "岡山県",
+     "iou": 0.9937,
+     "km2": 7154,
+     "drawn": false
+    },
+    {
+     "pref": "兵庫県",
+     "pref1920": "兵庫県",
+     "iou": 0.9946,
+     "km2": 8317,
+     "drawn": false
+    },
+    {
+     "pref": "埼玉県",
+     "pref1920": "埼玉県",
+     "iou": 0.9975,
+     "km2": 3811,
+     "drawn": true
+    }
+   ]
+  },
+  "1890-07-01": {
+   "prefectures": 47,
+   "iouMedian": 1,
+   "below1": [
+    {
+     "pref": "東京府",
+     "pref1920": "東京府",
+     "iou": 0.3017,
+     "km2": 638,
+     "drawn": true
+    },
+    {
+     "pref": "神奈川県",
+     "pref1920": "神奈川県",
+     "iou": 0.6727,
+     "km2": 3565,
+     "drawn": true
+    },
+    {
+     "pref": "千葉県",
+     "pref1920": "千葉県",
+     "iou": 0.9893,
+     "km2": 5213,
+     "drawn": true
+    },
+    {
+     "pref": "茨城県",
+     "pref1920": "茨城県",
+     "iou": 0.9906,
+     "km2": 5833,
+     "drawn": true
+    },
+    {
+     "pref": "岡山県",
+     "pref1920": "岡山県",
+     "iou": 0.9937,
+     "km2": 7154,
+     "drawn": false
+    },
+    {
+     "pref": "兵庫県",
+     "pref1920": "兵庫県",
+     "iou": 0.9946,
+     "km2": 8317,
+     "drawn": false
+    },
+    {
+     "pref": "埼玉県",
+     "pref1920": "埼玉県",
+     "iou": 0.9975,
+     "km2": 3811,
+     "drawn": true
+    }
+   ]
+  }
+ },
+ "B": {
+  "perKuni": [
+   {
+    "kuni": "隠岐国",
+    "blocks": 4,
+    "iou": 0.9288,
+    "oursKm2": 345,
+    "theirsKm2": 361
+   },
+   {
+    "kuni": "若狭国",
+    "blocks": 3,
+    "iou": 0.9408,
+    "oursKm2": 846,
+    "theirsKm2": 850
+   },
+   {
+    "kuni": "越前国",
+    "blocks": 9,
+    "iou": 0.9729,
+    "oursKm2": 3417,
+    "theirsKm2": 3429
+   },
+   {
+    "kuni": "加賀国",
+    "blocks": 5,
+    "iou": 0.9601,
+    "oursKm2": 2169,
+    "theirsKm2": 2165
+   },
+   {
+    "kuni": "越中国",
+    "blocks": 10,
+    "iou": 0.9729,
+    "oursKm2": 4251,
+    "theirsKm2": 4248
+   },
+   {
+    "kuni": "能登国",
+    "blocks": 4,
+    "iou": 0.968,
+    "oursKm2": 2012,
+    "theirsKm2": 2062
+   },
+   {
+    "kuni": "越後国",
+    "blocks": 18,
+    "iou": 0.9795,
+    "oursKm2": 11719,
+    "theirsKm2": 11771
+   },
+   {
+    "kuni": "佐渡国",
+    "blocks": 1,
+    "iou": 0.9739,
+    "oursKm2": 854,
+    "theirsKm2": 864
+   },
+   {
+    "kuni": "近江国",
+    "blocks": 13,
+    "iou": 0.9617,
+    "oursKm2": 3346,
+    "theirsKm2": 3315
+   },
+   {
+    "kuni": "美濃国",
+    "blocks": 17,
+    "iou": 0.9554,
+    "oursKm2": 6454,
+    "theirsKm2": 6255
+   },
+   {
+    "kuni": "飛騨国",
+    "blocks": 3,
+    "iou": 0.9402,
+    "oursKm2": 4037,
+    "theirsKm2": 4172
+   },
+   {
+    "kuni": "信濃国",
+    "blocks": 19,
+    "iou": 0.981,
+    "oursKm2": 13617,
+    "theirsKm2": 13554
+   },
+   {
+    "kuni": "上野国",
+    "blocks": 13,
+    "iou": 0.9718,
+    "oursKm2": 6343,
+    "theirsKm2": 6264
+   },
+   {
+    "kuni": "下野国",
+    "blocks": 9,
+    "iou": 0.977,
+    "oursKm2": 6424,
+    "theirsKm2": 6390
+   },
+   {
+    "kuni": "陸奥国",
+    "blocks": 51,
+    "iou": 0.8213,
+    "oursKm2": 39998,
+    "theirsKm2": 45578
+   },
+   {
+    "kuni": "出羽国",
+    "blocks": 22,
+    "iou": 0.9404,
+    "oursKm2": 20037,
+    "theirsKm2": 20878
+   }
+  ],
+  "iouMedian": 0.968,
+  "worst10": [
+   {
+    "kuni": "陸奥国",
+    "blocks": 51,
+    "iou": 0.8213,
+    "oursKm2": 39998,
+    "theirsKm2": 45578
+   },
+   {
+    "kuni": "隠岐国",
+    "blocks": 4,
+    "iou": 0.9288,
+    "oursKm2": 345,
+    "theirsKm2": 361
+   },
+   {
+    "kuni": "飛騨国",
+    "blocks": 3,
+    "iou": 0.9402,
+    "oursKm2": 4037,
+    "theirsKm2": 4172
+   },
+   {
+    "kuni": "出羽国",
+    "blocks": 22,
+    "iou": 0.9404,
+    "oursKm2": 20037,
+    "theirsKm2": 20878
+   },
+   {
+    "kuni": "若狭国",
+    "blocks": 3,
+    "iou": 0.9408,
+    "oursKm2": 846,
+    "theirsKm2": 850
+   },
+   {
+    "kuni": "美濃国",
+    "blocks": 17,
+    "iou": 0.9554,
+    "oursKm2": 6454,
+    "theirsKm2": 6255
+   },
+   {
+    "kuni": "加賀国",
+    "blocks": 5,
+    "iou": 0.9601,
+    "oursKm2": 2169,
+    "theirsKm2": 2165
+   },
+   {
+    "kuni": "近江国",
+    "blocks": 13,
+    "iou": 0.9617,
+    "oursKm2": 3346,
+    "theirsKm2": 3315
+   },
+   {
+    "kuni": "能登国",
+    "blocks": 4,
+    "iou": 0.968,
+    "oursKm2": 2012,
+    "theirsKm2": 2062
+   },
+   {
+    "kuni": "上野国",
+    "blocks": 13,
+    "iou": 0.9718,
+    "oursKm2": 6343,
+    "theirsKm2": 6264
+   }
+  ]
+ },
+ "C": [
+  {
+   "date": "1872-01-02",
+   "stated": "3府72県",
+   "statedN": 75,
+   "inForceFuKen": 75,
+   "drawn": 53,
+   "withheld": 22,
+   "withheldNames": [
+    "度会県",
+    "大阪府",
+    "柏崎県",
+    "安濃津県",
+    "新川県",
+    "宇和島県",
+    "岐阜県",
+    "名古屋県",
+    "堺県",
+    "新潟県",
+    "北条県",
+    "松山県",
+    "都城県",
+    "福島県",
+    "飾磨県",
+    "美々津県",
+    "入間県",
+    "東京府",
+    "山形県",
+    "置賜県",
+    "平県",
+    "七尾県"
+   ]
+  },
+  {
+   "date": "1872-12-31",
+   "stated": "3府69県",
+   "statedN": 72,
+   "inForceFuKen": 72,
+   "drawn": 52,
+   "withheld": 20,
+   "withheldNames": [
+    "度会県",
+    "大阪府",
+    "柏崎県",
+    "神奈川県",
+    "三重県",
+    "石鉄県",
+    "神山県",
+    "岐阜県",
+    "愛知県",
+    "堺県",
+    "新潟県",
+    "北条県",
+    "福島県",
+    "飾磨県",
+    "美々津県",
+    "入間県",
+    "山形県",
+    "都城県",
+    "置賜県",
+    "磐前県"
+   ]
+  },
+  {
+   "date": "1873-12-31",
+   "stated": "3府60県",
+   "statedN": 63,
+   "inForceFuKen": 63,
+   "drawn": 50,
+   "withheld": 13,
+   "withheldNames": [
+    "大阪府",
+    "神奈川県",
+    "三重県",
+    "岐阜県",
+    "愛知県",
+    "堺県",
+    "北条県",
+    "福島県",
+    "熊谷県",
+    "飾磨県",
+    "山形県",
+    "置賜県",
+    "磐前県"
+   ]
+  },
+  {
+   "date": "1875-12-20",
+   "stated": "3府59県",
+   "statedN": 62,
+   "inForceFuKen": 62,
+   "drawn": 53,
+   "withheld": 9,
+   "withheldNames": [
+    "神奈川県",
+    "三重県",
+    "岐阜県",
+    "愛知県",
+    "北条県",
+    "熊谷県",
+    "飾磨県",
+    "山形県",
+    "置賜県"
+   ]
+  },
+  {
+   "date": "1876-08-21",
+   "stated": "3府35県",
+   "statedN": 38,
+   "inForceFuKen": 38,
+   "drawn": 31,
+   "withheld": 7,
+   "withheldNames": [
+    "三重県",
+    "兵庫県",
+    "神奈川県",
+    "岡山県",
+    "岐阜県",
+    "愛知県",
+    "埼玉県"
+   ]
+  },
+  {
+   "date": "1879-04-04",
+   "stated": "3府36県",
+   "statedN": 39,
+   "inForceFuKen": 39,
+   "drawn": 32,
+   "withheld": 7,
+   "withheldNames": [
+    "三重県",
+    "兵庫県",
+    "神奈川県",
+    "岡山県",
+    "岐阜県",
+    "愛知県",
+    "埼玉県"
+   ]
+  },
+  {
+   "date": "1880-03-02",
+   "stated": "3府37県",
+   "statedN": 40,
+   "inForceFuKen": 40,
+   "drawn": 35,
+   "withheld": 5,
+   "withheldNames": [
+    "三重県",
+    "兵庫県",
+    "岡山県",
+    "岐阜県",
+    "愛知県"
+   ]
+  },
+  {
+   "date": "1881-02-07",
+   "stated": "3府37県",
+   "statedN": 40,
+   "inForceFuKen": 40,
+   "drawn": 36,
+   "withheld": 4,
+   "withheldNames": [
+    "兵庫県",
+    "岡山県",
+    "岐阜県",
+    "愛知県"
+   ]
+  },
+  {
+   "date": "1881-09-12",
+   "stated": "3府38県",
+   "statedN": 41,
+   "inForceFuKen": 41,
+   "drawn": 37,
+   "withheld": 4,
+   "withheldNames": [
+    "兵庫県",
+    "岡山県",
+    "岐阜県",
+    "愛知県"
+   ]
+  },
+  {
+   "date": "1882-02-08",
+   "stated": "3府41県",
+   "statedN": 44,
+   "inForceFuKen": 44,
+   "drawn": 40,
+   "withheld": 4,
+   "withheldNames": [
+    "兵庫県",
+    "岡山県",
+    "岐阜県",
+    "愛知県"
+   ]
+  },
+  {
+   "date": "1883-05-09",
+   "stated": "3府44県",
+   "statedN": 47,
+   "inForceFuKen": 47,
+   "drawn": 43,
+   "withheld": 4,
+   "withheldNames": [
+    "兵庫県",
+    "岡山県",
+    "岐阜県",
+    "愛知県"
+   ]
+  },
+  {
+   "date": "1886-01-26",
+   "stated": "3府41県1庁",
+   "statedN": 45,
+   "inForceFuKen": 44,
+   "drawn": 40,
+   "withheld": 4,
+   "withheldNames": [
+    "兵庫県",
+    "岡山県",
+    "岐阜県",
+    "愛知県"
+   ]
+  },
+  {
+   "date": "1887-11-04",
+   "stated": "3府42県1庁",
+   "statedN": 46,
+   "inForceFuKen": 45,
+   "drawn": 43,
+   "withheld": 2,
+   "withheldNames": [
+    "兵庫県",
+    "岡山県"
+   ]
+  },
+  {
+   "date": "1888-12-03",
+   "stated": "3府43県1庁",
+   "statedN": 47,
+   "inForceFuKen": 46,
+   "drawn": 44,
+   "withheld": 2,
+   "withheldNames": [
+    "兵庫県",
+    "岡山県"
+   ]
+  },
+  {
+   "date": "1890-12-31",
+   "stated": null,
+   "statedN": 47,
+   "inForceFuKen": 46,
+   "drawn": 44,
+   "withheld": 2,
+   "withheldNames": [
+    "兵庫県",
+    "岡山県"
+   ]
+  }
+ ],
+ "withheld": {
+  "runs": 50,
+  "prefectureIntervals": 1178,
+  "byRule": {
+   "R6": 49,
+   "R4": 2,
+   "R8": 3
+  },
+  "list": [
+   {
+    "pref": "二本松県",
+    "pid": "二本松県",
+    "from": "1871-12-13",
+    "to": "1871-12-25",
+    "reasons": [
+     "R6 village 矢吹村 not located (no 町丁・字 of that name inside the 1920 町村; searched 西白河郡矢吹町 07466, 岩瀬郡鏡石町 07342); village 矢吹新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 西白河郡矢吹町 07466, 岩瀬郡鏡石町 07342); village 中畑新田村 not located (no 町丁・字 of that name inside the 1920 町村; searched 西白河郡矢吹町 07466, 岩瀬郡鏡石町 07342) [福島県/西白河郡/矢吹町]",
+     "R6 village 神田村 not located (only fuzzy 町丁・字 candidates: 神田東・神田西・神田南); village 中野目村 not located (only fuzzy 町丁・字 candidates: 中野目東・中野目西); village 明新村 not located (only fuzzy 町丁・字 candidates: 明新上・明新中・明新下・明新東・明新原・明新西) [福島県/西白河郡/三神村]"
+    ]
+   },
+   {
+    "pref": "姫路県",
+    "pid": "姫路県",
+    "from": "1871-12-13",
+    "to": "1871-12-20",
+    "reasons": [
+     "R6 village 中山村 not located (only fuzzy 町丁・字 candidates: 東中山) [兵庫県/佐用郡/江川村]"
+    ]
+   },
+   {
+    "pref": "山形県",
+    "pid": "山形県",
+    "from": "1871-12-13",
+    "to": "1876-08-21",
+    "reasons": [
+     "R6 village 中山村 not located (only fuzzy 町丁・字 candidates: 元中山); village 元中山村・小岩沢村 not located (their side (山形県 or 置賜県) 1871-12-13..1876-08-21 is undetermined (stillUnresolved: no 1872-1876 attestation found)) [山形県/東置賜郡/中川村]"
+    ]
+   },
+   {
+    "pref": "置賜県",
+    "pid": "置賜県",
+    "from": "1871-12-13",
+    "to": "1876-08-21",
+    "reasons": [
+     "R6 village 中山村 not located (only fuzzy 町丁・字 candidates: 元中山); village 元中山村・小岩沢村 not located (their side (山形県 or 置賜県) 1871-12-13..1876-08-21 is undetermined (stillUnresolved: no 1872-1876 attestation found)) [山形県/東置賜郡/中川村]"
+    ]
+   },
+   {
+    "pref": "平県",
+    "pid": "平県",
+    "from": "1871-12-13",
+    "to": "1872-01-09",
+    "reasons": [
+     "R6 village 矢吹村 not located (no 町丁・字 of that name inside the 1920 町村; searched 西白河郡矢吹町 07466, 岩瀬郡鏡石町 07342); village 矢吹新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 西白河郡矢吹町 07466, 岩瀬郡鏡石町 07342); village 中畑新田村 not located (no 町丁・字 of that name inside the 1920 町村; searched 西白河郡矢吹町 07466, 岩瀬郡鏡石町 07342) [福島県/西白河郡/矢吹町]",
+     "R6 village 神田村 not located (only fuzzy 町丁・字 candidates: 神田東・神田西・神田南); village 中野目村 not located (only fuzzy 町丁・字 candidates: 中野目東・中野目西); village 明新村 not located (only fuzzy 町丁・字 candidates: 明新上・明新中・明新下・明新東・明新原・明新西) [福島県/西白河郡/三神村]"
+    ]
+   },
+   {
+    "pref": "飾磨県",
+    "pid": "飾磨県",
+    "from": "1871-12-20",
+    "to": "1876-08-21",
+    "reasons": [
+     "R6 village 中山村 not located (only fuzzy 町丁・字 candidates: 東中山) [兵庫県/佐用郡/江川村]"
+    ]
+   },
+   {
+    "pref": "神奈川県",
+    "pid": "神奈川県",
+    "from": "1872-01-03",
+    "to": "1872-09-21",
+    "reasons": [
+     "R6 village 大岱村 not located (no 町丁・字 of that name inside the 1920 町村; searched 東村山市 13213) [東京府/北多摩郡/東村山村]"
+    ]
+   },
+   {
+    "pref": "神奈川県",
+    "pid": "神奈川県",
+    "from": "1872-09-21",
+    "to": "1876-04-18",
+    "reasons": [
+     "R6 village 大岱村 not located (no 町丁・字 of that name inside the 1920 町村; searched 東村山市 13213) [東京府/北多摩郡/東村山村]"
+    ]
+   },
+   {
+    "pref": "神奈川県",
+    "pid": "神奈川県",
+    "from": "1876-04-18",
+    "to": "1880-02-07",
+    "reasons": [
+     "R6 village 大岱村 not located (no 町丁・字 of that name inside the 1920 町村; searched 東村山市 13213) [東京府/北多摩郡/東村山村]"
+    ]
+   },
+   {
+    "pref": "都城県",
+    "pid": "都城県",
+    "from": "1871-12-25",
+    "to": "1872-06-20",
+    "reasons": [
+     "R6 village 入野村 not located (no 町丁・字 of that name inside the 1920 町村; searched 東諸県郡綾町 45383) [宮崎県/東諸県郡/綾村]"
+    ]
+   },
+   {
+    "pref": "都城県",
+    "pid": "都城県",
+    "from": "1872-06-20",
+    "to": "1873-01-15",
+    "reasons": [
+     "R6 village 入野村 not located (no 町丁・字 of that name inside the 1920 町村; searched 東諸県郡綾町 45383) [宮崎県/東諸県郡/綾村]"
+    ]
+   },
+   {
+    "pref": "福島県",
+    "pid": "福島県",
+    "from": "1871-12-25",
+    "to": "1875-11-18",
+    "reasons": [
+     "R6 village 矢吹村 not located (no 町丁・字 of that name inside the 1920 町村; searched 西白河郡矢吹町 07466, 岩瀬郡鏡石町 07342); village 矢吹新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 西白河郡矢吹町 07466, 岩瀬郡鏡石町 07342); village 中畑新田村 not located (no 町丁・字 of that name inside the 1920 町村; searched 西白河郡矢吹町 07466, 岩瀬郡鏡石町 07342) [福島県/西白河郡/矢吹町]",
+     "R6 village 神田村 not located (only fuzzy 町丁・字 candidates: 神田東・神田西・神田南); village 中野目村 not located (only fuzzy 町丁・字 candidates: 中野目東・中野目西); village 明新村 not located (only fuzzy 町丁・字 candidates: 明新上・明新中・明新下・明新東・明新原・明新西) [福島県/西白河郡/三神村]"
+    ]
+   },
+   {
+    "pref": "美々津県",
+    "pid": "美々津県",
+    "from": "1871-12-25",
+    "to": "1872-06-20",
+    "reasons": [
+     "R6 village 入野村 not located (no 町丁・字 of that name inside the 1920 町村; searched 東諸県郡綾町 45383) [宮崎県/東諸県郡/綾村]"
+    ]
+   },
+   {
+    "pref": "美々津県",
+    "pid": "美々津県",
+    "from": "1872-06-20",
+    "to": "1872-10-25",
+    "reasons": [
+     "R6 village 入野村 not located (no 町丁・字 of that name inside the 1920 町村; searched 東諸県郡綾町 45383) [宮崎県/東諸県郡/綾村]"
+    ]
+   },
+   {
+    "pref": "美々津県",
+    "pid": "美々津県",
+    "from": "1872-10-25",
+    "to": "1873-01-15",
+    "reasons": [
+     "R6 village 入野村 not located (no 町丁・字 of that name inside the 1920 町村; searched 東諸県郡綾町 45383) [宮崎県/東諸県郡/綾村]"
+    ]
+   },
+   {
+    "pref": "入間県",
+    "pid": "入間県",
+    "from": "1871-12-25",
+    "to": "1872-01-03",
+    "reasons": [
+     "R6 village 吉祥寺村 not located (only fuzzy 町丁・字 candidates: 吉祥寺東町一丁目・吉祥寺東町二丁目・吉祥寺東町三丁目・吉祥寺東町四丁目・吉祥寺南町一丁目・吉祥寺南町二丁目・吉祥寺南町三丁目・吉祥寺南町四丁目・吉祥寺南町五丁目・吉祥寺本町一丁目・吉祥寺本町二丁目・吉祥寺本町三丁目・吉祥寺本町四丁目・吉祥寺北町一丁目・吉祥寺北町二丁目・吉祥寺北町三丁目・吉祥寺北町四丁目・吉祥寺北町五丁目); village 西窪村 not located (no 町丁・字 of that name inside the 1920 町村; searched 武蔵野市 13203) [東京府/北多摩郡/武蔵野村]"
+    ]
+   },
+   {
+    "pref": "入間県",
+    "pid": "入間県",
+    "from": "1872-01-03",
+    "to": "1873-06-15",
+    "reasons": [
+     "R6 village 大岱村 not located (no 町丁・字 of that name inside the 1920 町村; searched 東村山市 13213) [東京府/北多摩郡/東村山村]"
+    ]
+   },
+   {
+    "pref": "埼玉県",
+    "pid": "埼玉県",
+    "from": "1876-08-21",
+    "to": "1880-02-07",
+    "reasons": [
+     "R6 village 大岱村 not located (no 町丁・字 of that name inside the 1920 町村; searched 東村山市 13213) [東京府/北多摩郡/東村山村]"
+    ]
+   },
+   {
+    "pref": "東京府",
+    "pid": "東京府",
+    "from": "1871-12-25",
+    "to": "1872-01-03",
+    "reasons": [
+     "R6 village 吉祥寺村 not located (only fuzzy 町丁・字 candidates: 吉祥寺東町一丁目・吉祥寺東町二丁目・吉祥寺東町三丁目・吉祥寺東町四丁目・吉祥寺南町一丁目・吉祥寺南町二丁目・吉祥寺南町三丁目・吉祥寺南町四丁目・吉祥寺南町五丁目・吉祥寺本町一丁目・吉祥寺本町二丁目・吉祥寺本町三丁目・吉祥寺本町四丁目・吉祥寺北町一丁目・吉祥寺北町二丁目・吉祥寺北町三丁目・吉祥寺北町四丁目・吉祥寺北町五丁目); village 西窪村 not located (no 町丁・字 of that name inside the 1920 町村; searched 武蔵野市 13203) [東京府/北多摩郡/武蔵野村]"
+    ]
+   },
+   {
+    "pref": "宇和島県",
+    "pid": "宇和島県",
+    "from": "1871-12-26",
+    "to": "1872-06-20",
+    "reasons": [
+     "R6 village 大浦村 not located (大浦村 was divided inside itself between 預地(旧幕府領) and 大洲藩領 (村内で領主が分かれており分離不能 — the research's words; stillUnresolved U20)) [愛媛県/温泉郡/東中島村]"
+    ]
+   },
+   {
+    "pref": "宇和島県",
+    "pid": "宇和島県",
+    "from": "1872-06-20",
+    "to": "1872-07-28",
+    "reasons": [
+     "R6 village 大浦村 not located (大浦村 was divided inside itself between 預地(旧幕府領) and 大洲藩領 (村内で領主が分かれており分離不能 — the research's words; stillUnresolved U20)) [愛媛県/温泉郡/東中島村]"
+    ]
+   },
+   {
+    "pref": "岡山県",
+    "pid": "岡山県",
+    "from": "1876-04-18",
+    "to": "1891-01-01",
+    "reasons": [
+     "R6 village 中山村 not located (only fuzzy 町丁・字 candidates: 東中山) [兵庫県/佐用郡/江川村]"
+    ]
+   },
+   {
+    "pref": "北条県",
+    "pid": "北条県",
+    "from": "1871-12-26",
+    "to": "1872-03-04",
+    "reasons": [
+     "R6 village 中山村 not located (only fuzzy 町丁・字 candidates: 東中山) [兵庫県/佐用郡/江川村]"
+    ]
+   },
+   {
+    "pref": "北条県",
+    "pid": "北条県",
+    "from": "1872-03-04",
+    "to": "1876-04-18",
+    "reasons": [
+     "R6 village 中山村 not located (only fuzzy 町丁・字 candidates: 東中山) [兵庫県/佐用郡/江川村]"
+    ]
+   },
+   {
+    "pref": "松山県",
+    "pid": "松山県",
+    "from": "1871-12-26",
+    "to": "1872-03-17",
+    "reasons": [
+     "R6 village 大浦村 not located (大浦村 was divided inside itself between 預地(旧幕府領) and 大洲藩領 (村内で領主が分かれており分離不能 — the research's words; stillUnresolved U20)) [愛媛県/温泉郡/東中島村]"
+    ]
+   },
+   {
+    "pref": "大阪府",
+    "pid": "大阪府",
+    "from": "1871-12-31",
+    "to": "1874-08-04",
+    "reasons": [
+     "R6 village 磯島村 not located (only fuzzy 町丁・字 candidates: 磯島元町・磯島茶屋町・磯島南町・磯島北町) [大阪府/北河内郡/牧野村]"
+    ]
+   },
+   {
+    "pref": "柏崎県",
+    "pid": "柏崎県",
+    "from": "1871-12-31",
+    "to": "1873-06-10",
+    "reasons": [
+     "R6 village 海老島 not located (no 町丁・字 of that name inside the 1920 町村; searched 長岡市 15202); village 海老島勇次新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 長岡市 15202) [新潟県/南蒲原郡/中之島村]",
+     "R4 village transfer 1915-01-01 city 新潟市 (unresolved: origin 郡 not stated) (other side unknown: all neighbours)"
+    ]
+   },
+   {
+    "pref": "新川県",
+    "pid": "新川県",
+    "from": "1871-12-31",
+    "to": "1872-10-29",
+    "reasons": [
+     "R6 village 針山新村（婦負郡側） not located (1920 本江村 holds TWO villages named 針山新村 (射水郡側 and 婦負郡側); only the 婦負郡 one was 新川県 — a 大字 name cannot tell them apart) [富山県/射水郡/本江村]",
+     "R6 village 円池又新村 not located (no 町丁・字 of that name inside the 1920 町村; searched 高岡市 16202, 射水市 16211) [富山県/東砺波郡/般若野村]"
+    ]
+   },
+   {
+    "pref": "新潟県",
+    "pid": "新潟県",
+    "from": "1871-12-31",
+    "to": "1873-06-10",
+    "reasons": [
+     "R6 village 海老島 not located (no 町丁・字 of that name inside the 1920 町村; searched 長岡市 15202); village 海老島勇次新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 長岡市 15202) [新潟県/南蒲原郡/中之島村]",
+     "R4 village transfer 1915-01-01 city 新潟市 (unresolved: origin 郡 not stated) (other side unknown: all neighbours)"
+    ]
+   },
+   {
+    "pref": "七尾県",
+    "pid": "七尾県",
+    "from": "1871-12-31",
+    "to": "1872-10-29",
+    "reasons": [
+     "R6 village 針山新村（婦負郡側） not located (1920 本江村 holds TWO villages named 針山新村 (射水郡側 and 婦負郡側); only the 婦負郡 one was 新川県 — a 大字 name cannot tell them apart) [富山県/射水郡/本江村]",
+     "R6 village 円池又新村 not located (no 町丁・字 of that name inside the 1920 町村; searched 高岡市 16202, 射水市 16211) [富山県/東砺波郡/般若野村]"
+    ]
+   },
+   {
+    "pref": "兵庫県",
+    "pid": "兵庫県",
+    "from": "1876-08-21",
+    "to": "1891-01-01",
+    "reasons": [
+     "R6 village 中山村 not located (only fuzzy 町丁・字 candidates: 東中山) [兵庫県/佐用郡/江川村]"
+    ]
+   },
+   {
+    "pref": "度会県",
+    "pid": "度会県",
+    "from": "1872-01-02",
+    "to": "1872-02-09",
+    "reasons": [
+     "R6 village 伊予町 not located (no 町丁・字 of that name inside the 1920 町村; searched 津市 24201); village 藤方村の一部 not located (only part of 藤方村 went to 津市 (the rest is in 藤水村); the part is not a 大字 of its own) [三重県//津市]"
+    ]
+   },
+   {
+    "pref": "度会県",
+    "pid": "度会県",
+    "from": "1872-02-09",
+    "to": "1873-01-01",
+    "reasons": [
+     "R8 day of «1879 安濃郡 (三重県)» unknown within 1872-02-09..1873-01-01 (明治5年 only (D5; 明治5年1月1日 = 1872-02-09, 明治5年12月3日 = 1873-01-01); stillUnresolved U1)",
+     "R8 day of «1872 一志郡» unknown within 1872-02-09..1873-01-01 (明治5年 only (D5); same event as 1879 安濃郡)"
+    ]
+   },
+   {
+    "pref": "安濃津県",
+    "pid": "安濃津県",
+    "from": "1872-01-02",
+    "to": "1872-02-09",
+    "reasons": [
+     "R6 village 富島付新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 富崎新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 加稲山新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 加稲九郎治新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 稲荷崎付新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 加稲付新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235) [愛知県/海部郡/鍋田村]",
+     "R6 village 福原新田（桑名郡の部分） not located (only the 桑名郡 portion of 福原新田 moved; 福原新田 existed in BOTH 郡 and the two pieces were united after 1880 — no 大字 separates them) [愛知県/海部郡/立田村]",
+     "R6 village 伊予町 not located (no 町丁・字 of that name inside the 1920 町村; searched 津市 24201); village 藤方村の一部 not located (only part of 藤方村 went to 津市 (the rest is in 藤水村); the part is not a 大字 of its own) [三重県//津市]"
+    ]
+   },
+   {
+    "pref": "安濃津県",
+    "pid": "安濃津県",
+    "from": "1872-02-09",
+    "to": "1872-04-24",
+    "reasons": [
+     "R8 day of «1879 安濃郡 (三重県)» unknown within 1872-02-09..1873-01-01 (明治5年 only (D5; 明治5年1月1日 = 1872-02-09, 明治5年12月3日 = 1873-01-01); stillUnresolved U1)",
+     "R8 day of «1872 一志郡» unknown within 1872-02-09..1873-01-01 (明治5年 only (D5); same event as 1879 安濃郡)",
+     "R6 village 富島付新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 富崎新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 加稲山新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 加稲九郎治新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 稲荷崎付新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 加稲付新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235) [愛知県/海部郡/鍋田村]",
+     "R6 village 福原新田（桑名郡の部分） not located (only the 桑名郡 portion of 福原新田 moved; 福原新田 existed in BOTH 郡 and the two pieces were united after 1880 — no 大字 separates them) [愛知県/海部郡/立田村]"
+    ]
+   },
+   {
+    "pref": "岐阜県",
+    "pid": "岐阜県",
+    "from": "1872-01-02",
+    "to": "1876-08-21",
+    "reasons": [
+     "R6 village 松山中島村 not located (no 町丁・字 of that name inside the 1920 町村; searched 海津市 21221) [岐阜県/海津郡/東江村]",
+     "R6 village 三拾町村 not located (no 町丁・字 of that name inside the 1920 町村; searched 稲沢市 23220) [愛知県/中島郡/祖父江町]"
+    ]
+   },
+   {
+    "pref": "岐阜県",
+    "pid": "岐阜県",
+    "from": "1876-08-21",
+    "to": "1883-11-01",
+    "reasons": [
+     "R6 village 松山中島村 not located (no 町丁・字 of that name inside the 1920 町村; searched 海津市 21221) [岐阜県/海津郡/東江村]",
+     "R6 village 三拾町村 not located (no 町丁・字 of that name inside the 1920 町村; searched 稲沢市 23220) [愛知県/中島郡/祖父江町]"
+    ]
+   },
+   {
+    "pref": "岐阜県",
+    "pid": "岐阜県",
+    "from": "1883-11-01",
+    "to": "1887-07-12",
+    "reasons": [
+     "R6 village 松山中島村 not located (no 町丁・字 of that name inside the 1920 町村; searched 海津市 21221) [岐阜県/海津郡/東江村]",
+     "R6 village 三拾町村 not located (no 町丁・字 of that name inside the 1920 町村; searched 稲沢市 23220) [愛知県/中島郡/祖父江町]"
+    ]
+   },
+   {
+    "pref": "名古屋県",
+    "pid": "名古屋県",
+    "from": "1872-01-02",
+    "to": "1872-05-08",
+    "reasons": [
+     "R6 village 富島付新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 富崎新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 加稲山新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 加稲九郎治新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 稲荷崎付新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 加稲付新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235) [愛知県/海部郡/鍋田村]",
+     "R6 village 福原新田（桑名郡の部分） not located (only the 桑名郡 portion of 福原新田 moved; 福原新田 existed in BOTH 郡 and the two pieces were united after 1880 — no 大字 separates them) [愛知県/海部郡/立田村]",
+     "R6 village 松山中島村 not located (no 町丁・字 of that name inside the 1920 町村; searched 海津市 21221) [岐阜県/海津郡/東江村]",
+     "R6 village 三拾町村 not located (no 町丁・字 of that name inside the 1920 町村; searched 稲沢市 23220) [愛知県/中島郡/祖父江町]"
+    ]
+   },
+   {
+    "pref": "堺県",
+    "pid": "堺県",
+    "from": "1872-01-02",
+    "to": "1874-08-04",
+    "reasons": [
+     "R6 village 磯島村 not located (only fuzzy 町丁・字 candidates: 磯島元町・磯島茶屋町・磯島南町・磯島北町) [大阪府/北河内郡/牧野村]"
+    ]
+   },
+   {
+    "pref": "磐前県",
+    "pid": "磐前県",
+    "from": "1872-01-09",
+    "to": "1875-11-18",
+    "reasons": [
+     "R6 village 矢吹村 not located (no 町丁・字 of that name inside the 1920 町村; searched 西白河郡矢吹町 07466, 岩瀬郡鏡石町 07342); village 矢吹新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 西白河郡矢吹町 07466, 岩瀬郡鏡石町 07342); village 中畑新田村 not located (no 町丁・字 of that name inside the 1920 町村; searched 西白河郡矢吹町 07466, 岩瀬郡鏡石町 07342) [福島県/西白河郡/矢吹町]",
+     "R6 village 神田村 not located (only fuzzy 町丁・字 candidates: 神田東・神田西・神田南); village 中野目村 not located (only fuzzy 町丁・字 candidates: 中野目東・中野目西); village 明新村 not located (only fuzzy 町丁・字 candidates: 明新上・明新中・明新下・明新東・明新原・明新西) [福島県/西白河郡/三神村]"
+    ]
+   },
+   {
+    "pref": "石鉄県",
+    "pid": "石鉄県",
+    "from": "1872-03-17",
+    "to": "1872-06-20",
+    "reasons": [
+     "R6 village 大浦村 not located (大浦村 was divided inside itself between 預地(旧幕府領) and 大洲藩領 (村内で領主が分かれており分離不能 — the research's words; stillUnresolved U20)) [愛媛県/温泉郡/東中島村]"
+    ]
+   },
+   {
+    "pref": "石鉄県",
+    "pid": "石鉄県",
+    "from": "1872-06-20",
+    "to": "1873-02-20",
+    "reasons": [
+     "R6 village 大浦村 not located (大浦村 was divided inside itself between 預地(旧幕府領) and 大洲藩領 (村内で領主が分かれており分離不能 — the research's words; stillUnresolved U20)) [愛媛県/温泉郡/東中島村]"
+    ]
+   },
+   {
+    "pref": "三重県",
+    "pid": "三重県",
+    "from": "1872-04-24",
+    "to": "1876-04-18",
+    "reasons": [
+     "R8 day of «1879 安濃郡 (三重県)» unknown within 1872-02-09..1873-01-01 (明治5年 only (D5; 明治5年1月1日 = 1872-02-09, 明治5年12月3日 = 1873-01-01); stillUnresolved U1)",
+     "R8 day of «1872 一志郡» unknown within 1872-02-09..1873-01-01 (明治5年 only (D5); same event as 1879 安濃郡)",
+     "R6 village 富島付新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 富崎新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 加稲山新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 加稲九郎治新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 稲荷崎付新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 加稲付新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235) [愛知県/海部郡/鍋田村]",
+     "R6 village 福原新田（桑名郡の部分） not located (only the 桑名郡 portion of 福原新田 moved; 福原新田 existed in BOTH 郡 and the two pieces were united after 1880 — no 大字 separates them) [愛知県/海部郡/立田村]"
+    ]
+   },
+   {
+    "pref": "三重県",
+    "pid": "三重県",
+    "from": "1876-04-18",
+    "to": "1880-05-07",
+    "reasons": [
+     "R6 village 富島付新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 富崎新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 加稲山新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 加稲九郎治新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 稲荷崎付新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 加稲付新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235) [愛知県/海部郡/鍋田村]",
+     "R6 village 福原新田（桑名郡の部分） not located (only the 桑名郡 portion of 福原新田 moved; 福原新田 existed in BOTH 郡 and the two pieces were united after 1880 — no 大字 separates them) [愛知県/海部郡/立田村]"
+    ]
+   },
+   {
+    "pref": "愛知県",
+    "pid": "愛知県",
+    "from": "1872-05-08",
+    "to": "1872-12-27",
+    "reasons": [
+     "R6 village 富島付新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 富崎新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 加稲山新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 加稲九郎治新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 稲荷崎付新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 加稲付新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235) [愛知県/海部郡/鍋田村]",
+     "R6 village 福原新田（桑名郡の部分） not located (only the 桑名郡 portion of 福原新田 moved; 福原新田 existed in BOTH 郡 and the two pieces were united after 1880 — no 大字 separates them) [愛知県/海部郡/立田村]",
+     "R6 village 松山中島村 not located (no 町丁・字 of that name inside the 1920 町村; searched 海津市 21221) [岐阜県/海津郡/東江村]",
+     "R6 village 三拾町村 not located (no 町丁・字 of that name inside the 1920 町村; searched 稲沢市 23220) [愛知県/中島郡/祖父江町]"
+    ]
+   },
+   {
+    "pref": "愛知県",
+    "pid": "愛知県",
+    "from": "1872-12-27",
+    "to": "1880-05-07",
+    "reasons": [
+     "R6 village 富島付新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 富崎新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 加稲山新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 加稲九郎治新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 稲荷崎付新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 加稲付新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235) [愛知県/海部郡/鍋田村]",
+     "R6 village 福原新田（桑名郡の部分） not located (only the 桑名郡 portion of 福原新田 moved; 福原新田 existed in BOTH 郡 and the two pieces were united after 1880 — no 大字 separates them) [愛知県/海部郡/立田村]",
+     "R6 village 松山中島村 not located (no 町丁・字 of that name inside the 1920 町村; searched 海津市 21221) [岐阜県/海津郡/東江村]",
+     "R6 village 三拾町村 not located (no 町丁・字 of that name inside the 1920 町村; searched 稲沢市 23220) [愛知県/中島郡/祖父江町]"
+    ]
+   },
+   {
+    "pref": "愛知県",
+    "pid": "愛知県",
+    "from": "1880-05-07",
+    "to": "1887-07-12",
+    "reasons": [
+     "R6 village 松山中島村 not located (no 町丁・字 of that name inside the 1920 町村; searched 海津市 21221) [岐阜県/海津郡/東江村]",
+     "R6 village 三拾町村 not located (no 町丁・字 of that name inside the 1920 町村; searched 稲沢市 23220) [愛知県/中島郡/祖父江町]"
+    ]
+   },
+   {
+    "pref": "神山県",
+    "pid": "神山県",
+    "from": "1872-07-28",
+    "to": "1873-02-20",
+    "reasons": [
+     "R6 village 大浦村 not located (大浦村 was divided inside itself between 預地(旧幕府領) and 大洲藩領 (村内で領主が分かれており分離不能 — the research's words; stillUnresolved U20)) [愛媛県/温泉郡/東中島村]"
+    ]
+   },
+   {
+    "pref": "熊谷県",
+    "pid": "熊谷県",
+    "from": "1873-06-15",
+    "to": "1876-08-21",
+    "reasons": [
+     "R6 village 大岱村 not located (no 町丁・字 of that name inside the 1920 町村; searched 東村山市 13213) [東京府/北多摩郡/東村山村]"
+    ]
+   }
+  ]
+ },
+ "unresolvedApplied": [
+  {
+   "what": "多摩郡 1871-12-25 → 1872-03-08",
+   "applied": false,
+   "settledBy": "split resolution «多摩郡 1871-12-25 → 1872-03-08» (de jure by order)"
+  },
+  {
+   "what": "置賜郡 1871-12-13 → 1876-08-21",
+   "applied": false,
+   "settledBy": "split resolution «置賜郡 …» (中川村 remains a PART case)"
+  },
+  {
+   "what": "渡島国 福島・津軽・檜山・爾志 4郡 → 開拓使 (date)",
+   "applied": false,
+   "settledBy": "date D20: 1872-10-22 (明治5年9月20日 無號御沙汰), as the table already has"
+  },
+  {
+   "what": "東蒲原郡 福島県 → 新潟県 (date)",
+   "applied": false,
+   "settledBy": "date D7: 1886-05-25, as the table already has (1887 is a year error)"
+  },
+  {
+   "what": "福井県 → 足羽県 rename date",
+   "applied": false,
+   "settledBy": "date D8: 1872-01-29, as the table already has"
+  },
+  {
+   "what": "琉球藩 → 沖縄県 date",
+   "applied": false,
+   "settledBy": "date D30: 1879-04-04 (太政官布告第14号), as the table already has; 03-27 is the 通達"
+  },
+  {
+   "what": "菱刈郡・桑原郡・姶良郡 1871-12-25 → 1872-06-20",
+   "applied": false,
+   "settledBy": "split resolutions 姶良郡/伊佐郡 (C51)"
+  },
+  {
+   "what": "桑原郡 栗野郷・横川郷 (part moved 1872-06-20)",
+   "applied": false,
+   "settledBy": "split resolution 姶良郡 (栗野村・横川村 by name)"
+  },
+  {
+   "what": "宇多郡 1871-12-13 → 1876-04-18",
+   "applied": false,
+   "settledBy": "split resolution 相馬郡"
+  },
+  {
+   "what": "日向国 那珂郡・宮崎郡・諸県郡 1871-12-25 → 1873-01-15",
+   "applied": false,
+   "settledBy": "split resolutions 宮崎郡・南那珂郡・東諸県郡・北諸県郡・西諸県郡・囎唹郡"
+  },
+  {
+   "what": "伊予国 浮穴郡・伊予郡・風早郡 1871-12-26 → 1873-02-20",
+   "applied": false,
+   "settledBy": "split resolutions 上浮穴郡・伊予郡・温泉郡・松山市"
+  },
+  {
+   "what": "小豆郡 western part 北条県",
+   "applied": false,
+   "settledBy": "split resolution 小豆郡 + dates D24/D25"
+  },
+  {
+   "what": "能美郡 白山麓",
+   "applied": false,
+   "settledBy": "split resolution 能美郡"
+  },
+  {
+   "what": "南足立郡 area 1871-12-25 → 1872-01-08",
+   "applied": false,
+   "settledBy": "date D15: de jure 1871-12-25 (1872-01-08 is the 大区小区制 date); 舎人村 handled as an extra transfer"
+  },
+  {
+   "what": "統合 announcement vs. handover",
+   "applied": false,
+   "window": [
+    "0000-01-01",
+    "1872-01-02"
+   ],
+   "how": "extent unknown",
+   "prefectures": [],
+   "intervals": 0
+  },
+  {
+   "what": "1871 統合 list omissions",
+   "applied": false,
+   "window": [
+    "0000-01-01",
+    "1884-01-01"
+   ],
+   "how": "extent unknown",
+   "prefectures": [],
+   "intervals": 0
+  },
+  {
+   "what": "島尻郡 and 大東諸島",
+   "applied": false,
+   "settledBy": "dates D32/D33: 北大東島・南大東島 unassigned before 1885-08-31; 沖大東島 not in N03-1920"
+  },
+  {
+   "what": "北千島 (占守・新知・得撫郡) before 1876-01-14",
+   "applied": false,
+   "window": [
+    "0000-01-01",
+    "1876-01-14"
+   ],
+   "how": "extent unknown",
+   "prefectures": [],
+   "intervals": 0
+  },
+  {
+   "what": "琉球 1871-12-25 → 1872-10-16",
+   "applied": false,
+   "settledBy": "date D31: not prefectural territory (rows dropped)"
+  },
+  {
+   "what": "village-level transfers 1872-1920",
+   "applied": false,
+   "note": "no date: a caveat"
+  },
+  {
+   "what": "1920 unit list",
+   "applied": false,
+   "window": [
+    "0000-01-01",
+    "1920-10-01"
+   ],
+   "how": "extent unknown",
+   "prefectures": [],
+   "intervals": 0
+  },
+  {
+   "what": "seat",
+   "applied": false,
+   "note": "no date: a caveat"
+  },
+  {
+   "what": "wikidata / en names",
+   "applied": false,
+   "note": "no date: a caveat"
+  },
+  {
+   "what": "city 新潟市",
+   "applied": false,
+   "note": "routed to R4 (city)"
+  },
+  {
+   "what": "city 那覇区",
+   "applied": false,
+   "note": "no date: a caveat"
+  },
+  {
+   "what": "city 首里区",
+   "applied": false,
+   "note": "no date: a caveat"
+  }
+ ],
+ "transfersResearch": [
+  {
+   "key": "1880 海西郡 (愛知県)",
+   "skip": null,
+   "date": "1880-05-07",
+   "items": [
+    "愛知県/海部郡/弥富町 (part) <- 三重県/桑名郡/多度村",
+    "愛知県/海部郡/鍋田村 (part) <- 三重県/桑名郡/多度村",
+    "愛知県/海部郡/立田村 (part) <- 三重県/桑名郡/多度村"
+   ]
+  },
+  {
+   "key": "1887 海西郡 (愛知県)",
+   "skip": null,
+   "date": "1887-07-12",
+   "items": [
+    "岐阜県/海津郡/東江村 (part) <- 愛知県/海部郡/十四山村"
+   ]
+  },
+  {
+   "key": "1887 中島郡 (愛知県)",
+   "skip": null,
+   "date": "1887-07-12",
+   "items": [
+    "愛知県/中島郡/祖父江町 (part) <- 岐阜県/羽島郡/上中島村",
+    "愛知県/中島郡/長岡村 (part) <- 岐阜県/羽島郡/上中島村",
+    "愛知県/中島郡/朝日村 (part) <- 岐阜県/羽島郡/上中島村"
+   ]
+  },
+  {
+   "key": "1889 安八郡",
+   "skip": null,
+   "date": "1889-07-01",
+   "items": [
+    "岐阜県/海津郡/海西村 (part) <- 岐阜県/安八郡/北平野村"
+   ]
+  },
+  {
+   "key": "1887 海西郡 (岐阜県)",
+   "skip": null,
+   "date": "1887-07-12",
+   "items": [
+    "岐阜県/海津郡/東江村 (part) <- 愛知県/海部郡/十四山村"
+   ]
+  },
+  {
+   "key": "1887 中島郡 (岐阜県)",
+   "skip": null,
+   "date": "1887-07-12",
+   "items": [
+    "愛知県/中島郡/祖父江町 (part) <- 岐阜県/羽島郡/上中島村",
+    "愛知県/中島郡/長岡村 (part) <- 岐阜県/羽島郡/上中島村",
+    "愛知県/中島郡/朝日村 (part) <- 岐阜県/羽島郡/上中島村"
+   ]
+  },
+  {
+   "key": "1882 神崎郡 (滋賀県)",
+   "skip": null,
+   "date": "1882-01-01..1883-01-01",
+   "items": [
+    "滋賀県/神崎郡/能登川村 (part) <- 滋賀県/蒲生郡/安土村"
+   ]
+  },
+  {
+   "key": "1879 安濃郡 (三重県)",
+   "skip": null,
+   "date": "1872-02-09..1873-01-01",
+   "items": [
+    "三重県/安濃郡/藤水村 <- 三重県/一志郡/久居町",
+    "三重県//津市 (part) <- 三重県/一志郡/久居町"
+   ]
+  },
+  {
+   "key": "1872 一志郡",
+   "skip": null,
+   "date": "1872-02-09..1873-01-01",
+   "items": [
+    "三重県/安濃郡/藤水村 <- 三重県/一志郡/久居町",
+    "三重県//津市 (part) <- 三重県/一志郡/久居町"
+   ]
+  },
+  {
+   "key": "1883 桑名郡 (三重県) -> 下石津郡 (EXTRA, not in the sweep)",
+   "skip": null,
+   "date": "1883-11-01",
+   "items": [
+    "岐阜県/海津郡/大江村 (part) <- 三重県/桑名郡/多度村"
+   ]
+  },
+  {
+   "key": "1872-12-17 能美郡",
+   "skip": null,
+   "date": "1872-12-17",
+   "items": [
+    "石川県/能美郡/新丸村 <- 福井県/大野郡/上庄村",
+    "石川県/能美郡/尾口村 <- 福井県/大野郡/上庄村",
+    "石川県/能美郡/白峰村 <- 福井県/大野郡/上庄村"
+   ]
+  },
+  {
+   "key": "1889-04-01 射水郡",
+   "skip": null,
+   "date": "1889-04-01",
+   "items": [
+    "富山県/東砺波郡/般若野村 (part) <- 富山県/射水郡/伏木村"
+   ]
+  },
+  {
+   "key": "1889-04-01 婦負郡",
+   "skip": null,
+   "date": "1889-04-01",
+   "items": [
+    "富山県/射水郡/海老江村 (part) <- 富山県/婦負郡/八尾町",
+    "富山県/射水郡/本江村 (part) <- 富山県/婦負郡/八尾町"
+   ]
+  },
+  {
+   "key": "1879 三島郡 (新潟県) 真木山村 → 西蒲原郡（= 1879 西蒲原郡）",
+   "skip": null,
+   "date": "1879-01-01..1880-01-01",
+   "items": [
+    "新潟県/西蒲原郡/国上村 (part) <- 新潟県/三島郡/与板町"
+   ]
+  },
+  {
+   "key": "1879 三島郡 (新潟県) 大島村・水梨村・青山村・前島村・青島村 → 古志郡",
+   "skip": null,
+   "date": "1879-01-01..1880-01-01",
+   "items": [
+    "新潟県/古志郡/上組村 <- 新潟県/三島郡/与板町",
+    "新潟県/三島郡/来迎寺村 (part) <- 新潟県/三島郡/与板町"
+   ]
+  },
+  {
+   "key": "1879 三島郡 (新潟県) 古志郡古川新田 → 三島郡",
+   "skip": null,
+   "date": "1879-01-01..1880-01-01",
+   "items": [
+    "新潟県/三島郡/黒川村 <- 新潟県/古志郡/栃尾町"
+   ]
+  },
+  {
+   "key": "1879 中蒲原郡 脇川新田 → 三島郡（= 1879 三島郡の「西蒲原郡脇川新田」、1879 中蒲原郡）",
+   "skip": null,
+   "date": "1879-01-01..1880-01-01",
+   "items": [
+    "新潟県/古志郡/下川西村 (part) <- 新潟県/中蒲原郡/亀田町"
+   ]
+  },
+  {
+   "key": "1896 三島郡 (新潟県) 間瀬村 → 西蒲原郡（= 1896 西蒲原郡）",
+   "skip": null,
+   "date": "1896-04-01",
+   "items": [
+    "新潟県/西蒲原郡/間瀬村 <- 新潟県/三島郡/与板町"
+   ]
+  },
+  {
+   "key": "1881 丹生郡 沢村 → 南条郡（= 1881 南条郡）",
+   "skip": null,
+   "date": "1881-02-21",
+   "items": [
+    "福井県/南條郡/神山村 (part) <- 福井県/丹生郡/吉川村"
+   ]
+  },
+  {
+   "key": "1889-04-01 丹生郡 勾当原村・中山村 → 南条郡（掃引外・同じ丹生/南条の組で見つかった追加分）",
+   "skip": null,
+   "date": "1889-04-01",
+   "items": [
+    "福井県/南條郡/坂口村 (part) <- 福井県/丹生郡/吉川村"
+   ]
+  },
+  {
+   "key": "1879-12-26 南条郡 杉谷村（今立郡 → 南条郡）",
+   "skip": null,
+   "date": "1879-12-26",
+   "items": [
+    "福井県/南條郡/宅良村 <- 福井県/今立郡/北中山村"
+   ]
+  },
+  {
+   "key": "1885 南条郡 / 1885 敦賀郡 菅谷村（敦賀郡 → 南条郡）",
+   "skip": null,
+   "date": "1885-01-01..1886-01-01",
+   "items": [
+    "福井県/南條郡/河野村 (part) <- 福井県/敦賀郡/敦賀町"
+   ]
+  },
+  {
+   "key": "1884 丹生郡 三尾野出作村（足羽郡 → 丹生郡）",
+   "skip": null,
+   "date": "1884-01-01..1885-01-01",
+   "items": [
+    "福井県/丹生郡/立待村 <- 福井県/足羽郡/一乗谷村"
+   ]
+  },
+  {
+   "key": "1880 北多摩郡",
+   "skip": null,
+   "date": "1880-02-07",
+   "items": [
+    "埼玉県/入間郡/柳瀬村 (part) <- 東京府/北多摩郡/東村山村",
+    "東京府/北多摩郡/東村山村 (part) <- 埼玉県/入間郡/入間川町"
+   ]
+  },
+  {
+   "key": "1879 入間郡",
+   "skip": null,
+   "date": "1880-02-07",
+   "items": [
+    "埼玉県/入間郡/柳瀬村 (part) <- 東京府/北多摩郡/東村山村"
+   ]
+  },
+  {
+   "key": "1880 入間郡",
+   "skip": null,
+   "date": "1880-02-07",
+   "items": [
+    "東京府/北多摩郡/東村山村 (part) <- 埼玉県/入間郡/入間川町"
+   ]
+  },
+  {
+   "key": "1907-04-01 北多摩郡",
+   "skip": null,
+   "date": "1907-04-01",
+   "items": [
+    "東京府/北多摩郡/保谷村 <- 埼玉県/北足立郡/志木町"
+   ]
+  },
+  {
+   "key": "1907-04-01 北足立郡",
+   "skip": null,
+   "date": "1907-04-01",
+   "items": [
+    "東京府/北多摩郡/保谷村 <- 埼玉県/北足立郡/志木町"
+   ]
+  },
+  {
+   "key": "1875 橘樹郡",
+   "skip": "research: crosses_prefecture_at_time=false; 旧高旧領取調帳 already lists 中野島 under 橘樹郡 (its side 1871-12-25..1872-01-03 is called uncertain by the research, a 9-day window) — no prefecture effect drawn",
+   "date": null,
+   "items": []
+  },
+  {
+   "key": "1899-04-01 稲敷郡 / 香取郡",
+   "skip": null,
+   "date": "1899-04-01",
+   "items": [
+    "茨城県/稲敷郡/十余島村 <- 千葉県/香取郡/佐原町",
+    "茨城県/稲敷郡/金江津村 <- 千葉県/香取郡/佐原町",
+    "茨城県/稲敷郡/本新島村 <- 千葉県/香取郡/佐原町"
+   ]
+  },
+  {
+   "key": "1896 北相馬郡 / 筑波郡 (長崎村)",
+   "skip": null,
+   "date": "1896-04-01",
+   "items": [
+    "茨城県/筑波郡/長崎村 <- 茨城県/北相馬郡/取手町"
+   ]
+  },
+  {
+   "key": "1878 東茨城郡 / 鹿島郡 (磯浜村・大貫村)",
+   "skip": null,
+   "date": "1878-12-02",
+   "items": [
+    "茨城県/東茨城郡/磯浜町 <- 茨城県/鹿島郡/大同村",
+    "茨城県/東茨城郡/大貫町 <- 茨城県/鹿島郡/大同村"
+   ]
+  },
+  {
+   "key": "1878 印旛郡 / 南相馬郡 (染井入新田) ほか",
+   "skip": null,
+   "date": "1878-11-02",
+   "items": [
+    "千葉県/東葛飾郡/手賀村 <- 千葉県/印旛郡/佐倉町",
+    "千葉県/東葛飾郡/風早村 <- 千葉県/印旛郡/佐倉町"
+   ]
+  },
+  {
+   "key": "1887 印旛郡 / 東葛飾郡・南相馬郡",
+   "skip": null,
+   "date": "1887-01-01..1888-01-01",
+   "items": [
+    "千葉県/東葛飾郡/千代田村 <- 千葉県/印旛郡/佐倉町",
+    "千葉県/東葛飾郡/富勢村 <- 千葉県/印旛郡/佐倉町"
+   ]
+  },
+  {
+   "key": "1878 胆沢郡 / 和賀郡 / 東和賀郡 (相去村)",
+   "skip": null,
+   "date": "1878-11-26",
+   "items": [
+    "岩手県/胆沢郡/相去村 <- 岩手県/胆沢郡/水沢町"
+   ]
+  },
+  {
+   "key": "1880 遠田郡 / 登米郡 (西野村・中津山村)",
+   "skip": null,
+   "date": "1880-01-17",
+   "items": [
+    "宮城県/登米郡/米山村 <- 宮城県/遠田郡/小牛田町"
+   ]
+  },
+  {
+   "key": "1875 石川郡 / 岩瀬郡 / 西白河郡 (阿武隈川を境とする郡・県の付け替え)",
+   "skip": null,
+   "date": "1875-11-18",
+   "items": [
+    "福島県/西白河郡/矢吹町 (part) <- 福島県/石川郡/山橋村",
+    "福島県/西白河郡/中畑村 (part) <- 福島県/石川郡/山橋村",
+    "福島県/西白河郡/三神村 (part) <- 福島県/石川郡/山橋村",
+    "福島県/西白河郡/滑津村 (part) <- 福島県/石川郡/山橋村",
+    "福島県/岩瀬郡/鏡石村 (part) <- 福島県/石川郡/山橋村",
+    "福島県/石川郡/川東村 <- 福島県/岩瀬郡/仁井田村",
+    "福島県/石川郡/小塩江村 <- 福島県/岩瀬郡/仁井田村",
+    "福島県/石川郡/大森田村 <- 福島県/岩瀬郡/仁井田村",
+    "福島県/石川郡/須釜村 (part) <- 福島県/岩瀬郡/仁井田村"
+   ]
+  },
+  {
+   "key": "1881 福島郡 / 上磯郡 (知内村・小谷石村)",
+   "skip": null,
+   "date": "1881-07-27",
+   "items": [
+    "北海道/函館支庁/上磯郡/知内村 <- 北海道/函館支庁/松前郡/福島村"
+   ]
+  },
+  {
+   "key": "1897 伊予郡",
+   "skip": null,
+   "date": "1897-04-01",
+   "items": [
+    "愛媛県/温泉郡/垣生村 <- 愛媛県/伊予郡/北伊予村",
+    "愛媛県/温泉郡/余土村 <- 愛媛県/伊予郡/北伊予村"
+   ]
+  },
+  {
+   "key": "1874 交野郡",
+   "skip": null,
+   "date": "1874-08-04",
+   "items": [
+    "大阪府/北河内郡/牧野村 (part) <- 大阪府/三島郡/三宅村"
+   ]
+  },
+  {
+   "key": "1874-08-04 島上郡",
+   "skip": null,
+   "date": "1874-08-04",
+   "items": [
+    "大阪府/北河内郡/牧野村 (part) <- 大阪府/三島郡/三宅村"
+   ]
+  },
+  {
+   "key": "1878 児島郡",
+   "skip": "no land moved (n/a (no land moved across a prefecture line)): 掃引は『3 諸島 (小豆島・豊島・直島) は倉敷県や北条県、岡山県となるなどを経て…児島郡は岡山県となって郡域が確定した』という概説文を移動と読んだ誤検出。移動する村は存在しない。名東県/愛媛県/香川県の各区間で児島郡は岡山県に属し、小豆郡・香川郡と県境を共有するのは海上のみ。",
+   "date": null,
+   "items": []
+  },
+  {
+   "key": "1900 吉野郡 (岡山県)",
+   "skip": null,
+   "date": "1900-04-01",
+   "items": [
+    "岡山県/英田郡/西粟倉村 <- 岡山県/英田郡/大野村",
+    "岡山県/英田郡/大原村 <- 岡山県/英田郡/大野村",
+    "岡山県/英田郡/大野村 <- 岡山県/英田郡/大野村",
+    "岡山県/英田郡/吉野村 <- 岡山県/英田郡/大野村",
+    "岡山県/英田郡/粟井村 <- 岡山県/英田郡/大野村",
+    "岡山県/英田郡/讃甘村 <- 岡山県/英田郡/大野村"
+   ]
+  },
+  {
+   "key": "1896 佐用郡",
+   "skip": null,
+   "date": "1896-04-01",
+   "items": [
+    "兵庫県/佐用郡/石井村 <- 岡山県/英田郡/大野村",
+    "兵庫県/佐用郡/江川村 (part) <- 岡山県/英田郡/大野村"
+   ]
+  },
+  {
+   "key": "1876 幡多郡",
+   "skip": null,
+   "date": "1876-02-25",
+   "items": [
+    "高知県/幡多郡/沖ノ島村 (part) <- 愛媛県/南宇和郡/御荘村"
+   ]
+  },
+  {
+   "key": "1879 有馬郡",
+   "skip": "no land moved (n/a (no land moved across a prefecture line)): 『other side unknown: all neighbours』の正体は、概説文の『兵庫県に編入された郡』を移動と取った誤検出で、移動の相手方は存在しない。隣接 5 郡 (加東・美嚢・多紀・川辺・武庫) の記事で有馬郡との所属変更の記述は川辺郡高平村 (1896) の 1 件のみ。",
+   "date": null,
+   "items": []
+  },
+  {
+   "key": "1896 有馬郡",
+   "skip": null,
+   "date": "1896-04-01",
+   "items": [
+    "兵庫県/有馬郡/高平村 <- 兵庫県/川辺郡/伊丹町"
+   ]
+  },
+  {
+   "key": "1907 芦品郡",
+   "skip": "1949-04-01 (D29): after the 1920 survey; the land is in its 1920 町村 already",
+   "date": null,
+   "items": []
+  },
+  {
+   "key": "1912 御調郡",
+   "skip": "1949-04-01 (D29)",
+   "date": null,
+   "items": []
+  },
+  {
+   "key": "1871 東囎唹郡",
+   "skip": null,
+   "date": "1872-05-08..1872-06-06",
+   "items": [
+    "鹿児島県/囎唹郡/財部村 <- 鹿児島県/囎唹郡/志布志町"
+   ]
+  },
+  {
+   "key": "1872 曽於郡",
+   "skip": null,
+   "date": "1872-05-08..1872-06-06",
+   "items": [
+    "鹿児島県/囎唹郡/財部村 <- 鹿児島県/囎唹郡/志布志町"
+   ]
+  },
+  {
+   "key": "1881 下益城郡",
+   "skip": null,
+   "date": "1880-01-01..1882-01-01",
+   "items": [
+    "熊本県/下益城郡/杉合村 (part) <- 熊本県/飽託郡/中島村"
+   ]
+  },
+  {
+   "key": "1880 飽田郡",
+   "skip": null,
+   "date": "1880-01-01..1882-01-01",
+   "items": [
+    "熊本県/下益城郡/杉合村 (part) <- 熊本県/飽託郡/中島村"
+   ]
+  },
+  {
+   "key": "1872 児湯郡",
+   "skip": null,
+   "date": "1872-10-25",
+   "items": [
+    "宮崎県/児湯郡/西米良村 <- 熊本県/球磨郡/人吉町",
+    "宮崎県/児湯郡/東米良村 <- 熊本県/球磨郡/人吉町",
+    "宮崎県/児湯郡/三財村 (part) <- 熊本県/球磨郡/人吉町"
+   ]
+  },
+  {
+   "key": "C22/D15 舎人村",
+   "skip": null,
+   "date": "1875-12-24",
+   "items": [
+    "東京府/南足立郡/舎人村 (part) <- 埼玉県/北足立郡/鳩ヶ谷町"
+   ]
+  }
+ ],
+ "transfersSweepCovered": [
+  {
+   "sweep": "1880 海西郡 (愛知県)",
+   "by": [
+    "1880 海西郡 (愛知県)"
+   ]
+  },
+  {
+   "sweep": "1887 海西郡 (愛知県)",
+   "by": [
+    "1887 海西郡 (愛知県)",
+    "1887 海西郡 (岐阜県)"
+   ]
+  },
+  {
+   "sweep": "1887 中島郡 (愛知県)",
+   "by": [
+    "1887 中島郡 (愛知県)",
+    "1887 中島郡 (岐阜県)"
+   ]
+  },
+  {
+   "sweep": "1872-12-17 能美郡",
+   "by": [
+    "1872-12-17 能美郡"
+   ]
+  },
+  {
+   "sweep": "1899-04-01 稲敷郡",
+   "by": [
+    "1899-04-01 稲敷郡 / 香取郡"
+   ]
+  },
+  {
+   "sweep": "1896 北相馬郡",
+   "by": [
+    "1896 北相馬郡 / 筑波郡 (長崎村)"
+   ]
+  },
+  {
+   "sweep": "1878 東茨城郡",
+   "by": [
+    "1878 東茨城郡 / 鹿島郡 (磯浜村・大貫村)"
+   ]
+  },
+  {
+   "sweep": "1878 鹿島郡 (茨城県)",
+   "by": [
+    "1878 東茨城郡 / 鹿島郡 (磯浜村・大貫村)"
+   ]
+  },
+  {
+   "sweep": "1896 筑波郡",
+   "by": [
+    "1896 北相馬郡 / 筑波郡 (長崎村)"
+   ]
+  },
+  {
+   "sweep": "1896 筑波郡",
+   "by": [
+    "1896 北相馬郡 / 筑波郡 (長崎村)"
+   ]
+  },
+  {
+   "sweep": "1878 胆沢郡",
+   "by": [
+    "1878 胆沢郡 / 和賀郡 / 東和賀郡 (相去村)"
+   ]
+  },
+  {
+   "sweep": "1878 和賀郡",
+   "by": [
+    "1878 胆沢郡 / 和賀郡 / 東和賀郡 (相去村)"
+   ]
+  },
+  {
+   "sweep": "1878 東和賀郡",
+   "by": [
+    "1878 胆沢郡 / 和賀郡 / 東和賀郡 (相去村)"
+   ]
+  },
+  {
+   "sweep": "1897 伊予郡",
+   "by": [
+    "1897 伊予郡"
+   ]
+  },
+  {
+   "sweep": "1874 交野郡",
+   "by": [
+    "1874 交野郡"
+   ]
+  },
+  {
+   "sweep": "1874-08-04 島上郡",
+   "by": [
+    "1874-08-04 島上郡"
+   ]
+  },
+  {
+   "sweep": "1878 児島郡",
+   "by": [
+    "1878 児島郡"
+   ]
+  },
+  {
+   "sweep": "1900 吉野郡 (岡山県)",
+   "by": [
+    "1900 吉野郡 (岡山県)"
+   ]
+  },
+  {
+   "sweep": "1872 曽於郡",
+   "by": [
+    "1872 曽於郡"
+   ]
+  },
+  {
+   "sweep": "1871 東囎唹郡",
+   "by": [
+    "1871 東囎唹郡"
+   ]
+  },
+  {
+   "sweep": "1880 北多摩郡",
+   "by": [
+    "1880 北多摩郡"
+   ]
+  },
+  {
+   "sweep": "1907-04-01 北多摩郡",
+   "by": [
+    "1907-04-01 北多摩郡"
+   ]
+  },
+  {
+   "sweep": "1875 橘樹郡",
+   "by": [
+    "1875 橘樹郡"
+   ]
+  },
+  {
+   "sweep": "1889 安八郡",
+   "by": [
+    "1889 安八郡"
+   ]
+  },
+  {
+   "sweep": "1887 海西郡 (岐阜県)",
+   "by": [
+    "1887 海西郡 (愛知県)",
+    "1887 海西郡 (岐阜県)"
+   ]
+  },
+  {
+   "sweep": "1887 中島郡 (岐阜県)",
+   "by": [
+    "1887 中島郡 (愛知県)",
+    "1887 中島郡 (岐阜県)"
+   ]
+  },
+  {
+   "sweep": "1881 下益城郡",
+   "by": [
+    "1881 下益城郡"
+   ]
+  },
+  {
+   "sweep": "1880 飽田郡",
+   "by": [
+    "1880 飽田郡"
+   ]
+  },
+  {
+   "sweep": "1876 幡多郡",
+   "by": [
+    "1876 幡多郡"
+   ]
+  },
+  {
+   "sweep": "1879 入間郡",
+   "by": [
+    "1879 入間郡"
+   ]
+  },
+  {
+   "sweep": "1880 入間郡",
+   "by": [
+    "1880 入間郡"
+   ]
+  },
+  {
+   "sweep": "1907-04-01 北足立郡",
+   "by": [
+    "1907-04-01 北足立郡"
+   ]
+  },
+  {
+   "sweep": "1882 神崎郡 (滋賀県)",
+   "by": [
+    "1882 神崎郡 (滋賀県)"
+   ]
+  },
+  {
+   "sweep": "1878 印旛郡",
+   "by": [
+    "1878 印旛郡 / 南相馬郡 (染井入新田) ほか"
+   ]
+  },
+  {
+   "sweep": "1887 印旛郡",
+   "by": [
+    "1887 印旛郡 / 東葛飾郡・南相馬郡"
+   ]
+  },
+  {
+   "sweep": "1887 印旛郡",
+   "by": [
+    "1887 印旛郡 / 東葛飾郡・南相馬郡"
+   ]
+  },
+  {
+   "sweep": "1899 香取郡",
+   "by": [
+    "1899-04-01 稲敷郡 / 香取郡"
+   ]
+  },
+  {
+   "sweep": "1899 香取郡",
+   "by": [
+    "1899-04-01 稲敷郡 / 香取郡"
+   ]
+  },
+  {
+   "sweep": "1887 東葛飾郡",
+   "by": [
+    "1887 印旛郡 / 東葛飾郡・南相馬郡"
+   ]
+  },
+  {
+   "sweep": "1878 南相馬郡",
+   "by": [
+    "1878 印旛郡 / 南相馬郡 (染井入新田) ほか"
+   ]
+  },
+  {
+   "sweep": "1887 南相馬郡",
+   "by": [
+    "1887 印旛郡 / 東葛飾郡・南相馬郡"
+   ]
+  },
+  {
+   "sweep": "1889-04-01 射水郡",
+   "by": [
+    "1889-04-01 射水郡"
+   ]
+  },
+  {
+   "sweep": "1889-04-01 婦負郡",
+   "by": [
+    "1889-04-01 婦負郡"
+   ]
+  },
+  {
+   "sweep": "1879 三島郡 (新潟県)",
+   "by": [
+    "1879 三島郡 (新潟県) 真木山村 → 西蒲原郡（= 1879 西蒲原郡）",
+    "1879 三島郡 (新潟県) 大島村・水梨村・青山村・前島村・青島村 → 古志郡",
+    "1879 三島郡 (新潟県) 古志郡古川新田 → 三島郡",
+    "1879 中蒲原郡 脇川新田 → 三島郡（= 1879 三島郡の「西蒲原郡脇川新田」、1879 中蒲原郡）"
+   ]
+  },
+  {
+   "sweep": "1879 三島郡 (新潟県)",
+   "by": [
+    "1879 三島郡 (新潟県) 真木山村 → 西蒲原郡（= 1879 西蒲原郡）",
+    "1879 三島郡 (新潟県) 大島村・水梨村・青山村・前島村・青島村 → 古志郡",
+    "1879 三島郡 (新潟県) 古志郡古川新田 → 三島郡",
+    "1879 中蒲原郡 脇川新田 → 三島郡（= 1879 三島郡の「西蒲原郡脇川新田」、1879 中蒲原郡）"
+   ]
+  },
+  {
+   "sweep": "1879 三島郡 (新潟県)",
+   "by": [
+    "1879 三島郡 (新潟県) 真木山村 → 西蒲原郡（= 1879 西蒲原郡）",
+    "1879 三島郡 (新潟県) 大島村・水梨村・青山村・前島村・青島村 → 古志郡",
+    "1879 三島郡 (新潟県) 古志郡古川新田 → 三島郡",
+    "1879 中蒲原郡 脇川新田 → 三島郡（= 1879 三島郡の「西蒲原郡脇川新田」、1879 中蒲原郡）"
+   ]
+  },
+  {
+   "sweep": "1896 三島郡 (新潟県)",
+   "by": [
+    "1896 三島郡 (新潟県) 間瀬村 → 西蒲原郡（= 1896 西蒲原郡）"
+   ]
+  },
+  {
+   "sweep": "1879 西蒲原郡",
+   "by": [
+    "1879 三島郡 (新潟県) 真木山村 → 西蒲原郡（= 1879 西蒲原郡）",
+    "1879 中蒲原郡 脇川新田 → 三島郡（= 1879 三島郡の「西蒲原郡脇川新田」、1879 中蒲原郡）"
+   ]
+  },
+  {
+   "sweep": "1896 西蒲原郡",
+   "by": [
+    "1896 三島郡 (新潟県) 間瀬村 → 西蒲原郡（= 1896 西蒲原郡）"
+   ]
+  },
+  {
+   "sweep": "1879 古志郡",
+   "by": [
+    "1879 三島郡 (新潟県) 大島村・水梨村・青山村・前島村・青島村 → 古志郡",
+    "1879 三島郡 (新潟県) 古志郡古川新田 → 三島郡"
+   ]
+  },
+  {
+   "sweep": "1879 古志郡",
+   "by": [
+    "1879 三島郡 (新潟県) 大島村・水梨村・青山村・前島村・青島村 → 古志郡",
+    "1879 三島郡 (新潟県) 古志郡古川新田 → 三島郡"
+   ]
+  },
+  {
+   "sweep": "1879 中蒲原郡",
+   "by": [
+    "1879 中蒲原郡 脇川新田 → 三島郡（= 1879 三島郡の「西蒲原郡脇川新田」、1879 中蒲原郡）"
+   ]
+  },
+  {
+   "sweep": "1896 佐用郡",
+   "by": [
+    "1896 佐用郡"
+   ]
+  },
+  {
+   "sweep": "1879 有馬郡",
+   "by": [
+    "1879 有馬郡"
+   ]
+  },
+  {
+   "sweep": "1896 有馬郡",
+   "by": [
+    "1896 有馬郡"
+   ]
+  },
+  {
+   "sweep": "1907 芦品郡",
+   "by": [
+    "1907 芦品郡"
+   ]
+  },
+  {
+   "sweep": "1912 御調郡",
+   "by": [
+    "1912 御調郡"
+   ]
+  },
+  {
+   "sweep": "1879-12-26 南条郡",
+   "by": [
+    "1879-12-26 南条郡 杉谷村（今立郡 → 南条郡）"
+   ]
+  },
+  {
+   "sweep": "1881 南条郡",
+   "by": [
+    "1881 丹生郡 沢村 → 南条郡（= 1881 南条郡）"
+   ]
+  },
+  {
+   "sweep": "1885 南条郡",
+   "by": [
+    "1885 南条郡 / 1885 敦賀郡 菅谷村（敦賀郡 → 南条郡）"
+   ]
+  },
+  {
+   "sweep": "1881 丹生郡",
+   "by": [
+    "1881 丹生郡 沢村 → 南条郡（= 1881 南条郡）"
+   ]
+  },
+  {
+   "sweep": "1884 丹生郡",
+   "by": [
+    "1884 丹生郡 三尾野出作村（足羽郡 → 丹生郡）"
+   ]
+  },
+  {
+   "sweep": "1884 足羽郡",
+   "by": [
+    "1884 丹生郡 三尾野出作村（足羽郡 → 丹生郡）"
+   ]
+  },
+  {
+   "sweep": "1885 敦賀郡",
+   "by": [
+    "1885 南条郡 / 1885 敦賀郡 菅谷村（敦賀郡 → 南条郡）"
+   ]
+  },
+  {
+   "sweep": "1875 石川郡",
+   "by": [
+    "1875 石川郡 / 岩瀬郡 / 西白河郡 (阿武隈川を境とする郡・県の付け替え)"
+   ]
+  },
+  {
+   "sweep": "1875 岩瀬郡",
+   "by": [
+    "1875 石川郡 / 岩瀬郡 / 西白河郡 (阿武隈川を境とする郡・県の付け替え)"
+   ]
+  },
+  {
+   "sweep": "1875 岩瀬郡",
+   "by": [
+    "1875 石川郡 / 岩瀬郡 / 西白河郡 (阿武隈川を境とする郡・県の付け替え)"
+   ]
+  },
+  {
+   "sweep": "1875 西白河郡",
+   "by": [
+    "1875 石川郡 / 岩瀬郡 / 西白河郡 (阿武隈川を境とする郡・県の付け替え)"
+   ]
+  },
+  {
+   "sweep": "1881 上磯郡",
+   "by": [
+    "1881 福島郡 / 上磯郡 (知内村・小谷石村)"
+   ]
+  },
+  {
+   "sweep": "1881 福島郡",
+   "by": [
+    "1881 福島郡 / 上磯郡 (知内村・小谷石村)"
+   ]
+  },
+  {
+   "sweep": "1879 安濃郡 (三重県)",
+   "by": [
+    "1879 安濃郡 (三重県)"
+   ]
+  },
+  {
+   "sweep": "1872 一志郡",
+   "by": [
+    "1872 一志郡"
+   ]
+  },
+  {
+   "sweep": "1880 遠田郡",
+   "by": [
+    "1880 遠田郡 / 登米郡 (西野村・中津山村)"
+   ]
+  },
+  {
+   "sweep": "1880 登米郡",
+   "by": [
+    "1880 遠田郡 / 登米郡 (西野村・中津山村)"
+   ]
+  },
+  {
+   "sweep": "1872 児湯郡",
+   "by": [
+    "1872 児湯郡"
+   ]
+  }
+ ],
+ "transfersHeuristic": {
+  "total": 191,
+  "withheldSomething": [
+   {
+    "date": "1915-01-01",
+    "article": "city 新潟市 (unresolved: origin 郡 not stated)",
+    "intervals": 38,
+    "unknownOther": true
+   }
+  ]
+ },
+ "incomplete": [
+  {
+   "interval": [
+    "1871-12-25",
+    "1871-12-26"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島"
+   ]
+  },
+  {
+   "interval": [
+    "1871-12-26",
+    "1871-12-31"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島"
+   ]
+  },
+  {
+   "interval": [
+    "1871-12-31",
+    "1872-01-02"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島"
+   ]
+  },
+  {
+   "interval": [
+    "1872-01-02",
+    "1872-01-03"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-01-03",
+    "1872-01-09"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-01-09",
+    "1872-01-22"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-01-22",
+    "1872-01-26"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-01-26",
+    "1872-01-29"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-01-29",
+    "1872-02-09"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-02-09",
+    "1872-02-16"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-02-16",
+    "1872-02-27"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-02-27",
+    "1872-03-01"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-03-01",
+    "1872-03-04"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-03-04",
+    "1872-03-08"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-03-08",
+    "1872-03-10"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-03-10",
+    "1872-03-17"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-03-17",
+    "1872-04-04"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-04-04",
+    "1872-04-24"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-04-24",
+    "1872-05-08"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-05-08",
+    "1872-06-06"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-06-06",
+    "1872-06-20"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-06-20",
+    "1872-07-04"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-07-04",
+    "1872-07-10"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-07-10",
+    "1872-07-19"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-07-19",
+    "1872-07-28"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-07-28",
+    "1872-09-19"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-09-19",
+    "1872-09-21"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-09-21",
+    "1872-10-12"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-10-12",
+    "1872-10-16"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-10-16",
+    "1872-10-22"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-10-22",
+    "1872-10-25"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-10-25",
+    "1872-10-29"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-10-29",
+    "1872-10-30"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-10-30",
+    "1872-12-17"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-12-17",
+    "1872-12-27"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1872-12-27",
+    "1873-01-01"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1873-01-01",
+    "1873-01-14"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1873-01-14",
+    "1873-01-15"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1873-01-15",
+    "1873-02-20"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1873-02-20",
+    "1873-06-10"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1873-06-10",
+    "1873-06-15"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1873-06-15",
+    "1874-08-04"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1874-08-04",
+    "1875-05-07"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1875-05-07",
+    "1875-08-31"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1875-08-31",
+    "1875-09-05"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1875-09-05",
+    "1875-11-18"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1875-11-18",
+    "1875-11-22"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1875-11-22",
+    "1875-12-10"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1875-12-10",
+    "1875-12-20"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1875-12-20",
+    "1875-12-24"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1875-12-24",
+    "1876-01-14"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 振別郡"
+   ]
+  },
+  {
+   "interval": [
+    "1876-01-14",
+    "1876-02-25"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 占守郡",
+    "開拓使 w/o 得撫郡",
+    "開拓使 w/o 振別郡",
+    "開拓使 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1876-02-25",
+    "1876-03-01"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 占守郡",
+    "開拓使 w/o 得撫郡",
+    "開拓使 w/o 振別郡",
+    "開拓使 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1876-03-01",
+    "1876-04-18"
+   ],
+   "drawnWithout": [
+    "足柄県 w/o 伊豆諸島",
+    "開拓使 w/o 占守郡",
+    "開拓使 w/o 得撫郡",
+    "開拓使 w/o 振別郡",
+    "開拓使 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1876-04-18",
+    "1876-05-24"
+   ],
+   "drawnWithout": [
+    "静岡県 w/o 伊豆諸島",
+    "開拓使 w/o 占守郡",
+    "開拓使 w/o 得撫郡",
+    "開拓使 w/o 振別郡",
+    "開拓使 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1876-05-24",
+    "1876-05-25"
+   ],
+   "drawnWithout": [
+    "静岡県 w/o 伊豆諸島",
+    "開拓使 w/o 占守郡",
+    "開拓使 w/o 得撫郡",
+    "開拓使 w/o 振別郡",
+    "開拓使 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1876-05-25",
+    "1876-06-21"
+   ],
+   "drawnWithout": [
+    "静岡県 w/o 伊豆諸島",
+    "開拓使 w/o 占守郡",
+    "開拓使 w/o 得撫郡",
+    "開拓使 w/o 振別郡",
+    "開拓使 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1876-06-21",
+    "1876-08-21"
+   ],
+   "drawnWithout": [
+    "静岡県 w/o 伊豆諸島",
+    "開拓使 w/o 占守郡",
+    "開拓使 w/o 得撫郡",
+    "開拓使 w/o 振別郡",
+    "開拓使 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1876-08-21",
+    "1878-01-11"
+   ],
+   "drawnWithout": [
+    "静岡県 w/o 伊豆諸島",
+    "開拓使 w/o 占守郡",
+    "開拓使 w/o 得撫郡",
+    "開拓使 w/o 振別郡",
+    "開拓使 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1878-01-11",
+    "1878-11-02"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "開拓使 w/o 占守郡",
+    "開拓使 w/o 得撫郡",
+    "開拓使 w/o 振別郡",
+    "開拓使 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1878-11-02",
+    "1878-11-26"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "開拓使 w/o 占守郡",
+    "開拓使 w/o 得撫郡",
+    "開拓使 w/o 振別郡",
+    "開拓使 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1878-11-26",
+    "1878-12-02"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "開拓使 w/o 占守郡",
+    "開拓使 w/o 得撫郡",
+    "開拓使 w/o 振別郡",
+    "開拓使 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1878-12-02",
+    "1879-01-01"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "開拓使 w/o 占守郡",
+    "開拓使 w/o 得撫郡",
+    "開拓使 w/o 振別郡",
+    "開拓使 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1879-01-01",
+    "1879-04-04"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "開拓使 w/o 占守郡",
+    "開拓使 w/o 得撫郡",
+    "開拓使 w/o 振別郡",
+    "開拓使 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1879-04-04",
+    "1879-12-26"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "開拓使 w/o 占守郡",
+    "開拓使 w/o 得撫郡",
+    "開拓使 w/o 振別郡",
+    "開拓使 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1879-12-26",
+    "1880-01-01"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "開拓使 w/o 占守郡",
+    "開拓使 w/o 得撫郡",
+    "開拓使 w/o 振別郡",
+    "開拓使 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1880-01-01",
+    "1880-01-17"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "開拓使 w/o 占守郡",
+    "開拓使 w/o 得撫郡",
+    "開拓使 w/o 振別郡",
+    "開拓使 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1880-01-17",
+    "1880-02-07"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "開拓使 w/o 占守郡",
+    "開拓使 w/o 得撫郡",
+    "開拓使 w/o 振別郡",
+    "開拓使 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1880-02-07",
+    "1880-03-02"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "開拓使 w/o 占守郡",
+    "開拓使 w/o 得撫郡",
+    "開拓使 w/o 振別郡",
+    "開拓使 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1880-03-02",
+    "1880-05-07"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "開拓使 w/o 占守郡",
+    "開拓使 w/o 得撫郡",
+    "開拓使 w/o 振別郡",
+    "開拓使 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1880-05-07",
+    "1880-10-08"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "開拓使 w/o 占守郡",
+    "開拓使 w/o 得撫郡",
+    "開拓使 w/o 振別郡",
+    "開拓使 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1880-10-08",
+    "1881-02-07"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "開拓使 w/o 占守郡",
+    "開拓使 w/o 得撫郡",
+    "開拓使 w/o 振別郡",
+    "開拓使 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1881-02-07",
+    "1881-02-21"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "開拓使 w/o 占守郡",
+    "開拓使 w/o 得撫郡",
+    "開拓使 w/o 振別郡",
+    "開拓使 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1881-02-21",
+    "1881-07-27"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "開拓使 w/o 占守郡",
+    "開拓使 w/o 得撫郡",
+    "開拓使 w/o 振別郡",
+    "開拓使 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1881-07-27",
+    "1881-09-12"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "開拓使 w/o 占守郡",
+    "開拓使 w/o 得撫郡",
+    "開拓使 w/o 振別郡",
+    "開拓使 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1881-09-12",
+    "1882-01-01"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "開拓使 w/o 占守郡",
+    "開拓使 w/o 得撫郡",
+    "開拓使 w/o 振別郡",
+    "開拓使 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1882-01-01",
+    "1882-02-08"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "開拓使 w/o 占守郡",
+    "開拓使 w/o 得撫郡",
+    "開拓使 w/o 振別郡",
+    "開拓使 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1882-02-08",
+    "1883-01-01"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "根室県 w/o 占守郡",
+    "根室県 w/o 得撫郡",
+    "根室県 w/o 振別郡",
+    "根室県 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1883-01-01",
+    "1883-05-09"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "根室県 w/o 占守郡",
+    "根室県 w/o 得撫郡",
+    "根室県 w/o 振別郡",
+    "根室県 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1883-05-09",
+    "1883-11-01"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "根室県 w/o 占守郡",
+    "根室県 w/o 得撫郡",
+    "根室県 w/o 振別郡",
+    "根室県 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1883-11-01",
+    "1884-01-01"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "根室県 w/o 占守郡",
+    "根室県 w/o 得撫郡",
+    "根室県 w/o 振別郡",
+    "根室県 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1884-01-01",
+    "1885-01-01"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "根室県 w/o 占守郡",
+    "根室県 w/o 得撫郡",
+    "根室県 w/o 振別郡",
+    "根室県 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1885-01-01",
+    "1885-08-31"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "根室県 w/o 占守郡",
+    "根室県 w/o 得撫郡",
+    "根室県 w/o 振別郡",
+    "根室県 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1885-08-31",
+    "1886-01-01"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "根室県 w/o 占守郡",
+    "根室県 w/o 得撫郡",
+    "根室県 w/o 振別郡",
+    "根室県 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1886-01-01",
+    "1886-01-26"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "根室県 w/o 占守郡",
+    "根室県 w/o 得撫郡",
+    "根室県 w/o 振別郡",
+    "根室県 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1886-01-26",
+    "1886-05-25"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "北海道庁 w/o 占守郡",
+    "北海道庁 w/o 得撫郡",
+    "北海道庁 w/o 振別郡",
+    "北海道庁 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1886-05-25",
+    "1887-01-01"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "北海道庁 w/o 占守郡",
+    "北海道庁 w/o 得撫郡",
+    "北海道庁 w/o 振別郡",
+    "北海道庁 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1887-01-01",
+    "1887-07-12"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "北海道庁 w/o 占守郡",
+    "北海道庁 w/o 得撫郡",
+    "北海道庁 w/o 振別郡",
+    "北海道庁 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1887-07-12",
+    "1887-11-04"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "北海道庁 w/o 占守郡",
+    "北海道庁 w/o 得撫郡",
+    "北海道庁 w/o 振別郡",
+    "北海道庁 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1887-11-04",
+    "1888-01-01"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "北海道庁 w/o 占守郡",
+    "北海道庁 w/o 得撫郡",
+    "北海道庁 w/o 振別郡",
+    "北海道庁 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1888-01-01",
+    "1888-12-03"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "北海道庁 w/o 占守郡",
+    "北海道庁 w/o 得撫郡",
+    "北海道庁 w/o 振別郡",
+    "北海道庁 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1888-12-03",
+    "1889-04-01"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "北海道庁 w/o 占守郡",
+    "北海道庁 w/o 得撫郡",
+    "北海道庁 w/o 振別郡",
+    "北海道庁 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1889-04-01",
+    "1889-07-01"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "北海道庁 w/o 占守郡",
+    "北海道庁 w/o 得撫郡",
+    "北海道庁 w/o 振別郡",
+    "北海道庁 w/o 新知郡"
+   ]
+  },
+  {
+   "interval": [
+    "1889-07-01",
+    "1891-01-01"
+   ],
+   "drawnWithout": [
+    "東京府 w/o 伊豆諸島",
+    "北海道庁 w/o 占守郡",
+    "北海道庁 w/o 得撫郡",
+    "北海道庁 w/o 振別郡",
+    "北海道庁 w/o 新知郡"
+   ]
+  }
+ ],
+ "parts": [
+  {
+   "muni": "愛知県/海部郡/弥富町",
+   "located": true,
+   "needed": 67,
+   "why": null,
+   "modern": [
+    "弥富市 23235"
+   ],
+   "villages": [
+    {
+     "village": "五明村",
+     "level": "exact",
+     "matched": [
+      "五明町西亀具",
+      "五明町築留",
+      "五明町小赤津外",
+      "五明一丁目",
+      "五明二丁目",
+      "五明三丁目",
+      "五明四丁目"
+     ],
+     "fuzzy": []
+    },
+    {
+     "village": "小島新田",
+     "level": "exact",
+     "matched": [
+      "小島町下新田",
+      "小島町附新田"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 8.181,
+   "locKm2": 1.689
+  },
+  {
+   "muni": "愛知県/海部郡/鍋田村",
+   "located": false,
+   "needed": 67,
+   "why": "village 富島付新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 富崎新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 加稲山新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 加稲九郎治新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 稲荷崎付新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 加稲付新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235)",
+   "modern": [
+    "弥富市 23235"
+   ],
+   "villages": [
+    {
+     "village": "川原欠新田",
+     "level": "exact",
+     "matched": [
+      "川原欠一丁目",
+      "川原欠二丁目",
+      "川原欠三丁目",
+      "川原欠四丁目",
+      "川原欠五丁目"
+     ],
+     "fuzzy": []
+    },
+    {
+     "village": "富島新田",
+     "level": "exact",
+     "matched": [
+      "富島一丁目",
+      "富島二丁目",
+      "富島三丁目",
+      "富島四丁目"
+     ],
+     "fuzzy": []
+    },
+    {
+     "village": "富島付新田",
+     "level": "unmatched",
+     "matched": [],
+     "fuzzy": []
+    },
+    {
+     "village": "富崎新田",
+     "level": "unmatched",
+     "matched": [],
+     "fuzzy": []
+    },
+    {
+     "village": "加稲新田",
+     "level": "exact",
+     "matched": [
+      "加稲一丁目",
+      "加稲二丁目",
+      "加稲三丁目"
+     ],
+     "fuzzy": []
+    },
+    {
+     "village": "加稲山新田",
+     "level": "unmatched",
+     "matched": [],
+     "fuzzy": []
+    },
+    {
+     "village": "加稲九郎治新田",
+     "level": "unmatched",
+     "matched": [],
+     "fuzzy": []
+    },
+    {
+     "village": "三好新田",
+     "level": "exact",
+     "matched": [
+      "三好一丁目",
+      "三好二丁目",
+      "三好三丁目",
+      "三好四丁目",
+      "三好五丁目"
+     ],
+     "fuzzy": []
+    },
+    {
+     "village": "稲荷崎付新田",
+     "level": "unmatched",
+     "matched": [],
+     "fuzzy": []
+    },
+    {
+     "village": "稲荷崎新田",
+     "level": "exact",
+     "matched": [
+      "稲荷崎一丁目",
+      "稲荷崎二丁目",
+      "稲荷崎三丁目",
+      "稲荷崎四丁目",
+      "稲荷崎五丁目",
+      "稲荷崎六丁目",
+      "稲荷崎七丁目",
+      "稲荷崎八丁目",
+      "稲荷崎九丁目"
+     ],
+     "fuzzy": []
+    },
+    {
+     "village": "加稲付新田",
+     "level": "unmatched",
+     "matched": [],
+     "fuzzy": []
+    },
+    {
+     "village": "境新田",
+     "level": "exact",
+     "matched": [
+      "境町"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 24.586,
+   "locKm2": 2.637
+  },
+  {
+   "muni": "愛知県/海部郡/立田村",
+   "located": false,
+   "needed": 67,
+   "why": "village 福原新田（桑名郡の部分） not located (only the 桑名郡 portion of 福原新田 moved; 福原新田 existed in BOTH 郡 and the two pieces were united after 1880 — no 大字 separates them)",
+   "modern": [],
+   "villages": [],
+   "unlocatable": [
+    {
+     "village": "福原新田（桑名郡の部分）",
+     "reason": "only the 桑名郡 portion of 福原新田 moved; 福原新田 existed in BOTH 郡 and the two pieces were united after 1880 — no 大字 separates them"
+    }
+   ],
+   "km2": 24.547,
+   "locKm2": null
+  },
+  {
+   "muni": "岐阜県/海津郡/東江村",
+   "located": false,
+   "needed": 85,
+   "why": "village 松山中島村 not located (no 町丁・字 of that name inside the 1920 町村; searched 海津市 21221)",
+   "modern": [
+    "海津市 21221"
+   ],
+   "villages": [
+    {
+     "village": "松山中島村",
+     "level": "unmatched",
+     "matched": [],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 8.724,
+   "locKm2": null
+  },
+  {
+   "muni": "愛知県/中島郡/祖父江町",
+   "located": false,
+   "needed": 85,
+   "why": "village 三拾町村 not located (no 町丁・字 of that name inside the 1920 町村; searched 稲沢市 23220)",
+   "modern": [
+    "稲沢市 23220"
+   ],
+   "villages": [
+    {
+     "village": "三拾町村",
+     "level": "unmatched",
+     "matched": [],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 16.443,
+   "locKm2": null
+  },
+  {
+   "muni": "愛知県/中島郡/長岡村",
+   "located": true,
+   "needed": 85,
+   "why": null,
+   "modern": [
+    "稲沢市 23220"
+   ],
+   "villages": [
+    {
+     "village": "馬飼村",
+     "level": "prefixed",
+     "matched": [
+      "祖父江町馬飼寺東",
+      "祖父江町馬飼上馬飼",
+      "祖父江町馬飼西馬飼",
+      "祖父江町馬飼東馬飼"
+     ],
+     "fuzzy": []
+    },
+    {
+     "village": "拾町野村",
+     "level": "prefixed",
+     "matched": [
+      "祖父江町拾町野猿尾北",
+      "祖父江町拾町野屋敷西",
+      "祖父江町拾町野屋敷東"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 5.608,
+   "locKm2": 1.732
+  },
+  {
+   "muni": "愛知県/中島郡/朝日村",
+   "located": true,
+   "needed": 85,
+   "why": null,
+   "modern": [
+    "一宮市 23203"
+   ],
+   "villages": [
+    {
+     "village": "東加賀野井村",
+     "level": "exact",
+     "matched": [
+      "東加賀野井字江東",
+      "東加賀野井字東川原"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 9.729,
+   "locKm2": 1.087
+  },
+  {
+   "muni": "三重県//津市",
+   "located": false,
+   "needed": 6,
+   "why": "village 伊予町 not located (no 町丁・字 of that name inside the 1920 町村; searched 津市 24201); village 藤方村の一部 not located (only part of 藤方村 went to 津市 (the rest is in 藤水村); the part is not a 大字 of its own)",
+   "modern": [
+    "津市 24201"
+   ],
+   "villages": [
+    {
+     "village": "伊予町",
+     "level": "unmatched",
+     "matched": [],
+     "fuzzy": []
+    },
+    {
+     "village": "八幡町",
+     "level": "exact",
+     "matched": [
+      "八幡町津"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [
+    {
+     "village": "藤方村の一部",
+     "reason": "only part of 藤方村 went to 津市 (the rest is in 藤水村); the part is not a 大字 of its own"
+    }
+   ],
+   "km2": 11.165,
+   "locKm2": 0.069
+  },
+  {
+   "muni": "岐阜県/海津郡/大江村",
+   "located": true,
+   "needed": 77,
+   "why": null,
+   "modern": [
+    "海津市 21221"
+   ],
+   "villages": [
+    {
+     "village": "金廻村",
+     "level": "exact",
+     "matched": [
+      "金廻"
+     ],
+     "fuzzy": []
+    },
+    {
+     "village": "油島村",
+     "level": "exact",
+     "matched": [
+      "油島"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 7.942,
+   "locKm2": 2.359
+  },
+  {
+   "muni": "滋賀県/神崎郡/能登川村",
+   "located": true,
+   "needed": 30,
+   "why": null,
+   "modern": [
+    "東近江市 25213"
+   ],
+   "villages": [
+    {
+     "village": "南須田",
+     "level": "exact",
+     "matched": [
+      "南須田町"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 4.497,
+   "locKm2": 0.634
+  },
+  {
+   "muni": "富山県/東砺波郡/般若野村",
+   "located": false,
+   "needed": 30,
+   "why": "village 円池又新村 not located (no 町丁・字 of that name inside the 1920 町村; searched 高岡市 16202, 射水市 16211)",
+   "modern": [
+    "高岡市 16202",
+    "射水市 16211"
+   ],
+   "villages": [
+    {
+     "village": "円池又新村",
+     "level": "unmatched",
+     "matched": [],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 5.153,
+   "locKm2": null
+  },
+  {
+   "muni": "富山県/射水郡/海老江村",
+   "located": true,
+   "needed": 30,
+   "why": null,
+   "modern": [
+    "射水市 16211"
+   ],
+   "villages": [
+    {
+     "village": "練合村",
+     "level": "prefixed",
+     "matched": [
+      "海老江練合"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 2.099,
+   "locKm2": 0.332
+  },
+  {
+   "muni": "富山県/射水郡/本江村",
+   "located": false,
+   "needed": 30,
+   "why": "village 針山新村（婦負郡側） not located (1920 本江村 holds TWO villages named 針山新村 (射水郡側 and 婦負郡側); only the 婦負郡 one was 新川県 — a 大字 name cannot tell them apart)",
+   "modern": [],
+   "villages": [],
+   "unlocatable": [
+    {
+     "village": "針山新村（婦負郡側）",
+     "reason": "1920 本江村 holds TWO villages named 針山新村 (射水郡側 and 婦負郡側); only the 婦負郡 one was 新川県 — a 大字 name cannot tell them apart"
+    }
+   ],
+   "km2": 2.546,
+   "locKm2": null
+  },
+  {
+   "muni": "新潟県/西蒲原郡/国上村",
+   "located": true,
+   "needed": 38,
+   "why": null,
+   "modern": [
+    "燕市 15213",
+    "西蒲原郡弥彦村 15342"
+   ],
+   "villages": [
+    {
+     "village": "真木山村",
+     "level": "exact",
+     "matched": [
+      "真木山"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 20.514,
+   "locKm2": 0.352
+  },
+  {
+   "muni": "新潟県/古志郡/下川西村",
+   "located": true,
+   "needed": 38,
+   "why": null,
+   "modern": [
+    "長岡市 15202"
+   ],
+   "villages": [
+    {
+     "village": "脇川新田",
+     "level": "exact",
+     "matched": [
+      "脇川新田町"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 11.251,
+   "locKm2": 0.277
+  },
+  {
+   "muni": "新潟県/南蒲原郡/中之島村",
+   "located": false,
+   "needed": 38,
+   "why": "village 海老島 not located (no 町丁・字 of that name inside the 1920 町村; searched 長岡市 15202); village 海老島勇次新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 長岡市 15202)",
+   "modern": [
+    "長岡市 15202"
+   ],
+   "villages": [
+    {
+     "village": "海老島",
+     "level": "unmatched",
+     "matched": [],
+     "fuzzy": []
+    },
+    {
+     "village": "海老島勇次新田",
+     "level": "unmatched",
+     "matched": [],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 42.672,
+   "locKm2": null
+  },
+  {
+   "muni": "福井県/南條郡/神山村",
+   "located": true,
+   "needed": 35,
+   "why": null,
+   "modern": [
+    "越前市 18209"
+   ],
+   "villages": [
+    {
+     "village": "沢村",
+     "level": "exact",
+     "matched": [
+      "沢町"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 15.912,
+   "locKm2": 0.33
+  },
+  {
+   "muni": "福井県/南條郡/坂口村",
+   "located": true,
+   "needed": 35,
+   "why": null,
+   "modern": [
+    "越前市 18209"
+   ],
+   "villages": [
+    {
+     "village": "勾当原村",
+     "level": "exact",
+     "matched": [
+      "勾当原町"
+     ],
+     "fuzzy": []
+    },
+    {
+     "village": "中山村",
+     "level": "exact",
+     "matched": [
+      "中山町"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 14.944,
+   "locKm2": 5.356
+  },
+  {
+   "muni": "福井県/南條郡/河野村",
+   "located": true,
+   "needed": 14,
+   "why": null,
+   "modern": [
+    "南条郡南越前町 18404"
+   ],
+   "villages": [
+    {
+     "village": "菅谷村",
+     "level": "exact",
+     "matched": [
+      "菅谷"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 49.868,
+   "locKm2": 7.629
+  },
+  {
+   "muni": "東京府/北多摩郡/東村山村",
+   "located": false,
+   "needed": 64,
+   "why": "village 大岱村 not located (no 町丁・字 of that name inside the 1920 町村; searched 東村山市 13213)",
+   "modern": [
+    "東村山市 13213"
+   ],
+   "villages": [
+    {
+     "village": "大岱村",
+     "level": "unmatched",
+     "matched": [],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 17.134,
+   "locKm2": null
+  },
+  {
+   "muni": "埼玉県/入間郡/柳瀬村",
+   "located": true,
+   "needed": 64,
+   "why": null,
+   "modern": [
+    "所沢市 11208"
+   ],
+   "villages": [
+    {
+     "village": "日比田村",
+     "level": "exact",
+     "matched": [
+      "大字日比田"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 9.425,
+   "locKm2": 0.97
+  },
+  {
+   "muni": "東京府/北多摩郡/武蔵野村",
+   "located": false,
+   "needed": 4,
+   "why": "village 吉祥寺村 not located (only fuzzy 町丁・字 candidates: 吉祥寺東町一丁目・吉祥寺東町二丁目・吉祥寺東町三丁目・吉祥寺東町四丁目・吉祥寺南町一丁目・吉祥寺南町二丁目・吉祥寺南町三丁目・吉祥寺南町四丁目・吉祥寺南町五丁目・吉祥寺本町一丁目・吉祥寺本町二丁目・吉祥寺本町三丁目・吉祥寺本町四丁目・吉祥寺北町一丁目・吉祥寺北町二丁目・吉祥寺北町三丁目・吉祥寺北町四丁目・吉祥寺北町五丁目); village 西窪村 not located (no 町丁・字 of that name inside the 1920 町村; searched 武蔵野市 13203)",
+   "modern": [
+    "武蔵野市 13203"
+   ],
+   "villages": [
+    {
+     "village": "吉祥寺村",
+     "level": "fuzzy",
+     "matched": [],
+     "fuzzy": [
+      "吉祥寺東町一丁目",
+      "吉祥寺東町二丁目",
+      "吉祥寺東町三丁目",
+      "吉祥寺東町四丁目",
+      "吉祥寺南町一丁目",
+      "吉祥寺南町二丁目",
+      "吉祥寺南町三丁目",
+      "吉祥寺南町四丁目",
+      "吉祥寺南町五丁目",
+      "吉祥寺本町一丁目",
+      "吉祥寺本町二丁目",
+      "吉祥寺本町三丁目",
+      "吉祥寺本町四丁目",
+      "吉祥寺北町一丁目",
+      "吉祥寺北町二丁目",
+      "吉祥寺北町三丁目",
+      "吉祥寺北町四丁目",
+      "吉祥寺北町五丁目"
+     ]
+    },
+    {
+     "village": "西窪村",
+     "level": "unmatched",
+     "matched": [],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 10.979,
+   "locKm2": null
+  },
+  {
+   "muni": "東京府/北多摩郡/三鷹村",
+   "located": true,
+   "needed": 4,
+   "why": null,
+   "modern": [
+    "三鷹市 13204"
+   ],
+   "villages": [
+    {
+     "village": "牟礼村",
+     "level": "exact",
+     "matched": [
+      "牟礼一丁目",
+      "牟礼二丁目",
+      "牟礼三丁目",
+      "牟礼四丁目",
+      "牟礼五丁目",
+      "牟礼六丁目",
+      "牟礼七丁目"
+     ],
+     "fuzzy": []
+    },
+    {
+     "village": "上連雀村",
+     "level": "exact",
+     "matched": [
+      "上連雀一丁目",
+      "上連雀二丁目",
+      "上連雀三丁目",
+      "上連雀四丁目",
+      "上連雀五丁目",
+      "上連雀六丁目",
+      "上連雀七丁目",
+      "上連雀八丁目",
+      "上連雀九丁目"
+     ],
+     "fuzzy": []
+    },
+    {
+     "village": "下連雀村",
+     "level": "exact",
+     "matched": [
+      "下連雀一丁目",
+      "下連雀二丁目",
+      "下連雀三丁目",
+      "下連雀四丁目",
+      "下連雀五丁目",
+      "下連雀六丁目",
+      "下連雀七丁目",
+      "下連雀八丁目",
+      "下連雀九丁目"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 16.423,
+   "locKm2": 5.803
+  },
+  {
+   "muni": "東京府/北多摩郡/清瀬村",
+   "located": true,
+   "needed": 0,
+   "why": null,
+   "modern": [],
+   "villages": [],
+   "unlocatable": [],
+   "km2": 10.229,
+   "locKm2": null
+  },
+  {
+   "muni": "埼玉県/北葛飾郡/吉田村",
+   "located": true,
+   "needed": 43,
+   "why": null,
+   "modern": [
+    "幸手市 11240"
+   ],
+   "villages": [
+    {
+     "village": "細野",
+     "level": "exact",
+     "matched": [
+      "大字細野"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 6.651,
+   "locKm2": 0.227
+  },
+  {
+   "muni": "埼玉県/北葛飾郡/豊岡村",
+   "located": true,
+   "needed": 51,
+   "why": null,
+   "modern": [
+    "幸手市 11240",
+    "北葛飾郡杉戸町 11464"
+   ],
+   "villages": [
+    {
+     "village": "西関宿",
+     "level": "exact",
+     "matched": [
+      "大字西関宿"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 4.985,
+   "locKm2": 0.407
+  },
+  {
+   "muni": "東京府/南足立郡/舎人村",
+   "located": true,
+   "needed": 50,
+   "why": null,
+   "modern": [
+    "足立区 13121"
+   ],
+   "villages": [
+    {
+     "village": "舎人村",
+     "level": "exact",
+     "matched": [
+      "舎人一丁目",
+      "舎人二丁目",
+      "舎人三丁目",
+      "舎人四丁目",
+      "舎人五丁目",
+      "舎人六丁目"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 4.526,
+   "locKm2": 1.112
+  },
+  {
+   "muni": "山形県/東置賜郡/中川村",
+   "located": false,
+   "needed": 60,
+   "why": "village 中山村 not located (only fuzzy 町丁・字 candidates: 元中山); village 元中山村・小岩沢村 not located (their side (山形県 or 置賜県) 1871-12-13..1876-08-21 is undetermined (stillUnresolved: no 1872-1876 attestation found))",
+   "modern": [
+    "南陽市 06213"
+   ],
+   "villages": [
+    {
+     "village": "中山村",
+     "level": "fuzzy",
+     "matched": [],
+     "fuzzy": [
+      "元中山"
+     ]
+    },
+    {
+     "village": "川樋村",
+     "level": "exact",
+     "matched": [
+      "川樋"
+     ],
+     "fuzzy": []
+    },
+    {
+     "village": "川樋新田",
+     "level": "exact",
+     "matched": [
+      "川樋"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [
+    {
+     "village": "元中山村・小岩沢村",
+     "reason": "their side (山形県 or 置賜県) 1871-12-13..1876-08-21 is undetermined (stillUnresolved: no 1872-1876 attestation found)"
+    }
+   ],
+   "km2": 23.531,
+   "locKm2": 2.376
+  },
+  {
+   "muni": "山形県/南置賜郡/万世村",
+   "located": true,
+   "needed": 60,
+   "why": null,
+   "modern": [
+    "米沢市 06202"
+   ],
+   "villages": [
+    {
+     "village": "金谷村",
+     "level": "prefixed",
+     "matched": [
+      "万世町金谷"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 13.794,
+   "locKm2": 0.841
+  },
+  {
+   "muni": "福島県/西白河郡/矢吹町",
+   "located": false,
+   "needed": 48,
+   "why": "village 矢吹村 not located (no 町丁・字 of that name inside the 1920 町村; searched 西白河郡矢吹町 07466, 岩瀬郡鏡石町 07342); village 矢吹新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 西白河郡矢吹町 07466, 岩瀬郡鏡石町 07342); village 中畑新田村 not located (no 町丁・字 of that name inside the 1920 町村; searched 西白河郡矢吹町 07466, 岩瀬郡鏡石町 07342)",
+   "modern": [
+    "西白河郡矢吹町 07466",
+    "岩瀬郡鏡石町 07342"
+   ],
+   "villages": [
+    {
+     "village": "矢吹村",
+     "level": "unmatched",
+     "matched": [],
+     "fuzzy": []
+    },
+    {
+     "village": "矢吹新田",
+     "level": "unmatched",
+     "matched": [],
+     "fuzzy": []
+    },
+    {
+     "village": "中畑新田村",
+     "level": "unmatched",
+     "matched": [],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 15.829,
+   "locKm2": null
+  },
+  {
+   "muni": "福島県/西白河郡/中畑村",
+   "located": true,
+   "needed": 48,
+   "why": null,
+   "modern": [
+    "西白河郡矢吹町 07466"
+   ],
+   "villages": [
+    {
+     "village": "中畑村",
+     "level": "exact",
+     "matched": [
+      "中畑"
+     ],
+     "fuzzy": []
+    },
+    {
+     "village": "大畑村",
+     "level": "exact",
+     "matched": [
+      "大畑"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 20.204,
+   "locKm2": 1.174
+  },
+  {
+   "muni": "福島県/西白河郡/三神村",
+   "located": false,
+   "needed": 48,
+   "why": "village 神田村 not located (only fuzzy 町丁・字 candidates: 神田東・神田西・神田南); village 中野目村 not located (only fuzzy 町丁・字 candidates: 中野目東・中野目西); village 明新村 not located (only fuzzy 町丁・字 candidates: 明新上・明新中・明新下・明新東・明新原・明新西)",
+   "modern": [
+    "西白河郡矢吹町 07466"
+   ],
+   "villages": [
+    {
+     "village": "神田村",
+     "level": "fuzzy",
+     "matched": [],
+     "fuzzy": [
+      "神田東",
+      "神田西",
+      "神田南"
+     ]
+    },
+    {
+     "village": "堤村",
+     "level": "exact",
+     "matched": [
+      "堤"
+     ],
+     "fuzzy": []
+    },
+    {
+     "village": "中野目村",
+     "level": "fuzzy",
+     "matched": [],
+     "fuzzy": [
+      "中野目東",
+      "中野目西"
+     ]
+    },
+    {
+     "village": "明新村",
+     "level": "fuzzy",
+     "matched": [],
+     "fuzzy": [
+      "明新上",
+      "明新中",
+      "明新下",
+      "明新東",
+      "明新原",
+      "明新西"
+     ]
+    }
+   ],
+   "unlocatable": [],
+   "km2": 20.799,
+   "locKm2": 0.415
+  },
+  {
+   "muni": "福島県/西白河郡/滑津村",
+   "located": true,
+   "needed": 48,
+   "why": null,
+   "modern": [
+    "西白河郡中島村 07465"
+   ],
+   "villages": [
+    {
+     "village": "松崎村",
+     "level": "exact",
+     "matched": [
+      "大字松崎"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 11.825,
+   "locKm2": 2.878
+  },
+  {
+   "muni": "福島県/岩瀬郡/鏡石村",
+   "located": true,
+   "needed": 48,
+   "why": null,
+   "modern": [
+    "岩瀬郡鏡石町 07342"
+   ],
+   "villages": [
+    {
+     "village": "笠石村",
+     "level": "exact",
+     "matched": [
+      "笠石"
+     ],
+     "fuzzy": []
+    },
+    {
+     "village": "成田村",
+     "level": "exact",
+     "matched": [
+      "成田"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 31.286,
+   "locKm2": 3.914
+  },
+  {
+   "muni": "福島県/石川郡/須釜村",
+   "located": true,
+   "needed": 48,
+   "why": null,
+   "modern": [
+    "石川郡玉川村 07502"
+   ],
+   "villages": [
+    {
+     "village": "四辻新田村",
+     "level": "exact",
+     "matched": [
+      "大字四辻新田"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 29.55,
+   "locKm2": 5.47
+  },
+  {
+   "muni": "大阪府/北河内郡/牧野村",
+   "located": false,
+   "needed": 40,
+   "why": "village 磯島村 not located (only fuzzy 町丁・字 candidates: 磯島元町・磯島茶屋町・磯島南町・磯島北町)",
+   "modern": [
+    "枚方市 27210"
+   ],
+   "villages": [
+    {
+     "village": "磯島村",
+     "level": "fuzzy",
+     "matched": [],
+     "fuzzy": [
+      "磯島元町",
+      "磯島茶屋町",
+      "磯島南町",
+      "磯島北町"
+     ]
+    }
+   ],
+   "unlocatable": [],
+   "km2": 7.709,
+   "locKm2": null
+  },
+  {
+   "muni": "兵庫県/佐用郡/江川村",
+   "located": false,
+   "needed": 96,
+   "why": "village 中山村 not located (only fuzzy 町丁・字 candidates: 東中山)",
+   "modern": [
+    "佐用郡佐用町 28501"
+   ],
+   "villages": [
+    {
+     "village": "中山村",
+     "level": "fuzzy",
+     "matched": [],
+     "fuzzy": [
+      "東中山"
+     ]
+    }
+   ],
+   "unlocatable": [],
+   "km2": 24.228,
+   "locKm2": null
+  },
+  {
+   "muni": "高知県/幡多郡/沖ノ島村",
+   "located": true,
+   "needed": 51,
+   "why": null,
+   "modern": [
+    "宿毛市 39208"
+   ],
+   "villages": [
+    {
+     "village": "母島",
+     "level": "prefixed",
+     "matched": [
+      "沖の島町母島"
+     ],
+     "fuzzy": []
+    },
+    {
+     "village": "鵜来島",
+     "level": "prefixed",
+     "matched": [
+      "沖の島町鵜来島",
+      "沖の島町鵜来島姫島"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 11.884,
+   "locKm2": 5.654
+  },
+  {
+   "muni": "熊本県/下益城郡/杉合村",
+   "located": true,
+   "needed": 38,
+   "why": null,
+   "modern": [
+    "熊本市南区 43104"
+   ],
+   "villages": [
+    {
+     "village": "小岩瀬村",
+     "level": "prefixed",
+     "matched": [
+      "富合町小岩瀬"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 7.527,
+   "locKm2": 1.032
+  },
+  {
+   "muni": "宮崎県/児湯郡/三財村",
+   "located": true,
+   "needed": 31,
+   "why": null,
+   "modern": [
+    "西都市 45208"
+   ],
+   "villages": [
+    {
+     "village": "寒川村",
+     "level": "exact",
+     "matched": [
+      "大字寒川"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 86.544,
+   "locKm2": 55.914
+  },
+  {
+   "muni": "愛媛県/上浮穴郡/久万町",
+   "located": true,
+   "needed": 18,
+   "why": null,
+   "modern": [
+    "上浮穴郡久万高原町 38386"
+   ],
+   "villages": [
+    {
+     "village": "下野尻村",
+     "level": "exact",
+     "matched": [
+      "下野尻"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 8.156,
+   "locKm2": 3.073
+  },
+  {
+   "muni": "愛媛県/伊予郡/南山崎村",
+   "located": true,
+   "needed": 20,
+   "why": null,
+   "modern": [
+    "伊予市 38210"
+   ],
+   "villages": [
+    {
+     "village": "下唐川村",
+     "level": "exact",
+     "matched": [
+      "下唐川"
+     ],
+     "fuzzy": []
+    },
+    {
+     "village": "大平村",
+     "level": "exact",
+     "matched": [
+      "大平"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 20.184,
+   "locKm2": 10.409
+  },
+  {
+   "muni": "愛媛県/温泉郡/睦野村",
+   "located": true,
+   "needed": 38,
+   "why": null,
+   "modern": [
+    "松山市 38201"
+   ],
+   "villages": [
+    {
+     "village": "睦月村",
+     "level": "exact",
+     "matched": [
+      "睦月"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 4.78,
+   "locKm2": 3.738
+  },
+  {
+   "muni": "愛媛県/温泉郡/東中島村",
+   "located": false,
+   "needed": 38,
+   "why": "village 大浦村 not located (大浦村 was divided inside itself between 預地(旧幕府領) and 大洲藩領 (村内で領主が分かれており分離不能 — the research's words; stillUnresolved U20))",
+   "modern": [],
+   "villages": [],
+   "unlocatable": [
+    {
+     "village": "大浦村",
+     "reason": "大浦村 was divided inside itself between 預地(旧幕府領) and 大洲藩領 (村内で領主が分かれており分離不能 — the research's words; stillUnresolved U20)"
+    }
+   ],
+   "km2": 11.965,
+   "locKm2": null
+  },
+  {
+   "muni": "愛媛県/温泉郡/西中島村",
+   "located": true,
+   "needed": 38,
+   "why": null,
+   "modern": [
+    "松山市 38201"
+   ],
+   "villages": [
+    {
+     "village": "宇和間村",
+     "level": "exact",
+     "matched": [
+      "宇和間"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 9.672,
+   "locKm2": 1.125
+  },
+  {
+   "muni": "愛媛県/温泉郡/神和村",
+   "located": true,
+   "needed": 38,
+   "why": null,
+   "modern": [
+    "松山市 38201"
+   ],
+   "villages": [
+    {
+     "village": "元怒和村",
+     "level": "exact",
+     "matched": [
+      "元怒和"
+     ],
+     "fuzzy": []
+    },
+    {
+     "village": "上怒和村",
+     "level": "exact",
+     "matched": [
+      "上怒和"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 10.889,
+   "locKm2": 4.522
+  },
+  {
+   "muni": "宮崎県/東諸県郡/倉岡村",
+   "located": true,
+   "needed": 38,
+   "why": null,
+   "modern": [
+    "宮崎市 45201"
+   ],
+   "villages": [
+    {
+     "village": "糸原村",
+     "level": "exact",
+     "matched": [
+      "大字糸原"
+     ],
+     "fuzzy": []
+    },
+    {
+     "village": "有田村",
+     "level": "exact",
+     "matched": [
+      "大字有田"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 11.295,
+   "locKm2": 5.968
+  },
+  {
+   "muni": "宮崎県/東諸県郡/綾村",
+   "located": false,
+   "needed": 38,
+   "why": "village 入野村 not located (no 町丁・字 of that name inside the 1920 町村; searched 東諸県郡綾町 45383)",
+   "modern": [
+    "東諸県郡綾町 45383"
+   ],
+   "villages": [
+    {
+     "village": "入野村",
+     "level": "unmatched",
+     "matched": [],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 95.569,
+   "locKm2": null
+  },
+  {
+   "muni": "宮崎県/北諸県郡/高崎村",
+   "located": true,
+   "needed": 21,
+   "why": null,
+   "modern": [
+    "都城市 45202"
+   ],
+   "villages": [
+    {
+     "village": "笛水村",
+     "level": "prefixed",
+     "matched": [
+      "高崎町笛水椎屋",
+      "高崎町笛水後平",
+      "高崎町笛水竹元",
+      "高崎町笛水崎山"
+     ],
+     "fuzzy": []
+    },
+    {
+     "village": "江平村",
+     "level": "prefixed",
+     "matched": [
+      "高崎町江平塚原",
+      "高崎町江平小牧",
+      "高崎町江平轟",
+      "高崎町江平鵜戸",
+      "高崎町江平木下",
+      "高崎町江平温水",
+      "高崎町江平吉村",
+      "高崎町江平炭床",
+      "高崎町江平中山",
+      "高崎町江平崎山"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 93.265,
+   "locKm2": 38.297
+  },
+  {
+   "muni": "宮崎県/西諸県郡/小林町",
+   "located": true,
+   "needed": 21,
+   "why": null,
+   "modern": [
+    "小林市 45205"
+   ],
+   "villages": [
+    {
+     "village": "東方村",
+     "level": "exact",
+     "matched": [
+      "東方"
+     ],
+     "fuzzy": []
+    }
+   ],
+   "unlocatable": [],
+   "km2": 232.317,
+   "locKm2": 79.915
+  }
+ ],
+ "D": {
+  "landKm2": 375886,
+  "at": {
+   "1872-07-01": {
+    "drawn": 54,
+    "km2": 298663,
+    "share": 0.7946,
+    "withheldKm2": 74584
+   },
+   "1876-12-01": {
+    "drawn": 34,
+    "km2": 331310,
+    "share": 0.8814,
+    "withheldKm2": 44231
+   },
+   "1883-07-01": {
+    "drawn": 43,
+    "km2": 344456,
+    "share": 0.9164,
+    "withheldKm2": 31085
+   },
+   "1890-07-01": {
+    "drawn": 45,
+    "km2": 360112,
+    "share": 0.958,
+    "withheldKm2": 15472
+   }
+  }
+ },
+ "E": {
+  "measuredOn": "v2 intervals (97); v1 status read at each interval's first day from meiji-report.json",
+  "prefectureIntervals": {
+   "v1WithheldNowDrawn": 1527,
+   "v1DrawnNowWithheld": 61,
+   "stillWithheld": 1117,
+   "drawnInBoth": 2964
+  },
+  "prefectureDays": {
+   "nowDrawn": 67454,
+   "nowWithheld": 1715,
+   "stillWithheld": 44343
+  },
+  "runs": {
+   "v1Withheld": 101,
+   "v2Withheld": 50
+  },
+  "newlyDrawnDaysByPrefecture": {
+   "茨城県": 6947,
+   "千葉県": 6409,
+   "埼玉県": 5682,
+   "沖縄県": 4290,
+   "神奈川県": 3990,
+   "琉球藩": 2361,
+   "愛媛県": 2234,
+   "高知県": 2208,
+   "石川県": 1913,
+   "滋賀県": 1877,
+   "豊岡県": 1713,
+   "鹿児島県": 1701,
+   "兵庫県": 1695,
+   "岡山県": 1575,
+   "広島県": 1575,
+   "岩手県": 1523,
+   "宮城県": 1523,
+   "東京府": 1472,
+   "水沢県": 1400,
+   "宮崎県": 1314,
+   "岐阜県": 1269,
+   "愛知県": 1269,
+   "小田県": 1258,
+   "新治県": 1229,
+   "度会県": 1203,
+   "名東県": 927,
+   "香川県": 773,
+   "福島県": 585,
+   "印旛県": 538,
+   "新潟県": 528,
+   "八代県": 387,
+   "敦賀県": 380,
+   "筑摩県": 352,
+   "足羽県": 351,
+   "開拓使": 350,
+   "青森県": 314,
+   "大阪府": 276,
+   "堺県": 276,
+   "三重県": 276,
+   "犬上県": 209,
+   "熊本県": 207,
+   "深津県": 197,
+   "白川県": 180,
+   "磐前県": 152,
+   "磐井県": 148,
+   "長浜県": 93,
+   "金沢県": 70,
+   "盛岡県": 65,
+   "仙台県": 65,
+   "大津県": 56,
+   "一関県": 40,
+   "福井県": 29
+  },
+  "newlyWithheld": {
+   "山形県": [
+    "R6 village 中山村 not located (only fuzzy 町丁・字 candidates: 元中山); village 元中山村・小岩沢村 not located (their side (山形県 or 置賜県) 1871-12-13..1876-08-21 "
+   ],
+   "大阪府": [
+    "R6 village 磯島村 not located (only fuzzy 町丁・字 candidates: 磯島元町・磯島茶屋町・磯島南町・磯島北町) [大阪府/北河内郡/牧野村]"
+   ]
+  },
+  "v1D": {
+   "1872-07-01": {
+    "drawn": 29,
+    "km2": 113702,
+    "share": 0.3025,
+    "withheldKm2": 272962
+   },
+   "1876-12-01": {
+    "drawn": 27,
+    "km2": 283222,
+    "share": 0.7535,
+    "withheldKm2": 92362
+   },
+   "1883-07-01": {
+    "drawn": 38,
+    "km2": 323827,
+    "share": 0.8615,
+    "withheldKm2": 51757
+   },
+   "1890-07-01": {
+    "drawn": 38,
+    "km2": 323827,
+    "share": 0.8615,
+    "withheldKm2": 51757
+   }
+  },
+  "remainingReasonsByRunCount": {
+   "R6 village 富島付新田 not located (no 町丁・字 of that name inside the 1920 町村; searched 弥富市 23235); village 富崎新田 not located (no 町丁・字 of that name inside the 1920 町村; s": 7,
+   "R6 village 福原新田（桑名郡の部分） not located (only the 桑名郡 portion of 福原新田 moved; 福原新田 existed in BOTH 郡 and the two pieces were united after 1880 — no 大字 separates them": 7,
+   "R6 village 松山中島村 not located (no 町丁・字 of that name inside the 1920 町村; searched 海津市 21221)": 7,
+   "R6 village 三拾町村 not located (no 町丁・字 of that name inside the 1920 町村; searched 稲沢市 23220)": 7,
+   "R6 village 中山村 not located (only fuzzy 町丁・字 candidates: 東中山)": 6,
+   "R6 village 大岱村 not located (no 町丁・字 of that name inside the 1920 町村; searched 東村山市 13213)": 6,
+   "R6 village 大浦村 not located (大浦村 was divided inside itself between 預地(旧幕府領) and 大洲藩領 (村内で領主が分かれており分離不能 — the research's words; stillUnresolved U20))": 6,
+   "R6 village 入野村 not located (no 町丁・字 of that name inside the 1920 町村; searched 東諸県郡綾町 45383)": 5,
+   "R6 village 矢吹村 not located (no 町丁・字 of that name inside the 1920 町村; searched 西白河郡矢吹町 07466, 岩瀬郡鏡石町 07342); village 矢吹新田 not located (no 町丁・字 of that name insid": 4,
+   "R6 village 神田村 not located (only fuzzy 町丁・字 candidates: 神田東・神田西・神田南); village 中野目村 not located (only fuzzy 町丁・字 candidates: 中野目東・中野目西); village 明新村 not located ": 4,
+   "R8 day of «1879 安濃郡 (三重県)» unknown within 1872-02-09..1873-01-01 (明治5年 only (D5; 明治5年1月1日 = 1872-02-09, 明治5年12月3日 = 1873-01-01); stillUnresolved U1)": 3,
+   "R8 day of «1872 一志郡» unknown within 1872-02-09..1873-01-01 (明治5年 only (D5); same event as 1879 安濃郡)": 3,
+   "R6 village 中山村 not located (only fuzzy 町丁・字 candidates: 元中山); village 元中山村・小岩沢村 not located (their side (山形県 or 置賜県) 1871-12-13..1876-08-21 is undetermined (sti": 2,
+   "R6 village 吉祥寺村 not located (only fuzzy 町丁・字 candidates: 吉祥寺東町一丁目・吉祥寺東町二丁目・吉祥寺東町三丁目・吉祥寺東町四丁目・吉祥寺南町一丁目・吉祥寺南町二丁目・吉祥寺南町三丁目・吉祥寺南町四丁目・吉祥寺南町五丁目・吉祥寺本町一丁目・吉祥寺本町二丁目・吉祥寺本": 2,
+   "R6 village 磯島村 not located (only fuzzy 町丁・字 candidates: 磯島元町・磯島茶屋町・磯島南町・磯島北町)": 2,
+   "R6 village 海老島 not located (no 町丁・字 of that name inside the 1920 町村; searched 長岡市 15202); village 海老島勇次新田 not located (no 町丁・字 of that name inside the 1920 町村; ": 2,
+   "R4 village transfer 1915-01-01 city 新潟市 (unresolved: origin 郡 not stated) (other side unknown: all neighbours)": 2,
+   "R6 village 針山新村（婦負郡側） not located (1920 本江村 holds TWO villages named 針山新村 (射水郡側 and 婦負郡側); only the 婦負郡 one was 新川県 — a 大字 name cannot tell them apart)": 2,
+   "R6 village 円池又新村 not located (no 町丁・字 of that name inside the 1920 町村; searched 高岡市 16202, 射水市 16211)": 2,
+   "R6 village 伊予町 not located (no 町丁・字 of that name inside the 1920 町村; searched 津市 24201); village 藤方村の一部 not located (only part of 藤方村 went to 津市 (the rest is in": 2
+  }
+ },
+ "unionTrouble": [],
+ "images": [
+  {
+   "file": "C:\\Users\\gyuuk\\AppData\\Local\\Temp\\claude\\C--Users-gyuuk-OneDrive-IntMap\\dfc24dbe-735e-43ba-a35e-b14d6a7d3405\\scratchpad\\meiji-pilot\\meiji-1872-07-01-v2.png",
+   "date": "1872-07-01",
+   "drawn": 54,
+   "prefectures": [
+    "群馬県",
+    "青森県",
+    "豊岡県",
+    "秋田県",
+    "若松県",
+    "酒田県",
+    "三潴県",
+    "伊万里県",
+    "熊本県",
+    "栃木県",
+    "小倉県",
+    "八代県",
+    "足柄県",
+    "茨城県",
+    "鹿児島県",
+    "埼玉県",
+    "東京府",
+    "長崎県",
+    "大分県",
+    "印旛県",
+    "新治県",
+    "木更津県",
+    "福岡県",
+    "宇都宮県",
+    "名東県",
+    "香川県",
+    "深津県",
+    "岡山県",
+    "広島県",
+    "島根県",
+    "山口県",
+    "額田県",
+    "鳥取県",
+    "高知県",
+    "浜松県",
+    "静岡県",
+    "浜田県",
+    "敦賀県",
+    "筑摩県",
+    "長野県",
+    "山梨県",
+    "相川県",
+    "兵庫県",
+    "開拓使",
+    "京都府",
+    "和歌山県",
+    "奈良県",
+    "水沢県",
+    "足羽県",
+    "岩手県",
+    "宮城県",
+    "滋賀県",
+    "石川県",
+    "犬上県"
+   ]
+  },
+  {
+   "file": "C:\\Users\\gyuuk\\AppData\\Local\\Temp\\claude\\C--Users-gyuuk-OneDrive-IntMap\\dfc24dbe-735e-43ba-a35e-b14d6a7d3405\\scratchpad\\meiji-pilot\\meiji-1876-12-01-v2.png",
+   "date": "1876-12-01",
+   "drawn": 32,
+   "prefectures": [
+    "青森県",
+    "秋田県",
+    "山形県",
+    "栃木県",
+    "茨城県",
+    "鹿児島県",
+    "福島県",
+    "東京府",
+    "長崎県",
+    "大分県",
+    "福岡県",
+    "広島県",
+    "島根県",
+    "山口県",
+    "高知県",
+    "静岡県",
+    "大阪府",
+    "長野県",
+    "山梨県",
+    "新潟県",
+    "開拓使",
+    "堺県",
+    "京都府",
+    "和歌山県",
+    "岩手県",
+    "宮城県",
+    "滋賀県",
+    "石川県",
+    "愛媛県",
+    "千葉県",
+    "熊本県",
+    "群馬県"
+   ]
+  },
+  {
+   "file": "C:\\Users\\gyuuk\\AppData\\Local\\Temp\\claude\\C--Users-gyuuk-OneDrive-IntMap\\dfc24dbe-735e-43ba-a35e-b14d6a7d3405\\scratchpad\\meiji-pilot\\meiji-1883-07-01-v2.png",
+   "date": "1883-07-01",
+   "drawn": 42,
+   "prefectures": [
+    "青森県",
+    "秋田県",
+    "山形県",
+    "神奈川県",
+    "栃木県",
+    "茨城県",
+    "鹿児島県",
+    "福島県",
+    "埼玉県",
+    "東京府",
+    "長崎県",
+    "大分県",
+    "福岡県",
+    "広島県",
+    "島根県",
+    "山口県",
+    "高知県",
+    "静岡県",
+    "大阪府",
+    "長野県",
+    "山梨県",
+    "新潟県",
+    "京都府",
+    "和歌山県",
+    "岩手県",
+    "宮城県",
+    "滋賀県",
+    "石川県",
+    "三重県",
+    "愛媛県",
+    "千葉県",
+    "熊本県",
+    "群馬県",
+    "徳島県",
+    "福井県",
+    "鳥取県",
+    "札幌県",
+    "函館県",
+    "根室県",
+    "佐賀県",
+    "富山県",
+    "宮崎県"
+   ]
+  },
+  {
+   "file": "C:\\Users\\gyuuk\\AppData\\Local\\Temp\\claude\\C--Users-gyuuk-OneDrive-IntMap\\dfc24dbe-735e-43ba-a35e-b14d6a7d3405\\scratchpad\\meiji-pilot\\meiji-1890-07-01-v2.png",
+   "date": "1890-07-01",
+   "drawn": 44,
+   "prefectures": [
+    "青森県",
+    "秋田県",
+    "山形県",
+    "神奈川県",
+    "栃木県",
+    "茨城県",
+    "鹿児島県",
+    "福島県",
+    "埼玉県",
+    "東京府",
+    "長崎県",
+    "大分県",
+    "福岡県",
+    "広島県",
+    "島根県",
+    "山口県",
+    "高知県",
+    "静岡県",
+    "大阪府",
+    "長野県",
+    "山梨県",
+    "新潟県",
+    "岐阜県",
+    "京都府",
+    "和歌山県",
+    "岩手県",
+    "宮城県",
+    "滋賀県",
+    "石川県",
+    "三重県",
+    "愛知県",
+    "愛媛県",
+    "千葉県",
+    "熊本県",
+    "群馬県",
+    "徳島県",
+    "福井県",
+    "鳥取県",
+    "佐賀県",
+    "富山県",
+    "宮崎県",
+    "北海道庁",
+    "奈良県",
+    "香川県"
+   ]
+  },
+  {
+   "file": "C:\\Users\\gyuuk\\AppData\\Local\\Temp\\claude\\C--Users-gyuuk-OneDrive-IntMap\\dfc24dbe-735e-43ba-a35e-b14d6a7d3405\\scratchpad\\meiji-pilot\\meiji-kinai-1876-12-01-v2.png",
+   "date": "1876-12-01",
+   "drawn": 5,
+   "prefectures": [
+    "大阪府",
+    "堺県",
+    "京都府",
+    "和歌山県",
+    "滋賀県"
+   ]
+  },
+  {
+   "file": "C:\\Users\\gyuuk\\AppData\\Local\\Temp\\claude\\C--Users-gyuuk-OneDrive-IntMap\\dfc24dbe-735e-43ba-a35e-b14d6a7d3405\\scratchpad\\meiji-pilot\\meiji-kinai-1883-07-01-v2.png",
+   "date": "1883-07-01",
+   "drawn": 5,
+   "prefectures": [
+    "大阪府",
+    "京都府",
+    "和歌山県",
+    "滋賀県",
+    "三重県"
+   ]
+  },
+  {
+   "file": "C:\\Users\\gyuuk\\AppData\\Local\\Temp\\claude\\C--Users-gyuuk-OneDrive-IntMap\\dfc24dbe-735e-43ba-a35e-b14d6a7d3405\\scratchpad\\meiji-pilot\\meiji-zoom-owari-mino-ise-1883-07-01-v2.png",
+   "date": "1883-07-01",
+   "drawn": 1,
+   "prefectures": [
+    "三重県"
+   ]
+  },
+  {
+   "file": "C:\\Users\\gyuuk\\AppData\\Local\\Temp\\claude\\C--Users-gyuuk-OneDrive-IntMap\\dfc24dbe-735e-43ba-a35e-b14d6a7d3405\\scratchpad\\meiji-pilot\\meiji-zoom-echizen-nanjo-1872-07-01-v2.png",
+   "date": "1872-07-01",
+   "drawn": 3,
+   "prefectures": [
+    "敦賀県",
+    "足羽県",
+    "犬上県"
+   ]
+  }
+ ]
+}

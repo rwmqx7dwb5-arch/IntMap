@@ -1,0 +1,2736 @@
+{
+ "cluster": "E",
+ "transfers": [
+  {
+   "key": "1871 東囎唹郡",
+   "date": "1872-05-08",
+   "date_precision": "month (明治5年4月 = 1872-05-08..1872-06-05; day not stated by any source found)",
+   "date_basis": "南諸県郡 article: 明治5年（1872年）4月. 明治5年1月1日=1872-02-09 and 5月15日=1872-06-20 give 1月30+2月29+3月30+4月29=118 days (02-09 to 06-06), so 4月1日=1872-05-08 and 4月29日=1872-06-05. 東囎唹郡 article writes \"明治5年（1871年）\": 明治5年 cannot be 1871 (明治5年1月1日=1872-02-09), so its Gregorian year is an error.",
+   "from_pref": "都城県",
+   "to_pref": "都城県",
+   "from_gun": "諸県郡 (日向国; later 南諸県郡 area)",
+   "to_gun": "囎唹郡 (大隅国; later 東囎唹郡)",
+   "crosses_prefecture_at_time": false,
+   "matters_for_intervals": "1873-01-15..1876-08-21 only: 日向国諸県郡 land is 宮崎県 while 大隅国囎唹郡 is 鹿児島県 (都城県 article: 大隅国 moved to 鹿児島県 on 1873-01-15). 下財部村 is on the 囎唹郡 = 鹿児島県 side in that interval because the 明治5年4月 change precedes 1873-01-15. Before 1872-04 both 郡 were in 都城県 (1871-12-25..), so no prefecture difference.",
+   "villages_pre1889": [
+    "下財部村 (財部郷)"
+   ],
+   "n03_1920_municipalities": [
+    {
+     "pref1920": "鹿児島県",
+     "gun": "囎唹郡",
+     "name": "財部村",
+     "whole_or_part": "whole",
+     "part_detail": "財部村 = 下財部村 + 南俣村 + 北俣村 (all three in 囎唹郡 after 1872-04), so the whole 1920 町村 is on the 囎唹郡 side"
+    }
+   ],
+   "chain": "下財部村 (財部郷, 日向国諸県郡, 旧高旧領 lists it as 大隅国囎唹郡) → 1889-04-01 財部村 ← 下財部村・南俣村・北俣村 (東囎唹郡) → 1920 財部村 (囎唹郡)",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%8D%97%E8%AB%B8%E7%9C%8C%E9%83%A1&oldid=100944540",
+     "quote": "明治5年（1872年）4月 - 下財部村の所属郡が大隅国囎唹郡に変更。"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%9D%B1%E5%9B%8E%E5%94%B9%E9%83%A1&oldid=93334044",
+     "quote": "日向国諸県郡下財部村（財部郷）の所属郡が囎唹郡に変更。"
+    }
+   ],
+   "notes": "This is the ONLY village moved. The sweep's other keyed transfer \"1872 曽於郡 財部郷・54村\" is the same event seen from the 曽於郡 article: \"（54村）\" is the village count of 囎唹郡 after the change, not 54 transferred villages. 東囎唹郡 article gives year 1871 which is wrong (see date_basis). The withheld blocks listed in the input (姶良郡, 北諸県郡, 西諸県郡) are an artefact of the generic sweep: only 囎唹郡 (財部村) is touched; the 1920 囎唹郡 block assignment is in splits."
+  },
+  {
+   "key": "1872 曽於郡",
+   "date": "1872-05-08",
+   "date_precision": "month (明治5年4月 = 1872-05-08..1872-06-05; day not stated by any source found)",
+   "date_basis": "南諸県郡 article: 明治5年（1872年）4月. 明治5年1月1日=1872-02-09 and 5月15日=1872-06-20 give 1月30+2月29+3月30+4月29=118 days (02-09 to 06-06), so 4月1日=1872-05-08 and 4月29日=1872-06-05. 東囎唹郡 article writes \"明治5年（1871年）\": 明治5年 cannot be 1871 (明治5年1月1日=1872-02-09), so its Gregorian year is an error.",
+   "from_pref": "都城県",
+   "to_pref": "都城県",
+   "from_gun": "諸県郡 (日向国; later 南諸県郡 area)",
+   "to_gun": "囎唹郡 (大隅国; later 東囎唹郡)",
+   "crosses_prefecture_at_time": false,
+   "matters_for_intervals": "1873-01-15..1876-08-21 only: 日向国諸県郡 land is 宮崎県 while 大隅国囎唹郡 is 鹿児島県 (都城県 article: 大隅国 moved to 鹿児島県 on 1873-01-15). 下財部村 is on the 囎唹郡 = 鹿児島県 side in that interval because the 明治5年4月 change precedes 1873-01-15. Before 1872-04 both 郡 were in 都城県 (1871-12-25..), so no prefecture difference.",
+   "villages_pre1889": [
+    "下財部村 (財部郷)"
+   ],
+   "n03_1920_municipalities": [
+    {
+     "pref1920": "鹿児島県",
+     "gun": "囎唹郡",
+     "name": "財部村",
+     "whole_or_part": "whole",
+     "part_detail": "財部村 = 下財部村 + 南俣村 + 北俣村 (all three in 囎唹郡 after 1872-04), so the whole 1920 町村 is on the 囎唹郡 side"
+    }
+   ],
+   "chain": "下財部村 (財部郷, 日向国諸県郡, 旧高旧領 lists it as 大隅国囎唹郡) → 1889-04-01 財部村 ← 下財部村・南俣村・北俣村 (東囎唹郡) → 1920 財部村 (囎唹郡)",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%8D%97%E8%AB%B8%E7%9C%8C%E9%83%A1&oldid=100944540",
+     "quote": "明治5年（1872年）4月 - 下財部村の所属郡が大隅国囎唹郡に変更。"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%9D%B1%E5%9B%8E%E5%94%B9%E9%83%A1&oldid=93334044",
+     "quote": "日向国諸県郡下財部村（財部郷）の所属郡が囎唹郡に変更。"
+    }
+   ],
+   "notes": "DUPLICATE of \"1871 東囎唹郡\" (same event, same village 下財部村); the quote \"（54村）\" counts villages of 囎唹郡 after the change and is NOT a list of 54 transferred villages. This is the ONLY village moved. The sweep's other keyed transfer \"1872 曽於郡 財部郷・54村\" is the same event seen from the 曽於郡 article: \"（54村）\" is the village count of 囎唹郡 after the change, not 54 transferred villages. 東囎唹郡 article gives year 1871 which is wrong (see date_basis). The withheld blocks listed in the input (姶良郡, 北諸県郡, 西諸県郡) are an artefact of the generic sweep: only 囎唹郡 (財部村) is touched; the 1920 囎唹郡 block assignment is in splits."
+  },
+  {
+   "key": "1881 下益城郡",
+   "date": "1881",
+   "date_precision": "year only",
+   "date_basis": "飽田郡 and 下益城郡 articles (citing 角川日本地名大辞典 p.452 小岩瀬村): 明治14年（1881年）; the same articles note 『下益城郡誌』 gives 明治13年 (1880). Day not stated; the two sources disagree by one year. The year does not affect the map (both 郡 were in the same prefecture in 1880 and 1881; only the 1871-12-25..1873-01-15 prefecture difference matters).",
+   "from_pref": "熊本県",
+   "to_pref": "熊本県",
+   "from_gun": "飽田郡",
+   "to_gun": "下益城郡",
+   "crosses_prefecture_at_time": false,
+   "matters_for_intervals": "1871-12-25..1872-07-19 (飽田郡=熊本県, 下益城郡=八代県) and 1872-07-19..1873-01-15 (飽田郡=白川県, 下益城郡=八代県). From 1873-01-15 both 郡 are 白川県 (下益城郡 article) so no difference.",
+   "villages_pre1889": [
+    "小岩瀬村 (= 上小岩瀬村 + 下小岩瀬村, merged by 明治8年)"
+   ],
+   "n03_1920_municipalities": [
+    {
+     "pref1920": "熊本県",
+     "gun": "下益城郡",
+     "name": "杉合村",
+     "whole_or_part": "part",
+     "part_detail": "小岩瀬村 (originally 飽田郡) moved: in 1871-12-25..1872-07-19 it is 熊本県, 1872-07-19..1873-01-15 白川県. The other villages of 杉合村 (杉島村, 大町村, 莎崎村, 釈迦堂村, 硴江村, 菰江村, 国町村) were always 下益城郡 = 八代県 in those intervals."
+    }
+   ],
+   "chain": "小岩瀬村 (飽田郡, = 上小岩瀬村+下小岩瀬村) → 1880/81 郡 changed to 下益城郡 → 1889 杉合村 ← 杉島村、大町村、莎崎村、釈迦堂村、硴江村、菰江村、小岩瀬村、国町村 → 1920 杉合村 (下益城郡)",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E9%A3%BD%E7%94%B0%E9%83%A1&oldid=110953347",
+     "quote": "小岩瀬村の所属郡が下益城郡に変更"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E4%B8%8B%E7%9B%8A%E5%9F%8E%E9%83%A1&oldid=110929335",
+     "quote": "杉合村 ← 杉島村、大町村、莎崎村、釈迦堂村、硴江村、菰江村、小岩瀬村、国町村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E9%A3%BD%E7%94%B0%E9%83%A1&oldid=110953347",
+     "quote": "小岩瀬村 ← 上小岩瀬村、下小岩瀬村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E4%B8%8B%E7%9B%8A%E5%9F%8E%E9%83%A1&oldid=110929335",
+     "quote": "11月14日（1871年12月25日） - 第1次府県統合により八代県の管轄となる"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E9%A3%BD%E7%94%B0%E9%83%A1&oldid=110953347",
+     "quote": "明治5年6月14日（1872年7月19日） - 白川県の管轄となる"
+    }
+   ],
+   "notes": "The only village moved is 小岩瀬村; \"1町132村\" / \"2町98村\" / \"2町\" in the sweep are village counts after the change, not names. Exactly one 1920 町村 is affected. The sweep's third entry (block 熊本市) is spurious: 熊本市 (1920) contains no part of 小岩瀬村 and no other 飽田郡 village was transferred (飽田郡/託麻郡/下益城郡 articles record no other cross-郡 move)."
+  },
+  {
+   "key": "1880 飽田郡",
+   "date": "1881",
+   "date_precision": "year only",
+   "date_basis": "飽田郡 and 下益城郡 articles (citing 角川日本地名大辞典 p.452 小岩瀬村): 明治14年（1881年）; the same articles note 『下益城郡誌』 gives 明治13年 (1880). Day not stated; the two sources disagree by one year. The year does not affect the map (both 郡 were in the same prefecture in 1880 and 1881; only the 1871-12-25..1873-01-15 prefecture difference matters).",
+   "from_pref": "熊本県",
+   "to_pref": "熊本県",
+   "from_gun": "飽田郡",
+   "to_gun": "下益城郡",
+   "crosses_prefecture_at_time": false,
+   "matters_for_intervals": "1871-12-25..1872-07-19 (飽田郡=熊本県, 下益城郡=八代県) and 1872-07-19..1873-01-15 (飽田郡=白川県, 下益城郡=八代県). From 1873-01-15 both 郡 are 白川県 (下益城郡 article) so no difference.",
+   "villages_pre1889": [
+    "小岩瀬村 (= 上小岩瀬村 + 下小岩瀬村, merged by 明治8年)"
+   ],
+   "n03_1920_municipalities": [
+    {
+     "pref1920": "熊本県",
+     "gun": "下益城郡",
+     "name": "杉合村",
+     "whole_or_part": "part",
+     "part_detail": "小岩瀬村 (originally 飽田郡) moved: in 1871-12-25..1872-07-19 it is 熊本県, 1872-07-19..1873-01-15 白川県. The other villages of 杉合村 (杉島村, 大町村, 莎崎村, 釈迦堂村, 硴江村, 菰江村, 国町村) were always 下益城郡 = 八代県 in those intervals."
+    }
+   ],
+   "chain": "小岩瀬村 (飽田郡, = 上小岩瀬村+下小岩瀬村) → 1880/81 郡 changed to 下益城郡 → 1889 杉合村 ← 杉島村、大町村、莎崎村、釈迦堂村、硴江村、菰江村、小岩瀬村、国町村 → 1920 杉合村 (下益城郡)",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E9%A3%BD%E7%94%B0%E9%83%A1&oldid=110953347",
+     "quote": "小岩瀬村の所属郡が下益城郡に変更"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E4%B8%8B%E7%9B%8A%E5%9F%8E%E9%83%A1&oldid=110929335",
+     "quote": "杉合村 ← 杉島村、大町村、莎崎村、釈迦堂村、硴江村、菰江村、小岩瀬村、国町村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E9%A3%BD%E7%94%B0%E9%83%A1&oldid=110953347",
+     "quote": "小岩瀬村 ← 上小岩瀬村、下小岩瀬村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E4%B8%8B%E7%9B%8A%E5%9F%8E%E9%83%A1&oldid=110929335",
+     "quote": "11月14日（1871年12月25日） - 第1次府県統合により八代県の管轄となる"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E9%A3%BD%E7%94%B0%E9%83%A1&oldid=110953347",
+     "quote": "明治5年6月14日（1872年7月19日） - 白川県の管轄となる"
+    }
+   ],
+   "notes": "The only village moved is 小岩瀬村; \"1町132村\" / \"2町98村\" / \"2町\" in the sweep are village counts after the change, not names. Exactly one 1920 町村 is affected. The sweep's third entry (block 熊本市) is spurious: 熊本市 (1920) contains no part of 小岩瀬村 and no other 飽田郡 village was transferred (飽田郡/託麻郡/下益城郡 articles record no other cross-郡 move)."
+  },
+  {
+   "key": "1872 児湯郡",
+   "date": "1872-10-25",
+   "date_basis": "美々津県/八代県/球磨郡 articles: 明治5年9月23日. Conversion: 明治5年9月20日=1872-10-22 (anchor given), so 9月23日=1872-10-25.",
+   "from_pref": "八代県",
+   "to_pref": "美々津県",
+   "from_gun": "球磨郡 (肥後国)",
+   "to_gun": "児湯郡 (日向国)",
+   "crosses_prefecture_at_time": true,
+   "matters_for_intervals": "1871-12-25..1872-10-25: the 14 villages are 八代県 (球磨郡); 1872-10-25..1873-01-15: 美々津県 (児湯郡). Then 宮崎県 (1873-01-15).",
+   "villages_pre1889": [
+    "小川村",
+    "村所村",
+    "板谷村",
+    "越野尾村",
+    "上米良村",
+    "竹原村",
+    "横野村",
+    "銀鏡村",
+    "上揚村",
+    "八重村",
+    "中尾村",
+    "尾八重村",
+    "中之又村",
+    "寒川村"
+   ],
+   "n03_1920_municipalities": [
+    {
+     "pref1920": "宮崎県",
+     "gun": "児湯郡",
+     "name": "西米良村",
+     "whole_or_part": "whole",
+     "part_detail": "小川・村所・板谷・越野尾・上米良・竹原・横野 (7 villages)"
+    },
+    {
+     "pref1920": "宮崎県",
+     "gun": "児湯郡",
+     "name": "東米良村",
+     "whole_or_part": "whole",
+     "part_detail": "銀鏡・上揚・八重・中尾・尾八重・中之又 (6 villages)"
+    },
+    {
+     "pref1920": "宮崎県",
+     "gun": "児湯郡",
+     "name": "三財村",
+     "whole_or_part": "part",
+     "part_detail": "寒川村 only (米良山 village) moved; the other villages of 三財村 (藤田村、下三財村、上三財村、加勢村) were always 児湯郡 = 美々津県 from 1871-12-25"
+    }
+   ],
+   "chain": "米良山14村 → 1889-05-01 西米良村 ← 小川村、村所村、板谷村、越野尾村、上米良村、竹原村、横野村; 東米良村 ← 銀鏡村、上揚村、八重村、中尾村、尾八重村、中之又村; 三財村 ← 藤田村、下三財村、上三財村、加勢村、寒川村 → 1920 same 町村 (児湯郡)",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E7%BE%8E%E3%80%85%E6%B4%A5%E7%9C%8C&oldid=110103231",
+     "quote": "旧人吉藩領の米良地方14村を八代県球磨郡から美々津県児湯郡に移管"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%85%90%E6%B9%AF%E9%83%A1&oldid=106755109",
+     "quote": "西米良村 ← 小川村、村所村、板谷村、越野尾村、上米良村、竹原村、横野村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%85%90%E6%B9%AF%E9%83%A1&oldid=106755109",
+     "quote": "銀鏡村、上揚村、八重村、中尾村、尾八重村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%85%90%E6%B9%AF%E9%83%A1&oldid=106755109",
+     "quote": "三財村 ← 藤田村、下三財村、上三財村、加勢村、寒川村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E7%90%83%E7%A3%A8%E9%83%A1&oldid=109168703",
+     "quote": "米良山14ヶ村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E7%90%83%E7%A3%A8%E9%83%A1&oldid=109168703",
+     "quote": "11月14日（1871年12月25日） - 第1次府県統合により八代県の管轄となる"
+    }
+   ],
+   "notes": "The sweep printed 小川村 only in its source quote and did not map 寒川村 to a 1920 町村: 寒川村 is in 三財村, which is therefore \"part\". 1920 球磨郡 contains none of the 14 villages. Before 1872-10-25 the 米良山 14 villages were treated as 球磨郡 under 人吉県 (1871-08-29) then 八代県 (1871-12-25); the 児湯郡 article gives only 明治5年, the day comes from the 美々津県/八代県/球磨郡 articles (明治5年9月23日)."
+  }
+ ],
+ "splits": [
+  {
+   "key": "block 宮崎郡 (旧・宮崎郡+北那珂郡; 1920 宮崎郡 15町村) 美々津県/都城県 1871-12-25 → 1873-01-15",
+   "intervals": [
+    {
+     "from": "1871-12-25",
+     "to": "1873-01-15",
+     "assignments": [
+      {
+       "pref": "美々津県",
+       "n03_1920_municipalities": [
+        {
+         "pref1920": "宮崎県",
+         "gun": "宮崎郡",
+         "name": "宮崎町",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "宮崎郡",
+         "name": "大宮村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "宮崎郡",
+         "name": "瓜生野村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "宮崎郡",
+         "name": "佐土原町",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "宮崎郡",
+         "name": "那珂村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "宮崎郡",
+         "name": "広瀬村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "宮崎郡",
+         "name": "住吉村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "宮崎郡",
+         "name": "檍村",
+         "whole_or_part": "whole"
+        }
+       ],
+       "villages_pre1889": [
+        "宮崎町: 上別府村、上野町、江平町、瀬頭村(松山町・瀬頭町は後の分立)",
+        "大宮村: 下北方村、名田村、大島村、花ヶ島町、村角村、南方村、池内村",
+        "瓜生野村: 上北方村、瓜生野村",
+        "那珂村: 東上那珂村、西上那珂村",
+        "佐土原町: 上田島村、(佐土原町)",
+        "広瀬村: 下田島村、下那珂村",
+        "住吉村: 広原村、島ノ内村、新名爪村、芳士村、塩路村",
+        "檍村: 山崎村、江田村、新別府村、吉村、下別府村"
+       ]
+      },
+      {
+       "pref": "都城県",
+       "n03_1920_municipalities": [
+        {
+         "pref1920": "宮崎県",
+         "gun": "宮崎郡",
+         "name": "大淀町",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "宮崎郡",
+         "name": "清武村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "宮崎郡",
+         "name": "田野村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "宮崎郡",
+         "name": "生目村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "宮崎郡",
+         "name": "赤江村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "宮崎郡",
+         "name": "木花村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "宮崎郡",
+         "name": "青島村",
+         "whole_or_part": "whole"
+        }
+       ],
+       "villages_pre1889": [
+        "大淀町(大淀村): 中村町、太田村、古城村、福島村、大塚村、源藤村",
+        "清武村: 今泉村、木原村、船引村、加納村 (+西細江村)",
+        "田野村",
+        "生目村: 浮田村、生目村、細江村(東細江村)、長嶺村、跡江村、富吉村、柏原村、小松村",
+        "赤江村: 城ヶ崎町、恒久村、田吉村、本郷北方村、本郷南方村(上・下南方村)、郡司分村",
+        "木花村: 隈野村、鏡洲村、加江田村",
+        "青島村: 折生迫村、内海村"
+       ]
+      }
+     ]
+    }
+   ],
+   "covers_all_1920_municipalities_of_block": true,
+   "chain": "旧高旧領 villages → 1889 町村 (宮崎郡 and 北那珂郡 articles) → 1920 宮崎郡 15町村 (all whole: no 1889 町村 straddles the 大淀川 line; the straddle at the 郡 level is 堤内村・金崎村・宮王丸村, which went to 東諸県郡, see that block). The line is given village-by-village by the two articles (not 概ね), so no village is guessed.",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%AE%AE%E5%B4%8E%E9%83%A1&oldid=108762614",
+     "quote": "大淀川以北（上野町・江平町・松山町・下北方村・名田村・上北方村・池内村・南方村・花ヶ島町・村角村・大島村・上別府村・堤内村・金崎村・瓜生野村・宮王丸村）が美々津県、残部が都城県の管轄となる"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%8C%97%E9%82%A3%E7%8F%82%E9%83%A1&oldid=103107608",
+     "quote": "後の北那珂郡域のうち大淀川以南（福島村・上南方村・下南方村・西北方村・東北方村・恒久村・田吉村・郡司分村・隈野村・加江田村・鏡洲村）が都城県、残部が美々津県の管轄となる"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E9%83%BD%E5%9F%8E%E7%9C%8C&oldid=107421737",
+     "quote": "並びに廃止された飫肥県の領域及び同じく廃止された延岡県の宮崎郡における12ヶ村の移管を受け、都城県が発足"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%AE%AE%E5%B4%8E%E9%83%A1&oldid=108762614",
+     "quote": "宮崎町 ← 上別府村、上野町、川原町、江平町、北那珂郡松山町、瀬頭町"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%AE%AE%E5%B4%8E%E9%83%A1&oldid=108762614",
+     "quote": "大宮村 ← 下北方村、大島村、花ヶ島町、村角村、南方村、池内村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%AE%AE%E5%B4%8E%E9%83%A1&oldid=108762614",
+     "quote": "瓜生野村 ← 上北方村、瓜生野村、大瀬町村、柏田町"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%AE%AE%E5%B4%8E%E9%83%A1&oldid=108762614",
+     "quote": "大淀村 ← 中村町、太田村、古城村、福島町、大塚村、源藤村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%AE%AE%E5%B4%8E%E9%83%A1&oldid=108762614",
+     "quote": "生目村 ← 浮田村、生目村、細江村、長嶺村、跡江村、富吉村、柏原村、小松村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%AE%AE%E5%B4%8E%E9%83%A1&oldid=108762614",
+     "quote": "南清武村 ← 今泉村、木原村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%AE%AE%E5%B4%8E%E9%83%A1&oldid=108762614",
+     "quote": "北清武村 ← 船引村、加納村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%8C%97%E9%82%A3%E7%8F%82%E9%83%A1&oldid=103107608",
+     "quote": "那珂村 ← 東上那珂村、西上那珂村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%8C%97%E9%82%A3%E7%8F%82%E9%83%A1&oldid=103107608",
+     "quote": "佐土原村 ← 上田島村、佐土原町"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%8C%97%E9%82%A3%E7%8F%82%E9%83%A1&oldid=103107608",
+     "quote": "広瀬村 ← 下田島村、広瀬町、下那珂村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%8C%97%E9%82%A3%E7%8F%82%E9%83%A1&oldid=103107608",
+     "quote": "住吉村 ← 広原村、島ノ内村、新名爪村、芳士村、塩路村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%8C%97%E9%82%A3%E7%8F%82%E9%83%A1&oldid=103107608",
+     "quote": "檍村 ← 山崎村、江田村、新別府村、吉村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%8C%97%E9%82%A3%E7%8F%82%E9%83%A1&oldid=103107608",
+     "quote": "赤江村 ← 城ヶ崎町、恒久村、田吉村、本郷北方村、本郷南方村、郡司分村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%8C%97%E9%82%A3%E7%8F%82%E9%83%A1&oldid=103107608",
+     "quote": "木花村 ← 隈野村、鏡洲村、加江田村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%8C%97%E9%82%A3%E7%8F%82%E9%83%A1&oldid=103107608",
+     "quote": "青島村 ← 折生迫村、内海村"
+    }
+   ],
+   "notes": "CORRECTION to the sweep rows: the sweep put 那珂郡-north-of-大淀川 land under 南那珂郡 as well; the north-of-大淀川 part of 那珂郡 is the later 北那珂郡 (= 1920 宮崎郡), never 南那珂郡. 田野村 (旧高旧領: 田野村, 日向飫肥藩) is in the 都城県 残部. Both articles list 松山町 on the 美々津 side; 松山町 as a separate 北那珂郡 町 only arises 1881 from 瀬頭村 (美々津 side), consistent. 都城県 article: 延岡県 contributed exactly 12 宮崎郡 villages to 都城県 = 太田・古城・源藤・大塚・跡江・浮田・長嶺・柏原・富吉・東細江・小松・生目, all in the 都城 list above."
+  },
+  {
+   "key": "block 南那珂郡 都城県 1871-12-25 → 1873-01-15",
+   "intervals": [
+    {
+     "from": "1871-12-25",
+     "to": "1873-01-15",
+     "assignments": [
+      {
+       "pref": "都城県",
+       "n03_1920_municipalities": [
+        {
+         "pref1920": "宮崎県",
+         "gun": "南那珂郡",
+         "name": "北方村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "南那珂郡",
+         "name": "北郷村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "南那珂郡",
+         "name": "南郷村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "南那珂郡",
+         "name": "吾田村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "南那珂郡",
+         "name": "大束村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "南那珂郡",
+         "name": "市木村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "南那珂郡",
+         "name": "本城村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "南那珂郡",
+         "name": "東郷村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "南那珂郡",
+         "name": "榎原村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "南那珂郡",
+         "name": "油津町",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "南那珂郡",
+         "name": "福島村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "南那珂郡",
+         "name": "細田村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "南那珂郡",
+         "name": "都井村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "南那珂郡",
+         "name": "酒谷村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "南那珂郡",
+         "name": "飫肥町",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "南那珂郡",
+         "name": "鵜戸村",
+         "whole_or_part": "whole"
+        }
+       ],
+       "villages_pre1889": [
+        "那珂郡のうち後の南那珂郡域 (53村; 飫肥藩・幕府領・高鍋藩領 → 飫肥県/… → 都城県)"
+       ]
+      }
+     ]
+    }
+   ],
+   "covers_all_1920_municipalities_of_block": true,
+   "chain": "旧那珂郡 南部 53村 (旧高旧領) → 1884-01-26 南那珂郡 → 1920 南那珂郡 16町村. 大淀川 is the north boundary; every village of this block lies south of it, so the whole block is on the 都城県 side.",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E9%82%A3%E7%8F%82%E9%83%A1%20(%E5%AE%AE%E5%B4%8E%E7%9C%8C)&oldid=104883038",
+     "quote": "大淀川以北（後の北那珂郡域の一部）が美々津県、残部が都城県の管轄となる"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%8C%97%E9%82%A3%E7%8F%82%E9%83%A1&oldid=103107608",
+     "quote": "後の北那珂郡域のうち大淀川以南（福島村・上南方村・下南方村・西北方村・東北方村・恒久村・田吉村・郡司分村・隈野村・加江田村・鏡洲村）が都城県、残部が美々津県の管轄となる"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E9%82%A3%E7%8F%82%E9%83%A1%20(%E5%AE%AE%E5%B4%8E%E7%9C%8C)&oldid=104883038",
+     "quote": "明治17年（1884年）1月26日 - 佐土原町ほか4町25村の区域をもって北那珂郡が、飫肥ほか51村の区域をもって南那珂郡がそれぞれ発足"
+    }
+   ],
+   "notes": "CORRECTION: the sweep split 南那珂郡 into 美々津県 (\"大淀川以北\") and 都城県; the 美々津 half does not exist. 那珂郡 north of 大淀川 belongs to 北那珂郡 (-> 1920 宮崎郡), proven by the 北那珂郡 article listing the south-of-river villages as 都城県 and the rest as 美々津県, and by the 那珂郡 article \"大淀川以北（後の北那珂郡域の一部）\"."
+  },
+  {
+   "key": "block 東諸県郡 (1920 7町村) 美々津県/都城県 1871-12-25 → 1873-01-15",
+   "intervals": [
+    {
+     "from": "1871-12-25",
+     "to": "1873-01-15",
+     "assignments": [
+      {
+       "pref": "美々津県",
+       "n03_1920_municipalities": [
+        {
+         "pref1920": "宮崎県",
+         "gun": "東諸県郡",
+         "name": "高岡町",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "東諸県郡",
+         "name": "八代村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "東諸県郡",
+         "name": "木脇村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "東諸県郡",
+         "name": "本庄町",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "東諸県郡",
+         "name": "倉岡村",
+         "whole_or_part": "part",
+         "part_detail": "吉野村、堤内村(宮崎郡)、金崎村(宮崎郡) on the 美々津 side; 糸原村・有田村 on the 都城 side"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "東諸県郡",
+         "name": "綾村",
+         "whole_or_part": "part",
+         "part_detail": "入野村 (高岡郷) on the 美々津 side; 北俣村・南俣村 (綾郷) on the 都城 side"
+        }
+       ],
+       "villages_pre1889": [
+        "高岡町: 浦之名村、五町村、内山村、高岡町、飯田村、花見村、高浜村 (高岡郷)",
+        "八代村: 伊佐生村 (高鍋藩領)、八代北俣村、八代南俣村、深年村 (高岡郷)",
+        "木脇村: 木脇村、岩知野村 (旗本領)、塚原村 (幕府領)、三名村 (高鍋藩領)",
+        "本庄町: 須志田村、森永村、本庄村(→北本庄・十日町・六日町・南本庄)、竹田村、嵐田村 (幕府領・旗本領) + 向高村、田尻村 (高岡郷) + 宮崎郡宮王丸村",
+        "倉岡村: 吉野村 (旗本領)、宮崎郡堤内村、金崎村",
+        "綾村: 入野村 (高岡郷)"
+       ]
+      },
+      {
+       "pref": "都城県",
+       "n03_1920_municipalities": [
+        {
+         "pref1920": "宮崎県",
+         "gun": "東諸県郡",
+         "name": "穆佐村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "東諸県郡",
+         "name": "倉岡村",
+         "whole_or_part": "part",
+         "part_detail": "糸原村・有田村 (倉岡郷)"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "東諸県郡",
+         "name": "綾村",
+         "whole_or_part": "part",
+         "part_detail": "北俣村・南俣村 (綾郷)"
+        }
+       ],
+       "villages_pre1889": [
+        "穆佐村: 小山田村、上倉永村、下倉永村 (穆佐郷)",
+        "倉岡村: 糸原村、有田村 (倉岡郷)",
+        "綾村: 北俣村、南俣村 (綾郷)"
+       ]
+      }
+     ]
+    }
+   ],
+   "covers_all_1920_municipalities_of_block": true,
+   "chain": "旧高旧領 villages (東諸県郡 article) → 1889 町村 (東諸県郡 article) → 1920. 東諸県郡 article: 大淀川以北 = 高岡郷 → 美々津県, 残部 → 都城県.",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%9D%B1%E8%AB%B8%E7%9C%8C%E9%83%A1&oldid=101986404",
+     "quote": "後の東諸県郡域のうち概ね大淀川以北（高岡郷）が美々津県、残部が都城県の管轄となる"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%9D%B1%E8%AB%B8%E7%9C%8C%E9%83%A1&oldid=101986404",
+     "quote": "高岡郷（高岡町、田尻村、深年村、入野村、向高村、浦之名村、八代北俣村、飯田村、五町村、内山村、高浜村、八代南俣村、花見村）"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%9D%B1%E8%AB%B8%E7%9C%8C%E9%83%A1&oldid=101986404",
+     "quote": "穆佐郷（小山田村、下倉永村、上倉永村）、倉岡郷（糸原村、有田村）"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%9D%B1%E8%AB%B8%E7%9C%8C%E9%83%A1&oldid=101986404",
+     "quote": "綾郷（南俣村、北俣村）"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%9D%B1%E8%AB%B8%E7%9C%8C%E9%83%A1&oldid=101986404",
+     "quote": "倉岡村 ← 糸原村、柳瀬町、有田村、吉野村、宮崎郡堤内村、金崎村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%9D%B1%E8%AB%B8%E7%9C%8C%E9%83%A1&oldid=101986404",
+     "quote": "本庄村 ← 須志田村、北本庄村、森永村、竹田村、十日町、六日町、向高村、田尻村、嵐田村、南本庄村、宮崎郡宮王丸村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%9D%B1%E8%AB%B8%E7%9C%8C%E9%83%A1&oldid=101986404",
+     "quote": "綾村 ← 北俣村、南俣村、入野村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%9D%B1%E8%AB%B8%E7%9C%8C%E9%83%A1&oldid=101986404",
+     "quote": "八代村 ← 伊佐生村、八代北俣村、八代南俣村、深年村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%9D%B1%E8%AB%B8%E7%9C%8C%E9%83%A1&oldid=101986404",
+     "quote": "木脇村 ← 木脇村、岩知野村、塚原村、三名村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E7%BE%8E%E3%80%85%E6%B4%A5%E7%9C%8C&oldid=110103231",
+     "quote": "第1次府県統合により延岡県、高鍋県、佐土原県を廃止・統合し"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E9%83%BD%E5%9F%8E%E7%9C%8C&oldid=107421737",
+     "quote": "並びに廃止された飫肥県の領域及び同じく廃止された延岡県の宮崎郡における12ヶ村の移管を受け、都城県が発足"
+    }
+   ],
+   "notes": "INFERENCE (spelled out): the article gives the 美々津 side only as \"（高岡郷）\" for the Satsuma-held villages. The villages held by 延岡 (幕府領/旗本領 under 延岡藩 from 1871-02) and 高鍋 (三名・伊佐生) are not named. I assign them to 美々津県 because (1) 美々津県 was formed by merging 延岡県, 高鍋県, 佐土原県 (美々津県 article) and (2) the 都城県 article says the only 延岡県 land 都城県 received was \"宮崎郡における12ヶ村\" and nothing from 高鍋県, so all other 延岡/高鍋 land, including these 東諸県 villages, stayed in 美々津県. Residual weakness: no source names these villages by prefecture on 1871-12-25; see stillUnresolved. Sweep error: it labelled the 東諸県郡 美々津 side as \"高岡郷、野尻郷・須木郷・小林郷東方村\"; 野尻・須木・東方 are in 西諸県郡 (and 笛水・江平 in 北諸県郡), not 東諸県郡. No change on 1872-06-20 for this block."
+  },
+  {
+   "key": "block 北諸県郡 (1920 12町村) 美々津県/都城県 1871-12-25 → 1873-01-15",
+   "intervals": [
+    {
+     "from": "1871-12-25",
+     "to": "1872-06-20",
+     "assignments": [
+      {
+       "pref": "美々津県",
+       "n03_1920_municipalities": [
+        {
+         "pref1920": "宮崎県",
+         "gun": "北諸県郡",
+         "name": "高崎村",
+         "whole_or_part": "part",
+         "part_detail": "笛水村・江平村 (野尻郷の一部) only"
+        }
+       ],
+       "villages_pre1889": [
+        "笛水村、江平村 (野尻郷)"
+       ]
+      },
+      {
+       "pref": "都城県",
+       "n03_1920_municipalities": [
+        {
+         "pref1920": "宮崎県",
+         "gun": "北諸県郡",
+         "name": "三股村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "北諸県郡",
+         "name": "中郷村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "北諸県郡",
+         "name": "五十市村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "北諸県郡",
+         "name": "山之口村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "北諸県郡",
+         "name": "山田村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "北諸県郡",
+         "name": "庄内村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "北諸県郡",
+         "name": "志和池村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "北諸県郡",
+         "name": "沖水村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "北諸県郡",
+         "name": "西岳村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "北諸県郡",
+         "name": "都城町",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "北諸県郡",
+         "name": "高城村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "北諸県郡",
+         "name": "高崎村",
+         "whole_or_part": "part",
+         "part_detail": "東霧島村・前田村・縄瀬村・大牟田村 (高崎郷)"
+        }
+       ],
+       "villages_pre1889": [
+        "都城郷・勝岡郷・山之口郷・高城郷・高崎郷 (薩摩国鹿児島藩の郷)"
+       ]
+      }
+     ]
+    },
+    {
+     "from": "1872-06-20",
+     "to": "1873-01-15",
+     "assignments": [
+      {
+       "pref": "都城県",
+       "n03_1920_municipalities": [
+        {
+         "pref1920": "宮崎県",
+         "gun": "北諸県郡",
+         "name": "三股村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "北諸県郡",
+         "name": "中郷村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "北諸県郡",
+         "name": "五十市村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "北諸県郡",
+         "name": "山之口村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "北諸県郡",
+         "name": "山田村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "北諸県郡",
+         "name": "庄内村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "北諸県郡",
+         "name": "志和池村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "北諸県郡",
+         "name": "沖水村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "北諸県郡",
+         "name": "西岳村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "北諸県郡",
+         "name": "都城町",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "北諸県郡",
+         "name": "高城村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "北諸県郡",
+         "name": "高崎村",
+         "whole_or_part": "whole"
+        }
+       ],
+       "villages_pre1889": [
+        "全域 (野尻郷の笛水村・江平村も)"
+       ]
+      }
+     ]
+    }
+   ],
+   "covers_all_1920_municipalities_of_block": true,
+   "chain": "旧高旧領 41村 (北諸県郡 article) → 1889 町村 (北諸県郡 article; 西岳村 split from 庄内村 in 1891) → 1920",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%8C%97%E8%AB%B8%E7%9C%8C%E9%83%A1&oldid=88423981",
+     "quote": "後の北諸県郡域のうち野尻郷が美々津県、残部が都城県の管轄となる"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%8C%97%E8%AB%B8%E7%9C%8C%E9%83%A1&oldid=88423981",
+     "quote": "野尻郷（一部） - 笛水村、江平村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%8C%97%E8%AB%B8%E7%9C%8C%E9%83%A1&oldid=88423981",
+     "quote": "高崎村 ← 東霧島村、笛水村、江平村、前田村、縄瀬村、大牟田村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%8C%97%E8%AB%B8%E7%9C%8C%E9%83%A1&oldid=88423981",
+     "quote": "明治5年5月15日（1872年6月20日） - 後の北諸県郡域の全域が都城県の管轄となる"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E7%BE%8E%E3%80%85%E6%B4%A5%E7%9C%8C&oldid=110103231",
+     "quote": "5月15日（6月20日） - 諸県郡のうち須木郷、野尻郷および小林郷のうち東方村を都城県に移管。"
+    }
+   ],
+   "notes": "CORRECTION: the sweep listed 高岡郷 (東諸県郡) and 須木郷・小林郷東方村 (西諸県郡) as the 美々津 side of 北諸県郡. In the 北諸県郡 article the only 美々津 part is 野尻郷 (笛水村・江平村), which is in 1920 高崎村 (part). 西岳村 (split from 庄内村 in 1891; 安永村・西岳村 formed 庄内村 in 1889) is whole 都城県."
+  },
+  {
+   "key": "block 西諸県郡 (1920 7町村) 美々津県/都城県 1871-12-25 → 1873-01-15",
+   "intervals": [
+    {
+     "from": "1871-12-25",
+     "to": "1872-06-20",
+     "assignments": [
+      {
+       "pref": "美々津県",
+       "n03_1920_municipalities": [
+        {
+         "pref1920": "宮崎県",
+         "gun": "西諸県郡",
+         "name": "野尻村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "西諸県郡",
+         "name": "須木村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "西諸県郡",
+         "name": "小林町",
+         "whole_or_part": "part",
+         "part_detail": "東方村 (小林郷) only"
+        }
+       ],
+       "villages_pre1889": [
+        "野尻村: 紙屋村、東麓村、三ヶ野山村 (野尻郷)",
+        "須木村 (須木郷)",
+        "東方村 (小林郷)"
+       ]
+      },
+      {
+       "pref": "都城県",
+       "n03_1920_municipalities": [
+        {
+         "pref1920": "宮崎県",
+         "gun": "西諸県郡",
+         "name": "加久藤村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "西諸県郡",
+         "name": "真幸村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "西諸県郡",
+         "name": "飯野村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "西諸県郡",
+         "name": "高原村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "西諸県郡",
+         "name": "小林町",
+         "whole_or_part": "part",
+         "part_detail": "細野村、堤村、水流迫村、真方村、北西方村、南西方村 (小林郷の残り)"
+        }
+       ],
+       "villages_pre1889": [
+        "高原郷・飯野郷・加久藤郷・馬関田郷・吉田郷・小林郷(東方村を除く)"
+       ]
+      }
+     ]
+    },
+    {
+     "from": "1872-06-20",
+     "to": "1873-01-15",
+     "assignments": [
+      {
+       "pref": "都城県",
+       "n03_1920_municipalities": [
+        {
+         "pref1920": "宮崎県",
+         "gun": "西諸県郡",
+         "name": "野尻村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "西諸県郡",
+         "name": "須木村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "西諸県郡",
+         "name": "小林町",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "西諸県郡",
+         "name": "加久藤村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "西諸県郡",
+         "name": "真幸村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "西諸県郡",
+         "name": "飯野村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "西諸県郡",
+         "name": "高原村",
+         "whole_or_part": "whole"
+        }
+       ],
+       "villages_pre1889": [
+        "全域"
+       ]
+      }
+     ]
+    }
+   ],
+   "covers_all_1920_municipalities_of_block": true,
+   "chain": "旧高旧領 45村 (西諸県郡 article) → 1889 町村 → 1920",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E8%A5%BF%E8%AB%B8%E7%9C%8C%E9%83%A1&oldid=85841815",
+     "quote": "後の西諸県郡域のうち大淀川以北（野尻郷・須木郷および小林郷のうち東方村）が美々津県、残部が都城県の管轄となる"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E8%A5%BF%E8%AB%B8%E7%9C%8C%E9%83%A1&oldid=85841815",
+     "quote": "小林村 ← 細野村、十日町、五日町、堤村、水流迫村、東方村、真方村、北西方村、南西方村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E8%A5%BF%E8%AB%B8%E7%9C%8C%E9%83%A1&oldid=85841815",
+     "quote": "野尻村 ← 紙屋村、東麓村、三ヶ野山村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E8%A5%BF%E8%AB%B8%E7%9C%8C%E9%83%A1&oldid=85841815",
+     "quote": "明治5年5月15日（1872年6月20日） - 後の西諸県郡域の全域が都城県の管轄となる"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E7%BE%8E%E3%80%85%E6%B4%A5%E7%9C%8C&oldid=110103231",
+     "quote": "5月15日（6月20日） - 諸県郡のうち須木郷、野尻郷および小林郷のうち東方村を都城県に移管。"
+    }
+   ],
+   "notes": "The sweep labelled this block \"北諸県郡に当たる部分\" and listed 高岡郷 for it; 高岡郷 is in 1920 東諸県郡. 野尻村 formed from 野尻郷 villages 紙屋・麓(→東麓)・三ヶ野山 only; 野尻郷 笛水・江平 are in 北諸県郡 (高崎村)."
+  },
+  {
+   "key": "block 囎唹郡 (1920 11町村 = 旧東囎唹郡 5 + 旧南諸県郡 6) 1871-12-25 → 1876-08-21",
+   "intervals": [
+    {
+     "from": "1871-12-25",
+     "to": "1873-01-15",
+     "assignments": [
+      {
+       "pref": "都城県",
+       "n03_1920_municipalities": [
+        {
+         "pref1920": "鹿児島県",
+         "gun": "囎唹郡",
+         "name": "財部村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "囎唹郡",
+         "name": "末吉村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "囎唹郡",
+         "name": "市成村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "囎唹郡",
+         "name": "岩川村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "囎唹郡",
+         "name": "恒吉村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "囎唹郡",
+         "name": "志布志町",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "囎唹郡",
+         "name": "松山村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "囎唹郡",
+         "name": "大崎村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "囎唹郡",
+         "name": "野方村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "囎唹郡",
+         "name": "西志布志村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "囎唹郡",
+         "name": "月野村",
+         "whole_or_part": "whole"
+        }
+       ],
+       "villages_pre1889": [
+        "東囎唹郡域 (旧・囎唹郡 恒吉・市成・末吉・財部・岩川 5郷; 大隅国)",
+        "南諸県郡域 (松山・志布志・大崎 3郷; 日向国)"
+       ]
+      }
+     ]
+    },
+    {
+     "from": "1873-01-15",
+     "to": "1876-08-21",
+     "assignments": [
+      {
+       "pref": "鹿児島県",
+       "n03_1920_municipalities": [
+        {
+         "pref1920": "鹿児島県",
+         "gun": "囎唹郡",
+         "name": "財部村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "囎唹郡",
+         "name": "末吉村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "囎唹郡",
+         "name": "市成村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "囎唹郡",
+         "name": "岩川村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "囎唹郡",
+         "name": "恒吉村",
+         "whole_or_part": "whole"
+        }
+       ],
+       "villages_pre1889": [
+        "大隅国囎唹郡 (東囎唹郡域); 下財部村は1872-04から囎唹郡"
+       ]
+      },
+      {
+       "pref": "宮崎県",
+       "n03_1920_municipalities": [
+        {
+         "pref1920": "鹿児島県",
+         "gun": "囎唹郡",
+         "name": "志布志町",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "囎唹郡",
+         "name": "松山村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "囎唹郡",
+         "name": "大崎村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "囎唹郡",
+         "name": "野方村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "囎唹郡",
+         "name": "西志布志村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "囎唹郡",
+         "name": "月野村",
+         "whole_or_part": "whole"
+        }
+       ],
+       "villages_pre1889": [
+        "日向国諸県郡 (南諸県郡域): 志布志・松山・大崎郷"
+       ]
+      }
+     ]
+    }
+   ],
+   "covers_all_1920_municipalities_of_block": true,
+   "chain": "1920 囎唹郡 (1897-04-01) = 東囎唹郡 + 南諸県郡. 東囎唹郡 1889: 財部村、末吉村、市成村、岩川村、恒吉村. 南諸県郡 1889 松山村・志布志村・大崎村; 1891 志布志村 → 東志布志村(=志布志町)・西志布志村・月野村, 大崎村 → 野方村 + 大崎村.",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%8D%97%E8%AB%B8%E7%9C%8C%E9%83%A1&oldid=100944540",
+     "quote": "第1次府県統合により都城県の管轄となる"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%9D%B1%E5%9B%8E%E5%94%B9%E9%83%A1&oldid=93334044",
+     "quote": "明治30年（1897年）4月1日 - 郡制の施行のため、「岩川郡役所」が管轄する東囎唹郡・南諸県郡の区域をもって囎唹郡が発足"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%9D%B1%E5%9B%8E%E5%94%B9%E9%83%A1&oldid=93334044",
+     "quote": "各郷に財部村、末吉村、市成村、岩川村、恒吉村が発足"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%8D%97%E8%AB%B8%E7%9C%8C%E9%83%A1&oldid=100944540",
+     "quote": "大崎村が分割し、一部（野方）の区域に野方村、残部の区域に改めて大崎村がそれぞれ発足"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%8D%97%E8%AB%B8%E7%9C%8C%E9%83%A1&oldid=100944540",
+     "quote": "残部（月野）の区域に月野村がそれぞれ発足"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E9%83%BD%E5%9F%8E%E7%9C%8C&oldid=107421737",
+     "quote": "ただし、大隅国は鹿児島県に移管。"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E9%B9%BF%E5%85%90%E5%B3%B6%E7%9C%8C&oldid=111207931",
+     "quote": "旧日向国であった地域（現在の志布志市・大崎町など）は宮崎県所属となった。"
+    }
+   ],
+   "notes": "CORRECTION: the sweep put 囎唹郡 on the 美々津 side (with 高岡郷・野尻郷...) for 1871-12-25..1873-01-15. No part of 1920 囎唹郡 was ever 美々津県: 南諸県郡 (南諸県郡 article) and 囎唹郡 (都城県 article list) are both 都城県. The sweep also mixed in 西囎唹郡 (= 1920 姶良郡). The 1873-01-15 split follows from 大隅国 → 鹿児島県 and 日向国 → 宮崎県; 下財部村 (諸県郡 → 囎唹郡 1872-04) is on the 鹿児島 side. 西志布志村 = 原田・野神・蓬原・野井倉・伊崎田 (志布志郷), all 日向国諸県郡."
+  },
+  {
+   "key": "block 姶良郡 (1920 18町村 = 旧姶良郡 6 + 旧桑原郡 5 + 旧西囎唹郡 7) 都城県/鹿児島県 1871-12-25 → 1873-01-15",
+   "intervals": [
+    {
+     "from": "1871-12-25",
+     "to": "1872-06-20",
+     "assignments": [
+      {
+       "pref": "都城県",
+       "n03_1920_municipalities": [
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "加治木町",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "重富村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "蒲生村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "山田村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "溝辺村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "帖佐村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "栗野村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "横川村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "吉松村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "牧園村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "西襲山村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "敷根村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "清水村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "東襲山村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "福山村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "国分村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "西国分村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "東国分村",
+         "whole_or_part": "whole"
+        }
+       ],
+       "villages_pre1889": [
+        "姶良郡 (全6郷), 桑原郡 (全5郷), 囎唹郡 西部 (敷根・福山・国分・清水・襲山の5郷) — all listed in 都城県 (廃藩置県 article)"
+       ]
+      }
+     ]
+    },
+    {
+     "from": "1872-06-20",
+     "to": "1873-01-15",
+     "assignments": [
+      {
+       "pref": "鹿児島県",
+       "n03_1920_municipalities": [
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "加治木町",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "重富村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "蒲生村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "山田村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "溝辺村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "帖佐村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "栗野村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "横川村",
+         "whole_or_part": "whole"
+        }
+       ],
+       "villages_pre1889": [
+        "姶良郡 全域: 溝辺・山田・蒲生・帖佐・重富・加治木 6郷",
+        "桑原郡 栗野郷 (田尾原村、木場村、恒次村、北方村、米永村、幸田村、稲葉崎村)、横川郷 (上之村、下之村、中之村)"
+       ]
+      },
+      {
+       "pref": "都城県",
+       "n03_1920_municipalities": [
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "吉松村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "牧園村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "西襲山村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "敷根村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "清水村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "東襲山村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "福山村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "国分村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "西国分村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "東国分村",
+         "whole_or_part": "whole"
+        }
+       ],
+       "villages_pre1889": [
+        "桑原郡 踊郷(牧園)、吉松郷、日当山郷(西襲山; 当時は囎唹郡襲山郷)",
+        "西囎唹郡域 敷根・福山・国分・清水・襲山郷"
+       ]
+      }
+     ]
+    },
+    {
+     "from": "1873-01-15",
+     "to": "1876-08-21",
+     "assignments": [
+      {
+       "pref": "鹿児島県",
+       "n03_1920_municipalities": [
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "加治木町",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "重富村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "蒲生村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "山田村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "溝辺村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "帖佐村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "栗野村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "横川村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "吉松村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "牧園村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "西襲山村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "敷根村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "清水村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "東襲山村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "福山村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "国分村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "西国分村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "姶良郡",
+         "name": "東国分村",
+         "whole_or_part": "whole"
+        }
+       ],
+       "villages_pre1889": [
+        "都城県の大隅国部分が鹿児島県へ (1873-01-15)"
+       ]
+      }
+     ]
+    }
+   ],
+   "covers_all_1920_municipalities_of_block": true,
+   "chain": "旧高旧領 郷 → 1889 町村 (姶良郡/桑原郡/西囎唹郡 articles) → 1897-04-01 姶良郡 18町村 = 1920. 栗野村 ← 栗野郷 whole, 横川村 ← 横川郷 whole, 吉松村 ← 吉松郷, 牧園村 ← 踊郷, 西襲山村 ← 日当山郷.",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%BB%83%E8%97%A9%E7%BD%AE%E7%9C%8C&oldid=111035138",
+     "quote": "5月15日（6月20日） - 都城県のうち大隅国菱刈郡・姶良郡および桑原郡栗野郷・横川郷（鹿児島県）、美々津県のうち日向国諸県郡須木郷・野尻郷および小林郷のうち東方村（都城県）"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E9%83%BD%E5%9F%8E%E7%9C%8C&oldid=107421737",
+     "quote": "姶良郡、菱刈郡および桑原郡のうち栗野郷、横川郷を鹿児島県へ移管。"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%BB%83%E8%97%A9%E7%BD%AE%E7%9C%8C&oldid=111035138",
+     "quote": "大隅国のうち菱刈郡・桑原郡・姶良郡・囎唹郡・肝属郡・大隅郡"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%A1%91%E5%8E%9F%E9%83%A1&oldid=103856843",
+     "quote": "横川郷 - 上之村、下之村、中之村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%A1%91%E5%8E%9F%E9%83%A1&oldid=103856843",
+     "quote": "各郷に横川村、栗野村、吉松村、牧園村［踊郷］、西襲山村が発足"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E8%A5%BF%E5%9B%8E%E5%94%B9%E9%83%A1&oldid=102096247",
+     "quote": "敷根村、清水村、東襲山村、福山村、国分村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%A7%B6%E8%89%AF%E9%83%A1&oldid=103801033",
+     "quote": "各郷に加治木村、重富村、蒲生村、山田村、溝辺村、帖佐村が発足"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%A7%B6%E8%89%AF%E9%83%A1&oldid=103801033",
+     "quote": "旧・桑原郡（5村） - 横川村（現・霧島市）、栗野村、吉松村（現・湧水町）、牧園村、西襲山村（現・霧島市）"
+    }
+   ],
+   "notes": "RESOLVED \"which is right\": the 姶良郡/菱刈郡/桑原郡 articles only say 鹿児島県 from 廃藩置県 (1871-08-29) and omit the 都城県 phase; the 廃藩置県, 都城県 and 鹿児島県 articles (and the 1872-06-20 transfer line itself, \"都城県のうち…→鹿児島県\", which presupposes they were in 都城県) agree they were 都城県 from 1871-12-25 to 1872-06-20. So the table following 廃藩置県 is right. 日当山郷 (西襲山村) was merged into 囎唹郡襲山郷 in 1869 and returned to 桑原郡 only in 1879; either way 都城県."
+  },
+  {
+   "key": "block 伊佐郡 (1920 6町村 = 旧北伊佐郡 3 + 旧菱刈郡 3) 1871-12-25 → 1873-01-15",
+   "intervals": [
+    {
+     "from": "1871-12-25",
+     "to": "1872-06-20",
+     "assignments": [
+      {
+       "pref": "都城県",
+       "n03_1920_municipalities": [
+        {
+         "pref1920": "鹿児島県",
+         "gun": "伊佐郡",
+         "name": "菱刈村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "伊佐郡",
+         "name": "東太良村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "伊佐郡",
+         "name": "西太良村",
+         "whole_or_part": "whole"
+        }
+       ],
+       "villages_pre1889": [
+        "大隅国菱刈郡 (馬越・湯之尾・本城・曽木・大口一部; 13村)"
+       ]
+      },
+      {
+       "pref": "鹿児島県",
+       "n03_1920_municipalities": [
+        {
+         "pref1920": "鹿児島県",
+         "gun": "伊佐郡",
+         "name": "大口町",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "伊佐郡",
+         "name": "羽月村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "伊佐郡",
+         "name": "山野村",
+         "whole_or_part": "whole"
+        }
+       ],
+       "villages_pre1889": [
+        "薩摩国伊佐郡 北伊佐郡域 (大口郷一部・羽月郷・山野郷; 23村)"
+       ]
+      }
+     ]
+    },
+    {
+     "from": "1872-06-20",
+     "to": "1873-01-15",
+     "assignments": [
+      {
+       "pref": "鹿児島県",
+       "n03_1920_municipalities": [
+        {
+         "pref1920": "鹿児島県",
+         "gun": "伊佐郡",
+         "name": "大口町",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "伊佐郡",
+         "name": "羽月村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "伊佐郡",
+         "name": "山野村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "伊佐郡",
+         "name": "菱刈村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "伊佐郡",
+         "name": "東太良村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "伊佐郡",
+         "name": "西太良村",
+         "whole_or_part": "whole"
+        }
+       ],
+       "villages_pre1889": [
+        "菱刈郡 → 鹿児島県 (1872-06-20)"
+       ]
+      }
+     ]
+    }
+   ],
+   "covers_all_1920_municipalities_of_block": true,
+   "chain": "菱刈郡 13村 → 1889 菱刈村 ← 前目村、田中村、川北村、徳辺村、市山村、花北村、重留村、下手村; 太良村 ← 南浦村、荒田村、川南村、里村、針持村 (1891 東太良村 ← 南浦・荒田・川南, 西太良村 ← 里・針持); 北伊佐郡 → 羽月村・大口村・山野村 → 1897 伊佐郡 (6村) → 1920",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E4%BC%8A%E4%BD%90%E9%83%A1&oldid=103768436",
+     "quote": "旧・北伊佐郡（3村） - 羽月村、大口村、山野村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E4%BC%8A%E4%BD%90%E9%83%A1&oldid=103768436",
+     "quote": "旧・菱刈郡（3村） - 菱刈村、東太良村、西太良村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E8%8F%B1%E5%88%88%E9%83%A1&oldid=103768660",
+     "quote": "菱刈村 ← 前目村、田中村、川北村、徳辺村、市山村、花北村、重留村、下手村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%BB%83%E8%97%A9%E7%BD%AE%E7%9C%8C&oldid=111035138",
+     "quote": "大隅国のうち菱刈郡・桑原郡・姶良郡・囎唹郡・肝属郡・大隅郡"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%BB%83%E8%97%A9%E7%BD%AE%E7%9C%8C&oldid=111035138",
+     "quote": "大隅国菱刈郡・姶良郡および桑原郡栗野郷・横川郷（鹿児島県）"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%BB%83%E8%97%A9%E7%BD%AE%E7%9C%8C&oldid=111035138",
+     "quote": "薩摩国一円"
+    }
+   ],
+   "notes": "The whole split follows the old 郡: 菱刈郡 (大隅国) vs 伊佐郡 (薩摩国). Verified no 1889 町村 straddles the old line: 大口郷 is split between the two old 郡 (里村 etc. in 伊佐郡 → 大口村; 市山村・花北村 in 菱刈郡 → 菱刈村) but each 1889 町村 contains only villages of one old 郡."
+  },
+  {
+   "key": "block 鹿児島郡 (1920 8町村) 鹿児島県/都城県 1871-12-25 → 1873-01-15",
+   "intervals": [
+    {
+     "from": "1871-12-25",
+     "to": "1873-01-15",
+     "assignments": [
+      {
+       "pref": "鹿児島県",
+       "n03_1920_municipalities": [
+        {
+         "pref1920": "鹿児島県",
+         "gun": "鹿児島郡",
+         "name": "中郡宇村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "鹿児島郡",
+         "name": "伊敷村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "鹿児島郡",
+         "name": "吉田村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "鹿児島郡",
+         "name": "吉野村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "鹿児島郡",
+         "name": "西武田村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "鹿児島郡",
+         "name": "谷山村",
+         "whole_or_part": "whole"
+        }
+       ],
+       "villages_pre1889": [
+        "鹿児島郡 (近在・吉田郷) + 谿山郡 (谷山村) — 薩摩国"
+       ]
+      },
+      {
+       "pref": "都城県",
+       "n03_1920_municipalities": [
+        {
+         "pref1920": "鹿児島県",
+         "gun": "鹿児島郡",
+         "name": "東桜島村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "鹿児島郡",
+         "name": "西桜島村",
+         "whole_or_part": "whole"
+        }
+       ],
+       "villages_pre1889": [
+        "大隅郡 桜島郷 18村 (後の北大隅郡)"
+       ]
+      }
+     ]
+    },
+    {
+     "from": "1873-01-15",
+     "to": "1876-08-21",
+     "assignments": [
+      {
+       "pref": "鹿児島県",
+       "n03_1920_municipalities": [
+        {
+         "pref1920": "鹿児島県",
+         "gun": "鹿児島郡",
+         "name": "中郡宇村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "鹿児島郡",
+         "name": "伊敷村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "鹿児島郡",
+         "name": "吉田村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "鹿児島郡",
+         "name": "吉野村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "鹿児島郡",
+         "name": "西武田村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "鹿児島郡",
+         "name": "谷山村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "鹿児島郡",
+         "name": "東桜島村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "鹿児島県",
+         "gun": "鹿児島郡",
+         "name": "西桜島村",
+         "whole_or_part": "whole"
+        }
+       ],
+       "villages_pre1889": [
+        "大隅国 → 鹿児島県 (1873-01-15)"
+       ]
+      }
+     ]
+    }
+   ],
+   "covers_all_1920_municipalities_of_block": true,
+   "chain": "鹿児島郡 (1920, 1897-04-01) = 鹿児島郡 5村 + 谿山郡 谷山村 + 北大隅郡 (西桜島村・東桜島村). 北大隅郡 = 大隅郡のうち桜島郷 (1887). 西桜島村 ← 横山村、赤水村、小池村、赤生原村、武村、藤野村、西道村、松浦村、二俣村、白浜村; 東桜島村 ← 有村、脇村、瀬戸村、黒神村、高免村、古里村、湯ノ村、野尻村.",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E9%B9%BF%E5%85%90%E5%B3%B6%E9%83%A1&oldid=110020794",
+     "quote": "旧・北大隅郡 - 西桜島村、東桜島村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E9%B9%BF%E5%85%90%E5%B3%B6%E9%83%A1&oldid=110020794",
+     "quote": "旧・谿山郡 - 谷山村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%8C%97%E5%A4%A7%E9%9A%85%E9%83%A1&oldid=81218731",
+     "quote": "大隅郡のうち後の本郡域には桜島郷18村が存在"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%8C%97%E5%A4%A7%E9%9A%85%E9%83%A1&oldid=81218731",
+     "quote": "大隅郡のうち桜島郷の区域をもって北大隅郡が発足"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%BB%83%E8%97%A9%E7%BD%AE%E7%9C%8C&oldid=111035138",
+     "quote": "大隅国のうち菱刈郡・桑原郡・姶良郡・囎唹郡・肝属郡・大隅郡"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E8%B0%BF%E5%B1%B1%E9%83%A1&oldid=103673575",
+     "quote": "宇宿村の所属郡が鹿児島郡に変更。"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E9%B9%BF%E5%85%90%E5%B3%B6%E7%9C%8C&oldid=111207931",
+     "quote": "1873年（明治6年）1月15日 - 宮崎県（初代）の設置に伴い、都城県のうち大隅国の部分を鹿児島県に移管。"
+    }
+   ],
+   "notes": "谷山村 (谿山郡) and 宇宿村 (谿山郡→鹿児島郡 in 1871, in 中郡宇村) are 薩摩国 and stay 鹿児島県. INFERENCE: 桜島 is on the 都城県 side because the 廃藩置県 article lists 大隅郡 without restriction (the same list marks 那珂・宮崎・諸県 as 一部) and the 鹿児島県 article describes 都城県 as 大隅国 excluding islands (熊毛・馭謨); 桜島 is not one of those. No source in hand states 桜島 by name for the period; see stillUnresolved."
+  },
+  {
+   "key": "block 児湯郡 (1920 15町村) 美々津県/八代県 1871-12-25 → 1873-01-15",
+   "intervals": [
+    {
+     "from": "1871-12-25",
+     "to": "1872-10-25",
+     "assignments": [
+      {
+       "pref": "美々津県",
+       "n03_1920_municipalities": [
+        {
+         "pref1920": "宮崎県",
+         "gun": "児湯郡",
+         "name": "三納村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "児湯郡",
+         "name": "上江村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "児湯郡",
+         "name": "上穂北村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "児湯郡",
+         "name": "下穂北村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "児湯郡",
+         "name": "富田村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "児湯郡",
+         "name": "川南村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "児湯郡",
+         "name": "新田村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "児湯郡",
+         "name": "木城村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "児湯郡",
+         "name": "美々津町",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "児湯郡",
+         "name": "都於郡村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "児湯郡",
+         "name": "都農町",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "児湯郡",
+         "name": "高鍋町",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "児湯郡",
+         "name": "三財村",
+         "whole_or_part": "part",
+         "part_detail": "藤田村、下三財村、上三財村、加勢村"
+        }
+       ]
+      },
+      {
+       "pref": "八代県",
+       "n03_1920_municipalities": [
+        {
+         "pref1920": "宮崎県",
+         "gun": "児湯郡",
+         "name": "西米良村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "児湯郡",
+         "name": "東米良村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "児湯郡",
+         "name": "三財村",
+         "whole_or_part": "part",
+         "part_detail": "寒川村"
+        }
+       ],
+       "villages_pre1889": [
+        "米良山14村 (球磨郡の扱い)"
+       ]
+      }
+     ]
+    },
+    {
+     "from": "1872-10-25",
+     "to": "1873-01-15",
+     "assignments": [
+      {
+       "pref": "美々津県",
+       "n03_1920_municipalities": [
+        {
+         "pref1920": "宮崎県",
+         "gun": "児湯郡",
+         "name": "三納村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "児湯郡",
+         "name": "上江村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "児湯郡",
+         "name": "上穂北村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "児湯郡",
+         "name": "下穂北村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "児湯郡",
+         "name": "富田村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "児湯郡",
+         "name": "川南村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "児湯郡",
+         "name": "新田村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "児湯郡",
+         "name": "木城村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "児湯郡",
+         "name": "美々津町",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "児湯郡",
+         "name": "都於郡村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "児湯郡",
+         "name": "都農町",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "児湯郡",
+         "name": "高鍋町",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "児湯郡",
+         "name": "三財村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "児湯郡",
+         "name": "西米良村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "宮崎県",
+         "gun": "児湯郡",
+         "name": "東米良村",
+         "whole_or_part": "whole"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "covers_all_1920_municipalities_of_block": true,
+   "chain": "see transfer \"1872 児湯郡\"",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%85%90%E6%B9%AF%E9%83%A1&oldid=106755109",
+     "quote": "第1次府県統合により美々津県の管轄となる"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E7%BE%8E%E3%80%85%E6%B4%A5%E7%9C%8C&oldid=110103231",
+     "quote": "旧人吉藩領の米良地方14村を八代県球磨郡から美々津県児湯郡に移管"
+    }
+   ],
+   "notes": "The other 児湯郡 町村 were 美々津県 from 1871-12-25 (児湯郡 article). No part of 1920 児湯郡 went to another prefecture except the 米良山 14 villages."
+  },
+  {
+   "key": "block 下益城郡 (1920 18町村) 八代県/熊本県/白川県 1871-12-25 → 1873-01-15",
+   "intervals": [
+    {
+     "from": "1871-12-25",
+     "to": "1872-07-19",
+     "assignments": [
+      {
+       "pref": "八代県",
+       "n03_1920_municipalities": [
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "中山村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "守富村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "小川町",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "小野部田村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "年弥村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "当尾村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "杉上村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "東砥用村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "松橋町",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "河江村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "海東村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "西砥用村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "豊川村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "豊田村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "豊福村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "豊野村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "隈庄町",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "杉合村",
+         "whole_or_part": "part",
+         "part_detail": "杉島・大町・莎崎・釈迦堂・硴江・菰江・国町"
+        }
+       ]
+      },
+      {
+       "pref": "熊本県",
+       "n03_1920_municipalities": [
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "杉合村",
+         "whole_or_part": "part",
+         "part_detail": "小岩瀬村 (飽田郡から移る)"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "from": "1872-07-19",
+     "to": "1873-01-15",
+     "assignments": [
+      {
+       "pref": "八代県",
+       "n03_1920_municipalities": [
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "中山村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "守富村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "小川町",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "小野部田村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "年弥村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "当尾村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "杉上村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "東砥用村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "松橋町",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "河江村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "海東村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "西砥用村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "豊川村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "豊田村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "豊福村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "豊野村",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "隈庄町",
+         "whole_or_part": "whole"
+        },
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "杉合村",
+         "whole_or_part": "part",
+         "part_detail": "杉島・大町・莎崎・釈迦堂・硴江・菰江・国町"
+        }
+       ]
+      },
+      {
+       "pref": "白川県",
+       "n03_1920_municipalities": [
+        {
+         "pref1920": "熊本県",
+         "gun": "下益城郡",
+         "name": "杉合村",
+         "whole_or_part": "part",
+         "part_detail": "小岩瀬村"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "covers_all_1920_municipalities_of_block": true,
+   "chain": "下益城郡 article (1889 町村) + transfer \"1881 下益城郡\"",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E4%B8%8B%E7%9B%8A%E5%9F%8E%E9%83%A1&oldid=110929335",
+     "quote": "11月14日（1871年12月25日） - 第1次府県統合により八代県の管轄となる"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E9%A3%BD%E7%94%B0%E9%83%A1&oldid=110953347",
+     "quote": "明治5年6月14日（1872年7月19日） - 白川県の管轄となる"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E4%B8%8B%E7%9B%8A%E5%9F%8E%E9%83%A1&oldid=110929335",
+     "quote": "杉合村 ← 杉島村、大町村、莎崎村、釈迦堂村、硴江村、菰江村、小岩瀬村、国町村"
+    }
+   ],
+   "notes": "Only 杉合村 is straddled. The other 1920 下益城郡 町村 are whole 八代県 (下益城郡 article lists the whole 郡 under 八代県). Block 飽託郡 / 熊本市: no village of 飽田郡/託麻郡 left the 熊本県→白川県 side (only 小岩瀬村 moved, to 下益城郡), so those blocks are single-prefecture in these intervals; I did not enumerate each 飽託郡 町村 (託麻郡 and 飽田郡 are both 熊本県 → 白川県 1872-07-19 per their articles)."
+  }
+ ],
+ "dates": [
+  {
+   "key": "琉球藩→沖縄県 (廃藩置県の日)",
+   "date": "1879-04-04",
+   "act": "太政官布告第14号「琉球藩ヲ廃シ沖縄縣ヲ被置ノ件」, 明治12年4月4日 (法令全書). Text as quoted by the Wikisource page found by search: 琉球藩ヲ廢シ沖繩縣ヲ被置候條此旨布告候事 但縣廰ヲ首里ニ被置候事",
+   "reasoning": "Both dates are right but for different things. 1879-03-27 = 松田道之 delivered the 通達 at 首里城 (琉球藩 article: 「3月27日…琉球藩を廃止し、沖縄県を設置する「廃藩置県」を通達した」), the de-facto handover; 1879-04-04 = the 太政官布告第14号 that legally abolishes the 藩 and establishes the 県 nationwide; 4月5日 初代県令 鍋島直彬 就任 (沖縄県 article). Dates are already Gregorian (post 明治6年 calendar reform). Recommendation: use 1879-04-04 (legal act), document 03-27 as the notification.",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E7%90%89%E7%90%83%E8%97%A9&oldid=110209346",
+     "quote": "同年4月4日には「琉球藩ヲ廃シ沖縄縣ヲ置ク」（1879年4月4日　布告第14号）で、琉球藩の廃止と沖縄県設置を全国に布告した"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%B2%96%E7%B8%84%E7%9C%8C&oldid=111068883",
+     "quote": "（なお、太政官布告は同年4月4日付けで出されている"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E7%90%89%E7%90%83%E8%97%A9&oldid=110209346",
+     "quote": "琉球藩を廃止し、沖縄県を設置する「廃藩置県」を通達した"
+    }
+   ]
+  },
+  {
+   "key": "琉球 1871-12-25 → 1872-10-16 status",
+   "date": "1872-10-16",
+   "act": "琉球國王尚泰ヲ藩王トナシ華族ニ陞列スルノ詔, 明治5年9月14日",
+   "reasoning": "Until 明治5年9月14日 (=1872-10-16; anchor 9月20日=1872-10-22 minus 6 days; the 琉球藩 article prints 10月16日) 琉球 was a 付庸国 of 鹿児島県, not ordinary prefectural territory: 琉球藩 article: 明治政府は…鹿児島県が所管するものとした; 廃藩置県 article lists 琉球国 after 鹿児島県 (\"ほか琉球国\"). On 明治5年9月14日 尚泰 was appointed 琉球藩王 and 琉球藩 established, ending the 鹿児島県 所管. Recommended treatment: under 鹿児島県 supervision as a tributary kingdom for 1871-12-25..1872-10-16 (no 郡, not 県 territory), then 琉球藩 (1872-10-16..1879-04-04), then 沖縄県. The Okinawa 郡 did not exist (島尻郡 etc. from 1896-04-01).",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E7%90%89%E7%90%83%E8%97%A9&oldid=110209346",
+     "quote": "明治政府は従来より実質的に薩摩藩の付庸国で、その利権を引き続いだ鹿児島県が所管するものとした"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E7%90%89%E7%90%83%E8%97%A9&oldid=110209346",
+     "quote": "以上により琉球王国は鹿児島県付庸国から明治政府の藩国となり、琉球藩が設置された"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%BB%83%E8%97%A9%E7%BD%AE%E7%9C%8C&oldid=111035138",
+     "quote": "大隅国のうち熊毛郡・馭謨郡、薩摩国一円、ほか琉球国"
+    }
+   ]
+  },
+  {
+   "key": "大東諸島 北大東島・南大東島 領有",
+   "date": "1885-08-31",
+   "act": "沖縄県令西村捨三が内務省の命で調査し国標を建てる (formal 閣議決定/告示 not found)",
+   "reasoning": "大東諸島 article: 「1885年（明治18年）…8月31日、調査を終え国標を建てて両島を「大東諸島」と公称」 and the 領有 was declared to other powers and the islands incorporated into 沖縄県. Both islands were uninhabited and never part of 琉球王国. 1885-08-31 is the survey-completion / 国標建設 date as given by that article; the 内務省 act itself was not found. They joined 島尻郡 only on 1896-04-01 (明治29年勅令第13号; 島尻郡 article: 大東島 \"この時点で南大東島・北大東島\"). 沖大東島 was NOT included in 1885 (沖大東島 article).",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%A4%A7%E6%9D%B1%E8%AB%B8%E5%B3%B6&oldid=110989056",
+     "quote": "8月31日、調査を終え国標を建てて両島を「大東諸島」と公称"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%B2%96%E5%A4%A7%E6%9D%B1%E5%B3%B6&oldid=109455802",
+     "quote": "しかし同じ大東諸島に属しながら、この時沖大東島の日本領編入は行われなかった"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%B3%B6%E5%B0%BB%E9%83%A1&oldid=101471344",
+     "quote": "大東島（この時点で南大東島・北大東島）の地域をもって行政区画としての島尻郡が発足（17間切7諸島）"
+    }
+   ]
+  },
+  {
+   "key": "沖大東島 編入",
+   "date": "1900-10-17",
+   "act": "閣議決定 1900-09-11 (西郷従道内務大臣) → 内務大臣訓令 訓第913号 (島尻郡 article dates the 編入 9月26日) → 沖縄県告示第95号 (1900-10-17)",
+   "reasoning": "沖大東島 article: 閣議 1900-09-11 decided to incorporate into 沖縄県島尻郡; the 県 announced 10月17日. 島尻郡 article: 「沖大東島が日本領に編入（9月26日）…島尻郡に属する（10月17日）」 citing 内務大臣訓令訓第913号 and 沖縄県告示第95号. The two articles disagree by 15 days on the 閣議/訓令 date (09-11 vs 09-26); the 10-17 告示 date agrees. Effective date for the map: the 告示, 1900-10-17.",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%B2%96%E5%A4%A7%E6%9D%B1%E5%B3%B6&oldid=109455802",
+     "quote": "10月17日、沖大東島を正式に沖縄県島尻郡に編入する告示を行った"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%B3%B6%E5%B0%BB%E9%83%A1&oldid=101471344",
+     "quote": "沖大東島が日本領に編入（9月26日）"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%B3%B6%E5%B0%BB%E9%83%A1&oldid=101471344",
+     "quote": "島尻郡に属する（10月17日）"
+    }
+   ]
+  },
+  {
+   "key": "都城県/美々津県 1871-12-25 と 1872-06-20",
+   "date": "1871-12-25",
+   "act": "第1次府県統合 明治4年11月14日 (都城県は太政官布告595号 per 都城県 article); 明治5年5月15日 transfer",
+   "reasoning": "明治4年11月14日=1871-12-25 (given anchor); 明治5年5月15日=1872-06-20 as printed. Consistency check: 明治5年1月1日=1872-02-09; 1月30+2月29+3月30+4月29 = 118 days to 1872-06-06 = 5月1日; +14 = 06-20.",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E9%83%BD%E5%9F%8E%E7%9C%8C&oldid=107421737",
+     "quote": "都城県が発足（太政官布告595号）"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E7%BE%8E%E3%80%85%E6%B4%A5%E7%9C%8C&oldid=110103231",
+     "quote": "5月15日（6月20日）"
+    }
+   ]
+  }
+ ],
+ "stillUnresolved": [
+  {
+   "what": "The prefecture on 1871-12-25 of 東諸県郡 villages that were NOT 鹿児島藩 land (須志田・森永・本庄・竹田・塚原・岩知野・吉野・嵐田・木脇・三名・伊佐生): 美々津県 (my inference) vs 都城県",
+   "searched": [
+    "東諸県郡",
+    "諸県郡",
+    "美々津県",
+    "都城県",
+    "国富町",
+    "本庄町 (宮崎県)",
+    "木脇村",
+    "八代村 (宮崎県)",
+    "web search for 国富町 美々津県/都城県 (no village-level statement)"
+   ],
+   "why": "The 東諸県郡 article states the 美々津 side only as \"（高岡郷）\"; the 延岡/高鍋-held villages are never named. My assignment (美々津) rests on: 美々津県 merged 延岡県・高鍋県; 都城県 inherited only 12 延岡県宮崎郡 villages plus 飫肥県 and 鹿児島県 land. A primary text (日向国史 第三章 第一節/第二節; 宮崎県史 第一項) would settle it; not retrievable here. Geography (国富 on the 本庄川, north of 大淀川) is also consistent. Affects 1920 本庄町・木脇村・八代村 and part of 倉岡村 for 1871-12-25..1873-01-15."
+  },
+  {
+   "what": "桜島 (大隅郡桜島郷 → 1920 東桜島村/西桜島村) prefecture 1871-12-25..1873-01-15: 都城県 (inference) vs 鹿児島県",
+   "searched": [
+    "廃藩置県",
+    "都城県",
+    "鹿児島県",
+    "北大隅郡",
+    "鹿児島郡"
+   ],
+   "why": "Sources list 大隅郡 under 都城県 without qualification and the 鹿児島県 article says 都城県 held 大隅国 excluding islands (熊毛・馭謨). 桜島 is an island by geography but part of 大隅郡; no source names 桜島. Low risk but unproven."
+  },
+  {
+   "what": "Exact day of 下財部村 諸県郡→囎唹郡 change (明治5年4月 = 1872-05-08..1872-06-05)",
+   "searched": [
+    "南諸県郡",
+    "諸県郡",
+    "東囎唹郡",
+    "財部町 (web)"
+   ],
+   "why": "All sources give only 明治5年4月. No effect on any interval (both 都城県 then)."
+  },
+  {
+   "what": "Year of 小岩瀬村 飽田郡→下益城郡 (1880 vs 1881)",
+   "searched": [
+    "飽田郡",
+    "下益城郡"
+   ],
+   "why": "角川 (452頁) says 明治14年, 下益城郡誌 says 明治13年. Irrelevant to prefecture intervals (both 熊本県); would matter only for a 郡-level map between 1880 and 1881."
+  },
+  {
+   "what": "Exact calendar date of 北大東島・南大東島 領有 in 1885 (国標建設) and any 内務省/太政官 act",
+   "searched": [
+    "大東諸島",
+    "南大東島",
+    "北大東島",
+    "沖大東島",
+    "web search"
+   ],
+   "why": "Only the 大東諸島 article statement \"8月31日…国標を建てて\" was found; no formal act located. Both islands uninhabited, no 郡 until 1896-04-01."
+  }
+ ],
+ "corrections": [
+  "Sweep row for 南那珂郡 (\"那珂郡のうち大淀川以北 in 美々津県\") is wrong: the north-of-大淀川 part of 那珂郡 is the later 北那珂郡 = 1920 宮崎郡. 1920 南那珂郡 is wholly 都城県 for 1871-12-25..1873-01-15.",
+  "Sweep rows for 北諸県郡/東諸県郡/西諸県郡/囎唹郡 copy 高岡郷 + 野尻郷・須木郷・小林郷東方村 into every row. Correctly: 高岡郷 (+ 延岡/高鍋 land) → 1920 東諸県郡 (美々津); 野尻郷 笛水・江平 → 北諸県郡 高崎村 part (美々津 until 1872-06-20); 野尻郷 紙屋・麓・三ヶ野山, 須木郷, 小林郷東方村 → 西諸県郡 野尻村/須木村/小林町 part (美々津 until 1872-06-20). 1920 囎唹郡 has NO 美々津県 land.",
+  "\"1872 曽於郡 財部郷・54村\" is a parse error: \"（54村）\" is a count. It duplicates \"1871 東囎唹郡\" (下財部村). The 東囎唹郡 article's \"明治5年（1871年）\" is wrong: 明治5年 = 1872.",
+  "\"1881 下益城郡 / 1880 飽田郡\" involve ONE village, 小岩瀬村 (→ 杉合村 part); \"1町132村\" and \"2町98村\" are counts. The 熊本市 block entry is spurious.",
+  "\"1872 児湯郡\": 寒川村 is in 三財村 (part); 西米良/東米良 are whole.",
+  "Sweep unresolved \"菱刈郡・桑原郡・姶良郡 都城県 vs 鹿児島県\": 都城県 is correct for 1871-12-25..1872-06-20 (the transfer line presupposes it; 廃藩置県, 都城県 and 鹿児島県 articles agree). The 菱刈/桑原/姶良 articles that start 鹿児島県 from 1871-08-29 skip the 都城県 phase.",
+  "\"琉球藩 → 沖縄県\": use 1879-04-04 (太政官布告第14号 = the legal act); 1879-03-27 is the delivery of the 通達 at 首里城. \"琉球 1871-12-25 → 1872-10-16\": 付庸国 under 鹿児島県 所管, ends with 琉球藩王冊封 on 明治5年9月14日 = 1872-10-16.",
+  "1920 N03 島尻郡 includes 大東島: 南北大東島 claimed 1885 (国標建設 8月31日 per article); 沖大東島 only 1900 (沖縄県告示第95号, 1900-10-17).",
+  "In the 宮崎郡 article the 美々津 list contains 松山町, which appears in 旧高旧領 only as an 1881 offshoot of 瀬頭村 (北那珂郡); harmless since 宮崎町 is entirely on the north bank."
+ ]
+}
