@@ -2577,10 +2577,11 @@ test('timelapse-video-export ① the lapse is written to a file that decodes, on
     expect([d.w, d.h]).toEqual([1080, 1080]);
     expect(d.type).toBe(s.ext === 'mp4' ? 'video/mp4' : 'video/webm');
     expect(d.decoded, 'decoded frames ≠ drawn instants + the hold').toBe(s.frames + 1);
-    /* the map's waits are not in the file: four frames at 4 a second play for about a second (1.05 s measured alone).
-       A frame's length is real time with the recorder running, so a loaded machine stretches it — 1.75 s measured with
-       a Cesium page booting beside this one — while a single tile wait would add seconds; the bound sits between */
-    expect(d.duration).toBeGreaterThan((s.frames - 0.5) / 4); expect(d.duration).toBeLessThan(s.frames * 2.5 / 4);
+    /* (timelapse-hold-frame) the file is written by the encoder that stamps every frame itself — the path that cannot
+       drop one (js/map-recorder.js «THE VIDEO WRITERS») — so the map's waits are not in it and neither is the machine's
+       load: four instants and the hold at 4 a second last exactly 5/4 s */
+    expect(s.via).toBe('webcodecs');
+    expect(d.duration).toBeCloseTo((s.frames + 1) / 4, 2);
     tveBandIsText(d);
   } finally {
     await page.evaluate(() => { try { window.IntMapTime.setNow({ source: 'ui' }); } catch (_) { /* live */ } });
@@ -2597,6 +2598,7 @@ test('timelapse-video-export ② Atlas records a portrait WebM; ③ the comparis
     expect([s.ext, s.w, s.h, s.frames]).toEqual(['webm', 1080, 1920, 2]);
     const d = await tveDecode(s);
     expect([d.w, d.h, d.decoded]).toEqual([1080, 1920, 3]);
+    expect(s.via).toBe('webcodecs'); expect(d.duration).toBeCloseTo(3 / 4, 2);
     tveBandIsText(d);
     /* ③ the comparison: the window at 1914, the main map at 1960 */
     /* both maps have drawn their instant's borders — the same waits as time-compare-lapse ① */
