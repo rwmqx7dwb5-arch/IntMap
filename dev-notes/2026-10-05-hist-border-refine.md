@@ -136,3 +136,12 @@ CShapes と OHM の長い辺の多くは本当に直線の国境（北緯 49 度
   離れる弦・誤差より短い区間は動かない／上位の記録の線上の頂点と例外は動かない／描かれない run は差し替えない／読み手が
   run に差し込み、両側が同じ頂点を共有し、ファイルが無ければ元どおり／地物の経路は自身の頂点だけを通る／事実の要件／
   Cliopatria と、それに沿って切られた枚以外は差し替えない／同じ辺を描く隣の環が同じ地物の頂点を描く／事実の期間外と日付の無いときは元の線／出荷物の再導出。
+
+### 統治台帳（`data/governance-ledger.json`）に 1 件を「未宣言」として記録した理由
+
+`data/hist-courses.js` 自身は出自を値として全部述べる（publisher・url・licence・licenceUrl・attribution・paidBy・retrievedAt・
+generatedAt・asOf（Overpass の osm_base）・cadence・builtBy・schema・quality（js/data-governance.js measureQuality で
+21 区間を測った行数・欠損・範囲外・重複））。記録したのは書き手 `scripts/build-hist-courses.mjs` の側の 7 facet（retrievedAt・
+generatedAt・asOf・quality の 4 つ）で、これらは取得と生成のたびに変わる値なので、check:datagov が実行せずに読む純データの
+`GOVERNANCE` 宣言には書けない——同じ値は束の先頭が述べている。初回の `npm test` はこの 2 件（束と書き手）を新しい未宣言として
+落とし（束の側は attribution を真偽値で書いていなかった）、束の側は直し、書き手の側だけを記録した（181 件・2,389 facet）。

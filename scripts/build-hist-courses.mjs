@@ -41,12 +41,13 @@
  *      node scripts/build-hist-courses.mjs --report    # the coarse share by year, before and after
  *      node scripts/build-hist-courses.mjs --measure   # the record's positional error (needs the Cliopatria cache)
  * ==========================================================================*/
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { createHash } from 'node:crypto';
 import { OPENSTREETMAP } from './lib/upstream-cadence.mjs';
+import { requireModule } from './lib/import-module.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const OUT = join(ROOT, 'data', 'hist-courses.js');
@@ -60,7 +61,9 @@ export const GOVERNANCE = {
     publisher: 'OpenStreetMap contributors',
     url: 'https://www.openstreetmap.org/copyright',
     licence: 'ODbL',
+    licenceUrl: 'https://opendatacommons.org/licenses/odbl/1-0/',
     attribution: true,
+    schema: 'scripts/build-hist-courses.mjs --check (npm run check:bordercoast)',
     paidBy: 'Historical boundary courses — OpenStreetMap contributors (ODbL 1.0), reviewed by IntMap',
     ...OPENSTREETMAP,
     builtBy: 'scripts/build-hist-courses.mjs',
@@ -186,6 +189,7 @@ async function fetchAll(facts) {
       const have = new Set(j.elements.map((e) => e.type + e.id));
       for (const e of k.elements || []) if (!have.has(e.type + e.id)) { e._byName = true; j.elements.push(e); }
     }
+    j._fetchedAt = new Date().toISOString();   /* when this copy was taken (the bundle's retrievedAt) */
     writeFileSync(file, JSON.stringify(j));
     console.error(`  ${c.id}: ${f.osm.type} ${ids} → ${(j.elements || []).length} elements`);
   }
@@ -552,11 +556,14 @@ const basisOf = () => Object.fromEntries([...RECORDS.map((r) => r.file), ...MIRR
 async function build() {
   const facts = readFacts(), bad = factProblems(facts);
   if (bad.length) { for (const b of bad) console.error('✖ ' + b); process.exit(1); }
-  const courses = [];
+  const courses = [], fetched = [], based = [];
   for (const c of facts.reviewed) {
     const file = osmFile(c.feature);
     if (!existsSync(file)) throw new Error(c.id + ': no OpenStreetMap geometry in the cache — node scripts/build-hist-courses.mjs --fetch');
-    const { ways, side, version } = featureWays(c.feature, JSON.parse(readFileSync(file, 'utf8')));
+    const raw = JSON.parse(readFileSync(file, 'utf8'));
+    /* the copy's own dates: when it was taken, and the OpenStreetMap state it is (Overpass osm_base) */
+    fetched.push(raw._fetchedAt || statSync(file).mtime.toISOString()); if (raw.osm3s && raw.osm3s.timestamp_osm_base) based.push(raw.osm3s.timestamp_osm_base);
+    const { ways, side, version } = featureWays(c.feature, raw);
     const p = pathAlong(ways, c.from, c.to, side, c.feature.bridgeKm || 0);
     if (!p) throw new Error(c.id + ': the feature\'s ways do not connect ' + JSON.stringify(c.from) + ' to ' + JSON.stringify(c.to));
     /* the stretch's ends are named places ON the feature; one further from it than the record's error is a typo */
@@ -566,8 +573,19 @@ async function build() {
   for (const c of courses) c.ix = courseIndex(c.line);
   const inp = inputs();
   const { sets, stats } = derive(courses, { ...inp, onAboveOf: (tol) => aboveIndex(courses, tol) });
+  /* ⚠ 出自は値である（scripts/data-governance.mjs が先頭から読む）。品質は js/data-governance.js measureQuality が測る:
+     1 行 = 1 区間、id で同一、線の座標は地球の上、期間は前へ進む */
+  const { measureQuality } = requireModule('js/data-governance.js');
+  const qrows = courses.map((c) => ({ id: c.id, line: c.line.length >= 2 ? c.line.length : null, sources: c.sources.length >= 2 ? c.sources.length : null,
+    lon: Math.min(...c.line.map((p) => p[0])), lat: Math.min(...c.line.map((p) => p[1])), lonMax: Math.max(...c.line.map((p) => p[0])), latMax: Math.max(...c.line.map((p) => p[1])),
+    forward: dayOf(c.span[1]) - dayOf(c.span[0]) }));
+  const quality = measureQuality(qrows, { key: ['id'], fields: { id: {}, line: { min: 2 }, sources: { min: 2 }, lon: { min: -180, max: 180 }, lonMax: { min: -180, max: 180 },
+    lat: { min: -90, max: 90 }, latMax: { min: -90, max: 90 }, forward: { min: 1 } } });
+  const g = GOVERNANCE['data/hist-courses.js'];
   const doc = {
-    v: 1, src: SRC, licence: 'ODbL-1.0', basis: basisOf(),
+    v: 1, src: SRC, publisher: g.publisher, url: g.url, licence: 'ODbL 1.0', licenceUrl: g.licenceUrl, attribution: true, paidBy: g.paidBy,
+    retrievedAt: fetched.sort().slice(-1)[0] || null, generatedAt: new Date().toISOString().slice(0, 10), asOf: based.sort().slice(-1)[0] || null,
+    cadence: g.cadence, builtBy: g.builtBy, schema: g.schema, quality, basis: basisOf(),
     means: '`sets[key].sub[ringIndex]` = [[a, b, course, i0, i1], …], in force while the clock is in courses[course].days ([from, to) as sortable YYYYMMDD days) on the CLOSED ring of the bundle whose window global is `global` (a pool of exactly `rings` rings): the drawn run V[..a-1] continues along courses[course].line from vertex i0 to vertex i1 (i1 < i0 walks it backwards) and resumes at V[b+1]. Only lines change; a ring with no entry is drawn as data/border-coast.js marks it.',
     courses: courses.map((c) => ({ id: c.id, name: c.feature.name, kind: c.feature.kind, wikidata: c.feature.wikidata,
       osm: { type: c.feature.osm.type, ids: c.feature.osm.ids, version: c.osmVersion }, span: c.span, days: [dayOf(c.span[0]), dayOf(c.span[1])],
@@ -588,7 +606,8 @@ export function check() {
   if (!existsSync(OUT)) return ['data/hist-courses.js is missing — node scripts/build-hist-courses.mjs'];
   const d = evalBundle('data/hist-courses.js', '__IMBCOURSE'), facts = readFacts();
   bad.push(...factProblems(facts));
-  ok(d && d.v === 1 && /OpenStreetMap/.test(d.src) && d.licence === 'ODbL-1.0', 'data/hist-courses.js must name OpenStreetMap and ODbL 1.0');
+  ok(d && d.v === 1 && /OpenStreetMap/.test(d.src) && d.licence === 'ODbL 1.0' && d.paidBy === GOVERNANCE['data/hist-courses.js'].paidBy, 'data/hist-courses.js must name OpenStreetMap, ODbL 1.0 and the row that pays its credit');
+  ok(d && d.quality && d.quality.rows === d.courses.length && d.quality.duplicates === 0 && Object.values(d.quality.missing).every((n) => n === 0) && Object.values(d.quality.outOfRange).every((n) => n === 0), 'data/hist-courses.js quality: a course is missing a field, out of range or duplicated');
   const basis = basisOf();
   for (const [f, h] of Object.entries(basis)) ok(d.basis[f] === h, `data/hist-courses.js was derived from another ${f} — rebuild it (node scripts/build-hist-courses.mjs)`);
   /* the shipped courses are exactly the reviewed facts, in order, with the same span, sides and sources */
