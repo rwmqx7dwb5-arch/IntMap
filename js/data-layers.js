@@ -21,7 +21,7 @@ import { untilObserved, isUnobserved } from './fetch-deadline.js';   /* (stalled
 /* (layer-manifest) WHICH LAYERS EXIST, their shelves and their defaults are js/layer-manifest.js. The five lists
    below and reorganizeLayerPanel's taxonomy used to be written out here by hand; they are derived now. */
 import { defaultLayers, defaultOn, basicRows, basicLayers, hiddenRows, layerGroups, betaKeys, layerFor, packageOf, loadPackage } from './layer-manifest.js';   /* (layer-packages) …and which rows a package implements, and the package's literal import */
-import { IntMapTime } from './chronos.js';
+import { IntMapTime } from './chronos.js'; import { dimPixel } from './class-highlight.js';   /* (landcover-class-highlight) the one «dim what was not picked» rule — Köppen and WorldCover */
 import { IntMapGeoEngine } from './geo-engine.js'; import * as bus from './bus.js';
 import { IntMapLang } from './lang-registry.js'; import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js; on this line because this file's line count only goes down (scripts/layer-packages.mjs), and icons.js is reached from js/app-body.js for the reachability rule */
 /* ══ (fetch-deadline-layer) THE READS A ROW MAKES, FOR THE OTHER READERS OF THE SAME DATA ══════════════
@@ -2507,7 +2507,7 @@ export function dataLayers(HOST){
       for(let p=0,i=0;p<idx.length;p++,i+=4){
         const ci=idx[p];
         if(ci!==255 && selIdx[ci]){ o[i]=src[i]; o[i+1]=src[i+1]; o[i+2]=src[i+2]; o[i+3]=src[i+3]; }   /* selected: keep */
-        else { const g=(src[i]+src[i+1]+src[i+2])/3; o[i]=g*0.6; o[i+1]=g*0.6; o[i+2]=g*0.6; o[i+3]=Math.floor(src[i+3]*0.28); }   /* rest: gray + faded */
+        else dimPixel(src,o,i);   /* rest: gray + faded — js/class-highlight.js, the rule WorldCover's highlight reads too */
       }
       octx.putImageData(img,0,0);
       try{ return out.toDataURL('image/png'); }catch(e){ return null; }

@@ -444,7 +444,9 @@ test('R268 ⑦ the two-epoch rasters can be switched too', () => {
   assert.match(lp, /const WC_EPOCHS=/, 'land cover: both ESA WorldCover versions');
   assert.ok(lp.includes('esa-worldcover-map-10m-2020-v1_map') && lp.includes('esa-worldcover-map-10m-2021-v2_map'),
     'both Terrascope layer names must be present');
-  assert.match(lp, /tiles:wcTiles\(\)/, 'the source must be built from the chosen year');
+  assert.match(lp, /tiles:wcSourceTiles\(\)/, 'the source must be built from the chosen year');
+  /* (landcover-class-highlight) …and wcSourceTiles is the plain chosen-year tiles while no class is picked */
+  assert.match(lp, /function wcSourceTiles\(\)\{ if\(!wcSel\.size\|\|!wcProto\) return wcTiles\(\);/);
 });
 
 test('R268 ⑪ the annual-precipitation tile has a real screenshot', () => {
