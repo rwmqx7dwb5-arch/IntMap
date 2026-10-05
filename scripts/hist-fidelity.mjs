@@ -369,7 +369,7 @@ const HOLE_REASONS = {
   undated: 'Wikidata states a founding (P571) for fewer than three, or fewer than half, of this country\'s present-day first-level units — [stated, units]',
   'no-identifier': 'a present-day unit of this country carries no ISO 3166-2 or HASC code, so the country cannot be answered whole — [stated, units]',
   'no-set-floor': 'dated, but no unit\'s own statement gives the set a floor — [stated, units]',
-  'never-whole': 'on no date can every present-day unit of this country be drawn: the era record places one in another polity — [stated, units]',
+  'never-whole': 'on no date can every present-day unit of this country be drawn: the lives Wikidata states for its units are never in force together (an outline set older than a reform, beside units dated only after it), or the era record places one across two polities — [stated, units]',
   'before-set-floor': 'the present-day units are drawn only from the latest founding any of them states — [YYYYMMDD]',
   withheld: 'the country is drawn at this date, but not this ground: the era record places it elsewhere, or OpenHistoricalMap answers for it and does not cover it now',
   'no-outline': 'the ground lies in no present-day unit of the outline set (coast, lake, or a polity outline wider than the unit set)',
@@ -661,11 +661,16 @@ export function fillInceptionProblems(bs) {
     const countryOf = (code) => codeIso.get(code) || iso3Of.get(code.split('-')[0]);
     const F = new Map();
     for (const [code, s] of Object.entries(inc)) { const c = countryOf(code); if (c && (!F.has(c) || s > F.get(c))) F.set(c, s); }
+    /* (hist-fill-never-whole) a code SEVERAL Wikidata items hold (a reform reused it) has one life per item, and
+       its `inception` is the earliest of them; a row of it must then lie inside ONE life — not in the gap between
+       the predecessor's dissolution and the successor's founding, nor across it */
+    const lives = b.lives || {};
     const bad = [];
     for (const f of b.feats) {
-      const s = f[2] * 10000 + f[3] * 100 + f[4];
-      const own = inc[f[10]], floor = F.get(f[11]);
-      if ((own != null && s < own) || (floor != null && s < floor)) bad.push(f[0] + ' ' + f[10] + ' from ' + [f[2], f[3], f[4]].join('-') + ' (own ' + own + ', country ' + floor + ')');
+      const s = f[2] * 10000 + f[3] * 100 + f[4], e = f[5] * 10000 + f[6] * 100 + f[7];
+      const own = inc[f[10]], floor = F.get(f[11]), L = lives[f[10]];
+      const outside = L && !L.some(([ls, le]) => s >= ls && (le == null || e <= le));
+      if ((own != null && s < own) || (floor != null && s < floor) || outside) bad.push(f[0] + ' ' + f[10] + ' from ' + [f[2], f[3], f[4]].join('-') + (outside ? ' outside every stated life ' + JSON.stringify(L) : ' (own ' + own + ', country ' + floor + ')'));
     }
     if (bad.length) out.push(['fill-before-inception', bad.length + ' row(s) of ' + file + ' are drawn before a founding Wikidata states for them or for their country — ' + bad.slice(0, 6).join('; ')]);
   }
