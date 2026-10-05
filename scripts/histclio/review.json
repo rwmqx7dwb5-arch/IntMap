@@ -1504,15 +1504,6 @@
     "wd": 1207
    },
    {
-    "name": "Dumnonia",
-    "q": "Q313136",
-    "over": "Brythons",
-    "from": 439,
-    "to": 601,
-    "first": 602,
-    "wd": 400
-   },
-   {
     "name": "Dutch Gold Coast",
     "q": "Q770776",
     "over": "Dutch Republic",
@@ -3230,6 +3221,15 @@
     "to": 885,
     "first": 1046,
     "wd": 840
+   },
+   {
+    "name": "Western Liang",
+    "q": "Q994451",
+    "over": "Northern Liang",
+    "from": 400,
+    "to": 406,
+    "first": 407,
+    "wd": 400
    },
    {
     "name": "Western Satraps",

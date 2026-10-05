@@ -1735,7 +1735,10 @@ OHM と Cliopatria の土地を引いたもの）を測る。⚠ **再導出は�
   実際に一度そう書き出した）・CShapes の最後の日を越える行が無いこと・リング番号が解決し、どの行にも使われない
   リングが無いこと・1886 年より前の枚がすべて同じ順で載っていること
 - **出荷した QID はすべて、それが描かれている政体だと確かめられること**（`scripts/histclio/wikidata.json` の
-  事実から、ビルドと同じ `verifiedQid` で決め直す。historical-verification.md §4-3）
+  事実から、ビルドと同じ `verifiedQid` で決め直す。historical-verification.md §4-3）。その事実が**クラスの問い**
+  （P31 が Wikidata 自身のクラス階層で Q17379835「Wikimedia の内部ページ」の下にあるか＝`i`）を訊いて取られたこと
+  （`internal`）も確かめる——訊いていない事実では、曖昧さ回避ページがラベルの一致で通る。回帰は
+  `tests/clio-qid-not-polity-checks.test.mjs`
 - **所見（名前が政体の存続期間の外に描かれている）がすべて `scripts/histclio/review.json` のどれかのリストに
   あること**（名前と側の組で照合する）、そして `rows` が外した名前が、終わりの年より後にも始まりの年より前にも
   1 行も残っていないこと、各 `rows` が Wikidata の項目（`wd`）を名指していること。`gaps` は整数の年の組で、
