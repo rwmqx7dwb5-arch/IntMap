@@ -1500,8 +1500,17 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     try{ window._mAddPointUpdate&&window._mAddPointUpdate(); }catch(_){}   /* show/hide the mobile "+Add point" button with the tool state (#R13) */
   }
   window._syncToolBtns=_syncToolBtns;
+  /* ══ (radius-close-clears) LEAVING THE RADIUS TOOL TAKES ITS CIRCLES WITH IT ══════════════════════════════════
+     「この中で、Radiusだけウィンドウを消しても消えないのはキモイ。」 (2026-10-05, the Measure menu: Distance / area, Draw,
+     Radius, 3-D volume). Closing Distance/area drops its unsaved line (`measurePoints=[]` below) and closing 3-D volume
+     drops its box (`release()`), but the radius circles lived in `radiusItems`, which `buildToolFeatures` draws whatever
+     the tool — so they stayed on the map with no window left to edit or remove them. The same rule now holds for all
+     four: what the tool made and was not kept goes when the tool is left (closed, or another tool chosen). Keeping a
+     circle is the panel's «Done» (`_finalizeMeasurement`), which writes it as a map annotation before it leaves. */
+  function _leaveRadius(){ if(toolMode!=='radius'||!radiusItems.length) return; radiusItems=[]; window._activeRadiusId=null; }
   function exitTool(){
     try{ if(toolMode==='volume'&&window.IntMapVolume3D) window.IntMapVolume3D.release(); }catch(_){}   /* (#R170) closing the tool removes its 3-D box; (#R171) release() also hands the drag gesture back */
+    _leaveRadius();
     toolMode=null; liveCursor=null; measureSnapClose=false;
     _syncToolBtns();
     measurePoints=[]; hideMeasureTip(); refreshTool();
@@ -1511,6 +1520,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function setTool(mode){
     if(toolMode===mode){ exitTool(); return; }
     try{ if(toolMode==='volume'&&mode!=='volume'&&window.IntMapVolume3D) window.IntMapVolume3D.release(); }catch(_){}   /* (#R170/#R171) */
+    _leaveRadius();   /* (radius-close-clears) another tool chosen: the same as closing */
     toolMode=mode; _syncToolBtns();
     measurePoints=[]; hideMeasureTip(); refreshTool();
     document.getElementById('map-container').classList.add('tool-active'); if(GE().hasRenderer())GE().input.set('doubleClickZoom',false);
