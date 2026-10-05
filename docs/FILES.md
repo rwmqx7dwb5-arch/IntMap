@@ -623,11 +623,14 @@ year-book.js                      **年鑑（その年の世界）**——時計
                                   Wikidata が述べる日付つきの出来事・Maddison・描けるレイヤー数）。Chronos パネルの「この年を読む」
                                   （news-timeline.js が押されたときに読む）と Atlas `time.yearbook`。docs/architecture/07-map.md §7.4b
 map-recorder.js                   **タイムラプスの動画書き出しと、比較の 1 枚画像と、地図の絵葉書**——1 つの合成器（地図・その瞬間・
-                                  出典・語標とリンク）。描き終えたコマだけを MediaRecorder に 1/fps ずつ書く（地図を待つ間は録画を止める）。
+                                  出典・語標とリンク）。描き終えたコマだけを WebCodecs の VideoEncoder に時刻 k/fps で渡し、全コマが
+                                  返ったのを確かめて容器に詰める（無いブラウザは MediaRecorder で、地図を待つ間は録画を止める）。
                                   出典は描いている層の典拠と #map-credit から（`drawnCredits`）、切らずに折り返す（`layoutFrame`）。
                                   絵葉書（`postcard`・共有パネルの画像タブ `createPostcardTab`）は題と一言のカードと、地図上の凡例を
                                   ページの DOM から読んだ絵（`rasterLegend`・`parseGradient`）を足す。形は `POSTCARD_SIZES`。
                                   遅延チャンク（Chronos の書き出し欄・共有パネルの画像タブ・Atlas `time.lapse` record:true／`postcard` が読む）
+video-mux.js                      **符号化済みのコマを WebM／MP4 のファイルにする**（`muxWebM` / `muxMP4`）。符号化も DOM も時計も持たない。
+                                  map-recorder.js がタイムラプスの書き出しで読む。順序の崩れたコマと鍵コマで始まらない列は拒む
 notify.js                         **通知の唯一の実装** `notify`（window.IntMapNotify）。1 つの要素 #ai-toast・1 つの時計・
                                   role=status（polite）と role=alert（assertive）の 2 声を持つ 1 つの live region。同じ文の
                                   表示中の重複は読み上げ直さない。aiToast / satToast / imToast / _toast / toast / majorToast はここへ委譲

@@ -159,8 +159,8 @@ test('④ the container: MP4 first, WebM where MP4 cannot be recorded; the sizes
 });
 
 test('⑤ without a recorder or a comparison window, the export says so instead of producing nothing', async () => {
-  /* Node has no MediaRecorder — the state a browser that cannot record is in */
-  const r = M.recordLapse({ from: 1900, to: 1903, unit: 'year' });
+  /* Node has neither VideoEncoder nor MediaRecorder — the state a browser that cannot record is in */
+  const r = await M.recordLapse({ from: 1900, to: 1903, unit: 'year' });
   assert.equal(r.error, 'unsupported'); assert.equal(r.phase, 'failed');
   assert.deepEqual([M.recorderState().phase, M.recorderState().error], ['failed', 'unsupported'], 'the panel reads a state that does not say why');
   assert.equal(L.lapseState().playing, false, 'a recording that could not start played the lapse anyway');

@@ -195,7 +195,7 @@ async function record(a, from, to, TL, K) {
   try { const tl = document.getElementById('news-timeline'), tg = document.getElementById('ntl-toggle'); if (tl && tg && tl.classList.contains('collapsed')) tg.click(); } catch (_) { /* no panel: openRecorder says so */ }
   const M = await TL.openRecorder();
   if (!M) return R(false, warn('' + L('The export row of the Chronos panel is not available', 'Chronos パネルの書き出し欄が使えません')));
-  const s = M.recordLapse({ from, to, unit: a.unit, step: a.step, fps: a.fps, size: a.size, format: a.format });
+  const s = await M.recordLapse({ from, to, unit: a.unit, step: a.step, fps: a.fps, size: a.size, format: a.format });
   if (s.error) {
     const why = s.error === 'unsupported' ? L('this browser cannot record video', 'このブラウザは動画を録画できません')
       : s.error === 'busy' ? L('a recording is already running', '別の録画が進行中です')

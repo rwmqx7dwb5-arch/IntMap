@@ -12,15 +12,16 @@
  *    when the map has drawn the current one (kernel judged · tiles in · border record on screen). The recorder is
  *    that player's frame SINK: it is handed each drawn frame, reads the renderer inside a render tick (the WebGL
  *    buffer is not preserved — js/atlas-view-capture.js, whose `captureCanvas` is the one reader of it), composes,
- *    and holds the frame for exactly 1/fps of RECORDED time. MediaRecorder's clock runs in real time, so the
- *    recorder is PAUSED while the map draws and resumed only for the frame's own dwell — measured 2026-10-02 in
- *    Chromium: seven frames with 200–800 ms random waits between them came out at block timestamps 0, 250, 501,
- *    785, 1014, 1268, 1519 ms, i.e. the waits are not in the file. So a slow tile makes the export slower and never
- *    puts a blank or a half-drawn instant on film.
- *  ⚠ THE LAST INSTANT GETS ITS TIME ON SCREEN. A recording ends at its last frame's timestamp (same measurement:
- *    duration 1519 ms for 7 frames at 4 per second), so the final instant — usually the one the lapse was about —
- *    would show for no time at all in a looping player. One more encoded frame of the SAME picture is written after
- *    it (`encoded` = `frames` + 1, and the state says so); it adds no instant.
+ *    and gives the frame exactly 1/fps of RECORDED time: the encoder (WebCodecs `VideoEncoder`) is handed frame k
+ *    stamped k/fps, so the map's waits are not in the file by construction, and the file is written only once the
+ *    encoder has returned every frame it was given («THE VIDEO WRITERS»; the container is js/video-mux.js). So a slow
+ *    tile makes the export slower and never puts a blank or a half-drawn instant on film — nor leaves one out.
+ *    (A browser without VideoEncoder records through MediaRecorder, paused while the map draws; that path can drop
+ *    a frame on a loaded machine, and the state says which path made the file: `via`.)
+ *  ⚠ THE LAST INSTANT GETS ITS TIME ON SCREEN. A file whose last frame has no length shows the final instant —
+ *    usually the one the lapse was about — for no time at all in a looping player. One more encoded frame of the
+ *    SAME picture is written after it (`encoded` = `frames` + 1, and the state says so), stamped and lasting like
+ *    every other frame; it adds no instant.
  *  ⚠ THE CREDIT IS BURNED IN AND IS NEVER CUT. A video leaves the page and its credit with it — the band names
  *    every source a drawn layer reads (the attribution each source declares) plus the base credit the page shows
  *    (#map-credit). It wraps onto as many lines as it needs; it shrinks to a floor and then grows taller, never
@@ -40,6 +41,7 @@ import { IntMapLang } from './lang-registry.js';
 import { IntMapTime } from './chronos.js';
 import { makeViewCapture } from './atlas-view-capture.js';
 import { startLapse, stopLapse, lapseState } from './time-lapse.js';
+import { muxWebM, muxMP4 } from './video-mux.js';
 import { iconNode } from './icons.js';   /* (map-postcard) the one icon set — js/icons.js */
 
 /* The three frames offered: square, landscape, portrait. 1080 is the short edge all three share, so the overlay's
@@ -79,14 +81,16 @@ export function postcardSizeKey(v) {
 
 /* The containers, best first, and the codecs inside them. MP4 first because it is what the places a reader posts
    to accept (WebM is not taken everywhere); H.264 at level 4.0, the level a 1920×1080 frame needs (3.0 stops at
-   720×576), High → Main → Constrained Baseline, then the bare container for a browser (Safari) that names none. */
+   720×576), High → Main → Constrained Baseline, then the bare container for a browser (Safari) that names none.
+   `codec` is the same codec as WebCodecs names it (VP9 profile 0, level 4.0, 8-bit — the level of a 1080p frame);
+   the bare containers name none and are MediaRecorder's alone. */
 const MIMES = Object.freeze([
-  { ext: 'mp4', type: 'video/mp4;codecs=avc1.640028' },
-  { ext: 'mp4', type: 'video/mp4;codecs=avc1.4D0028' },
-  { ext: 'mp4', type: 'video/mp4;codecs=avc1.42E028' },
+  { ext: 'mp4', type: 'video/mp4;codecs=avc1.640028', codec: 'avc1.640028' },
+  { ext: 'mp4', type: 'video/mp4;codecs=avc1.4D0028', codec: 'avc1.4D0028' },
+  { ext: 'mp4', type: 'video/mp4;codecs=avc1.42E028', codec: 'avc1.42E028' },
   { ext: 'mp4', type: 'video/mp4' },
-  { ext: 'webm', type: 'video/webm;codecs=vp9' },
-  { ext: 'webm', type: 'video/webm;codecs=vp8' },
+  { ext: 'webm', type: 'video/webm;codecs=vp9', codec: 'vp09.00.40.08' },
+  { ext: 'webm', type: 'video/webm;codecs=vp8', codec: 'vp8' },
   { ext: 'webm', type: 'video/webm' },
 ]);
 /** pickMime(format?, isSupported) → {ext, type} | null — the first container the browser can record, of the
@@ -436,8 +440,10 @@ function instantLabel(unit, lang) {
 
 /* ══ THE RECORDER — one at a time ══════════════════════════════════════════════════════════════════════ */
 const rs = {
-  /** @type {'idle'|'recording'|'finishing'|'done'|'cancelled'|'failed'} */ phase: 'idle',
+  /** @type {'idle'|'starting'|'recording'|'finishing'|'done'|'cancelled'|'failed'} */ phase: 'idle',
   /** @type {'video'|'image'|null} */ kind: null, size: 'square', w: 0, h: 0, ext: '', mime: '',
+  /** which writer made the video: 'webcodecs' (every frame stamped and accounted for) or 'mediarecorder' (the
+      fallback — «THE VIDEO WRITERS» below) @type {''|'webcodecs'|'mediarecorder'} */ via: '',
   frames: 0, encoded: 0, /** @type {number|null} */ total: null, /** @type {string|null} */ at: null, fps: 1,
   /** @type {string|null} */ reason: null, /** @type {string|null} */ error: null,
   bytes: 0, /** @type {string[]} */ credits: [], /** @type {string[]} */ instants: [],
@@ -454,40 +460,116 @@ const emit = () => { const s = recorderState(); subs.forEach((f) => { try { f(s)
 function reset(kind) {
   if (rs.url) { try { URL.revokeObjectURL(rs.url); } catch (_) { /* gone */ } }
   blob = null;
-  Object.assign(rs, { phase: 'idle', kind, frames: 0, encoded: 0, total: null, at: null, reason: null, error: null, bytes: 0, credits: [], instants: [], url: null, name: null, band: null });
+  Object.assign(rs, { phase: 'idle', kind, frames: 0, encoded: 0, total: null, at: null, reason: null, error: null, bytes: 0, credits: [], instants: [], url: null, name: null, band: null, via: '' });
 }
-const busy = () => rs.phase === 'recording' || rs.phase === 'finishing';
+const busy = () => rs.phase === 'starting' || rs.phase === 'recording' || rs.phase === 'finishing';
 const slug = (s) => String(s || '').replace(/[^0-9A-Za-z-]+/g, '').slice(0, 24) || 'now';
 function noteBand(L) { rs.band = { y: L.band.y, h: L.band.h, lines: L.credit.lines.map((l) => ({ x: l.x, y: l.y, w: Math.round(l.w), h: l.h })) }; }
 function addCredits(list) { list.forEach((c) => { if (!rs.credits.includes(c)) rs.credits.push(c); }); }
 
-/**
- * recordLapse({ from, to?, unit?, step?, fps?, size?, format? }) → recorderState() (with `error` when it could not start)
- * Plays the time-lapse (js/time-lapse.js `startLapse`) with this recorder as its frame sink and writes each drawn
- * frame to the video. The panel offers Save when it ends; a stop before the end discards the recording.
- */
-export function recordLapse(o) {
-  o = o || {};
-  if (busy()) return Object.assign(recorderState(), { error: 'busy' });
+/* ══ THE VIDEO WRITERS — WebCodecs where the browser has it, MediaRecorder where it has not ═════════════════════
+   Both are handed the composed frame on `out` (`put`) and give back the file (`finish`). They differ in who decides a
+   frame's time, and that is the whole difference:
+     · WebCodecs (`VideoEncoder`; js/video-mux.js writes the container): frame k is stamped k/fps and lasts 1/fps, so the
+       map's waits are not in the file by construction; `flush` returns once the encoder has handed back EVERY frame
+       it was given, and the writer checks that it got as many as it gave — a missing frame is a failed recording that
+       says so, never a short file that looks complete. Nothing waits on the wall clock: the export runs as fast as the
+       map draws.
+     · MediaRecorder (a browser without VideoEncoder): the frame's time is the wall clock, so the recorder runs only for
+       each frame's dwell and is paused while the map draws. ⚠ This path CAN drop a frame on a loaded machine — a frame
+       still in the encoder when pause() comes is discarded, and nothing in MediaRecorder tells when a frame is encoded
+       (js/video-mux.js, «why not MediaRecorder», has the measurement). It is kept so such a browser still records. */
+/** bits per second from the frame's area — at ≤ 4 frames a second that is ~0.3–1.3 MB a frame at 1080p, which keeps
+    a coastline and a 24-px credit sharp */
+const bitrateOf = (S) => Math.round(S.w * S.h * 2.5);
+function encoderConfig(codec, S, fps) {
+  /** @type {any} */ const c = { codec, width: S.w, height: S.h, bitrate: bitrateOf(S), framerate: fps };
+  if (/^avc1\./.test(codec)) c.avc = { format: 'avc' };   /* length-prefixed NAL units + the avcC record MP4 carries */
+  return c;
+}
+/** pickCodec(format?, isSupported) → Promise<{ext, type, codec}|null> — the first codec in MIMES the encoder can
+    write, of the format asked for, or of any; isSupported(codec) may answer asynchronously (isConfigSupported) */
+export async function pickCodec(format, isSupported) {
+  const want = format === 'mp4' || format === 'webm' ? format : null;
+  for (const m of MIMES) {
+    if (!m.codec || (want && m.ext !== want)) continue;
+    try { if (await isSupported(m.codec)) return { ext: m.ext, type: m.type, codec: m.codec }; } catch (_) { /* not this one */ }
+  }
+  return null;
+}
+const hasEncoder = () => typeof W_().VideoEncoder === 'function' && typeof W_().VideoFrame === 'function';
+const encoderCan = (S, fps) => async (/** @type {string} */ codec) => {
+  const r = await W_().VideoEncoder.isConfigSupported(encoderConfig(codec, S, fps)); return !!(r && r.supported);
+};
+/** the formats this browser can write at every frame size, by either path — what the export row offers */
+async function writableFormats() {
   const MR = W_().MediaRecorder;
-  const mime = MR && typeof MR.isTypeSupported === 'function' ? pickMime(o.format, (t) => MR.isTypeSupported(t)) : null;
-  reset('video');
-  const key = sizeKey(o.size), S = SIZES[key];
-  Object.assign(rs, { size: key, w: S.w, h: S.h });
-  const out = mime ? document.createElement('canvas') : null;
-  if (out) { out.width = S.w; out.height = S.h; }
-  if (!mime || !out || typeof out.captureStream !== 'function') { rs.phase = 'failed'; rs.error = 'unsupported'; emit(); return Object.assign(recorderState(), { error: 'unsupported' }); }
-  Object.assign(rs, { ext: mime.ext, mime: mime.type });
+  const out = [];
+  for (const f of ['mp4', 'webm']) {
+    let ok = !!(MR && typeof MR.isTypeSupported === 'function' && pickMime(f, (x) => MR.isTypeSupported(x)));
+    if (!ok && hasEncoder()) {
+      ok = true;
+      for (const k of Object.keys(SIZES)) if (!(await pickCodec(f, encoderCan(SIZES[k], lapseState().fps)))) { ok = false; break; }
+    }
+    if (ok) out.push(f);
+  }
+  return out;
+}
+
+/** a WebCodecs writer: every frame stamped by its index, every frame accounted for */
+export function codecWriter(pick, out, S, fps) {
+  const W = W_(), frameUs = 1e6 / fps;
+  /* a key frame for every second of recorded time: a reader scrubbing the file lands on a picture within a second */
+  const keyEvery = Math.max(1, Math.round(fps));
+  /** @type {import('./video-mux.js').Chunk[]} */ const chunks = [];
+  /** @type {Uint8Array|null} */ let avcC = null;
+  /** @type {any} */ let err = null;
+  let n = 0;
+  const enc = new W.VideoEncoder({
+    output: (/** @type {any} */ c, /** @type {any} */ meta) => {
+      const data = new Uint8Array(c.byteLength); c.copyTo(data);
+      chunks.push({ data, ts: c.timestamp, dur: c.duration != null ? c.duration : Math.round(frameUs), key: c.type === 'key' });
+      const d = meta && meta.decoderConfig && meta.decoderConfig.description;
+      if (d && !avcC) avcC = d instanceof ArrayBuffer ? new Uint8Array(d.slice(0)) : new Uint8Array(d.buffer.slice(d.byteOffset, d.byteOffset + d.byteLength));
+    },
+    error: (/** @type {any} */ e) => { err = e || new Error('encoder'); },
+  });
+  enc.configure(encoderConfig(pick.codec, S, fps));
+  return {
+    ext: pick.ext, mime: pick.type.replace(/;codecs=.*/, '') + ';codecs=' + pick.codec, via: 'webcodecs',
+    failed: () => !!err,
+    async put() {
+      /* the encoder works behind the page; a long lapse does not pile frames up in memory ahead of it */
+      while (!err && enc.encodeQueueSize > 1 && 'ondequeue' in enc) await new Promise((r) => enc.addEventListener('dequeue', r, { once: true }));
+      if (err) return;
+      const f = new W.VideoFrame(out, { timestamp: Math.round(n * frameUs), duration: Math.round(frameUs) });
+      try { enc.encode(f, { keyFrame: n % keyEvery === 0 }); } finally { f.close(); }
+      n++;
+    },
+    async finish() {
+      await enc.flush();
+      try { enc.close(); } catch (_) { /* closed */ }
+      if (err) throw err;
+      if (chunks.length !== n) throw new Error('the encoder returned ' + chunks.length + ' frames for ' + n);
+      const bytes = pick.ext === 'mp4'
+        ? muxMP4({ width: S.w, height: S.h, chunks, avcC: /** @type {Uint8Array} */ (avcC) })
+        : muxWebM({ codec: /^vp8/.test(pick.codec) ? 'vp8' : 'vp9', width: S.w, height: S.h, chunks });
+      return new Blob([bytes], { type: pick.ext === 'mp4' ? 'video/mp4' : 'video/webm' });
+    },
+    abort() { try { enc.close(); } catch (_) { /* closed */ } },
+  };
+}
+
+/** a MediaRecorder writer (a browser without VideoEncoder) — see the head of this section for what it cannot promise */
+function recorderWriter(mime, out, S, fps) {
+  const MR = W_().MediaRecorder;
   const ctx = /** @type {CanvasRenderingContext2D} */ (out.getContext('2d'));
   const stream = out.captureStream(0), track = /** @type {any} */ (stream.getVideoTracks()[0]);
-  /* bits per second from the frame's area — at ≤ 4 frames a second that is ~0.3–1.3 MB a frame at 1080p, which keeps
-     a coastline and a 24-px credit sharp */
-  const rec = new MR(stream, { mimeType: mime.type, videoBitsPerSecond: Math.round(S.w * S.h * 2.5) });
+  const rec = new MR(stream, { mimeType: mime.type, videoBitsPerSecond: bitrateOf(S) });
   /** @type {Blob[]} */ const chunks = [];
   rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
   let started = false, failed = false;
   rec.onerror = () => { failed = true; };
-  const dwell = () => 1000 / (rs.fps || 1);
   /* one encoded frame of what is on `out` now, held for 1/fps of recorded time.
      ⚠ HOW MANY FRAMES A CALL MAKES DEPENDS ON HOW IT ASKS — measured 2026-10-02 in Chromium (4 instants + the hold,
      MP4 and WebM, with and without a busy main thread):
@@ -497,19 +579,65 @@ export function recordLapse(o) {
          request made 6 frames of 5, and so did waiting for the 'start' event and then requesting;
        · `resume()` takes nothing by itself.
      So the FIRST frame is the picture `start()` takes (the caller paints it in the same task), and every later one is
-     `resume()`, the picture drawn back onto itself (same pixels, a fresh paint) and a request, in one task: 5 of 5 in all
-     eight runs. The first frame plays a little longer than 1/fps — the recorder's own start-up (0.28–0.62 s instead of
-     0.25 s in those runs); the frames after it are within a few hundredths of 1/fps on an idle machine. */
-  const put = async () => {
-    if (!started) { started = true; rec.start(); }
-    else { rec.resume(); ctx.drawImage(out, 0, 0); track.requestFrame(); }
-    rs.encoded++;
-    await sleep(dwell());
-    rec.pause();
+     `resume()`, the picture drawn back onto itself (same pixels, a fresh paint) and a request, in one task. */
+  return {
+    ext: mime.ext, mime: mime.type, via: 'mediarecorder',
+    failed: () => failed,
+    async put() {
+      if (!started) { started = true; rec.start(); }
+      else { rec.resume(); ctx.drawImage(out, 0, 0); track.requestFrame(); }
+      await sleep(1000 / fps);
+      rec.pause();
+    },
+    async finish() {
+      const stopped = new Promise((r) => { rec.onstop = r; });
+      rec.stop(); await stopped;
+      try { track.stop(); } catch (_) { /* gone */ }
+      if (failed) throw new Error('encoder');
+      return new Blob(chunks, { type: mime.ext === 'mp4' ? 'video/mp4' : 'video/webm' });
+    },
+    abort() {
+      try { if (started) rec.stop(); } catch (_) { /* never started */ }
+      try { track.stop(); } catch (_) { /* gone */ }
+    },
   };
+}
+/** the writer for this browser: WebCodecs when it can write the format at this size, MediaRecorder otherwise */
+async function openWriter(format, out, S, fps) {
+  if (hasEncoder()) {
+    const pick = await pickCodec(format, encoderCan(S, fps));
+    if (pick) { try { return codecWriter(pick, out, S, fps); } catch (_) { /* configure refused it: the other path */ } }
+  }
+  const MR = W_().MediaRecorder;
+  const mime = MR && typeof MR.isTypeSupported === 'function' ? pickMime(format, (t) => MR.isTypeSupported(t)) : null;
+  if (mime && typeof out.captureStream === 'function') return recorderWriter(mime, out, S, fps);
+  return null;
+}
+
+/**
+ * recordLapse({ from, to?, unit?, step?, fps?, size?, format? }) → Promise<recorderState()> (with `error` when it could not start)
+ * Plays the time-lapse (js/time-lapse.js `startLapse`) with this recorder as its frame sink and writes each drawn
+ * frame to the video. The panel offers Save when it ends; a stop before the end discards the recording.
+ */
+export async function recordLapse(o) {
+  o = o || {};
+  if (busy()) return Object.assign(recorderState(), { error: 'busy' });
+  reset('video');
+  const key = sizeKey(o.size), S = SIZES[key];
+  const fps = o.fps != null && isFinite(+o.fps) && +o.fps > 0 ? +o.fps : lapseState().fps;
+  Object.assign(rs, { size: key, w: S.w, h: S.h, fps, phase: 'starting' });
+  const out = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+  if (out) { out.width = S.w; out.height = S.h; }
+  let w = null;
+  try { w = out ? await openWriter(o.format, out, S, fps) : null; } catch (_) { w = null; }
+  if (!w || !out) { rs.phase = 'failed'; rs.error = 'unsupported'; emit(); return Object.assign(recorderState(), { error: 'unsupported' }); }
+  const writer = w;
+  Object.assign(rs, { ext: writer.ext, mime: writer.mime, via: writer.via });
+  const ctx = /** @type {CanvasRenderingContext2D} */ (out.getContext('2d'));
+  const put = async () => { await writer.put(); rs.encoded++; };
   const sink = {
     async frame(/** @type {any} */ s) {
-      if (failed) return false;
+      if (writer.failed()) return false;
       /* the renderer is read inside a tick; a frame with no tick (hidden tab) is waited for, never filmed black */
       let g = await grabMain();
       while (!g.live && lapseState().playing) { await frame(); g = await grabMain(); }
@@ -519,37 +647,31 @@ export function recordLapse(o) {
       noteBand(paint(ctx, { w: S.w, h: S.h, panes: [{ label }], credits, brand: brand() }, [g.canvas]));
       await put();
       rs.frames++; rs.at = s.at; rs.instants.push(label); emit();
-      return !failed;
+      return !writer.failed();
     },
     end(/** @type {string} */ reason) { finish(reason); },
   };
   async function finish(reason) {
     rs.reason = reason;
-    if (reason !== 'end' || !started || rs.frames === 0) {
-      try { if (started) rec.stop(); } catch (_) { /* never started */ }
-      try { track.stop(); } catch (_) { /* gone */ }
+    if (reason !== 'end' || rs.frames === 0) {
+      writer.abort();
       rs.phase = reason === 'record-failed' ? 'failed' : 'cancelled'; if (reason === 'record-failed') rs.error = 'encoder';
       emit(); return;
     }
     rs.phase = 'finishing'; emit();
-    /* the hold: the last instant's own time on screen (see the header). `put` paints the picture afresh, which is what
-       makes a request on an unchanged picture a frame — measured, without it the hold was missing (4 decoded for 5). */
+    /* the hold: the last instant's own time on screen (see the header) — the same picture, once more */
     await put();
-    const stopped = new Promise((r) => { rec.onstop = r; });
-    rec.stop(); await stopped;
-    try { track.stop(); } catch (_) { /* gone */ }
-    blob = new Blob(chunks, { type: mime.ext === 'mp4' ? 'video/mp4' : 'video/webm' });
+    try { blob = await writer.finish(); } catch (_) { blob = null; }
+    if (!blob || !blob.size) { rs.phase = 'failed'; rs.error = 'encoder'; emit(); return; }
     rs.bytes = blob.size;
     rs.url = URL.createObjectURL(blob);
-    rs.name = 'intmap-timelapse-' + slug(rs.instants[0]) + '-' + slug(rs.instants[rs.instants.length - 1]) + '-' + S.w + 'x' + S.h + '.' + mime.ext;
-    rs.phase = failed || !blob.size ? 'failed' : 'done'; if (rs.phase === 'failed') rs.error = 'encoder';
+    rs.name = 'intmap-timelapse-' + slug(rs.instants[0]) + '-' + slug(rs.instants[rs.instants.length - 1]) + '-' + S.w + 'x' + S.h + '.' + writer.ext;
+    rs.phase = 'done';
     emit();
   }
-  const fps = o.fps != null && isFinite(+o.fps) && +o.fps > 0 ? +o.fps : lapseState().fps;
-  rs.fps = fps;
   if (lapseState().playing) stopLapse('stopped');
   const s = startLapse({ from: o.from, to: o.to, unit: o.unit, step: o.step, fps, sink });
-  if (s.error) { try { track.stop(); } catch (_) { /* gone */ } rs.phase = 'failed'; rs.error = s.error; emit(); return Object.assign(recorderState(), { error: s.error }); }
+  if (s.error) { writer.abort(); rs.phase = 'failed'; rs.error = s.error; emit(); return Object.assign(recorderState(), { error: s.error }); }
   rs.fps = s.fps; rs.total = s.total; rs.phase = 'recording';
   emit();
   return recorderState();
@@ -1018,8 +1140,15 @@ export function mountRecorder(el, host) {
   const node = (tag, cls, text) => { const n = d.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
   const MR = W_().MediaRecorder;
   const can = (f) => !!(MR && typeof MR.isTypeSupported === 'function' && pickMime(f, (x) => MR.isTypeSupported(x)));
-  const formats = ['mp4', 'webm'].filter(can);
+  /* what MediaRecorder can make is known at once; what the encoder can make is an answer that comes back (isConfigSupported),
+     and the row is rebuilt when it adds or removes a format */
+  let formats = ['mp4', 'webm'].filter(can);
   let size = rs.size || 'square', format = formats[0] || '';
+  writableFormats().then((f) => {
+    if (f.join() === formats.join()) return;
+    formats = f; if (!formats.includes(format)) format = formats[0] || '';
+    if (el.childElementCount) build();   /* built already: show the row the browser can really use */
+  }).catch(() => { /* the encoder did not answer: MediaRecorder's formats stand */ });
   const SIZE_LABEL = { square: '1:1', landscape: '16:9', portrait: '9:16' };
   /** @type {HTMLCanvasElement|null} */ let preview = null;
   async function drawPreview() {
@@ -1070,10 +1199,10 @@ export function mountRecorder(el, host) {
     const done = node('div', 'ntl-lapse-row ntl-rec-done'); done.id = 'ntl-rec-done'; done.hidden = true;
     el.append(head, row, preview, acts, prog, status, done,
       node('div', 'ntl-lapse-note', t('The year, the data credits and the IntMap link are part of every frame.', '年・データの出典・IntMap のリンクは、すべてのコマに入ります。')));
-    rec.onclick = () => {
+    rec.onclick = async () => {
       const s = host.settings();
       if (!s || s.error === 'no-start') { paintStatus(t('Give the time-lapse a start', 'タイムラプスの開始を入れてください')); return; }
-      const r = recordLapse(Object.assign({}, s, { size, format }));
+      const r = await recordLapse(Object.assign({}, s, { size, format }));
       if (r.error === 'empty-range') paintStatus(t('The end is before the start', '終了が開始より前です'));
     };
     cancel.onclick = () => { cancelRecording(); };
@@ -1090,7 +1219,7 @@ export function mountRecorder(el, host) {
     const q = (sel) => /** @type {any} */ (el.querySelector(sel));
     const rec = q('#ntl-rec-video'), img = q('#ntl-rec-image'), cancel = q('#ntl-rec-cancel'), prog = q('#ntl-rec-progress'), done = q('#ntl-rec-done');
     if (!rec) return;
-    const b = s.phase === 'recording' || s.phase === 'finishing';
+    const b = s.phase === 'starting' || s.phase === 'recording' || s.phase === 'finishing';
     rec.hidden = b; img.hidden = b; cancel.hidden = !(b && s.kind === 'video');
     el.querySelectorAll('[data-size],[data-format]').forEach((x) => { /** @type {HTMLButtonElement} */ (x).disabled = b; });
     prog.hidden = !(b && s.kind === 'video');
