@@ -35,8 +35,10 @@ newsjp: レイヤーをオフにしたとき、たまたま同じ時に現れた
 - **エンジンの窓口に `GE().layers.onVisibility(fn)` を足した**（`js/geo-engine.js`・`types/geo-engine.d.ts`）。
   add / remove / setVisible / setLayout('visibility') の**各書き込みの中で同期的に** `fn(id, shown, was)` を呼ぶ。
   `was` は書き込みの直前に描かれていたか（購読者がいるときだけ訊く）。
-- **学習器を置き換え、`js/layer-ownership.js` に出した**（`ownershipLearner(store)`。`js/data-layers.js` は行数の台帳が
-  減る一方なので、配線の 4 行だけを残した——台帳は 5,246 → 5,228 行）。箱の `change` を window の capture で受けて「配送中の事象」の
+- **学習器を置き換え、`js/layer-rows.js` の `ownershipLearner(store)` に出した**（`js/data-layers.js` は行数の台帳が
+  減る一方なので、配線の 4 行だけを残した——台帳は 5,246 → 5,227 行。⚠ 最初は独立の `js/layer-ownership.js` にしたが、
+  CI の `check:perf` が「起動時に読むモジュール 314 → 315」で落とした。行の change の配送を既に扱う `layer-rows.js` に
+  置けば、起動の費用は増えない）。箱の `change` を window の capture で受けて「配送中の事象」の
   スタックに積み、書き込みは **`eventPhase !== 0`（DOM が言う「この配送はまだ返っていない」）の最も内側の箱**に
   帰属する。時計の移動・描けるようになった瞬間・fetch の着地・Atlas の描画は、その同期配送の中では走れないので、
   **層の名前が何であれ箱に帰属しない**——除外パターン `SKIP` と「別の箱が動いたら捨てる」`_seq` は要らなくなり、消した。

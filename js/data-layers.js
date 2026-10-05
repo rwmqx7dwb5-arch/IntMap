@@ -15,8 +15,7 @@
 import { everyTick, stopTick, afterTick, tickKey } from './runtime.js';   /* the one timer wheel — js/runtime.js */
 import { readWorldBank, wbClock, wbIndicator } from './wb-indicators.js';   /* (country-analysis-unify) the fertility row's World Bank read — the one read, under the host's clock (stalled-fetch). (layer-packages) The relay rung of the cable ladder (ownRelayUrl) went with the cables to js/layer-pkg-subcables.js */
 import './night-lights.js';   /* (#R550) which night-lights epoch is on screen — window.IntMapNightLights */
-import { layerInflight } from './layer-rows.js';   /* (heal-waits-for-inflight) the request a row started and has not finished — see ④ there */
-import { ownershipLearner } from './layer-ownership.js';   /* (layer-ownership-by-declaration) which layers a box owns: what its own OFF took off the map */
+import { layerInflight, ownershipLearner } from './layer-rows.js';   /* (heal-waits-for-inflight) the request a row started and has not finished — see ④ there; (layer-ownership-by-declaration) which layers a box owns: what its own OFF took off the map */
 import { layerState } from './layer-state.js';   /* (layer-failure-state) what became of a row's request — failed / unobserved and why — kept, shown on the row, told once, readable by Atlas */
 import { untilObserved, isUnobserved } from './fetch-deadline.js';   /* (stalled-fetch) every read a row's request waits on, under a clock (the radar's rvFetch is js/layer-pkg-radar.js now); (unobserved-is-not-refused) and what a row does when that clock runs out — see rowUntilObserved */
 /* (layer-manifest) WHICH LAYERS EXIST, their shelves and their defaults are js/layer-manifest.js. The five lists
@@ -5006,7 +5005,7 @@ export function dataLayers(HOST){
        Diagnostics: window.IntMapLayerAudit.{run,check,log} — Atlas reads check() for honest state. */
     window._imAuditReg=window._imAuditReg||{};
     /* (#R81) LEARNED layer ownership for the boxes no id table names — learned from what the box's own OFF took off the
-       map, never from what appeared in the same seconds (js/layer-ownership.js says why, and what it measured). */
+       map, never from what appeared in the same seconds (js/layer-rows.js `ownershipLearner` says why, and what it measured). */
     window._imLayerOwn=window._imLayerOwn||{};
     try{ if(GE()&&GE().layers&&typeof GE().layers.onVisibility==='function'){ const own=ownershipLearner(window._imLayerOwn);
       window.addEventListener('change',e=>{ const t=e.target; if(t&&t.type==='checkbox'&&t.id&&t.closest&&t.closest('#layer-dropdown')) own.dispatching(e); },true);

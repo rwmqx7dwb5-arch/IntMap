@@ -78,7 +78,7 @@ test('① (cont.) the newest change for a box is the one in flight', async () =>
 
 /* ── ②③ the reconciler, as shipped ──────────────────────────────────────────────────────────────── */
 const RECONCILER = ['inFlightNow', 'toggleLook', 'audit'].map((n) => liftFunction(DL, n)).join('\n');
-const DEPS = ['layerInflight', 'observable', 'heldNow', 'timeHeld', '_canDraw', 'idsFor', 'painted', 'healed', 'sus', 'log', 'BASE',
+const DEPS = ['layerInflight', 'observable', 'heldNow', 'timeHeld', '_canDraw', 'idsFor', 'owned', 'painted', 'healed', 'sus', 'log', 'BASE',
   'fireSyn', 'rearm', 'userTouched', '_auditLearned', 'GE', 'document', 'window'];
 
 function rig() {
@@ -89,6 +89,8 @@ function rig() {
     layerInflight: F,
     observable: () => true, heldNow: () => false, timeHeld: () => false, _canDraw: () => true,
     idsFor: (id) => (id === 'dl-radar' ? ['lyr-radar'] : null),
+    /* (layer-ownership-by-declaration) toggleLook asks owned() — the id table, else what the box's own OFF took off */
+    owned: (id) => (id === 'dl-radar' ? ['lyr-radar'] : []),
     painted: (ids) => ids.some((l) => drawn.has(l)),
     healed: {}, sus: {}, log: [], BASE: {},
     pulses: [],

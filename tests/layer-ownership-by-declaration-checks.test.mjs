@@ -1,4 +1,4 @@
-/* layer-ownership-by-declaration — js/layer-ownership.js, evaluated (not read).
+/* layer-ownership-by-declaration — js/layer-rows.js `ownershipLearner`, evaluated (not read).
  *
  * The defect (production 2026-10-05, build 076f908): the learner gave a Layers box every layer that APPEARED in the
  * seconds after it was ticked — the era borders of a clock that travelled in those seconds included — and the audit
@@ -10,7 +10,7 @@
  * else; the browser itself is exercised by tests/hist-urban-population.spec.js (the reported sequence, in the app). */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ownershipLearner } from '../js/layer-ownership.js';
+import { ownershipLearner } from '../js/layer-rows.js';
 
 /* a Layers box: the two fields the learner reads, and its change listeners */
 function box(id, checked) {
