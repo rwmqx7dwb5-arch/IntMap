@@ -12,8 +12,8 @@
  *  if the reader asks for a different dimmed look, and then they change here for both layers at once.
  * ==========================================================================*/
 
-export const DIM_GRAY = 0.6;
-export const DIM_ALPHA = 0.28;
+const DIM_GRAY = 0.6;
+const DIM_ALPHA = 0.28;
 
 /** write the dimmed form of the RGBA pixel at `i` of `src` into `out` at `i` (out may be src) */
 export function dimPixel(src, out, i) {

@@ -758,17 +758,17 @@ export default [
     ],
     schema: () => ({ type: 'object', properties: { classes: list(loose()), class: str(), clear: bool(), year: str(), only: bool() } }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, note = K.note, esc = K.esc;
-      { const API=window.IntMapEco&&window.IntMapEco.landCover; if(!API) return R(false, warn(L('The land cover layer is not available yet.','土地被覆レイヤーはまだ利用できません。','Die Bodenbedeckungsebene ist noch nicht verfügbar.','Слой земного покрова пока недоступен.','La capa de cobertura del suelo aún no está disponible.')));
-        const names=(i)=>{ const c=API.classes()[i]; return c?L(c.name,c.nameJa,c.names[2]||c.name,c.names[3]||c.name,c.names[4]||c.name):''; };
-        let yearNote=''; if(a.year!=null&&String(a.year)!==''){ const y=String(a.year); if(API.years().indexOf(y)<0) return R(false, warn(L('Land cover exists for '+API.years().join(' and ')+' only — not '+esc(y)+'.','土地被覆は '+API.years().join('・')+' 年版のみです（'+esc(y)+' 年はありません）。','Bodenbedeckung gibt es nur für '+API.years().join(' und ')+'.','Земной покров есть только за '+API.years().join(' и ')+'.','La cobertura del suelo solo existe para '+API.years().join(' y ')+'.'))); API.setYear(y); yearNote=' · '+esc(y); }
+      { const API=window.IntMapEco&&window.IntMapEco.landCover; if(!API) return R(false, warn(L('The land cover layer is not available yet.','土地被覆レイヤーはまだ利用できません。')));
+        const names=(i)=>{ const c=API.classes()[i]; return c?L(c.name,c.nameJa):''; };
+        let yearNote=''; if(a.year!=null&&String(a.year)!==''){ const y=String(a.year); if(API.years().indexOf(y)<0) return R(false, warn(L('Land cover exists for '+API.years().join(' and ')+' only — not '+esc(y)+'.','土地被覆は '+API.years().join('・')+' 年版のみです（'+esc(y)+' 年はありません）。'))); API.setYear(y); yearNote=' · '+esc(y); }
         const want=[].concat(Array.isArray(a.classes)?a.classes:[], a.class!=null&&a.class!==''?[a.class]:[]);
-        if(a.clear===true&&!want.length){ API.clear(); return R(true, note(icon('check')+' '+L('Land cover: class selection cleared — all classes shown','土地被覆: 分類の選択を解除しました（全分類を表示）','Bodenbedeckung: Auswahl aufgehoben','Земной покров: выбор снят','Cobertura del suelo: selección borrada')+yearNote)); }
+        if(a.clear===true&&!want.length){ API.clear(); return R(true, note(icon('check')+' '+L('Land cover: class selection cleared — all classes shown','土地被覆: 分類の選択を解除しました（全分類を表示）')+yearNote)); }
         if(!want.length){ const sel=API.selected(); const all=API.classes().map(c=>c.index+' '+esc(names(c.index))).join(' · ');
-          return R(true, note(L('Land cover classes','土地被覆の分類','Bodenbedeckungsklassen','Классы земного покрова','Clases de cobertura')+': '+all+(sel.length?'<br>'+L('Highlighted','ハイライト中','Hervorgehoben','Выделено','Resaltado')+': '+sel.map(i=>esc(names(i))).join(' · '):'')+yearNote)); }
+          return R(true, note(L('Land cover classes','土地被覆の分類')+': '+all+(sel.length?'<br>'+L('Highlighted','ハイライト中')+': '+sel.map(i=>esc(names(i))).join(' · '):'')+yearNote)); }
         const r=API.select(want,{only:a.only!==false});
-        const unk=r.unknown.length?warn(L('Not a land cover class','土地被覆の分類にありません','Keine Bodenbedeckungsklasse','Нет такого класса земного покрова','No es una clase de cobertura')+': '+r.unknown.map(esc).join(', ')+' — '+L('classes: ','分類: ','Klassen: ','классы: ','clases: ')+API.classes().map(c=>esc(names(c.index))).join(' · ')):'';
-        if(!r.selected.length) return R(false, unk||warn(L('No class picked','分類が選ばれていません','Keine Klasse gewählt','Класс не выбран','Ninguna clase elegida')));
-        return R(true, note(icon('check')+' '+L('Land cover — showing only','土地被覆 — 表示中の分類','Bodenbedeckung — nur angezeigt','Земной покров — показаны только','Cobertura del suelo — solo se muestra')+': '+r.selected.map(i=>esc(names(i))).join(' · ')+yearNote)+unk); }
+        const unk=r.unknown.length?warn(L('Not a land cover class','土地被覆の分類にありません')+': '+r.unknown.map(esc).join(', ')+' — '+L('classes: ','分類: ')+API.classes().map(c=>esc(names(c.index))).join(' · ')):'';
+        if(!r.selected.length) return R(false, unk||warn(L('No class picked','分類が選ばれていません')));
+        return R(true, note(icon('check')+' '+L('Land cover — showing only','土地被覆 — 表示中の分類')+': '+r.selected.map(i=>esc(names(i))).join(' · ')+yearNote)+unk); }
     },
   },
   {
