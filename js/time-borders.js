@@ -860,20 +860,49 @@ export function timeBorders(HOST){
     /* which records drew how many shapes into a composed collection — what the layer's sentence counts */
     const _made=new WeakMap();
     /* the records a composed collection cites, in their own words — the year book reads this off the answer */
-    function _recordFor(made){ const ps=[['cshapes',made.cs,_csD],['ohm',made.ohm,_hbD],['clio',made.clio,_clD],['sheet',made.sheet!=null?1:0,_rsD]]
+    function _recordFor(made){ const ps=[['cshapes',made.cs,_csD],['ohm',made.ohm,made.late?_olD:_hbD],['clio',made.clio,_clD],['sheet',made.sheet!=null?1:0,_rsD]]
         .filter(x=>x[1]&&x[2]&&x[2].src).map(x=>({ tier:x[0], src:x[2].src, citation:x[2].citation||null }));
       return ps.length?{ tier:'composite', src:ps.map(x=>x.src).join(' + '), built:null, parts:ps }:null; }
+    /* ⚠ (hist-colonial-era-borders) FROM 1886 THE ORDER IS CShapes → OpenHistoricalMap → Cliopatria. CShapes states
+       sovereign states, so on 1886-01-01 the colonial blocs OHM states (the Congo Free State, German East Africa,
+       Greenland under Denmark…) left the map — measured on the gate's grid, 85.8% of the world's land inside a
+       polity on 1 July 1885 and 79.1% a year later. data/hist-borders-late.js is OHM on CShapes' days already less
+       CShapes' ground (scripts/build-hist-clio.mjs --ohm-late), and data/hist-clio.js is cut against both, so this
+       is again a union with no geometric decision in it. Either record unreadable, the others still compose. */
     async function csComposite(csKey,csfc,year,mon,day){ try{
-      const cd=await clLoad(); if(!cd) return null;
-      const k='cl'+_epochIn(_clBnd||[],_ymd(year,mon,day));
-      let cl=cache.get(k); if(!cl){ cl=await clFC(cd,year,mon,day); cache.set(k,cl); }
-      if(!cl||!cl.features.length) return null;
-      const key='cp:'+csKey+'|'+k;
+      const [cd,od]=await Promise.all([clLoad(),olLoad()]); if(!cd&&!od) return null;
+      const t=_ymd(year,mon,day), parts=[], keys=[];
+      let ol=null; if(od){ const k='ol'+_epochIn(_olBnd||[],t);
+        ol=cache.get(k); if(!ol){ ol=await olFC(od,year,mon,day); cache.set(k,ol); }
+        if(ol&&ol.features.length){ parts.push(ol); keys.push(k); } else ol=null; }
+      let cl=null; if(cd){ const k='cl'+_epochIn(_clBnd||[],t);
+        cl=cache.get(k); if(!cl){ cl=await clFC(cd,year,mon,day); cache.set(k,cl); }
+        if(cl&&cl.features.length){ parts.push(cl); keys.push(k); } else cl=null; }
+      if(!parts.length) return null;
+      const key='cp:'+csKey+'|'+keys.join('|');
       let fc=cache.get(key);
-      if(!fc){ fc={type:'FeatureCollection',features:csfc.features.concat(cl.features)};
-        _lnOf.set(fc,{type:'FeatureCollection',features:_linesFor(csfc).features.concat(_linesFor(cl).features)});
-        _made.set(fc,{cs:csfc.features.length,ohm:0,clio:cl.features.length,sheet:null}); cache.set(key,fc); }
+      if(!fc){ fc={type:'FeatureCollection',features:csfc.features.concat(...parts.map(p=>p.features))};
+        _lnOf.set(fc,{type:'FeatureCollection',features:_linesFor(csfc).features.concat(...parts.map(p=>_linesFor(p).features))});
+        _made.set(fc,{cs:csfc.features.length,ohm:ol?ol.features.length:0,late:!!ol,clio:cl?cl.features.length:0,sheet:null}); cache.set(key,fc); }
       return { key, fc, corr:false, tier:'composite', sheet:null, record:_recordFor(_made.get(fc)) }; }catch(_){ return null; } }
+    /* (hist-colonial-era-borders) data/hist-borders-late.js — OpenHistoricalMap's relations on CShapes' days, less the
+       ground CShapes states, cut by scripts/build-hist-clio.mjs. Its reach is the bundle's own `window`; nothing here
+       copies it (a year past it simply has no rows). Ends are EXCLUSIVE, as in data/hist-borders.js. The names travel
+       with the polygon, as `hbFC` reads them. */
+    let _olD=null,_olP=null,_olH=null,_olBnd=null; const _olGeom=new Map();
+    function olLoad(){ if(_olD) return Promise.resolve(_olD); if(_olP) return _olP;
+      _olP=Promise.resolve().then(()=>HB().open({file:'data/hist-borders-late.js',global:'__HISTBLATE'}))
+        .then(h=>h?h.edges('exclusive',_ymd(CS_MIN,1,1),_ymd(CS_MAX+1,1,1)).then(b=>{ _olBnd=b; _olH=h; _olD=h.data; return _olD; }):null)
+        .catch(()=>null)
+        .then(d=>{ if(!d) _olP=null; return d; });
+      return _olP; }
+    async function olFC(d,year,mon,day){ const feats=[];
+      const ix=await _olH.at(_ymd(year,mon,day),'exclusive');
+      for(const i of ix){ const f=d.feats[i], NAME=f[0].en;
+        let g=_olGeom.get(i); if(!g){ const polys=f[8].map(poly=>poly.map(ri=>d.rings[ri]));
+          g=(polys.length===1)?{type:'Polygon',coordinates:polys[0]}:{type:'MultiPolygon',coordinates:polys}; _olGeom.set(i,g); }
+        feats.push({type:'Feature',geometry:g,properties:Object.assign({NAME:NAME,name:NAME,_i18n:hnFor('histBorders',NAME,f[1],f[0])||f[0],_rec:'ohm'},f[1]?{_qid:f[1]}:{})}); }
+      return {type:'FeatureCollection',features:feats}; }
     let _clD=null,_clP=null,_clH=null,_clBnd=null; const _clGeom=new Map();
     function clLoad(){ if(_clD) return Promise.resolve(_clD); if(_clP) return _clP;
       _clP=Promise.resolve().then(()=>HB().open({file:'data/hist-clio.js',global:'__HISTCLIO'}))
@@ -2440,6 +2469,7 @@ export function timeBorders(HOST){
       /* (hist-coverage-expansion) the composed world changes when a Cliopatria row begins or ends, and when
          its sheet layer moves to the next sheet — asked only of what is already open, like the sheets above */
       try{ if(_clD&&_clBnd) for(const k of _clBnd) out.push(k); }catch(_){}
+      try{ if(_olD&&_olBnd) for(const k of _olBnd) out.push(k); }catch(_){}   /* (hist-colonial-era-borders) OHM on CShapes' days */
       try{ if(_rsD) for(const y of rsYears(_rsD)) out.push(_ymd(y,1,1)); }catch(_){}
       return [...new Set(out)].sort((a,b)=>a-b); }
     /* ⚠ (hist-coverage-expansion) A CHANGE DATE IS ONLY AS PRECISE AS THE RECORD THAT STATES IT. CShapes and
@@ -2448,7 +2478,7 @@ export function timeBorders(HOST){
        `'year'` ones as the year — 1 January is not a date anyone stated. A Cliopatria edge that the builder
        split on an OpenHistoricalMap day IS that day, and is found among OHM's own edges. */
     function changePrecision(when){ try{ const t=_kOf(when);
-      if((_hbD&&hbBounds().indexOf(t)>=0)||(_csD&&csBounds().indexOf(t)>=0)) return 'day';
+      if((_hbD&&hbBounds().indexOf(t)>=0)||(_csD&&csBounds().indexOf(t)>=0)||(_olD&&_olBnd&&_olBnd.indexOf(t)>=0)) return 'day';
       if(_clD&&_clBnd&&_clBnd.indexOf(t)>=0) return 'year';
       const y=Math.floor(t/10000); return (y<CS_MIN&&(_erD||_rsD))?'year':'day'; }catch(_){ return 'day'; } }
     async function changeAfter(when){ try{ const t=_kOf(when), b=await _allBounds();
@@ -2484,7 +2514,9 @@ export function timeBorders(HOST){
       const d=await csLoad(); if(!d) return null;
       /* (hist-coverage-expansion) a Cliopatria edge under CShapes changes the composed world too */
       const t=_ymd(y,w.getMonth()+1,w.getDate()), ce=csEpoch(d,y,w.getMonth()+1,w.getDate()), le=(_clD&&_clBnd)?_epochIn(_clBnd,t):ce;
-      return _kToDate(Math.max(ce,le<=t?le:ce)); }catch(_){ return null; } }
+      /* (hist-colonial-era-borders) …and so does an OpenHistoricalMap edge on the ground CShapes leaves */
+      const oe=(_olD&&_olBnd)?_epochIn(_olBnd,t):ce;
+      return _kToDate(Math.max(ce,le<=t?le:ce,oe<=t?oe:ce)); }catch(_){ return null; } }
     async function changeDates(){ try{ return (await _allBounds()).map(_kToDate); }catch(_){ return []; } }
     /* ⚠ (#R695) THE FLOOR OF THE STEPPER IS NOT A NUMBER THIS FILE OWNS. It is the oldest year any
        record here can put on the screen, and #R682 recorded that this function was still naming

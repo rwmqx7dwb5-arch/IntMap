@@ -357,14 +357,14 @@ function deriveFloor(table, bar) {
   return floor;
 }
 
-/* ── build ──────────────────────────────────────────────────────────────────*/
-async function build({ report, measure } = {}) {
-  const previous = {};
-  if (process.argv.includes('--precision-only')) new Function('window', readFileSync(OUT, 'utf8'))(previous);
-  const prior = previousPrecision(previous.__HISTB, 0.012, 3);
-  migrateBatches(CACHE);
-  const idx = JSON.parse(readFileSync(join(CACHE, 'index.json'), 'utf8'));
-
+/* ── the records, read off the cache ─────────────────────────────────────────
+   One reading for both products of this file — the bundle below CShapes (`build`) and the relations in
+   force on CShapes' days (`buildLate`) — so the two cannot disagree on a date, a name or a ring.
+   `hi` is an exclusive sortable day: a record starting on or after it is not this window's. `lo` (also a
+   sortable day) drops a record that has ended by then; the bundle below CShapes leaves it at −∞ and cuts at
+   its derived floor afterwards, because the floor is measured from the very records read here. `extra`
+   lets a caller read a second geometry off the same relation while it is in memory. */
+function collect(idx, { hi, lo = -Infinity, extra = null } = {}) {
   const recs = [];
   const skipped = { noDate: 0, noName: 0, noGeom: 0, empty: 0, outside: 0, oneDay: 0, belowFloor: 0 };
   for (const el of idx.elements) {
@@ -373,7 +373,7 @@ async function build({ report, measure } = {}) {
     if (!sArr && !eArr) { skipped.noDate++; continue; }
     const s = sArr ? ymd(...sArr) : -999990101;
     const e = eArr ? ymd(...eArr) : 30000101;
-    if (s >= T_HI) { skipped.outside++; continue; }
+    if (s >= hi) { skipped.outside++; continue; }
     const names = {};
     for (const [code, tag] of LANGS) { const v = t[tag]; if (v) names[code] = String(v).trim(); }
     if (!names.en) names.en = String(t.name || '').trim();
@@ -386,7 +386,7 @@ async function build({ report, measure } = {}) {
   const { clamped, dropped: dupes } = clampOverlaps(recs);
   /* ⚠ AND FILTER AGAIN AFTERWARDS. Clamping only ever moves an end EARLIER, so a record admitted on
      its widened end can leave the window once its real successor is known. */
-  for (let i = recs.length - 1; i >= 0; i--) if (!(recs[i].s < T_HI)) { recs.splice(i, 1); skipped.outside++; }
+  for (let i = recs.length - 1; i >= 0; i--) if (!(recs[i].s < hi && recs[i].e > lo)) { recs.splice(i, 1); skipped.outside++; }
 
   /* ⚠ GEOMETRY IS READ ONE RELATION AT A TIME AND THE RAW RESPONSE IS DROPPED BEFORE THE NEXT ONE.
      #R604 hit V8's 4 GB ceiling holding a whole download in a Map, and this download is five times
@@ -401,13 +401,70 @@ async function build({ report, measure } = {}) {
     const rel = loadGeom(CACHE, r.id);
     if (!rel) { recs.splice(i, 1); skipped.noGeom++; continue; }
     const g = ringsOf(rel, resolve);
-    if (previous.__HISTB) r.baselinePolys = ringsOf(rel, resolve, prior.tolerance).polys.map(p => p.map(ring => round(ring, prior.decimals)));
+    if (extra) extra(r, rel, resolve);
     side.clear();
     bridged += g.bridged; broken += g.dropped;
     r.polys = g.polys.map(p => p.map(ring => round(ring))).filter(p => p.length);
     if (!r.polys.length) { recs.splice(i, 1); skipped.empty++; continue; }
     r.area = polyArea(r.polys);
   }
+  return { recs, skipped, clamped, dupes, bridged, broken };
+}
+
+/* Simplified Chinese, derived — never hand-written twice (#R224). `name:zh` in OHM is a MIX of
+   the two orthographies (兩西西里王國 beside 奥斯曼帝国), so both lanes are normalised: the
+   Traditional one through cn→tw and the Simplified one through tw→cn. */
+async function chineseLanes(recs) {
+  const OpenCC = (await import('opencc-js')).default;
+  const t2s = OpenCC.Converter({ from: 'tw', to: 'cn' });
+  const s2t = OpenCC.Converter({ from: 'cn', to: 'tw' });
+  for (const r of recs) if (r.names.zh) { const z = r.names.zh; r.names['zh-hans'] = t2s(z); r.names.zh = s2t(z); }
+}
+
+/* ══ (hist-colonial-era-borders) THE RELATIONS IN FORCE ON CShapes' DAYS ══════════════════════════════
+   「1886 年に被覆が下がる」 Measured 2026-10-05 on the gate's grid (scripts/hist-fidelity.mjs polityLand):
+   1885 85.8% → 1886 79.1% of the world's land inside a drawn polity. On 1886-01-01 the page hands over
+   from this bundle to data/cshapes.js, and CShapes records SOVEREIGN STATES — the colonial blocs OHM states
+   in Africa (British Bechuanaland, the Congo Free State, Congo français, German East Africa…) and Greenland
+   are not in it, so they vanish the day the clock crosses. CShapes stays the record above; OHM answers the
+   ground it leaves, before Cliopatria, exactly as it does below 1886.
+   This writes the relations in force on or after CShapes' first day, as read by `collect`, into the CACHE
+   (not into data/): what ships is the part of each relation CShapes does not state, and that subtraction
+   is the composition's, done by scripts/build-hist-clio.mjs --ohm-late into data/hist-borders-late.js.
+   ⚠ THE TOP IS NOT TYPED HERE — the caller names it (see build-hist-clio's `LATE_TOP` and its measurement). */
+export const LATE_RAW = join(CACHE, 'late.json');
+export async function buildLate(topYear) {
+  migrateBatches(CACHE);
+  const idx = await fetchIndex(CACHE);
+  const hi = ymd(topYear + 1, 1, 1);
+  /* the geometry `--fetch` does not take (it takes what begins before 1886): every relation that may be in force
+     between CShapes' first day and the top. Only the relations not yet in the cache are asked (network). */
+  const py = s => { const m = /^(-?\d{1,4})/.exec(String(s || '').trim()); return m ? +m[1] : null; };
+  const want = idx.elements.filter(x => { const t = x.tags || {}, s = py(t.start_date), e = py(t.end_date);
+    return (s != null || e != null) && (s == null || s <= topYear) && (e == null || e >= Y_MAX + 1); }).map(x => x.id);
+  const fetched = await fetchGeom(CACHE, want);
+  if (fetched) console.error(`late OHM: fetched geometry for ${fetched} relation(s) not yet in the cache`);
+  const { recs, skipped, clamped, dupes, bridged, broken } = collect(idx, { hi, lo: T_HI });
+  await chineseLanes(recs);
+  recs.sort((a, b) => a.s - b.s || a.id - b.id);
+  const out = { v: 1, window: [Y_MAX + 1, topYear], index: idx.elements.length,
+    recs: recs.map(r => ({ id: r.id, wd: r.wd, names: r.names, sArr: r.sArr, eArr: r.eArr, polys: r.polys })) };
+  writeFileSync(LATE_RAW, JSON.stringify(out));
+  console.error(`late OHM: ${recs.length} relations in force ${Y_MAX + 1}–${topYear} → ${LATE_RAW}`);
+  console.error('skipped', JSON.stringify(skipped), `| overlaps clamped ${clamped}, ${dupes} duplicate(s) dropped | gaps bridged ${bridged}, ${broken} chain(s) too broken to close`);
+  return out;
+}
+
+/* ── build ──────────────────────────────────────────────────────────────────*/
+async function build({ report, measure } = {}) {
+  const previous = {};
+  if (process.argv.includes('--precision-only')) new Function('window', readFileSync(OUT, 'utf8'))(previous);
+  const prior = previousPrecision(previous.__HISTB, 0.012, 3);
+  migrateBatches(CACHE);
+  const idx = JSON.parse(readFileSync(join(CACHE, 'index.json'), 'utf8'));
+
+  const { recs, skipped, clamped, dupes, bridged, broken } = collect(idx, { hi: T_HI,
+    extra: previous.__HISTB ? (r, rel, resolve) => { r.baselinePolys = ringsOf(rel, resolve, prior.tolerance).polys.map(p => p.map(ring => round(ring, prior.decimals))); } : null });
 
   /* the floor, and then the records that survive it */
   const world = cshapesWorld();
@@ -423,13 +480,7 @@ async function build({ report, measure } = {}) {
   const T_LO = ymd(floor, 1, 1);
   for (let i = recs.length - 1; i >= 0; i--) if (!(recs[i].e > T_LO)) { recs.splice(i, 1); skipped.belowFloor++; }
 
-  /* Simplified Chinese, derived — never hand-written twice (#R224). `name:zh` in OHM is a MIX of
-     the two orthographies (兩西西里王國 beside 奥斯曼帝国), so both lanes are normalised: the
-     Traditional one through cn→tw and the Simplified one through tw→cn. */
-  const OpenCC = (await import('opencc-js')).default;
-  const t2s = OpenCC.Converter({ from: 'tw', to: 'cn' });
-  const s2t = OpenCC.Converter({ from: 'cn', to: 'tw' });
-  for (const r of recs) if (r.names.zh) { const z = r.names.zh; r.names['zh-hans'] = t2s(z); r.names.zh = s2t(z); }
+  await chineseLanes(recs);
 
   const ringPool = new Map(), rings = [];
   const put = r => { const k = JSON.stringify(r); let i = ringPool.get(k);

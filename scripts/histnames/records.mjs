@@ -111,6 +111,8 @@ export function histBordersQidGaps(langs, root = ROOT) {
      record that carries identifiers, never a second table */
   const ds = [bundle('hist-borders.js', '__HISTB', root)];
   if (existsSync(join(root, 'data', 'hist-clio.js'))) ds.push(bundle('hist-clio.js', '__HISTCLIO', root));
+  /* (hist-colonial-era-borders) OpenHistoricalMap on CShapes' days — the same rows as hist-borders, the same question */
+  if (existsSync(join(root, 'data', 'hist-borders-late.js'))) ds.push(bundle('hist-borders-late.js', '__HISTBLATE', root));
   const want = langs.filter((l) => l !== 'en');
   const need = new Map();                       /* qid → Set(lang) */
   for (const d of ds) for (const f of d.feats) {

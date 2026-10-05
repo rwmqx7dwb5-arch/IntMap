@@ -79,6 +79,7 @@
     { id: 'hist-eras', path: 'data/hist-eras.js', phone: 'need', who: 'js/time-borders.js', why: 'the time machine' },
     { id: 'hist-clio', path: 'data/hist-clio.js', phone: 'need', who: 'js/time-borders.js (compositeAt)', why: 'the time machine, before 1886' },
     { id: 'hist-eras-rest', path: 'data/hist-eras-rest.js', phone: 'need', who: 'js/time-borders.js (compositeAt)', why: 'the time machine, before 1886' },
+    { id: 'hist-borders-late', path: 'data/hist-borders-late.js', phone: 'need', who: 'js/time-borders.js (csComposite)', why: 'the time machine, 1886–1923 where CShapes is silent' },
     { id: 'hist-era-spans', path: 'data/hist-era-spans.json', phone: 'need', who: 'js/time-borders.js', why: 'the time machine' },
     { id: 'histnames', path: 'data/histnames.json', phone: 'need', who: 'js/time-borders.js', why: 'the time machine' },
     { id: 'hist-admin', path: 'data/hist-admin', phone: 'need', who: 'js/time-admin1.js', why: 'historical subdivisions (hist-admin1/2/3, hist-admin-fill)' },
