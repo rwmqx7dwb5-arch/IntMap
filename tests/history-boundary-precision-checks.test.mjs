@@ -337,9 +337,9 @@ test('#R712 partial builds reject incompatible shared provenance before writing'
 
 test('#R712 full rebuild starts every set fresh and does not inherit stale index metadata', () => {
   const { index, selected } = planDetailBuild({ broken: true });
-  /* every OpenHistoricalMap set and every surveyed gap record (derived:false), discovered from the one list */
+  /* every OpenHistoricalMap set and every surveyed (derived:false) or reconstructed gap record, discovered from the one list */
   assert.deepEqual(selected.map(s => s[0]), ['hist-borders', 'hist-admin1', 'hist-admin2',
-    ...HIST_ADMIN_GAPS.filter(g => g.derived === false).map(g => g.file.replace(/^.*\//, '').replace(/\.js$/, ''))]);
+    ...HIST_ADMIN_GAPS.filter(g => g.derived === false || g.reconstructed).map(g => g.file.replace(/^.*\//, '').replace(/\.js$/, ''))]);
   assert.deepEqual(index.sets, {});
   assert.deepEqual(index.stats, {});
   assert.equal(index.broken, undefined);

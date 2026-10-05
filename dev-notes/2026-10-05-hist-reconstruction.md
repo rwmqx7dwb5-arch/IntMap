@@ -81,8 +81,8 @@ newsjp: 歴史地図の地方区分に、どの記録も述べていない所を
 
 統治台帳（`data/governance-ledger.json`）に 2 件を「未宣言」として記録した: `data/hist-admin-recon`（束の側）と書き手の側。書き手は `GOVERNANCE` で部品の出版者ごとの publisher・url・licence・paidBy を値として述べるが、取得日・行数などの facet はこの形式の束に値の欄が無い——隣の `data/hist-admin-surveys`・`data/hist-admin-fill` と同じ状態で、同じ理由（main の 2444 → 2474）。
 
-### check:perf の天井を上げた理由（`--update`、データの 2 行だけ）
+### check:perf の天井を上げた理由（`--update`）
 
 - `dist.data` 799,622,260 → 859,242,932 B・`dist.total` 968,975,781 → 1,028,660,209 B（+59.7 MB）。内訳は復元の束 `data/hist-admin-recon.js`（6.8 MB、年別タイル `data/hvt/` を含む）と、拡大時の全精度の輪郭（`data/border-detail` の復元の集合 48 MB）。どちらも時計がその年を求めたとき・z8 以上でその土地が画面に入ったときだけ読まれ、起動時には読まない。精度を妥協しない（§0）ための増分。
-- ⚠ 起動コード（eager）の天井は上げていない。このマシンでの計測は main のままでも天井（#1016 が CI の実測に下げたもの）を超える。私の差分の寄与は、触った 2 ファイル（`js/border-coast.js`・`js/reference-data.js`）を main の版に戻してビルドし直して測った差で **raw +1.5 kB・brotli +0.7 kB**（許容幅 5.9 kB の内）。
+- 起動コード（eager）の brotli も上げた（1,207,756 → 1,214,452 B）。この差分の寄与は、触った 2 ファイル（`js/border-coast.js`・`js/reference-data.js`）を main の版に戻してビルドし直して測った差で **raw +1.5 kB・brotli +0.7 kB**——出典ページの 3 行（N03・e-Stat はライセンスが帰属表示を条件にしている）と記録の一覧の 1 行。⚠ 最初は「main のままでもこのマシンでは天井を超えるので上げない」と判断したが誤りだった: main の計測は天井＋許容幅（1,179.4＋5.9 kB）のちょうど境目にあり、CI でもこの +0.7 kB で線を越えた（CI の計測はこのマシンと同じ 1,186.0 kB）。
 - `data/hist-admin-recon.js` は 6 MB を超えるので `scripts/asset-report.mjs` の `ALLOW.bigFile` に理由を添えて載せた（出版者の記録・cshapes と同じ扱い）。
