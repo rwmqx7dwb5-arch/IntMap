@@ -43,6 +43,24 @@ test('#4 Radius popup drops the redundant radius tile (circumference+area remain
   expect(r.collapsed).toBe(true);
 });
 
+/* (radius-close-clears) 「Radiusだけウィンドウを消しても消えないのはキモイ。」 — closing the radius window (or choosing another tool)
+   takes the circles with it, as Distance/area and 3-D volume already did; «Done» is how a circle is kept. */
+test('radius-close-clears closing the Radius window, or choosing another tool, removes its circles', async () => {
+  const drawn = () => page.evaluate(() => { const d = window.IntMapGeoEngine.layers.sourceData('tool-source');
+    return (d && d.features ? d.features : []).length; });
+  await page.evaluate(() => { window._radiusFromPoint(139.7, 35.68, 'test'); window._radiusFromPoint(135.5, 34.7, 'test'); });
+  expect(await drawn()).toBeGreaterThan(0);
+  await page.click('#tool-panel .tp-close');
+  await expect(page.locator('#tool-panel')).toBeHidden();
+  expect(await drawn()).toBe(0);
+  /* another tool chosen from the radius tool: the same */
+  await page.evaluate(() => window._radiusFromPoint(139.7, 35.68, 'test'));
+  expect(await drawn()).toBeGreaterThan(0);
+  await page.evaluate(() => document.getElementById('btn-tool-measure').click());
+  expect(await drawn()).toBe(0);
+  await page.evaluate(() => { const x = document.querySelector('#tool-panel .tp-close'); if (x) x.click(); });
+});
+
 // ---- #11 Atlas white button + #6 feature on/off (R148: standard switch) ---
 test('#11/#6 Atlas go button is white and feature on/off renders the standard switch that flips the real control', async () => {
   const r = await page.evaluate(async () => {
