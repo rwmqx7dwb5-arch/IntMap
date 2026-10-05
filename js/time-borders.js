@@ -376,7 +376,13 @@ export function timeBorders(HOST){
     const _closedRing=r=>_BC().closedRing(r);
     const _ringLines=(ring,mark)=>_BC().ringLines(ring,mark);
     const _lineGeom=(d,idx,marks)=>_BC().lineGeom(d,idx,marks);
-    const _wholeLines=fc=>_BC().wholeLines(fc);
+    const _wholeLines=(fc,t)=>_BC().wholeLines(fc,t);
+    /* (hist-border-refine) the course redraws (data/hist-courses.js) hold only while their fact does, so a line
+       depends on the date as well as the collection: lines are memoised per collection AND per course epoch, and a
+       composed collection remembers the instant it was composed for (`_tOf`) */
+    const _courseEp=t=>{ try{ return _BC().courseEpoch(t); }catch(_){ return -1; } };
+    const coursesLoad=()=>{ try{ _BC().loadCourses(); }catch(_){} };
+    const _tOf=new WeakMap();
     /* (#R711) Marks/detail arrival changes only the currently drawn line. Dropping the
        year cache did not repaint anything (_applyBorders only controls visibility), and
        also made currentFC() lose the territory already on screen. Keep those identities
@@ -392,15 +398,16 @@ export function timeBorders(HOST){
        same collection the year cache holds carries it without touching what is sent. */
     let _lnOf=new WeakMap();
     const _lineRecordOf=new WeakMap();   /* original polygon object -> bundle record; corrected geometry has no entry */
-    function _linesFor(fc){ let v=_lnOf.get(fc); if(v) return v;
+    function _linesFor(fc,t){ if(t==null) t=_tOf.has(fc)?_tOf.get(fc):null; const ep=_courseEp(t);
+      let byEp=_lnOf.get(fc); if(!byEp){ byEp=new Map(); _lnOf.set(fc,byEp); } let v=byEp.get('*')||byEp.get(ep); if(v) return v;
       const feats=[],other=[];
       for(const f of (fc.features||[])){
         const rec=f.geometry&&_lineRecordOf.get(f.geometry);
         if(rec){ const g=_lineGeom(rec[0],rec[1],_bcMarks(rec[2])); if(g) feats.push(_lineFeat(g)); }
         else other.push(f);
       }
-      if(other.length) feats.push(..._wholeLines({type:'FeatureCollection',features:other}).features);
-      v={type:'FeatureCollection',features:feats}; _lnOf.set(fc,v); return v;
+      if(other.length) feats.push(..._wholeLines({type:'FeatureCollection',features:other},t).features);
+      v={type:'FeatureCollection',features:feats}; byEp.set(ep,v); return v;
     }
     function _csGeomOf(d,idx){ let g=_csGeom.get(idx); if(g) return g;
       const polys=d.feats[idx][8].map(poly=>poly.map(ri=>d.rings[ri]));
@@ -424,7 +431,7 @@ export function timeBorders(HOST){
         feats.push({type:'Feature',geometry:_csGeomOf(_csD,i),properties:Object.assign({NAME:NAME,name:NAME,_gw:f[1]},i18?{_i18n:i18}:{})});
         const lg=_csLineOf(_csD,i); if(lg) lines.push(_lineFeat(lg)); }
       const fc={type:'FeatureCollection',features:feats};
-      _lnOf.set(fc,{type:'FeatureCollection',features:lines});   /* (#R531) what `imtb-line` strokes */
+      _lnOf.set(fc,new Map([['*',{type:'FeatureCollection',features:lines}]]));   /* (#R531) what `imtb-line` strokes — the same at every date ('*'): CShapes and OHM are never redrawn */
       return fc; }
     /* ══ (#R518) …AND BELOW CShapes, THE SAME MACHINERY ON A SECOND RECORD ═════════════════════════
        「1850–1885の国境を本気で埋めて」 The clock's floor is 1850 (js/chronos.js) and CShapes begins on
@@ -493,7 +500,7 @@ export function timeBorders(HOST){
         feats.push({type:'Feature',geometry:_hbGeomOf(d,i),properties:{NAME:NAME,name:NAME,_i18n:hnFor('histBorders',NAME,f[1],f[0])||f[0]}});
         const lg=_hbLineOf(d,i); if(lg) lines.push(_lineFeat(lg)); }
       const fc={type:'FeatureCollection',features:feats};
-      _lnOf.set(fc,{type:'FeatureCollection',features:lines});   /* (#R531) what `imtb-line` strokes */
+      _lnOf.set(fc,new Map([['*',{type:'FeatureCollection',features:lines}]]));   /* (#R531) what `imtb-line` strokes — the same at every date ('*'): CShapes and OHM are never redrawn */
       return fc; }
     /* (#R105) vanished entities that occupy a modern country's territory (shared by the click resolver + the era
        correction) — a point-in-polygon would mis-resolve them to the modern occupant. */
@@ -870,7 +877,9 @@ export function timeBorders(HOST){
        CShapes' ground (scripts/build-hist-clio.mjs --ohm-late), and data/hist-clio.js is cut against both, so this
        is again a union with no geometric decision in it. Either record unreadable, the others still compose. */
     async function csComposite(csKey,csfc,year,mon,day){ try{
-      const [cd,od]=await Promise.all([clLoad(),olLoad()]); if(!cd&&!od) return null;
+      /* the course file is asked for but not waited on: its arrival repaints the line (onArrive), and a composition
+         keyed before it arrived (`ce-1`) is never reused after */
+      coursesLoad(); const [cd,od]=await Promise.all([clLoad(),olLoad()]); if(!cd&&!od) return null;
       const t=_ymd(year,mon,day), parts=[], keys=[];
       let ol=null; if(od){ const k='ol'+_epochIn(_olBnd||[],t);
         ol=cache.get(k); if(!ol){ ol=await olFC(od,year,mon,day); cache.set(k,ol); }
@@ -879,10 +888,10 @@ export function timeBorders(HOST){
         cl=cache.get(k); if(!cl){ cl=await clFC(cd,year,mon,day); cache.set(k,cl); }
         if(cl&&cl.features.length){ parts.push(cl); keys.push(k); } else cl=null; }
       if(!parts.length) return null;
-      const key='cp:'+csKey+'|'+keys.join('|');
+      const key='cp:'+csKey+'|'+keys.join('|')+'|ce'+_courseEp(t);
       let fc=cache.get(key);
-      if(!fc){ fc={type:'FeatureCollection',features:csfc.features.concat(...parts.map(p=>p.features))};
-        _lnOf.set(fc,{type:'FeatureCollection',features:_linesFor(csfc).features.concat(...parts.map(p=>_linesFor(p).features))});
+      if(!fc){ fc={type:'FeatureCollection',features:csfc.features.concat(...parts.map(p=>p.features))}; _tOf.set(fc,t);
+        _lnOf.set(fc,new Map([[_courseEp(t),{type:'FeatureCollection',features:_linesFor(csfc,t).features.concat(...parts.map(p=>_linesFor(p,t).features))}]]));
         _made.set(fc,{cs:csfc.features.length,ohm:ol?ol.features.length:0,late:!!ol,clio:cl?cl.features.length:0,sheet:null}); cache.set(key,fc); }
       return { key, fc, corr:false, tier:'composite', sheet:null, record:_recordFor(_made.get(fc)) }; }catch(_){ return null; } }
     /* (hist-colonial-era-borders) data/hist-borders-late.js — OpenHistoricalMap's relations on CShapes' days, less the
@@ -956,7 +965,7 @@ export function timeBorders(HOST){
     /* the composed world at an instant before CShapes, or null when it cannot be composed */
     async function compositeAt(year,mon,day){
       if(year>=CS_MIN) return null;
-      const [cd,rd]=await Promise.all([clLoad(),rsLoad(),bcLoad(),hnLoad(),spLoad()]);
+      coursesLoad(); const [cd,rd]=await Promise.all([clLoad(),rsLoad(),bcLoad(),hnLoad(),spLoad()]);
       if(!cd||!rd) return null;
       const parts=[], keys=[], made={ohm:0,clio:0,sheet:null};
       if(year>=HB_MIN&&year<=HB_MAX){ const hd=await hbLoad();
@@ -971,10 +980,10 @@ export function timeBorders(HOST){
       const ys=rsYears(rd), ny=ys.length?nearest(year,ys):null;
       if(ny!=null){ const raw=await rsFC(rd,ny);
         if(raw){ corr=_eraState(raw,year); const shown=_eraShow(raw,year); parts.push(shown); keys.push('rs'+ny); made.sheet=ny; } }
-      const key='cp:'+keys.join('|')+'|'+corr;
+      const t=_ymd(year,mon,day), key='cp:'+keys.join('|')+'|'+corr+'|ce'+_courseEp(t);
       let fc=cache.get(key);
-      if(!fc){ fc={type:'FeatureCollection',features:[].concat(...parts.map(p=>p.features))};
-        _lnOf.set(fc,{type:'FeatureCollection',features:[].concat(...parts.map(p=>_linesFor(p).features))});
+      if(!fc){ fc={type:'FeatureCollection',features:[].concat(...parts.map(p=>p.features))}; _tOf.set(fc,t);
+        _lnOf.set(fc,new Map([[_courseEp(t),{type:'FeatureCollection',features:[].concat(...parts.map(p=>_linesFor(p,t).features))}]]));
         _made.set(fc,made); cache.set(key,fc); }
       return { key, fc, corr, tier:'composite', sheet:made.sheet, record:_recordFor(_made.get(fc)) }; }
     /* ══ (#R520) 一国につき一つ — THE ERA NAMES GET THEIR OWN POINT SOURCE ══════════════════════
@@ -1232,7 +1241,7 @@ export function timeBorders(HOST){
        year re-localized) makes that statement describe something that is no longer drawn. */
     function _pushLbl(fc){ _blankClose(); try{ if(GE().layers.hasSource('imtb-lbl-src')) GE().layers.setSourceData('imtb-lbl-src',_labelFC(fc)); }catch(_){} }
     function ensure(){ try{ if(!_imCanDraw()) return false;
-      if(!GE().layers.hasSource('imtb-src')) GE().layers.addSource('imtb-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'CShapes 2.0 (Schvitz et al.) · OpenHistoricalMap (CC0) · Cliopatria (Seshat Global History Databank, CC BY 4.0) · historical-basemaps (aourednik, GPL-3.0)'});
+      if(!GE().layers.hasSource('imtb-src')) GE().layers.addSource('imtb-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'CShapes 2.0 (Schvitz et al.) · OpenHistoricalMap (CC0) · Cliopatria (Seshat Global History Databank, CC BY 4.0) · historical-basemaps (aourednik, GPL-3.0) · © OpenStreetMap contributors (ODbL)'});
       /* ══ (#R531) THE STROKED OUTLINE IS NOT THE POLYGON ═══════════════════════════════════════
          「昔の国境は海岸より先まであるのが気持ち悪い。」 A political record's ring is two kinds of edge in
          one loop: the boundaries between polities, which only that record knows, and the polity's own
@@ -1248,7 +1257,7 @@ export function timeBorders(HOST){
          ⚠ AND THE CREDIT MOVES WITH THE LINE. `imtb-src` kept the attribution because it was what
          drew; after this it only holds the click target, and the visible line would have come from a
          source that credits nobody. Both carry it — MapLibre folds identical strings into one. */
-      if(!GE().layers.hasSource('imtb-ln-src')) GE().layers.addSource('imtb-ln-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'CShapes 2.0 (Schvitz et al.) · OpenHistoricalMap (CC0) · Cliopatria (Seshat Global History Databank, CC BY 4.0) · historical-basemaps (aourednik, GPL-3.0)'});
+      if(!GE().layers.hasSource('imtb-ln-src')) GE().layers.addSource('imtb-ln-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'CShapes 2.0 (Schvitz et al.) · OpenHistoricalMap (CC0) · Cliopatria (Seshat Global History Databank, CC BY 4.0) · historical-basemaps (aourednik, GPL-3.0) · © OpenStreetMap contributors (ODbL)'});
       /* (#R520) the era NAMES — one Point per country, derived from `imtb-src` (see `_labelFC`). No `attribution`
          of its own: it is the same datasets, already credited by the source it is derived from, whose
          `imtb-line` is on screen in exactly the moments these labels are. */

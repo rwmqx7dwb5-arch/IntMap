@@ -1929,6 +1929,14 @@ internal consistency is not geographic accuracy.
 
 ### `npm run check:bordercoast` — 描かれる辺を、実物の海岸線に照らす (#R531)
 
+⚠ (hist-border-refine) **同じ門が `scripts/build-hist-courses.mjs --check` も走らせる**——描かれる辺のもう一つの決定
+（史料が述べる川・城壁の区間で粗い線を差し替える `data/hist-courses.js`）。上流（OSM）は要らない: 事実
+（`scripts/histcourse/courses.json`。区間・期間・QID・出典 2 本以上・例外）の形式を検め、出荷された区間の線と同梱の束・
+印から**差し替えを丸ごと再導出してバイト単位で突き合わせ**、束・印・上位の記録の sha256 が導出時と同じであることを確かめる。
+規則そのもの（誤差の内側だけ・上位の記録の線と例外は動かさない・両側が同じ頂点を通る・線だけが変わる）は
+`tests/hist-border-refine-checks.test.mjs` が合成した環で、答えが分かっている形に対して評価する。記録ごとの海岸の帯
+（`RECORD_INLAND_KM`）は、印の再導出が各束の帯で行われることと、各束が自分の帯を名乗っていることを同じ門が見る。
+
 ⚠ **こちらは再導出する。** `scripts/build-border-coast.mjs --check` は上流を必要としない——
 入力は `data/` から**発見された**束（いまは6つ——`cshapes` / `hist-borders` / `hist-admin1` / `hist-admin2` / `hist-eras` / `hist-kuni`）と
 `data/coastline.json.gz` だけなので、**全 78,340 リングを判定し直して `data/border-coast.js` と

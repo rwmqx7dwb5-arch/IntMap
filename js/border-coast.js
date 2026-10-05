@@ -84,14 +84,21 @@ export const IntMapBorderCoast = (function () {
      without them */
   function onArrive(cb) { if (typeof cb === 'function') _arrived.push(cb); }
 
+  /* (hist-border-refine) the river and wall courses a coarse line is redrawn along — read by js/hist-courses.js,
+     which is imported only when a Cliopatria line is first drawn (it is not on the boot path) */
+  let _HC = null, _HCP = null;
+  const loadCourses = () => _HCP || (_HCP = import('./hist-courses.js').then((m) => m.open(window, globalThis.document))
+    .then((h) => { if (h) { _HC = h; _arrived.forEach((cb) => { try { cb(); } catch (_) {} }); } else _HCP = null; return h; }, () => (_HCP = null)));
+
   function marks(set) { try { return (_D && _D.sets && _D.sets[set] && _D.sets[set].draw) || null; } catch (_) { return null; } }
 
   const closedRing = (r) => { const n = r.length; return (n > 1 && r[0][0] === r[n - 1][0] && r[0][1] === r[n - 1][1]) ? r : r.concat([r[0]]); };
 
   /* the border runs of ONE ring, as LineString coordinate arrays */
-  function ringLines(ring, mark) {
+  function ringLines(ring, mark, subs) {
     const V = closedRing(ring);
     if (mark === 0) return [];
+    if (subs) return _HC.runs(V, mark, subs);
     if (mark === 1 || !Array.isArray(mark)) return [V];
     const out = [];
     for (const run of mark) { const seg = V.slice(run[0], run[1] + 1); if (seg.length > 1) out.push(seg); }
@@ -165,19 +172,20 @@ export const IntMapBorderCoast = (function () {
   /* a collection handed over whole: each ring stroked whole unless the marks know it, in which case
      it is stroked the way the marks say — the outline drawn before #R531 for everything nobody has
      measured, and the measured answer for everything that has been. */
-  function wholeLines(fc) {
+  function wholeLines(fc, t = null) {
     /* ⚠ the marks may not have been asked for yet on this path (the era tier awaits the bundle, not
        these), so ask now: a caller that memoizes what it gets back keeps the whole-ring drawing
        until it rebuilds, and one request started here is what makes that a first frame instead of a
        session. */
     if (!_D) { try { load(); } catch (_) {} }
+    if (!_HC) loadCourses();
     const feats = [];
     for (const f of ((fc && fc.features) || [])) {
       const g = f.geometry; if (!g) continue;
       const polys = g.type === 'Polygon' ? [g.coordinates] : (g.type === 'MultiPolygon' ? g.coordinates : null);
       if (!polys) continue;
       const lines = [];
-      for (const p of polys) for (const r of p) if (r && r.length > 1) for (const l of ringLines(r, markOf(r))) lines.push(l);
+      for (const p of polys) for (const r of p) if (r && r.length > 1) for (const l of ringLines(r, markOf(r), _HC && _HC.of(r, t))) lines.push(l);
       if (lines.length) feats.push({ type: 'Feature', geometry: { type: 'MultiLineString', coordinates: lines }, properties: Object.assign({}, f.properties) });
     }
     return { type: 'FeatureCollection', features: feats };
@@ -325,6 +333,6 @@ export const IntMapBorderCoast = (function () {
     return lines.length ? { type: 'MultiLineString', coordinates: lines } : null;
   }
 
-  return { load, onArrive, marks, closedRing, ringLines, lineGeom, wholeLines, geometryKey, loaded: () => !!_D };
+  return { load, loadCourses, courseEpoch: (t) => (_HC ? _HC.epoch(t) : -1), onArrive, marks, closedRing, ringLines, lineGeom, wholeLines, geometryKey, loaded: () => !!_D };
 })();
 globalThis.IntMapBorderCoast = IntMapBorderCoast;   /* (module-graph) the compat window: importers get the binding above */

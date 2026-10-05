@@ -706,6 +706,9 @@ cameras.js                        ライブカメラ層（export cameras）
 beta-overlays.js                  ベータのオーバーレイ（export betaOverlays。火山レイヤー本体＝色モード4種・VEIによる大きさ・凡例・volcano.* コマンド）
 volcano-intel.js                  火山の深さ window.IntMapVolcano（遅延）——噴火履歴11,043件・警戒レベルの4段・気象庁↔GVPの結合・詳細カード
 volcano-layers.js                 火山の3レイヤー window.IntMapVolcanoLayers（遅延）——火山灰SIGMET・USGSハザード域・衛星SO₂
+hist-courses.js                   粗い記録の国境線を、史料が述べる川・城壁の区間で引き直す**読み手**（data/hist-courses.js・
+                                  scripts/build-hist-courses.mjs）。起動経路に載らない——js/border-coast.js が Cliopatria の線を初めて
+                                  描くとき import する。差し替えは事実の期間（`days`）の間だけ効き、`epoch(t)` が線のメモの鍵
 hist-bundles.js                   リングプールした歴史記録（data/cshapes.js・hist-borders.js・hist-eras.js・
                                   hist-admin1〜3.js と、border-coast.js の HIST_ADMIN_GAPS が列挙する継ぎ足しの記録）を読む**唯一の扉**
                                   window.IntMapHistBundles。束は Blob Worker で取得・JSON.parse・保持し、
@@ -1696,6 +1699,12 @@ data/border-coast.js              歴史的な輪郭の各辺が「境界」か�
                                   `imta2-line` はこの印の run だけを描く。読み手は js/border-coast.js
                                   （束の索引でも**環そのものの同一性**でも引ける）。⚠ 面積 0 のリングは
                                   内部を持たないので描かない
+data/hist-courses.js              **粗い記録の国境線を、史実が述べる川・城壁の実形で引き直す差し替え**（川・城壁の形は
+                                  OpenStreetMap・**ODbL 1.0**・`window.__IMBCOURSE`・`scripts/build-hist-courses.mjs`／
+                                  `npm run check:bordercoast`）。考証した事実は `scripts/histcourse/courses.json`（区間・期間・
+                                  両側の政体の QID・出典 2 本以上）。中身は区間の線（OSM の頂点そのまま）と、Cliopatria の
+                                  リングごとの差し替え範囲 `[a, b, 区間, i0, i1]`。読み手は js/border-coast.js（線だけ。
+                                  塗り・名前・日付は触らない）。無ければ従来どおり描く
 data/border-detail/               拡大表示用の境界線。OHM の 3 層は OHM 原典と同梱形状を照合したもの、
                                   出版元の調査記録（hist-admin-surveys・-nc）は出版元自身の座標を単純化せずに
                                   運んだもの。索引と空間別の断片を js/border-coast.js が表示範囲に応じて読み、
@@ -2050,7 +2059,13 @@ scripts/
                                   →場所。切ったものは扉の job で読み戻して記録と照合し、違えば失敗する
   build-border-coast.mjs          同梱の海岸線（`data/coastline.json.gz`）に照らして、歴史国境の各辺が国境か海岸線の
                                   写しかを印す → `data/border-coast.js`。⚠ **`--check` は全リングを再導出して突き合わせる**
-                                  （上流不要）。`--report` が唯一の定数 `INLAND_KM` を読み取る分布を出す
+                                  （上流不要）。`--report` が `INLAND_KM` を読み取る分布を、`--sweep <global> <年>` が記録ごとの帯
+                                  （`RECORD_INLAND_KM`。いまは Cliopatria だけ 10 km）を読み取る測定を出す
+  build-hist-courses.mjs          `scripts/histcourse/courses.json` の考証済みの区間を OpenStreetMap の川・城壁の形で取り、
+                                  その区間を描く Cliopatria の辺（その記録の位置誤差の内側にあり、上位の記録の線でも
+                                  例外地点でもないもの）を差し替える範囲を求める → `data/hist-courses.js`。
+                                  `--fetch`（OSM・ネットワーク）／`--check`（同梱の束から全部を再導出・オフライン）／
+                                  `--report`（年ごとの粗い弦の長さと差し替えた長さ）／`--measure`（位置誤差の実測）
   build-border-detail.mjs         同じOHM原典を既存形状と照合し、拡大表示用の詳細な境界線を
                                   data/border-detail/へ分割生成する。既存の補正形状・年代・身元は保持する。
                                   出版元の調査記録（HIST_ADMIN_GAPS の derived:false）は harvester を読み直し、

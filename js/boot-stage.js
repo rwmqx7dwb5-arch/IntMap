@@ -61,6 +61,7 @@
     { id: 'hdi-series', path: 'data/hdi-series.json', phone: 'boot', who: 'js/time-countries.js loadHDI()', why: 'the country table\'s HDI column (10 kB)' },
     { id: 'border-coast', path: 'data/border-coast.js', phone: 'need', who: 'js/border-coast.js', why: 'which border edges are coast — read when borders are drawn at a zoom that needs it' },
     { id: 'border-detail', path: 'data/border-detail/', phone: 'need', who: 'js/border-coast.js', why: 'the zoomed-in outline shards, by viewport' },
+    { id: 'hist-courses', path: 'data/hist-courses.js', phone: 'need', who: 'js/hist-courses.js', why: 'the time machine' },
 
     /* ── behind the moment a phone can be touched ── */
     { id: 'stars', path: 'data/stars.bin', phone: 'settled', who: 'js/star-catalogue.js (the night sky behind the globe, js/space-sky.js)', why: '773 kB and a 98,887-row decode for the background of the dark globe; the globe is usable without it' },
