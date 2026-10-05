@@ -1972,7 +1972,7 @@ way が 1 本のリングに閉じるか／内側のリングが**穴**になり
 上流に訊くか／**粗い形を先に渡し、鋭い形が届いたら渡し直す**か／その差し替えが**同じ source の
 置き換えであって第2のレイヤーではない**か。
 
-### `npm run check:histadmin` — 83.28 MB の行政区分に、初めて門を付ける (#R680)
+### `npm run check:histadmin` — 83.29 MB の行政区分に、初めて門を付ける (#R680)
 
 `scripts/build-hist-admin1.mjs --check` は `data/hist-admin1.js`（41.46 MB・第1級 4,837 単位）と
 `data/hist-admin2.js`（40.66 MB・第2級 22,691 単位）の不変条件を測る。**この 2 本は #R680 まで

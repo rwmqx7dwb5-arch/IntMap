@@ -1718,7 +1718,7 @@ data/hist-admin2.js               歴史的な第2級行政区分（OpenHistoric
                                   払わせないため（docs/MAP-LAYERS.md §7.7）。門は第1級と同じ
                                   `npm run check:histadmin`——1 つの build が両方を焼くので、門も 1 つ
 data/hist-admin3.js               歴史的な第3階層（OpenHistoricalMap の admin_level **7**・CC0 1.0・
-                                  `window.__HISTADM3`・2,067件／rings 2,184・1.16 MB）。同じ生成器の
+                                  `window.__HISTADM3`・2,067件／rings 2,184・1.17 MB）。同じ生成器の
                                   `--levels 7`。**z8 未満では取得もしない**——第2階層の z6 と同じ規則で、
                                   「中央値の単位が 50 px 以上になる最初のズーム」から描く（#R564 の尺度）。
                                   ⚠ **level 8 は入れていない**（上流 23,922 関係＝2階層 82 MB がほぼ倍になる）。

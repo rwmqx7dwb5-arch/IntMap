@@ -74,6 +74,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
+import zlib from 'node:zlib';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { registry, harvestTags, shipTags } from './histadmin/langs.mjs';
@@ -84,6 +85,7 @@ import { plainLabel } from './histeras/match.mjs';
 import { geometryOf, repoolGeometry, generatedPrecision } from './histborders/precision.mjs';
 import { OPENHISTORICALMAP } from './lib/upstream-cadence.mjs';
 import { readEdges, successions, applyEdges, LEDGER as EDGES_LEDGER, GOVERNANCE as EDGES_GOVERNANCE } from './histadmin/edges.mjs';
+import { REGIMES as CAL_REGIMES, statements as calendarStatements, groundIndex as calendarGround, applyCalendar } from './histadmin/calendar.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const EP = 'https://overpass-api.openhistoricalmap.org/api/interpreter';
@@ -1226,8 +1228,12 @@ async function refreshEdges() {
   }
   ledger.facts = facts;
   ledger.gov = { ...EDGES_GOVERNANCE[EDGES_LEDGER], retrievedAt: new Date().toISOString().slice(0, 10) };
+  /* (meiji-lunisolar-dates) the same ledger's second population: dates stated before a calendar regime
+     adopted the Gregorian calendar, on its ground — scripts/histadmin/calendar.mjs */
+  ledger.calendar = { ...(ledger.calendar || {}), found: await calendarFound(units) };
   fs.writeFileSync(path.join(ROOT, EDGES_LEDGER), JSON.stringify(ledger, null, 1) + '\n');
-  const touched = applyEdges(units.map(u => ({ file: u.tier.file, data: u.data })), ledger);
+  const bundles = units.map(u => ({ file: u.tier.file, data: u.data }));
+  const touched = [...new Set([...applyEdges(bundles, ledger), ...applyCalendar(bundles, ledger)])];
   for (const u of units) {
     if (!touched.includes(u.tier.file)) continue;
     const body = 'window.' + u.tier.global + '=' + JSON.stringify({ ...u.data, built: new Date().toISOString().slice(0, 10) }) + ';\n';
@@ -1235,6 +1241,38 @@ async function refreshEdges() {
     console.error('· wrote ' + u.tier.file + ' (rings untouched: ' + u.data.rings.length + ')');
   }
   console.error('· ' + EDGES_LEDGER + ': ' + found.length + ' finding(s), ' + (ledger.reviewed || []).length + ' reviewed, ' + (ledger.refuted || []).length + ' refuted');
+  const cal = ledger.calendar;
+  console.error('· ' + EDGES_LEDGER + ' calendar: ' + cal.found.length + ' statement(s) before the Gregorian day, ' + (cal.reviewed || []).length + ' reviewed, ' + (cal.refuted || []).reduce((n, x) => n + (x.ids || []).length, 0) + ' refuted');
+}
+
+/* every upstream relation of the levels the tiers hold, on a regime's ground, with a day or a month
+   stated before the regime's Gregorian day — and the ways the vector tiles draw it with (a tile line's
+   `osm_id` is the way's id: measured 2026-10-05, the z7 tile over Shiga carries 滋賀県's member ways) */
+async function calendarFound(units) {
+  const levels = [...new Set(units.flatMap(u => u.data.levels || []))].sort((a, b) => a - b);
+  const ne = JSON.parse(zlib.gunzipSync(fs.readFileSync(path.join(ROOT, 'data', 'admin1-world.json.gz'))));
+  const ringsOf = g => (g.type === 'Polygon' ? [g.coordinates] : g.coordinates).map(p => p[0]);
+  const out = [];
+  for (const regime of CAL_REGIMES) {
+    let w = 180, s = 90, e = -180, n = -90;
+    for (const f of ne.f) if (f.i === regime.ground) for (const r of ringsOf(f.g)) for (const [x, y] of r) { w = Math.min(w, x); e = Math.max(e, x); s = Math.min(s, y); n = Math.max(n, y); }
+    const bb = [s, w, n, e].map(v => v.toFixed(3)).join(',');
+    /* every country whose land enters the window, so a relation goes to the one holding most of it */
+    const win = [w - 1, s - 1, e + 1, n + 1];
+    const near = ne.f.filter(f => ringsOf(f.g).some(r => r.some(([x, y]) => x >= win[0] && x <= win[2] && y >= win[1] && y <= win[3])));
+    const countryAt = calendarGround(near, win);
+    const lv = '^(' + levels.join('|') + ')$';
+    const tags = await overpass('[out:json][timeout:300];(relation["boundary"="administrative"]["admin_level"~"' + lv + '"](' + bb + ');'
+      + 'relation["type"="boundary"][!"boundary"]["admin_level"~"' + lv + '"](' + bb + '););out tags;');
+    const dated = v => /^\d{4}-\d{2}(-\d{2})?$/.test(String(v || '')) && String(v) < regime.until;
+    const ids = (tags.elements || []).filter(r => r.tags && (dated(r.tags.start_date) || dated(r.tags.end_date))).map(r => r.id);
+    if (!ids.length) continue;
+    const geo = await overpass('[out:json][timeout:300];relation(id:' + ids.join(',') + ');out geom;');
+    const rels = (geo.elements || []).filter(r => r.type === 'relation').map(r => ({ id: r.id, tags: r.tags,
+      ways: (r.members || []).filter(m => m.type === 'way' && Array.isArray(m.geometry)).map(m => ({ id: m.ref, pts: m.geometry.map(g => [g.lon, g.lat]) })) }));
+    out.push(...calendarStatements(rels, countryAt, regime));
+  }
+  return out;
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

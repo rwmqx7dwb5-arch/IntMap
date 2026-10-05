@@ -187,10 +187,10 @@ export function timeAdmin1(HOST) {
          of which 1,142 and 1,600 end before 1800.
 
        The fallback geometry now uses 0.004° / 4 decimals in both tiers. Measured
-       2026-09-15: data/hist-admin1.js is 41,458,052 B (2026-10-02, after the reviewed handover dates
-       were written into its `dates`; the rings did not move) and 2,180,014 vertices;
+       2026-09-15: data/hist-admin1.js is 41,459,442 B (2026-10-05, after the reviewed handover and calendar dates
+       were written into its `dates` and its tile `lines`; the rings did not move) and 2,180,014 vertices;
        data/hist-admin2.js is 40,660,406 B and 1,871,841 vertices (LF bytes); and (#R719)
-       data/hist-admin3.js is 1,164,385 B and 39,725 vertices.
+       data/hist-admin3.js is 1,165,187 B and 39,725 vertices.
        This is the build target, not a guarantee about the source's survey accuracy.
        Geometry-only refinement preserves labels, validity intervals and corrected shapes.
        On the cached Izu record, the maximum source-to-outline deviation fell from
@@ -251,7 +251,7 @@ export function timeAdmin1(HOST) {
     function eraBorders() { return window.IntMapTimeBorders; }
     const readerFont = () => { try { return window.IntMapMapTypography.readerFont(); } catch (_) { return ['Noto Sans SC']; } };
     const _dec = (y, m, d) => HS().decYear(y, m, d);
-    const _vtFilter = (lo, hi, t) => HS().ohmFilter(lo, hi, t);
+    const _vtFilter = (lo, hi, t, rev) => HS().ohmFilter(lo, hi, t, rev);
     function ensureVTSource() {
       try {
         if (GE().layers.hasSource(VT_SRC)) return true;
@@ -547,6 +547,10 @@ export function timeAdmin1(HOST) {
          something to draw — i.e. on evidence, and it is given up again the moment a tile does paint,
          because a reader who walks back into coverage must not keep the coarse line. */
       let vtState = 'unknown', vtAt = null, vtSince = 0;
+      /* (meiji-lunisolar-dates) the reviewed days for lines upstream misdated — the tier's own `lines`
+         (scripts/histadmin/calendar.mjs). They arrive with the bundle, after the first aim; the aim is
+         taken again once they do (see go()). */
+      let vtRev = null;
       /* ⚠ MEASURED, NOT GUESSED: on this machine a cold z5 view over Germany has the first OHM tile
          painting 0.9-2.1 s after the clock moves. Six seconds is that with room for a slow link;
          below the round trip it would declare failure on a page that was merely loading, and far
@@ -559,7 +563,7 @@ export function timeAdmin1(HOST) {
           const t = _dec(y, m, dd);
           if (vtAt === t) return;
           vtAt = t; if (!vtSince) vtSince = Date.now();
-          GE().layers.setFilter(cfg.vtLine, _vtFilter(cfg.lo, cfg.hi, t));
+          GE().layers.setFilter(cfg.vtLine, _vtFilter(cfg.lo, cfg.hi, t, vtRev));
           vtPoll();
         } catch (_) {}
       }
@@ -720,6 +724,7 @@ export function timeAdmin1(HOST) {
         const d = (await Promise.all([load(), BC() ? BC().load() : null]))[0];   /* (#R564) the marks settle before the first collection is built, so nothing is cached unmarked */
         if (my !== seq || !active) return;
         if (!d) { setTimeout(() => { try { if (active && my === seq) go(when); } catch (_) {} }, 4000); return; }
+        if (d.lines && vtRev !== d.lines) { vtRev = d.lines; vtAt = null; vtAim(y, m, dd); }
         let key; try { key = 'a' + epoch(d, y, m, dd); } catch (_) { key = 'a' + y; }
         if (shownKey === key) {
           try { if (ensure()) _applyNow(); else whenStyleReady().then(() => { if (active && shownKey === key && ensure()) _applyNow(); }); } catch (_) {}
