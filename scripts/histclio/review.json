@@ -1,5 +1,5 @@
 {
- "note": "Reviewed lifespans for data/hist-clio.js (Cliopatria). The machine FINDS (scripts/build-hist-clio.mjs: a row drawn more than FINDING_SLACK years outside the lifespan Wikidata states for a QID shown to be that polity) and this file JUDGES. `rows` act on the map: before `s` and from the year after `e` (astronomical; `s` and `e` themselves are inside) the shape is drawn without the name, and its card says which name Cliopatria gives and the year the historical record (`history`) places the beginning or the end (`circa`: that year is approximate) — the bound is history's, `wd` is the Wikidata item for the polity that states the same or a nearby year. `refuted` are findings examined and NOT applied, with the reason (`why`: date-disputed, other-identity or name-not-claim); a `side` limits one to that side. A finding is judged by name and side. `pending` are findings not yet judged: they are drawn as Cliopatria states them, and the gate fails on any finding in none of the three lists — so a new one arrives counted. Gate: npm run check:histclio.",
+ "note": "Reviewed lifespans for data/hist-clio.js (Cliopatria). The machine FINDS (scripts/build-hist-clio.mjs: a row drawn more than FINDING_SLACK years outside the lifespan Wikidata states for a QID shown to be that polity) and this file JUDGES. `rows` act on the map: before `s`, from the year after `e`, and inside each `gaps` span [from, to] (astronomical; `s`, `e` and the years outside a gap are inside; `from` and `to` themselves are in the gap — two lives under one name with the years between them belonging to neither) the shape is drawn without the name, and its card says which name Cliopatria gives and the year the historical record (`history`) places the beginning or the end (`circa`: that year is approximate) — the bound is history's, `wd` is the Wikidata item for the polity that states the same or a nearby year. `refuted` are findings examined and NOT applied, with the reason (`why`: date-disputed, other-identity or name-not-claim); a `side` limits one to that side. A finding is judged by name and side; a `gaps` span judges the end side (the item ended where the gap begins, and the name after it is a second life). `pending` are findings not yet judged: they are drawn as Cliopatria states them, and the gate fails on any finding in none of the three lists — so a new one arrives counted. Gate: npm run check:histclio.",
  "rows": [
   {
    "name": "Byzantine Empire",
@@ -358,6 +358,29 @@
    "e": -511,
    "wd": "Q2650109",
    "history": "The state of Wu destroyed the state of Xu in 512 BC."
+  },
+  {
+   "name": "Emirate of Nejd",
+   "gaps": [
+    [
+     1892,
+     1901
+    ]
+   ],
+   "wd": "Q146862",
+   "history": "The Second Saudi State (Emirate of Nejd, the QID) fell to the Rashidis of Ha’il at the Battle of Mulayda on 21 January 1891, and Riyadh was ruled from Ha’il until Ibn Saud retook it on 13 January 1902. His Emirate of Riyadh and Nejd (later of Nejd and Hasa, the Sultanate of Nejd from 1921) is the second life Cliopatria draws under the same name to 1925; between 1892 and 1901 no Saudi Emirate of Nejd existed."
+  },
+  {
+   "name": "Empire of Haiti",
+   "e": 1859,
+   "gaps": [
+    [
+     1807,
+     1848
+    ]
+   ],
+   "wd": "Q2006756",
+   "history": "The First Empire of Haiti (the QID) began when Dessalines was proclaimed emperor in 1804 and ended with his assassination on 17 October 1806; the State and Kingdom of Haiti in the north and the Republic in the south followed, unified as a republic in 1820. Soulouque proclaimed the Second Empire on 26 August 1849 and abdicated on 15 January 1859; Haiti was a republic thereafter. Cliopatria draws «Empire of Haiti» from 1805 to 1915 without a break."
   }
  ],
  "refuted": [
@@ -435,11 +458,6 @@
    "name": "Elam",
    "why": "date-disputed",
    "history": "Proto-Elamite Susa and Anshan formed a state society from c. 3200 BC; the first Elamite dynasty (Awan) is dated c. 2700 BC."
-  },
-  {
-   "name": "Emirate of Nejd",
-   "why": "other-identity",
-   "history": "The Second Saudi State (the QID) fell to the Rashidis in 1891; Ibn Saud’s Emirate of Riyadh and Nejd (1902–1921) and Sultanate of Nejd (to 1926) are the later Saudi state Cliopatria also draws under this name. The gap of 1891–1902 needs a span the builder cannot express."
   },
   {
    "name": "Empire of Kanem",
