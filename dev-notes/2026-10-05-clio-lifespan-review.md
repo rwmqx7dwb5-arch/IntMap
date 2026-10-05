@@ -46,7 +46,7 @@ Wikidata の年は項目の範囲で決まる（Burma Q836 は 1948 年の独立
 | 反証 name-not-claim | 10 | サヴォイア・カスティーリャ・ブータン・ポーランド（始まり）・セルビア専制公・メンパワ |
 
 ビルド後: 所見 80（すべて `refuted` の名前で、名前が描かれたまま）・適用中の名前 58・`pending` 0。
-`data/hist-clio.js` は 12,881 → 12,911 行（行を境で切った分）、+12 KB。⚠ 依頼文の例（グルジア 1802・マラッカ 1861）は
+`data/hist-clio.js` は 12,827 → 12,857 行（行を境で切った分）、+13 KB（#999 の合成順の変更の後に作り直した値）。⚠ 依頼文の例（グルジア 1802・マラッカ 1861）は
 上流の年で、OHM／CShapes を引いた後に実際に描かれていたのは 1794・1799 だった——審査は描かれている方で行った。
 ⚠ 依頼文の例の「ハイチ帝国」は今回の `pending` に無かった（Cliopatria の «Empire of Haiti» は検証済み QID の期間外に
 25 年超は描かれていない）。
@@ -73,5 +73,6 @@ Wikidata の年は項目の範囲で決まる（Burma Q836 は 1948 年の独立
   ④b に「名前と側の組で 1 回だけ審査」を足した。
 - カードはページ自身のモジュール（`scripts/histeras/time-borders.mjs`）で文を出して確かめた: 神聖ローマ帝国 950 年
   「史実はこの政体の成立を 962年 に置く」、ヒムヤル 590 年「終焉を 570年頃 に置く」。
-- ⚠ **名前表も読み手だった。** `data/histnames.json` の識別子欄は OHM と Cliopatria の両方の QID から作られる（`histBordersQidGaps`）。«First Hellenic Republic» を 1832 年で外すと、OHM の帯を引いた後に名前付きで残る行が 0 になり、Q528546 を述べる行が無いまま表に残って `check:histnames` が CI で落ちた。`node scripts/build-histnames.mjs --identifiers` で作り直した（Q528546 を削除、#991 が足した Cliopatria 行の分だけ 6 項目の言語が広がった）。名前を外す変更は**名前表の再生成も伴う**。 さらに表の訳語数は文書と出典ページ 9 言語に写されているので（`check:docs` の histnames）、`docs/architecture/07-map.md` と `js/locales/pages.*.js` の数も 13,472／13,624 に合わせた。
+- ⚠ **名前表も読み手だった。** `data/histnames.json` の識別子欄は OHM と Cliopatria の両方の QID から作られる（`histBordersQidGaps`）。«First Hellenic Republic» を 1832 年で外すと、OHM の帯を引いた後に名前付きで残る行が 0 になり、Q528546 を述べる行が無いまま表に残って `check:histnames` が CI で落ちた。`node scripts/build-histnames.mjs --identifiers` で作り直した（Q528546 を削除、#991 が足した Cliopatria 行の分だけ 6 項目の言語が広がった）。名前を外す変更は**名前表の再生成も伴う**。 さらに表の訳語数は文書と出典ページ 9 言語に写されているので（`check:docs` の histnames）、`docs/architecture/07-map.md` と `js/locales/pages.*.js` の数も合わせた（#999 の後の値で 13,553／13,705・識別子 1,265。main の名前表に欠けていた Q688859 も生成器が足した）。
+- ⚠ **着地の順**: #991 の後に #998（録画器のコマ落ち・この PR の CI を止めていた）と #999（1886 年からの合成を CShapes → OHM → Cliopatria に）が先に入った。生成物は main 側を取ってから審査を載せて作り直した（未判定は 0 のまま）。
 - ⚠ 自分の門の正規表現 `/^Qd+$/` を heredoc 経由で書いて `d` が `d` になり、全行が落ちた——門が最初に赤くなって気づいた。
