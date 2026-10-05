@@ -3166,7 +3166,8 @@
     @media(min-width:769px){
       /* one colour for the words, the ticks and the line (currentColor), one for the dot (--pk) — the accent state swaps two values */
       .news-timeline.collapsed .ntl-peek{ display:block; flex:0 0 auto; width:clamp(220px,30vw,360px); padding:0 16px 0 10px; border-left:1px solid rgba(128,128,128,.2); color:var(--text-muted); --pk:var(--primary-color); }
-      .ntl-peek-track{ position:relative; height:100%; min-height:38px; }
+      .ntl-peek-track{ position:relative; height:100%; min-height:38px; cursor:pointer; touch-action:none; }
+      .ntl-peek.scrub .ntl-peek-here{ transition:none; } .ntl-peek.scrub{ cursor:grabbing; }
       .ntl-peek-track::before{ content:""; position:absolute; inset:11px 0 auto; height:3px; border-radius:2px; background:currentColor; opacity:.3; }
       /* --t: where the words hang from the tick — centred, and inward at the two ends (the floor's label spilled over the button) */
       .ntl-peek-m{ position:absolute; left:var(--p); top:0; bottom:0; transform:translateX(var(--t,-50%)); display:flex; align-items:flex-end; padding:0 3px 3px; border:none; background:none; color:inherit; font-size:10.5px; line-height:1; white-space:nowrap; cursor:pointer; }

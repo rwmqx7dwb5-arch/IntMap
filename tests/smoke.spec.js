@@ -2788,3 +2788,58 @@ test('compare-window-bounds the compare window stays on screen on all four sides
     if (before) await page.setViewportSize(before);
   }
 });
+
+/* 「Chronosボタンでスクロールするときに、1900や1600、123000BCといった目盛りの或る年代にしか離散的にしかスクラブできないのは不便。」
+   The collapsed rail is a scrub surface: a drag and the wheel reach years BETWEEN the marks, the panel stays shut,
+   and a mark is still an exact jump. */
+test('chronos-peek-scrub the collapsed Chronos rail scrubs continuously by drag and wheel', async () => {
+  const before = page.viewportSize();
+  await page.setViewportSize({ width: 1440, height: 900 });
+  try {
+    await page.evaluate(() => document.getElementById('news-timeline').classList.add('collapsed'));
+    await expect(page.locator('#ntl-peek .ntl-peek-track')).toBeVisible({ timeout: 15_000 });
+    const r = await page.evaluate(async () => {
+      const frame = () => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)));
+      const T = window.IntMapTime, tl = document.getElementById('news-timeline'), peek = document.getElementById('ntl-peek');
+      const track = peek.querySelector('.ntl-peek-track'), box = track.getBoundingClientRect();
+      const markYears = new Set(Array.from(peek.querySelectorAll('.ntl-peek-m')).map((m) => m.dataset.year));
+      const yr = () => { const s = T.state(); return s.isLive ? 'now' : s.year; };
+      const pe = (type, x, extra) => new PointerEvent(type, Object.assign({ bubbles: true, cancelable: true, pointerId: 7, pointerType: 'mouse', isPrimary: true, clientX: x, clientY: box.top + box.height / 2, button: 0, buttons: type === 'pointerup' ? 0 : 1 }, extra));
+      const y0 = box.top + box.height / 2;
+      const out = { dragYears: [], wheelYears: [], markYears: Array.from(markYears) };
+      /* a drag from 20% to 60% of the rail, in 8 steps, on bare track (between the marks) */
+      const x = (f) => box.left + box.width * f;
+      track.dispatchEvent(pe('pointerdown', x(0.2)));
+      for (let i = 1; i <= 8; i++) { track.dispatchEvent(pe('pointermove', x(0.2 + 0.4 * i / 8))); await frame(); out.dragYears.push(yr()); }
+      out.scrubClass = peek.classList.contains('scrub');
+      track.dispatchEvent(pe('pointerup', x(0.6)));
+      await frame();
+      out.scrubClassAfter = peek.classList.contains('scrub');
+      out.collapsedAfterDrag = tl.classList.contains('collapsed');
+      /* the wheel, three notches down = later */
+      for (let i = 0; i < 3; i++) { peek.dispatchEvent(new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: 100, clientX: x(0.5), clientY: y0 })); await frame(); out.wheelYears.push(yr()); }
+      out.collapsedAfterWheel = tl.classList.contains('collapsed');
+      /* a mark is still an exact jump */
+      const mk = Array.from(peek.querySelectorAll('.ntl-peek-m')).find((m) => m.dataset.year !== 'now' && +m.dataset.year > T.min);
+      mk.click(); await frame();
+      out.markTarget = +mk.dataset.year; out.markNow = yr();
+      T.setNow({ source: 'ui' });
+      return out;
+    });
+    const nums = r.dragYears.filter((y) => y !== 'now');
+    expect(new Set(r.dragYears).size, 'a drag visits many distinct years: ' + r.dragYears).toBeGreaterThanOrEqual(5);
+    expect(nums.some((y) => !r.markYears.includes(String(y))), 'a drag reaches a year that is not a mark').toBe(true);
+    expect(r.scrubClass, 'the rail is in its scrubbing state mid-drag').toBe(true);
+    expect(r.scrubClassAfter, 'and leaves it on release').toBe(false);
+    expect(r.collapsedAfterDrag, 'a rail gesture does not open the panel').toBe(true);
+    const w = r.wheelYears;
+    expect(w.every((y) => y !== 'now' && (typeof w[0] === 'number')), 'the wheel stays on a past year: ' + w).toBe(true);
+    expect(w[1] > w[0] && w[2] > w[1], 'wheel down moves later, monotonically: ' + w).toBe(true);
+    expect(w.some((y) => !r.markYears.includes(String(y))), 'the wheel reaches a year that is not a mark').toBe(true);
+    expect(r.collapsedAfterWheel, 'the wheel does not open the panel').toBe(true);
+    expect(r.markNow, 'a mark still jumps to exactly its year').toBe(r.markTarget);
+  } finally {
+    await page.evaluate(() => { try { window.IntMapTime.setNow({ source: 'ui' }); } catch (_) { /* ignore */ } });
+    if (before) await page.setViewportSize(before);
+  }
+});
