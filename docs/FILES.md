@@ -590,6 +590,10 @@ layer-manifest.js                 **どのレイヤーが在るか**（layer-man
                                   （Node の検査がそのまま import する）。棚の並べ替え（reorganizeLayerPanel）・既定 ON の一覧・
                                   タイル盤・共有リンク・お気に入りがここを読む。`packageOf(id)` / `loadPackage(name)` は宣言の
                                   `pkg` が名指すレイヤー・パッケージと、その literal な動的 import（呼ばれるまで何も取らない）
+layer-ownership.js                **表の無いレイヤーの箱がどの描画レイヤーを持つかを学ぶ（純粋）** `ownershipLearner(store)` — その箱の
+                                  OFF の `change` を配送している最中に、その箱自身のハンドラが描かれていた層を隠した・外した書き込み
+                                  （`GE().layers.onVisibility`）だけを数える。同じ数秒に現れた層は持ち物にならない。読み手は
+                                  `data-layers.js` の `IntMapLayerAudit`。docs/architecture/08-ui.md
 layer-rows.js                     manifest の DOM 側 — 基本表示 10 行を manifest から書く（index.html から移った）＋
                                   `whenBoxes`（行が挿入された瞬間に適用する。セッション復元の 220ms×25 回ポーリングの後継）＋
                                   `holdUntilDrawable`（スタイルが受け取れる前のレイヤーの `change` を預かり、受け取れる

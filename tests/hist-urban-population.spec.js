@@ -6,7 +6,13 @@
  *    · at the live clock nothing is drawn (and nothing was fetched before the row was switched on);
  *    · at year 1000 the label features are exactly the cities `activeAt` lists, and each stated figure
  *      has its own circle (Baghdad: Chandler's 125,000 AND Modelski's 1,500,000, neither chosen);
- *    · a city's card lists every dated figure of `historyOf` with its book and location certainty.
+ *    · a city's card lists every dated figure of `historyOf` with its book and location certainty;
+ *    · (layer-ownership-by-declaration) the row owns what its own OFF took off the map, and no layer another party
+ *      added while it was being ticked. Production 2026-10-05 (build 076f908): this row was ticked while the map pane was
+ *      hidden, the era borders (imtb-*) and provinces (imta-*) were added in the same seconds, the reconciler in
+ *      js/data-layers.js learned them as this row's (it diffed the style 0.5–4 s after a tick), and unticking the
+ *      row hid the 1890 borders every time they were drawn. MEASURED on the old code (fresh page, clock moved 200 ms after
+ *      the tick): the row owned imta-line, imta-vt-line, imta-gap-line and imta-lbl, and the audit logged `hide-learned`.
  * ========================================================================================== */
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -99,5 +105,40 @@ test.describe('dl-histurban', () => {
     expect(body).toContain('Shown for');
     expect(body).toContain('CC BY 4.0');
     await rowOn(page, false);
+  });
+
+  test('the row owns what its own OFF took off the map, and no layer another party added while it was being ticked', async ({ app }) => {
+    const page = app.page;
+    await page.setViewportSize({ width: 1400, height: 1000 });
+    const L = (fn, arg) => page.evaluate(fn, arg);
+    const drawn = (id) => L((id) => { const G = window.IntMapGeoEngine.layers; return G.has(id) && (G.getLayout(id, 'visibility') || 'visible') !== 'none'; }, id);
+    /* the map of the report: 1890, its era borders drawn */
+    await L(() => window.IntMapTime.setYear(1890, { source: 'test' }));
+    await expect.poll(() => drawn('imtb-line'), { timeout: 30000, message: 'the era borders are drawn at 1890' }).toBe(true);
+    /* the row is ticked and, inside the old learner's window (it diffed the style 0.5 / 1.8 / 4 s after a tick), another
+       party adds a layer of its own through the engine — what the era borders did in production when the pane became
+       drawable. ⚠ The clock is NOT moved inside the window here: on this shared page an earlier test has already made the
+       era layers (moving the clock adds nothing new), and a clock move toggles time-held rows, which made the old learner
+       discard its window as «ambiguous» — measured: with the clock moved here the old build passed the claim below. */
+    const FOREIGN = 'ownership-probe-line';
+    await L((id) => {
+      const cb = document.getElementById('dl-histurban'); cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true }));
+      setTimeout(() => { const G = window.IntMapGeoEngine.layers; G.addSource(id, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } }); G.add({ id, type: 'line', source: id }); }, 200);
+    }, FOREIGN);
+    await page.waitForFunction(() => window.IntMapGeoEngine.layers.has('imhu-circles'), null, { timeout: 30000 });
+    await page.waitForTimeout(2000);
+    expect(await drawn(FOREIGN), 'the other party’s layer is drawn').toBe(true);
+
+    await rowOn(page, false);
+    const owned = await L(() => window.IntMapLayerAudit.owned('dl-histurban'));
+    expect(owned, 'the row does not own the layer another party added').not.toContain(FOREIGN);
+    expect([...owned].sort(), 'it owns exactly what its own OFF took off').toEqual(['imhu-circles', 'imhu-labels']);
+    expect(await L((id) => Object.keys(window._imLayerOwn).filter((k) => window._imLayerOwn[k].has(id)), FOREIGN), 'no box owns it').toEqual([]);
+    await page.waitForTimeout(4200);   /* the audit defers to a box touched in the last 4 s (#R85) — wait it out so it judges */
+    await L(() => window.IntMapLayerAudit.run());
+    expect(await drawn(FOREIGN), 'the audit left the other party’s layer drawn').toBe(true);
+    expect(await drawn('imtb-line'), 'and the era borders').toBe(true);
+    expect((await L(() => window.IntMapLayerAudit.log())).filter((e) => e.id === 'dl-histurban' && e.fix === 'hide-learned')).toEqual([]);
+    await L((id) => { const G = window.IntMapGeoEngine.layers; G.remove(id); G.removeSource(id); window.IntMapTime.setNow({ source: 'test' }); }, FOREIGN);
   });
 });
