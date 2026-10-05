@@ -158,7 +158,21 @@ export function placeLabels(HOST){
       const FONT=MT().placeFont();
       const before = GE().layers.has('grid-lines') ? 'grid-lines' : undefined;
       if(!GE().layers.has('ofm-country')) GE().layers.add({id:'ofm-country',type:'symbol',source:'ofm','source-layer':'place',filter:['==',['get','class'],'country'],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.place('country'),'text-letter-spacing':0.08,'text-max-width':8,'text-padding':6},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.7}}, before);   /* (#R210) 発色を濃く: pure white on a heavier halo */
-      if(!GE().layers.has('ofm-city')) GE().layers.add({id:'ofm-city',type:'symbol',source:'ofm','source-layer':'place',minzoom:3,filter:['all',['in',['get','class'],['literal',['city','town']]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.place('city'),'text-max-width':7,'text-variable-anchor':['top','bottom','left','right'],'text-radial-offset':0.4,'text-justify':'auto','icon-optional':true},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.6}});   /* (#R210) 発色を濃く */
+      /* (city-label-size) WHICH STEP OF THE SIZE LADDER A SETTLEMENT IS ON — read off the tiles' own statements, nothing
+         listed by hand. OpenMapTiles `place` carries `rank` (1 = most important; measured 2026-10-05 over Japan and Korea:
+         Tokyo 1, Osaka/Seoul 2, Pyongyang/Hiroshima 3, Nagasaki 4, Nagoya/Kyoto/Fukuoka 5, Yokohama/Kobe 6) and `capital`
+         (2 = a national capital, 3–4 = a region's seat). Tier 0: a national capital or rank ≤ 2. Tier 1: rank ≤ 4.
+         Tier 2: every other city. Tier 3: a town, or a city the source ranks below 6. A missing rank reads as the
+         ordinary city it most likely is (6). The sizes per step are js/label-scale.js `TIER_K`; the same tier orders
+         the collisions, so where two names cannot both fit the bigger place keeps its name. */
+      const CITY_RANK=['coalesce',['get','rank'],6];   /* not to-number: it turns a missing rank into 0, the most important */
+      const CITY_TIER=['case',
+        ['any',['==',['get','capital'],2],['<=',CITY_RANK,2]],0,
+        ['==',['get','class'],'town'],3,
+        ['<=',CITY_RANK,4],1,
+        ['<=',CITY_RANK,6],2,
+        3];
+      if(!GE().layers.has('ofm-city')) GE().layers.add({id:'ofm-city',type:'symbol',source:'ofm','source-layer':'place',minzoom:3,filter:['all',['in',['get','class'],['literal',['city','town']]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.placeTiered('city',CITY_TIER),'symbol-sort-key':['+',['*',CITY_TIER,100],CITY_RANK],'text-max-width':7,'text-variable-anchor':['top','bottom','left','right'],'text-radial-offset':0.4,'text-justify':'auto','icon-optional':true},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.6}});   /* (#R210) 発色を濃く */
       /* ══ (#R198) THE NAMES OF THE THINGS BETWEEN A COUNTRY AND A CITY ═══════════════════════════
          「地方行政区分も地名ラベルをつけるように。（例：日本の都道府県、アメリカ・ドイツ・オーストラリア
            の州、中国の省など。）」

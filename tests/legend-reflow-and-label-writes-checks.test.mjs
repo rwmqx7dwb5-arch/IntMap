@@ -104,7 +104,7 @@ async function labels() {
   const GE = Object.assign(R.GE, { camera: { getZoom: () => 6 }, coords: { querySourceFeatures: () => [] }, events: { on: noop } });
   ctx.IntMapMapTypography = { placeFont: () => ['literal', ['Inter']], readerFont: () => ['literal', ['Inter']], cjkFamily: () => '', glyphRewrite: noop };
   /* the text sizes are js/label-scale.js's; a size is not what this file is about */
-  ctx.IntMapLabelScale = { place: () => 12, sub: () => 11, subCase: () => 11 };
+  ctx.IntMapLabelScale = { place: () => 12, placeTiered: () => 12, sub: () => 11, subCase: () => 11 };
   const M = await importModule('js/place-labels.js', {
     globals: { window: ctx, document: ctx.document },
     mocks: {
