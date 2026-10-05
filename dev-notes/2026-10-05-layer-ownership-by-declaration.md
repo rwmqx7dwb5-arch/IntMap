@@ -46,6 +46,8 @@ newsjp: レイヤーをオフにしたとき、たまたま同じ時に現れた
   修正の途中の実測では地名の箱の OFF が共有の処理を呼び、**すでに隠れていた** `ofm-country` や `imta-line` を
   もう一度 none にしていた。それは何も変えていないので数えない。
 - **表が別の箱に与えた層は、この箱のものにならない**（`owned()` の `declaredElsewhere`）。宣言は観測に優先する。
+- **表は 1 か所から読む**（`TABLES()`。`idsFor` と `declaredElsewhere` が同じものを引く）——`check:surface` が
+  `window._imAuditReg` の読みが 1 件増えたのを捕まえた。`window._imLayerOwn` の読みは 15 → 7 に減った（基準を下げた）。
 - **読み手は全部 `owned()` / `learned()` を通る**ようにした（監査・`toggleLook`・`IntMapLayerAudit.owned`・
   `__imLayerPainted`）。以前は 3 か所が `_imLayerOwn` を直に読んでいた。
 - ⚠ **失ったもの**: 箱は最初の OFF で学ぶので、宣言の無い箱は最初の ON の間は持ち物が無い——`check()` は null

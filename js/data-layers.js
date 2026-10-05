@@ -5100,13 +5100,13 @@ export function dataLayers(HOST){
          The post-toggle look WAITS for that request and looks once when it has settled (fulfilled or
          rejected); the periodic audit just does not count a box while it is in flight. */
       function inFlightNow(cb){ try{ return layerInflight.has(cb.id); }catch(_){ return false; } }
-      const idsFor=cbId=>STATIC[cbId]||BASE[cbId]||window._imAuditReg[cbId]||null;
+      const TABLES=()=>[STATIC,BASE,window._imAuditReg];   /* every id table, the registered one read live */ const idsFor=cbId=>{ for(const T of TABLES()){ if(T&&T[cbId]) return T[cbId]; } return null; };
       function painted(ids){ try{ for(const lid of ids){ if(GE().layers.has(lid)&&GE().layers.getLayout(lid,'visibility')!=='none') return true; } }catch(_){} return false; }
       /* which renderer layers a box owns — the id tables, then the learned ownership. (world-at-time) also handed out
          read-only as IntMapLayerAudit.owned, so a reader can tell a layer held for the instant from one the style hold lost */
       /* (layer-ownership-by-declaration) a layer an id table gives to ANOTHER box is that box's, whatever this box's
          handler did to it — the declaration outranks the observation (see the learner above). */
-      function declaredElsewhere(cbId,lid){ for(const T of [STATIC,BASE,window._imAuditReg]){ for(const k in T){ if(k!==cbId&&T[k]&&T[k].indexOf(lid)>=0) return true; } } return false; }
+      function declaredElsewhere(cbId,lid){ for(const T of TABLES()){ for(const k in T){ if(k!==cbId&&T[k]&&T[k].indexOf(lid)>=0) return true; } } return false; }
       function learned(cbId){ const own=window._imLayerOwn&&window._imLayerOwn[cbId]; return own&&own.size?Array.from(own).filter(lid=>!declaredElsewhere(cbId,lid)):[]; }
       function owned(cbId){ const ids=idsFor(cbId); return (ids&&ids.length)?ids.slice():learned(cbId); }
       function check(cbId){ const ids=owned(cbId); if(!ids.length) return null; return painted(ids); }
