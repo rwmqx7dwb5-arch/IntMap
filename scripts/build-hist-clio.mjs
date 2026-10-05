@@ -392,6 +392,123 @@ function applyReview(rows, review) {
   return out;
 }
 
+/* ══ WHEN CLIOPATRIA GIVES A POLITY'S GROUND TO ANOTHER, CONTINUING ROW BEFORE ITS FIRST ROW (sudan-mahdist-1886) ══
+   The finding above asks whether a NAME is drawn outside its polity's life. It cannot see the opposite: a polity
+   whose life history places years before Cliopatria's first row for it, while those years' ground is drawn under a
+   row that goes on being drawn afterwards. Cliopatria's rows are snapshots (median span 8 years), so a state that
+   arose between two snapshots is drawn from the second, and the ground in between keeps whatever held it before.
+     observed 2026-10-05 (production, build 076f908): on 1 July 1886 the Sudan was drawn as «British Africa» — 745
+     cells (0.25°) of the Mahdist State's first row (1890) held by «British Africa» (of the British Empire) on every
+     instant 1885–1889. Upstream: «British Africa» 1885–1889 carries Egypt AND the Sudan; «Mahdist State» begins
+     1890; Wikidata Q3125368 states 1885. History: Khartoum fell on 26 January 1885 and Britain had made Egypt give
+     the Sudan up in 1884 — no British claim, nominal or other, lay on that ground until the reconquest of 1896–98.
+   ⇒ The machine FINDS (`heldFindingsOf`) and scripts/histclio/review.json JUDGES, as above, in `ground`:
+     `rows` — the polity held its first row's ground from `s` (history's year): from 1 January of `s` until the
+     first row, what the rows named in `over` draw inside that row's outline is drawn under the polity's name
+     instead (`hy` the year the outline is Cliopatria's, `hs` the year history gives, `ho` the rows it is taken
+     from), and those rows keep the rest. ⚠ The outline is the first row's, carried back — a derivation, so the row says so and
+     the card says so (historical-verification.md §2-3). `refuted` — examined and not applied, with the reason.
+     `pending` — not yet judged: drawn as Cliopatria states, and counted (written by the build).
+   A finding: a polity with a verified QID whose Wikidata start is at least HELD_YEARS before its first row, and a
+   named row that is still drawn after that first row and holds at least HELD_COVER of the first row's ground on at
+   least HELD_YEARS instants (1 July) between the two. ⚠ «First row» is UPSTREAM's first year (the bundle's `ids`
+   span), not the first shipped piece: a row the records above answered for is not a row Cliopatria began late
+   (measured: the Hotaki Dynasty begins in 1709 upstream, as history does, and OHM states Kandahar until 1713 — the
+   shipped piece of 1713 is another ground).
+     observed 2026-10-05: 282 findings across all history at these values — most are snapshot lag between a
+     predecessor and its successor in the ancient and medieval rows (272 left pending). Of the 10 polities whose
+     first row is from 1700 on, the Mahdist State is the largest by ground (2,973 cells) and the only one of the
+     partition of Africa; it is applied, and the other 9 are refuted (the other state governed there, or the ground
+     is not the polity's). HELD_COVER 0.8: the successor's ground is taken whole,
+     not a border dispute; HELD_YEARS 3: below it the two records differ by a snapshot's rounding, not a state.
+   expires: when Cliopatria's release or the grid (GR) changes; canon: here. */
+const HELD_COVER = 0.8, HELD_YEARS = 3;
+const heldKeys = (R) => (R.over || []).map((x) => R.name + '|' + x);
+export const groundJudged = (G) => new Set([...(G.rows || []), ...(G.refuted || [])].flatMap(heldKeys));
+export function heldFindingsOf(feats, rings, facts, ids = {}) {
+  const k0 = (f) => ymd(f[2], f[3], f[4]), k1 = (f) => ymd(f[5], f[6], f[7]);
+  const named = feats.filter((f) => f[0] && f[0].en && !(f[9] && f[9].r));
+  const first = new Map(), last = new Map();
+  for (const f of named) {
+    const n = f[0].en, o = first.get(n);
+    if (!o || k0(f) < k0(o[0])) first.set(n, [f]); else if (k0(f) === k0(o[0])) o.push(f);
+    last.set(n, Math.max(last.has(n) ? last.get(n) : -Infinity, k1(f)));
+  }
+  const memo = new Map(), polysOf = (f) => f[8].map((p) => p.map((i) => rings[i]));
+  const cellsF = (f) => { let c = memo.get(f); if (!c) { const ps = polysOf(f); c = { cells: cellsOf(ps), bb: bboxOf(ps) }; memo.set(f, c); } return c; };
+  const out = [];
+  for (const [n, fs] of first) {
+    const q = fs[0][1], x = q && facts[q];
+    if (!x || !x.s || !x.s.length) continue;
+    const s = Math.min(...x.s), F = Math.min(fs[0][2], ids[n] ? ids[n][0] : Infinity), T = Math.min(k0(fs[0]), ymd(F, 1, 1));
+    if (F - s < HELD_YEARS) continue;
+    const P = new Set(); let bb = null;
+    for (const f of fs) { const c = cellsF(f); for (const v of c.cells) P.add(v); bb = bb ? [Math.min(bb[0], c.bb[0]), Math.min(bb[1], c.bb[1]), Math.max(bb[2], c.bb[2]), Math.max(bb[3], c.bb[3])] : c.bb; }
+    if (P.size < CUT_CELLS) continue;
+    const by = new Map(), lo = ymd(s, 1, 1);
+    for (const g of named) {
+      const X = g[0].en;
+      if (X === n || k1(g) <= lo || k0(g) >= T || !(last.get(X) > T)) continue;
+      const c = cellsF(g); if (!meets(c.bb, bb)) continue;
+      let hit = 0; for (const v of c.cells) if (P.has(v)) hit++;
+      if (hit < HELD_COVER * P.size) continue;
+      const ys = by.get(X) || new Set();
+      for (let y = s; y < F; y++) { const t = ymd(y, 7, 1); if (k0(g) <= t && t < k1(g)) ys.add(y); }
+      by.set(X, ys);
+    }
+    for (const [X, ys] of by) if (ys.size >= HELD_YEARS) out.push({ name: n, q, over: X, from: Math.min(...ys), to: Math.max(...ys), first: F, wd: s, cells: P.size });
+  }
+  return out.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : a.over < b.over ? -1 : a.over > b.over ? 1 : 0));
+}
+/* the rows as they will be drawn (already cut against OHM and CShapes), with each judged `ground` row applied.
+   ⚠ IT REASSIGNS, IT DOES NOT ADD: between 1 January of `s` and the polity's first row, the part of each `over` row that lies inside the first
+   row's outline is drawn under the polity's name instead, and the `over` row keeps the rest. Nothing is drawn where
+   no `over` row drew, so a judgement cannot lay the polity over a third record's ground (a first version drew the
+   whole outline over the whole span; measured on Saxe-Meiningen, carried to 1680, that would have covered every row
+   Cliopatria draws in Thuringia for 128 years). The realms the `over` rows are members of (`of`) lose the same
+   ground, because a realm is drawn as the union of its members (measured: «(British Empire)» carried the Sudan in
+   1885–1889 beside «British Africa»).
+   ⚠ THE SPLIT IS EXACT, AND IT IS MADE AFTER THE RECORDS ABOVE. `subtract` drops what is narrower than SLIVER_W as two
+   hands drawing one border, and between two records that is right; here both hands are Cliopatria's (its outline of
+   1885 and its outline of 1890), and the ribbon is ground one of them holds. Measured: made before the cut against
+   CShapes, the Red Sea coast by Suakin and the strip below Wadi Halfa — both held by Egypt throughout — were left as
+   ribbons of «British Africa», the cut against CShapes' Egypt then dropped them, and they fell off the map in 1886
+   (2.75 deg², the world's land inside a polity 83.68% → 83.66%). So the split is made on the drawn rows and the
+   `over` row keeps every piece outside the outline, however narrow. The first row is the first DRAWN row. */
+function cut(op, polys, other) {
+  const o = clipPolys(other, bboxOf(polys)); if (!o.length) return op === 'difference' ? polys : null;
+  let res; try { res = pc[op](toPC(polys), toPC(o)); STATS.clipped++; } catch (e) { STATS.failed++; return op === 'difference' ? polys : null; }
+  const kept = cleanPolys(fromPC(res));
+  return kept.length ? kept : null;
+}
+export const takesGround = (R, realms) => (r) => R.over.includes(r.name) || (!!(r.meta && r.meta.r) && realms.has(r.name));
+function applyHeld(rows, G) {
+  let out = rows;
+  for (const R of (G && G.rows) || []) {
+    const mine = out.filter((r) => r.name === R.name);
+    if (!mine.length) continue;
+    const T = Math.min(...mine.map((r) => r.s)), S = ymd(R.s, 1, 1);
+    if (!(S < T)) continue;
+    const firsts = mine.filter((r) => r.s === T);
+    let polys = firsts[0].polys;
+    if (firsts.length > 1) { try { polys = cleanPolys(fromPC(pc.union(...firsts.map((r) => toPC(r.polys))))); } catch (e) { polys = firsts.flatMap((r) => r.polys); } }
+    const meta = { ...firsts[0].meta, hy: unymd(T)[0], hs: R.s, ho: R.over.join(', ') };
+    const next = [], realms = new Set(out.filter((r) => R.over.includes(r.name) && r.meta && r.meta.of).map((r) => r.meta.of)), takes = takesGround(R, realms);
+    for (const r of out) {
+      if (!takes(r) || r.e <= S || r.s >= T) { next.push(r); continue; }
+      if (r.s < S) next.push({ ...r, e: S });
+      const s0 = Math.max(r.s, S), e0 = Math.min(r.e, T);
+      const g = cut('difference', r.polys, polys);
+      if (g) next.push({ ...r, polys: g, bb: bboxOf(g), area: areaOf(g), s: s0, e: e0 });
+      const h = R.over.includes(r.name) ? cut('intersection', r.polys, polys) : null;
+      if (h) next.push({ name: R.name, qid: firsts[0].qid, meta, polys: h, bb: bboxOf(h), area: areaOf(h), s: s0, e: e0 });
+      if (r.e > T) next.push({ ...r, s: T });
+    }
+    out = next;
+  }
+  return out;
+}
+
 /* ── the neighbours ──────────────────────────────────────────────────────── */
 const evalBundle = (file, g) => { const w = {}; new Function('window', readFileSync(file, 'utf8'))(w); return w[g]; };
 const sha = (file) => createHash('sha256').update(readFileSync(file)).digest('hex');
@@ -520,7 +637,7 @@ function splitRow(row, ohmRows) {
 }
 /* the Cliopatria rows the composition draws, each as { name, qid, meta, polys, bb, area, s, e } —
    the rows that reach into OHM's band are handed to `clip` (the worker pool) */
-async function clioRows(features, ohm, clip) {
+async function clioRows(features, ohm, clip, ground) {
   const [hbLo] = ohm.window, T_HB = ymd(hbLo, 1, 1);
   const out = [], band = [];
   let leaf = 0, relation = 0, aggregate = 0, late = 0;
@@ -531,12 +648,16 @@ async function clioRows(features, ohm, clip) {
   const lastY = Math.floor(ohm.top / 10000) - (ohm.top % 10000 === 101 ? 1 : 0);
   for (const ft of features) { const p = ft.properties; if (p.Type !== 'POLITY' || ymd(astro(p.FromYear), 1, 1) >= ohm.top) continue;
     const k = bare(p.Name), sp = spanOf.get(k) || [Infinity, -Infinity]; sp[0] = Math.min(sp[0], astro(p.FromYear)); sp[1] = Math.max(sp[1], Math.min(astro(p.ToYear), lastY)); spanOf.set(k, sp); }
+  /* (sudan-mahdist-1886) a judged `ground` row draws the polity from the year history gives — the span its QID is
+     decided on, and the one the gate re-decides on, starts there */
+  for (const R of (ground && ground.rows) || []) { const sp = spanOf.get(R.name); if (sp) sp[0] = Math.min(sp[0], R.s); }
   const facts = readFacts(), wikiQ = readWiki(), verdict = new Map();
   /* the release's own QID first; when it is shown NOT to be the polity, the item of the Wikipedia article the
      same row names — measured 2026-10-04: «Han Dynasty» carries Q1068371 (Chauhan) and names the article
      «Han dynasty» (Q7209); both are put to the same test, and neither is taken on trust */
   const decide = (q, n) => { const k = n + '|' + q; if (!verdict.has(k)) verdict.set(k, verifiedQid(q, n, spanOf.get(n), facts)); return verdict.get(k) ? q : null; };
   const qidFor = (p) => decide(p.Wikidata, bare(p.Name)) || (p.Wikipedia && wikiQ[p.Wikipedia] && wikiQ[p.Wikipedia] !== p.Wikidata ? decide(wikiQ[p.Wikipedia], bare(p.Name)) : null);
+  const all = [];
   for (const ft of features) {
     const p = ft.properties;
     if (p.Type !== 'POLITY') { relation++; continue; }
@@ -549,17 +670,23 @@ async function clioRows(features, ohm, clip) {
     const meta = realm ? { r: 1 } : {};
     if (p.Wikipedia) meta.w = p.Wikipedia;
     if (p.MemberOf) meta.of = String(p.MemberOf).replace(/^\(|\)$/g, '');
-    const row = { name: realm ? p.Name.slice(1, -1) : p.Name, qid: qidFor(p), meta, polys, bb: bboxOf(polys), area: areaOf(polys) };
-    if (e <= T_HB) { out.push({ ...row, s, e }); continue; }
+    all.push({ name: realm ? p.Name.slice(1, -1) : p.Name, qid: qidFor(p), meta, polys, bb: bboxOf(polys), area: areaOf(polys), s, e });
+  }
+  for (const r of all) {
+    const { s, e } = r;
+    if (e <= T_HB) { out.push(r); continue; }
     /* the part below OHM's floor is Cliopatria's alone */
-    if (s < T_HB) out.push({ ...row, s, e: T_HB });
-    band.push({ ...row, s: Math.max(s, T_HB), e });
+    if (s < T_HB) out.push({ ...r, e: T_HB });
+    band.push({ ...r, s: Math.max(s, T_HB), e });
   }
   const vs = [...verdict.values()];
   const named = new Set(), withQ = new Set(); for (const r of out.concat(band)) { named.add(r.name); if (r.qid) withQ.add(r.name); }
   console.error(`cliopatria: ${features.length} rows — ${leaf} polity rows to CShapes' last day (${aggregate} of them realms over their members), ${relation} relations not drawn, ${late} after it; ${band.length} reach into OpenHistoricalMap's or CShapes' years and are cut against them; identity tests passed ${vs.filter(Boolean).length}, failed ${vs.filter((v) => !v).length}; names with a verified QID ${withQ.size} of ${named.size}`);
   const done = await clip(band.map((row) => ({ kind: 'row', row })));
   band.forEach((row, i) => { for (const pc of done[i]) out.push({ ...row, s: pc.s, e: pc.e, polys: pc.polys }); });
+  /* (sudan-mahdist-1886) the judged `ground` rows act on the rows as they will be DRAWN — after OHM and CShapes are
+     taken out — because that is what the finding measured and what a reader sees (see `applyHeld`) */
+  const held = applyHeld(out, ground); out.length = 0; for (const r of held) out.push(r);
   /* the span each verified QID was decided on — the bundle carries it, because the rows it ships are fewer
      than the rows the decision read (OHM answers part of them), and the gate must re-decide on the same span */
   out.ids = {};
@@ -746,7 +873,7 @@ async function build({ measure } = {}) {
   console.error(`subtracting on ${P.N} threads`);
   try {
     const review = JSON.parse(readFileSync(REVIEW, 'utf8'));
-    const raw = await clioRows(readUpstream(), ohm, P.run), clio = applyReview(raw, review);
+    const raw = await clioRows(readUpstream(), ohm, P.run, review.ground), clio = applyReview(raw, review);
     const rings = [], pool2 = new Map();
     const put = (r) => { const k = r.join(';'); let i = pool2.get(k); if (i == null) { i = rings.length; rings.push(r); pool2.set(k, i); } return i; };
     clio.sort((a, b) => a.s - b.s || a.e - b.e || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
@@ -768,6 +895,11 @@ async function build({ measure } = {}) {
     const judged = judgedKeys(review);
     const found = findingsOf(feats, readFacts());
     review.pending = found.filter((x) => !judged.has(x.name + '|' + x.side)).map((x) => ({ name: x.name, q: x.q, side: x.side, drawn: x.drawn, wd: x.wd }));
+    /* (sudan-mahdist-1886) …and the findings of ground given to a continuing row before a polity's first row */
+    const G = review.ground || (review.ground = { rows: [], refuted: [], pending: [] }), gj = groundJudged(G);
+    const held = heldFindingsOf(feats, rings, readFacts(), head.ids);
+    G.pending = held.filter((x) => !gj.has(x.name + '|' + x.over)).map(({ name, q, over, from, to, first, wd }) => ({ name, q, over, from, to, first, wd }));
+    console.error(`ground: ${held.length} finding(s) still raised — ${G.rows.length} polity(ies) drawn back by a reviewed row, ${G.refuted.length} refuted, ${G.pending.length} pending`);
     writeFileSync(REVIEW, JSON.stringify(review, null, 1) + '\n');
     console.error(`review: ${found.length} finding(s) — ${review.rows.length} name(s) withheld by a reviewed row, ${review.refuted.length} refuted, ${review.pending.length} pending`);
     console.error(`data/hist-clio.js: ${feats.length} rows, ${rings.length} rings, ${rings.reduce((a, r) => a + r.length, 0)} points, ${(body.length / 1e6).toFixed(2)} MB`);
@@ -880,12 +1012,61 @@ export function check() {
       if (m.ws === 'start') return m.wy !== R.s; if (m.ws === 'end') return m.wy !== R.e;
       if (m.ws === 'gap') return !(R.gaps || []).some(([a, b]) => m.wy === a - 1 && m.wz === b + 1);
       return true; });
-    ok(stray.length === 0, stray.length + ' withheld Cliopatria row(s) carry a side or year no reviewed row states: ' + stray.slice(0, 3).map((f) => f[9].wn + ' ' + f[9].ws + ' ' + f[9].wy).join(', ')); }
+    ok(stray.length === 0, stray.length + ' withheld Cliopatria row(s) carry a side or year no reviewed row states: ' + stray.slice(0, 3).map((f) => f[9].wn + ' ' + f[9].ws + ' ' + f[9].wy).join(', '));
+    checkGround(d, review, ok); }
   /* ⚠ CC BY 4.0 MAKES CREDIT A CONDITION OF REDISTRIBUTION: the reader-facing row must exist, by its exact name */
   const ref = readFileSync(join(ROOT, 'js', 'reference-data.js'), 'utf8');
   ok(ref.includes("n:'" + CREDIT_ROW + "'") && /lic:'CC BY 4.0'/.test(ref.slice(ref.indexOf(CREDIT_ROW))), 'js/reference-data.js does not credit Cliopatria as «' + CREDIT_ROW + '» with its licence');
   if (bad.length) return fail(bad);
   console.log(`hist-clio ok — ${d.feats.length} rows ${d.window[0]}–${d.window[1]}, ${d.rings.length} rings; hist-eras-rest ${r.snaps.length} sheets, ${r.rings.length} rings; hist-borders-late ${evalBundle(HBL, '__HISTBLATE').feats.length} rows 1886–${LATE_TOP}; all made against the shipped neighbours`);
+}
+/* (sudan-mahdist-1886) every finding of ground given to a continuing row is judged or counted; every judged `ground`
+   row is drawn back on the shipped rows — between 1 January of `s` and its first outline, under its own name, saying
+   which year's outline it carries — and the rows it is taken from (and their realms) no longer hold that ground then */
+function checkGround(d, review, ok) {
+  const G = review.ground;
+  ok(G && Array.isArray(G.rows) && Array.isArray(G.refuted) && Array.isArray(G.pending), 'scripts/histclio/review.json must carry ground: { rows, refuted, pending }');
+  if (!G || !Array.isArray(G.rows) || !Array.isArray(G.refuted) || !Array.isArray(G.pending)) return;
+  const k0 = (f) => ymd(f[2], f[3], f[4]), k1 = (f) => ymd(f[5], f[6], f[7]);
+  const twice = [], once = new Set();
+  for (const R of [...G.rows, ...G.refuted]) for (const k of heldKeys(R)) { if (once.has(k)) twice.push(k); once.add(k); }
+  ok(twice.length === 0, 'scripts/histclio/review.json judges ' + twice.length + ' ground finding(s) more than once: ' + twice.slice(0, 4).join(', '));
+  const held = heldFindingsOf(d.feats, d.rings, readFacts(), d.ids || {}), raised = new Set(held.map((x) => x.name + '|' + x.over));
+  const listed = groundJudged(G); for (const p of G.pending) listed.add(p.name + '|' + p.over);
+  const loose = held.filter((x) => !listed.has(x.name + '|' + x.over));
+  ok(loose.length === 0, loose.length + ' finding(s) of a polity\'s ground drawn under a continuing row before its first row are in no list of review.json ground: ' + loose.slice(0, 4).map((x) => x.name + ' ← ' + x.over + ' ' + x.from + '–' + x.to).join(', '));
+  for (const R of G.refuted) {
+    ok(!!(R.why && R.note), 'ground: «' + R.name + '» ← ' + (R.over || []).join(', ') + ' is refuted without a reason (why) and a note');
+    for (const k of heldKeys(R)) ok(raised.has(k), 'ground: ' + k + ' is refuted, but nothing raises it any more — remove the entry');
+  }
+  const cellsF = (f) => cellsOf(f[8].map((p) => p.map((i) => d.rings[i])));
+  for (const R of G.rows) {
+    const tag = 'ground: «' + R.name + '»';
+    ok(Number.isInteger(R.s) && Array.isArray(R.over) && R.over.length > 0, tag + ' must state the year history gives (s) and the rows the ground is taken from (over)');
+    ok(/^Q\d+$/.test(String(R.wd || '')), tag + ' must name the Wikidata item (wd) of the polity');
+    ok(typeof R.history === 'string' && R.history.length > 20, tag + ' must say what history states');
+    if (!Number.isInteger(R.s) || !Array.isArray(R.over)) continue;
+    const carried = d.feats.filter((f) => f[0].en === R.name && f[9] && f[9].hy != null);
+    ok(carried.length > 0, tag + ' is not drawn back to ' + R.s + ' — the record changed; re-judge or remove the row');
+    if (!carried.length) continue;
+    const hy = carried[0][9].hy, S = ymd(R.s, 1, 1), T = ymd(hy, 1, 1);
+    ok(carried.every((f) => k0(f) >= S && k1(f) <= T && f[9].hs === R.s && f[9].hy === hy), tag + ' must be drawn back only between 1 January ' + R.s + ' and its first outline (' + hy + '), and say so on every row');
+    const early = d.feats.filter((f) => f[0].en === R.name && !(f[9] && f[9].hy != null) && k0(f) < T);
+    ok(early.length === 0, tag + ' has a row of its own before ' + hy + ', the year review.json says its first outline is');
+    const realms = new Set(d.feats.filter((f) => R.over.includes(f[0].en) && f[9] && f[9].of).map((f) => f[9].of));
+    const takes = takesGround(R, realms), meta = (f) => ({ name: f[0].en, meta: f[9] || {} });
+    for (const c of carried) {
+      const C = new Set(cellsF(c));
+      for (const g of d.feats) {
+        if (!takes(meta(g)) || k1(g) <= k0(c) || k0(g) >= k1(c)) continue;
+        let hit = 0; for (const v of cellsF(g)) if (C.has(v)) hit++;
+        ok(hit < CUT_CELLS, tag + ': «' + g[0].en + '» (' + g.slice(2, 5).join('-') + ') still holds ' + hit + ' cells of the ground review.json gives to it');
+      }
+    }
+  }
+  const byName = new Map(G.rows.map((R) => [R.name, R]));
+  const stray = d.feats.filter((f) => f[9] && f[9].hy != null && !(byName.get(f[0].en) && byName.get(f[0].en).s === f[9].hs));
+  ok(stray.length === 0, stray.length + ' Cliopatria row(s) carry an outline back to a year no ground row states: ' + stray.slice(0, 3).map((f) => f[0].en + ' ' + f[9].hs).join(', '));
 }
 /* (hist-colonial-era-borders) data/hist-borders-late.js: OHM on CShapes' days. Made against the shipped CShapes, every row
    inside its window and ending by its top, every ring resolvable and used — and Cliopatria cut against THIS file. */

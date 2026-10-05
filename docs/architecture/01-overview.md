@@ -254,7 +254,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   バイトを取り、IMSTAR1/2 のレコードを**一度だけ**列（赤経・赤緯・等級・B−V・年周視差）に復号する。
   地球の背後の星空（`js/space-sky.js`）とエクスプローラ（`js/space.js`）はそこから自分の形を作る。
 - **Noto の規則シートは描画をブロックしない。** `index.html` の Google Fonts `<link>`（JP・SC・TC × 4 ウェイト、
-  実測 1,386,296 B の CSS・gzip 378,319 B）は撤去し、`js/map-typography.js` の `ensureWebFonts()` が
+  実測 1,386,296 B の CSS・gzip 378,340 B）は撤去し、`js/map-typography.js` の `ensureWebFonts()` が
   **言語が決まった後**（DOMContentLoaded と `intmap-lang`）に、その読者の面（`_readerFaces()`——ラベルが描く
   面で、UI の面の上位集合）のうち `document.fonts` に宣言の無いものだけを注入する：ja と Latin の UI は
   JP＋SC、繁体は TC＋SC、簡体は SC、韓国語は SC（Pretendard は同梱）。⚠ SC は「中国語用」ではない——

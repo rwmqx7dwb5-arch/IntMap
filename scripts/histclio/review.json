@@ -1,5 +1,5 @@
 {
- "note": "Reviewed lifespans for data/hist-clio.js (Cliopatria). The machine FINDS (scripts/build-hist-clio.mjs: a row drawn more than FINDING_SLACK years outside the lifespan Wikidata states for a QID shown to be that polity) and this file JUDGES. `rows` act on the map: before `s`, from the year after `e`, and inside each `gaps` span [from, to] (astronomical; `s`, `e` and the years outside a gap are inside; `from` and `to` themselves are in the gap — two lives under one name with the years between them belonging to neither) the shape is drawn without the name, and its card says which name Cliopatria gives and the year the historical record (`history`) places the beginning or the end (`circa`: that year is approximate) — the bound is history's, `wd` is the Wikidata item for the polity that states the same or a nearby year. `refuted` are findings examined and NOT applied, with the reason (`why`: date-disputed, other-identity or name-not-claim); a `side` limits one to that side. A finding is judged by name and side; a `gaps` span judges the end side (the item ended where the gap begins, and the name after it is a second life). `pending` are findings not yet judged: they are drawn as Cliopatria states them, and the gate fails on any finding in none of the three lists — so a new one arrives counted. Gate: npm run check:histclio.",
+ "note": "Reviewed lifespans for data/hist-clio.js (Cliopatria). The machine FINDS (scripts/build-hist-clio.mjs: a row drawn more than FINDING_SLACK years outside the lifespan Wikidata states for a QID shown to be that polity) and this file JUDGES. `rows` act on the map: before `s`, from the year after `e`, and inside each `gaps` span [from, to] (astronomical; `s`, `e` and the years outside a gap are inside; `from` and `to` themselves are in the gap — two lives under one name with the years between them belonging to neither) the shape is drawn without the name, and its card says which name Cliopatria gives and the year the historical record (`history`) places the beginning or the end (`circa`: that year is approximate) — the bound is history's, `wd` is the Wikidata item for the polity that states the same or a nearby year. `refuted` are findings examined and NOT applied, with the reason (`why`: date-disputed, other-identity or name-not-claim); a `side` limits one to that side. A finding is judged by name and side; a `gaps` span judges the end side (the item ended where the gap begins, and the name after it is a second life). `pending` are findings not yet judged: they are drawn as Cliopatria states them, and the gate fails on any finding in none of the three lists — so a new one arrives counted. Gate: npm run check:histclio. `ground` judges the opposite case (scripts/build-hist-clio.mjs `heldFindingsOf`): a polity whose verified start lies years before Cliopatria's first row for it, while a row that goes on being drawn afterwards holds that first row's ground in between. `ground.rows` apply: from 1 January of `s` (history's year) until the first row, what the rows in `over` draw inside the first row's outline is drawn under the polity's name instead and says which year's outline it is; those rows keep the rest, and the realms they are members of lose the same ground. Nothing is drawn where no `over` row drew. The line is whether the state of the `over` row governed that ground in those years (a garrison, a governor, an administration): where it did not — a tributary claim, a province lost to a rising, a claim given up — the ground is the polity's. `ground.refuted` are findings not applied (`why`: ruled — the `over` state did govern there; not-its-ground — the ground the finding measures, what is left of the first row after the records above, is not land the polity held; date-disputed; name-not-claim); `ground.pending` are not yet judged, drawn as Cliopatria states and counted.",
  "rows": [
   {
    "name": "Byzantine Empire",
@@ -757,5 +757,2543 @@
    "history": "Đại Việt was the name of the Vietnamese state until 1804; the QID is the Mạc dynasty (1527–1677), one of its ruling houses."
   }
  ],
- "pending": []
+ "pending": [],
+ "ground": {
+  "rows": [
+   {
+    "name": "Mahdist State",
+    "s": 1885,
+    "over": [
+     "British Africa"
+    ],
+    "wd": "Q3125368",
+    "history": "Muhammad Ahmad declared himself the Mahdi in 1881; El Obeid fell in January 1883 and Darfur in December 1883, and in 1884 Britain had Egypt give the Sudan up. Khartoum fell on 26 January 1885 and the Mahdist state ruled the Sudan until the Anglo-Egyptian reconquest of 1896-1898 (Omdurman, 2 September 1898). Britain held no claim of any kind on that ground in 1885-1889; Egypt kept only Suakin and Wadi Halfa, and Emin Pasha's Equatoria until 1889."
+   }
+  ],
+  "refuted": [
+   {
+    "name": "Qatar",
+    "over": [
+     "Ottoman Empire"
+    ],
+    "why": "ruled",
+    "note": "An Ottoman garrison was stationed at Doha from 1871 and Jassim Al Thani held the Ottoman office of kaymakam of the kaza of Qatar; Ottoman sovereignty was real until the Anglo-Ottoman convention of 1913 and the garrison's departure in 1915."
+   },
+   {
+    "name": "Emirate of Nejd",
+    "over": [
+     "Ottoman Empire"
+    ],
+    "why": "ruled",
+    "note": "After Ibrahim Pasha destroyed Diriyah in 1818, Egyptian-Ottoman garrisons held Nejd; Turki ibn Abdullah took Riyadh from them only in 1824, which is where Cliopatria begins the second Saudi state. Wikidata's 1818 is the fall of the first."
+   },
+   {
+    "name": "Chiangmai",
+    "over": [
+     "Konbaung Dynasty"
+    ],
+    "why": "ruled",
+    "note": "Konbaung Burma took Chiang Mai in 1763 and governed it through Burmese governors until Kawila and Siam drove them out in 1774-1775. Wikidata Q52028's 1201 is the founding of Lan Na, not the Chiang Mai kingdom Cliopatria draws from 1775."
+   },
+   {
+    "name": "Regency of Algiers",
+    "over": [
+     "Ottoman Empire"
+    ],
+    "why": "ruled",
+    "note": "Algiers was an Ottoman province from 1516-1518, governed by beylerbeys and then pashas appointed from Constantinople until 1659; its later aghas and deys ruled inside the Empire's sovereignty. Drawing it as the Ottoman Empire states that sovereignty."
+   },
+   {
+    "name": "Principality of Svaneti",
+    "over": [
+     "Principality of Mingrelia",
+     "Ottoman Empire"
+    ],
+    "why": "date-disputed",
+    "note": "No independent Svan principality is attested before the Dadeshkeliani princes of the 18th century; before that Svaneti was a highland under the Dadiani of Mingrelia and the kings of Imereti, themselves Ottoman vassals after 1578. Wikidata's 1463 is the breakup of the Georgian kingdom, not a Svan state."
+   },
+   {
+    "name": "Unitary State of Brazil",
+    "over": [
+     "Brazilian Republic"
+    ],
+    "why": "name-not-claim",
+    "note": "One state: Q155 is Brazil itself (1822), and Cliopatria's «Brazilian Republic» and «Unitary State of Brazil» are names of its regimes (the First Republic from 1889, the Vargas era from 1930). No ground changed hands."
+   },
+   {
+    "name": "Talpur Dynasty",
+    "over": [
+     "Durrani Empire"
+    ],
+    "why": "not-its-ground",
+    "note": "The Talpur Mirs ruled Sindh from 1783, and OpenHistoricalMap draws Sindh as the «Sind Sultanate» above Cliopatria; what the finding measures is the rest of Cliopatria's first Talpur row of 1822 (centred at 64.4°E 26.7°N), the Baloch country of Makran and Kalat, which the Talpurs did not rule. Carrying that piece back would draw a second error."
+   },
+   {
+    "name": "Carnatic Sultanate",
+    "over": [
+     "Nayaks of Madurai"
+    ],
+    "why": "ruled",
+    "note": "The Nawabs of the Carnatic ruled from Arcot from 1692, but Madurai, the ground the finding measures, was held by the Nayaks of Madurai until Chanda Sahib took it in 1736."
+   },
+   {
+    "name": "Saxe-Meiningen",
+    "over": [
+     "Grand Duchy of Berg"
+    ],
+    "why": "not-its-ground",
+    "note": "The ground the finding measures is Cliopatria's Saxe-Meiningen outline of 1828, which includes Hildburghausen and Saalfeld, gained only in the Saxon partition of 1826; before that they were Saxe-Hildburghausen's and Saxe-Coburg-Saalfeld's. Cliopatria draws that Thuringian ground as «Grand Duchy of Berg» in 1811-1827 — a name error of its own (Berg lay on the lower Rhine and ended in 1813), not a claim Saxe-Meiningen held."
+   }
+  ],
+  "pending": [
+   {
+    "name": "Abbasid Caliphate/Buyid Dynasty",
+    "q": "Q12536",
+    "over": "Abbasid Caliphate",
+    "from": 751,
+    "to": 935,
+    "first": 947,
+    "wd": 750
+   },
+   {
+    "name": "Aetolian League",
+    "q": "Q245273",
+    "over": "Antigonid Dynasty",
+    "from": -290,
+    "to": -284,
+    "first": -283,
+    "wd": -400
+   },
+   {
+    "name": "Aetolian League",
+    "q": "Q245273",
+    "over": "Greek City-States",
+    "from": -400,
+    "to": -307,
+    "first": -283,
+    "wd": -400
+   },
+   {
+    "name": "Almohad Caliphate",
+    "q": "Q199688",
+    "over": "Almoravid Dynasty",
+    "from": 1121,
+    "to": 1138,
+    "first": 1139,
+    "wd": 1121
+   },
+   {
+    "name": "Ambrosian Republic",
+    "q": "Q746443",
+    "over": "Duchy of Milan",
+    "from": 1447,
+    "to": 1449,
+    "first": 1450,
+    "wd": 1447
+   },
+   {
+    "name": "Aq Qoyunlu",
+    "q": "Q555994",
+    "over": "Timurid Empire",
+    "from": 1402,
+    "to": 1406,
+    "first": 1407,
+    "wd": 1378
+   },
+   {
+    "name": "Armenian Kingdom of Cilicia",
+    "q": "Q335088",
+    "over": "Byzantine Empire",
+    "from": 1080,
+    "to": 1098,
+    "first": 1099,
+    "wd": 1080
+   },
+   {
+    "name": "Atropatene",
+    "q": "Q260437",
+    "over": "Macedonian Empire",
+    "from": -322,
+    "to": -307,
+    "first": -306,
+    "wd": -322
+   },
+   {
+    "name": "Balhae",
+    "q": "Q28322",
+    "over": "Tang Dynasty",
+    "from": 698,
+    "to": 704,
+    "first": 705,
+    "wd": 698
+   },
+   {
+    "name": "Banate of Bosnia",
+    "q": "Q3627069",
+    "over": "Byzantine Empire",
+    "from": 1169,
+    "to": 1187,
+    "first": 1188,
+    "wd": 1136
+   },
+   {
+    "name": "Beylik of Aydin",
+    "q": "Q717112",
+    "over": "Byzantine Empire",
+    "from": 1300,
+    "to": 1304,
+    "first": 1305,
+    "wd": 1300
+   },
+   {
+    "name": "Beylik of Karasi",
+    "q": "Q941887",
+    "over": "Byzantine Empire",
+    "from": 1297,
+    "to": 1304,
+    "first": 1305,
+    "wd": 1297
+   },
+   {
+    "name": "Beylik of Sinop",
+    "q": "Q2096678",
+    "over": "Ilkhanate",
+    "from": 1294,
+    "to": 1304,
+    "first": 1305,
+    "wd": 1291
+   },
+   {
+    "name": "Beylik of Teke",
+    "q": "Q373988",
+    "over": "Beylik of Hamid",
+    "from": 1321,
+    "to": 1325,
+    "first": 1326,
+    "wd": 1321
+   },
+   {
+    "name": "Blue Horde",
+    "q": "Q644979",
+    "over": "Golden Horde",
+    "from": 1294,
+    "to": 1362,
+    "first": 1363,
+    "wd": 1227
+   },
+   {
+    "name": "Burgundian Kingdom",
+    "q": "Q13590051",
+    "over": "Western Roman Empire",
+    "from": 411,
+    "to": 413,
+    "first": 414,
+    "wd": 411
+   },
+   {
+    "name": "Buyid Dynasty",
+    "q": "Q12536",
+    "over": "Abbasid Caliphate",
+    "from": 750,
+    "to": 935,
+    "first": 936,
+    "wd": 750
+   },
+   {
+    "name": "Carolingian Empire",
+    "q": "Q146246",
+    "over": "Aquitaine",
+    "from": 661,
+    "to": 673,
+    "first": 718,
+    "wd": 481
+   },
+   {
+    "name": "Carolingian Empire",
+    "q": "Q146246",
+    "over": "Kingdom of the Franks",
+    "from": 540,
+    "to": 717,
+    "first": 718,
+    "wd": 481
+   },
+   {
+    "name": "Carthage",
+    "q": "Q2429397",
+    "over": "Phoenicia",
+    "from": -799,
+    "to": -650,
+    "first": -649,
+    "wd": -813
+   },
+   {
+    "name": "Catalonia",
+    "q": "Q5705",
+    "over": "Kingdom of Spain",
+    "from": 1516,
+    "to": 1581,
+    "first": 1640,
+    "wd": 801
+   },
+   {
+    "name": "Chandela Kingdom",
+    "q": "Q2039087",
+    "over": "Pala Empire",
+    "from": 831,
+    "to": 839,
+    "first": 960,
+    "wd": 831
+   },
+   {
+    "name": "Commune of the Zealots",
+    "q": "Q17151",
+    "over": "Byzantine Empire",
+    "from": 633,
+    "to": 1343,
+    "first": 1344,
+    "wd": -314
+   },
+   {
+    "name": "Commune of the Zealots",
+    "q": "Q17151",
+    "over": "Despotate of Epirus",
+    "from": 1227,
+    "to": 1235,
+    "first": 1344,
+    "wd": -314
+   },
+   {
+    "name": "County of Aragon",
+    "q": "Q1235737",
+    "over": "Kingdom of the Franks",
+    "from": 806,
+    "to": 824,
+    "first": 830,
+    "wd": 802
+   },
+   {
+    "name": "County of Artois",
+    "q": "Q778266",
+    "over": "Kingdom of France",
+    "from": 1237,
+    "to": 1240,
+    "first": 1241,
+    "wd": 1237
+   },
+   {
+    "name": "County of Holland",
+    "q": "Q762943",
+    "over": "Holy Roman Empire",
+    "from": 962,
+    "to": 1259,
+    "first": 1260,
+    "wd": 880
+   },
+   {
+    "name": "County of Nevers",
+    "q": "Q2070440",
+    "over": "Duchy of Burgundy",
+    "from": 1003,
+    "to": 1009,
+    "first": 1010,
+    "wd": 801
+   },
+   {
+    "name": "County of Nevers",
+    "q": "Q2070440",
+    "over": "Kingdom of France",
+    "from": 990,
+    "to": 1002,
+    "first": 1010,
+    "wd": 801
+   },
+   {
+    "name": "County of Osona",
+    "q": "Q1541779",
+    "over": "County of Berga",
+    "from": 922,
+    "to": 935,
+    "first": 990,
+    "wd": 798
+   },
+   {
+    "name": "County of Osona",
+    "q": "Q1541779",
+    "over": "County of Urgell",
+    "from": 878,
+    "to": 897,
+    "first": 990,
+    "wd": 798
+   },
+   {
+    "name": "County of Pallars",
+    "q": "Q1541787",
+    "over": "West Franks",
+    "from": 870,
+    "to": 874,
+    "first": 875,
+    "wd": 870
+   },
+   {
+    "name": "County of Poitou",
+    "q": "Q2991374",
+    "over": "Angevin Empire",
+    "from": 1152,
+    "to": 1205,
+    "first": 1206,
+    "wd": 778
+   },
+   {
+    "name": "County of Poitou",
+    "q": "Q2991374",
+    "over": "Duchy of Aquitaine",
+    "from": 990,
+    "to": 1138,
+    "first": 1206,
+    "wd": 778
+   },
+   {
+    "name": "County of Poitou",
+    "q": "Q2991374",
+    "over": "Kingdom of France",
+    "from": 1139,
+    "to": 1151,
+    "first": 1206,
+    "wd": 778
+   },
+   {
+    "name": "County of Portugal",
+    "q": "Q1139807",
+    "over": "Kingdom of Castile",
+    "from": 1072,
+    "to": 1110,
+    "first": 1139,
+    "wd": 868
+   },
+   {
+    "name": "County of Portugal",
+    "q": "Q1139807",
+    "over": "Kingdom of León",
+    "from": 1126,
+    "to": 1138,
+    "first": 1139,
+    "wd": 868
+   },
+   {
+    "name": "County of Savoy",
+    "q": "Q1232887",
+    "over": "Holy Roman Empire",
+    "from": 1034,
+    "to": 1259,
+    "first": 1260,
+    "wd": 1003
+   },
+   {
+    "name": "County of Savoy",
+    "q": "Q1232887",
+    "over": "Kingdom of Arles",
+    "from": 1003,
+    "to": 1033,
+    "first": 1260,
+    "wd": 1003
+   },
+   {
+    "name": "County of Tripoli",
+    "q": "Q272033",
+    "over": "Great Seljuk Empire",
+    "from": 1102,
+    "to": 1110,
+    "first": 1111,
+    "wd": 1102
+   },
+   {
+    "name": "County of Urgell",
+    "q": "Q1514510",
+    "over": "Emirate of Córdoba",
+    "from": 785,
+    "to": 787,
+    "first": 870,
+    "wd": 785
+   },
+   {
+    "name": "County of Urgell",
+    "q": "Q1514510",
+    "over": "West Franks",
+    "from": 850,
+    "to": 869,
+    "first": 870,
+    "wd": 785
+   },
+   {
+    "name": "Crimean Khanate",
+    "q": "Q160440",
+    "over": "Golden Horde",
+    "from": 1441,
+    "to": 1449,
+    "first": 1450,
+    "wd": 1441
+   },
+   {
+    "name": "Danishmendids",
+    "q": "Q846670",
+    "over": "Byzantine Empire",
+    "from": 1071,
+    "to": 1084,
+    "first": 1094,
+    "wd": 1071
+   },
+   {
+    "name": "Danishmendids",
+    "q": "Q846670",
+    "over": "Great Seljuk Empire",
+    "from": 1085,
+    "to": 1093,
+    "first": 1094,
+    "wd": 1071
+   },
+   {
+    "name": "Despotate of Dobruja",
+    "q": "Q542165",
+    "over": "Second Bulgarian Empire",
+    "from": 1322,
+    "to": 1362,
+    "first": 1363,
+    "wd": 1322
+   },
+   {
+    "name": "Despotate of Vidin",
+    "q": "Q927154",
+    "over": "Second Bulgarian Empire",
+    "from": 1356,
+    "to": 1362,
+    "first": 1363,
+    "wd": 1356
+   },
+   {
+    "name": "Domain of Rhodes",
+    "q": "Q43048",
+    "over": "Byzantine Empire",
+    "from": 633,
+    "to": 1205,
+    "first": 1206,
+    "wd": -1600
+   },
+   {
+    "name": "Duchy of Bavaria",
+    "q": "Q47261",
+    "over": "Holy Roman Empire",
+    "from": 962,
+    "to": 1259,
+    "first": 1260,
+    "wd": 907
+   },
+   {
+    "name": "Duchy of Benevento",
+    "q": "Q267816",
+    "over": "Eastern Roman Empire",
+    "from": 570,
+    "to": 576,
+    "first": 577,
+    "wd": 570
+   },
+   {
+    "name": "Duchy of Bohemia",
+    "q": "Q2162698",
+    "over": "Great Moravia",
+    "from": 870,
+    "to": 895,
+    "first": 896,
+    "wd": 870
+   },
+   {
+    "name": "Duchy of Brittany",
+    "q": "Q71747",
+    "over": "Viking settlements",
+    "from": 939,
+    "to": 946,
+    "first": 947,
+    "wd": 939
+   },
+   {
+    "name": "Duchy of Burgundy",
+    "q": "Q4712",
+    "over": "Kingdom of France",
+    "from": 990,
+    "to": 1002,
+    "first": 1003,
+    "wd": 880
+   },
+   {
+    "name": "Duchy of Bytom",
+    "q": "Q682001",
+    "over": "Duchy of Opole",
+    "from": 1281,
+    "to": 1284,
+    "first": 1285,
+    "wd": 1281
+   },
+   {
+    "name": "Duchy of Gascony",
+    "q": "Q2295939",
+    "over": "Aquitaine",
+    "from": 661,
+    "to": 767,
+    "first": 768,
+    "wd": 602
+   },
+   {
+    "name": "Duchy of Gascony",
+    "q": "Q2295939",
+    "over": "Kingdom of the Franks",
+    "from": 732,
+    "to": 749,
+    "first": 768,
+    "wd": 602
+   },
+   {
+    "name": "Duchy of Głogów",
+    "q": "Q684501",
+    "over": "Duchy of Silesia",
+    "from": 1177,
+    "to": 1249,
+    "first": 1250,
+    "wd": 1177
+   },
+   {
+    "name": "Duchy of Legnica",
+    "q": "Q570740",
+    "over": "Duchy of Głogów",
+    "from": 1250,
+    "to": 1278,
+    "first": 1279,
+    "wd": 1248
+   },
+   {
+    "name": "Duchy of Lorraine",
+    "q": "Q155019",
+    "over": "Holy Roman Empire",
+    "from": 962,
+    "to": 1259,
+    "first": 1431,
+    "wd": 959
+   },
+   {
+    "name": "Duchy of Lorraine",
+    "q": "Q155019",
+    "over": "Holy Roman Empire Minor States",
+    "from": 1260,
+    "to": 1430,
+    "first": 1431,
+    "wd": 959
+   },
+   {
+    "name": "Duchy of Luxembourg",
+    "q": "Q2719360",
+    "over": "County of Brabant",
+    "from": 1415,
+    "to": 1421,
+    "first": 1429,
+    "wd": 1353
+   },
+   {
+    "name": "Duchy of Luxembourg",
+    "q": "Q2719360",
+    "over": "Duchy of Bavaria",
+    "from": 1422,
+    "to": 1428,
+    "first": 1429,
+    "wd": 1353
+   },
+   {
+    "name": "Duchy of Luxembourg",
+    "q": "Q2719360",
+    "over": "Holy Roman Empire Minor States",
+    "from": 1353,
+    "to": 1428,
+    "first": 1429,
+    "wd": 1353
+   },
+   {
+    "name": "Duchy of Milan",
+    "q": "Q153529",
+    "over": "Holy Roman Empire Minor States",
+    "from": 1395,
+    "to": 1401,
+    "first": 1402,
+    "wd": 1395
+   },
+   {
+    "name": "Duchy of Normandy",
+    "q": "Q842091",
+    "over": "Viking settlements",
+    "from": 911,
+    "to": 921,
+    "first": 922,
+    "wd": 911
+   },
+   {
+    "name": "Duchy of Opole",
+    "q": "Q661980",
+    "over": "Duchy of Wrocław",
+    "from": 1172,
+    "to": 1176,
+    "first": 1177,
+    "wd": 1172
+   },
+   {
+    "name": "Duchy of Racibórz",
+    "q": "Q700117",
+    "over": "Duchy of Opole",
+    "from": 1177,
+    "to": 1284,
+    "first": 1285,
+    "wd": 1172
+   },
+   {
+    "name": "Duchy of Spoleto",
+    "q": "Q2829270",
+    "over": "Eastern Roman Empire",
+    "from": 570,
+    "to": 576,
+    "first": 577,
+    "wd": 570
+   },
+   {
+    "name": "Duchy of Styria",
+    "q": "Q580447",
+    "over": "Holy Roman Empire",
+    "from": 1180,
+    "to": 1259,
+    "first": 1260,
+    "wd": 1180
+   },
+   {
+    "name": "Duchy of Tuscia",
+    "q": "Q1054580",
+    "over": "Lombards",
+    "from": 574,
+    "to": 576,
+    "first": 577,
+    "wd": 574
+   },
+   {
+    "name": "Duchy of Wrocław",
+    "q": "Q568638",
+    "over": "Duchy of Masovia",
+    "from": 1147,
+    "to": 1168,
+    "first": 1169,
+    "wd": 1138
+   },
+   {
+    "name": "Duchy of Wrocław",
+    "q": "Q568638",
+    "over": "Duchy of Silesia",
+    "from": 1139,
+    "to": 1146,
+    "first": 1169,
+    "wd": 1138
+   },
+   {
+    "name": "Duchy of the Archipelago",
+    "q": "Q777981",
+    "over": "Byzantine Empire",
+    "from": 1207,
+    "to": 1209,
+    "first": 1210,
+    "wd": 1207
+   },
+   {
+    "name": "Dumnonia",
+    "q": "Q313136",
+    "over": "Brythons",
+    "from": 439,
+    "to": 601,
+    "first": 602,
+    "wd": 400
+   },
+   {
+    "name": "Dutch Gold Coast",
+    "q": "Q770776",
+    "over": "Dutch Republic",
+    "from": 1645,
+    "to": 1652,
+    "first": 1653,
+    "wd": 1598
+   },
+   {
+    "name": "Earldom of Ulster",
+    "q": "Q19872858",
+    "over": "Kingdom of England",
+    "from": 1210,
+    "to": 1325,
+    "first": 1326,
+    "wd": 1177
+   },
+   {
+    "name": "Eastern Chagatai Khanate",
+    "q": "Q1191125",
+    "over": "Moghulistan",
+    "from": 1463,
+    "to": 1491,
+    "first": 1492,
+    "wd": 1347
+   },
+   {
+    "name": "Eastern Hungarian Kingdom",
+    "q": "Q625380",
+    "over": "Kingdom of Hungary",
+    "from": 1526,
+    "to": 1528,
+    "first": 1529,
+    "wd": 1526
+   },
+   {
+    "name": "Eastern Wu",
+    "q": "Q274488",
+    "over": "Han Dynasty",
+    "from": 198,
+    "to": 206,
+    "first": 207,
+    "wd": 198
+   },
+   {
+    "name": "Electorate of Brandenburg",
+    "q": "Q148499",
+    "over": "Duchy of Bavaria",
+    "from": 1352,
+    "to": 1384,
+    "first": 1422,
+    "wd": 1157
+   },
+   {
+    "name": "Electorate of Brandenburg",
+    "q": "Q148499",
+    "over": "Holy Roman Empire",
+    "from": 1236,
+    "to": 1259,
+    "first": 1422,
+    "wd": 1157
+   },
+   {
+    "name": "Electorate of Brandenburg",
+    "q": "Q148499",
+    "over": "Holy Roman Empire Minor States",
+    "from": 1415,
+    "to": 1421,
+    "first": 1422,
+    "wd": 1157
+   },
+   {
+    "name": "Electorate of Brandenburg",
+    "q": "Q148499",
+    "over": "Kingdom of Bohemia",
+    "from": 1375,
+    "to": 1384,
+    "first": 1422,
+    "wd": 1157
+   },
+   {
+    "name": "Electorate of Saxony",
+    "q": "Q156199",
+    "over": "Holy Roman Empire Minor States",
+    "from": 1356,
+    "to": 1362,
+    "first": 1363,
+    "wd": 1356
+   },
+   {
+    "name": "Electorate of Trier",
+    "q": "Q1794352",
+    "over": "Duchy of Bavaria",
+    "from": 1272,
+    "to": 1325,
+    "first": 1333,
+    "wd": 898
+   },
+   {
+    "name": "Electorate of Trier",
+    "q": "Q1794352",
+    "over": "Holy Roman Empire",
+    "from": 962,
+    "to": 1259,
+    "first": 1333,
+    "wd": 898
+   },
+   {
+    "name": "Electorate of Trier",
+    "q": "Q1794352",
+    "over": "Margraviate of Brandenburg",
+    "from": 1326,
+    "to": 1332,
+    "first": 1333,
+    "wd": 898
+   },
+   {
+    "name": "Emirate of Crete",
+    "q": "Q603771",
+    "over": "Byzantine Empire",
+    "from": 820,
+    "to": 829,
+    "first": 830,
+    "wd": 820
+   },
+   {
+    "name": "Emirate of Granada",
+    "q": "Q238445",
+    "over": "Almohad Caliphate",
+    "from": 1238,
+    "to": 1240,
+    "first": 1241,
+    "wd": 1238
+   },
+   {
+    "name": "Emirate of Nekor",
+    "q": "Q1709337",
+    "over": "Umayyad Caliphate",
+    "from": 710,
+    "to": 749,
+    "first": 750,
+    "wd": 710
+   },
+   {
+    "name": "Emirate of Sicily",
+    "q": "Q118780154",
+    "over": "Aghlabid Dynasty",
+    "from": 840,
+    "to": 849,
+    "first": 850,
+    "wd": 827
+   },
+   {
+    "name": "Emirate of Sicily",
+    "q": "Q118780154",
+    "over": "Byzantine Empire",
+    "from": 827,
+    "to": 839,
+    "first": 850,
+    "wd": 827
+   },
+   {
+    "name": "Empire of Thessalonica",
+    "q": "Q623151",
+    "over": "Despotate of Epirus",
+    "from": 1227,
+    "to": 1235,
+    "first": 1236,
+    "wd": 1224
+   },
+   {
+    "name": "Eshrefids",
+    "q": "Q1386189",
+    "over": "Ilkhanate",
+    "from": 1294,
+    "to": 1304,
+    "first": 1305,
+    "wd": 1284
+   },
+   {
+    "name": "Former Liang",
+    "q": "Q943392",
+    "over": "Western Jin",
+    "from": 320,
+    "to": 323,
+    "first": 324,
+    "wd": 320
+   },
+   {
+    "name": "Four Oirats",
+    "q": "Q4332415",
+    "over": "Northern Yuan",
+    "from": 1399,
+    "to": 1401,
+    "first": 1402,
+    "wd": 1399
+   },
+   {
+    "name": "French India",
+    "q": "Q646374",
+    "over": "New France",
+    "from": 1670,
+    "to": 1672,
+    "first": 1673,
+    "wd": 1668
+   },
+   {
+    "name": "Ghurid Dynasty",
+    "q": "Q199443",
+    "over": "Ghaznavid Empire",
+    "from": 1011,
+    "to": 1039,
+    "first": 1152,
+    "wd": 1011
+   },
+   {
+    "name": "Giudicato of Arborea",
+    "q": "Q1241847",
+    "over": "Byzantine Empire",
+    "from": 800,
+    "to": 839,
+    "first": 866,
+    "wd": 800
+   },
+   {
+    "name": "Giudicato of Gallura",
+    "q": "Q2723760",
+    "over": "Byzantine Empire",
+    "from": 800,
+    "to": 839,
+    "first": 866,
+    "wd": 800
+   },
+   {
+    "name": "Giudicato of Logudoro",
+    "q": "Q1761381",
+    "over": "Byzantine Empire",
+    "from": 800,
+    "to": 839,
+    "first": 866,
+    "wd": 800
+   },
+   {
+    "name": "Grand Principality of Serbia",
+    "q": "Q1311990",
+    "over": "Kingdom of Duklja",
+    "from": 1084,
+    "to": 1093,
+    "first": 1094,
+    "wd": 1084
+   },
+   {
+    "name": "Great Principality of Duklja",
+    "q": "Q1252942",
+    "over": "Byzantine Empire",
+    "from": 990,
+    "to": 1055,
+    "first": 1056,
+    "wd": 854
+   },
+   {
+    "name": "Greco-Bactrian Kingdom",
+    "q": "Q488880",
+    "over": "Seleucid Empire",
+    "from": -249,
+    "to": -247,
+    "first": -246,
+    "wd": -249
+   },
+   {
+    "name": "Hafsid Dynasty",
+    "q": "Q752662",
+    "over": "Almohad Caliphate",
+    "from": 1229,
+    "to": 1235,
+    "first": 1236,
+    "wd": 1229
+   },
+   {
+    "name": "Hamdanid Emirates",
+    "q": "Q837187",
+    "over": "Abbasid Caliphate",
+    "from": 890,
+    "to": 935,
+    "first": 936,
+    "wd": 890
+   },
+   {
+    "name": "Hammadid Dynasty",
+    "q": "Q588672",
+    "over": "Fatimid Caliphate",
+    "from": 1014,
+    "to": 1017,
+    "first": 1018,
+    "wd": 1014
+   },
+   {
+    "name": "Holy Roman Empire Minor States",
+    "q": "Q12548",
+    "over": "Holy Roman Empire",
+    "from": 962,
+    "to": 1259,
+    "first": 1260,
+    "wd": 962
+   },
+   {
+    "name": "House of Ascania",
+    "q": "Q168352",
+    "over": "Holy Roman Empire",
+    "from": 1036,
+    "to": 1259,
+    "first": 1260,
+    "wd": 1036
+   },
+   {
+    "name": "House of Bourbon",
+    "q": "Q58389",
+    "over": "Kingdom of France",
+    "from": 1305,
+    "to": 1332,
+    "first": 1333,
+    "wd": 1272
+   },
+   {
+    "name": "House of Habsburg",
+    "q": "Q65968",
+    "over": "Holy Roman Empire",
+    "from": 1034,
+    "to": 1259,
+    "first": 1260,
+    "wd": 1001
+   },
+   {
+    "name": "House of Habsburg",
+    "q": "Q65968",
+    "over": "Kingdom of Arles",
+    "from": 1001,
+    "to": 1033,
+    "first": 1260,
+    "wd": 1001
+   },
+   {
+    "name": "House of Hohenstaufen",
+    "q": "Q130875",
+    "over": "Holy Roman Empire",
+    "from": 1079,
+    "to": 1259,
+    "first": 1260,
+    "wd": 1079
+   },
+   {
+    "name": "House of Savoy",
+    "q": "Q200229",
+    "over": "Holy Roman Empire",
+    "from": 1034,
+    "to": 1259,
+    "first": 1564,
+    "wd": 1003
+   },
+   {
+    "name": "House of Savoy",
+    "q": "Q200229",
+    "over": "Kingdom of France",
+    "from": 1540,
+    "to": 1563,
+    "first": 1564,
+    "wd": 1003
+   },
+   {
+    "name": "House of Tocco",
+    "q": "Q149846",
+    "over": "Byzantine Empire",
+    "from": 1185,
+    "to": 1362,
+    "first": 1363,
+    "wd": 1185
+   },
+   {
+    "name": "House of Tocco",
+    "q": "Q149846",
+    "over": "Republic of Venice",
+    "from": 1210,
+    "to": 1325,
+    "first": 1363,
+    "wd": 1185
+   },
+   {
+    "name": "House of Wittelsbach",
+    "q": "Q131621",
+    "over": "Holy Roman Empire",
+    "from": 1180,
+    "to": 1259,
+    "first": 1260,
+    "wd": 1180
+   },
+   {
+    "name": "Hoysala Kingdom",
+    "q": "Q466581",
+    "over": "Chola Empire",
+    "from": 1026,
+    "to": 1110,
+    "first": 1111,
+    "wd": 1026
+   },
+   {
+    "name": "Indo-Parthians",
+    "q": "Q1255614",
+    "over": "Indo-Scythians",
+    "from": -18,
+    "to": 0,
+    "first": 1,
+    "wd": -18
+   },
+   {
+    "name": "Indo-Scythians",
+    "q": "Q240123",
+    "over": "Greco-Bactrian Kingdom",
+    "from": -199,
+    "to": -164,
+    "first": -143,
+    "wd": -199
+   },
+   {
+    "name": "Indo-Scythians",
+    "q": "Q240123",
+    "over": "Parthian Empire",
+    "from": -163,
+    "to": -144,
+    "first": -143,
+    "wd": -199
+   },
+   {
+    "name": "Jaffna kingdom",
+    "q": "Q1311219",
+    "over": "Ceylon",
+    "from": 1260,
+    "to": 1313,
+    "first": 1314,
+    "wd": 1215
+   },
+   {
+    "name": "Kalabhra Dynasty",
+    "q": "Q2572901",
+    "over": "Late Pallava Empire",
+    "from": 306,
+    "to": 352,
+    "first": 353,
+    "wd": 250
+   },
+   {
+    "name": "Kazakh Khanate",
+    "q": "Q1433867",
+    "over": "Moghulistan",
+    "from": 1465,
+    "to": 1467,
+    "first": 1468,
+    "wd": 1465
+   },
+   {
+    "name": "Khanate of Bukhara",
+    "q": "Q577668",
+    "over": "Timurid Empire",
+    "from": 1512,
+    "to": 1515,
+    "first": 1516,
+    "wd": 1500
+   },
+   {
+    "name": "Kharijites",
+    "q": "Q189570",
+    "over": "Umayyad Caliphate",
+    "from": 692,
+    "to": 749,
+    "first": 751,
+    "wd": 657
+   },
+   {
+    "name": "Khwarezmid Dynasty",
+    "q": "Q486918",
+    "over": "Great Seljuk Empire",
+    "from": 1077,
+    "to": 1093,
+    "first": 1094,
+    "wd": 1077
+   },
+   {
+    "name": "Kingdom of Bernicia",
+    "q": "Q623751",
+    "over": "Brythons",
+    "from": 439,
+    "to": 554,
+    "first": 555,
+    "wd": 420
+   },
+   {
+    "name": "Kingdom of Bohemia",
+    "q": "Q42585",
+    "over": "Holy Roman Empire",
+    "from": 1198,
+    "to": 1201,
+    "first": 1202,
+    "wd": 1198
+   },
+   {
+    "name": "Kingdom of Cappadocia",
+    "q": "Q29654286",
+    "over": "Seleucid Empire",
+    "from": -300,
+    "to": -239,
+    "first": -238,
+    "wd": -320
+   },
+   {
+    "name": "Kingdom of Dambadeniya",
+    "q": "Q3136869",
+    "over": "Kingdom of Polonnaruwa",
+    "from": 1220,
+    "to": 1235,
+    "first": 1236,
+    "wd": 1220
+   },
+   {
+    "name": "Kingdom of Duklja",
+    "q": "Q1252942",
+    "over": "Byzantine Empire",
+    "from": 970,
+    "to": 1055,
+    "first": 1072,
+    "wd": 854
+   },
+   {
+    "name": "Kingdom of Dunoting",
+    "q": "Q2264840",
+    "over": "Brythons",
+    "from": 460,
+    "to": 591,
+    "first": 592,
+    "wd": 460
+   },
+   {
+    "name": "Kingdom of Galicia",
+    "q": "Q303421",
+    "over": "Kingdom of Asturias",
+    "from": 724,
+    "to": 910,
+    "first": 911,
+    "wd": 410
+   },
+   {
+    "name": "Kingdom of Germany",
+    "q": "Q175211",
+    "over": "West Franks",
+    "from": 882,
+    "to": 886,
+    "first": 911,
+    "wd": 843
+   },
+   {
+    "name": "Kingdom of Gwent",
+    "q": "Q2594661",
+    "over": "Brythons",
+    "from": 439,
+    "to": 539,
+    "first": 540,
+    "wd": 430
+   },
+   {
+    "name": "Kingdom of Gwynedd",
+    "q": "Q816814",
+    "over": "Brythons",
+    "from": 439,
+    "to": 539,
+    "first": 540,
+    "wd": 401
+   },
+   {
+    "name": "Kingdom of Imereti",
+    "q": "Q1069959",
+    "over": "Golden Horde",
+    "from": 1294,
+    "to": 1332,
+    "first": 1468,
+    "wd": 1260
+   },
+   {
+    "name": "Kingdom of Imereti",
+    "q": "Q1069959",
+    "over": "Kingdom of Georgia",
+    "from": 1333,
+    "to": 1462,
+    "first": 1468,
+    "wd": 1260
+   },
+   {
+    "name": "Kingdom of Imereti",
+    "q": "Q1069959",
+    "over": "Kingdom of Kartli",
+    "from": 1463,
+    "to": 1467,
+    "first": 1468,
+    "wd": 1260
+   },
+   {
+    "name": "Kingdom of Judah",
+    "q": "Q48685",
+    "over": "Kingdom of Israel",
+    "from": -929,
+    "to": -900,
+    "first": -899,
+    "wd": -929
+   },
+   {
+    "name": "Kingdom of Kakheti",
+    "q": "Q1209822",
+    "over": "Kingdom of Kartli",
+    "from": 1465,
+    "to": 1467,
+    "first": 1468,
+    "wd": 1465
+   },
+   {
+    "name": "Kingdom of Kent",
+    "q": "Q328818",
+    "over": "Anglo-Saxon England",
+    "from": 480,
+    "to": 489,
+    "first": 490,
+    "wd": 450
+   },
+   {
+    "name": "Kingdom of Khotan",
+    "q": "Q914898",
+    "over": "Kara-Khanids",
+    "from": 850,
+    "to": 887,
+    "first": 888,
+    "wd": 56
+   },
+   {
+    "name": "Kingdom of Khotan",
+    "q": "Q914898",
+    "over": "Tang Dynasty",
+    "from": 661,
+    "to": 756,
+    "first": 888,
+    "wd": 56
+   },
+   {
+    "name": "Kingdom of Lazica",
+    "q": "Q136884",
+    "over": "Byzantine Empire",
+    "from": 633,
+    "to": 637,
+    "first": 638,
+    "wd": -100
+   },
+   {
+    "name": "Kingdom of Lazica",
+    "q": "Q136884",
+    "over": "Georgia",
+    "from": 567,
+    "to": 576,
+    "first": 638,
+    "wd": -100
+   },
+   {
+    "name": "Kingdom of Lazica",
+    "q": "Q136884",
+    "over": "Sasanian Empire",
+    "from": 546,
+    "to": 625,
+    "first": 638,
+    "wd": -100
+   },
+   {
+    "name": "Kingdom of Lower Burgundy",
+    "q": "Q33242",
+    "over": "West Franks",
+    "from": 866,
+    "to": 886,
+    "first": 900,
+    "wd": 855
+   },
+   {
+    "name": "Kingdom of Majorca",
+    "q": "Q836676",
+    "over": "Crown of Aragon",
+    "from": 1236,
+    "to": 1278,
+    "first": 1279,
+    "wd": 1229
+   },
+   {
+    "name": "Kingdom of Mann",
+    "q": "Q459188",
+    "over": "Old Kingdom of Norway",
+    "from": 990,
+    "to": 1176,
+    "first": 1177,
+    "wd": 900
+   },
+   {
+    "name": "Kingdom of Mann",
+    "q": "Q459188",
+    "over": "Viking settlements",
+    "from": 900,
+    "to": 1176,
+    "first": 1177,
+    "wd": 900
+   },
+   {
+    "name": "Kingdom of Neustria",
+    "q": "Q106577",
+    "over": "Aquitaine",
+    "from": 661,
+    "to": 673,
+    "first": 724,
+    "wd": 511
+   },
+   {
+    "name": "Kingdom of Neustria",
+    "q": "Q106577",
+    "over": "Kingdom of the Franks",
+    "from": 511,
+    "to": 723,
+    "first": 724,
+    "wd": 511
+   },
+   {
+    "name": "Kingdom of Osroene",
+    "q": "Q237234",
+    "over": "Kingdom of Armenia",
+    "from": -76,
+    "to": -66,
+    "first": -62,
+    "wd": -131
+   },
+   {
+    "name": "Kingdom of Osroene",
+    "q": "Q237234",
+    "over": "Parthian Empire",
+    "from": -109,
+    "to": -87,
+    "first": -62,
+    "wd": -131
+   },
+   {
+    "name": "Kingdom of Polonnaruwa",
+    "q": "Q3167772",
+    "over": "Chola Empire",
+    "from": 1018,
+    "to": 1071,
+    "first": 1072,
+    "wd": 1017
+   },
+   {
+    "name": "Kingdom of Powys",
+    "q": "Q769782",
+    "over": "Brythons",
+    "from": 500,
+    "to": 539,
+    "first": 540,
+    "wd": 500
+   },
+   {
+    "name": "Kingdom of Rheged",
+    "q": "Q633573",
+    "over": "Brythons",
+    "from": 500,
+    "to": 591,
+    "first": 592,
+    "wd": 500
+   },
+   {
+    "name": "Kingdom of Seisyllwg",
+    "q": "Q2456191",
+    "over": "Brythons",
+    "from": 680,
+    "to": 874,
+    "first": 878,
+    "wd": 680
+   },
+   {
+    "name": "Kingdom of Seisyllwg",
+    "q": "Q2456191",
+    "over": "Kingdom of Gwynedd",
+    "from": 875,
+    "to": 877,
+    "first": 878,
+    "wd": 680
+   },
+   {
+    "name": "Kingdom of Sussex",
+    "q": "Q676184",
+    "over": "Anglo-Saxon England",
+    "from": 480,
+    "to": 489,
+    "first": 490,
+    "wd": 477
+   },
+   {
+    "name": "Kingdom of Sussex",
+    "q": "Q676184",
+    "over": "Brythons",
+    "from": 477,
+    "to": 479,
+    "first": 490,
+    "wd": 477
+   },
+   {
+    "name": "Kingdom of Sweden",
+    "q": "Q34",
+    "over": "Scandinavian minor kingdoms",
+    "from": 900,
+    "to": 979,
+    "first": 980,
+    "wd": 900
+   },
+   {
+    "name": "Kingdom of Vaspurakan",
+    "q": "Q5228183",
+    "over": "Bagratid Armenia",
+    "from": 908,
+    "to": 910,
+    "first": 911,
+    "wd": 908
+   },
+   {
+    "name": "Kingdom of the Isles",
+    "q": "Q459188",
+    "over": "Old Kingdom of Norway",
+    "from": 990,
+    "to": 1084,
+    "first": 1085,
+    "wd": 900
+   },
+   {
+    "name": "Kingdom of the Isles",
+    "q": "Q459188",
+    "over": "Viking settlements",
+    "from": 900,
+    "to": 1084,
+    "first": 1085,
+    "wd": 900
+   },
+   {
+    "name": "Kingdom of the Suebi",
+    "q": "Q1048918",
+    "over": "Vandals",
+    "from": 410,
+    "to": 413,
+    "first": 414,
+    "wd": 409
+   },
+   {
+    "name": "Later Qin",
+    "q": "Q1730130",
+    "over": "Former Qin",
+    "from": 384,
+    "to": 386,
+    "first": 387,
+    "wd": 384
+   },
+   {
+    "name": "Lazica",
+    "q": "Q136884",
+    "over": "Kingdom of Pontus",
+    "from": -90,
+    "to": -63,
+    "first": -62,
+    "wd": -100
+   },
+   {
+    "name": "Lower Burgundy",
+    "q": "Q33242",
+    "over": "Middle Franks",
+    "from": 855,
+    "to": 859,
+    "first": 860,
+    "wd": 855
+   },
+   {
+    "name": "Makuria Kingdom",
+    "q": "Q829356",
+    "over": "Mamluk Sultanate",
+    "from": 1279,
+    "to": 1293,
+    "first": 1415,
+    "wd": 500
+   },
+   {
+    "name": "Margraviate of Brandenburg",
+    "q": "Q148499",
+    "over": "Holy Roman Empire",
+    "from": 1169,
+    "to": 1259,
+    "first": 1260,
+    "wd": 1157
+   },
+   {
+    "name": "Margraviate of Moravia",
+    "q": "Q2670751",
+    "over": "Holy Roman Empire",
+    "from": 1182,
+    "to": 1201,
+    "first": 1385,
+    "wd": 1182
+   },
+   {
+    "name": "Margraviate of Moravia",
+    "q": "Q2670751",
+    "over": "Kingdom of Bohemia",
+    "from": 1202,
+    "to": 1384,
+    "first": 1385,
+    "wd": 1182
+   },
+   {
+    "name": "Marinid Sultanate",
+    "q": "Q582861",
+    "over": "Almohad Caliphate",
+    "from": 1215,
+    "to": 1249,
+    "first": 1250,
+    "wd": 1215
+   },
+   {
+    "name": "Mataram Kingdom",
+    "q": "Q402580",
+    "over": "Sunda Kingdom",
+    "from": 732,
+    "to": 740,
+    "first": 741,
+    "wd": 716
+   },
+   {
+    "name": "New Netherland",
+    "q": "Q382593",
+    "over": "Portuguese Empire",
+    "from": 1619,
+    "to": 1621,
+    "first": 1622,
+    "wd": 1609
+   },
+   {
+    "name": "Ngô Dynasty",
+    "q": "Q703919",
+    "over": "Southern Han",
+    "from": 939,
+    "to": 946,
+    "first": 947,
+    "wd": 939
+   },
+   {
+    "name": "Nitra",
+    "q": "Q26397",
+    "over": "Great Moravia",
+    "from": 840,
+    "to": 897,
+    "first": 898,
+    "wd": 826
+   },
+   {
+    "name": "Oirat Confederation",
+    "q": "Q4332415",
+    "over": "Dzungar Khanate",
+    "from": 1609,
+    "to": 1618,
+    "first": 1619,
+    "wd": 1399
+   },
+   {
+    "name": "Oirat Confederation",
+    "q": "Q4332415",
+    "over": "Mongol Khanate",
+    "from": 1519,
+    "to": 1546,
+    "first": 1619,
+    "wd": 1399
+   },
+   {
+    "name": "Oirat Confederation",
+    "q": "Q4332415",
+    "over": "Tümed",
+    "from": 1547,
+    "to": 1581,
+    "first": 1619,
+    "wd": 1399
+   },
+   {
+    "name": "Pandya Dynasty",
+    "q": "Q844910",
+    "over": "Kalabhra Dynasty",
+    "from": 353,
+    "to": 591,
+    "first": 592,
+    "wd": -299
+   },
+   {
+    "name": "Pandya Dynasty",
+    "q": "Q844910",
+    "over": "Late Pallava Empire",
+    "from": 306,
+    "to": 352,
+    "first": 592,
+    "wd": -299
+   },
+   {
+    "name": "Pandya Empire",
+    "q": "Q844910",
+    "over": "Chola Empire",
+    "from": 922,
+    "to": 1215,
+    "first": 1216,
+    "wd": -299
+   },
+   {
+    "name": "Patani Kingdom",
+    "q": "Q584435",
+    "over": "Ayutthaya Kingdom",
+    "from": 1516,
+    "to": 1571,
+    "first": 1572,
+    "wd": 1516
+   },
+   {
+    "name": "Patriarchate of Aquileia",
+    "q": "Q836894",
+    "over": "Holy Roman Empire",
+    "from": 962,
+    "to": 1259,
+    "first": 1260,
+    "wd": 300
+   },
+   {
+    "name": "Patriarchate of Aquileia",
+    "q": "Q836894",
+    "over": "Kingdom of Italy",
+    "from": 887,
+    "to": 969,
+    "first": 1260,
+    "wd": 300
+   },
+   {
+    "name": "Philistia",
+    "q": "Q7185566",
+    "over": "New Kingdom of Egypt",
+    "from": -1174,
+    "to": -1150,
+    "first": -1149,
+    "wd": -1174
+   },
+   {
+    "name": "Phoenicia",
+    "q": "Q41642",
+    "over": "New Kingdom of Egypt",
+    "from": -1399,
+    "to": -1300,
+    "first": -1149,
+    "wd": -2499
+   },
+   {
+    "name": "Portuguese Colonies",
+    "q": "Q200464",
+    "over": "Portuguese Empire",
+    "from": 1516,
+    "to": 1563,
+    "first": 1564,
+    "wd": 1415
+   },
+   {
+    "name": "Principality of Abkhazia",
+    "q": "Q1760473",
+    "over": "Kingdom of Kartli",
+    "from": 1463,
+    "to": 1467,
+    "first": 1468,
+    "wd": 1463
+   },
+   {
+    "name": "Principality of Chernigov",
+    "q": "Q1322662",
+    "over": "Kievan Rus'",
+    "from": 988,
+    "to": 1055,
+    "first": 1056,
+    "wd": 988
+   },
+   {
+    "name": "Principality of Drutsk",
+    "q": "Q2596884",
+    "over": "Kievan Rus'",
+    "from": 1101,
+    "to": 1110,
+    "first": 1111,
+    "wd": 1101
+   },
+   {
+    "name": "Principality of Drutsk",
+    "q": "Q2596884",
+    "over": "Principality of Polotsky",
+    "from": 1101,
+    "to": 1110,
+    "first": 1111,
+    "wd": 1101
+   },
+   {
+    "name": "Principality of Iberia",
+    "q": "Q199389",
+    "over": "Byzantine Empire",
+    "from": 633,
+    "to": 637,
+    "first": 682,
+    "wd": 588
+   },
+   {
+    "name": "Principality of Iberia",
+    "q": "Q199389",
+    "over": "Georgia",
+    "from": 638,
+    "to": 646,
+    "first": 682,
+    "wd": 588
+   },
+   {
+    "name": "Principality of Iberia",
+    "q": "Q199389",
+    "over": "Umayyad Caliphate",
+    "from": 666,
+    "to": 681,
+    "first": 682,
+    "wd": 588
+   },
+   {
+    "name": "Principality of Kiev",
+    "q": "Q1483430",
+    "over": "Kievan Rus'",
+    "from": 900,
+    "to": 1055,
+    "first": 1056,
+    "wd": 500
+   },
+   {
+    "name": "Principality of Mingrelia",
+    "q": "Q2907860",
+    "over": "Kingdom of Georgia",
+    "from": 1442,
+    "to": 1462,
+    "first": 1468,
+    "wd": 1442
+   },
+   {
+    "name": "Principality of Mingrelia",
+    "q": "Q2907860",
+    "over": "Kingdom of Kartli",
+    "from": 1463,
+    "to": 1467,
+    "first": 1468,
+    "wd": 1442
+   },
+   {
+    "name": "Principality of Minsk",
+    "q": "Q2662372",
+    "over": "Kievan Rus'",
+    "from": 1101,
+    "to": 1110,
+    "first": 1111,
+    "wd": 1101
+   },
+   {
+    "name": "Principality of Minsk",
+    "q": "Q2662372",
+    "over": "Principality of Polotsky",
+    "from": 1101,
+    "to": 1110,
+    "first": 1111,
+    "wd": 1101
+   },
+   {
+    "name": "Principality of Moldavia",
+    "q": "Q10957559",
+    "over": "Golden Horde",
+    "from": 1346,
+    "to": 1362,
+    "first": 1363,
+    "wd": 1346
+   },
+   {
+    "name": "Principality of Peremyshl",
+    "q": "Q4350658",
+    "over": "Kievan Rus'",
+    "from": 1034,
+    "to": 1055,
+    "first": 1056,
+    "wd": 1031
+   },
+   {
+    "name": "Principality of Pereyaslavl",
+    "q": "Q1261908",
+    "over": "Kievan Rus'",
+    "from": 900,
+    "to": 1055,
+    "first": 1056,
+    "wd": 900
+   },
+   {
+    "name": "Principality of Polotsky",
+    "q": "Q200797",
+    "over": "Kievan Rus'",
+    "from": 990,
+    "to": 1055,
+    "first": 1056,
+    "wd": 780
+   },
+   {
+    "name": "Principality of Smolensk",
+    "q": "Q1483495",
+    "over": "Kievan Rus'",
+    "from": 1010,
+    "to": 1055,
+    "first": 1056,
+    "wd": 1010
+   },
+   {
+    "name": "Principality of Terebovlia",
+    "q": "Q680530",
+    "over": "Kievan Rus'",
+    "from": 1048,
+    "to": 1084,
+    "first": 1085,
+    "wd": 1048
+   },
+   {
+    "name": "Principality of Terebovlia",
+    "q": "Q680530",
+    "over": "Principality of Peremyshl",
+    "from": 1056,
+    "to": 1084,
+    "first": 1085,
+    "wd": 1048
+   },
+   {
+    "name": "Principality of Turov and Pinsk",
+    "q": "Q671362",
+    "over": "Kievan Rus'",
+    "from": 990,
+    "to": 1187,
+    "first": 1188,
+    "wd": 988
+   },
+   {
+    "name": "Principality of Turov and Pinsk",
+    "q": "Q671362",
+    "over": "Principality of Kiev",
+    "from": 1056,
+    "to": 1187,
+    "first": 1188,
+    "wd": 988
+   },
+   {
+    "name": "Principality of Valona and Kanina",
+    "q": "Q7245121",
+    "over": "Albanian Principalities",
+    "from": 1375,
+    "to": 1394,
+    "first": 1395,
+    "wd": 1346
+   },
+   {
+    "name": "Principality of Valona and Kanina",
+    "q": "Q7245121",
+    "over": "Byzantine Empire",
+    "from": 1346,
+    "to": 1351,
+    "first": 1395,
+    "wd": 1346
+   },
+   {
+    "name": "Principality of Vitebsk",
+    "q": "Q2621010",
+    "over": "Kievan Rus'",
+    "from": 1101,
+    "to": 1110,
+    "first": 1111,
+    "wd": 1101
+   },
+   {
+    "name": "Principality of Vitebsk",
+    "q": "Q2621010",
+    "over": "Principality of Polotsky",
+    "from": 1101,
+    "to": 1110,
+    "first": 1111,
+    "wd": 1101
+   },
+   {
+    "name": "Principality of Volhynia",
+    "q": "Q680472",
+    "over": "Kievan Rus'",
+    "from": 990,
+    "to": 1055,
+    "first": 1056,
+    "wd": 987
+   },
+   {
+    "name": "Qarmatians",
+    "q": "Q138803",
+    "over": "Abbasid Caliphate",
+    "from": 800,
+    "to": 898,
+    "first": 899,
+    "wd": 800
+   },
+   {
+    "name": "Ramadanid Emirate",
+    "q": "Q2261321",
+    "over": "Mamluk Sultanate",
+    "from": 1375,
+    "to": 1384,
+    "first": 1385,
+    "wd": 1352
+   },
+   {
+    "name": "Republic of Florence",
+    "q": "Q148540",
+    "over": "Holy Roman Empire",
+    "from": 1115,
+    "to": 1259,
+    "first": 1260,
+    "wd": 1115
+   },
+   {
+    "name": "Republic of Genoa",
+    "q": "Q174306",
+    "over": "Holy Roman Empire",
+    "from": 1005,
+    "to": 1009,
+    "first": 1010,
+    "wd": 1005
+   },
+   {
+    "name": "Republic of Pisa",
+    "q": "Q1365493",
+    "over": "Holy Roman Empire",
+    "from": 1000,
+    "to": 1009,
+    "first": 1010,
+    "wd": 1000
+   },
+   {
+    "name": "Republic of Venice",
+    "q": "Q4948",
+    "over": "Byzantine Empire",
+    "from": 697,
+    "to": 704,
+    "first": 705,
+    "wd": 697
+   },
+   {
+    "name": "Ryazan",
+    "q": "Q269109",
+    "over": "Golden Horde",
+    "from": 1294,
+    "to": 1452,
+    "first": 1453,
+    "wd": 1097
+   },
+   {
+    "name": "Sacred Band of Thebes",
+    "q": "Q5760",
+    "over": "Greek City-States",
+    "from": -382,
+    "to": -366,
+    "first": -365,
+    "wd": -2000
+   },
+   {
+    "name": "Sagaing Kingdom",
+    "q": "Q3446223",
+    "over": "Kingdom of Pinya",
+    "from": 1315,
+    "to": 1325,
+    "first": 1326,
+    "wd": 1315
+   },
+   {
+    "name": "Sajid Dynasty",
+    "q": "Q3432153",
+    "over": "Abbasid Caliphate",
+    "from": 889,
+    "to": 897,
+    "first": 898,
+    "wd": 889
+   },
+   {
+    "name": "Samanid Empire",
+    "q": "Q486181",
+    "over": "Abbasid Caliphate",
+    "from": 819,
+    "to": 885,
+    "first": 886,
+    "wd": 819
+   },
+   {
+    "name": "Samtskhe-Saatabago",
+    "q": "Q2029317",
+    "over": "Kingdom of Georgia",
+    "from": 1333,
+    "to": 1462,
+    "first": 1468,
+    "wd": 1268
+   },
+   {
+    "name": "Samtskhe-Saatabago",
+    "q": "Q2029317",
+    "over": "Kingdom of Kartli",
+    "from": 1463,
+    "to": 1467,
+    "first": 1468,
+    "wd": 1268
+   },
+   {
+    "name": "Samtskhe-Saatabago",
+    "q": "Q2029317",
+    "over": "Timurid Empire",
+    "from": 1395,
+    "to": 1414,
+    "first": 1468,
+    "wd": 1268
+   },
+   {
+    "name": "Satavahana Dynasty",
+    "q": "Q5257",
+    "over": "Maurya Empire",
+    "from": -229,
+    "to": -225,
+    "first": -224,
+    "wd": -229
+   },
+   {
+    "name": "Second Athenian League",
+    "q": "Q2338980",
+    "over": "Greek City-States",
+    "from": -376,
+    "to": -366,
+    "first": -365,
+    "wd": -376
+   },
+   {
+    "name": "Second Bulgarian Empire",
+    "q": "Q420759",
+    "over": "Byzantine Empire",
+    "from": 1185,
+    "to": 1187,
+    "first": 1188,
+    "wd": 1185
+   },
+   {
+    "name": "Shirvan",
+    "q": "Q638064",
+    "over": "Abbasid Caliphate",
+    "from": 751,
+    "to": 824,
+    "first": 825,
+    "wd": 400
+   },
+   {
+    "name": "Shu Han",
+    "q": "Q320925",
+    "over": "Han Dynasty",
+    "from": 221,
+    "to": 223,
+    "first": 224,
+    "wd": 221
+   },
+   {
+    "name": "Southern Xiongnu",
+    "q": "Q188836",
+    "over": "Xiongnu",
+    "from": -207,
+    "to": 50,
+    "first": 51,
+    "wd": -300
+   },
+   {
+    "name": "Southern Yan",
+    "q": "Q1329439",
+    "over": "Later Yan",
+    "from": 398,
+    "to": 401,
+    "first": 402,
+    "wd": 398
+   },
+   {
+    "name": "Sukhothai Kingdom",
+    "q": "Q863279",
+    "over": "Khmer Empire",
+    "from": 1238,
+    "to": 1240,
+    "first": 1241,
+    "wd": 1238
+   },
+   {
+    "name": "Sultanate of Cirebon",
+    "q": "Q2077648",
+    "over": "Sunda Kingdom",
+    "from": 1447,
+    "to": 1474,
+    "first": 1482,
+    "wd": 1447
+   },
+   {
+    "name": "Sultanate of Jambi",
+    "q": "Q1679856",
+    "over": "Sultanate of Johor",
+    "from": 1615,
+    "to": 1669,
+    "first": 1670,
+    "wd": 1615
+   },
+   {
+    "name": "Sultanate of Kedah",
+    "q": "Q1317579",
+    "over": "Srivijaya",
+    "from": 1136,
+    "to": 1138,
+    "first": 1139,
+    "wd": 1136
+   },
+   {
+    "name": "Sultanate of Maguindanao",
+    "q": "Q248572",
+    "over": "Sultanate of Brunei",
+    "from": 1515,
+    "to": 1520,
+    "first": 1521,
+    "wd": 1515
+   },
+   {
+    "name": "Sultanate of Malacca",
+    "q": "Q46652",
+    "over": "Majapahit",
+    "from": 1402,
+    "to": 1458,
+    "first": 1459,
+    "wd": 1400
+   },
+   {
+    "name": "Sultanate of Rum",
+    "q": "Q975405",
+    "over": "Byzantine Empire",
+    "from": 1077,
+    "to": 1084,
+    "first": 1094,
+    "wd": 1077
+   },
+   {
+    "name": "Sultanate of Rum",
+    "q": "Q975405",
+    "over": "Great Seljuk Empire",
+    "from": 1085,
+    "to": 1093,
+    "first": 1094,
+    "wd": 1077
+   },
+   {
+    "name": "Taebong",
+    "q": "Q699871",
+    "over": "Unified Silla",
+    "from": 901,
+    "to": 910,
+    "first": 911,
+    "wd": 901
+   },
+   {
+    "name": "Taifa of Albarracín",
+    "q": "Q2060937",
+    "over": "Caliphate of Córdoba",
+    "from": 1012,
+    "to": 1014,
+    "first": 1015,
+    "wd": 1012
+   },
+   {
+    "name": "Taifa of Almería",
+    "q": "Q2580032",
+    "over": "Caliphate of Córdoba",
+    "from": 1010,
+    "to": 1014,
+    "first": 1015,
+    "wd": 1010
+   },
+   {
+    "name": "Taifa of Arcos",
+    "q": "Q2390604",
+    "over": "Caliphate of Córdoba",
+    "from": 1011,
+    "to": 1014,
+    "first": 1015,
+    "wd": 1011
+   },
+   {
+    "name": "Taifa of Morón",
+    "q": "Q2666791",
+    "over": "Caliphate of Córdoba",
+    "from": 1010,
+    "to": 1014,
+    "first": 1015,
+    "wd": 1010
+   },
+   {
+    "name": "Taifa of Murcia",
+    "q": "Q921067",
+    "over": "Caliphate of Córdoba",
+    "from": 1011,
+    "to": 1014,
+    "first": 1015,
+    "wd": 1011
+   },
+   {
+    "name": "Taifa of Saltés and Huelva",
+    "q": "Q2081763",
+    "over": "Caliphate of Córdoba",
+    "from": 1012,
+    "to": 1014,
+    "first": 1015,
+    "wd": 1012
+   },
+   {
+    "name": "Taifa of Seville",
+    "q": "Q276951",
+    "over": "Caliphate of Córdoba",
+    "from": 1023,
+    "to": 1027,
+    "first": 1028,
+    "wd": 1023
+   },
+   {
+    "name": "Taifa of Silves",
+    "q": "Q1994569",
+    "over": "Taifa of Badajoz",
+    "from": 1027,
+    "to": 1039,
+    "first": 1040,
+    "wd": 1027
+   },
+   {
+    "name": "Tang Dynasty",
+    "q": "Q9683",
+    "over": "Sui Dynasty",
+    "from": 618,
+    "to": 622,
+    "first": 623,
+    "wd": 618
+   },
+   {
+    "name": "Teutonic Order",
+    "q": "Q48189",
+    "over": "Duchy of Masovia",
+    "from": 1202,
+    "to": 1235,
+    "first": 1236,
+    "wd": 1190
+   },
+   {
+    "name": "Teutonic Order",
+    "q": "Q48189",
+    "over": "Duchy of Sandomierz",
+    "from": 1190,
+    "to": 1201,
+    "first": 1236,
+    "wd": 1190
+   },
+   {
+    "name": "Tulunids",
+    "q": "Q726798",
+    "over": "Abbasid Caliphate",
+    "from": 868,
+    "to": 874,
+    "first": 875,
+    "wd": 868
+   },
+   {
+    "name": "Twenty-sixth Dynasty of Egypt",
+    "q": "Q662410",
+    "over": "Neo-Assyrian Empire",
+    "from": -663,
+    "to": -615,
+    "first": -614,
+    "wd": -663
+   },
+   {
+    "name": "Vandal Kingdom",
+    "q": "Q10416611",
+    "over": "Western Roman Empire",
+    "from": 435,
+    "to": 438,
+    "first": 439,
+    "wd": 435
+   },
+   {
+    "name": "Western Chalukya Empire",
+    "q": "Q14624218",
+    "over": "Rashtrakuta Dynasty",
+    "from": 973,
+    "to": 979,
+    "first": 980,
+    "wd": 973
+   },
+   {
+    "name": "Western Karakhanid Khanate",
+    "q": "Q494354",
+    "over": "Abbasid Caliphate",
+    "from": 840,
+    "to": 885,
+    "first": 1046,
+    "wd": 840
+   },
+   {
+    "name": "Western Satraps",
+    "q": "Q2086608",
+    "over": "Indo-Scythians",
+    "from": 35,
+    "to": 42,
+    "first": 43,
+    "wd": 35
+   },
+   {
+    "name": "Western Yan",
+    "q": "Q1149230",
+    "over": "Former Qin",
+    "from": 384,
+    "to": 386,
+    "first": 387,
+    "wd": 384
+   },
+   {
+    "name": "White Horde",
+    "q": "Q2553863",
+    "over": "Golden Horde",
+    "from": 1294,
+    "to": 1362,
+    "first": 1363,
+    "wd": 1227
+   },
+   {
+    "name": "Xianbei",
+    "q": "Q861054",
+    "over": "Xiongnu",
+    "from": -207,
+    "to": -110,
+    "first": 60,
+    "wd": -207
+   },
+   {
+    "name": "Yaudheya Republic",
+    "q": "Q8050331",
+    "over": "Eastern Kushans",
+    "from": 238,
+    "to": 269,
+    "first": 306,
+    "wd": -500
+   },
+   {
+    "name": "Zengid dynasty",
+    "q": "Q189545",
+    "over": "Great Seljuk Empire",
+    "from": 1127,
+    "to": 1138,
+    "first": 1139,
+    "wd": 1127
+   },
+   {
+    "name": "Zirid dynasty",
+    "q": "Q205718",
+    "over": "Fatimid Caliphate",
+    "from": 972,
+    "to": 1055,
+    "first": 1056,
+    "wd": 972
+   }
+  ]
+ }
 }

@@ -935,7 +935,11 @@ export function timeBorders(HOST){
            first of the second), and the card says so (`blankNote`, the same lane the sheets' withheld names use) */
         const W=m.wn?{_wName:m.wn,_wSide:m.ws||'end',_wYear:m.wy,_wQ:m.wq||'',_wBy:'history',_wCirca:m.wc?1:0}:null;
         if(W&&m.ws==='gap') W._wYear2=m.wz;
-        feats.push({type:'Feature',geometry:_clGeomOf(d,i),properties:Object.assign(W?{NAME:'',_rec:'clio'}:{NAME:NAME,name:NAME,_i18n:hnFor('clio',NAME,f[1],f[0])||f[0],_rec:'clio'},W||{},
+        /* (sudan-mahdist-1886) a polity review.json `ground` draws back to the year history gives: the outline is
+           Cliopatria's first one for it (`hy`), carried back to `hs`, in place of the rows Cliopatria draws there (`ho`) —
+           a derivation, so the card says so (`typeNote`) */
+        const H=m.hy!=null?{_heldFrom:m.hs,_heldShape:m.hy,_heldOver:m.ho||''}:null;
+        feats.push({type:'Feature',geometry:_clGeomOf(d,i),properties:Object.assign(W?{NAME:'',_rec:'clio'}:{NAME:NAME,name:NAME,_i18n:hnFor('clio',NAME,f[1],f[0])||f[0],_rec:'clio'},W||{},H||{},
           f[1]?{_qid:f[1]}:{},(m.w&&!W)?{_wiki:m.w}:{},m.of?{_of:m.of,PARTOF:m.of}:{},m.r?{_realm:1}:{})}); }
       return {type:'FeatureCollection',features:feats}; }
     let _rsD=null,_rsP=null,_rsH=null;
@@ -2640,6 +2644,11 @@ export function timeBorders(HOST){
           'Grenzgenauigkeit laut Quelle: völkerrechtlich festgelegt','Точность границ по источнику: определены международным правом',
           'Precisión de los límites según la fuente: determinados por el derecho internacional','來源的邊界精度分類：由國際法界定','来源的边界精度分类：由国际法界定',
           'Précision des frontières selon la source : définies par le droit international','출처의 경계 정밀도 분류: 국제법으로 정해진 경계')):'';
+      /* (sudan-mahdist-1886) the outline is carried back: review.json `ground` (scripts/build-hist-clio.mjs) */
+      if(p._heldShape!=null&&isFinite(+p._heldShape)&&isFinite(+p._heldFrom)){
+        const hs=_yTxt(+p._heldFrom), hy=_yTxt(+p._heldShape), ov=String(p._heldOver||'').trim();
+        return _LTB.arr(LA('The historical record places this polity here from '+hs+'. Cliopatria’s first outline of it is of '+hy+(ov?' and draws «'+ov+'» on this ground until then':'')+', so that outline is drawn back to '+hs+'; the boundary before '+hy+' is not stated by any record.',
+                           '史実はこの政体がここを '+hs+' から治めていたとする。Cliopatria の最初の輪郭は '+hy+' のもので'+(ov?'、それまでこの土地には「'+ov+'」を描いている':'')+'。そのためその輪郭を '+hs+' まで遡らせて描いている。'+hy+' より前の境界はどの記録も述べていない。'))+(precision?' · '+precision:'')+(t?' · '+t:''); }
       if(!t) return precision;
       return _LTB.arr(LA(
         'Upstream’s own word for this: ' + t, '上流自身の言葉での分類: ' + t,
