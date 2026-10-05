@@ -2380,11 +2380,12 @@ test('time-compare-lapse ① the comparison window draws 1914 beside the main ma
     expect(((await page.locator('#cmp-tnote').textContent()) || '').length).toBeGreaterThan(10);
     expect(await page.evaluate(() => window.IntMapCompare._map().layers.getLayout('cmpx-eq', 'visibility'))).not.toBe('visible');
 
-    /* the historical borders: the window at 1914, the main map at 1960 */
+    /* the historical borders: the window at 1914, the main map at 1960 — CShapes' epoch, alone (`cs…`) or with
+       Cliopatria composed on the ground CShapes leaves (`cp:cs…`, js/time-borders.js csComposite) */
     await page.selectOption('#cmp-layers-sel', 'histb');
     await page.evaluate(() => window.IntMapTime.setYear(1960, { source: 'ui' }));
     await page.waitForFunction(() => { const s = window.IntMapCompare.timeState(); return s.layer === 'histb' && s.drawn && s.drawn.features > 0 && String(s.drawn.iso).startsWith('1914'); }, null, { timeout: 120_000 });
-    await page.waitForFunction(() => { const TB = window.IntMapTimeBorders; return TB.active() && !!TB.currentFC() && String(TB.current()).startsWith('cs196'); }, null, { timeout: 120_000 });
+    await page.waitForFunction(() => { const TB = window.IntMapTimeBorders; return TB.active() && !!TB.currentFC() && /^(cp:)?cs196/.test(String(TB.current())); }, null, { timeout: 120_000 });
     await page.waitForFunction(() => { try { return window.IntMapCompare._map().coords.queryRenderedFeatures(undefined, { layers: ['cmp-hb-l'] }).length > 0; } catch (_) { return false; } }, null, { timeout: 60_000 });
     w = await tclWindow();
     const main = await page.evaluate(() => { const TB = window.IntMapTimeBorders, fc = TB.currentFC();
@@ -2603,7 +2604,7 @@ test('timelapse-video-export ② Atlas records a portrait WebM; ③ the comparis
     await page.selectOption('#cmp-layers-sel', 'histb');
     await page.evaluate(() => { window.IntMapCompare.setTime({ year: 1914 }); window.IntMapTime.setYear(1960, { source: 'ui' }); });
     await page.waitForFunction(() => { const s = window.IntMapCompare.timeState(); return s.layer === 'histb' && s.drawn && s.drawn.features > 0 && String(s.drawn.iso).startsWith('1914'); }, null, { timeout: 120_000 });
-    await page.waitForFunction(() => { const TB = window.IntMapTimeBorders; return TB.active() && !!TB.currentFC() && String(TB.current()).startsWith('cs196'); }, null, { timeout: 120_000 });
+    await page.waitForFunction(() => { const TB = window.IntMapTimeBorders; return TB.active() && !!TB.currentFC() && /^(cp:)?cs196/.test(String(TB.current())); }, null, { timeout: 120_000 });
     await page.waitForFunction(() => { try { return window.IntMapCompare._map().coords.queryRenderedFeatures(undefined, { layers: ['cmp-hb-l'] }).length > 0; } catch (_) { return false; } }, null, { timeout: 60_000 });
     await page.click('#ntl-rec [data-size="landscape"]');
     await page.click('#ntl-rec-image');

@@ -292,9 +292,18 @@ export async function mapReader() {
         return String(v || '').trim();
       });
     }
-    return { modern: false, tier: r.tier, fc: r.fc, labels };
+    /* (hist-coverage-expansion) a composed answer is named by the records it is composed of, in order —
+       «cshapes+clio» from 1886, «ohm+clio+sheet» before — and cites them in their own words */
+    const tier = (r.tier === 'composite' && r.record && r.record.parts) ? 'composite:' + r.record.parts.map((x) => x.tier).join('+') : r.tier;
+    return { modern: false, tier, src: (r.record && r.record.src) || null, fc: r.fc, labels };
   }
   return { bands: B, api, labelsAt };
+}
+
+/** the words for the record(s) a page's borders come from — a composed tier lists its records in order */
+export function tierWords(tier, T) {
+  if (String(tier).indexOf('composite:') !== 0) return T.tiers[tier];
+  return String(tier).slice(10).split('+').map((k) => T.records[k] || k).join(T.recordsJoin) + T.recordsComposed;
 }
 
 /* ══ COLLECT — ask the map what it draws, at every instant a page could stand for ════════════════════ */
@@ -335,7 +344,7 @@ export async function collect(opt = {}) {
         slot.names.set(en, { en, jp: jp && jp !== en ? jp : null, km, desc: !!p._desc });
       }
     });
-    samples.push({ y, sheet: y < B.ohmFrom, tier: r.tier, per });
+    samples.push({ y, sheet: y < B.ohmFrom, tier: r.tier, src: r.src || null, per });
   }
   /* the runs: a new page where the names (or the record) change; a sheet is always its own page */
   const pages = [];
@@ -347,7 +356,7 @@ export async function collect(opt = {}) {
       const key = s.tier + '|' + names.map((n) => n.en).sort().join('\u0001');
       if (!names.length) { cur = null; continue; }   /* nothing drawn here: no page (and the next run starts fresh) */
       if (cur && !s.sheet && !cur.sheet && cur.key === key && cur.last === s.y - 1) { cur.last = s.y; cur.years.push(s.y); continue; }
-      cur = { region: reg.id, key, sheet: s.sheet, tier: s.tier, first: s.y, last: s.y, years: [s.y], names, unnamed: slot.unnamed };
+      cur = { region: reg.id, key, sheet: s.sheet, tier: s.tier, src: s.src, first: s.y, last: s.y, years: [s.y], names, unnamed: slot.unnamed };
       pages.push(cur);
     }
   }
@@ -494,7 +503,7 @@ function renderPage(M, p, L) {
   const RN = T.regions[p.region];
   const when = whenWords(p, lang);
   const n = fmt(p.names.length, L);
-  const tier = T.tiers[p.tier];
+  const tier = tierWords(p.tier, T);
   const W = { mapOf: RN.mapOf, region: RN.name, when, n, tier, date: dayWords(p.first, lang),
     first: yearWords(p.first, lang), last: yearWords(p.last, lang) };
   const single = p.sheet || p.first === p.last;
@@ -511,7 +520,7 @@ function renderPage(M, p, L) {
   const ld = [
     { '@context': 'https://schema.org', '@type': 'WebPage', name: title, description, url: SITE_TOKEN + pagePath(p, L), inLanguage: L.tag,
       isPartOf: { '@type': 'WebSite', name: 'IntMap', url: SITE_TOKEN },
-      about: { '@type': 'Place', name: RN.name }, isBasedOn: M.src[p.tier] },
+      about: { '@type': 'Place', name: RN.name }, isBasedOn: p.src || M.src[p.tier] },
     breadcrumbLd(crumbs),
   ];
   const showSource = lang === 'jp';
@@ -560,7 +569,7 @@ ${p.elsewhere.length ? `
 ` : ''}
   <section class="lp-sec" id="source">
     <h2>${esc(T.sourceH2)}</h2>
-    <p>${esc(fill(T.sourceRecord, { src: M.src[p.tier] }))}</p>
+    <p>${esc(fill(T.sourceRecord, { src: p.src || M.src[p.tier] }))}</p>
     <p class="lp-note">${esc(fill(T.method, { box: boxWords(region, lang) }))} ${esc(T.methodNames)}</p>
     <p><a class="lp-open" href="${up}sources.html">${esc(T.sourcesLink)} →</a></p>
   </section>`;

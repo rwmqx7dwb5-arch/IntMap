@@ -146,6 +146,15 @@ export const AOUREDNIK_BASEMAPS = {
   },
 };
 
+export const CLIOPATRIA = {
+  cadence: 'P6M',
+  cadenceBasis: {
+    observed: 'measured 2026-10-04 on github.com/Seshat-Global-History-Databank/cliopatria: data releases v0.0.1 2024-08-22, v0.1.0 2024-12-22, v0.1.1 2025-01-04, v0.1.3 2025-01-21, v0.2.0 2026-05-16, v0.2.1 2026-10-03 — median gap about five months, longest sixteen',
+    expires: 'when the project states a release schedule, or two releases fall within a month of each other twice in a row',
+    canon: 'scripts/lib/upstream-cadence.mjs CLIOPATRIA',
+  },
+};
+
 export const JPL_SBDB = {
   cadence: 'P1D',
   cadenceBasis: {

@@ -40,6 +40,7 @@
  *      node scripts/build-histnames.mjs --fetch   # candidates, facts, classes, QID labels (cached)
  *      node scripts/build-histnames.mjs           # build data/histnames.json
  *      node scripts/build-histnames.mjs --check    # rebuild and compare with what is shipped
+ *      node scripts/build-histnames.mjs --identifiers   # the QID lane alone, for a record that states QIDs (network)
  * ==========================================================================*/
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -456,6 +457,40 @@ async function build({ check = false } = {}) {
   return doc;
 }
 
+/* ══ (hist-coverage-expansion) --identifiers: THE IDENTIFIER LANE ALONE ══════════════════════════════
+   A record that states QIDs (data/hist-clio.js, every Cliopatria row) adds questions to ONE lane, and that
+   lane needs nothing but the labels of the QIDs asked — no candidate harvest, no measure. Rebuilding the
+   whole table for it would re-ask Wikidata every name the other lanes hold and fold their drift into a
+   change about something else. So this mode keeps every row the shipped table already answers in full,
+   asks Wikidata only for the QIDs that are new or now want a language their row lacks (the existing
+   values stay, the missing languages are added), and drops rows no record asks about — the same set a
+   full rebuild would keep. ⚠ The row rule is `labelRow`, the one the full build uses. */
+async function identifiers() {
+  const t = readJSON(OUT);
+  const langs = attestedLangs(ROOT), cc = await converters(langs);
+  const gaps = histBordersQidGaps(langs, ROOT);
+  const short = (q) => { const r = t.byQid[q]; return !r || [...gaps.get(q)].some((l) => !(r.n && r.n[l])); };
+  const ask = [...gaps.keys()].filter(short);
+  const lab = await labelsByQid(ask, (m) => process.stderr.write(String.fromCharCode(13) + m));
+  const byQid = {};
+  let added = 0, widened = 0;
+  for (const [q, want] of gaps) {
+    const was = t.byQid[q];
+    let row = was || null;
+    if (short(q) && lab[q] && Object.keys(lab[q]).length) {
+      const { n, a } = labelRow({ labels: lab[q] }, '', langs, cc);
+      const keep = Object.assign({}, was ? was.n : {});
+      for (const l of want) if (!keep[l] && n[l]) keep[l] = n[l];
+      if (Object.keys(keep).length) { row = { a: was ? (was.a | a) : a, n: keep }; if (was) widened++; else added++; }
+    }
+    if (row && Object.keys(row.n || {}).length) byQid[q] = row;
+  }
+  t.byQid = byQid; t.lanes.qid = Object.keys(byQid).length;
+  writeFileSync(OUT, JSON.stringify(t));
+  console.log('data/histnames.json — identifier lane ' + Object.keys(byQid).length + ' QIDs of ' + gaps.size + ' with a gap (' + added + ' new, ' + widened + ' widened); the other lanes are untouched');
+}
+
 const arg = process.argv.slice(2);
 if (arg.includes('--fetch')) await fetchAll();
+else if (arg.includes('--identifiers')) await identifiers();
 else await build({ check: arg.includes('--check') });

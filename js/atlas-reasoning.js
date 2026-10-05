@@ -242,7 +242,9 @@ export function rankChanges(borderDays, wars, region) {
     if (!a.length && !e.length && !r.length) return;
     items.push({ kind: 'border', date: d.date || null, score: a.length + e.length + 0.5 * r.length,
       basis: T(a.length + ' appear, ' + e.length + ' end, ' + r.length + ' change borders', a.length + ' が出現・' + e.length + ' が消滅・' + r.length + ' の境界が変化'),
-      appeared: a, ended: e, reshaped: r, maybeYearOnly: !!(d.date && /-01-01$/.test(d.date)) });
+      /* (hist-coverage-expansion) when the border reader says how precise the day is, that is the answer — a
+         Cliopatria or sheet edge states the year alone; only without it is 1 January a guess */
+      appeared: a, ended: e, reshaped: r, yearOnly: d.prec === 'year', maybeYearOnly: d.prec ? d.prec === 'year' : !!(d.date && /-01-01$/.test(d.date)) });
   });
   (wars || []).forEach((w) => {
     const n = (w.events || []).length;

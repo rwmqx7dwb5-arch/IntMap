@@ -124,7 +124,8 @@ const names = (p) => new Set(p.names.map((n) => n.en));
 test('⑥ named years and places say what history says (the map\'s own labels, its own records)', () => {
   /* Europe, 1 July 1913 — before the war: the four empires; no state that only the peace made */
   const e13 = at('europe', 1913);
-  assert.equal(e13.tier, 'cshapes');
+  /* CShapes answers first — alone, or with Cliopatria on the ground CShapes leaves (hist-coverage-expansion) */
+  assert.ok(e13.tier === 'cshapes' || /^composite:cshapes(\+|$)/.test(e13.tier), e13.tier);
   for (const n of ['Austria-Hungary', 'German Empire', 'Russian Empire', 'Ottoman Empire']) assert.ok(names(e13).has(n), 'Europe 1913 lacks ' + n);
   for (const n of ['Czechoslovakia', 'Poland', 'Weimar Republic']) assert.ok(!names(e13).has(n), 'Europe 1913 draws ' + n + ', which did not yet exist');
   /* Europe, 1 July 1920 — after it: Austria-Hungary dissolved (1918-11), Czechoslovakia (1918-10-28) and
@@ -142,7 +143,7 @@ test('⑥ named years and places say what history says (the map\'s own labels, i
   assert.equal(jp.get('Korean Empire'), '大韓帝国');
   /* 3000 BC is a sheet, and the sheet is the year's own */
   const w3 = at('world', -2999);
-  assert.ok(w3 && w3.sheet && w3.tier === 'snapshot' && w3.first === -2999, 'the world of 3000 BC is the sheet of that year');
+  assert.ok(w3 && w3.sheet && (w3.tier === 'snapshot' || /^composite:.*sheet/.test(w3.tier)) && w3.first === -2999, 'the world of 3000 BC is the sheet of that year (' + (w3 && w3.tier) + ')');
   assert.ok(names(w3).has('Egypt'));
   /* every listed name has area inside the region, and the list is ordered by it */
   for (const p of M.pages) {

@@ -446,7 +446,7 @@ async function changes(a, K) {
           const appeared = [...B.keys()].filter((k) => !A.has(k) && hit(B.get(k)));
           const ended = [...A.keys()].filter((k) => !B.has(k) && hit(A.get(k)));
           const reshaped = [...B.keys()].filter((k) => A.has(k) && A.get(k) !== B.get(k) && (hit(B.get(k)) || hit(A.get(k))));
-          days.push({ date: isoOf(d), appeared, ended, reshaped });
+          days.push({ date: isoOf(d), prec: TB.changePrecision ? TB.changePrecision(d) : 'day', appeared, ended, reshaped });
         }
         dayCap = Math.max(0, dayTotal - maxDays);
       } catch (_) { daysUnstated = true; }
@@ -507,7 +507,7 @@ async function changes(a, K) {
   out += sec(L('Inside the period, by how many records each affects', '期間内の出来事（影響する記録の数の順）'));
   if (items.length) {
     out += '<ol style="margin:2px 0 4px 18px;padding:0;">' + items.slice(0, N).map((it) => {
-      if (it.kind === 'border') return '<li><b>' + esc(it.date || L('undated', '日付なし')) + '</b>' + (it.maybeYearOnly ? ' <i>(' + esc(L('1 January: the record may state only the year', '1 月 1 日: 記録は年だけを述べている可能性')) + ')</i>' : '') + ' — ' + esc(L('border record changes', '国境の記録の変化')) + ': '
+      if (it.kind === 'border') return '<li><b>' + esc((it.yearOnly && it.date) ? String(it.date).replace(/-01-01$/, '') : (it.date || L('undated', '日付なし'))) + '</b>' + (it.yearOnly ? ' <i>(' + esc(L('the record states the year only', '記録は年だけを述べている')) + ')</i>' : it.maybeYearOnly ? ' <i>(' + esc(L('1 January: the record may state only the year', '1 月 1 日: 記録は年だけを述べている可能性')) + ')</i>' : '') + ' — ' + esc(L('border record changes', '国境の記録の変化')) + ': '
         + esc([it.appeared.length ? '+' + it.appeared.join(', ') : '', it.ended.length ? '−' + it.ended.join(', ') : '', it.reshaped.length ? '~' + it.reshaped.slice(0, 4).join(', ') : ''].filter(Boolean).join(' · ')) + ' <span style="color:var(--text-muted);font-size:11px;">(' + esc(pick(it.basis)) + ')</span></li>';
       return '<li><b>' + esc(it.name) + '</b> (' + esc(it.date || '') + ' – ' + esc(it.to || '') + ') — ' + it.events.map((e) => esc(e.date + ' ' + e.name)).join(' · ') + ' <span style="color:var(--text-muted);font-size:11px;">(' + esc(pick(it.basis)) + ')</span></li>';
     }).join('') + '</ol>';

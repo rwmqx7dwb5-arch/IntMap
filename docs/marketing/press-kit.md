@@ -24,9 +24,9 @@
 - JA: IntMap は、地図の上のすべてに一つの時計を持つ無料の世界地図です。紀元前123,000年から今日までのどの日付に合わせても、国境・数字・166のレイヤーがついてきて、それぞれの出典が明記されています。ブラウザで登録なしに使え、リンク一つで見ているものをそのまま開き直せます。
 
 ### 長い段落 (long)
-EN: IntMap is a free world map with one clock for everything on it. Move the clock anywhere from 123,000 BC to today and the map moves with it: country borders from 54 historical snapshots before 1689, from OpenHistoricalMap from 1689 to 1885, and day by day from CShapes 2.0 from 1886 to 2019. On the same map sit 166 layers — climate, hazards, population, economy, infrastructure and live feeds — and every one names its source; a layer whose source does not describe the chosen date is simply not drawn. A link reopens the same place, date and layers on any device, and the page for teachers shows how to build a lesson on that. Signed in, Atlas, IntMap’s AI assistant, operates the map from plain language. IntMap has no ads and no paid plan and is kept running by donations.
+EN: IntMap is a free world map with one clock for everything on it. Move the clock anywhere from 123,000 BC to today and the map moves with it: country borders day by day from CShapes 2.0 (1886–2019) and OpenHistoricalMap (1689–1885), year by year from Cliopatria (Seshat Global History Databank, from 3,400 BC) where those are silent, and from 54 historical snapshots where none of them speaks. On the same map sit 166 layers — climate, hazards, population, economy, infrastructure and live feeds — and every one names its source; a layer whose source does not describe the chosen date is simply not drawn. A link reopens the same place, date and layers on any device, and the page for teachers shows how to build a lesson on that. Signed in, Atlas, IntMap’s AI assistant, operates the map from plain language. IntMap has no ads and no paid plan and is kept running by donations.
 
-JA: IntMap は、地図の上のすべてに一つの時計を持つ無料の世界地図です。時計を紀元前123,000年から今日までのどこへ動かしても、地図がついてきます。国境は、1689年より前が54枚の歴史スナップショット、1689〜1885年が OpenHistoricalMap、1886〜2019年が CShapes 2.0 による日単位のものです。同じ地図に気候・災害・人口・経済・インフラ・リアルタイムの166のレイヤーが重なり、すべてが出典を明記しています。選んだ日付を出典が述べていないレイヤーは、そもそも描きません。リンク一つで同じ場所・日付・レイヤーをどの端末でも開け、それを使った授業の組み立て方を「先生へ」のページにまとめています。ログインすれば、AI アシスタントの Atlas が言葉どおりに地図を操作します。広告も有料プランもなく、寄付で運営しています。
+JA: IntMap は、地図の上のすべてに一つの時計を持つ無料の世界地図です。時計を紀元前123,000年から今日までのどこへ動かしても、地図がついてきます。国境は、1886〜2019年の CShapes 2.0 と 1689〜1885年の OpenHistoricalMap（どちらも日単位）、それらが述べない土地に Seshat Global History Databank の Cliopatria（紀元前3,400年から・年単位）、どれも述べない土地に54枚の歴史スナップショットを重ねたものです。同じ地図に気候・災害・人口・経済・インフラ・リアルタイムの166のレイヤーが重なり、すべてが出典を明記しています。選んだ日付を出典が述べていないレイヤーは、そもそも描きません。リンク一つで同じ場所・日付・レイヤーをどの端末でも開け、それを使った授業の組み立て方を「先生へ」のページにまとめています。ログインすれば、AI アシスタントの Atlas が言葉どおりに地図を操作します。広告も有料プランもなく、寄付で運営しています。
 
 ### 検索結果の一行 (meta description)
 - EN: A free world map you can set to any date from 123,000 BC to today — historical borders, climate, population and live data on one map, every source named. No sign-up.
@@ -46,8 +46,8 @@ JA: IntMap は、地図の上のすべてに一つの時計を持つ無料の世
 | 何と違うか | Unlike printed atlases and static historical maps, which show one moment someone chose for you, and unlike GIS tools, which expect you to bring and prepare the data yourself. | 誰かが選んだ一瞬だけを見せる地図帳や静的な歴史地図とも、データを自分で用意することが前提の GIS とも違います。 |
 
 ### 裏付け (proof points)
-- EN: Borders for every year: 54 historical snapshots before 1689, OpenHistoricalMap from 1689 to 1885, and CShapes 2.0 day by day from 1886 to 2019.
-  JA: すべての年の国境：1689年より前は54枚の歴史スナップショット、1689〜1885年は OpenHistoricalMap、1886〜2019年は CShapes 2.0 を日単位で。
+- EN: Borders for every year, layered by precision: CShapes 2.0 day by day from 1886 to 2019, OpenHistoricalMap from 1689 to 1885, Cliopatria from the Seshat Global History Databank year by year from 3,400 BC where those are silent, and 54 historical snapshots where none of them speaks.
+  JA: すべての年の国境を精度の順に重ねて：1886〜2019年は CShapes 2.0、1689〜1885年は OpenHistoricalMap（どちらも日単位）、それらが述べない土地に Seshat Global History Databank の Cliopatria（紀元前3,400年から・年単位）、どれも述べない土地に54枚の歴史スナップショット。
 - EN: 166 layers — climate, hazards, population, economy, infrastructure, live feeds — each with its source and licence on the Data sources page. A layer whose source does not describe the chosen date is not drawn.
   JA: 気候・災害・人口・経済・インフラ・リアルタイムの166のレイヤー。すべての出典とライセンスを「データの出典」ページに載せています。選んだ日付を出典が述べていないレイヤーは描きません。
 - EN: One link reopens the same place, date and layers on any device; the same map can be embedded on another site.

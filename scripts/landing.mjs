@@ -76,12 +76,15 @@ export function facts() {
   const [, csMin, csMax] = need(/const CS_MIN=(\d+), CS_MAX=(\d+);/, tb, 'js/time-borders.js CS_MIN/CS_MAX');
   const er = rd('data/hist-eras.js');
   const eras = JSON.parse(er.slice(er.indexOf('=') + 1).replace(/;\s*$/, ''));
+  /* (hist-coverage-expansion) the year-by-year record's own floor — data/hist-clio.js `window[0]`, never typed */
+  const cl = rd('data/hist-clio.js');
+  const clioFloor = +need(/"window":\[(-?\d+),/, cl, 'data/hist-clio.js window')[1];
   const site = SITE;
   const stripeEn = STRIPE_DONATE.en, stripeJp = STRIPE_DONATE.jp;
   return {
     floor, bcYears: 1 - floor,                    /* astronomical year y ≤ 0 is (1 − y) BC */
     snapshots: eras.snaps.length, firstSnap: eras.snaps[0].y,
-    ohmFrom: +hbMin, ohmTo: +hbMax, csFrom: +csMin, csTo: +csMax,
+    ohmFrom: +hbMin, ohmTo: +hbMax, csFrom: +csMin, csTo: +csMax, clioBCYears: 1 - clioFloor,
     /* (basic-display-not-layers) the LAYERS — the map display (labels, borders, roads, day & night …) is not a layer
        and is not counted as one (「基本表示をレイヤーって言うな」, 2026-10-02); 174 rows were 163 layers + 11 display items */
     layers: dataLayers().length,
@@ -90,12 +93,13 @@ export function facts() {
 }
 
 /* the facts, written in each language */
-function factWords(F, lang) {
+export function factWords(F, lang) {
   const n = (v) => v.toLocaleString(lang === 'jp' ? 'ja-JP' : 'en-US');
   return {
     floorBC: lang === 'jp' ? '紀元前' + n(F.bcYears) + '年' : n(F.bcYears) + ' BC',
     snapshots: n(F.snapshots), ohmFrom: String(F.ohmFrom), ohmTo: String(F.ohmTo),
     csFrom: String(F.csFrom), csTo: String(F.csTo), layers: n(F.layers),
+    clioFromBC: lang === 'jp' ? '紀元前' + n(F.clioBCYears) + '年' : n(F.clioBCYears) + ' BC',
   };
 }
 function fill(s, W) {

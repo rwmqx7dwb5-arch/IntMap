@@ -21,7 +21,7 @@ import { join, dirname, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { TEXT } from '../scripts/landing-text.mjs';
-import { facts, outputs, showcaseProblems, PAGES, pagePath, recordNamesFor } from '../scripts/landing.mjs';
+import { facts, factWords, outputs, showcaseProblems, PAGES, pagePath, recordNamesFor } from '../scripts/landing.mjs';
 import { SHOWCASE, CAPTURED, RECORD_ANSWERED } from '../js/showcase.js';
 import { STATIC_ASSETS, STATIC_EXCLUDE } from '../vite.config.js';
 import { HUB as HISTORY_HUB, SITEMAP_INDEX } from '../scripts/history-pages.mjs';
@@ -62,7 +62,8 @@ test('② en and jp carry the same text: same keys, nothing empty, no unknown pl
     : Array.isArray(o) ? o.flatMap((v, i) => shape(v, p + '[' + i + ']'))
       : Object.keys(o).sort().flatMap((k) => shape(o[k], p + '.' + k)));
   assert.deepEqual(shape(TEXT.jp), shape(TEXT.en));
-  const known = new Set(['floorBC', 'snapshots', 'ohmFrom', 'ohmTo', 'csFrom', 'csTo', 'layers']);
+  /* the facts the generator fills — asked of it, not listed here (a new fact is known the day it is written) */
+  const known = new Set(Object.keys(factWords(facts(), 'en')));
   const walk = (o, p) => {
     if (typeof o === 'string') {
       assert.ok(o.trim(), p + ' is empty');

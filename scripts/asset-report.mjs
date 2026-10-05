@@ -172,6 +172,12 @@ const ALLOW = {
        record boundary, and moving our simplification on one side alone changes its size or its sign).
        ⚠ ITS POSITION IS NOT CHOSEN EITHER: 1689 is derived from coverage by
        scripts/build-hist-borders.mjs, so the step moves down the moment OHM fills in below it. */
+    /* (hist-coverage-expansion) the composition's layers below the day-exact records: Cliopatria's polities
+       (CC BY 4.0) less the ground OpenHistoricalMap and CShapes state, and the era sheets less the ground those
+       state at each sheet's year. Each is one record, read only when the clock asks, and the app reads both as
+       time-cut tiles by Range — an instant reads its own rows (measured: 1250 needs 126 Cliopatria rows). */
+    { match: /^data\/hist-clio\.js$/, why: 'Cliopatria (Seshat Global History Databank, CC BY 4.0), 3400 BC–2019, year by year, less the ground OpenHistoricalMap and CShapes state on their own dates (scripts/build-hist-clio.mjs) — the app reads it as time-cut tiles (data/hvt/, by Range); the whole file is read only where no tiles are served (js/hist-bundles.js)' },
+    { match: /^data\/hist-eras-rest\.js$/, why: 'the era sheets before 1886 less the ground OpenHistoricalMap and Cliopatria state at each sheet\'s year (aourednik/historical-basemaps, GPL-3.0; scripts/build-hist-clio.mjs) — read one sheet at a time as time-cut tiles (data/hvt/, by Range); the whole file only where no tiles are served (js/hist-bundles.js)' },
     { match: /^data\/hist-borders\.js$/, why: 'the day-exact country borders below CShapes, 1689–1885 (OpenHistoricalMap, CC0) — one file is the dataset, injected as a <script> only when the clock asks, retaining source-matched finer geometry and existing territorial corrections, with measured cost in DEV-NOTES.md R710 — the app reads it as time-cut tiles (data/hvt/, by Range); the whole file is read only where no tiles are served (js/hist-bundles.js)' },
   ],
 };

@@ -501,6 +501,12 @@ export const IntMapRefData = (function(){
        `gpl-3.0`, and README.md names no licence at all — there is no CC declaration anywhere in
        it, contrary to what several downstream copies assume. What is stated is what was read. */
     {n:'historical-basemaps (aourednik) — GPL-3.0',u:'https://github.com/aourednik/historical-basemaps',lic:'GPL-3.0',credit:true},
+    /* (hist-coverage-expansion) Cliopatria — Seshat Global History Databank's world-wide polities, 3400 BC–2024,
+       dated to the year. IntMap REDISTRIBUTES an adaptation (data/hist-clio.js: simplified, BC years made
+       astronomical, cut at 1886, less the ground OpenHistoricalMap states 1689–1885), so CC BY 4.0's conditions —
+       credit, a link to the licence, and saying that it was changed — are paid here and in the bundle's own `src`.
+       scripts/build-hist-clio.mjs holds the citation as a value. */
+    {n:'Cliopatria — Seshat Global History Databank (CC BY 4.0)',u:'https://github.com/Seshat-Global-History-Databank/cliopatria',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},
     /* ⚠⚠⚠ (#R689) THE CREDIT #R679 WROTE DOWN AS AN INSTRUCTION AND THEN DID NOT PAY. The
        harvest that produced scripts/histcities/derived-pleiades.mjs put the condition in that
        file's own header — «sources.html must name Pleiades and its contributors» — and 785 rows

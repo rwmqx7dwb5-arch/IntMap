@@ -107,6 +107,9 @@ function polities(r, areaKm2) {
   if (!r || !r.fc) return m;
   r.fc.features.forEach((f, i) => {
     const en = r.labels.en[i]; if (!en) return;   /* an outline the record leaves unnamed is drawn without a label; it is not a polity this page can name */
+    /* (hist-coverage-expansion) the day record is CShapes: Cliopatria's pieces under it (`_rec: 'clio'`) state years, and a
+       piece sharing a state's name (the Russian Empire's Arctic islands) must not move that state's area or box on a day */
+    if (f.properties && f.properties._rec) return;
     const jp = r.labels.jp[i];
     let row = m.get(en);
     if (!row) { row = { en, jp: jp && jp !== en ? jp : null, km: 0, bb: [Infinity, Infinity, -Infinity, -Infinity], gw: new Set() }; m.set(en, row); }
@@ -152,8 +155,11 @@ export async function build() {
     const day = localNoon(y, m, d), prev = localNoon(y, m, d - 1);
     const after = await R.labelsAt(day), before = await R.labelsAt(prev);
     if (!after || !before || !after.fc || !before.fc) continue;
-    if (after.tier !== before.tier) { skipped.seam++; continue; }
-    if (!DAY_RECORDS.includes(after.tier)) { skipped.notADayRecord++; continue; }
+    /* (hist-coverage-expansion) a composed answer is named by its records in order (`composite:cshapes+clio`): the day
+       is its FIRST record's — Cliopatria under CShapes states years and carries no state-system code, so it adds no event */
+    const tierOf = (r) => (String(r.tier).indexOf('composite:') === 0 ? String(r.tier).slice(10).split('+')[0] : r.tier);
+    if (tierOf(after) !== tierOf(before)) { skipped.seam++; continue; }
+    if (!DAY_RECORDS.includes(tierOf(after))) { skipped.notADayRecord++; continue; }
     const A = polities(before, areaKm2), Bn = polities(after, areaKm2);
     const here = edges.get(isoOf(y, m, d)) || new Set();
     const dated = (p) => [...p.gw].some((g) => here.has(g));
@@ -164,7 +170,7 @@ export async function build() {
     skipped.undatedName += appeared0.length + ended0.length + redrawn0.length - appeared.length - ended.length - redrawn.length;
     if (!appeared.length && !ended.length && !redrawn.length) { skipped.unchanged++; continue; }
     const byArea = (a, b) => b.km - a.km || a.en.localeCompare(b.en);
-    const ev = { d: isoOf(y, m, d), src: after.tier };
+    const ev = { d: isoOf(y, m, d), src: tierOf(after) };
     if (m === 1 && d === 1) ev.maybeYearOnly = true;
     if (appeared.length) ev.appeared = appeared.sort(byArea).map(out1);
     if (ended.length) ev.ended = ended.sort(byArea).map(out1);

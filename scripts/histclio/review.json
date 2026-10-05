@@ -1,0 +1,935 @@
+{
+ "note": "Reviewed lifespans for data/hist-clio.js (Cliopatria). The machine FINDS (scripts/build-hist-clio.mjs: a row drawn more than FINDING_SLACK years outside the lifespan Wikidata states for a QID shown to be that polity) and this file JUDGES. `rows` act on the map: from the year after `e` (astronomical; `e` itself is inside) the shape is drawn without the name, and its card says which name Cliopatria gives and the year the historical record (`history`) places the end — the bound is history's, `wd` is the Wikidata item for the polity that states the same or a nearby year. `refuted` are findings examined and NOT applied, with the reason. `pending` are findings not yet judged: they are drawn as Cliopatria states them, and the gate fails on any finding in none of the three lists — so a new one arrives counted. Gate: npm run check:histclio.",
+ "rows": [
+  {
+   "name": "Byzantine Empire",
+   "e": 1453,
+   "wd": "Q12544",
+   "history": "Constantinople fell to the Ottomans on 29 May 1453, ending the Byzantine Empire; the Despotate of the Morea (to 1460) and the Empire of Trebizond (to 1461) were separate successor states."
+  },
+  {
+   "name": "New Netherland",
+   "e": 1674,
+   "wd": "Q382593",
+   "history": "England seized New Amsterdam in 1664 and kept it by the Treaty of Breda (1667); the Dutch reconquest of 1673 was handed back by the Treaty of Westminster in 1674."
+  },
+  {
+   "name": "Denmark-Norway",
+   "e": 1814,
+   "wd": "Q62651",
+   "history": "The Treaty of Kiel (14 January 1814) ceded Norway to Sweden and ended the union of Denmark and Norway."
+  },
+  {
+   "name": "Golden Horde",
+   "e": 1502,
+   "wd": "Q79965",
+   "history": "The Golden Horde's last remnant, the Great Horde, was destroyed by the Crimean Khanate in 1502."
+  },
+  {
+   "name": "Republic of Florence",
+   "e": 1532,
+   "wd": "Q148540",
+   "history": "Alessandro de' Medici was made hereditary Duke of the Florentine Republic in 1532, ending the republic; the Grand Duchy of Tuscany followed in 1569."
+  },
+  {
+   "name": "Swedish Empire",
+   "e": 1721,
+   "wd": "Q215443",
+   "history": "The Great Northern War ended Sweden's period as a great power; the Treaty of Nystad (1721) ceded the eastern Baltic provinces to Russia."
+  },
+  {
+   "name": "Almohad Caliphate",
+   "e": 1269,
+   "wd": "Q199688",
+   "history": "The Marinids took Marrakesh in 1269, ending the Almohad Caliphate."
+  },
+  {
+   "name": "Almoravid Dynasty",
+   "e": 1147,
+   "wd": "Q75613",
+   "history": "The Almohads took Marrakesh in 1147, ending Almoravid rule."
+  },
+  {
+   "name": "Caliphate of Córdoba",
+   "e": 1031,
+   "wd": "Q171740",
+   "history": "The Caliphate of Córdoba was abolished in 1031 and broke up into the taifa kingdoms."
+  },
+  {
+   "name": "Hamdanid Emirates",
+   "e": 1004,
+   "wd": "Q837187",
+   "history": "The Hamdanid emirate of Mosul ended in 979 and the emirate of Aleppo in 1004."
+  },
+  {
+   "name": "Ngô Dynasty",
+   "e": 965,
+   "wd": "Q703919",
+   "history": "The Ngô dynasty ended in 965, followed by the Anarchy of the Twelve Warlords and the Đinh dynasty (968)."
+  },
+  {
+   "name": "Serbian Empire",
+   "e": 1371,
+   "wd": "Q1406298",
+   "history": "The Serbian Empire ended with the death of Stefan Uroš V in 1371; the Serbian Despotate (1402–1459) was a later successor state."
+  },
+  {
+   "name": "Saadi Sultanate",
+   "e": 1659,
+   "wd": "Q1136188",
+   "history": "The last Saadi sultan was killed in 1659; the Alaouites had taken Morocco by 1668."
+  }
+ ],
+ "refuted": [
+  {
+   "name": "Inca Empire",
+   "why": "date-disputed",
+   "history": "After the Spanish conquest (1533) the Neo-Inca State held Vilcabamba until 1572; Cliopatria's last row (1564–1571) is that state."
+  },
+  {
+   "name": "Carolingian Empire",
+   "why": "date-disputed",
+   "history": "Wikidata's item ends at the partition of Verdun (843); Carolingian kings ruled West Francia until 987, which is the realm Cliopatria draws."
+  },
+  {
+   "name": "Kingdom of Israel",
+   "why": "other-identity",
+   "history": "Cliopatria's rows to 722 BC are the northern Kingdom of Israel, destroyed by Assyria in 722 BC; the QID it carries is the united monarchy."
+  }
+ ],
+ "pending": [
+  {
+   "name": "Alodia",
+   "q": "Q449639",
+   "side": "start",
+   "drawn": 347,
+   "wd": 600
+  },
+  {
+   "name": "Astrakhan Khanate",
+   "q": "Q210163",
+   "side": "end",
+   "drawn": 1688,
+   "wd": 1556
+  },
+  {
+   "name": "Bidar Sultanate",
+   "q": "Q669317",
+   "side": "start",
+   "drawn": 1492,
+   "wd": 1527
+  },
+  {
+   "name": "Burgundian Kingdom",
+   "q": "Q13590051",
+   "side": "end",
+   "drawn": 660,
+   "wd": 534
+  },
+  {
+   "name": "Burma",
+   "q": "Q836",
+   "side": "start",
+   "drawn": 1820,
+   "wd": 1948
+  },
+  {
+   "name": "Byeonhan",
+   "q": "Q1378584",
+   "side": "end",
+   "drawn": 566,
+   "wd": 400
+  },
+  {
+   "name": "Cao",
+   "q": "Q284964",
+   "side": "end",
+   "drawn": -450,
+   "wd": -486
+  },
+  {
+   "name": "Caucasian Albania",
+   "q": "Q177076",
+   "side": "end",
+   "drawn": 509,
+   "wd": 461
+  },
+  {
+   "name": "Caucasian Albania",
+   "q": "Q177076",
+   "side": "start",
+   "drawn": -62,
+   "wd": -1
+  },
+  {
+   "name": "Chen",
+   "q": "Q1069690",
+   "side": "end",
+   "drawn": -450,
+   "wd": -478
+  },
+  {
+   "name": "Chu",
+   "q": "Q504759",
+   "side": "start",
+   "drawn": -749,
+   "wd": -721
+  },
+  {
+   "name": "County of Besalú",
+   "q": "Q1541642",
+   "side": "start",
+   "drawn": 898,
+   "wd": 988
+  },
+  {
+   "name": "County of Ribagorza",
+   "q": "Q1297894",
+   "side": "start",
+   "drawn": 866,
+   "wd": 900
+  },
+  {
+   "name": "County of Savoy",
+   "q": "Q1232887",
+   "side": "end",
+   "drawn": 1539,
+   "wd": 1416
+  },
+  {
+   "name": "County of Urgell",
+   "q": "Q1514510",
+   "side": "end",
+   "drawn": 1688,
+   "wd": 1413
+  },
+  {
+   "name": "Dauphiné",
+   "q": "Q151999",
+   "side": "start",
+   "drawn": 1260,
+   "wd": 1349
+  },
+  {
+   "name": "Duchy of Anhalt",
+   "q": "Q16550783",
+   "side": "start",
+   "drawn": 1806,
+   "wd": 1863
+  },
+  {
+   "name": "Duchy of Thuringia",
+   "q": "Q5311389",
+   "side": "start",
+   "drawn": 567,
+   "wd": 631
+  },
+  {
+   "name": "Dál Riata",
+   "q": "Q111471",
+   "side": "end",
+   "drawn": 899,
+   "wd": 843
+  },
+  {
+   "name": "Eastern Moghulistan",
+   "q": "Q1191125",
+   "side": "end",
+   "drawn": 1686,
+   "wd": 1570
+  },
+  {
+   "name": "Elam",
+   "q": "Q128904",
+   "side": "start",
+   "drawn": -3199,
+   "wd": -2699
+  },
+  {
+   "name": "Emirate of Nejd",
+   "q": "Q146862",
+   "side": "end",
+   "drawn": 1925,
+   "wd": 1891
+  },
+  {
+   "name": "Empire of Kanem",
+   "q": "Q1139762",
+   "side": "start",
+   "drawn": 1072,
+   "wd": 1100
+  },
+  {
+   "name": "Fifteenth Dynasty of Egypt",
+   "q": "Q728479",
+   "side": "end",
+   "drawn": -1500,
+   "wd": -1549
+  },
+  {
+   "name": "First Hellenic Republic",
+   "q": "Q528546",
+   "side": "end",
+   "drawn": 1912,
+   "wd": 1832
+  },
+  {
+   "name": "First Toungoo Empire",
+   "q": "Q23039102",
+   "side": "end",
+   "drawn": 1756,
+   "wd": 1599
+  },
+  {
+   "name": "French Indochina",
+   "q": "Q185682",
+   "side": "start",
+   "drawn": 1860,
+   "wd": 1887
+  },
+  {
+   "name": "Funan",
+   "q": "Q867782",
+   "side": "end",
+   "drawn": 640,
+   "wd": 550
+  },
+  {
+   "name": "Giudicato of Cagliari",
+   "q": "Q2297073",
+   "side": "start",
+   "drawn": 866,
+   "wd": 1000
+  },
+  {
+   "name": "Gurjara-Pratihara Dynasty",
+   "q": "Q5324",
+   "side": "start",
+   "drawn": 732,
+   "wd": 800
+  },
+  {
+   "name": "Halych-Volhynia occupation",
+   "q": "Q239502",
+   "side": "start",
+   "drawn": 1056,
+   "wd": 1199
+  },
+  {
+   "name": "Himyarite Kingdom",
+   "q": "Q289577",
+   "side": "end",
+   "drawn": 601,
+   "wd": 525
+  },
+  {
+   "name": "Holy Roman Empire",
+   "q": "Q12548",
+   "side": "start",
+   "drawn": 922,
+   "wd": 962
+  },
+  {
+   "name": "Janapada of Aśmaka",
+   "q": "Q1194906",
+   "side": "end",
+   "drawn": -350,
+   "wd": -424
+  },
+  {
+   "name": "Janapada of Gandhāra",
+   "q": "Q112980583",
+   "side": "end",
+   "drawn": -500,
+   "wd": -534
+  },
+  {
+   "name": "Janapada of Kosala",
+   "q": "Q756854",
+   "side": "end",
+   "drawn": -450,
+   "wd": -500
+  },
+  {
+   "name": "Kadamba Empire",
+   "q": "Q1479952",
+   "side": "end",
+   "drawn": 554,
+   "wd": 525
+  },
+  {
+   "name": "Karkota Dynasty",
+   "q": "Q466433",
+   "side": "start",
+   "drawn": 592,
+   "wd": 625
+  },
+  {
+   "name": "Khanate of Sibir",
+   "q": "Q190513",
+   "side": "start",
+   "drawn": 1429,
+   "wd": 1490
+  },
+  {
+   "name": "Khmer Empire",
+   "q": "Q201705",
+   "side": "end",
+   "drawn": 1867,
+   "wd": 1431
+  },
+  {
+   "name": "Khoshut Khanate",
+   "q": "Q10921634",
+   "side": "start",
+   "drawn": 1582,
+   "wd": 1650
+  },
+  {
+   "name": "Kingdom of Armenia",
+   "q": "Q208404",
+   "side": "end",
+   "drawn": 646,
+   "wd": 428
+  },
+  {
+   "name": "Kingdom of Bhutan",
+   "q": "Q917",
+   "side": "start",
+   "drawn": 1636,
+   "wd": 1949
+  },
+  {
+   "name": "Kingdom of Brittany",
+   "q": "Q771193",
+   "side": "start",
+   "drawn": 825,
+   "wd": 851
+  },
+  {
+   "name": "Kingdom of Brycheiniog",
+   "q": "Q954585",
+   "side": "end",
+   "drawn": 1084,
+   "wd": 1045
+  },
+  {
+   "name": "Kingdom of Castile",
+   "q": "Q179293",
+   "side": "start",
+   "drawn": 961,
+   "wd": 1065
+  },
+  {
+   "name": "Kingdom of Denmark",
+   "q": "Q756617",
+   "side": "start",
+   "drawn": 936,
+   "wd": 965
+  },
+  {
+   "name": "Kingdom of Georgia",
+   "q": "Q154667",
+   "side": "end",
+   "drawn": 1794,
+   "wd": 1466
+  },
+  {
+   "name": "Kingdom of Gwent",
+   "q": "Q2594661",
+   "side": "end",
+   "drawn": 1055,
+   "wd": 950
+  },
+  {
+   "name": "Kingdom of Gwynedd",
+   "q": "Q816814",
+   "side": "end",
+   "drawn": 1284,
+   "wd": 1216
+  },
+  {
+   "name": "Kingdom of Italy",
+   "q": "Q172579",
+   "side": "start",
+   "drawn": 587,
+   "wd": 1861
+  },
+  {
+   "name": "Kingdom of Janggala",
+   "q": "Q13093931",
+   "side": "start",
+   "drawn": 1046,
+   "wd": 1100
+  },
+  {
+   "name": "Kingdom of Lazica",
+   "q": "Q136884",
+   "side": "end",
+   "drawn": 777,
+   "wd": 700
+  },
+  {
+   "name": "Kingdom of Morgannwg",
+   "q": "Q13131807",
+   "side": "start",
+   "drawn": 540,
+   "wd": 580
+  },
+  {
+   "name": "Kingdom of Northumbria",
+   "q": "Q107299",
+   "side": "start",
+   "drawn": 612,
+   "wd": 653
+  },
+  {
+   "name": "Kingdom of Poland",
+   "q": "Q577867",
+   "side": "end",
+   "drawn": 1449,
+   "wd": 1385
+  },
+  {
+   "name": "Kingdom of Poland",
+   "q": "Q577867",
+   "side": "start",
+   "drawn": 962,
+   "wd": 1025
+  },
+  {
+   "name": "Kingdom of Seisyllwg",
+   "q": "Q2456191",
+   "side": "end",
+   "drawn": 959,
+   "wd": 920
+  },
+  {
+   "name": "Kingdom of Serbia",
+   "q": "Q241748",
+   "side": "start",
+   "drawn": 1188,
+   "wd": 1882
+  },
+  {
+   "name": "Kingdom of Sophene",
+   "q": "Q2626105",
+   "side": "end",
+   "drawn": 113,
+   "wd": -93
+  },
+  {
+   "name": "Kingdom of Sophene",
+   "q": "Q2626105",
+   "side": "start",
+   "drawn": -255,
+   "wd": -201
+  },
+  {
+   "name": "Kingdom of Urartu",
+   "q": "Q185068",
+   "side": "end",
+   "drawn": -550,
+   "wd": -589
+  },
+  {
+   "name": "Kingdom of the Iberians",
+   "q": "Q154816",
+   "side": "start",
+   "drawn": 814,
+   "wd": 888
+  },
+  {
+   "name": "Lakhmid Kingdom",
+   "q": "Q943191",
+   "side": "end",
+   "drawn": 633,
+   "wd": 602
+  },
+  {
+   "name": "Later Zhou",
+   "q": "Q1154556",
+   "side": "start",
+   "drawn": -749,
+   "wd": 951
+  },
+  {
+   "name": "Lavo Kingdom",
+   "q": "Q1332305",
+   "side": "start",
+   "drawn": 638,
+   "wd": 700
+  },
+  {
+   "name": "Magna Frisia",
+   "q": "Q87791",
+   "side": "end",
+   "drawn": 771,
+   "wd": 734
+  },
+  {
+   "name": "Makuria",
+   "q": "Q829356",
+   "side": "start",
+   "drawn": 347,
+   "wd": 500
+  },
+  {
+   "name": "Maynila",
+   "q": "Q4401247",
+   "side": "end",
+   "drawn": 1599,
+   "wd": 1571
+  },
+  {
+   "name": "Middle Kingdom of Egypt",
+   "q": "Q191324",
+   "side": "end",
+   "drawn": -1600,
+   "wd": -1781
+  },
+  {
+   "name": "Montenegro",
+   "q": "Q236",
+   "side": "start",
+   "drawn": 1913,
+   "wd": 2006
+  },
+  {
+   "name": "Natalia Republic",
+   "q": "Q1029847",
+   "side": "end",
+   "drawn": 1909,
+   "wd": 1843
+  },
+  {
+   "name": "Nepal",
+   "q": "Q837",
+   "side": "start",
+   "drawn": 1775,
+   "wd": 2008
+  },
+  {
+   "name": "Netherlands Antilles",
+   "q": "Q25227",
+   "side": "start",
+   "drawn": 1815,
+   "wd": 1954
+  },
+  {
+   "name": "Nobatia",
+   "q": "Q568523",
+   "side": "start",
+   "drawn": 347,
+   "wd": 400
+  },
+  {
+   "name": "Novgorod Republic",
+   "q": "Q151536",
+   "side": "start",
+   "drawn": 1056,
+   "wd": 1136
+  },
+  {
+   "name": "Oirat Confederation",
+   "q": "Q4332415",
+   "side": "end",
+   "drawn": 1676,
+   "wd": 1628
+  },
+  {
+   "name": "Old Kingdom of Norway",
+   "q": "Q20",
+   "side": "start",
+   "drawn": 866,
+   "wd": 900
+  },
+  {
+   "name": "Peloponnesian League",
+   "q": "Q208742",
+   "side": "end",
+   "drawn": -337,
+   "wd": -365
+  },
+  {
+   "name": "Portuguese Ceylon",
+   "q": "Q1709007",
+   "side": "end",
+   "drawn": 1686,
+   "wd": 1658
+  },
+  {
+   "name": "Principality of Capua",
+   "q": "Q1280122",
+   "side": "start",
+   "drawn": 840,
+   "wd": 900
+  },
+  {
+   "name": "Principality of Jersika",
+   "q": "Q1687929",
+   "side": "start",
+   "drawn": 1111,
+   "wd": 1190
+  },
+  {
+   "name": "Principality of Koknese",
+   "q": "Q2502248",
+   "side": "start",
+   "drawn": 1111,
+   "wd": 1180
+  },
+  {
+   "name": "Principality of Rostov-Suzdal",
+   "q": "Q83546",
+   "side": "start",
+   "drawn": 1056,
+   "wd": 1125
+  },
+  {
+   "name": "Principality of Theodoro",
+   "q": "Q874954",
+   "side": "start",
+   "drawn": 1333,
+   "wd": 1360
+  },
+  {
+   "name": "Principality of Vladimir-Suzdal",
+   "q": "Q83546",
+   "side": "end",
+   "drawn": 1486,
+   "wd": 1389
+  },
+  {
+   "name": "Pskov Republic",
+   "q": "Q317078",
+   "side": "start",
+   "drawn": 1285,
+   "wd": 1348
+  },
+  {
+   "name": "Ptolemaic Kingdom",
+   "q": "Q2320005",
+   "side": "start",
+   "drawn": -330,
+   "wd": -304
+  },
+  {
+   "name": "Qataban",
+   "q": "Q748595",
+   "side": "end",
+   "drawn": 183,
+   "wd": 150
+  },
+  {
+   "name": "Roman Kingdom",
+   "q": "Q201038",
+   "side": "end",
+   "drawn": -480,
+   "wd": -508
+  },
+  {
+   "name": "Serbian Despots",
+   "q": "Q878319",
+   "side": "start",
+   "drawn": 1375,
+   "wd": 1402
+  },
+  {
+   "name": "Seventeenth Dynasty of Egypt",
+   "q": "Q642301",
+   "side": "end",
+   "drawn": -1500,
+   "wd": -1549
+  },
+  {
+   "name": "Shang Dynasty",
+   "q": "Q128938",
+   "side": "end",
+   "drawn": -1000,
+   "wd": -1045
+  },
+  {
+   "name": "Shunten Dynasty",
+   "q": "Q6151113",
+   "side": "end",
+   "drawn": 1313,
+   "wd": 1259
+  },
+  {
+   "name": "Small Horde",
+   "q": "Q631210",
+   "side": "end",
+   "drawn": 1737,
+   "wd": 1634
+  },
+  {
+   "name": "Sultanate of Malacca",
+   "q": "Q46652",
+   "side": "end",
+   "drawn": 1799,
+   "wd": 1511
+  },
+  {
+   "name": "Sultanate of Mempawah",
+   "q": "Q19746028",
+   "side": "start",
+   "drawn": 1619,
+   "wd": 1740
+  },
+  {
+   "name": "Sultanate of Oman",
+   "q": "Q842",
+   "side": "start",
+   "drawn": 1744,
+   "wd": 1970
+  },
+  {
+   "name": "Sur Empire",
+   "q": "Q373650",
+   "side": "end",
+   "drawn": 1594,
+   "wd": 1556
+  },
+  {
+   "name": "Swiss Confederation",
+   "q": "Q39",
+   "side": "start",
+   "drawn": 1294,
+   "wd": 1848
+  },
+  {
+   "name": "Tabal Kingdom",
+   "q": "Q727710",
+   "side": "end",
+   "drawn": -700,
+   "wd": -800
+  },
+  {
+   "name": "Taifa of Algeciras",
+   "q": "Q1183407",
+   "side": "end",
+   "drawn": 1168,
+   "wd": 1058
+  },
+  {
+   "name": "Taifa of Almería",
+   "q": "Q2580032",
+   "side": "end",
+   "drawn": 1249,
+   "wd": 1147
+  },
+  {
+   "name": "Taifa of Niebla",
+   "q": "Q2668600",
+   "side": "end",
+   "drawn": 1249,
+   "wd": 1053
+  },
+  {
+   "name": "Taifa of Saltés and Huelva",
+   "q": "Q2081763",
+   "side": "end",
+   "drawn": 1151,
+   "wd": 1051
+  },
+  {
+   "name": "Taifa of Silves",
+   "q": "Q1994569",
+   "side": "end",
+   "drawn": 1168,
+   "wd": 1063
+  },
+  {
+   "name": "Taifa of Valencia",
+   "q": "Q676811",
+   "side": "end",
+   "drawn": 1249,
+   "wd": 1094
+  },
+  {
+   "name": "Tarumanagara",
+   "q": "Q2247225",
+   "side": "start",
+   "drawn": 367,
+   "wd": 450
+  },
+  {
+   "name": "Unified Silla",
+   "q": "Q715257",
+   "side": "end",
+   "drawn": 935,
+   "wd": 892
+  },
+  {
+   "name": "Upper Burgundy",
+   "q": "Q33235",
+   "side": "end",
+   "drawn": 959,
+   "wd": 933
+  },
+  {
+   "name": "Vakataka Kingdom",
+   "q": "Q1501306",
+   "side": "end",
+   "drawn": 554,
+   "wd": 500
+  },
+  {
+   "name": "Visigothic Kingdom",
+   "q": "Q126936",
+   "side": "start",
+   "drawn": 426,
+   "wd": 476
+  },
+  {
+   "name": "Western Moghulistan",
+   "q": "Q1191125",
+   "side": "end",
+   "drawn": 1635,
+   "wd": 1570
+  },
+  {
+   "name": "Western Satraps",
+   "q": "Q2086608",
+   "side": "end",
+   "drawn": 489,
+   "wd": 405
+  },
+  {
+   "name": "Western Xia",
+   "q": "Q7427",
+   "side": "start",
+   "drawn": 990,
+   "wd": 1038
+  },
+  {
+   "name": "Xu",
+   "q": "Q2650109",
+   "side": "end",
+   "drawn": -284,
+   "wd": -511
+  },
+  {
+   "name": "Yue",
+   "q": "Q1936158",
+   "side": "start",
+   "drawn": -499,
+   "wd": -333
+  },
+  {
+   "name": "Zhu",
+   "q": "Q227007",
+   "side": "start",
+   "drawn": -749,
+   "wd": -699
+  },
+  {
+   "name": "Đại Việt",
+   "q": "Q1317991",
+   "side": "end",
+   "drawn": 1770,
+   "wd": 1677
+  }
+ ]
+}

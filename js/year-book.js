@@ -134,8 +134,11 @@ export async function readYear(when, deps, opts) {
         const by = new Map();
         for (const r of rows) { const k = r.en; const was = by.get(k); if (!was) by.set(k, Object.assign({ parts: 1 }, r)); else { was.km2 += r.km2; was.parts++; if (r.bbox && was.bbox) was.bbox = [Math.min(was.bbox[0], r.bbox[0]), Math.min(was.bbox[1], r.bbox[1]), Math.max(was.bbox[2], r.bbox[2]), Math.max(was.bbox[3], r.bbox[3])]; } }
         const list = [...by.values()].sort((a, b) => b.km2 - a.km2);
-        const total = list.reduce((s, r) => s + r.km2, 0);
-        const rec = TB.recordOf ? TB.recordOf(c.tier) : null;
+        /* (hist-coverage-expansion) a realm (Cliopatria's «(Holy Roman Empire)») is the union of polities also listed — its area is not counted twice */
+        const realms = new Set(feats.filter((f) => f.properties && f.properties._realm).map((f) => nameIn(f.properties, 'en')));
+        const total = list.reduce((s, r) => s + (realms.has(r.en) ? 0 : r.km2), 0);
+        /* (hist-coverage-expansion) a composed answer names its own records; the tier alone cannot say which */
+        const rec = c.record || (TB.recordOf ? TB.recordOf(c.tier) : null);
         out.borders = { modern: false, tier: c.tier, count: list.length, unnamed: c.fc.features.length - feats.length, totalKm2: total, largest: list.slice(0, top), record: rec };
         if (rec && rec.src) out.sources.push(rec.src);
       }
@@ -159,10 +162,14 @@ export async function readYear(when, deps, opts) {
      them — the index's header gives the measurement), the days are read off the record as before and marked `stated:
      false`, and the page says to read them as the year. */
   if (TB && TB.changeDates && out.borders && !out.borders.modern && !out.borders.failed) {
+    const P0 = out.borders.tier === 'composite' && out.borders.record && out.borders.record.parts && out.borders.record.parts[0];
+    const dayTier = P0 ? P0.tier : out.borders.tier;
     try {
       if (out.borders.tier === 'snapshot') out.changes = { kind: 'sheets', days: [], note: 'sheet' };
-      else if (IX && Array.isArray(IX.dayRecords) && IX.dayRecords.includes(out.borders.tier)) {
-        const recs = inYear(records(IX), year).filter((r) => r.src === out.borders.tier);
+      /* (hist-coverage-expansion) a composed answer's days are its FIRST record's — CShapes under which Cliopatria fills
+         the ground CShapes leaves; Cliopatria's own edges state years, which this per-day list does not claim */
+      else if (IX && Array.isArray(IX.dayRecords) && IX.dayRecords.includes(dayTier)) {
+        const recs = inYear(records(IX), year).filter((r) => r.src === dayTier);
         const days = [];
         const gwNames = (fc, m) => { for (const f of (fc && fc.features) || []) { const p = f.properties || {}; if (p._gw != null && !m.has(+p._gw)) { const n = nameIn(p, lang); if (n) m.set(+p._gw, n); } } return m; };
         for (const r of recs.slice(0, maxDays)) {
@@ -188,7 +195,9 @@ export async function readYear(when, deps, opts) {
           const appeared = [...B.keys()].filter((k) => !A.has(k)).map((k) => B.get(k).local);
           const ended = [...A.keys()].filter((k) => !B.has(k)).map((k) => A.get(k).local);
           const reshaped = [...B.keys()].filter((k) => A.has(k) && A.get(k).geom !== B.get(k).geom).map((k) => B.get(k).local);
-          days.push({ date: isoDay(d), ms: d.getTime(), appeared, ended, reshaped });
+          /* (hist-coverage-expansion) a change the record dates to the year alone is printed as the year */
+          const prec = TB.changePrecision ? TB.changePrecision(d) : 'day';
+          days.push({ date: prec === 'year' ? isoDay(d).replace(/-01-01$/, '') : isoDay(d), prec, ms: d.getTime(), appeared, ended, reshaped });
         }
         out.changes = { kind: 'days', days, more: Math.max(0, ofYear.length - maxDays), stated: false };
       }
@@ -305,7 +314,9 @@ function body(r, H, t) {
   else if (B.failed) h += sec(t('The map', '地図'), '<p class="yb-note">' + e(t('The border record did not answer for this instant.', 'この時点について国境の記録が答えませんでした。')) + '</p>');
   else if (B.modern) h += sec(t('The map', '地図'), '<p class="yb-note">' + e(t('This instant is drawn with today’s borders — the historical records end before it.', 'この時点は現在の国境で描かれます（歴史的な記録はこれより前で終わります）。')) + '</p>');
   else {
-    const tierW = B.tier === 'cshapes' ? t('day by day', '日単位') : B.tier === 'ohm' ? t('day by day', '日単位') : t('one sheet for the period', 'その時期の1枚');
+    const tierW = B.tier === 'cshapes' ? t('day by day', '日単位') : B.tier === 'ohm' ? t('day by day', '日単位')
+      : B.tier === 'composite' ? t('several records composed, the more precise first, each where the ones before it are silent', '複数の記録を精度の順に重ね、前の記録が述べない土地にだけ次を描く')
+      : t('one sheet for the period', 'その時期の1枚');
     h += sec(t('The map', '地図'), '<p class="yb-lede">' + e(t(B.count + ' polities are drawn', B.count + ' の政体が描かれています')) + (B.unnamed ? e(t(' · ' + B.unnamed + ' shapes the record leaves unnamed', '・名前のない形 ' + B.unnamed)) : '') + '</p>'
       + '<ol class="yb-list">' + B.largest.map((p) => '<li><button type="button" class="yb-row" data-bbox="' + e(JSON.stringify(p.bbox || null)) + '"><span class="yb-n">' + e(p.name) + '</span><span class="yb-v">' + e(fmtInt(p.km2)) + ' km²</span>'
         + (p.subjectTo ? '<span class="yb-s">' + e(t('under ', '従属先: ') + p.subjectTo) + '</span>' : '') + '</button></li>').join('') + '</ol>'
