@@ -308,7 +308,6 @@ IntMapLang.define('jp', { ui: {
       offlineBack:"オンラインに戻りました。再読み込みすると、取得できなかったデータを読み込みます。",
       offlineReload:"再読み込み",
       /* (share-embed-distribution) 共有パネルの「リンク／埋め込み」タブと、埋め込み表示そのもの（js/map-ui.js share・js/embed-mode.js） */
-      shareTabLink:"リンク",
       shareTabEmbed:"埋め込み",
       embedDesc:"この地図を他のウェブサイトに載せます。フレームには、いま表示している状態がそのまま読み取り専用で表示されます。",
       embedSize:"サイズ",

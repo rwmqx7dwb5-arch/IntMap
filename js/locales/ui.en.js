@@ -308,7 +308,6 @@ IntMapLang.define('en', { ui: {
       offlineBack:"You’re back online. Reload to download what could not be fetched.",
       offlineReload:"Reload",
       /* (share-embed-distribution) the share panel's Link / Embed tabs and the embedded view itself (js/map-ui.js share, js/embed-mode.js) */
-      shareTabLink:"Link",
       shareTabEmbed:"Embed",
       embedDesc:"Put this map on another website. The frame shows exactly the view you have now, read-only.",
       embedSize:"Size",
