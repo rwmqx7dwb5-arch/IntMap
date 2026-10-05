@@ -1007,6 +1007,7 @@ async function main() {
   }
   console.error('· names: ' + filled + ' columns filled from Wikidata in ' + SHIP.join(',') + ' (harvest set is ' + HARVEST.join(',') + ')');
 
+  const drawnCodes = new Set(feats.map((f) => f[10]));
   const data = {
     v: 1,
     src: LICENCE,
@@ -1016,10 +1017,14 @@ async function main() {
     /* (#R730) the units this record deliberately leaves to data/hist-admin{1,2,3}.js, so the gate
        can re-derive «a country is answered whole» over what the READER sees rather than over one
        record's half of it. */
-    deferred: [...deferred].sort(),
+    /* ⚠ (hist-coverage-depth) ONE CODE, SEVERAL OUTLINES: Natural Earth carries New South Wales as the mainland
+       AND Lord Howe Island under one `AU-NSW`. The record answers the mainland (deferred) while the fill draws the
+       island — a code with ANY drawn row is drawn, and is never also listed as deferred or unplaced
+       (tests/history-fidelity-checks.test.mjs #R730 ⑧ asks it by code). */
+    deferred: [...deferred].filter((c) => !drawnCodes.has(c)).sort(),
     /* (hist-coverage-depth) units the era record places nowhere on every date their country is drawn:
        no country is drawn over them, so they are not a hole in one. `--check` re-verifies it. */
-    unplaced: [...unplaced].sort(),
+    unplaced: [...unplaced].filter((c) => !drawnCodes.has(c) && !deferred.has(c)).sort(),
     inception: inceptionOf(admitted, byCountry, spans),
     /* (hist-coverage) the units dated through their HASC code rather than their ISO 3166-2 one */
     inceptionVia: inceptionViaOf(admitted, byCountry, spans),
