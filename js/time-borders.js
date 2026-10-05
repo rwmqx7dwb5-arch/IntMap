@@ -399,7 +399,7 @@ export function timeBorders(HOST){
     let _lnOf=new WeakMap();
     const _lineRecordOf=new WeakMap();   /* original polygon object -> bundle record; corrected geometry has no entry */
     function _linesFor(fc,t){ if(t==null) t=_tOf.has(fc)?_tOf.get(fc):null; const ep=_courseEp(t);
-      let byEp=_lnOf.get(fc); if(!byEp){ byEp=new Map(); _lnOf.set(fc,byEp); } let v=byEp.get(ep); if(v) return v;
+      let byEp=_lnOf.get(fc); if(!byEp){ byEp=new Map(); _lnOf.set(fc,byEp); } let v=byEp.get('*')||byEp.get(ep); if(v) return v;
       const feats=[],other=[];
       for(const f of (fc.features||[])){
         const rec=f.geometry&&_lineRecordOf.get(f.geometry);
@@ -431,7 +431,7 @@ export function timeBorders(HOST){
         feats.push({type:'Feature',geometry:_csGeomOf(_csD,i),properties:Object.assign({NAME:NAME,name:NAME,_gw:f[1]},i18?{_i18n:i18}:{})});
         const lg=_csLineOf(_csD,i); if(lg) lines.push(_lineFeat(lg)); }
       const fc={type:'FeatureCollection',features:feats};
-      _lnOf.set(fc,{type:'FeatureCollection',features:lines});   /* (#R531) what `imtb-line` strokes */
+      _lnOf.set(fc,new Map([['*',{type:'FeatureCollection',features:lines}]]));   /* (#R531) what `imtb-line` strokes — the same at every date ('*'): CShapes and OHM are never redrawn */
       return fc; }
     /* ══ (#R518) …AND BELOW CShapes, THE SAME MACHINERY ON A SECOND RECORD ═════════════════════════
        「1850–1885の国境を本気で埋めて」 The clock's floor is 1850 (js/chronos.js) and CShapes begins on
@@ -500,7 +500,7 @@ export function timeBorders(HOST){
         feats.push({type:'Feature',geometry:_hbGeomOf(d,i),properties:{NAME:NAME,name:NAME,_i18n:hnFor('histBorders',NAME,f[1],f[0])||f[0]}});
         const lg=_hbLineOf(d,i); if(lg) lines.push(_lineFeat(lg)); }
       const fc={type:'FeatureCollection',features:feats};
-      _lnOf.set(fc,{type:'FeatureCollection',features:lines});   /* (#R531) what `imtb-line` strokes */
+      _lnOf.set(fc,new Map([['*',{type:'FeatureCollection',features:lines}]]));   /* (#R531) what `imtb-line` strokes — the same at every date ('*'): CShapes and OHM are never redrawn */
       return fc; }
     /* (#R105) vanished entities that occupy a modern country's territory (shared by the click resolver + the era
        correction) — a point-in-polygon would mis-resolve them to the modern occupant. */
@@ -877,7 +877,9 @@ export function timeBorders(HOST){
        CShapes' ground (scripts/build-hist-clio.mjs --ohm-late), and data/hist-clio.js is cut against both, so this
        is again a union with no geometric decision in it. Either record unreadable, the others still compose. */
     async function csComposite(csKey,csfc,year,mon,day){ try{
-      const [cd,od]=await Promise.all([clLoad(),olLoad(),coursesLoad()]); if(!cd&&!od) return null;
+      /* the course file is asked for but not waited on: its arrival repaints the line (onArrive), and a composition
+         keyed before it arrived (`ce-1`) is never reused after */
+      coursesLoad(); const [cd,od]=await Promise.all([clLoad(),olLoad()]); if(!cd&&!od) return null;
       const t=_ymd(year,mon,day), parts=[], keys=[];
       let ol=null; if(od){ const k='ol'+_epochIn(_olBnd||[],t);
         ol=cache.get(k); if(!ol){ ol=await olFC(od,year,mon,day); cache.set(k,ol); }
@@ -963,7 +965,7 @@ export function timeBorders(HOST){
     /* the composed world at an instant before CShapes, or null when it cannot be composed */
     async function compositeAt(year,mon,day){
       if(year>=CS_MIN) return null;
-      const [cd,rd]=await Promise.all([clLoad(),rsLoad(),bcLoad(),hnLoad(),spLoad(),coursesLoad()]);
+      coursesLoad(); const [cd,rd]=await Promise.all([clLoad(),rsLoad(),bcLoad(),hnLoad(),spLoad()]);
       if(!cd||!rd) return null;
       const parts=[], keys=[], made={ohm:0,clio:0,sheet:null};
       if(year>=HB_MIN&&year<=HB_MAX){ const hd=await hbLoad();
