@@ -1,6 +1,7 @@
 ---
 title: 現代の区分を遡らせる記録が国ごと «never-whole» で拒否していた——改革で再利用された ISO コードの前任と後任の 2 項目を 1 単位に混ぜていたこと、標本点の 1 セルを数えていなかったこと
 date: 2026-10-05
+pr: 1015
 newsen: Latvia's 119 municipalities of 2011–2021 are now drawn on the historical map (before, Latvia had no provinces on any date), and the Philippines' provinces now reach back to 2001 instead of 2020.
 newsjp: 歴史地図に、ラトビアの 2011〜2021 年の 119 の自治体が描かれるようになりました（以前はどの年にも区分がありませんでした）。フィリピンの州も 2020 年からではなく 2001 年から描かれます。
 ---
