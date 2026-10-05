@@ -511,6 +511,8 @@ place-labels.js                   地名・海洋名ラベルと、そのロー�
                                   （地名の意味を漢字に訳したもの）を拒み、既存の鍵の並びに落とす。表は生成物で、
                                   正本は `scripts/build-osm-ja-rejects.mjs`
 label-scale.js                    ラベルの大きさ window.IntMapLabelScale
+class-highlight.js                ↳ 分類ラスタの「選んだ分類だけ」の 1 つの規則（選ばれなかった画素を灰×0.6・不透明度×0.28）。
+                                  ケッペン（data-layers.js）と土地被覆（layer-packs.js の imwc:// プロトコル）が読む
 compass.js                        方位の呼び名（9言語・16方位）window.IntMapCompass
 chronos.js                        Chronos＝統一時間カーネル window.IntMapTime。下限は IntMapHistScale.FLOOR を読み、
                                   100 年未満の瞬間は `atUTC()`（`setUTCFullYear`）で作る

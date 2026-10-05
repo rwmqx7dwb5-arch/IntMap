@@ -38,6 +38,7 @@ import { layerState } from './layer-state.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { IntMapTime } from './chronos.js';
+import { keepClasses, rgbKey } from './class-highlight.js';   /* (landcover-class-highlight) the one «dim what was not picked» rule, shared with Köppen */
 import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import * as bus from './bus.js';
 
@@ -236,9 +237,44 @@ export function landCover(HOST){
     const wcTiles=()=>{ const e=WC_EPOCHS.find(x=>x[0]===wcYear)||WC_EPOCHS[0];
       return ['https://wmts.terrascope.be/?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER='+e[1]
         +'&STYLE=default&TILEMATRIXSET=EPSG:3857&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png&TIME='+e[2]]; };
+    /* ══ (landcover-class-highlight) PICK CLASSES, SEE ONLY THEM ══════════════════════════════════════════════════
+       「land coverレイヤーも、ケッペンの気候区分レイヤーと同じように、選択したものだけハイライト表示されるようにして。」
+       Köppen recolours its own PNG on a canvas; WorldCover is remote tiles, and MapLibre 6.11 has no `raster-color`
+       (its style spec lists no such paint property — the dormant GPU Köppen path in js/data-layers.js could never run),
+       so the recolouring happens where each tile ARRIVES: while a class is picked the source's tiles are `imwc://`
+       URLs, and the protocol below fetches the same Terrascope tile, keeps the picked classes' exact colours and dims
+       the rest with js/class-highlight.js — the rule the Köppen highlight uses. Nothing picked → the plain Terrascope
+       URLs again, untouched. Terrascope answers CORS for the site's origin (measured 2026-10-05), which is what lets
+       the tile be read back; a tile that cannot be read is shown as it came, never dropped. */
+    const wcSel=new Set();   /* indices into WC_CLASSES */
+    let wcProto=false;
+    const wcSelKey=()=>[...wcSel].sort((a,b)=>a-b).join('.');
+    function wcSourceTiles(){ if(!wcSel.size||!wcProto) return wcTiles(); return ['imwc://'+wcYear+'/'+wcSelKey()+'/{z}/{x}/{y}']; }
+    function wcEnsureProto(){ if(wcProto) return true;
+      try{ wcProto=!!GE().scene.addProtocol('imwc', async (params, abortController)=>{
+        const m=/^imwc:\/\/(\d+)\/([\d.]*)\/(\d+)\/(\d+)\/(\d+)/.exec(params&&params.url||''); if(!m) throw new Error('bad imwc url');
+        const e=WC_EPOCHS.find(x=>x[0]===m[1])||WC_EPOCHS[0];
+        const url='https://wmts.terrascope.be/?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER='+e[1]
+          +'&STYLE=default&TILEMATRIXSET=EPSG:3857&TILEMATRIX='+m[3]+'&TILEROW='+m[5]+'&TILECOL='+m[4]+'&FORMAT=image/png&TIME='+e[2];
+        const r=await fetch(url,{ signal:abortController&&abortController.signal, mode:'cors' });
+        if(!r.ok) throw new Error('worldcover '+r.status);
+        const bmp=await createImageBitmap(await r.blob());
+        const keep=new Set(m[2].split('.').filter(Boolean).map(i=>WC_CLASSES[+i]).filter(Boolean).map(c=>rgbKey(c[0])));
+        try{ const cv=new OffscreenCanvas(bmp.width,bmp.height), cx=cv.getContext('2d',{ willReadFrequently:true });
+          cx.drawImage(bmp,0,0); const img=cx.getImageData(0,0,bmp.width,bmp.height);
+          keepClasses(img.data,keep); cx.putImageData(img,0,0);
+          return { data: await createImageBitmap(cv) }; }
+        catch(_){ return { data: bmp }; } }); }catch(_){ wcProto=false; }
+      return wcProto; }
+    function wcApplySel(){ if(wcSel.size) wcEnsureProto();
+      try{ if(GE().layers.hasSource('eco-worldcover')) GE().layers.setSourceTiles('eco-worldcover',wcSourceTiles()); }catch(_){}
+      try{ wcLegend(state.worldcover); }catch(_){} }
+    /** pick / unpick a class (by index into WC_CLASSES, or its colour) — → the picked indices */
+    function wcToggle(i){ i=+i; if(!(i>=0&&i<WC_CLASSES.length)) return [...wcSel]; wcSel.has(i)?wcSel.delete(i):wcSel.add(i); wcApplySel(); return [...wcSel]; }
+    function wcClear(){ if(!wcSel.size) return []; wcSel.clear(); wcApplySel(); return []; }
     function wcSetYear(y){ if(!WC_EPOCHS.some(e=>e[0]===y)) return wcYear;
       wcYear=y;
-      try{ if(GE().layers.hasSource('eco-worldcover')) GE().layers.setSourceTiles('eco-worldcover',wcTiles()); }catch(_){}
+      try{ if(GE().layers.hasSource('eco-worldcover')) GE().layers.setSourceTiles('eco-worldcover',wcSourceTiles()); }catch(_){}
       try{ wcLegend(state.worldcover); }catch(_){}
       return wcYear; }
     /* ---- ESA WorldCover (raster) ---- */
@@ -248,7 +284,7 @@ export function landCover(HOST){
          count is unchanged (maxzoom only bites when zoomed right in), so it doesn't slow the common case;
          the SW (R17) caches every Terrascope tile so revisits are instant — the controllable speed win on a
          single slow host. */
-      try{ GE().layers.addSource('eco-worldcover',{type:'raster',tiles:wcTiles(),tileSize:256,maxzoom:14,attribution:'ESA WorldCover · Terrascope'});
+      try{ GE().layers.addSource('eco-worldcover',{type:'raster',tiles:wcSourceTiles(),tileSize:256,maxzoom:14,attribution:'ESA WorldCover · Terrascope'});
         /* (#R15 / #19,#29) The Terrascope WMTS is a single slow host (can't multi-host it), so squeeze what
            we can: raster-fade-duration:0 shows each tile the instant it arrives (no 300 ms fade → feels
            faster); raster-resampling:nearest keeps the CATEGORICAL land-cover classes crisp instead of
@@ -466,11 +502,16 @@ export function landCover(HOST){
           '<div style="display:flex;flex-direction:column;gap:3px;margin-top:4px;">'+
           /* ⚠ (#R251) the two name slots are ONE tuple now, resolved through pick() itself, so a
              language past the five arguments reaches the inline table instead of falling to English. */
-          WC_CLASSES.map(([c,t])=>'<div style="display:flex;align-items:center;gap:7px;"><span style="width:13px;height:13px;border-radius:3px;flex:none;border:1px solid rgba(128,128,128,0.4);background:'+c+';"></span><span>'+LPK.arr(t)+'</span></div>').join('')+
-          '</div>';
+          /* (landcover-class-highlight) a row is a button: press = show only the picked classes on the map (Köppen's .kl-item) */
+          WC_CLASSES.map(([c,t],i)=>'<button type="button" class="wc-cls'+(wcSel.has(i)?' sel':'')+'" data-wc="'+i+'" aria-pressed="'+wcSel.has(i)+'" style="display:flex;align-items:center;gap:7px;width:100%;text-align:left;padding:2px 4px;margin:0 -4px;border:none;border-radius:6px;background:'+(wcSel.has(i)?'var(--input-bg)':'none')+';color:inherit;font:inherit;cursor:pointer;outline:'+(wcSel.has(i)?'1.5px solid var(--primary-color)':'none')+';opacity:'+(wcSel.size&&!wcSel.has(i)?'0.5':'1')+';"><span style="width:13px;height:13px;border-radius:3px;flex:none;border:1px solid rgba(128,128,128,0.4);background:'+c+';"></span><span>'+LPK.arr(t)+'</span></button>').join('')+
+          '</div>'+
+          '<div style="display:flex;align-items:center;gap:6px;margin-top:5px;font-size:10.5px;color:var(--text-muted);"><span style="flex:1;">'+(IntMapLang.t(HOST.lang,'Click a class to show only it','分類をクリックするとそれだけを表示'))+'</span>'
+            +(wcSel.size?'<button type="button" class="wc-clear" style="border:none;border-radius:6px;padding:2px 8px;background:var(--input-bg);color:var(--text-main);font-size:10.5px;cursor:pointer;">'+(IntMapLang.t(HOST.lang,'Clear','選択解除'))+'</button>':'')+'</div>';
         lg.style.display='block';
         lg.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('eco-dl-worldcover'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
         { const ys=lg.querySelector('.wc-year'); if(ys) ys.onchange=()=>wcSetYear(ys.value); }
+        lg.querySelectorAll('.wc-cls').forEach(b=>{ b.onclick=()=>wcToggle(b.dataset.wc); });
+        { const cl=lg.querySelector('.wc-clear'); if(cl) cl.onclick=()=>wcClear(); }
         try{ window._wireLegendDrag&&window._wireLegendDrag(lg); window._ensureLegendMinimize&&window._ensureLegendMinimize(lg); }catch(_){}
       } else if(lg){ lg.style.display='none'; }
     }
@@ -519,7 +560,32 @@ export function landCover(HOST){
     function relabel(){ const h=document.querySelector('[data-ecohead]'); if(h) h.textContent=IntMapLang.t(HOST.lang,'Land cover & earth science','土地被覆・地球科学','Bodenbedeckung & Geowissenschaft','Земной покров и науки о Земле','Cobertura del suelo y ciencias de la Tierra'); Object.keys(ECLBL).forEach(k=>{ const e=document.getElementById('eco-dl-'+k+'-lbl'); if(e) e.textContent=ecoLbl(k); }); }
     ['lang-jp','lang-en','lang-de','lang-ru','lang-es'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(relabel,20)); });
     bus.on('intmap-lang',()=>setTimeout(relabel,20));   /* (#R11) header lang toggle is hidden → relabel on Settings change */
-    window.IntMapEco={ toggle };
+    /* ══ (landcover-class-highlight) …AND ATLAS CAN DO WHAT THE LEGEND ROWS DO ═════════════════════════════════
+       「land coverレイヤーも、ケッペンの気候区分レイヤーと同じように、選択したものだけハイライト表示されるようにして。」
+       The legend rows are one door; `map.landCover` (js/atlas-cap-map.js) is the other, and both end in wcToggle/wcApplySel — one rule.
+       A class is named by its index or by any of its names in any language (case-insensitive; exact first, then a name that
+       contains / is contained in the query when that picks exactly one class). A name that picks none is RETURNED as `unknown`,
+       never dropped. Asking for a class while the layer is off turns the layer on through its own checkbox (what the × does the other way). */
+    const wcNames=(t)=>(Array.isArray(t)?t:[t]).map(n=>String(n==null?'':n).trim().toLowerCase()).filter(Boolean);
+    function wcResolve(x){ const s=String(x==null?'':x).trim().toLowerCase(); if(!s) return -1;
+      if(/^\d+$/.test(s)) return +s<WC_CLASSES.length?+s:-1;
+      const ex=WC_CLASSES.findIndex(([,t])=>wcNames(t).includes(s)); if(ex>=0) return ex;
+      const part=[]; WC_CLASSES.forEach(([,t],i)=>{ if(wcNames(t).some(n=>n.includes(s)||(n.length>=2&&s.includes(n)))) part.push(i); });
+      return part.length===1?part[0]:-1; }
+    function wcOn(){ const cb=document.getElementById('eco-dl-worldcover');
+      if(cb){ if(!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } } else if(!state.worldcover) toggle('worldcover',true);
+      return state.worldcover; }
+    const landCoverApi={
+      classes:()=>WC_CLASSES.map(([c,t],i)=>({ index:i, colour:c, name:t[0], nameJa:t[1], names:t.slice() })),
+      selected:()=>[...wcSel].sort((a,b)=>a-b),
+      year:()=>wcYear, years:()=>WC_EPOCHS.map(e=>e[0]), setYear:(y)=>wcSetYear(String(y)),
+      isOn:()=>!!state.worldcover,
+      select(list,opt){ const only=!(opt&&opt.only===false), idx=[], unknown=[];
+        (Array.isArray(list)?list:[list]).forEach(x=>{ const i=wcResolve(x); if(i<0) unknown.push(x); else if(!idx.includes(i)) idx.push(i); });
+        if(idx.length){ if(only) wcSel.clear(); idx.forEach(i=>wcSel.add(i)); wcOn(); wcApplySel(); }
+        return { selected:landCoverApi.selected(), unknown, on:!!state.worldcover }; },
+      clear(){ wcClear(); return { selected:[], unknown:[], on:!!state.worldcover }; } };
+    window.IntMapEco={ toggle, landCover:landCoverApi };
   })();
 }
 
