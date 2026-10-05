@@ -136,3 +136,45 @@ test('map-postcard ② an embed keeps the caption, and a phone shows it above th
     expect(cap.y + cap.h <= cr.y + 0.5, 'the caption is above the credit pill').toBe(true);
   } finally { await phone.close(); }
 });
+
+/* ③ (share-simple) 「shareからどちらを押してもShare this viewウィンドウが開くのはちょっときもい。しかも、素人からしたら画面が複雑すぎ。」
+   The Share menu's two items do two things: «Map screenshot» saves the picture without opening any panel, and «Share / copy
+   link» opens on the link and its Copy button alone — the caption, the embed and the picture are folded under «More options»,
+   which a caller who asks for one of them (the Image tab, a caption) finds open. */
+test('map-postcard ③ the screenshot saves at once, and the share panel opens on the link alone', async ({ browser }) => {
+  test.setTimeout(150_000);
+  const ctx = await browser.newContext({ storageState: seededStorageState(), viewport: { width: 1440, height: 900 }, acceptDownloads: true });
+  await installHermeticRouting(ctx);
+  const page = await ctx.newPage();
+  try {
+    await page.goto('/#v=10.0000,48.0000,4.00,0,0,f', { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    await page.waitForFunction(() => !!(window.IntMapShare && window.IntMapShare.screenshot), null, { timeout: 45_000 });
+    await page.waitForFunction(() => { try { return window.IntMapGeoEngine.ready(); } catch (_) { return false; } }, null, { timeout: 45_000 });
+    /* the menu's screenshot: a PNG download, and no panel */
+    await page.click('#btn-share-menu');
+    const dl = page.waitForEvent('download', { timeout: 60_000 });
+    await page.click('#btn-screenshot');
+    const file = await dl;
+    expect(file.suggestedFilename()).toMatch(/^intmap-.+\.png$/);
+    expect(await page.evaluate(() => { const p = document.getElementById('share-panel'); return !!p && getComputedStyle(p).display !== 'none'; })).toBe(false);
+    /* the menu's link: the address and Copy are shown, everything else is folded */
+    await page.click('#btn-share-menu');
+    await page.click('#btn-share');
+    await expect(page.locator('#share-panel .sh-url')).toBeVisible();
+    await expect(page.locator('#share-panel .sh-copy')).toBeVisible();
+    expect(await page.evaluate(() => document.querySelector('#share-panel .sh-more').open)).toBe(false);
+    await expect(page.locator('#share-panel .sh-cap-t')).toBeHidden();
+    await expect(page.locator('#share-panel .sh-tabs')).toBeHidden();
+    /* unfolded, the caption and the embed/picture tabs are all there */
+    await page.click('#share-panel .sh-more > summary');
+    await expect(page.locator('#share-panel .sh-cap-t')).toBeVisible();
+    await expect(page.locator('#share-panel .sh-tab[data-tab="embed"]')).toBeVisible();
+    await expect(page.locator('#share-panel .sh-tab[data-tab="image"]')).toBeVisible();
+    /* a caller who asks for the picture finds the fold open on it */
+    await page.evaluate(() => window.IntMapShare.close());
+    await page.evaluate(() => window.IntMapShare.open({ tab: 'image' }));
+    expect(await page.evaluate(() => document.querySelector('#share-panel .sh-more').open)).toBe(true);
+    await expect(page.locator('#share-panel .sh-pane[data-pane="image"]')).toBeVisible();
+    await expect(page.locator('#share-panel .sh-url')).toBeVisible();
+  } finally { await ctx.close(); }
+});
