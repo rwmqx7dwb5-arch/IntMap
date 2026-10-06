@@ -97,6 +97,10 @@ export function timeBorders(HOST){
      loading.» and left nothing to retry (dev-notes/2026-09-26-restored-layer-before-style.md). */
   function whenStyleReady(){ return GE().whenCanDraw(); }
   const applyTheme=HOST.applyTheme, countryStats=HOST.countryStats, showCountryDetail=HOST.showCountryDetail;
+  /* (hist-border-same-look) every layer this module draws the era with — ONE list, read by `clear()` below
+     and by js/app-body.js `_applyBorders` (via `layerIds`), which each kept a hand-typed copy; a casing
+     added to one copy and not the other would have stayed on screen after the clock returned to Now. */
+  const _DRAWN_LAYERS=['imtb-fill','imtb-casing','imtb-line','imtb-lbl','imtb-lbl2'];
   return (function(){
     if(!GE().hasRenderer()||!GE().hasRenderer()||!IntMapTime) return {};
     /* (#R349) 1815 and 1880 are new. The clock's floor moved to 1850 (js/chronos.js) and CShapes —
@@ -377,6 +381,9 @@ export function timeBorders(HOST){
     const _ringLines=(ring,mark)=>_BC().ringLines(ring,mark);
     const _lineGeom=(d,idx,marks)=>_BC().lineGeom(d,idx,marks);
     const _wholeLines=(fc,t)=>_BC().wholeLines(fc,t);
+    /* (hist-border-same-look) what `imtb-line` is handed: the outline with every shared edge struck once
+       (js/border-coast.js `strokedOnce`). Neighbouring countries cut their common border from both rings. */
+    const _strokeFor=(fc,t)=>{ const v=_linesFor(fc,t); try{ return _BC().strokedOnce(v); }catch(_){ return v; } };
     /* (hist-border-refine) the course redraws (data/hist-courses.js) hold only while their fact does, so a line
        depends on the date as well as the collection: lines are memoised per collection AND per course epoch, and a
        composed collection remembers the instant it was composed for (`_tOf`) */
@@ -389,7 +396,7 @@ export function timeBorders(HOST){
        and polygons, invalidate only line memos, and read shownFC at notification time so
        a response from an earlier date cannot put that date back on the map. */
     try{ _BC().onArrive(()=>{ _csLn.clear(); _hbLn.clear(); _lnOf=new WeakMap();
-      if(active&&shownFC){ try{ if(GE().layers.hasSource('imtb-ln-src')) GE().layers.setSourceData('imtb-ln-src',_linesFor(shownFC)); }catch(_){} }
+      if(active&&shownFC){ try{ if(GE().layers.hasSource('imtb-ln-src')) GE().layers.setSourceData('imtb-ln-src',_strokeFor(shownFC)); }catch(_){} }
     }); }catch(_){}
     const _lineFeat=g=>({type:'Feature',geometry:g,properties:{}});
     /* ⚠ THE OUTLINE HANGS OFF THE COLLECTION, NOT ON IT. A `fc._lines` property would ride inside
@@ -1272,7 +1279,13 @@ export function timeBorders(HOST){
       const _BS=(window.IntMapBorderStyle||{});
       /* Source precision changes the line pattern, never its geometry or legal recognition.
          Unknown precision keeps the existing solid stroke; it is not labelled as precise. */
-      if(!GE().layers.has('imtb-line')) GE().layers.add({id:'imtb-line',type:'line',source:'imtb-ln-src',layout:{'line-join':'round','line-cap':'round'},paint:{'line-color':_BS.color||'#d9dbe0','line-opacity':0.95,'line-dasharray':['match',['to-number',['coalesce',['get','BORDERPRECISION'],['get','borderprecision']],-1],1,['literal',[2,2]],2,['literal',[6,2]],['literal',[1,0]]],'line-width':_BS.width||['interpolate',['linear'],['zoom'],1,0.95,4,1.55,8,2.2,12,2.9]}}, before);
+      /* (hist-border-same-look) …and the WHOLE stroke, not only its colour and ladder: the layout, the
+         paint and the dark casing under it are the objects today's `borders-only-line` /
+         `borders-only-casing` are built from (js/border-style.js). Before, this layer had no casing
+         and round caps, and was repainted dark grey on the pale base — three differences a reader saw
+         the moment the clock left Now. The precision dash is the one thing this line adds. */
+      if(!GE().layers.has('imtb-line')) GE().layers.add({id:'imtb-line',type:'line',source:'imtb-ln-src',layout:(_BS.layout?_BS.layout():{'line-join':'round'}),paint:Object.assign(_BS.paint?_BS.paint():{'line-color':'#d9dbe0','line-opacity':0.95,'line-width':['interpolate',['linear'],['zoom'],1,0.95,4,1.55,8,2.2,12,2.9]},{'line-dasharray':['match',['to-number',['coalesce',['get','BORDERPRECISION'],['get','borderprecision']],-1],1,['literal',[2,2]],2,['literal',[6,2]],['literal',[1,0]]]})}, before);
+      if(!GE().layers.has('imtb-casing')) GE().layers.add({id:'imtb-casing',type:'line',source:'imtb-ln-src',layout:(_BS.layout?_BS.layout():{'line-join':'round'}),paint:(_BS.casingPaint?_BS.casingPaint():{'line-color':'#000000','line-opacity':0.35,'line-width':['interpolate',['linear'],['zoom'],1,2.0,4,2.8,8,3.8,12,4.9]})}, 'imtb-line');
       /* == (#R309) A PAST COUNTRY'S NAME IS A COUNTRY NAME ======================================
          「昔の国名ラベルの見た目や挙動も今の国名ラベルと完全に同じに。」 #R101 gave the RENAMED half its
          own smaller "era style" (that request was about the UNCHANGED half keeping the normal one), so
@@ -1891,7 +1904,7 @@ export function timeBorders(HOST){
       /* (#R531) the polygons and the stroked outline are two sources now, and the outline is derived
          from the collection, so a collection that arrived without marks (the aourednik fallback)
          still has one — computed once and kept on the object the year cache holds. */
-      const _ln=()=>{ try{ return _linesFor(fc); }catch(_){ return {type:'FeatureCollection',features:[]}; } };
+      const _ln=()=>{ try{ return _strokeFor(fc); }catch(_){ return {type:'FeatureCollection',features:[]}; } };
       try{ if(GE().layers.hasSource('imtb-src')&&GE().layers.hasSource('imtb-ln-src')&&GE().layers.has('imtb-line')){ GE().layers.setSourceData('imtb-src',fc); GE().layers.setSourceData('imtb-ln-src',_ln()); _pushLbl(fc); window._applyBorders(); _afterApply(); return; } }catch(_){}
       if(ensure()){ try{ GE().layers.setSourceData('imtb-src',fc); GE().layers.setSourceData('imtb-ln-src',_ln()); }catch(_){} _pushLbl(fc); try{ window._applyBorders(); }catch(_){} _afterApply(); }
       /* (#R140) was map.once('idle',…) — a ONE-SHOT 'idle' that NEVER fires on a busy/backgrounded map (another source
@@ -1909,7 +1922,7 @@ export function timeBorders(HOST){
       try{ GE().layers.setSourceData('imtb-src',{type:'FeatureCollection',features:[]}); }catch(_){}
       try{ GE().layers.setSourceData('imtb-ln-src',{type:'FeatureCollection',features:[]}); }catch(_){}
       try{ GE().layers.setSourceData('imtb-lbl-src',{type:'FeatureCollection',features:[]}); }catch(_){}
-      try{ ['imtb-fill','imtb-line','imtb-lbl','imtb-lbl2'].forEach(id=>{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility','none'); }); }catch(_){}
+      try{ _DRAWN_LAYERS.forEach(id=>{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility','none'); }); }catch(_){}
       _restoreBase(); try{ window._applyBorders&&window._applyBorders(); }catch(_){} }
     /* ══ (time-compare-lapse) WHICH COLLECTION ANSWERS AN INSTANT — ONE CHAIN, ANY MAP ══════════════════
        「1914 年 | 今日」: the comparison window (js/compare.js) is a second map at an instant of its own, and its
@@ -2019,7 +2032,7 @@ export function timeBorders(HOST){
       if(GE().layers.hasSource('imtb-src')&&GE().layers.has('imtb-line')){ GE().layers.setSourceData('imtb-src',shownFC);
         /* (#R531) the identities changed, not the geometry — but this path also runs when the layers
            were rebuilt underneath, so the outline is re-asserted with them rather than left empty. */
-        try{ if(GE().layers.hasSource('imtb-ln-src')) GE().layers.setSourceData('imtb-ln-src',_linesFor(shownFC)); }catch(_){}
+        try{ if(GE().layers.hasSource('imtb-ln-src')) GE().layers.setSourceData('imtb-ln-src',_strokeFor(shownFC)); }catch(_){}
         _pushLbl(shownFC); }
     }catch(_){} });
     /* (#R94k) warm the cache in the background so the era borders swap INSTANTLY when a year is entered
@@ -2057,7 +2070,7 @@ export function timeBorders(HOST){
     /* re-assert ONLY when a base-style swap (globe/flat/satellite) WIPED our layers — detected by a missing
        imtb-line. Re-asserting on EVERY styledata would loop, because our own setLayoutProperty fires styledata
        (that was the fast-blink). */
-    GE().events.on('styledata',()=>{ if(active&&shownY!=null&&_imCanDraw()&&!GE().layers.has('imtb-line')) setTimeout(()=>{ try{ if(active&&_imCanDraw()&&!GE().layers.has('imtb-line')){ ensure(); const fc=cache.get(shownY); if(fc){ try{ GE().layers.setSourceData('imtb-src',fc); GE().layers.setSourceData('imtb-ln-src',_linesFor(fc)); }catch(_){} _pushLbl(fc); } window._applyBorders(); } }catch(_){} },160); });
+    GE().events.on('styledata',()=>{ if(active&&shownY!=null&&_imCanDraw()&&!GE().layers.has('imtb-line')) setTimeout(()=>{ try{ if(active&&_imCanDraw()&&!GE().layers.has('imtb-line')){ ensure(); const fc=cache.get(shownY); if(fc){ try{ GE().layers.setSourceData('imtb-src',fc); GE().layers.setSourceData('imtb-ln-src',_strokeFor(fc)); }catch(_){} _pushLbl(fc); } window._applyBorders(); } }catch(_){} },160); });
     /* (#R94h) geometry of the era polygon whose NAME matches — used to paint compared former states.
        (#R94o) pick the LARGEST match, not the first: a broad regex like the British-Raj `/^india$/` also hits a
        tiny mislabeled "India" sliver in the 1900 data (a 28-pt strip near the Iran border), and `.find()` grabbed
@@ -2768,7 +2781,7 @@ export function timeBorders(HOST){
        already answer?» had no answer — the shape #R575 and #R673 each paid for. It is published
        here so tests/history-era-names-checks.test.mjs (#R686) can hold the bundled table and this one
        apart: a name answered by both would be one judgement in two places (#R536). */
-    return { _go:go, _clear:clear, collectionAt, modernAt, current:()=>shownY, active:()=>active, coverage, note, typeNote, blankNote, refresh:()=>{ try{ window._applyBorders(); }catch(_){} }, currentFC:()=>_drawnFC(), geomFor, geomForCode, resolveHist, featureAt, _nearest:nearest, eraLocName:_eraLocName, histNames:histNames, histNameFor:hnFor, histNameForGloss:hnEraGloss, loadHistNames:hnLoad,
+    return { layerIds:_DRAWN_LAYERS.slice(), _go:go, _clear:clear, collectionAt, modernAt, current:()=>shownY, active:()=>active, coverage, note, typeNote, blankNote, refresh:()=>{ try{ window._applyBorders(); }catch(_){} }, currentFC:()=>_drawnFC(), geomFor, geomForCode, resolveHist, featureAt, _nearest:nearest, eraLocName:_eraLocName, histNames:histNames, histNameFor:hnFor, histNameForGloss:hnEraGloss, loadHistNames:hnLoad,
              /* (hist-era-span-fidelity) a sheet as the reader's year draws it, and the reviewed spans it is
                 drawn under — a real question about the record («which names does 1600 withhold?»), the same
                 kind `histNameFor` answers; scripts/hist-fidelity.mjs gates the map through it */

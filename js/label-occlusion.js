@@ -62,7 +62,7 @@ export function makeLabelOcclusion(HOST, CTX) {
        leaves behind what is not, so `borders-only-casing` was being separated from its own line by
        everything that happened to be added in between (measured above: thirteen layers, the gust
        raster among them). Listing a line without its casing does not raise a line — it splits one. */
-    const STACK=['layer-sat-labels','coast-only-casing','coast-only-line','borders-only-casing','borders-only-line','ofm-river','ofm-water','ofm-water2','ofm-peak','ofm-admin1','ofm-city','ofm-other','geo-sea','imtb-line','ofm-country','imtb-lbl2','imtb-lbl'];
+    const STACK=['layer-sat-labels','coast-only-casing','coast-only-line','borders-only-casing','borders-only-line','ofm-river','ofm-water','ofm-water2','ofm-peak','ofm-admin1','ofm-city','ofm-other','geo-sea','imtb-casing','imtb-line','ofm-country','imtb-lbl2','imtb-lbl'];
     /* (#R25) "own" overlays — the user's active drawings / measurements / analysis + the isolation mask +
        the place highlight — legitimately sit ABOVE the labels. Everything else is a DATA layer that the
        user wants BENEATH the place-name/border labels ("地名や国境はどのレイヤーよりも最前部に"). */

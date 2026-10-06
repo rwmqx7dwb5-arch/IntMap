@@ -562,21 +562,19 @@ test('#R705 actual border style validates and distinguishes source precision wit
   assert.deepEqual(readDash(3), [1, 0]); assert.deepEqual(readDash(null), [1, 0]);
   assert.equal(layer.paint['line-opacity'], 0.95);
 });
-test('#R705 historical theme updates choose a contrasting stroke and leave Now untouched', () => {
+/* (hist-border-same-look) #R705 repainted the era border dark grey on the pale historical base; today's
+   border on the pale CARTO base keeps the pale line on its dark casing. The era border now has that
+   casing too, so the basemap switch must not touch the border's paint at all — in either theme. */
+test('hist-border-same-look: the historical basemap never repaints the era border', () => {
   const win = {}; win.window = win;
   vm.runInNewContext(transformSync(rd('js/border-style.js'), { format: 'iife' }).code, win);
-  const borderColor = win.IntMapBorderStyle.colorFor;
   vm.runInNewContext(rd('js/historical-basemap.js'), win);
   const paint = [];
   const engine = { layers: { hasSource: () => true, has: () => true, setPaint: (...a) => paint.push(a), setLayout: () => {} }, scene: { getStyle: () => ({ layers: [] }) } };
-  win.IntMapHistoricalBasemap.apply(engine, { active: true, sat: false, light: true });
-  assert.equal(paint.find(a => a[0] === 'imtb-line')[2], borderColor(true));
-  paint.length = 0; win.IntMapHistoricalBasemap.apply(engine, { active: true, sat: false, light: false });
-  assert.equal(paint.find(a => a[0] === 'imtb-line')[2], borderColor(false));
-  assert.notEqual(borderColor(true), borderColor(false));
-  assert.equal(borderColor(true, true), borderColor(false));
-  paint.length = 0; win.IntMapHistoricalBasemap.apply(engine, { active: false, sat: false, light: true });
-  assert.equal(paint.length, 0);
+  for (const light of [true, false]) for (const sat of [true, false]) for (const active of [true, false]) {
+    paint.length = 0; win.IntMapHistoricalBasemap.apply(engine, { active, sat, light });
+    assert.deepEqual(paint.filter(a => /^imtb-/.test(a[0])), [], `imtb-* repainted (light=${light} sat=${sat} active=${active})`);
+  }
 });
 test('#R705 Cesium preserves dash ratios and represents zero gaps with solid material', async () => {
   const win = {}; win.window = win;
@@ -631,4 +629,57 @@ test('#R711 computed administrative label anchors have alternate collision place
     assert.equal(l.layout['text-optional'], true);
     assert.ok(l.layout['symbol-sort-key'], 'area priority preserved');
   }
+});
+
+/* ══ (hist-border-same-look) THE ERA BORDER IS TODAY'S BORDER, STROKE FOR STROKE ═════════════════════
+   「歴史地図は、現在の地図の国境や地方区分境界線と、ちょっと違う…見た目を同じにしろ」(2026-10-06).
+   Measured on production before this change: today's border had a dark casing and the era border did
+   not; the era border had round caps; and on the pale base the era border was repainted #59636e. Each
+   layer is drawn here by the code that ships — today's `borders-only-*` lifted out of js/app-body.js,
+   the coastline from js/coast-line.js, the era border from js/time-borders.js — and the three strokes
+   must agree in everything but the era line's precision dash. Also with js/border-style.js NOT
+   evaluated: the era module's fallback literals are a copy, and a copy is held to its source here. */
+async function eraDefs(withStyle) {
+  const { mod, bundle, HOST, win, ge } = await loadModule();
+  if (withStyle) vm.runInNewContext(transformSync(rd('js/border-style.js'), { format: 'iife' }).code, win);
+  await importModule('js/label-scale.js', { globals: { window: win } });
+  const defs = new Map(), sources = new Map(), order = [];
+  const noop = () => {};
+  const chain = new Proxy(function () {}, { get: () => chain, apply: () => chain });
+  ge.set(new Proxy({ layers: { has: id => defs.has(id), hasSource: id => sources.has(id),
+    add: (def, before) => { defs.set(def.id, def); order.push([def.id, before]); }, addSource: (id, def) => sources.set(id, def),
+    setSourceData: noop } }, { get: (t, k) => k in t ? t[k] : chain }));
+  win._applyBorders = noop; HOST.canDraw = () => true;
+  await mod._go(bundle.snaps[0].y);
+  return { defs: plain(Object.fromEntries(defs)), order, mod };
+}
+async function todayDefs() {
+  const style = await importModule('js/border-style.js', { globals: { window: {} } });
+  const defs = {};
+  const GE = () => ({ layers: { has: id => id in defs, hasSource: () => true, get: () => null, add: (def) => { defs[def.id] = def; } } });
+  const src = codeOnly(rd('js/app-body.js'));
+  const ensureBordersLayer = new Function('GE', 'canDraw', 'ensurePlaceLabels', 'bordersOn', ...Object.keys(style),
+    liftFunction(src, 'ensureBordersLayer') + '; return ensureBordersLayer;')(GE, () => true, () => {}, true, ...Object.values(style));
+  assert.equal(ensureBordersLayer(), true);
+  const { makeCoastLine } = await importModule('js/coast-line.js', { globals: { window: {} } });
+  const coast = makeCoastLine({ GE, canDraw: () => true, ensurePlaceLabels: () => {}, ...style });
+  assert.equal(coast.ensureCoastLayer(), true);
+  return plain(defs);
+}
+const strokeOf = (def) => { const p = { ...def.paint }; delete p['line-dasharray']; const l = { ...def.layout }; delete l.visibility; return { paint: p, layout: l }; };
+for (const withStyle of [true, false]) test(`hist-border-same-look: the era border and its casing are today's (border-style ${withStyle ? 'evaluated' : 'absent'})`, async () => {
+  const today = await todayDefs(), { defs, order, mod } = await eraDefs(withStyle);
+  assert.ok(today['borders-only-line'] && today['borders-only-casing'], 'today\'s border was not drawn by the lifted code');
+  assert.ok(defs['imtb-line'] && defs['imtb-casing'], 'the era border or its casing is not added');
+  assert.deepEqual(strokeOf(defs['imtb-line']), strokeOf(today['borders-only-line']));
+  assert.deepEqual(strokeOf(defs['imtb-casing']), strokeOf(today['borders-only-casing']));
+  assert.equal(defs['imtb-casing'].source, defs['imtb-line'].source, 'the casing must stroke the same lines');
+  assert.deepEqual(order.find(([id]) => id === 'imtb-casing'), ['imtb-casing', 'imtb-line'], 'the casing sits directly under its line');
+  if (today['coast-only-line']) {
+    assert.deepEqual(strokeOf(today['coast-only-line']), strokeOf(today['borders-only-line']));
+    assert.deepEqual(strokeOf(today['coast-only-casing']), strokeOf(today['borders-only-casing']));
+  }
+  /* the one list the module shows and hides the era with names every layer it added */
+  for (const id of Object.keys(defs).filter(id => /^imtb-/.test(id) && defs[id].type !== 'symbol' || /^imtb-lbl/.test(id)))
+    assert.ok(mod.layerIds.includes(id), `${id} is added but not in layerIds — it would outlive the trip back to Now`);
 });

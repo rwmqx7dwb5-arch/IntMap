@@ -35,7 +35,7 @@
  *  named binding is checkable where a window registration is not.
  * ==========================================================================*/
 export function makeCoastLine(CTX) {
-  const { GE, canDraw, ensurePlaceLabels, BORDER_COLOR, BORDER_WIDTH, BORDER_CASING } = CTX;
+  const { GE, canDraw, ensurePlaceLabels, BORDER_LAYOUT, BORDER_PAINT, BORDER_CASING_PAINT } = CTX;
   let coastOn = false;   /* ships OFF; the Wind layer switches it on once — see _imCoastAuto */
   /* everything except the ocean-vs-pool question, which is the one line that differs from a border */
   const FILTER = ['!', ['==', ['get', 'class'], 'swimming_pool']];
@@ -48,12 +48,12 @@ export function makeCoastLine(CTX) {
           || (GE().layers.has('tool-poly') ? 'tool-poly' : undefined);
         GE().layers.add({ id: 'coast-only-line', type: 'line', source: 'ofm', 'source-layer': 'water',
           filter: FILTER,
-          layout: { visibility: coastOn ? 'visible' : 'none', 'line-join': 'round' },
-          paint: { 'line-color': BORDER_COLOR, 'line-opacity': 0.95, 'line-width': BORDER_WIDTH } }, before);
+          layout: { ...BORDER_LAYOUT(), visibility: coastOn ? 'visible' : 'none' },
+          paint: BORDER_PAINT() }, before);
         if (!GE().layers.has('coast-only-casing')) GE().layers.add({ id: 'coast-only-casing', type: 'line', source: 'ofm', 'source-layer': 'water',
           filter: FILTER,
-          layout: { visibility: coastOn ? 'visible' : 'none', 'line-join': 'round' },
-          paint: { 'line-color': '#000000', 'line-opacity': 0.35, 'line-width': BORDER_CASING } }, 'coast-only-line');
+          layout: { ...BORDER_LAYOUT(), visibility: coastOn ? 'visible' : 'none' },
+          paint: BORDER_CASING_PAINT() }, 'coast-only-line');
       }
       return true;
     } catch (e) { return false; }

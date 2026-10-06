@@ -490,7 +490,7 @@ export function timeAdmin1(HOST) {
           const polys = (g.type === 'Polygon') ? [g.coordinates] : (g.coordinates || []);
           for (const poly of polys) for (const ring of poly) feats.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: ring }, properties: {} });
         }
-        return { type: 'FeatureCollection', features: feats };
+        return onceEach({ type: 'FeatureCollection', features: feats });
       }
       function _setGap(fc) {
         try { if (cfg.gaps && GE().layers.hasSource(cfg.gapSrc)) GE().layers.setSourceData(cfg.gapSrc, gapLinesFor(fc)); } catch (_) {}
@@ -523,14 +523,17 @@ export function timeAdmin1(HOST) {
 
       function linesFor(fc) {
         const m = BC() ? BC().marks(cfg.set) : null;
-        if (!_D || !m) { try { return BC().wholeLines(fc); } catch (_) { return { type: 'FeatureCollection', features: [] }; } }
+        if (!_D || !m) { try { return onceEach(BC().wholeLines(fc)); } catch (_) { return { type: 'FeatureCollection', features: [] }; } }
         const feats = [];
         for (const f of (fc.features || [])) {
           const g = BC().lineGeom(_D, f.properties._ix, m, vtState === 'absent');
           if (g) feats.push({ type: 'Feature', geometry: g, properties: {} });
         }
-        return { type: 'FeatureCollection', features: feats };
+        return onceEach({ type: 'FeatureCollection', features: feats });
       }
+      /* (hist-border-same-look) a boundary two units share is cut from both of their rings; strike it once,
+         as `ref-admin1` does at Now (js/border-coast.js `strokedOnce`, which says what doubling looked like) */
+      function onceEach(lfc) { try { return BC().strokedOnce(lfc); } catch (_) { return lfc; } }
 
       /* ══ (#R604) POINT THE TILE LAYER AT A DATE, AND ASK THE MAP WHETHER IT ANSWERED ═══════════
          ⚠⚠⚠ THE BUNDLE'S LINE IS NOT SHOWN UNTIL THE TILES HAVE BEEN GIVEN A CHANCE TO FAIL, AND

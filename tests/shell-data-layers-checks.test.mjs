@@ -752,17 +752,19 @@ const json = (p) => JSON.parse(readFileSync(join(ROOT, p), 'utf8'));
 test('R289 ③ the coastline uses the border line’s own source, colour and widths', () => {
   const s = read('js/coast-line.js');
   const body = read('js/app-body.js');
-  for (const need of [/source: 'ofm'/, /'source-layer': 'water'/, /'line-color': BORDER_COLOR/,
-    /'line-width': BORDER_WIDTH/, /'line-width': BORDER_CASING/, /id: 'coast-only-line'/, /id: 'coast-only-casing'/]) {
+  /* (hist-border-same-look) the stroke is the border's own objects from js/border-style.js (colour, widths,
+     casing); that they equal `borders-only-*` is evaluated in tests/history-era-display-checks.test.mjs */
+  for (const need of [/source: 'ofm'/, /'source-layer': 'water'/, /paint: BORDER_PAINT\(\)/,
+    /paint: BORDER_CASING_PAINT\(\)/, /id: 'coast-only-line'/, /id: 'coast-only-casing'/]) {
     assert.match(s, need, `the coastline must be drawn with ${need}`);
   }
   /* the casing goes UNDER the line, exactly as the border's does */
-  assert.match(s, /BORDER_CASING \} \}, 'coast-only-line'\);/, 'the casing is inserted below the line');
+  assert.match(s, /BORDER_CASING_PAINT\(\) \}, 'coast-only-line'\);/, 'the casing is inserted below the line');
   /* a hotel pool is not a coast; a dock basin is */
   assert.match(s, /\['!', \['==', \['get', 'class'\], 'swimming_pool'\]\]/, 'swimming pools are excluded');
   /* the shell wires it in two lines and keeps no second copy of the layer */
   assert.match(body, /import \{ makeCoastLine \} from '\.\/coast-line\.js';/, 'app-body imports it by name');
-  assert.match(body, /makeCoastLine\(\{ GE, canDraw, ensurePlaceLabels, BORDER_COLOR, BORDER_WIDTH, BORDER_CASING \}\);/);
+  assert.match(body, /makeCoastLine\(\{ GE, canDraw, ensurePlaceLabels, BORDER_LAYOUT, BORDER_PAINT, BORDER_CASING_PAINT \}\);/);
   assert.ok(!/coast-only-line',type:'line'/.test(body), 'the shell must not build the layer as well');
   /* the row exists, ships ON (#R476), and is filed with the other base displays rather than as a
      data layer. ⚠ THIS ASSERTION USED TO READ «ships unchecked / NOT in the default-on list». That was

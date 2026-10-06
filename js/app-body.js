@@ -42,7 +42,7 @@ import { makeLazyModules } from './lazy-modules.js';
 import { makeRuntime, everyTick, stopTick } from './runtime.js';
 import { makeDemSource } from './dem-source.js';
 import { gridLayerSpecs } from './grid-style.js';
-import { BORDER_COLOR, ADMIN1_COLOR, BORDER_WIDTH, BORDER_CASING, ADMIN1_WIDTH } from './border-style.js';
+import { BORDER_COLOR, ADMIN1_COLOR, BORDER_WIDTH, BORDER_CASING, ADMIN1_WIDTH, BORDER_LAYOUT, BORDER_PAINT, BORDER_CASING_PAINT } from './border-style.js';
 import { makeCoastLine } from './coast-line.js';   /* (#R289) the border line, drawn round the water */
 import { fetchViaProxy, clockFor } from './proxy-fetch.js';
 import { readWithin, jsonWithin, isUnobserved } from './fetch-deadline.js';   /* (stalled-fetch-and-surface-gauge) the PPP table from the World Bank, under the host's clock */
@@ -597,13 +597,13 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      returns. This replaced the two layers fighting each other (which fast-blinked when the toggle was flipped). */
   let _imbOfmWas=null;
   window._applyBorders=function(){ try{ if(!GE().hasRenderer()||!GE().hasRenderer()) return;
-    const traveling=!!(window.IntMapTimeBorders&&window.IntMapTimeBorders.active&&window.IntMapTimeBorders.active());
+    const TB=window.IntMapTimeBorders, traveling=!!(TB&&TB.active&&TB.active());
     const bon=!!bordersOn;
     /* modern boundary line: only when NOT travelling (and the toggle is on). */
     ['borders-only-line','borders-only-casing'].forEach(id=>{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',(bon&&!traveling)?'visible':'none'); });   /* (#R210) casing follows the border */
     /* (#R94l) era borders + names show WHENEVER travelling — the whole point of moving the clock is to see them
        (not gated by the modern-border toggle, which previously left the map border-less). */
-    ['imtb-fill','imtb-line','imtb-lbl','imtb-lbl2'].forEach(id=>{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',traveling?'visible':'none'); });
+    ((TB&&TB.layerIds)||[]).forEach(id=>{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',traveling?'visible':'none'); });
     /* modern country labels off while travelling — the era names come from imtb-lbl. */
     if(GE().layers.has('ofm-country')){ if(traveling){ if(_imbOfmWas===null){ try{ _imbOfmWas=GE().layers.getLayout('ofm-country','visibility')||'visible'; }catch(_){ _imbOfmWas='visible'; } } GE().layers.setLayout('ofm-country','visibility','none'); }
       else if(_imbOfmWas!==null){ GE().layers.setLayout('ofm-country','visibility',_imbOfmWas); _imbOfmWas=null; } }
@@ -1996,19 +1996,19 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       const before=['ofm-country','ofm-city','ofm-other'].find(id=>GE().layers.get(id)) || (GE().layers.has('tool-poly')?'tool-poly':undefined);
       GE().layers.add({id:'borders-only-line',type:'line',source:'ofm','source-layer':'boundary',
         filter:['all',['==',['get','admin_level'],2],['!=',['get','maritime'],1]],
-        layout:{visibility:bordersOn?'visible':'none','line-join':'round'},
+        layout:{...BORDER_LAYOUT(),visibility:bordersOn?'visible':'none'},
         /* (#R210) WHITE and ~2x thicker (国境線は白・太く). `borders-only-casing` goes UNDER it so white still reads over a pale basemap; both are driven together by _applyBorders/cb-borders.
            (#R212) 「国境線は少しだけ灰色に。…両者とも少しだけ細く。」 — pure white against a pale basemap is
            the same value as the basemap, so it now sits one step down the grey scale, and both widths
            come back ~15 %. The same colour and the same ladder are used by the HISTORICAL border layer
            (js/time-borders.js `imtb-line`), because 「歴史的国境線も同じものに統一」 — one line for
            «this is a national border», whichever year is on the clock. */
-        paint:{'line-color':BORDER_COLOR,'line-opacity':0.95,'line-width':BORDER_WIDTH}}, before);
-      if(!GE().layers.has('borders-only-casing')) GE().layers.add({id:'borders-only-casing',type:'line',source:'ofm','source-layer':'boundary',filter:['all',['==',['get','admin_level'],2],['!=',['get','maritime'],1]],layout:{visibility:bordersOn?'visible':'none','line-join':'round'},paint:{'line-color':'#000000','line-opacity':0.35,'line-width':BORDER_CASING}}, 'borders-only-line');
+        paint:BORDER_PAINT()}, before);
+      if(!GE().layers.has('borders-only-casing')) GE().layers.add({id:'borders-only-casing',type:'line',source:'ofm','source-layer':'boundary',filter:['all',['==',['get','admin_level'],2],['!=',['get','maritime'],1]],layout:{...BORDER_LAYOUT(),visibility:bordersOn?'visible':'none'},paint:BORDER_CASING_PAINT()}, 'borders-only-line');
     }
     return true; }catch(e){ return false; } }
   window.ensureBordersLayer=ensureBordersLayer;
-  makeCoastLine({ GE, canDraw, ensurePlaceLabels, BORDER_COLOR, BORDER_WIDTH, BORDER_CASING });   /* (#R289) 「海岸線も国境線が全く同じ手法で」 */
+  makeCoastLine({ GE, canDraw, ensurePlaceLabels, BORDER_LAYOUT, BORDER_PAINT, BORDER_CASING_PAINT });   /* (#R289) 「海岸線も国境線が全く同じ手法で」 */
   function ensureRefLayers(){
     try{
       if(!canDraw()) return false;
