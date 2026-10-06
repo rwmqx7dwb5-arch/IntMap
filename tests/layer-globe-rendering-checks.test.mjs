@@ -369,14 +369,15 @@ test('R212 ⑦: today’s borders, provinces and historical borders read one sty
   /* spelling kept below: js/app-body.js and js/time-borders.js build MapLibre layers inside the app
      shell and cannot be evaluated here, so the wiring of the module into them is read as source */
   const app = read('js/app-body.js');
-  assert.match(app, /import \{ BORDER_COLOR, ADMIN1_COLOR, BORDER_WIDTH, BORDER_CASING, ADMIN1_WIDTH \} from '\.\/border-style\.js'/);
-  assert.match(app, /'line-color':BORDER_COLOR,[^}]*'line-width':BORDER_WIDTH/, 'the national border uses them');
+  assert.match(app, /import \{[^}]*\bBORDER_PAINT\b[^}]*\} from '\.\/border-style\.js'/);
+  /* (hist-border-same-look) the whole stroke is the module's now, not only colour and width */
+  assert.match(app, /id:'borders-only-line'[^]*?paint:BORDER_PAINT\(\)/, 'the national border uses them');
   assert.match(app, /'line-color':ADMIN1_COLOR,[^}]*'line-width':ADMIN1_WIDTH/, 'and so does the province line');
   const tb = read('js/time-borders.js');
-  assert.match(tb, /_BS\.color\|\|/, 'the historical border reads the same module');
-  assert.match(tb, /_BS\.width\|\|/);
-  /* the fallback literals must BE the module's values, or the two disagree the moment one changes */
-  assert.ok(tb.includes("_BS.color||'" + BS.BORDER_COLOR + "'"), 'the historical fallback colour is the module’s own');
+  assert.match(tb, /_BS\.paint\?_BS\.paint\(\)/, 'the historical border reads the same module');
+  assert.match(tb, /_BS\.casingPaint\?_BS\.casingPaint\(\)/, 'and so does its casing');
+  /* the fallback literals must BE the module's values — evaluated, not read, by
+     tests/history-era-display-checks.test.mjs «hist-border-same-look … (border-style absent)» */
 });
 }
 

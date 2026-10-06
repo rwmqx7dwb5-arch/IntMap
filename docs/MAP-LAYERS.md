@@ -3017,8 +3017,15 @@ WW2 しか開かない利用者は残り5本の source を1つも払わない。
 **レイヤー行ではない。** 凡例にも「基本表示」にも出ない——マスタークロックが過去の瞬時を指した
 とき `js/time-borders.js` が現代の国ポリゴンの上に敷き、`Now` に戻すと消す。source は
 `imtb-src`（ポリゴン）・`imtb-ln-src`（**描かれる境界線**）・`imtb-lbl-src`（名前の点）の3本、
-layer は `imtb-fill`（ほぼ透明なクリック対象）・`imtb-line`・`imtb-lbl`（改名・消滅した政体の名前）・
-`imtb-lbl2`（現代と同じ国の、現在の名前）の4本。
+layer は `imtb-fill`（ほぼ透明なクリック対象）・`imtb-casing`（線の下の暗い縁）・`imtb-line`・`imtb-lbl`（改名・消滅した政体の名前）・
+`imtb-lbl2`（現代と同じ国の、現在の名前）の5本。表示・非表示はこの5本を1つの一覧（`IntMapTimeBorders.layerIds`）で回す。
+
+⚠ **描線は現代の国境と同一。** `imtb-line` / `imtb-casing` の layout と paint は、`borders-only-line` / `borders-only-casing`・
+`coast-only-*` と同じ `js/border-style.js` の `BORDER_LAYOUT` / `BORDER_PAINT` / `BORDER_CASING_PAINT` から作る（色・幅・不透明度・
+暗い縁・線端）。基図の明暗で塗り替えない。現代の線に無いのは記録の精度による破線（`BORDERPRECISION`）だけ。
+⚠ **隣り合う単位が共有する辺は1回だけ描く。** 線は多角形の環から切り出すので、共有辺は隣の数だけ重なる
+（1950 年の CShapes の国境で 52,322 辺中 24,728 辺）。半透明の破線が重なると濃く・太く・破線が長く見えるため、
+`imtb-ln-src` と地方区分の束の線（`imta*-ln-src` / `imta*-gap-src`）は `js/border-coast.js` の `strokedOnce` を通してから渡す。
 
 ⚠ **`imtb-line` はポリゴンをなぞらない。** 政治的記録の環は「国どうしの境界」と「その記録が持つ
 海岸線の写し」の2種類の辺でできていて、後者は基図のほうが正確に知っている（実測: 1900年の

@@ -198,6 +198,57 @@ export const IntMapBorderCoast = (function () {
     return { type: 'FeatureCollection', features: feats };
   }
 
+  /* ══ (hist-border-same-look) A SHARED EDGE IS ONE STROKE, NOT ONE PER NEIGHBOUR ══════════════════════
+     「地方区分線も違う」(2026-10-06). Every bundled record is a set of POLYGONS, and every line above is
+     cut from a polygon's own ring — so the edge two neighbours share is cut twice, once from each (more
+     where two records hold the same unit). Measured on production at 2015-06-15, central Romania, z7.6: of the
+     `imta-gap-line` segments on screen 234 were drawn twice, 75 three times, 2 four times (1,057
+     segments, 13 features). Two semi-transparent dashed strokes on one path do not look like one: the
+     opacity compounds (0.82 → 0.97, paler), and the dashes start at different ends so they interleave
+     into longer, near-solid dashes that read as a thicker line. Today's `ref-admin1` / `borders-only-line`
+     stroke each boundary ONCE (OpenMapTiles' boundary layer is a line layer), so the era line looked
+     different with identical paint. This keeps the first stroke of every undirected segment and drops
+     the rest, splitting a line where a dropped stretch was — the picture is the same path, struck once.
+     ⚠ Exact coordinates, not a tolerance: only an edge two rings genuinely share is merged; a neighbour
+     whose copy of the boundary was digitised differently is a different line and stays drawn.
+     ⚠ Memoised on the collection it is handed (callers already memoise that collection per date), so
+     a redraw of the same instant does not re-walk the world. */
+  const _once = new WeakMap();
+  function strokedOnce(fc) {
+    if (!fc || !fc.features) return fc;
+    const hit = _once.get(fc); if (hit) return hit;
+    /* a vertex is named by its position on a 1e-5° grid (~1 m — every bundle is written at 5 decimals or
+       coarser, so this is the exact coordinate as stored) packed into one number, then by a small integer;
+       an edge is the pair of integers as one number, so no string is built per edge. Measured on the
+       shipped data/cshapes.js + data/border-coast.js at 1950-07-01 (Node 24, this machine): the 172
+       countries' border runs are 52,322 segments, 24,728 of them (47 %) a neighbour's second copy, and
+       the walk takes 8–26 ms (the string-per-edge version of the same walk on whole rings: ~380 ms). */
+    const seen = new Set(), feats = [], ids = new Map();
+    const id = (p) => { const k = Math.round((p[0] + 360) * 1e5) * 67108864 + Math.round((p[1] + 90) * 1e5); let v = ids.get(k); if (v === undefined) { v = ids.size; ids.set(k, v); } return v; };
+    const key = (a, b) => { const p = id(a), q = id(b); return p < q ? p * 67108864 + q : q * 67108864 + p; };
+    for (const f of fc.features) {
+      const g = f && f.geometry; if (!g) continue;
+      const lines = g.type === 'LineString' ? [g.coordinates] : g.type === 'MultiLineString' ? g.coordinates : null;
+      if (!lines) { feats.push(f); continue; }
+      const out = [];
+      for (const c of lines) {
+        let run = null;
+        for (let i = 0; i + 1 < (c ? c.length : 0); i++) {
+          const k = key(c[i], c[i + 1]);
+          if (c[i][0] === c[i + 1][0] && c[i][1] === c[i + 1][1]) continue;
+          if (seen.has(k)) { if (run) { out.push(run); run = null; } continue; }
+          seen.add(k);
+          if (!run) run = [c[i]];
+          run.push(c[i + 1]);
+        }
+        if (run) out.push(run);
+      }
+      if (out.length) feats.push({ type: 'Feature', geometry: out.length === 1 ? { type: 'LineString', coordinates: out[0] } : { type: 'MultiLineString', coordinates: out }, properties: f.properties || {} });
+    }
+    const v = { type: 'FeatureCollection', features: feats };
+    _once.set(fc, v); return v;
+  }
+
   /* R711: detailed OHM lines are built from the same cached source as the bundle.
      The bundle still owns identity, dates, polygons and labels. Only source-reproducible
      outlines get detail, and their geometry fingerprint must still match at read time.
@@ -340,6 +391,6 @@ export const IntMapBorderCoast = (function () {
     return lines.length ? { type: 'MultiLineString', coordinates: lines } : null;
   }
 
-  return { load, loadCourses, courseEpoch: (t) => (_HC ? _HC.epoch(t) : -1), onArrive, marks, closedRing, ringLines, lineGeom, wholeLines, geometryKey, loaded: () => !!_D };
+  return { load, loadCourses, courseEpoch: (t) => (_HC ? _HC.epoch(t) : -1), onArrive, marks, closedRing, ringLines, lineGeom, wholeLines, strokedOnce, geometryKey, loaded: () => !!_D };
 })();
 globalThis.IntMapBorderCoast = IntMapBorderCoast;   /* (module-graph) the compat window: importers get the binding above */

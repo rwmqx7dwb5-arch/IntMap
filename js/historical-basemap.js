@@ -26,8 +26,6 @@
     const L=engine.layers, visible=!!active&&!sat;
     if(visible&&!L.hasSource('ofm')) return false;
     const defs=definitions(light);
-    if(active&&L.has('imtb-line')&&window.IntMapBorderStyle?.colorFor)
-      L.setPaint('imtb-line','line-color',window.IntMapBorderStyle.colorFor(light,sat));
     if(visible){
       /* Insert at the map base, above the polar/world background and below
          overlays. A background added above us must not replace the land color. */
