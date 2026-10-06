@@ -1,0 +1,1345 @@
+{
+  "country": "MAR",
+  "atomSet": "gb-adm2@2026-10-06",
+  "scope": {
+    "from": "1997",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Kingdom of Morocco: the 16 regions of 1997–2015 and the 12 of 2015, as unions of the 75 provinces and prefectures of 2017 (geoBoundaries gbOpen MAR ADM2, OpenStreetMap, ODbL; their 2015 region from the same source's ADM1, nesting ≥ 0.97). The atoms cover Western Sahara too (union 680,620 km²; Natural Earth's MAR outline is covered to within 2,278 km²); the Western Sahara provinces are withheld (berm, sovereignty). New record 2026-10-06.",
+  "units": [
+    {
+      "id": "MAR:TangerTetouan@1997",
+      "names": {
+        "en": "Tanger-Tétouan",
+        "ja": "タンジェ＝テトゥアン地方",
+        "local": "جهة طنجة تطوان"
+      },
+      "spans": [
+        {
+          "from": "1997",
+          "precision": "year",
+          "to": "2015-09-04",
+          "atoms": [
+            "MAR-ADM2-96644757B99361415702964",
+            "MAR-ADM2-96644757B56432502406176",
+            "MAR-ADM2-96644757B89687162507810",
+            "MAR-ADM2-96644757B84561517472973",
+            "MAR-ADM2-96644757B18768670389586",
+            "MAR-ADM2-96644757B54306876372793"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uma.html",
+              "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+              "says": "1997-03: sixteen regions created as primary subdivisions (table with their provinces' later regrouping in 2015); provinces and prefectures became secondary.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239195974",
+              "title": "Organisation territoriale du Maroc — fr.wikipedia, oldid 239195974",
+              "says": "Loi 47-96 (1997) on the organisation of the region; 16 regions until 2015.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uma.html",
+              "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+              "says": "2015: Tanger-Tétouan-Al Hoceima formed by annexing Al Hoceima and Ouezzane provinces to Tanger-Tétouan.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "statoids dates the 16 regions to March 1997; Loi 47-96 was promulgated in April 1997 and the regions' composition fixed by decree later that year — known here to the year only. The provinces created later (2003, 2009) are drawn inside the region of the province they were carved from. Ouezzane (2009) is withheld: carved from Chefchaouen (this region) and Sidi Kacem (Gharb)."
+        }
+      ]
+    },
+    {
+      "id": "MAR:Gharb@1997",
+      "names": {
+        "en": "Gharb-Chrarda-Béni Hssen",
+        "ja": "ガルブ＝シュラルダ＝ベニ・ハッセン地方",
+        "local": "جهة الغرب الشراردة بني حسن"
+      },
+      "spans": [
+        {
+          "from": "1997",
+          "precision": "year",
+          "to": "2015-09-04",
+          "atoms": [
+            "MAR-ADM2-96644757B12662883146655",
+            "MAR-ADM2-96644757B9718685225615",
+            "MAR-ADM2-96644757B64432809888793"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uma.html",
+              "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+              "says": "1997-03: sixteen regions created as primary subdivisions (table with their provinces' later regrouping in 2015); provinces and prefectures became secondary.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239195974",
+              "title": "Organisation territoriale du Maroc — fr.wikipedia, oldid 239195974",
+              "says": "Loi 47-96 (1997) on the organisation of the region; 16 regions until 2015.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1375894181",
+              "title": "Gharb-Chrarda-Béni Hssen — en.wikipedia, oldid 1375894181",
+              "says": "Provinces: Kénitra, Sidi Kacem, Sidi Slimane.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "statoids dates the 16 regions to March 1997; Loi 47-96 was promulgated in April 1997 and the regions' composition fixed by decree later that year — known here to the year only. The provinces created later (2003, 2009) are drawn inside the region of the province they were carved from. Ouezzane withheld (see Tanger-Tétouan)."
+        }
+      ]
+    },
+    {
+      "id": "MAR:TazaAlHoceima@1997",
+      "names": {
+        "en": "Taza-Al Hoceima-Taounate",
+        "ja": "タザ＝アル・ホセイマ＝タウナート地方",
+        "local": "جهة تازة الحسيمة تاونات"
+      },
+      "spans": [
+        {
+          "from": "1997",
+          "precision": "year",
+          "to": "2015-09-04",
+          "atoms": [
+            "MAR-ADM2-96644757B99920267922653",
+            "MAR-ADM2-96644757B85287588144355",
+            "MAR-ADM2-96644757B36967765471663",
+            "MAR-ADM2-96644757B63064605054668"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uma.html",
+              "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+              "says": "1997-03: sixteen regions created as primary subdivisions (table with their provinces' later regrouping in 2015); provinces and prefectures became secondary.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239195974",
+              "title": "Organisation territoriale du Maroc — fr.wikipedia, oldid 239195974",
+              "says": "Loi 47-96 (1997) on the organisation of the region; 16 regions until 2015.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1376954240",
+              "title": "Taza-Al Hoceima-Taounate — en.wikipedia, oldid 1376954240",
+              "says": "Provinces: Al Hoceïma, Guercif, Taounate, Taza.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=234456106",
+              "title": "Province de Guercif — fr.wikipedia, oldid 234456106",
+              "says": "Created 2009 by dismemberment of Taza province.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "statoids dates the 16 regions to March 1997; Loi 47-96 was promulgated in April 1997 and the regions' composition fixed by decree later that year — known here to the year only. The provinces created later (2003, 2009) are drawn inside the region of the province they were carved from."
+        }
+      ]
+    },
+    {
+      "id": "MAR:Oriental@1997",
+      "names": {
+        "en": "Oriental",
+        "ja": "オリエンタル地方",
+        "local": "جهة الشرق"
+      },
+      "spans": [
+        {
+          "from": "1997",
+          "precision": "year",
+          "to": "2009-06-11",
+          "atoms": [
+            "MAR-ADM2-96644757B53695376753874",
+            "MAR-ADM2-96644757B69343874835814",
+            "MAR-ADM2-96644757B25874170222857",
+            "MAR-ADM2-96644757B21390270390615",
+            "MAR-ADM2-96644757B25654465299878",
+            "MAR-ADM2-96644757B4563753155162",
+            "MAR-ADM2-96644757B88930410593624"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uma.html",
+              "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+              "says": "1997-03: sixteen regions created as primary subdivisions (table with their provinces' later regrouping in 2015); provinces and prefectures became secondary.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239195974",
+              "title": "Organisation territoriale du Maroc — fr.wikipedia, oldid 239195974",
+              "says": "Loi 47-96 (1997) on the organisation of the region; 16 regions until 2015.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=238632441",
+              "title": "Province de Driouch — fr.wikipedia, oldid 238632441",
+              "says": "Created 2009 by dismemberment of Nador province (its communes were Nador's in the 2004 census).",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "statoids dates the 16 regions to March 1997; Loi 47-96 was promulgated in April 1997 and the regions' composition fixed by decree later that year — known here to the year only. The provinces created later (2003, 2009) are drawn inside the region of the province they were carved from. Includes the later Driouch province (Nador's until 2009)."
+        },
+        {
+          "from": "2009-06-11",
+          "precision": "day",
+          "to": "2015-09-04",
+          "atoms": [
+            "MAR-ADM2-96644757B53695376753874",
+            "MAR-ADM2-96644757B69343874835814",
+            "MAR-ADM2-96644757B25874170222857",
+            "MAR-ADM2-96644757B21390270390615",
+            "MAR-ADM2-96644757B25654465299878",
+            "MAR-ADM2-96644757B4563753155162"
+          ],
+          "sources": [
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=235692868",
+              "title": "Province de Tinghir — fr.wikipedia, oldid 235692868",
+              "says": "Décret 2-09-319 of 11 June 2009 created new provinces (Tinghir from Ouarzazate in Souss-Massa-Drâa and Errachidia in Meknès-Tafilalet; likewise Driouch from Nador, Guercif from Taza, Midelt from Khénifra and Errachidia, Sidi Ifni from Tiznit, Ouezzane from Sidi Kacem and Chefchaouen).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uma.html",
+              "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+              "says": "2015: Driouch and Guercif annexed to Oriental — i.e. Driouch was outside Oriental from 2009.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Driouch withheld 2009–15 (its region in those years is not settled, see unresolved)."
+        }
+      ]
+    },
+    {
+      "id": "MAR:FesBoulemane@1997",
+      "names": {
+        "en": "Fès-Boulemane",
+        "ja": "フェズ＝ブールマーヌ地方",
+        "local": "جهة فاس بولمان"
+      },
+      "spans": [
+        {
+          "from": "1997",
+          "precision": "year",
+          "to": "2015-09-04",
+          "atoms": [
+            "MAR-ADM2-96644757B2759448404756",
+            "MAR-ADM2-96644757B81090244987905",
+            "MAR-ADM2-96644757B42104761334354",
+            "MAR-ADM2-96644757B1478822582790"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uma.html",
+              "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+              "says": "1997-03: sixteen regions created as primary subdivisions (table with their provinces' later regrouping in 2015); provinces and prefectures became secondary.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239195974",
+              "title": "Organisation territoriale du Maroc — fr.wikipedia, oldid 239195974",
+              "says": "Loi 47-96 (1997) on the organisation of the region; 16 regions until 2015.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "statoids dates the 16 regions to March 1997; Loi 47-96 was promulgated in April 1997 and the regions' composition fixed by decree later that year — known here to the year only. The provinces created later (2003, 2009) are drawn inside the region of the province they were carved from."
+        }
+      ]
+    },
+    {
+      "id": "MAR:MeknesTafilalet@1997",
+      "names": {
+        "en": "Meknès-Tafilalet",
+        "ja": "メクネス＝タフィラルト地方",
+        "local": "جهة مكناس تافيلالت"
+      },
+      "spans": [
+        {
+          "from": "1997",
+          "precision": "year",
+          "to": "2015-09-04",
+          "atoms": [
+            "MAR-ADM2-96644757B60043813814440",
+            "MAR-ADM2-96644757B90056368806308",
+            "MAR-ADM2-96644757B64717664824106",
+            "MAR-ADM2-96644757B52871738396395",
+            "MAR-ADM2-96644757B71822601453569",
+            "MAR-ADM2-96644757B35891480133263"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uma.html",
+              "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+              "says": "1997-03: sixteen regions created as primary subdivisions (table with their provinces' later regrouping in 2015); provinces and prefectures became secondary.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239195974",
+              "title": "Organisation territoriale du Maroc — fr.wikipedia, oldid 239195974",
+              "says": "Loi 47-96 (1997) on the organisation of the region; 16 regions until 2015.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1376423924",
+              "title": "Meknès-Tafilalet — en.wikipedia, oldid 1376423924",
+              "says": "Provinces: El Hajeb, Errachidia, Ifrane, Khénifra, Meknès, Midelt.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=235692690",
+              "title": "Province de Midelt — fr.wikipedia, oldid 235692690",
+              "says": "Created 2009 from Khénifra and Errachidia provinces.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "statoids dates the 16 regions to March 1997; Loi 47-96 was promulgated in April 1997 and the regions' composition fixed by decree later that year — known here to the year only. The provinces created later (2003, 2009) are drawn inside the region of the province they were carved from. Tinghir withheld 1997–2009 (carved from Errachidia, this region, and Ouarzazate, Souss-Massa-Drâa); in Souss-Massa-Drâa from 2009."
+        }
+      ]
+    },
+    {
+      "id": "MAR:RabatSale@1997",
+      "names": {
+        "en": "Rabat-Salé-Zemmour-Zaer",
+        "ja": "ラバト＝サレ＝ゼムール＝ザエル地方",
+        "local": "جهة الرباط سلا زمور زعير"
+      },
+      "spans": [
+        {
+          "from": "1997",
+          "precision": "year",
+          "to": "2015-09-04",
+          "atoms": [
+            "MAR-ADM2-96644757B91545835536411",
+            "MAR-ADM2-96644757B6720908192283",
+            "MAR-ADM2-96644757B91342156363380",
+            "MAR-ADM2-96644757B24539393832458"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uma.html",
+              "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+              "says": "1997-03: sixteen regions created as primary subdivisions (table with their provinces' later regrouping in 2015); provinces and prefectures became secondary.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239195974",
+              "title": "Organisation territoriale du Maroc — fr.wikipedia, oldid 239195974",
+              "says": "Loi 47-96 (1997) on the organisation of the region; 16 regions until 2015.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "statoids dates the 16 regions to March 1997; Loi 47-96 was promulgated in April 1997 and the regions' composition fixed by decree later that year — known here to the year only. The provinces created later (2003, 2009) are drawn inside the region of the province they were carved from."
+        }
+      ]
+    },
+    {
+      "id": "MAR:GrandCasablanca@1997",
+      "names": {
+        "en": "Grand Casablanca",
+        "ja": "大カサブランカ地方",
+        "local": "جهة الدار البيضاء الكبرى"
+      },
+      "spans": [
+        {
+          "from": "1997",
+          "precision": "year",
+          "to": "2015-09-04",
+          "atoms": [
+            "MAR-ADM2-96644757B69656421663665",
+            "MAR-ADM2-96644757B27397508075839",
+            "MAR-ADM2-96644757B92138134403299",
+            "MAR-ADM2-96644757B89345886069248"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uma.html",
+              "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+              "says": "1997-03: sixteen regions created as primary subdivisions (table with their provinces' later regrouping in 2015); provinces and prefectures became secondary.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239195974",
+              "title": "Organisation territoriale du Maroc — fr.wikipedia, oldid 239195974",
+              "says": "Loi 47-96 (1997) on the organisation of the region; 16 regions until 2015.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "statoids dates the 16 regions to March 1997; Loi 47-96 was promulgated in April 1997 and the regions' composition fixed by decree later that year — known here to the year only. The provinces created later (2003, 2009) are drawn inside the region of the province they were carved from."
+        }
+      ]
+    },
+    {
+      "id": "MAR:ChaouiaOuardigha@1997",
+      "names": {
+        "en": "Chaouia-Ouardigha",
+        "ja": "シャウイア＝ウアルディガ地方",
+        "local": "جهة الشاوية ورديغة"
+      },
+      "spans": [
+        {
+          "from": "1997",
+          "precision": "year",
+          "to": "2015-09-04",
+          "atoms": [
+            "MAR-ADM2-96644757B9799798831472",
+            "MAR-ADM2-96644757B26045285741175",
+            "MAR-ADM2-96644757B34372354169334",
+            "MAR-ADM2-96644757B15248572972708"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uma.html",
+              "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+              "says": "1997-03: sixteen regions created as primary subdivisions (table with their provinces' later regrouping in 2015); provinces and prefectures became secondary.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239195974",
+              "title": "Organisation territoriale du Maroc — fr.wikipedia, oldid 239195974",
+              "says": "Loi 47-96 (1997) on the organisation of the region; 16 regions until 2015.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uma.html",
+              "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+              "says": "2015: Béni Mellal-Khénifra formed by annexing Fquih Ben Salah, Khouribga and Khénifra to Tadla-Azilal; Casablanca-Settat by merging Grand Casablanca and Chaouia-Ouardigha and annexing El Jadida.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "statoids dates the 16 regions to March 1997; Loi 47-96 was promulgated in April 1997 and the regions' composition fixed by decree later that year — known here to the year only. The provinces created later (2003, 2009) are drawn inside the region of the province they were carved from."
+        }
+      ]
+    },
+    {
+      "id": "MAR:DoukkalaAbda@1997",
+      "names": {
+        "en": "Doukkala-Abda",
+        "ja": "ドゥカラ＝アブダ地方",
+        "local": "جهة دكالة عبدة"
+      },
+      "spans": [
+        {
+          "from": "1997",
+          "precision": "year",
+          "to": "2015-09-04",
+          "atoms": [
+            "MAR-ADM2-96644757B5863178934624",
+            "MAR-ADM2-96644757B30309850889145",
+            "MAR-ADM2-96644757B23117375948520",
+            "MAR-ADM2-96644757B54259280648674"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uma.html",
+              "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+              "says": "1997-03: sixteen regions created as primary subdivisions (table with their provinces' later regrouping in 2015); provinces and prefectures became secondary.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239195974",
+              "title": "Organisation territoriale du Maroc — fr.wikipedia, oldid 239195974",
+              "says": "Loi 47-96 (1997) on the organisation of the region; 16 regions until 2015.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uma.html",
+              "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+              "says": "2015: El Jadida annexed to Casablanca-Settat; Safi to Marrakech-Safi.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "statoids dates the 16 regions to March 1997; Loi 47-96 was promulgated in April 1997 and the regions' composition fixed by decree later that year — known here to the year only. The provinces created later (2003, 2009) are drawn inside the region of the province they were carved from."
+        }
+      ]
+    },
+    {
+      "id": "MAR:MarrakechTensift@1997",
+      "names": {
+        "en": "Marrakech-Tensift-Al Haouz",
+        "ja": "マラケシュ＝テンシフト＝アル・ハウズ地方",
+        "local": "جهة مراكش تانسيفت الحوز"
+      },
+      "spans": [
+        {
+          "from": "1997",
+          "precision": "year",
+          "to": "2015-09-04",
+          "atoms": [
+            "MAR-ADM2-96644757B80339347175881",
+            "MAR-ADM2-96644757B698999344864",
+            "MAR-ADM2-96644757B46616002618727",
+            "MAR-ADM2-96644757B21870556317795",
+            "MAR-ADM2-96644757B21316479060137",
+            "MAR-ADM2-96644757B53936679900609"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uma.html",
+              "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+              "says": "1997-03: sixteen regions created as primary subdivisions (table with their provinces' later regrouping in 2015); provinces and prefectures became secondary.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239195974",
+              "title": "Organisation territoriale du Maroc — fr.wikipedia, oldid 239195974",
+              "says": "Loi 47-96 (1997) on the organisation of the region; 16 regions until 2015.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uma.html",
+              "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+              "says": "2015: Marrakech-Safi formed by annexing Safi province to Marrakech-Tensift-Al Haouz.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "statoids dates the 16 regions to March 1997; Loi 47-96 was promulgated in April 1997 and the regions' composition fixed by decree later that year — known here to the year only. The provinces created later (2003, 2009) are drawn inside the region of the province they were carved from."
+        }
+      ]
+    },
+    {
+      "id": "MAR:TadlaAzilal@1997",
+      "names": {
+        "en": "Tadla-Azilal",
+        "ja": "タドラ＝アジラル地方",
+        "local": "جهة تادلة أزيلال"
+      },
+      "spans": [
+        {
+          "from": "1997",
+          "precision": "year",
+          "to": "2015-09-04",
+          "atoms": [
+            "MAR-ADM2-96644757B40957387644980",
+            "MAR-ADM2-96644757B50122508033550",
+            "MAR-ADM2-96644757B10773066300421"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uma.html",
+              "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+              "says": "1997-03: sixteen regions created as primary subdivisions (table with their provinces' later regrouping in 2015); provinces and prefectures became secondary.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239195974",
+              "title": "Organisation territoriale du Maroc — fr.wikipedia, oldid 239195974",
+              "says": "Loi 47-96 (1997) on the organisation of the region; 16 regions until 2015.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "statoids dates the 16 regions to March 1997; Loi 47-96 was promulgated in April 1997 and the regions' composition fixed by decree later that year — known here to the year only. The provinces created later (2003, 2009) are drawn inside the region of the province they were carved from."
+        }
+      ]
+    },
+    {
+      "id": "MAR:SoussMassaDraa@1997",
+      "names": {
+        "en": "Souss-Massa-Drâa",
+        "ja": "スース＝マサ＝ドラア地方",
+        "local": "جهة سوس ماسة درعة"
+      },
+      "spans": [
+        {
+          "from": "1997",
+          "precision": "year",
+          "to": "2009-06-11",
+          "atoms": [
+            "MAR-ADM2-96644757B63187791317705",
+            "MAR-ADM2-96644757B99662254658575",
+            "MAR-ADM2-96644757B99021473747258",
+            "MAR-ADM2-96644757B53703826618026",
+            "MAR-ADM2-96644757B52167870329218",
+            "MAR-ADM2-96644757B51161748863193",
+            "MAR-ADM2-96644757B41522516415054",
+            "MAR-ADM2-96644757B83322507681707"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uma.html",
+              "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+              "says": "1997-03: sixteen regions created as primary subdivisions (table with their provinces' later regrouping in 2015); provinces and prefectures became secondary.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239195974",
+              "title": "Organisation territoriale du Maroc — fr.wikipedia, oldid 239195974",
+              "says": "Loi 47-96 (1997) on the organisation of the region; 16 regions until 2015.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=235692833",
+              "title": "Province de Sidi Ifni — fr.wikipedia, oldid 235692833",
+              "says": "Created 2009 by dismemberment of Tiznit province.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "statoids dates the 16 regions to March 1997; Loi 47-96 was promulgated in April 1997 and the regions' composition fixed by decree later that year — known here to the year only. The provinces created later (2003, 2009) are drawn inside the region of the province they were carved from. Tinghir withheld 1997–2009 (see Meknès-Tafilalet)."
+        },
+        {
+          "from": "2009-06-11",
+          "precision": "day",
+          "to": "2015-09-04",
+          "atoms": [
+            "MAR-ADM2-96644757B63187791317705",
+            "MAR-ADM2-96644757B99662254658575",
+            "MAR-ADM2-96644757B99021473747258",
+            "MAR-ADM2-96644757B53703826618026",
+            "MAR-ADM2-96644757B52167870329218",
+            "MAR-ADM2-96644757B51161748863193",
+            "MAR-ADM2-96644757B41522516415054",
+            "MAR-ADM2-96644757B83322507681707",
+            "MAR-ADM2-96644757B39685617616684"
+          ],
+          "sources": [
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=235692868",
+              "title": "Province de Tinghir — fr.wikipedia, oldid 235692868",
+              "says": "Décret 2-09-319 of 11 June 2009 created new provinces (Tinghir from Ouarzazate in Souss-Massa-Drâa and Errachidia in Meknès-Tafilalet; likewise Driouch from Nador, Guercif from Taza, Midelt from Khénifra and Errachidia, Sidi Ifni from Tiznit, Ouezzane from Sidi Kacem and Chefchaouen).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1376882432",
+              "title": "Souss-Massa-Drâa — en.wikipedia, oldid 1376882432",
+              "says": "Provinces: Chtouka Ait Baha, Ouarzazate, Sidi Ifni, Taroudant, Tinghir, Tiznit, Zagora (and Agadir, Inezgane prefectures).",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MAR:GuelmimEsSemara@1997",
+      "names": {
+        "en": "Guelmim-Es-Semara",
+        "ja": "グエルミム＝エス・セマラ地方",
+        "local": "جهة كلميم السمارة"
+      },
+      "spans": [
+        {
+          "from": "1997",
+          "precision": "year",
+          "to": "2015-09-04",
+          "atoms": [
+            "MAR-ADM2-96644757B36466177595872",
+            "MAR-ADM2-96644757B62254917052717",
+            "MAR-ADM2-96644757B8060198419886",
+            "MAR-ADM2-96644757B26550498921337"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uma.html",
+              "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+              "says": "1997-03: sixteen regions created as primary subdivisions (table with their provinces' later regrouping in 2015); provinces and prefectures became secondary.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239195974",
+              "title": "Organisation territoriale du Maroc — fr.wikipedia, oldid 239195974",
+              "says": "Loi 47-96 (1997) on the organisation of the region; 16 regions until 2015.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1375959569",
+              "title": "Guelmim-Es Semara — en.wikipedia, oldid 1375959569",
+              "says": "Provinces: Assa-Zag, Es Smara, Guelmim, Tan-Tan, Tata.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uma.html",
+              "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+              "says": "2015: Souss-Massa formed by annexing Tata to Souss-Massa-Drâa; Guelmim-Oued Noun by annexing Sidi Ifni to Guelmim-Es-Semara.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "statoids dates the 16 regions to March 1997; Loi 47-96 was promulgated in April 1997 and the regions' composition fixed by decree later that year — known here to the year only. The provinces created later (2003, 2009) are drawn inside the region of the province they were carved from. Es-Semara province (Western Sahara) withheld — see unresolved."
+        }
+      ]
+    },
+    {
+      "id": "MAR:BeniMellalKhenifra@2015",
+      "names": {
+        "en": "Béni Mellal-Khénifra",
+        "ja": "ベニ・メラル＝ケニフラ地方",
+        "local": "جهة بني ملال خنيفرة"
+      },
+      "spans": [
+        {
+          "from": "2015-09-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MAR-ADM2-96644757B40957387644980",
+            "MAR-ADM2-96644757B50122508033550",
+            "MAR-ADM2-96644757B10773066300421",
+            "MAR-ADM2-96644757B52871738396395",
+            "MAR-ADM2-96644757B15248572972708"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uma.html",
+              "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+              "says": "2015-09-04: Morocco reorganised from sixteen regions to twelve, each formed by named provinces (description of each new region).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239195974",
+              "title": "Organisation territoriale du Maroc — fr.wikipedia, oldid 239195974",
+              "says": "Twelve regions since 2015 (Loi organique 111-14 of 7 July 2015).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen MAR ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 75 provinces and prefectures, each inside one of the 12 regions of 2015",
+              "says": "Province/prefecture outlines of 2017 and their 2015 region.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MAR:CasablancaSettat@2015",
+      "names": {
+        "en": "Casablanca-Settat",
+        "ja": "カサブランカ＝セタット地方",
+        "local": "جهة الدار البيضاء سطات"
+      },
+      "spans": [
+        {
+          "from": "2015-09-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MAR-ADM2-96644757B69656421663665",
+            "MAR-ADM2-96644757B27397508075839",
+            "MAR-ADM2-96644757B92138134403299",
+            "MAR-ADM2-96644757B89345886069248",
+            "MAR-ADM2-96644757B9799798831472",
+            "MAR-ADM2-96644757B26045285741175",
+            "MAR-ADM2-96644757B34372354169334",
+            "MAR-ADM2-96644757B5863178934624",
+            "MAR-ADM2-96644757B30309850889145"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uma.html",
+              "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+              "says": "2015-09-04: Morocco reorganised from sixteen regions to twelve, each formed by named provinces (description of each new region).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239195974",
+              "title": "Organisation territoriale du Maroc — fr.wikipedia, oldid 239195974",
+              "says": "Twelve regions since 2015 (Loi organique 111-14 of 7 July 2015).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen MAR ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 75 provinces and prefectures, each inside one of the 12 regions of 2015",
+              "says": "Province/prefecture outlines of 2017 and their 2015 region.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MAR:DraaTafilalet@2015",
+      "names": {
+        "en": "Drâa-Tafilalet",
+        "ja": "ドラア＝タフィラルト地方",
+        "local": "جهة درعة تافيلالت"
+      },
+      "spans": [
+        {
+          "from": "2015-09-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MAR-ADM2-96644757B35891480133263",
+            "MAR-ADM2-96644757B71822601453569",
+            "MAR-ADM2-96644757B41522516415054",
+            "MAR-ADM2-96644757B39685617616684",
+            "MAR-ADM2-96644757B83322507681707"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uma.html",
+              "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+              "says": "2015-09-04: Morocco reorganised from sixteen regions to twelve, each formed by named provinces (description of each new region).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239195974",
+              "title": "Organisation territoriale du Maroc — fr.wikipedia, oldid 239195974",
+              "says": "Twelve regions since 2015 (Loi organique 111-14 of 7 July 2015).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen MAR ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 75 provinces and prefectures, each inside one of the 12 regions of 2015",
+              "says": "Province/prefecture outlines of 2017 and their 2015 region.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MAR:FesMeknes@2015",
+      "names": {
+        "en": "Fès-Meknès",
+        "ja": "フェズ＝メクネス地方",
+        "local": "جهة فاس مكناس"
+      },
+      "spans": [
+        {
+          "from": "2015-09-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MAR-ADM2-96644757B2759448404756",
+            "MAR-ADM2-96644757B60043813814440",
+            "MAR-ADM2-96644757B90056368806308",
+            "MAR-ADM2-96644757B64717664824106",
+            "MAR-ADM2-96644757B81090244987905",
+            "MAR-ADM2-96644757B42104761334354",
+            "MAR-ADM2-96644757B1478822582790",
+            "MAR-ADM2-96644757B36967765471663",
+            "MAR-ADM2-96644757B85287588144355"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uma.html",
+              "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+              "says": "2015-09-04: Morocco reorganised from sixteen regions to twelve, each formed by named provinces (description of each new region).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239195974",
+              "title": "Organisation territoriale du Maroc — fr.wikipedia, oldid 239195974",
+              "says": "Twelve regions since 2015 (Loi organique 111-14 of 7 July 2015).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen MAR ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 75 provinces and prefectures, each inside one of the 12 regions of 2015",
+              "says": "Province/prefecture outlines of 2017 and their 2015 region.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MAR:GuelmimOuedNoun@2015",
+      "names": {
+        "en": "Guelmim-Oued Noun",
+        "ja": "グエルミム＝ウェド・ヌン地方",
+        "local": "جهة كلميم واد نون"
+      },
+      "spans": [
+        {
+          "from": "2015-09-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MAR-ADM2-96644757B36466177595872",
+            "MAR-ADM2-96644757B62254917052717",
+            "MAR-ADM2-96644757B8060198419886",
+            "MAR-ADM2-96644757B51161748863193"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uma.html",
+              "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+              "says": "2015-09-04: Morocco reorganised from sixteen regions to twelve, each formed by named provinces (description of each new region).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239195974",
+              "title": "Organisation territoriale du Maroc — fr.wikipedia, oldid 239195974",
+              "says": "Twelve regions since 2015 (Loi organique 111-14 of 7 July 2015).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen MAR ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 75 provinces and prefectures, each inside one of the 12 regions of 2015",
+              "says": "Province/prefecture outlines of 2017 and their 2015 region.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MAR:Oriental@2015",
+      "names": {
+        "en": "Oriental",
+        "ja": "オリエンタル地方",
+        "local": "جهة الشرق"
+      },
+      "spans": [
+        {
+          "from": "2015-09-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MAR-ADM2-96644757B53695376753874",
+            "MAR-ADM2-96644757B69343874835814",
+            "MAR-ADM2-96644757B25874170222857",
+            "MAR-ADM2-96644757B21390270390615",
+            "MAR-ADM2-96644757B25654465299878",
+            "MAR-ADM2-96644757B4563753155162",
+            "MAR-ADM2-96644757B88930410593624",
+            "MAR-ADM2-96644757B63064605054668"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uma.html",
+              "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+              "says": "2015-09-04: Morocco reorganised from sixteen regions to twelve, each formed by named provinces (description of each new region).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239195974",
+              "title": "Organisation territoriale du Maroc — fr.wikipedia, oldid 239195974",
+              "says": "Twelve regions since 2015 (Loi organique 111-14 of 7 July 2015).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen MAR ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 75 provinces and prefectures, each inside one of the 12 regions of 2015",
+              "says": "Province/prefecture outlines of 2017 and their 2015 region.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MAR:MarrakechSafi@2015",
+      "names": {
+        "en": "Marrakech-Safi",
+        "ja": "マラケシュ＝サフィ地方",
+        "local": "جهة مراكش آسفي"
+      },
+      "spans": [
+        {
+          "from": "2015-09-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MAR-ADM2-96644757B80339347175881",
+            "MAR-ADM2-96644757B698999344864",
+            "MAR-ADM2-96644757B46616002618727",
+            "MAR-ADM2-96644757B21870556317795",
+            "MAR-ADM2-96644757B21316479060137",
+            "MAR-ADM2-96644757B53936679900609",
+            "MAR-ADM2-96644757B23117375948520",
+            "MAR-ADM2-96644757B54259280648674"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uma.html",
+              "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+              "says": "2015-09-04: Morocco reorganised from sixteen regions to twelve, each formed by named provinces (description of each new region).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239195974",
+              "title": "Organisation territoriale du Maroc — fr.wikipedia, oldid 239195974",
+              "says": "Twelve regions since 2015 (Loi organique 111-14 of 7 July 2015).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen MAR ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 75 provinces and prefectures, each inside one of the 12 regions of 2015",
+              "says": "Province/prefecture outlines of 2017 and their 2015 region.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MAR:RabatSaleKenitra@2015",
+      "names": {
+        "en": "Rabat-Salé-Kénitra",
+        "ja": "ラバト＝サレ＝ケニトラ地方",
+        "local": "جهة الرباط سلا القنيطرة"
+      },
+      "spans": [
+        {
+          "from": "2015-09-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MAR-ADM2-96644757B91545835536411",
+            "MAR-ADM2-96644757B6720908192283",
+            "MAR-ADM2-96644757B91342156363380",
+            "MAR-ADM2-96644757B24539393832458",
+            "MAR-ADM2-96644757B12662883146655",
+            "MAR-ADM2-96644757B9718685225615",
+            "MAR-ADM2-96644757B64432809888793"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uma.html",
+              "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+              "says": "2015-09-04: Morocco reorganised from sixteen regions to twelve, each formed by named provinces (description of each new region).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239195974",
+              "title": "Organisation territoriale du Maroc — fr.wikipedia, oldid 239195974",
+              "says": "Twelve regions since 2015 (Loi organique 111-14 of 7 July 2015).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen MAR ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 75 provinces and prefectures, each inside one of the 12 regions of 2015",
+              "says": "Province/prefecture outlines of 2017 and their 2015 region.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MAR:SoussMassa@2015",
+      "names": {
+        "en": "Souss-Massa",
+        "ja": "スース＝マサ地方",
+        "local": "جهة سوس ماسة"
+      },
+      "spans": [
+        {
+          "from": "2015-09-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MAR-ADM2-96644757B63187791317705",
+            "MAR-ADM2-96644757B99662254658575",
+            "MAR-ADM2-96644757B99021473747258",
+            "MAR-ADM2-96644757B53703826618026",
+            "MAR-ADM2-96644757B52167870329218",
+            "MAR-ADM2-96644757B26550498921337"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uma.html",
+              "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+              "says": "2015-09-04: Morocco reorganised from sixteen regions to twelve, each formed by named provinces (description of each new region).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239195974",
+              "title": "Organisation territoriale du Maroc — fr.wikipedia, oldid 239195974",
+              "says": "Twelve regions since 2015 (Loi organique 111-14 of 7 July 2015).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen MAR ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 75 provinces and prefectures, each inside one of the 12 regions of 2015",
+              "says": "Province/prefecture outlines of 2017 and their 2015 region.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MAR:TangerTetouanAlHoceima@2015",
+      "names": {
+        "en": "Tanger-Tétouan-Al Hoceima",
+        "ja": "タンジェ＝テトゥアン＝アル・ホセイマ地方",
+        "local": "جهة طنجة تطوان الحسيمة"
+      },
+      "spans": [
+        {
+          "from": "2015-09-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MAR-ADM2-96644757B99361415702964",
+            "MAR-ADM2-96644757B56432502406176",
+            "MAR-ADM2-96644757B89687162507810",
+            "MAR-ADM2-96644757B84561517472973",
+            "MAR-ADM2-96644757B18768670389586",
+            "MAR-ADM2-96644757B54306876372793",
+            "MAR-ADM2-96644757B99920267922653",
+            "MAR-ADM2-96644757B93440982531475"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uma.html",
+              "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+              "says": "2015-09-04: Morocco reorganised from sixteen regions to twelve, each formed by named provinces (description of each new region).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239195974",
+              "title": "Organisation territoriale du Maroc — fr.wikipedia, oldid 239195974",
+              "says": "Twelve regions since 2015 (Loi organique 111-14 of 7 July 2015).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen MAR ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 75 provinces and prefectures, each inside one of the 12 regions of 2015",
+              "says": "Province/prefecture outlines of 2017 and their 2015 region.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1997",
+      "precision": "year",
+      "what": "Sixteen regions",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uma.html",
+          "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+          "says": "1997-03: sixteen regions created as primary subdivisions (table with their provinces' later regrouping in 2015); provinces and prefectures became secondary.",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://fr.wikipedia.org/w/index.php?oldid=239195974",
+          "title": "Organisation territoriale du Maroc — fr.wikipedia, oldid 239195974",
+          "says": "Loi 47-96 (1997) on the organisation of the region; 16 regions until 2015.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "2009-06-11",
+      "precision": "day",
+      "what": "New provinces (Décret 2-09-319)",
+      "sources": [
+        {
+          "url": "https://fr.wikipedia.org/w/index.php?oldid=235692868",
+          "title": "Province de Tinghir — fr.wikipedia, oldid 235692868",
+          "says": "Décret 2-09-319 of 11 June 2009 created new provinces (Tinghir from Ouarzazate in Souss-Massa-Drâa and Errachidia in Meknès-Tafilalet; likewise Driouch from Nador, Guercif from Taza, Midelt from Khénifra and Errachidia, Sidi Ifni from Tiznit, Ouezzane from Sidi Kacem and Chefchaouen).",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "2015-09-04",
+      "precision": "day",
+      "what": "Twelve regions",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uma.html",
+          "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+          "says": "2015-09-04: Morocco reorganised from sixteen regions to twelve, each formed by named provinces (description of each new region).",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://fr.wikipedia.org/w/index.php?oldid=239195974",
+          "title": "Organisation territoriale du Maroc — fr.wikipedia, oldid 239195974",
+          "says": "Twelve regions since 2015 (Loi organique 111-14 of 7 July 2015).",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://www.geoboundaries.org/",
+          "title": "geoBoundaries gbOpen MAR ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 75 provinces and prefectures, each inside one of the 12 regions of 2015",
+          "says": "Province/prefecture outlines of 2017 and their 2015 region.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "2005-01-01",
+      "n": 16,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uma.html",
+          "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+          "says": "Sixteen regions (1997–2015 table).",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "2016-01-01",
+      "n": 12,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uma.html",
+          "title": "Morocco Regions — Statoids (Gwillim Law, last updated 2015-10-28)",
+          "says": "Morocco is divided into twelve regions.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Western Sahara provinces (Laâyoune, Boujdour, Es-Semara, Oued Ed-Dahab, Aousserd) and the two regions made of them",
+      "atoms": [
+        "MAR-ADM2-96644757B90795389022281",
+        "MAR-ADM2-96644757B48127384361052",
+        "MAR-ADM2-96644757B70524131405695",
+        "MAR-ADM2-96644757B78111329468616",
+        "MAR-ADM2-96644757B25593504689486"
+      ],
+      "from": "1997",
+      "to": null,
+      "why": "The OSM provinces reach the international borders of Western Sahara, but Morocco administers only the land west of the berm (the rest is held by the Polisario since 1991); the atoms straddle that line, and Morocco's sovereignty is not recognised. Tarfaya (Laâyoune-Sakia El Hamra region from 2009/2015) is withheld with its region.",
+      "checked": [
+        "statoids uma (change history 1900–2015)",
+        "fr.wikipedia Organisation territoriale du Maroc oldid 239195974",
+        "fr.wikipedia province articles (Driouch 238632441, Ouezzane 237658222, Tinghir 235692868, Midelt 235692690, Sidi Ifni 235692833, Guercif 234456106)",
+        "en.wikipedia region articles (Taza-Al Hoceima-Taounate 1376954240, Gharb-Chrarda-Béni Hssen 1375894181, Meknès-Tafilalet 1376423924, Souss-Massa-Drâa 1376882432, Guelmim-Es Semara 1375959569)",
+        "Bulletin officiel n° 5744 (2009) — not retrievable (sgg.gov.ma 404/429)",
+        "OpenHistoricalMap «Liberated Territories» (1991–), «Province of the Sahara» (1958–1976)"
+      ],
+      "needs": "the berm as an atom boundary inside these provinces, and a country-layer decision on Western Sahara"
+    },
+    {
+      "what": "Laâyoune-Boujdour-Sakia El Hamra region (1997–2015)",
+      "unit": "MAR:Laayoune@1997",
+      "atoms": [
+        "MAR-ADM2-96644757B75888110493475"
+      ],
+      "from": "1997",
+      "to": "2015-09-04",
+      "why": "see the Western Sahara entry; the region is withheld with its provinces.",
+      "checked": [
+        "statoids uma (change history 1900–2015)",
+        "fr.wikipedia Organisation territoriale du Maroc oldid 239195974",
+        "fr.wikipedia province articles (Driouch 238632441, Ouezzane 237658222, Tinghir 235692868, Midelt 235692690, Sidi Ifni 235692833, Guercif 234456106)",
+        "en.wikipedia region articles (Taza-Al Hoceima-Taounate 1376954240, Gharb-Chrarda-Béni Hssen 1375894181, Meknès-Tafilalet 1376423924, Souss-Massa-Drâa 1376882432, Guelmim-Es Semara 1375959569)",
+        "Bulletin officiel n° 5744 (2009) — not retrievable (sgg.gov.ma 404/429)"
+      ],
+      "needs": "as above"
+    },
+    {
+      "what": "Oued Ed-Dahab-Lagouira region (1997–2015)",
+      "unit": "MAR:OuedEdDahab@1997",
+      "atoms": [],
+      "from": "1997",
+      "to": "2015-09-04",
+      "why": "see the Western Sahara entry.",
+      "checked": [
+        "statoids uma (change history 1900–2015)",
+        "fr.wikipedia Organisation territoriale du Maroc oldid 239195974",
+        "fr.wikipedia province articles (Driouch 238632441, Ouezzane 237658222, Tinghir 235692868, Midelt 235692690, Sidi Ifni 235692833, Guercif 234456106)",
+        "en.wikipedia region articles (Taza-Al Hoceima-Taounate 1376954240, Gharb-Chrarda-Béni Hssen 1375894181, Meknès-Tafilalet 1376423924, Souss-Massa-Drâa 1376882432, Guelmim-Es Semara 1375959569)",
+        "Bulletin officiel n° 5744 (2009) — not retrievable (sgg.gov.ma 404/429)"
+      ],
+      "needs": "as above"
+    },
+    {
+      "what": "Laâyoune-Sakia El Hamra region (2015–)",
+      "unit": "MAR:Laayoune@2015",
+      "atoms": [
+        "MAR-ADM2-96644757B75888110493475"
+      ],
+      "from": "2015-09-04",
+      "to": null,
+      "why": "see the Western Sahara entry.",
+      "checked": [
+        "statoids uma (change history 1900–2015)",
+        "fr.wikipedia Organisation territoriale du Maroc oldid 239195974",
+        "fr.wikipedia province articles (Driouch 238632441, Ouezzane 237658222, Tinghir 235692868, Midelt 235692690, Sidi Ifni 235692833, Guercif 234456106)",
+        "en.wikipedia region articles (Taza-Al Hoceima-Taounate 1376954240, Gharb-Chrarda-Béni Hssen 1375894181, Meknès-Tafilalet 1376423924, Souss-Massa-Drâa 1376882432, Guelmim-Es Semara 1375959569)",
+        "Bulletin officiel n° 5744 (2009) — not retrievable (sgg.gov.ma 404/429)"
+      ],
+      "needs": "as above"
+    },
+    {
+      "what": "Dakhla-Oued Ed-Dahab region (2015–)",
+      "unit": "MAR:Dakhla@2015",
+      "atoms": [],
+      "from": "2015-09-04",
+      "to": null,
+      "why": "see the Western Sahara entry.",
+      "checked": [
+        "statoids uma (change history 1900–2015)",
+        "fr.wikipedia Organisation territoriale du Maroc oldid 239195974",
+        "fr.wikipedia province articles (Driouch 238632441, Ouezzane 237658222, Tinghir 235692868, Midelt 235692690, Sidi Ifni 235692833, Guercif 234456106)",
+        "en.wikipedia region articles (Taza-Al Hoceima-Taounate 1376954240, Gharb-Chrarda-Béni Hssen 1375894181, Meknès-Tafilalet 1376423924, Souss-Massa-Drâa 1376882432, Guelmim-Es Semara 1375959569)",
+        "Bulletin officiel n° 5744 (2009) — not retrievable (sgg.gov.ma 404/429)"
+      ],
+      "needs": "as above"
+    },
+    {
+      "what": "Ouezzane province 1997–2015 (Tanger-Tétouan or Gharb)",
+      "atoms": [
+        "MAR-ADM2-96644757B93440982531475"
+      ],
+      "from": "1997",
+      "to": "2015-09-04",
+      "why": "Before 2009 its land was split between Chefchaouen (Tanger-Tétouan) and Sidi Kacem (Gharb) along a line inside the atom; for 2009–15 the region of the new province is not settled (statoids implies it was outside Tanger-Tétouan; en.wikipedia lists it under neither region).",
+      "checked": [
+        "statoids uma (change history 1900–2015)",
+        "fr.wikipedia Organisation territoriale du Maroc oldid 239195974",
+        "fr.wikipedia province articles (Driouch 238632441, Ouezzane 237658222, Tinghir 235692868, Midelt 235692690, Sidi Ifni 235692833, Guercif 234456106)",
+        "en.wikipedia region articles (Taza-Al Hoceima-Taounate 1376954240, Gharb-Chrarda-Béni Hssen 1375894181, Meknès-Tafilalet 1376423924, Souss-Massa-Drâa 1376882432, Guelmim-Es Semara 1375959569)",
+        "Bulletin officiel n° 5744 (2009) — not retrievable (sgg.gov.ma 404/429)"
+      ],
+      "needs": "the 2009 decree attaching the new provinces to regions (BO 5744) and the pre-2009 commune lines"
+    },
+    {
+      "what": "Tinghir province 1997–2009 (Souss-Massa-Drâa / Meknès-Tafilalet)",
+      "atoms": [
+        "MAR-ADM2-96644757B39685617616684"
+      ],
+      "from": "1997",
+      "to": "2009-06-11",
+      "why": "Carved in 2009 from Ouarzazate (Souss-Massa-Drâa) and Errachidia (Meknès-Tafilalet); the old line runs inside the atom.",
+      "checked": [
+        "statoids uma (change history 1900–2015)",
+        "fr.wikipedia Organisation territoriale du Maroc oldid 239195974",
+        "fr.wikipedia province articles (Driouch 238632441, Ouezzane 237658222, Tinghir 235692868, Midelt 235692690, Sidi Ifni 235692833, Guercif 234456106)",
+        "en.wikipedia region articles (Taza-Al Hoceima-Taounate 1376954240, Gharb-Chrarda-Béni Hssen 1375894181, Meknès-Tafilalet 1376423924, Souss-Massa-Drâa 1376882432, Guelmim-Es Semara 1375959569)",
+        "Bulletin officiel n° 5744 (2009) — not retrievable (sgg.gov.ma 404/429)"
+      ],
+      "needs": "commune atoms with the pre-2009 Ouarzazate/Errachidia line"
+    },
+    {
+      "what": "Driouch province 2009–2015 (Oriental or Taza-Al Hoceima-Taounate)",
+      "atoms": [
+        "MAR-ADM2-96644757B88930410593624"
+      ],
+      "from": "2009-06-11",
+      "to": "2015-09-04",
+      "why": "statoids says Driouch was annexed to Oriental in 2015, i.e. it was elsewhere 2009–15; en.wikipedia's Taza-Al Hoceima-Taounate list omits it. Not settled.",
+      "checked": [
+        "statoids uma (change history 1900–2015)",
+        "fr.wikipedia Organisation territoriale du Maroc oldid 239195974",
+        "fr.wikipedia province articles (Driouch 238632441, Ouezzane 237658222, Tinghir 235692868, Midelt 235692690, Sidi Ifni 235692833, Guercif 234456106)",
+        "en.wikipedia region articles (Taza-Al Hoceima-Taounate 1376954240, Gharb-Chrarda-Béni Hssen 1375894181, Meknès-Tafilalet 1376423924, Souss-Massa-Drâa 1376882432, Guelmim-Es Semara 1375959569)",
+        "Bulletin officiel n° 5744 (2009) — not retrievable (sgg.gov.ma 404/429)"
+      ],
+      "needs": "the 2009 decree attaching the new provinces to regions (BO 5744)"
+    },
+    {
+      "what": "Provinces and prefectures as first-level units (1956–1997) and the seven economic regions of 1971",
+      "atoms": [],
+      "from": "1997",
+      "to": "1997",
+      "why": "Outside this record's scope: before 1997 the provinces were the primary divisions; most have since been split, and several were formed from parts of two (Khénifra 1973, Figuig 1974, Azilal, Boulemane, Tata ~1978) whose old lines run inside today's provinces; statoids calls its own pre-1997 history «only an approximation».",
+      "checked": [
+        "statoids uma (change history 1900–2015)",
+        "fr.wikipedia Organisation territoriale du Maroc oldid 239195974",
+        "fr.wikipedia province articles (Driouch 238632441, Ouezzane 237658222, Tinghir 235692868, Midelt 235692690, Sidi Ifni 235692833, Guercif 234456106)",
+        "en.wikipedia region articles (Taza-Al Hoceima-Taounate 1376954240, Gharb-Chrarda-Béni Hssen 1375894181, Meknès-Tafilalet 1376423924, Souss-Massa-Drâa 1376882432, Guelmim-Es Semara 1375959569)",
+        "Bulletin officiel n° 5744 (2009) — not retrievable (sgg.gov.ma 404/429)"
+      ],
+      "needs": "commune-level atoms with the provincial lines of 1959–1997 and the dated decrees"
+    }
+  ]
+}

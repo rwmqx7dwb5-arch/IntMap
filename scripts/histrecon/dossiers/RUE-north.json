@@ -20,10 +20,10 @@
   "Kurland governorate"
  ],
  "scope": {
-  "from": "1783-07-14",
+  "from": "1708-12-29",
   "to": "1917-11-06"
  },
- "polityNote": "Russian Empire (to 1917-11-06). Finnish läänit belong to the Grand Duchy of Finland, in personal union with the Empire from 1809-09-17 (Old Finland/Vyborg gub. joined it 1812); before that the western Finnish läns were Swedish. Courland joined in 1795. German occupation of Courland (1915) and Riga (1917-09) did not change the governorates de jure. Old Style decree dates converted to Gregorian.",
+ "polityNote": "Russian Empire (to 1917-11-06). Finnish läänit belong to the Grand Duchy of Finland, in personal union with the Empire from 1809-09-17 (Old Finland/Vyborg gub. joined it 1812); before that the western Finnish läns were Swedish. Courland joined in 1795. German occupation of Courland (1915) and Riga (1917-09) did not change the governorates de jure. Old Style decree dates converted to Gregorian. Scope extended back to Peter I's governorates (29 Dec 1708). Livland is drawn from 1727 (Riga governorate without Smolensk province); Estland only from 1798, because until Paul's re-division the Narva county lands west of the Narova lay in St Petersburg governorate (and before 1775 Narva with its uyezd lay in Reval governorate).",
  "units": [
   {
    "id": "RUE:Oulu",
@@ -520,8 +520,8 @@
    "wikidata": "Q720496",
    "spans": [
     {
-     "from": "1783-07-14",
-     "precision": "day",
+     "from": "1798",
+     "precision": "year",
      "to": "1917-04-12",
      "atoms": [
       "U1897-147",
@@ -535,9 +535,27 @@
        "title": "ru.wikipedia «Эстляндская губерния» (rev. 155114454)",
        "says": "Reval viceroyalty by decree 3.7.1783, Estland gub. 12.12.1796; on 30.03.1917 Verro, Pernov, Fellin, Yuryev and Ezel uyezds of Livonia passed to Estland.",
        "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://et.wikipedia.org/w/index.php?oldid=7248052",
+       "title": "Narva — Wikipedia (oldid 7248052)",
+       "says": "In 1797 the Narva county lands outside the town (incl. Joala manor, today Kreenholm) joined Estland's Wierland district; the town stayed in Yamburg uyezd.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=152661544",
+       "title": "Нарвский уезд — Википедия (oldid 152661544)",
+       "says": "Narva uyezd (St Petersburg gov.) got west-bank lands on 5 May 1725; passed to Reval gov. c. 1727–1730; Narva back to St Petersburg 1775; uyezd re-formed 1780, merged into Yamburg 31 Dec 1796.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/spb.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902) — Санкт-Петербургская губерния",
+       "says": "31.12.1796 (ПСЗ-1 № 17702): Narva uyezd joined to Yamburg uyezd except the town of Narva; 1.1.1802 (ПСЗ-1 № 20099) Narva town attached to St Petersburg governorate; no later transfer with Estland.",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "From = scope start (Reval viceroyalty decree 1783-07-03 O.S.; four districts unchanged). Ends with the Provisional Government statute of 1917-03-30 O.S. joining northern Livonia to Estland."
+     "dateNote": "Year precision, first year the sources guarantee: the west-bank lands of Narva uyezd outside the town (Joala, today Kreenholm/Joaoru — inside the 1897 Wesenberg uyezd) passed from St Petersburg to Estland in 1797 under Paul's re-division (31 Dec 1796 O.S. = 11 Jan 1797), day not stated. Narva town itself (1897 Yamburg uyezd) was never in Estland in this span (without uyezd 1797–1802, then St Petersburg governorate). Ends with the Provisional Government statute of 30 Mar 1917 O.S. joining northern Livonia to Estland."
     }
    ]
   },
@@ -551,8 +569,8 @@
    "wikidata": "Q1419584",
    "spans": [
     {
-     "from": "1783-07-14",
-     "precision": "day",
+     "from": "1727",
+     "precision": "year",
      "to": "1917-04-12",
      "atoms": [
       "U1897-151",
@@ -571,9 +589,27 @@
        "title": "ru.wikipedia «Лифляндская губерния» (rev. 155114482)",
        "says": "Riga viceroyalty 1783 with nine uyezds, renamed Livland gub. 1796; 30.03.1917 five uyezds and part of Valk uyezd transferred to Estland.",
        "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=155145617",
+       "title": "Рижская губерния — Википедия (oldid 155145617)",
+       "says": "Formed 17 (28) Jul 1713 from part of the abolished Smolensk governorate and the occupied lands of Swedish Livonia; Smolensk governorate restored in 1726; Riga namestnichestvo 1783, Livland governorate 1796.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=155114482",
+       "title": "Лифляндская губерния — Википедия (oldid 155114482)",
+       "says": "Riga governorate of 1713 at first also held part of the abolished Smolensk governorate; in 1726 Smolensk province became a separate governorate and Riga governorate was divided into five provinces: Riga, Wenden, Dorpat, Pernau and Ösel.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=155088315",
+       "title": "Смоленская губерния — Википедия (oldid 155088315)",
+       "says": "Smolensk governorate dissolved in 1713, most of it to Riga governorate; re-created in 1726 with five uyezds.",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "From = scope start (Riga viceroyalty 1783, decree of 1783-07-03 O.S. together with Reval). Ends 1917-03-30 O.S. (Estonian autonomy statute)."
+     "dateNote": "Year precision: Smolensk province left Riga governorate when Smolensk governorate was re-created in 1726 (day not found); from 1727 Riga governorate is the five provinces Riga, Wenden, Dorpat, Pernau, Ösel — the later Livland. Riga namestnichestvo 3 Jul 1783 O.S. (nine uyezds), Livland governorate 12 Dec 1796 O.S. No source records a transfer across its lines with Estland (Swedish-era line), Pskov, Polish Inflanty / Vitebsk or Courland (the Düna) between 1727 and 1917. Ends 30 Mar 1917 O.S. (Estonian autonomy statute)."
     }
    ]
   },
@@ -587,8 +623,8 @@
    "wikidata": "Q386371",
    "spans": [
     {
-     "from": "1819",
-     "precision": "year",
+     "from": "1819-03-25",
+     "precision": "day",
      "to": null,
      "atoms": [
       "U1897-159",
@@ -606,7 +642,7 @@
       {
        "url": "https://ru.wikipedia.org/w/index.php?oldid=154901389",
        "title": "ru.wikipedia «Курляндская губерния» (rev. 154901389)",
-       "says": "Formed 1795 from the Duchy and Pilten; in 1819 coastal strip with Polangen passed from Vilna governorate to Courland; occupied by Germany 1915.",
+       "says": "Formed 1795 from the Duchy and Pilten; in 1819 the coastal strip with Polangen passed from Vilna governorate to Courland by the decree «on dividing Courland governorate into five Oberhauptmannschaften», ПСЗ-1 т. 36 № 27718 of 13 March 1819.",
        "accessed": "2026-10-05"
       },
       {
@@ -616,12 +652,51 @@
        "accessed": "2026-10-05"
       }
      ],
-     "dateNote": "Year precision: Polangen strip transferred from Vilna gub. in 1819, day not found. German occupation from 1915 did not change the governorate de jure."
+     "dateNote": "ПСЗ-1 № 27718 of 13 Mar 1819 O.S. = 25 Mar 1819 (the reference in the cited revision of ru.wikipedia; the same date bounds the Vilna governorate span in RUE-west). German occupation from 1915 did not change the governorate de jure."
     }
    ]
   }
  ],
  "events": [
+  {
+   "date": "1708-12-29",
+   "precision": "day",
+   "what": "Peter I's decree of 18 Dec 1708 O.S.: Ingermanland and Archangelgorod governorates",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=153479057",
+     "title": "Губернская реформа Петра I — Википедия (oldid 153479057)",
+     "says": "Decree of 18 (29) Dec 1708: eight governorates as lists of towns, among them Ingermanland (later St Petersburg) with 29 towns and Archangelgorod.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1719-06-09",
+   "precision": "day",
+   "what": "Reval governorate founded (decree of 29 May 1719 O.S.)",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=151266086",
+     "title": "Ревельская губерния — Википедия (oldid 151266086)",
+     "says": "Founded by decree of 29 May (9 Jun) 1719 from the lands of Swedish Estonia; in 1727 Narva uyezd passed to it from St Petersburg governorate; Reval namestnichestvo from 3 (14) Jul 1783.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1819",
+   "precision": "year",
+   "what": "Polangen strip moved from Vilna to Courland governorate",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1377347001",
+     "title": "en.wikipedia «Palanga» (rev. 1377347001)",
+     "says": "In 1819 Palanga was transferred from Vilna Governorate to Grobin county of Courland Governorate.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
   {
    "date": "1824-08-19",
    "precision": "day",
@@ -737,240 +812,274 @@
      "accessed": "2026-10-05"
     }
    ]
-  },
-  {
-   "date": "1819",
-   "precision": "year",
-   "what": "Polangen strip moved from Vilna to Courland governorate",
-   "sources": [
-    {
-     "url": "https://en.wikipedia.org/w/index.php?oldid=1377347001",
-     "title": "en.wikipedia «Palanga» (rev. 1377347001)",
-     "says": "In 1819 Palanga was transferred from Vilna Governorate to Grobin county of Courland Governorate.",
-     "accessed": "2026-10-05"
-    }
-   ]
   }
  ],
  "atomsOutside": [
   {
    "atom": "U1897-3",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1809-09-17",
-   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17); Russian military occupation 1713–1721, 1742–1743 and from 1808 did not place it in a governorate."
   },
   {
    "atom": "U1897-4",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1809-09-17",
-   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17); Russian military occupation 1713–1721, 1742–1743 and from 1808 did not place it in a governorate."
   },
   {
    "atom": "U1897-27",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1809-09-17",
-   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17); Russian military occupation 1713–1721, 1742–1743 and from 1808 did not place it in a governorate."
   },
   {
    "atom": "U1897-2",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1809-09-17",
-   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17); Russian military occupation 1713–1721, 1742–1743 and from 1808 did not place it in a governorate."
   },
   {
    "atom": "U1897-1",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1809-09-17",
-   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17); Russian military occupation 1713–1721, 1742–1743 and from 1808 did not place it in a governorate."
   },
   {
    "atom": "U1897-28",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1809-09-17",
-   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17); Russian military occupation 1713–1721, 1742–1743 and from 1808 did not place it in a governorate."
   },
   {
    "atom": "U1897-30",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1809-09-17",
-   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17); Russian military occupation 1713–1721, 1742–1743 and from 1808 did not place it in a governorate."
   },
   {
    "atom": "U1897-33",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1809-09-17",
-   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17); Russian military occupation 1713–1721, 1742–1743 and from 1808 did not place it in a governorate."
   },
   {
    "atom": "U1897-34",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1809-09-17",
-   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17); Russian military occupation 1713–1721, 1742–1743 and from 1808 did not place it in a governorate."
   },
   {
    "atom": "U1897-29",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1809-09-17",
-   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17); Russian military occupation 1713–1721, 1742–1743 and from 1808 did not place it in a governorate."
   },
   {
    "atom": "U1897-32",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1809-09-17",
-   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17); Russian military occupation 1713–1721, 1742–1743 and from 1808 did not place it in a governorate."
   },
   {
    "atom": "U1897-31",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1809-09-17",
-   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17); Russian military occupation 1713–1721, 1742–1743 and from 1808 did not place it in a governorate."
   },
   {
    "atom": "U1897-35",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1809-09-17",
-   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17); Russian military occupation 1713–1721, 1742–1743 and from 1808 did not place it in a governorate."
   },
   {
    "atom": "U1897-42",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1809-09-17",
-   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17); Russian military occupation 1713–1721, 1742–1743 and from 1808 did not place it in a governorate."
   },
   {
    "atom": "U1897-38",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1809-09-17",
-   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17); Russian military occupation 1713–1721, 1742–1743 and from 1808 did not place it in a governorate."
   },
   {
    "atom": "U1897-40",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1809-09-17",
-   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17); Russian military occupation 1713–1721, 1742–1743 and from 1808 did not place it in a governorate."
   },
   {
    "atom": "U1897-39",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1809-09-17",
-   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17); Russian military occupation 1713–1721, 1742–1743 and from 1808 did not place it in a governorate."
   },
   {
    "atom": "U1897-41",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1809-09-17",
-   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17); Russian military occupation 1713–1721, 1742–1743 and from 1808 did not place it in a governorate."
   },
   {
    "atom": "U1897-36",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1809-09-17",
-   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17); Russian military occupation 1713–1721, 1742–1743 and from 1808 did not place it in a governorate."
   },
   {
    "atom": "U1897-37",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1809-09-17",
-   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17); Russian military occupation 1713–1721, 1742–1743 and from 1808 did not place it in a governorate."
   },
   {
    "atom": "U1897-45",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1809-09-17",
-   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17); Russian military occupation 1713–1721, 1742–1743 and from 1808 did not place it in a governorate."
   },
   {
    "atom": "U1897-44",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1809-09-17",
-   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17); Russian military occupation 1713–1721, 1742–1743 and from 1808 did not place it in a governorate."
   },
   {
    "atom": "U1897-46",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1809-09-17",
-   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17); Russian military occupation 1713–1721, 1742–1743 and from 1808 did not place it in a governorate."
   },
   {
    "atom": "U1897-48",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1809-09-17",
-   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17); Russian military occupation 1713–1721, 1742–1743 and from 1808 did not place it in a governorate."
   },
   {
    "atom": "U1897-43",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1809-09-17",
-   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17); Russian military occupation 1713–1721, 1742–1743 and from 1808 did not place it in a governorate."
   },
   {
    "atom": "U1897-47",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1809-09-17",
-   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17); Russian military occupation 1713–1721, 1742–1743 and from 1808 did not place it in a governorate."
   },
   {
    "atom": "U1897-159",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1795-03",
-   "why": "Duchy of Courland and Semigallia / Pilten / Lithuanian Samogitia (Polish-Lithuanian), outside the Russian Empire until the annexation of March 1795."
+   "why": "Duchy of Courland and Semigallia / Pilten / Lithuanian Samogitia (Polish-Lithuanian fiefs and lands), outside the Russian Empire until the annexation of March 1795."
   },
   {
    "atom": "U1897-163",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1795-03",
-   "why": "Duchy of Courland and Semigallia / Pilten / Lithuanian Samogitia (Polish-Lithuanian), outside the Russian Empire until the annexation of March 1795."
+   "why": "Duchy of Courland and Semigallia / Pilten / Lithuanian Samogitia (Polish-Lithuanian fiefs and lands), outside the Russian Empire until the annexation of March 1795."
   },
   {
    "atom": "U1897-166",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1795-03",
-   "why": "Duchy of Courland and Semigallia / Pilten / Lithuanian Samogitia (Polish-Lithuanian), outside the Russian Empire until the annexation of March 1795."
+   "why": "Duchy of Courland and Semigallia / Pilten / Lithuanian Samogitia (Polish-Lithuanian fiefs and lands), outside the Russian Empire until the annexation of March 1795."
   },
   {
    "atom": "U1897-167",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1795-03",
-   "why": "Duchy of Courland and Semigallia / Pilten / Lithuanian Samogitia (Polish-Lithuanian), outside the Russian Empire until the annexation of March 1795."
+   "why": "Duchy of Courland and Semigallia / Pilten / Lithuanian Samogitia (Polish-Lithuanian fiefs and lands), outside the Russian Empire until the annexation of March 1795."
   },
   {
    "atom": "U1897-160",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1795-03",
-   "why": "Duchy of Courland and Semigallia / Pilten / Lithuanian Samogitia (Polish-Lithuanian), outside the Russian Empire until the annexation of March 1795."
+   "why": "Duchy of Courland and Semigallia / Pilten / Lithuanian Samogitia (Polish-Lithuanian fiefs and lands), outside the Russian Empire until the annexation of March 1795."
   },
   {
    "atom": "U1897-165",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1795-03",
-   "why": "Duchy of Courland and Semigallia / Pilten / Lithuanian Samogitia (Polish-Lithuanian), outside the Russian Empire until the annexation of March 1795."
+   "why": "Duchy of Courland and Semigallia / Pilten / Lithuanian Samogitia (Polish-Lithuanian fiefs and lands), outside the Russian Empire until the annexation of March 1795."
   },
   {
    "atom": "U1897-161",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1795-03",
-   "why": "Duchy of Courland and Semigallia / Pilten / Lithuanian Samogitia (Polish-Lithuanian), outside the Russian Empire until the annexation of March 1795."
+   "why": "Duchy of Courland and Semigallia / Pilten / Lithuanian Samogitia (Polish-Lithuanian fiefs and lands), outside the Russian Empire until the annexation of March 1795."
   },
   {
    "atom": "U1897-162",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1795-03",
-   "why": "Duchy of Courland and Semigallia / Pilten / Lithuanian Samogitia (Polish-Lithuanian), outside the Russian Empire until the annexation of March 1795."
+   "why": "Duchy of Courland and Semigallia / Pilten / Lithuanian Samogitia (Polish-Lithuanian fiefs and lands), outside the Russian Empire until the annexation of March 1795."
   },
   {
    "atom": "U1897-164",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1795-03",
-   "why": "Duchy of Courland and Semigallia / Pilten / Lithuanian Samogitia (Polish-Lithuanian), outside the Russian Empire until the annexation of March 1795."
+   "why": "Duchy of Courland and Semigallia / Pilten / Lithuanian Samogitia (Polish-Lithuanian fiefs and lands), outside the Russian Empire until the annexation of March 1795."
   },
   {
    "atom": "U1897-168",
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1795-03",
-   "why": "Duchy of Courland and Semigallia / Pilten / Lithuanian Samogitia (Polish-Lithuanian), outside the Russian Empire until the annexation of March 1795."
+   "why": "Duchy of Courland and Semigallia / Pilten / Lithuanian Samogitia (Polish-Lithuanian fiefs and lands), outside the Russian Empire until the annexation of March 1795."
   }
  ],
  "unresolved": [
+  {
+   "what": "Estland lands 1708–1797 (Narva county lines)",
+   "unit": "RUE:Estonia",
+   "atoms": [
+    "U1897-147",
+    "U1897-149",
+    "U1897-148",
+    "U1897-150"
+   ],
+   "from": "1708-12-29",
+   "to": "1798",
+   "why": "Swedish until the capitulation of Reval (1710) and the Treaty of Nystad (1721); Narva county — eastern Wierland — lay in Ingermanland governorate until 1722; Reval governorate (1719) then held Narva uyezd with Narva town (1897 Yamburg uyezd) until 1775; and from 1725 the west-bank lands of Narva uyezd outside the town (Joala, inside the 1897 Wesenberg uyezd) belonged to St Petersburg's Narva uyezd until 1797. In no window does Estland equal the four 1897 uyezds; the sources disagree on 1775–1797 (ru: Narva returned to St Petersburg 1775; et: the west-bank lands joined Estland only in 1797).",
+   "checked": [
+    "ru.wikipedia Ревельская губерния oldid 151266086",
+    "ru.wikipedia Нарвский уезд oldid 152661544",
+    "et.wikipedia Narva oldid 7248052",
+    "et.wikipedia Narva maakond oldid 7107194",
+    "РНБ / Ден, appendix page spb.html",
+    "ЭСБЕ «Нарва» (ru.wikisource)"
+   ],
+   "needs": "the Joala/Narva town-lands line as its own atom (1897 Wesenberg uyezd split along the 1797 line), and the pre-1722 Narva county line"
+  },
+  {
+   "what": "Livland lands 1708–1726 (Swedish Livonia; Riga governorate with Smolensk province)",
+   "unit": "RUE:Livonia",
+   "atoms": [
+    "U1897-151",
+    "U1897-154",
+    "U1897-155",
+    "U1897-153",
+    "U1897-156",
+    "U1897-157",
+    "U1897-158",
+    "U1897-835",
+    "U1897-152"
+   ],
+   "from": "1708-12-29",
+   "to": "1727",
+   "why": "Swedish Livonia until the capitulations of Riga and Ösel (1710); Dorpat, taken in 1704, lay in Ingermanland governorate in 1708; Riga governorate (17 Jul 1713 O.S.) also held part of the former Smolensk governorate until 1726, so the unit was not Livland alone.",
+   "checked": [
+    "ru.wikipedia Рижская губерния oldid 155145617",
+    "ru.wikipedia Лифляндская губерния oldid 155114482",
+    "ru.wikipedia Смоленская губерния oldid 155088315",
+    "et.wikipedia Narva maakond oldid 7107194"
+   ],
+   "needs": "Smolensk province lines of 1713–1726 (not carried by 1897 uyezds); the 1726 decree date"
+  },
   {
    "what": "Uusimaa, Mikkeli and Kuopio areas before 1809",
    "atoms": [
@@ -989,14 +1098,15 @@
     "U1897-26",
     "U1897-57"
    ],
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1809-09-17",
-   "why": "Split between Swedish Finland (outside the Empire) and Russian Old Finland (Vyborg gub.) along the 1743 Åbo / 1790 Värälä border; whether that line follows 1897 härad lines was not established, so the atoms cannot be declared outside or assigned.",
+   "why": "Split between Swedish Finland (outside the Empire) and Russian Old Finland (Vyborg gub.) along the 1743 Åbo / 1790 Värälä border; whether that line follows 1897 härad lines was not established, so the atoms cannot be declared outside or assigned. Before 1783: Swedish until the Treaty of Åbo (1743), which moved the border to the Kymi and gave Russia Savonlinna (Nyslott) and Kymenkartano parishes; neither the 1721 (Nystad) nor the 1743 line follows 1897 härad lines (Russian occupation 1713–1721 and 1742–1743).",
    "checked": [
     "fi.wikipedia articles on all eight läänit (Hämeen, Turun ja Porin, Vaasan, Oulun, Kuopion, Mikkelin, Uudenmaan, Viipurin lääni)",
     "Tilastokeskus, Tilastollisia tiedonantoja 63 (1979), Väestön elinkeino kunnittain 1880–1975, Liite 4: Kuntien siirrot läänistä toiseen 1881–1976 (p. 353–354)",
     "fi.wikipedia «Luettelo Suomen kihlakunnista»",
-    "fi.wikipedia «Luettelo Suomen kihlakunnista» (Kymi härad split 1743)"
+    "fi.wikipedia «Luettelo Suomen kihlakunnista» (Kymi härad split 1743)",
+    "ru.wikipedia Губернская реформа Петра I oldid 153479057"
    ],
    "needs": "parish-level atoms for Finland 1743–1812"
   },
@@ -1014,9 +1124,9 @@
     "U1897-838",
     "U1897-69"
    ],
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1864-02-13",
-   "why": "Until 1811 a governorate of the Empire bounded by the Swedish border (1743/1790), which cuts 1897 härad lines; Old Finland joined the Grand Duchy 1812; 1812-04-25 O.S. Sestroretsk works area (part of an 1897 St Petersburg uyezd) attached to Vyborg gub. until 1864; 1831 lääni reform moved Savonlinna area and Kymenkartano parts across its line.",
+   "why": "Until 1811 a governorate of the Empire bounded by the Swedish border (1743/1790), which cuts 1897 härad lines; Old Finland joined the Grand Duchy 1812; 1812-04-25 O.S. Sestroretsk works area (part of an 1897 St Petersburg uyezd) attached to Vyborg gub. until 1864; 1831 lääni reform moved Savonlinna area and Kymenkartano parts across its line. Before 1783: Vyborg province captured 1710, part of the St Petersburg governorate, Vyborg governorate from 1744 with the 1743 Åbo gains; its western line was the 1721/1743 state border, which cuts 1897 härad lines.",
    "checked": [
     "RNB, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (after V. E. Den 1902): Санкт-Петербургская губерния",
     "fi.wikipedia «Viipurin lääni» rev. 23802498",
@@ -1182,13 +1292,14 @@
     "U1897-831",
     "U1897-832"
    ],
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1864-02-13",
-   "why": "Olonets oblast part of the governorate to 1784; Narva town (inside 1897 Yamburg uyezd) outside any governorate 1797–1802; the pre-1812 line with Vyborg gub. is not established; 1812–1864 the Sestroretsk works area (part of an 1897 uyezd) belonged to Vyborg gub.",
+   "why": "Olonets oblast part of the governorate to 1784; Narva town (inside 1897 Yamburg uyezd) outside any governorate 1797–1802; the pre-1812 line with Vyborg gub. is not established; 1812–1864 the Sestroretsk works area (part of an 1897 uyezd) belonged to Vyborg gub. Before 1783: Ingermanland governorate of 1708 (29 towns) also held Novgorod, Pskov, Tver lands, Narva county and, 1708–1713, Dorpat; St Petersburg governorate shrank by stages (Novgorod governorate 1727, Pskov 1772) whose lines were those of old uyezds re-cut by souls in 1776–1781 (Den, spb, novg, pskov pages).",
    "checked": [
     "RNB, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (after V. E. Den 1902): Санкт-Петербургская губерния",
     "ru.wikipedia «Санкт-Петербургская губерния» rev. 149475910",
-    "ru.wikipedia «Сестрорецк»"
+    "ru.wikipedia «Сестрорецк»",
+    "РНБ / Ден, appendix pages spb, novg, pskov"
    ],
    "needs": "the Sestroretsk area and Narva town as separate atoms; a source for the 1802–1812 Vyborg line"
   },
@@ -1215,9 +1326,9 @@
     "U1897-145",
     "U1897-142"
    ],
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1824-08-19",
-   "why": "Demyansk uyezd (1897) was formed in 1824 from parts of Novgorod uyezds and part of Pskov's Kholm uyezd, so the pre-1824 Novgorod–Pskov line runs inside 1897 uyezds (also 1796–1801 Olonets lands inside Novgorod gub.).",
+   "why": "Demyansk uyezd (1897) was formed in 1824 from parts of Novgorod uyezds and part of Pskov's Kholm uyezd, so the pre-1824 Novgorod–Pskov line runs inside 1897 uyezds (also 1796–1801 Olonets lands inside Novgorod gub.). Before 1783: Part of Ingermanland/St Petersburg governorate until Novgorod governorate (1727) and Pskov governorate (1772); both namestnichestva (1776–1777) were built from provinces and parts of uyezds (Den: Krestets from part of Novgorod uyezd, Kirillov from part of Belozersk, Pskov 1783 ten villages to Gdov).",
    "checked": [
     "RNB, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (after V. E. Den 1902): Новгородская губерния",
     "RNB, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (after V. E. Den 1902): Псковская губерния"
@@ -1244,9 +1355,9 @@
     "U1897-79",
     "U1897-80"
    ],
-   "from": "1783-07-14",
+   "from": "1708-12-29",
    "to": "1891-11-28",
-   "why": "Olonets was an oblast of St Petersburg to 1784, divided between Arkhangelsk and Novgorod 1796–1801, Kem uyezd moved 1802; from 1802 to 1891 the Onega/Pudozh line differed from 1897 by the village Luzskaya (moved 1891-11-16 O.S.), a line inside 1897 uyezds.",
+   "why": "Olonets was an oblast of St Petersburg to 1784, divided between Arkhangelsk and Novgorod 1796–1801, Kem uyezd moved 1802; from 1802 to 1891 the Onega/Pudozh line differed from 1897 by the village Luzskaya (moved 1891-11-16 O.S.), a line inside 1897 uyezds. Before 1783: Archangelgorod governorate of 1708 also held Vologda, Ustyug, Totma and Kargopol lands; Olonets lands lay in Ingermanland/St Petersburg governorate; the 1776–1784 namestnichestva re-cut them (Den: northern part of Kargopol uyezd to Arkhangelsk 1776).",
    "checked": [
     "RNB, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (after V. E. Den 1902): Олонецкая губерния",
     "RNB, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (after V. E. Den 1902): Архангельская губерния",
@@ -1255,7 +1366,7 @@
    "needs": "village-level atoms on the Onega–Pudozh line"
   },
   {
-   "what": "Courland 1795–1818",
+   "what": "Courland 1795–1819 (with the Polangen strip in Vilna governorate)",
    "unit": "RUE:Kurland",
    "atoms": [
     "U1897-159",
@@ -1270,8 +1381,8 @@
     "U1897-168"
    ],
    "from": "1795-03",
-   "to": "1819",
-   "why": "Until 1819 the Polangen coastal strip (inside 1897 Grobin uyezd) belonged to Vilna governorate (before Oct 1795 to Poland-Lithuania); the day of the 1819 transfer was not found.",
+   "to": "1819-03-25",
+   "why": "Until 13 (25) Mar 1819 the Polangen coastal strip (inside the 1897 Grobin uyezd) belonged to Vilna governorate (before Oct 1795 to Poland-Lithuania), so Courland was the 1897 governorate less part of one uyezd.",
    "checked": [
     "ru.wikipedia «Курляндская губерния» rev. 154901389",
     "en/lt/de.wikipedia «Palanga»"

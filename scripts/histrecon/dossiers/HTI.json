@@ -1,0 +1,369 @@
+{
+ "country": "HTI",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "2003-09-04",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Republic of Haiti. The ten departments from the creation of Nippes (2003-09-04). The nine-department layout of the 1962 law is not claimed: statoids says it was implemented only \"around 1980\", so no day or year can be stated for its start (Grand'Anse before 2003 would be the union of the Grand'Anse and Nippes atoms).",
+ "units": [
+  {
+   "id": "HTI:Nord@1962",
+   "names": {
+    "en": "Nord Department",
+    "ja": "ノール県",
+    "local": "Département du Nord"
+   },
+   "wikidata": "Q943932",
+   "spans": [
+    {
+     "from": "2003-09-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "HTI-1387"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uht.html",
+       "title": "Statoids — Departments of Haiti (change history)",
+       "says": "Five departments became nine by a 1962 law implemented only around 1980; Nippes split from Grand'Anse on 2003-09-04 (Miragoâne, Anse-à-Veau and new Baradères arrondissements); no later change listed.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?title=D%C3%A9partements_d%27Ha%C3%AFti&oldid=236656601",
+       "title": "Wikipedia (fr) — Départements d'Haïti (oldid 236656601)",
+       "says": "Ten departments under Title V section D of the 1987 Constitution; Nippes created in 2003.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "HTI:NordEst@1962",
+   "names": {
+    "en": "Nord-Est Department",
+    "ja": "ノール＝エスト県",
+    "local": "Département du Nord-Est"
+   },
+   "wikidata": "Q928694",
+   "spans": [
+    {
+     "from": "2003-09-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "HTI-1386"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uht.html",
+       "title": "Statoids — Departments of Haiti (change history)",
+       "says": "Five departments became nine by a 1962 law implemented only around 1980; Nippes split from Grand'Anse on 2003-09-04 (Miragoâne, Anse-à-Veau and new Baradères arrondissements); no later change listed.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?title=D%C3%A9partements_d%27Ha%C3%AFti&oldid=236656601",
+       "title": "Wikipedia (fr) — Départements d'Haïti (oldid 236656601)",
+       "says": "Ten departments under Title V section D of the 1987 Constitution; Nippes created in 2003.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "HTI:NordOuest@1962",
+   "names": {
+    "en": "Nord-Ouest Department",
+    "ja": "ノール＝ウエスト県",
+    "local": "Département du Nord-Ouest"
+   },
+   "wikidata": "Q608361",
+   "spans": [
+    {
+     "from": "2003-09-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "HTI-1361"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uht.html",
+       "title": "Statoids — Departments of Haiti (change history)",
+       "says": "Five departments became nine by a 1962 law implemented only around 1980; Nippes split from Grand'Anse on 2003-09-04 (Miragoâne, Anse-à-Veau and new Baradères arrondissements); no later change listed.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?title=D%C3%A9partements_d%27Ha%C3%AFti&oldid=236656601",
+       "title": "Wikipedia (fr) — Départements d'Haïti (oldid 236656601)",
+       "says": "Ten departments under Title V section D of the 1987 Constitution; Nippes created in 2003.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "HTI:Artibonite@1962",
+   "names": {
+    "en": "Artibonite Department",
+    "ja": "アルティボニット県",
+    "local": "Département de l'Artibonite"
+   },
+   "wikidata": "Q844024",
+   "spans": [
+    {
+     "from": "2003-09-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "HTI-1384"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uht.html",
+       "title": "Statoids — Departments of Haiti (change history)",
+       "says": "Five departments became nine by a 1962 law implemented only around 1980; Nippes split from Grand'Anse on 2003-09-04 (Miragoâne, Anse-à-Veau and new Baradères arrondissements); no later change listed.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?title=D%C3%A9partements_d%27Ha%C3%AFti&oldid=236656601",
+       "title": "Wikipedia (fr) — Départements d'Haïti (oldid 236656601)",
+       "says": "Ten departments under Title V section D of the 1987 Constitution; Nippes created in 2003.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "HTI:Centre@1962",
+   "names": {
+    "en": "Centre Department",
+    "ja": "サントル県",
+    "local": "Département du Centre"
+   },
+   "wikidata": "Q844528",
+   "spans": [
+    {
+     "from": "2003-09-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "HTI-1385"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uht.html",
+       "title": "Statoids — Departments of Haiti (change history)",
+       "says": "Five departments became nine by a 1962 law implemented only around 1980; Nippes split from Grand'Anse on 2003-09-04 (Miragoâne, Anse-à-Veau and new Baradères arrondissements); no later change listed.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?title=D%C3%A9partements_d%27Ha%C3%AFti&oldid=236656601",
+       "title": "Wikipedia (fr) — Départements d'Haïti (oldid 236656601)",
+       "says": "Ten departments under Title V section D of the 1987 Constitution; Nippes created in 2003.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "HTI:Ouest@1962",
+   "names": {
+    "en": "Ouest Department",
+    "ja": "ウエスト県",
+    "local": "Département de l'Ouest"
+   },
+   "wikidata": "Q1434621",
+   "spans": [
+    {
+     "from": "2003-09-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "HTI-1388"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uht.html",
+       "title": "Statoids — Departments of Haiti (change history)",
+       "says": "Five departments became nine by a 1962 law implemented only around 1980; Nippes split from Grand'Anse on 2003-09-04 (Miragoâne, Anse-à-Veau and new Baradères arrondissements); no later change listed.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?title=D%C3%A9partements_d%27Ha%C3%AFti&oldid=236656601",
+       "title": "Wikipedia (fr) — Départements d'Haïti (oldid 236656601)",
+       "says": "Ten departments under Title V section D of the 1987 Constitution; Nippes created in 2003.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "HTI:SudEst@1962",
+   "names": {
+    "en": "Sud-Est Department",
+    "ja": "シュド＝エスト県",
+    "local": "Département du Sud-Est"
+   },
+   "wikidata": "Q936717",
+   "spans": [
+    {
+     "from": "2003-09-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "HTI-1389"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uht.html",
+       "title": "Statoids — Departments of Haiti (change history)",
+       "says": "Five departments became nine by a 1962 law implemented only around 1980; Nippes split from Grand'Anse on 2003-09-04 (Miragoâne, Anse-à-Veau and new Baradères arrondissements); no later change listed.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?title=D%C3%A9partements_d%27Ha%C3%AFti&oldid=236656601",
+       "title": "Wikipedia (fr) — Départements d'Haïti (oldid 236656601)",
+       "says": "Ten departments under Title V section D of the 1987 Constitution; Nippes created in 2003.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "HTI:Sud@1962",
+   "names": {
+    "en": "Sud Department",
+    "ja": "シュド県",
+    "local": "Département du Sud"
+   },
+   "wikidata": "Q936704",
+   "spans": [
+    {
+     "from": "2003-09-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "HTI-1362"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uht.html",
+       "title": "Statoids — Departments of Haiti (change history)",
+       "says": "Five departments became nine by a 1962 law implemented only around 1980; Nippes split from Grand'Anse on 2003-09-04 (Miragoâne, Anse-à-Veau and new Baradères arrondissements); no later change listed.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?title=D%C3%A9partements_d%27Ha%C3%AFti&oldid=236656601",
+       "title": "Wikipedia (fr) — Départements d'Haïti (oldid 236656601)",
+       "says": "Ten departments under Title V section D of the 1987 Constitution; Nippes created in 2003.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "HTI:GrandAnse@1962",
+   "names": {
+    "en": "Grand'Anse Department",
+    "ja": "グランダンス県",
+    "local": "Département de la Grand'Anse"
+   },
+   "wikidata": "Q913231",
+   "spans": [
+    {
+     "from": "2003-09-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "HTI-1359"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uht.html",
+       "title": "Statoids — Departments of Haiti (change history)",
+       "says": "Five departments became nine by a 1962 law implemented only around 1980; Nippes split from Grand'Anse on 2003-09-04 (Miragoâne, Anse-à-Veau and new Baradères arrondissements); no later change listed.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?title=D%C3%A9partements_d%27Ha%C3%AFti&oldid=236656601",
+       "title": "Wikipedia (fr) — Départements d'Haïti (oldid 236656601)",
+       "says": "Ten departments under Title V section D of the 1987 Constitution; Nippes created in 2003.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Grand'Anse without Nippes from 2003-09-04."
+    }
+   ]
+  },
+  {
+   "id": "HTI:Nippes@2003",
+   "names": {
+    "en": "Nippes Department",
+    "ja": "ニップ県",
+    "local": "Département des Nippes"
+   },
+   "wikidata": "Q125232",
+   "spans": [
+    {
+     "from": "2003-09-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "HTI-1360"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uht.html",
+       "title": "Statoids — Departments of Haiti (change history)",
+       "says": "Five departments became nine by a 1962 law implemented only around 1980; Nippes split from Grand'Anse on 2003-09-04 (Miragoâne, Anse-à-Veau and new Baradères arrondissements); no later change listed.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?title=D%C3%A9partements_d%27Ha%C3%AFti&oldid=236656601",
+       "title": "Wikipedia (fr) — Départements d'Haïti (oldid 236656601)",
+       "says": "Ten departments under Title V section D of the 1987 Constitution; Nippes created in 2003.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "2003-09-04",
+   "n": 10,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uht.html",
+     "title": "Statoids — Departments of Haiti (change history)",
+     "says": "Five departments became nine by a 1962 law implemented only around 1980; Nippes split from Grand'Anse on 2003-09-04 (Miragoâne, Anse-à-Veau and new Baradères arrondissements); no later change listed.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "2019-12-31",
+   "n": 10,
+   "sources": [
+    {
+     "url": "https://fr.wikipedia.org/w/index.php?title=D%C3%A9partements_d%27Ha%C3%AFti&oldid=236656601",
+     "title": "Wikipedia (fr) — Départements d'Haïti (oldid 236656601)",
+     "says": "Ten departments under Title V section D of the 1987 Constitution; Nippes created in 2003.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  }
+ ],
+ "unresolved": []
+}

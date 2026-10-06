@@ -1,0 +1,413 @@
+{
+ "country": "GEO",
+ "atomSet": "gb-adm1@2026-10-06",
+ "scope": {
+  "from": "1991-12-26",
+  "to": "1995-12-18"
+ },
+ "polityNote": "First-level divisions of Georgia from the dissolution of the USSR to the eve of the last of the nine regions (mkhare). Judgement on the level: a region is the jurisdiction of a presidential State Trustee (governor), and the posts were instituted one region at a time — Kakheti 4 Oct 1993, Samtskhe-Javakheti 31 Jul 1994, Kvemo Kartli 29 Aug 1994, Imereti 26 Jan 1995, Guria 22 Feb 1995, Shida Kartli 6 Mar 1995, Mtskheta-Mtianeti 19 Mar 1995, Racha-Lechkhumi-Kvemo Svaneti 12 May 1995, Samegrelo-Zemo Svaneti 19 Dec 1995 (decrees cited by date and number in presidential decree No. 363 of 8 Jun 1999, matsne 1257125, which repealed them). From its trustee’s institution a region is taken as the first-level unit, because the trustee directed and could suspend the raion and city administrations beneath him (decree No. 318 of 2004 states the power); before it, the first level was the raions and the cities of republican subordination, beside the autonomous republics of Abkhazia and Adjara (the South Ossetian AO was abolished on 11 Dec 1990). US BGN (CIA Factbook 1992–96: only the 2 ARs, rayons under direct republic jurisdiction; 1997–2001: 53 rayons, 9 cities, 2 ARs; regions from the 2002 edition) and ISO 3166-2 (raions until Newsletter I-2 of 21 May 2002) kept listing the raions; statoids.com notes ISO/DIS 1996 already mentioned unnamed prefectures, so this is a lag of the catalogues, not a different administration. Consequence for data/hist-admin-fill.js, which draws twelve units from 1995-01-01: on that date three regions existed; the twelve-unit structure was complete on 1995-12-19. Atoms: geoBoundaries GEO ADM1 (2015, Wikimedia, 12 units). The ADM2 set (manifest 2007, 68 municipalities) was measured and rejected: against OpenStreetMap its municipalities agree at IoU 0.42–0.77 and it folds the republican cities into raions. Check ① (2026-10-06, geodesic, against OpenStreetMap relations whose areas match published figures within 1% — Adjara 2,897 vs 2,880, Guria 2,032 vs 2,033, Tbilisi 504 vs 504.3): the Abkhazia atom is 8,643 km² vs OSM 8,647, IoU 0.974 overall and 0.988 inland (both clipped to the common outline); against the OpenHistoricalMap Abkhaz ASSR in force on 1992-01-01 (0.05° grid) it lies 0.990 inside it, IoU 0.896, OHM’s outline taking in sea; the other atoms are inland IoU 0.91–0.985 and Tbilisi 0.48, so only Abkhazia is drawn, and only while the republic was under Georgian administration (to the outbreak of war, 14 Aug 1992; OpenHistoricalMap draws the Abkhaz ASSR to 23 Jul 1992 and answers that part). cshapes keeps Abkhazia and South Ossetia inside Georgia throughout; this dossier separates them by administration.",
+ "units": [
+  {
+   "id": "GEO:Abkhazia",
+   "names": {
+    "en": "Autonomous Republic of Abkhazia",
+    "ja": "アブハジア自治共和国",
+    "local": "აფხაზეთის ავტონომიური რესპუბლიკა"
+   },
+   "wikidata": "Q23334",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1992-08-14",
+     "atoms": [
+      "GEO-ADM1-13066534B27338241074695"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Georgia_(country)&oldid=1364469524",
+       "title": "Wikipedia — Administrative divisions of Georgia (country)",
+       "says": "Regions were set up by presidential decrees 1994–1996 on a provisional basis and are not self-governing; the autonomous republics Abkhazia and Adjara date from the Soviet era; South Ossetian autonomy was abolished in December 1990.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/48",
+       "title": "CIA World Factbook 1992 (Project Gutenberg 48) — Georgia, Administrative divisions",
+       "says": "2 autonomous republics (Abkhazia, Ajaria); no oblasts, the rayons are under direct republic jurisdiction; the South Ossetia Autonomous Oblast is also mentioned.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=War_in_Abkhazia_(1992%E2%80%931993)&oldid=1376015050",
+       "title": "Wikipedia — War in Abkhazia (1992–1993)",
+       "says": "The war lasted from 14 August 1992 to 30 September 1993; Abkhazia became de facto independent and Georgia kept only the upper Kodori Valley.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Begins at the scope: the Abkhaz ASSR of the Georgian SSR continued as an autonomous republic of Georgia. Ends at the outbreak of war on 14 Aug 1992, after which the republic was cut by front lines (see unresolved)."
+    }
+   ]
+  }
+ ],
+ "counts": [],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Raions and cities of republican subordination of the later Kakheti region, before its state trustee",
+   "atoms": [
+    "GEO-ADM1-13066534B18810562533194"
+   ],
+   "from": "1991-12-26",
+   "to": "1993-10-04",
+   "why": "Until the state trustee was instituted the first-level units here were the raions and the cities of republican subordination. No atom set carries their lines: the only raion-level set (gb-adm2) is a coarse drawing (municipality IoU 0.42–0.77 against OpenStreetMap) and folds the republican cities into raions.",
+   "checked": [
+    "geoBoundaries GEO ADM2 (gb-adm2@2026-10-06, Wikimedia Commons, manifest year 2007, 68 municipalities): against OpenStreetMap relations the municipality outlines agree at IoU 0.42–0.77 (Lanchkhuti 0.42, Ozurgeti 0.50, Kobuleti 0.64, Keda 0.75, Khelvachauri+Batumi 0.77) and the regions they sum to at 0.68–0.97 (Guria 0.68)",
+    "point tests in gb-adm2: Kutaisi→Terjola, Rustavi→Gardabani, Poti→Lanchkhuti, Gori→Gori, Zugdidi→Zugdidi, Tskhinvali→Gori, Znauri→Kareli (cities of republican subordination and former oblast raions folded into raion atoms); Chiatura, Tkibuli, Tsqaltubo are whole atoms",
+    "statoids.com yge (Gwillim Law records no dated raion changes 1991–2007)",
+    "CIA World Factbook 1997–2001 (US BGN: 53 rayons, 9 cities, 2 ARs, by name)",
+    "geoBoundaries GEO ADM1 (regions only; carries no raion lines)"
+   ],
+   "needs": "raion and republican-city outlines as of 1991 at OpenStreetMap precision (the 2006 municipalities recapitulate most raions), plus the pre-2006 limits of Kutaisi, Rustavi, Poti, Gori, Zugdidi and Tbilisi"
+  },
+  {
+   "what": "Kakheti region (state trustee) from its institution to the end of the scope",
+   "unit": "GEO:Kakheti",
+   "atoms": [
+    "GEO-ADM1-13066534B18810562533194"
+   ],
+   "from": "1993-10-04",
+   "to": "1995-12-19",
+   "why": "The trustee decree of 1993-10-04 is known only from its repeal in decree No. 363 of 8 Jun 1999; it is not published on matsne.gov.ge and no text reached states which raions and cities the region comprised when instituted. The gb-adm1 outline is also off: inland IoU 0.985 against OpenStreetMap.",
+   "checked": [
+    "matsne.gov.ge search sorted by signing date (earliest trustee act published is of 1998; decree No. 363 of 8 Jun 1999 lists the 1993–1995 decrees it repeals, without territories)",
+    "decree No. 318 of 11 Aug 2004 (no territories)",
+    "acts of 2005 and 2007 naming trustee territories by raion or municipality (later composition only, e.g. matsne 2070218, 2061387)",
+    "en and ru Wikipedia articles on the nine regions (give 1995 only)",
+    "geoBoundaries GEO ADM1 2015 against OpenStreetMap region relations"
+   ],
+   "needs": "the 1993–1995 trustee decrees with their territorial provisions (official bulletin of the Head of State), and a region outline at OpenStreetMap precision"
+  },
+  {
+   "what": "Raions and cities of republican subordination of the later Samtskhe-Javakheti region, before its state trustee",
+   "atoms": [
+    "GEO-ADM1-13066534B71664328266075"
+   ],
+   "from": "1991-12-26",
+   "to": "1994-07-31",
+   "why": "Until the state trustee was instituted the first-level units here were the raions and the cities of republican subordination. No atom set carries their lines: the only raion-level set (gb-adm2) is a coarse drawing (municipality IoU 0.42–0.77 against OpenStreetMap) and folds the republican cities into raions.",
+   "checked": [
+    "geoBoundaries GEO ADM2 (gb-adm2@2026-10-06, Wikimedia Commons, manifest year 2007, 68 municipalities): against OpenStreetMap relations the municipality outlines agree at IoU 0.42–0.77 (Lanchkhuti 0.42, Ozurgeti 0.50, Kobuleti 0.64, Keda 0.75, Khelvachauri+Batumi 0.77) and the regions they sum to at 0.68–0.97 (Guria 0.68)",
+    "point tests in gb-adm2: Kutaisi→Terjola, Rustavi→Gardabani, Poti→Lanchkhuti, Gori→Gori, Zugdidi→Zugdidi, Tskhinvali→Gori, Znauri→Kareli (cities of republican subordination and former oblast raions folded into raion atoms); Chiatura, Tkibuli, Tsqaltubo are whole atoms",
+    "statoids.com yge (Gwillim Law records no dated raion changes 1991–2007)",
+    "CIA World Factbook 1997–2001 (US BGN: 53 rayons, 9 cities, 2 ARs, by name)",
+    "geoBoundaries GEO ADM1 (regions only; carries no raion lines)"
+   ],
+   "needs": "raion and republican-city outlines as of 1991 at OpenStreetMap precision (the 2006 municipalities recapitulate most raions), plus the pre-2006 limits of Kutaisi, Rustavi, Poti, Gori, Zugdidi and Tbilisi"
+  },
+  {
+   "what": "Samtskhe-Javakheti region (state trustee) from its institution to the end of the scope",
+   "unit": "GEO:Samtskhe-Javakheti",
+   "atoms": [
+    "GEO-ADM1-13066534B71664328266075"
+   ],
+   "from": "1994-07-31",
+   "to": "1995-12-19",
+   "why": "The trustee decree of 1994-07-31 is known only from its repeal in decree No. 363 of 8 Jun 1999; it is not published on matsne.gov.ge and no text reached states which raions and cities the region comprised when instituted. The gb-adm1 outline is also off: inland IoU 0.973 against OpenStreetMap.",
+   "checked": [
+    "matsne.gov.ge search sorted by signing date (earliest trustee act published is of 1998; decree No. 363 of 8 Jun 1999 lists the 1993–1995 decrees it repeals, without territories)",
+    "decree No. 318 of 11 Aug 2004 (no territories)",
+    "acts of 2005 and 2007 naming trustee territories by raion or municipality (later composition only, e.g. matsne 2070218, 2061387)",
+    "en and ru Wikipedia articles on the nine regions (give 1995 only)",
+    "geoBoundaries GEO ADM1 2015 against OpenStreetMap region relations"
+   ],
+   "needs": "the 1993–1995 trustee decrees with their territorial provisions (official bulletin of the Head of State), and a region outline at OpenStreetMap precision"
+  },
+  {
+   "what": "Raions and cities of republican subordination of the later Kvemo Kartli region, before its state trustee",
+   "atoms": [
+    "GEO-ADM1-13066534B60595656675538"
+   ],
+   "from": "1991-12-26",
+   "to": "1994-08-29",
+   "why": "Until the state trustee was instituted the first-level units here were the raions and the cities of republican subordination. No atom set carries their lines: the only raion-level set (gb-adm2) is a coarse drawing (municipality IoU 0.42–0.77 against OpenStreetMap) and folds the republican cities into raions.",
+   "checked": [
+    "geoBoundaries GEO ADM2 (gb-adm2@2026-10-06, Wikimedia Commons, manifest year 2007, 68 municipalities): against OpenStreetMap relations the municipality outlines agree at IoU 0.42–0.77 (Lanchkhuti 0.42, Ozurgeti 0.50, Kobuleti 0.64, Keda 0.75, Khelvachauri+Batumi 0.77) and the regions they sum to at 0.68–0.97 (Guria 0.68)",
+    "point tests in gb-adm2: Kutaisi→Terjola, Rustavi→Gardabani, Poti→Lanchkhuti, Gori→Gori, Zugdidi→Zugdidi, Tskhinvali→Gori, Znauri→Kareli (cities of republican subordination and former oblast raions folded into raion atoms); Chiatura, Tkibuli, Tsqaltubo are whole atoms",
+    "statoids.com yge (Gwillim Law records no dated raion changes 1991–2007)",
+    "CIA World Factbook 1997–2001 (US BGN: 53 rayons, 9 cities, 2 ARs, by name)",
+    "geoBoundaries GEO ADM1 (regions only; carries no raion lines)"
+   ],
+   "needs": "raion and republican-city outlines as of 1991 at OpenStreetMap precision (the 2006 municipalities recapitulate most raions), plus the pre-2006 limits of Kutaisi, Rustavi, Poti, Gori, Zugdidi and Tbilisi"
+  },
+  {
+   "what": "Kvemo Kartli region (state trustee) from its institution to the end of the scope",
+   "unit": "GEO:Kvemo Kartli",
+   "atoms": [
+    "GEO-ADM1-13066534B60595656675538"
+   ],
+   "from": "1994-08-29",
+   "to": "1995-12-19",
+   "why": "The trustee decree of 1994-08-29 is known only from its repeal in decree No. 363 of 8 Jun 1999; it is not published on matsne.gov.ge and no text reached states which raions and cities the region comprised when instituted. The gb-adm1 outline is also off: inland IoU 0.939 against OpenStreetMap.",
+   "checked": [
+    "matsne.gov.ge search sorted by signing date (earliest trustee act published is of 1998; decree No. 363 of 8 Jun 1999 lists the 1993–1995 decrees it repeals, without territories)",
+    "decree No. 318 of 11 Aug 2004 (no territories)",
+    "acts of 2005 and 2007 naming trustee territories by raion or municipality (later composition only, e.g. matsne 2070218, 2061387)",
+    "en and ru Wikipedia articles on the nine regions (give 1995 only)",
+    "geoBoundaries GEO ADM1 2015 against OpenStreetMap region relations"
+   ],
+   "needs": "the 1993–1995 trustee decrees with their territorial provisions (official bulletin of the Head of State), and a region outline at OpenStreetMap precision"
+  },
+  {
+   "what": "Raions and cities of republican subordination of the later Imereti region, before its state trustee",
+   "atoms": [
+    "GEO-ADM1-13066534B65630723466818"
+   ],
+   "from": "1991-12-26",
+   "to": "1995-01-26",
+   "why": "Until the state trustee was instituted the first-level units here were the raions and the cities of republican subordination. No atom set carries their lines: the only raion-level set (gb-adm2) is a coarse drawing (municipality IoU 0.42–0.77 against OpenStreetMap) and folds the republican cities into raions. A small part of the former oblast assigned to this region lay outside Georgian control; no atom carries that line.",
+   "checked": [
+    "geoBoundaries GEO ADM2 (gb-adm2@2026-10-06, Wikimedia Commons, manifest year 2007, 68 municipalities): against OpenStreetMap relations the municipality outlines agree at IoU 0.42–0.77 (Lanchkhuti 0.42, Ozurgeti 0.50, Kobuleti 0.64, Keda 0.75, Khelvachauri+Batumi 0.77) and the regions they sum to at 0.68–0.97 (Guria 0.68)",
+    "point tests in gb-adm2: Kutaisi→Terjola, Rustavi→Gardabani, Poti→Lanchkhuti, Gori→Gori, Zugdidi→Zugdidi, Tskhinvali→Gori, Znauri→Kareli (cities of republican subordination and former oblast raions folded into raion atoms); Chiatura, Tkibuli, Tsqaltubo are whole atoms",
+    "statoids.com yge (Gwillim Law records no dated raion changes 1991–2007)",
+    "CIA World Factbook 1997–2001 (US BGN: 53 rayons, 9 cities, 2 ARs, by name)",
+    "geoBoundaries GEO ADM1 (regions only; carries no raion lines)"
+   ],
+   "needs": "raion and republican-city outlines as of 1991 at OpenStreetMap precision (the 2006 municipalities recapitulate most raions), plus the pre-2006 limits of Kutaisi, Rustavi, Poti, Gori, Zugdidi and Tbilisi"
+  },
+  {
+   "what": "Imereti region (state trustee) from its institution to the end of the scope",
+   "unit": "GEO:Imereti",
+   "atoms": [
+    "GEO-ADM1-13066534B65630723466818"
+   ],
+   "from": "1995-01-26",
+   "to": "1995-12-19",
+   "why": "The trustee decree of 1995-01-26 is known only from its repeal in decree No. 363 of 8 Jun 1999; it is not published on matsne.gov.ge and no text reached states which raions and cities the region comprised when instituted. The gb-adm1 outline is also off: inland IoU 0.936 against OpenStreetMap. A small part of the former oblast assigned to this region lay outside Georgian control; no atom carries that line.",
+   "checked": [
+    "matsne.gov.ge search sorted by signing date (earliest trustee act published is of 1998; decree No. 363 of 8 Jun 1999 lists the 1993–1995 decrees it repeals, without territories)",
+    "decree No. 318 of 11 Aug 2004 (no territories)",
+    "acts of 2005 and 2007 naming trustee territories by raion or municipality (later composition only, e.g. matsne 2070218, 2061387)",
+    "en and ru Wikipedia articles on the nine regions (give 1995 only)",
+    "geoBoundaries GEO ADM1 2015 against OpenStreetMap region relations"
+   ],
+   "needs": "the 1993–1995 trustee decrees with their territorial provisions (official bulletin of the Head of State), and a region outline at OpenStreetMap precision"
+  },
+  {
+   "what": "Raions and cities of republican subordination of the later Guria region, before its state trustee",
+   "atoms": [
+    "GEO-ADM1-13066534B95762165423207"
+   ],
+   "from": "1991-12-26",
+   "to": "1995-02-22",
+   "why": "Until the state trustee was instituted the first-level units here were the raions and the cities of republican subordination. No atom set carries their lines: the only raion-level set (gb-adm2) is a coarse drawing (municipality IoU 0.42–0.77 against OpenStreetMap) and folds the republican cities into raions.",
+   "checked": [
+    "geoBoundaries GEO ADM2 (gb-adm2@2026-10-06, Wikimedia Commons, manifest year 2007, 68 municipalities): against OpenStreetMap relations the municipality outlines agree at IoU 0.42–0.77 (Lanchkhuti 0.42, Ozurgeti 0.50, Kobuleti 0.64, Keda 0.75, Khelvachauri+Batumi 0.77) and the regions they sum to at 0.68–0.97 (Guria 0.68)",
+    "point tests in gb-adm2: Kutaisi→Terjola, Rustavi→Gardabani, Poti→Lanchkhuti, Gori→Gori, Zugdidi→Zugdidi, Tskhinvali→Gori, Znauri→Kareli (cities of republican subordination and former oblast raions folded into raion atoms); Chiatura, Tkibuli, Tsqaltubo are whole atoms",
+    "statoids.com yge (Gwillim Law records no dated raion changes 1991–2007)",
+    "CIA World Factbook 1997–2001 (US BGN: 53 rayons, 9 cities, 2 ARs, by name)",
+    "geoBoundaries GEO ADM1 (regions only; carries no raion lines)"
+   ],
+   "needs": "raion and republican-city outlines as of 1991 at OpenStreetMap precision (the 2006 municipalities recapitulate most raions), plus the pre-2006 limits of Kutaisi, Rustavi, Poti, Gori, Zugdidi and Tbilisi"
+  },
+  {
+   "what": "Guria region (state trustee) from its institution to the end of the scope",
+   "unit": "GEO:Guria",
+   "atoms": [
+    "GEO-ADM1-13066534B95762165423207"
+   ],
+   "from": "1995-02-22",
+   "to": "1995-12-19",
+   "why": "The trustee decree of 1995-02-22 is known only from its repeal in decree No. 363 of 8 Jun 1999; it is not published on matsne.gov.ge and no text reached states which raions and cities the region comprised when instituted. The gb-adm1 outline is also off: inland IoU 0.922 against OpenStreetMap.",
+   "checked": [
+    "matsne.gov.ge search sorted by signing date (earliest trustee act published is of 1998; decree No. 363 of 8 Jun 1999 lists the 1993–1995 decrees it repeals, without territories)",
+    "decree No. 318 of 11 Aug 2004 (no territories)",
+    "acts of 2005 and 2007 naming trustee territories by raion or municipality (later composition only, e.g. matsne 2070218, 2061387)",
+    "en and ru Wikipedia articles on the nine regions (give 1995 only)",
+    "geoBoundaries GEO ADM1 2015 against OpenStreetMap region relations"
+   ],
+   "needs": "the 1993–1995 trustee decrees with their territorial provisions (official bulletin of the Head of State), and a region outline at OpenStreetMap precision"
+  },
+  {
+   "what": "Raions and cities of republican subordination of the later Shida Kartli region, before its state trustee",
+   "atoms": [
+    "GEO-ADM1-13066534B94010522959464"
+   ],
+   "from": "1991-12-26",
+   "to": "1995-03-06",
+   "why": "Until the state trustee was instituted the first-level units here were the raions and the cities of republican subordination. No atom set carries their lines: the only raion-level set (gb-adm2) is a coarse drawing (municipality IoU 0.42–0.77 against OpenStreetMap) and folds the republican cities into raions. The former Tskhinvali, Java and Znauri raions inside this atom were held by the South Ossetian authorities after the 1991–92 war (Dagomys agreement 24 Jun 1992, en Wikipedia South Ossetia war (1991–1992) oldid 1375749777); no atom carries that line.",
+   "checked": [
+    "geoBoundaries GEO ADM2 (gb-adm2@2026-10-06, Wikimedia Commons, manifest year 2007, 68 municipalities): against OpenStreetMap relations the municipality outlines agree at IoU 0.42–0.77 (Lanchkhuti 0.42, Ozurgeti 0.50, Kobuleti 0.64, Keda 0.75, Khelvachauri+Batumi 0.77) and the regions they sum to at 0.68–0.97 (Guria 0.68)",
+    "point tests in gb-adm2: Kutaisi→Terjola, Rustavi→Gardabani, Poti→Lanchkhuti, Gori→Gori, Zugdidi→Zugdidi, Tskhinvali→Gori, Znauri→Kareli (cities of republican subordination and former oblast raions folded into raion atoms); Chiatura, Tkibuli, Tsqaltubo are whole atoms",
+    "statoids.com yge (Gwillim Law records no dated raion changes 1991–2007)",
+    "CIA World Factbook 1997–2001 (US BGN: 53 rayons, 9 cities, 2 ARs, by name)",
+    "geoBoundaries GEO ADM1 (regions only; carries no raion lines)"
+   ],
+   "needs": "raion and republican-city outlines as of 1991 at OpenStreetMap precision (the 2006 municipalities recapitulate most raions), plus the pre-2006 limits of Kutaisi, Rustavi, Poti, Gori, Zugdidi and Tbilisi"
+  },
+  {
+   "what": "Shida Kartli region (state trustee) from its institution to the end of the scope",
+   "unit": "GEO:Shida Kartli",
+   "atoms": [
+    "GEO-ADM1-13066534B94010522959464"
+   ],
+   "from": "1995-03-06",
+   "to": "1995-12-19",
+   "why": "The trustee decree of 1995-03-06 is known only from its repeal in decree No. 363 of 8 Jun 1999; it is not published on matsne.gov.ge and no text reached states which raions and cities the region comprised when instituted. The gb-adm1 outline is also off: inland IoU 0.912 against OpenStreetMap. The former Tskhinvali, Java and Znauri raions inside this atom were held by the South Ossetian authorities after the 1991–92 war (Dagomys agreement 24 Jun 1992, en Wikipedia South Ossetia war (1991–1992) oldid 1375749777); no atom carries that line.",
+   "checked": [
+    "matsne.gov.ge search sorted by signing date (earliest trustee act published is of 1998; decree No. 363 of 8 Jun 1999 lists the 1993–1995 decrees it repeals, without territories)",
+    "decree No. 318 of 11 Aug 2004 (no territories)",
+    "acts of 2005 and 2007 naming trustee territories by raion or municipality (later composition only, e.g. matsne 2070218, 2061387)",
+    "en and ru Wikipedia articles on the nine regions (give 1995 only)",
+    "geoBoundaries GEO ADM1 2015 against OpenStreetMap region relations"
+   ],
+   "needs": "the 1993–1995 trustee decrees with their territorial provisions (official bulletin of the Head of State), and a region outline at OpenStreetMap precision"
+  },
+  {
+   "what": "Raions and cities of republican subordination of the later Mtskheta-Mtianeti region, before its state trustee",
+   "atoms": [
+    "GEO-ADM1-13066534B64349154399075"
+   ],
+   "from": "1991-12-26",
+   "to": "1995-03-19",
+   "why": "Until the state trustee was instituted the first-level units here were the raions and the cities of republican subordination. No atom set carries their lines: the only raion-level set (gb-adm2) is a coarse drawing (municipality IoU 0.42–0.77 against OpenStreetMap) and folds the republican cities into raions. The western part of Akhalgori raion inside this atom stayed under the Tskhinvali authorities 1992–2008 (ru Wikipedia Ленингорский район oldid 154482606); no atom carries that line.",
+   "checked": [
+    "geoBoundaries GEO ADM2 (gb-adm2@2026-10-06, Wikimedia Commons, manifest year 2007, 68 municipalities): against OpenStreetMap relations the municipality outlines agree at IoU 0.42–0.77 (Lanchkhuti 0.42, Ozurgeti 0.50, Kobuleti 0.64, Keda 0.75, Khelvachauri+Batumi 0.77) and the regions they sum to at 0.68–0.97 (Guria 0.68)",
+    "point tests in gb-adm2: Kutaisi→Terjola, Rustavi→Gardabani, Poti→Lanchkhuti, Gori→Gori, Zugdidi→Zugdidi, Tskhinvali→Gori, Znauri→Kareli (cities of republican subordination and former oblast raions folded into raion atoms); Chiatura, Tkibuli, Tsqaltubo are whole atoms",
+    "statoids.com yge (Gwillim Law records no dated raion changes 1991–2007)",
+    "CIA World Factbook 1997–2001 (US BGN: 53 rayons, 9 cities, 2 ARs, by name)",
+    "geoBoundaries GEO ADM1 (regions only; carries no raion lines)"
+   ],
+   "needs": "raion and republican-city outlines as of 1991 at OpenStreetMap precision (the 2006 municipalities recapitulate most raions), plus the pre-2006 limits of Kutaisi, Rustavi, Poti, Gori, Zugdidi and Tbilisi"
+  },
+  {
+   "what": "Mtskheta-Mtianeti region (state trustee) from its institution to the end of the scope",
+   "unit": "GEO:Mtskheta-Mtianeti",
+   "atoms": [
+    "GEO-ADM1-13066534B64349154399075"
+   ],
+   "from": "1995-03-19",
+   "to": "1995-12-19",
+   "why": "The trustee decree of 1995-03-19 is known only from its repeal in decree No. 363 of 8 Jun 1999; it is not published on matsne.gov.ge and no text reached states which raions and cities the region comprised when instituted. The gb-adm1 outline is also off: inland IoU 0.931 against OpenStreetMap. The western part of Akhalgori raion inside this atom stayed under the Tskhinvali authorities 1992–2008 (ru Wikipedia Ленингорский район oldid 154482606); no atom carries that line.",
+   "checked": [
+    "matsne.gov.ge search sorted by signing date (earliest trustee act published is of 1998; decree No. 363 of 8 Jun 1999 lists the 1993–1995 decrees it repeals, without territories)",
+    "decree No. 318 of 11 Aug 2004 (no territories)",
+    "acts of 2005 and 2007 naming trustee territories by raion or municipality (later composition only, e.g. matsne 2070218, 2061387)",
+    "en and ru Wikipedia articles on the nine regions (give 1995 only)",
+    "geoBoundaries GEO ADM1 2015 against OpenStreetMap region relations"
+   ],
+   "needs": "the 1993–1995 trustee decrees with their territorial provisions (official bulletin of the Head of State), and a region outline at OpenStreetMap precision"
+  },
+  {
+   "what": "Raions and cities of republican subordination of the later Racha-Lechkhumi and Kvemo Svaneti region, before its state trustee",
+   "atoms": [
+    "GEO-ADM1-13066534B45176100929029"
+   ],
+   "from": "1991-12-26",
+   "to": "1995-05-12",
+   "why": "Until the state trustee was instituted the first-level units here were the raions and the cities of republican subordination. No atom set carries their lines: the only raion-level set (gb-adm2) is a coarse drawing (municipality IoU 0.42–0.77 against OpenStreetMap) and folds the republican cities into raions. The part of the former oblast assigned to this region lay outside Georgian control; no atom carries that line.",
+   "checked": [
+    "geoBoundaries GEO ADM2 (gb-adm2@2026-10-06, Wikimedia Commons, manifest year 2007, 68 municipalities): against OpenStreetMap relations the municipality outlines agree at IoU 0.42–0.77 (Lanchkhuti 0.42, Ozurgeti 0.50, Kobuleti 0.64, Keda 0.75, Khelvachauri+Batumi 0.77) and the regions they sum to at 0.68–0.97 (Guria 0.68)",
+    "point tests in gb-adm2: Kutaisi→Terjola, Rustavi→Gardabani, Poti→Lanchkhuti, Gori→Gori, Zugdidi→Zugdidi, Tskhinvali→Gori, Znauri→Kareli (cities of republican subordination and former oblast raions folded into raion atoms); Chiatura, Tkibuli, Tsqaltubo are whole atoms",
+    "statoids.com yge (Gwillim Law records no dated raion changes 1991–2007)",
+    "CIA World Factbook 1997–2001 (US BGN: 53 rayons, 9 cities, 2 ARs, by name)",
+    "geoBoundaries GEO ADM1 (regions only; carries no raion lines)"
+   ],
+   "needs": "raion and republican-city outlines as of 1991 at OpenStreetMap precision (the 2006 municipalities recapitulate most raions), plus the pre-2006 limits of Kutaisi, Rustavi, Poti, Gori, Zugdidi and Tbilisi"
+  },
+  {
+   "what": "Racha-Lechkhumi and Kvemo Svaneti region (state trustee) from its institution to the end of the scope",
+   "unit": "GEO:Racha-Lechkhumi and Kvemo Svaneti",
+   "atoms": [
+    "GEO-ADM1-13066534B45176100929029"
+   ],
+   "from": "1995-05-12",
+   "to": "1995-12-19",
+   "why": "The trustee decree of 1995-05-12 is known only from its repeal in decree No. 363 of 8 Jun 1999; it is not published on matsne.gov.ge and no text reached states which raions and cities the region comprised when instituted. The gb-adm1 outline is also off: inland IoU 0.961 against OpenStreetMap. The part of the former oblast assigned to this region lay outside Georgian control; no atom carries that line.",
+   "checked": [
+    "matsne.gov.ge search sorted by signing date (earliest trustee act published is of 1998; decree No. 363 of 8 Jun 1999 lists the 1993–1995 decrees it repeals, without territories)",
+    "decree No. 318 of 11 Aug 2004 (no territories)",
+    "acts of 2005 and 2007 naming trustee territories by raion or municipality (later composition only, e.g. matsne 2070218, 2061387)",
+    "en and ru Wikipedia articles on the nine regions (give 1995 only)",
+    "geoBoundaries GEO ADM1 2015 against OpenStreetMap region relations"
+   ],
+   "needs": "the 1993–1995 trustee decrees with their territorial provisions (official bulletin of the Head of State), and a region outline at OpenStreetMap precision"
+  },
+  {
+   "what": "Raions and cities of republican subordination of the later Samegrelo-Zemo Svaneti region, before its state trustee",
+   "atoms": [
+    "GEO-ADM1-13066534B80116330304733"
+   ],
+   "from": "1991-12-26",
+   "to": "1995-12-19",
+   "why": "Until the state trustee was instituted the first-level units here were the raions and the cities of republican subordination. No atom set carries their lines: the only raion-level set (gb-adm2) is a coarse drawing (municipality IoU 0.42–0.77 against OpenStreetMap) and folds the republican cities into raions.",
+   "checked": [
+    "geoBoundaries GEO ADM2 (gb-adm2@2026-10-06, Wikimedia Commons, manifest year 2007, 68 municipalities): against OpenStreetMap relations the municipality outlines agree at IoU 0.42–0.77 (Lanchkhuti 0.42, Ozurgeti 0.50, Kobuleti 0.64, Keda 0.75, Khelvachauri+Batumi 0.77) and the regions they sum to at 0.68–0.97 (Guria 0.68)",
+    "point tests in gb-adm2: Kutaisi→Terjola, Rustavi→Gardabani, Poti→Lanchkhuti, Gori→Gori, Zugdidi→Zugdidi, Tskhinvali→Gori, Znauri→Kareli (cities of republican subordination and former oblast raions folded into raion atoms); Chiatura, Tkibuli, Tsqaltubo are whole atoms",
+    "statoids.com yge (Gwillim Law records no dated raion changes 1991–2007)",
+    "CIA World Factbook 1997–2001 (US BGN: 53 rayons, 9 cities, 2 ARs, by name)",
+    "geoBoundaries GEO ADM1 (regions only; carries no raion lines)"
+   ],
+   "needs": "raion and republican-city outlines as of 1991 at OpenStreetMap precision (the 2006 municipalities recapitulate most raions), plus the pre-2006 limits of Kutaisi, Rustavi, Poti, Gori, Zugdidi and Tbilisi"
+  },
+  {
+   "what": "Tbilisi, city of republican subordination",
+   "unit": "GEO:Tbilisi",
+   "atoms": [
+    "GEO-ADM1-13066534B93111814336300"
+   ],
+   "from": "1991-12-26",
+   "to": "1995-12-19",
+   "why": "The gb-adm1 Tbilisi atom is 248 km², matching neither the 1990s city nor the city after its 2006–07 enlargement (504.3 km² per en Wikipedia Tbilisi oldid 1378241258; OpenStreetMap relation 1996871 504 km², IoU 0.48); the 261 km² it omits sits in the neighbouring atoms. gb-adm2 has 329 km² (IoU 0.62). The 1991 city limits were not found as a polygon.",
+   "checked": [
+    "geoBoundaries GEO ADM1 and ADM2 Tbilisi atoms",
+    "OpenStreetMap relation 1996871",
+    "en Wikipedia Tbilisi oldid 1378241258"
+   ],
+   "needs": "the Tbilisi city limits of 1991–2006 as a polygon, and neighbouring atoms that do not contain the city"
+  },
+  {
+   "what": "Adjara Autonomous Republic",
+   "unit": "GEO:Adjara",
+   "atoms": [
+    "GEO-ADM1-13066534B27622454556820"
+   ],
+   "from": "1991-12-26",
+   "to": "1995-12-19",
+   "why": "The republic and its outline did not change in the scope, but the only atom carrying it is too coarse: gb-adm1 Adjara is 3,010 km² against the published 2,880 km² (en Wikipedia Adjara oldid 1372679043) and OpenStreetMap’s 2,897 km² (relation 1995970); inland IoU 0.969, with 91 km² of Guria and Samtskhe-Javakheti inside it. The gb-adm2 union is 3,268 km² (municipality IoU 0.64–0.77).",
+   "checked": [
+    "geoBoundaries GEO ADM1 2015 and ADM2 against OpenStreetMap relations 1995970 (Adjara) and 2009237–2009240 (Batumi, Khelvachauri, Kobuleti, Keda)",
+    "en Wikipedia Adjara oldid 1372679043"
+   ],
+   "needs": "an Adjara outline at OpenStreetMap precision as an atom"
+  },
+  {
+   "what": "Abkhazia during the war",
+   "unit": "GEO:Abkhazia",
+   "atoms": [
+    "GEO-ADM1-13066534B27338241074695"
+   ],
+   "from": "1992-08-14",
+   "to": "1993-09-30",
+   "why": "From 14 Aug 1992 the republic was cut by front lines: Gudauta district never came under Georgian forces, Gagra was lost in early October 1992, Tkvarcheli was an Abkhaz-held enclave inside Ochamchire district, and the front ran along the Gumista inside Sukhumi district. One atom covers the whole republic, so the part under Georgian administration cannot be drawn.",
+   "checked": [
+    "en Wikipedia War in Abkhazia (1992–1993) oldid 1376015050",
+    "geoBoundaries GEO ADM2 districts (coarse, and not cut along the front lines)"
+   ],
+   "needs": "polygons of the 1992–93 front lines (Gumista, Tkvarcheli enclave, Gagra)"
+  },
+  {
+   "what": "Abkhazia after the war: only the upper Kodori Valley under Georgia",
+   "unit": "GEO:Abkhazia",
+   "atoms": [
+    "GEO-ADM1-13066534B27338241074695"
+   ],
+   "from": "1993-09-30",
+   "to": "1995-12-19",
+   "why": "After 30 Sep 1993 Georgia administered only the upper Kodori Valley (part of Gulripshi district, about 2,540 km²); the rest was held by the Abkhaz authorities. The atom cannot be split into the two.",
+   "checked": [
+    "en Wikipedia War in Abkhazia (1992–1993) oldid 1376015050",
+    "en Wikipedia Upper Abkhazia oldid 1377147306"
+   ],
+   "needs": "an outline of the upper Kodori Valley (the 2006–08 Azhara community) as an atom"
+  }
+ ]
+}

@@ -1,14 +1,14 @@
 {
  "country": "IRN",
- "atomSet": "ne-admin1@ca96624",
+ "atomSet": "gb-adm2@2026-10-06",
  "scope": {
-  "from": "1993-04-12",
+  "from": "1986-10-08",
   "to": "2019-12-31"
  },
- "polityNote": "Islamic Republic of Iran (state continuous over the whole scope). Scope starts at the Ardabil split; earlier layouts are listed in unresolved.",
+ "polityNote": "Islamic Republic of Iran: the de jure provinces (ostan) from the 1986 census (24 provinces) to 2019. Atoms: geoBoundaries IRN ADM2 (432 shahrestan, OpenStreetMap/Wambacher, ODbL, 2017); the whole period is drawn from this one set (the earlier Natural Earth dossier began in 1993 and could not separate Tehran/Zanjan/Qazvin, Tabas or Razavi/South Khorasan). Province of each 2017 county = the gb ADM1 point test, corrected where gb ADM1 is wrong or ambiguous (Bandar-e-Gaz → Golestan, Chardavol → Ilam, Hajiabad → Hormozgan, Miandoab → West Azerbaijan); the polygon gb names «Paveh» inside Tehran province is a Tehran county (by position, Pardis) and «Shahariar» inside Alborz is Fardis. Valid-since claims rest on Statoids’ change history and the fa.Wikipedia articles of the provinces (Markazi, Tehran, Zanjan, Qazvin, Semnan, Yazd, Fars, Kerman, Isfahan, Hormozgan, Bushehr, Kohgiluyeh, Chaharmahal, Kurdistan, Hamadan, Lorestan, Ilam, Khuzestan, Sistan, West Azerbaijan, South Khorasan) read for inter-provincial transfers after 1355 SH — only Qom (1365), Abarkuh (1366), Qazvin (1373/1376), Takestan (1376), Tabas (1380/1391), Qaenat/Sarayan/Ferdows (1383–1385) were found; village/dehestan transfers not recorded there would invalidate a span. Territory occupied by Iraq during the 1980–88 war and the 1971 Abu Musa arrangement with Sharjah do not change the de jure provinces (the build’s test 3 checks the era map). Independent check (①): today’s provinces as unions of the atoms ÷ the official areas in en.Wikipedia «Provinces of Iran» (oldid 1345255752): 22 of the 25 provinces with a stated area within ±1.5% (Tehran and Alborz counted together) (e.g. Isfahan 1.002, Fars 1.001, Razavi Khorasan 0.991, Golestan 0.998, Qazvin 1.000, Qom 0.997; Tehran ∪ Alborz 1.002 against the pre-2010 Tehran figure), Kerman 0.979, South Khorasan 0.984, Yazd 0.966. The 1980s areas in Statoids’ table differ from the unions by −17%…+16% but equally from today’s official areas of unchanged provinces (e.g. Kordestan 24,998 vs 29,137 km²), so they are survey estimates and cannot test the historical claims.",
  "units": [
   {
-   "id": "IRN:WestAzarbaijan@1993",
+   "id": "IRN:WestAzarbaijan",
    "names": {
     "en": "West Azerbaijan Province",
     "ja": "西アーザルバーイジャーン州",
@@ -17,26 +17,48 @@
    "wikidata": "Q134411",
    "spans": [
     {
-     "from": "1993-04-12",
+     "from": "1986-10-08",
      "precision": "day",
      "to": null,
      "atoms": [
-      "IRN-3237"
+      "IRN-ADM2-26516999B17250188517419",
+      "IRN-ADM2-26516999B66360891462523",
+      "IRN-ADM2-26516999B18914038878150",
+      "IRN-ADM2-26516999B91409158133742",
+      "IRN-ADM2-26516999B28758554946600",
+      "IRN-ADM2-26516999B21321897949419",
+      "IRN-ADM2-26516999B23614835942617",
+      "IRN-ADM2-26516999B23867002770121",
+      "IRN-ADM2-26516999B82823163074118",
+      "IRN-ADM2-26516999B45389444256962",
+      "IRN-ADM2-26516999B26059889986874",
+      "IRN-ADM2-26516999B62085663863071",
+      "IRN-ADM2-26516999B1763710224285",
+      "IRN-ADM2-26516999B87571170384179",
+      "IRN-ADM2-26516999B59055604564020",
+      "IRN-ADM2-26516999B65382814141684",
+      "IRN-ADM2-26516999B27858637913657"
      ],
      "sources": [
       {
        "url": "https://statoids.com/uir.html",
-       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
-       "says": "Change history after the ~1986 census table lists no boundary change for West Azarbaijan (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26), change history",
+       "says": "The change history from the ~1986 table onward lists no boundary change touching West Azerbaijan (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.iranicaonline.org/articles/census-i/",
+       "title": "Encyclopaedia Iranica, «CENSUS i. In Iran»",
+       "says": "The 1986 census was taken 16–30 Mehr 1365 (8–22 October 1986).",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+     "dateNote": "Earliest date drawn: the 1986 census (16–30 Mehr 1365 = 8–22 Oct 1986), the earliest dated statement of the 24-province layout found. The layout is older (Tehran province from Mehr 1357; Qom county joined Tehran in 1365); the earlier window is in unresolved. Outline = the union of today’s counties of the province; valid while no county or part of a county moved across its line (none found: Statoids change history; fa.Wikipedia province articles read for inter-provincial transfers after 1355 SH)."
     }
    ]
   },
   {
-   "id": "IRN:Gilan@1993",
+   "id": "IRN:Gilan",
    "names": {
     "en": "Gilan Province",
     "ja": "ギーラーン州",
@@ -45,26 +67,47 @@
    "wikidata": "Q928828",
    "spans": [
     {
-     "from": "1993-04-12",
+     "from": "1986-10-08",
      "precision": "day",
      "to": null,
      "atoms": [
-      "IRN-3240"
+      "IRN-ADM2-26516999B94347081437309",
+      "IRN-ADM2-26516999B74160111192578",
+      "IRN-ADM2-26516999B11499906507742",
+      "IRN-ADM2-26516999B88714007223772",
+      "IRN-ADM2-26516999B78444669572816",
+      "IRN-ADM2-26516999B64197560608675",
+      "IRN-ADM2-26516999B37524338421516",
+      "IRN-ADM2-26516999B48657018106645",
+      "IRN-ADM2-26516999B82896467977822",
+      "IRN-ADM2-26516999B34671996107663",
+      "IRN-ADM2-26516999B92361944116982",
+      "IRN-ADM2-26516999B28317654487010",
+      "IRN-ADM2-26516999B55700406548436",
+      "IRN-ADM2-26516999B94753634136895",
+      "IRN-ADM2-26516999B29374520347309",
+      "IRN-ADM2-26516999B12086645395245"
      ],
      "sources": [
       {
        "url": "https://statoids.com/uir.html",
-       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
-       "says": "Change history after the ~1986 census table lists no boundary change for Gilan (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26), change history",
+       "says": "The change history from the ~1986 table onward lists no boundary change touching Gilan (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.iranicaonline.org/articles/census-i/",
+       "title": "Encyclopaedia Iranica, «CENSUS i. In Iran»",
+       "says": "The 1986 census was taken 16–30 Mehr 1365 (8–22 October 1986).",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+     "dateNote": "Earliest date drawn: the 1986 census (16–30 Mehr 1365 = 8–22 Oct 1986), the earliest dated statement of the 24-province layout found. The layout is older (Tehran province from Mehr 1357; Qom county joined Tehran in 1365); the earlier window is in unresolved. Outline = the union of today’s counties of the province; valid while no county or part of a county moved across its line (none found: Statoids change history; fa.Wikipedia province articles read for inter-provincial transfers after 1355 SH)."
     }
    ]
   },
   {
-   "id": "IRN:Kordestan@1993",
+   "id": "IRN:Kordestan",
    "names": {
     "en": "Kurdistan Province",
     "ja": "コルデスターン州",
@@ -73,26 +116,41 @@
    "wikidata": "Q134386",
    "spans": [
     {
-     "from": "1993-04-12",
+     "from": "1986-10-08",
      "precision": "day",
      "to": null,
      "atoms": [
-      "IRN-3241"
+      "IRN-ADM2-26516999B2129411543171",
+      "IRN-ADM2-26516999B87732486508374",
+      "IRN-ADM2-26516999B73056090760460",
+      "IRN-ADM2-26516999B35902742388409",
+      "IRN-ADM2-26516999B7898904036469",
+      "IRN-ADM2-26516999B8626163364911",
+      "IRN-ADM2-26516999B41230928483212",
+      "IRN-ADM2-26516999B90886090046018",
+      "IRN-ADM2-26516999B25593426286847",
+      "IRN-ADM2-26516999B94962279665840"
      ],
      "sources": [
       {
        "url": "https://statoids.com/uir.html",
-       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
-       "says": "Change history after the ~1986 census table lists no boundary change for Kordestan (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26), change history",
+       "says": "The change history from the ~1986 table onward lists no boundary change touching Kurdistan (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.iranicaonline.org/articles/census-i/",
+       "title": "Encyclopaedia Iranica, «CENSUS i. In Iran»",
+       "says": "The 1986 census was taken 16–30 Mehr 1365 (8–22 October 1986).",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+     "dateNote": "Earliest date drawn: the 1986 census (16–30 Mehr 1365 = 8–22 Oct 1986), the earliest dated statement of the 24-province layout found. The layout is older (Tehran province from Mehr 1357; Qom county joined Tehran in 1365); the earlier window is in unresolved. Outline = the union of today’s counties of the province; valid while no county or part of a county moved across its line (none found: Statoids change history; fa.Wikipedia province articles read for inter-provincial transfers after 1355 SH)."
     }
    ]
   },
   {
-   "id": "IRN:Kermanshah@1993",
+   "id": "IRN:Kermanshah",
    "names": {
     "en": "Kermanshah Province",
     "ja": "ケルマーンシャー州",
@@ -101,26 +159,45 @@
    "wikidata": "Q174010",
    "spans": [
     {
-     "from": "1993-04-12",
+     "from": "1986-10-08",
      "precision": "day",
      "to": null,
      "atoms": [
-      "IRN-3239"
+      "IRN-ADM2-26516999B70472721893141",
+      "IRN-ADM2-26516999B9554478276773",
+      "IRN-ADM2-26516999B81802652789823",
+      "IRN-ADM2-26516999B77200689162011",
+      "IRN-ADM2-26516999B50064931988390",
+      "IRN-ADM2-26516999B76441182716958",
+      "IRN-ADM2-26516999B80551665070749",
+      "IRN-ADM2-26516999B63898815911608",
+      "IRN-ADM2-26516999B78499446254718",
+      "IRN-ADM2-26516999B31294698504315",
+      "IRN-ADM2-26516999B63345942722352",
+      "IRN-ADM2-26516999B94265974923858",
+      "IRN-ADM2-26516999B71909583803315",
+      "IRN-ADM2-26516999B95400622220789"
      ],
      "sources": [
       {
        "url": "https://statoids.com/uir.html",
-       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
-       "says": "Change history after the ~1986 census table lists no boundary change for Kermanshah (Bakhtaran until ~1995, a renaming only) (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26), change history",
+       "says": "The change history from the ~1986 table onward lists no boundary change touching Kermanshah (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.iranicaonline.org/articles/census-i/",
+       "title": "Encyclopaedia Iranica, «CENSUS i. In Iran»",
+       "says": "The 1986 census was taken 16–30 Mehr 1365 (8–22 October 1986).",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+     "dateNote": "Earliest date drawn: the 1986 census (16–30 Mehr 1365 = 8–22 Oct 1986), the earliest dated statement of the 24-province layout found. The layout is older (Tehran province from Mehr 1357; Qom county joined Tehran in 1365); the earlier window is in unresolved. Outline = the union of today’s counties of the province; valid while no county or part of a county moved across its line (none found: Statoids change history; fa.Wikipedia province articles read for inter-provincial transfers after 1355 SH)."
     }
    ]
   },
   {
-   "id": "IRN:Ilam@1993",
+   "id": "IRN:Ilam",
    "names": {
     "en": "Ilam Province",
     "ja": "イーラーム州",
@@ -129,26 +206,41 @@
    "wikidata": "Q170570",
    "spans": [
     {
-     "from": "1993-04-12",
+     "from": "1986-10-08",
      "precision": "day",
      "to": null,
      "atoms": [
-      "IRN-3221"
+      "IRN-ADM2-26516999B6229382207334",
+      "IRN-ADM2-26516999B92255471633458",
+      "IRN-ADM2-26516999B11439556257387",
+      "IRN-ADM2-26516999B8850587579698",
+      "IRN-ADM2-26516999B47699008899510",
+      "IRN-ADM2-26516999B80458275705118",
+      "IRN-ADM2-26516999B96541653880638",
+      "IRN-ADM2-26516999B94670765309569",
+      "IRN-ADM2-26516999B34396944856731",
+      "IRN-ADM2-26516999B91552748789287"
      ],
      "sources": [
       {
        "url": "https://statoids.com/uir.html",
-       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
-       "says": "Change history after the ~1986 census table lists no boundary change for Ilam (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26), change history",
+       "says": "The change history from the ~1986 table onward lists no boundary change touching Ilam (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.iranicaonline.org/articles/census-i/",
+       "title": "Encyclopaedia Iranica, «CENSUS i. In Iran»",
+       "says": "The 1986 census was taken 16–30 Mehr 1365 (8–22 October 1986).",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+     "dateNote": "Earliest date drawn: the 1986 census (16–30 Mehr 1365 = 8–22 Oct 1986), the earliest dated statement of the 24-province layout found. The layout is older (Tehran province from Mehr 1357; Qom county joined Tehran in 1365); the earlier window is in unresolved. Outline = the union of today’s counties of the province; valid while no county or part of a county moved across its line (none found: Statoids change history; fa.Wikipedia province articles read for inter-provincial transfers after 1355 SH)."
     }
    ]
   },
   {
-   "id": "IRN:Khuzestan@1993",
+   "id": "IRN:Khuzestan",
    "names": {
     "en": "Khuzestan Province",
     "ja": "フーゼスターン州",
@@ -157,26 +249,58 @@
    "wikidata": "Q241119",
    "spans": [
     {
-     "from": "1993-04-12",
+     "from": "1986-10-08",
      "precision": "day",
      "to": null,
      "atoms": [
-      "IRN-3219"
+      "IRN-ADM2-26516999B24032480332451",
+      "IRN-ADM2-26516999B96606259934367",
+      "IRN-ADM2-26516999B64200059521295",
+      "IRN-ADM2-26516999B63269798350757",
+      "IRN-ADM2-26516999B42380000785678",
+      "IRN-ADM2-26516999B32897397696681",
+      "IRN-ADM2-26516999B33493735714006",
+      "IRN-ADM2-26516999B7244949529758",
+      "IRN-ADM2-26516999B12324663644091",
+      "IRN-ADM2-26516999B43254187169274",
+      "IRN-ADM2-26516999B71321559386588",
+      "IRN-ADM2-26516999B57148385226690",
+      "IRN-ADM2-26516999B65688862601758",
+      "IRN-ADM2-26516999B8994051047563",
+      "IRN-ADM2-26516999B66862761896628",
+      "IRN-ADM2-26516999B69655135105776",
+      "IRN-ADM2-26516999B88219199265349",
+      "IRN-ADM2-26516999B72106810049108",
+      "IRN-ADM2-26516999B57098750154816",
+      "IRN-ADM2-26516999B74847209376990",
+      "IRN-ADM2-26516999B23471821205078",
+      "IRN-ADM2-26516999B44271580032667",
+      "IRN-ADM2-26516999B67960119430245",
+      "IRN-ADM2-26516999B95121613479097",
+      "IRN-ADM2-26516999B27724937868330",
+      "IRN-ADM2-26516999B62042723471691",
+      "IRN-ADM2-26516999B42982747839684"
      ],
      "sources": [
       {
        "url": "https://statoids.com/uir.html",
-       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
-       "says": "Change history after the ~1986 census table lists no boundary change for Khuzestan (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26), change history",
+       "says": "The change history from the ~1986 table onward lists no boundary change touching Khuzestan (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.iranicaonline.org/articles/census-i/",
+       "title": "Encyclopaedia Iranica, «CENSUS i. In Iran»",
+       "says": "The 1986 census was taken 16–30 Mehr 1365 (8–22 October 1986).",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+     "dateNote": "Earliest date drawn: the 1986 census (16–30 Mehr 1365 = 8–22 Oct 1986), the earliest dated statement of the 24-province layout found. The layout is older (Tehran province from Mehr 1357; Qom county joined Tehran in 1365); the earlier window is in unresolved. Outline = the union of today’s counties of the province; valid while no county or part of a county moved across its line (none found: Statoids change history; fa.Wikipedia province articles read for inter-provincial transfers after 1355 SH)."
     }
    ]
   },
   {
-   "id": "IRN:SistanBaluchestan@1993",
+   "id": "IRN:SistanBaluchestan",
    "names": {
     "en": "Sistan and Baluchestan Province",
     "ja": "スィースターン・バルーチェスターン州",
@@ -185,26 +309,50 @@
    "wikidata": "Q939575",
    "spans": [
     {
-     "from": "1993-04-12",
+     "from": "1986-10-08",
      "precision": "day",
      "to": null,
      "atoms": [
-      "IRN-3247"
+      "IRN-ADM2-26516999B34585033213826",
+      "IRN-ADM2-26516999B36699787814052",
+      "IRN-ADM2-26516999B70611074843936",
+      "IRN-ADM2-26516999B32746064835581",
+      "IRN-ADM2-26516999B72503842437132",
+      "IRN-ADM2-26516999B44596062298983",
+      "IRN-ADM2-26516999B69171350042189",
+      "IRN-ADM2-26516999B54373040579478",
+      "IRN-ADM2-26516999B84118019171575",
+      "IRN-ADM2-26516999B61918750078383",
+      "IRN-ADM2-26516999B92238134077066",
+      "IRN-ADM2-26516999B18760154347005",
+      "IRN-ADM2-26516999B51456390360279",
+      "IRN-ADM2-26516999B17111396986996",
+      "IRN-ADM2-26516999B32263338072182",
+      "IRN-ADM2-26516999B21476392712465",
+      "IRN-ADM2-26516999B45422934407646",
+      "IRN-ADM2-26516999B82572542491403",
+      "IRN-ADM2-26516999B7495808431061"
      ],
      "sources": [
       {
        "url": "https://statoids.com/uir.html",
-       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
-       "says": "Change history after the ~1986 census table lists no boundary change for Sistan and Baluchestan (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26), change history",
+       "says": "The change history from the ~1986 table onward lists no boundary change touching Sistan and Baluchestan (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.iranicaonline.org/articles/census-i/",
+       "title": "Encyclopaedia Iranica, «CENSUS i. In Iran»",
+       "says": "The 1986 census was taken 16–30 Mehr 1365 (8–22 October 1986).",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+     "dateNote": "Earliest date drawn: the 1986 census (16–30 Mehr 1365 = 8–22 Oct 1986), the earliest dated statement of the 24-province layout found. The layout is older (Tehran province from Mehr 1357; Qom county joined Tehran in 1365); the earlier window is in unresolved. Outline = the union of today’s counties of the province; valid while no county or part of a county moved across its line (none found: Statoids change history; fa.Wikipedia province articles read for inter-provincial transfers after 1355 SH)."
     }
    ]
   },
   {
-   "id": "IRN:Bushehr@1993",
+   "id": "IRN:Bushehr",
    "names": {
     "en": "Bushehr Province",
     "ja": "ブーシェフル州",
@@ -213,26 +361,41 @@
    "wikidata": "Q132945",
    "spans": [
     {
-     "from": "1993-04-12",
+     "from": "1986-10-08",
      "precision": "day",
      "to": null,
      "atoms": [
-      "IRN-3210"
+      "IRN-ADM2-26516999B63754886130139",
+      "IRN-ADM2-26516999B37941054480889",
+      "IRN-ADM2-26516999B53336837444126",
+      "IRN-ADM2-26516999B46056765195731",
+      "IRN-ADM2-26516999B60756834869001",
+      "IRN-ADM2-26516999B8753996914596",
+      "IRN-ADM2-26516999B48813339957388",
+      "IRN-ADM2-26516999B22359176745064",
+      "IRN-ADM2-26516999B9806547708081",
+      "IRN-ADM2-26516999B39740704478849"
      ],
      "sources": [
       {
        "url": "https://statoids.com/uir.html",
-       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
-       "says": "Change history after the ~1986 census table lists no boundary change for Bushehr (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26), change history",
+       "says": "The change history from the ~1986 table onward lists no boundary change touching Bushehr (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.iranicaonline.org/articles/census-i/",
+       "title": "Encyclopaedia Iranica, «CENSUS i. In Iran»",
+       "says": "The 1986 census was taken 16–30 Mehr 1365 (8–22 October 1986).",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+     "dateNote": "Earliest date drawn: the 1986 census (16–30 Mehr 1365 = 8–22 Oct 1986), the earliest dated statement of the 24-province layout found. The layout is older (Tehran province from Mehr 1357; Qom county joined Tehran in 1365); the earlier window is in unresolved. Outline = the union of today’s counties of the province; valid while no county or part of a county moved across its line (none found: Statoids change history; fa.Wikipedia province articles read for inter-provincial transfers after 1355 SH)."
     }
    ]
   },
   {
-   "id": "IRN:Hormozgan@1993",
+   "id": "IRN:Hormozgan",
    "names": {
     "en": "Hormozgan Province",
     "ja": "ホルモズガーン州",
@@ -241,26 +404,44 @@
    "wikidata": "Q633659",
    "spans": [
     {
-     "from": "1993-04-12",
+     "from": "1986-10-08",
      "precision": "day",
      "to": null,
      "atoms": [
-      "IRN-3228"
+      "IRN-ADM2-26516999B72531545512024",
+      "IRN-ADM2-26516999B24888278707758",
+      "IRN-ADM2-26516999B61910600933867",
+      "IRN-ADM2-26516999B92440319964610",
+      "IRN-ADM2-26516999B45588441119461",
+      "IRN-ADM2-26516999B25478419431042",
+      "IRN-ADM2-26516999B166609562008",
+      "IRN-ADM2-26516999B56334420790097",
+      "IRN-ADM2-26516999B90740799350642",
+      "IRN-ADM2-26516999B83156142063585",
+      "IRN-ADM2-26516999B19501686958831",
+      "IRN-ADM2-26516999B72332564994091",
+      "IRN-ADM2-26516999B18960395800520"
      ],
      "sources": [
       {
        "url": "https://statoids.com/uir.html",
-       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
-       "says": "Change history after the ~1986 census table lists no boundary change for Hormozgan (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26), change history",
+       "says": "The change history from the ~1986 table onward lists no boundary change touching Hormozgan (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.iranicaonline.org/articles/census-i/",
+       "title": "Encyclopaedia Iranica, «CENSUS i. In Iran»",
+       "says": "The 1986 census was taken 16–30 Mehr 1365 (8–22 October 1986).",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+     "dateNote": "Earliest date drawn: the 1986 census (16–30 Mehr 1365 = 8–22 Oct 1986), the earliest dated statement of the 24-province layout found. The layout is older (Tehran province from Mehr 1357; Qom county joined Tehran in 1365); the earlier window is in unresolved. Outline = the union of today’s counties of the province; valid while no county or part of a county moved across its line (none found: Statoids change history; fa.Wikipedia province articles read for inter-provincial transfers after 1355 SH)."
     }
    ]
   },
   {
-   "id": "IRN:Semnan@1993",
+   "id": "IRN:Semnan",
    "names": {
     "en": "Semnan Province",
     "ja": "セムナーン州",
@@ -269,26 +450,46 @@
    "wikidata": "Q168949",
    "spans": [
     {
-     "from": "1993-04-12",
+     "from": "1986-10-08",
      "precision": "day",
      "to": null,
      "atoms": [
-      "IRN-3215"
+      "IRN-ADM2-26516999B20257950089709",
+      "IRN-ADM2-26516999B76302116401449",
+      "IRN-ADM2-26516999B23051070111381",
+      "IRN-ADM2-26516999B19031465392973",
+      "IRN-ADM2-26516999B79404323444601",
+      "IRN-ADM2-26516999B19292811735522",
+      "IRN-ADM2-26516999B48178401181810",
+      "IRN-ADM2-26516999B87370079738370",
+      "IRN-ADM2-26516999B25202377970453"
      ],
      "sources": [
       {
        "url": "https://statoids.com/uir.html",
-       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
-       "says": "Change history after the ~1986 census table lists no boundary change for Semnan (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26), change history",
+       "says": "The change history from the ~1986 table onward lists no boundary change touching Semnan (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.thmporg.ir/news/1442/",
+       "title": "Tehran municipal planning organisation — «How Tehran became a province, 1335–1365» (census-by-census shahrestan composition)",
+       "says": "At the 1365 (1986) census Tehran province existed (incl. Karaj and Qom counties); Qazvin had gone to Zanjan, Garmsar to Semnan, Kashan to Isfahan; Markazi = Arak, Mahallat, Khomein, Tafresh, Saveh.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.iranicaonline.org/articles/census-i/",
+       "title": "Encyclopaedia Iranica, «CENSUS i. In Iran»",
+       "says": "The 1986 census was taken 16–30 Mehr 1365 (8–22 October 1986).",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+     "dateNote": "Earliest date drawn: the 1986 census (16–30 Mehr 1365 = 8–22 Oct 1986), the earliest dated statement of the 24-province layout found. The layout is older (Tehran province from Mehr 1357; Qom county joined Tehran in 1365); the earlier window is in unresolved. Outline = the union of today’s counties of the province; valid while no county or part of a county moved across its line (none found: Statoids change history; fa.Wikipedia province articles read for inter-provincial transfers after 1355 SH)."
     }
    ]
   },
   {
-   "id": "IRN:Markazi@1993",
+   "id": "IRN:Markazi",
    "names": {
     "en": "Markazi Province",
     "ja": "マルキャズィー州",
@@ -297,26 +498,55 @@
    "wikidata": "Q134417",
    "spans": [
     {
-     "from": "1993-04-12",
+     "from": "1986-10-08",
      "precision": "day",
      "to": null,
      "atoms": [
-      "IRN-3231"
+      "IRN-ADM2-26516999B53003077389452",
+      "IRN-ADM2-26516999B592707210395",
+      "IRN-ADM2-26516999B68529026912362",
+      "IRN-ADM2-26516999B67916571313357",
+      "IRN-ADM2-26516999B39560569014245",
+      "IRN-ADM2-26516999B5216552557315",
+      "IRN-ADM2-26516999B62997215325170",
+      "IRN-ADM2-26516999B45341635778318",
+      "IRN-ADM2-26516999B51832741433745",
+      "IRN-ADM2-26516999B55805150648844",
+      "IRN-ADM2-26516999B50357108816765",
+      "IRN-ADM2-26516999B1107707028024"
      ],
      "sources": [
       {
        "url": "https://statoids.com/uir.html",
-       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
-       "says": "Change history after the ~1986 census table lists no boundary change for Markazi (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26), change history",
+       "says": "The change history from the ~1986 table onward lists no boundary change touching Markazi (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.thmporg.ir/news/1442/",
+       "title": "Tehran municipal planning organisation — «How Tehran became a province, 1335–1365» (census-by-census shahrestan composition)",
+       "says": "At the 1365 (1986) census Tehran province existed (incl. Karaj and Qom counties); Qazvin had gone to Zanjan, Garmsar to Semnan, Kashan to Isfahan; Markazi = Arak, Mahallat, Khomein, Tafresh, Saveh.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fa.wikipedia.org/w/index.php?oldid=44615929",
+       "title": "fa.Wikipedia «استان مرکزی» (oldid 44615929)",
+       "says": "Tehran (with today’s Alborz) left Markazi in Mehr 1357; Kashan went to Isfahan by a 1357 decree; Qom county went from Markazi to Tehran in 1365 and became a province in 1375.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.iranicaonline.org/articles/census-i/",
+       "title": "Encyclopaedia Iranica, «CENSUS i. In Iran»",
+       "says": "The 1986 census was taken 16–30 Mehr 1365 (8–22 October 1986).",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+     "dateNote": "Earliest date drawn: the 1986 census (16–30 Mehr 1365 = 8–22 Oct 1986), the earliest dated statement of the 24-province layout found. The layout is older (Tehran province from Mehr 1357; Qom county joined Tehran in 1365); the earlier window is in unresolved. Outline = the union of today’s counties of the province; valid while no county or part of a county moved across its line (none found: Statoids change history; fa.Wikipedia province articles read for inter-provincial transfers after 1355 SH)."
     }
    ]
   },
   {
-   "id": "IRN:Esfahan@1993",
+   "id": "IRN:Esfahan",
    "names": {
     "en": "Isfahan Province",
     "ja": "エスファハーン州",
@@ -325,26 +555,62 @@
    "wikidata": "Q1367759",
    "spans": [
     {
-     "from": "1993-04-12",
+     "from": "1986-10-08",
      "precision": "day",
      "to": null,
      "atoms": [
-      "IRN-3211"
+      "IRN-ADM2-26516999B65528840873055",
+      "IRN-ADM2-26516999B28077412601949",
+      "IRN-ADM2-26516999B22228063424415",
+      "IRN-ADM2-26516999B68927272948870",
+      "IRN-ADM2-26516999B61720440722467",
+      "IRN-ADM2-26516999B81802370629848",
+      "IRN-ADM2-26516999B49367241492620",
+      "IRN-ADM2-26516999B66610320755751",
+      "IRN-ADM2-26516999B53657170540670",
+      "IRN-ADM2-26516999B52777728961809",
+      "IRN-ADM2-26516999B57175661365872",
+      "IRN-ADM2-26516999B856283200440",
+      "IRN-ADM2-26516999B86709384335724",
+      "IRN-ADM2-26516999B15554253720847",
+      "IRN-ADM2-26516999B21176946057077",
+      "IRN-ADM2-26516999B62750653622278",
+      "IRN-ADM2-26516999B42355425065847",
+      "IRN-ADM2-26516999B99092186898208",
+      "IRN-ADM2-26516999B93947079730111",
+      "IRN-ADM2-26516999B60050633111278",
+      "IRN-ADM2-26516999B61548623284320",
+      "IRN-ADM2-26516999B60355296107319",
+      "IRN-ADM2-26516999B20464053267780",
+      "IRN-ADM2-26516999B946453569638",
+      "IRN-ADM2-26516999B79801150218158"
      ],
      "sources": [
       {
        "url": "https://statoids.com/uir.html",
-       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
-       "says": "Change history after the ~1986 census table lists no boundary change for Esfahan (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26), change history",
+       "says": "The change history from the ~1986 table onward lists no boundary change touching Isfahan (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.thmporg.ir/news/1442/",
+       "title": "Tehran municipal planning organisation — «How Tehran became a province, 1335–1365» (census-by-census shahrestan composition)",
+       "says": "At the 1365 (1986) census Tehran province existed (incl. Karaj and Qom counties); Qazvin had gone to Zanjan, Garmsar to Semnan, Kashan to Isfahan; Markazi = Arak, Mahallat, Khomein, Tafresh, Saveh.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.iranicaonline.org/articles/census-i/",
+       "title": "Encyclopaedia Iranica, «CENSUS i. In Iran»",
+       "says": "The 1986 census was taken 16–30 Mehr 1365 (8–22 October 1986).",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+     "dateNote": "Earliest date drawn: the 1986 census (16–30 Mehr 1365 = 8–22 Oct 1986), the earliest dated statement of the 24-province layout found. The layout is older (Tehran province from Mehr 1357; Qom county joined Tehran in 1365); the earlier window is in unresolved. Outline = the union of today’s counties of the province; valid while no county or part of a county moved across its line (none found: Statoids change history; fa.Wikipedia province articles read for inter-provincial transfers after 1355 SH)."
     }
    ]
   },
   {
-   "id": "IRN:ChaharmahalBakhtiari@1993",
+   "id": "IRN:ChaharmahalBakhtiari",
    "names": {
     "en": "Chaharmahal and Bakhtiari Province",
     "ja": "チャハール＝マハール・バフティヤーリー州",
@@ -353,26 +619,40 @@
    "wikidata": "Q171702",
    "spans": [
     {
-     "from": "1993-04-12",
+     "from": "1986-10-08",
      "precision": "day",
      "to": null,
      "atoms": [
-      "IRN-3218"
+      "IRN-ADM2-26516999B79317762041585",
+      "IRN-ADM2-26516999B87847620327137",
+      "IRN-ADM2-26516999B48261240873808",
+      "IRN-ADM2-26516999B48624746912841",
+      "IRN-ADM2-26516999B76458960768577",
+      "IRN-ADM2-26516999B1878487815861",
+      "IRN-ADM2-26516999B37259120183151",
+      "IRN-ADM2-26516999B93471025469739",
+      "IRN-ADM2-26516999B43838530500878"
      ],
      "sources": [
       {
        "url": "https://statoids.com/uir.html",
-       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
-       "says": "Change history after the ~1986 census table lists no boundary change for Chahar Mahall and Bakhtiari (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26), change history",
+       "says": "The change history from the ~1986 table onward lists no boundary change touching Chaharmahal and Bakhtiari (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.iranicaonline.org/articles/census-i/",
+       "title": "Encyclopaedia Iranica, «CENSUS i. In Iran»",
+       "says": "The 1986 census was taken 16–30 Mehr 1365 (8–22 October 1986).",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+     "dateNote": "Earliest date drawn: the 1986 census (16–30 Mehr 1365 = 8–22 Oct 1986), the earliest dated statement of the 24-province layout found. The layout is older (Tehran province from Mehr 1357; Qom county joined Tehran in 1365); the earlier window is in unresolved. Outline = the union of today’s counties of the province; valid while no county or part of a county moved across its line (none found: Statoids change history; fa.Wikipedia province articles read for inter-provincial transfers after 1355 SH)."
     }
    ]
   },
   {
-   "id": "IRN:KohgiluyehBoyerAhmad@1993",
+   "id": "IRN:KohgiluyehBoyerAhmad",
    "names": {
     "en": "Kohgiluyeh and Boyer-Ahmad Province",
     "ja": "コフギールーイェ・ブーイェル＝アフマド州",
@@ -381,54 +661,39 @@
    "wikidata": "Q180068",
    "spans": [
     {
-     "from": "1993-04-12",
+     "from": "1986-10-08",
      "precision": "day",
      "to": null,
      "atoms": [
-      "IRN-3209"
+      "IRN-ADM2-26516999B37926245179674",
+      "IRN-ADM2-26516999B2913870137678",
+      "IRN-ADM2-26516999B13831763724092",
+      "IRN-ADM2-26516999B4049702327715",
+      "IRN-ADM2-26516999B34905565411804",
+      "IRN-ADM2-26516999B35307583245497",
+      "IRN-ADM2-26516999B52777286797415",
+      "IRN-ADM2-26516999B42921235985098"
      ],
      "sources": [
       {
        "url": "https://statoids.com/uir.html",
-       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
-       "says": "Change history after the ~1986 census table lists no boundary change for Kohgiluyeh and Buyer Ahmad (renaming ~1990 only) (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
-       "accessed": "2026-10-05"
-      }
-     ],
-     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
-    }
-   ]
-  },
-  {
-   "id": "IRN:Fars@1993",
-   "names": {
-    "en": "Fars Province",
-    "ja": "ファールス州",
-    "local": "استان فارس"
-   },
-   "wikidata": "Q1004666",
-   "spans": [
-    {
-     "from": "1993-04-12",
-     "precision": "day",
-     "to": null,
-     "atoms": [
-      "IRN-3212"
-     ],
-     "sources": [
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26), change history",
+       "says": "The change history from the ~1986 table onward lists no boundary change touching Kohgiluyeh and Boyer-Ahmad (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-06"
+      },
       {
-       "url": "https://statoids.com/uir.html",
-       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
-       "says": "Change history after the ~1986 census table lists no boundary change for Fars (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
-       "accessed": "2026-10-05"
+       "url": "https://www.iranicaonline.org/articles/census-i/",
+       "title": "Encyclopaedia Iranica, «CENSUS i. In Iran»",
+       "says": "The 1986 census was taken 16–30 Mehr 1365 (8–22 October 1986).",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+     "dateNote": "Earliest date drawn: the 1986 census (16–30 Mehr 1365 = 8–22 Oct 1986), the earliest dated statement of the 24-province layout found. The layout is older (Tehran province from Mehr 1357; Qom county joined Tehran in 1365); the earlier window is in unresolved. Outline = the union of today’s counties of the province; valid while no county or part of a county moved across its line (none found: Statoids change history; fa.Wikipedia province articles read for inter-provincial transfers after 1355 SH)."
     }
    ]
   },
   {
-   "id": "IRN:Kerman@1993",
+   "id": "IRN:Kerman",
    "names": {
     "en": "Kerman Province",
     "ja": "ケルマーン州",
@@ -437,26 +702,54 @@
    "wikidata": "Q165352",
    "spans": [
     {
-     "from": "1993-04-12",
+     "from": "1986-10-08",
      "precision": "day",
      "to": null,
      "atoms": [
-      "IRN-3248"
+      "IRN-ADM2-26516999B41926998473473",
+      "IRN-ADM2-26516999B20801630109762",
+      "IRN-ADM2-26516999B24690535039316",
+      "IRN-ADM2-26516999B48215536872692",
+      "IRN-ADM2-26516999B70870833729392",
+      "IRN-ADM2-26516999B62194301460072",
+      "IRN-ADM2-26516999B1886777602600",
+      "IRN-ADM2-26516999B17020465050742",
+      "IRN-ADM2-26516999B37456138927379",
+      "IRN-ADM2-26516999B58518657589526",
+      "IRN-ADM2-26516999B86225594854227",
+      "IRN-ADM2-26516999B65472529827734",
+      "IRN-ADM2-26516999B15212319400024",
+      "IRN-ADM2-26516999B73392319124774",
+      "IRN-ADM2-26516999B14588092008747",
+      "IRN-ADM2-26516999B67217614724000",
+      "IRN-ADM2-26516999B70882236959584",
+      "IRN-ADM2-26516999B54601871974309",
+      "IRN-ADM2-26516999B99171203420730",
+      "IRN-ADM2-26516999B80543435521724",
+      "IRN-ADM2-26516999B74659867374962",
+      "IRN-ADM2-26516999B93023128308777",
+      "IRN-ADM2-26516999B58204073145892"
      ],
      "sources": [
       {
        "url": "https://statoids.com/uir.html",
-       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
-       "says": "Change history after the ~1986 census table lists no boundary change for Kerman (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26), change history",
+       "says": "The change history from the ~1986 table onward lists no boundary change touching Kerman (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.iranicaonline.org/articles/census-i/",
+       "title": "Encyclopaedia Iranica, «CENSUS i. In Iran»",
+       "says": "The 1986 census was taken 16–30 Mehr 1365 (8–22 October 1986).",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+     "dateNote": "Earliest date drawn: the 1986 census (16–30 Mehr 1365 = 8–22 Oct 1986), the earliest dated statement of the 24-province layout found. The layout is older (Tehran province from Mehr 1357; Qom county joined Tehran in 1365); the earlier window is in unresolved. Outline = the union of today’s counties of the province; valid while no county or part of a county moved across its line (none found: Statoids change history; fa.Wikipedia province articles read for inter-provincial transfers after 1355 SH)."
     }
    ]
   },
   {
-   "id": "IRN:Hamadan@1993",
+   "id": "IRN:Hamadan",
    "names": {
     "en": "Hamadan Province",
     "ja": "ハマダーン州",
@@ -465,26 +758,40 @@
    "wikidata": "Q187373",
    "spans": [
     {
-     "from": "1993-04-12",
+     "from": "1986-10-08",
      "precision": "day",
      "to": null,
      "atoms": [
-      "IRN-3233"
+      "IRN-ADM2-26516999B33561915819961",
+      "IRN-ADM2-26516999B29929036807281",
+      "IRN-ADM2-26516999B79303691660919",
+      "IRN-ADM2-26516999B87288882742030",
+      "IRN-ADM2-26516999B43311179696161",
+      "IRN-ADM2-26516999B75964929890263",
+      "IRN-ADM2-26516999B14457222835725",
+      "IRN-ADM2-26516999B44072268904433",
+      "IRN-ADM2-26516999B2696625672257"
      ],
      "sources": [
       {
        "url": "https://statoids.com/uir.html",
-       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
-       "says": "Change history after the ~1986 census table lists no boundary change for Hamadan (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26), change history",
+       "says": "The change history from the ~1986 table onward lists no boundary change touching Hamadan (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.iranicaonline.org/articles/census-i/",
+       "title": "Encyclopaedia Iranica, «CENSUS i. In Iran»",
+       "says": "The 1986 census was taken 16–30 Mehr 1365 (8–22 October 1986).",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+     "dateNote": "Earliest date drawn: the 1986 census (16–30 Mehr 1365 = 8–22 Oct 1986), the earliest dated statement of the 24-province layout found. The layout is older (Tehran province from Mehr 1357; Qom county joined Tehran in 1365); the earlier window is in unresolved. Outline = the union of today’s counties of the province; valid while no county or part of a county moved across its line (none found: Statoids change history; fa.Wikipedia province articles read for inter-provincial transfers after 1355 SH)."
     }
    ]
   },
   {
-   "id": "IRN:Lorestan@1993",
+   "id": "IRN:Lorestan",
    "names": {
     "en": "Lorestan Province",
     "ja": "ロレスターン州",
@@ -493,26 +800,307 @@
    "wikidata": "Q1131727",
    "spans": [
     {
-     "from": "1993-04-12",
+     "from": "1986-10-08",
      "precision": "day",
      "to": null,
      "atoms": [
-      "IRN-3220"
+      "IRN-ADM2-26516999B44605245795990",
+      "IRN-ADM2-26516999B72538799808234",
+      "IRN-ADM2-26516999B7403388553122",
+      "IRN-ADM2-26516999B3517453231988",
+      "IRN-ADM2-26516999B96370851506401",
+      "IRN-ADM2-26516999B37714414343865",
+      "IRN-ADM2-26516999B80500116996701",
+      "IRN-ADM2-26516999B90063230961685",
+      "IRN-ADM2-26516999B26097911994582",
+      "IRN-ADM2-26516999B31807147750379",
+      "IRN-ADM2-26516999B42305402788396"
      ],
      "sources": [
       {
        "url": "https://statoids.com/uir.html",
-       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
-       "says": "Change history after the ~1986 census table lists no boundary change for Lorestan (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26), change history",
+       "says": "The change history from the ~1986 table onward lists no boundary change touching Lorestan (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.iranicaonline.org/articles/census-i/",
+       "title": "Encyclopaedia Iranica, «CENSUS i. In Iran»",
+       "says": "The 1986 census was taken 16–30 Mehr 1365 (8–22 October 1986).",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Scope start (Ardabil split). Valid-since claim rests on the absence of any change touching this province in the Statoids change list and the province articles; county-level inter-provincial transfers not recorded there would invalidate it."
+     "dateNote": "Earliest date drawn: the 1986 census (16–30 Mehr 1365 = 8–22 Oct 1986), the earliest dated statement of the 24-province layout found. The layout is older (Tehran province from Mehr 1357; Qom county joined Tehran in 1365); the earlier window is in unresolved. Outline = the union of today’s counties of the province; valid while no county or part of a county moved across its line (none found: Statoids change history; fa.Wikipedia province articles read for inter-provincial transfers after 1355 SH)."
     }
    ]
   },
   {
-   "id": "IRN:EastAzarbaijan@1993",
+   "id": "IRN:Fars",
+   "names": {
+    "en": "Fars Province",
+    "ja": "ファールス州",
+    "local": "استان فارس"
+   },
+   "wikidata": "Q1004666",
+   "spans": [
+    {
+     "from": "1986-10-08",
+     "precision": "day",
+     "to": "1987-03-21",
+     "atoms": [
+      "IRN-ADM2-26516999B39151476361698",
+      "IRN-ADM2-26516999B54037117701761",
+      "IRN-ADM2-26516999B33258325620820",
+      "IRN-ADM2-26516999B49523904635025",
+      "IRN-ADM2-26516999B20073535554131",
+      "IRN-ADM2-26516999B90083536047061",
+      "IRN-ADM2-26516999B88811296722818",
+      "IRN-ADM2-26516999B32257300927621",
+      "IRN-ADM2-26516999B97388051072743",
+      "IRN-ADM2-26516999B65660347724628",
+      "IRN-ADM2-26516999B82593167652364",
+      "IRN-ADM2-26516999B72847577610402",
+      "IRN-ADM2-26516999B94987113860520",
+      "IRN-ADM2-26516999B2481614878910",
+      "IRN-ADM2-26516999B58492425906505",
+      "IRN-ADM2-26516999B49627728280640",
+      "IRN-ADM2-26516999B27771522164434",
+      "IRN-ADM2-26516999B3184808068268",
+      "IRN-ADM2-26516999B94287029098573",
+      "IRN-ADM2-26516999B72018241883703",
+      "IRN-ADM2-26516999B20481554870260",
+      "IRN-ADM2-26516999B18065523740752",
+      "IRN-ADM2-26516999B67593588074579",
+      "IRN-ADM2-26516999B39156021405543",
+      "IRN-ADM2-26516999B60579871210289",
+      "IRN-ADM2-26516999B20685226211808",
+      "IRN-ADM2-26516999B41792947819586",
+      "IRN-ADM2-26516999B78420469397297",
+      "IRN-ADM2-26516999B10093051490570",
+      "IRN-ADM2-26516999B58328562389762"
+     ],
+     "sources": [
+      {
+       "url": "https://fa.wikipedia.org/w/index.php?oldid=44616301",
+       "title": "fa.Wikipedia «استان یزد» (oldid 44616301)",
+       "says": "In 1359 the Marvast and Herat dehestans left Shahr-e Babak (Kerman) for Yazd; in 1366 the Abarkuh bakhsh left Abadeh county (Fars) and joined Taft county (Yazd).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26), change history",
+       "says": "The change history from the ~1986 table onward lists no boundary change touching Fars (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.iranicaonline.org/articles/census-i/",
+       "title": "Encyclopaedia Iranica, «CENSUS i. In Iran»",
+       "says": "The 1986 census was taken 16–30 Mehr 1365 (8–22 October 1986).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Earliest date drawn: the 1986 census (16–30 Mehr 1365 = 8–22 Oct 1986), the earliest dated statement of the 24-province layout found. The layout is older (Tehran province from Mehr 1357; Qom county joined Tehran in 1365); the earlier window is in unresolved. Fars still held the Abarkuh bakhsh (today Abarkuh county, Yazd) until SH 1366. Assumes today’s Abarkuh county (Central and Bahman districts) is the bakhsh that moved."
+    },
+    {
+     "from": "1988-03-21",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-ADM2-26516999B39151476361698",
+      "IRN-ADM2-26516999B54037117701761",
+      "IRN-ADM2-26516999B33258325620820",
+      "IRN-ADM2-26516999B49523904635025",
+      "IRN-ADM2-26516999B20073535554131",
+      "IRN-ADM2-26516999B90083536047061",
+      "IRN-ADM2-26516999B88811296722818",
+      "IRN-ADM2-26516999B32257300927621",
+      "IRN-ADM2-26516999B97388051072743",
+      "IRN-ADM2-26516999B65660347724628",
+      "IRN-ADM2-26516999B82593167652364",
+      "IRN-ADM2-26516999B72847577610402",
+      "IRN-ADM2-26516999B94987113860520",
+      "IRN-ADM2-26516999B2481614878910",
+      "IRN-ADM2-26516999B58492425906505",
+      "IRN-ADM2-26516999B49627728280640",
+      "IRN-ADM2-26516999B27771522164434",
+      "IRN-ADM2-26516999B3184808068268",
+      "IRN-ADM2-26516999B94287029098573",
+      "IRN-ADM2-26516999B72018241883703",
+      "IRN-ADM2-26516999B20481554870260",
+      "IRN-ADM2-26516999B18065523740752",
+      "IRN-ADM2-26516999B67593588074579",
+      "IRN-ADM2-26516999B39156021405543",
+      "IRN-ADM2-26516999B60579871210289",
+      "IRN-ADM2-26516999B20685226211808",
+      "IRN-ADM2-26516999B41792947819586",
+      "IRN-ADM2-26516999B78420469397297",
+      "IRN-ADM2-26516999B10093051490570"
+     ],
+     "sources": [
+      {
+       "url": "https://fa.wikipedia.org/w/index.php?oldid=44616301",
+       "title": "fa.Wikipedia «استان یزد» (oldid 44616301)",
+       "says": "In 1359 the Marvast and Herat dehestans left Shahr-e Babak (Kerman) for Yazd; in 1366 the Abarkuh bakhsh left Abadeh county (Fars) and joined Taft county (Yazd).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26), change history",
+       "says": "The change history from the ~1986 table onward lists no boundary change touching Fars (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "After Abarkuh left during SH 1366 (day not found); starts 1 Farvardin 1367."
+    }
+   ]
+  },
+  {
+   "id": "IRN:Yazd",
+   "names": {
+    "en": "Yazd Province",
+    "ja": "ヤズド州",
+    "local": "استان یزد"
+   },
+   "wikidata": "Q170568",
+   "spans": [
+    {
+     "from": "1986-10-08",
+     "precision": "day",
+     "to": "1987-03-21",
+     "atoms": [
+      "IRN-ADM2-26516999B70166389265173",
+      "IRN-ADM2-26516999B53432282490231",
+      "IRN-ADM2-26516999B3184386646186",
+      "IRN-ADM2-26516999B58609738692200",
+      "IRN-ADM2-26516999B56806517565330",
+      "IRN-ADM2-26516999B48761790846180",
+      "IRN-ADM2-26516999B46491324927495",
+      "IRN-ADM2-26516999B49616713660661",
+      "IRN-ADM2-26516999B26309538852698"
+     ],
+     "sources": [
+      {
+       "url": "https://fa.wikipedia.org/w/index.php?oldid=44616301",
+       "title": "fa.Wikipedia «استان یزد» (oldid 44616301)",
+       "says": "In 1359 the Marvast and Herat dehestans left Shahr-e Babak (Kerman) for Yazd; in 1366 the Abarkuh bakhsh left Abadeh county (Fars) and joined Taft county (Yazd).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26), change history",
+       "says": "~1986 table lists Yazd; ~2002 Tabas transferred from Khorasan to Yazd.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.iranicaonline.org/articles/census-i/",
+       "title": "Encyclopaedia Iranica, «CENSUS i. In Iran»",
+       "says": "The 1986 census was taken 16–30 Mehr 1365 (8–22 October 1986).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Earliest date drawn: the 1986 census (16–30 Mehr 1365 = 8–22 Oct 1986), the earliest dated statement of the 24-province layout found. The layout is older (Tehran province from Mehr 1357; Qom county joined Tehran in 1365); the earlier window is in unresolved. Without Abarkuh (Fars until SH 1366) and without Tabas (Khorasan until SH 1380)."
+    },
+    {
+     "from": "1988-03-21",
+     "precision": "day",
+     "to": "2001-03-21",
+     "atoms": [
+      "IRN-ADM2-26516999B58328562389762",
+      "IRN-ADM2-26516999B70166389265173",
+      "IRN-ADM2-26516999B53432282490231",
+      "IRN-ADM2-26516999B3184386646186",
+      "IRN-ADM2-26516999B58609738692200",
+      "IRN-ADM2-26516999B56806517565330",
+      "IRN-ADM2-26516999B48761790846180",
+      "IRN-ADM2-26516999B46491324927495",
+      "IRN-ADM2-26516999B49616713660661",
+      "IRN-ADM2-26516999B26309538852698"
+     ],
+     "sources": [
+      {
+       "url": "https://fa.wikipedia.org/w/index.php?oldid=44616301",
+       "title": "fa.Wikipedia «استان یزد» (oldid 44616301)",
+       "says": "In 1359 the Marvast and Herat dehestans left Shahr-e Babak (Kerman) for Yazd; in 1366 the Abarkuh bakhsh left Abadeh county (Fars) and joined Taft county (Yazd).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fa.wikipedia.org/w/index.php?oldid=44596070",
+       "title": "fa.Wikipedia «شهرستان طبس» (oldid 44596070)",
+       "says": "In SH 1380 Tabas county left Khorasan and joined Yazd province; in SH 1391 it joined South Khorasan.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From 1 Farvardin 1367 (after Abarkuh joined during SH 1366) until Tabas joined during SH 1380."
+    },
+    {
+     "from": "2002-03-21",
+     "precision": "day",
+     "to": "2013-01-13",
+     "atoms": [
+      "IRN-ADM2-26516999B58328562389762",
+      "IRN-ADM2-26516999B70166389265173",
+      "IRN-ADM2-26516999B53432282490231",
+      "IRN-ADM2-26516999B3184386646186",
+      "IRN-ADM2-26516999B58609738692200",
+      "IRN-ADM2-26516999B56806517565330",
+      "IRN-ADM2-26516999B48761790846180",
+      "IRN-ADM2-26516999B46491324927495",
+      "IRN-ADM2-26516999B49616713660661",
+      "IRN-ADM2-26516999B26309538852698",
+      "IRN-ADM2-26516999B91230303463917"
+     ],
+     "sources": [
+      {
+       "url": "https://fa.wikipedia.org/w/index.php?oldid=44596070",
+       "title": "fa.Wikipedia «شهرستان طبس» (oldid 44596070)",
+       "says": "In SH 1380 Tabas county left Khorasan and joined Yazd province; in SH 1391 it joined South Khorasan.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375775611",
+       "title": "en.Wikipedia «Deyhuk District» (oldid 1375775611)",
+       "says": "Cites the approval letter of 24/10/1391 (13 January 2013) detaching Tabas County from Yazd and annexing it to South Khorasan.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "With Tabas: from the end of SH 1380 (transfer day not found) to the cabinet approval of 24/10/1391 (2013-01-13)."
+    },
+    {
+     "from": "2013-01-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-ADM2-26516999B58328562389762",
+      "IRN-ADM2-26516999B70166389265173",
+      "IRN-ADM2-26516999B53432282490231",
+      "IRN-ADM2-26516999B3184386646186",
+      "IRN-ADM2-26516999B58609738692200",
+      "IRN-ADM2-26516999B56806517565330",
+      "IRN-ADM2-26516999B48761790846180",
+      "IRN-ADM2-26516999B46491324927495",
+      "IRN-ADM2-26516999B49616713660661",
+      "IRN-ADM2-26516999B26309538852698"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375775611",
+       "title": "en.Wikipedia «Deyhuk District» (oldid 1375775611)",
+       "says": "Cites the approval letter of 24/10/1391 (13 January 2013) detaching Tabas County from Yazd and annexing it to South Khorasan.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fa.wikipedia.org/w/index.php?oldid=44289329",
+       "title": "fa.Wikipedia «استان خراسان جنوبی» (oldid 44289329)",
+       "says": "Qaen (Qaenat) joined South Khorasan late in SH 1383; Ferdows joined after efforts that succeeded in 1386; Boshruyeh bakhsh of Ferdows became a county in 1387; Tabas joined from Yazd in the last days of 1391.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "After Tabas left for South Khorasan (approval 2013-01-13)."
+    }
+   ]
+  },
+  {
+   "id": "IRN:EastAzarbaijan",
    "names": {
     "en": "East Azerbaijan Province",
     "ja": "東アーザルバーイジャーン州",
@@ -521,32 +1109,109 @@
    "wikidata": "Q176081",
    "spans": [
     {
-     "from": "1993-04-12",
+     "from": "1986-10-08",
      "precision": "day",
-     "to": null,
+     "to": "1993-04-12",
      "atoms": [
-      "IRN-3238"
+      "IRN-ADM2-26516999B26771319006159",
+      "IRN-ADM2-26516999B95133176366772",
+      "IRN-ADM2-26516999B48641886096964",
+      "IRN-ADM2-26516999B99088565157474",
+      "IRN-ADM2-26516999B87063603962275",
+      "IRN-ADM2-26516999B30563621874394",
+      "IRN-ADM2-26516999B682573475254",
+      "IRN-ADM2-26516999B39301488637733",
+      "IRN-ADM2-26516999B76825786208469",
+      "IRN-ADM2-26516999B74935612430683",
+      "IRN-ADM2-26516999B48513131873854",
+      "IRN-ADM2-26516999B86339515593957",
+      "IRN-ADM2-26516999B1383835814029",
+      "IRN-ADM2-26516999B53891891902628",
+      "IRN-ADM2-26516999B87117305072709",
+      "IRN-ADM2-26516999B42800343493413",
+      "IRN-ADM2-26516999B95014229196024",
+      "IRN-ADM2-26516999B96525773118359",
+      "IRN-ADM2-26516999B8769414402537",
+      "IRN-ADM2-26516999B20832835256632",
+      "IRN-ADM2-26516999B65171849596186",
+      "IRN-ADM2-26516999B77848583915371",
+      "IRN-ADM2-26516999B20217440569292",
+      "IRN-ADM2-26516999B2183035752809",
+      "IRN-ADM2-26516999B95597536957820",
+      "IRN-ADM2-26516999B98042873317682",
+      "IRN-ADM2-26516999B18176022488171",
+      "IRN-ADM2-26516999B92194782243325",
+      "IRN-ADM2-26516999B22205062491942",
+      "IRN-ADM2-26516999B89648484670520"
      ],
      "sources": [
       {
        "url": "https://www.mefa.ir/news/644125/",
-       "title": "آشنایی با استان اردبیل (mefa.ir)",
-       "says": "Ardabil bill passed Majlis 22 Dey 1371; province separated from East Azerbaijan on 23 Farvardin 1372 (1993-04-12).",
-       "accessed": "2026-10-05"
+       "title": "Mefa news — Ardabil province anniversary",
+       "says": "Ardabil bill passed Majlis 22 Dey 1371; the province was separated from East Azerbaijan on 23 Farvardin 1372 (1993-04-12).",
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://statoids.com/uir.html",
-       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
-       "says": "Change history after the ~1986 census table lists no boundary change for East Azarbaijan after 1993 (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26), change history",
+       "says": "1993: Ardebil province split from East Azarbaijan; the ~1986 table lists East Azarbaijan.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.iranicaonline.org/articles/census-i/",
+       "title": "Encyclopaedia Iranica, «CENSUS i. In Iran»",
+       "says": "The 1986 census was taken 16–30 Mehr 1365 (8–22 October 1986).",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Outline after Ardabil left it on 1993-04-12 (23 Farvardin 1372)."
+     "dateNote": "Earliest date drawn: the 1986 census (16–30 Mehr 1365 = 8–22 Oct 1986), the earliest dated statement of the 24-province layout found. The layout is older (Tehran province from Mehr 1357; Qom county joined Tehran in 1365); the earlier window is in unresolved. Ardabil province was formed of six whole counties of East Azerbaijan, so before it the province is the union of both."
+    },
+    {
+     "from": "1993-04-12",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-ADM2-26516999B26771319006159",
+      "IRN-ADM2-26516999B95133176366772",
+      "IRN-ADM2-26516999B48641886096964",
+      "IRN-ADM2-26516999B99088565157474",
+      "IRN-ADM2-26516999B87063603962275",
+      "IRN-ADM2-26516999B30563621874394",
+      "IRN-ADM2-26516999B682573475254",
+      "IRN-ADM2-26516999B39301488637733",
+      "IRN-ADM2-26516999B76825786208469",
+      "IRN-ADM2-26516999B74935612430683",
+      "IRN-ADM2-26516999B48513131873854",
+      "IRN-ADM2-26516999B86339515593957",
+      "IRN-ADM2-26516999B1383835814029",
+      "IRN-ADM2-26516999B53891891902628",
+      "IRN-ADM2-26516999B87117305072709",
+      "IRN-ADM2-26516999B42800343493413",
+      "IRN-ADM2-26516999B95014229196024",
+      "IRN-ADM2-26516999B96525773118359",
+      "IRN-ADM2-26516999B8769414402537",
+      "IRN-ADM2-26516999B20832835256632"
+     ],
+     "sources": [
+      {
+       "url": "https://www.mefa.ir/news/644125/",
+       "title": "Mefa news — Ardabil province anniversary",
+       "says": "Ardabil bill passed Majlis 22 Dey 1371; the province was separated from East Azerbaijan on 23 Farvardin 1372 (1993-04-12).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26), change history",
+       "says": "The change history from the ~1986 table onward lists no boundary change touching East Azarbaijan (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Separation day of Ardabil (23 Farvardin 1372)."
     }
    ]
   },
   {
-   "id": "IRN:Ardabil@1993",
+   "id": "IRN:Ardabil",
    "names": {
     "en": "Ardabil Province",
     "ja": "アルダビール州",
@@ -559,28 +1224,37 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "IRN-3230"
+      "IRN-ADM2-26516999B65171849596186",
+      "IRN-ADM2-26516999B77848583915371",
+      "IRN-ADM2-26516999B20217440569292",
+      "IRN-ADM2-26516999B2183035752809",
+      "IRN-ADM2-26516999B95597536957820",
+      "IRN-ADM2-26516999B98042873317682",
+      "IRN-ADM2-26516999B18176022488171",
+      "IRN-ADM2-26516999B92194782243325",
+      "IRN-ADM2-26516999B22205062491942",
+      "IRN-ADM2-26516999B89648484670520"
      ],
      "sources": [
       {
        "url": "https://www.mefa.ir/news/644125/",
-       "title": "آشنایی با استان اردبیل (mefa.ir)",
-       "says": "Ardabil bill passed Majlis 22 Dey 1371; province separated from East Azerbaijan on 23 Farvardin 1372 (1993-04-12).",
-       "accessed": "2026-10-05"
+       "title": "Mefa news — Ardabil province anniversary",
+       "says": "Ardabil bill passed Majlis 22 Dey 1371; the province was separated from East Azerbaijan on 23 Farvardin 1372 (1993-04-12).",
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://statoids.com/uir.html",
-       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26), change history",
        "says": "1993: Ardebil province split from East Azarbaijan; no later change listed.",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Date = separation date given by mefa.ir (23 Farvardin 1372); Majlis approval was 22 Dey 1371."
+     "dateNote": "Separation day (23 Farvardin 1372); the Majlis approved the law on 22 Dey 1371."
     }
    ]
   },
   {
-   "id": "IRN:Mazandaran@1993",
+   "id": "IRN:Mazandaran",
    "names": {
     "en": "Mazandaran Province",
     "ja": "マーザンダラーン州",
@@ -589,50 +1263,117 @@
    "wikidata": "Q308864",
    "spans": [
     {
-     "from": "1993-04-12",
+     "from": "1986-10-08",
      "precision": "day",
-     "to": "1997-05-31",
+     "to": "1998-01-19",
      "atoms": [
-      "IRN-3214",
-      "IRN-3213"
+      "IRN-ADM2-26516999B75297716983437",
+      "IRN-ADM2-26516999B614175773337",
+      "IRN-ADM2-26516999B97137622231418",
+      "IRN-ADM2-26516999B6767181071119",
+      "IRN-ADM2-26516999B66507339305075",
+      "IRN-ADM2-26516999B63141971912260",
+      "IRN-ADM2-26516999B69199667178674",
+      "IRN-ADM2-26516999B26685629169180",
+      "IRN-ADM2-26516999B13023967479908",
+      "IRN-ADM2-26516999B82885590871966",
+      "IRN-ADM2-26516999B77170707337234",
+      "IRN-ADM2-26516999B6216206084306",
+      "IRN-ADM2-26516999B8462455962901",
+      "IRN-ADM2-26516999B71967233755929",
+      "IRN-ADM2-26516999B71049707098918",
+      "IRN-ADM2-26516999B20037485471266",
+      "IRN-ADM2-26516999B11404266188231",
+      "IRN-ADM2-26516999B74580058140448",
+      "IRN-ADM2-26516999B85520235501206",
+      "IRN-ADM2-26516999B47471603014627",
+      "IRN-ADM2-26516999B57878859239378",
+      "IRN-ADM2-26516999B23008411354327",
+      "IRN-ADM2-26516999B35251766342087",
+      "IRN-ADM2-26516999B76005318211769",
+      "IRN-ADM2-26516999B81288157881452",
+      "IRN-ADM2-26516999B3915516187311",
+      "IRN-ADM2-26516999B1948213080714",
+      "IRN-ADM2-26516999B98648315748206",
+      "IRN-ADM2-26516999B50588022585400",
+      "IRN-ADM2-26516999B81401415645977",
+      "IRN-ADM2-26516999B66953246231714",
+      "IRN-ADM2-26516999B13741052220202",
+      "IRN-ADM2-26516999B67395757658881",
+      "IRN-ADM2-26516999B4770561111833",
+      "IRN-ADM2-26516999B81214123489601",
+      "IRN-ADM2-26516999B76974127550435"
      ],
      "sources": [
       {
        "url": "https://lamtakam.com/law/council_of_ministers/93027",
-       "title": "قانون تأسیس استان گلستان (Law on establishing Golestan province), Official Gazette no. 15412",
-       "says": "Seven counties taken from Mazandaran form Golestan; Majlis 1376/09/16, Guardian Council 1376/10/03, published 1376/10/29 (1998-01-19).",
-       "accessed": "2026-10-05"
+       "title": "Law on the establishment of Golestan province (lamtakam.com law text)",
+       "says": "Counties taken from Mazandaran form Golestan; Majlis 1376/09/16, Guardian Council 1376/10/03, published 1376/10/29 (1998-01-19).",
+       "accessed": "2026-10-06"
       },
       {
-       "url": "https://statoids.com/uir.html",
-       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
-       "says": "1997-05-31: Golestan formed from six Mazandaran counties; no other change to Mazandaran listed.",
-       "accessed": "2026-10-05"
+       "url": "https://www.thmporg.ir/news/1442/",
+       "title": "Tehran municipal planning organisation — «How Tehran became a province, 1335–1365» (census-by-census shahrestan composition)",
+       "says": "At the 1365 (1986) census Tehran province existed (incl. Karaj and Qom counties); Qazvin had gone to Zanjan, Garmsar to Semnan, Kashan to Isfahan; Markazi = Arak, Mahallat, Khomein, Tafresh, Saveh.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.iranicaonline.org/articles/census-i/",
+       "title": "Encyclopaedia Iranica, «CENSUS i. In Iran»",
+       "says": "The 1986 census was taken 16–30 Mehr 1365 (8–22 October 1986).",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Mazandaran before Golestan = union of the modern Mazandaran and Golestan atoms (Golestan made wholly of Mazandaran counties per the law). Ends at the earliest date any source gives for Golestan (Statoids/Wikipedia 1997-05-31)."
+     "dateNote": "Earliest date drawn: the 1986 census (16–30 Mehr 1365 = 8–22 Oct 1986), the earliest dated statement of the 24-province layout found. The layout is older (Tehran province from Mehr 1357; Qom county joined Tehran in 1365); the earlier window is in unresolved. Golestan was made wholly of Mazandaran counties. Ends at the gazette publication of the Golestan law. Statoids/en.Wikipedia date Golestan to 1997-05-31, before the Majlis voted the bill (1376/09/16 = 1997-12-07); that date cannot be the creation and is not used."
     },
     {
      "from": "1998-01-19",
      "precision": "day",
      "to": null,
      "atoms": [
-      "IRN-3214"
+      "IRN-ADM2-26516999B75297716983437",
+      "IRN-ADM2-26516999B614175773337",
+      "IRN-ADM2-26516999B97137622231418",
+      "IRN-ADM2-26516999B6767181071119",
+      "IRN-ADM2-26516999B66507339305075",
+      "IRN-ADM2-26516999B63141971912260",
+      "IRN-ADM2-26516999B69199667178674",
+      "IRN-ADM2-26516999B26685629169180",
+      "IRN-ADM2-26516999B13023967479908",
+      "IRN-ADM2-26516999B82885590871966",
+      "IRN-ADM2-26516999B77170707337234",
+      "IRN-ADM2-26516999B6216206084306",
+      "IRN-ADM2-26516999B8462455962901",
+      "IRN-ADM2-26516999B71967233755929",
+      "IRN-ADM2-26516999B71049707098918",
+      "IRN-ADM2-26516999B20037485471266",
+      "IRN-ADM2-26516999B11404266188231",
+      "IRN-ADM2-26516999B74580058140448",
+      "IRN-ADM2-26516999B85520235501206",
+      "IRN-ADM2-26516999B47471603014627",
+      "IRN-ADM2-26516999B57878859239378",
+      "IRN-ADM2-26516999B23008411354327"
      ],
      "sources": [
       {
        "url": "https://lamtakam.com/law/council_of_ministers/93027",
-       "title": "قانون تأسیس استان گلستان (Law on establishing Golestan province), Official Gazette no. 15412",
-       "says": "Seven counties taken from Mazandaran form Golestan; Majlis 1376/09/16, Guardian Council 1376/10/03, published 1376/10/29 (1998-01-19).",
-       "accessed": "2026-10-05"
+       "title": "Law on the establishment of Golestan province (lamtakam.com law text)",
+       "says": "Counties taken from Mazandaran form Golestan; Majlis 1376/09/16, Guardian Council 1376/10/03, published 1376/10/29 (1998-01-19).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26), change history",
+       "says": "The change history from the ~1986 table onward lists no boundary change touching Mazandaran (changes listed: Ardabil, Qom, Qazvin, Golestan, Tabas, Khorasan split, Ferdows, Alborz).",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Begins at the official-gazette publication of the Golestan law (1376/10/29); window from 1997-05-31 is unresolved because sources disagree."
+     "dateNote": "From the gazette publication of the Golestan law (1376/10/29)."
     }
    ]
   },
   {
-   "id": "IRN:Golestan@1998",
+   "id": "IRN:Golestan",
    "names": {
     "en": "Golestan Province",
     "ja": "ゴレスターン州",
@@ -645,28 +1386,295 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "IRN-3213"
+      "IRN-ADM2-26516999B35251766342087",
+      "IRN-ADM2-26516999B76005318211769",
+      "IRN-ADM2-26516999B81288157881452",
+      "IRN-ADM2-26516999B3915516187311",
+      "IRN-ADM2-26516999B1948213080714",
+      "IRN-ADM2-26516999B98648315748206",
+      "IRN-ADM2-26516999B50588022585400",
+      "IRN-ADM2-26516999B81401415645977",
+      "IRN-ADM2-26516999B66953246231714",
+      "IRN-ADM2-26516999B13741052220202",
+      "IRN-ADM2-26516999B67395757658881",
+      "IRN-ADM2-26516999B4770561111833",
+      "IRN-ADM2-26516999B81214123489601",
+      "IRN-ADM2-26516999B76974127550435"
      ],
      "sources": [
       {
        "url": "https://lamtakam.com/law/council_of_ministers/93027",
-       "title": "قانون تأسیس استان گلستان (Law on establishing Golestan province), Official Gazette no. 15412",
-       "says": "Seven counties taken from Mazandaran form Golestan; Majlis 1376/09/16, Guardian Council 1376/10/03, published 1376/10/29 (1998-01-19).",
-       "accessed": "2026-10-05"
-      },
-      {
-       "url": "https://en.wikipedia.org/w/index.php?oldid=1345255752",
-       "title": "Provinces of Iran — Wikipedia (oldid 1345255752)",
-       "says": "Table notes: Qazvin formed 31 Dec 1996 from Zanjan; Golestan 31 May 1997 from Mazandaran; Tabas moved Khorasan→Yazd 2002; 31 provinces.",
-       "accessed": "2026-10-05"
+       "title": "Law on the establishment of Golestan province (lamtakam.com law text)",
+       "says": "Counties taken from Mazandaran form Golestan; Majlis 1376/09/16, Guardian Council 1376/10/03, published 1376/10/29 (1998-01-19).",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Gazette publication date of the law; Statoids and en.Wikipedia give 31 May 1997 (unsourced) — the window between is unresolved."
+     "dateNote": "Gazette publication (1376/10/29); the 1997-05-31 date of Statoids/en.Wikipedia predates the bill and is rejected."
     }
    ]
   },
   {
-   "id": "IRN:Zanjan@1997",
+   "id": "IRN:Tehran",
+   "names": {
+    "en": "Tehran Province",
+    "ja": "テヘラン州",
+    "local": "استان تهران"
+   },
+   "wikidata": "Q590866",
+   "spans": [
+    {
+     "from": "1986-10-08",
+     "precision": "day",
+     "to": "1994-09-21",
+     "atoms": [
+      "IRN-ADM2-26516999B32274164067447",
+      "IRN-ADM2-26516999B29761828880922",
+      "IRN-ADM2-26516999B19088359236830",
+      "IRN-ADM2-26516999B88251394352170",
+      "IRN-ADM2-26516999B60688920539787",
+      "IRN-ADM2-26516999B27698470337483",
+      "IRN-ADM2-26516999B72896925290367",
+      "IRN-ADM2-26516999B29825516258970",
+      "IRN-ADM2-26516999B30802534166857",
+      "IRN-ADM2-26516999B258055047426",
+      "IRN-ADM2-26516999B5684873266134",
+      "IRN-ADM2-26516999B97503362604777",
+      "IRN-ADM2-26516999B89814030456652",
+      "IRN-ADM2-26516999B66540867756489",
+      "IRN-ADM2-26516999B22518076976615",
+      "IRN-ADM2-26516999B12442173705609",
+      "IRN-ADM2-26516999B88410465027536",
+      "IRN-ADM2-26516999B3241280506075",
+      "IRN-ADM2-26516999B84495228881975",
+      "IRN-ADM2-26516999B30076408008576",
+      "IRN-ADM2-26516999B18640438628843",
+      "IRN-ADM2-26516999B31487954135890",
+      "IRN-ADM2-26516999B32748483520397",
+      "IRN-ADM2-26516999B32628597066486"
+     ],
+     "sources": [
+      {
+       "url": "https://www.thmporg.ir/news/1442/",
+       "title": "Tehran municipal planning organisation — «How Tehran became a province, 1335–1365» (census-by-census shahrestan composition)",
+       "says": "At the 1365 (1986) census Tehran province existed (incl. Karaj and Qom counties); Qazvin had gone to Zanjan, Garmsar to Semnan, Kashan to Isfahan; Markazi = Arak, Mahallat, Khomein, Tafresh, Saveh.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fa.wikipedia.org/w/index.php?oldid=44615929",
+       "title": "fa.Wikipedia «استان مرکزی» (oldid 44615929)",
+       "says": "Tehran (with today’s Alborz) left Markazi in Mehr 1357; Kashan went to Isfahan by a 1357 decree; Qom county went from Markazi to Tehran in 1365 and became a province in 1375.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.justice.gov/sites/default/files/eoir/legacy/2013/11/07/ISSUES_PAPER_CHRONOLOGY-OF-EVENTS-AUGUST-1994-FEBRUARY-1995.pdf",
+       "title": "Immigration and Refugee Board of Canada, «Iran: Chronology of Events August 1994 – February 1995» (citing IRIB TV 21 Sept 1994; Keesing’s Sept 1994)",
+       "says": "21 September 1994: the cabinet approves the separation of Qazvin from Zanjan province; Qazvin becomes part of Tehran province.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.iranicaonline.org/articles/census-i/",
+       "title": "Encyclopaedia Iranica, «CENSUS i. In Iran»",
+       "says": "The 1986 census was taken 16–30 Mehr 1365 (8–22 October 1986).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Earliest date drawn: the 1986 census (16–30 Mehr 1365 = 8–22 Oct 1986), the earliest dated statement of the 24-province layout found. The layout is older (Tehran province from Mehr 1357; Qom county joined Tehran in 1365); the earlier window is in unresolved. Tehran province at the 1986 census = today’s Tehran, Alborz and Qom provinces (Qom county joined from Markazi in 1365, before the census per the census composition)."
+    },
+    {
+     "from": "1994-09-21",
+     "precision": "day",
+     "to": "1996-04-23",
+     "atoms": [
+      "IRN-ADM2-26516999B32274164067447",
+      "IRN-ADM2-26516999B29761828880922",
+      "IRN-ADM2-26516999B19088359236830",
+      "IRN-ADM2-26516999B88251394352170",
+      "IRN-ADM2-26516999B60688920539787",
+      "IRN-ADM2-26516999B27698470337483",
+      "IRN-ADM2-26516999B72896925290367",
+      "IRN-ADM2-26516999B29825516258970",
+      "IRN-ADM2-26516999B30802534166857",
+      "IRN-ADM2-26516999B258055047426",
+      "IRN-ADM2-26516999B5684873266134",
+      "IRN-ADM2-26516999B97503362604777",
+      "IRN-ADM2-26516999B89814030456652",
+      "IRN-ADM2-26516999B66540867756489",
+      "IRN-ADM2-26516999B22518076976615",
+      "IRN-ADM2-26516999B12442173705609",
+      "IRN-ADM2-26516999B88410465027536",
+      "IRN-ADM2-26516999B3241280506075",
+      "IRN-ADM2-26516999B84495228881975",
+      "IRN-ADM2-26516999B30076408008576",
+      "IRN-ADM2-26516999B18640438628843",
+      "IRN-ADM2-26516999B31487954135890",
+      "IRN-ADM2-26516999B32748483520397",
+      "IRN-ADM2-26516999B32628597066486",
+      "IRN-ADM2-26516999B22288495117377",
+      "IRN-ADM2-26516999B12511349308112",
+      "IRN-ADM2-26516999B92441425098461",
+      "IRN-ADM2-26516999B97759541837307",
+      "IRN-ADM2-26516999B1248286061350"
+     ],
+     "sources": [
+      {
+       "url": "https://www.justice.gov/sites/default/files/eoir/legacy/2013/11/07/ISSUES_PAPER_CHRONOLOGY-OF-EVENTS-AUGUST-1994-FEBRUARY-1995.pdf",
+       "title": "Immigration and Refugee Board of Canada, «Iran: Chronology of Events August 1994 – February 1995» (citing IRIB TV 21 Sept 1994; Keesing’s Sept 1994)",
+       "says": "21 September 1994: the cabinet approves the separation of Qazvin from Zanjan province; Qazvin becomes part of Tehran province.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fa.wikipedia.org/w/index.php?oldid=44498873",
+       "title": "fa.Wikipedia «استان زنجان» (oldid 44498873)",
+       "says": "Qazvin left Zanjan in 1373 and joined Tehran province; Takestan county left Zanjan in 1375 (for Qazvin province); no other inter-provincial change of Zanjan after the 1350s is stated.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://lamtakam.com/law/council_of_ministers/92861",
+       "title": "Law on the establishment of Qazvin province (lamtakam.com law text)",
+       "says": "Qazvin, Buin Zahra and Takestan counties form Qazvin province, taken from Tehran and Zanjan provinces; Majlis 1376/03/04, published 1376/04/08 (1997-06-29).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Cabinet approval of Qazvin’s move to Tehran (1994-09-21). Qazvin county then held today’s Qazvin, Abyek, Alborz, Buin Zahra and Avaj counties (Buin Zahra county was created in Tehran province on 1375/10/16); Takestan was already a separate county and stayed in Zanjan until 1997."
+    },
+    {
+     "from": "1996-04-23",
+     "precision": "day",
+     "to": "1997-06-29",
+     "atoms": [
+      "IRN-ADM2-26516999B32274164067447",
+      "IRN-ADM2-26516999B29761828880922",
+      "IRN-ADM2-26516999B19088359236830",
+      "IRN-ADM2-26516999B88251394352170",
+      "IRN-ADM2-26516999B60688920539787",
+      "IRN-ADM2-26516999B27698470337483",
+      "IRN-ADM2-26516999B72896925290367",
+      "IRN-ADM2-26516999B29825516258970",
+      "IRN-ADM2-26516999B30802534166857",
+      "IRN-ADM2-26516999B258055047426",
+      "IRN-ADM2-26516999B5684873266134",
+      "IRN-ADM2-26516999B97503362604777",
+      "IRN-ADM2-26516999B89814030456652",
+      "IRN-ADM2-26516999B66540867756489",
+      "IRN-ADM2-26516999B22518076976615",
+      "IRN-ADM2-26516999B12442173705609",
+      "IRN-ADM2-26516999B88410465027536",
+      "IRN-ADM2-26516999B3241280506075",
+      "IRN-ADM2-26516999B84495228881975",
+      "IRN-ADM2-26516999B30076408008576",
+      "IRN-ADM2-26516999B18640438628843",
+      "IRN-ADM2-26516999B31487954135890",
+      "IRN-ADM2-26516999B32748483520397",
+      "IRN-ADM2-26516999B22288495117377",
+      "IRN-ADM2-26516999B12511349308112",
+      "IRN-ADM2-26516999B92441425098461",
+      "IRN-ADM2-26516999B97759541837307",
+      "IRN-ADM2-26516999B1248286061350"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1376579684",
+       "title": "en.Wikipedia «Qom province» (oldid 1376579684)",
+       "says": "Formed from part of Tehran province in 1996; cites the law on the establishment of Qom province approved 1375/02/04 (23 April 1996).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://lamtakam.com/law/council_of_ministers/92861",
+       "title": "Law on the establishment of Qazvin province (lamtakam.com law text)",
+       "says": "Qazvin, Buin Zahra and Takestan counties form Qazvin province, taken from Tehran and Zanjan provinces; Majlis 1376/03/04, published 1376/04/08 (1997-06-29).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "After Qom province (law approved 1375/02/04) and until the Qazvin law took the Qazvin and Buin Zahra counties."
+    },
+    {
+     "from": "1997-06-29",
+     "precision": "day",
+     "to": "2010-06-23",
+     "atoms": [
+      "IRN-ADM2-26516999B32274164067447",
+      "IRN-ADM2-26516999B29761828880922",
+      "IRN-ADM2-26516999B19088359236830",
+      "IRN-ADM2-26516999B88251394352170",
+      "IRN-ADM2-26516999B60688920539787",
+      "IRN-ADM2-26516999B27698470337483",
+      "IRN-ADM2-26516999B72896925290367",
+      "IRN-ADM2-26516999B29825516258970",
+      "IRN-ADM2-26516999B30802534166857",
+      "IRN-ADM2-26516999B258055047426",
+      "IRN-ADM2-26516999B5684873266134",
+      "IRN-ADM2-26516999B97503362604777",
+      "IRN-ADM2-26516999B89814030456652",
+      "IRN-ADM2-26516999B66540867756489",
+      "IRN-ADM2-26516999B22518076976615",
+      "IRN-ADM2-26516999B12442173705609",
+      "IRN-ADM2-26516999B88410465027536",
+      "IRN-ADM2-26516999B3241280506075",
+      "IRN-ADM2-26516999B84495228881975",
+      "IRN-ADM2-26516999B30076408008576",
+      "IRN-ADM2-26516999B18640438628843",
+      "IRN-ADM2-26516999B31487954135890",
+      "IRN-ADM2-26516999B32748483520397"
+     ],
+     "sources": [
+      {
+       "url": "https://lamtakam.com/law/council_of_ministers/92861",
+       "title": "Law on the establishment of Qazvin province (lamtakam.com law text)",
+       "says": "Qazvin, Buin Zahra and Takestan counties form Qazvin province, taken from Tehran and Zanjan provinces; Majlis 1376/03/04, published 1376/04/08 (1997-06-29).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1374586947",
+       "title": "en.Wikipedia «Alborz province» (oldid 1374586947)",
+       "says": "In 2010 Karaj, Nazarabad and Savojbolagh counties were separated from Tehran province to form Alborz; law approval 1389/04/02 (23 June 2010).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From the gazette publication of the Qazvin law to the Alborz law; Alborz was made of three whole Tehran counties."
+    },
+    {
+     "from": "2010-06-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-ADM2-26516999B32274164067447",
+      "IRN-ADM2-26516999B29761828880922",
+      "IRN-ADM2-26516999B19088359236830",
+      "IRN-ADM2-26516999B88251394352170",
+      "IRN-ADM2-26516999B60688920539787",
+      "IRN-ADM2-26516999B27698470337483",
+      "IRN-ADM2-26516999B72896925290367",
+      "IRN-ADM2-26516999B29825516258970",
+      "IRN-ADM2-26516999B30802534166857",
+      "IRN-ADM2-26516999B258055047426",
+      "IRN-ADM2-26516999B5684873266134",
+      "IRN-ADM2-26516999B97503362604777",
+      "IRN-ADM2-26516999B89814030456652",
+      "IRN-ADM2-26516999B66540867756489",
+      "IRN-ADM2-26516999B22518076976615",
+      "IRN-ADM2-26516999B12442173705609",
+      "IRN-ADM2-26516999B88410465027536"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1374586947",
+       "title": "en.Wikipedia «Alborz province» (oldid 1374586947)",
+       "says": "In 2010 Karaj, Nazarabad and Savojbolagh counties were separated from Tehran province to form Alborz; law approval 1389/04/02 (23 June 2010).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26), change history",
+       "says": "2010-06-23: Alborz province split from Tehran (Karaj, Nazarabad, Savojbolagh).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Majlis approval of the Alborz law (1389/04/02)."
+    }
+   ]
+  },
+  {
+   "id": "IRN:Zanjan",
    "names": {
     "en": "Zanjan Province",
     "ja": "ザンジャーン州",
@@ -675,32 +1683,124 @@
    "wikidata": "Q146726",
    "spans": [
     {
+     "from": "1986-10-08",
+     "precision": "day",
+     "to": "1994-09-21",
+     "atoms": [
+      "IRN-ADM2-26516999B64541015243752",
+      "IRN-ADM2-26516999B82159871126176",
+      "IRN-ADM2-26516999B39900461257531",
+      "IRN-ADM2-26516999B47909004465552",
+      "IRN-ADM2-26516999B8632253531875",
+      "IRN-ADM2-26516999B89786247801303",
+      "IRN-ADM2-26516999B71601711234840",
+      "IRN-ADM2-26516999B8425213033236",
+      "IRN-ADM2-26516999B22288495117377",
+      "IRN-ADM2-26516999B12511349308112",
+      "IRN-ADM2-26516999B92441425098461",
+      "IRN-ADM2-26516999B97759541837307",
+      "IRN-ADM2-26516999B1248286061350",
+      "IRN-ADM2-26516999B36207654564503"
+     ],
+     "sources": [
+      {
+       "url": "https://www.thmporg.ir/news/1442/",
+       "title": "Tehran municipal planning organisation — «How Tehran became a province, 1335–1365» (census-by-census shahrestan composition)",
+       "says": "At the 1365 (1986) census Tehran province existed (incl. Karaj and Qom counties); Qazvin had gone to Zanjan, Garmsar to Semnan, Kashan to Isfahan; Markazi = Arak, Mahallat, Khomein, Tafresh, Saveh.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fa.wikipedia.org/w/index.php?oldid=44498873",
+       "title": "fa.Wikipedia «استان زنجان» (oldid 44498873)",
+       "says": "Qazvin left Zanjan in 1373 and joined Tehran province; Takestan county left Zanjan in 1375 (for Qazvin province); no other inter-provincial change of Zanjan after the 1350s is stated.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.justice.gov/sites/default/files/eoir/legacy/2013/11/07/ISSUES_PAPER_CHRONOLOGY-OF-EVENTS-AUGUST-1994-FEBRUARY-1995.pdf",
+       "title": "Immigration and Refugee Board of Canada, «Iran: Chronology of Events August 1994 – February 1995» (citing IRIB TV 21 Sept 1994; Keesing’s Sept 1994)",
+       "says": "21 September 1994: the cabinet approves the separation of Qazvin from Zanjan province; Qazvin becomes part of Tehran province.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.iranicaonline.org/articles/census-i/",
+       "title": "Encyclopaedia Iranica, «CENSUS i. In Iran»",
+       "says": "The 1986 census was taken 16–30 Mehr 1365 (8–22 October 1986).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Earliest date drawn: the 1986 census (16–30 Mehr 1365 = 8–22 Oct 1986), the earliest dated statement of the 24-province layout found. The layout is older (Tehran province from Mehr 1357; Qom county joined Tehran in 1365); the earlier window is in unresolved. Zanjan held Qazvin county (since the late 1350s) and Takestan."
+    },
+    {
+     "from": "1994-09-21",
+     "precision": "day",
+     "to": "1997-06-29",
+     "atoms": [
+      "IRN-ADM2-26516999B64541015243752",
+      "IRN-ADM2-26516999B82159871126176",
+      "IRN-ADM2-26516999B39900461257531",
+      "IRN-ADM2-26516999B47909004465552",
+      "IRN-ADM2-26516999B8632253531875",
+      "IRN-ADM2-26516999B89786247801303",
+      "IRN-ADM2-26516999B71601711234840",
+      "IRN-ADM2-26516999B8425213033236",
+      "IRN-ADM2-26516999B36207654564503"
+     ],
+     "sources": [
+      {
+       "url": "https://www.justice.gov/sites/default/files/eoir/legacy/2013/11/07/ISSUES_PAPER_CHRONOLOGY-OF-EVENTS-AUGUST-1994-FEBRUARY-1995.pdf",
+       "title": "Immigration and Refugee Board of Canada, «Iran: Chronology of Events August 1994 – February 1995» (citing IRIB TV 21 Sept 1994; Keesing’s Sept 1994)",
+       "says": "21 September 1994: the cabinet approves the separation of Qazvin from Zanjan province; Qazvin becomes part of Tehran province.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fa.wikipedia.org/w/index.php?oldid=44498873",
+       "title": "fa.Wikipedia «استان زنجان» (oldid 44498873)",
+       "says": "Qazvin left Zanjan in 1373 and joined Tehran province; Takestan county left Zanjan in 1375 (for Qazvin province); no other inter-provincial change of Zanjan after the 1350s is stated.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://lamtakam.com/law/council_of_ministers/92861",
+       "title": "Law on the establishment of Qazvin province (lamtakam.com law text)",
+       "says": "Qazvin, Buin Zahra and Takestan counties form Qazvin province, taken from Tehran and Zanjan provinces; Majlis 1376/03/04, published 1376/04/08 (1997-06-29).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "After Qazvin left for Tehran; Takestan county stayed in Zanjan until the Qazvin law."
+    },
+    {
      "from": "1997-06-29",
      "precision": "day",
      "to": null,
      "atoms": [
-      "IRN-3234"
+      "IRN-ADM2-26516999B64541015243752",
+      "IRN-ADM2-26516999B82159871126176",
+      "IRN-ADM2-26516999B39900461257531",
+      "IRN-ADM2-26516999B47909004465552",
+      "IRN-ADM2-26516999B8632253531875",
+      "IRN-ADM2-26516999B89786247801303",
+      "IRN-ADM2-26516999B71601711234840",
+      "IRN-ADM2-26516999B8425213033236"
      ],
      "sources": [
       {
        "url": "https://lamtakam.com/law/council_of_ministers/92861",
-       "title": "قانون ایجاد استان قزوین (Law on establishing Qazvin province), Official Gazette no. 15239",
+       "title": "Law on the establishment of Qazvin province (lamtakam.com law text)",
        "says": "Qazvin, Buin Zahra and Takestan counties form Qazvin province, taken from Tehran and Zanjan provinces; Majlis 1376/03/04, published 1376/04/08 (1997-06-29).",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       },
       {
-       "url": "https://statoids.com/uir.html",
-       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
-       "says": "1996-12-31: Qazvin province formed taking Qazvin and Takestan from Zanjan; no later change to Zanjan listed.",
-       "accessed": "2026-10-05"
+       "url": "https://fa.wikipedia.org/w/index.php?oldid=44498873",
+       "title": "fa.Wikipedia «استان زنجان» (oldid 44498873)",
+       "says": "Qazvin left Zanjan in 1373 and joined Tehran province; Takestan county left Zanjan in 1375 (for Qazvin province); no other inter-provincial change of Zanjan after the 1350s is stated.",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Gazette publication of the Qazvin law (1376/04/08); the law authorises the government, entry-into-force day not stated."
+     "dateNote": "Gazette publication of the Qazvin law (1376/04/08)."
     }
    ]
   },
   {
-   "id": "IRN:Qazvin@1997",
+   "id": "IRN:Qazvin",
    "names": {
     "en": "Qazvin Province",
     "ja": "ガズヴィーン州",
@@ -713,22 +1813,27 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "IRN-3235"
+      "IRN-ADM2-26516999B22288495117377",
+      "IRN-ADM2-26516999B12511349308112",
+      "IRN-ADM2-26516999B92441425098461",
+      "IRN-ADM2-26516999B97759541837307",
+      "IRN-ADM2-26516999B1248286061350",
+      "IRN-ADM2-26516999B36207654564503"
      ],
      "sources": [
       {
        "url": "https://lamtakam.com/law/council_of_ministers/92861",
-       "title": "قانون ایجاد استان قزوین (Law on establishing Qazvin province), Official Gazette no. 15239",
+       "title": "Law on the establishment of Qazvin province (lamtakam.com law text)",
        "says": "Qazvin, Buin Zahra and Takestan counties form Qazvin province, taken from Tehran and Zanjan provinces; Majlis 1376/03/04, published 1376/04/08 (1997-06-29).",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Gazette publication date; Statoids/Wikipedia give 1996-12-31, which predates the Majlis vote (1997-05-25)."
+     "dateNote": "Gazette publication (1376/04/08); Statoids/Wikipedia give 1996-12-31, before the Majlis vote, and are not used."
     }
    ]
   },
   {
-   "id": "IRN:Qom@1997",
+   "id": "IRN:Qom",
    "names": {
     "en": "Qom Province",
     "ja": "ゴム州",
@@ -737,90 +1842,32 @@
    "wikidata": "Q131664",
    "spans": [
     {
-     "from": "1997-06-29",
+     "from": "1996-04-23",
      "precision": "day",
      "to": null,
      "atoms": [
-      "IRN-3232"
+      "IRN-ADM2-26516999B32628597066486"
      ],
      "sources": [
       {
        "url": "https://en.wikipedia.org/w/index.php?oldid=1376579684",
-       "title": "Qom province — Wikipedia (oldid 1376579684)",
-       "says": "Formed from part of Tehran province in 1996; cites the Law on the establishment of Qom province, approved 1375/02/04 (23 April 1996).",
-       "accessed": "2026-10-05"
+       "title": "en.Wikipedia «Qom province» (oldid 1376579684)",
+       "says": "Formed from part of Tehran province in 1996; cites the law on the establishment of Qom province approved 1375/02/04 (23 April 1996).",
+       "accessed": "2026-10-06"
       },
       {
-       "url": "https://statoids.com/uir.html",
-       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
-       "says": "1995: Qom province formed by taking Qom county from Tehran province.",
-       "accessed": "2026-10-05"
+       "url": "https://fa.wikipedia.org/w/index.php?oldid=44615929",
+       "title": "fa.Wikipedia «استان مرکزی» (oldid 44615929)",
+       "says": "Tehran (with today’s Alborz) left Markazi in Mehr 1357; Kashan went to Isfahan by a 1357 decree; Qom county went from Markazi to Tehran in 1365 and became a province in 1375.",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Qom province existed from 1996 (law approved 1996-04-23); the atom is left inside the unresolved Tehran–Zanjan block until the Qazvin law because Tehran's pre-1997 extent is unknown. Span start is therefore conservative, not the founding date."
+     "dateNote": "Law approval 1375/02/04 (1996-04-23); the province is Qom county whole."
     }
    ]
   },
   {
-   "id": "IRN:Tehran@1997",
-   "names": {
-    "en": "Tehran Province",
-    "ja": "テヘラン州",
-    "local": "استان تهران"
-   },
-   "wikidata": "Q590866",
-   "spans": [
-    {
-     "from": "1997-06-29",
-     "precision": "day",
-     "to": "2010-06-23",
-     "atoms": [
-      "IRN-3216",
-      "IRN-5490"
-     ],
-     "sources": [
-      {
-       "url": "https://lamtakam.com/law/council_of_ministers/92861",
-       "title": "قانون ایجاد استان قزوین (Law on establishing Qazvin province), Official Gazette no. 15239",
-       "says": "Qazvin, Buin Zahra and Takestan counties form Qazvin province, taken from Tehran and Zanjan provinces; Majlis 1376/03/04, published 1376/04/08 (1997-06-29).",
-       "accessed": "2026-10-05"
-      },
-      {
-       "url": "https://en.wikipedia.org/w/index.php?oldid=1374586947",
-       "title": "Alborz province — Wikipedia (oldid 1374586947)",
-       "says": "In 2010 Karaj, Nazarabad and Savojbolagh counties were separated from Tehran province to form Alborz; law approval 1389/04/02 (23 June 2010).",
-       "accessed": "2026-10-05"
-      }
-     ],
-     "dateNote": "Tehran province after the Qazvin law and before Alborz = union of the modern Tehran and Alborz atoms (Alborz made wholly of three Tehran counties)."
-    },
-    {
-     "from": "2010-06-23",
-     "precision": "day",
-     "to": null,
-     "atoms": [
-      "IRN-3216"
-     ],
-     "sources": [
-      {
-       "url": "https://en.wikipedia.org/w/index.php?oldid=1374586947",
-       "title": "Alborz province — Wikipedia (oldid 1374586947)",
-       "says": "In 2010 Karaj, Nazarabad and Savojbolagh counties were separated from Tehran province to form Alborz; law approval 1389/04/02 (23 June 2010).",
-       "accessed": "2026-10-05"
-      },
-      {
-       "url": "https://statoids.com/uir.html",
-       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
-       "says": "2010-06-23: Alborz province split from Tehran (Karaj, Nazarabad, Savojbolagh).",
-       "accessed": "2026-10-05"
-      }
-     ],
-     "dateNote": "Majlis approval date of the Alborz law (1389/04/02), also given by Statoids as the change date."
-    }
-   ]
-  },
-  {
-   "id": "IRN:Alborz@2010",
+   "id": "IRN:Alborz",
    "names": {
     "en": "Alborz Province",
     "ja": "アルボルズ州",
@@ -833,22 +1880,27 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "IRN-5490"
+      "IRN-ADM2-26516999B3241280506075",
+      "IRN-ADM2-26516999B84495228881975",
+      "IRN-ADM2-26516999B30076408008576",
+      "IRN-ADM2-26516999B18640438628843",
+      "IRN-ADM2-26516999B31487954135890",
+      "IRN-ADM2-26516999B32748483520397"
      ],
      "sources": [
       {
        "url": "https://en.wikipedia.org/w/index.php?oldid=1374586947",
-       "title": "Alborz province — Wikipedia (oldid 1374586947)",
+       "title": "en.Wikipedia «Alborz province» (oldid 1374586947)",
        "says": "In 2010 Karaj, Nazarabad and Savojbolagh counties were separated from Tehran province to form Alborz; law approval 1389/04/02 (23 June 2010).",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Majlis approval date (1389/04/02); later additions (Eshtehard, Taleqan) were districts of the founding counties."
+     "dateNote": "Majlis approval (1389/04/02)."
     }
    ]
   },
   {
-   "id": "IRN:Khorasan@2002",
+   "id": "IRN:Khorasan",
    "names": {
     "en": "Khorasan Province",
     "ja": "ホラーサーン",
@@ -857,80 +1909,152 @@
    "wikidata": "Q6178890",
    "spans": [
     {
+     "from": "1986-10-08",
+     "precision": "day",
+     "to": "2001-03-21",
+     "atoms": [
+      "IRN-ADM2-26516999B34169158572719",
+      "IRN-ADM2-26516999B71024891434715",
+      "IRN-ADM2-26516999B82161823889319",
+      "IRN-ADM2-26516999B44238666440515",
+      "IRN-ADM2-26516999B98998438809914",
+      "IRN-ADM2-26516999B43189584883238",
+      "IRN-ADM2-26516999B18019305512029",
+      "IRN-ADM2-26516999B3151020278107",
+      "IRN-ADM2-26516999B60480097525972",
+      "IRN-ADM2-26516999B13007563432776",
+      "IRN-ADM2-26516999B81995248888147",
+      "IRN-ADM2-26516999B83444105476451",
+      "IRN-ADM2-26516999B56578565954588",
+      "IRN-ADM2-26516999B40412890406651",
+      "IRN-ADM2-26516999B82780078890840",
+      "IRN-ADM2-26516999B94438413494599",
+      "IRN-ADM2-26516999B25927625334819",
+      "IRN-ADM2-26516999B59750662819708",
+      "IRN-ADM2-26516999B38857085199860",
+      "IRN-ADM2-26516999B83918899556553",
+      "IRN-ADM2-26516999B95142806063695",
+      "IRN-ADM2-26516999B83582562113634",
+      "IRN-ADM2-26516999B26667266803329",
+      "IRN-ADM2-26516999B73673362951541",
+      "IRN-ADM2-26516999B90586069770235",
+      "IRN-ADM2-26516999B41264207363212",
+      "IRN-ADM2-26516999B86055394195727",
+      "IRN-ADM2-26516999B82440039794337",
+      "IRN-ADM2-26516999B36132738090771",
+      "IRN-ADM2-26516999B15643801602770",
+      "IRN-ADM2-26516999B28118151729358",
+      "IRN-ADM2-26516999B34734291891056",
+      "IRN-ADM2-26516999B64169470777031",
+      "IRN-ADM2-26516999B39018807994192",
+      "IRN-ADM2-26516999B82528120548879",
+      "IRN-ADM2-26516999B37015415111440",
+      "IRN-ADM2-26516999B13201432598238",
+      "IRN-ADM2-26516999B91960059161490",
+      "IRN-ADM2-26516999B8321186821121",
+      "IRN-ADM2-26516999B74391222088225",
+      "IRN-ADM2-26516999B97570022534661",
+      "IRN-ADM2-26516999B84474148191523",
+      "IRN-ADM2-26516999B14554721742760",
+      "IRN-ADM2-26516999B57025947176860",
+      "IRN-ADM2-26516999B75811430051425",
+      "IRN-ADM2-26516999B91230303463917",
+      "IRN-ADM2-26516999B41834556106571"
+     ],
+     "sources": [
+      {
+       "url": "https://fa.wikipedia.org/w/index.php?oldid=44596070",
+       "title": "fa.Wikipedia «شهرستان طبس» (oldid 44596070)",
+       "says": "In SH 1380 Tabas county left Khorasan and joined Yazd province; in SH 1391 it joined South Khorasan.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26), change history",
+       "says": "The ~1986 table lists Khorasan (incl. Tabas); ~2002 Tabas to Yazd; 2004-09-29 divided into three.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.iranicaonline.org/articles/census-i/",
+       "title": "Encyclopaedia Iranica, «CENSUS i. In Iran»",
+       "says": "The 1986 census was taken 16–30 Mehr 1365 (8–22 October 1986).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Earliest date drawn: the 1986 census (16–30 Mehr 1365 = 8–22 Oct 1986), the earliest dated statement of the 24-province layout found. The layout is older (Tehran province from Mehr 1357; Qom county joined Tehran in 1365); the earlier window is in unresolved. Khorasan = today’s North, Razavi and South Khorasan including Tabas."
+    },
+    {
      "from": "2002-03-21",
      "precision": "day",
      "to": "2004-09-29",
      "atoms": [
-      "IRN-3246",
-      "IRN-3245",
-      "IRN-3244"
+      "IRN-ADM2-26516999B34169158572719",
+      "IRN-ADM2-26516999B71024891434715",
+      "IRN-ADM2-26516999B82161823889319",
+      "IRN-ADM2-26516999B44238666440515",
+      "IRN-ADM2-26516999B98998438809914",
+      "IRN-ADM2-26516999B43189584883238",
+      "IRN-ADM2-26516999B18019305512029",
+      "IRN-ADM2-26516999B3151020278107",
+      "IRN-ADM2-26516999B60480097525972",
+      "IRN-ADM2-26516999B13007563432776",
+      "IRN-ADM2-26516999B81995248888147",
+      "IRN-ADM2-26516999B83444105476451",
+      "IRN-ADM2-26516999B56578565954588",
+      "IRN-ADM2-26516999B40412890406651",
+      "IRN-ADM2-26516999B82780078890840",
+      "IRN-ADM2-26516999B94438413494599",
+      "IRN-ADM2-26516999B25927625334819",
+      "IRN-ADM2-26516999B59750662819708",
+      "IRN-ADM2-26516999B38857085199860",
+      "IRN-ADM2-26516999B83918899556553",
+      "IRN-ADM2-26516999B95142806063695",
+      "IRN-ADM2-26516999B83582562113634",
+      "IRN-ADM2-26516999B26667266803329",
+      "IRN-ADM2-26516999B73673362951541",
+      "IRN-ADM2-26516999B90586069770235",
+      "IRN-ADM2-26516999B41264207363212",
+      "IRN-ADM2-26516999B86055394195727",
+      "IRN-ADM2-26516999B82440039794337",
+      "IRN-ADM2-26516999B36132738090771",
+      "IRN-ADM2-26516999B15643801602770",
+      "IRN-ADM2-26516999B28118151729358",
+      "IRN-ADM2-26516999B34734291891056",
+      "IRN-ADM2-26516999B64169470777031",
+      "IRN-ADM2-26516999B39018807994192",
+      "IRN-ADM2-26516999B82528120548879",
+      "IRN-ADM2-26516999B37015415111440",
+      "IRN-ADM2-26516999B13201432598238",
+      "IRN-ADM2-26516999B91960059161490",
+      "IRN-ADM2-26516999B8321186821121",
+      "IRN-ADM2-26516999B74391222088225",
+      "IRN-ADM2-26516999B97570022534661",
+      "IRN-ADM2-26516999B84474148191523",
+      "IRN-ADM2-26516999B14554721742760",
+      "IRN-ADM2-26516999B57025947176860",
+      "IRN-ADM2-26516999B75811430051425",
+      "IRN-ADM2-26516999B41834556106571"
      ],
      "sources": [
       {
        "url": "https://fa.wikipedia.org/w/index.php?oldid=44596070",
-       "title": "شهرستان طبس — ویکی‌پدیای فارسی (oldid 44596070)",
+       "title": "fa.Wikipedia «شهرستان طبس» (oldid 44596070)",
        "says": "In SH 1380 Tabas county left Khorasan and joined Yazd province; in SH 1391 it joined South Khorasan.",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://en.wikipedia.org/w/index.php?oldid=1376937801",
-       "title": "North Khorasan province — Wikipedia (oldid 1376937801)",
+       "title": "en.Wikipedia «Khorasan province» (oldid 1376937801)",
        "says": "Khorasan was divided into North, Razavi and South Khorasan on 29 September 2004 (law approved 18 and 29 May 2004).",
-       "accessed": "2026-10-05"
-      },
-      {
-       "url": "https://statoids.com/uir.html",
-       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
-       "says": "~2002: Tabas transferred Khorasan→Yazd; 2004-09-29 Khorasan divided into three provinces.",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "After Tabas left (during SH 1380 = 2001-03-21…2002-03-20; day not found) Khorasan = union of the three successor atoms. Span starts 1 Farvardin 1381 so that nothing uncertain is claimed; the earlier window is unresolved."
+     "dateNote": "After Tabas left during SH 1380 (day not found): from 1 Farvardin 1381 to the split."
     }
    ]
   },
   {
-   "id": "IRN:Yazd@2002",
-   "names": {
-    "en": "Yazd Province",
-    "ja": "ヤズド州",
-    "local": "استان یزد"
-   },
-   "wikidata": "Q170568",
-   "spans": [
-    {
-     "from": "2002-03-21",
-     "precision": "day",
-     "to": "2013-01-13",
-     "atoms": [
-      "IRN-3217"
-     ],
-     "sources": [
-      {
-       "url": "https://fa.wikipedia.org/w/index.php?oldid=44596070",
-       "title": "شهرستان طبس — ویکی‌پدیای فارسی (oldid 44596070)",
-       "says": "In SH 1380 Tabas county left Khorasan and joined Yazd province; in SH 1391 it joined South Khorasan.",
-       "accessed": "2026-10-05"
-      },
-      {
-       "url": "https://en.wikipedia.org/w/index.php?oldid=1375775611",
-       "title": "Deyhuk District — Wikipedia (oldid 1375775611)",
-       "says": "Cites approval letter 24/10/1391 (13 January 2013) detaching Tabas County from Yazd and annexing it to South Khorasan.",
-       "accessed": "2026-10-05"
-      },
-      {
-       "url": "https://en.wikipedia.org/w/index.php?oldid=1345255752",
-       "title": "Provinces of Iran — Wikipedia (oldid 1345255752)",
-       "says": "Table notes: Qazvin formed 31 Dec 1996 from Zanjan; Golestan 31 May 1997 from Mazandaran; Tabas moved Khorasan→Yazd 2002; 31 provinces.",
-       "accessed": "2026-10-05"
-      }
-     ],
-     "dateNote": "NE Yazd contains Tabas (point-in-polygon test, Tabas and Deyhuk fall in IRN-3217). Valid only while Tabas was in Yazd: from the end of SH 1380 (conservative) to the cabinet approval of 2013-01-13 (announced 2013-03-13)."
-    }
-   ]
-  },
-  {
-   "id": "IRN:NorthKhorasan@2004",
+   "id": "IRN:NorthKhorasan",
    "names": {
     "en": "North Khorasan Province",
     "ja": "北ホラーサーン州",
@@ -943,161 +2067,236 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "IRN-3246"
+      "IRN-ADM2-26516999B34169158572719",
+      "IRN-ADM2-26516999B71024891434715",
+      "IRN-ADM2-26516999B82161823889319",
+      "IRN-ADM2-26516999B44238666440515",
+      "IRN-ADM2-26516999B98998438809914",
+      "IRN-ADM2-26516999B43189584883238",
+      "IRN-ADM2-26516999B18019305512029",
+      "IRN-ADM2-26516999B3151020278107"
      ],
      "sources": [
       {
        "url": "https://en.wikipedia.org/w/index.php?oldid=1376937801",
-       "title": "North Khorasan province — Wikipedia (oldid 1376937801)",
+       "title": "en.Wikipedia «Khorasan province» (oldid 1376937801)",
        "says": "Khorasan was divided into North, Razavi and South Khorasan on 29 September 2004 (law approved 18 and 29 May 2004).",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://statoids.com/uir.html",
-       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26)",
-       "says": "2004-09-29: Bojnurd, Esfarayen, Jajarm, Maneh and Samalqan, Shirvan to North Khorasan; later transfers listed only between Razavi and South Khorasan.",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26), change history",
+       "says": "2004-09-29: Bojnurd, Esfarayen, Jajarm, Maneh and Samalqan, Shirvan to North Khorasan; later transfers only between Razavi and South Khorasan.",
+       "accessed": "2026-10-06"
       }
-     ]
+     ],
+     "dateNote": "Day of the division."
+    }
+   ]
+  },
+  {
+   "id": "IRN:RazaviKhorasan",
+   "names": {
+    "en": "Razavi Khorasan Province",
+    "ja": "ラザヴィー・ホラーサーン州",
+    "local": "استان خراسان رضوی"
+   },
+   "wikidata": "Q587090",
+   "spans": [
+    {
+     "from": "2007-03-21",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-ADM2-26516999B60480097525972",
+      "IRN-ADM2-26516999B13007563432776",
+      "IRN-ADM2-26516999B81995248888147",
+      "IRN-ADM2-26516999B83444105476451",
+      "IRN-ADM2-26516999B56578565954588",
+      "IRN-ADM2-26516999B40412890406651",
+      "IRN-ADM2-26516999B82780078890840",
+      "IRN-ADM2-26516999B94438413494599",
+      "IRN-ADM2-26516999B25927625334819",
+      "IRN-ADM2-26516999B59750662819708",
+      "IRN-ADM2-26516999B38857085199860",
+      "IRN-ADM2-26516999B83918899556553",
+      "IRN-ADM2-26516999B95142806063695",
+      "IRN-ADM2-26516999B83582562113634",
+      "IRN-ADM2-26516999B26667266803329",
+      "IRN-ADM2-26516999B73673362951541",
+      "IRN-ADM2-26516999B90586069770235",
+      "IRN-ADM2-26516999B41264207363212",
+      "IRN-ADM2-26516999B86055394195727",
+      "IRN-ADM2-26516999B82440039794337",
+      "IRN-ADM2-26516999B36132738090771",
+      "IRN-ADM2-26516999B15643801602770",
+      "IRN-ADM2-26516999B28118151729358",
+      "IRN-ADM2-26516999B34734291891056",
+      "IRN-ADM2-26516999B64169470777031",
+      "IRN-ADM2-26516999B39018807994192",
+      "IRN-ADM2-26516999B82528120548879",
+      "IRN-ADM2-26516999B37015415111440"
+     ],
+     "sources": [
+      {
+       "url": "https://fa.wikipedia.org/w/index.php?oldid=44261026",
+       "title": "fa.Wikipedia «شهرستان فردوس» (oldid 44261026)",
+       "says": "After the 2004 split Ferdows belonged to Razavi Khorasan until Esfand 1385, when a government decision attached it to South Khorasan; Sarayan bakhsh of Ferdows became a county in 1384 and joined South Khorasan.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fa.wikipedia.org/w/index.php?oldid=44289329",
+       "title": "fa.Wikipedia «استان خراسان جنوبی» (oldid 44289329)",
+       "says": "Qaen (Qaenat) joined South Khorasan late in SH 1383; Ferdows joined after efforts that succeeded in 1386; Boshruyeh bakhsh of Ferdows became a county in 1387; Tabas joined from Yazd in the last days of 1391.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://statoids.com/uir.html",
+       "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26), change history",
+       "says": "2007-03: Ferdows county transferred from Razavi Khorasan to South Khorasan.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Earliest date drawn: 1 Farvardin 1386, after Ferdows (with its Boshruyeh bakhsh) joined South Khorasan in Esfand 1385 (Statoids: 2007-03). Qaenat (with today’s Zirkuh) joined late in SH 1383 and Sarayan in SH 1384; the 2004-09-29 → 2007-03-21 window is unresolved."
+    }
+   ]
+  },
+  {
+   "id": "IRN:SouthKhorasan",
+   "names": {
+    "en": "South Khorasan Province",
+    "ja": "南ホラーサーン州",
+    "local": "استان خراسان جنوبی"
+   },
+   "wikidata": "Q171551",
+   "spans": [
+    {
+     "from": "2007-03-21",
+     "precision": "day",
+     "to": "2013-01-13",
+     "atoms": [
+      "IRN-ADM2-26516999B13201432598238",
+      "IRN-ADM2-26516999B91960059161490",
+      "IRN-ADM2-26516999B8321186821121",
+      "IRN-ADM2-26516999B74391222088225",
+      "IRN-ADM2-26516999B97570022534661",
+      "IRN-ADM2-26516999B84474148191523",
+      "IRN-ADM2-26516999B14554721742760",
+      "IRN-ADM2-26516999B57025947176860",
+      "IRN-ADM2-26516999B75811430051425",
+      "IRN-ADM2-26516999B41834556106571"
+     ],
+     "sources": [
+      {
+       "url": "https://fa.wikipedia.org/w/index.php?oldid=44261026",
+       "title": "fa.Wikipedia «شهرستان فردوس» (oldid 44261026)",
+       "says": "After the 2004 split Ferdows belonged to Razavi Khorasan until Esfand 1385, when a government decision attached it to South Khorasan; Sarayan bakhsh of Ferdows became a county in 1384 and joined South Khorasan.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fa.wikipedia.org/w/index.php?oldid=44289329",
+       "title": "fa.Wikipedia «استان خراسان جنوبی» (oldid 44289329)",
+       "says": "Qaen (Qaenat) joined South Khorasan late in SH 1383; Ferdows joined after efforts that succeeded in 1386; Boshruyeh bakhsh of Ferdows became a county in 1387; Tabas joined from Yazd in the last days of 1391.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Earliest date drawn: 1 Farvardin 1386, after Ferdows (with its Boshruyeh bakhsh) joined South Khorasan in Esfand 1385 (Statoids: 2007-03). Qaenat (with today’s Zirkuh) joined late in SH 1383 and Sarayan in SH 1384; the 2004-09-29 → 2007-03-21 window is unresolved."
+    },
+    {
+     "from": "2013-01-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IRN-ADM2-26516999B13201432598238",
+      "IRN-ADM2-26516999B91960059161490",
+      "IRN-ADM2-26516999B8321186821121",
+      "IRN-ADM2-26516999B74391222088225",
+      "IRN-ADM2-26516999B97570022534661",
+      "IRN-ADM2-26516999B84474148191523",
+      "IRN-ADM2-26516999B14554721742760",
+      "IRN-ADM2-26516999B57025947176860",
+      "IRN-ADM2-26516999B75811430051425",
+      "IRN-ADM2-26516999B91230303463917",
+      "IRN-ADM2-26516999B41834556106571"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375775611",
+       "title": "en.Wikipedia «Deyhuk District» (oldid 1375775611)",
+       "says": "Cites the approval letter of 24/10/1391 (13 January 2013) detaching Tabas County from Yazd and annexing it to South Khorasan.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fa.wikipedia.org/w/index.php?oldid=44289329",
+       "title": "fa.Wikipedia «استان خراسان جنوبی» (oldid 44289329)",
+       "says": "Qaen (Qaenat) joined South Khorasan late in SH 1383; Ferdows joined after efforts that succeeded in 1386; Boshruyeh bakhsh of Ferdows became a county in 1387; Tabas joined from Yazd in the last days of 1391.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "With Tabas from the approval of 24/10/1391 (2013-01-13)."
     }
    ]
   }
  ],
- "events": [
+ "events": [],
+ "counts": [
   {
-   "date": "1993-04-12",
-   "precision": "day",
-   "what": "Ardabil province separated from East Azerbaijan",
+   "date": "1986-10-22",
+   "n": 24,
    "sources": [
     {
-     "url": "https://www.mefa.ir/news/644125/",
-     "title": "آشنایی با استان اردبیل (mefa.ir)",
-     "says": "Ardabil bill passed Majlis 22 Dey 1371; province separated from East Azerbaijan on 23 Farvardin 1372 (1993-04-12).",
-     "accessed": "2026-10-05"
+     "url": "https://statoids.com/uir.html",
+     "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26), change history",
+     "says": "Table «divisions of Iran at about the time of the 1986 census»: 24 provinces.",
+     "accessed": "2026-10-06"
     }
    ]
   },
   {
-   "date": "1996-04-23",
-   "precision": "day",
-   "what": "Majlis approves law establishing Qom province from Qom county of Tehran province",
+   "date": "1993-06-01",
+   "n": 25,
    "sources": [
     {
-     "url": "https://en.wikipedia.org/w/index.php?oldid=1376579684",
-     "title": "Qom province — Wikipedia (oldid 1376579684)",
-     "says": "Formed from part of Tehran province in 1996; cites the Law on the establishment of Qom province, approved 1375/02/04 (23 April 1996).",
-     "accessed": "2026-10-05"
+     "url": "https://statoids.com/uir.html",
+     "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26), change history",
+     "says": "1993: Ardebil split from East Azarbaijan (24 → 25).",
+     "accessed": "2026-10-06"
     }
    ]
   },
   {
-   "date": "1997-06-29",
-   "precision": "day",
-   "what": "Law establishing Qazvin province (from Tehran and Zanjan) published",
+   "date": "1998-02-01",
+   "n": 28,
    "sources": [
     {
-     "url": "https://lamtakam.com/law/council_of_ministers/92861",
-     "title": "قانون ایجاد استان قزوین (Law on establishing Qazvin province), Official Gazette no. 15239",
-     "says": "Qazvin, Buin Zahra and Takestan counties form Qazvin province, taken from Tehran and Zanjan provinces; Majlis 1376/03/04, published 1376/04/08 (1997-06-29).",
-     "accessed": "2026-10-05"
+     "url": "https://statoids.com/uir.html",
+     "title": "Statoids — Provinces of Iran (Gwillim Law, updated 2015-10-26), change history",
+     "says": "Qom (1995/96), Qazvin (1996/97) and Golestan (1997/98) added to the 25 provinces.",
+     "accessed": "2026-10-06"
     }
    ]
   },
   {
-   "date": "1998-01-19",
-   "precision": "day",
-   "what": "Law establishing Golestan province (from Mazandaran) published",
-   "sources": [
-    {
-     "url": "https://lamtakam.com/law/council_of_ministers/93027",
-     "title": "قانون تأسیس استان گلستان (Law on establishing Golestan province), Official Gazette no. 15412",
-     "says": "Seven counties taken from Mazandaran form Golestan; Majlis 1376/09/16, Guardian Council 1376/10/03, published 1376/10/29 (1998-01-19).",
-     "accessed": "2026-10-05"
-    }
-   ]
-  },
-  {
-   "date": "2001",
-   "precision": "year",
-   "what": "Tabas county moved from Khorasan to Yazd during SH 1380 (2001-03-21…2002-03-20)",
-   "sources": [
-    {
-     "url": "https://fa.wikipedia.org/w/index.php?oldid=44596070",
-     "title": "شهرستان طبس — ویکی‌پدیای فارسی (oldid 44596070)",
-     "says": "In SH 1380 Tabas county left Khorasan and joined Yazd province; in SH 1391 it joined South Khorasan.",
-     "accessed": "2026-10-05"
-    }
-   ]
-  },
-  {
-   "date": "2004-09-29",
-   "precision": "day",
-   "what": "Khorasan divided into North, Razavi and South Khorasan",
+   "date": "2004-10-01",
+   "n": 30,
    "sources": [
     {
      "url": "https://en.wikipedia.org/w/index.php?oldid=1376937801",
-     "title": "North Khorasan province — Wikipedia (oldid 1376937801)",
+     "title": "en.Wikipedia «Khorasan province» (oldid 1376937801)",
      "says": "Khorasan was divided into North, Razavi and South Khorasan on 29 September 2004 (law approved 18 and 29 May 2004).",
-     "accessed": "2026-10-05"
+     "accessed": "2026-10-06"
     }
    ]
   },
-  {
-   "date": "2007-03-04",
-   "precision": "day",
-   "what": "Ferdows county moved from Razavi Khorasan to South Khorasan",
-   "sources": [
-    {
-     "url": "https://en.wikipedia.org/w/index.php?oldid=1375875565",
-     "title": "Ferdows County — Wikipedia (oldid 1375875565)",
-     "says": "Ferdows County was first in Razavi Khorasan (2004 law) and was incorporated into South Khorasan by an approval of 4 March 2007.",
-     "accessed": "2026-10-05"
-    }
-   ]
-  },
-  {
-   "date": "2010-06-23",
-   "precision": "day",
-   "what": "Alborz province formed from three Tehran counties",
-   "sources": [
-    {
-     "url": "https://en.wikipedia.org/w/index.php?oldid=1374586947",
-     "title": "Alborz province — Wikipedia (oldid 1374586947)",
-     "says": "In 2010 Karaj, Nazarabad and Savojbolagh counties were separated from Tehran province to form Alborz; law approval 1389/04/02 (23 June 2010).",
-     "accessed": "2026-10-05"
-    }
-   ]
-  },
-  {
-   "date": "2013-01-13",
-   "precision": "day",
-   "what": "Cabinet approves moving Tabas county from Yazd to South Khorasan (announced 2013-03-13)",
-   "sources": [
-    {
-     "url": "https://en.wikipedia.org/w/index.php?oldid=1375775611",
-     "title": "Deyhuk District — Wikipedia (oldid 1375775611)",
-     "says": "Cites approval letter 24/10/1391 (13 January 2013) detaching Tabas County from Yazd and annexing it to South Khorasan.",
-     "accessed": "2026-10-05"
-    },
-    {
-     "url": "https://www.hamshahrionline.ir/news/205056/",
-     "title": "شهرستان طبس از استان یزد جدا شد — Hamshahri Online, 22 Esfand 1391 (2013-03-13)",
-     "says": "Government decision announced: Tabas county separated from Yazd province and annexed to South Khorasan.",
-     "accessed": "2026-10-05"
-    }
-   ]
-  }
- ],
- "counts": [
   {
    "date": "2019-01-01",
    "n": 31,
    "sources": [
     {
      "url": "https://en.wikipedia.org/w/index.php?oldid=1345255752",
-     "title": "Provinces of Iran — Wikipedia (oldid 1345255752)",
-     "says": "Table notes: Qazvin formed 31 Dec 1996 from Zanjan; Golestan 31 May 1997 from Mazandaran; Tabas moved Khorasan→Yazd 2002; 31 provinces.",
-     "accessed": "2026-10-05"
+     "title": "en.Wikipedia «Provinces of Iran» (oldid 1345255752)",
+     "says": "Iran has 31 provinces.",
+     "accessed": "2026-10-06"
     }
    ]
   }
@@ -1105,109 +2304,234 @@
  "atomsOutside": [],
  "unresolved": [
   {
-   "what": "Iranian provincial layouts before 1993-04-12 (1950 ten numbered ostans; governorate promotions ~1960-1981; ~1986 Markazi/Tehran split with transfers to Esfahan, Semnan, Zanjan and Kerman→Yazd)",
-   "from": "1900",
-   "to": "1993-04-12",
-   "why": "Statoids records several partial transfers (parts of Markazi to Esfahan, Semnan, Zanjan; part of Kerman to Yazd, c.1986) with only approximate dates; these lines run inside modern atoms and the dates are not established. Not attempted.",
+   "what": "Iranian provincial layouts before the 1986 census (1937 law: ostans and 50 shahrestans, then 10 numbered ostans; farmandari-ye kol promoted 1952–1976; Tehran province from Mehr 1357; Qazvin to Zanjan ~1356; Kashan to Isfahan 1357; Qom county to Tehran 1365)",
+   "from": null,
+   "to": null,
+   "why": "Outside the scope. The 1937–1986 ostans and governorates were made of the shahrestans of their day, whose lines were redrawn many times since (e.g. Bukan 1344, Marvast/Herat 1359, Sarband/Delijan 1358–59, Abarkuh 1366); several changes are dated only to the year. A layout drawn from today’s counties would claim lines that cannot be shown to have existed.",
    "checked": [
-    "statoids.com/uir.html",
-    "Provinces of Iran (Wikipedia oldid 1345255752)"
+    "fa.Wikipedia «تاریخچه تقسیمات کشوری ایران»",
+    "fa.Wikipedia province articles (Markazi oldid 44615929, Tehran 44630068, Semnan 44615697, Yazd 44616301, Zanjan 44498873 and others)",
+    "thmporg.ir census-by-census composition of Tehran 1335–1365",
+    "Statoids uir.html / yir.html",
+    "Encyclopaedia Iranica «CENSUS i»"
    ],
-   "needs": "dated decrees for the 1986 reorganisation and county-level atoms (e.g. geoBoundaries IRN ADM2, check licence)"
+   "needs": "dated cabinet decrees for every shahrestan transfer 1937–1986 and shahrestan outlines of those years (or bakhsh/dehestan atoms)"
   },
   {
-   "what": "Tehran province (with Qom county until 1996, and the Tehran-side units later given to Qazvin) and Zanjan province (with Qazvin county) before the Qazvin law",
-   "unit": "IRN:Tehran@1997",
+   "what": "Fars / Yazd during SH 1366 (Abarkuh bakhsh moved from Fars to Yazd, day not found)",
+   "unit": "IRN:Yazd",
    "atoms": [
-    "IRN-3216",
-    "IRN-5490",
-    "IRN-3232",
-    "IRN-3235",
-    "IRN-3234"
+    "IRN-ADM2-26516999B39151476361698",
+    "IRN-ADM2-26516999B54037117701761",
+    "IRN-ADM2-26516999B33258325620820",
+    "IRN-ADM2-26516999B49523904635025",
+    "IRN-ADM2-26516999B20073535554131",
+    "IRN-ADM2-26516999B90083536047061",
+    "IRN-ADM2-26516999B88811296722818",
+    "IRN-ADM2-26516999B32257300927621",
+    "IRN-ADM2-26516999B97388051072743",
+    "IRN-ADM2-26516999B65660347724628",
+    "IRN-ADM2-26516999B82593167652364",
+    "IRN-ADM2-26516999B72847577610402",
+    "IRN-ADM2-26516999B94987113860520",
+    "IRN-ADM2-26516999B2481614878910",
+    "IRN-ADM2-26516999B58492425906505",
+    "IRN-ADM2-26516999B49627728280640",
+    "IRN-ADM2-26516999B27771522164434",
+    "IRN-ADM2-26516999B3184808068268",
+    "IRN-ADM2-26516999B94287029098573",
+    "IRN-ADM2-26516999B72018241883703",
+    "IRN-ADM2-26516999B20481554870260",
+    "IRN-ADM2-26516999B18065523740752",
+    "IRN-ADM2-26516999B67593588074579",
+    "IRN-ADM2-26516999B39156021405543",
+    "IRN-ADM2-26516999B60579871210289",
+    "IRN-ADM2-26516999B20685226211808",
+    "IRN-ADM2-26516999B41792947819586",
+    "IRN-ADM2-26516999B78420469397297",
+    "IRN-ADM2-26516999B10093051490570",
+    "IRN-ADM2-26516999B58328562389762",
+    "IRN-ADM2-26516999B70166389265173",
+    "IRN-ADM2-26516999B53432282490231",
+    "IRN-ADM2-26516999B3184386646186",
+    "IRN-ADM2-26516999B58609738692200",
+    "IRN-ADM2-26516999B56806517565330",
+    "IRN-ADM2-26516999B48761790846180",
+    "IRN-ADM2-26516999B46491324927495",
+    "IRN-ADM2-26516999B49616713660661",
+    "IRN-ADM2-26516999B26309538852698"
    ],
-   "from": "1993-04-12",
-   "to": "1997-06-29",
-   "why": "The Qazvin law takes its units from BOTH Tehran and Zanjan without saying which; Statoids and en.Wikipedia say all of Qazvin came from Zanjan, fa.Wikipedia and the Statoids county page say Qazvin county came from Tehran. The pre-1997 Tehran–Zanjan line therefore runs inside the Qazvin atom at an unknown place. Qom province (created 1996, law approved 1996-04-23, entry into force not found) is also inside this block.",
+   "from": "1987-03-21",
+   "to": "1988-03-21",
+   "why": "fa.Wikipedia states the year only; during it Abarkuh may belong to either province.",
    "checked": [
-    "Qazvin law (lamtakam 92861)",
-    "statoids.com/uir.html and yir.html (contradict each other)",
-    "Qazvin province en.Wikipedia oldid 1376561715",
-    "fa.Wikipedia استان قزوین",
-    "Qom province en.Wikipedia oldid 1376579684",
-    "fa.Wikipedia استان قم oldid 44260296 (gives SH 1375)"
+    "fa.Wikipedia «استان یزد» oldid 44616301",
+    "fa.Wikipedia «شهرستان ابرکوه» oldid 44059214 (no date)",
+    "Statoids uir.html (not listed)"
    ],
-   "needs": "1996 county lists of Tehran and Zanjan (Statistical Centre of Iran census atlas) and county atoms (geoBoundaries IRN ADM2)"
+   "needs": "the cabinet decision of SH 1366 transferring Abarkuh"
   },
   {
-   "what": "Mazandaran / Golestan between the earliest stated split date and the law's publication",
-   "unit": "IRN:Mazandaran@1993",
-   "atoms": [
-    "IRN-3214",
-    "IRN-3213"
-   ],
-   "from": "1997-05-31",
-   "to": "1998-01-19",
-   "why": "Statoids and en.Wikipedia date Golestan to 1997-05-31 (no primary source); the founding law was voted 1997-12-07 and published 1998-01-19 and only authorises the government to establish the province. The day the province actually came into being is not established.",
+   "what": "Fars during SH 1366",
+   "unit": "IRN:Fars",
+   "from": "1987-03-21",
+   "to": "1988-03-21",
+   "why": "As above (the atoms are withheld by the entry above).",
    "checked": [
-    "Golestan law (lamtakam 93027)",
-    "statoids.com/uir.html",
-    "Golestan province en.Wikipedia oldid 1369317405"
+    "as above"
    ],
-   "needs": "the cabinet decision/decree implementing the Golestan law"
+   "needs": "as above"
   },
   {
-   "what": "Khorasan (incl. Tabas) and Yazd (without Tabas) before Tabas moved to Yazd",
-   "unit": "IRN:Khorasan@2002",
+   "what": "Khorasan / Yazd during SH 1380 (Tabas moved from Khorasan to Yazd, day not found)",
+   "unit": "IRN:Khorasan",
    "atoms": [
-    "IRN-3246",
-    "IRN-3245",
-    "IRN-3244",
-    "IRN-3217"
+    "IRN-ADM2-26516999B34169158572719",
+    "IRN-ADM2-26516999B71024891434715",
+    "IRN-ADM2-26516999B82161823889319",
+    "IRN-ADM2-26516999B44238666440515",
+    "IRN-ADM2-26516999B98998438809914",
+    "IRN-ADM2-26516999B43189584883238",
+    "IRN-ADM2-26516999B18019305512029",
+    "IRN-ADM2-26516999B3151020278107",
+    "IRN-ADM2-26516999B60480097525972",
+    "IRN-ADM2-26516999B13007563432776",
+    "IRN-ADM2-26516999B81995248888147",
+    "IRN-ADM2-26516999B83444105476451",
+    "IRN-ADM2-26516999B56578565954588",
+    "IRN-ADM2-26516999B40412890406651",
+    "IRN-ADM2-26516999B82780078890840",
+    "IRN-ADM2-26516999B94438413494599",
+    "IRN-ADM2-26516999B25927625334819",
+    "IRN-ADM2-26516999B59750662819708",
+    "IRN-ADM2-26516999B38857085199860",
+    "IRN-ADM2-26516999B83918899556553",
+    "IRN-ADM2-26516999B95142806063695",
+    "IRN-ADM2-26516999B83582562113634",
+    "IRN-ADM2-26516999B26667266803329",
+    "IRN-ADM2-26516999B73673362951541",
+    "IRN-ADM2-26516999B90586069770235",
+    "IRN-ADM2-26516999B41264207363212",
+    "IRN-ADM2-26516999B86055394195727",
+    "IRN-ADM2-26516999B82440039794337",
+    "IRN-ADM2-26516999B36132738090771",
+    "IRN-ADM2-26516999B15643801602770",
+    "IRN-ADM2-26516999B28118151729358",
+    "IRN-ADM2-26516999B34734291891056",
+    "IRN-ADM2-26516999B64169470777031",
+    "IRN-ADM2-26516999B39018807994192",
+    "IRN-ADM2-26516999B82528120548879",
+    "IRN-ADM2-26516999B37015415111440",
+    "IRN-ADM2-26516999B13201432598238",
+    "IRN-ADM2-26516999B91960059161490",
+    "IRN-ADM2-26516999B8321186821121",
+    "IRN-ADM2-26516999B74391222088225",
+    "IRN-ADM2-26516999B97570022534661",
+    "IRN-ADM2-26516999B84474148191523",
+    "IRN-ADM2-26516999B14554721742760",
+    "IRN-ADM2-26516999B57025947176860",
+    "IRN-ADM2-26516999B75811430051425",
+    "IRN-ADM2-26516999B91230303463917",
+    "IRN-ADM2-26516999B41834556106571",
+    "IRN-ADM2-26516999B58328562389762",
+    "IRN-ADM2-26516999B70166389265173",
+    "IRN-ADM2-26516999B53432282490231",
+    "IRN-ADM2-26516999B3184386646186",
+    "IRN-ADM2-26516999B58609738692200",
+    "IRN-ADM2-26516999B56806517565330",
+    "IRN-ADM2-26516999B48761790846180",
+    "IRN-ADM2-26516999B46491324927495",
+    "IRN-ADM2-26516999B49616713660661",
+    "IRN-ADM2-26516999B26309538852698"
    ],
-   "from": "1993-04-12",
+   "from": "2001-03-21",
    "to": "2002-03-21",
-   "why": "Tabas county (~55,000 km²) lies inside NE Yazd. Before its transfer (SH 1380, day not found) neither Khorasan nor Yazd is a union of NE atoms.",
+   "why": "Sources give the Persian year only (Statoids: ~2002).",
    "checked": [
-    "fa.Wikipedia شهرستان طبس oldid 44596070",
-    "Tabas County en.Wikipedia oldid 1376943207 (says 2004)",
-    "Deyhuk District oldid 1375775611 (says 2001)",
-    "statoids.com/uir.html (~2002)"
+    "fa.Wikipedia «شهرستان طبس» oldid 44596070",
+    "Statoids uir.html",
+    "en.Wikipedia Tabas County oldid 1376943207 (says 2004)",
+    "web search for the SH 1380 cabinet decision (none found)"
    ],
-   "needs": "Tabas county outline (geoBoundaries IRN ADM2) and the SH 1380 cabinet decision"
+   "needs": "the SH 1380 cabinet decision on Tabas"
   },
   {
-   "what": "Razavi Khorasan and South Khorasan individually (2004-09-29 onward)",
-   "unit": "IRN:RazaviKhorasan@2004",
+   "what": "Yazd during SH 1380",
+   "unit": "IRN:Yazd",
+   "from": "2001-03-21",
+   "to": "2002-03-21",
+   "why": "As above (the atoms are withheld by the entry above).",
+   "checked": [
+    "as above"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "Razavi and South Khorasan from the split to Ferdows’s transfer (Qaenat late SH 1383, Sarayan SH 1384, Ferdows Esfand 1385 — no day for any)",
+   "unit": "IRN:RazaviKhorasan",
    "atoms": [
-    "IRN-3245",
-    "IRN-3244"
+    "IRN-ADM2-26516999B60480097525972",
+    "IRN-ADM2-26516999B13007563432776",
+    "IRN-ADM2-26516999B81995248888147",
+    "IRN-ADM2-26516999B83444105476451",
+    "IRN-ADM2-26516999B56578565954588",
+    "IRN-ADM2-26516999B40412890406651",
+    "IRN-ADM2-26516999B82780078890840",
+    "IRN-ADM2-26516999B94438413494599",
+    "IRN-ADM2-26516999B25927625334819",
+    "IRN-ADM2-26516999B59750662819708",
+    "IRN-ADM2-26516999B38857085199860",
+    "IRN-ADM2-26516999B83918899556553",
+    "IRN-ADM2-26516999B95142806063695",
+    "IRN-ADM2-26516999B83582562113634",
+    "IRN-ADM2-26516999B26667266803329",
+    "IRN-ADM2-26516999B73673362951541",
+    "IRN-ADM2-26516999B90586069770235",
+    "IRN-ADM2-26516999B41264207363212",
+    "IRN-ADM2-26516999B86055394195727",
+    "IRN-ADM2-26516999B82440039794337",
+    "IRN-ADM2-26516999B36132738090771",
+    "IRN-ADM2-26516999B15643801602770",
+    "IRN-ADM2-26516999B28118151729358",
+    "IRN-ADM2-26516999B34734291891056",
+    "IRN-ADM2-26516999B64169470777031",
+    "IRN-ADM2-26516999B39018807994192",
+    "IRN-ADM2-26516999B82528120548879",
+    "IRN-ADM2-26516999B37015415111440",
+    "IRN-ADM2-26516999B13201432598238",
+    "IRN-ADM2-26516999B91960059161490",
+    "IRN-ADM2-26516999B8321186821121",
+    "IRN-ADM2-26516999B74391222088225",
+    "IRN-ADM2-26516999B97570022534661",
+    "IRN-ADM2-26516999B84474148191523",
+    "IRN-ADM2-26516999B14554721742760",
+    "IRN-ADM2-26516999B57025947176860",
+    "IRN-ADM2-26516999B75811430051425",
+    "IRN-ADM2-26516999B41834556106571"
    ],
    "from": "2004-09-29",
-   "to": null,
-   "why": "NE puts Ferdows, Boshruyeh and Sarayan inside IRN-3245 (Razavi), i.e. a line that matches neither the 2004 law (Sarayan already in South Khorasan; Qayenat moved to South Khorasan in SH 1383) nor the post-2007 layout (Ferdows in South Khorasan). South Khorasan also gained Tabas from Yazd in 2013. Neither province is a union of NE atoms at any instant.",
+   "to": "2007-03-21",
+   "why": "Three counties moved from Razavi to South Khorasan in this window, each dated only to the Persian year or month; the line between the two provinces is not known on any given day.",
    "checked": [
-    "Ferdows County oldid 1375875565",
-    "Sarayan County oldid 1376777547",
-    "statoids.com/uir.html",
-    "point-in-polygon tests on NE geometry (Ferdows, Sarayan, Boshruyeh → IRN-3245)"
+    "fa.Wikipedia «استان خراسان جنوبی» oldid 44289329",
+    "fa.Wikipedia «شهرستان فردوس» oldid 44261026",
+    "fa.Wikipedia «شهرستان قائنات» oldid 44305594",
+    "en.Wikipedia South Khorasan province oldid 1376882930",
+    "en.Wikipedia Sarayan County oldid 1376777547",
+    "Statoids uir.html"
    ],
-   "needs": "county atoms (geoBoundaries IRN ADM2) for Ferdows, Sarayan, Qayenat, Tabas"
+   "needs": "the cabinet decisions moving Qaenat (1383), Sarayan (1384) and Ferdows (Esfand 1385)"
   },
   {
-   "what": "Yazd after Tabas left (2013 onward)",
-   "unit": "IRN:Yazd@2002",
-   "atoms": [
-    "IRN-3217"
-   ],
-   "from": "2013-01-13",
-   "to": null,
-   "why": "NE Yazd still contains Tabas, which belongs to South Khorasan from 2013. Yazd 2013+ = NE Yazd minus Tabas: needs a finer atom.",
+   "what": "South Khorasan 2004-09-29 → 2007-03-21",
+   "unit": "IRN:SouthKhorasan",
+   "from": "2004-09-29",
+   "to": "2007-03-21",
+   "why": "As above (the atoms are withheld by the entry above).",
    "checked": [
-    "Deyhuk District oldid 1375775611",
-    "Hamshahri Online 2013-03-13",
-    "point-in-polygon test (Tabas → IRN-3217)"
+    "as above"
    ],
-   "needs": "Tabas county outline (geoBoundaries IRN ADM2)"
+   "needs": "as above"
   }
  ]
 }

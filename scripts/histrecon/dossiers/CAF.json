@@ -1,11 +1,11 @@
 {
  "country": "CAF",
- "atomSet": "ne-admin1@ca96624",
+ "atomSet": "gb-adm2@2026-10-06",
  "scope": {
   "from": "1960-08-13",
   "to": "2019-12-31"
  },
- "polityNote": "Central African Republic since 1960-08-13 (Central African Empire 1976-12-04 to 1979-09-21). Law 96-013 (1996) provided 7 regions above prefectures, but regions were not implemented; prefectures stayed the functioning first level (Répertoire). The 2020-12 reform to 20 prefectures is outside scope.",
+ "polityNote": "Central African Republic since 1960-08-13 (Central African Empire 1976-12-04 to 1979-09-21). Law 96-013 (1996) provided 7 regions above prefectures, but regions were not implemented; prefectures stayed the functioning first level (Répertoire). The 2020-12 reform to 20 prefectures is outside scope. Atoms: the 72 sub-prefectures of geoBoundaries CAF ADM2 (UNHCR 2015, CC BY 3.0), rewritten from Natural Earth on 2026-10-06 so that Sangha-Mbaéré can be split into its Haute-Sangha part (Nola, Bayanga) and its Lobaye part (Bambio) for 1960–1974; every prefecture is the union of the sub-prefectures that the NE prefecture atom holds (all assignments ≥ 0.65 of area, 70 of 72 ≥ 0.9). ① 1968 published areas (statoids) vs unions: Lobaye 24,500 vs 24,170 km² (0.987); Haute-Sangha 44,360 vs 41,504 (0.936); Kémo-Gribingui 37,210 vs 36,321 (0.976).",
  "units": [
   {
    "id": "CAF:OmbellaMPoko",
@@ -21,8 +21,13 @@
      "precision": "day",
      "to": "1964-01-03",
      "atoms": [
-      "CAF-4856",
-      "CAF-1460"
+      "CAF-ADM2-33826404B9315728863093",
+      "CAF-ADM2-33826404B36599130273361",
+      "CAF-ADM2-33826404B11454155454969",
+      "CAF-ADM2-33826404B7214769303301",
+      "CAF-ADM2-33826404B87944665241134",
+      "CAF-ADM2-33826404B89402945162763",
+      "CAF-ADM2-33826404B58165985423079"
      ],
      "sources": [
       {
@@ -45,7 +50,12 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "CAF-4856"
+      "CAF-ADM2-33826404B9315728863093",
+      "CAF-ADM2-33826404B36599130273361",
+      "CAF-ADM2-33826404B11454155454969",
+      "CAF-ADM2-33826404B7214769303301",
+      "CAF-ADM2-33826404B87944665241134",
+      "CAF-ADM2-33826404B89402945162763"
      ],
      "sources": [
       {
@@ -79,7 +89,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "CAF-1460"
+      "CAF-ADM2-33826404B58165985423079"
      ],
      "sources": [
       {
@@ -112,8 +122,12 @@
      "precision": "day",
      "to": "1974-08-06",
      "atoms": [
-      "CAF-808",
-      "CAF-807"
+      "CAF-ADM2-33826404B12088014945622",
+      "CAF-ADM2-33826404B70800381391301",
+      "CAF-ADM2-33826404B24746486434253",
+      "CAF-ADM2-33826404B62845091164313",
+      "CAF-ADM2-33826404B55944816658840",
+      "CAF-ADM2-33826404B9567885504809"
      ],
      "sources": [
       {
@@ -147,7 +161,10 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "CAF-808"
+      "CAF-ADM2-33826404B12088014945622",
+      "CAF-ADM2-33826404B70800381391301",
+      "CAF-ADM2-33826404B24746486434253",
+      "CAF-ADM2-33826404B62845091164313"
      ],
      "sources": [
       {
@@ -181,7 +198,8 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "CAF-807"
+      "CAF-ADM2-33826404B55944816658840",
+      "CAF-ADM2-33826404B9567885504809"
      ],
      "sources": [
       {
@@ -202,6 +220,97 @@
    ]
   },
   {
+   "id": "CAF:HauteSangha@1960",
+   "names": {
+    "en": "Haute-Sangha Prefecture",
+    "ja": "オート＝サンガ県",
+    "local": "Préfecture de la Haute-Sangha"
+   },
+   "spans": [
+    {
+     "from": "1960-08-13",
+     "precision": "day",
+     "to": "1974",
+     "atoms": [
+      "CAF-ADM2-33826404B19731387545693",
+      "CAF-ADM2-33826404B15620845480465",
+      "CAF-ADM2-33826404B6437617730206",
+      "CAF-ADM2-33826404B83457658124611",
+      "CAF-ADM2-33826404B29108379746580",
+      "CAF-ADM2-33826404B21992681295318",
+      "CAF-ADM2-33826404B47432472160828",
+      "CAF-ADM2-33826404B1885733015759",
+      "CAF-ADM2-33826404B5322507148284"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ycf.html",
+       "title": "Statoids — Sub-prefectures of the Central African Republic",
+       "says": "Official geographic code of 1972-09-29: Bambio 211 (prefecture 21 = Lobaye), Nola 314 (31 = Haute-Sangha); in the 1984 atlas both form Sangha (SE). Bayanga was created later.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/ucf.html",
+       "title": "Statoids — Prefectures of the Central African Republic",
+       "says": "Sangha-économique formed c.1974 from about 14,150 km² of Haute-Sangha and 5,250 km² of Lobaye; 1968 areas Haute-Sangha 44,360 km², Lobaye 24,500 km².",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=237822006",
+       "title": "Préfectures de la République centrafricaine — fr.wikipedia, oldid 237822006",
+       "says": "1964: Bangui autonomous commune (Law 63-445); Birao and N'Délé become prefectures (14). 1974: Gribingui and Sangha économiques created; 16 prefectures. 1988 ordinance confirms 16.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Haute-Sangha = today's Mambéré-Kadéï sub-prefectures + Nola (code 314 in 1972) and Bayanga (later carved from Nola). Ends when Sangha-économique was formed (year only, c.1974)."
+    }
+   ]
+  },
+  {
+   "id": "CAF:Lobaye@1960",
+   "names": {
+    "en": "Lobaye Prefecture (with Bambio)",
+    "ja": "ロバイェ県",
+    "local": "Préfecture de la Lobaye"
+   },
+   "spans": [
+    {
+     "from": "1960-08-13",
+     "precision": "day",
+     "to": "1974",
+     "atoms": [
+      "CAF-ADM2-33826404B21321520993489",
+      "CAF-ADM2-33826404B24481683700723",
+      "CAF-ADM2-33826404B82101327169951",
+      "CAF-ADM2-33826404B33100016317003",
+      "CAF-ADM2-33826404B50242901211322",
+      "CAF-ADM2-33826404B86044426841106"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ycf.html",
+       "title": "Statoids — Sub-prefectures of the Central African Republic",
+       "says": "Official geographic code of 1972-09-29: Bambio 211 (prefecture 21 = Lobaye), Nola 314 (31 = Haute-Sangha); in the 1984 atlas both form Sangha (SE). Bayanga was created later.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/ucf.html",
+       "title": "Statoids — Prefectures of the Central African Republic",
+       "says": "Sangha-économique formed c.1974 from about 14,150 km² of Haute-Sangha and 5,250 km² of Lobaye; 1968 areas Haute-Sangha 44,360 km², Lobaye 24,500 km².",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=237822006",
+       "title": "Préfectures de la République centrafricaine — fr.wikipedia, oldid 237822006",
+       "says": "1964: Bangui autonomous commune (Law 63-445); Birao and N'Délé become prefectures (14). 1974: Gribingui and Sangha économiques created; 16 prefectures. 1988 ordinance confirms 16.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Lobaye = today's Lobaye sub-prefectures + Bambio (code 211 = Lobaye in 1972), which passed to Sangha-économique c.1974."
+    }
+   ]
+  },
+  {
    "id": "CAF:MambereKadei@1974",
    "names": {
     "en": "Mambéré-Kadéï (Haute-Sangha until c.1992)",
@@ -215,7 +324,13 @@
      "precision": "year",
      "to": null,
      "atoms": [
-      "CAF-801"
+      "CAF-ADM2-33826404B19731387545693",
+      "CAF-ADM2-33826404B15620845480465",
+      "CAF-ADM2-33826404B6437617730206",
+      "CAF-ADM2-33826404B83457658124611",
+      "CAF-ADM2-33826404B29108379746580",
+      "CAF-ADM2-33826404B21992681295318",
+      "CAF-ADM2-33826404B47432472160828"
      ],
      "sources": [
       {
@@ -249,7 +364,11 @@
      "precision": "year",
      "to": null,
      "atoms": [
-      "CAF-795"
+      "CAF-ADM2-33826404B21321520993489",
+      "CAF-ADM2-33826404B24481683700723",
+      "CAF-ADM2-33826404B82101327169951",
+      "CAF-ADM2-33826404B33100016317003",
+      "CAF-ADM2-33826404B50242901211322"
      ],
      "sources": [
       {
@@ -283,7 +402,9 @@
      "precision": "year",
      "to": null,
      "atoms": [
-      "CAF-802"
+      "CAF-ADM2-33826404B86044426841106",
+      "CAF-ADM2-33826404B5322507148284",
+      "CAF-ADM2-33826404B1885733015759"
      ],
      "sources": [
       {
@@ -317,7 +438,10 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "CAF-804"
+      "CAF-ADM2-33826404B17315710707848",
+      "CAF-ADM2-33826404B23664805641311",
+      "CAF-ADM2-33826404B97851482460311",
+      "CAF-ADM2-33826404B60338684619617"
      ],
      "sources": [
       {
@@ -357,7 +481,12 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "CAF-805"
+      "CAF-ADM2-33826404B71934397264584",
+      "CAF-ADM2-33826404B95792566341641",
+      "CAF-ADM2-33826404B93316862366408",
+      "CAF-ADM2-33826404B56355179164788",
+      "CAF-ADM2-33826404B23266852289650",
+      "CAF-ADM2-33826404B76356244638876"
      ],
      "sources": [
       {
@@ -397,7 +526,13 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "CAF-810"
+      "CAF-ADM2-33826404B52601033142025",
+      "CAF-ADM2-33826404B19230963390716",
+      "CAF-ADM2-33826404B79989829713557",
+      "CAF-ADM2-33826404B64832249251388",
+      "CAF-ADM2-33826404B6253227494909",
+      "CAF-ADM2-33826404B99967621035211",
+      "CAF-ADM2-33826404B90258922405871"
      ],
      "sources": [
       {
@@ -437,7 +572,11 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "CAF-809"
+      "CAF-ADM2-33826404B55816089636663",
+      "CAF-ADM2-33826404B32260495393800",
+      "CAF-ADM2-33826404B96667764649230",
+      "CAF-ADM2-33826404B56773227283390",
+      "CAF-ADM2-33826404B92675237545946"
      ],
      "sources": [
       {
@@ -477,7 +616,12 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "CAF-794"
+      "CAF-ADM2-33826404B54558554669564",
+      "CAF-ADM2-33826404B30338372331060",
+      "CAF-ADM2-33826404B98868976507956",
+      "CAF-ADM2-33826404B2530322918847",
+      "CAF-ADM2-33826404B71517620333215",
+      "CAF-ADM2-33826404B62938730808524"
      ],
      "sources": [
       {
@@ -517,7 +661,9 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "CAF-866"
+      "CAF-ADM2-33826404B77142922363915",
+      "CAF-ADM2-33826404B85937091100445",
+      "CAF-ADM2-33826404B18938631147464"
      ],
      "sources": [
       {
@@ -557,7 +703,11 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "CAF-868"
+      "CAF-ADM2-33826404B37622790924059",
+      "CAF-ADM2-33826404B81358030227477",
+      "CAF-ADM2-33826404B65142748169152",
+      "CAF-ADM2-33826404B57857240211029",
+      "CAF-ADM2-33826404B59000496677715"
      ],
      "sources": [
       {
@@ -597,7 +747,10 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "CAF-867"
+      "CAF-ADM2-33826404B2470815195032",
+      "CAF-ADM2-33826404B40761150188578",
+      "CAF-ADM2-33826404B9662788023259",
+      "CAF-ADM2-33826404B4042011562142"
      ],
      "sources": [
       {
@@ -637,7 +790,8 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "CAF-812"
+      "CAF-ADM2-33826404B56670707739048",
+      "CAF-ADM2-33826404B28698929649290"
      ],
      "sources": [
       {
@@ -677,7 +831,8 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "CAF-806"
+      "CAF-ADM2-33826404B83224337375675",
+      "CAF-ADM2-33826404B40726346610529"
      ],
      "sources": [
       {
@@ -840,38 +995,5 @@
   }
  ],
  "atomsOutside": [],
- "unresolved": [
-  {
-   "what": "Haute-Sangha before Sangha-économique was formed",
-   "unit": "CAF:HauteSangha@1960",
-   "atoms": [
-    "CAF-801"
-   ],
-   "from": "1960-08-13",
-   "to": "1974",
-   "why": "Haute-Sangha = Mambéré-Kadéï + the southern part of Sangha-Mbaéré (≈14,150 km²); the line between that part and the Lobaye part runs inside the NE Sangha-Mbaéré atom.",
-   "checked": [
-    "statoids ucf (1968 table: Haute-Sangha 44,360 km²)",
-    "fr.wikipedia oldid 237822006",
-    "Répertoire preview (1961 sub-prefecture lists)"
-   ],
-   "needs": "sub-prefecture atoms (Nola, Bayanga, Bambio…) e.g. OCHA COD-AB CAF ADM2/ADM3 (licence to check) or geoBoundaries CAF ADM3"
-  },
-  {
-   "what": "Lobaye before Sangha-économique was formed",
-   "unit": "CAF:Lobaye@1960",
-   "atoms": [
-    "CAF-795",
-    "CAF-802"
-   ],
-   "from": "1960-08-13",
-   "to": "1974",
-   "why": "Lobaye = current Lobaye + western part (≈5,250 km²) of Sangha-Mbaéré; the Sangha-Mbaéré atom is shared between Haute-Sangha and Lobaye, so neither can be drawn.",
-   "checked": [
-    "statoids ucf (1968 table: Lobaye 24,500 km²)",
-    "fr.wikipedia oldid 237822006"
-   ],
-   "needs": "sub-prefecture atoms (as above)"
-  }
- ]
+ "unresolved": []
 }

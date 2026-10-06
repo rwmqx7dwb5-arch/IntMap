@@ -3,9 +3,9 @@
  "atomSet": "ne-admin1@ca96624",
  "scope": {
   "from": "1962-12-17",
-  "to": "2019-12-31"
+  "to": "2015-09-19"
  },
- "polityNote": "Kingdom of Nepal, Federal Democratic Republic from 28 May 2008. NE depicts the 14 zones (NE names NPL-1134 «Bhojpur», but it is Kosi Zone: gn_name «Kosi Zone»).",
+ "polityNote": "Kingdom of Nepal, Federal Democratic Republic from 28 May 2008. NE depicts the 14 zones (NE names NPL-1134 «Bhojpur», but it is Kosi Zone: gn_name «Kosi Zone»). From 20 September 2015 the seven provinces are drawn by NPL-provinces-2015.json (geoBoundaries ADM3).",
  "units": [
   {
    "id": "NPL:Mechi",
@@ -482,41 +482,6 @@
      "dateNote": "The 1975 reorganisation is dated only to the year (possibly B.S. 2032 = Apr 1975–Apr 1976); the span starts on 13 Apr 1976 (B.S. 2033-01-01) to lie safely after it. Development regions (1972/1981) are unions of zones and are not drawn separately."
     }
    ]
-  },
-  {
-   "id": "NPL:Sudurpashchim",
-   "names": {
-    "en": "Sudurpashchim Province",
-    "ja": "第七州",
-    "local": "सुदूरपश्चिम प्रदेश"
-   },
-   "wikidata": "Q25104019",
-   "spans": [
-    {
-     "from": "2015-09-20",
-     "precision": "day",
-     "to": null,
-     "atoms": [
-      "NPL-1129",
-      "NPL-1128"
-     ],
-     "sources": [
-      {
-       "url": "https://www.statoids.com/unp.html",
-       "title": "Statoids — Zones of Nepal, change history",
-       "says": "2015-09-20: under the new constitution seven provinces replaced the regions; Rukum and Nawalparasi were split between provinces.",
-       "accessed": "2026-10-05"
-      },
-      {
-       "url": "https://en.wikipedia.org/w/index.php?title=List_of_districts_of_Nepal&oldid=1378300427",
-       "title": "Wikipedia — List of districts of Nepal",
-       "says": "Sudurpashchim Province has 9 districts; the 1975–2015 zone table puts exactly these nine (Bajura…Kailali, Darchula…Kanchanpur) in Seti and Mahakali zones.",
-       "accessed": "2026-10-05"
-      }
-     ],
-     "dateNote": "Province No. 7 = the former Far-Western region = Seti ∪ Mahakali zones, all nine districts intact; named Sudurpashchim in 2018."
-    }
-   ]
   }
  ],
  "events": [
@@ -545,19 +510,6 @@
      "accessed": "2026-10-05"
     }
    ]
-  },
-  {
-   "date": "2015-09-20",
-   "precision": "day",
-   "what": "Constitution: seven provinces replace zones/regions",
-   "sources": [
-    {
-     "url": "https://www.statoids.com/unp.html",
-     "title": "Statoids — Zones of Nepal, change history",
-     "says": "2015-09-20: under the new constitution seven provinces replaced the regions; Rukum and Nawalparasi were split between provinces.",
-     "accessed": "2026-10-05"
-    }
-   ]
   }
  ],
  "counts": [
@@ -569,18 +521,6 @@
      "url": "https://www.statoids.com/unp.html",
      "title": "Statoids — Zones of Nepal, change history",
      "says": "Table of the 14 zones (1991 census populations).",
-     "accessed": "2026-10-05"
-    }
-   ]
-  },
-  {
-   "date": "2015-09-20",
-   "n": 7,
-   "sources": [
-    {
-     "url": "https://www.statoids.com/unp.html",
-     "title": "Statoids — Zones of Nepal, change history",
-     "says": "2015-09-20: under the new constitution seven provinces replaced the regions; Rukum and Nawalparasi were split between provinces.",
      "accessed": "2026-10-05"
     }
    ]
@@ -797,102 +737,6 @@
     "Wikipedia List of districts of Nepal, Zones of Nepal, Administrative divisions of Nepal"
    ],
    "needs": "pre-1975 district/panchayat boundaries (no open dataset found)"
-  },
-  {
-   "what": "Koshi Province (Province No. 1) 2015–2019",
-   "unit": "NPL:Koshi",
-   "atoms": [
-    "NPL-1135",
-    "NPL-1134",
-    "NPL-1133"
-   ],
-   "from": "2015-09-20",
-   "to": null,
-   "why": "Provinces 1–6 cut through zones (Sagarmatha, Janakpur, Narayani, Lumbini, Rapti, Bheri are split; Rukum and Nawalparasi districts are themselves split). Atoms are grouped here only for bookkeeping, not as membership.",
-   "checked": [
-    "statoids.com/unp.html",
-    "Wikipedia List of districts of Nepal, Zones of Nepal, Administrative divisions of Nepal"
-   ],
-   "needs": "district atoms plus the Rukum/Nawalparasi split lines, e.g. Survey Department of Nepal 77-district boundaries (licence to check) or geoBoundaries NPL ADM2"
-  },
-  {
-   "what": "Madhesh Province (Province No. 2) 2015–2019",
-   "unit": "NPL:Madhesh",
-   "atoms": [
-    "NPL-1131",
-    "NPL-1132"
-   ],
-   "from": "2015-09-20",
-   "to": null,
-   "why": "Provinces 1–6 cut through zones (Sagarmatha, Janakpur, Narayani, Lumbini, Rapti, Bheri are split; Rukum and Nawalparasi districts are themselves split). Atoms are grouped here only for bookkeeping, not as membership.",
-   "checked": [
-    "statoids.com/unp.html",
-    "Wikipedia List of districts of Nepal, Zones of Nepal, Administrative divisions of Nepal"
-   ],
-   "needs": "district atoms plus the Rukum/Nawalparasi split lines, e.g. Survey Department of Nepal 77-district boundaries (licence to check) or geoBoundaries NPL ADM2"
-  },
-  {
-   "what": "Bagmati Province (Province No. 3) 2015–2019",
-   "unit": "NPL:Bagmati",
-   "atoms": [
-    "NPL-1130"
-   ],
-   "from": "2015-09-20",
-   "to": null,
-   "why": "Provinces 1–6 cut through zones (Sagarmatha, Janakpur, Narayani, Lumbini, Rapti, Bheri are split; Rukum and Nawalparasi districts are themselves split). Atoms are grouped here only for bookkeeping, not as membership.",
-   "checked": [
-    "statoids.com/unp.html",
-    "Wikipedia List of districts of Nepal, Zones of Nepal, Administrative divisions of Nepal"
-   ],
-   "needs": "district atoms plus the Rukum/Nawalparasi split lines, e.g. Survey Department of Nepal 77-district boundaries (licence to check) or geoBoundaries NPL ADM2"
-  },
-  {
-   "what": "Gandaki Province (Province No. 4) 2015–2019",
-   "unit": "NPL:Gandaki",
-   "atoms": [
-    "NPL-1095",
-    "NPL-1125"
-   ],
-   "from": "2015-09-20",
-   "to": null,
-   "why": "Provinces 1–6 cut through zones (Sagarmatha, Janakpur, Narayani, Lumbini, Rapti, Bheri are split; Rukum and Nawalparasi districts are themselves split). Atoms are grouped here only for bookkeeping, not as membership.",
-   "checked": [
-    "statoids.com/unp.html",
-    "Wikipedia List of districts of Nepal, Zones of Nepal, Administrative divisions of Nepal"
-   ],
-   "needs": "district atoms plus the Rukum/Nawalparasi split lines, e.g. Survey Department of Nepal 77-district boundaries (licence to check) or geoBoundaries NPL ADM2"
-  },
-  {
-   "what": "Lumbini Province (Province No. 5) 2015–2019",
-   "unit": "NPL:Lumbini",
-   "atoms": [
-    "NPL-1127",
-    "NPL-373"
-   ],
-   "from": "2015-09-20",
-   "to": null,
-   "why": "Provinces 1–6 cut through zones (Sagarmatha, Janakpur, Narayani, Lumbini, Rapti, Bheri are split; Rukum and Nawalparasi districts are themselves split). Atoms are grouped here only for bookkeeping, not as membership.",
-   "checked": [
-    "statoids.com/unp.html",
-    "Wikipedia List of districts of Nepal, Zones of Nepal, Administrative divisions of Nepal"
-   ],
-   "needs": "district atoms plus the Rukum/Nawalparasi split lines, e.g. Survey Department of Nepal 77-district boundaries (licence to check) or geoBoundaries NPL ADM2"
-  },
-  {
-   "what": "Karnali Province (Province No. 6) 2015–2019",
-   "unit": "NPL:Karnali",
-   "atoms": [
-    "NPL-1126",
-    "NPL-1124"
-   ],
-   "from": "2015-09-20",
-   "to": null,
-   "why": "Provinces 1–6 cut through zones (Sagarmatha, Janakpur, Narayani, Lumbini, Rapti, Bheri are split; Rukum and Nawalparasi districts are themselves split). Atoms are grouped here only for bookkeeping, not as membership.",
-   "checked": [
-    "statoids.com/unp.html",
-    "Wikipedia List of districts of Nepal, Zones of Nepal, Administrative divisions of Nepal"
-   ],
-   "needs": "district atoms plus the Rukum/Nawalparasi split lines, e.g. Survey Department of Nepal 77-district boundaries (licence to check) or geoBoundaries NPL ADM2"
   }
  ]
 }

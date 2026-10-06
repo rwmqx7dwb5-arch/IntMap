@@ -1,11 +1,11 @@
 {
   "country": "TUN",
-  "atomSet": "ne-admin1@ca96624",
+  "atomSet": "gb-adm2@2026-10-06",
   "scope": {
     "from": "1980-05-28",
     "to": "2019-12-31"
   },
-  "polityNote": "Republic of Tunisia (independent 1956-03-20). NE's 23 features are the 1983-2000 layout (no separate Ariana/Manouba).",
+  "polityNote": "Republic of Tunisia (independent 1956-03-20). Atoms: the 264 délégations of 2017 (geoBoundaries TUN ADM2, OpenStreetMap, ODbL), grouped by their 2017 governorate; re-based 2026-10-06 from Natural Earth, which lacked the Ariana/Manouba line of 2000. ① Union areas vs statoids (official) areas: within ±5 % for 17 of 24 governorates; Gafsa −16 % / Tozeur +28 % (their common line in OSM) and Sousse −18 % differ.",
   "units": [
     {
       "id": "TUN:Beja@1980",
@@ -21,7 +21,15 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "TUN-103"
+            "TUN-ADM2-11933810B29604582719412",
+            "TUN-ADM2-11933810B12415666618118",
+            "TUN-ADM2-11933810B80105937964230",
+            "TUN-ADM2-11933810B3034727793195",
+            "TUN-ADM2-11933810B69090870616601",
+            "TUN-ADM2-11933810B43224810674441",
+            "TUN-ADM2-11933810B38819723902176",
+            "TUN-ADM2-11933810B75310279086219",
+            "TUN-ADM2-11933810B22312000664115"
           ],
           "sources": [
             {
@@ -29,6 +37,12 @@
               "title": "Statoids — Governorates of Tunisia (change history)",
               "says": "Beja: unchanged since Siliana (1974-06-05, Law 74-47); no later change listed.",
               "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen TUN ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 264 délégations, each inside one of the 24 governorates (area share ≥ 0.97)",
+              "says": "Délégation → governorate membership as of 2017, used to form each governorate as a union of délégations.",
+              "accessed": "2026-10-06"
             }
           ]
         }
@@ -48,7 +62,20 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "TUN-105"
+            "TUN-ADM2-11933810B87788045325558",
+            "TUN-ADM2-11933810B90101987139089",
+            "TUN-ADM2-11933810B10637834163678",
+            "TUN-ADM2-11933810B79340019170790",
+            "TUN-ADM2-11933810B92881576006474",
+            "TUN-ADM2-11933810B70107776875396",
+            "TUN-ADM2-11933810B45404698681959",
+            "TUN-ADM2-11933810B21860369421282",
+            "TUN-ADM2-11933810B88650874660140",
+            "TUN-ADM2-11933810B69695767821716",
+            "TUN-ADM2-11933810B10905453653895",
+            "TUN-ADM2-11933810B80183977842330",
+            "TUN-ADM2-11933810B6690726234201",
+            "TUN-ADM2-11933810B33126972723663"
           ],
           "sources": [
             {
@@ -56,6 +83,12 @@
               "title": "Statoids — Governorates of Tunisia (change history)",
               "says": "Bizerte: no change listed after Law 72-1 / 76-82.",
               "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen TUN ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 264 délégations, each inside one of the 24 governorates (area share ≥ 0.97)",
+              "says": "Délégation → governorate membership as of 2017, used to form each governorate as a union of délégations.",
+              "accessed": "2026-10-06"
             }
           ]
         }
@@ -75,7 +108,15 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "TUN-106"
+            "TUN-ADM2-11933810B50492442899568",
+            "TUN-ADM2-11933810B27500273818749",
+            "TUN-ADM2-11933810B63769477321457",
+            "TUN-ADM2-11933810B5291941008457",
+            "TUN-ADM2-11933810B13305423353951",
+            "TUN-ADM2-11933810B84977870340871",
+            "TUN-ADM2-11933810B72846800304376",
+            "TUN-ADM2-11933810B98066234289129",
+            "TUN-ADM2-11933810B94389885221206"
           ],
           "sources": [
             {
@@ -83,6 +124,12 @@
               "title": "Statoids — Governorates of Tunisia (change history)",
               "says": "Jendouba: no territorial change listed after 1956 (renamed 1966).",
               "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen TUN ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 264 délégations, each inside one of the 24 governorates (area share ≥ 0.97)",
+              "says": "Délégation → governorate membership as of 2017, used to form each governorate as a union of délégations.",
+              "accessed": "2026-10-06"
             }
           ]
         }
@@ -102,7 +149,17 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "TUN-118"
+            "TUN-ADM2-11933810B5953362566301",
+            "TUN-ADM2-11933810B46466927285708",
+            "TUN-ADM2-11933810B20445335117262",
+            "TUN-ADM2-11933810B9843874857613",
+            "TUN-ADM2-11933810B51337682918507",
+            "TUN-ADM2-11933810B14836095916482",
+            "TUN-ADM2-11933810B83603965964672",
+            "TUN-ADM2-11933810B10530629108425",
+            "TUN-ADM2-11933810B37862088791511",
+            "TUN-ADM2-11933810B20435458440644",
+            "TUN-ADM2-11933810B10041539297974"
           ],
           "sources": [
             {
@@ -110,6 +167,12 @@
               "title": "Statoids — Governorates of Tunisia (change history)",
               "says": "Kairouan: no change listed after 1956.",
               "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen TUN ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 264 délégations, each inside one of the 24 governorates (area share ≥ 0.97)",
+              "says": "Délégation → governorate membership as of 2017, used to form each governorate as a union of délégations.",
+              "accessed": "2026-10-06"
             }
           ]
         }
@@ -129,7 +192,19 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "TUN-110"
+            "TUN-ADM2-11933810B21305509879120",
+            "TUN-ADM2-11933810B58410238411456",
+            "TUN-ADM2-11933810B14631424416912",
+            "TUN-ADM2-11933810B6535547360334",
+            "TUN-ADM2-11933810B61814585339016",
+            "TUN-ADM2-11933810B38507486646045",
+            "TUN-ADM2-11933810B10014638911734",
+            "TUN-ADM2-11933810B6714146070039",
+            "TUN-ADM2-11933810B81805450499121",
+            "TUN-ADM2-11933810B7200177865373",
+            "TUN-ADM2-11933810B52074179872789",
+            "TUN-ADM2-11933810B87757841010951",
+            "TUN-ADM2-11933810B37259719331002"
           ],
           "sources": [
             {
@@ -137,6 +212,12 @@
               "title": "Statoids — Governorates of Tunisia (change history)",
               "says": "Kasserine: unchanged since Sidi Bou Zid (1973-12-08, Law 73-75).",
               "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen TUN ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 264 délégations, each inside one of the 24 governorates (area share ≥ 0.97)",
+              "says": "Délégation → governorate membership as of 2017, used to form each governorate as a union of délégations.",
+              "accessed": "2026-10-06"
             }
           ]
         }
@@ -156,7 +237,17 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "TUN-109"
+            "TUN-ADM2-11933810B26016099352541",
+            "TUN-ADM2-11933810B82782291879884",
+            "TUN-ADM2-11933810B34035527934296",
+            "TUN-ADM2-11933810B37215570160824",
+            "TUN-ADM2-11933810B49043051728800",
+            "TUN-ADM2-11933810B59009288682307",
+            "TUN-ADM2-11933810B63421014427866",
+            "TUN-ADM2-11933810B76558874378908",
+            "TUN-ADM2-11933810B55515778364888",
+            "TUN-ADM2-11933810B44054307576941",
+            "TUN-ADM2-11933810B49902378284824"
           ],
           "sources": [
             {
@@ -164,6 +255,12 @@
               "title": "Statoids — Governorates of Tunisia (change history)",
               "says": "Kef: unchanged since Siliana (1974-06-05).",
               "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen TUN ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 264 délégations, each inside one of the 24 governorates (area share ≥ 0.97)",
+              "says": "Délégation → governorate membership as of 2017, used to form each governorate as a union of délégations.",
+              "accessed": "2026-10-06"
             }
           ]
         }
@@ -183,7 +280,17 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "TUN-116"
+            "TUN-ADM2-11933810B43888701821775",
+            "TUN-ADM2-11933810B55082969984596",
+            "TUN-ADM2-11933810B64556610249653",
+            "TUN-ADM2-11933810B58495148677727",
+            "TUN-ADM2-11933810B14634667217503",
+            "TUN-ADM2-11933810B57085806890021",
+            "TUN-ADM2-11933810B76458029989338",
+            "TUN-ADM2-11933810B33888578945237",
+            "TUN-ADM2-11933810B14406608577982",
+            "TUN-ADM2-11933810B18034425554259",
+            "TUN-ADM2-11933810B93469460723803"
           ],
           "sources": [
             {
@@ -191,6 +298,12 @@
               "title": "Statoids — Governorates of Tunisia (change history)",
               "says": "Mahdia: created 1974-03-09 (Law 74-8); no later change listed.",
               "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen TUN ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 264 délégations, each inside one of the 24 governorates (area share ≥ 0.97)",
+              "says": "Délégation → governorate membership as of 2017, used to form each governorate as a union of délégations.",
+              "accessed": "2026-10-06"
             }
           ]
         }
@@ -210,7 +323,19 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "TUN-117"
+            "TUN-ADM2-11933810B19311233217993",
+            "TUN-ADM2-11933810B1906058680343",
+            "TUN-ADM2-11933810B23550451682072",
+            "TUN-ADM2-11933810B26778140305408",
+            "TUN-ADM2-11933810B40616905411348",
+            "TUN-ADM2-11933810B74832609224245",
+            "TUN-ADM2-11933810B8202711908587",
+            "TUN-ADM2-11933810B99005067592963",
+            "TUN-ADM2-11933810B3957312331643",
+            "TUN-ADM2-11933810B10641809578431",
+            "TUN-ADM2-11933810B49609226357839",
+            "TUN-ADM2-11933810B35489062673947",
+            "TUN-ADM2-11933810B91827641175132"
           ],
           "sources": [
             {
@@ -218,6 +343,12 @@
               "title": "Statoids — Governorates of Tunisia (change history)",
               "says": "Monastir: created 1974-03-09 (Law 74-8); no later change listed.",
               "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen TUN ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 264 délégations, each inside one of the 24 governorates (area share ≥ 0.97)",
+              "says": "Délégation → governorate membership as of 2017, used to form each governorate as a union of délégations.",
+              "accessed": "2026-10-06"
             }
           ]
         }
@@ -237,7 +368,22 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "TUN-107"
+            "TUN-ADM2-11933810B25147295271575",
+            "TUN-ADM2-11933810B5544515796376",
+            "TUN-ADM2-11933810B94035776455507",
+            "TUN-ADM2-11933810B39767465855300",
+            "TUN-ADM2-11933810B855044538504",
+            "TUN-ADM2-11933810B70885239011208",
+            "TUN-ADM2-11933810B56579355102022",
+            "TUN-ADM2-11933810B57309520880620",
+            "TUN-ADM2-11933810B9429743875970",
+            "TUN-ADM2-11933810B11827339972029",
+            "TUN-ADM2-11933810B16609511598620",
+            "TUN-ADM2-11933810B27831601054676",
+            "TUN-ADM2-11933810B17792419290785",
+            "TUN-ADM2-11933810B54928628318578",
+            "TUN-ADM2-11933810B45961681846987",
+            "TUN-ADM2-11933810B33504132443060"
           ],
           "sources": [
             {
@@ -245,6 +391,12 @@
               "title": "Statoids — Governorates of Tunisia (change history)",
               "says": "Nabeul: no change listed after Law 72-1.",
               "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen TUN ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 264 délégations, each inside one of the 24 governorates (area share ≥ 0.97)",
+              "says": "Délégation → governorate membership as of 2017, used to form each governorate as a union of délégations.",
+              "accessed": "2026-10-06"
             }
           ]
         }
@@ -264,7 +416,22 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "TUN-114"
+            "TUN-ADM2-11933810B64295465131340",
+            "TUN-ADM2-11933810B48763821279010",
+            "TUN-ADM2-11933810B91048903383845",
+            "TUN-ADM2-11933810B97114621769355",
+            "TUN-ADM2-11933810B27365957956997",
+            "TUN-ADM2-11933810B8760132099835",
+            "TUN-ADM2-11933810B93719080710322",
+            "TUN-ADM2-11933810B84931460768485",
+            "TUN-ADM2-11933810B77828978418448",
+            "TUN-ADM2-11933810B13645243771423",
+            "TUN-ADM2-11933810B89439185484115",
+            "TUN-ADM2-11933810B57127812574337",
+            "TUN-ADM2-11933810B55404586431180",
+            "TUN-ADM2-11933810B61776975949609",
+            "TUN-ADM2-11933810B89464736925123",
+            "TUN-ADM2-11933810B65727884052892"
           ],
           "sources": [
             {
@@ -272,6 +439,12 @@
               "title": "Statoids — Governorates of Tunisia (change history)",
               "says": "Sfax: unchanged since Mahdia (1974-03-09).",
               "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen TUN ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 264 délégations, each inside one of the 24 governorates (area share ≥ 0.97)",
+              "says": "Délégation → governorate membership as of 2017, used to form each governorate as a union of délégations.",
+              "accessed": "2026-10-06"
             }
           ]
         }
@@ -291,7 +464,18 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "TUN-113"
+            "TUN-ADM2-11933810B93669853270617",
+            "TUN-ADM2-11933810B48053950180724",
+            "TUN-ADM2-11933810B66585629816917",
+            "TUN-ADM2-11933810B37574036497971",
+            "TUN-ADM2-11933810B73279713716236",
+            "TUN-ADM2-11933810B21943551709100",
+            "TUN-ADM2-11933810B91924190982808",
+            "TUN-ADM2-11933810B30023985357701",
+            "TUN-ADM2-11933810B54416453623",
+            "TUN-ADM2-11933810B70280449703815",
+            "TUN-ADM2-11933810B84544107883303",
+            "TUN-ADM2-11933810B90184807818123"
           ],
           "sources": [
             {
@@ -299,6 +483,12 @@
               "title": "Statoids — Governorates of Tunisia (change history)",
               "says": "Sidi Bouzid: created 1973-12-08 (Law 73-75); no later change listed.",
               "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen TUN ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 264 délégations, each inside one of the 24 governorates (area share ≥ 0.97)",
+              "says": "Délégation → governorate membership as of 2017, used to form each governorate as a union of délégations.",
+              "accessed": "2026-10-06"
             }
           ]
         }
@@ -318,7 +508,17 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "TUN-115"
+            "TUN-ADM2-11933810B23318166280957",
+            "TUN-ADM2-11933810B82124432646139",
+            "TUN-ADM2-11933810B63201722786618",
+            "TUN-ADM2-11933810B3817841111611",
+            "TUN-ADM2-11933810B4781158018226",
+            "TUN-ADM2-11933810B81652618880798",
+            "TUN-ADM2-11933810B21220731511134",
+            "TUN-ADM2-11933810B59766353296810",
+            "TUN-ADM2-11933810B21725458188720",
+            "TUN-ADM2-11933810B54717657919008",
+            "TUN-ADM2-11933810B30403367882459"
           ],
           "sources": [
             {
@@ -326,6 +526,12 @@
               "title": "Statoids — Governorates of Tunisia (change history)",
               "says": "Siliana: created 1974-06-05 (Law 74-47); no later change listed.",
               "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen TUN ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 264 délégations, each inside one of the 24 governorates (area share ≥ 0.97)",
+              "says": "Délégation → governorate membership as of 2017, used to form each governorate as a union of délégations.",
+              "accessed": "2026-10-06"
             }
           ]
         }
@@ -345,7 +551,22 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "TUN-119"
+            "TUN-ADM2-11933810B52939615202666",
+            "TUN-ADM2-11933810B76195291286542",
+            "TUN-ADM2-11933810B31167158349382",
+            "TUN-ADM2-11933810B46924105449942",
+            "TUN-ADM2-11933810B70158392681362",
+            "TUN-ADM2-11933810B69037134075078",
+            "TUN-ADM2-11933810B92430147648185",
+            "TUN-ADM2-11933810B40013450318318",
+            "TUN-ADM2-11933810B4615556416921",
+            "TUN-ADM2-11933810B93819416666054",
+            "TUN-ADM2-11933810B8352609818393",
+            "TUN-ADM2-11933810B19204281524577",
+            "TUN-ADM2-11933810B45632571730396",
+            "TUN-ADM2-11933810B95892911712161",
+            "TUN-ADM2-11933810B84840502063502",
+            "TUN-ADM2-11933810B20916595248179"
           ],
           "sources": [
             {
@@ -353,6 +574,12 @@
               "title": "Statoids — Governorates of Tunisia (change history)",
               "says": "Sousse: unchanged since Mahdia/Monastir (1974-03-09).",
               "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen TUN ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 264 délégations, each inside one of the 24 governorates (area share ≥ 0.97)",
+              "says": "Délégation → governorate membership as of 2017, used to form each governorate as a union of délégations.",
+              "accessed": "2026-10-06"
             }
           ]
         }
@@ -372,7 +599,12 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "TUN-120"
+            "TUN-ADM2-11933810B49530197885075",
+            "TUN-ADM2-11933810B99487931603822",
+            "TUN-ADM2-11933810B17149479798456",
+            "TUN-ADM2-11933810B29864184441707",
+            "TUN-ADM2-11933810B81607479948477",
+            "TUN-ADM2-11933810B85459320583034"
           ],
           "sources": [
             {
@@ -380,6 +612,12 @@
               "title": "Statoids — Governorates of Tunisia (change history)",
               "says": "Zaghouan: formed 1976-08-11 (Law 76-82); no later change listed.",
               "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen TUN ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 264 délégations, each inside one of the 24 governorates (area share ≥ 0.97)",
+              "says": "Délégation → governorate membership as of 2017, used to form each governorate as a union of délégations.",
+              "accessed": "2026-10-06"
             }
           ]
         }
@@ -399,7 +637,17 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "TUN-112"
+            "TUN-ADM2-11933810B49393262252767",
+            "TUN-ADM2-11933810B54153099076840",
+            "TUN-ADM2-11933810B24565531401721",
+            "TUN-ADM2-11933810B93906060339366",
+            "TUN-ADM2-11933810B11969920480260",
+            "TUN-ADM2-11933810B54708226655560",
+            "TUN-ADM2-11933810B38388231155929",
+            "TUN-ADM2-11933810B77110081230007",
+            "TUN-ADM2-11933810B38600373367169",
+            "TUN-ADM2-11933810B66279865706920",
+            "TUN-ADM2-11933810B50994391352057"
           ],
           "sources": [
             {
@@ -407,6 +655,12 @@
               "title": "Statoids — Governorates of Tunisia (change history)",
               "says": "1980-05-28: Tozeur governorate split from Gafsa (Law 80-35); no later change.",
               "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen TUN ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 264 délégations, each inside one of the 24 governorates (area share ≥ 0.97)",
+              "says": "Délégation → governorate membership as of 2017, used to form each governorate as a union of délégations.",
+              "accessed": "2026-10-06"
             }
           ]
         }
@@ -426,7 +680,11 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "TUN-101"
+            "TUN-ADM2-11933810B67504768334789",
+            "TUN-ADM2-11933810B62164441904454",
+            "TUN-ADM2-11933810B67956509398297",
+            "TUN-ADM2-11933810B76554962247664",
+            "TUN-ADM2-11933810B9968739853543"
           ],
           "sources": [
             {
@@ -434,6 +692,12 @@
               "title": "Statoids — Governorates of Tunisia (change history)",
               "says": "1980-05-28: Tozeur governorate split from Gafsa under Law 80-35.",
               "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen TUN ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 264 délégations, each inside one of the 24 governorates (area share ≥ 0.97)",
+              "says": "Délégation → governorate membership as of 2017, used to form each governorate as a union of délégations.",
+              "accessed": "2026-10-06"
             }
           ]
         }
@@ -453,8 +717,22 @@
           "precision": "day",
           "to": "1981-03-01",
           "atoms": [
-            "TUN-96",
-            "TUN-98"
+            "TUN-ADM2-11933810B18047024672055",
+            "TUN-ADM2-11933810B7896937975348",
+            "TUN-ADM2-11933810B71937428341343",
+            "TUN-ADM2-11933810B22764087432985",
+            "TUN-ADM2-11933810B49298312402477",
+            "TUN-ADM2-11933810B85460766663298",
+            "TUN-ADM2-11933810B95745204086870",
+            "TUN-ADM2-11933810B5079624698745",
+            "TUN-ADM2-11933810B36279508615628",
+            "TUN-ADM2-11933810B83498935151337",
+            "TUN-ADM2-11933810B19780106503049",
+            "TUN-ADM2-11933810B41543815367913",
+            "TUN-ADM2-11933810B49203985770178",
+            "TUN-ADM2-11933810B38672190318546",
+            "TUN-ADM2-11933810B42878076535883",
+            "TUN-ADM2-11933810B49417994468433"
           ],
           "sources": [
             {
@@ -462,6 +740,12 @@
               "title": "Statoids — Governorates of Tunisia (change history)",
               "says": "1981-03-01: Tataouine split from Médenine (Law 81-11); Médenine had been unchanged since 1956.",
               "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen TUN ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 264 délégations, each inside one of the 24 governorates (area share ≥ 0.97)",
+              "says": "Délégation → governorate membership as of 2017, used to form each governorate as a union of délégations.",
+              "accessed": "2026-10-06"
             }
           ]
         },
@@ -470,7 +754,15 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "TUN-96"
+            "TUN-ADM2-11933810B18047024672055",
+            "TUN-ADM2-11933810B7896937975348",
+            "TUN-ADM2-11933810B71937428341343",
+            "TUN-ADM2-11933810B22764087432985",
+            "TUN-ADM2-11933810B49298312402477",
+            "TUN-ADM2-11933810B85460766663298",
+            "TUN-ADM2-11933810B95745204086870",
+            "TUN-ADM2-11933810B5079624698745",
+            "TUN-ADM2-11933810B36279508615628"
           ],
           "sources": [
             {
@@ -478,6 +770,12 @@
               "title": "Statoids — Governorates of Tunisia (change history)",
               "says": "1981-03-01: Tataouine split from Médenine under Law 81-11; no later change.",
               "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen TUN ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 264 délégations, each inside one of the 24 governorates (area share ≥ 0.97)",
+              "says": "Délégation → governorate membership as of 2017, used to form each governorate as a union of délégations.",
+              "accessed": "2026-10-06"
             }
           ]
         }
@@ -497,7 +795,13 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "TUN-98"
+            "TUN-ADM2-11933810B83498935151337",
+            "TUN-ADM2-11933810B19780106503049",
+            "TUN-ADM2-11933810B41543815367913",
+            "TUN-ADM2-11933810B49203985770178",
+            "TUN-ADM2-11933810B38672190318546",
+            "TUN-ADM2-11933810B42878076535883",
+            "TUN-ADM2-11933810B49417994468433"
           ],
           "sources": [
             {
@@ -505,6 +809,12 @@
               "title": "Statoids — Governorates of Tunisia (change history)",
               "says": "1981-03-01: Tataouine governorate split from Médenine under Law 81-11.",
               "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen TUN ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 264 délégations, each inside one of the 24 governorates (area share ≥ 0.97)",
+              "says": "Délégation → governorate membership as of 2017, used to form each governorate as a union of délégations.",
+              "accessed": "2026-10-06"
             }
           ]
         }
@@ -524,8 +834,22 @@
           "precision": "day",
           "to": "1981-09-24",
           "atoms": [
-            "TUN-111",
-            "TUN-97"
+            "TUN-ADM2-11933810B10318624738248",
+            "TUN-ADM2-11933810B30611491582390",
+            "TUN-ADM2-11933810B83790658636329",
+            "TUN-ADM2-11933810B60005514770048",
+            "TUN-ADM2-11933810B93089307586019",
+            "TUN-ADM2-11933810B10126944429848",
+            "TUN-ADM2-11933810B61155262377860",
+            "TUN-ADM2-11933810B21643194978673",
+            "TUN-ADM2-11933810B2147309578114",
+            "TUN-ADM2-11933810B71477976393658",
+            "TUN-ADM2-11933810B67570722535168",
+            "TUN-ADM2-11933810B49944749177942",
+            "TUN-ADM2-11933810B4282823233173",
+            "TUN-ADM2-11933810B8106113048091",
+            "TUN-ADM2-11933810B33023449768384",
+            "TUN-ADM2-11933810B88432623246130"
           ],
           "sources": [
             {
@@ -533,6 +857,12 @@
               "title": "Statoids — Governorates of Tunisia (change history)",
               "says": "1981-09-24: Kébili split from Gabès (Law 81-18); Nefzaoua had joined Gabès in 1959 (Law 59-79).",
               "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen TUN ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 264 délégations, each inside one of the 24 governorates (area share ≥ 0.97)",
+              "says": "Délégation → governorate membership as of 2017, used to form each governorate as a union of délégations.",
+              "accessed": "2026-10-06"
             }
           ]
         },
@@ -541,7 +871,16 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "TUN-111"
+            "TUN-ADM2-11933810B10318624738248",
+            "TUN-ADM2-11933810B30611491582390",
+            "TUN-ADM2-11933810B83790658636329",
+            "TUN-ADM2-11933810B60005514770048",
+            "TUN-ADM2-11933810B93089307586019",
+            "TUN-ADM2-11933810B10126944429848",
+            "TUN-ADM2-11933810B61155262377860",
+            "TUN-ADM2-11933810B21643194978673",
+            "TUN-ADM2-11933810B2147309578114",
+            "TUN-ADM2-11933810B71477976393658"
           ],
           "sources": [
             {
@@ -549,6 +888,12 @@
               "title": "Statoids — Governorates of Tunisia (change history)",
               "says": "1981-09-24: Kébili split from Gabès under Law 81-18; no later change.",
               "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen TUN ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 264 délégations, each inside one of the 24 governorates (area share ≥ 0.97)",
+              "says": "Délégation → governorate membership as of 2017, used to form each governorate as a union of délégations.",
+              "accessed": "2026-10-06"
             }
           ]
         }
@@ -568,7 +913,12 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "TUN-97"
+            "TUN-ADM2-11933810B67570722535168",
+            "TUN-ADM2-11933810B49944749177942",
+            "TUN-ADM2-11933810B4282823233173",
+            "TUN-ADM2-11933810B8106113048091",
+            "TUN-ADM2-11933810B33023449768384",
+            "TUN-ADM2-11933810B88432623246130"
           ],
           "sources": [
             {
@@ -576,6 +926,12 @@
               "title": "Statoids — Governorates of Tunisia (change history)",
               "says": "1981-09-24: Kébili governorate split from Gabès under Law 81-18.",
               "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen TUN ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 264 délégations, each inside one of the 24 governorates (area share ≥ 0.97)",
+              "says": "Délégation → governorate membership as of 2017, used to form each governorate as a union of délégations.",
+              "accessed": "2026-10-06"
             }
           ]
         }
@@ -595,9 +951,54 @@
           "precision": "day",
           "to": "1983-03",
           "atoms": [
-            "TUN-108",
-            "TUN-104",
-            "TUN-102"
+            "TUN-ADM2-11933810B39381734454792",
+            "TUN-ADM2-11933810B45442684753250",
+            "TUN-ADM2-11933810B93810808295366",
+            "TUN-ADM2-11933810B27074780106305",
+            "TUN-ADM2-11933810B792600527731",
+            "TUN-ADM2-11933810B23225476199680",
+            "TUN-ADM2-11933810B96784549406628",
+            "TUN-ADM2-11933810B56753019610878",
+            "TUN-ADM2-11933810B15261795399084",
+            "TUN-ADM2-11933810B18230049002493",
+            "TUN-ADM2-11933810B89916598335200",
+            "TUN-ADM2-11933810B72032041676540",
+            "TUN-ADM2-11933810B61318752024090",
+            "TUN-ADM2-11933810B80970548575435",
+            "TUN-ADM2-11933810B78138707020335",
+            "TUN-ADM2-11933810B95103152566623",
+            "TUN-ADM2-11933810B63287447977470",
+            "TUN-ADM2-11933810B65786338139889",
+            "TUN-ADM2-11933810B14386581864910",
+            "TUN-ADM2-11933810B13786823130754",
+            "TUN-ADM2-11933810B21257507323383",
+            "TUN-ADM2-11933810B4327996675990",
+            "TUN-ADM2-11933810B94695140482222",
+            "TUN-ADM2-11933810B97530891468779",
+            "TUN-ADM2-11933810B70692418830632",
+            "TUN-ADM2-11933810B81248278761241",
+            "TUN-ADM2-11933810B99011573109347",
+            "TUN-ADM2-11933810B17375886890417",
+            "TUN-ADM2-11933810B77374835127738",
+            "TUN-ADM2-11933810B70866189338214",
+            "TUN-ADM2-11933810B3203162636288",
+            "TUN-ADM2-11933810B2824472069390",
+            "TUN-ADM2-11933810B16314159892818",
+            "TUN-ADM2-11933810B85991761590163",
+            "TUN-ADM2-11933810B96031064721664",
+            "TUN-ADM2-11933810B90990960542190",
+            "TUN-ADM2-11933810B69163376090757",
+            "TUN-ADM2-11933810B98016623241881",
+            "TUN-ADM2-11933810B62465925468138",
+            "TUN-ADM2-11933810B24040773299461",
+            "TUN-ADM2-11933810B2611958153952",
+            "TUN-ADM2-11933810B41984965215358",
+            "TUN-ADM2-11933810B30705450500253",
+            "TUN-ADM2-11933810B17084695603021",
+            "TUN-ADM2-11933810B69098282317118",
+            "TUN-ADM2-11933810B30823561868472",
+            "TUN-ADM2-11933810B74384837832426",
+            "TUN-ADM2-11933810B79768086949873"
           ],
           "sources": [
             {
@@ -605,6 +1006,12 @@
               "title": "Statoids — Governorates of Tunisia (change history)",
               "says": "1976-08-11 Law 76-82 reorganised Tunis/Tunis-Sud; 1983 Ariana and Ben Arous split from Tunis.",
               "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen TUN ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 264 délégations, each inside one of the 24 governorates (area share ≥ 0.97)",
+              "says": "Délégation → governorate membership as of 2017, used to form each governorate as a union of délégations.",
+              "accessed": "2026-10-06"
             }
           ],
           "dateNote": "Ends at the start of March 1983 (month precision): Ariana was created by a decree of March 1983 (ar/fr Wikipedia), ratified by Law 83-104 of 1983-12-03 (statoids)."
@@ -614,7 +1021,27 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "TUN-108"
+            "TUN-ADM2-11933810B39381734454792",
+            "TUN-ADM2-11933810B45442684753250",
+            "TUN-ADM2-11933810B93810808295366",
+            "TUN-ADM2-11933810B27074780106305",
+            "TUN-ADM2-11933810B792600527731",
+            "TUN-ADM2-11933810B23225476199680",
+            "TUN-ADM2-11933810B96784549406628",
+            "TUN-ADM2-11933810B56753019610878",
+            "TUN-ADM2-11933810B15261795399084",
+            "TUN-ADM2-11933810B18230049002493",
+            "TUN-ADM2-11933810B89916598335200",
+            "TUN-ADM2-11933810B72032041676540",
+            "TUN-ADM2-11933810B61318752024090",
+            "TUN-ADM2-11933810B80970548575435",
+            "TUN-ADM2-11933810B78138707020335",
+            "TUN-ADM2-11933810B95103152566623",
+            "TUN-ADM2-11933810B63287447977470",
+            "TUN-ADM2-11933810B65786338139889",
+            "TUN-ADM2-11933810B14386581864910",
+            "TUN-ADM2-11933810B13786823130754",
+            "TUN-ADM2-11933810B21257507323383"
           ],
           "sources": [
             {
@@ -622,6 +1049,12 @@
               "title": "Statoids — Governorates of Tunisia (change history)",
               "says": "1983-12-03: Ariana and Ben Arous governorates split from Tunis under Law 83-104; no later change to Tunis.",
               "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen TUN ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 264 délégations, each inside one of the 24 governorates (area share ≥ 0.97)",
+              "says": "Délégation → governorate membership as of 2017, used to form each governorate as a union of délégations.",
+              "accessed": "2026-10-06"
             }
           ]
         }
@@ -641,7 +1074,18 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "TUN-104"
+            "TUN-ADM2-11933810B4327996675990",
+            "TUN-ADM2-11933810B94695140482222",
+            "TUN-ADM2-11933810B97530891468779",
+            "TUN-ADM2-11933810B70692418830632",
+            "TUN-ADM2-11933810B81248278761241",
+            "TUN-ADM2-11933810B99011573109347",
+            "TUN-ADM2-11933810B17375886890417",
+            "TUN-ADM2-11933810B77374835127738",
+            "TUN-ADM2-11933810B70866189338214",
+            "TUN-ADM2-11933810B3203162636288",
+            "TUN-ADM2-11933810B2824472069390",
+            "TUN-ADM2-11933810B16314159892818"
           ],
           "sources": [
             {
@@ -655,6 +1099,12 @@
               "title": "Gouvernorat de Ben Arous (fr.wikipedia oldid 236470687)",
               "says": "Created 3 December 1983; area 761 km².",
               "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen TUN ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 264 délégations, each inside one of the 24 governorates (area share ≥ 0.97)",
+              "says": "Délégation → governorate membership as of 2017, used to form each governorate as a union of délégations.",
+              "accessed": "2026-10-06"
             }
           ]
         }
@@ -674,7 +1124,21 @@
           "precision": "day",
           "to": "2000-07-31",
           "atoms": [
-            "TUN-102"
+            "TUN-ADM2-11933810B85991761590163",
+            "TUN-ADM2-11933810B96031064721664",
+            "TUN-ADM2-11933810B90990960542190",
+            "TUN-ADM2-11933810B69163376090757",
+            "TUN-ADM2-11933810B98016623241881",
+            "TUN-ADM2-11933810B62465925468138",
+            "TUN-ADM2-11933810B24040773299461",
+            "TUN-ADM2-11933810B2611958153952",
+            "TUN-ADM2-11933810B41984965215358",
+            "TUN-ADM2-11933810B30705450500253",
+            "TUN-ADM2-11933810B17084695603021",
+            "TUN-ADM2-11933810B69098282317118",
+            "TUN-ADM2-11933810B30823561868472",
+            "TUN-ADM2-11933810B74384837832426",
+            "TUN-ADM2-11933810B79768086949873"
           ],
           "sources": [
             {
@@ -688,9 +1152,105 @@
               "title": "Gouvernorat de l'Ariana (fr.wikipedia oldid 236470638)",
               "says": "Created March 1983; in 2000 the Manouba delegation (western part) became a governorate.",
               "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen TUN ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 264 délégations, each inside one of the 24 governorates (area share ≥ 0.97)",
+              "says": "Délégation → governorate membership as of 2017, used to form each governorate as a union of délégations.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "NE feature TUN-102 is labelled «Manubah» but its outline is Ariana + Manouba (1,633 km² vs 482 + 1,137 km²; contains Ariana, Raoued, La Soukra, Kalaat el-Andalous, Tebourba), i.e. the Ariana governorate of 1983-2000."
+          "dateNote": "Drawn as the délégations of the later Ariana and Manouba governorates (Manouba split off in 2000 by whole délégations). the Ariana governorate of 1983-2000."
+        }
+      ]
+    },
+    {
+      "id": "TUN:Ariana@2000",
+      "names": {
+        "en": "Ariana Governorate",
+        "ja": "アリアナ県",
+        "local": "ولاية أريانة"
+      },
+      "wikidata": "Q233116",
+      "spans": [
+        {
+          "from": "2000-07-31",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TUN-ADM2-11933810B85991761590163",
+            "TUN-ADM2-11933810B96031064721664",
+            "TUN-ADM2-11933810B90990960542190",
+            "TUN-ADM2-11933810B69163376090757",
+            "TUN-ADM2-11933810B98016623241881",
+            "TUN-ADM2-11933810B62465925468138",
+            "TUN-ADM2-11933810B24040773299461"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utn.html",
+              "title": "Statoids — Governorates of Tunisia (change history)",
+              "says": "2000-07-31: Manouba governorate split from Ariana under Law 2000-78.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?title=Gouvernorat_de_l%27Ariana&oldid=236470638",
+              "title": "Gouvernorat de l'Ariana (fr.wikipedia oldid 236470638)",
+              "says": "In 2000 the western délégations became the Manouba governorate.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen TUN ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 264 délégations, each inside one of the 24 governorates (area share ≥ 0.97)",
+              "says": "Délégation → governorate membership as of 2017, used to form each governorate as a union of délégations.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TUN:Manouba@2000",
+      "names": {
+        "en": "Manouba Governorate",
+        "ja": "マヌーバ県",
+        "local": "ولاية منوبة"
+      },
+      "spans": [
+        {
+          "from": "2000-07-31",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TUN-ADM2-11933810B2611958153952",
+            "TUN-ADM2-11933810B41984965215358",
+            "TUN-ADM2-11933810B30705450500253",
+            "TUN-ADM2-11933810B17084695603021",
+            "TUN-ADM2-11933810B69098282317118",
+            "TUN-ADM2-11933810B30823561868472",
+            "TUN-ADM2-11933810B74384837832426",
+            "TUN-ADM2-11933810B79768086949873"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utn.html",
+              "title": "Statoids — Governorates of Tunisia (change history)",
+              "says": "2000-07-31: Manouba governorate split from Ariana under Law 2000-78.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?title=Gouvernorat_de_l%27Ariana&oldid=236470638",
+              "title": "Gouvernorat de l'Ariana (fr.wikipedia oldid 236470638)",
+              "says": "In 2000 the western délégations became the Manouba governorate.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.geoboundaries.org/",
+              "title": "geoBoundaries gbOpen TUN ADM2 / ADM1 (OpenStreetMap 2017, ODbL) — 264 délégations, each inside one of the 24 governorates (area share ≥ 0.97)",
+              "says": "Délégation → governorate membership as of 2017, used to form each governorate as a union of délégations.",
+              "accessed": "2026-10-06"
+            }
+          ]
         }
       ]
     }
@@ -794,9 +1354,54 @@
       "what": "Tunis / Ariana / Ben Arous during 1983 (between the March 1983 creation decree and Law 83-104 of 1983-12-03)",
       "unit": "TUN:Tunis",
       "atoms": [
-        "TUN-108",
-        "TUN-104",
-        "TUN-102"
+        "TUN-ADM2-11933810B39381734454792",
+        "TUN-ADM2-11933810B45442684753250",
+        "TUN-ADM2-11933810B93810808295366",
+        "TUN-ADM2-11933810B27074780106305",
+        "TUN-ADM2-11933810B792600527731",
+        "TUN-ADM2-11933810B23225476199680",
+        "TUN-ADM2-11933810B96784549406628",
+        "TUN-ADM2-11933810B56753019610878",
+        "TUN-ADM2-11933810B15261795399084",
+        "TUN-ADM2-11933810B18230049002493",
+        "TUN-ADM2-11933810B89916598335200",
+        "TUN-ADM2-11933810B72032041676540",
+        "TUN-ADM2-11933810B61318752024090",
+        "TUN-ADM2-11933810B80970548575435",
+        "TUN-ADM2-11933810B78138707020335",
+        "TUN-ADM2-11933810B95103152566623",
+        "TUN-ADM2-11933810B63287447977470",
+        "TUN-ADM2-11933810B65786338139889",
+        "TUN-ADM2-11933810B14386581864910",
+        "TUN-ADM2-11933810B13786823130754",
+        "TUN-ADM2-11933810B21257507323383",
+        "TUN-ADM2-11933810B4327996675990",
+        "TUN-ADM2-11933810B94695140482222",
+        "TUN-ADM2-11933810B97530891468779",
+        "TUN-ADM2-11933810B70692418830632",
+        "TUN-ADM2-11933810B81248278761241",
+        "TUN-ADM2-11933810B99011573109347",
+        "TUN-ADM2-11933810B17375886890417",
+        "TUN-ADM2-11933810B77374835127738",
+        "TUN-ADM2-11933810B70866189338214",
+        "TUN-ADM2-11933810B3203162636288",
+        "TUN-ADM2-11933810B2824472069390",
+        "TUN-ADM2-11933810B16314159892818",
+        "TUN-ADM2-11933810B85991761590163",
+        "TUN-ADM2-11933810B96031064721664",
+        "TUN-ADM2-11933810B90990960542190",
+        "TUN-ADM2-11933810B69163376090757",
+        "TUN-ADM2-11933810B98016623241881",
+        "TUN-ADM2-11933810B62465925468138",
+        "TUN-ADM2-11933810B24040773299461",
+        "TUN-ADM2-11933810B2611958153952",
+        "TUN-ADM2-11933810B41984965215358",
+        "TUN-ADM2-11933810B30705450500253",
+        "TUN-ADM2-11933810B17084695603021",
+        "TUN-ADM2-11933810B69098282317118",
+        "TUN-ADM2-11933810B30823561868472",
+        "TUN-ADM2-11933810B74384837832426",
+        "TUN-ADM2-11933810B79768086949873"
       ],
       "from": "1983-03",
       "to": "1983-12-03",
@@ -804,36 +1409,10 @@
       "checked": [
         "statoids.com/utn.html",
         "fr.wikipedia Gouvernorat de l'Ariana oldid 236470638 / Ben Arous oldid 236470687",
-        "ar.wikipedia ولاية أريانة oldid 70818774"
+        "ar.wikipedia ولاية أريانة oldid 70818774",
+        "geoBoundaries TUN ADM2 (OSM 2017 délégations; checked 2026-10-06)"
       ],
       "needs": "JORT text of the March 1983 decree (no finer atoms needed)"
-    },
-    {
-      "what": "Ariana (reduced) after Manouba split, 2000-07-31 →",
-      "unit": "TUN:Ariana@2000",
-      "atoms": [
-        "TUN-102"
-      ],
-      "from": "2000-07-31",
-      "to": null,
-      "why": "Law 2000-78 made the Manouba delegations a governorate; the Ariana/Manouba line runs inside NE atom TUN-102, which NE has not split.",
-      "checked": [
-        "statoids.com/utn.html",
-        "fr.wikipedia Gouvernorat de l'Ariana oldid 236470638",
-        "NE admin-1 TUN (23 features, no Ariana)"
-      ],
-      "needs": "delegation-level atoms (e.g. geoBoundaries TUN ADM2 / INS délégations; licence to check)"
-    },
-    {
-      "what": "Manouba governorate 2000-07-31 →",
-      "unit": "TUN:Manouba@2000",
-      "from": "2000-07-31",
-      "to": null,
-      "why": "Carved from Ariana inside NE atom TUN-102.",
-      "checked": [
-        "statoids.com/utn.html"
-      ],
-      "needs": "delegation-level atoms"
     },
     {
       "what": "Layouts before 1980-05-28 (14 governorates 1956, 1959, Tunis-Sud 1972, Sidi Bou Zid 1973, Mahdia/Monastir and Siliana 1974, Zaghouan 1976)",
@@ -842,9 +1421,10 @@
       "why": "Several were formed from PARTS of 2-4 governorates (Tunis-Sud 1972, Sidi Bou Zid 1973, Mahdia 1974, Siliana 1974) and the 1976 Tunis/Tunis-Sud → Tunis/Zaghouan reorganisation moved territory both ways; statoids (Law 76-82, 1976-08-11) and fr.wikipedia (Zaghouan created November 1976) disagree on the date.",
       "checked": [
         "statoids.com/utn.html",
-        "fr.wikipedia Gouvernorat de Zaghouan oldid 235885778"
+        "fr.wikipedia Gouvernorat de Zaghouan oldid 235885778",
+        "geoBoundaries TUN ADM2 (OSM 2017 délégations; checked 2026-10-06)"
       ],
-      "needs": "delegation-level geometry of 1956-1980"
+      "needs": "the délégations of 1956–1980 and the lists of délégations moved by Laws 72-1, 73-75, 74-8, 74-47 and 76-82 (the 2017 délégations are finer than those of the 1970s; a list naming délégations would let them be drawn)"
     }
   ]
 }

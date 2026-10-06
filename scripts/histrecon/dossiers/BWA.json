@@ -1,11 +1,11 @@
 {
   "country": "BWA",
-  "atomSet": "ne-admin1@ca96624",
+  "atomSet": "gb-adm1@2026-10-06",
   "scope": {
     "from": "1966-09-30",
     "to": "2019-12-31"
   },
-  "polityNote": "Republic of Botswana from independence on 1966-09-30.",
+  "polityNote": "Republic of Botswana from independence (1966-09-30). First level: the administrative districts (district-council areas); the city and town councils (Gaborone, Francistown, Lobatse, Selebi-Phikwe, Jwaneng, Sowa) lie inside them and are treated as subordinate, as statoids and ISO 3166-2 did until 2014. Atoms are the ten districts of geoBoundaries BWA ADM1 (OpenStreetMap, 2017). Units whose outline no recorded change touches are drawn from independence; Central, South-East, Southern and North-West change in the undated ~1980 reorganisation (Tuli, Lobatse, the Chobe crown lands) and are drawn from the first dated source that shows the present layout (1981 census). Independent check (①): atom area / statoids area — Central 147,058/147,730 = 0.995, Chobe 21,133/20,800 = 1.016, Ghanzi 115,237/117,910 = 0.977, Kgalagadi 105,158/106,940 = 0.983, Kgatleng 7,636/7,960 = 0.959, Kweneng 37,099/35,890 = 1.034, North-East 5,337/5,120 = 1.042, North-West 111,791/109,130 = 1.024, South-East 1,753/1,780 = 0.985, Southern 27,426/28,470 = 0.963; North-West + Chobe 132,924 vs the 2001 census North-West 129,930 = 1.023.",
   "units": [
     {
       "id": "BWA:Ghanzi@1966",
@@ -21,17 +21,23 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "BWA-1191"
+            "BWA-ADM1-57670837B99453960122440"
           ],
           "sources": [
             {
               "url": "https://www.statoids.com/ubw.html",
-              "title": "Statoids: Districts of Botswana (G. Law)",
-              "says": "1957 list includes Ghanzi and Kgalagadi; ~1980 changes affect Tuli, Lobatse, Chobe, Ngamiland, Ngwato; Chobe/North-West merged ~2001, split ~2006; towns separate later.",
-              "accessed": "2026-10-05"
+              "title": "Statoids — Districts of Botswana (Gwillim Law, updated 2015-06-30)",
+              "accessed": "2026-10-06",
+              "says": "Change history 1885–2015: Tati renamed Francistown (~1961); Gaberones→Gaborone, Lobatsi→Lobatse, Tuli Block→Tuli (1969-08-15); ~1980 Tuli merged into Ngwato (Central), Lobatse district split between Gaborone (South-East) and Ngwaketse (Southern), parts of Chobe to Ngamiland and Ngwato; Chobe/North-West 2001–2006. No other boundary change."
+            },
+            {
+              "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/BWA/ADM1/geoBoundaries-BWA-ADM1.geojson",
+              "title": "geoBoundaries BWA ADM1 (OpenStreetMap / Wambacher, 2017)",
+              "says": "Ten districts (Central, Chobe, Ghanzi, Kgalagadi, Kgatleng, Kweneng, North-East, North-West, South-East, Southern); cities and towns lie inside them.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "District predates independence (1957 list); none of the changes in the statoids change history touches it. Area figures differ (NE 115,169 vs 117,910 km²) at the 2% level."
+          "dateNote": "District predates independence; none of the boundary changes in the statoids change history (Tuli, Lobatse, Chobe/Ngamiland/Ngwato, Chobe/North-West) touches its outline."
         }
       ]
     },
@@ -49,64 +55,512 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "BWA-2625"
+            "BWA-ADM1-57670837B51384475500083"
           ],
           "sources": [
             {
               "url": "https://www.statoids.com/ubw.html",
-              "title": "Statoids: Districts of Botswana (G. Law)",
-              "says": "1957 list includes Ghanzi and Kgalagadi; ~1980 changes affect Tuli, Lobatse, Chobe, Ngamiland, Ngwato; Chobe/North-West merged ~2001, split ~2006; towns separate later.",
-              "accessed": "2026-10-05"
+              "title": "Statoids — Districts of Botswana (Gwillim Law, updated 2015-06-30)",
+              "accessed": "2026-10-06",
+              "says": "Change history 1885–2015: Tati renamed Francistown (~1961); Gaberones→Gaborone, Lobatsi→Lobatse, Tuli Block→Tuli (1969-08-15); ~1980 Tuli merged into Ngwato (Central), Lobatse district split between Gaborone (South-East) and Ngwaketse (Southern), parts of Chobe to Ngamiland and Ngwato; Chobe/North-West 2001–2006. No other boundary change."
+            },
+            {
+              "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/BWA/ADM1/geoBoundaries-BWA-ADM1.geojson",
+              "title": "geoBoundaries BWA ADM1 (OpenStreetMap / Wambacher, 2017)",
+              "says": "Ten districts (Central, Chobe, Ghanzi, Kgalagadi, Kgatleng, Kweneng, North-East, North-West, South-East, Southern); cities and towns lie inside them.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "District predates independence (1957 list); none of the recorded changes touches it."
+          "dateNote": "District predates independence; none of the boundary changes in the statoids change history (Tuli, Lobatse, Chobe/Ngamiland/Ngwato, Chobe/North-West) touches its outline."
+        }
+      ]
+    },
+    {
+      "id": "BWA:Kgatleng@1966",
+      "names": {
+        "en": "Kgatleng District",
+        "ja": "クガトレン地区",
+        "local": "Kgatleng"
+      },
+      "wikidata": "Q57593",
+      "spans": [
+        {
+          "from": "1966-09-30",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BWA-ADM1-57670837B30841156556030"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubw.html",
+              "title": "Statoids — Districts of Botswana (Gwillim Law, updated 2015-06-30)",
+              "accessed": "2026-10-06",
+              "says": "Change history 1885–2015: Tati renamed Francistown (~1961); Gaberones→Gaborone, Lobatsi→Lobatse, Tuli Block→Tuli (1969-08-15); ~1980 Tuli merged into Ngwato (Central), Lobatse district split between Gaborone (South-East) and Ngwaketse (Southern), parts of Chobe to Ngamiland and Ngwato; Chobe/North-West 2001–2006. No other boundary change."
+            },
+            {
+              "url": "https://www.statoids.com/ubw.html",
+              "title": "Statoids — Districts of Botswana (Gwillim Law, updated 2015-06-30)",
+              "accessed": "2026-10-06",
+              "says": "~1955: Mochudi district renamed Kgatleng (Bakgatla reserve); listed in the 1957 Britannica atlas."
+            },
+            {
+              "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/BWA/ADM1/geoBoundaries-BWA-ADM1.geojson",
+              "title": "geoBoundaries BWA ADM1 (OpenStreetMap / Wambacher, 2017)",
+              "says": "Ten districts (Central, Chobe, Ghanzi, Kgalagadi, Kgatleng, Kweneng, North-East, North-West, South-East, Southern); cities and towns lie inside them.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "District predates independence; none of the boundary changes in the statoids change history (Tuli, Lobatse, Chobe/Ngamiland/Ngwato, Chobe/North-West) touches its outline."
+        }
+      ]
+    },
+    {
+      "id": "BWA:Kweneng@1966",
+      "names": {
+        "en": "Kweneng District",
+        "ja": "クウェネン地区",
+        "local": "Kweneng"
+      },
+      "wikidata": "Q57599",
+      "spans": [
+        {
+          "from": "1966-09-30",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BWA-ADM1-57670837B49806718353307"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubw.html",
+              "title": "Statoids — Districts of Botswana (Gwillim Law, updated 2015-06-30)",
+              "accessed": "2026-10-06",
+              "says": "Change history 1885–2015: Tati renamed Francistown (~1961); Gaberones→Gaborone, Lobatsi→Lobatse, Tuli Block→Tuli (1969-08-15); ~1980 Tuli merged into Ngwato (Central), Lobatse district split between Gaborone (South-East) and Ngwaketse (Southern), parts of Chobe to Ngamiland and Ngwato; Chobe/North-West 2001–2006. No other boundary change."
+            },
+            {
+              "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/BWA/ADM1/geoBoundaries-BWA-ADM1.geojson",
+              "title": "geoBoundaries BWA ADM1 (OpenStreetMap / Wambacher, 2017)",
+              "says": "Ten districts (Central, Chobe, Ghanzi, Kgalagadi, Kgatleng, Kweneng, North-East, North-West, South-East, Southern); cities and towns lie inside them.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "District predates independence; none of the boundary changes in the statoids change history (Tuli, Lobatse, Chobe/Ngamiland/Ngwato, Chobe/North-West) touches its outline. The former Lobatse district lay between South-East and Southern; the Kweneng atom is 48 km from Lobatse town at its nearest vertex."
+        }
+      ]
+    },
+    {
+      "id": "BWA:NorthEast@1966",
+      "names": {
+        "en": "North-East District (Tati / Francistown District earlier)",
+        "ja": "北東地区",
+        "local": "North-East"
+      },
+      "wikidata": "Q57636",
+      "spans": [
+        {
+          "from": "1966-09-30",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BWA-ADM1-57670837B74109899498700"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubw.html",
+              "title": "Statoids — Districts of Botswana (Gwillim Law, updated 2015-06-30)",
+              "accessed": "2026-10-06",
+              "says": "Change history 1885–2015: Tati renamed Francistown (~1961); Gaberones→Gaborone, Lobatsi→Lobatse, Tuli Block→Tuli (1969-08-15); ~1980 Tuli merged into Ngwato (Central), Lobatse district split between Gaborone (South-East) and Ngwaketse (Southern), parts of Chobe to Ngamiland and Ngwato; Chobe/North-West 2001–2006. No other boundary change."
+            },
+            {
+              "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/BWA/ADM1/geoBoundaries-BWA-ADM1.geojson",
+              "title": "geoBoundaries BWA ADM1 (OpenStreetMap / Wambacher, 2017)",
+              "says": "Ten districts (Central, Chobe, Ghanzi, Kgalagadi, Kgatleng, Kweneng, North-East, North-West, South-East, Southern); cities and towns lie inside them.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "District predates independence; none of the boundary changes in the statoids change history (Tuli, Lobatse, Chobe/Ngamiland/Ngwato, Chobe/North-West) touches its outline. Tati district renamed Francistown ~1961, later North-East; the Tuli Block ended at the Shashe–Limpopo confluence, 156 km from the atom."
+        }
+      ]
+    },
+    {
+      "id": "BWA:Central@1981",
+      "names": {
+        "en": "Central District (Ngwato)",
+        "ja": "中央地区",
+        "local": "Central"
+      },
+      "wikidata": "Q57525",
+      "spans": [
+        {
+          "from": "1981-08-12",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BWA-ADM1-57670837B77729612727439"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubw.html",
+              "title": "Statoids — Districts of Botswana (Gwillim Law, updated 2015-06-30)",
+              "accessed": "2026-10-06",
+              "says": "~1980 (undated): Tuli merged into Central; Lobatse district split between South-East and Southern; parts of Chobe crown lands to Ngamiland and Ngwato. The 1981 census lists Lobatse only as a town and no Tuli."
+            },
+            {
+              "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/BWA/ADM1/geoBoundaries-BWA-ADM1.geojson",
+              "title": "geoBoundaries BWA ADM1 (OpenStreetMap / Wambacher, 2017)",
+              "says": "Ten districts (Central, Chobe, Ghanzi, Kgalagadi, Kgatleng, Kweneng, North-East, North-West, South-East, Southern); cities and towns lie inside them.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Drawn from the 1981 census (the 2001 and 2011 census tables give the same 147,730 km²); the merger of Tuli and of the Chobe crown-land parts happened ~1980 and is not dated, so 1966-09-30 → 1981-08-12 is unresolved."
+        }
+      ]
+    },
+    {
+      "id": "BWA:SouthEast@1981",
+      "names": {
+        "en": "South-East District",
+        "ja": "南東地区",
+        "local": "South-East"
+      },
+      "wikidata": "Q57695",
+      "spans": [
+        {
+          "from": "1981-08-12",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BWA-ADM1-57670837B20379019036464"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubw.html",
+              "title": "Statoids — Districts of Botswana (Gwillim Law, updated 2015-06-30)",
+              "accessed": "2026-10-06",
+              "says": "~1980 (undated): Tuli merged into Central; Lobatse district split between South-East and Southern; parts of Chobe crown lands to Ngamiland and Ngwato. The 1981 census lists Lobatse only as a town and no Tuli."
+            },
+            {
+              "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/BWA/ADM1/geoBoundaries-BWA-ADM1.geojson",
+              "title": "geoBoundaries BWA ADM1 (OpenStreetMap / Wambacher, 2017)",
+              "says": "Ten districts (Central, Chobe, Ghanzi, Kgalagadi, Kgatleng, Kweneng, North-East, North-West, South-East, Southern); cities and towns lie inside them.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Gaborone district with Lobatse town after the ~1980 split of Lobatse district; drawn from the 1981 census."
+        }
+      ]
+    },
+    {
+      "id": "BWA:Southern@1981",
+      "names": {
+        "en": "Southern District (Ngwaketse)",
+        "ja": "南部地区",
+        "local": "Southern"
+      },
+      "wikidata": "Q57609",
+      "spans": [
+        {
+          "from": "1981-08-12",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BWA-ADM1-57670837B18017563073821"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubw.html",
+              "title": "Statoids — Districts of Botswana (Gwillim Law, updated 2015-06-30)",
+              "accessed": "2026-10-06",
+              "says": "~1980 (undated): Tuli merged into Central; Lobatse district split between South-East and Southern; parts of Chobe crown lands to Ngamiland and Ngwato. The 1981 census lists Lobatse only as a town and no Tuli."
+            },
+            {
+              "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/BWA/ADM1/geoBoundaries-BWA-ADM1.geojson",
+              "title": "geoBoundaries BWA ADM1 (OpenStreetMap / Wambacher, 2017)",
+              "says": "Ten districts (Central, Chobe, Ghanzi, Kgalagadi, Kgatleng, Kweneng, North-East, North-West, South-East, Southern); cities and towns lie inside them.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Ngwaketse with Barolong and part of the former Lobatse district; drawn from the 1981 census."
+        }
+      ]
+    },
+    {
+      "id": "BWA:NorthWest@1966",
+      "names": {
+        "en": "North-West District (Ngamiland)",
+        "ja": "北西地区",
+        "local": "North-West"
+      },
+      "wikidata": "Q57617",
+      "spans": [
+        {
+          "from": "1981-08-12",
+          "precision": "day",
+          "to": "2006",
+          "atoms": [
+            "BWA-ADM1-57670837B3917923701881",
+            "BWA-ADM1-57670837B89802666826813"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=North-West_District_(Botswana)&oldid=1374777194",
+              "title": "Wikipedia — North-West District (Botswana) (oldid 1374777194)",
+              "says": "The North-West District established in 1966 included both Ngamiland and Chobe; Chobe District was separated out in 2006 (cites the Ministry of Local Government site, archived 2009).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Chobe_District&oldid=1375624591",
+              "title": "Wikipedia — Chobe District (oldid 1375624591)",
+              "says": "Until 2006 Chobe shared the North-West District Council with Ngamiland; infobox gives establishment 10 February 2006.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ubw.html",
+              "title": "Statoids — Districts of Botswana (Gwillim Law, updated 2015-06-30)",
+              "accessed": "2026-10-06",
+              "says": "~1980 (undated): Tuli merged into Central; Lobatse district split between South-East and Southern; parts of Chobe crown lands to Ngamiland and Ngwato. The 1981 census lists Lobatse only as a town and no Tuli."
+            },
+            {
+              "url": "https://www.statoids.com/ubw.html",
+              "title": "Statoids — Districts of Botswana (Gwillim Law, updated 2015-06-30)",
+              "accessed": "2026-10-06",
+              "says": "2001: Chobe and Ngamiland shown as one North-West district (ISO 3166-2 newsletter I-5, 2003; GEC 2006; IIASA); 2001 census area of North-West 129,930 km²; split again in 2006."
+            },
+            {
+              "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/BWA/ADM1/geoBoundaries-BWA-ADM1.geojson",
+              "title": "geoBoundaries BWA ADM1 (OpenStreetMap / Wambacher, 2017)",
+              "says": "Ten districts (Central, Chobe, Ghanzi, Kgalagadi, Kgatleng, Kweneng, North-East, North-West, South-East, Southern); cities and towns lie inside them.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "The North-West District Council covered Ngamiland and Chobe until Chobe got its own district in 2006. Before ~1980 the Chobe crown lands were a district of their own and parts went to Ngamiland and Ngwato (statoids), so the 1966 outline is unresolved. The 1981 and 1991 census tables list Chobe separately — as a census district inside North-West."
+        },
+        {
+          "from": "2006",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "BWA-ADM1-57670837B3917923701881"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=North-West_District_(Botswana)&oldid=1374777194",
+              "title": "Wikipedia — North-West District (Botswana) (oldid 1374777194)",
+              "says": "The North-West District established in 1966 included both Ngamiland and Chobe; Chobe District was separated out in 2006 (cites the Ministry of Local Government site, archived 2009).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Chobe_District&oldid=1375624591",
+              "title": "Wikipedia — Chobe District (oldid 1375624591)",
+              "says": "Until 2006 Chobe shared the North-West District Council with Ngamiland; infobox gives establishment 10 February 2006.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ubw.html",
+              "title": "Statoids — Districts of Botswana (Gwillim Law, updated 2015-06-30)",
+              "accessed": "2026-10-06",
+              "says": "2006: government sources show Chobe and North-West as separate districts again."
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Botswana&oldid=1375008503",
+              "title": "Wikipedia — Districts of Botswana (oldid 1375008503)",
+              "says": "Ten administrative districts (Southern, South-East, Kweneng, Kgatleng, Central, North-East, Chobe, North-West, Ghanzi, Kgalagadi) plus two cities and five towns.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/BWA/ADM1/geoBoundaries-BWA-ADM1.geojson",
+              "title": "geoBoundaries BWA ADM1 (OpenStreetMap / Wambacher, 2017)",
+              "says": "Ten districts (Central, Chobe, Ghanzi, Kgalagadi, Kgatleng, Kweneng, North-East, North-West, South-East, Southern); cities and towns lie inside them.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Chobe District separated in 2006; the Wikipedia infobox gives 10 February 2006 (uncited), so only the year is stated."
+        }
+      ]
+    },
+    {
+      "id": "BWA:Chobe@2006",
+      "names": {
+        "en": "Chobe District",
+        "ja": "チョベ地区",
+        "local": "Chobe"
+      },
+      "wikidata": "Q165536",
+      "spans": [
+        {
+          "from": "2006",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "BWA-ADM1-57670837B89802666826813"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Chobe_District&oldid=1375624591",
+              "title": "Wikipedia — Chobe District (oldid 1375624591)",
+              "says": "Until 2006 Chobe shared the North-West District Council with Ngamiland; infobox gives establishment 10 February 2006.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=North-West_District_(Botswana)&oldid=1374777194",
+              "title": "Wikipedia — North-West District (Botswana) (oldid 1374777194)",
+              "says": "The North-West District established in 1966 included both Ngamiland and Chobe; Chobe District was separated out in 2006 (cites the Ministry of Local Government site, archived 2009).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Botswana&oldid=1375008503",
+              "title": "Wikipedia — Districts of Botswana (oldid 1375008503)",
+              "says": "Ten administrative districts (Southern, South-East, Kweneng, Kgatleng, Central, North-East, Chobe, North-West, Ghanzi, Kgalagadi) plus two cities and five towns.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/BWA/ADM1/geoBoundaries-BWA-ADM1.geojson",
+              "title": "geoBoundaries BWA ADM1 (OpenStreetMap / Wambacher, 2017)",
+              "says": "Ten districts (Central, Chobe, Ghanzi, Kgalagadi, Kgatleng, Kweneng, North-East, North-West, South-East, Southern); cities and towns lie inside them.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Separated from North-West in 2006 (infobox: 10 February 2006, uncited)."
         }
       ]
     }
   ],
   "events": [
     {
-      "date": "1980",
-      "precision": "year",
-      "what": "~1980: Tuli merged into Central; Lobatse district divided between South-East and Southern; parts of Chobe to Ngamiland and Central (approximate date)",
+      "date": "1966-09-30",
+      "precision": "day",
+      "what": "Independence of Botswana; the protectorate districts become district-council areas",
       "sources": [
         {
           "url": "https://www.statoids.com/ubw.html",
-          "title": "Statoids: Districts of Botswana (G. Law)",
-          "says": "1957 list includes Ghanzi and Kgalagadi; ~1980 changes affect Tuli, Lobatse, Chobe, Ngamiland, Ngwato; Chobe/North-West merged ~2001, split ~2006; towns separate later.",
-          "accessed": "2026-10-05"
+          "title": "Statoids — Districts of Botswana (Gwillim Law, updated 2015-06-30)",
+          "accessed": "2026-10-06",
+          "says": "1966-09-30: Bechuanaland Protectorate became independent as Botswana."
+        }
+      ]
+    },
+    {
+      "date": "1980",
+      "precision": "year",
+      "what": "~1980 (undated): Tuli to Central, Lobatse district split between South-East and Southern, Chobe crown lands to Ngamiland and Ngwato",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ubw.html",
+          "title": "Statoids — Districts of Botswana (Gwillim Law, updated 2015-06-30)",
+          "accessed": "2026-10-06",
+          "says": "~1980 (undated): Tuli merged into Central; Lobatse district split between South-East and Southern; parts of Chobe crown lands to Ngamiland and Ngwato. The 1981 census lists Lobatse only as a town and no Tuli."
+        }
+      ]
+    },
+    {
+      "date": "2006",
+      "precision": "year",
+      "what": "Chobe District separated from North-West",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/w/index.php?title=Chobe_District&oldid=1375624591",
+          "title": "Wikipedia — Chobe District (oldid 1375624591)",
+          "says": "Until 2006 Chobe shared the North-West District Council with Ngamiland; infobox gives establishment 10 February 2006.",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?title=North-West_District_(Botswana)&oldid=1374777194",
+          "title": "Wikipedia — North-West District (Botswana) (oldid 1374777194)",
+          "says": "The North-West District established in 1966 included both Ngamiland and Chobe; Chobe District was separated out in 2006 (cites the Ministry of Local Government site, archived 2009).",
+          "accessed": "2026-10-06"
         }
       ]
     }
   ],
-  "counts": [],
+  "counts": [
+    {
+      "date": "2001-08-17",
+      "n": 9,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ubw.html",
+          "title": "Statoids — Districts of Botswana (Gwillim Law, updated 2015-06-30)",
+          "accessed": "2026-10-06",
+          "says": "2001 census: nine districts — Central, Ghanzi, Kgalagadi, Kgatleng, Kweneng, North-East, North-West, South-East, Southern."
+        }
+      ]
+    },
+    {
+      "date": "2011-08-09",
+      "n": 10,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ubw.html",
+          "title": "Statoids — Districts of Botswana (Gwillim Law, updated 2015-06-30)",
+          "accessed": "2026-10-06",
+          "says": "2011 census: ten districts (towns and cities subordinate)."
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Botswana&oldid=1375008503",
+          "title": "Wikipedia — Districts of Botswana (oldid 1375008503)",
+          "says": "Ten administrative districts (Southern, South-East, Kweneng, Kgatleng, Central, North-East, Chobe, North-West, Ghanzi, Kgalagadi) plus two cities and five towns.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    }
+  ],
   "atomsOutside": [],
   "unresolved": [
     {
-      "what": "All other districts and town councils",
+      "what": "Central, South-East, Southern and North-West (with Chobe) before the ~1980 reorganisation",
+      "unit": "BWA:Central@1981",
       "atoms": [
-        "BWA-2629",
-        "BWA-2630",
-        "BWA-4853",
-        "BWA-2646",
-        "BWA-2648",
-        "BWA-2649",
-        "BWA-2647",
-        "BWA-5501",
-        "BWA-5506",
-        "BWA-5502",
-        "BWA-5503",
-        "BWA-5504",
-        "BWA-5505"
+        "BWA-ADM1-57670837B77729612727439",
+        "BWA-ADM1-57670837B20379019036464",
+        "BWA-ADM1-57670837B18017563073821",
+        "BWA-ADM1-57670837B3917923701881",
+        "BWA-ADM1-57670837B89802666826813"
       ],
       "from": "1966-09-30",
-      "to": null,
-      "why": "NE combines a merged North-West (Ngamiland + Chobe) with separate city/town atoms — a layout that never existed (Chobe merge c.2001 and split c.2006 are themselves unsure). The NE Gaborone atom (286 km² vs 169 km² official) contains Mogoditshane (Kweneng) and Tlokweng (South-East), so the Kweneng, South-East and probably Kgatleng outlines are not legal ones. The ~1980 changes (Tuli, Lobatse, Chobe) are undated.",
+      "to": "1981-08-12",
+      "why": "At independence Tuli Block, Lobatse and Gaberones were separate districts and the Chobe crown lands a district of their own; their lines run through today's Central, South-East, Southern, North-West and Chobe atoms, and the merger is dated only ~1980.",
       "checked": [
-        "statoids ubw.html (change history, ISO 3166-2 newsletters I-5 2003 and 2014 update)",
-        "Natural Earth point tests (Mogoditshane, Tlokweng → BWA-5501)"
+        "statoids ubw.html (change history, 1957 Britannica district list, census tables 1971–2001)",
+        "Wikipedia Districts of Botswana oldid 1375008503, North-West District oldid 1374777194, Chobe District oldid 1375624591",
+        "Müller-Crepon DVN/9JI06R (CC0): Bechuanaland only in 1899 (8 units) and 1906 (14 units) — no independence-era section",
+        "geoBoundaries BWA ADM2 (RCMRD 2015, 25 sub-districts; Tuli is a sub-district of Central, 4,689 km²) — a different publisher, cannot be mixed with the ADM1 atoms"
       ],
-      "needs": "geoBoundaries BWA ADM1/ADM2 (CC BY 4.0) and the Local Government Act schedules with dates; Chobe / Ngamiland line"
+      "needs": "the Local Government (District Councils) Act schedules / statutory instruments that merged Tuli and Lobatse (with dates), and the colonial Chobe crown-land boundary"
+    },
+    {
+      "what": "South-East before ~1980",
+      "unit": "BWA:SouthEast@1981",
+      "from": "1966-09-30",
+      "to": "1981-08-12",
+      "why": "Atoms withheld in the Central entry (same window).",
+      "checked": [
+        "statoids ubw.html"
+      ],
+      "needs": "as above"
+    },
+    {
+      "what": "Southern before ~1980",
+      "unit": "BWA:Southern@1981",
+      "from": "1966-09-30",
+      "to": "1981-08-12",
+      "why": "Atoms withheld in the Central entry (same window).",
+      "checked": [
+        "statoids ubw.html"
+      ],
+      "needs": "as above"
+    },
+    {
+      "what": "North-West (Ngamiland + Chobe) before ~1980",
+      "unit": "BWA:NorthWest@1966",
+      "from": "1966-09-30",
+      "to": "1981-08-12",
+      "why": "Atoms withheld in the Central entry (same window).",
+      "checked": [
+        "statoids ubw.html",
+        "Wikipedia North-West District oldid 1374777194"
+      ],
+      "needs": "as above"
     }
   ]
 }

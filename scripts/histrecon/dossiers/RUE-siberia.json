@@ -13,10 +13,10 @@
   "Sakhalin island"
  ],
  "scope": {
-  "from": "1822-08-03",
+  "from": "1708-12-29",
   "to": "1917-11-06"
  },
- "polityNote": "Russian Empire (Siberia and the Far East) to 1917-11-06 (Provisional Government from March 1917). Amur lands Russian from the Aigun treaty (1858), Ussuri lands from Peking (1860), all Sakhalin from 1875, southern Sakhalin Japanese from 1905; Uryankhai a protectorate from 1914. Old Style decree dates converted to Gregorian (+12 days in the 19th century, +13 from 1900-03-01 O.S.).",
+ "polityNote": "Russian Empire (Siberia and the Far East) to 1917-11-06 (Provisional Government from March 1917). Amur lands Russian from the Aigun treaty (1858), Ussuri lands from Peking (1860), all Sakhalin from 1875, southern Sakhalin Japanese from 1905; Uryankhai a protectorate from 1914. Old Style decree dates converted to Gregorian (+12 days in the 19th century, +13 from 1900-03-01 O.S.). Scope extended back to the Siberian governorate (29 Dec 1708): no Siberian first-level unit before 1822 is a union of 1897 uyezds (southern fortified lines through 1897 steppe uyezds, the Gorbitsa line inside Nerchinsk-Zavodsk uyezd, the 1822 re-cut of Kansk and Achinsk okrugs); Qing and unadministered lands are named outside until the treaties.",
  "units": [
   {
    "id": "RUE:Tobolsk@1887",
@@ -424,6 +424,45 @@
  ],
  "events": [
   {
+   "date": "1708-12-29",
+   "precision": "day",
+   "what": "Siberian governorate created (decree of 18 Dec 1708 O.S.)",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=152587037",
+     "title": "Сибирская губерния — Википедия (oldid 152587037)",
+     "says": "Created 18 (29) Dec 1708; Tobolsk, Vyatka and Solikamsk provinces (1719), Yeniseysk and Irkutsk provinces (1724); Vyatka and Solikamsk to Kazan governorate 29 Apr 1727; Irkutsk governorate separated 1764.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1782-01-30",
+   "precision": "day",
+   "what": "Tobolsk namestnichestvo founded (ПСЗ-1 № 15327, 19 Jan 1782 O.S.)",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=154778678",
+     "title": "Тобольское наместничество — Википедия (oldid 154778678)",
+     "says": "Founded by decree № 15327 of 19 Jan 1782 with Tobolsk and Tomsk oblasts; 11 fortresses of the Ishim line formed the southern border of Kurgan, Ishim and Omsk uyezds.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1804-03-09",
+   "precision": "day",
+   "what": "Tomsk governorate separated from Tobolsk (26 Feb 1804 O.S.)",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=153606694",
+     "title": "Томская губерния — Википедия (oldid 153606694)",
+     "says": "Formed 26 Feb (9 Mar) 1804; in 1822 Yeniseysk, Krasnoyarsk, Turukhansk uyezds went to the new Yeniseysk governorate and lands to the Omsk oblast.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
    "date": "1822-08-03",
    "precision": "day",
    "what": "Speransky reform: Yeniseysk governorate formed from Tomsk governorate (and Nizhneudinsk volosts of Irkutsk); Omsk oblast in being (to 1838)",
@@ -652,14 +691,56 @@
  "atomsOutside": [
   {
    "atom": "U1897-777",
-   "from": "1822-08-03",
+   "from": "1708-12-29",
    "to": "1914-04-17",
-   "why": "Tannu Uryankhai: Qing territory to 1912, then claimed by Mongolia; not under Russian administration before the protectorate of 4 (17) April 1914."
+   "why": "Tannu Uryankhai: Dzungar and from 1757 Qing territory (to 1912), then claimed by Mongolia; not under Russian administration before the protectorate of 4 (17) April 1914."
   },
   {
    "atom": "U1897-843",
    "from": "1905-11-25",
    "why": "Southern Sakhalin ceded to Japan by the Treaty of Portsmouth (ratifications exchanged 25 Nov 1905); Karafuto."
+  },
+  {
+   "atom": "U1897-762",
+   "from": "1708-12-29",
+   "to": "1854",
+   "why": "Qing side of the Nerchinsk treaty line (1689: the Gorbitsa, then the «stone mountains» towards the sea, whose branch the text does not fix); no Russian administration on the Amur before the expeditions of 1854."
+  },
+  {
+   "atom": "U1897-759",
+   "from": "1708-12-29",
+   "to": "1858-05-28",
+   "why": "Qing territory (Ussuri and lower-Amur lands) under the Nerchinsk treaty until the Aigun treaty of 28 May 1858 (left bank of the Amur ceded, the Ussuri lands put in joint possession) and the Peking treaty of 2 (14) Nov 1860."
+  },
+  {
+   "atom": "U1897-758",
+   "from": "1708-12-29",
+   "to": "1858-05-28",
+   "why": "Qing territory (Ussuri and lower-Amur lands) under the Nerchinsk treaty until the Aigun treaty of 28 May 1858 (left bank of the Amur ceded, the Ussuri lands put in joint possession) and the Peking treaty of 2 (14) Nov 1860."
+  },
+  {
+   "atom": "U1897-760",
+   "from": "1708-12-29",
+   "to": "1858-05-28",
+   "why": "Qing territory (Ussuri and lower-Amur lands) under the Nerchinsk treaty until the Aigun treaty of 28 May 1858 (left bank of the Amur ceded, the Ussuri lands put in joint possession) and the Peking treaty of 2 (14) Nov 1860."
+  },
+  {
+   "atom": "U1897-843",
+   "from": "1708-12-29",
+   "to": "1853",
+   "why": "Sakhalin: Qing tributary north and Japanese (Matsumae) posts in the south; no Russian administration before Nevelskoy's posts of 1853."
+  },
+  {
+   "atom": "U1897-842",
+   "from": "1708-12-29",
+   "to": "1853",
+   "why": "Sakhalin: Qing tributary north and Japanese (Matsumae) posts in the south; no Russian administration before Nevelskoy's posts of 1853."
+  },
+  {
+   "atom": "U1897-783",
+   "from": "1708-12-29",
+   "to": "1853",
+   "why": "Sakhalin: Qing tributary north and Japanese (Matsumae) posts in the south; no Russian administration before Nevelskoy's posts of 1853."
   }
  ],
  "unresolved": [
@@ -678,14 +759,19 @@
     "U1897-737",
     "U1897-738"
    ],
-   "from": "1822-08-03",
+   "from": "1708-12-29",
    "to": "1887-06-17",
-   "why": "Until 1887 Tyukalinsk (earlier Omsk) okrug held Yudinskaya volost, which lies inside the 1897 Kainsk uyezd atom (Tomsk group); before that Omsk oblast 1822–1838 and the 1868 loss of Omsk also moved the outer line.",
+   "why": "Until 1887 Tyukalinsk (earlier Omsk) okrug held Yudinskaya volost, which lies inside the 1897 Kainsk uyezd atom (Tomsk group); before that Omsk oblast 1822–1838 and the 1868 loss of Omsk also moved the outer line. Before 1822 the same land lay in the Siberian governorate (18 Dec 1708 O.S.; with Vyatka and Solikamsk provinces to 1727, Iset province 1737–1744), the Tobolsk namestnichestvo (19 Jan 1782 O.S., Tobolsk and Tomsk oblasts) and the Kolyvan oblast/namestnichestvo (1779/1783–1796), the Tobolsk governorate of 1796–1804 (sixteen uyezds from Berezov to Kuznetsk, Semipalatinsk, Krasnoyarsk and Turukhansk) and the Tobolsk and Tomsk governorates of 26 Feb 1804 O.S. Each ran its southern line along the fortified lines — the Ishim line was the southern border of Kurgan, Ishim and Omsk uyezds — and held Omsk, Semipalatinsk and Ust-Kamenogorsk with lands that in 1897 are parts of Akmola and Semipalatinsk uyezds; the Altai south of the Chuya was Qing until the 1864 Chuguchak protocol; and the Tobolsk–Tomsk line of 1804 ran through the later Kainsk and Tyukalinsk lands (Yudinskaya volost, below). No 18th- or early 19th-century unit of western Siberia is a union of 1897 uyezds.",
    "checked": [
     "ru.wikipedia Тюкалинский уезд oldid 155325789",
     "ru.wikipedia Тобольская губерния oldid 152754514",
     "ru.wikipedia Омская область (Российская империя) oldid 146290624",
-    "ЭСБЕ Тобольская губерния (Викитека oldid 5368903)"
+    "ЭСБЕ Тобольская губерния (Викитека oldid 5368903)",
+    "ru.wikipedia Сибирская губерния oldid 152587037",
+    "ru.wikipedia Тобольское наместничество oldid 154778678",
+    "ru.wikipedia Тобольская губерния oldid 152754514",
+    "ru.wikipedia Томская губерния oldid 153606694",
+    "ru.wikipedia Колыванское наместничество oldid 146344047"
    ],
    "needs": "Yudinskaya volost as a separate atom (1897 Kainsk uyezd split along the pre-1887 line)"
   },
@@ -702,13 +788,18 @@
     "U1897-756",
     "U1897-755"
    ],
-   "from": "1822-08-03",
+   "from": "1708-12-29",
    "to": "1887-06-17",
-   "why": "Tomsk lacked Yudinskaya volost (part of the Kainsk atom) before 1887; earlier also Omsk oblast 1822–1838 and the Semipalatinsk lands (1854/1856).",
+   "why": "Tomsk lacked Yudinskaya volost (part of the Kainsk atom) before 1887; earlier also Omsk oblast 1822–1838 and the Semipalatinsk lands (1854/1856). Before 1822 the same land lay in the Siberian governorate (18 Dec 1708 O.S.; with Vyatka and Solikamsk provinces to 1727, Iset province 1737–1744), the Tobolsk namestnichestvo (19 Jan 1782 O.S., Tobolsk and Tomsk oblasts) and the Kolyvan oblast/namestnichestvo (1779/1783–1796), the Tobolsk governorate of 1796–1804 (sixteen uyezds from Berezov to Kuznetsk, Semipalatinsk, Krasnoyarsk and Turukhansk) and the Tobolsk and Tomsk governorates of 26 Feb 1804 O.S. Each ran its southern line along the fortified lines — the Ishim line was the southern border of Kurgan, Ishim and Omsk uyezds — and held Omsk, Semipalatinsk and Ust-Kamenogorsk with lands that in 1897 are parts of Akmola and Semipalatinsk uyezds; the Altai south of the Chuya was Qing until the 1864 Chuguchak protocol; and the Tobolsk–Tomsk line of 1804 ran through the later Kainsk and Tyukalinsk lands (Yudinskaya volost, below). No 18th- or early 19th-century unit of western Siberia is a union of 1897 uyezds.",
    "checked": [
     "ru.wikipedia Каинский уезд oldid 155325784",
     "ru.wikipedia Томская губерния oldid 153606694",
-    "ru.wikipedia Семипалатинская область (Российская империя) oldid 151483637"
+    "ru.wikipedia Семипалатинская область (Российская империя) oldid 151483637",
+    "ru.wikipedia Сибирская губерния oldid 152587037",
+    "ru.wikipedia Тобольское наместничество oldid 154778678",
+    "ru.wikipedia Тобольская губерния oldid 152754514",
+    "ru.wikipedia Томская губерния oldid 153606694",
+    "ru.wikipedia Колыванское наместничество oldid 146344047"
    ],
    "needs": "Yudinskaya volost as a separate atom"
   },
@@ -745,17 +836,24 @@
     "U1897-773",
     "U1897-772"
    ],
-   "from": "1822-08-03",
+   "from": "1708-12-29",
    "to": "1851-07-23",
-   "why": "Until 1851 the governorate also contained Verkhneudinsk and Nerchinsk okrugs, whose eastern edge was the Nerchinsk-treaty line (Gorbitsa), not the 1897 Transbaikal line.",
+   "why": "Until 1851 the governorate also contained Verkhneudinsk and Nerchinsk okrugs, whose eastern edge was the Nerchinsk-treaty line (Gorbitsa), not the 1897 Transbaikal line. Before 1822 the land lay in Irkutsk province (26 Nov 1724 O.S.) of the Siberian governorate, the Irkutsk governorate (1764), the Irkutsk namestnichestvo (6 Mar 1783 O.S.; Irkutsk, Nerchinsk, Yakutsk and Okhotsk oblasts) and the Irkutsk governorate of 1796–1822 — one unit holding the Irkutsk, Transbaikal and Yakutsk lands and (to 1803/1805) Okhotsk and Kamchatka. Its eastern land line was the Nerchinsk-treaty line on the Gorbitsa, inside the 1897 Nerchinsk-Zavodsk uyezd; its Uda lands reached country the treaty left undetermined; and its western line with Tomsk governorate ran through the later Kansk okrug (formed 1822 from parts of Krasnoyarsk and Yeniseysk uyezds and the Ilanskaya and Biryusinskaya volosts of Nizhneudinsk uyezd). So it is not a union of 1897 uyezds; Yakutsk oblast (taken out of the governorate in 1805 by one account) held the Uda lands until 1857 (see the Yakutsk entry).",
    "checked": [
     "ru.wikipedia Забайкальская область oldid 152486932",
-    "ru.wikipedia Иркутская губерния oldid 153528431"
+    "ru.wikipedia Иркутская губерния oldid 153528431",
+    "ru.wikipedia Сибирская губерния oldid 152587037",
+    "ru.wikipedia Иркутская губерния oldid 153528431",
+    "ru.wikipedia Иркутское наместничество oldid 146578970",
+    "ru.wikipedia Нерчинский договор oldid 155086095",
+    "ru.wikipedia Енисейская губерния oldid 154900457",
+    "ru.wikipedia Якутская область oldid 150697315",
+    "ru.wikipedia Охотская область oldid 146898515"
    ],
    "needs": "the pre-1858 Gorbitsa–Argun strip as a separate atom"
   },
   {
-   "what": "Transbaikal lands 1822–1858",
+   "what": "Transbaikal lands 1708–1858",
    "atoms": [
     "U1897-764",
     "U1897-765",
@@ -766,13 +864,20 @@
     "U1897-767",
     "U1897-770"
    ],
-   "from": "1822-08-03",
+   "from": "1708-12-29",
    "to": "1858-12-20",
-   "why": "Part of Irkutsk governorate to 1851; 1851–1858 the left bank of the Shilka east of the Gorbitsa was Qing under the Nerchinsk treaty until Aigun (1858) and the Amur decree, so the oblast was smaller than the 1897 atoms.",
+   "why": "Part of Irkutsk governorate to 1851; 1851–1858 the left bank of the Shilka east of the Gorbitsa was Qing under the Nerchinsk treaty until Aigun (1858) and the Amur decree, so the oblast was smaller than the 1897 atoms. Before 1822 the land lay in Irkutsk province (26 Nov 1724 O.S.) of the Siberian governorate, the Irkutsk governorate (1764), the Irkutsk namestnichestvo (6 Mar 1783 O.S.; Irkutsk, Nerchinsk, Yakutsk and Okhotsk oblasts) and the Irkutsk governorate of 1796–1822 — one unit holding the Irkutsk, Transbaikal and Yakutsk lands and (to 1803/1805) Okhotsk and Kamchatka. Its eastern land line was the Nerchinsk-treaty line on the Gorbitsa, inside the 1897 Nerchinsk-Zavodsk uyezd; its Uda lands reached country the treaty left undetermined; and its western line with Tomsk governorate ran through the later Kansk okrug (formed 1822 from parts of Krasnoyarsk and Yeniseysk uyezds and the Ilanskaya and Biryusinskaya volosts of Nizhneudinsk uyezd). So it is not a union of 1897 uyezds; Yakutsk oblast (taken out of the governorate in 1805 by one account) held the Uda lands until 1857 (see the Yakutsk entry).",
    "checked": [
     "ru.wikipedia Забайкальская область oldid 152486932",
     "ru.wikipedia Амурская область (Российская империя) oldid 146240074",
-    "en.wikipedia Treaty of Aigun oldid 1365512169"
+    "en.wikipedia Treaty of Aigun oldid 1365512169",
+    "ru.wikipedia Сибирская губерния oldid 152587037",
+    "ru.wikipedia Иркутская губерния oldid 153528431",
+    "ru.wikipedia Иркутское наместничество oldid 146578970",
+    "ru.wikipedia Нерчинский договор oldid 155086095",
+    "ru.wikipedia Енисейская губерния oldid 154900457",
+    "ru.wikipedia Якутская область oldid 150697315",
+    "ru.wikipedia Охотская область oldid 146898515"
    ],
    "needs": "the Gorbitsa–Ust-Strelka strip as a separate atom"
   },
@@ -786,13 +891,20 @@
     "U1897-788",
     "U1897-784"
    ],
-   "from": "1822-08-03",
+   "from": "1708-12-29",
    "to": "1857-11-12",
-   "why": "Until 1856/1857 Yakutsk oblast held Okhotsk (from 1849) and Udsky okrugs, which are 1897 Primorskaya atoms; before 1851 it was under Irkutsk governorate. The dates of 1849/1851/1856/1857 could not all be fixed to the day.",
+   "why": "Until 1856/1857 Yakutsk oblast held Okhotsk (from 1849) and Udsky okrugs, which are 1897 Primorskaya atoms; before 1851 it was under Irkutsk governorate. The dates of 1849/1851/1856/1857 could not all be fixed to the day. Before 1822 the land lay in Irkutsk province (26 Nov 1724 O.S.) of the Siberian governorate, the Irkutsk governorate (1764), the Irkutsk namestnichestvo (6 Mar 1783 O.S.; Irkutsk, Nerchinsk, Yakutsk and Okhotsk oblasts) and the Irkutsk governorate of 1796–1822 — one unit holding the Irkutsk, Transbaikal and Yakutsk lands and (to 1803/1805) Okhotsk and Kamchatka. Its eastern land line was the Nerchinsk-treaty line on the Gorbitsa, inside the 1897 Nerchinsk-Zavodsk uyezd; its Uda lands reached country the treaty left undetermined; and its western line with Tomsk governorate ran through the later Kansk okrug (formed 1822 from parts of Krasnoyarsk and Yeniseysk uyezds and the Ilanskaya and Biryusinskaya volosts of Nizhneudinsk uyezd). So it is not a union of 1897 uyezds; Yakutsk oblast (taken out of the governorate in 1805 by one account) held the Uda lands until 1857 (see the Yakutsk entry).",
    "checked": [
     "ru.wikipedia Якутская область oldid 150697315",
     "ru.wikipedia Охотский уезд oldid 148432779",
-    "ru.wikipedia Приморская область oldid 153576990"
+    "ru.wikipedia Приморская область oldid 153576990",
+    "ru.wikipedia Сибирская губерния oldid 152587037",
+    "ru.wikipedia Иркутская губерния oldid 153528431",
+    "ru.wikipedia Иркутское наместничество oldid 146578970",
+    "ru.wikipedia Нерчинский договор oldid 155086095",
+    "ru.wikipedia Енисейская губерния oldid 154900457",
+    "ru.wikipedia Якутская область oldid 150697315",
+    "ru.wikipedia Охотская область oldid 146898515"
    ]
   },
   {
@@ -800,12 +912,13 @@
    "atoms": [
     "U1897-762"
    ],
-   "from": "1822-08-03",
+   "from": "1854",
    "to": "1858-12-20",
-   "why": "Qing territory under the Nerchinsk treaty, with Russian posts from 1854; ceded by the Aigun treaty of 28 May 1858; organised as an oblast only by the decree of 20 Dec 1858.",
+   "why": "From the Amur expeditions of 1854 Russian posts stood on the left bank; ceded by the Aigun treaty of 28 May 1858; organised as an oblast only by the decree of 8 (20) Dec 1858.",
    "checked": [
     "en.wikipedia Treaty of Aigun oldid 1365512169",
-    "ru.wikipedia Амурская область (Российская империя) oldid 146240074"
+    "ru.wikipedia Амурская область (Российская империя) oldid 146240074",
+    "ru.wikipedia Нерчинский договор oldid 155086095"
    ]
   },
   {
@@ -822,33 +935,6 @@
     "ru.wikipedia Хабаровский уезд oldid 151925306"
    ],
    "needs": "the 1904 Urmi/Amgun transfer area as a separate atom"
-  },
-  {
-   "what": "Primorskaya oblast and Sakhalin before 1875",
-   "unit": "RUE:Primorskaya@1856",
-   "atoms": [
-    "U1897-759",
-    "U1897-760",
-    "U1897-780",
-    "U1897-781",
-    "U1897-779",
-    "U1897-840",
-    "U1897-778",
-    "U1897-761",
-    "U1897-758",
-    "U1897-843",
-    "U1897-842",
-    "U1897-783"
-   ],
-   "from": "1822-08-03",
-   "to": "1875-08-22",
-   "why": "Kamchatka/Okhotsk units with other lines before 1856; Ussuri lands Qing until Aigun 1858 / Peking 1860; Sakhalin an undivided Russo-Japanese condominium (Shimoda 1855) to 1875, so the Primorskaya share of it has no line.",
-   "checked": [
-    "ru.wikipedia Приморская область oldid 153576990",
-    "ru.wikipedia Камчатская область (Российская империя) oldid 152425153",
-    "ru.wikipedia Петербургский договор (1875) oldid 153899758"
-   ],
-   "needs": "no atom set can carry the condominium"
   },
   {
    "what": "Primorskaya oblast during the Vladivostok military governorate",
@@ -985,6 +1071,89 @@
    "checked": [
     "ru.wikipedia Урянхайский край oldid 154810150"
    ]
+  },
+  {
+   "what": "Yeniseysk lands before the Yeniseysk governorate",
+   "atoms": [
+    "U1897-744",
+    "U1897-745",
+    "U1897-748",
+    "U1897-746",
+    "U1897-741",
+    "U1897-742",
+    "U1897-743",
+    "U1897-776",
+    "U1897-747"
+   ],
+   "from": "1708-12-29",
+   "to": "1822-08-03",
+   "why": "Yeniseysk province (1724) of the Siberian governorate, from 1764 in Irkutsk governorate; in 1782–1796 split between the Tobolsk namestnichestvo (Yeniseysk, Achinsk, Turukhansk in Tomsk oblast), the Kolyvan namestnichestvo (Krasnoyarsk) and Irkutsk; 1797–1804 in Tobolsk governorate and 1804–1822 in Tomsk governorate, while Nizhneudinsk lands west of the Biryusa were in Irkutsk. The 1822 statute made Achinsk okrug from parts of Krasnoyarsk, Yeniseysk and Tomsk uyezds and Kansk okrug from Krasnoyarsk, Yeniseysk and Nizhneudinsk lands, so the earlier lines run through 1897 uyezds.",
+   "checked": [
+    "ru.wikipedia Енисейская губерния oldid 154900457",
+    "ru.wikipedia Томская губерния oldid 153606694",
+    "ru.wikipedia Тобольская губерния oldid 152754514",
+    "ru.wikipedia Колыванское наместничество oldid 146344047"
+   ],
+   "needs": "the pre-1822 uyezd lines of Krasnoyarsk, Yeniseysk, Achinsk and Nizhneudinsk as atoms"
+  },
+  {
+   "what": "Okhotsk, Uda, Gizhiga, Kamchatka, Anadyr and Commander lands before 1875",
+   "unit": "RUE:Primorskaya@1856",
+   "atoms": [
+    "U1897-780",
+    "U1897-781",
+    "U1897-779",
+    "U1897-840",
+    "U1897-778",
+    "U1897-761"
+   ],
+   "from": "1708-12-29",
+   "to": "1875-08-22",
+   "why": "Kamchatka/Okhotsk units with other lines before 1856; Ussuri lands Qing until Aigun 1858 / Peking 1860; Sakhalin an undivided Russo-Japanese condominium (Shimoda 1855) to 1875, so the Primorskaya share of it has no line. Before 1856: Okhotsk oblast of the Irkutsk namestnichestvo (2 Mar 1783: Aklan, Gizhiga, Nizhnekamchatsk, Okhotsk uyezds); Gizhiga and Kamchatka uyezds made a Kamchatka oblast on 11 Aug 1803; Okhotsk oblast abolished 22 Apr 1805 into Irkutsk governorate; the Uda lands belonged to Yakutsk oblast until 1857; the Commander Islands were settled and run by the Russian-American Company; the Chukchi of the Anadyr were not under ordinary administration. None of these units has an attested line equal to 1897 okrug lines (Anadyr okrug was cut from Gizhiga only in 1888).",
+   "checked": [
+    "ru.wikipedia Приморская область oldid 153576990",
+    "ru.wikipedia Камчатская область (Российская империя) oldid 152425153",
+    "ru.wikipedia Петербургский договор (1875) oldid 153899758",
+    "ru.wikipedia Охотская область oldid 146898515",
+    "ru.wikipedia Якутская область oldid 150697315",
+    "ru.wikipedia Иркутское наместничество oldid 146578970"
+   ],
+   "needs": "no atom set can carry the condominium"
+  },
+  {
+   "what": "Ussuri and lower-Amur lands between the Aigun treaty and 1875",
+   "unit": "RUE:Primorskaya@1856",
+   "atoms": [
+    "U1897-759",
+    "U1897-758",
+    "U1897-760"
+   ],
+   "from": "1858-05-28",
+   "to": "1875-08-22",
+   "why": "Left bank of the Amur Russian from Aigun (1858), the Ussuri lands in joint possession until the Peking treaty of 2 (14) Nov 1860; Primorskaya oblast held them with Sakhalin as a condominium (Shimoda 1855) until 1875, so the oblast has no line before 1875.",
+   "checked": [
+    "ru.wikipedia Приморская область oldid 153576990",
+    "ru.wikipedia Камчатская область (Российская империя) oldid 152425153",
+    "ru.wikipedia Петербургский договор (1875) oldid 153899758"
+   ],
+   "needs": "no atom set can carry the condominium"
+  },
+  {
+   "what": "Sakhalin 1853–1875 (Russo-Japanese condominium)",
+   "atoms": [
+    "U1897-843",
+    "U1897-842",
+    "U1897-783"
+   ],
+   "from": "1853",
+   "to": "1875-08-22",
+   "why": "Russian posts from 1853; the Shimoda treaty of 1855 left the island undivided between Russia and Japan until the Treaty of St Petersburg (ratifications 22 Aug 1875); the Russian share has no line.",
+   "checked": [
+    "ru.wikipedia Приморская область oldid 153576990",
+    "ru.wikipedia Камчатская область (Российская империя) oldid 152425153",
+    "ru.wikipedia Петербургский договор (1875) oldid 153899758"
+   ],
+   "needs": "no atom set can carry the condominium"
   }
  ]
 }

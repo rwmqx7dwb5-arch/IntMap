@@ -1,0 +1,606 @@
+{
+  "country": "LSO",
+  "atomSet": "gb-adm1@2026-10-06",
+  "scope": {
+    "from": "1946-05-07",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Basutoland (British High Commission territory) and, from 1966-10-04, the Kingdom of Lesotho. First level: the districts. Atoms are the ten districts of geoBoundaries LSO ADM1 (OpenStreetMap, 2017). Five districts no recorded change touches since the ~1944 split (Berea, Butha-Buthe, Mafeteng, Mohale's Hoek, Quthing) are drawn from the 1946 census; the four that gave land to Thaba-Tseka (~1980) and Thaba-Tseka itself are drawn from the 1986 census. Müller-Crepon DVN/9JI06R has Basutoland only in 1937 and as a single unit, so it does not answer the districts. Independent check (①): atom area / statoids area — Berea 1,991/2,222 = 0.896, Butha-Buthe 1,790/1,767 = 1.013, Leribe 2,824/2,828 = 0.999, Mafeteng 2,385/2,119 = 1.126, Maseru 4,049/4,279 = 0.946, Mohale's Hoek 3,427/3,530 = 0.971, Mokhotlong 4,200/4,075 = 1.031, Qacha's Nek 2,134/2,349 = 0.908, Quthing 2,966/2,916 = 1.017, Thaba-Tseka 4,820/4,270 = 1.129 (statoids' Thaba-Tseka figure is the sum of the four transferred parts; the gb ADM2 constituencies of a different publisher give Thaba-Tseka ≈ 4,870 km² as well, so the OSM lines are not the outlier there).",
+  "units": [
+    {
+      "id": "LSO:Berea@1946",
+      "names": {
+        "en": "Berea District",
+        "ja": "ベレア県",
+        "local": "Berea"
+      },
+      "wikidata": "Q737086",
+      "spans": [
+        {
+          "from": "1946-05-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LSO-ADM1-63558799B64035332832072"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uls.html",
+              "title": "Statoids — Districts of Lesotho (Gwillim Law, updated 2015-06-30)",
+              "says": "Change history: ~1910 Basutoland reorganised (Berea, Leribe, Mafeteng, Maseru, Mohale's Hoek, Qacha's Nek, Quthing formed); ~1944 Butha-Buthe split from Leribe and Mokhotlong from Qacha's Nek; ~1980 Thaba-Tseka formed from parts of Leribe, Maseru, Mokhotlong and Qacha's Nek. No other change.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uls.html",
+              "title": "Statoids — Districts of Lesotho (Gwillim Law, updated 2015-06-30)",
+              "says": "1946-05-07 census: nine districts including Berea (58,026).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Lesotho&oldid=1325262967",
+              "title": "Wikipedia — Districts of Lesotho (oldid 1325262967)",
+              "says": "Lesotho is divided into ten districts, subdivided into 80 constituencies.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/LSO/ADM1/geoBoundaries-LSO-ADM1.geojson",
+              "title": "geoBoundaries LSO ADM1 (OpenStreetMap / Wambacher, 2017)",
+              "says": "The ten districts of Lesotho.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Outline untouched by the ~1944 and ~1980 changes; drawn from the 1946 census, the first dated source of the nine-district layout (statoids gives its creation only as ~1910 / ~1944)."
+        }
+      ]
+    },
+    {
+      "id": "LSO:ButhaButhe@1946",
+      "names": {
+        "en": "Butha-Buthe District",
+        "ja": "ブータブーテ県",
+        "local": "Botha-Bothe"
+      },
+      "wikidata": "Q535632",
+      "spans": [
+        {
+          "from": "1946-05-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LSO-ADM1-63558799B80267127102175"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uls.html",
+              "title": "Statoids — Districts of Lesotho (Gwillim Law, updated 2015-06-30)",
+              "says": "Change history: ~1910 Basutoland reorganised (Berea, Leribe, Mafeteng, Maseru, Mohale's Hoek, Qacha's Nek, Quthing formed); ~1944 Butha-Buthe split from Leribe and Mokhotlong from Qacha's Nek; ~1980 Thaba-Tseka formed from parts of Leribe, Maseru, Mokhotlong and Qacha's Nek. No other change.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uls.html",
+              "title": "Statoids — Districts of Lesotho (Gwillim Law, updated 2015-06-30)",
+              "says": "1946-05-07 census: nine districts including Butha-Buthe (35,444).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Lesotho&oldid=1325262967",
+              "title": "Wikipedia — Districts of Lesotho (oldid 1325262967)",
+              "says": "Lesotho is divided into ten districts, subdivided into 80 constituencies.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/LSO/ADM1/geoBoundaries-LSO-ADM1.geojson",
+              "title": "geoBoundaries LSO ADM1 (OpenStreetMap / Wambacher, 2017)",
+              "says": "The ten districts of Lesotho.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Outline untouched by the ~1944 and ~1980 changes; drawn from the 1946 census, the first dated source of the nine-district layout (statoids gives its creation only as ~1910 / ~1944)."
+        }
+      ]
+    },
+    {
+      "id": "LSO:Mafeteng@1946",
+      "names": {
+        "en": "Mafeteng District",
+        "ja": "マフェテング県",
+        "local": "Mafeteng"
+      },
+      "wikidata": "Q817342",
+      "spans": [
+        {
+          "from": "1946-05-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LSO-ADM1-63558799B33254441338778"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uls.html",
+              "title": "Statoids — Districts of Lesotho (Gwillim Law, updated 2015-06-30)",
+              "says": "Change history: ~1910 Basutoland reorganised (Berea, Leribe, Mafeteng, Maseru, Mohale's Hoek, Qacha's Nek, Quthing formed); ~1944 Butha-Buthe split from Leribe and Mokhotlong from Qacha's Nek; ~1980 Thaba-Tseka formed from parts of Leribe, Maseru, Mokhotlong and Qacha's Nek. No other change.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uls.html",
+              "title": "Statoids — Districts of Lesotho (Gwillim Law, updated 2015-06-30)",
+              "says": "1946-05-07 census: nine districts including Mafeteng (69,629).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Lesotho&oldid=1325262967",
+              "title": "Wikipedia — Districts of Lesotho (oldid 1325262967)",
+              "says": "Lesotho is divided into ten districts, subdivided into 80 constituencies.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/LSO/ADM1/geoBoundaries-LSO-ADM1.geojson",
+              "title": "geoBoundaries LSO ADM1 (OpenStreetMap / Wambacher, 2017)",
+              "says": "The ten districts of Lesotho.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Outline untouched by the ~1944 and ~1980 changes; drawn from the 1946 census, the first dated source of the nine-district layout (statoids gives its creation only as ~1910 / ~1944)."
+        }
+      ]
+    },
+    {
+      "id": "LSO:MohalesHoek@1946",
+      "names": {
+        "en": "Mohale's Hoek District",
+        "ja": "モハレスフック県",
+        "local": "Mohale's Hoek"
+      },
+      "wikidata": "Q839074",
+      "spans": [
+        {
+          "from": "1946-05-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LSO-ADM1-63558799B8829159228001"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uls.html",
+              "title": "Statoids — Districts of Lesotho (Gwillim Law, updated 2015-06-30)",
+              "says": "Change history: ~1910 Basutoland reorganised (Berea, Leribe, Mafeteng, Maseru, Mohale's Hoek, Qacha's Nek, Quthing formed); ~1944 Butha-Buthe split from Leribe and Mokhotlong from Qacha's Nek; ~1980 Thaba-Tseka formed from parts of Leribe, Maseru, Mokhotlong and Qacha's Nek. No other change.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uls.html",
+              "title": "Statoids — Districts of Lesotho (Gwillim Law, updated 2015-06-30)",
+              "says": "1946-05-07 census: nine districts including Mohale's Hoek (66,185).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Lesotho&oldid=1325262967",
+              "title": "Wikipedia — Districts of Lesotho (oldid 1325262967)",
+              "says": "Lesotho is divided into ten districts, subdivided into 80 constituencies.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/LSO/ADM1/geoBoundaries-LSO-ADM1.geojson",
+              "title": "geoBoundaries LSO ADM1 (OpenStreetMap / Wambacher, 2017)",
+              "says": "The ten districts of Lesotho.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Outline untouched by the ~1944 and ~1980 changes; drawn from the 1946 census, the first dated source of the nine-district layout (statoids gives its creation only as ~1910 / ~1944)."
+        }
+      ]
+    },
+    {
+      "id": "LSO:Quthing@1946",
+      "names": {
+        "en": "Quthing District",
+        "ja": "クシング県",
+        "local": "Quthing"
+      },
+      "wikidata": "Q839060",
+      "spans": [
+        {
+          "from": "1946-05-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LSO-ADM1-63558799B90026421394578"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uls.html",
+              "title": "Statoids — Districts of Lesotho (Gwillim Law, updated 2015-06-30)",
+              "says": "Change history: ~1910 Basutoland reorganised (Berea, Leribe, Mafeteng, Maseru, Mohale's Hoek, Qacha's Nek, Quthing formed); ~1944 Butha-Buthe split from Leribe and Mokhotlong from Qacha's Nek; ~1980 Thaba-Tseka formed from parts of Leribe, Maseru, Mokhotlong and Qacha's Nek. No other change.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uls.html",
+              "title": "Statoids — Districts of Lesotho (Gwillim Law, updated 2015-06-30)",
+              "says": "1946-05-07 census: nine districts including Quthing (45,809).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Lesotho&oldid=1325262967",
+              "title": "Wikipedia — Districts of Lesotho (oldid 1325262967)",
+              "says": "Lesotho is divided into ten districts, subdivided into 80 constituencies.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/LSO/ADM1/geoBoundaries-LSO-ADM1.geojson",
+              "title": "geoBoundaries LSO ADM1 (OpenStreetMap / Wambacher, 2017)",
+              "says": "The ten districts of Lesotho.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Outline untouched by the ~1944 and ~1980 changes; drawn from the 1946 census, the first dated source of the nine-district layout (statoids gives its creation only as ~1910 / ~1944)."
+        }
+      ]
+    },
+    {
+      "id": "LSO:Leribe@1946",
+      "names": {
+        "en": "Leribe District",
+        "ja": "レリベ県",
+        "local": "Leribe"
+      },
+      "wikidata": "Q819987",
+      "spans": [
+        {
+          "from": "1986-04-14",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LSO-ADM1-63558799B58245420334254"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uls.html",
+              "title": "Statoids — Districts of Lesotho (Gwillim Law, updated 2015-06-30)",
+              "says": "~1980: Thaba-Tseka formed from Leribe (412 km²), Maseru (1,782 km²), Mokhotlong (496 km²) and Qacha's Nek (1,580 km²); census tables show nine districts in 1976 and ten in 1986.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Lesotho&oldid=1325262967",
+              "title": "Wikipedia — Districts of Lesotho (oldid 1325262967)",
+              "says": "Lesotho is divided into ten districts, subdivided into 80 constituencies.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/LSO/ADM1/geoBoundaries-LSO-ADM1.geojson",
+              "title": "geoBoundaries LSO ADM1 (OpenStreetMap / Wambacher, 2017)",
+              "says": "The ten districts of Lesotho.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Ten-district layout drawn from the 1986-04-14 census; Thaba-Tseka was created ~1980 (statoids) between the 1976 and 1986 censuses, and no decree date was found, so 1946-05-07 → 1986-04-14 is unresolved for this district."
+        }
+      ]
+    },
+    {
+      "id": "LSO:Maseru@1946",
+      "names": {
+        "en": "Maseru District",
+        "ja": "マセル県",
+        "local": "Maseru"
+      },
+      "wikidata": "Q844921",
+      "spans": [
+        {
+          "from": "1986-04-14",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LSO-ADM1-63558799B83139219064193"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uls.html",
+              "title": "Statoids — Districts of Lesotho (Gwillim Law, updated 2015-06-30)",
+              "says": "~1980: Thaba-Tseka formed from Leribe (412 km²), Maseru (1,782 km²), Mokhotlong (496 km²) and Qacha's Nek (1,580 km²); census tables show nine districts in 1976 and ten in 1986.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Lesotho&oldid=1325262967",
+              "title": "Wikipedia — Districts of Lesotho (oldid 1325262967)",
+              "says": "Lesotho is divided into ten districts, subdivided into 80 constituencies.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/LSO/ADM1/geoBoundaries-LSO-ADM1.geojson",
+              "title": "geoBoundaries LSO ADM1 (OpenStreetMap / Wambacher, 2017)",
+              "says": "The ten districts of Lesotho.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Ten-district layout drawn from the 1986-04-14 census; Thaba-Tseka was created ~1980 (statoids) between the 1976 and 1986 censuses, and no decree date was found, so 1946-05-07 → 1986-04-14 is unresolved for this district."
+        }
+      ]
+    },
+    {
+      "id": "LSO:Mokhotlong@1946",
+      "names": {
+        "en": "Mokhotlong District",
+        "ja": "モホトロン県",
+        "local": "Mokhotlong"
+      },
+      "wikidata": "Q817340",
+      "spans": [
+        {
+          "from": "1986-04-14",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LSO-ADM1-63558799B62052207870559"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uls.html",
+              "title": "Statoids — Districts of Lesotho (Gwillim Law, updated 2015-06-30)",
+              "says": "~1980: Thaba-Tseka formed from Leribe (412 km²), Maseru (1,782 km²), Mokhotlong (496 km²) and Qacha's Nek (1,580 km²); census tables show nine districts in 1976 and ten in 1986.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Lesotho&oldid=1325262967",
+              "title": "Wikipedia — Districts of Lesotho (oldid 1325262967)",
+              "says": "Lesotho is divided into ten districts, subdivided into 80 constituencies.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/LSO/ADM1/geoBoundaries-LSO-ADM1.geojson",
+              "title": "geoBoundaries LSO ADM1 (OpenStreetMap / Wambacher, 2017)",
+              "says": "The ten districts of Lesotho.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Ten-district layout drawn from the 1986-04-14 census; Thaba-Tseka was created ~1980 (statoids) between the 1976 and 1986 censuses, and no decree date was found, so 1946-05-07 → 1986-04-14 is unresolved for this district."
+        }
+      ]
+    },
+    {
+      "id": "LSO:QachasNek@1946",
+      "names": {
+        "en": "Qacha's Nek District",
+        "ja": "クァシャスネック県",
+        "local": "Qacha's Nek"
+      },
+      "wikidata": "Q850423",
+      "spans": [
+        {
+          "from": "1986-04-14",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LSO-ADM1-63558799B57972026302791"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uls.html",
+              "title": "Statoids — Districts of Lesotho (Gwillim Law, updated 2015-06-30)",
+              "says": "~1980: Thaba-Tseka formed from Leribe (412 km²), Maseru (1,782 km²), Mokhotlong (496 km²) and Qacha's Nek (1,580 km²); census tables show nine districts in 1976 and ten in 1986.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Lesotho&oldid=1325262967",
+              "title": "Wikipedia — Districts of Lesotho (oldid 1325262967)",
+              "says": "Lesotho is divided into ten districts, subdivided into 80 constituencies.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/LSO/ADM1/geoBoundaries-LSO-ADM1.geojson",
+              "title": "geoBoundaries LSO ADM1 (OpenStreetMap / Wambacher, 2017)",
+              "says": "The ten districts of Lesotho.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Ten-district layout drawn from the 1986-04-14 census; Thaba-Tseka was created ~1980 (statoids) between the 1976 and 1986 censuses, and no decree date was found, so 1946-05-07 → 1986-04-14 is unresolved for this district."
+        }
+      ]
+    },
+    {
+      "id": "LSO:ThabaTseka@1980",
+      "names": {
+        "en": "Thaba-Tseka District",
+        "ja": "タバツェカ県",
+        "local": "Thaba-Tseka"
+      },
+      "wikidata": "Q817327",
+      "spans": [
+        {
+          "from": "1986-04-14",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "LSO-ADM1-63558799B97764260128978"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uls.html",
+              "title": "Statoids — Districts of Lesotho (Gwillim Law, updated 2015-06-30)",
+              "says": "~1980: Thaba-Tseka formed from Leribe (412 km²), Maseru (1,782 km²), Mokhotlong (496 km²) and Qacha's Nek (1,580 km²); census tables show nine districts in 1976 and ten in 1986.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Lesotho&oldid=1325262967",
+              "title": "Wikipedia — Districts of Lesotho (oldid 1325262967)",
+              "says": "Lesotho is divided into ten districts, subdivided into 80 constituencies.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/LSO/ADM1/geoBoundaries-LSO-ADM1.geojson",
+              "title": "geoBoundaries LSO ADM1 (OpenStreetMap / Wambacher, 2017)",
+              "says": "The ten districts of Lesotho.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Ten-district layout drawn from the 1986-04-14 census; Thaba-Tseka was created ~1980 (statoids) between the 1976 and 1986 censuses, and no decree date was found, so 1946-05-07 → 1986-04-14 is unresolved for this district."
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1966-10-04",
+      "precision": "day",
+      "what": "Basutoland becomes independent as Lesotho; districts unchanged",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uls.html",
+          "title": "Statoids — Districts of Lesotho (Gwillim Law, updated 2015-06-30)",
+          "says": "On 1966-10-04 Basutoland became independent under the name Lesotho.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "1980",
+      "precision": "year",
+      "what": "~1980: Thaba-Tseka District formed from parts of Leribe, Maseru, Mokhotlong and Qacha's Nek",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uls.html",
+          "title": "Statoids — Districts of Lesotho (Gwillim Law, updated 2015-06-30)",
+          "says": "~1980: Thaba-Tseka formed from Leribe (412 km²), Maseru (1,782 km²), Mokhotlong (496 km²) and Qacha's Nek (1,580 km²); census tables show nine districts in 1976 and ten in 1986.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "1946-05-07",
+      "n": 9,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uls.html",
+          "title": "Statoids — Districts of Lesotho (Gwillim Law, updated 2015-06-30)",
+          "says": "1946 census table: nine districts.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "1966-04-14",
+      "n": 9,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uls.html",
+          "title": "Statoids — Districts of Lesotho (Gwillim Law, updated 2015-06-30)",
+          "says": "1966 census table: nine districts.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "1976-04-12",
+      "n": 9,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uls.html",
+          "title": "Statoids — Districts of Lesotho (Gwillim Law, updated 2015-06-30)",
+          "says": "1976 census table: nine districts.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "1986-04-14",
+      "n": 10,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uls.html",
+          "title": "Statoids — Districts of Lesotho (Gwillim Law, updated 2015-06-30)",
+          "says": "1986 census table: ten districts including Thaba-Tseka.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "2006-04-09",
+      "n": 10,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uls.html",
+          "title": "Statoids — Districts of Lesotho (Gwillim Law, updated 2015-06-30)",
+          "says": "2006 census: ten districts.",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?title=Districts_of_Lesotho&oldid=1325262967",
+          "title": "Wikipedia — Districts of Lesotho (oldid 1325262967)",
+          "says": "Lesotho is divided into ten districts, subdivided into 80 constituencies.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Leribe, Maseru, Mokhotlong and Qacha's Nek before Thaba-Tseka was carved out of them",
+      "unit": "LSO:Maseru@1946",
+      "atoms": [
+        "LSO-ADM1-63558799B58245420334254",
+        "LSO-ADM1-63558799B83139219064193",
+        "LSO-ADM1-63558799B62052207870559",
+        "LSO-ADM1-63558799B57972026302791",
+        "LSO-ADM1-63558799B97764260128978"
+      ],
+      "from": "1946-05-07",
+      "to": "1986-04-14",
+      "why": "Each of the four then included part of today's Thaba-Tseka; the old lines between them run through the Thaba-Tseka atom (statoids gives the transferred areas, not the lines). The creation itself is dated only ~1980, between the 1976 and 1986 censuses.",
+      "checked": [
+        "statoids uls.html (change history, census tables 1946–2006)",
+        "Wikipedia Districts of Lesotho oldid 1325262967, Thaba-Tseka District oldid 1373535827 (no date)",
+        "geoBoundaries LSO ADM2 (FAO / Ministry of Local Government, 2020, 78 constituencies) — later delimitation lines, a different publisher, and no source maps them to the pre-1980 districts",
+        "Müller-Crepon DVN/9JI06R: Basutoland 1937 as one unit"
+      ],
+      "needs": "the order creating Thaba-Tseka District (date) and the pre-1980 district lines inside it"
+    },
+    {
+      "what": "Leribe before ~1980",
+      "unit": "LSO:Leribe@1946",
+      "from": "1946-05-07",
+      "to": "1986-04-14",
+      "why": "Atoms withheld in the Maseru entry (same window).",
+      "checked": [
+        "statoids uls.html"
+      ],
+      "needs": "as above"
+    },
+    {
+      "what": "Mokhotlong before ~1980",
+      "unit": "LSO:Mokhotlong@1946",
+      "from": "1946-05-07",
+      "to": "1986-04-14",
+      "why": "Atoms withheld in the Maseru entry (same window).",
+      "checked": [
+        "statoids uls.html"
+      ],
+      "needs": "as above"
+    },
+    {
+      "what": "Qacha's Nek before ~1980",
+      "unit": "LSO:QachasNek@1946",
+      "from": "1946-05-07",
+      "to": "1986-04-14",
+      "why": "Atoms withheld in the Maseru entry (same window).",
+      "checked": [
+        "statoids uls.html"
+      ],
+      "needs": "as above"
+    },
+    {
+      "what": "Thaba-Tseka from its creation (~1980) to the 1986 census",
+      "unit": "LSO:ThabaTseka@1980",
+      "from": "1976-04-13",
+      "to": "1986-04-14",
+      "why": "Created between the 1976 census (nine districts) and the 1986 census (ten); the date is not established. Atoms withheld in the Maseru entry.",
+      "checked": [
+        "statoids uls.html",
+        "Wikipedia Thaba-Tseka District oldid 1373535827"
+      ],
+      "needs": "as above"
+    }
+  ]
+}

@@ -1,0 +1,625 @@
+{
+ "country": "JAM",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1867-05-01",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Colony of Jamaica (crown colony from 1866) to 1962-08-06, then independent Jamaica. The fourteen parishes of Law 20 of 1867 (in force 1867-05-01) are today's fourteen parishes; the three counties (Cornwall, Middlesex, Surrey) are judicial groupings, not administrative units, and are not drawn. The 22 parishes before 1867 are not unions of today's parishes (the Manchioneal district and parts of St Andrew/Port Royal were split), so the scope starts on 1867-05-01. ① independent check (2026-10-06): NE atom areas against statoids published parish areas, total 11,066 vs 11,191 km2 (0.99); per parish 0.92-1.12 (Kingston 30 vs 22 km2, coast generalisation).",
+ "units": [
+  {
+   "id": "JAM:Kingston@1867",
+   "names": {
+    "en": "Kingston Parish",
+    "ja": "キングストン教区",
+    "local": "Kingston Parish"
+   },
+   "wikidata": "Q1473680",
+   "spans": [
+    {
+     "from": "1867-05-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "JAM-1377"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikisource.org/wiki/The_Laws_of_Jamaica,_passed_in_1867/No.20_A_Law_to_Reduce_the_Number_of_Parishes",
+       "title": "The Laws of Jamaica, passed in 1867 — No. 20, A Law to Reduce the Number of Parishes (Wikisource, rev 14426475)",
+       "accessed": "2026-10-06",
+       "says": "Passed 23 April 1867, in force 1 May 1867; Kingston = existing Kingston parish with parts of St Andrew and Port Royal."
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Parishes_of_Jamaica&oldid=1358982382",
+       "title": "Wikipedia (en) — Parishes of Jamaica (oldid 1358982382)",
+       "says": "Since 1 May 1867 Jamaica has been divided into the current fourteen parishes, retained after independence in 1962.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/ujm.html",
+       "title": "Statoids — Parishes of Jamaica (change history)",
+       "says": "Change history ends with the 1867-04-23 Counties and Parishes law (and the 1872 move of the capital); no later change to the 14 parishes is listed.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.parishhistoriesofjamaica.org/wp-content/uploads/2022/03/A-HISTORY-OF-KINGSTON-completed_compressed-1_compressed-1.pdf",
+       "title": "Parish Histories of Jamaica Project — A History of Kingston",
+       "says": "Kingston parish was formed in 1867 from Kingston, Port Royal and part of St Andrew; its separate identity rests on the boundaries laid down by Law 20 of 1867; the 1923 KSAC merged the two parishes' local government only.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Law 20 of 1867 was passed on 1867-04-23 and took effect on 1867-05-01."
+    }
+   ]
+  },
+  {
+   "id": "JAM:SaintAndrew@1867",
+   "names": {
+    "en": "Saint Andrew Parish",
+    "ja": "セント・アンドリュー教区",
+    "local": "Parish of Saint Andrew"
+   },
+   "wikidata": "Q2212935",
+   "spans": [
+    {
+     "from": "1867-05-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "JAM-1382"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikisource.org/wiki/The_Laws_of_Jamaica,_passed_in_1867/No.20_A_Law_to_Reduce_the_Number_of_Parishes",
+       "title": "The Laws of Jamaica, passed in 1867 — No. 20, A Law to Reduce the Number of Parishes (Wikisource, rev 14426475)",
+       "accessed": "2026-10-06",
+       "says": "Passed 23 April 1867, in force 1 May 1867; Saint Andrew = remaining portions of St Andrew and Port Royal."
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Parishes_of_Jamaica&oldid=1358982382",
+       "title": "Wikipedia (en) — Parishes of Jamaica (oldid 1358982382)",
+       "says": "Since 1 May 1867 Jamaica has been divided into the current fourteen parishes, retained after independence in 1962.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/ujm.html",
+       "title": "Statoids — Parishes of Jamaica (change history)",
+       "says": "Change history ends with the 1867-04-23 Counties and Parishes law (and the 1872 move of the capital); no later change to the 14 parishes is listed.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.parishhistoriesofjamaica.org/wp-content/uploads/2022/03/A-HISTORY-OF-KINGSTON-completed_compressed-1_compressed-1.pdf",
+       "title": "Parish Histories of Jamaica Project — A History of Kingston",
+       "says": "Kingston parish was formed in 1867 from Kingston, Port Royal and part of St Andrew; its separate identity rests on the boundaries laid down by Law 20 of 1867; the 1923 KSAC merged the two parishes' local government only.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Law 20 of 1867 was passed on 1867-04-23 and took effect on 1867-05-01."
+    }
+   ]
+  },
+  {
+   "id": "JAM:SaintThomas@1867",
+   "names": {
+    "en": "Saint Thomas Parish",
+    "ja": "セント・トーマス教区",
+    "local": "Parish of Saint Thomas"
+   },
+   "wikidata": "Q1422332",
+   "spans": [
+    {
+     "from": "1867-05-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "JAM-1383"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikisource.org/wiki/The_Laws_of_Jamaica,_passed_in_1867/No.20_A_Law_to_Reduce_the_Number_of_Parishes",
+       "title": "The Laws of Jamaica, passed in 1867 — No. 20, A Law to Reduce the Number of Parishes (Wikisource, rev 14426475)",
+       "accessed": "2026-10-06",
+       "says": "Passed 23 April 1867, in force 1 May 1867; Saint Thomas = St Thomas in the East (without the Manchioneal district) and St David."
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Parishes_of_Jamaica&oldid=1358982382",
+       "title": "Wikipedia (en) — Parishes of Jamaica (oldid 1358982382)",
+       "says": "Since 1 May 1867 Jamaica has been divided into the current fourteen parishes, retained after independence in 1962.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/ujm.html",
+       "title": "Statoids — Parishes of Jamaica (change history)",
+       "says": "Change history ends with the 1867-04-23 Counties and Parishes law (and the 1872 move of the capital); no later change to the 14 parishes is listed.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Law 20 of 1867 was passed on 1867-04-23 and took effect on 1867-05-01."
+    }
+   ]
+  },
+  {
+   "id": "JAM:Portland@1867",
+   "names": {
+    "en": "Portland Parish",
+    "ja": "ポートランド教区",
+    "local": "Portland Parish"
+   },
+   "wikidata": "Q125148",
+   "spans": [
+    {
+     "from": "1867-05-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "JAM-1378"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikisource.org/wiki/The_Laws_of_Jamaica,_passed_in_1867/No.20_A_Law_to_Reduce_the_Number_of_Parishes",
+       "title": "The Laws of Jamaica, passed in 1867 — No. 20, A Law to Reduce the Number of Parishes (Wikisource, rev 14426475)",
+       "accessed": "2026-10-06",
+       "says": "Passed 23 April 1867, in force 1 May 1867; Portland = Portland and St George with the Manchioneal district."
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Parishes_of_Jamaica&oldid=1358982382",
+       "title": "Wikipedia (en) — Parishes of Jamaica (oldid 1358982382)",
+       "says": "Since 1 May 1867 Jamaica has been divided into the current fourteen parishes, retained after independence in 1962.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/ujm.html",
+       "title": "Statoids — Parishes of Jamaica (change history)",
+       "says": "Change history ends with the 1867-04-23 Counties and Parishes law (and the 1872 move of the capital); no later change to the 14 parishes is listed.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Law 20 of 1867 was passed on 1867-04-23 and took effect on 1867-05-01."
+    }
+   ]
+  },
+  {
+   "id": "JAM:SaintMary@1867",
+   "names": {
+    "en": "Saint Mary Parish",
+    "ja": "セント・メアリー教区",
+    "local": "Parish of Saint Mary"
+   },
+   "wikidata": "Q633565",
+   "spans": [
+    {
+     "from": "1867-05-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "JAM-1381"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikisource.org/wiki/The_Laws_of_Jamaica,_passed_in_1867/No.20_A_Law_to_Reduce_the_Number_of_Parishes",
+       "title": "The Laws of Jamaica, passed in 1867 — No. 20, A Law to Reduce the Number of Parishes (Wikisource, rev 14426475)",
+       "accessed": "2026-10-06",
+       "says": "Passed 23 April 1867, in force 1 May 1867; Saint Mary = St Mary and Metcalfe."
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Parishes_of_Jamaica&oldid=1358982382",
+       "title": "Wikipedia (en) — Parishes of Jamaica (oldid 1358982382)",
+       "says": "Since 1 May 1867 Jamaica has been divided into the current fourteen parishes, retained after independence in 1962.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/ujm.html",
+       "title": "Statoids — Parishes of Jamaica (change history)",
+       "says": "Change history ends with the 1867-04-23 Counties and Parishes law (and the 1872 move of the capital); no later change to the 14 parishes is listed.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Law 20 of 1867 was passed on 1867-04-23 and took effect on 1867-05-01."
+    }
+   ]
+  },
+  {
+   "id": "JAM:SaintAnn@1867",
+   "names": {
+    "en": "Saint Ann Parish",
+    "ja": "セント・アン教区",
+    "local": "Parish of Saint Ann"
+   },
+   "wikidata": "Q1326284",
+   "spans": [
+    {
+     "from": "1867-05-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "JAM-1379"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikisource.org/wiki/The_Laws_of_Jamaica,_passed_in_1867/No.20_A_Law_to_Reduce_the_Number_of_Parishes",
+       "title": "The Laws of Jamaica, passed in 1867 — No. 20, A Law to Reduce the Number of Parishes (Wikisource, rev 14426475)",
+       "accessed": "2026-10-06",
+       "says": "Passed 23 April 1867, in force 1 May 1867; Saint Ann = St Ann unchanged."
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Parishes_of_Jamaica&oldid=1358982382",
+       "title": "Wikipedia (en) — Parishes of Jamaica (oldid 1358982382)",
+       "says": "Since 1 May 1867 Jamaica has been divided into the current fourteen parishes, retained after independence in 1962.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/ujm.html",
+       "title": "Statoids — Parishes of Jamaica (change history)",
+       "says": "Change history ends with the 1867-04-23 Counties and Parishes law (and the 1872 move of the capital); no later change to the 14 parishes is listed.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Law 20 of 1867 was passed on 1867-04-23 and took effect on 1867-05-01."
+    }
+   ]
+  },
+  {
+   "id": "JAM:SaintCatherine@1867",
+   "names": {
+    "en": "Saint Catherine Parish",
+    "ja": "セント・キャサリン教区",
+    "local": "Parish of Saint Catherine"
+   },
+   "wikidata": "Q1473663",
+   "spans": [
+    {
+     "from": "1867-05-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "JAM-1380"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikisource.org/wiki/The_Laws_of_Jamaica,_passed_in_1867/No.20_A_Law_to_Reduce_the_Number_of_Parishes",
+       "title": "The Laws of Jamaica, passed in 1867 — No. 20, A Law to Reduce the Number of Parishes (Wikisource, rev 14426475)",
+       "accessed": "2026-10-06",
+       "says": "Passed 23 April 1867, in force 1 May 1867; Saint Catherine = St Catherine, St Dorothy, St John and St Thomas in the Vale."
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Parishes_of_Jamaica&oldid=1358982382",
+       "title": "Wikipedia (en) — Parishes of Jamaica (oldid 1358982382)",
+       "says": "Since 1 May 1867 Jamaica has been divided into the current fourteen parishes, retained after independence in 1962.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/ujm.html",
+       "title": "Statoids — Parishes of Jamaica (change history)",
+       "says": "Change history ends with the 1867-04-23 Counties and Parishes law (and the 1872 move of the capital); no later change to the 14 parishes is listed.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Law 20 of 1867 was passed on 1867-04-23 and took effect on 1867-05-01."
+    }
+   ]
+  },
+  {
+   "id": "JAM:Clarendon@1867",
+   "names": {
+    "en": "Clarendon Parish",
+    "ja": "クラレンドン教区",
+    "local": "Clarendon Parish"
+   },
+   "wikidata": "Q1095557",
+   "spans": [
+    {
+     "from": "1867-05-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "JAM-1370"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikisource.org/wiki/The_Laws_of_Jamaica,_passed_in_1867/No.20_A_Law_to_Reduce_the_Number_of_Parishes",
+       "title": "The Laws of Jamaica, passed in 1867 — No. 20, A Law to Reduce the Number of Parishes (Wikisource, rev 14426475)",
+       "accessed": "2026-10-06",
+       "says": "Passed 23 April 1867, in force 1 May 1867; Clarendon = Clarendon and Vere."
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Parishes_of_Jamaica&oldid=1358982382",
+       "title": "Wikipedia (en) — Parishes of Jamaica (oldid 1358982382)",
+       "says": "Since 1 May 1867 Jamaica has been divided into the current fourteen parishes, retained after independence in 1962.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/ujm.html",
+       "title": "Statoids — Parishes of Jamaica (change history)",
+       "says": "Change history ends with the 1867-04-23 Counties and Parishes law (and the 1872 move of the capital); no later change to the 14 parishes is listed.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Law 20 of 1867 was passed on 1867-04-23 and took effect on 1867-05-01."
+    }
+   ]
+  },
+  {
+   "id": "JAM:Manchester@1867",
+   "names": {
+    "en": "Manchester Parish",
+    "ja": "マンチェスター教区",
+    "local": "Manchester Parish"
+   },
+   "wikidata": "Q920496",
+   "spans": [
+    {
+     "from": "1867-05-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "JAM-1372"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikisource.org/wiki/The_Laws_of_Jamaica,_passed_in_1867/No.20_A_Law_to_Reduce_the_Number_of_Parishes",
+       "title": "The Laws of Jamaica, passed in 1867 — No. 20, A Law to Reduce the Number of Parishes (Wikisource, rev 14426475)",
+       "accessed": "2026-10-06",
+       "says": "Passed 23 April 1867, in force 1 May 1867; Manchester = Manchester unchanged."
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Parishes_of_Jamaica&oldid=1358982382",
+       "title": "Wikipedia (en) — Parishes of Jamaica (oldid 1358982382)",
+       "says": "Since 1 May 1867 Jamaica has been divided into the current fourteen parishes, retained after independence in 1962.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/ujm.html",
+       "title": "Statoids — Parishes of Jamaica (change history)",
+       "says": "Change history ends with the 1867-04-23 Counties and Parishes law (and the 1872 move of the capital); no later change to the 14 parishes is listed.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Law 20 of 1867 was passed on 1867-04-23 and took effect on 1867-05-01."
+    }
+   ]
+  },
+  {
+   "id": "JAM:SaintElizabeth@1867",
+   "names": {
+    "en": "Saint Elizabeth Parish",
+    "ja": "セント・エリザベス教区",
+    "local": "Parish of Saint Elizabeth"
+   },
+   "wikidata": "Q1473646",
+   "spans": [
+    {
+     "from": "1867-05-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "JAM-1373"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikisource.org/wiki/The_Laws_of_Jamaica,_passed_in_1867/No.20_A_Law_to_Reduce_the_Number_of_Parishes",
+       "title": "The Laws of Jamaica, passed in 1867 — No. 20, A Law to Reduce the Number of Parishes (Wikisource, rev 14426475)",
+       "accessed": "2026-10-06",
+       "says": "Passed 23 April 1867, in force 1 May 1867; Saint Elizabeth = St Elizabeth unchanged."
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Parishes_of_Jamaica&oldid=1358982382",
+       "title": "Wikipedia (en) — Parishes of Jamaica (oldid 1358982382)",
+       "says": "Since 1 May 1867 Jamaica has been divided into the current fourteen parishes, retained after independence in 1962.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/ujm.html",
+       "title": "Statoids — Parishes of Jamaica (change history)",
+       "says": "Change history ends with the 1867-04-23 Counties and Parishes law (and the 1872 move of the capital); no later change to the 14 parishes is listed.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Law 20 of 1867 was passed on 1867-04-23 and took effect on 1867-05-01."
+    }
+   ]
+  },
+  {
+   "id": "JAM:Westmoreland@1867",
+   "names": {
+    "en": "Westmoreland Parish",
+    "ja": "ウェストモアランド教区",
+    "local": "Westmoreland Parish"
+   },
+   "wikidata": "Q1440250",
+   "spans": [
+    {
+     "from": "1867-05-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "JAM-1376"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikisource.org/wiki/The_Laws_of_Jamaica,_passed_in_1867/No.20_A_Law_to_Reduce_the_Number_of_Parishes",
+       "title": "The Laws of Jamaica, passed in 1867 — No. 20, A Law to Reduce the Number of Parishes (Wikisource, rev 14426475)",
+       "accessed": "2026-10-06",
+       "says": "Passed 23 April 1867, in force 1 May 1867; Westmoreland = Westmoreland unchanged."
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Parishes_of_Jamaica&oldid=1358982382",
+       "title": "Wikipedia (en) — Parishes of Jamaica (oldid 1358982382)",
+       "says": "Since 1 May 1867 Jamaica has been divided into the current fourteen parishes, retained after independence in 1962.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/ujm.html",
+       "title": "Statoids — Parishes of Jamaica (change history)",
+       "says": "Change history ends with the 1867-04-23 Counties and Parishes law (and the 1872 move of the capital); no later change to the 14 parishes is listed.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Law 20 of 1867 was passed on 1867-04-23 and took effect on 1867-05-01."
+    }
+   ]
+  },
+  {
+   "id": "JAM:Hanover@1867",
+   "names": {
+    "en": "Hanover Parish",
+    "ja": "ハノーバー教区",
+    "local": "Hanover Parish"
+   },
+   "wikidata": "Q1131779",
+   "spans": [
+    {
+     "from": "1867-05-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "JAM-1371"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikisource.org/wiki/The_Laws_of_Jamaica,_passed_in_1867/No.20_A_Law_to_Reduce_the_Number_of_Parishes",
+       "title": "The Laws of Jamaica, passed in 1867 — No. 20, A Law to Reduce the Number of Parishes (Wikisource, rev 14426475)",
+       "accessed": "2026-10-06",
+       "says": "Passed 23 April 1867, in force 1 May 1867; Hanover = Hanover unchanged."
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Parishes_of_Jamaica&oldid=1358982382",
+       "title": "Wikipedia (en) — Parishes of Jamaica (oldid 1358982382)",
+       "says": "Since 1 May 1867 Jamaica has been divided into the current fourteen parishes, retained after independence in 1962.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/ujm.html",
+       "title": "Statoids — Parishes of Jamaica (change history)",
+       "says": "Change history ends with the 1867-04-23 Counties and Parishes law (and the 1872 move of the capital); no later change to the 14 parishes is listed.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Law 20 of 1867 was passed on 1867-04-23 and took effect on 1867-05-01."
+    }
+   ]
+  },
+  {
+   "id": "JAM:SaintJames@1867",
+   "names": {
+    "en": "Saint James Parish",
+    "ja": "セント・ジェームズ教区",
+    "local": "Parish of Saint James"
+   },
+   "wikidata": "Q1421939",
+   "spans": [
+    {
+     "from": "1867-05-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "JAM-1374"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikisource.org/wiki/The_Laws_of_Jamaica,_passed_in_1867/No.20_A_Law_to_Reduce_the_Number_of_Parishes",
+       "title": "The Laws of Jamaica, passed in 1867 — No. 20, A Law to Reduce the Number of Parishes (Wikisource, rev 14426475)",
+       "accessed": "2026-10-06",
+       "says": "Passed 23 April 1867, in force 1 May 1867; Saint James = St James unchanged."
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Parishes_of_Jamaica&oldid=1358982382",
+       "title": "Wikipedia (en) — Parishes of Jamaica (oldid 1358982382)",
+       "says": "Since 1 May 1867 Jamaica has been divided into the current fourteen parishes, retained after independence in 1962.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/ujm.html",
+       "title": "Statoids — Parishes of Jamaica (change history)",
+       "says": "Change history ends with the 1867-04-23 Counties and Parishes law (and the 1872 move of the capital); no later change to the 14 parishes is listed.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Law 20 of 1867 was passed on 1867-04-23 and took effect on 1867-05-01."
+    }
+   ]
+  },
+  {
+   "id": "JAM:Trelawny@1867",
+   "names": {
+    "en": "Trelawny Parish",
+    "ja": "トレローニー教区",
+    "local": "Trelawny Parish"
+   },
+   "wikidata": "Q1123340",
+   "spans": [
+    {
+     "from": "1867-05-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "JAM-1375"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikisource.org/wiki/The_Laws_of_Jamaica,_passed_in_1867/No.20_A_Law_to_Reduce_the_Number_of_Parishes",
+       "title": "The Laws of Jamaica, passed in 1867 — No. 20, A Law to Reduce the Number of Parishes (Wikisource, rev 14426475)",
+       "accessed": "2026-10-06",
+       "says": "Passed 23 April 1867, in force 1 May 1867; Trelawny = Trelawny unchanged."
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Parishes_of_Jamaica&oldid=1358982382",
+       "title": "Wikipedia (en) — Parishes of Jamaica (oldid 1358982382)",
+       "says": "Since 1 May 1867 Jamaica has been divided into the current fourteen parishes, retained after independence in 1962.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/ujm.html",
+       "title": "Statoids — Parishes of Jamaica (change history)",
+       "says": "Change history ends with the 1867-04-23 Counties and Parishes law (and the 1872 move of the capital); no later change to the 14 parishes is listed.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Law 20 of 1867 was passed on 1867-04-23 and took effect on 1867-05-01."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1867-05-01",
+   "precision": "day",
+   "what": "22 parishes reduced to 14 (Law 20 of 1867)",
+   "sources": [
+    {
+     "url": "https://en.wikisource.org/wiki/The_Laws_of_Jamaica,_passed_in_1867/No.20_A_Law_to_Reduce_the_Number_of_Parishes",
+     "title": "The Laws of Jamaica, passed in 1867 — No. 20, A Law to Reduce the Number of Parishes (Wikisource, rev 14426475)",
+     "accessed": "2026-10-06",
+     "says": "Passed 23 April 1867; commencement 1 May 1867; fourteen parishes in three counties."
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1867-05-01",
+   "n": 14,
+   "sources": [
+    {
+     "url": "https://en.wikisource.org/wiki/The_Laws_of_Jamaica,_passed_in_1867/No.20_A_Law_to_Reduce_the_Number_of_Parishes",
+     "title": "The Laws of Jamaica, passed in 1867 — No. 20, A Law to Reduce the Number of Parishes (Wikisource, rev 14426475)",
+     "accessed": "2026-10-06",
+     "says": "Fourteen parishes from 1 May 1867."
+    }
+   ]
+  },
+  {
+   "date": "2019-12-31",
+   "n": 14,
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Parishes_of_Jamaica&oldid=1358982382",
+     "title": "Wikipedia (en) — Parishes of Jamaica (oldid 1358982382)",
+     "says": "Since 1 May 1867 Jamaica has been divided into the current fourteen parishes, retained after independence in 1962.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  }
+ ],
+ "unresolved": []
+}

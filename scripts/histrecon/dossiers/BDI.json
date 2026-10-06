@@ -1,0 +1,955 @@
+{
+  "country": "BDI",
+  "atomSet": "gb-adm2@2026-10-06",
+  "scope": {
+    "from": "1982-09-24",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Republic of Burundi. First level = provinces (and Bujumbura Mairie from 1991). Atoms are the 119 communes of geoBoundaries BDI ADM2 (2007 vintage with the three 2014 communes of Bujumbura Mairie; NYU Spatial Data Repository / Stanford / Map Maker, public domain). Provinces are unions of communes; after 1982 the change list moves only whole communes (1991 Bujumbura split, 1998 Mwaro, 2015 Rumonge). The 2025 reform into five provinces is after the scope.",
+  "units": [
+    {
+      "id": "BDI:Gitega@1982",
+      "names": {
+        "en": "Gitega Province",
+        "ja": "ギテガ県",
+        "local": "Province de Gitega"
+      },
+      "wikidata": "Q720843",
+      "spans": [
+        {
+          "from": "1982-09-24",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BDI-ADM2-21766830B15811078155518",
+            "BDI-ADM2-21766830B29011409096617",
+            "BDI-ADM2-21766830B32665034860455",
+            "BDI-ADM2-21766830B3303123993236",
+            "BDI-ADM2-21766830B51581455705264",
+            "BDI-ADM2-21766830B69591063381574",
+            "BDI-ADM2-21766830B71062038912102",
+            "BDI-ADM2-21766830B73562224956549",
+            "BDI-ADM2-21766830B76485672774701",
+            "BDI-ADM2-21766830B80629459024639",
+            "BDI-ADM2-21766830B81399712036677"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubi.html",
+              "title": "Statoids — Provinces of Burundi (Gwillim Law, updated 2015-11-27)",
+              "says": "1982-09-24: the eight provinces regrouped into fifteen, with named commune transfers (Gihogazi, Giteranyi, Gitanga, Bukemba, Busiga, half of Bukinanyana); arrondissements eliminated.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Communes_of_Burundi&oldid=1368745007",
+              "title": "Wikipedia: Communes of Burundi (rev 1368745007)",
+              "says": "Lists each commune of Burundi under its province.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Scope start: the fifteen provinces of 1982. Earlier the eight provinces were made of arrondissements, and the 1982 reform also moved communes between them (see unresolved)."
+        }
+      ]
+    },
+    {
+      "id": "BDI:Muramvya@1982",
+      "names": {
+        "en": "Muramvya Province",
+        "ja": "ムランヴィヤ県",
+        "local": "Province de Muramvya"
+      },
+      "wikidata": "Q671086",
+      "spans": [
+        {
+          "from": "1982-09-24",
+          "precision": "day",
+          "to": "1998-12-10",
+          "atoms": [
+            "BDI-ADM2-21766830B17486429962760",
+            "BDI-ADM2-21766830B19333977175167",
+            "BDI-ADM2-21766830B24037016071048",
+            "BDI-ADM2-21766830B36103898428570",
+            "BDI-ADM2-21766830B4360406366219",
+            "BDI-ADM2-21766830B55907977289604",
+            "BDI-ADM2-21766830B72733606015225",
+            "BDI-ADM2-21766830B75311935252649",
+            "BDI-ADM2-21766830B86275018260755",
+            "BDI-ADM2-21766830B89600323039153",
+            "BDI-ADM2-21766830B89840065497772"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubi.html",
+              "title": "Statoids — Provinces of Burundi (Gwillim Law, updated 2015-11-27)",
+              "says": "1982-09-24: the eight provinces regrouped into fifteen, with named commune transfers (Gihogazi, Giteranyi, Gitanga, Bukemba, Busiga, half of Bukinanyana); arrondissements eliminated.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ubi.html",
+              "title": "Statoids — Provinces of Burundi (Gwillim Law, updated 2015-11-27)",
+              "says": "1998-12-10: Mwaro province split from Muramvya.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Communes_of_Burundi&oldid=1368745007",
+              "title": "Wikipedia: Communes of Burundi (rev 1368745007)",
+              "says": "Lists each commune of Burundi under its province.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Scope start: the fifteen provinces of 1982. Earlier the eight provinces were made of arrondissements, and the 1982 reform also moved communes between them (see unresolved)."
+        },
+        {
+          "from": "1998-12-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BDI-ADM2-21766830B36103898428570",
+            "BDI-ADM2-21766830B72733606015225",
+            "BDI-ADM2-21766830B75311935252649",
+            "BDI-ADM2-21766830B86275018260755",
+            "BDI-ADM2-21766830B89600323039153"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubi.html",
+              "title": "Statoids — Provinces of Burundi (Gwillim Law, updated 2015-11-27)",
+              "says": "1998-12-10: Mwaro province split from Muramvya.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Communes_of_Burundi&oldid=1368745007",
+              "title": "Wikipedia: Communes of Burundi (rev 1368745007)",
+              "says": "Lists each commune of Burundi under its province.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "BDI:Bururi@1982",
+      "names": {
+        "en": "Bururi Province",
+        "ja": "ブルリ県",
+        "local": "Province de Bururi"
+      },
+      "wikidata": "Q431385",
+      "spans": [
+        {
+          "from": "1982-09-24",
+          "precision": "day",
+          "to": "2015-03-26",
+          "atoms": [
+            "BDI-ADM2-21766830B13270332643198",
+            "BDI-ADM2-21766830B18921295675400",
+            "BDI-ADM2-21766830B25905143515438",
+            "BDI-ADM2-21766830B2637956321101",
+            "BDI-ADM2-21766830B32777890626704",
+            "BDI-ADM2-21766830B40262547233983",
+            "BDI-ADM2-21766830B58261819569057",
+            "BDI-ADM2-21766830B72694279365930",
+            "BDI-ADM2-21766830B94080264403798"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubi.html",
+              "title": "Statoids — Provinces of Burundi (Gwillim Law, updated 2015-11-27)",
+              "says": "1982-09-24: the eight provinces regrouped into fifteen, with named commune transfers (Gihogazi, Giteranyi, Gitanga, Bukemba, Busiga, half of Bukinanyana); arrondissements eliminated.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ubi.html",
+              "title": "Statoids — Provinces of Burundi (Gwillim Law, updated 2015-11-27)",
+              "says": "2015-03-26 (Law No. 1/10): Rumonge province from Burambi, Buyengero, Rumonge communes (Bururi) and Bugarama, Muhuta communes (Bujumbura Rural).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Communes_of_Burundi&oldid=1368745007",
+              "title": "Wikipedia: Communes of Burundi (rev 1368745007)",
+              "says": "Lists each commune of Burundi under its province.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Scope start: the fifteen provinces of 1982. Earlier the eight provinces were made of arrondissements, and the 1982 reform also moved communes between them (see unresolved)."
+        },
+        {
+          "from": "2015-03-26",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BDI-ADM2-21766830B18921295675400",
+            "BDI-ADM2-21766830B25905143515438",
+            "BDI-ADM2-21766830B2637956321101",
+            "BDI-ADM2-21766830B40262547233983",
+            "BDI-ADM2-21766830B58261819569057",
+            "BDI-ADM2-21766830B94080264403798"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubi.html",
+              "title": "Statoids — Provinces of Burundi (Gwillim Law, updated 2015-11-27)",
+              "says": "2015-03-26 (Law No. 1/10): Rumonge province from Burambi, Buyengero, Rumonge communes (Bururi) and Bugarama, Muhuta communes (Bujumbura Rural).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Communes_of_Burundi&oldid=1368745007",
+              "title": "Wikipedia: Communes of Burundi (rev 1368745007)",
+              "says": "Lists each commune of Burundi under its province.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "BDI:Bujumbura@1982",
+      "names": {
+        "en": "Bujumbura Province",
+        "ja": "ブジュンブラ県",
+        "local": "Province de Bujumbura"
+      },
+      "spans": [
+        {
+          "from": "1982-09-24",
+          "precision": "day",
+          "to": "1991-11-08",
+          "atoms": [
+            "BDI-ADM2-21766830B10562197966638",
+            "BDI-ADM2-21766830B14140898215143",
+            "BDI-ADM2-21766830B17268150669588",
+            "BDI-ADM2-21766830B24780978451442",
+            "BDI-ADM2-21766830B26172674635426",
+            "BDI-ADM2-21766830B31049489476840",
+            "BDI-ADM2-21766830B36835382033084",
+            "BDI-ADM2-21766830B38784521668340",
+            "BDI-ADM2-21766830B4857646374703",
+            "BDI-ADM2-21766830B6345718789328",
+            "BDI-ADM2-21766830B65855218165696",
+            "BDI-ADM2-21766830B84199363749171",
+            "BDI-ADM2-21766830B87038696970617",
+            "BDI-ADM2-21766830B91002704780807"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubi.html",
+              "title": "Statoids — Provinces of Burundi (Gwillim Law, updated 2015-11-27)",
+              "says": "1982-09-24: the eight provinces regrouped into fifteen, with named commune transfers (Gihogazi, Giteranyi, Gitanga, Bukemba, Busiga, half of Bukinanyana); arrondissements eliminated.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ubi.html",
+              "title": "Statoids — Provinces of Burundi (Gwillim Law, updated 2015-11-27)",
+              "says": "1991-11-08: Bujumbura province split into Bujumbura Mairie and Bujumbura Rural.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Communes_of_Burundi&oldid=1368745007",
+              "title": "Wikipedia: Communes of Burundi (rev 1368745007)",
+              "says": "Lists each commune of Burundi under its province.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Scope start: the fifteen provinces of 1982. Earlier the eight provinces were made of arrondissements, and the 1982 reform also moved communes between them (see unresolved)."
+        }
+      ]
+    },
+    {
+      "id": "BDI:Makamba@1982",
+      "names": {
+        "en": "Makamba Province",
+        "ja": "マカンバ県",
+        "local": "Province de Makamba"
+      },
+      "wikidata": "Q823740",
+      "spans": [
+        {
+          "from": "1982-09-24",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BDI-ADM2-21766830B23200126988104",
+            "BDI-ADM2-21766830B66939921424101",
+            "BDI-ADM2-21766830B71257741300393",
+            "BDI-ADM2-21766830B72373703869549",
+            "BDI-ADM2-21766830B74257208244788",
+            "BDI-ADM2-21766830B93103585159294"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubi.html",
+              "title": "Statoids — Provinces of Burundi (Gwillim Law, updated 2015-11-27)",
+              "says": "1982-09-24: the eight provinces regrouped into fifteen, with named commune transfers (Gihogazi, Giteranyi, Gitanga, Bukemba, Busiga, half of Bukinanyana); arrondissements eliminated.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Communes_of_Burundi&oldid=1368745007",
+              "title": "Wikipedia: Communes of Burundi (rev 1368745007)",
+              "says": "Lists each commune of Burundi under its province.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Scope start: the fifteen provinces of 1982. Earlier the eight provinces were made of arrondissements, and the 1982 reform also moved communes between them (see unresolved)."
+        }
+      ]
+    },
+    {
+      "id": "BDI:Bubanza@1982",
+      "names": {
+        "en": "Bubanza Province",
+        "ja": "ブバンザ県",
+        "local": "Province de Bubanza"
+      },
+      "wikidata": "Q460538",
+      "spans": [
+        {
+          "from": "1982-09-24",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BDI-ADM2-21766830B27994781295310",
+            "BDI-ADM2-21766830B29868880431968",
+            "BDI-ADM2-21766830B70249907645493",
+            "BDI-ADM2-21766830B78591112120307",
+            "BDI-ADM2-21766830B9951429704486"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubi.html",
+              "title": "Statoids — Provinces of Burundi (Gwillim Law, updated 2015-11-27)",
+              "says": "1982-09-24: the eight provinces regrouped into fifteen, with named commune transfers (Gihogazi, Giteranyi, Gitanga, Bukemba, Busiga, half of Bukinanyana); arrondissements eliminated.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Communes_of_Burundi&oldid=1368745007",
+              "title": "Wikipedia: Communes of Burundi (rev 1368745007)",
+              "says": "Lists each commune of Burundi under its province.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Scope start: the fifteen provinces of 1982. Earlier the eight provinces were made of arrondissements, and the 1982 reform also moved communes between them (see unresolved)."
+        }
+      ]
+    },
+    {
+      "id": "BDI:Cibitoke@1982",
+      "names": {
+        "en": "Cibitoke Province",
+        "ja": "チビトケ県",
+        "local": "Province de Cibitoke"
+      },
+      "wikidata": "Q505596",
+      "spans": [
+        {
+          "from": "1982-09-24",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BDI-ADM2-21766830B12025098844752",
+            "BDI-ADM2-21766830B2147150443328",
+            "BDI-ADM2-21766830B421358417112",
+            "BDI-ADM2-21766830B51540876931984",
+            "BDI-ADM2-21766830B66237815735217",
+            "BDI-ADM2-21766830B75549003528399"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubi.html",
+              "title": "Statoids — Provinces of Burundi (Gwillim Law, updated 2015-11-27)",
+              "says": "1982-09-24: the eight provinces regrouped into fifteen, with named commune transfers (Gihogazi, Giteranyi, Gitanga, Bukemba, Busiga, half of Bukinanyana); arrondissements eliminated.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Communes_of_Burundi&oldid=1368745007",
+              "title": "Wikipedia: Communes of Burundi (rev 1368745007)",
+              "says": "Lists each commune of Burundi under its province.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Scope start: the fifteen provinces of 1982. Earlier the eight provinces were made of arrondissements, and the 1982 reform also moved communes between them (see unresolved)."
+        }
+      ]
+    },
+    {
+      "id": "BDI:Kayanza@1982",
+      "names": {
+        "en": "Kayanza Province",
+        "ja": "カヤンザ県",
+        "local": "Province de Kayanza"
+      },
+      "wikidata": "Q720848",
+      "spans": [
+        {
+          "from": "1982-09-24",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BDI-ADM2-21766830B24961695434412",
+            "BDI-ADM2-21766830B25707783862584",
+            "BDI-ADM2-21766830B38836808291040",
+            "BDI-ADM2-21766830B52252554978419",
+            "BDI-ADM2-21766830B63780958565723",
+            "BDI-ADM2-21766830B70902227945627",
+            "BDI-ADM2-21766830B84106347559317",
+            "BDI-ADM2-21766830B87758575998638",
+            "BDI-ADM2-21766830B99657937177591"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubi.html",
+              "title": "Statoids — Provinces of Burundi (Gwillim Law, updated 2015-11-27)",
+              "says": "1982-09-24: the eight provinces regrouped into fifteen, with named commune transfers (Gihogazi, Giteranyi, Gitanga, Bukemba, Busiga, half of Bukinanyana); arrondissements eliminated.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Communes_of_Burundi&oldid=1368745007",
+              "title": "Wikipedia: Communes of Burundi (rev 1368745007)",
+              "says": "Lists each commune of Burundi under its province.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Scope start: the fifteen provinces of 1982. Earlier the eight provinces were made of arrondissements, and the 1982 reform also moved communes between them (see unresolved)."
+        }
+      ]
+    },
+    {
+      "id": "BDI:Rutana@1982",
+      "names": {
+        "en": "Rutana Province",
+        "ja": "ルタナ県",
+        "local": "Province de Rutana"
+      },
+      "wikidata": "Q822566",
+      "spans": [
+        {
+          "from": "1982-09-24",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BDI-ADM2-21766830B33206260721673",
+            "BDI-ADM2-21766830B38172137244003",
+            "BDI-ADM2-21766830B77564167498805",
+            "BDI-ADM2-21766830B87895722039818",
+            "BDI-ADM2-21766830B89324425383518",
+            "BDI-ADM2-21766830B95746888860763"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubi.html",
+              "title": "Statoids — Provinces of Burundi (Gwillim Law, updated 2015-11-27)",
+              "says": "1982-09-24: the eight provinces regrouped into fifteen, with named commune transfers (Gihogazi, Giteranyi, Gitanga, Bukemba, Busiga, half of Bukinanyana); arrondissements eliminated.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Communes_of_Burundi&oldid=1368745007",
+              "title": "Wikipedia: Communes of Burundi (rev 1368745007)",
+              "says": "Lists each commune of Burundi under its province.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Scope start: the fifteen provinces of 1982. Earlier the eight provinces were made of arrondissements, and the 1982 reform also moved communes between them (see unresolved)."
+        }
+      ]
+    },
+    {
+      "id": "BDI:Ruyigi@1982",
+      "names": {
+        "en": "Ruyigi Province",
+        "ja": "ルイギ県",
+        "local": "Province de Ruyigi"
+      },
+      "wikidata": "Q822578",
+      "spans": [
+        {
+          "from": "1982-09-24",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BDI-ADM2-21766830B11414555561270",
+            "BDI-ADM2-21766830B17506602240665",
+            "BDI-ADM2-21766830B24825002042526",
+            "BDI-ADM2-21766830B26044748371423",
+            "BDI-ADM2-21766830B39450952647031",
+            "BDI-ADM2-21766830B39870041079987",
+            "BDI-ADM2-21766830B54937037916307"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubi.html",
+              "title": "Statoids — Provinces of Burundi (Gwillim Law, updated 2015-11-27)",
+              "says": "1982-09-24: the eight provinces regrouped into fifteen, with named commune transfers (Gihogazi, Giteranyi, Gitanga, Bukemba, Busiga, half of Bukinanyana); arrondissements eliminated.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Communes_of_Burundi&oldid=1368745007",
+              "title": "Wikipedia: Communes of Burundi (rev 1368745007)",
+              "says": "Lists each commune of Burundi under its province.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Scope start: the fifteen provinces of 1982. Earlier the eight provinces were made of arrondissements, and the 1982 reform also moved communes between them (see unresolved)."
+        }
+      ]
+    },
+    {
+      "id": "BDI:Karuzi@1982",
+      "names": {
+        "en": "Karuzi Province",
+        "ja": "カルジ県",
+        "local": "Province de Karuzi"
+      },
+      "wikidata": "Q735463",
+      "spans": [
+        {
+          "from": "1982-09-24",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BDI-ADM2-21766830B2211499884350",
+            "BDI-ADM2-21766830B23511682723630",
+            "BDI-ADM2-21766830B35176009375128",
+            "BDI-ADM2-21766830B47881609362439",
+            "BDI-ADM2-21766830B50673772074896",
+            "BDI-ADM2-21766830B66626516446695",
+            "BDI-ADM2-21766830B82901968055666"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubi.html",
+              "title": "Statoids — Provinces of Burundi (Gwillim Law, updated 2015-11-27)",
+              "says": "1982-09-24: the eight provinces regrouped into fifteen, with named commune transfers (Gihogazi, Giteranyi, Gitanga, Bukemba, Busiga, half of Bukinanyana); arrondissements eliminated.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Communes_of_Burundi&oldid=1368745007",
+              "title": "Wikipedia: Communes of Burundi (rev 1368745007)",
+              "says": "Lists each commune of Burundi under its province.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Scope start: the fifteen provinces of 1982. Earlier the eight provinces were made of arrondissements, and the 1982 reform also moved communes between them (see unresolved)."
+        }
+      ]
+    },
+    {
+      "id": "BDI:Ngozi@1982",
+      "names": {
+        "en": "Ngozi Province",
+        "ja": "ンゴジ県",
+        "local": "Province de Ngozi"
+      },
+      "wikidata": "Q720852",
+      "spans": [
+        {
+          "from": "1982-09-24",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BDI-ADM2-21766830B13058774962077",
+            "BDI-ADM2-21766830B14713025325915",
+            "BDI-ADM2-21766830B1882461017579",
+            "BDI-ADM2-21766830B34593389282909",
+            "BDI-ADM2-21766830B35301506436742",
+            "BDI-ADM2-21766830B44237759334809",
+            "BDI-ADM2-21766830B4667325104587",
+            "BDI-ADM2-21766830B83078145904206",
+            "BDI-ADM2-21766830B95738875058381"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubi.html",
+              "title": "Statoids — Provinces of Burundi (Gwillim Law, updated 2015-11-27)",
+              "says": "1982-09-24: the eight provinces regrouped into fifteen, with named commune transfers (Gihogazi, Giteranyi, Gitanga, Bukemba, Busiga, half of Bukinanyana); arrondissements eliminated.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Communes_of_Burundi&oldid=1368745007",
+              "title": "Wikipedia: Communes of Burundi (rev 1368745007)",
+              "says": "Lists each commune of Burundi under its province.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Scope start: the fifteen provinces of 1982. Earlier the eight provinces were made of arrondissements, and the 1982 reform also moved communes between them (see unresolved)."
+        }
+      ]
+    },
+    {
+      "id": "BDI:Kirundo@1982",
+      "names": {
+        "en": "Kirundo Province",
+        "ja": "キルンド県",
+        "local": "Province de Kirundo"
+      },
+      "wikidata": "Q600840",
+      "spans": [
+        {
+          "from": "1982-09-24",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BDI-ADM2-21766830B10882929904233",
+            "BDI-ADM2-21766830B26549611972725",
+            "BDI-ADM2-21766830B46224156448041",
+            "BDI-ADM2-21766830B53810177315638",
+            "BDI-ADM2-21766830B58356129382648",
+            "BDI-ADM2-21766830B60116589238707",
+            "BDI-ADM2-21766830B78190696569930"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubi.html",
+              "title": "Statoids — Provinces of Burundi (Gwillim Law, updated 2015-11-27)",
+              "says": "1982-09-24: the eight provinces regrouped into fifteen, with named commune transfers (Gihogazi, Giteranyi, Gitanga, Bukemba, Busiga, half of Bukinanyana); arrondissements eliminated.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Communes_of_Burundi&oldid=1368745007",
+              "title": "Wikipedia: Communes of Burundi (rev 1368745007)",
+              "says": "Lists each commune of Burundi under its province.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Scope start: the fifteen provinces of 1982. Earlier the eight provinces were made of arrondissements, and the 1982 reform also moved communes between them (see unresolved)."
+        }
+      ]
+    },
+    {
+      "id": "BDI:Cankuzo@1982",
+      "names": {
+        "en": "Cankuzo Province",
+        "ja": "カンクゾ県",
+        "local": "Province de Cankuzo"
+      },
+      "wikidata": "Q645033",
+      "spans": [
+        {
+          "from": "1982-09-24",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BDI-ADM2-21766830B1729082638594",
+            "BDI-ADM2-21766830B23756713917278",
+            "BDI-ADM2-21766830B44986812705529",
+            "BDI-ADM2-21766830B5675183686685",
+            "BDI-ADM2-21766830B80223800900582"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubi.html",
+              "title": "Statoids — Provinces of Burundi (Gwillim Law, updated 2015-11-27)",
+              "says": "1982-09-24: the eight provinces regrouped into fifteen, with named commune transfers (Gihogazi, Giteranyi, Gitanga, Bukemba, Busiga, half of Bukinanyana); arrondissements eliminated.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Communes_of_Burundi&oldid=1368745007",
+              "title": "Wikipedia: Communes of Burundi (rev 1368745007)",
+              "says": "Lists each commune of Burundi under its province.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Scope start: the fifteen provinces of 1982. Earlier the eight provinces were made of arrondissements, and the 1982 reform also moved communes between them (see unresolved)."
+        }
+      ]
+    },
+    {
+      "id": "BDI:Muyinga@1982",
+      "names": {
+        "en": "Muyinga Province",
+        "ja": "ムインガ県",
+        "local": "Province de Muyinga"
+      },
+      "wikidata": "Q822571",
+      "spans": [
+        {
+          "from": "1982-09-24",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BDI-ADM2-21766830B10181595189520",
+            "BDI-ADM2-21766830B20307269846045",
+            "BDI-ADM2-21766830B3809417619483",
+            "BDI-ADM2-21766830B41528201457160",
+            "BDI-ADM2-21766830B49899566949034",
+            "BDI-ADM2-21766830B82611116745094",
+            "BDI-ADM2-21766830B83765633898760"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubi.html",
+              "title": "Statoids — Provinces of Burundi (Gwillim Law, updated 2015-11-27)",
+              "says": "1982-09-24: the eight provinces regrouped into fifteen, with named commune transfers (Gihogazi, Giteranyi, Gitanga, Bukemba, Busiga, half of Bukinanyana); arrondissements eliminated.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Communes_of_Burundi&oldid=1368745007",
+              "title": "Wikipedia: Communes of Burundi (rev 1368745007)",
+              "says": "Lists each commune of Burundi under its province.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Scope start: the fifteen provinces of 1982. Earlier the eight provinces were made of arrondissements, and the 1982 reform also moved communes between them (see unresolved)."
+        }
+      ]
+    },
+    {
+      "id": "BDI:BujumburaRural@1991",
+      "names": {
+        "en": "Bujumbura Rural Province",
+        "ja": "ブジュンブラ近郊県",
+        "local": "Province de Bujumbura Rural"
+      },
+      "wikidata": "Q645043",
+      "spans": [
+        {
+          "from": "1991-11-08",
+          "precision": "day",
+          "to": "2015-03-26",
+          "atoms": [
+            "BDI-ADM2-21766830B14140898215143",
+            "BDI-ADM2-21766830B17268150669588",
+            "BDI-ADM2-21766830B24780978451442",
+            "BDI-ADM2-21766830B26172674635426",
+            "BDI-ADM2-21766830B31049489476840",
+            "BDI-ADM2-21766830B36835382033084",
+            "BDI-ADM2-21766830B38784521668340",
+            "BDI-ADM2-21766830B4857646374703",
+            "BDI-ADM2-21766830B6345718789328",
+            "BDI-ADM2-21766830B65855218165696",
+            "BDI-ADM2-21766830B91002704780807"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubi.html",
+              "title": "Statoids — Provinces of Burundi (Gwillim Law, updated 2015-11-27)",
+              "says": "1991-11-08: Bujumbura province split into Bujumbura Mairie and Bujumbura Rural.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ubi.html",
+              "title": "Statoids — Provinces of Burundi (Gwillim Law, updated 2015-11-27)",
+              "says": "2015-03-26 (Law No. 1/10): Rumonge province from Burambi, Buyengero, Rumonge communes (Bururi) and Bugarama, Muhuta communes (Bujumbura Rural).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Communes_of_Burundi&oldid=1368745007",
+              "title": "Wikipedia: Communes of Burundi (rev 1368745007)",
+              "says": "Lists each commune of Burundi under its province.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        },
+        {
+          "from": "2015-03-26",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BDI-ADM2-21766830B17268150669588",
+            "BDI-ADM2-21766830B24780978451442",
+            "BDI-ADM2-21766830B26172674635426",
+            "BDI-ADM2-21766830B36835382033084",
+            "BDI-ADM2-21766830B38784521668340",
+            "BDI-ADM2-21766830B4857646374703",
+            "BDI-ADM2-21766830B6345718789328",
+            "BDI-ADM2-21766830B65855218165696",
+            "BDI-ADM2-21766830B91002704780807"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubi.html",
+              "title": "Statoids — Provinces of Burundi (Gwillim Law, updated 2015-11-27)",
+              "says": "2015-03-26 (Law No. 1/10): Rumonge province from Burambi, Buyengero, Rumonge communes (Bururi) and Bugarama, Muhuta communes (Bujumbura Rural).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Communes_of_Burundi&oldid=1368745007",
+              "title": "Wikipedia: Communes of Burundi (rev 1368745007)",
+              "says": "Lists each commune of Burundi under its province.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "BDI:BujumburaMairie@1991",
+      "names": {
+        "en": "Bujumbura Mairie",
+        "ja": "ブジュンブラ・メリー県",
+        "local": "Bujumbura Mairie"
+      },
+      "wikidata": "Q1816580",
+      "spans": [
+        {
+          "from": "1991-11-08",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BDI-ADM2-21766830B10562197966638",
+            "BDI-ADM2-21766830B84199363749171",
+            "BDI-ADM2-21766830B87038696970617"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubi.html",
+              "title": "Statoids — Provinces of Burundi (Gwillim Law, updated 2015-11-27)",
+              "says": "1991-11-08: Bujumbura province split into Bujumbura Mairie and Bujumbura Rural.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Communes_of_Burundi&oldid=1368745007",
+              "title": "Wikipedia: Communes of Burundi (rev 1368745007)",
+              "says": "Lists each commune of Burundi under its province.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "BDI:Mwaro@1998",
+      "names": {
+        "en": "Mwaro Province",
+        "ja": "ムワロ県",
+        "local": "Province de Mwaro"
+      },
+      "wikidata": "Q847718",
+      "spans": [
+        {
+          "from": "1998-12-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BDI-ADM2-21766830B17486429962760",
+            "BDI-ADM2-21766830B19333977175167",
+            "BDI-ADM2-21766830B24037016071048",
+            "BDI-ADM2-21766830B4360406366219",
+            "BDI-ADM2-21766830B55907977289604",
+            "BDI-ADM2-21766830B89840065497772"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubi.html",
+              "title": "Statoids — Provinces of Burundi (Gwillim Law, updated 2015-11-27)",
+              "says": "1998-12-10: Mwaro province split from Muramvya.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Communes_of_Burundi&oldid=1368745007",
+              "title": "Wikipedia: Communes of Burundi (rev 1368745007)",
+              "says": "Lists each commune of Burundi under its province.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "BDI:Rumonge@2015",
+      "names": {
+        "en": "Rumonge Province",
+        "ja": "ルモンゲ県",
+        "local": "Province de Rumonge"
+      },
+      "wikidata": "Q20669646",
+      "spans": [
+        {
+          "from": "2015-03-26",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BDI-ADM2-21766830B13270332643198",
+            "BDI-ADM2-21766830B14140898215143",
+            "BDI-ADM2-21766830B31049489476840",
+            "BDI-ADM2-21766830B32777890626704",
+            "BDI-ADM2-21766830B72694279365930"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubi.html",
+              "title": "Statoids — Provinces of Burundi (Gwillim Law, updated 2015-11-27)",
+              "says": "2015-03-26 (Law No. 1/10): Rumonge province from Burambi, Buyengero, Rumonge communes (Bururi) and Bugarama, Muhuta communes (Bujumbura Rural).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Communes_of_Burundi&oldid=1368745007",
+              "title": "Wikipedia: Communes of Burundi (rev 1368745007)",
+              "says": "Lists each commune of Burundi under its province.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "events": [],
+  "counts": [
+    {
+      "date": "1982-09-24",
+      "n": 15,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ubi.html",
+          "title": "Statoids — Provinces of Burundi (Gwillim Law, updated 2015-11-27)",
+          "says": "1982-09-24: the eight provinces regrouped into fifteen, with named commune transfers (Gihogazi, Giteranyi, Gitanga, Bukemba, Busiga, half of Bukinanyana); arrondissements eliminated.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "1991-11-08",
+      "n": 16,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ubi.html",
+          "title": "Statoids — Provinces of Burundi (Gwillim Law, updated 2015-11-27)",
+          "says": "1991-11-08: Bujumbura province split into Bujumbura Mairie and Bujumbura Rural.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "1998-12-10",
+      "n": 17,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ubi.html",
+          "title": "Statoids — Provinces of Burundi (Gwillim Law, updated 2015-11-27)",
+          "says": "1998-12-10: Mwaro province split from Muramvya.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "2015-03-26",
+      "n": 18,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ubi.html",
+          "title": "Statoids — Provinces of Burundi (Gwillim Law, updated 2015-11-27)",
+          "says": "2015-03-26 (Law No. 1/10): Rumonge province from Burambi, Buyengero, Rumonge communes (Bururi) and Bugarama, Muhuta communes (Bujumbura Rural).",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Burundi&oldid=1378439959",
+          "title": "Wikipedia: Provinces of Burundi (rev 1378439959)",
+          "says": "Eighteen provinces from 2015 (Rumonge the newest), each made of communes.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "The eight provinces 1962-03-01 → 1982-09-24 (arrondissements; Mwisare moved ~1969)",
+      "from": "1962-03-01",
+      "to": "1982-09-24",
+      "why": "Before scope. The eight provinces are unions of the 1982 provinces except where 1982 moved communes across them: Gitanga and Bukemba (Bururi → Rutana) are known, but Bukirasazi arrondissement was absorbed «almost all» into Gitega and the destination of the rest is not stated, and Mwisare's transfer to Bujumbura is dated only ~1969.",
+      "checked": [
+        "statoids ubi.html change history",
+        "Wikipedia Provinces of Burundi rev 1378439959"
+      ],
+      "needs": "the 1982-09-24 decree-law listing the communes of each new province; a colline-level atom set for Bukirasazi"
+    }
+  ]
+}

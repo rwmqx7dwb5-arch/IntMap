@@ -1,0 +1,848 @@
+{
+ "country": "UKR",
+ "atomSet": "gb-adm1@2026-10-06",
+ "scope": {
+  "from": "1991-08-24",
+  "to": "1991-12-25"
+ },
+ "polityNote": "Oblasts of Ukraine from the Act of Declaration of Independence (24 Aug 1991) to the dissolution of the USSR; the present-day units are carried back from 26 Dec 1991 and OpenHistoricalMap’s Ukrainian SSR ends 16 Sep 1991, leaving the autumn of 1991 unanswered. Atoms: geoBoundaries UKR ADM1 (OpenStreetMap/Wambacher 2017, ODbL, 137,991 vertices vs. 19,652 in Natural Earth). Check ① (2026-10-06, 0.05° grid) against the OpenHistoricalMap oblasts in force on 1991-10-01: IoU 0.97–1.00 for Sumy, Chernihiv, Kharkiv, Donetsk, Mykolaiv, Luhansk, Zakarpattia; Zaporizhzhia 0.90 and Kherson 0.84, where the OpenStreetMap atoms extend over the Sea of Azov / Dnieper reservoir water that OHM leaves out (OHM is ≥0.98 inside the atoms).",
+ "units": [
+  {
+   "id": "UKR:UA-65",
+   "names": {
+    "en": "Kherson Oblast",
+    "ja": "ヘルソン州",
+    "local": "Херсонська область"
+   },
+   "wikidata": "Q163271",
+   "spans": [
+    {
+     "from": "1991-08-24",
+     "precision": "day",
+     "to": "1991-12-26",
+     "atoms": [
+      "UKR-ADM1-14850775B65901307765467"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uua.html",
+       "title": "Statoids — Regions of Ukraine, change history",
+       "says": "The last boundary changes listed are Cherkasy (about 1955) and Drohobych into Lviv (about 1963); from 1991 only names and the status of Crimea (1992) change.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Oblasts_of_Ukraine&oldid=1365178388",
+       "title": "Wikipedia — Oblasts of Ukraine",
+       "says": "Ukraine has had 24 oblasts since 1991 (with the Autonomous Republic of Crimea and the cities of Kyiv and Sevastopol); the Crimean Oblast (1954–1991) became the Crimean ASSR.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "UKR:UA-07",
+   "names": {
+    "en": "Volyn Oblast",
+    "ja": "ヴォルィーニ州",
+    "local": "Волинська область"
+   },
+   "wikidata": "Q167859",
+   "spans": [
+    {
+     "from": "1991-08-24",
+     "precision": "day",
+     "to": "1991-12-26",
+     "atoms": [
+      "UKR-ADM1-14850775B13681962240800"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uua.html",
+       "title": "Statoids — Regions of Ukraine, change history",
+       "says": "The last boundary changes listed are Cherkasy (about 1955) and Drohobych into Lviv (about 1963); from 1991 only names and the status of Crimea (1992) change.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Oblasts_of_Ukraine&oldid=1365178388",
+       "title": "Wikipedia — Oblasts of Ukraine",
+       "says": "Ukraine has had 24 oblasts since 1991 (with the Autonomous Republic of Crimea and the cities of Kyiv and Sevastopol); the Crimean Oblast (1954–1991) became the Crimean ASSR.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "UKR:UA-56",
+   "names": {
+    "en": "Rivne Oblast",
+    "ja": "リウネ州",
+    "local": "Рівненська область"
+   },
+   "wikidata": "Q174187",
+   "spans": [
+    {
+     "from": "1991-08-24",
+     "precision": "day",
+     "to": "1991-12-26",
+     "atoms": [
+      "UKR-ADM1-14850775B83802928232754"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uua.html",
+       "title": "Statoids — Regions of Ukraine, change history",
+       "says": "The last boundary changes listed are Cherkasy (about 1955) and Drohobych into Lviv (about 1963); from 1991 only names and the status of Crimea (1992) change.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Oblasts_of_Ukraine&oldid=1365178388",
+       "title": "Wikipedia — Oblasts of Ukraine",
+       "says": "Ukraine has had 24 oblasts since 1991 (with the Autonomous Republic of Crimea and the cities of Kyiv and Sevastopol); the Crimean Oblast (1954–1991) became the Crimean ASSR.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "UKR:UA-18",
+   "names": {
+    "en": "Zhytomyr Oblast",
+    "ja": "ジトームィル州",
+    "local": "Житомирська область"
+   },
+   "wikidata": "Q40637",
+   "spans": [
+    {
+     "from": "1991-08-24",
+     "precision": "day",
+     "to": "1991-12-26",
+     "atoms": [
+      "UKR-ADM1-14850775B79197734087513"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uua.html",
+       "title": "Statoids — Regions of Ukraine, change history",
+       "says": "The last boundary changes listed are Cherkasy (about 1955) and Drohobych into Lviv (about 1963); from 1991 only names and the status of Crimea (1992) change.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Oblasts_of_Ukraine&oldid=1365178388",
+       "title": "Wikipedia — Oblasts of Ukraine",
+       "says": "Ukraine has had 24 oblasts since 1991 (with the Autonomous Republic of Crimea and the cities of Kyiv and Sevastopol); the Crimean Oblast (1954–1991) became the Crimean ASSR.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "UKR:UA-74",
+   "names": {
+    "en": "Chernihiv Oblast",
+    "ja": "チェルニーヒウ州",
+    "local": "Чернігівська область"
+   },
+   "wikidata": "Q167874",
+   "spans": [
+    {
+     "from": "1991-08-24",
+     "precision": "day",
+     "to": "1991-12-26",
+     "atoms": [
+      "UKR-ADM1-14850775B55286662261645"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uua.html",
+       "title": "Statoids — Regions of Ukraine, change history",
+       "says": "The last boundary changes listed are Cherkasy (about 1955) and Drohobych into Lviv (about 1963); from 1991 only names and the status of Crimea (1992) change.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Oblasts_of_Ukraine&oldid=1365178388",
+       "title": "Wikipedia — Oblasts of Ukraine",
+       "says": "Ukraine has had 24 oblasts since 1991 (with the Autonomous Republic of Crimea and the cities of Kyiv and Sevastopol); the Crimean Oblast (1954–1991) became the Crimean ASSR.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "UKR:UA-59",
+   "names": {
+    "en": "Sumy Oblast",
+    "ja": "スームィ州",
+    "local": "Сумська область"
+   },
+   "wikidata": "Q170446",
+   "spans": [
+    {
+     "from": "1991-08-24",
+     "precision": "day",
+     "to": "1991-12-26",
+     "atoms": [
+      "UKR-ADM1-14850775B14512392274127"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uua.html",
+       "title": "Statoids — Regions of Ukraine, change history",
+       "says": "The last boundary changes listed are Cherkasy (about 1955) and Drohobych into Lviv (about 1963); from 1991 only names and the status of Crimea (1992) change.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Oblasts_of_Ukraine&oldid=1365178388",
+       "title": "Wikipedia — Oblasts of Ukraine",
+       "says": "Ukraine has had 24 oblasts since 1991 (with the Autonomous Republic of Crimea and the cities of Kyiv and Sevastopol); the Crimean Oblast (1954–1991) became the Crimean ASSR.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "UKR:UA-63",
+   "names": {
+    "en": "Kharkiv Oblast",
+    "ja": "ハルキウ州",
+    "local": "Харківська область"
+   },
+   "wikidata": "Q170666",
+   "spans": [
+    {
+     "from": "1991-08-24",
+     "precision": "day",
+     "to": "1991-12-26",
+     "atoms": [
+      "UKR-ADM1-14850775B15913324833724"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uua.html",
+       "title": "Statoids — Regions of Ukraine, change history",
+       "says": "The last boundary changes listed are Cherkasy (about 1955) and Drohobych into Lviv (about 1963); from 1991 only names and the status of Crimea (1992) change.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Oblasts_of_Ukraine&oldid=1365178388",
+       "title": "Wikipedia — Oblasts of Ukraine",
+       "says": "Ukraine has had 24 oblasts since 1991 (with the Autonomous Republic of Crimea and the cities of Kyiv and Sevastopol); the Crimean Oblast (1954–1991) became the Crimean ASSR.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "UKR:UA-09",
+   "names": {
+    "en": "Luhansk Oblast",
+    "ja": "ルハーンシク州",
+    "local": "Луганська область"
+   },
+   "wikidata": "Q171965",
+   "spans": [
+    {
+     "from": "1991-08-24",
+     "precision": "day",
+     "to": "1991-12-26",
+     "atoms": [
+      "UKR-ADM1-14850775B31033086218351"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uua.html",
+       "title": "Statoids — Regions of Ukraine, change history",
+       "says": "The last boundary changes listed are Cherkasy (about 1955) and Drohobych into Lviv (about 1963); from 1991 only names and the status of Crimea (1992) change.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Oblasts_of_Ukraine&oldid=1365178388",
+       "title": "Wikipedia — Oblasts of Ukraine",
+       "says": "Ukraine has had 24 oblasts since 1991 (with the Autonomous Republic of Crimea and the cities of Kyiv and Sevastopol); the Crimean Oblast (1954–1991) became the Crimean ASSR.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "UKR:UA-14",
+   "names": {
+    "en": "Donetsk Oblast",
+    "ja": "ドネツィク州",
+    "local": "Донецька область"
+   },
+   "wikidata": "Q2012050",
+   "spans": [
+    {
+     "from": "1991-08-24",
+     "precision": "day",
+     "to": "1991-12-26",
+     "atoms": [
+      "UKR-ADM1-14850775B15615817748403"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uua.html",
+       "title": "Statoids — Regions of Ukraine, change history",
+       "says": "The last boundary changes listed are Cherkasy (about 1955) and Drohobych into Lviv (about 1963); from 1991 only names and the status of Crimea (1992) change.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Oblasts_of_Ukraine&oldid=1365178388",
+       "title": "Wikipedia — Oblasts of Ukraine",
+       "says": "Ukraine has had 24 oblasts since 1991 (with the Autonomous Republic of Crimea and the cities of Kyiv and Sevastopol); the Crimean Oblast (1954–1991) became the Crimean ASSR.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "UKR:UA-23",
+   "names": {
+    "en": "Zaporizhzhia Oblast",
+    "ja": "ザポリージャ州",
+    "local": "Запорізька область"
+   },
+   "wikidata": "Q171334",
+   "spans": [
+    {
+     "from": "1991-08-24",
+     "precision": "day",
+     "to": "1991-12-26",
+     "atoms": [
+      "UKR-ADM1-14850775B92888097715572"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uua.html",
+       "title": "Statoids — Regions of Ukraine, change history",
+       "says": "The last boundary changes listed are Cherkasy (about 1955) and Drohobych into Lviv (about 1963); from 1991 only names and the status of Crimea (1992) change.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Oblasts_of_Ukraine&oldid=1365178388",
+       "title": "Wikipedia — Oblasts of Ukraine",
+       "says": "Ukraine has had 24 oblasts since 1991 (with the Autonomous Republic of Crimea and the cities of Kyiv and Sevastopol); the Crimean Oblast (1954–1991) became the Crimean ASSR.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "UKR:UA-46",
+   "names": {
+    "en": "Lviv Oblast",
+    "ja": "リヴィウ州",
+    "local": "Львівська область"
+   },
+   "wikidata": "Q164193",
+   "spans": [
+    {
+     "from": "1991-08-24",
+     "precision": "day",
+     "to": "1991-12-26",
+     "atoms": [
+      "UKR-ADM1-14850775B26941409899318"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uua.html",
+       "title": "Statoids — Regions of Ukraine, change history",
+       "says": "The last boundary changes listed are Cherkasy (about 1955) and Drohobych into Lviv (about 1963); from 1991 only names and the status of Crimea (1992) change.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Oblasts_of_Ukraine&oldid=1365178388",
+       "title": "Wikipedia — Oblasts of Ukraine",
+       "says": "Ukraine has had 24 oblasts since 1991 (with the Autonomous Republic of Crimea and the cities of Kyiv and Sevastopol); the Crimean Oblast (1954–1991) became the Crimean ASSR.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "UKR:UA-26",
+   "names": {
+    "en": "Ivano-Frankivsk Oblast",
+    "ja": "イヴァーノ＝フランキーウシク州",
+    "local": "Івано-Франківська область"
+   },
+   "wikidata": "Q178269",
+   "spans": [
+    {
+     "from": "1991-08-24",
+     "precision": "day",
+     "to": "1991-12-26",
+     "atoms": [
+      "UKR-ADM1-14850775B19104561075165"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uua.html",
+       "title": "Statoids — Regions of Ukraine, change history",
+       "says": "The last boundary changes listed are Cherkasy (about 1955) and Drohobych into Lviv (about 1963); from 1991 only names and the status of Crimea (1992) change.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Oblasts_of_Ukraine&oldid=1365178388",
+       "title": "Wikipedia — Oblasts of Ukraine",
+       "says": "Ukraine has had 24 oblasts since 1991 (with the Autonomous Republic of Crimea and the cities of Kyiv and Sevastopol); the Crimean Oblast (1954–1991) became the Crimean ASSR.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "UKR:UA-21",
+   "names": {
+    "en": "Zakarpattia Oblast",
+    "ja": "ザカルパッチャ州",
+    "local": "Закарпатська область"
+   },
+   "wikidata": "Q170213",
+   "spans": [
+    {
+     "from": "1991-08-24",
+     "precision": "day",
+     "to": "1991-12-26",
+     "atoms": [
+      "UKR-ADM1-14850775B82824220650579"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uua.html",
+       "title": "Statoids — Regions of Ukraine, change history",
+       "says": "The last boundary changes listed are Cherkasy (about 1955) and Drohobych into Lviv (about 1963); from 1991 only names and the status of Crimea (1992) change.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Oblasts_of_Ukraine&oldid=1365178388",
+       "title": "Wikipedia — Oblasts of Ukraine",
+       "says": "Ukraine has had 24 oblasts since 1991 (with the Autonomous Republic of Crimea and the cities of Kyiv and Sevastopol); the Crimean Oblast (1954–1991) became the Crimean ASSR.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "UKR:UA-61",
+   "names": {
+    "en": "Ternopil Oblast",
+    "ja": "テルノーピリ州",
+    "local": "Тернопільська область"
+   },
+   "wikidata": "Q173407",
+   "spans": [
+    {
+     "from": "1991-08-24",
+     "precision": "day",
+     "to": "1991-12-26",
+     "atoms": [
+      "UKR-ADM1-14850775B81694531118507"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uua.html",
+       "title": "Statoids — Regions of Ukraine, change history",
+       "says": "The last boundary changes listed are Cherkasy (about 1955) and Drohobych into Lviv (about 1963); from 1991 only names and the status of Crimea (1992) change.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Oblasts_of_Ukraine&oldid=1365178388",
+       "title": "Wikipedia — Oblasts of Ukraine",
+       "says": "Ukraine has had 24 oblasts since 1991 (with the Autonomous Republic of Crimea and the cities of Kyiv and Sevastopol); the Crimean Oblast (1954–1991) became the Crimean ASSR.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "UKR:UA-77",
+   "names": {
+    "en": "Chernivtsi Oblast",
+    "ja": "チェルニウツィー州",
+    "local": "Чернівецька область"
+   },
+   "wikidata": "Q168856",
+   "spans": [
+    {
+     "from": "1991-08-24",
+     "precision": "day",
+     "to": "1991-12-26",
+     "atoms": [
+      "UKR-ADM1-14850775B35593196550103"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uua.html",
+       "title": "Statoids — Regions of Ukraine, change history",
+       "says": "The last boundary changes listed are Cherkasy (about 1955) and Drohobych into Lviv (about 1963); from 1991 only names and the status of Crimea (1992) change.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Oblasts_of_Ukraine&oldid=1365178388",
+       "title": "Wikipedia — Oblasts of Ukraine",
+       "says": "Ukraine has had 24 oblasts since 1991 (with the Autonomous Republic of Crimea and the cities of Kyiv and Sevastopol); the Crimean Oblast (1954–1991) became the Crimean ASSR.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "UKR:UA-51",
+   "names": {
+    "en": "Odesa Oblast",
+    "ja": "オデーサ州",
+    "local": "Одеська область"
+   },
+   "wikidata": "Q171852",
+   "spans": [
+    {
+     "from": "1991-08-24",
+     "precision": "day",
+     "to": "1991-12-26",
+     "atoms": [
+      "UKR-ADM1-14850775B53240635394722"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uua.html",
+       "title": "Statoids — Regions of Ukraine, change history",
+       "says": "The last boundary changes listed are Cherkasy (about 1955) and Drohobych into Lviv (about 1963); from 1991 only names and the status of Crimea (1992) change.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Oblasts_of_Ukraine&oldid=1365178388",
+       "title": "Wikipedia — Oblasts of Ukraine",
+       "says": "Ukraine has had 24 oblasts since 1991 (with the Autonomous Republic of Crimea and the cities of Kyiv and Sevastopol); the Crimean Oblast (1954–1991) became the Crimean ASSR.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "UKR:UA-48",
+   "names": {
+    "en": "Mykolaiv Oblast",
+    "ja": "ムィコラーイウ州",
+    "local": "Миколаївська область"
+   },
+   "wikidata": "Q181633",
+   "spans": [
+    {
+     "from": "1991-08-24",
+     "precision": "day",
+     "to": "1991-12-26",
+     "atoms": [
+      "UKR-ADM1-14850775B99856317748721"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uua.html",
+       "title": "Statoids — Regions of Ukraine, change history",
+       "says": "The last boundary changes listed are Cherkasy (about 1955) and Drohobych into Lviv (about 1963); from 1991 only names and the status of Crimea (1992) change.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Oblasts_of_Ukraine&oldid=1365178388",
+       "title": "Wikipedia — Oblasts of Ukraine",
+       "says": "Ukraine has had 24 oblasts since 1991 (with the Autonomous Republic of Crimea and the cities of Kyiv and Sevastopol); the Crimean Oblast (1954–1991) became the Crimean ASSR.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "UKR:UA-05",
+   "names": {
+    "en": "Vinnytsia Oblast",
+    "ja": "ヴィーンヌィツャ州",
+    "local": "Вінницька область"
+   },
+   "wikidata": "Q166709",
+   "spans": [
+    {
+     "from": "1991-08-24",
+     "precision": "day",
+     "to": "1991-12-26",
+     "atoms": [
+      "UKR-ADM1-14850775B93300237551625"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uua.html",
+       "title": "Statoids — Regions of Ukraine, change history",
+       "says": "The last boundary changes listed are Cherkasy (about 1955) and Drohobych into Lviv (about 1963); from 1991 only names and the status of Crimea (1992) change.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Oblasts_of_Ukraine&oldid=1365178388",
+       "title": "Wikipedia — Oblasts of Ukraine",
+       "says": "Ukraine has had 24 oblasts since 1991 (with the Autonomous Republic of Crimea and the cities of Kyiv and Sevastopol); the Crimean Oblast (1954–1991) became the Crimean ASSR.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "UKR:UA-68",
+   "names": {
+    "en": "Khmelnytskyi Oblast",
+    "ja": "フメリヌィーツィクィイ州",
+    "local": "Хмельницька область"
+   },
+   "wikidata": "Q171331",
+   "spans": [
+    {
+     "from": "1991-08-24",
+     "precision": "day",
+     "to": "1991-12-26",
+     "atoms": [
+      "UKR-ADM1-14850775B78366470925827"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uua.html",
+       "title": "Statoids — Regions of Ukraine, change history",
+       "says": "The last boundary changes listed are Cherkasy (about 1955) and Drohobych into Lviv (about 1963); from 1991 only names and the status of Crimea (1992) change.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Oblasts_of_Ukraine&oldid=1365178388",
+       "title": "Wikipedia — Oblasts of Ukraine",
+       "says": "Ukraine has had 24 oblasts since 1991 (with the Autonomous Republic of Crimea and the cities of Kyiv and Sevastopol); the Crimean Oblast (1954–1991) became the Crimean ASSR.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "UKR:UA-71",
+   "names": {
+    "en": "Cherkasy Oblast",
+    "ja": "チェルカースィ州",
+    "local": "Черкаська область"
+   },
+   "wikidata": "Q161808",
+   "spans": [
+    {
+     "from": "1991-08-24",
+     "precision": "day",
+     "to": "1991-12-26",
+     "atoms": [
+      "UKR-ADM1-14850775B95678810793770"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uua.html",
+       "title": "Statoids — Regions of Ukraine, change history",
+       "says": "The last boundary changes listed are Cherkasy (about 1955) and Drohobych into Lviv (about 1963); from 1991 only names and the status of Crimea (1992) change.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Oblasts_of_Ukraine&oldid=1365178388",
+       "title": "Wikipedia — Oblasts of Ukraine",
+       "says": "Ukraine has had 24 oblasts since 1991 (with the Autonomous Republic of Crimea and the cities of Kyiv and Sevastopol); the Crimean Oblast (1954–1991) became the Crimean ASSR.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "UKR:UA-53",
+   "names": {
+    "en": "Poltava Oblast",
+    "ja": "ポルタヴァ州",
+    "local": "Полтавська область"
+   },
+   "wikidata": "Q169501",
+   "spans": [
+    {
+     "from": "1991-08-24",
+     "precision": "day",
+     "to": "1991-12-26",
+     "atoms": [
+      "UKR-ADM1-14850775B18105645488844"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uua.html",
+       "title": "Statoids — Regions of Ukraine, change history",
+       "says": "The last boundary changes listed are Cherkasy (about 1955) and Drohobych into Lviv (about 1963); from 1991 only names and the status of Crimea (1992) change.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Oblasts_of_Ukraine&oldid=1365178388",
+       "title": "Wikipedia — Oblasts of Ukraine",
+       "says": "Ukraine has had 24 oblasts since 1991 (with the Autonomous Republic of Crimea and the cities of Kyiv and Sevastopol); the Crimean Oblast (1954–1991) became the Crimean ASSR.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "UKR:UA-12",
+   "names": {
+    "en": "Dnipropetrovsk Oblast",
+    "ja": "ドニプロペトロウシク州",
+    "local": "Дніпропетровська область"
+   },
+   "wikidata": "Q170672",
+   "spans": [
+    {
+     "from": "1991-08-24",
+     "precision": "day",
+     "to": "1991-12-26",
+     "atoms": [
+      "UKR-ADM1-14850775B41808765507575"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uua.html",
+       "title": "Statoids — Regions of Ukraine, change history",
+       "says": "The last boundary changes listed are Cherkasy (about 1955) and Drohobych into Lviv (about 1963); from 1991 only names and the status of Crimea (1992) change.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Oblasts_of_Ukraine&oldid=1365178388",
+       "title": "Wikipedia — Oblasts of Ukraine",
+       "says": "Ukraine has had 24 oblasts since 1991 (with the Autonomous Republic of Crimea and the cities of Kyiv and Sevastopol); the Crimean Oblast (1954–1991) became the Crimean ASSR.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "UKR:UA-35",
+   "names": {
+    "en": "Kirovohrad Oblast",
+    "ja": "キロヴォフラード州",
+    "local": "Кіровоградська область"
+   },
+   "wikidata": "Q180981",
+   "spans": [
+    {
+     "from": "1991-08-24",
+     "precision": "day",
+     "to": "1991-12-26",
+     "atoms": [
+      "UKR-ADM1-14850775B64193679462794"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uua.html",
+       "title": "Statoids — Regions of Ukraine, change history",
+       "says": "The last boundary changes listed are Cherkasy (about 1955) and Drohobych into Lviv (about 1963); from 1991 only names and the status of Crimea (1992) change.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Oblasts_of_Ukraine&oldid=1365178388",
+       "title": "Wikipedia — Oblasts of Ukraine",
+       "says": "Ukraine has had 24 oblasts since 1991 (with the Autonomous Republic of Crimea and the cities of Kyiv and Sevastopol); the Crimean Oblast (1954–1991) became the Crimean ASSR.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "events": [],
+ "counts": [
+  {
+   "date": "1991-12-01",
+   "n": 27,
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Oblasts_of_Ukraine&oldid=1365178388",
+     "title": "Wikipedia — Oblasts of Ukraine",
+     "says": "Ukraine has had 24 oblasts since 1991 (with the Autonomous Republic of Crimea and the cities of Kyiv and Sevastopol); the Crimean Oblast (1954–1991) became the Crimean ASSR.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Kyiv Oblast 1991",
+   "unit": "UKR:UA-32",
+   "atoms": [
+    "UKR-ADM1-14850775B37539954297462"
+   ],
+   "from": "1991-08-24",
+   "to": "1991-12-26",
+   "why": "Its inner line with Kyiv city depends on the city limits above.",
+   "checked": [
+    "statoids.com/uua.html",
+    "en.wikipedia Oblasts of Ukraine oldid 1365178388"
+   ],
+   "needs": "dated Kyiv city limits"
+  },
+  {
+   "what": "Autonomous Republic of Crimea 1991",
+   "unit": "UKR:UA-43",
+   "atoms": [
+    "UKR-ADM1-14850775B24260608407062"
+   ],
+   "from": "1991-08-24",
+   "to": "1991-12-26",
+   "why": "The line between Crimea and Sevastopol (a city of republican subordination) is not established for 1991; OpenHistoricalMap answers Crimea from 12 Feb 1991.",
+   "checked": [
+    "statoids.com/uua.html",
+    "en.wikipedia Oblasts of Ukraine oldid 1365178388"
+   ],
+   "needs": "dated Sevastopol city limits"
+  },
+  {
+   "what": "Kyiv 1991",
+   "unit": "UKR:UA-30",
+   "atoms": [
+    "UKR-ADM1-14850775B22712718081002"
+   ],
+   "from": "1991-08-24",
+   "to": "1991-12-26",
+   "why": "Kyiv city limits after 1991 are not established from a change list.",
+   "checked": [
+    "statoids.com/uua.html",
+    "en.wikipedia Oblasts of Ukraine oldid 1365178388"
+   ],
+   "needs": "dated Kyiv city limits"
+  },
+  {
+   "what": "Administrative and municipal divisions of Sevastopol 1991",
+   "unit": "UKR:UA-40",
+   "atoms": [
+    "UKR-ADM1-14850775B70667807354554"
+   ],
+   "from": "1991-08-24",
+   "to": "1991-12-26",
+   "why": "Same line as Crimea.",
+   "checked": [
+    "statoids.com/uua.html",
+    "en.wikipedia Oblasts of Ukraine oldid 1365178388"
+   ],
+   "needs": "dated Sevastopol city limits"
+  }
+ ]
+}

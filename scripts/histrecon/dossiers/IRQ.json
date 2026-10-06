@@ -517,9 +517,10 @@
    "why": "NE Baghdad (659 km²) is the city only: Mahmudiya falls in NE Babil, Abu Ghraib in NE Anbar, Tarmiyah and Taji in NE Salah ad-Din, Salman Pak in NE Diyala — all legally Baghdad governorate. The NE lines are not the governorate's lines at any date.",
    "checked": [
     "point-in-polygon tests on NE geometry",
-    "statoids.com/uiq.html"
+    "statoids.com/uiq.html",
+    "geoBoundaries IRQ ADM2 (gb-adm2@2026-10-06; OCHA/Iraq CSO, 101 districts, 2021), examined 2026-10-06: the features carry no governorate code, Baghdad’s legal districts must be assigned by hand, and the district lines do not reproduce the governorates’ stated areas (Najaf districts 40,151 km² vs 28,824 official; Anbar 123,787 vs 138,501 — the Nukhayb desert lies inside OCHA’s Al-Najaf district)"
    ],
-   "needs": "district atoms (OCHA COD-AB Iraq ADM2 / geoBoundaries IRQ ADM2)"
+   "needs": "district atoms (OCHA COD-AB Iraq ADM2 / geoBoundaries IRQ ADM2) — the gb ADM2 set alone does not settle it (see checked)"
   },
   {
    "what": "Babil governorate",
@@ -531,9 +532,10 @@
    "to": null,
    "why": "NE Babil contains Mahmudiya district of Baghdad governorate.",
    "checked": [
-    "point-in-polygon tests"
+    "point-in-polygon tests",
+    "geoBoundaries IRQ ADM2 (gb-adm2@2026-10-06; OCHA/Iraq CSO, 101 districts, 2021), examined 2026-10-06: the features carry no governorate code, Baghdad’s legal districts must be assigned by hand, and the district lines do not reproduce the governorates’ stated areas (Najaf districts 40,151 km² vs 28,824 official; Anbar 123,787 vs 138,501 — the Nukhayb desert lies inside OCHA’s Al-Najaf district)"
    ],
-   "needs": "district atoms"
+   "needs": "district atoms — the gb ADM2 set alone does not settle it (see checked)"
   },
   {
    "what": "Al Anbar governorate",
@@ -546,9 +548,10 @@
    "why": "NE Anbar contains Abu Ghraib (Baghdad governorate); its line with Karbala depends on Nukhayb, administered by Karbala for a short undated period in the 1970s.",
    "checked": [
     "point-in-polygon tests",
-    "Nukhayb oldid 1376947735"
+    "Nukhayb oldid 1376947735",
+    "geoBoundaries IRQ ADM2 (gb-adm2@2026-10-06; OCHA/Iraq CSO, 101 districts, 2021), examined 2026-10-06: the features carry no governorate code, Baghdad’s legal districts must be assigned by hand, and the district lines do not reproduce the governorates’ stated areas (Najaf districts 40,151 km² vs 28,824 official; Anbar 123,787 vs 138,501 — the Nukhayb desert lies inside OCHA’s Al-Najaf district)"
    ],
-   "needs": "district atoms and the dates of the Nukhayb transfers"
+   "needs": "district atoms and the dates of the Nukhayb transfers — the gb ADM2 set alone does not settle it (see checked)"
   },
   {
    "what": "Salah ad-Din governorate",
@@ -560,9 +563,10 @@
    "to": null,
    "why": "NE Salah ad-Din contains Tarmiyah and Taji (Baghdad governorate).",
    "checked": [
-    "point-in-polygon tests"
+    "point-in-polygon tests",
+    "geoBoundaries IRQ ADM2 (gb-adm2@2026-10-06; OCHA/Iraq CSO, 101 districts, 2021), examined 2026-10-06: the features carry no governorate code, Baghdad’s legal districts must be assigned by hand, and the district lines do not reproduce the governorates’ stated areas (Najaf districts 40,151 km² vs 28,824 official; Anbar 123,787 vs 138,501 — the Nukhayb desert lies inside OCHA’s Al-Najaf district)"
    ],
-   "needs": "district atoms"
+   "needs": "district atoms — the gb ADM2 set alone does not settle it (see checked)"
   },
   {
    "what": "Diyala governorate",
@@ -575,9 +579,10 @@
    "why": "NE Diyala contains Salman Pak / Mada'in (Baghdad governorate); Diyala also borders Iran where the Algiers line was not implemented (Zain al-Qaws, Saif Saad) before 1980.",
    "checked": [
     "point-in-polygon tests",
-    "1975 Algiers Agreement oldid 1366753231"
+    "1975 Algiers Agreement oldid 1366753231",
+    "geoBoundaries IRQ ADM2 (gb-adm2@2026-10-06; OCHA/Iraq CSO, 101 districts, 2021), examined 2026-10-06: the features carry no governorate code, Baghdad’s legal districts must be assigned by hand, and the district lines do not reproduce the governorates’ stated areas (Najaf districts 40,151 km² vs 28,824 official; Anbar 123,787 vs 138,501 — the Nukhayb desert lies inside OCHA’s Al-Najaf district)"
    ],
-   "needs": "district atoms"
+   "needs": "district atoms — the gb ADM2 set alone does not settle it (see checked)"
   },
   {
    "what": "Karbala governorate",
@@ -589,9 +594,10 @@
    "to": null,
    "why": "Nukhayb (now Anbar, outside NE Karbala) was administered by Karbala for a short period in the 1970s; the end of that period is not dated, so no start for the NE outline can be given.",
    "checked": [
-    "Nukhayb oldid 1376947735"
+    "Nukhayb oldid 1376947735",
+    "geoBoundaries IRQ ADM2 (gb-adm2@2026-10-06; OCHA/Iraq CSO, 101 districts, 2021), examined 2026-10-06: the features carry no governorate code, Baghdad’s legal districts must be assigned by hand, and the district lines do not reproduce the governorates’ stated areas (Najaf districts 40,151 km² vs 28,824 official; Anbar 123,787 vs 138,501 — the Nukhayb desert lies inside OCHA’s Al-Najaf district)"
    ],
-   "needs": "the decree returning Nukhayb to Anbar"
+   "needs": "the decree returning Nukhayb to Anbar — the gb ADM2 set alone does not settle it (see checked)"
   },
   {
    "what": "Erbil and Ninawa governorates",
@@ -605,9 +611,10 @@
    "why": "NE puts Makhmur district in Arbil; legally it was Ninawa before 1991 and after 2008 (in Erbil 2003–2008, date of legal basis unclear). Neither governorate is an NE atom at a documented date.",
    "checked": [
     "Makhmur district oldid 1376445676",
-    "point-in-polygon test (Makhmur → IRQ-3050)"
+    "point-in-polygon test (Makhmur → IRQ-3050)",
+    "geoBoundaries IRQ ADM2 (gb-adm2@2026-10-06; OCHA/Iraq CSO, 101 districts, 2021), examined 2026-10-06: the features carry no governorate code, Baghdad’s legal districts must be assigned by hand, and the district lines do not reproduce the governorates’ stated areas (Najaf districts 40,151 km² vs 28,824 official; Anbar 123,787 vs 138,501 — the Nukhayb desert lies inside OCHA’s Al-Najaf district)"
    ],
-   "needs": "Makhmur district atom (OCHA COD-AB Iraq ADM2)"
+   "needs": "Makhmur district atom (OCHA COD-AB Iraq ADM2) — the gb ADM2 set alone does not settle it (see checked)"
   },
   {
    "what": "Maysan and Wasit during the abrogation of the Algiers line",

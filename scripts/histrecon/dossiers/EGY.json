@@ -78,9 +78,10 @@
         "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
         "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
         "NE admin-1 EGY areas (computed)",
-        "cc.gov.eg legislation database (unreachable from this environment)"
+        "cc.gov.eg legislation database (unreachable from this environment)",
+        "geoBoundaries EGY ADM2 (OCHA/CAPMAS COD-AB, 365 kism/markaz, valid_on 2017-04-21; parents from the HDX release of the same dataset): its governorate unions give Asyut 16,428, Aswan 57,734, Giza 36,326, Sohag 9,993, New Valley 426,811 km² — matching neither the official areas above nor NE, and it carries «Zemam Out» desert units whose assignment follows the same undated decrees (checked 2026-10-06)"
       ],
-      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg), so that the OCHA/CAPMAS 2017 kism/markaz lines (now available as gb-adm2 atoms) can be tied to the period since the last decree"
     },
     {
       "what": "Aswan Governorate — every span 1960-2019",
@@ -96,9 +97,10 @@
         "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
         "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
         "NE admin-1 EGY areas (computed)",
-        "cc.gov.eg legislation database (unreachable from this environment)"
+        "cc.gov.eg legislation database (unreachable from this environment)",
+        "geoBoundaries EGY ADM2 (OCHA/CAPMAS COD-AB, 365 kism/markaz, valid_on 2017-04-21; parents from the HDX release of the same dataset): its governorate unions give Asyut 16,428, Aswan 57,734, Giza 36,326, Sohag 9,993, New Valley 426,811 km² — matching neither the official areas above nor NE, and it carries «Zemam Out» desert units whose assignment follows the same undated decrees (checked 2026-10-06)"
       ],
-      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg), so that the OCHA/CAPMAS 2017 kism/markaz lines (now available as gb-adm2 atoms) can be tied to the period since the last decree"
     },
     {
       "what": "Red Sea Governorate — every span 1960-2019",
@@ -114,9 +116,10 @@
         "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
         "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
         "NE admin-1 EGY areas (computed)",
-        "cc.gov.eg legislation database (unreachable from this environment)"
+        "cc.gov.eg legislation database (unreachable from this environment)",
+        "geoBoundaries EGY ADM2 (OCHA/CAPMAS COD-AB, 365 kism/markaz, valid_on 2017-04-21; parents from the HDX release of the same dataset): its governorate unions give Asyut 16,428, Aswan 57,734, Giza 36,326, Sohag 9,993, New Valley 426,811 km² — matching neither the official areas above nor NE, and it carries «Zemam Out» desert units whose assignment follows the same undated decrees (checked 2026-10-06)"
       ],
-      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg), so that the OCHA/CAPMAS 2017 kism/markaz lines (now available as gb-adm2 atoms) can be tied to the period since the last decree"
     },
     {
       "what": "Matruh Governorate — every span 1960-2019",
@@ -132,9 +135,10 @@
         "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
         "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
         "NE admin-1 EGY areas (computed)",
-        "cc.gov.eg legislation database (unreachable from this environment)"
+        "cc.gov.eg legislation database (unreachable from this environment)",
+        "geoBoundaries EGY ADM2 (OCHA/CAPMAS COD-AB, 365 kism/markaz, valid_on 2017-04-21; parents from the HDX release of the same dataset): its governorate unions give Asyut 16,428, Aswan 57,734, Giza 36,326, Sohag 9,993, New Valley 426,811 km² — matching neither the official areas above nor NE, and it carries «Zemam Out» desert units whose assignment follows the same undated decrees (checked 2026-10-06)"
       ],
-      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg), so that the OCHA/CAPMAS 2017 kism/markaz lines (now available as gb-adm2 atoms) can be tied to the period since the last decree"
     },
     {
       "what": "New Valley Governorate — every span 1960-2019",
@@ -150,9 +154,10 @@
         "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
         "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
         "NE admin-1 EGY areas (computed)",
-        "cc.gov.eg legislation database (unreachable from this environment)"
+        "cc.gov.eg legislation database (unreachable from this environment)",
+        "geoBoundaries EGY ADM2 (OCHA/CAPMAS COD-AB, 365 kism/markaz, valid_on 2017-04-21; parents from the HDX release of the same dataset): its governorate unions give Asyut 16,428, Aswan 57,734, Giza 36,326, Sohag 9,993, New Valley 426,811 km² — matching neither the official areas above nor NE, and it carries «Zemam Out» desert units whose assignment follows the same undated decrees (checked 2026-10-06)"
       ],
-      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg), so that the OCHA/CAPMAS 2017 kism/markaz lines (now available as gb-adm2 atoms) can be tied to the period since the last decree"
     },
     {
       "what": "Suez Governorate — every span 1960-2019",
@@ -168,9 +173,10 @@
         "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
         "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
         "NE admin-1 EGY areas (computed)",
-        "cc.gov.eg legislation database (unreachable from this environment)"
+        "cc.gov.eg legislation database (unreachable from this environment)",
+        "geoBoundaries EGY ADM2 (OCHA/CAPMAS COD-AB, 365 kism/markaz, valid_on 2017-04-21; parents from the HDX release of the same dataset): its governorate unions give Asyut 16,428, Aswan 57,734, Giza 36,326, Sohag 9,993, New Valley 426,811 km² — matching neither the official areas above nor NE, and it carries «Zemam Out» desert units whose assignment follows the same undated decrees (checked 2026-10-06)"
       ],
-      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg), so that the OCHA/CAPMAS 2017 kism/markaz lines (now available as gb-adm2 atoms) can be tied to the period since the last decree"
     },
     {
       "what": "South Sinai Governorate — every span 1960-2019",
@@ -186,9 +192,10 @@
         "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
         "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
         "NE admin-1 EGY areas (computed)",
-        "cc.gov.eg legislation database (unreachable from this environment)"
+        "cc.gov.eg legislation database (unreachable from this environment)",
+        "geoBoundaries EGY ADM2 (OCHA/CAPMAS COD-AB, 365 kism/markaz, valid_on 2017-04-21; parents from the HDX release of the same dataset): its governorate unions give Asyut 16,428, Aswan 57,734, Giza 36,326, Sohag 9,993, New Valley 426,811 km² — matching neither the official areas above nor NE, and it carries «Zemam Out» desert units whose assignment follows the same undated decrees (checked 2026-10-06)"
       ],
-      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg), so that the OCHA/CAPMAS 2017 kism/markaz lines (now available as gb-adm2 atoms) can be tied to the period since the last decree"
     },
     {
       "what": "Port Said Governorate — every span 1960-2019",
@@ -204,9 +211,10 @@
         "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
         "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
         "NE admin-1 EGY areas (computed)",
-        "cc.gov.eg legislation database (unreachable from this environment)"
+        "cc.gov.eg legislation database (unreachable from this environment)",
+        "geoBoundaries EGY ADM2 (OCHA/CAPMAS COD-AB, 365 kism/markaz, valid_on 2017-04-21; parents from the HDX release of the same dataset): its governorate unions give Asyut 16,428, Aswan 57,734, Giza 36,326, Sohag 9,993, New Valley 426,811 km² — matching neither the official areas above nor NE, and it carries «Zemam Out» desert units whose assignment follows the same undated decrees (checked 2026-10-06)"
       ],
-      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg), so that the OCHA/CAPMAS 2017 kism/markaz lines (now available as gb-adm2 atoms) can be tied to the period since the last decree"
     },
     {
       "what": "Dakahlia Governorate — every span 1960-2019",
@@ -222,9 +230,10 @@
         "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
         "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
         "NE admin-1 EGY areas (computed)",
-        "cc.gov.eg legislation database (unreachable from this environment)"
+        "cc.gov.eg legislation database (unreachable from this environment)",
+        "geoBoundaries EGY ADM2 (OCHA/CAPMAS COD-AB, 365 kism/markaz, valid_on 2017-04-21; parents from the HDX release of the same dataset): its governorate unions give Asyut 16,428, Aswan 57,734, Giza 36,326, Sohag 9,993, New Valley 426,811 km² — matching neither the official areas above nor NE, and it carries «Zemam Out» desert units whose assignment follows the same undated decrees (checked 2026-10-06)"
       ],
-      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg), so that the OCHA/CAPMAS 2017 kism/markaz lines (now available as gb-adm2 atoms) can be tied to the period since the last decree"
     },
     {
       "what": "Sharqia Governorate — every span 1960-2019",
@@ -240,9 +249,10 @@
         "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
         "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
         "NE admin-1 EGY areas (computed)",
-        "cc.gov.eg legislation database (unreachable from this environment)"
+        "cc.gov.eg legislation database (unreachable from this environment)",
+        "geoBoundaries EGY ADM2 (OCHA/CAPMAS COD-AB, 365 kism/markaz, valid_on 2017-04-21; parents from the HDX release of the same dataset): its governorate unions give Asyut 16,428, Aswan 57,734, Giza 36,326, Sohag 9,993, New Valley 426,811 km² — matching neither the official areas above nor NE, and it carries «Zemam Out» desert units whose assignment follows the same undated decrees (checked 2026-10-06)"
       ],
-      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg), so that the OCHA/CAPMAS 2017 kism/markaz lines (now available as gb-adm2 atoms) can be tied to the period since the last decree"
     },
     {
       "what": "Ismailia Governorate — every span 1960-2019",
@@ -258,9 +268,10 @@
         "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
         "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
         "NE admin-1 EGY areas (computed)",
-        "cc.gov.eg legislation database (unreachable from this environment)"
+        "cc.gov.eg legislation database (unreachable from this environment)",
+        "geoBoundaries EGY ADM2 (OCHA/CAPMAS COD-AB, 365 kism/markaz, valid_on 2017-04-21; parents from the HDX release of the same dataset): its governorate unions give Asyut 16,428, Aswan 57,734, Giza 36,326, Sohag 9,993, New Valley 426,811 km² — matching neither the official areas above nor NE, and it carries «Zemam Out» desert units whose assignment follows the same undated decrees (checked 2026-10-06)"
       ],
-      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg), so that the OCHA/CAPMAS 2017 kism/markaz lines (now available as gb-adm2 atoms) can be tied to the period since the last decree"
     },
     {
       "what": "Damietta Governorate — every span 1960-2019",
@@ -276,9 +287,10 @@
         "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
         "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
         "NE admin-1 EGY areas (computed)",
-        "cc.gov.eg legislation database (unreachable from this environment)"
+        "cc.gov.eg legislation database (unreachable from this environment)",
+        "geoBoundaries EGY ADM2 (OCHA/CAPMAS COD-AB, 365 kism/markaz, valid_on 2017-04-21; parents from the HDX release of the same dataset): its governorate unions give Asyut 16,428, Aswan 57,734, Giza 36,326, Sohag 9,993, New Valley 426,811 km² — matching neither the official areas above nor NE, and it carries «Zemam Out» desert units whose assignment follows the same undated decrees (checked 2026-10-06)"
       ],
-      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg), so that the OCHA/CAPMAS 2017 kism/markaz lines (now available as gb-adm2 atoms) can be tied to the period since the last decree"
     },
     {
       "what": "Kafr el-Sheikh Governorate — every span 1960-2019",
@@ -294,9 +306,10 @@
         "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
         "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
         "NE admin-1 EGY areas (computed)",
-        "cc.gov.eg legislation database (unreachable from this environment)"
+        "cc.gov.eg legislation database (unreachable from this environment)",
+        "geoBoundaries EGY ADM2 (OCHA/CAPMAS COD-AB, 365 kism/markaz, valid_on 2017-04-21; parents from the HDX release of the same dataset): its governorate unions give Asyut 16,428, Aswan 57,734, Giza 36,326, Sohag 9,993, New Valley 426,811 km² — matching neither the official areas above nor NE, and it carries «Zemam Out» desert units whose assignment follows the same undated decrees (checked 2026-10-06)"
       ],
-      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg), so that the OCHA/CAPMAS 2017 kism/markaz lines (now available as gb-adm2 atoms) can be tied to the period since the last decree"
     },
     {
       "what": "Beheira Governorate — every span 1960-2019",
@@ -312,9 +325,10 @@
         "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
         "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
         "NE admin-1 EGY areas (computed)",
-        "cc.gov.eg legislation database (unreachable from this environment)"
+        "cc.gov.eg legislation database (unreachable from this environment)",
+        "geoBoundaries EGY ADM2 (OCHA/CAPMAS COD-AB, 365 kism/markaz, valid_on 2017-04-21; parents from the HDX release of the same dataset): its governorate unions give Asyut 16,428, Aswan 57,734, Giza 36,326, Sohag 9,993, New Valley 426,811 km² — matching neither the official areas above nor NE, and it carries «Zemam Out» desert units whose assignment follows the same undated decrees (checked 2026-10-06)"
       ],
-      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg), so that the OCHA/CAPMAS 2017 kism/markaz lines (now available as gb-adm2 atoms) can be tied to the period since the last decree"
     },
     {
       "what": "Alexandria Governorate — every span 1960-2019",
@@ -330,9 +344,10 @@
         "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
         "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
         "NE admin-1 EGY areas (computed)",
-        "cc.gov.eg legislation database (unreachable from this environment)"
+        "cc.gov.eg legislation database (unreachable from this environment)",
+        "geoBoundaries EGY ADM2 (OCHA/CAPMAS COD-AB, 365 kism/markaz, valid_on 2017-04-21; parents from the HDX release of the same dataset): its governorate unions give Asyut 16,428, Aswan 57,734, Giza 36,326, Sohag 9,993, New Valley 426,811 km² — matching neither the official areas above nor NE, and it carries «Zemam Out» desert units whose assignment follows the same undated decrees (checked 2026-10-06)"
       ],
-      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg), so that the OCHA/CAPMAS 2017 kism/markaz lines (now available as gb-adm2 atoms) can be tied to the period since the last decree"
     },
     {
       "what": "Cairo Governorate — every span 1960-2019",
@@ -348,9 +363,10 @@
         "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
         "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
         "NE admin-1 EGY areas (computed)",
-        "cc.gov.eg legislation database (unreachable from this environment)"
+        "cc.gov.eg legislation database (unreachable from this environment)",
+        "geoBoundaries EGY ADM2 (OCHA/CAPMAS COD-AB, 365 kism/markaz, valid_on 2017-04-21; parents from the HDX release of the same dataset): its governorate unions give Asyut 16,428, Aswan 57,734, Giza 36,326, Sohag 9,993, New Valley 426,811 km² — matching neither the official areas above nor NE, and it carries «Zemam Out» desert units whose assignment follows the same undated decrees (checked 2026-10-06)"
       ],
-      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg), so that the OCHA/CAPMAS 2017 kism/markaz lines (now available as gb-adm2 atoms) can be tied to the period since the last decree"
     },
     {
       "what": "Giza Governorate — every span 1960-2019",
@@ -366,9 +382,10 @@
         "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
         "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
         "NE admin-1 EGY areas (computed)",
-        "cc.gov.eg legislation database (unreachable from this environment)"
+        "cc.gov.eg legislation database (unreachable from this environment)",
+        "geoBoundaries EGY ADM2 (OCHA/CAPMAS COD-AB, 365 kism/markaz, valid_on 2017-04-21; parents from the HDX release of the same dataset): its governorate unions give Asyut 16,428, Aswan 57,734, Giza 36,326, Sohag 9,993, New Valley 426,811 km² — matching neither the official areas above nor NE, and it carries «Zemam Out» desert units whose assignment follows the same undated decrees (checked 2026-10-06)"
       ],
-      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg), so that the OCHA/CAPMAS 2017 kism/markaz lines (now available as gb-adm2 atoms) can be tied to the period since the last decree"
     },
     {
       "what": "Minya Governorate — every span 1960-2019",
@@ -384,9 +401,10 @@
         "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
         "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
         "NE admin-1 EGY areas (computed)",
-        "cc.gov.eg legislation database (unreachable from this environment)"
+        "cc.gov.eg legislation database (unreachable from this environment)",
+        "geoBoundaries EGY ADM2 (OCHA/CAPMAS COD-AB, 365 kism/markaz, valid_on 2017-04-21; parents from the HDX release of the same dataset): its governorate unions give Asyut 16,428, Aswan 57,734, Giza 36,326, Sohag 9,993, New Valley 426,811 km² — matching neither the official areas above nor NE, and it carries «Zemam Out» desert units whose assignment follows the same undated decrees (checked 2026-10-06)"
       ],
-      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg), so that the OCHA/CAPMAS 2017 kism/markaz lines (now available as gb-adm2 atoms) can be tied to the period since the last decree"
     },
     {
       "what": "Faiyum Governorate — every span 1960-2019",
@@ -402,9 +420,10 @@
         "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
         "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
         "NE admin-1 EGY areas (computed)",
-        "cc.gov.eg legislation database (unreachable from this environment)"
+        "cc.gov.eg legislation database (unreachable from this environment)",
+        "geoBoundaries EGY ADM2 (OCHA/CAPMAS COD-AB, 365 kism/markaz, valid_on 2017-04-21; parents from the HDX release of the same dataset): its governorate unions give Asyut 16,428, Aswan 57,734, Giza 36,326, Sohag 9,993, New Valley 426,811 km² — matching neither the official areas above nor NE, and it carries «Zemam Out» desert units whose assignment follows the same undated decrees (checked 2026-10-06)"
       ],
-      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg), so that the OCHA/CAPMAS 2017 kism/markaz lines (now available as gb-adm2 atoms) can be tied to the period since the last decree"
     },
     {
       "what": "Beni Suef Governorate — every span 1960-2019",
@@ -420,9 +439,10 @@
         "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
         "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
         "NE admin-1 EGY areas (computed)",
-        "cc.gov.eg legislation database (unreachable from this environment)"
+        "cc.gov.eg legislation database (unreachable from this environment)",
+        "geoBoundaries EGY ADM2 (OCHA/CAPMAS COD-AB, 365 kism/markaz, valid_on 2017-04-21; parents from the HDX release of the same dataset): its governorate unions give Asyut 16,428, Aswan 57,734, Giza 36,326, Sohag 9,993, New Valley 426,811 km² — matching neither the official areas above nor NE, and it carries «Zemam Out» desert units whose assignment follows the same undated decrees (checked 2026-10-06)"
       ],
-      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg), so that the OCHA/CAPMAS 2017 kism/markaz lines (now available as gb-adm2 atoms) can be tied to the period since the last decree"
     },
     {
       "what": "Monufia Governorate — every span 1960-2019",
@@ -438,9 +458,10 @@
         "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
         "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
         "NE admin-1 EGY areas (computed)",
-        "cc.gov.eg legislation database (unreachable from this environment)"
+        "cc.gov.eg legislation database (unreachable from this environment)",
+        "geoBoundaries EGY ADM2 (OCHA/CAPMAS COD-AB, 365 kism/markaz, valid_on 2017-04-21; parents from the HDX release of the same dataset): its governorate unions give Asyut 16,428, Aswan 57,734, Giza 36,326, Sohag 9,993, New Valley 426,811 km² — matching neither the official areas above nor NE, and it carries «Zemam Out» desert units whose assignment follows the same undated decrees (checked 2026-10-06)"
       ],
-      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg), so that the OCHA/CAPMAS 2017 kism/markaz lines (now available as gb-adm2 atoms) can be tied to the period since the last decree"
     },
     {
       "what": "Qalyubia Governorate — every span 1960-2019",
@@ -456,9 +477,10 @@
         "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
         "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
         "NE admin-1 EGY areas (computed)",
-        "cc.gov.eg legislation database (unreachable from this environment)"
+        "cc.gov.eg legislation database (unreachable from this environment)",
+        "geoBoundaries EGY ADM2 (OCHA/CAPMAS COD-AB, 365 kism/markaz, valid_on 2017-04-21; parents from the HDX release of the same dataset): its governorate unions give Asyut 16,428, Aswan 57,734, Giza 36,326, Sohag 9,993, New Valley 426,811 km² — matching neither the official areas above nor NE, and it carries «Zemam Out» desert units whose assignment follows the same undated decrees (checked 2026-10-06)"
       ],
-      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg), so that the OCHA/CAPMAS 2017 kism/markaz lines (now available as gb-adm2 atoms) can be tied to the period since the last decree"
     },
     {
       "what": "Gharbia Governorate — every span 1960-2019",
@@ -474,9 +496,10 @@
         "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
         "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
         "NE admin-1 EGY areas (computed)",
-        "cc.gov.eg legislation database (unreachable from this environment)"
+        "cc.gov.eg legislation database (unreachable from this environment)",
+        "geoBoundaries EGY ADM2 (OCHA/CAPMAS COD-AB, 365 kism/markaz, valid_on 2017-04-21; parents from the HDX release of the same dataset): its governorate unions give Asyut 16,428, Aswan 57,734, Giza 36,326, Sohag 9,993, New Valley 426,811 km² — matching neither the official areas above nor NE, and it carries «Zemam Out» desert units whose assignment follows the same undated decrees (checked 2026-10-06)"
       ],
-      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg), so that the OCHA/CAPMAS 2017 kism/markaz lines (now available as gb-adm2 atoms) can be tied to the period since the last decree"
     },
     {
       "what": "Sohag Governorate — every span 1960-2019",
@@ -492,9 +515,10 @@
         "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
         "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
         "NE admin-1 EGY areas (computed)",
-        "cc.gov.eg legislation database (unreachable from this environment)"
+        "cc.gov.eg legislation database (unreachable from this environment)",
+        "geoBoundaries EGY ADM2 (OCHA/CAPMAS COD-AB, 365 kism/markaz, valid_on 2017-04-21; parents from the HDX release of the same dataset): its governorate unions give Asyut 16,428, Aswan 57,734, Giza 36,326, Sohag 9,993, New Valley 426,811 km² — matching neither the official areas above nor NE, and it carries «Zemam Out» desert units whose assignment follows the same undated decrees (checked 2026-10-06)"
       ],
-      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg), so that the OCHA/CAPMAS 2017 kism/markaz lines (now available as gb-adm2 atoms) can be tied to the period since the last decree"
     },
     {
       "what": "Qena Governorate — every span 1960-2019",
@@ -510,9 +534,10 @@
         "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
         "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
         "NE admin-1 EGY areas (computed)",
-        "cc.gov.eg legislation database (unreachable from this environment)"
+        "cc.gov.eg legislation database (unreachable from this environment)",
+        "geoBoundaries EGY ADM2 (OCHA/CAPMAS COD-AB, 365 kism/markaz, valid_on 2017-04-21; parents from the HDX release of the same dataset): its governorate unions give Asyut 16,428, Aswan 57,734, Giza 36,326, Sohag 9,993, New Valley 426,811 km² — matching neither the official areas above nor NE, and it carries «Zemam Out» desert units whose assignment follows the same undated decrees (checked 2026-10-06)"
       ],
-      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg), so that the OCHA/CAPMAS 2017 kism/markaz lines (now available as gb-adm2 atoms) can be tied to the period since the last decree"
     },
     {
       "what": "Asyut Governorate — every span 1960-2019",
@@ -528,9 +553,10 @@
         "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
         "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
         "NE admin-1 EGY areas (computed)",
-        "cc.gov.eg legislation database (unreachable from this environment)"
+        "cc.gov.eg legislation database (unreachable from this environment)",
+        "geoBoundaries EGY ADM2 (OCHA/CAPMAS COD-AB, 365 kism/markaz, valid_on 2017-04-21; parents from the HDX release of the same dataset): its governorate unions give Asyut 16,428, Aswan 57,734, Giza 36,326, Sohag 9,993, New Valley 426,811 km² — matching neither the official areas above nor NE, and it carries «Zemam Out» desert units whose assignment follows the same undated decrees (checked 2026-10-06)"
       ],
-      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg), so that the OCHA/CAPMAS 2017 kism/markaz lines (now available as gb-adm2 atoms) can be tied to the period since the last decree"
     },
     {
       "what": "Luxor Governorate — every span 1960-2019",
@@ -546,9 +572,10 @@
         "ar.wikipedia قائمة محافظات مصر oldid 76453457 (areas; former governorates table)",
         "ar.wikipedia محافظة سوهاج oldid 76387670 (desert hinterland ~90 km east)",
         "NE admin-1 EGY areas (computed)",
-        "cc.gov.eg legislation database (unreachable from this environment)"
+        "cc.gov.eg legislation database (unreachable from this environment)",
+        "geoBoundaries EGY ADM2 (OCHA/CAPMAS COD-AB, 365 kism/markaz, valid_on 2017-04-21; parents from the HDX release of the same dataset): its governorate unions give Asyut 16,428, Aswan 57,734, Giza 36,326, Sohag 9,993, New Valley 426,811 km² — matching neither the official areas above nor NE, and it carries «Zemam Out» desert units whose assignment follows the same undated decrees (checked 2026-10-06)"
       ],
-      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg) and markaz/qism-level atoms (e.g. CAPMAS or geoBoundaries EGY ADM2; licence to check)"
+      "needs": "dated list of presidential decrees altering governorate limits (Official Gazette / cc.gov.eg), so that the OCHA/CAPMAS 2017 kism/markaz lines (now available as gb-adm2 atoms) can be tied to the period since the last decree"
     }
   ]
 }

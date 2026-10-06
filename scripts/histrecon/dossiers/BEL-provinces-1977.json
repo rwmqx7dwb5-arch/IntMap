@@ -1,0 +1,378 @@
+{
+ "country": "BEL",
+ "atomSet": "gb-adm2@2026-10-06",
+ "scope": {
+  "from": "1977-01-01",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Kingdom of Belgium. First level modelled as the provinces plus, from 1995-01-01 when it ceased to belong to Brabant, the Brussels-Capital Region (the layout data/hist-admin-fill.js and Natural Earth use). The Brussels-Capital Region existed from 1989 inside Brabant province; OpenHistoricalMap draws it from 1989-01-12 and the build yields to that record. Scope starts at the 1977 commune merger (statoids lists no inter-provincial transfer after the 1962 law); OpenHistoricalMap answers several provinces up to 1980 and is preferred there. Atoms: geoBoundaries BEL ADM2 (Statistics Belgium, 2015).",
+ "units": [
+  {
+   "id": "BEL:Antwerpen@1977",
+   "names": {
+    "en": "Province of Antwerp",
+    "ja": "アントウェルペン州",
+    "local": "Antwerpen"
+   },
+   "wikidata": "Q1116",
+   "spans": [
+    {
+     "from": "1977-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BEL-ADM2-21686613B2396966306431"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/ube.html",
+       "title": "Provinces of Belgium (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "Last inter-provincial transfers by the law of 1962-11-08 (Mouscron to Hainaut, Fourons to Limburg); 1977-01-01 communes merged into 589; 1995-01-01 Brabant divided into Flemish Brabant, Walloon Brabant and the Brussels-Capital Region. No other transfer between provinces is listed."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "BEL:Limburg@1977",
+   "names": {
+    "en": "Limburg",
+    "ja": "リンブルフ州",
+    "local": "Limburg"
+   },
+   "wikidata": "Q1095",
+   "spans": [
+    {
+     "from": "1977-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BEL-ADM2-21686613B67770072661487"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/ube.html",
+       "title": "Provinces of Belgium (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "Last inter-provincial transfers by the law of 1962-11-08 (Mouscron to Hainaut, Fourons to Limburg); 1977-01-01 communes merged into 589; 1995-01-01 Brabant divided into Flemish Brabant, Walloon Brabant and the Brussels-Capital Region. No other transfer between provinces is listed."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "BEL:Oost-Vlaanderen@1977",
+   "names": {
+    "en": "East Flanders",
+    "ja": "オースト＝フランデレン州",
+    "local": "Oost-Vlaanderen"
+   },
+   "wikidata": "Q1114",
+   "spans": [
+    {
+     "from": "1977-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BEL-ADM2-21686613B82996872575786"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/ube.html",
+       "title": "Provinces of Belgium (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "Last inter-provincial transfers by the law of 1962-11-08 (Mouscron to Hainaut, Fourons to Limburg); 1977-01-01 communes merged into 589; 1995-01-01 Brabant divided into Flemish Brabant, Walloon Brabant and the Brussels-Capital Region. No other transfer between provinces is listed."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "BEL:West-Vlaanderen@1977",
+   "names": {
+    "en": "West Flanders",
+    "ja": "ウェスト＝フランデレン州",
+    "local": "West-Vlaanderen"
+   },
+   "wikidata": "Q1113",
+   "spans": [
+    {
+     "from": "1977-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BEL-ADM2-21686613B39448605328026"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/ube.html",
+       "title": "Provinces of Belgium (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "Last inter-provincial transfers by the law of 1962-11-08 (Mouscron to Hainaut, Fourons to Limburg); 1977-01-01 communes merged into 589; 1995-01-01 Brabant divided into Flemish Brabant, Walloon Brabant and the Brussels-Capital Region. No other transfer between provinces is listed."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "BEL:Hainaut@1977",
+   "names": {
+    "en": "Hainaut",
+    "ja": "エノー州",
+    "local": "Hainaut"
+   },
+   "wikidata": "Q1129",
+   "spans": [
+    {
+     "from": "1977-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BEL-ADM2-21686613B73119179556728"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/ube.html",
+       "title": "Provinces of Belgium (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "Last inter-provincial transfers by the law of 1962-11-08 (Mouscron to Hainaut, Fourons to Limburg); 1977-01-01 communes merged into 589; 1995-01-01 Brabant divided into Flemish Brabant, Walloon Brabant and the Brussels-Capital Region. No other transfer between provinces is listed."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "BEL:Liege@1977",
+   "names": {
+    "en": "Province of Liège",
+    "ja": "リエージュ州",
+    "local": "Liège"
+   },
+   "wikidata": "Q1127",
+   "spans": [
+    {
+     "from": "1977-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BEL-ADM2-21686613B30775418393346"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/ube.html",
+       "title": "Provinces of Belgium (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "Last inter-provincial transfers by the law of 1962-11-08 (Mouscron to Hainaut, Fourons to Limburg); 1977-01-01 communes merged into 589; 1995-01-01 Brabant divided into Flemish Brabant, Walloon Brabant and the Brussels-Capital Region. No other transfer between provinces is listed."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "BEL:Luxembourg@1977",
+   "names": {
+    "en": "Province of Luxembourg",
+    "ja": "リュクサンブール州",
+    "local": "Luxembourg"
+   },
+   "wikidata": "Q1126",
+   "spans": [
+    {
+     "from": "1977-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BEL-ADM2-21686613B13309387984844"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/ube.html",
+       "title": "Provinces of Belgium (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "Last inter-provincial transfers by the law of 1962-11-08 (Mouscron to Hainaut, Fourons to Limburg); 1977-01-01 communes merged into 589; 1995-01-01 Brabant divided into Flemish Brabant, Walloon Brabant and the Brussels-Capital Region. No other transfer between provinces is listed."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "BEL:Namur@1977",
+   "names": {
+    "en": "Province of Namur",
+    "ja": "ナミュール州",
+    "local": "Namur"
+   },
+   "wikidata": "Q1125",
+   "spans": [
+    {
+     "from": "1977-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BEL-ADM2-21686613B39201499637991"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/ube.html",
+       "title": "Provinces of Belgium (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "Last inter-provincial transfers by the law of 1962-11-08 (Mouscron to Hainaut, Fourons to Limburg); 1977-01-01 communes merged into 589; 1995-01-01 Brabant divided into Flemish Brabant, Walloon Brabant and the Brussels-Capital Region. No other transfer between provinces is listed."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "BEL:Brabant@1977",
+   "names": {
+    "en": "Province of Brabant",
+    "ja": "ブラバント州",
+    "local": "Brabant / Brabant"
+   },
+   "wikidata": "Q848831",
+   "spans": [
+    {
+     "from": "1977-01-01",
+     "precision": "day",
+     "to": "1995-01-01",
+     "atoms": [
+      "BEL-ADM2-21686613B83431002442680",
+      "BEL-ADM2-21686613B69139919320544",
+      "BEL-ADM2-21686613B18913386279163"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/ube.html",
+       "title": "Provinces of Belgium (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "Last inter-provincial transfers by the law of 1962-11-08 (Mouscron to Hainaut, Fourons to Limburg); 1977-01-01 communes merged into 589; 1995-01-01 Brabant divided into Flemish Brabant, Walloon Brabant and the Brussels-Capital Region. No other transfer between provinces is listed."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "BEL:Vlaams-Brabant@1995",
+   "names": {
+    "en": "Flemish Brabant",
+    "ja": "フラームス＝ブラバント州",
+    "local": "Vlaams-Brabant"
+   },
+   "wikidata": "Q1118",
+   "spans": [
+    {
+     "from": "1995-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BEL-ADM2-21686613B83431002442680"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/ube.html",
+       "title": "Provinces of Belgium (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "Last inter-provincial transfers by the law of 1962-11-08 (Mouscron to Hainaut, Fourons to Limburg); 1977-01-01 communes merged into 589; 1995-01-01 Brabant divided into Flemish Brabant, Walloon Brabant and the Brussels-Capital Region. No other transfer between provinces is listed."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "BEL:Brabant-wallon@1995",
+   "names": {
+    "en": "Walloon Brabant",
+    "ja": "ブラバン・ワロン州",
+    "local": "Brabant wallon"
+   },
+   "wikidata": "Q1122",
+   "spans": [
+    {
+     "from": "1995-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BEL-ADM2-21686613B69139919320544"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/ube.html",
+       "title": "Provinces of Belgium (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "Last inter-provincial transfers by the law of 1962-11-08 (Mouscron to Hainaut, Fourons to Limburg); 1977-01-01 communes merged into 589; 1995-01-01 Brabant divided into Flemish Brabant, Walloon Brabant and the Brussels-Capital Region. No other transfer between provinces is listed."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "BEL:Bruxelles-Capitale@1995",
+   "names": {
+    "en": "Brussels-Capital Region",
+    "ja": "ブリュッセル首都圏地域",
+    "local": "Région de Bruxelles-Capitale / Brussels Hoofdstedelijk Gewest"
+   },
+   "wikidata": "Q240",
+   "spans": [
+    {
+     "from": "1995-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BEL-ADM2-21686613B18913386279163"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/ube.html",
+       "title": "Provinces of Belgium (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "Last inter-provincial transfers by the law of 1962-11-08 (Mouscron to Hainaut, Fourons to Limburg); 1977-01-01 communes merged into 589; 1995-01-01 Brabant divided into Flemish Brabant, Walloon Brabant and the Brussels-Capital Region. No other transfer between provinces is listed."
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1995-01-01",
+   "what": "Brabant divided into Flemish Brabant, Walloon Brabant and the Brussels-Capital Region",
+   "sources": [
+    {
+     "url": "https://statoids.com/ube.html",
+     "title": "Provinces of Belgium (Statoids, Gwillim Law) — change history",
+     "accessed": "2026-10-06",
+     "says": "Last inter-provincial transfers by the law of 1962-11-08 (Mouscron to Hainaut, Fourons to Limburg); 1977-01-01 communes merged into 589; 1995-01-01 Brabant divided into Flemish Brabant, Walloon Brabant and the Brussels-Capital Region. No other transfer between provinces is listed."
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1977-01-01",
+   "n": 9,
+   "sources": [
+    {
+     "url": "https://statoids.com/ube.html",
+     "title": "Provinces of Belgium (Statoids, Gwillim Law) — change history",
+     "accessed": "2026-10-06",
+     "says": "Nine provinces until Brabant was divided on 1995-01-01."
+    }
+   ]
+  },
+  {
+   "date": "1995-01-01",
+   "n": 11,
+   "sources": [
+    {
+     "url": "https://statoids.com/ube.html",
+     "title": "Provinces of Belgium (Statoids, Gwillim Law) — change history",
+     "accessed": "2026-10-06",
+     "says": "From 1995-01-01: ten provinces and the Brussels-Capital Region."
+    }
+   ]
+  }
+ ],
+ "unresolved": []
+}

@@ -1,0 +1,1128 @@
+{
+ "country": "TCD",
+ "atomSet": "gb-adm2@2026-10-06",
+ "scope": {
+  "from": "1960-08-11",
+  "to": "2002-10-16"
+ },
+ "polityNote": "Republic of Chad from independence (1960-08-11) to the regions of 2002-10-17 (TCD.json draws from then). Prefectures 1960–1999 (11; 13 from 1962-01-09; 14 from 1962-10-29) and the 28 departments of decree 355/PR/MISD/99 (1999-09-01). Atoms: OCHA departments of 2012–2025 (geoBoundaries TCD ADM2, CC BY 3.0 IGO). A prefecture is drawn only when (a) every later department lies inside it and no recorded sub-prefecture change crosses its outline (statoids ytd: c.1973, c.1986, decrees 226 and 354 of 1999, 2002, 2008, 2012), and (b) the OCHA department lines on its outline agree with the independent OSM region outline (gb ADM1). Four lines where OCHA differs from both OSM and Natural Earth by a block 7–15 km wide (Wayi, Loug-Chari, Wadi Hawar/Mourtcha, Haraze-Mangueigne) are left unresolved together with every prefecture they bound. OCHA’s own 2025 revision of the layer (COD-AB valid_on 2025-02-12, same 70 departments) moved two of those four lines to where OSM and Natural Earth have them (35% of Wayi now in Dagana/Hadjer-Lamis, 6.7% of Loug-Chari now in Bahr Koh/Moyen-Chari), while every atom of the drawn prefectures falls ≥97.6% inside the same prefecture under the 2025 lines. Colonial Chad before 1960-08-11 is left to Müller-Crepon (Harvard Dataverse DVN/9JI06R, CC0), whose col_units_full.geojson holds Chad (COW 483) at 1938 and 1946. ① Published 1993 prefecture areas (statoids) vs the drawn unions: Batha 88,800 vs 91,421 km² (1.030); Guéra 58,950 vs 61,273 (1.039); Kanem 114,520 vs 123,643 (1.080); Logone Occidental 8,695 vs 8,888 (1.022); Logone Oriental 28,035 vs 23,794 (0.849); Mayo-Kebbi 30,105 vs 30,630 (1.017); Tandjilé 18,045 vs 17,601 (0.975); national total 1,284,000 vs 1,269,250 (0.989). The published areas are old round figures (Logone Oriental 0.849 beside Moyen-Chari 1.286 suggests the 1960s figures placed that line differently; OSM and OCHA agree on it today).",
+ "units": [
+  {
+   "id": "TCD:Batha@1960",
+   "names": {
+    "en": "Batha Prefecture",
+    "ja": "バタ県",
+    "local": "Préfecture du Batha"
+   },
+   "spans": [
+    {
+     "from": "1960-08-11",
+     "precision": "day",
+     "to": "1999-09-01",
+     "atoms": [
+      "TCD-ADM2-50815135B79604505945545",
+      "TCD-ADM2-50815135B78939282341988",
+      "TCD-ADM2-50815135B60006364885554"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utd.html",
+       "title": "Statoids — Regions of Chad (change history)",
+       "says": "11 prefectures (1964 atlas list); 1962-01-09 Logone split into Logone Occidental, Logone Oriental, Tandjilé; 1962-10-29 Lac split from Kanem; 14 prefectures to 1999; 1999-09-01 decree 355/PR/MISD/99 turned them into 28 departments; 2002-10-17 18 regions.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?title=Administration_territoriale_du_Tchad&oldid=235042492",
+       "title": "Wikipédia — Administration territoriale du Tchad (oldid 235042492)",
+       "says": "Tables of the 14 prefectures 1960–1999 with their sub-prefectures, and of the 28 departments of decree 355/PR/MISD/99 (1 Sept 1999) with theirs.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/ytd.html",
+       "title": "Statoids — Departments of Chad (sub-prefecture change history)",
+       "says": "Sub-prefecture changes c.1973 and c.1986 stay inside prefectures except the eastern part of Bousso (Chari-Baguirmi) moved to Sarh (Moyen-Chari) c.1986; 1999 sub-prefectures created inside named prefectures; 2002, 2008 and 2012 department splits.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Its departments of 2012–2025 (OCHA) lie inside it, the c.1973/c.1986/1999 sub-prefecture changes stay inside it (statoids), and every department line on its outline agrees with the independent OSM region outline (geoBoundaries ADM1) to within thin slivers (no piece wider than 5 km). Split into Batha Est and Batha Ouest departments 1999-09-01."
+    }
+   ]
+  },
+  {
+   "id": "TCD:Guera@1960",
+   "names": {
+    "en": "Guéra Prefecture",
+    "ja": "ゲラ県",
+    "local": "Préfecture du Guéra"
+   },
+   "spans": [
+    {
+     "from": "1960-08-11",
+     "precision": "day",
+     "to": "1999-09-01",
+     "atoms": [
+      "TCD-ADM2-50815135B54463089232866",
+      "TCD-ADM2-50815135B50589595383303",
+      "TCD-ADM2-50815135B83117027765697",
+      "TCD-ADM2-50815135B86536624745263"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utd.html",
+       "title": "Statoids — Regions of Chad (change history)",
+       "says": "11 prefectures (1964 atlas list); 1962-01-09 Logone split into Logone Occidental, Logone Oriental, Tandjilé; 1962-10-29 Lac split from Kanem; 14 prefectures to 1999; 1999-09-01 decree 355/PR/MISD/99 turned them into 28 departments; 2002-10-17 18 regions.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?title=Administration_territoriale_du_Tchad&oldid=235042492",
+       "title": "Wikipédia — Administration territoriale du Tchad (oldid 235042492)",
+       "says": "Tables of the 14 prefectures 1960–1999 with their sub-prefectures, and of the 28 departments of decree 355/PR/MISD/99 (1 Sept 1999) with theirs.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/ytd.html",
+       "title": "Statoids — Departments of Chad (sub-prefecture change history)",
+       "says": "Sub-prefecture changes c.1973 and c.1986 stay inside prefectures except the eastern part of Bousso (Chari-Baguirmi) moved to Sarh (Moyen-Chari) c.1986; 1999 sub-prefectures created inside named prefectures; 2002, 2008 and 2012 department splits.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Formed in 1960, before independence (Mongo from Batha, Melfi from Salamat). Its departments of 2012–2025 (OCHA) lie inside it, the c.1973/c.1986/1999 sub-prefecture changes stay inside it (statoids), and every department line on its outline agrees with the independent OSM region outline (geoBoundaries ADM1) to within thin slivers (no piece wider than 5 km)."
+    }
+   ]
+  },
+  {
+   "id": "TCD:Guera@1999",
+   "names": {
+    "en": "Guéra Department",
+    "ja": "ゲラ県（1999年の département）",
+    "local": "Département du Guéra"
+   },
+   "spans": [
+    {
+     "from": "1999-09-01",
+     "precision": "day",
+     "to": "2002-10-17",
+     "atoms": [
+      "TCD-ADM2-50815135B54463089232866",
+      "TCD-ADM2-50815135B50589595383303",
+      "TCD-ADM2-50815135B83117027765697",
+      "TCD-ADM2-50815135B86536624745263"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utd.html",
+       "title": "Statoids — Regions of Chad (change history)",
+       "says": "11 prefectures (1964 atlas list); 1962-01-09 Logone split into Logone Occidental, Logone Oriental, Tandjilé; 1962-10-29 Lac split from Kanem; 14 prefectures to 1999; 1999-09-01 decree 355/PR/MISD/99 turned them into 28 departments; 2002-10-17 18 regions.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?title=Administration_territoriale_du_Tchad&oldid=235042492",
+       "title": "Wikipédia — Administration territoriale du Tchad (oldid 235042492)",
+       "says": "Tables of the 14 prefectures 1960–1999 with their sub-prefectures, and of the 28 departments of decree 355/PR/MISD/99 (1 Sept 1999) with theirs.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Decree 355/PR/MISD/99 kept the prefecture whole as a department (the same four sub-prefectures Mongo, Bitkine, Mangalmé, Melfi)."
+    }
+   ]
+  },
+  {
+   "id": "TCD:Kanem@1962",
+   "names": {
+    "en": "Kanem Prefecture",
+    "ja": "カネム県",
+    "local": "Préfecture du Kanem"
+   },
+   "spans": [
+    {
+     "from": "1962-10-29",
+     "precision": "day",
+     "to": "1999-09-01",
+     "atoms": [
+      "TCD-ADM2-50815135B11223303174297",
+      "TCD-ADM2-50815135B23579173703051",
+      "TCD-ADM2-50815135B59767652467514",
+      "TCD-ADM2-50815135B97156808183777",
+      "TCD-ADM2-50815135B74780249962770",
+      "TCD-ADM2-50815135B90270246712933"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utd.html",
+       "title": "Statoids — Regions of Chad (change history)",
+       "says": "11 prefectures (1964 atlas list); 1962-01-09 Logone split into Logone Occidental, Logone Oriental, Tandjilé; 1962-10-29 Lac split from Kanem; 14 prefectures to 1999; 1999-09-01 decree 355/PR/MISD/99 turned them into 28 departments; 2002-10-17 18 regions.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?title=Administration_territoriale_du_Tchad&oldid=235042492",
+       "title": "Wikipédia — Administration territoriale du Tchad (oldid 235042492)",
+       "says": "Tables of the 14 prefectures 1960–1999 with their sub-prefectures, and of the 28 departments of decree 355/PR/MISD/99 (1 Sept 1999) with theirs.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/ytd.html",
+       "title": "Statoids — Departments of Chad (sub-prefecture change history)",
+       "says": "Sub-prefecture changes c.1973 and c.1986 stay inside prefectures except the eastern part of Bousso (Chari-Baguirmi) moved to Sarh (Moyen-Chari) c.1986; 1999 sub-prefectures created inside named prefectures; 2002, 2008 and 2012 department splits.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "After Lac was split off on 1962-10-29; includes the later Barh el Gazel (Moussoro). Its departments of 2012–2025 (OCHA) lie inside it, the c.1973/c.1986/1999 sub-prefecture changes stay inside it (statoids), and every department line on its outline agrees with the independent OSM region outline (geoBoundaries ADM1) to within thin slivers (no piece wider than 5 km)."
+    }
+   ]
+  },
+  {
+   "id": "TCD:Logone@1960",
+   "names": {
+    "en": "Logone Prefecture",
+    "ja": "ロゴヌ県",
+    "local": "Préfecture du Logone"
+   },
+   "spans": [
+    {
+     "from": "1960-08-11",
+     "precision": "day",
+     "to": "1962-01-09",
+     "atoms": [
+      "TCD-ADM2-50815135B88319439398100",
+      "TCD-ADM2-50815135B21432441174008",
+      "TCD-ADM2-50815135B58104899779962",
+      "TCD-ADM2-50815135B84328468709684",
+      "TCD-ADM2-50815135B98764858098702",
+      "TCD-ADM2-50815135B27112556056018",
+      "TCD-ADM2-50815135B99305267844407",
+      "TCD-ADM2-50815135B51143570982343",
+      "TCD-ADM2-50815135B28220035440725",
+      "TCD-ADM2-50815135B14191552615898",
+      "TCD-ADM2-50815135B85738495348243",
+      "TCD-ADM2-50815135B89886025568853",
+      "TCD-ADM2-50815135B21537967756666"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utd.html",
+       "title": "Statoids — Regions of Chad (change history)",
+       "says": "11 prefectures (1964 atlas list); 1962-01-09 Logone split into Logone Occidental, Logone Oriental, Tandjilé; 1962-10-29 Lac split from Kanem; 14 prefectures to 1999; 1999-09-01 decree 355/PR/MISD/99 turned them into 28 departments; 2002-10-17 18 regions.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?title=Administration_territoriale_du_Tchad&oldid=235042492",
+       "title": "Wikipédia — Administration territoriale du Tchad (oldid 235042492)",
+       "says": "Tables of the 14 prefectures 1960–1999 with their sub-prefectures, and of the 28 departments of decree 355/PR/MISD/99 (1 Sept 1999) with theirs.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "= the later Logone Occidental + Logone Oriental + Tandjilé (the 1947–1960 Logone region held Moundou, Doba and Laï); split 1962-01-09."
+    }
+   ]
+  },
+  {
+   "id": "TCD:LogoneOccidental@1962",
+   "names": {
+    "en": "Logone Occidental Prefecture",
+    "ja": "西ロゴヌ県",
+    "local": "Préfecture du Logone Occidental"
+   },
+   "spans": [
+    {
+     "from": "1962-01-09",
+     "precision": "day",
+     "to": "1999-09-01",
+     "atoms": [
+      "TCD-ADM2-50815135B88319439398100",
+      "TCD-ADM2-50815135B21432441174008",
+      "TCD-ADM2-50815135B58104899779962",
+      "TCD-ADM2-50815135B84328468709684"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utd.html",
+       "title": "Statoids — Regions of Chad (change history)",
+       "says": "11 prefectures (1964 atlas list); 1962-01-09 Logone split into Logone Occidental, Logone Oriental, Tandjilé; 1962-10-29 Lac split from Kanem; 14 prefectures to 1999; 1999-09-01 decree 355/PR/MISD/99 turned them into 28 departments; 2002-10-17 18 regions.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?title=Administration_territoriale_du_Tchad&oldid=235042492",
+       "title": "Wikipédia — Administration territoriale du Tchad (oldid 235042492)",
+       "says": "Tables of the 14 prefectures 1960–1999 with their sub-prefectures, and of the 28 departments of decree 355/PR/MISD/99 (1 Sept 1999) with theirs.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/ytd.html",
+       "title": "Statoids — Departments of Chad (sub-prefecture change history)",
+       "says": "Sub-prefecture changes c.1973 and c.1986 stay inside prefectures except the eastern part of Bousso (Chari-Baguirmi) moved to Sarh (Moyen-Chari) c.1986; 1999 sub-prefectures created inside named prefectures; 2002, 2008 and 2012 department splits.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Its departments of 2012–2025 (OCHA) lie inside it, the c.1973/c.1986/1999 sub-prefecture changes stay inside it (statoids), and every department line on its outline agrees with the independent OSM region outline (geoBoundaries ADM1) to within thin slivers (no piece wider than 5 km)."
+    }
+   ]
+  },
+  {
+   "id": "TCD:LogoneOccidental@1999",
+   "names": {
+    "en": "Logone Occidental Department",
+    "ja": "西ロゴヌ県（1999年の département）",
+    "local": "Département du Logone Occidental"
+   },
+   "spans": [
+    {
+     "from": "1999-09-01",
+     "precision": "day",
+     "to": "2002-10-17",
+     "atoms": [
+      "TCD-ADM2-50815135B88319439398100",
+      "TCD-ADM2-50815135B21432441174008",
+      "TCD-ADM2-50815135B58104899779962",
+      "TCD-ADM2-50815135B84328468709684"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utd.html",
+       "title": "Statoids — Regions of Chad (change history)",
+       "says": "11 prefectures (1964 atlas list); 1962-01-09 Logone split into Logone Occidental, Logone Oriental, Tandjilé; 1962-10-29 Lac split from Kanem; 14 prefectures to 1999; 1999-09-01 decree 355/PR/MISD/99 turned them into 28 departments; 2002-10-17 18 regions.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?title=Administration_territoriale_du_Tchad&oldid=235042492",
+       "title": "Wikipédia — Administration territoriale du Tchad (oldid 235042492)",
+       "says": "Tables of the 14 prefectures 1960–1999 with their sub-prefectures, and of the 28 departments of decree 355/PR/MISD/99 (1 Sept 1999) with theirs.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/ytd.html",
+       "title": "Statoids — Departments of Chad (sub-prefecture change history)",
+       "says": "Sub-prefecture changes c.1973 and c.1986 stay inside prefectures except the eastern part of Bousso (Chari-Baguirmi) moved to Sarh (Moyen-Chari) c.1986; 1999 sub-prefectures created inside named prefectures; 2002, 2008 and 2012 department splits.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Decree 355/PR/MISD/99 kept the prefecture whole (Moundou, Beïnamar, Bénoye and Krim-Krim, the last created inside Logone Occidental prefecture by decree 226/PR/MISD/99)."
+    }
+   ]
+  },
+  {
+   "id": "TCD:LogoneOriental@1962",
+   "names": {
+    "en": "Logone Oriental Prefecture",
+    "ja": "東ロゴヌ県",
+    "local": "Préfecture du Logone Oriental"
+   },
+   "spans": [
+    {
+     "from": "1962-01-09",
+     "precision": "day",
+     "to": "1999-09-01",
+     "atoms": [
+      "TCD-ADM2-50815135B98764858098702",
+      "TCD-ADM2-50815135B27112556056018",
+      "TCD-ADM2-50815135B99305267844407",
+      "TCD-ADM2-50815135B51143570982343",
+      "TCD-ADM2-50815135B28220035440725",
+      "TCD-ADM2-50815135B14191552615898"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utd.html",
+       "title": "Statoids — Regions of Chad (change history)",
+       "says": "11 prefectures (1964 atlas list); 1962-01-09 Logone split into Logone Occidental, Logone Oriental, Tandjilé; 1962-10-29 Lac split from Kanem; 14 prefectures to 1999; 1999-09-01 decree 355/PR/MISD/99 turned them into 28 departments; 2002-10-17 18 regions.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?title=Administration_territoriale_du_Tchad&oldid=235042492",
+       "title": "Wikipédia — Administration territoriale du Tchad (oldid 235042492)",
+       "says": "Tables of the 14 prefectures 1960–1999 with their sub-prefectures, and of the 28 departments of decree 355/PR/MISD/99 (1 Sept 1999) with theirs.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/ytd.html",
+       "title": "Statoids — Departments of Chad (sub-prefecture change history)",
+       "says": "Sub-prefecture changes c.1973 and c.1986 stay inside prefectures except the eastern part of Bousso (Chari-Baguirmi) moved to Sarh (Moyen-Chari) c.1986; 1999 sub-prefectures created inside named prefectures; 2002, 2008 and 2012 department splits.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Its departments of 2012–2025 (OCHA) lie inside it, the c.1973/c.1986/1999 sub-prefecture changes stay inside it (statoids), and every department line on its outline agrees with the independent OSM region outline (geoBoundaries ADM1) to within thin slivers (no piece wider than 5 km). (Natural Earth puts 17% of Kouh Est in Mandoul; OSM and OCHA both put it whole in Logone Oriental.)"
+    }
+   ]
+  },
+  {
+   "id": "TCD:Tandjile@1962",
+   "names": {
+    "en": "Tandjilé Prefecture",
+    "ja": "タンジレ県",
+    "local": "Préfecture de la Tandjilé"
+   },
+   "spans": [
+    {
+     "from": "1962-01-09",
+     "precision": "day",
+     "to": "1999-09-01",
+     "atoms": [
+      "TCD-ADM2-50815135B85738495348243",
+      "TCD-ADM2-50815135B89886025568853",
+      "TCD-ADM2-50815135B21537967756666"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utd.html",
+       "title": "Statoids — Regions of Chad (change history)",
+       "says": "11 prefectures (1964 atlas list); 1962-01-09 Logone split into Logone Occidental, Logone Oriental, Tandjilé; 1962-10-29 Lac split from Kanem; 14 prefectures to 1999; 1999-09-01 decree 355/PR/MISD/99 turned them into 28 departments; 2002-10-17 18 regions.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?title=Administration_territoriale_du_Tchad&oldid=235042492",
+       "title": "Wikipédia — Administration territoriale du Tchad (oldid 235042492)",
+       "says": "Tables of the 14 prefectures 1960–1999 with their sub-prefectures, and of the 28 departments of decree 355/PR/MISD/99 (1 Sept 1999) with theirs.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/ytd.html",
+       "title": "Statoids — Departments of Chad (sub-prefecture change history)",
+       "says": "Sub-prefecture changes c.1973 and c.1986 stay inside prefectures except the eastern part of Bousso (Chari-Baguirmi) moved to Sarh (Moyen-Chari) c.1986; 1999 sub-prefectures created inside named prefectures; 2002, 2008 and 2012 department splits.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Its departments of 2012–2025 (OCHA) lie inside it, the c.1973/c.1986/1999 sub-prefecture changes stay inside it (statoids), and every department line on its outline agrees with the independent OSM region outline (geoBoundaries ADM1) to within thin slivers (no piece wider than 5 km)."
+    }
+   ]
+  },
+  {
+   "id": "TCD:MayoKebbi@1960",
+   "names": {
+    "en": "Mayo-Kebbi Prefecture",
+    "ja": "マヨ＝ケビ県",
+    "local": "Préfecture du Mayo-Kebbi"
+   },
+   "spans": [
+    {
+     "from": "1960-08-11",
+     "precision": "day",
+     "to": "1999-09-01",
+     "atoms": [
+      "TCD-ADM2-50815135B13713715101650",
+      "TCD-ADM2-50815135B57632005694692",
+      "TCD-ADM2-50815135B64807508580818",
+      "TCD-ADM2-50815135B59741228858752",
+      "TCD-ADM2-50815135B24188788926450",
+      "TCD-ADM2-50815135B58245995276010",
+      "TCD-ADM2-50815135B81119267829848"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utd.html",
+       "title": "Statoids — Regions of Chad (change history)",
+       "says": "11 prefectures (1964 atlas list); 1962-01-09 Logone split into Logone Occidental, Logone Oriental, Tandjilé; 1962-10-29 Lac split from Kanem; 14 prefectures to 1999; 1999-09-01 decree 355/PR/MISD/99 turned them into 28 departments; 2002-10-17 18 regions.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?title=Administration_territoriale_du_Tchad&oldid=235042492",
+       "title": "Wikipédia — Administration territoriale du Tchad (oldid 235042492)",
+       "says": "Tables of the 14 prefectures 1960–1999 with their sub-prefectures, and of the 28 departments of decree 355/PR/MISD/99 (1 Sept 1999) with theirs.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/ytd.html",
+       "title": "Statoids — Departments of Chad (sub-prefecture change history)",
+       "says": "Sub-prefecture changes c.1973 and c.1986 stay inside prefectures except the eastern part of Bousso (Chari-Baguirmi) moved to Sarh (Moyen-Chari) c.1986; 1999 sub-prefectures created inside named prefectures; 2002, 2008 and 2012 department splits.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Its departments of 2012–2025 (OCHA) lie inside it, the c.1973/c.1986/1999 sub-prefecture changes stay inside it (statoids), and every department line on its outline agrees with the independent OSM region outline (geoBoundaries ADM1) to within thin slivers (no piece wider than 5 km). (Gounou Gaya sub-prefecture was formed inside it c.1973.)"
+    }
+   ]
+  }
+ ],
+ "events": [],
+ "counts": [
+  {
+   "date": "1961",
+   "n": 11,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/utd.html",
+     "title": "Statoids — Regions of Chad (change history)",
+     "says": "Prefecture list from the 1964 Britannica atlas with 1961 census figures: 11 prefectures (Logone and Kanem undivided).",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1973",
+   "n": 14,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/utd.html",
+     "title": "Statoids — Regions of Chad (change history)",
+     "says": "11 prefectures (1964 atlas list); 1962-01-09 Logone split into Logone Occidental, Logone Oriental, Tandjilé; 1962-10-29 Lac split from Kanem; 14 prefectures to 1999; 1999-09-01 decree 355/PR/MISD/99 turned them into 28 departments; 2002-10-17 18 regions.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1993-04-15",
+   "n": 14,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/utd.html",
+     "title": "Statoids — Regions of Chad (change history)",
+     "says": "14 prefectures at the 1993-04-15 census (N'Djamena counted inside Chari-Baguirmi).",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "2000",
+   "n": 28,
+   "sources": [
+    {
+     "url": "https://fr.wikipedia.org/w/index.php?title=Administration_territoriale_du_Tchad&oldid=235042492",
+     "title": "Wikipédia — Administration territoriale du Tchad (oldid 235042492)",
+     "says": "Decree 355/PR/MISD/99 of 1 Sept 1999 created 28 departments, in force until the 2002 regions.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Chari-Baguirmi Prefecture 1960–1999 (with N'Djamena)",
+   "unit": "TCD:ChariBaguirmi@1960",
+   "atoms": [
+    "TCD-ADM2-50815135B30125763845581",
+    "TCD-ADM2-50815135B55510615891344",
+    "TCD-ADM2-50815135B83477967363059",
+    "TCD-ADM2-50815135B49730685193773",
+    "TCD-ADM2-50815135B80092252042653",
+    "TCD-ADM2-50815135B82618270305421",
+    "TCD-ADM2-50815135B39277656442366"
+   ],
+   "from": "1960-08-11",
+   "to": "1999-09-01",
+   "why": "Two faults on its outline: (1) the eastern part of Bousso sub-prefecture moved to Sarh (Moyen-Chari) c.1986 (date conjectural), and the OCHA Loug-Chari department still holds a 1,034 km² block (≈15 km wide, 17.4–17.7E 9.7–10.2N) that both OSM and Natural Earth put in Moyen-Chari; (2) a 1,806 km² block (≈14 km wide, 15.0–15.55E 12.9–13.4N) of the OCHA Wayi department (Lac) is put in Hadjer-Lamis by both OSM and Natural Earth, so the Lac/Chari-Baguirmi line is not shown to be a department line.",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "canton or sub-prefecture atoms for Bousso/Sarh and Ngouri/Massakory/Karal, and the date of the Bousso transfer (Lanne, Répertoire de l'administration territoriale du Tchad 1900–1994)"
+  },
+  {
+   "what": "Moyen-Chari Prefecture 1960–1999",
+   "unit": "TCD:MoyenChari@1960",
+   "atoms": [
+    "TCD-ADM2-50815135B19223233714044",
+    "TCD-ADM2-50815135B49309888435923",
+    "TCD-ADM2-50815135B23154120961269",
+    "TCD-ADM2-50815135B94662216566844",
+    "TCD-ADM2-50815135B48101754695472",
+    "TCD-ADM2-50815135B5443465425830"
+   ],
+   "from": "1960-08-11",
+   "to": "1999-09-01",
+   "why": "Its line with Chari-Baguirmi moved c.1986 (eastern Bousso to Sarh) inside today's Loug-Chari/Bahr-Köh departments; see the Chari-Baguirmi entry.",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "as for Chari-Baguirmi"
+  },
+  {
+   "what": "Lac Prefecture 1962–1999",
+   "unit": "TCD:Lac@1962",
+   "atoms": [
+    "TCD-ADM2-50815135B86238137663719",
+    "TCD-ADM2-50815135B65244945482941",
+    "TCD-ADM2-50815135B95453652867262",
+    "TCD-ADM2-50815135B89390943871593"
+   ],
+   "from": "1962-10-29",
+   "to": "1999-09-01",
+   "why": "The Lac/Chari-Baguirmi line: 1,806 km² of the OCHA Wayi department lie in Hadjer-Lamis on both the OSM and Natural Earth maps (see the Chari-Baguirmi entry).",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "canton atoms of Ngouri, Massakory and Karal, or a dated map of the Lac prefecture"
+  },
+  {
+   "what": "Kanem Prefecture before Lac was split off (1960-08-11 → 1962-10-29)",
+   "unit": "TCD:Kanem@1960",
+   "atoms": [
+    "TCD-ADM2-50815135B11223303174297",
+    "TCD-ADM2-50815135B23579173703051",
+    "TCD-ADM2-50815135B59767652467514",
+    "TCD-ADM2-50815135B97156808183777",
+    "TCD-ADM2-50815135B74780249962770",
+    "TCD-ADM2-50815135B90270246712933",
+    "TCD-ADM2-50815135B86238137663719",
+    "TCD-ADM2-50815135B65244945482941",
+    "TCD-ADM2-50815135B95453652867262",
+    "TCD-ADM2-50815135B89390943871593"
+   ],
+   "from": "1960-08-11",
+   "to": "1962-10-29",
+   "why": "Then Kanem included Lac, whose southern line is not settled (see Lac).",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "as for Lac"
+  },
+  {
+   "what": "Biltine Prefecture 1960–1999",
+   "unit": "TCD:Biltine@1960",
+   "atoms": [
+    "TCD-ADM2-50815135B98948114650625",
+    "TCD-ADM2-50815135B35128958764518",
+    "TCD-ADM2-50815135B20529104749764",
+    "TCD-ADM2-50815135B12471481376218"
+   ],
+   "from": "1960-08-11",
+   "to": "1999-09-01",
+   "why": "Its northern line with Borkou-Ennedi-Tibesti is not a department line: 1,405 km² of the OCHA Wadi Hawar department and 1,040 km² of Mourtcha (incl. Kalaït, a BET sub-prefecture only from decree 226/PR/MISD/99 of 1999-06-10) lie in Wadi Fira on both the OSM and Natural Earth maps.",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "canton atoms of Iriba, Biltine and Kalaït, and when Kalaït passed to BET"
+  },
+  {
+   "what": "Borkou-Ennedi-Tibesti Prefecture 1960–1999",
+   "unit": "TCD:BET@1960",
+   "atoms": [
+    "TCD-ADM2-50815135B4564368173337",
+    "TCD-ADM2-50815135B13621547433724",
+    "TCD-ADM2-50815135B39039287340708",
+    "TCD-ADM2-50815135B44379234996248",
+    "TCD-ADM2-50815135B99861554638026",
+    "TCD-ADM2-50815135B12013942151217",
+    "TCD-ADM2-50815135B96833037498211",
+    "TCD-ADM2-50815135B62585523695590"
+   ],
+   "from": "1960-08-11",
+   "to": "1999-09-01",
+   "why": "(1) Its line with Biltine is not settled (see Biltine); (2) the Aozou strip, inside the Tibesti, Borkou and Ennedi atoms, was occupied and administered by Libya from 1973 until the joint declaration of 30 May 1994 that followed the ICJ judgment of 3 Feb 1994; most of BET was held by GUNT and Libyan forces 1983–1987.",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1",
+    "ICJ Territorial Dispute (Libya/Chad) judgment 1994-02-03",
+    "UN Aouzou Strip Observer Group (S/RES/915; joint declaration 1994-05-30)"
+   ],
+   "needs": "the Biltine/BET line as above, and an atom for the Aozou strip (its southern line is the 1955 Franco-Libyan treaty line, not a department line)"
+  },
+  {
+   "what": "Ouaddaï Prefecture 1960–1999",
+   "unit": "TCD:Ouaddai@1960",
+   "atoms": [
+    "TCD-ADM2-50815135B4539380481876",
+    "TCD-ADM2-50815135B12284790062818",
+    "TCD-ADM2-50815135B92277339053304",
+    "TCD-ADM2-50815135B66817745888418",
+    "TCD-ADM2-50815135B90510100968968"
+   ],
+   "from": "1960-08-11",
+   "to": "1999-09-01",
+   "why": "Its line with Salamat is not a department line: 807 km² (≈7 km wide, near Mogororo 22.3E 11.2N) of the OCHA Haraze-Mangueigne department lie in Sila on both the OSM and Natural Earth maps.",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "canton atoms of Goz Beïda and Haraze Mangueigne"
+  },
+  {
+   "what": "Salamat Prefecture 1960–1999",
+   "unit": "TCD:Salamat@1960",
+   "atoms": [
+    "TCD-ADM2-50815135B51440340925469",
+    "TCD-ADM2-50815135B73615292321578",
+    "TCD-ADM2-50815135B13353907786726"
+   ],
+   "from": "1960-08-11",
+   "to": "1999-09-01",
+   "why": "See Ouaddaï (the Salamat/Ouaddaï line near Mogororo).",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "as for Ouaddaï"
+  },
+  {
+   "what": "Batha Est (department, 1999-09-01 → 2002-10-17)",
+   "unit": "TCD:BathaEst@1999",
+   "atoms": [
+    "TCD-ADM2-50815135B79604505945545",
+    "TCD-ADM2-50815135B78939282341988",
+    "TCD-ADM2-50815135B60006364885554"
+   ],
+   "from": "1999-09-01",
+   "to": "2002-10-17",
+   "why": "Decree 355/PR/MISD/99 split the prefecture into new departments; no source states that the later (2002–2012) departments kept the 1999 lines between them (e.g. Binder sub-prefecture was in Kabbia in 1999 but the Mayo Binder department of 2012 came from Lac Léré).",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "the sub-prefecture composition of the 2002 departments (ordinance 01/PR/2003) set against decree 355/PR/MISD/99, with sub-prefecture atoms where they differ"
+  },
+  {
+   "what": "Batha Ouest (department, 1999-09-01 → 2002-10-17)",
+   "unit": "TCD:BathaOuest@1999",
+   "atoms": [],
+   "from": "1999-09-01",
+   "to": "2002-10-17",
+   "why": "Decree 355/PR/MISD/99 split the prefecture into new departments; no source states that the later (2002–2012) departments kept the 1999 lines between them (e.g. Binder sub-prefecture was in Kabbia in 1999 but the Mayo Binder department of 2012 came from Lac Léré).",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "the sub-prefecture composition of the 2002 departments (ordinance 01/PR/2003) set against decree 355/PR/MISD/99, with sub-prefecture atoms where they differ"
+  },
+  {
+   "what": "Biltine (department, 1999-09-01 → 2002-10-17)",
+   "unit": "TCD:Biltine@1999",
+   "atoms": [
+    "TCD-ADM2-50815135B98948114650625",
+    "TCD-ADM2-50815135B35128958764518",
+    "TCD-ADM2-50815135B20529104749764",
+    "TCD-ADM2-50815135B12471481376218"
+   ],
+   "from": "1999-09-01",
+   "to": "2002-10-17",
+   "why": "Same outline as Biltine prefecture, whose BET line is not settled.",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "the sub-prefecture composition of the 2002 departments (ordinance 01/PR/2003) set against decree 355/PR/MISD/99, with sub-prefecture atoms where they differ"
+  },
+  {
+   "what": "Borkou (department, 1999-09-01 → 2002-10-17)",
+   "unit": "TCD:Borkou@1999",
+   "atoms": [
+    "TCD-ADM2-50815135B4564368173337",
+    "TCD-ADM2-50815135B13621547433724",
+    "TCD-ADM2-50815135B39039287340708",
+    "TCD-ADM2-50815135B44379234996248",
+    "TCD-ADM2-50815135B99861554638026",
+    "TCD-ADM2-50815135B12013942151217",
+    "TCD-ADM2-50815135B96833037498211",
+    "TCD-ADM2-50815135B62585523695590"
+   ],
+   "from": "1999-09-01",
+   "to": "2002-10-17",
+   "why": "Decree 355/PR/MISD/99 split the prefecture into new departments; no source states that the later (2002–2012) departments kept the 1999 lines between them (e.g. Binder sub-prefecture was in Kabbia in 1999 but the Mayo Binder department of 2012 came from Lac Léré). The BET outline is not settled either (see Biltine).",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "the sub-prefecture composition of the 2002 departments (ordinance 01/PR/2003) set against decree 355/PR/MISD/99, with sub-prefecture atoms where they differ"
+  },
+  {
+   "what": "Ennedi (department, 1999-09-01 → 2002-10-17)",
+   "unit": "TCD:Ennedi@1999",
+   "atoms": [],
+   "from": "1999-09-01",
+   "to": "2002-10-17",
+   "why": "Decree 355/PR/MISD/99 split the prefecture into new departments; no source states that the later (2002–2012) departments kept the 1999 lines between them (e.g. Binder sub-prefecture was in Kabbia in 1999 but the Mayo Binder department of 2012 came from Lac Léré).",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "the sub-prefecture composition of the 2002 departments (ordinance 01/PR/2003) set against decree 355/PR/MISD/99, with sub-prefecture atoms where they differ"
+  },
+  {
+   "what": "Tibesti (department, 1999-09-01 → 2002-10-17)",
+   "unit": "TCD:Tibesti@1999",
+   "atoms": [],
+   "from": "1999-09-01",
+   "to": "2002-10-17",
+   "why": "Decree 355/PR/MISD/99 split the prefecture into new departments; no source states that the later (2002–2012) departments kept the 1999 lines between them (e.g. Binder sub-prefecture was in Kabbia in 1999 but the Mayo Binder department of 2012 came from Lac Léré).",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "the sub-prefecture composition of the 2002 departments (ordinance 01/PR/2003) set against decree 355/PR/MISD/99, with sub-prefecture atoms where they differ"
+  },
+  {
+   "what": "Dababa (department, 1999-09-01 → 2002-10-17)",
+   "unit": "TCD:Dababa@1999",
+   "atoms": [
+    "TCD-ADM2-50815135B30125763845581",
+    "TCD-ADM2-50815135B55510615891344",
+    "TCD-ADM2-50815135B83477967363059",
+    "TCD-ADM2-50815135B49730685193773",
+    "TCD-ADM2-50815135B80092252042653",
+    "TCD-ADM2-50815135B82618270305421",
+    "TCD-ADM2-50815135B39277656442366"
+   ],
+   "from": "1999-09-01",
+   "to": "2002-10-17",
+   "why": "Decree 355/PR/MISD/99 split the prefecture into new departments; no source states that the later (2002–2012) departments kept the 1999 lines between them (e.g. Binder sub-prefecture was in Kabbia in 1999 but the Mayo Binder department of 2012 came from Lac Léré). The 1999 Hadjer Lamis department held Mandelia and Linia, which lie in the Chari department of the 2002 Chari-Baguirmi region; N'Djamena was a commune whose rank is not stated.",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "the sub-prefecture composition of the 2002 departments (ordinance 01/PR/2003) set against decree 355/PR/MISD/99, with sub-prefecture atoms where they differ"
+  },
+  {
+   "what": "Baguirmi (department, 1999-09-01 → 2002-10-17)",
+   "unit": "TCD:Baguirmi@1999",
+   "atoms": [],
+   "from": "1999-09-01",
+   "to": "2002-10-17",
+   "why": "Decree 355/PR/MISD/99 split the prefecture into new departments; no source states that the later (2002–2012) departments kept the 1999 lines between them (e.g. Binder sub-prefecture was in Kabbia in 1999 but the Mayo Binder department of 2012 came from Lac Léré).",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "the sub-prefecture composition of the 2002 departments (ordinance 01/PR/2003) set against decree 355/PR/MISD/99, with sub-prefecture atoms where they differ"
+  },
+  {
+   "what": "Hadjer Lamis (department, 1999-09-01 → 2002-10-17)",
+   "unit": "TCD:HadjerLamis@1999",
+   "atoms": [],
+   "from": "1999-09-01",
+   "to": "2002-10-17",
+   "why": "Decree 355/PR/MISD/99 split the prefecture into new departments; no source states that the later (2002–2012) departments kept the 1999 lines between them (e.g. Binder sub-prefecture was in Kabbia in 1999 but the Mayo Binder department of 2012 came from Lac Léré).",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "the sub-prefecture composition of the 2002 departments (ordinance 01/PR/2003) set against decree 355/PR/MISD/99, with sub-prefecture atoms where they differ"
+  },
+  {
+   "what": "Kanem (department, 1999-09-01 → 2002-10-17)",
+   "unit": "TCD:Kanem@1999",
+   "atoms": [
+    "TCD-ADM2-50815135B11223303174297",
+    "TCD-ADM2-50815135B23579173703051",
+    "TCD-ADM2-50815135B59767652467514",
+    "TCD-ADM2-50815135B97156808183777",
+    "TCD-ADM2-50815135B74780249962770",
+    "TCD-ADM2-50815135B90270246712933"
+   ],
+   "from": "1999-09-01",
+   "to": "2002-10-17",
+   "why": "Decree 355/PR/MISD/99 split the prefecture into new departments; no source states that the later (2002–2012) departments kept the 1999 lines between them (e.g. Binder sub-prefecture was in Kabbia in 1999 but the Mayo Binder department of 2012 came from Lac Léré). OCHA and OSM also disagree on the Kanem/Barh el Gazel line by a 5,362 km² block (≈25 km wide) of Nord Kanem.",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "the sub-prefecture composition of the 2002 departments (ordinance 01/PR/2003) set against decree 355/PR/MISD/99, with sub-prefecture atoms where they differ"
+  },
+  {
+   "what": "Bahr el Gazal (department, 1999-09-01 → 2002-10-17)",
+   "unit": "TCD:BahrElGazal@1999",
+   "atoms": [],
+   "from": "1999-09-01",
+   "to": "2002-10-17",
+   "why": "Decree 355/PR/MISD/99 split the prefecture into new departments; no source states that the later (2002–2012) departments kept the 1999 lines between them (e.g. Binder sub-prefecture was in Kabbia in 1999 but the Mayo Binder department of 2012 came from Lac Léré).",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "the sub-prefecture composition of the 2002 departments (ordinance 01/PR/2003) set against decree 355/PR/MISD/99, with sub-prefecture atoms where they differ"
+  },
+  {
+   "what": "Lac (department, 1999-09-01 → 2002-10-17)",
+   "unit": "TCD:Lac@1999",
+   "atoms": [
+    "TCD-ADM2-50815135B86238137663719",
+    "TCD-ADM2-50815135B65244945482941",
+    "TCD-ADM2-50815135B95453652867262",
+    "TCD-ADM2-50815135B89390943871593"
+   ],
+   "from": "1999-09-01",
+   "to": "2002-10-17",
+   "why": "Same outline as Lac prefecture (not settled).",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "the sub-prefecture composition of the 2002 departments (ordinance 01/PR/2003) set against decree 355/PR/MISD/99, with sub-prefecture atoms where they differ"
+  },
+  {
+   "what": "Logone Oriental (department, 1999-09-01 → 2002-10-17)",
+   "unit": "TCD:LogoneOriental@1999",
+   "atoms": [
+    "TCD-ADM2-50815135B98764858098702",
+    "TCD-ADM2-50815135B27112556056018",
+    "TCD-ADM2-50815135B99305267844407",
+    "TCD-ADM2-50815135B51143570982343",
+    "TCD-ADM2-50815135B28220035440725",
+    "TCD-ADM2-50815135B14191552615898"
+   ],
+   "from": "1999-09-01",
+   "to": "2002-10-17",
+   "why": "Decree 355/PR/MISD/99 split the prefecture into new departments; no source states that the later (2002–2012) departments kept the 1999 lines between them (e.g. Binder sub-prefecture was in Kabbia in 1999 but the Mayo Binder department of 2012 came from Lac Léré).",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "the sub-prefecture composition of the 2002 departments (ordinance 01/PR/2003) set against decree 355/PR/MISD/99, with sub-prefecture atoms where they differ"
+  },
+  {
+   "what": "Monts de Lam (department, 1999-09-01 → 2002-10-17)",
+   "unit": "TCD:MontsDeLam@1999",
+   "atoms": [],
+   "from": "1999-09-01",
+   "to": "2002-10-17",
+   "why": "Decree 355/PR/MISD/99 split the prefecture into new departments; no source states that the later (2002–2012) departments kept the 1999 lines between them (e.g. Binder sub-prefecture was in Kabbia in 1999 but the Mayo Binder department of 2012 came from Lac Léré).",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "the sub-prefecture composition of the 2002 departments (ordinance 01/PR/2003) set against decree 355/PR/MISD/99, with sub-prefecture atoms where they differ"
+  },
+  {
+   "what": "Kabia (department, 1999-09-01 → 2002-10-17)",
+   "unit": "TCD:Kabia@1999",
+   "atoms": [
+    "TCD-ADM2-50815135B13713715101650",
+    "TCD-ADM2-50815135B57632005694692",
+    "TCD-ADM2-50815135B64807508580818",
+    "TCD-ADM2-50815135B59741228858752",
+    "TCD-ADM2-50815135B24188788926450",
+    "TCD-ADM2-50815135B58245995276010",
+    "TCD-ADM2-50815135B81119267829848"
+   ],
+   "from": "1999-09-01",
+   "to": "2002-10-17",
+   "why": "Decree 355/PR/MISD/99 split the prefecture into new departments; no source states that the later (2002–2012) departments kept the 1999 lines between them (e.g. Binder sub-prefecture was in Kabbia in 1999 but the Mayo Binder department of 2012 came from Lac Léré).",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "the sub-prefecture composition of the 2002 departments (ordinance 01/PR/2003) set against decree 355/PR/MISD/99, with sub-prefecture atoms where they differ"
+  },
+  {
+   "what": "Mayo Boneye (department, 1999-09-01 → 2002-10-17)",
+   "unit": "TCD:MayoBoneye@1999",
+   "atoms": [],
+   "from": "1999-09-01",
+   "to": "2002-10-17",
+   "why": "Decree 355/PR/MISD/99 split the prefecture into new departments; no source states that the later (2002–2012) departments kept the 1999 lines between them (e.g. Binder sub-prefecture was in Kabbia in 1999 but the Mayo Binder department of 2012 came from Lac Léré).",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "the sub-prefecture composition of the 2002 departments (ordinance 01/PR/2003) set against decree 355/PR/MISD/99, with sub-prefecture atoms where they differ"
+  },
+  {
+   "what": "Mayo-Dallah (department, 1999-09-01 → 2002-10-17)",
+   "unit": "TCD:MayoDallah@1999",
+   "atoms": [],
+   "from": "1999-09-01",
+   "to": "2002-10-17",
+   "why": "Decree 355/PR/MISD/99 split the prefecture into new departments; no source states that the later (2002–2012) departments kept the 1999 lines between them (e.g. Binder sub-prefecture was in Kabbia in 1999 but the Mayo Binder department of 2012 came from Lac Léré).",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "the sub-prefecture composition of the 2002 departments (ordinance 01/PR/2003) set against decree 355/PR/MISD/99, with sub-prefecture atoms where they differ"
+  },
+  {
+   "what": "Lac Iro (department, 1999-09-01 → 2002-10-17)",
+   "unit": "TCD:LacIro@1999",
+   "atoms": [
+    "TCD-ADM2-50815135B19223233714044",
+    "TCD-ADM2-50815135B49309888435923",
+    "TCD-ADM2-50815135B23154120961269",
+    "TCD-ADM2-50815135B94662216566844",
+    "TCD-ADM2-50815135B48101754695472",
+    "TCD-ADM2-50815135B5443465425830"
+   ],
+   "from": "1999-09-01",
+   "to": "2002-10-17",
+   "why": "Decree 355/PR/MISD/99 split the prefecture into new departments; no source states that the later (2002–2012) departments kept the 1999 lines between them (e.g. Binder sub-prefecture was in Kabbia in 1999 but the Mayo Binder department of 2012 came from Lac Léré). The Moyen-Chari/Chari-Baguirmi line is not settled either.",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "the sub-prefecture composition of the 2002 departments (ordinance 01/PR/2003) set against decree 355/PR/MISD/99, with sub-prefecture atoms where they differ"
+  },
+  {
+   "what": "Bahr Köh (department, 1999-09-01 → 2002-10-17)",
+   "unit": "TCD:BahrKoh@1999",
+   "atoms": [],
+   "from": "1999-09-01",
+   "to": "2002-10-17",
+   "why": "Decree 355/PR/MISD/99 split the prefecture into new departments; no source states that the later (2002–2012) departments kept the 1999 lines between them (e.g. Binder sub-prefecture was in Kabbia in 1999 but the Mayo Binder department of 2012 came from Lac Léré).",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "the sub-prefecture composition of the 2002 departments (ordinance 01/PR/2003) set against decree 355/PR/MISD/99, with sub-prefecture atoms where they differ"
+  },
+  {
+   "what": "Mandoul (department, 1999-09-01 → 2002-10-17)",
+   "unit": "TCD:Mandoul@1999",
+   "atoms": [],
+   "from": "1999-09-01",
+   "to": "2002-10-17",
+   "why": "Decree 355/PR/MISD/99 split the prefecture into new departments; no source states that the later (2002–2012) departments kept the 1999 lines between them (e.g. Binder sub-prefecture was in Kabbia in 1999 but the Mayo Binder department of 2012 came from Lac Léré).",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "the sub-prefecture composition of the 2002 departments (ordinance 01/PR/2003) set against decree 355/PR/MISD/99, with sub-prefecture atoms where they differ"
+  },
+  {
+   "what": "Ouaddaï (department, 1999-09-01 → 2002-10-17)",
+   "unit": "TCD:Ouaddai@1999",
+   "atoms": [
+    "TCD-ADM2-50815135B4539380481876",
+    "TCD-ADM2-50815135B12284790062818",
+    "TCD-ADM2-50815135B92277339053304",
+    "TCD-ADM2-50815135B66817745888418",
+    "TCD-ADM2-50815135B90510100968968"
+   ],
+   "from": "1999-09-01",
+   "to": "2002-10-17",
+   "why": "Decree 355/PR/MISD/99 split the prefecture into new departments; no source states that the later (2002–2012) departments kept the 1999 lines between them (e.g. Binder sub-prefecture was in Kabbia in 1999 but the Mayo Binder department of 2012 came from Lac Léré). The Ouaddaï/Salamat line is not settled either.",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "the sub-prefecture composition of the 2002 departments (ordinance 01/PR/2003) set against decree 355/PR/MISD/99, with sub-prefecture atoms where they differ"
+  },
+  {
+   "what": "Assongha (department, 1999-09-01 → 2002-10-17)",
+   "unit": "TCD:Assongha@1999",
+   "atoms": [],
+   "from": "1999-09-01",
+   "to": "2002-10-17",
+   "why": "Decree 355/PR/MISD/99 split the prefecture into new departments; no source states that the later (2002–2012) departments kept the 1999 lines between them (e.g. Binder sub-prefecture was in Kabbia in 1999 but the Mayo Binder department of 2012 came from Lac Léré).",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "the sub-prefecture composition of the 2002 departments (ordinance 01/PR/2003) set against decree 355/PR/MISD/99, with sub-prefecture atoms where they differ"
+  },
+  {
+   "what": "Sila (department, 1999-09-01 → 2002-10-17)",
+   "unit": "TCD:Sila@1999",
+   "atoms": [],
+   "from": "1999-09-01",
+   "to": "2002-10-17",
+   "why": "Decree 355/PR/MISD/99 split the prefecture into new departments; no source states that the later (2002–2012) departments kept the 1999 lines between them (e.g. Binder sub-prefecture was in Kabbia in 1999 but the Mayo Binder department of 2012 came from Lac Léré).",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "the sub-prefecture composition of the 2002 departments (ordinance 01/PR/2003) set against decree 355/PR/MISD/99, with sub-prefecture atoms where they differ"
+  },
+  {
+   "what": "Salamat (department, 1999-09-01 → 2002-10-17)",
+   "unit": "TCD:Salamat@1999",
+   "atoms": [
+    "TCD-ADM2-50815135B51440340925469",
+    "TCD-ADM2-50815135B73615292321578",
+    "TCD-ADM2-50815135B13353907786726"
+   ],
+   "from": "1999-09-01",
+   "to": "2002-10-17",
+   "why": "Same outline as Salamat prefecture (not settled).",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "the sub-prefecture composition of the 2002 departments (ordinance 01/PR/2003) set against decree 355/PR/MISD/99, with sub-prefecture atoms where they differ"
+  },
+  {
+   "what": "Tandjilé Est (department, 1999-09-01 → 2002-10-17)",
+   "unit": "TCD:TandjileEst@1999",
+   "atoms": [
+    "TCD-ADM2-50815135B85738495348243",
+    "TCD-ADM2-50815135B89886025568853",
+    "TCD-ADM2-50815135B21537967756666"
+   ],
+   "from": "1999-09-01",
+   "to": "2002-10-17",
+   "why": "Decree 355/PR/MISD/99 split the prefecture into new departments; no source states that the later (2002–2012) departments kept the 1999 lines between them (e.g. Binder sub-prefecture was in Kabbia in 1999 but the Mayo Binder department of 2012 came from Lac Léré).",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "the sub-prefecture composition of the 2002 departments (ordinance 01/PR/2003) set against decree 355/PR/MISD/99, with sub-prefecture atoms where they differ"
+  },
+  {
+   "what": "Tandjilé Ouest (department, 1999-09-01 → 2002-10-17)",
+   "unit": "TCD:TandjileOuest@1999",
+   "atoms": [],
+   "from": "1999-09-01",
+   "to": "2002-10-17",
+   "why": "Decree 355/PR/MISD/99 split the prefecture into new departments; no source states that the later (2002–2012) departments kept the 1999 lines between them (e.g. Binder sub-prefecture was in Kabbia in 1999 but the Mayo Binder department of 2012 came from Lac Léré).",
+   "checked": [
+    "statoids.com/utd.html",
+    "statoids.com/ytd.html (sub-prefecture changes c.1973, c.1986, 1999, 2002, 2008, 2012)",
+    "fr.wikipedia Administration territoriale du Tchad oldid 235042492",
+    "overlay of the OCHA departments (gb ADM2) on the OSM regions (gb ADM1) and on Natural Earth admin-1"
+   ],
+   "needs": "the sub-prefecture composition of the 2002 departments (ordinance 01/PR/2003) set against decree 355/PR/MISD/99, with sub-prefecture atoms where they differ"
+  }
+ ]
+}

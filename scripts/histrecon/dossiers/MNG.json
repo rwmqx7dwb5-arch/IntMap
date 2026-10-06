@@ -1,11 +1,11 @@
 {
  "country": "MNG",
- "atomSet": "ne-admin1@ca96624",
+ "atomSet": "gb-adm1@2026-10-06",
  "scope": {
   "from": "1994-05-06",
   "to": "2019-12-31"
  },
- "polityNote": "Mongolia (People's Republic until 1992-02-12, then Mongolia), aimags and the capital Ulaanbaatar under the 1992 Law on administrative units and the 1994 State Great Khural resolution No.32.",
+ "polityNote": "Mongolia (People's Republic until 1992-02-12, then Mongolia), aimags and the capital Ulaanbaatar under the 1992 Law on administrative units and the 1994 State Great Khural resolution No.32. Atoms: geoBoundaries MNG ADM1 (OpenStreetMap 2017, ODbL) since 2026-10-06 — Natural Earth merged Govisümber into Dornogovi and Bagakhangai into Töv, so those four units could not be drawn on it.",
  "units": [
   {
    "id": "MNG:Arkhangai",
@@ -21,7 +21,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "MNG-3316"
+      "MNG-ADM1-14279143B49702315868913"
      ],
      "sources": [
       {
@@ -55,7 +55,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "MNG-3208"
+      "MNG-ADM1-14279143B7284431230829"
      ],
      "sources": [
       {
@@ -89,7 +89,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "MNG-3317"
+      "MNG-ADM1-14279143B7576416025221"
      ],
      "sources": [
       {
@@ -123,7 +123,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "MNG-3319"
+      "MNG-ADM1-14279143B39885639062119"
      ],
      "sources": [
       {
@@ -157,7 +157,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "MNG-3332"
+      "MNG-ADM1-14279143B35762276870520"
      ],
      "sources": [
       {
@@ -191,7 +191,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "MNG-3325"
+      "MNG-ADM1-14279143B59026071325992"
      ],
      "sources": [
       {
@@ -225,7 +225,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "MNG-3318"
+      "MNG-ADM1-14279143B63368554420497"
      ],
      "sources": [
       {
@@ -259,7 +259,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "MNG-3327"
+      "MNG-ADM1-14279143B32793669032275"
      ],
      "sources": [
       {
@@ -293,7 +293,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "MNG-3298"
+      "MNG-ADM1-14279143B52126529381065"
      ],
      "sources": [
       {
@@ -327,7 +327,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "MNG-3333"
+      "MNG-ADM1-14279143B54746499726346"
      ],
      "sources": [
       {
@@ -361,7 +361,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "MNG-3322"
+      "MNG-ADM1-14279143B81467460095364"
      ],
      "sources": [
       {
@@ -395,7 +395,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "MNG-3320"
+      "MNG-ADM1-14279143B22317554045022"
      ],
      "sources": [
       {
@@ -429,7 +429,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "MNG-3321"
+      "MNG-ADM1-14279143B20985490361275"
      ],
      "sources": [
       {
@@ -463,7 +463,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "MNG-3315"
+      "MNG-ADM1-14279143B70362797710090"
      ],
      "sources": [
       {
@@ -480,6 +480,160 @@
       }
      ],
      "dateNote": "Scope floor (date of State Great Khural resolution No.32 of 1994, which set the present aimags; promulgation date — entry into force not established). This aimag was not touched by that resolution; no earlier extent is claimed."
+    }
+   ]
+  },
+  {
+   "id": "MNG:Dornogovi",
+   "names": {
+    "en": "Dornogovi Province",
+    "ja": "ドルノゴビ県",
+    "local": "Дорноговь аймаг"
+   },
+   "wikidata": "Q213272",
+   "spans": [
+    {
+     "from": "1994-05-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MNG-ADM1-14279143B47638406449643"
+     ],
+     "sources": [
+      {
+       "url": "https://mn.wikipedia.org/w/index.php?oldid=868156",
+       "title": "Говьсүмбэр аймаг (mn.wikipedia, permanent revision)",
+       "says": "State Great Khural resolution No.32 of 6 May 1994 made Govisümber aimag from Dornogovi's Sümber sum and Ulaanbaatar's Shivee-Gobi and Bayantsagaan districts (Choir city since 21 June 1991).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.geoboundaries.org/",
+       "title": "geoBoundaries gbOpen MNG ADM1 (OpenStreetMap, 2017) — pinned in scripts/histrecon/atoms/geoboundaries-manifest.json",
+       "says": "Ulaanbaatar is drawn as three parts (main city, Baganuur, Bagakhangai); Govisümber is a separate aimag outside Dornogovi.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Scope floor (State Great Khural resolution No.32 of 6 May 1994). Drawn from geoBoundaries MNG ADM1, whose outline carries the 1994 split of Govisümber from Dornogovi and Ulaanbaatar’s two exclaves."
+    }
+   ]
+  },
+  {
+   "id": "MNG:Govisumber",
+   "names": {
+    "en": "Govisümber Province",
+    "ja": "ゴビスンベル県",
+    "local": "Говьсүмбэр аймаг"
+   },
+   "wikidata": "Q236333",
+   "spans": [
+    {
+     "from": "1994-05-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MNG-ADM1-14279143B31648094269757"
+     ],
+     "sources": [
+      {
+       "url": "https://mn.wikipedia.org/w/index.php?oldid=868156",
+       "title": "Говьсүмбэр аймаг (mn.wikipedia, permanent revision)",
+       "says": "State Great Khural resolution No.32 of 6 May 1994 made Govisümber aimag from Dornogovi's Sümber sum and Ulaanbaatar's Shivee-Gobi and Bayantsagaan districts (Choir city since 21 June 1991).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.geoboundaries.org/",
+       "title": "geoBoundaries gbOpen MNG ADM1 (OpenStreetMap, 2017) — pinned in scripts/histrecon/atoms/geoboundaries-manifest.json",
+       "says": "Ulaanbaatar is drawn as three parts (main city, Baganuur, Bagakhangai); Govisümber is a separate aimag outside Dornogovi.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Scope floor (State Great Khural resolution No.32 of 6 May 1994). Drawn from geoBoundaries MNG ADM1, whose outline carries the 1994 split of Govisümber from Dornogovi and Ulaanbaatar’s two exclaves."
+    }
+   ]
+  },
+  {
+   "id": "MNG:Ulaanbaatar",
+   "names": {
+    "en": "Ulaanbaatar",
+    "ja": "ウランバートル",
+    "local": "Улаанбаатар"
+   },
+   "wikidata": "Q23430",
+   "spans": [
+    {
+     "from": "1994-05-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MNG-ADM1-14279143B69842940795179"
+     ],
+     "sources": [
+      {
+       "url": "https://mn.wikipedia.org/w/index.php?oldid=868156",
+       "title": "Говьсүмбэр аймаг (mn.wikipedia, permanent revision)",
+       "says": "State Great Khural resolution No.32 of 6 May 1994 made Govisümber aimag from Dornogovi's Sümber sum and Ulaanbaatar's Shivee-Gobi and Bayantsagaan districts (Choir city since 21 June 1991).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1374968109",
+       "title": "Bagakhangai (en.wikipedia, permanent revision)",
+       "says": "Bagakhangai, a district of Ulaanbaatar (khoroo from 1989, district from 1992), 140 km².",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1377559764",
+       "title": "Baganuur (en.wikipedia, permanent revision)",
+       "says": "Baganuur, a district and exclave of Ulaanbaatar (620 km²) between Töv and Khentii; raion from 1980, district from 1992.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.geoboundaries.org/",
+       "title": "geoBoundaries gbOpen MNG ADM1 (OpenStreetMap, 2017) — pinned in scripts/histrecon/atoms/geoboundaries-manifest.json",
+       "says": "Ulaanbaatar is drawn as three parts (main city, Baganuur, Bagakhangai); Govisümber is a separate aimag outside Dornogovi.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Scope floor (State Great Khural resolution No.32 of 6 May 1994). Drawn from geoBoundaries MNG ADM1, whose outline carries the 1994 split of Govisümber from Dornogovi and Ulaanbaatar’s two exclaves."
+    }
+   ]
+  },
+  {
+   "id": "MNG:Tov",
+   "names": {
+    "en": "Töv Province",
+    "ja": "トゥブ県",
+    "local": "Төв аймаг"
+   },
+   "wikidata": "Q276195",
+   "spans": [
+    {
+     "from": "1994-05-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MNG-ADM1-14279143B76228648820573"
+     ],
+     "sources": [
+      {
+       "url": "https://mn.wikipedia.org/w/index.php?oldid=868156",
+       "title": "Говьсүмбэр аймаг (mn.wikipedia, permanent revision)",
+       "says": "State Great Khural resolution No.32 of 6 May 1994 made Govisümber aimag from Dornogovi's Sümber sum and Ulaanbaatar's Shivee-Gobi and Bayantsagaan districts (Choir city since 21 June 1991).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1374968109",
+       "title": "Bagakhangai (en.wikipedia, permanent revision)",
+       "says": "Bagakhangai, a district of Ulaanbaatar (khoroo from 1989, district from 1992), 140 km².",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.geoboundaries.org/",
+       "title": "geoBoundaries gbOpen MNG ADM1 (OpenStreetMap, 2017) — pinned in scripts/histrecon/atoms/geoboundaries-manifest.json",
+       "says": "Ulaanbaatar is drawn as three parts (main city, Baganuur, Bagakhangai); Govisümber is a separate aimag outside Dornogovi.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Scope floor (State Great Khural resolution No.32 of 6 May 1994). Drawn from geoBoundaries MNG ADM1, whose outline carries the 1994 split of Govisümber from Dornogovi and Ulaanbaatar’s two exclaves."
     }
    ]
   }
@@ -528,66 +682,10 @@
  "atomsOutside": [],
  "unresolved": [
   {
-   "what": "Dornogovi 1994-05-06 → 2019",
-   "unit": "MNG:Dornogovi",
-   "atoms": [
-    "MNG-3297"
-   ],
-   "from": "1994-05-06",
-   "to": null,
-   "why": "NE quirk: atom MNG-3297 (114,328 km²) contains the whole of Govisümber (5,542 km²; Choir at 108.36E 46.36N falls inside it). That union never was one unit: Govisümber came from Dornogovi's Sümber sum AND two Ulaanbaatar districts.",
-   "checked": [
-    "NE ca96624 point-in-polygon (Choir) and per-atom areas",
-    "mn.wikipedia Govisümber oldid 868156"
-   ],
-   "needs": "an atom for Govisümber split out of NE MNG-3297 (e.g. geoBoundaries MNG ADM1/ADM2 or OSM, licence to be checked)"
-  },
-  {
-   "what": "Govisümber 1994-05-06 → 2019 (no atom carries it)",
-   "unit": "MNG:Govisumber",
-   "from": "1994-05-06",
-   "to": null,
-   "why": "Its territory lies inside NE's Dornogovi atom; the NE feature named Govĭ-Sümber is not Govisümber (see Ulaanbaatar entry).",
-   "checked": [
-    "NE ca96624 geometry (MNG-3330 is 645 km² centred 108.39E 47.73N = Baganuur)"
-   ],
-   "needs": "a Govisümber atom"
-  },
-  {
-   "what": "Ulaanbaatar 1994-05-06 → 2019",
-   "unit": "MNG:Ulaanbaatar",
-   "atoms": [
-    "MNG-3331",
-    "MNG-3330"
-   ],
-   "from": "1994-05-06",
-   "to": null,
-   "why": "NE quirk: MNG-3330, labelled Govĭ-Sümber, is the Baganuur exclave of Ulaanbaatar (645 km² at 108.39E 47.73N vs Baganuur 620 km²). Ulaanbaatar's Bagakhangai exclave (140 km², 107.49E 47.36N) lies inside NE's Töv atom, so no union of NE atoms equals Ulaanbaatar.",
-   "checked": [
-    "NE ca96624 point-in-polygon at Bagakhangai, Baganuur, Nalaikh",
-    "en.wikipedia Bagakhangai oldid 1374968109, Baganuur oldid 1377559764"
-   ],
-   "needs": "a Bagakhangai atom split from NE MNG-3329"
-  },
-  {
-   "what": "Töv 1994-05-06 → 2019",
-   "unit": "MNG:Tov",
-   "atoms": [
-    "MNG-3329"
-   ],
-   "from": "1994-05-06",
-   "to": null,
-   "why": "NE's Töv atom includes Ulaanbaatar's Bagakhangai exclave (district since 1989).",
-   "checked": [
-    "NE ca96624 point-in-polygon at 107.49E 47.36N"
-   ],
-   "needs": "a Bagakhangai atom split from NE MNG-3329"
-  },
-  {
    "what": "Bulgan and Orkhon 1994-05-06 → 2019",
    "unit": "MNG:Bulgan",
    "atoms": [
-    "MNG-3323"
+    "MNG-ADM1-14279143B49613281560709"
    ],
    "from": "1994-05-06",
    "to": null,
@@ -603,7 +701,7 @@
    "what": "Orkhon 1994-05-06 → 2019",
    "unit": "MNG:Orkhon",
    "atoms": [
-    "MNG-3324"
+    "MNG-ADM1-14279143B15424694570155"
    ],
    "from": "1994-05-06",
    "to": null,
@@ -617,7 +715,7 @@
    "what": "Selenge 1994-05-06 → 2019",
    "unit": "MNG:Selenge",
    "atoms": [
-    "MNG-3326"
+    "MNG-ADM1-14279143B84215380438566"
    ],
    "from": "1994-05-06",
    "to": null,
@@ -632,7 +730,7 @@
    "what": "Darkhan-Uul 1994-05-06 → 2019",
    "unit": "MNG:DarkhanUul",
    "atoms": [
-    "MNG-3328"
+    "MNG-ADM1-14279143B32551742065768"
    ],
    "from": "1994-05-06",
    "to": null,

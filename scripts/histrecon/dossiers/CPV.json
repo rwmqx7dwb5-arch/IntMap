@@ -1,0 +1,1039 @@
+{
+  "country": "CPV",
+  "atomSet": "gb-adm2@2026-10-06",
+  "scope": {
+    "from": "1975-07-05",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Republic of Cape Verde (independent 1975-07-05). First-level units are the concelhos (municípios); islands and the Barlavento/Sotavento groups are not administrative. Atoms: the 32 freguesias of geoBoundaries CPV ADM2 (OCHA ROWCA, 2020, CC BY 3.0 IGO); every concelho change since independence moved whole freguesias. ① Atom area (km², spherical) vs Statoids area: Boa Vista 634/620, Brava 66/67, Maio 274/269, Sal 220/216, Porto Novo 563/558, Ribeira Grande 168/167, Paul 56/54, Fogo 472/476, Praia before 1993 388/396, Santa Cruz before 2005 149/149, Tarrafal before 1996 198/203, São Vicente 269/227, São Nicolau 346/388, Santa Catarina with São Salvador do Mundo 272/243; country 3,999/3,985 (1.00). The three outliers are lines inside one island (Santiago) or published areas that omit islets; no source records a parish transfer.",
+  "units": [
+    {
+      "id": "CPV:BoaVista@1975",
+      "names": {
+        "en": "Boa Vista",
+        "ja": "ボアヴィスタ郡",
+        "local": "Concelho da Boa Vista"
+      },
+      "spans": [
+        {
+          "from": "1975-07-05",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "CPV-ADM2-66160863B6342114798882",
+            "CPV-ADM2-66160863B76154481217824"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids)",
+              "says": "14 concelhos in the 1971 table (Porto Novo and Santa Cruz split about 1971); later counties were formed by taking whole freguesias: São Domingos, Mosteiros, São Miguel, and five in July-August 2005.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids), territorial extent",
+              "says": "Each county lies on one island; islets go with the nearest county (Santa Luzia with São Vicente, Rei and Rombo with Brava).",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "CPV:Brava@1975",
+      "names": {
+        "en": "Brava",
+        "ja": "ブラヴァ郡",
+        "local": "Concelho da Brava"
+      },
+      "spans": [
+        {
+          "from": "1975-07-05",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "CPV-ADM2-66160863B40523802781782",
+            "CPV-ADM2-66160863B96352926706883"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids)",
+              "says": "14 concelhos in the 1971 table (Porto Novo and Santa Cruz split about 1971); later counties were formed by taking whole freguesias: São Domingos, Mosteiros, São Miguel, and five in July-August 2005.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids), territorial extent",
+              "says": "Each county lies on one island; islets go with the nearest county (Santa Luzia with São Vicente, Rei and Rombo with Brava).",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "CPV:Maio@1975",
+      "names": {
+        "en": "Maio",
+        "ja": "マイオ郡",
+        "local": "Concelho do Maio"
+      },
+      "spans": [
+        {
+          "from": "1975-07-05",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "CPV-ADM2-66160863B67599039999674"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids)",
+              "says": "14 concelhos in the 1971 table (Porto Novo and Santa Cruz split about 1971); later counties were formed by taking whole freguesias: São Domingos, Mosteiros, São Miguel, and five in July-August 2005.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids), territorial extent",
+              "says": "Each county lies on one island; islets go with the nearest county (Santa Luzia with São Vicente, Rei and Rombo with Brava).",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "CPV:Sal@1975",
+      "names": {
+        "en": "Sal",
+        "ja": "サル郡",
+        "local": "Concelho do Sal"
+      },
+      "spans": [
+        {
+          "from": "1975-07-05",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "CPV-ADM2-66160863B51777192933696"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids)",
+              "says": "14 concelhos in the 1971 table (Porto Novo and Santa Cruz split about 1971); later counties were formed by taking whole freguesias: São Domingos, Mosteiros, São Miguel, and five in July-August 2005.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids), territorial extent",
+              "says": "Each county lies on one island; islets go with the nearest county (Santa Luzia with São Vicente, Rei and Rombo with Brava).",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "CPV:SaoVicente@1975",
+      "names": {
+        "en": "São Vicente",
+        "ja": "サン・ヴィセンテ郡",
+        "local": "Concelho de São Vicente"
+      },
+      "spans": [
+        {
+          "from": "1975-07-05",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "CPV-ADM2-66160863B58817505266013"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids)",
+              "says": "14 concelhos in the 1971 table (Porto Novo and Santa Cruz split about 1971); later counties were formed by taking whole freguesias: São Domingos, Mosteiros, São Miguel, and five in July-August 2005.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids), territorial extent",
+              "says": "Each county lies on one island; islets go with the nearest county (Santa Luzia with São Vicente, Rei and Rombo with Brava).",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "CPV:Paul@1975",
+      "names": {
+        "en": "Paul",
+        "ja": "パウル郡",
+        "local": "Concelho do Paul"
+      },
+      "spans": [
+        {
+          "from": "1975-07-05",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "CPV-ADM2-66160863B53098387752451"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids)",
+              "says": "14 concelhos in the 1971 table (Porto Novo and Santa Cruz split about 1971); later counties were formed by taking whole freguesias: São Domingos, Mosteiros, São Miguel, and five in July-August 2005.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids), territorial extent",
+              "says": "Each county lies on one island; islets go with the nearest county (Santa Luzia with São Vicente, Rei and Rombo with Brava).",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "CPV:PortoNovo@1975",
+      "names": {
+        "en": "Porto Novo",
+        "ja": "ポルト・ノヴォ郡",
+        "local": "Concelho do Porto Novo"
+      },
+      "spans": [
+        {
+          "from": "1975-07-05",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "CPV-ADM2-66160863B70751634637165",
+            "CPV-ADM2-66160863B46579427106888"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids)",
+              "says": "14 concelhos in the 1971 table (Porto Novo and Santa Cruz split about 1971); later counties were formed by taking whole freguesias: São Domingos, Mosteiros, São Miguel, and five in July-August 2005.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids), territorial extent",
+              "says": "Each county lies on one island; islets go with the nearest county (Santa Luzia with São Vicente, Rei and Rombo with Brava).",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "CPV:RibeiraGrande@1975",
+      "names": {
+        "en": "Ribeira Grande",
+        "ja": "リベイラ・グランデ郡",
+        "local": "Concelho da Ribeira Grande"
+      },
+      "spans": [
+        {
+          "from": "1975-07-05",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "CPV-ADM2-66160863B91585848329276",
+            "CPV-ADM2-66160863B28688334871687",
+            "CPV-ADM2-66160863B26577257957631",
+            "CPV-ADM2-66160863B19660935593220"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids)",
+              "says": "14 concelhos in the 1971 table (Porto Novo and Santa Cruz split about 1971); later counties were formed by taking whole freguesias: São Domingos, Mosteiros, São Miguel, and five in July-August 2005.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids), territorial extent",
+              "says": "Each county lies on one island; islets go with the nearest county (Santa Luzia with São Vicente, Rei and Rombo with Brava).",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "CPV:SaoNicolau@1975",
+      "names": {
+        "en": "São Nicolau",
+        "ja": "サン・ニコラウ郡",
+        "local": "Concelho de São Nicolau"
+      },
+      "spans": [
+        {
+          "from": "1975-07-05",
+          "precision": "day",
+          "to": "2005-08-03",
+          "atoms": [
+            "CPV-ADM2-66160863B12848359802416",
+            "CPV-ADM2-66160863B38183693605809",
+            "CPV-ADM2-66160863B96931694342339"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids)",
+              "says": "14 concelhos in the 1971 table (Porto Novo and Santa Cruz split about 1971); later counties were formed by taking whole freguesias: São Domingos, Mosteiros, São Miguel, and five in July-August 2005.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids), 2005 changes",
+              "says": "Five counties formed from whole parishes, 2005-07-19 to 08-03: São Salvador do Mundo (from Santa Catarina), São Lourenço dos Órgãos (Santa Cruz), Ribeira Grande de Santiago (Praia), Santa Catarina do Fogo (São Filipe), Tarrafal de São Nicolau.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "CPV:RibeiraBrava@2005",
+      "names": {
+        "en": "Ribeira Brava",
+        "ja": "リベイラ・ブラヴァ郡",
+        "local": "Concelho da Ribeira Brava"
+      },
+      "spans": [
+        {
+          "from": "2005-08-03",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "CPV-ADM2-66160863B12848359802416",
+            "CPV-ADM2-66160863B38183693605809"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids), 2005 changes",
+              "says": "Five counties formed from whole parishes, 2005-07-19 to 08-03: São Salvador do Mundo (from Santa Catarina), São Lourenço dos Órgãos (Santa Cruz), Ribeira Grande de Santiago (Praia), Santa Catarina do Fogo (São Filipe), Tarrafal de São Nicolau.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "CPV:TarrafalSN@2005",
+      "names": {
+        "en": "Tarrafal de São Nicolau",
+        "ja": "タラファル・デ・サン・ニコラウ郡",
+        "local": "Concelho do Tarrafal de São Nicolau"
+      },
+      "spans": [
+        {
+          "from": "2005-08-03",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "CPV-ADM2-66160863B96931694342339"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids), 2005 changes",
+              "says": "Five counties formed from whole parishes, 2005-07-19 to 08-03: São Salvador do Mundo (from Santa Catarina), São Lourenço dos Órgãos (Santa Cruz), Ribeira Grande de Santiago (Praia), Santa Catarina do Fogo (São Filipe), Tarrafal de São Nicolau.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "CPV:Fogo@1975",
+      "names": {
+        "en": "Fogo",
+        "ja": "フォゴ郡",
+        "local": "Concelho do Fogo"
+      },
+      "spans": [
+        {
+          "from": "1975-07-05",
+          "precision": "day",
+          "to": "1992-01-02",
+          "atoms": [
+            "CPV-ADM2-66160863B39753348448887",
+            "CPV-ADM2-66160863B41356087556588",
+            "CPV-ADM2-66160863B13080281314211",
+            "CPV-ADM2-66160863B71170562423195"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids)",
+              "says": "14 concelhos in the 1971 table (Porto Novo and Santa Cruz split about 1971); later counties were formed by taking whole freguesias: São Domingos, Mosteiros, São Miguel, and five in July-August 2005.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?title=Mosteiros_(concelho_de_Cabo_Verde)&oldid=72086698",
+              "title": "Mosteiros (concelho de Cabo Verde), Wikipédia",
+              "says": "Created by law 23/IV/91 of 30 December 1991, in force 2 January 1992, by dividing the former Fogo concelho: the north-east became Mosteiros (parish N. S. da Ajuda), the south-west São Filipe.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "CPV:SaoFilipe@1992",
+      "names": {
+        "en": "São Filipe",
+        "ja": "サン・フィリペ郡",
+        "local": "Concelho de São Filipe"
+      },
+      "spans": [
+        {
+          "from": "1992-01-02",
+          "precision": "day",
+          "to": "2005-07-25",
+          "atoms": [
+            "CPV-ADM2-66160863B39753348448887",
+            "CPV-ADM2-66160863B41356087556588",
+            "CPV-ADM2-66160863B71170562423195"
+          ],
+          "sources": [
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?title=Mosteiros_(concelho_de_Cabo_Verde)&oldid=72086698",
+              "title": "Mosteiros (concelho de Cabo Verde), Wikipédia",
+              "says": "Created by law 23/IV/91 of 30 December 1991, in force 2 January 1992, by dividing the former Fogo concelho: the north-east became Mosteiros (parish N. S. da Ajuda), the south-west São Filipe.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids)",
+              "says": "14 concelhos in the 1971 table (Porto Novo and Santa Cruz split about 1971); later counties were formed by taking whole freguesias: São Domingos, Mosteiros, São Miguel, and five in July-August 2005.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        },
+        {
+          "from": "2005-07-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "CPV-ADM2-66160863B39753348448887",
+            "CPV-ADM2-66160863B41356087556588"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids), 2005 changes",
+              "says": "Five counties formed from whole parishes, 2005-07-19 to 08-03: São Salvador do Mundo (from Santa Catarina), São Lourenço dos Órgãos (Santa Cruz), Ribeira Grande de Santiago (Praia), Santa Catarina do Fogo (São Filipe), Tarrafal de São Nicolau.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "CPV:Mosteiros@1992",
+      "names": {
+        "en": "Mosteiros",
+        "ja": "モステイロス郡",
+        "local": "Concelho dos Mosteiros"
+      },
+      "spans": [
+        {
+          "from": "1992-01-02",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "CPV-ADM2-66160863B13080281314211"
+          ],
+          "sources": [
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?title=Mosteiros_(concelho_de_Cabo_Verde)&oldid=72086698",
+              "title": "Mosteiros (concelho de Cabo Verde), Wikipédia",
+              "says": "Created by law 23/IV/91 of 30 December 1991, in force 2 January 1992, by dividing the former Fogo concelho: the north-east became Mosteiros (parish N. S. da Ajuda), the south-west São Filipe.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids)",
+              "says": "14 concelhos in the 1971 table (Porto Novo and Santa Cruz split about 1971); later counties were formed by taking whole freguesias: São Domingos, Mosteiros, São Miguel, and five in July-August 2005.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "CPV:SantaCatarinaFogo@2005",
+      "names": {
+        "en": "Santa Catarina do Fogo",
+        "ja": "サンタ・カタリナ・ド・フォゴ郡",
+        "local": "Concelho de Santa Catarina do Fogo"
+      },
+      "spans": [
+        {
+          "from": "2005-07-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "CPV-ADM2-66160863B71170562423195"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids), 2005 changes",
+              "says": "Five counties formed from whole parishes, 2005-07-19 to 08-03: São Salvador do Mundo (from Santa Catarina), São Lourenço dos Órgãos (Santa Cruz), Ribeira Grande de Santiago (Praia), Santa Catarina do Fogo (São Filipe), Tarrafal de São Nicolau.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "CPV:Praia@1975",
+      "names": {
+        "en": "Praia",
+        "ja": "プライア郡",
+        "local": "Concelho da Praia"
+      },
+      "spans": [
+        {
+          "from": "1975-07-05",
+          "precision": "day",
+          "to": "1993-12-13",
+          "atoms": [
+            "CPV-ADM2-66160863B19025383966327",
+            "CPV-ADM2-66160863B56005242542710",
+            "CPV-ADM2-66160863B53173453259277",
+            "CPV-ADM2-66160863B49789826079472",
+            "CPV-ADM2-66160863B10929768356041"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids)",
+              "says": "14 concelhos in the 1971 table (Porto Novo and Santa Cruz split about 1971); later counties were formed by taking whole freguesias: São Domingos, Mosteiros, São Miguel, and five in July-August 2005.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?title=S%C3%A3o_Domingos_(concelho_de_Cabo_Verde)&oldid=71458945",
+              "title": "São Domingos (concelho de Cabo Verde), Wikipédia",
+              "says": "Created in 1993 when two parishes of the former Praia concelho (N. S. da Luz, São Nicolau Tolentino) were separated.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        },
+        {
+          "from": "1993-12-13",
+          "precision": "day",
+          "to": "2005-07-23",
+          "atoms": [
+            "CPV-ADM2-66160863B19025383966327",
+            "CPV-ADM2-66160863B56005242542710",
+            "CPV-ADM2-66160863B53173453259277"
+          ],
+          "sources": [
+            {
+              "url": "https://cmsd.cv/",
+              "title": "Câmara Municipal de São Domingos",
+              "says": "The concelho of São Domingos was created by law 96/IV/93 of 13 December (1993).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids), 2005 changes",
+              "says": "Five counties formed from whole parishes, 2005-07-19 to 08-03: São Salvador do Mundo (from Santa Catarina), São Lourenço dos Órgãos (Santa Cruz), Ribeira Grande de Santiago (Praia), Santa Catarina do Fogo (São Filipe), Tarrafal de São Nicolau.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        },
+        {
+          "from": "2005-07-23",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "CPV-ADM2-66160863B19025383966327"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids), 2005 changes",
+              "says": "Five counties formed from whole parishes, 2005-07-19 to 08-03: São Salvador do Mundo (from Santa Catarina), São Lourenço dos Órgãos (Santa Cruz), Ribeira Grande de Santiago (Praia), Santa Catarina do Fogo (São Filipe), Tarrafal de São Nicolau.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "CPV:SaoDomingos@1993",
+      "names": {
+        "en": "São Domingos",
+        "ja": "サン・ドミンゴス郡",
+        "local": "Concelho de São Domingos"
+      },
+      "spans": [
+        {
+          "from": "1993-12-13",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "CPV-ADM2-66160863B49789826079472",
+            "CPV-ADM2-66160863B10929768356041"
+          ],
+          "sources": [
+            {
+              "url": "https://cmsd.cv/",
+              "title": "Câmara Municipal de São Domingos",
+              "says": "The concelho of São Domingos was created by law 96/IV/93 of 13 December (1993).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?title=S%C3%A3o_Domingos_(concelho_de_Cabo_Verde)&oldid=71458945",
+              "title": "São Domingos (concelho de Cabo Verde), Wikipédia",
+              "says": "Created in 1993 when two parishes of the former Praia concelho (N. S. da Luz, São Nicolau Tolentino) were separated.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Statoids dates this change to about 1988; the municipality itself and Wikipédia give law 96/IV/93 of 1993-12-13."
+        }
+      ]
+    },
+    {
+      "id": "CPV:RibeiraGrandeSantiago@2005",
+      "names": {
+        "en": "Ribeira Grande de Santiago",
+        "ja": "リベイラ・グランデ・デ・サンティアゴ郡",
+        "local": "Concelho da Ribeira Grande de Santiago"
+      },
+      "spans": [
+        {
+          "from": "2005-07-23",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "CPV-ADM2-66160863B56005242542710",
+            "CPV-ADM2-66160863B53173453259277"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids), 2005 changes",
+              "says": "Five counties formed from whole parishes, 2005-07-19 to 08-03: São Salvador do Mundo (from Santa Catarina), São Lourenço dos Órgãos (Santa Cruz), Ribeira Grande de Santiago (Praia), Santa Catarina do Fogo (São Filipe), Tarrafal de São Nicolau.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "CPV:SantaCatarina@1975",
+      "names": {
+        "en": "Santa Catarina",
+        "ja": "サンタ・カタリナ郡",
+        "local": "Concelho de Santa Catarina"
+      },
+      "spans": [
+        {
+          "from": "1975-07-05",
+          "precision": "day",
+          "to": "2005-07-19",
+          "atoms": [
+            "CPV-ADM2-66160863B9089914822408",
+            "CPV-ADM2-66160863B42982614395502"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids)",
+              "says": "14 concelhos in the 1971 table (Porto Novo and Santa Cruz split about 1971); later counties were formed by taking whole freguesias: São Domingos, Mosteiros, São Miguel, and five in July-August 2005.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids), 2005 changes",
+              "says": "Five counties formed from whole parishes, 2005-07-19 to 08-03: São Salvador do Mundo (from Santa Catarina), São Lourenço dos Órgãos (Santa Cruz), Ribeira Grande de Santiago (Praia), Santa Catarina do Fogo (São Filipe), Tarrafal de São Nicolau.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        },
+        {
+          "from": "2005-07-19",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "CPV-ADM2-66160863B9089914822408"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids), 2005 changes",
+              "says": "Five counties formed from whole parishes, 2005-07-19 to 08-03: São Salvador do Mundo (from Santa Catarina), São Lourenço dos Órgãos (Santa Cruz), Ribeira Grande de Santiago (Praia), Santa Catarina do Fogo (São Filipe), Tarrafal de São Nicolau.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "CPV:SaoSalvadorMundo@2005",
+      "names": {
+        "en": "São Salvador do Mundo",
+        "ja": "サン・サルヴァドル・ド・ムンド郡",
+        "local": "Concelho de São Salvador do Mundo"
+      },
+      "spans": [
+        {
+          "from": "2005-07-19",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "CPV-ADM2-66160863B42982614395502"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids), 2005 changes",
+              "says": "Five counties formed from whole parishes, 2005-07-19 to 08-03: São Salvador do Mundo (from Santa Catarina), São Lourenço dos Órgãos (Santa Cruz), Ribeira Grande de Santiago (Praia), Santa Catarina do Fogo (São Filipe), Tarrafal de São Nicolau.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "CPV:SantaCruz@1975",
+      "names": {
+        "en": "Santa Cruz",
+        "ja": "サンタ・クルス郡",
+        "local": "Concelho de Santa Cruz"
+      },
+      "spans": [
+        {
+          "from": "1975-07-05",
+          "precision": "day",
+          "to": "2005-07-21",
+          "atoms": [
+            "CPV-ADM2-66160863B62302711188639",
+            "CPV-ADM2-66160863B72941798312267"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids)",
+              "says": "14 concelhos in the 1971 table (Porto Novo and Santa Cruz split about 1971); later counties were formed by taking whole freguesias: São Domingos, Mosteiros, São Miguel, and five in July-August 2005.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids), 2005 changes",
+              "says": "Five counties formed from whole parishes, 2005-07-19 to 08-03: São Salvador do Mundo (from Santa Catarina), São Lourenço dos Órgãos (Santa Cruz), Ribeira Grande de Santiago (Praia), Santa Catarina do Fogo (São Filipe), Tarrafal de São Nicolau.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        },
+        {
+          "from": "2005-07-21",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "CPV-ADM2-66160863B62302711188639"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids), 2005 changes",
+              "says": "Five counties formed from whole parishes, 2005-07-19 to 08-03: São Salvador do Mundo (from Santa Catarina), São Lourenço dos Órgãos (Santa Cruz), Ribeira Grande de Santiago (Praia), Santa Catarina do Fogo (São Filipe), Tarrafal de São Nicolau.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "CPV:SaoLourencoOrgaos@2005",
+      "names": {
+        "en": "São Lourenço dos Órgãos",
+        "ja": "サン・ロウレンソ・ドス・オルガンス郡",
+        "local": "Concelho de São Lourenço dos Órgãos"
+      },
+      "spans": [
+        {
+          "from": "2005-07-21",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "CPV-ADM2-66160863B72941798312267"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids), 2005 changes",
+              "says": "Five counties formed from whole parishes, 2005-07-19 to 08-03: São Salvador do Mundo (from Santa Catarina), São Lourenço dos Órgãos (Santa Cruz), Ribeira Grande de Santiago (Praia), Santa Catarina do Fogo (São Filipe), Tarrafal de São Nicolau.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "CPV:Tarrafal@1975",
+      "names": {
+        "en": "Tarrafal",
+        "ja": "タラファル郡",
+        "local": "Concelho do Tarrafal"
+      },
+      "spans": [
+        {
+          "from": "1975-07-05",
+          "precision": "day",
+          "to": "1996-11-11",
+          "atoms": [
+            "CPV-ADM2-66160863B37752467633472",
+            "CPV-ADM2-66160863B69203973191500"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids)",
+              "says": "14 concelhos in the 1971 table (Porto Novo and Santa Cruz split about 1971); later counties were formed by taking whole freguesias: São Domingos, Mosteiros, São Miguel, and five in July-August 2005.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?title=S%C3%A3o_Miguel_(concelho_de_Cabo_Verde)&oldid=71181868",
+              "title": "São Miguel (concelho de Cabo Verde), Wikipédia",
+              "says": "Created in 1996 when one parish of the former Tarrafal concelho was separated.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        },
+        {
+          "from": "1996-11-11",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "CPV-ADM2-66160863B37752467633472"
+          ],
+          "sources": [
+            {
+              "url": "https://expressodasilhas.cv/pais/2023/09/29/santiago-municipio-de-sao-miguel-completa-hoje-26-anos-da-sua-criacao/87897",
+              "title": "Expresso das Ilhas, 2023-09-29",
+              "says": "By law 11/V/96 of 11 November 1996 the parish was raised to a concelho; 29 September is the patron-saint municipal day, not the date of the law.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?title=S%C3%A3o_Miguel_(concelho_de_Cabo_Verde)&oldid=71181868",
+              "title": "São Miguel (concelho de Cabo Verde), Wikipédia",
+              "says": "Created in 1996 when one parish of the former Tarrafal concelho was separated.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "CPV:SaoMiguel@1996",
+      "names": {
+        "en": "São Miguel",
+        "ja": "サン・ミゲル郡",
+        "local": "Concelho de São Miguel"
+      },
+      "spans": [
+        {
+          "from": "1996-11-11",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "CPV-ADM2-66160863B69203973191500"
+          ],
+          "sources": [
+            {
+              "url": "https://expressodasilhas.cv/pais/2023/09/29/santiago-municipio-de-sao-miguel-completa-hoje-26-anos-da-sua-criacao/87897",
+              "title": "Expresso das Ilhas, 2023-09-29",
+              "says": "By law 11/V/96 of 11 November 1996 the parish was raised to a concelho; 29 September is the patron-saint municipal day, not the date of the law.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?title=S%C3%A3o_Miguel_(concelho_de_Cabo_Verde)&oldid=71181868",
+              "title": "São Miguel (concelho de Cabo Verde), Wikipédia",
+              "says": "Created in 1996 when one parish of the former Tarrafal concelho was separated.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ucv.html",
+              "title": "Counties of Cape Verde (Statoids)",
+              "says": "14 concelhos in the 1971 table (Porto Novo and Santa Cruz split about 1971); later counties were formed by taking whole freguesias: São Domingos, Mosteiros, São Miguel, and five in July-August 2005.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Statoids dates this change to about 1991; the law is 11/V/96 of 1996-11-11."
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1992-01-02",
+      "precision": "day",
+      "what": "Fogo concelho divided into Mosteiros (N. S. da Ajuda) and São Filipe (law 23/IV/91 of 1991-12-30, in force 1992-01-02)",
+      "sources": [
+        {
+          "url": "https://pt.wikipedia.org/w/index.php?title=Mosteiros_(concelho_de_Cabo_Verde)&oldid=72086698",
+          "title": "Mosteiros (concelho de Cabo Verde), Wikipédia",
+          "says": "Created by law 23/IV/91 of 30 December 1991, in force 2 January 1992, by dividing the former Fogo concelho: the north-east became Mosteiros (parish N. S. da Ajuda), the south-west São Filipe.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "1993-12-13",
+      "precision": "day",
+      "what": "São Domingos concelho created from two Praia parishes (law 96/IV/93)",
+      "sources": [
+        {
+          "url": "https://cmsd.cv/",
+          "title": "Câmara Municipal de São Domingos",
+          "says": "The concelho of São Domingos was created by law 96/IV/93 of 13 December (1993).",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://pt.wikipedia.org/w/index.php?title=S%C3%A3o_Domingos_(concelho_de_Cabo_Verde)&oldid=71458945",
+          "title": "São Domingos (concelho de Cabo Verde), Wikipédia",
+          "says": "Created in 1993 when two parishes of the former Praia concelho (N. S. da Luz, São Nicolau Tolentino) were separated.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "1996-11-11",
+      "precision": "day",
+      "what": "São Miguel concelho created from São Miguel Arcanjo parish of Tarrafal (law 11/V/96)",
+      "sources": [
+        {
+          "url": "https://expressodasilhas.cv/pais/2023/09/29/santiago-municipio-de-sao-miguel-completa-hoje-26-anos-da-sua-criacao/87897",
+          "title": "Expresso das Ilhas, 2023-09-29",
+          "says": "By law 11/V/96 of 11 November 1996 the parish was raised to a concelho; 29 September is the patron-saint municipal day, not the date of the law.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "2005-07-19",
+      "precision": "day",
+      "what": "Five concelhos created 2005-07-19 to 2005-08-03 from whole parishes; São Nicolau renamed Ribeira Brava",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ucv.html",
+          "title": "Counties of Cape Verde (Statoids), 2005 changes",
+          "says": "Five counties formed from whole parishes, 2005-07-19 to 08-03: São Salvador do Mundo (from Santa Catarina), São Lourenço dos Órgãos (Santa Cruz), Ribeira Grande de Santiago (Praia), Santa Catarina do Fogo (São Filipe), Tarrafal de São Nicolau.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "1975-07-05",
+      "n": 14,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ucv.html",
+          "title": "Counties of Cape Verde (Statoids)",
+          "says": "14 concelhos in the 1971 table (Porto Novo and Santa Cruz split about 1971); later counties were formed by taking whole freguesias: São Domingos, Mosteiros, São Miguel, and five in July-August 2005.",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://www.statoids.com/ucv.html",
+          "title": "Cape Verde (Statoids)",
+          "says": "Independent from Portugal on 1975-07-05; the 14 concelhos of the 1971 table were then in force (next change: Mosteiros, 1991).",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "1992-01-02",
+      "n": 15,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ucv.html",
+          "title": "Counties of Cape Verde (Statoids)",
+          "says": "14 concelhos in the 1971 table (Porto Novo and Santa Cruz split about 1971); later counties were formed by taking whole freguesias: São Domingos, Mosteiros, São Miguel, and five in July-August 2005.",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://pt.wikipedia.org/w/index.php?title=Mosteiros_(concelho_de_Cabo_Verde)&oldid=72086698",
+          "title": "Mosteiros (concelho de Cabo Verde), Wikipédia",
+          "says": "Created by law 23/IV/91 of 30 December 1991, in force 2 January 1992, by dividing the former Fogo concelho: the north-east became Mosteiros (parish N. S. da Ajuda), the south-west São Filipe.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "1993-12-13",
+      "n": 16,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ucv.html",
+          "title": "Counties of Cape Verde (Statoids)",
+          "says": "14 concelhos in the 1971 table (Porto Novo and Santa Cruz split about 1971); later counties were formed by taking whole freguesias: São Domingos, Mosteiros, São Miguel, and five in July-August 2005.",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://cmsd.cv/",
+          "title": "Câmara Municipal de São Domingos",
+          "says": "The concelho of São Domingos was created by law 96/IV/93 of 13 December (1993).",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "1996-11-11",
+      "n": 17,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ucv.html",
+          "title": "Counties of Cape Verde (Statoids)",
+          "says": "14 concelhos in the 1971 table (Porto Novo and Santa Cruz split about 1971); later counties were formed by taking whole freguesias: São Domingos, Mosteiros, São Miguel, and five in July-August 2005.",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://expressodasilhas.cv/pais/2023/09/29/santiago-municipio-de-sao-miguel-completa-hoje-26-anos-da-sua-criacao/87897",
+          "title": "Expresso das Ilhas, 2023-09-29",
+          "says": "By law 11/V/96 of 11 November 1996 the parish was raised to a concelho; 29 September is the patron-saint municipal day, not the date of the law.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "2005-08-03",
+      "n": 22,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ucv.html",
+          "title": "Counties of Cape Verde (Statoids), 2005 changes",
+          "says": "Five counties formed from whole parishes, 2005-07-19 to 08-03: São Salvador do Mundo (from Santa Catarina), São Lourenço dos Órgãos (Santa Cruz), Ribeira Grande de Santiago (Praia), Santa Catarina do Fogo (São Filipe), Tarrafal de São Nicolau.",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://www.statoids.com/ucv.html",
+          "title": "Counties of Cape Verde (Statoids)",
+          "says": "14 concelhos in the 1971 table (Porto Novo and Santa Cruz split about 1971); later counties were formed by taking whole freguesias: São Domingos, Mosteiros, São Miguel, and five in July-August 2005.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": []
+}

@@ -1,0 +1,279 @@
+{
+ "country": "TKM",
+ "atomSet": "gb-adm2@2026-10-06",
+ "scope": {
+  "from": "1991-12-26",
+  "to": "1992-12-13"
+ },
+ "polityNote": "First-level units of Turkmenistan from the dissolution of the USSR (26 Dec 1991) to the velayat reform of 14 Dec 1992, from which the Natural Earth fill draws. Atoms: geoBoundaries TKM ADM2 (CIESIN 2009, CC BY-SA, 59 units, 5,901 vertices; some units unnamed; a clean partition, 0 overlaps at 0.05°), grouped by the 2007 first-level layer (that layer itself, 1,322 vertices, is coarser than Natural Earth and is not used). The velayat articles say each velayat was formed on the territory of the former oblast; no transfer between them is recorded before 2009. Check ① (geodesic area of the union against the oblasts’ stated 1987 areas): Tashauz 76,429 vs 73,600 km² = 1.04; Chardzhou 96,473 vs 93,800 km² = 1.03; Mary 85,774 vs 86,800 km² = 0.99; Balkan 138,383 vs Krasnovodsk 138,500 km² = 1.00. No source states the number of first-level units for 1992, so no count is asserted. OpenHistoricalMap carries only the country for these years.",
+ "units": [
+  {
+   "id": "TKM:Tashauz",
+   "names": {
+    "en": "Tashauz Region",
+    "ja": "タシャウズ州",
+    "local": "Ташаузская область"
+   },
+   "wikidata": "Q4452926",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1992-12-14",
+     "atoms": [
+      "TKM-ADM2-10190150B53844356403959",
+      "TKM-ADM2-10190150B43921321162948",
+      "TKM-ADM2-10190150B19279847457631",
+      "TKM-ADM2-10190150B78263811448824",
+      "TKM-ADM2-10190150B22032040795574",
+      "TKM-ADM2-10190150B74382957458545",
+      "TKM-ADM2-10190150B20893258254384",
+      "TKM-ADM2-10190150B88624562206856"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%A2%D0%B0%D1%88%D0%B0%D1%83%D0%B7%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=151440953",
+       "title": "Wikipedia (ru) — Ташаузская область (oldid 151440953)",
+       "says": "Tashauz oblast existed 1939–1963 and 1970–1992; Darganata district went to Chardzhou in 1944; on 14 Dec 1992 Dashhowuz (Dashoguz) velayat was formed on its territory. 1987 area 73.6 thousand km².",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%94%D0%B0%D1%88%D0%BE%D0%B3%D1%83%D0%B7%D1%81%D0%BA%D0%B8%D0%B9_%D0%B2%D0%B5%D0%BB%D0%B0%D1%8F%D1%82&oldid=154388011",
+       "title": "Wikipedia (ru) — Дашогузский велаят (oldid 154388011)",
+       "says": "Formed 14 Dec 1992 on the territory of the former Tashauz oblast.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/utm.html",
+       "title": "Statoids — Provinces of Turkmenistan, change history",
+       "says": "Gives 1991-10-27 for the change of province names to Ahal, Balkan, Dashhowuz and Lebap and 1992 for Turkmen-language names; Ashgabat split from Ahal around 1996 (approximate).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Statoids dates the new province names to independence (27 Oct 1991); the Russian-language articles date the velayats to 14 Dec 1992 (Balkan: oblast 1991, velayat 18 May 1992). The territory is the same either way, so one span is drawn under the oblast name."
+    }
+   ]
+  },
+  {
+   "id": "TKM:Chardzhou",
+   "names": {
+    "en": "Chardzhou Region",
+    "ja": "チャルジョウ州",
+    "local": "Чарджоуская область"
+   },
+   "wikidata": "Q4507358",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1992-12-14",
+     "atoms": [
+      "TKM-ADM2-10190150B50164786179090",
+      "TKM-ADM2-10190150B22950665135778",
+      "TKM-ADM2-10190150B85284171000924",
+      "TKM-ADM2-10190150B82365313393871",
+      "TKM-ADM2-10190150B29958547271775",
+      "TKM-ADM2-10190150B55240389541589",
+      "TKM-ADM2-10190150B84447090793547",
+      "TKM-ADM2-10190150B33787597924926",
+      "TKM-ADM2-10190150B1660542161476",
+      "TKM-ADM2-10190150B91732086642718",
+      "TKM-ADM2-10190150B8136820559785",
+      "TKM-ADM2-10190150B64529450546528",
+      "TKM-ADM2-10190150B13703090222147"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%A7%D0%B0%D1%80%D0%B4%D0%B6%D0%BE%D1%83%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=148679317",
+       "title": "Wikipedia (ru) — Чарджоуская область (oldid 148679317)",
+       "says": "Chardzhou oblast existed 1939–1963 and 1970–1992 (with Darganata from 1944); on 14 Dec 1992 Lebap velayat was formed on its territory. 1987 area 93.8 thousand km².",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9B%D0%B5%D0%B1%D0%B0%D0%BF%D1%81%D0%BA%D0%B8%D0%B9_%D0%B2%D0%B5%D0%BB%D0%B0%D1%8F%D1%82&oldid=155145428",
+       "title": "Wikipedia (ru) — Лебапский велаят (oldid 155145428)",
+       "says": "Formed 14 Dec 1992 on the territory of the former Chardzhou oblast.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/utm.html",
+       "title": "Statoids — Provinces of Turkmenistan, change history",
+       "says": "Gives 1991-10-27 for the change of province names to Ahal, Balkan, Dashhowuz and Lebap and 1992 for Turkmen-language names; Ashgabat split from Ahal around 1996 (approximate).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Statoids dates the new province names to independence (27 Oct 1991); the Russian-language articles date the velayats to 14 Dec 1992 (Balkan: oblast 1991, velayat 18 May 1992). The territory is the same either way, so one span is drawn under the oblast name. Darganata has been on this side since 1944."
+    }
+   ]
+  },
+  {
+   "id": "TKM:Mary",
+   "names": {
+    "en": "Mary Region",
+    "ja": "マリ州",
+    "local": "Марыйская область"
+   },
+   "wikidata": "Q4283339",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1992-12-14",
+     "atoms": [
+      "TKM-ADM2-10190150B2260035962137",
+      "TKM-ADM2-10190150B14895102239013",
+      "TKM-ADM2-10190150B68029188897987",
+      "TKM-ADM2-10190150B79296156714764",
+      "TKM-ADM2-10190150B75003432350729",
+      "TKM-ADM2-10190150B24678300417334",
+      "TKM-ADM2-10190150B87689177497329",
+      "TKM-ADM2-10190150B49648436133803",
+      "TKM-ADM2-10190150B84985025782203",
+      "TKM-ADM2-10190150B71318451734132",
+      "TKM-ADM2-10190150B57236240934442",
+      "TKM-ADM2-10190150B21853413573592",
+      "TKM-ADM2-10190150B47066979897930",
+      "TKM-ADM2-10190150B1081119801356",
+      "TKM-ADM2-10190150B14310189929045",
+      "TKM-ADM2-10190150B50405020357004",
+      "TKM-ADM2-10190150B73073283057167",
+      "TKM-ADM2-10190150B71181095534415",
+      "TKM-ADM2-10190150B5604744388287",
+      "TKM-ADM2-10190150B69527723956536",
+      "TKM-ADM2-10190150B74431945610407",
+      "TKM-ADM2-10190150B68738729396459",
+      "TKM-ADM2-10190150B53319226660230",
+      "TKM-ADM2-10190150B54429883303561"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9C%D0%B0%D1%80%D1%8B%D0%B9%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=148054371",
+       "title": "Wikipedia (ru) — Марыйская область (oldid 148054371)",
+       "says": "Mary oblast existed 1939–1963 and 1970–1992; in 1992 Mary velayat was formed on its territory. 1987 area 86.8 thousand km².",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9C%D0%B0%D1%80%D1%8B%D0%B9%D1%81%D0%BA%D0%B8%D0%B9_%D0%B2%D0%B5%D0%BB%D0%B0%D1%8F%D1%82&oldid=154388070",
+       "title": "Wikipedia (ru) — Марыйский велаят (oldid 154388070)",
+       "says": "Formed 14 Dec 1992 on the territory of the former Mary oblast.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/utm.html",
+       "title": "Statoids — Provinces of Turkmenistan, change history",
+       "says": "Gives 1991-10-27 for the change of province names to Ahal, Balkan, Dashhowuz and Lebap and 1992 for Turkmen-language names; Ashgabat split from Ahal around 1996 (approximate).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Statoids dates the new province names to independence (27 Oct 1991); the Russian-language articles date the velayats to 14 Dec 1992 (Balkan: oblast 1991, velayat 18 May 1992). The territory is the same either way, so one span is drawn under the oblast name."
+    }
+   ]
+  },
+  {
+   "id": "TKM:Balkan",
+   "names": {
+    "en": "Balkan Region",
+    "ja": "バルカン州",
+    "local": "Балканская область"
+   },
+   "wikidata": "Q486073",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1992-12-14",
+     "atoms": [
+      "TKM-ADM2-10190150B47051626377462",
+      "TKM-ADM2-10190150B7816159308361",
+      "TKM-ADM2-10190150B33098588070062",
+      "TKM-ADM2-10190150B25855408224134",
+      "TKM-ADM2-10190150B5540422332593",
+      "TKM-ADM2-10190150B87050240782827",
+      "TKM-ADM2-10190150B43473123823457"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9A%D1%80%D0%B0%D1%81%D0%BD%D0%BE%D0%B2%D0%BE%D0%B4%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=144889424",
+       "title": "Wikipedia (ru) — Красноводская область (oldid 144889424)",
+       "says": "Krasnovodsk oblast existed 1939–1947, 1952–1955 and 1973–1988 (area 138.5 thousand km²); in 1991 Balkan oblast was formed on the territory of the former oblast, and in 1992 Balkan velayat.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%91%D0%B0%D0%BB%D0%BA%D0%B0%D0%BD%D1%81%D0%BA%D0%B8%D0%B9_%D0%B2%D0%B5%D0%BB%D0%B0%D1%8F%D1%82&oldid=154388191",
+       "title": "Wikipedia (ru) — Балканский велаят (oldid 154388191)",
+       "says": "Balkan velayat formed 18 May 1992 on the territory of the former Balkan oblast.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/utm.html",
+       "title": "Statoids — Provinces of Turkmenistan, change history",
+       "says": "Gives 1991-10-27 for the change of province names to Ahal, Balkan, Dashhowuz and Lebap and 1992 for Turkmen-language names; Ashgabat split from Ahal around 1996 (approximate).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Formed in 1991 on the territory of the former Krasnovodsk oblast (the exact day is not stated; it precedes 26 Dec 1991 by the statoids account of 27 Oct 1991); velayat from 18 May 1992 on the same territory."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1992-12-14",
+   "precision": "day",
+   "what": "Oblasts reconstituted as velayats; Ahal velayat formed on the former Ashkhabad oblast (the day after this scope)",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D1%85%D0%B0%D0%BB%D1%81%D0%BA%D0%B8%D0%B9_%D0%B2%D0%B5%D0%BB%D0%B0%D1%8F%D1%82&oldid=154387224",
+     "title": "Wikipedia (ru) — Ахалский велаят (oldid 154387224)",
+     "says": "Ahal velayat formed 14 Dec 1992 on the territory of the former Ashkhabad oblast; Ashgabat was at first its centre, later a separate unit.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%94%D0%B0%D1%88%D0%BE%D0%B3%D1%83%D0%B7%D1%81%D0%BA%D0%B8%D0%B9_%D0%B2%D0%B5%D0%BB%D0%B0%D1%8F%D1%82&oldid=154388011",
+     "title": "Wikipedia (ru) — Дашогузский велаят (oldid 154388011)",
+     "says": "Formed 14 Dec 1992 on the territory of the former Tashauz oblast.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9B%D0%B5%D0%B1%D0%B0%D0%BF%D1%81%D0%BA%D0%B8%D0%B9_%D0%B2%D0%B5%D0%BB%D0%B0%D1%8F%D1%82&oldid=155145428",
+     "title": "Wikipedia (ru) — Лебапский велаят (oldid 155145428)",
+     "says": "Formed 14 Dec 1992 on the territory of the former Chardzhou oblast.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9C%D0%B0%D1%80%D1%8B%D0%B9%D1%81%D0%BA%D0%B8%D0%B9_%D0%B2%D0%B5%D0%BB%D0%B0%D1%8F%D1%82&oldid=154388070",
+     "title": "Wikipedia (ru) — Марыйский велаят (oldid 154388070)",
+     "says": "Formed 14 Dec 1992 on the territory of the former Mary oblast.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  }
+ ],
+ "counts": [],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Former Ashkhabad oblast (districts under the republic) and Ashgabat city 1991–1992",
+   "unit": "TKM:Ashkhabad",
+   "atoms": [
+    "TKM-ADM2-10190150B31923585689840",
+    "TKM-ADM2-10190150B73322470423680",
+    "TKM-ADM2-10190150B850620817547",
+    "TKM-ADM2-10190150B42989304972975",
+    "TKM-ADM2-10190150B49022220136906",
+    "TKM-ADM2-10190150B40000077655635",
+    "TKM-ADM2-10190150B96789976776616"
+   ],
+   "from": "1991-12-26",
+   "to": "1992-12-14",
+   "why": "From 25 Aug 1988 to 14 Dec 1992 this territory was not an oblast; how its districts and the capital were grouped at the first level in 1991–1992 is not stated, and the capital lies inside the Ak Bugday atom (2009), so the city cannot be drawn apart from it.",
+   "checked": [
+    "ru.wikipedia Ашхабадская область oldid 151616925",
+    "ru.wikipedia Ахалский велаят oldid 154387224",
+    "statoids.com/utm.html (contradicts: Ahal named in 1991)",
+    "point-in-polygon of Ashgabat 58.38E 37.95N in TKM ADM1 and ADM2: Ahal / Ak Bugday"
+   ],
+   "needs": "The 1988–1992 status of the Ashkhabad-area districts and city (a decree list) and a city atom"
+  }
+ ]
+}

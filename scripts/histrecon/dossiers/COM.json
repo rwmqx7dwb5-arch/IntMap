@@ -1,0 +1,197 @@
+{
+  "country": "COM",
+  "atomSet": "gb-adm1@2026-10-06",
+  "scope": {
+    "from": "1975-07-06",
+    "to": "2019-12-31"
+  },
+  "polityNote": "State / Federal Islamic Republic / Union of the Comoros from independence (1975-07-06), without Mayotte, which stayed under French administration (claimed by the Comoros; drawn as France). First-level units are the three islands (governorates; autonomous islands from 2002). Atoms are geoBoundaries COM ADM1 (OpenStreetMap, ODbL), one per island with its islets. Anjouan (and briefly Mohéli) seceded de facto 1997–2002; the dossier follows the de jure administration. Independent check (①): atom areas vs statoids areas — Anjouan 428 vs 424 km², Grande Comore 1,019 vs 1,148, Mohéli 208 vs 290 (statoids figures are the commonly quoted round values; the OSM coastlines are the drawn ones).",
+  "units": [
+    {
+      "id": "COM:Ngazidja@1975",
+      "names": {
+        "en": "Grande Comore (Ngazidja)",
+        "ja": "グランドコモロ島（ンガジジャ）",
+        "local": "Ngazidja"
+      },
+      "spans": [
+        {
+          "from": "1975-07-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "COM-ADM1-22816118B95538827312271"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ukm.html",
+              "title": "Statoids — Islands of Comoros (Gwillim Law, updated 2015-06-30)",
+              "says": "Three autonomous islands (Anjouan, Grande Comore, Mohéli), each one major island with nearby islets; 1975-07-06 Mayotte separated when Comoros became independent; 2002-04-07 governorates became autonomous islands.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=236839389",
+              "title": "Wikipédia (fr): Subdivisions des Comores, rev. 236839389",
+              "says": "Under Loi 11-006/AU of 2 May 2011 the Union is divided into three autonomous islands, subdivided into 54 communes grouped in 16 prefectures.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Each island has been one first-level unit since independence (governorate, then autonomous island from 2002-04-07); the island is the unit, so its outline does not change."
+        }
+      ]
+    },
+    {
+      "id": "COM:Ndzuwani@1975",
+      "names": {
+        "en": "Anjouan (Ndzuwani)",
+        "ja": "アンジュアン島（ンズワニ）",
+        "local": "Ndzuwani"
+      },
+      "spans": [
+        {
+          "from": "1975-07-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "COM-ADM1-22816118B92166148047088"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ukm.html",
+              "title": "Statoids — Islands of Comoros (Gwillim Law, updated 2015-06-30)",
+              "says": "Three autonomous islands (Anjouan, Grande Comore, Mohéli), each one major island with nearby islets; 1975-07-06 Mayotte separated when Comoros became independent; 2002-04-07 governorates became autonomous islands.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=236839389",
+              "title": "Wikipédia (fr): Subdivisions des Comores, rev. 236839389",
+              "says": "Under Loi 11-006/AU of 2 May 2011 the Union is divided into three autonomous islands, subdivided into 54 communes grouped in 16 prefectures.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1377923140",
+              "title": "Wikipedia (en): Anjouan, rev. 1377923140",
+              "says": "Anjouan joined the State of Comoros at independence in 1975; it declared itself independent on 3 August 1997 and was reunified with the Comoros in 2002 as an autonomous island.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Each island has been one first-level unit since independence (governorate, then autonomous island from 2002-04-07); the island is the unit, so its outline does not change. 1997-08-03 → 2002: de facto secession (State of Anjouan); de jure part of the Comoros and drawn as such."
+        }
+      ]
+    },
+    {
+      "id": "COM:Mwali@1975",
+      "names": {
+        "en": "Mohéli (Mwali)",
+        "ja": "モヘリ島（ムワリ）",
+        "local": "Mwali"
+      },
+      "spans": [
+        {
+          "from": "1975-07-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "COM-ADM1-22816118B12510721755829"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ukm.html",
+              "title": "Statoids — Islands of Comoros (Gwillim Law, updated 2015-06-30)",
+              "says": "Three autonomous islands (Anjouan, Grande Comore, Mohéli), each one major island with nearby islets; 1975-07-06 Mayotte separated when Comoros became independent; 2002-04-07 governorates became autonomous islands.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=236839389",
+              "title": "Wikipédia (fr): Subdivisions des Comores, rev. 236839389",
+              "says": "Under Loi 11-006/AU of 2 May 2011 the Union is divided into three autonomous islands, subdivided into 54 communes grouped in 16 prefectures.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Each island has been one first-level unit since independence (governorate, then autonomous island from 2002-04-07); the island is the unit, so its outline does not change."
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1975-07-06",
+      "precision": "day",
+      "what": "Independence of the Comoros; Mayotte remains French",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ukm.html",
+          "title": "Statoids — Islands of Comoros (Gwillim Law, updated 2015-06-30)",
+          "says": "Three autonomous islands (Anjouan, Grande Comore, Mohéli), each one major island with nearby islets; 1975-07-06 Mayotte separated when Comoros became independent; 2002-04-07 governorates became autonomous islands.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "1997-08-03",
+      "precision": "day",
+      "what": "Anjouan declares itself independent (State of Anjouan); reunified 2002",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/w/index.php?oldid=1377923140",
+          "title": "Wikipedia (en): Anjouan, rev. 1377923140",
+          "says": "Anjouan joined the State of Comoros at independence in 1975; it declared itself independent on 3 August 1997 and was reunified with the Comoros in 2002 as an autonomous island.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "2002-04-07",
+      "precision": "day",
+      "what": "Governorates become autonomous islands (no territorial change)",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ukm.html",
+          "title": "Statoids — Islands of Comoros (Gwillim Law, updated 2015-06-30)",
+          "says": "Three autonomous islands (Anjouan, Grande Comore, Mohéli), each one major island with nearby islets; 1975-07-06 Mayotte separated when Comoros became independent; 2002-04-07 governorates became autonomous islands.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "2011-05-02",
+      "n": 3,
+      "sources": [
+        {
+          "url": "https://fr.wikipedia.org/w/index.php?oldid=236839389",
+          "title": "Wikipédia (fr): Subdivisions des Comores, rev. 236839389",
+          "says": "Under Loi 11-006/AU of 2 May 2011 the Union is divided into three autonomous islands, subdivided into 54 communes grouped in 16 prefectures.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "2015-06-30",
+      "n": 3,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ukm.html",
+          "title": "Statoids — Islands of Comoros (Gwillim Law, updated 2015-06-30)",
+          "says": "Three autonomous islands (Anjouan, Grande Comore, Mohéli), each one major island with nearby islets; 1975-07-06 Mayotte separated when Comoros became independent; 2002-04-07 governorates became autonomous islands.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Comoros as a French territory (1946–1975), including Mayotte",
+      "from": "1946",
+      "to": "1975-07-06",
+      "why": "Out of this dossier's scope: the colonial territory includes Mayotte, whose atoms belong to another country's set; its first-level units (circonscriptions per island) would need a polity dossier over COM and MYT atoms.",
+      "checked": [
+        "statoids ukm.html",
+        "Müller-Crepon DVN/9JI06R (does not cover the Comoros)"
+      ],
+      "needs": "a COM+MYT polity dossier with an atom set covering Mayotte"
+    }
+  ]
+}
