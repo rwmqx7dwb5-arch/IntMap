@@ -1,0 +1,56 @@
+# IntMap · the TLS certificate CloudFront serves for the site's own domain.
+#
+# ⚠ THIS STACK MUST BE CREATED IN us-east-1. CloudFront only accepts ACM certificates from that region
+#   (docs.aws.amazon.com «Requirements for using SSL/TLS certificates with CloudFront»). Everything
+#   else lives in infra/aws/hosting.yaml, in the region of the bucket.
+#
+# DNS validation: CloudFormation writes the validation CNAME into the Route 53 hosted zone that domain
+# registration created, and the stack completes once ACM has issued the certificate (minutes).
+# The certificate renews itself for as long as that CNAME stays in the zone — do not delete it.
+#
+# Procedure and order: docs/RELEASE.md «AWS（S3 + CloudFront）での配信».
+# Written in the long form (Fn::…, not !Ref) so any YAML parser reads it — tests/aws-hosting-checks.
+
+AWSTemplateFormatVersion: "2010-09-09"
+Description: IntMap - ACM certificate for the site's domain (us-east-1, for CloudFront)
+
+Parameters:
+  DomainName:
+    Type: String
+    Description: The apex domain, e.g. intmap.app (the www name is added as an alternative name)
+    AllowedPattern: "^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z][a-z0-9-]{0,61}[a-z0-9]$"
+  HostedZoneId:
+    Type: AWS::Route53::HostedZone::Id
+    Description: The Route 53 hosted zone of that domain
+
+# A stack created in another region would issue a certificate CloudFront refuses, and the failure would
+# surface only later, in the other stack. The rule makes it fail here, before anything is created.
+Rules:
+  MustBeUsEast1:
+    Assertions:
+      - Assert:
+          Fn::Equals: [{ Ref: "AWS::Region" }, "us-east-1"]
+        AssertDescription: CloudFront only accepts ACM certificates from us-east-1 - create this stack there.
+
+Resources:
+  Certificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: { Ref: DomainName }
+      SubjectAlternativeNames:
+        - Fn::Sub: "www.${DomainName}"
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: { Ref: DomainName }
+          HostedZoneId: { Ref: HostedZoneId }
+        - DomainName:
+            Fn::Sub: "www.${DomainName}"
+          HostedZoneId: { Ref: HostedZoneId }
+      Tags:
+        - Key: project
+          Value: intmap
+
+Outputs:
+  CertificateArn:
+    Description: Pass this to infra/aws/hosting.yaml as CertificateArn
+    Value: { Ref: Certificate }

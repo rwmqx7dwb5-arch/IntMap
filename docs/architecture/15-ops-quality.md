@@ -79,6 +79,12 @@ Pages の artifact も組み、`build`・「Static checks」・「Regression sui
 古いコミットはデータを git に持っているので取得しない）。**データ集合の Release は消さない**——
 それを名指すコミットのロールバックとビルドが再現できなくなる。
 
+**配信先は AWS（S3 + CloudFront）へ移行中**（決定は `DECISIONS.md`「配信とビルド」、手順は
+`docs/RELEASE.md`「AWS（S3 + CloudFront）での配信」）。`ci.yml` の `aws` ジョブは `pages` と同じ門を待ち、
+同じ `dist/` を `scripts/aws-publish.mjs` で S3 に置いて CloudFront を無効化する。応答ヘッダ（型・キャッシュ・
+圧縮・CORS）は Pages の実測値に合わせる。リポジトリ変数 `AWS_PUBLISH_ROLE_ARN` が無い間はスキップし、
+本番は Pages のまま。構成は `infra/aws/`（CloudFormation）。
+
 ⚠ 公開する 3 か所（`ci.yml` の `pages`・`deploy.yml`・`rollback.yml`）は `concurrency: pages-production` で
 直列に走る（前の公開が固まると次は pending のまま）。`main` への新しい push は古い CI の run を公開ごと
 取り消す（workflow の concurrency）ので、遅れて終わった古い commit が新しいものを上書きすることは無い。

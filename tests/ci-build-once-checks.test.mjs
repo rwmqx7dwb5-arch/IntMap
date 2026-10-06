@@ -270,10 +270,24 @@ test('⑥ production is published by ci.yml after main’s run is green, from th
   const dep = p.steps.find((s) => /^actions\/deploy-pages@/.test(s.uses || ''));
   assert.match(dep.with.artifact_name, /needs\.build\.outputs\.pages/, 'pages must publish the Pages artifact the build job assembled');
 
-  /* only pages can publish; the workflow default stays read-only */
+  /* (aws-hosting) the AWS publish is held to the same gate as Pages: the same needs, each read by
+     name, a push to main, never a cancelled run — and it publishes the artifact the build job made */
+  const a = CI.jobs.aws;
+  assert.ok(a, 'ci.yml has no aws job');
+  assert.deepEqual([].concat(a.needs).sort(), [].concat(p.needs).sort(), 'aws must wait for exactly what pages waits for');
+  const acond = String(a.if);
+  for (const need of ['!cancelled()', "github.event_name == 'push'", "github.ref == 'refs/heads/main'", "vars.AWS_PUBLISH_ROLE_ARN != ''"]) {
+    assert.ok(acond.includes(need), `aws.if lacks ${need}`);
+  }
+  for (const n of [].concat(a.needs)) assert.ok(acond.includes(`needs.${n}.result == 'success'`), `aws.if does not require ${n} to have succeeded`);
+  assert.deepEqual(a.permissions, { 'id-token': 'write', contents: 'read' });
+  const adl = a.steps.find((s) => /^actions\/download-artifact@/.test(s.uses || ''));
+  assert.match(adl.with.name, /needs\.build\.outputs\.site/, 'aws must publish the dist/ the build job made');
+
+  /* only the publishing jobs can publish; the workflow default stays read-only */
   assert.deepEqual(CI.permissions, { contents: 'read' });
   for (const [id, j] of Object.entries(CI.jobs)) {
-    if (id !== 'pages') assert.ok(!(j.permissions && (j.permissions.pages || j.permissions['id-token'])), `${id} can publish`);
+    if (id !== 'pages' && id !== 'aws') assert.ok(!(j.permissions && (j.permissions.pages || j.permissions['id-token'])), `${id} can publish`);
   }
 
   /* the build job assembles the Pages artifact on the same condition, from dist/, stamped with this run */
