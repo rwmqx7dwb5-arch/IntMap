@@ -160,8 +160,9 @@ test('③ ci-gates.mjs: IM_PREBUILT_DIST=1 skips the build, refuses a missing on
     const take = (f) => {
       if (existsSync(join(T, 'scripts', f))) return;
       cpSync(join(ROOT, 'scripts', f), join(T, 'scripts', f));
-      for (const m of readFileSync(join(ROOT, 'scripts', f), 'utf8').matchAll(/\bfrom\s*['"]\.\/([^'"]+)['"]/g)) take(m[1]);
+      for (const m of readFileSync(join(ROOT, 'scripts', f), 'utf8').matchAll(/(?:\bfrom\s*|\bnew URL\(\s*)['"]\.\/([^'"]+)['"]/g)) take(m[1]);
     };
+    /* an import, or a module named by `new URL('./x', import.meta.url)` (the preload gateEnv hands each gate) */
     take('ci-gates.mjs');
     const mark = (n) => `import { writeFileSync } from 'node:fs'; writeFileSync(${JSON.stringify(join(T, 'ran-' + n))}, '');`;
     writeFileSync(join(T, 'scripts', 'build.mjs'), mark('build') + '\n');

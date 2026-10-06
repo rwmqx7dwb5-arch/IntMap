@@ -53,7 +53,7 @@
 import { spawn } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { gatesInDeclaredOrder, gateCommand, needsBuild, BUILD } from './gate-universe.mjs';
+import { gatesInDeclaredOrder, gateCommand, needsBuild, BUILD, gateEnv } from './gate-universe.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const win = process.platform === 'win32';
@@ -85,7 +85,7 @@ export function localPlan(o = {}) {
   }
   const local = declared.filter((g) => !Object.prototype.hasOwnProperty.call(ciOnly, g));
   const built = local.filter(readsBuild);
-  const step = (g) => { const [cmd, args] = command(g); return { gate: g, cmd, args }; };
+  const step = (g) => { const [cmd, args] = command(g); return { gate: g, cmd, args, offline: true }; };   // run with the network refused (gateEnv)
   const checks = [
     /* ⚠ (data-outside-git) FIRST, BECAUSE EVERYTHING BELOW READS IT. data/border-detail/ and data/hist-eras.js
        live outside git (data-assets.json); absent, a dozen gates and tests would each fail with an
@@ -113,9 +113,9 @@ export function ciOnlyLine(plan) {
     : 'CI でだけ走るゲート: なし（宣言済みの全ゲートをこの実行が走らせる）';
 }
 
-function runStep(cmd, args, tag) {
+function runStep(cmd, args, tag, offline) {
   return new Promise((res) => {
-    const p = spawn(cmd, args, { cwd: ROOT, shell: win, env: process.env });
+    const p = spawn(cmd, args, { cwd: ROOT, shell: win, env: offline ? gateEnv() : process.env });
     let buf = { out: '', err: '' };
     const pump = (which, chunk) => {
       buf[which] += chunk;
@@ -135,8 +135,8 @@ function runStep(cmd, args, tag) {
 
 async function runHalf(h) {
   const t0 = Date.now();
-  for (const { cmd, args } of h.steps) {
-    const code = await runStep(cmd, args, h.tag);
+  for (const { cmd, args, offline } of h.steps) {
+    const code = await runStep(cmd, args, h.tag, offline);
     if (code !== 0) return { tag: h.tag, code, secs: Math.round((Date.now() - t0) / 1000) };
   }
   return { tag: h.tag, code: 0, secs: Math.round((Date.now() - t0) / 1000) };

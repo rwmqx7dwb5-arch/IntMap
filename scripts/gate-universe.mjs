@@ -22,6 +22,8 @@
  *    scriptFileOf(g)   the scripts/*.mjs a gate runs
  *    needsBuild(g)     whether a gate reads what `npm run build` wrote (discovered from its script)
  *    gateCommand(g)    [cmd, args] that runs the gate without an npm process in between
+ *    gateEnv(env)      the environment a gate runs in: every outbound connection refused
+ *                      (scripts/no-network.mjs) — a gate proves committed bytes, never a live upstream
  *    lpt(items, n)     longest-processing-time-first packing, deterministic
  *    medianOf(values)  the cost charged to an item no ledger has measured yet
  */
@@ -31,6 +33,21 @@ import { fileURLToPath } from 'node:url';
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const BUILD = 'npm run build';
+
+/* (histrecon-check-no-network) A GATE RUNS WITH THE NETWORK REFUSED. MEASURED 2026-10-06: PR #1022, an
+   unrelated infra change, went red on CI run 37406113749 (Gates 2/3, Regression 3/3) because
+   check:histrecon fetched the RISTAT 1897 districts from dataverse.nl and got HTTP 504 — a third
+   party's outage became a merge gate. The rule is attached to the FACT (every declared gate), not to
+   that one script: both runners hand every gate this environment, so a gate that reaches the network
+   fails on every run and every machine, not only on the day the upstream is down. Loopback stays open.
+   MEASURED the same day: all 35 declared gates (check:perf and check:assets after a build) passed this way with
+   no refusal. The build itself (`npm run build`) is not a gate and is not handed this. */
+export const NO_NETWORK = new URL('./no-network.mjs', import.meta.url).href;
+export function gateEnv(env = process.env) {
+  const opts = String(env.NODE_OPTIONS || '');
+  if (opts.split(/\s+/).includes('--import=' + NO_NETWORK)) return { ...env };
+  return { ...env, NODE_OPTIONS: (opts ? opts + ' ' : '') + '--import=' + NO_NETWORK };
+}
 
 /* A gate reads the build output if its own script names dist/ or the build report as a path. The
    spellings below are the ones this repository actually uses. MEASURED 2026-09-17 (#R771): they find

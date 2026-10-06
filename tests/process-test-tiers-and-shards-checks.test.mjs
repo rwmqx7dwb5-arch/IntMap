@@ -590,8 +590,9 @@ test('R771 (9) a shard reports every red gate in its bin, not just the first', (
     const take = (f) => {
       if (existsSync(join(T, 'scripts', f))) return;
       cpSync(join(ROOT, 'scripts', f), join(T, 'scripts', f));
-      for (const m of readFileSync(join(ROOT, 'scripts', f), 'utf8').matchAll(/\bfrom\s*['"]\.\/([^'"]+)['"]/g)) take(m[1]);
+      for (const m of readFileSync(join(ROOT, 'scripts', f), 'utf8').matchAll(/(?:\bfrom\s*|\bnew URL\(\s*)['"]\.\/([^'"]+)['"]/g)) take(m[1]);
     };
+    /* an import, or a module named by `new URL('./x', import.meta.url)` (the preload gateEnv hands each gate) */
     take('ci-gates.mjs');
     const gate = (name, code, extra = '') => writeFileSync(join(T, 'scripts', name + '.mjs'),
       `import { writeFileSync } from 'node:fs';\n${extra}\nwriteFileSync(${JSON.stringify(join(T, 'ran-' + name))}, '');\nprocess.exit(${code});\n`);
