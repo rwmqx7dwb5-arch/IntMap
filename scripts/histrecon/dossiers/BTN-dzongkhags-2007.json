@@ -1,0 +1,1241 @@
+{
+ "country": "BTN",
+ "atomSet": "gb-adm2@2026-10-06",
+ "scope": {
+  "from": "1992",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Kingdom of Bhutan, the twenty dzongkhags. Atoms: geoBoundaries ADM2 of BTN (205 gewogs, OCHA ROAP, CC BY 3.0 IGO). A dzongkhag is the union of the gewogs the Election Commission lists for it (Wikipedia «Gewogs of Bhutan», rev 1342287013); the geoBoundaries ADM1 (a 2010 Wikimedia map, coarser than the gewogs and dated before the 2007 transfer) served only to group the gewogs, and 16 gewogs where it disagreed with the list follow the list. ① Each dzongkhag holds the number of gewogs the list gives (205 in all). Against the areas in the Wikipedia infoboxes (several cite the National Statistics Bureau, 2010) the gewog unions agree within 1% for Chhukha 1,883/1,880 km², Dagana 1,726/1,713, Gasa 3,139/3,118, Punakha 1,111/1,110, Samtse 1,307/1,305, Trashiyangtse 1,451/1,438 and Tsirang 639/639; Sarpang 1,658 against 1,946 is the 2007 transfer (the three gewogs add 336 km²); Thimphu 1,799/2,067, Wangdue Phodrang 4,042/4,308 and Trashigang 2,206/3,066 differ, and statoids notes that its two sources for dzongkhag areas differ by up to 50% and add up to more than the country, so these are not read as a different line.",
+ "units": [
+  {
+   "id": "BTN:Bumthang",
+   "names": {
+    "en": "Bumthang District",
+    "ja": "ブムタン県"
+   },
+   "wikidata": "Q463242",
+   "spans": [
+    {
+     "from": "2007-04-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BTN-ADM2-84629894B98599067496491",
+      "BTN-ADM2-84629894B49965990869274",
+      "BTN-ADM2-84629894B61267933696979",
+      "BTN-ADM2-84629894B11205688340318"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1342287013",
+       "title": "Gewogs of Bhutan (en.wikipedia, revision 1342287013), list of 205 gewogs by dzongkhag (Election Commission delimitation 2011) and «Gewog changes since 2000»",
+       "says": "Lists the gewogs of each dzongkhag; Lhamozingkha Dungkhag (Lhamoy Zingkha, Deorali and Nichula gewogs) was transferred from Sarpang to Dagana on 26 April 2007.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375378339",
+       "title": "Sarpang District (en.wikipedia, revision 1375378339)",
+       "says": "On 26 April 2007 Lhamoy Zingkha Dungkhag, the westernmost part of Sarpang, was formally transferred to Dagana Dzongkhag.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375429625",
+       "title": "Districts of Bhutan (en.wikipedia, revision 1375429625)",
+       "says": "The Kingdom of Bhutan is divided into 20 districts (dzongkhags).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Union of the gewogs the Election Commission lists for this dzongkhag; drawn from the last transfer of gewogs between dzongkhags that the sources record (26 April 2007)."
+    }
+   ]
+  },
+  {
+   "id": "BTN:Chhukha",
+   "names": {
+    "en": "Chhukha District",
+    "ja": "チュカ県"
+   },
+   "wikidata": "Q652754",
+   "spans": [
+    {
+     "from": "2007-04-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BTN-ADM2-84629894B4757320303764",
+      "BTN-ADM2-84629894B25129658957997",
+      "BTN-ADM2-84629894B72576514572529",
+      "BTN-ADM2-84629894B52773490471005",
+      "BTN-ADM2-84629894B53394150042816",
+      "BTN-ADM2-84629894B86670310826979",
+      "BTN-ADM2-84629894B69371212515319",
+      "BTN-ADM2-84629894B64044446171466",
+      "BTN-ADM2-84629894B26183929812002",
+      "BTN-ADM2-84629894B40040749916025",
+      "BTN-ADM2-84629894B17389160207490"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1342287013",
+       "title": "Gewogs of Bhutan (en.wikipedia, revision 1342287013), list of 205 gewogs by dzongkhag (Election Commission delimitation 2011) and «Gewog changes since 2000»",
+       "says": "Lists the gewogs of each dzongkhag; Lhamozingkha Dungkhag (Lhamoy Zingkha, Deorali and Nichula gewogs) was transferred from Sarpang to Dagana on 26 April 2007.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375378339",
+       "title": "Sarpang District (en.wikipedia, revision 1375378339)",
+       "says": "On 26 April 2007 Lhamoy Zingkha Dungkhag, the westernmost part of Sarpang, was formally transferred to Dagana Dzongkhag.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375429625",
+       "title": "Districts of Bhutan (en.wikipedia, revision 1375429625)",
+       "says": "The Kingdom of Bhutan is divided into 20 districts (dzongkhags).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Union of the gewogs the Election Commission lists for this dzongkhag; drawn from the last transfer of gewogs between dzongkhags that the sources record (26 April 2007)."
+    }
+   ]
+  },
+  {
+   "id": "BTN:Dagana",
+   "names": {
+    "en": "Dagana District",
+    "ja": "ダガナ県"
+   },
+   "wikidata": "Q735146",
+   "spans": [
+    {
+     "from": "2007-04-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BTN-ADM2-84629894B5669247756527",
+      "BTN-ADM2-84629894B2198234836682",
+      "BTN-ADM2-84629894B98684691838312",
+      "BTN-ADM2-84629894B4625986798859",
+      "BTN-ADM2-84629894B53635199358843",
+      "BTN-ADM2-84629894B31642600341684",
+      "BTN-ADM2-84629894B72063035508805",
+      "BTN-ADM2-84629894B88322725559269",
+      "BTN-ADM2-84629894B27572863852317",
+      "BTN-ADM2-84629894B3274550477400",
+      "BTN-ADM2-84629894B97971916223830",
+      "BTN-ADM2-84629894B57914849969567",
+      "BTN-ADM2-84629894B38821780913292",
+      "BTN-ADM2-84629894B33123696098059"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1342287013",
+       "title": "Gewogs of Bhutan (en.wikipedia, revision 1342287013), list of 205 gewogs by dzongkhag (Election Commission delimitation 2011) and «Gewog changes since 2000»",
+       "says": "Lists the gewogs of each dzongkhag; Lhamozingkha Dungkhag (Lhamoy Zingkha, Deorali and Nichula gewogs) was transferred from Sarpang to Dagana on 26 April 2007.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375378339",
+       "title": "Sarpang District (en.wikipedia, revision 1375378339)",
+       "says": "On 26 April 2007 Lhamoy Zingkha Dungkhag, the westernmost part of Sarpang, was formally transferred to Dagana Dzongkhag.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375429625",
+       "title": "Districts of Bhutan (en.wikipedia, revision 1375429625)",
+       "says": "The Kingdom of Bhutan is divided into 20 districts (dzongkhags).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Union of the gewogs the Election Commission lists for this dzongkhag; drawn from the last transfer of gewogs between dzongkhags that the sources record (26 April 2007)."
+    }
+   ]
+  },
+  {
+   "id": "BTN:Gasa",
+   "names": {
+    "en": "Gasa District",
+    "ja": "ガサ県"
+   },
+   "wikidata": "Q578294",
+   "spans": [
+    {
+     "from": "2007-04-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BTN-ADM2-84629894B91389840528768",
+      "BTN-ADM2-84629894B85362517757759",
+      "BTN-ADM2-84629894B6989657948479",
+      "BTN-ADM2-84629894B27866882347456"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1342287013",
+       "title": "Gewogs of Bhutan (en.wikipedia, revision 1342287013), list of 205 gewogs by dzongkhag (Election Commission delimitation 2011) and «Gewog changes since 2000»",
+       "says": "Lists the gewogs of each dzongkhag; Lhamozingkha Dungkhag (Lhamoy Zingkha, Deorali and Nichula gewogs) was transferred from Sarpang to Dagana on 26 April 2007.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375378339",
+       "title": "Sarpang District (en.wikipedia, revision 1375378339)",
+       "says": "On 26 April 2007 Lhamoy Zingkha Dungkhag, the westernmost part of Sarpang, was formally transferred to Dagana Dzongkhag.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375429625",
+       "title": "Districts of Bhutan (en.wikipedia, revision 1375429625)",
+       "says": "The Kingdom of Bhutan is divided into 20 districts (dzongkhags).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Union of the gewogs the Election Commission lists for this dzongkhag; drawn from the last transfer of gewogs between dzongkhags that the sources record (26 April 2007)."
+    }
+   ]
+  },
+  {
+   "id": "BTN:Haa",
+   "names": {
+    "en": "Haa District",
+    "ja": "ハ県"
+   },
+   "wikidata": "Q754448",
+   "spans": [
+    {
+     "from": "2007-04-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BTN-ADM2-84629894B12913884891089",
+      "BTN-ADM2-84629894B40252407393905",
+      "BTN-ADM2-84629894B80124152926189",
+      "BTN-ADM2-84629894B76419626659945",
+      "BTN-ADM2-84629894B88569366969401",
+      "BTN-ADM2-84629894B5196630315403"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1342287013",
+       "title": "Gewogs of Bhutan (en.wikipedia, revision 1342287013), list of 205 gewogs by dzongkhag (Election Commission delimitation 2011) and «Gewog changes since 2000»",
+       "says": "Lists the gewogs of each dzongkhag; Lhamozingkha Dungkhag (Lhamoy Zingkha, Deorali and Nichula gewogs) was transferred from Sarpang to Dagana on 26 April 2007.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375378339",
+       "title": "Sarpang District (en.wikipedia, revision 1375378339)",
+       "says": "On 26 April 2007 Lhamoy Zingkha Dungkhag, the westernmost part of Sarpang, was formally transferred to Dagana Dzongkhag.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375429625",
+       "title": "Districts of Bhutan (en.wikipedia, revision 1375429625)",
+       "says": "The Kingdom of Bhutan is divided into 20 districts (dzongkhags).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Union of the gewogs the Election Commission lists for this dzongkhag; drawn from the last transfer of gewogs between dzongkhags that the sources record (26 April 2007)."
+    }
+   ]
+  },
+  {
+   "id": "BTN:Lhuentse",
+   "names": {
+    "en": "Lhuentse District",
+    "ja": "ルンツェ県"
+   },
+   "wikidata": "Q598793",
+   "spans": [
+    {
+     "from": "2007-04-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BTN-ADM2-84629894B27978509932961",
+      "BTN-ADM2-84629894B50145764455889",
+      "BTN-ADM2-84629894B14168855768935",
+      "BTN-ADM2-84629894B57016809532633",
+      "BTN-ADM2-84629894B25534094545314",
+      "BTN-ADM2-84629894B9266041490873",
+      "BTN-ADM2-84629894B76587395508507",
+      "BTN-ADM2-84629894B20725193756290"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1342287013",
+       "title": "Gewogs of Bhutan (en.wikipedia, revision 1342287013), list of 205 gewogs by dzongkhag (Election Commission delimitation 2011) and «Gewog changes since 2000»",
+       "says": "Lists the gewogs of each dzongkhag; Lhamozingkha Dungkhag (Lhamoy Zingkha, Deorali and Nichula gewogs) was transferred from Sarpang to Dagana on 26 April 2007.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375378339",
+       "title": "Sarpang District (en.wikipedia, revision 1375378339)",
+       "says": "On 26 April 2007 Lhamoy Zingkha Dungkhag, the westernmost part of Sarpang, was formally transferred to Dagana Dzongkhag.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375429625",
+       "title": "Districts of Bhutan (en.wikipedia, revision 1375429625)",
+       "says": "The Kingdom of Bhutan is divided into 20 districts (dzongkhags).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Union of the gewogs the Election Commission lists for this dzongkhag; drawn from the last transfer of gewogs between dzongkhags that the sources record (26 April 2007)."
+    }
+   ]
+  },
+  {
+   "id": "BTN:Mongar",
+   "names": {
+    "en": "Mongar District",
+    "ja": "モンガル県"
+   },
+   "wikidata": "Q389734",
+   "spans": [
+    {
+     "from": "2007-04-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BTN-ADM2-84629894B21655800544266",
+      "BTN-ADM2-84629894B11723980305793",
+      "BTN-ADM2-84629894B6753037066473",
+      "BTN-ADM2-84629894B36309524105984",
+      "BTN-ADM2-84629894B57522775958352",
+      "BTN-ADM2-84629894B588701148040",
+      "BTN-ADM2-84629894B48851567249316",
+      "BTN-ADM2-84629894B5600301866279",
+      "BTN-ADM2-84629894B50826464910493",
+      "BTN-ADM2-84629894B39157233132648",
+      "BTN-ADM2-84629894B52428030855326",
+      "BTN-ADM2-84629894B77073852352819",
+      "BTN-ADM2-84629894B23969892621665",
+      "BTN-ADM2-84629894B22017892255208",
+      "BTN-ADM2-84629894B4520468763677",
+      "BTN-ADM2-84629894B59294085379826",
+      "BTN-ADM2-84629894B64921010136115"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1342287013",
+       "title": "Gewogs of Bhutan (en.wikipedia, revision 1342287013), list of 205 gewogs by dzongkhag (Election Commission delimitation 2011) and «Gewog changes since 2000»",
+       "says": "Lists the gewogs of each dzongkhag; Lhamozingkha Dungkhag (Lhamoy Zingkha, Deorali and Nichula gewogs) was transferred from Sarpang to Dagana on 26 April 2007.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375378339",
+       "title": "Sarpang District (en.wikipedia, revision 1375378339)",
+       "says": "On 26 April 2007 Lhamoy Zingkha Dungkhag, the westernmost part of Sarpang, was formally transferred to Dagana Dzongkhag.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375429625",
+       "title": "Districts of Bhutan (en.wikipedia, revision 1375429625)",
+       "says": "The Kingdom of Bhutan is divided into 20 districts (dzongkhags).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Union of the gewogs the Election Commission lists for this dzongkhag; drawn from the last transfer of gewogs between dzongkhags that the sources record (26 April 2007)."
+    }
+   ]
+  },
+  {
+   "id": "BTN:Paro",
+   "names": {
+    "en": "Paro District",
+    "ja": "パロ県"
+   },
+   "wikidata": "Q652784",
+   "spans": [
+    {
+     "from": "2007-04-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BTN-ADM2-84629894B26183421967737",
+      "BTN-ADM2-84629894B98882308612415",
+      "BTN-ADM2-84629894B41574505265269",
+      "BTN-ADM2-84629894B37720492215641",
+      "BTN-ADM2-84629894B22495376544480",
+      "BTN-ADM2-84629894B57093636302105",
+      "BTN-ADM2-84629894B48616572457090",
+      "BTN-ADM2-84629894B81058268948150",
+      "BTN-ADM2-84629894B34516930524400",
+      "BTN-ADM2-84629894B96317495800587"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1342287013",
+       "title": "Gewogs of Bhutan (en.wikipedia, revision 1342287013), list of 205 gewogs by dzongkhag (Election Commission delimitation 2011) and «Gewog changes since 2000»",
+       "says": "Lists the gewogs of each dzongkhag; Lhamozingkha Dungkhag (Lhamoy Zingkha, Deorali and Nichula gewogs) was transferred from Sarpang to Dagana on 26 April 2007.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375378339",
+       "title": "Sarpang District (en.wikipedia, revision 1375378339)",
+       "says": "On 26 April 2007 Lhamoy Zingkha Dungkhag, the westernmost part of Sarpang, was formally transferred to Dagana Dzongkhag.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375429625",
+       "title": "Districts of Bhutan (en.wikipedia, revision 1375429625)",
+       "says": "The Kingdom of Bhutan is divided into 20 districts (dzongkhags).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Union of the gewogs the Election Commission lists for this dzongkhag; drawn from the last transfer of gewogs between dzongkhags that the sources record (26 April 2007)."
+    }
+   ]
+  },
+  {
+   "id": "BTN:Pemagatshel",
+   "names": {
+    "en": "Pemagatshel District",
+    "ja": "ペマガツェル県"
+   },
+   "wikidata": "Q167279",
+   "spans": [
+    {
+     "from": "2007-04-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BTN-ADM2-84629894B81792888214428",
+      "BTN-ADM2-84629894B45511376632903",
+      "BTN-ADM2-84629894B90871610259656",
+      "BTN-ADM2-84629894B26310020901724",
+      "BTN-ADM2-84629894B11783061729770",
+      "BTN-ADM2-84629894B71401387613270",
+      "BTN-ADM2-84629894B82504764239496",
+      "BTN-ADM2-84629894B57619855084660",
+      "BTN-ADM2-84629894B76488101752434",
+      "BTN-ADM2-84629894B84199937092772",
+      "BTN-ADM2-84629894B55544402274944"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1342287013",
+       "title": "Gewogs of Bhutan (en.wikipedia, revision 1342287013), list of 205 gewogs by dzongkhag (Election Commission delimitation 2011) and «Gewog changes since 2000»",
+       "says": "Lists the gewogs of each dzongkhag; Lhamozingkha Dungkhag (Lhamoy Zingkha, Deorali and Nichula gewogs) was transferred from Sarpang to Dagana on 26 April 2007.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375378339",
+       "title": "Sarpang District (en.wikipedia, revision 1375378339)",
+       "says": "On 26 April 2007 Lhamoy Zingkha Dungkhag, the westernmost part of Sarpang, was formally transferred to Dagana Dzongkhag.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375429625",
+       "title": "Districts of Bhutan (en.wikipedia, revision 1375429625)",
+       "says": "The Kingdom of Bhutan is divided into 20 districts (dzongkhags).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Union of the gewogs the Election Commission lists for this dzongkhag; drawn from the last transfer of gewogs between dzongkhags that the sources record (26 April 2007)."
+    }
+   ]
+  },
+  {
+   "id": "BTN:Punakha",
+   "names": {
+    "en": "Punakha District",
+    "ja": "プナカ県"
+   },
+   "wikidata": "Q587062",
+   "spans": [
+    {
+     "from": "2007-04-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BTN-ADM2-84629894B89279896100925",
+      "BTN-ADM2-84629894B97305398598213",
+      "BTN-ADM2-84629894B46754889891029",
+      "BTN-ADM2-84629894B76511771149478",
+      "BTN-ADM2-84629894B92148036486457",
+      "BTN-ADM2-84629894B31027958924606",
+      "BTN-ADM2-84629894B48304633314853",
+      "BTN-ADM2-84629894B19712913086843",
+      "BTN-ADM2-84629894B81369433275324",
+      "BTN-ADM2-84629894B89675802182154",
+      "BTN-ADM2-84629894B31491158844122"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1342287013",
+       "title": "Gewogs of Bhutan (en.wikipedia, revision 1342287013), list of 205 gewogs by dzongkhag (Election Commission delimitation 2011) and «Gewog changes since 2000»",
+       "says": "Lists the gewogs of each dzongkhag; Lhamozingkha Dungkhag (Lhamoy Zingkha, Deorali and Nichula gewogs) was transferred from Sarpang to Dagana on 26 April 2007.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375378339",
+       "title": "Sarpang District (en.wikipedia, revision 1375378339)",
+       "says": "On 26 April 2007 Lhamoy Zingkha Dungkhag, the westernmost part of Sarpang, was formally transferred to Dagana Dzongkhag.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375429625",
+       "title": "Districts of Bhutan (en.wikipedia, revision 1375429625)",
+       "says": "The Kingdom of Bhutan is divided into 20 districts (dzongkhags).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Union of the gewogs the Election Commission lists for this dzongkhag; drawn from the last transfer of gewogs between dzongkhags that the sources record (26 April 2007)."
+    }
+   ]
+  },
+  {
+   "id": "BTN:Samdrup Jongkhar",
+   "names": {
+    "en": "Samdrup Jongkhar District",
+    "ja": "サムドゥプ・ジョンカル県"
+   },
+   "wikidata": "Q728929",
+   "spans": [
+    {
+     "from": "2007-04-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BTN-ADM2-84629894B17444418606578",
+      "BTN-ADM2-84629894B32677413197834",
+      "BTN-ADM2-84629894B84259399341451",
+      "BTN-ADM2-84629894B60450500664281",
+      "BTN-ADM2-84629894B7321058523370",
+      "BTN-ADM2-84629894B34482076468426",
+      "BTN-ADM2-84629894B82317088432699",
+      "BTN-ADM2-84629894B7351985376412",
+      "BTN-ADM2-84629894B58083807854661",
+      "BTN-ADM2-84629894B93553850800927",
+      "BTN-ADM2-84629894B7815238118708"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1342287013",
+       "title": "Gewogs of Bhutan (en.wikipedia, revision 1342287013), list of 205 gewogs by dzongkhag (Election Commission delimitation 2011) and «Gewog changes since 2000»",
+       "says": "Lists the gewogs of each dzongkhag; Lhamozingkha Dungkhag (Lhamoy Zingkha, Deorali and Nichula gewogs) was transferred from Sarpang to Dagana on 26 April 2007.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375378339",
+       "title": "Sarpang District (en.wikipedia, revision 1375378339)",
+       "says": "On 26 April 2007 Lhamoy Zingkha Dungkhag, the westernmost part of Sarpang, was formally transferred to Dagana Dzongkhag.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375429625",
+       "title": "Districts of Bhutan (en.wikipedia, revision 1375429625)",
+       "says": "The Kingdom of Bhutan is divided into 20 districts (dzongkhags).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Union of the gewogs the Election Commission lists for this dzongkhag; drawn from the last transfer of gewogs between dzongkhags that the sources record (26 April 2007)."
+    }
+   ]
+  },
+  {
+   "id": "BTN:Samtse",
+   "names": {
+    "en": "Samtse District",
+    "ja": "サムツェ県"
+   },
+   "wikidata": "Q728917",
+   "spans": [
+    {
+     "from": "2007-04-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BTN-ADM2-84629894B92719198389791",
+      "BTN-ADM2-84629894B29308983401378",
+      "BTN-ADM2-84629894B86472917172938",
+      "BTN-ADM2-84629894B7629980605125",
+      "BTN-ADM2-84629894B1832791956678",
+      "BTN-ADM2-84629894B5574782149545",
+      "BTN-ADM2-84629894B66933064417365",
+      "BTN-ADM2-84629894B20961407724011",
+      "BTN-ADM2-84629894B20130203426207",
+      "BTN-ADM2-84629894B59986753144737",
+      "BTN-ADM2-84629894B94352407868213",
+      "BTN-ADM2-84629894B93627988982150",
+      "BTN-ADM2-84629894B47921188785963",
+      "BTN-ADM2-84629894B16110378208997",
+      "BTN-ADM2-84629894B70559788539296"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1342287013",
+       "title": "Gewogs of Bhutan (en.wikipedia, revision 1342287013), list of 205 gewogs by dzongkhag (Election Commission delimitation 2011) and «Gewog changes since 2000»",
+       "says": "Lists the gewogs of each dzongkhag; Lhamozingkha Dungkhag (Lhamoy Zingkha, Deorali and Nichula gewogs) was transferred from Sarpang to Dagana on 26 April 2007.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375378339",
+       "title": "Sarpang District (en.wikipedia, revision 1375378339)",
+       "says": "On 26 April 2007 Lhamoy Zingkha Dungkhag, the westernmost part of Sarpang, was formally transferred to Dagana Dzongkhag.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375429625",
+       "title": "Districts of Bhutan (en.wikipedia, revision 1375429625)",
+       "says": "The Kingdom of Bhutan is divided into 20 districts (dzongkhags).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Union of the gewogs the Election Commission lists for this dzongkhag; drawn from the last transfer of gewogs between dzongkhags that the sources record (26 April 2007)."
+    }
+   ]
+  },
+  {
+   "id": "BTN:Sarpang",
+   "names": {
+    "en": "Sarpang District",
+    "ja": "サルパン県"
+   },
+   "wikidata": "Q728947",
+   "spans": [
+    {
+     "from": "2007-04-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BTN-ADM2-84629894B14718080214922",
+      "BTN-ADM2-84629894B88618838291424",
+      "BTN-ADM2-84629894B28878505567361",
+      "BTN-ADM2-84629894B43838221922230",
+      "BTN-ADM2-84629894B89985438544464",
+      "BTN-ADM2-84629894B8166759987677",
+      "BTN-ADM2-84629894B83148928798212",
+      "BTN-ADM2-84629894B44966098423273",
+      "BTN-ADM2-84629894B15779326704479",
+      "BTN-ADM2-84629894B24283524280478",
+      "BTN-ADM2-84629894B75666827579722",
+      "BTN-ADM2-84629894B47212795309211"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1342287013",
+       "title": "Gewogs of Bhutan (en.wikipedia, revision 1342287013), list of 205 gewogs by dzongkhag (Election Commission delimitation 2011) and «Gewog changes since 2000»",
+       "says": "Lists the gewogs of each dzongkhag; Lhamozingkha Dungkhag (Lhamoy Zingkha, Deorali and Nichula gewogs) was transferred from Sarpang to Dagana on 26 April 2007.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375378339",
+       "title": "Sarpang District (en.wikipedia, revision 1375378339)",
+       "says": "On 26 April 2007 Lhamoy Zingkha Dungkhag, the westernmost part of Sarpang, was formally transferred to Dagana Dzongkhag.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375429625",
+       "title": "Districts of Bhutan (en.wikipedia, revision 1375429625)",
+       "says": "The Kingdom of Bhutan is divided into 20 districts (dzongkhags).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Union of the gewogs the Election Commission lists for this dzongkhag; drawn from the last transfer of gewogs between dzongkhags that the sources record (26 April 2007)."
+    }
+   ]
+  },
+  {
+   "id": "BTN:Thimphu",
+   "names": {
+    "en": "Thimphu District",
+    "ja": "ティンプー県"
+   },
+   "wikidata": "Q254889",
+   "spans": [
+    {
+     "from": "2007-04-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BTN-ADM2-84629894B72045307811039",
+      "BTN-ADM2-84629894B34921780137315",
+      "BTN-ADM2-84629894B66092782557801",
+      "BTN-ADM2-84629894B90537236845167",
+      "BTN-ADM2-84629894B67329763670216",
+      "BTN-ADM2-84629894B41784722800221",
+      "BTN-ADM2-84629894B27287561268619",
+      "BTN-ADM2-84629894B37103530921458"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1342287013",
+       "title": "Gewogs of Bhutan (en.wikipedia, revision 1342287013), list of 205 gewogs by dzongkhag (Election Commission delimitation 2011) and «Gewog changes since 2000»",
+       "says": "Lists the gewogs of each dzongkhag; Lhamozingkha Dungkhag (Lhamoy Zingkha, Deorali and Nichula gewogs) was transferred from Sarpang to Dagana on 26 April 2007.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375378339",
+       "title": "Sarpang District (en.wikipedia, revision 1375378339)",
+       "says": "On 26 April 2007 Lhamoy Zingkha Dungkhag, the westernmost part of Sarpang, was formally transferred to Dagana Dzongkhag.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375429625",
+       "title": "Districts of Bhutan (en.wikipedia, revision 1375429625)",
+       "says": "The Kingdom of Bhutan is divided into 20 districts (dzongkhags).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Union of the gewogs the Election Commission lists for this dzongkhag; drawn from the last transfer of gewogs between dzongkhags that the sources record (26 April 2007)."
+    }
+   ]
+  },
+  {
+   "id": "BTN:Trashigang",
+   "names": {
+    "en": "Trashigang District",
+    "ja": "タシガン県"
+   },
+   "wikidata": "Q652773",
+   "spans": [
+    {
+     "from": "2007-04-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BTN-ADM2-84629894B69325222968973",
+      "BTN-ADM2-84629894B11515592913322",
+      "BTN-ADM2-84629894B39590261295219",
+      "BTN-ADM2-84629894B48519884864464",
+      "BTN-ADM2-84629894B76978626004749",
+      "BTN-ADM2-84629894B35565609446545",
+      "BTN-ADM2-84629894B40086138337966",
+      "BTN-ADM2-84629894B49132822130738",
+      "BTN-ADM2-84629894B26708825657570",
+      "BTN-ADM2-84629894B56861060661097",
+      "BTN-ADM2-84629894B1548081314680",
+      "BTN-ADM2-84629894B18774539959245",
+      "BTN-ADM2-84629894B96484165118210",
+      "BTN-ADM2-84629894B53688584852577",
+      "BTN-ADM2-84629894B93354039766562"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1342287013",
+       "title": "Gewogs of Bhutan (en.wikipedia, revision 1342287013), list of 205 gewogs by dzongkhag (Election Commission delimitation 2011) and «Gewog changes since 2000»",
+       "says": "Lists the gewogs of each dzongkhag; Lhamozingkha Dungkhag (Lhamoy Zingkha, Deorali and Nichula gewogs) was transferred from Sarpang to Dagana on 26 April 2007.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375378339",
+       "title": "Sarpang District (en.wikipedia, revision 1375378339)",
+       "says": "On 26 April 2007 Lhamoy Zingkha Dungkhag, the westernmost part of Sarpang, was formally transferred to Dagana Dzongkhag.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375429625",
+       "title": "Districts of Bhutan (en.wikipedia, revision 1375429625)",
+       "says": "The Kingdom of Bhutan is divided into 20 districts (dzongkhags).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Union of the gewogs the Election Commission lists for this dzongkhag; drawn from the last transfer of gewogs between dzongkhags that the sources record (26 April 2007)."
+    }
+   ]
+  },
+  {
+   "id": "BTN:Trashiyangtse",
+   "names": {
+    "en": "Trashiyangtse District",
+    "ja": "タシヤンツェ県"
+   },
+   "wikidata": "Q600200",
+   "spans": [
+    {
+     "from": "2007-04-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BTN-ADM2-84629894B8904358941352",
+      "BTN-ADM2-84629894B22666501030765",
+      "BTN-ADM2-84629894B8594333696948",
+      "BTN-ADM2-84629894B19422058596981",
+      "BTN-ADM2-84629894B2316298414360",
+      "BTN-ADM2-84629894B58901780687554",
+      "BTN-ADM2-84629894B34864763924152",
+      "BTN-ADM2-84629894B30555243283294"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1342287013",
+       "title": "Gewogs of Bhutan (en.wikipedia, revision 1342287013), list of 205 gewogs by dzongkhag (Election Commission delimitation 2011) and «Gewog changes since 2000»",
+       "says": "Lists the gewogs of each dzongkhag; Lhamozingkha Dungkhag (Lhamoy Zingkha, Deorali and Nichula gewogs) was transferred from Sarpang to Dagana on 26 April 2007.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375378339",
+       "title": "Sarpang District (en.wikipedia, revision 1375378339)",
+       "says": "On 26 April 2007 Lhamoy Zingkha Dungkhag, the westernmost part of Sarpang, was formally transferred to Dagana Dzongkhag.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375429625",
+       "title": "Districts of Bhutan (en.wikipedia, revision 1375429625)",
+       "says": "The Kingdom of Bhutan is divided into 20 districts (dzongkhags).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Union of the gewogs the Election Commission lists for this dzongkhag; drawn from the last transfer of gewogs between dzongkhags that the sources record (26 April 2007)."
+    }
+   ]
+  },
+  {
+   "id": "BTN:Trongsa",
+   "names": {
+    "en": "Trongsa District",
+    "ja": "トンサ県"
+   },
+   "wikidata": "Q728938",
+   "spans": [
+    {
+     "from": "2007-04-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BTN-ADM2-84629894B32701898541772",
+      "BTN-ADM2-84629894B58410761625070",
+      "BTN-ADM2-84629894B85731212133965",
+      "BTN-ADM2-84629894B54102574648684",
+      "BTN-ADM2-84629894B49334077876628"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1342287013",
+       "title": "Gewogs of Bhutan (en.wikipedia, revision 1342287013), list of 205 gewogs by dzongkhag (Election Commission delimitation 2011) and «Gewog changes since 2000»",
+       "says": "Lists the gewogs of each dzongkhag; Lhamozingkha Dungkhag (Lhamoy Zingkha, Deorali and Nichula gewogs) was transferred from Sarpang to Dagana on 26 April 2007.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375378339",
+       "title": "Sarpang District (en.wikipedia, revision 1375378339)",
+       "says": "On 26 April 2007 Lhamoy Zingkha Dungkhag, the westernmost part of Sarpang, was formally transferred to Dagana Dzongkhag.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375429625",
+       "title": "Districts of Bhutan (en.wikipedia, revision 1375429625)",
+       "says": "The Kingdom of Bhutan is divided into 20 districts (dzongkhags).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Union of the gewogs the Election Commission lists for this dzongkhag; drawn from the last transfer of gewogs between dzongkhags that the sources record (26 April 2007)."
+    }
+   ]
+  },
+  {
+   "id": "BTN:Tsirang",
+   "names": {
+    "en": "Tsirang District",
+    "ja": "チラン県"
+   },
+   "wikidata": "Q728922",
+   "spans": [
+    {
+     "from": "2007-04-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BTN-ADM2-84629894B8862847881254",
+      "BTN-ADM2-84629894B72162930081374",
+      "BTN-ADM2-84629894B69062019287868",
+      "BTN-ADM2-84629894B38257689875150",
+      "BTN-ADM2-84629894B27564623470868",
+      "BTN-ADM2-84629894B69504897318329",
+      "BTN-ADM2-84629894B80971974621988",
+      "BTN-ADM2-84629894B77854435497479",
+      "BTN-ADM2-84629894B33629251386681",
+      "BTN-ADM2-84629894B63764516450796",
+      "BTN-ADM2-84629894B5121542425285",
+      "BTN-ADM2-84629894B69953247245699"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1342287013",
+       "title": "Gewogs of Bhutan (en.wikipedia, revision 1342287013), list of 205 gewogs by dzongkhag (Election Commission delimitation 2011) and «Gewog changes since 2000»",
+       "says": "Lists the gewogs of each dzongkhag; Lhamozingkha Dungkhag (Lhamoy Zingkha, Deorali and Nichula gewogs) was transferred from Sarpang to Dagana on 26 April 2007.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375378339",
+       "title": "Sarpang District (en.wikipedia, revision 1375378339)",
+       "says": "On 26 April 2007 Lhamoy Zingkha Dungkhag, the westernmost part of Sarpang, was formally transferred to Dagana Dzongkhag.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375429625",
+       "title": "Districts of Bhutan (en.wikipedia, revision 1375429625)",
+       "says": "The Kingdom of Bhutan is divided into 20 districts (dzongkhags).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Union of the gewogs the Election Commission lists for this dzongkhag; drawn from the last transfer of gewogs between dzongkhags that the sources record (26 April 2007)."
+    }
+   ]
+  },
+  {
+   "id": "BTN:Wangdue Phodrang",
+   "names": {
+    "en": "Wangdue Phodrang District",
+    "ja": "ワンデュ・ポダン県"
+   },
+   "wikidata": "Q728933",
+   "spans": [
+    {
+     "from": "2007-04-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BTN-ADM2-84629894B35951750591258",
+      "BTN-ADM2-84629894B58732287515502",
+      "BTN-ADM2-84629894B46024490365368",
+      "BTN-ADM2-84629894B29332894979808",
+      "BTN-ADM2-84629894B80230099066149",
+      "BTN-ADM2-84629894B12235536926610",
+      "BTN-ADM2-84629894B49729691627906",
+      "BTN-ADM2-84629894B17880677073525",
+      "BTN-ADM2-84629894B45309072751203",
+      "BTN-ADM2-84629894B40037951494601",
+      "BTN-ADM2-84629894B89694537760165",
+      "BTN-ADM2-84629894B82295722957518",
+      "BTN-ADM2-84629894B47901648046717",
+      "BTN-ADM2-84629894B46369829894621",
+      "BTN-ADM2-84629894B76025461135829"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1342287013",
+       "title": "Gewogs of Bhutan (en.wikipedia, revision 1342287013), list of 205 gewogs by dzongkhag (Election Commission delimitation 2011) and «Gewog changes since 2000»",
+       "says": "Lists the gewogs of each dzongkhag; Lhamozingkha Dungkhag (Lhamoy Zingkha, Deorali and Nichula gewogs) was transferred from Sarpang to Dagana on 26 April 2007.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375378339",
+       "title": "Sarpang District (en.wikipedia, revision 1375378339)",
+       "says": "On 26 April 2007 Lhamoy Zingkha Dungkhag, the westernmost part of Sarpang, was formally transferred to Dagana Dzongkhag.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375429625",
+       "title": "Districts of Bhutan (en.wikipedia, revision 1375429625)",
+       "says": "The Kingdom of Bhutan is divided into 20 districts (dzongkhags).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Union of the gewogs the Election Commission lists for this dzongkhag; drawn from the last transfer of gewogs between dzongkhags that the sources record (26 April 2007)."
+    }
+   ]
+  },
+  {
+   "id": "BTN:Zhemgang",
+   "names": {
+    "en": "Zhemgang District",
+    "ja": "シェムガン県"
+   },
+   "wikidata": "Q197564",
+   "spans": [
+    {
+     "from": "2007-04-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BTN-ADM2-84629894B88574535309986",
+      "BTN-ADM2-84629894B39816356167412",
+      "BTN-ADM2-84629894B58604121437268",
+      "BTN-ADM2-84629894B93769975990256",
+      "BTN-ADM2-84629894B76990430770482",
+      "BTN-ADM2-84629894B98879002213822",
+      "BTN-ADM2-84629894B47600985586733",
+      "BTN-ADM2-84629894B683869752306"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1342287013",
+       "title": "Gewogs of Bhutan (en.wikipedia, revision 1342287013), list of 205 gewogs by dzongkhag (Election Commission delimitation 2011) and «Gewog changes since 2000»",
+       "says": "Lists the gewogs of each dzongkhag; Lhamozingkha Dungkhag (Lhamoy Zingkha, Deorali and Nichula gewogs) was transferred from Sarpang to Dagana on 26 April 2007.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375378339",
+       "title": "Sarpang District (en.wikipedia, revision 1375378339)",
+       "says": "On 26 April 2007 Lhamoy Zingkha Dungkhag, the westernmost part of Sarpang, was formally transferred to Dagana Dzongkhag.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375429625",
+       "title": "Districts of Bhutan (en.wikipedia, revision 1375429625)",
+       "says": "The Kingdom of Bhutan is divided into 20 districts (dzongkhags).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Union of the gewogs the Election Commission lists for this dzongkhag; drawn from the last transfer of gewogs between dzongkhags that the sources record (26 April 2007)."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "2007-04-26",
+   "precision": "day",
+   "what": "Lhamozingkha Dungkhag (three gewogs) transferred from Sarpang to Dagana",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1342287013",
+     "title": "Gewogs of Bhutan (en.wikipedia, revision 1342287013), list of 205 gewogs by dzongkhag (Election Commission delimitation 2011) and «Gewog changes since 2000»",
+     "says": "Lists the gewogs of each dzongkhag; Lhamozingkha Dungkhag (Lhamoy Zingkha, Deorali and Nichula gewogs) was transferred from Sarpang to Dagana on 26 April 2007.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1375378339",
+     "title": "Sarpang District (en.wikipedia, revision 1375378339)",
+     "says": "On 26 April 2007 Lhamoy Zingkha Dungkhag, the westernmost part of Sarpang, was formally transferred to Dagana Dzongkhag.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "2010-01-01",
+   "n": 20,
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1375429625",
+     "title": "Districts of Bhutan (en.wikipedia, revision 1375429625)",
+     "says": "The Kingdom of Bhutan is divided into 20 districts (dzongkhags).",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://www.statoids.com/ubt.html",
+     "title": "Statoids: Districts of Bhutan (Gwillim Law)",
+     "says": "Bhutan has twenty dzongkhag; 1992: Gasa split from Punakha and Tashi Yangtse from Tashigang, other district boundaries changed.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "The dzongkhags from 1992 to 26 April 2007",
+   "atoms": [
+    "BTN-ADM2-84629894B98599067496491",
+    "BTN-ADM2-84629894B49965990869274",
+    "BTN-ADM2-84629894B61267933696979",
+    "BTN-ADM2-84629894B11205688340318",
+    "BTN-ADM2-84629894B4757320303764",
+    "BTN-ADM2-84629894B25129658957997",
+    "BTN-ADM2-84629894B72576514572529",
+    "BTN-ADM2-84629894B52773490471005",
+    "BTN-ADM2-84629894B53394150042816",
+    "BTN-ADM2-84629894B86670310826979",
+    "BTN-ADM2-84629894B69371212515319",
+    "BTN-ADM2-84629894B64044446171466",
+    "BTN-ADM2-84629894B26183929812002",
+    "BTN-ADM2-84629894B40040749916025",
+    "BTN-ADM2-84629894B17389160207490",
+    "BTN-ADM2-84629894B5669247756527",
+    "BTN-ADM2-84629894B2198234836682",
+    "BTN-ADM2-84629894B98684691838312",
+    "BTN-ADM2-84629894B4625986798859",
+    "BTN-ADM2-84629894B53635199358843",
+    "BTN-ADM2-84629894B31642600341684",
+    "BTN-ADM2-84629894B72063035508805",
+    "BTN-ADM2-84629894B88322725559269",
+    "BTN-ADM2-84629894B27572863852317",
+    "BTN-ADM2-84629894B3274550477400",
+    "BTN-ADM2-84629894B97971916223830",
+    "BTN-ADM2-84629894B57914849969567",
+    "BTN-ADM2-84629894B91389840528768",
+    "BTN-ADM2-84629894B85362517757759",
+    "BTN-ADM2-84629894B6989657948479",
+    "BTN-ADM2-84629894B27866882347456",
+    "BTN-ADM2-84629894B12913884891089",
+    "BTN-ADM2-84629894B40252407393905",
+    "BTN-ADM2-84629894B80124152926189",
+    "BTN-ADM2-84629894B76419626659945",
+    "BTN-ADM2-84629894B88569366969401",
+    "BTN-ADM2-84629894B5196630315403",
+    "BTN-ADM2-84629894B27978509932961",
+    "BTN-ADM2-84629894B50145764455889",
+    "BTN-ADM2-84629894B14168855768935",
+    "BTN-ADM2-84629894B57016809532633",
+    "BTN-ADM2-84629894B25534094545314",
+    "BTN-ADM2-84629894B9266041490873",
+    "BTN-ADM2-84629894B76587395508507",
+    "BTN-ADM2-84629894B20725193756290",
+    "BTN-ADM2-84629894B21655800544266",
+    "BTN-ADM2-84629894B11723980305793",
+    "BTN-ADM2-84629894B6753037066473",
+    "BTN-ADM2-84629894B36309524105984",
+    "BTN-ADM2-84629894B57522775958352",
+    "BTN-ADM2-84629894B588701148040",
+    "BTN-ADM2-84629894B48851567249316",
+    "BTN-ADM2-84629894B5600301866279",
+    "BTN-ADM2-84629894B50826464910493",
+    "BTN-ADM2-84629894B39157233132648",
+    "BTN-ADM2-84629894B52428030855326",
+    "BTN-ADM2-84629894B77073852352819",
+    "BTN-ADM2-84629894B23969892621665",
+    "BTN-ADM2-84629894B22017892255208",
+    "BTN-ADM2-84629894B4520468763677",
+    "BTN-ADM2-84629894B59294085379826",
+    "BTN-ADM2-84629894B64921010136115",
+    "BTN-ADM2-84629894B26183421967737",
+    "BTN-ADM2-84629894B98882308612415",
+    "BTN-ADM2-84629894B41574505265269",
+    "BTN-ADM2-84629894B37720492215641",
+    "BTN-ADM2-84629894B22495376544480",
+    "BTN-ADM2-84629894B57093636302105",
+    "BTN-ADM2-84629894B72045307811039",
+    "BTN-ADM2-84629894B48616572457090",
+    "BTN-ADM2-84629894B81058268948150",
+    "BTN-ADM2-84629894B34921780137315",
+    "BTN-ADM2-84629894B34516930524400",
+    "BTN-ADM2-84629894B96317495800587",
+    "BTN-ADM2-84629894B81792888214428",
+    "BTN-ADM2-84629894B45511376632903",
+    "BTN-ADM2-84629894B90871610259656",
+    "BTN-ADM2-84629894B26310020901724",
+    "BTN-ADM2-84629894B11783061729770",
+    "BTN-ADM2-84629894B71401387613270",
+    "BTN-ADM2-84629894B82504764239496",
+    "BTN-ADM2-84629894B89279896100925",
+    "BTN-ADM2-84629894B97305398598213",
+    "BTN-ADM2-84629894B46754889891029",
+    "BTN-ADM2-84629894B76511771149478",
+    "BTN-ADM2-84629894B92148036486457",
+    "BTN-ADM2-84629894B31027958924606",
+    "BTN-ADM2-84629894B57619855084660",
+    "BTN-ADM2-84629894B76488101752434",
+    "BTN-ADM2-84629894B17444418606578",
+    "BTN-ADM2-84629894B32677413197834",
+    "BTN-ADM2-84629894B84259399341451",
+    "BTN-ADM2-84629894B60450500664281",
+    "BTN-ADM2-84629894B7321058523370",
+    "BTN-ADM2-84629894B84199937092772",
+    "BTN-ADM2-84629894B34482076468426",
+    "BTN-ADM2-84629894B82317088432699",
+    "BTN-ADM2-84629894B7351985376412",
+    "BTN-ADM2-84629894B58083807854661",
+    "BTN-ADM2-84629894B93553850800927",
+    "BTN-ADM2-84629894B92719198389791",
+    "BTN-ADM2-84629894B29308983401378",
+    "BTN-ADM2-84629894B86472917172938",
+    "BTN-ADM2-84629894B7629980605125",
+    "BTN-ADM2-84629894B1832791956678",
+    "BTN-ADM2-84629894B5574782149545",
+    "BTN-ADM2-84629894B66933064417365",
+    "BTN-ADM2-84629894B20961407724011",
+    "BTN-ADM2-84629894B20130203426207",
+    "BTN-ADM2-84629894B59986753144737",
+    "BTN-ADM2-84629894B94352407868213",
+    "BTN-ADM2-84629894B93627988982150",
+    "BTN-ADM2-84629894B47921188785963",
+    "BTN-ADM2-84629894B16110378208997",
+    "BTN-ADM2-84629894B70559788539296",
+    "BTN-ADM2-84629894B14718080214922",
+    "BTN-ADM2-84629894B88618838291424",
+    "BTN-ADM2-84629894B28878505567361",
+    "BTN-ADM2-84629894B43838221922230",
+    "BTN-ADM2-84629894B89985438544464",
+    "BTN-ADM2-84629894B8166759987677",
+    "BTN-ADM2-84629894B38821780913292",
+    "BTN-ADM2-84629894B33123696098059",
+    "BTN-ADM2-84629894B83148928798212",
+    "BTN-ADM2-84629894B44966098423273",
+    "BTN-ADM2-84629894B15779326704479",
+    "BTN-ADM2-84629894B24283524280478",
+    "BTN-ADM2-84629894B75666827579722",
+    "BTN-ADM2-84629894B48304633314853",
+    "BTN-ADM2-84629894B66092782557801",
+    "BTN-ADM2-84629894B90537236845167",
+    "BTN-ADM2-84629894B67329763670216",
+    "BTN-ADM2-84629894B19712913086843",
+    "BTN-ADM2-84629894B81369433275324",
+    "BTN-ADM2-84629894B41784722800221",
+    "BTN-ADM2-84629894B27287561268619",
+    "BTN-ADM2-84629894B37103530921458",
+    "BTN-ADM2-84629894B89675802182154",
+    "BTN-ADM2-84629894B31491158844122",
+    "BTN-ADM2-84629894B69325222968973",
+    "BTN-ADM2-84629894B7815238118708",
+    "BTN-ADM2-84629894B11515592913322",
+    "BTN-ADM2-84629894B39590261295219",
+    "BTN-ADM2-84629894B48519884864464",
+    "BTN-ADM2-84629894B76978626004749",
+    "BTN-ADM2-84629894B35565609446545",
+    "BTN-ADM2-84629894B55544402274944",
+    "BTN-ADM2-84629894B40086138337966",
+    "BTN-ADM2-84629894B49132822130738",
+    "BTN-ADM2-84629894B26708825657570",
+    "BTN-ADM2-84629894B56861060661097",
+    "BTN-ADM2-84629894B1548081314680",
+    "BTN-ADM2-84629894B18774539959245",
+    "BTN-ADM2-84629894B96484165118210",
+    "BTN-ADM2-84629894B53688584852577",
+    "BTN-ADM2-84629894B93354039766562",
+    "BTN-ADM2-84629894B8904358941352",
+    "BTN-ADM2-84629894B22666501030765",
+    "BTN-ADM2-84629894B8594333696948",
+    "BTN-ADM2-84629894B19422058596981",
+    "BTN-ADM2-84629894B2316298414360",
+    "BTN-ADM2-84629894B58901780687554",
+    "BTN-ADM2-84629894B34864763924152",
+    "BTN-ADM2-84629894B30555243283294",
+    "BTN-ADM2-84629894B32701898541772",
+    "BTN-ADM2-84629894B47212795309211",
+    "BTN-ADM2-84629894B58410761625070",
+    "BTN-ADM2-84629894B85731212133965",
+    "BTN-ADM2-84629894B54102574648684",
+    "BTN-ADM2-84629894B49334077876628",
+    "BTN-ADM2-84629894B8862847881254",
+    "BTN-ADM2-84629894B72162930081374",
+    "BTN-ADM2-84629894B69062019287868",
+    "BTN-ADM2-84629894B38257689875150",
+    "BTN-ADM2-84629894B27564623470868",
+    "BTN-ADM2-84629894B69504897318329",
+    "BTN-ADM2-84629894B80971974621988",
+    "BTN-ADM2-84629894B77854435497479",
+    "BTN-ADM2-84629894B33629251386681",
+    "BTN-ADM2-84629894B63764516450796",
+    "BTN-ADM2-84629894B5121542425285",
+    "BTN-ADM2-84629894B69953247245699",
+    "BTN-ADM2-84629894B35951750591258",
+    "BTN-ADM2-84629894B58732287515502",
+    "BTN-ADM2-84629894B46024490365368",
+    "BTN-ADM2-84629894B29332894979808",
+    "BTN-ADM2-84629894B80230099066149",
+    "BTN-ADM2-84629894B12235536926610",
+    "BTN-ADM2-84629894B49729691627906",
+    "BTN-ADM2-84629894B17880677073525",
+    "BTN-ADM2-84629894B45309072751203",
+    "BTN-ADM2-84629894B40037951494601",
+    "BTN-ADM2-84629894B89694537760165",
+    "BTN-ADM2-84629894B82295722957518",
+    "BTN-ADM2-84629894B47901648046717",
+    "BTN-ADM2-84629894B46369829894621",
+    "BTN-ADM2-84629894B76025461135829",
+    "BTN-ADM2-84629894B88574535309986",
+    "BTN-ADM2-84629894B39816356167412",
+    "BTN-ADM2-84629894B58604121437268",
+    "BTN-ADM2-84629894B93769975990256",
+    "BTN-ADM2-84629894B76990430770482",
+    "BTN-ADM2-84629894B98879002213822",
+    "BTN-ADM2-84629894B47600985586733",
+    "BTN-ADM2-84629894B683869752306"
+   ],
+   "from": "1992",
+   "to": "2007-04-26",
+   "why": "Statoids records that in 1992 «other district boundaries changed» besides the creation of Gasa and Trashiyangtse without saying which; between 2002 and 2005 gewogs were dissolved and created (199 → 205) and in 2007 three gewogs moved from Sarpang to Dagana, which statoids does not list — so the change list is incomplete, and no source gives the gewog-by-dzongkhag list before 2007 to show that today’s gewog lines carried the 1992–2007 dzongkhag lines.",
+   "checked": [
+    "statoids ubt.html change history",
+    "Wikipedia Gewogs of Bhutan rev 1342287013 (Gewog changes since 2000)",
+    "Wikipedia Districts of Bhutan rev 1375429625",
+    "Wikipedia Gasa District rev 1362735999 (area 2002 vs 2010)",
+    "Wikipedia Sarpang District rev 1375378339"
+   ],
+   "needs": "the gewog list per dzongkhag of 1992 and 2002 (Planning Commission / Department of Local Governance) with the 2002–2005 gewog splits as atoms"
+  }
+ ]
+}

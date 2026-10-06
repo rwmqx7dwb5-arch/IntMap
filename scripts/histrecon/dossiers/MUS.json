@@ -1,0 +1,502 @@
+{
+  "country": "MUS",
+  "atomSet": "gb-adm1@2026-10-06",
+  "scope": {
+    "from": "1968-03-12",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Mauritius from independence (1968-03-12). First-level divisions: the nine districts of Mauritius island, Rodrigues (dependency, then island region) and the dependencies Agaléga and Cargados Carajos (St. Brandon), as in ISO 3166-2:MU and statoids. The Chagos Archipelago had been detached on 1965-11-08 (British Indian Ocean Territory) and is not part of this dossier. Local-government councils (three district councils and five urban councils in 1971, per statoids) are a different, non-territorial layer and are not drawn. Atoms are geoBoundaries MUS ADM1 (OpenStreetMap, ODbL). Independent check (①): atom areas vs statoids — every district of Mauritius island within 4% (Black River 257 vs 259 km², Flacq 298 vs 298, Moka 236 vs 231, Savanne 249 vs 243) except Port Louis 40.5 vs 44 (−8%); Rodrigues 109 vs 104.",
+  "units": [
+    {
+      "id": "MUS:BlackRiver@1968",
+      "names": {
+        "en": "Black River District",
+        "ja": "ブラックリバー県",
+        "local": "Rivière Noire"
+      },
+      "spans": [
+        {
+          "from": "1968-03-12",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MUS-ADM1-65221844B99203907341133"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umu.html",
+              "title": "Statoids — Districts of Mauritius (Gwillim Law, updated 2015-06-30)",
+              "says": "Nine districts, two dependencies (Agalega, Cargados Carajos) and one region (Rodrigues); census populations by the same districts 1846–2011; Rodrigues a dependency until it became an island region on 2001-11-20.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1355715898",
+              "title": "Wikipedia (en): Districts of Mauritius, rev. 1355715898",
+              "says": "Mauritius is divided into nine districts; Rodrigues used to be the tenth district until it gained autonomy in 2002.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1378376800",
+              "title": "Wikipedia (en): Mauritius, rev. 1378376800",
+              "says": "Independence was proclaimed on 12 March 1968.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Scope start (independence). The census district is older: statoids tabulates the same nine districts at every census 1846–2011 and records no change to their lines."
+        }
+      ]
+    },
+    {
+      "id": "MUS:Flacq@1968",
+      "names": {
+        "en": "Flacq District",
+        "ja": "フラック県",
+        "local": "Flacq"
+      },
+      "spans": [
+        {
+          "from": "1968-03-12",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MUS-ADM1-65221844B3325932502431"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umu.html",
+              "title": "Statoids — Districts of Mauritius (Gwillim Law, updated 2015-06-30)",
+              "says": "Nine districts, two dependencies (Agalega, Cargados Carajos) and one region (Rodrigues); census populations by the same districts 1846–2011; Rodrigues a dependency until it became an island region on 2001-11-20.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1355715898",
+              "title": "Wikipedia (en): Districts of Mauritius, rev. 1355715898",
+              "says": "Mauritius is divided into nine districts; Rodrigues used to be the tenth district until it gained autonomy in 2002.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1378376800",
+              "title": "Wikipedia (en): Mauritius, rev. 1378376800",
+              "says": "Independence was proclaimed on 12 March 1968.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Scope start (independence). The census district is older: statoids tabulates the same nine districts at every census 1846–2011 and records no change to their lines."
+        }
+      ]
+    },
+    {
+      "id": "MUS:GrandPort@1968",
+      "names": {
+        "en": "Grand Port District",
+        "ja": "グランポート県",
+        "local": "Grand Port"
+      },
+      "spans": [
+        {
+          "from": "1968-03-12",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MUS-ADM1-65221844B660734165567"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umu.html",
+              "title": "Statoids — Districts of Mauritius (Gwillim Law, updated 2015-06-30)",
+              "says": "Nine districts, two dependencies (Agalega, Cargados Carajos) and one region (Rodrigues); census populations by the same districts 1846–2011; Rodrigues a dependency until it became an island region on 2001-11-20.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1355715898",
+              "title": "Wikipedia (en): Districts of Mauritius, rev. 1355715898",
+              "says": "Mauritius is divided into nine districts; Rodrigues used to be the tenth district until it gained autonomy in 2002.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1378376800",
+              "title": "Wikipedia (en): Mauritius, rev. 1378376800",
+              "says": "Independence was proclaimed on 12 March 1968.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Scope start (independence). The census district is older: statoids tabulates the same nine districts at every census 1846–2011 and records no change to their lines."
+        }
+      ]
+    },
+    {
+      "id": "MUS:Moka@1968",
+      "names": {
+        "en": "Moka District",
+        "ja": "モカ県",
+        "local": "Moka"
+      },
+      "spans": [
+        {
+          "from": "1968-03-12",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MUS-ADM1-65221844B64352145242214"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umu.html",
+              "title": "Statoids — Districts of Mauritius (Gwillim Law, updated 2015-06-30)",
+              "says": "Nine districts, two dependencies (Agalega, Cargados Carajos) and one region (Rodrigues); census populations by the same districts 1846–2011; Rodrigues a dependency until it became an island region on 2001-11-20.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1355715898",
+              "title": "Wikipedia (en): Districts of Mauritius, rev. 1355715898",
+              "says": "Mauritius is divided into nine districts; Rodrigues used to be the tenth district until it gained autonomy in 2002.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1378376800",
+              "title": "Wikipedia (en): Mauritius, rev. 1378376800",
+              "says": "Independence was proclaimed on 12 March 1968.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Scope start (independence). The census district is older: statoids tabulates the same nine districts at every census 1846–2011 and records no change to their lines."
+        }
+      ]
+    },
+    {
+      "id": "MUS:Pamplemousses@1968",
+      "names": {
+        "en": "Pamplemousses District",
+        "ja": "パンプルムース県",
+        "local": "Pamplemousses"
+      },
+      "spans": [
+        {
+          "from": "1968-03-12",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MUS-ADM1-65221844B91551715822340"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umu.html",
+              "title": "Statoids — Districts of Mauritius (Gwillim Law, updated 2015-06-30)",
+              "says": "Nine districts, two dependencies (Agalega, Cargados Carajos) and one region (Rodrigues); census populations by the same districts 1846–2011; Rodrigues a dependency until it became an island region on 2001-11-20.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1355715898",
+              "title": "Wikipedia (en): Districts of Mauritius, rev. 1355715898",
+              "says": "Mauritius is divided into nine districts; Rodrigues used to be the tenth district until it gained autonomy in 2002.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1378376800",
+              "title": "Wikipedia (en): Mauritius, rev. 1378376800",
+              "says": "Independence was proclaimed on 12 March 1968.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Scope start (independence). The census district is older: statoids tabulates the same nine districts at every census 1846–2011 and records no change to their lines."
+        }
+      ]
+    },
+    {
+      "id": "MUS:PlainesWilhems@1968",
+      "names": {
+        "en": "Plaines Wilhems District",
+        "ja": "プレーヌ・ウィルエム県",
+        "local": "Plaines Wilhems"
+      },
+      "spans": [
+        {
+          "from": "1968-03-12",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MUS-ADM1-65221844B21568199301359"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umu.html",
+              "title": "Statoids — Districts of Mauritius (Gwillim Law, updated 2015-06-30)",
+              "says": "Nine districts, two dependencies (Agalega, Cargados Carajos) and one region (Rodrigues); census populations by the same districts 1846–2011; Rodrigues a dependency until it became an island region on 2001-11-20.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1355715898",
+              "title": "Wikipedia (en): Districts of Mauritius, rev. 1355715898",
+              "says": "Mauritius is divided into nine districts; Rodrigues used to be the tenth district until it gained autonomy in 2002.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1378376800",
+              "title": "Wikipedia (en): Mauritius, rev. 1378376800",
+              "says": "Independence was proclaimed on 12 March 1968.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Scope start (independence). The census district is older: statoids tabulates the same nine districts at every census 1846–2011 and records no change to their lines."
+        }
+      ]
+    },
+    {
+      "id": "MUS:PortLouis@1968",
+      "names": {
+        "en": "Port Louis District",
+        "ja": "ポートルイス県",
+        "local": "Port Louis"
+      },
+      "spans": [
+        {
+          "from": "1968-03-12",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MUS-ADM1-65221844B53255720811613"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umu.html",
+              "title": "Statoids — Districts of Mauritius (Gwillim Law, updated 2015-06-30)",
+              "says": "Nine districts, two dependencies (Agalega, Cargados Carajos) and one region (Rodrigues); census populations by the same districts 1846–2011; Rodrigues a dependency until it became an island region on 2001-11-20.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1355715898",
+              "title": "Wikipedia (en): Districts of Mauritius, rev. 1355715898",
+              "says": "Mauritius is divided into nine districts; Rodrigues used to be the tenth district until it gained autonomy in 2002.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1378376800",
+              "title": "Wikipedia (en): Mauritius, rev. 1378376800",
+              "says": "Independence was proclaimed on 12 March 1968.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Scope start (independence). The census district is older: statoids tabulates the same nine districts at every census 1846–2011 and records no change to their lines."
+        }
+      ]
+    },
+    {
+      "id": "MUS:RiviereDuRempart@1968",
+      "names": {
+        "en": "Rivière du Rempart District",
+        "ja": "リヴィエール・デュ・ランパール県",
+        "local": "Rivière du Rempart"
+      },
+      "spans": [
+        {
+          "from": "1968-03-12",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MUS-ADM1-65221844B93227578092779"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umu.html",
+              "title": "Statoids — Districts of Mauritius (Gwillim Law, updated 2015-06-30)",
+              "says": "Nine districts, two dependencies (Agalega, Cargados Carajos) and one region (Rodrigues); census populations by the same districts 1846–2011; Rodrigues a dependency until it became an island region on 2001-11-20.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1355715898",
+              "title": "Wikipedia (en): Districts of Mauritius, rev. 1355715898",
+              "says": "Mauritius is divided into nine districts; Rodrigues used to be the tenth district until it gained autonomy in 2002.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1378376800",
+              "title": "Wikipedia (en): Mauritius, rev. 1378376800",
+              "says": "Independence was proclaimed on 12 March 1968.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Scope start (independence). The census district is older: statoids tabulates the same nine districts at every census 1846–2011 and records no change to their lines."
+        }
+      ]
+    },
+    {
+      "id": "MUS:Savanne@1968",
+      "names": {
+        "en": "Savanne District",
+        "ja": "サバンヌ県",
+        "local": "Savanne"
+      },
+      "spans": [
+        {
+          "from": "1968-03-12",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MUS-ADM1-65221844B93866494923153"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umu.html",
+              "title": "Statoids — Districts of Mauritius (Gwillim Law, updated 2015-06-30)",
+              "says": "Nine districts, two dependencies (Agalega, Cargados Carajos) and one region (Rodrigues); census populations by the same districts 1846–2011; Rodrigues a dependency until it became an island region on 2001-11-20.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1355715898",
+              "title": "Wikipedia (en): Districts of Mauritius, rev. 1355715898",
+              "says": "Mauritius is divided into nine districts; Rodrigues used to be the tenth district until it gained autonomy in 2002.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1378376800",
+              "title": "Wikipedia (en): Mauritius, rev. 1378376800",
+              "says": "Independence was proclaimed on 12 March 1968.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Scope start (independence). The census district is older: statoids tabulates the same nine districts at every census 1846–2011 and records no change to their lines."
+        }
+      ]
+    },
+    {
+      "id": "MUS:Rodrigues@1968",
+      "names": {
+        "en": "Rodrigues (dependency; autonomous island region from 2001-11-20)",
+        "ja": "ロドリゲス島",
+        "local": "Rodrigues"
+      },
+      "spans": [
+        {
+          "from": "1968-03-12",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MUS-ADM1-65221844B37057547030311"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umu.html",
+              "title": "Statoids — Districts of Mauritius (Gwillim Law, updated 2015-06-30)",
+              "says": "Nine districts, two dependencies (Agalega, Cargados Carajos) and one region (Rodrigues); census populations by the same districts 1846–2011; Rodrigues a dependency until it became an island region on 2001-11-20.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1373690964",
+              "title": "Wikipedia (en): Rodrigues, rev. 1373690964",
+              "says": "Rodrigues was the tenth district of Mauritius until 2002, when it was granted autonomy under the Rodrigues Regional Assembly.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1378376800",
+              "title": "Wikipedia (en): Mauritius, rev. 1378376800",
+              "says": "Independence was proclaimed on 12 March 1968.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Dependency (counted as the tenth district) until 2001-11-20, then autonomous island region; same territory."
+        }
+      ]
+    },
+    {
+      "id": "MUS:Agalega@1968",
+      "names": {
+        "en": "Agaléga Islands (dependency)",
+        "ja": "アガレガ諸島",
+        "local": "Agaléga"
+      },
+      "spans": [
+        {
+          "from": "1968-03-12",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MUS-ADM1-65221844B83452679821580"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umu.html",
+              "title": "Statoids — Districts of Mauritius (Gwillim Law, updated 2015-06-30)",
+              "says": "Nine districts, two dependencies (Agalega, Cargados Carajos) and one region (Rodrigues); census populations by the same districts 1846–2011; Rodrigues a dependency until it became an island region on 2001-11-20.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1378376800",
+              "title": "Wikipedia (en): Mauritius, rev. 1378376800",
+              "says": "Independence was proclaimed on 12 March 1968.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MUS:CargadosCarajos@1968",
+      "names": {
+        "en": "Cargados Carajos / St. Brandon (dependency)",
+        "ja": "カルガドス・カラジョス礁（セント・ブランドン）",
+        "local": "Saint-Brandon"
+      },
+      "spans": [
+        {
+          "from": "1968-03-12",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MUS-ADM1-65221844B12885462064369"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umu.html",
+              "title": "Statoids — Districts of Mauritius (Gwillim Law, updated 2015-06-30)",
+              "says": "Nine districts, two dependencies (Agalega, Cargados Carajos) and one region (Rodrigues); census populations by the same districts 1846–2011; Rodrigues a dependency until it became an island region on 2001-11-20.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1378376800",
+              "title": "Wikipedia (en): Mauritius, rev. 1378376800",
+              "says": "Independence was proclaimed on 12 March 1968.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "2001-11-20",
+      "precision": "day",
+      "what": "Rodrigues becomes an autonomous island region (no territorial change)",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/umu.html",
+          "title": "Statoids — Districts of Mauritius (Gwillim Law, updated 2015-06-30)",
+          "says": "Nine districts, two dependencies (Agalega, Cargados Carajos) and one region (Rodrigues); census populations by the same districts 1846–2011; Rodrigues a dependency until it became an island region on 2001-11-20.",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?oldid=1373690964",
+          "title": "Wikipedia (en): Rodrigues, rev. 1373690964",
+          "says": "Rodrigues was the tenth district of Mauritius until 2002, when it was granted autonomy under the Rodrigues Regional Assembly.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "2011-07-03",
+      "n": 12,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/umu.html",
+          "title": "Statoids — Districts of Mauritius (Gwillim Law, updated 2015-06-30)",
+          "says": "Nine districts, two dependencies (Agalega, Cargados Carajos) and one region (Rodrigues); census populations by the same districts 1846–2011; Rodrigues a dependency until it became an island region on 2001-11-20.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": []
+}

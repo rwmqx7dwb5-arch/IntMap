@@ -1,11 +1,11 @@
 {
   "country": "ZMB",
-  "atomSet": "ne-admin1@ca96624",
+  "atomSet": "gb-adm2@2026-10-06",
   "scope": {
     "from": "1964-10-24",
     "to": "2019-12-31"
   },
-  "polityNote": "Republic of Zambia from independence on 1964-10-24.",
+  "polityNote": "Republic of Zambia from independence on 1964-10-24. Atoms: geoBoundaries ZMB ADM2 (GRID3 / Office of the Surveyor General, 2020, 116 districts, CC BY 4.0); gb ADM1 of the same publisher nests exactly and places Itezhi-Tezhi in Central, Chirundu in Lusaka and Shibuyunji in Central (the 2018-2021 arrangement). Rewritten from ne-admin1 to gb-adm2 (2026-10-06): every inter-provincial change of 1964-2019 moved whole districts (Chama, Itezhi-Tezhi, Chirundu, Shibuyunji), which NE cannot separate. (1) Unions vs statoids areas: Central (pre-2012) 94,881 vs 94,394 km² (+0.5%), Lusaka 22,163 vs 21,896 (+1.2%), Southern (pre-2012) 85,641 vs 85,283 (+0.4%), Muchinga 86,742 vs 87,806 (-1.2%), Northern 77,894 vs 77,650 (+0.3%), Eastern 51,843 vs 51,476 (+0.7%). Against the CC0 regions panel (DVN/BM4WW0) every district falls >=0.79 (mostly >=0.95) in the region given here for 1970, 1980 and 2013, except the 2012 moves the panel does not model.",
   "units": [
     {
       "id": "ZMB:Western@1964",
@@ -21,29 +21,44 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "ZMB-523"
+            "ZMB-ADM2-96606910B70334566672203",
+            "ZMB-ADM2-96606910B45616226024157",
+            "ZMB-ADM2-96606910B48739682467937",
+            "ZMB-ADM2-96606910B75659295397669",
+            "ZMB-ADM2-96606910B66911286782898",
+            "ZMB-ADM2-96606910B13624449135340",
+            "ZMB-ADM2-96606910B8342530541372",
+            "ZMB-ADM2-96606910B3196683578902",
+            "ZMB-ADM2-96606910B67741623521388",
+            "ZMB-ADM2-96606910B50694573542024",
+            "ZMB-ADM2-96606910B42234900410364",
+            "ZMB-ADM2-96606910B84216604788069",
+            "ZMB-ADM2-96606910B16407097160512",
+            "ZMB-ADM2-96606910B19262681040951",
+            "ZMB-ADM2-96606910B5408602862486",
+            "ZMB-ADM2-96606910B11966717412590"
           ],
           "sources": [
             {
               "url": "https://www.statoids.com/uzm.html",
-              "title": "Statoids: Provinces of Zambia (G. Law)",
-              "says": "At independence 8 provinces; ~1969 renames; Lusaka split from Central ~1973, enlarged to present size by 1988; Muchinga formed 2011-11 incl. Chama from Eastern.",
-              "accessed": "2026-10-05"
+              "title": "Statoids: Provinces of Zambia (G. Law, updated 2015-06-30)",
+              "says": "8 provinces at independence; ~1969 renames only; Lusaka split from Central ~1973 (initially 360 km², later enlarged); Muchinga formed 2011-11 from Chinsali, Isoka, Mafinga, Mpika, Nakonde (Northern) and Chama (Eastern). No other inter-provincial change listed.",
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://en.wikipedia.org/w/index.php?oldid=1352041990",
               "title": "Wikipedia: Provinces of Zambia, rev. 1352041990",
-              "says": "Copperbelt was Western Province until 1969, Barotseland renamed Western; Lusaka split from Central 1973; Muchinga created Nov 2011 from 5 Northern districts and one Eastern.",
-              "accessed": "2026-10-05"
+              "says": "Copperbelt was Western Province until 1969, Barotseland renamed Western; Lusaka split from Central 1973 (360 km², present size by 1988); Muchinga created 2011.",
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://www.parliament.gov.zm/sites/default/files/documents/acts/Provincial%20and%20District%20Boundaries%20Act_0.pdf",
               "title": "Provincial and District Boundaries Act, Cap. 286, with S.I. 106 of 1996 (Provinces and Districts Boundaries (Division) Order)",
-              "says": "S.I. 106/1996 divides Zambia into 9 provinces with listed districts (Lusaka: Chongwe, Kafue, Luangwa, Lusaka), revoking S.I. 211 of 1977.",
-              "accessed": "2026-10-05"
+              "says": "S.I. 106/1996 divides Zambia into 9 provinces with listed districts and boundary descriptions (Lusaka: Chongwe, Kafue, Luangwa, Lusaka; Southern: 9 districts without Kafue), revoking S.I. 211 of 1977.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Unit existed at independence; the change lists record only renames (1969) and internal district splits for it; S.I. 79/2012 realignments in Luapula were internal (Chipili/Mwense)."
+          "dateNote": "No inter-provincial change is listed for this province (only renames and splits of its own districts), so the union of its present districts is its outline from independence."
         }
       ]
     },
@@ -61,29 +76,39 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "ZMB-521"
+            "ZMB-ADM2-96606910B52944150437375",
+            "ZMB-ADM2-96606910B32160654105939",
+            "ZMB-ADM2-96606910B9917173826335",
+            "ZMB-ADM2-96606910B30237809157373",
+            "ZMB-ADM2-96606910B75049689384444",
+            "ZMB-ADM2-96606910B15136159078795",
+            "ZMB-ADM2-96606910B54849868159577",
+            "ZMB-ADM2-96606910B46264133370016",
+            "ZMB-ADM2-96606910B26185337086625",
+            "ZMB-ADM2-96606910B85168359517007",
+            "ZMB-ADM2-96606910B76619304368438"
           ],
           "sources": [
             {
               "url": "https://www.statoids.com/uzm.html",
-              "title": "Statoids: Provinces of Zambia (G. Law)",
-              "says": "At independence 8 provinces; ~1969 renames; Lusaka split from Central ~1973, enlarged to present size by 1988; Muchinga formed 2011-11 incl. Chama from Eastern.",
-              "accessed": "2026-10-05"
+              "title": "Statoids: Provinces of Zambia (G. Law, updated 2015-06-30)",
+              "says": "8 provinces at independence; ~1969 renames only; Lusaka split from Central ~1973 (initially 360 km², later enlarged); Muchinga formed 2011-11 from Chinsali, Isoka, Mafinga, Mpika, Nakonde (Northern) and Chama (Eastern). No other inter-provincial change listed.",
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://en.wikipedia.org/w/index.php?oldid=1352041990",
               "title": "Wikipedia: Provinces of Zambia, rev. 1352041990",
-              "says": "Copperbelt was Western Province until 1969, Barotseland renamed Western; Lusaka split from Central 1973; Muchinga created Nov 2011 from 5 Northern districts and one Eastern.",
-              "accessed": "2026-10-05"
+              "says": "Copperbelt was Western Province until 1969, Barotseland renamed Western; Lusaka split from Central 1973 (360 km², present size by 1988); Muchinga created 2011.",
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://www.parliament.gov.zm/sites/default/files/documents/acts/Provincial%20and%20District%20Boundaries%20Act_0.pdf",
               "title": "Provincial and District Boundaries Act, Cap. 286, with S.I. 106 of 1996 (Provinces and Districts Boundaries (Division) Order)",
-              "says": "S.I. 106/1996 divides Zambia into 9 provinces with listed districts (Lusaka: Chongwe, Kafue, Luangwa, Lusaka), revoking S.I. 211 of 1977.",
-              "accessed": "2026-10-05"
+              "says": "S.I. 106/1996 divides Zambia into 9 provinces with listed districts and boundary descriptions (Lusaka: Chongwe, Kafue, Luangwa, Lusaka; Southern: 9 districts without Kafue), revoking S.I. 211 of 1977.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Unit existed at independence; the change lists record only renames (1969) and internal district splits for it; S.I. 79/2012 realignments in Luapula were internal (Chipili/Mwense)."
+          "dateNote": "No inter-provincial change is listed for this province (only renames and splits of its own districts), so the union of its present districts is its outline from independence."
         }
       ]
     },
@@ -101,29 +126,38 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "ZMB-517"
+            "ZMB-ADM2-96606910B40420728980339",
+            "ZMB-ADM2-96606910B88567375078856",
+            "ZMB-ADM2-96606910B20946814397752",
+            "ZMB-ADM2-96606910B1018737914833",
+            "ZMB-ADM2-96606910B75415616642530",
+            "ZMB-ADM2-96606910B27641216908272",
+            "ZMB-ADM2-96606910B87020590647468",
+            "ZMB-ADM2-96606910B43712843056023",
+            "ZMB-ADM2-96606910B37180348733704",
+            "ZMB-ADM2-96606910B76631115886164"
           ],
           "sources": [
             {
               "url": "https://www.statoids.com/uzm.html",
-              "title": "Statoids: Provinces of Zambia (G. Law)",
-              "says": "At independence 8 provinces; ~1969 renames; Lusaka split from Central ~1973, enlarged to present size by 1988; Muchinga formed 2011-11 incl. Chama from Eastern.",
-              "accessed": "2026-10-05"
+              "title": "Statoids: Provinces of Zambia (G. Law, updated 2015-06-30)",
+              "says": "8 provinces at independence; ~1969 renames only; Lusaka split from Central ~1973 (initially 360 km², later enlarged); Muchinga formed 2011-11 from Chinsali, Isoka, Mafinga, Mpika, Nakonde (Northern) and Chama (Eastern). No other inter-provincial change listed.",
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://en.wikipedia.org/w/index.php?oldid=1352041990",
               "title": "Wikipedia: Provinces of Zambia, rev. 1352041990",
-              "says": "Copperbelt was Western Province until 1969, Barotseland renamed Western; Lusaka split from Central 1973; Muchinga created Nov 2011 from 5 Northern districts and one Eastern.",
-              "accessed": "2026-10-05"
+              "says": "Copperbelt was Western Province until 1969, Barotseland renamed Western; Lusaka split from Central 1973 (360 km², present size by 1988); Muchinga created 2011.",
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://www.parliament.gov.zm/sites/default/files/documents/acts/Provincial%20and%20District%20Boundaries%20Act_0.pdf",
               "title": "Provincial and District Boundaries Act, Cap. 286, with S.I. 106 of 1996 (Provinces and Districts Boundaries (Division) Order)",
-              "says": "S.I. 106/1996 divides Zambia into 9 provinces with listed districts (Lusaka: Chongwe, Kafue, Luangwa, Lusaka), revoking S.I. 211 of 1977.",
-              "accessed": "2026-10-05"
+              "says": "S.I. 106/1996 divides Zambia into 9 provinces with listed districts and boundary descriptions (Lusaka: Chongwe, Kafue, Luangwa, Lusaka; Southern: 9 districts without Kafue), revoking S.I. 211 of 1977.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Unit existed at independence; the change lists record only renames (1969) and internal district splits for it; S.I. 79/2012 realignments in Luapula were internal (Chipili/Mwense)."
+          "dateNote": "No inter-provincial change is listed for this province (only renames and splits of its own districts), so the union of its present districts is its outline from independence."
         }
       ]
     },
@@ -141,34 +175,45 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "ZMB-514"
+            "ZMB-ADM2-96606910B10415646720486",
+            "ZMB-ADM2-96606910B82152127957425",
+            "ZMB-ADM2-96606910B92394332931396",
+            "ZMB-ADM2-96606910B25287686140667",
+            "ZMB-ADM2-96606910B68487362337591",
+            "ZMB-ADM2-96606910B4218134786212",
+            "ZMB-ADM2-96606910B48291631033153",
+            "ZMB-ADM2-96606910B39507061952782",
+            "ZMB-ADM2-96606910B97208010005617",
+            "ZMB-ADM2-96606910B65361757033996",
+            "ZMB-ADM2-96606910B37258058096160",
+            "ZMB-ADM2-96606910B51649803270254"
           ],
           "sources": [
             {
               "url": "https://www.statoids.com/uzm.html",
-              "title": "Statoids: Provinces of Zambia (G. Law)",
-              "says": "At independence 8 provinces; ~1969 renames; Lusaka split from Central ~1973, enlarged to present size by 1988; Muchinga formed 2011-11 incl. Chama from Eastern.",
-              "accessed": "2026-10-05"
+              "title": "Statoids: Provinces of Zambia (G. Law, updated 2015-06-30)",
+              "says": "8 provinces at independence; ~1969 renames only; Lusaka split from Central ~1973 (initially 360 km², later enlarged); Muchinga formed 2011-11 from Chinsali, Isoka, Mafinga, Mpika, Nakonde (Northern) and Chama (Eastern). No other inter-provincial change listed.",
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://en.wikipedia.org/w/index.php?oldid=1352041990",
               "title": "Wikipedia: Provinces of Zambia, rev. 1352041990",
-              "says": "Copperbelt was Western Province until 1969, Barotseland renamed Western; Lusaka split from Central 1973; Muchinga created Nov 2011 from 5 Northern districts and one Eastern.",
-              "accessed": "2026-10-05"
+              "says": "Copperbelt was Western Province until 1969, Barotseland renamed Western; Lusaka split from Central 1973 (360 km², present size by 1988); Muchinga created 2011.",
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://www.parliament.gov.zm/sites/default/files/documents/acts/Provincial%20and%20District%20Boundaries%20Act_0.pdf",
               "title": "Provincial and District Boundaries Act, Cap. 286, with S.I. 106 of 1996 (Provinces and Districts Boundaries (Division) Order)",
-              "says": "S.I. 106/1996 divides Zambia into 9 provinces with listed districts (Lusaka: Chongwe, Kafue, Luangwa, Lusaka), revoking S.I. 211 of 1977.",
-              "accessed": "2026-10-05"
+              "says": "S.I. 106/1996 divides Zambia into 9 provinces with listed districts and boundary descriptions (Lusaka: Chongwe, Kafue, Luangwa, Lusaka; Southern: 9 districts without Kafue), revoking S.I. 211 of 1977.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Unit existed at independence; the change lists record only renames (1969) and internal district splits for it; S.I. 79/2012 realignments in Luapula were internal (Chipili/Mwense)."
+          "dateNote": "No inter-provincial change is listed for this province (only renames and splits of its own districts), so the union of its present districts is its outline from independence."
         }
       ]
     },
     {
-      "id": "ZMB:Eastern@2011",
+      "id": "ZMB:Eastern@1964",
       "names": {
         "en": "Eastern Province",
         "ja": "東部州",
@@ -177,38 +222,360 @@
       "wikidata": "Q823810",
       "spans": [
         {
-          "from": "2011-11",
-          "precision": "month",
-          "to": null,
+          "from": "1964-10-24",
+          "precision": "day",
+          "to": "2011-11",
           "atoms": [
-            "ZMB-518"
+            "ZMB-ADM2-96606910B44569696961001",
+            "ZMB-ADM2-96606910B72978673218668",
+            "ZMB-ADM2-96606910B61559073197846",
+            "ZMB-ADM2-96606910B12043083212801",
+            "ZMB-ADM2-96606910B99834275279733",
+            "ZMB-ADM2-96606910B8201415928290",
+            "ZMB-ADM2-96606910B53587891275683",
+            "ZMB-ADM2-96606910B63463932820005",
+            "ZMB-ADM2-96606910B89827390447979",
+            "ZMB-ADM2-96606910B40356469041881",
+            "ZMB-ADM2-96606910B94036775861358",
+            "ZMB-ADM2-96606910B40532044353326",
+            "ZMB-ADM2-96606910B72426001037260",
+            "ZMB-ADM2-96606910B99969900210710",
+            "ZMB-ADM2-96606910B17560798529879"
           ],
           "sources": [
             {
               "url": "https://www.statoids.com/uzm.html",
-              "title": "Statoids: Provinces of Zambia (G. Law)",
-              "says": "At independence 8 provinces; ~1969 renames; Lusaka split from Central ~1973, enlarged to present size by 1988; Muchinga formed 2011-11 incl. Chama from Eastern.",
-              "accessed": "2026-10-05"
+              "title": "Statoids: Provinces of Zambia (G. Law, updated 2015-06-30)",
+              "says": "8 provinces at independence; ~1969 renames only; Lusaka split from Central ~1973 (initially 360 km², later enlarged); Muchinga formed 2011-11 from Chinsali, Isoka, Mafinga, Mpika, Nakonde (Northern) and Chama (Eastern). No other inter-provincial change listed.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.parliament.gov.zm/sites/default/files/documents/acts/Provincial%20and%20District%20Boundaries%20Act_0.pdf",
+              "title": "Provincial and District Boundaries Act, Cap. 286, with S.I. 106 of 1996 (Provinces and Districts Boundaries (Division) Order)",
+              "says": "S.I. 106/1996 divides Zambia into 9 provinces with listed districts and boundary descriptions (Lusaka: Chongwe, Kafue, Luangwa, Lusaka; Southern: 9 districts without Kafue), revoking S.I. 211 of 1977.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://doi.org/10.7910/DVN/BM4WW0",
+              "title": "Müller-Crepon (2021), State Reach and Development in Africa since the 1960s, replication data: africa_regions_panel and adminnum_bycountry (CC0)",
+              "says": "Zambia regions: Central 1964–1973 covering today’s Lusaka Province (Kafue, Luangwa inside it); Lusaka from 1974; Southern 1964–2013 unchanged; 8 regions 1964–1973, 9 1974–2011, 10 from 2012.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Includes Chama until Muchinga Province."
+        },
+        {
+          "from": "2011-11",
+          "precision": "month",
+          "to": null,
+          "atoms": [
+            "ZMB-ADM2-96606910B44569696961001",
+            "ZMB-ADM2-96606910B72978673218668",
+            "ZMB-ADM2-96606910B61559073197846",
+            "ZMB-ADM2-96606910B12043083212801",
+            "ZMB-ADM2-96606910B99834275279733",
+            "ZMB-ADM2-96606910B8201415928290",
+            "ZMB-ADM2-96606910B53587891275683",
+            "ZMB-ADM2-96606910B63463932820005",
+            "ZMB-ADM2-96606910B89827390447979",
+            "ZMB-ADM2-96606910B40356469041881",
+            "ZMB-ADM2-96606910B94036775861358",
+            "ZMB-ADM2-96606910B40532044353326",
+            "ZMB-ADM2-96606910B72426001037260",
+            "ZMB-ADM2-96606910B99969900210710"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uzm.html",
+              "title": "Statoids: Provinces of Zambia (G. Law, updated 2015-06-30)",
+              "says": "8 provinces at independence; ~1969 renames only; Lusaka split from Central ~1973 (initially 360 km², later enlarged); Muchinga formed 2011-11 from Chinsali, Isoka, Mafinga, Mpika, Nakonde (Northern) and Chama (Eastern). No other inter-provincial change listed.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/yzm.html",
+              "title": "Statoids: Districts of Zambia (G. Law, updated 2015-02-22)",
+              "says": "District changes: Lusaka Rural split ~1990; Mafinga from Isoka 2011-02; Muchinga 2011-11; 2012-07-09 Sibuyunji split from Mumbwa; 2012-07-12 Sibuyunji transferred from Central to Lusaka; 2012-07 Luapula splits.",
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://en.wikipedia.org/w/index.php?oldid=1352041990",
               "title": "Wikipedia: Provinces of Zambia, rev. 1352041990",
-              "says": "Copperbelt was Western Province until 1969, Barotseland renamed Western; Lusaka split from Central 1973; Muchinga created Nov 2011 from 5 Northern districts and one Eastern.",
-              "accessed": "2026-10-05"
+              "says": "Copperbelt was Western Province until 1969, Barotseland renamed Western; Lusaka split from Central 1973 (360 km², present size by 1988); Muchinga created 2011.",
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://media.zambialii.org/media/legislation/20584/source_file/e3d0362052983629/zm-act-si-2021-114-publication-document.pdf",
               "title": "Statutory Instrument No. 114 of 2021",
-              "says": "Moves Itezhi-tezhi (from Central) and Chirundu (from Lusaka) to Southern, and Chama from Muchinga to Eastern, amending S.I. 106 of 1996.",
-              "accessed": "2026-10-05"
+              "says": "Moves Itezhi-tezhi (from Central) and Chirundu (from Lusaka) back to Southern and Chama from Muchinga to Eastern, amending S.I. 106 of 1996 (after this scope).",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Chama left for Muchinga in 2011-11 (statoids: between 2011-11-07 and 2011-12-27) and returned only by S.I. 114 of 2021 (after scope)."
+          "dateNote": "Chama left for Muchinga in 2011-11 and returned only by S.I. 114 of 2021 (after scope)."
         }
       ]
     },
     {
-      "id": "ZMB:Central@1996",
+      "id": "ZMB:Northern@1964",
+      "names": {
+        "en": "Northern Province",
+        "ja": "北部州",
+        "local": "Northern Province"
+      },
+      "wikidata": "Q778738",
+      "spans": [
+        {
+          "from": "1964-10-24",
+          "precision": "day",
+          "to": "2011-11",
+          "atoms": [
+            "ZMB-ADM2-96606910B6838055437947",
+            "ZMB-ADM2-96606910B91372429992286",
+            "ZMB-ADM2-96606910B49131847475849",
+            "ZMB-ADM2-96606910B27526943690880",
+            "ZMB-ADM2-96606910B11970238956391",
+            "ZMB-ADM2-96606910B28047609597150",
+            "ZMB-ADM2-96606910B75728228725802",
+            "ZMB-ADM2-96606910B5671768599011",
+            "ZMB-ADM2-96606910B10449137451116",
+            "ZMB-ADM2-96606910B23171864038647",
+            "ZMB-ADM2-96606910B46360514720663",
+            "ZMB-ADM2-96606910B60229531220552",
+            "ZMB-ADM2-96606910B49575738019753",
+            "ZMB-ADM2-96606910B95554535134500",
+            "ZMB-ADM2-96606910B88888220258727",
+            "ZMB-ADM2-96606910B97886687400536",
+            "ZMB-ADM2-96606910B74743827741249",
+            "ZMB-ADM2-96606910B87532559916375",
+            "ZMB-ADM2-96606910B77888556336058",
+            "ZMB-ADM2-96606910B14962040673296"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uzm.html",
+              "title": "Statoids: Provinces of Zambia (G. Law, updated 2015-06-30)",
+              "says": "8 provinces at independence; ~1969 renames only; Lusaka split from Central ~1973 (initially 360 km², later enlarged); Muchinga formed 2011-11 from Chinsali, Isoka, Mafinga, Mpika, Nakonde (Northern) and Chama (Eastern). No other inter-provincial change listed.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.parliament.gov.zm/sites/default/files/documents/acts/Provincial%20and%20District%20Boundaries%20Act_0.pdf",
+              "title": "Provincial and District Boundaries Act, Cap. 286, with S.I. 106 of 1996 (Provinces and Districts Boundaries (Division) Order)",
+              "says": "S.I. 106/1996 divides Zambia into 9 provinces with listed districts and boundary descriptions (Lusaka: Chongwe, Kafue, Luangwa, Lusaka; Southern: 9 districts without Kafue), revoking S.I. 211 of 1977.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://doi.org/10.7910/DVN/BM4WW0",
+              "title": "Müller-Crepon (2021), State Reach and Development in Africa since the 1960s, replication data: africa_regions_panel and adminnum_bycountry (CC0)",
+              "says": "Zambia regions: Central 1964–1973 covering today’s Lusaka Province (Kafue, Luangwa inside it); Lusaka from 1974; Southern 1964–2013 unchanged; 8 regions 1964–1973, 9 1974–2011, 10 from 2012.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Includes Chinsali, Isoka (with Mafinga), Mpika and Nakonde, and their later splits, until Muchinga Province."
+        },
+        {
+          "from": "2011-11",
+          "precision": "month",
+          "to": null,
+          "atoms": [
+            "ZMB-ADM2-96606910B6838055437947",
+            "ZMB-ADM2-96606910B91372429992286",
+            "ZMB-ADM2-96606910B49131847475849",
+            "ZMB-ADM2-96606910B27526943690880",
+            "ZMB-ADM2-96606910B11970238956391",
+            "ZMB-ADM2-96606910B28047609597150",
+            "ZMB-ADM2-96606910B75728228725802",
+            "ZMB-ADM2-96606910B5671768599011",
+            "ZMB-ADM2-96606910B10449137451116",
+            "ZMB-ADM2-96606910B23171864038647",
+            "ZMB-ADM2-96606910B46360514720663",
+            "ZMB-ADM2-96606910B60229531220552"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uzm.html",
+              "title": "Statoids: Provinces of Zambia (G. Law, updated 2015-06-30)",
+              "says": "8 provinces at independence; ~1969 renames only; Lusaka split from Central ~1973 (initially 360 km², later enlarged); Muchinga formed 2011-11 from Chinsali, Isoka, Mafinga, Mpika, Nakonde (Northern) and Chama (Eastern). No other inter-provincial change listed.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/yzm.html",
+              "title": "Statoids: Districts of Zambia (G. Law, updated 2015-02-22)",
+              "says": "District changes: Lusaka Rural split ~1990; Mafinga from Isoka 2011-02; Muchinga 2011-11; 2012-07-09 Sibuyunji split from Mumbwa; 2012-07-12 Sibuyunji transferred from Central to Lusaka; 2012-07 Luapula splits.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1352041990",
+              "title": "Wikipedia: Provinces of Zambia, rev. 1352041990",
+              "says": "Copperbelt was Western Province until 1969, Barotseland renamed Western; Lusaka split from Central 1973 (360 km², present size by 1988); Muchinga created 2011.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "After Muchinga Province."
+        }
+      ]
+    },
+    {
+      "id": "ZMB:Muchinga@2011",
+      "names": {
+        "en": "Muchinga Province",
+        "ja": "ムチンガ州",
+        "local": "Muchinga Province"
+      },
+      "wikidata": "Q6714242",
+      "spans": [
+        {
+          "from": "2011-11",
+          "precision": "month",
+          "to": null,
+          "atoms": [
+            "ZMB-ADM2-96606910B17560798529879",
+            "ZMB-ADM2-96606910B49575738019753",
+            "ZMB-ADM2-96606910B95554535134500",
+            "ZMB-ADM2-96606910B88888220258727",
+            "ZMB-ADM2-96606910B97886687400536",
+            "ZMB-ADM2-96606910B74743827741249",
+            "ZMB-ADM2-96606910B87532559916375",
+            "ZMB-ADM2-96606910B77888556336058",
+            "ZMB-ADM2-96606910B14962040673296"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uzm.html",
+              "title": "Statoids: Provinces of Zambia (G. Law, updated 2015-06-30)",
+              "says": "8 provinces at independence; ~1969 renames only; Lusaka split from Central ~1973 (initially 360 km², later enlarged); Muchinga formed 2011-11 from Chinsali, Isoka, Mafinga, Mpika, Nakonde (Northern) and Chama (Eastern). No other inter-provincial change listed.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/yzm.html",
+              "title": "Statoids: Districts of Zambia (G. Law, updated 2015-02-22)",
+              "says": "District changes: Lusaka Rural split ~1990; Mafinga from Isoka 2011-02; Muchinga 2011-11; 2012-07-09 Sibuyunji split from Mumbwa; 2012-07-12 Sibuyunji transferred from Central to Lusaka; 2012-07 Luapula splits.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1352041990",
+              "title": "Wikipedia: Provinces of Zambia, rev. 1352041990",
+              "says": "Copperbelt was Western Province until 1969, Barotseland renamed Western; Lusaka split from Central 1973 (360 km², present size by 1988); Muchinga created 2011.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Formed 2011-11 from five Northern districts and Chama (Eastern); later districts (Shiwang’andu, Kanchibiya, Lavushimanda) split from its own districts."
+        }
+      ]
+    },
+    {
+      "id": "ZMB:Southern@1964",
+      "names": {
+        "en": "Southern Province",
+        "ja": "南部州",
+        "local": "Southern Province"
+      },
+      "wikidata": "Q738382",
+      "spans": [
+        {
+          "from": "1964-10-24",
+          "precision": "day",
+          "to": "2012-02",
+          "atoms": [
+            "ZMB-ADM2-96606910B6098711564137",
+            "ZMB-ADM2-96606910B73975181244202",
+            "ZMB-ADM2-96606910B99334137269025",
+            "ZMB-ADM2-96606910B45059584224762",
+            "ZMB-ADM2-96606910B95953051402599",
+            "ZMB-ADM2-96606910B12959301642296",
+            "ZMB-ADM2-96606910B8169685936662",
+            "ZMB-ADM2-96606910B87508974482320",
+            "ZMB-ADM2-96606910B54328368707661",
+            "ZMB-ADM2-96606910B89551378676560",
+            "ZMB-ADM2-96606910B78484131600253",
+            "ZMB-ADM2-96606910B20600796740117",
+            "ZMB-ADM2-96606910B98197380388075",
+            "ZMB-ADM2-96606910B99117639697542",
+            "ZMB-ADM2-96606910B35256638811207"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uzm.html",
+              "title": "Statoids: Provinces of Zambia (G. Law, updated 2015-06-30)",
+              "says": "8 provinces at independence; ~1969 renames only; Lusaka split from Central ~1973 (initially 360 km², later enlarged); Muchinga formed 2011-11 from Chinsali, Isoka, Mafinga, Mpika, Nakonde (Northern) and Chama (Eastern). No other inter-provincial change listed.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.parliament.gov.zm/sites/default/files/documents/acts/Provincial%20and%20District%20Boundaries%20Act_0.pdf",
+              "title": "Provincial and District Boundaries Act, Cap. 286, with S.I. 106 of 1996 (Provinces and Districts Boundaries (Division) Order)",
+              "says": "S.I. 106/1996 divides Zambia into 9 provinces with listed districts and boundary descriptions (Lusaka: Chongwe, Kafue, Luangwa, Lusaka; Southern: 9 districts without Kafue), revoking S.I. 211 of 1977.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://doi.org/10.7910/DVN/BM4WW0",
+              "title": "Müller-Crepon (2021), State Reach and Development in Africa since the 1960s, replication data: africa_regions_panel and adminnum_bycountry (CC0)",
+              "says": "Zambia regions: Central 1964–1973 covering today’s Lusaka Province (Kafue, Luangwa inside it); Lusaka from 1974; Southern 1964–2013 unchanged; 8 regions 1964–1973, 9 1974–2011, 10 from 2012.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1376242056",
+              "title": "Wikipedia: Itezhi-Tezhi District, rev. 1376242056",
+              "says": "Created Sept 1997 from Namwala; moved from Southern to Central by Sata in 2012; returned to Southern in 2021.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1375623653",
+              "title": "Wikipedia: Chirundu District, rev. 1375623653",
+              "says": "Separated from Siavonga (Southern) in 2012 and moved to Lusaka Province; return announced 17 Nov 2021.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Includes Itezhi-Tezhi (from Namwala) and Chirundu (from Siavonga). Lusaka Province was carved from Central only: the S.I. 106/1996 Southern list has no Kafue, and the CC0 panel places Kafue and Luangwa in Central in 1964."
+        },
+        {
+          "from": "2012-02",
+          "precision": "month",
+          "to": null,
+          "atoms": [
+            "ZMB-ADM2-96606910B6098711564137",
+            "ZMB-ADM2-96606910B73975181244202",
+            "ZMB-ADM2-96606910B99334137269025",
+            "ZMB-ADM2-96606910B45059584224762",
+            "ZMB-ADM2-96606910B95953051402599",
+            "ZMB-ADM2-96606910B12959301642296",
+            "ZMB-ADM2-96606910B8169685936662",
+            "ZMB-ADM2-96606910B87508974482320",
+            "ZMB-ADM2-96606910B54328368707661",
+            "ZMB-ADM2-96606910B89551378676560",
+            "ZMB-ADM2-96606910B78484131600253",
+            "ZMB-ADM2-96606910B20600796740117",
+            "ZMB-ADM2-96606910B98197380388075"
+          ],
+          "sources": [
+            {
+              "url": "https://www.lusakatimes.com/2012/02/06/president-sata-moves-chirundu-itezhi-tezhi-districts-southern-province-upnd-reacts/",
+              "title": "Lusaka Times, 6 Feb 2012: President Sata moves Chirundu and Itezhi Tezhi districts",
+              "says": "Sata directed a gazette notice moving newly created Chirundu District to Lusaka and Itezhi-Tezhi to Central Province.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1376242056",
+              "title": "Wikipedia: Itezhi-Tezhi District, rev. 1376242056",
+              "says": "Created Sept 1997 from Namwala; moved from Southern to Central by Sata in 2012; returned to Southern in 2021.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1375623653",
+              "title": "Wikipedia: Chirundu District, rev. 1375623653",
+              "says": "Separated from Siavonga (Southern) in 2012 and moved to Lusaka Province; return announced 17 Nov 2021.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://media.zambialii.org/media/legislation/20584/source_file/e3d0362052983629/zm-act-si-2021-114-publication-document.pdf",
+              "title": "Statutory Instrument No. 114 of 2021",
+              "says": "Moves Itezhi-tezhi (from Central) and Chirundu (from Lusaka) back to Southern and Chama from Muchinga to Eastern, amending S.I. 106 of 1996 (after this scope).",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Itezhi-Tezhi to Central and Chirundu to Lusaka by the directive of 6 Feb 2012 (gazette day not found; month precision); back only in 2021."
+        }
+      ]
+    },
+    {
+      "id": "ZMB:Central@1964",
       "names": {
         "en": "Central Province",
         "ja": "中央州",
@@ -217,38 +584,200 @@
       "wikidata": "Q190718",
       "spans": [
         {
+          "from": "1964-10-24",
+          "precision": "day",
+          "to": "1973",
+          "atoms": [
+            "ZMB-ADM2-96606910B53104033004120",
+            "ZMB-ADM2-96606910B82726316050571",
+            "ZMB-ADM2-96606910B62371668778538",
+            "ZMB-ADM2-96606910B72559103883158",
+            "ZMB-ADM2-96606910B40769326482894",
+            "ZMB-ADM2-96606910B16035329871790",
+            "ZMB-ADM2-96606910B76461295717926",
+            "ZMB-ADM2-96606910B37920738728221",
+            "ZMB-ADM2-96606910B70902538429016",
+            "ZMB-ADM2-96606910B77122166525946",
+            "ZMB-ADM2-96606910B97598096149790",
+            "ZMB-ADM2-96606910B81629947645825",
+            "ZMB-ADM2-96606910B32717004733154",
+            "ZMB-ADM2-96606910B70191271227661",
+            "ZMB-ADM2-96606910B48730551364911",
+            "ZMB-ADM2-96606910B10621059217070",
+            "ZMB-ADM2-96606910B83885559265483"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uzm.html",
+              "title": "Statoids: Provinces of Zambia (G. Law, updated 2015-06-30)",
+              "says": "8 provinces at independence; ~1969 renames only; Lusaka split from Central ~1973 (initially 360 km², later enlarged); Muchinga formed 2011-11 from Chinsali, Isoka, Mafinga, Mpika, Nakonde (Northern) and Chama (Eastern). No other inter-provincial change listed.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1352041990",
+              "title": "Wikipedia: Provinces of Zambia, rev. 1352041990",
+              "says": "Copperbelt was Western Province until 1969, Barotseland renamed Western; Lusaka split from Central 1973 (360 km², present size by 1988); Muchinga created 2011.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://doi.org/10.7910/DVN/BM4WW0",
+              "title": "Müller-Crepon (2021), State Reach and Development in Africa since the 1960s, replication data: africa_regions_panel and adminnum_bycountry (CC0)",
+              "says": "Zambia regions: Central 1964–1973 covering today’s Lusaka Province (Kafue, Luangwa inside it); Lusaka from 1974; Southern 1964–2013 unchanged; 8 regions 1964–1973, 9 1974–2011, 10 from 2012.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.parliament.gov.zm/sites/default/files/documents/acts/Provincial%20and%20District%20Boundaries%20Act_0.pdf",
+              "title": "Provincial and District Boundaries Act, Cap. 286, with S.I. 106 of 1996 (Provinces and Districts Boundaries (Division) Order)",
+              "says": "S.I. 106/1996 divides Zambia into 9 provinces with listed districts and boundary descriptions (Lusaka: Chongwe, Kafue, Luangwa, Lusaka; Southern: 9 districts without Kafue), revoking S.I. 211 of 1977.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Before Lusaka Province: Central = today’s Central (pre-2012) + today’s Lusaka (pre-2012). Ends at the earliest reported date of the Lusaka split (1973; others 1976)."
+        },
+        {
           "from": "1996",
           "precision": "year",
-          "to": "2012-01",
+          "to": "2012-02",
           "atoms": [
-            "ZMB-516"
+            "ZMB-ADM2-96606910B53104033004120",
+            "ZMB-ADM2-96606910B82726316050571",
+            "ZMB-ADM2-96606910B62371668778538",
+            "ZMB-ADM2-96606910B72559103883158",
+            "ZMB-ADM2-96606910B40769326482894",
+            "ZMB-ADM2-96606910B16035329871790",
+            "ZMB-ADM2-96606910B76461295717926",
+            "ZMB-ADM2-96606910B37920738728221",
+            "ZMB-ADM2-96606910B70902538429016",
+            "ZMB-ADM2-96606910B77122166525946",
+            "ZMB-ADM2-96606910B97598096149790"
           ],
           "sources": [
             {
               "url": "https://www.parliament.gov.zm/sites/default/files/documents/acts/Provincial%20and%20District%20Boundaries%20Act_0.pdf",
               "title": "Provincial and District Boundaries Act, Cap. 286, with S.I. 106 of 1996 (Provinces and Districts Boundaries (Division) Order)",
-              "says": "S.I. 106/1996 divides Zambia into 9 provinces with listed districts (Lusaka: Chongwe, Kafue, Luangwa, Lusaka), revoking S.I. 211 of 1977.",
-              "accessed": "2026-10-05"
+              "says": "S.I. 106/1996 divides Zambia into 9 provinces with listed districts and boundary descriptions (Lusaka: Chongwe, Kafue, Luangwa, Lusaka; Southern: 9 districts without Kafue), revoking S.I. 211 of 1977.",
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://www.statoids.com/uzm.html",
-              "title": "Statoids: Provinces of Zambia (G. Law)",
-              "says": "At independence 8 provinces; ~1969 renames; Lusaka split from Central ~1973, enlarged to present size by 1988; Muchinga formed 2011-11 incl. Chama from Eastern.",
-              "accessed": "2026-10-05"
+              "title": "Statoids: Provinces of Zambia (G. Law, updated 2015-06-30)",
+              "says": "8 provinces at independence; ~1969 renames only; Lusaka split from Central ~1973 (initially 360 km², later enlarged); Muchinga formed 2011-11 from Chinsali, Isoka, Mafinga, Mpika, Nakonde (Northern) and Chama (Eastern). No other inter-provincial change listed.",
+              "accessed": "2026-10-06"
             },
             {
-              "url": "https://media.zambialii.org/media/legislation/20584/source_file/e3d0362052983629/zm-act-si-2021-114-publication-document.pdf",
-              "title": "Statutory Instrument No. 114 of 2021",
-              "says": "Moves Itezhi-tezhi (from Central) and Chirundu (from Lusaka) to Southern, and Chama from Muchinga to Eastern, amending S.I. 106 of 1996.",
-              "accessed": "2026-10-05"
+              "url": "https://www.statoids.com/yzm.html",
+              "title": "Statoids: Districts of Zambia (G. Law, updated 2015-02-22)",
+              "says": "District changes: Lusaka Rural split ~1990; Mafinga from Isoka 2011-02; Muchinga 2011-11; 2012-07-09 Sibuyunji split from Mumbwa; 2012-07-12 Sibuyunji transferred from Central to Lusaka; 2012-07 Luapula splits.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Earliest primary schedule seen is S.I. 106 of 1996 (day not established); Lusaka had reached its present size by 1988 (statoids). NE puts Itezhi-Tezhi and Chirundu in Southern and Shibuyunji in Central — the pre-2012 arrangement."
+          "dateNote": "S.I. 106 of 1996 (day not established) lists Central’s districts; Shibuyunji was then part of Mumbwa."
+        },
+        {
+          "from": "2012-02",
+          "precision": "month",
+          "to": "2012-07-12",
+          "atoms": [
+            "ZMB-ADM2-96606910B53104033004120",
+            "ZMB-ADM2-96606910B82726316050571",
+            "ZMB-ADM2-96606910B62371668778538",
+            "ZMB-ADM2-96606910B99117639697542",
+            "ZMB-ADM2-96606910B72559103883158",
+            "ZMB-ADM2-96606910B40769326482894",
+            "ZMB-ADM2-96606910B16035329871790",
+            "ZMB-ADM2-96606910B76461295717926",
+            "ZMB-ADM2-96606910B37920738728221",
+            "ZMB-ADM2-96606910B70902538429016",
+            "ZMB-ADM2-96606910B77122166525946",
+            "ZMB-ADM2-96606910B97598096149790"
+          ],
+          "sources": [
+            {
+              "url": "https://www.lusakatimes.com/2012/02/06/president-sata-moves-chirundu-itezhi-tezhi-districts-southern-province-upnd-reacts/",
+              "title": "Lusaka Times, 6 Feb 2012: President Sata moves Chirundu and Itezhi Tezhi districts",
+              "says": "Sata directed a gazette notice moving newly created Chirundu District to Lusaka and Itezhi-Tezhi to Central Province.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1376242056",
+              "title": "Wikipedia: Itezhi-Tezhi District, rev. 1376242056",
+              "says": "Created Sept 1997 from Namwala; moved from Southern to Central by Sata in 2012; returned to Southern in 2021.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/yzm.html",
+              "title": "Statoids: Districts of Zambia (G. Law, updated 2015-02-22)",
+              "says": "District changes: Lusaka Rural split ~1990; Mafinga from Isoka 2011-02; Muchinga 2011-11; 2012-07-09 Sibuyunji split from Mumbwa; 2012-07-12 Sibuyunji transferred from Central to Lusaka; 2012-07 Luapula splits.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "With Itezhi-Tezhi; Shibuyunji still part of Mumbwa."
+        },
+        {
+          "from": "2012-07-12",
+          "precision": "day",
+          "to": "2018-04-13",
+          "atoms": [
+            "ZMB-ADM2-96606910B53104033004120",
+            "ZMB-ADM2-96606910B82726316050571",
+            "ZMB-ADM2-96606910B62371668778538",
+            "ZMB-ADM2-96606910B99117639697542",
+            "ZMB-ADM2-96606910B72559103883158",
+            "ZMB-ADM2-96606910B40769326482894",
+            "ZMB-ADM2-96606910B16035329871790",
+            "ZMB-ADM2-96606910B76461295717926",
+            "ZMB-ADM2-96606910B37920738728221",
+            "ZMB-ADM2-96606910B70902538429016",
+            "ZMB-ADM2-96606910B77122166525946"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/yzm.html",
+              "title": "Statoids: Districts of Zambia (G. Law, updated 2015-02-22)",
+              "says": "District changes: Lusaka Rural split ~1990; Mafinga from Isoka 2011-02; Muchinga 2011-11; 2012-07-09 Sibuyunji split from Mumbwa; 2012-07-12 Sibuyunji transferred from Central to Lusaka; 2012-07 Luapula splits.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1376854919",
+              "title": "Wikipedia: Shibuyunji District, rev. 1376854919",
+              "says": "Separated from Mumbwa and moved from Central to Lusaka in 2012; returned to Central by S.I. 28 of 2018 (Gazette 13 April 2018).",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Shibuyunji split from Mumbwa 2012-07-09 and transferred to Lusaka 2012-07-12 (statoids)."
+        },
+        {
+          "from": "2018-04-13",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ZMB-ADM2-96606910B53104033004120",
+            "ZMB-ADM2-96606910B82726316050571",
+            "ZMB-ADM2-96606910B62371668778538",
+            "ZMB-ADM2-96606910B99117639697542",
+            "ZMB-ADM2-96606910B72559103883158",
+            "ZMB-ADM2-96606910B40769326482894",
+            "ZMB-ADM2-96606910B16035329871790",
+            "ZMB-ADM2-96606910B76461295717926",
+            "ZMB-ADM2-96606910B37920738728221",
+            "ZMB-ADM2-96606910B70902538429016",
+            "ZMB-ADM2-96606910B77122166525946",
+            "ZMB-ADM2-96606910B97598096149790"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1376854919",
+              "title": "Wikipedia: Shibuyunji District, rev. 1376854919",
+              "says": "Separated from Mumbwa and moved from Central to Lusaka in 2012; returned to Central by S.I. 28 of 2018 (Gazette 13 April 2018).",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "S.I. 28 of 2018 (Gazette 13 April 2018; announced 3 Feb 2018) returned Shibuyunji to Central."
         }
       ]
     },
     {
-      "id": "ZMB:Lusaka@1996",
+      "id": "ZMB:Lusaka@1973",
       "names": {
         "en": "Lusaka Province",
         "ja": "ルサカ州",
@@ -259,71 +788,112 @@
         {
           "from": "1996",
           "precision": "year",
-          "to": "2012-01",
+          "to": "2012-02",
           "atoms": [
-            "ZMB-520"
+            "ZMB-ADM2-96606910B81629947645825",
+            "ZMB-ADM2-96606910B32717004733154",
+            "ZMB-ADM2-96606910B70191271227661",
+            "ZMB-ADM2-96606910B48730551364911",
+            "ZMB-ADM2-96606910B10621059217070",
+            "ZMB-ADM2-96606910B83885559265483"
           ],
           "sources": [
             {
               "url": "https://www.parliament.gov.zm/sites/default/files/documents/acts/Provincial%20and%20District%20Boundaries%20Act_0.pdf",
               "title": "Provincial and District Boundaries Act, Cap. 286, with S.I. 106 of 1996 (Provinces and Districts Boundaries (Division) Order)",
-              "says": "S.I. 106/1996 divides Zambia into 9 provinces with listed districts (Lusaka: Chongwe, Kafue, Luangwa, Lusaka), revoking S.I. 211 of 1977.",
-              "accessed": "2026-10-05"
+              "says": "S.I. 106/1996 divides Zambia into 9 provinces with listed districts and boundary descriptions (Lusaka: Chongwe, Kafue, Luangwa, Lusaka; Southern: 9 districts without Kafue), revoking S.I. 211 of 1977.",
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://www.statoids.com/uzm.html",
-              "title": "Statoids: Provinces of Zambia (G. Law)",
-              "says": "At independence 8 provinces; ~1969 renames; Lusaka split from Central ~1973, enlarged to present size by 1988; Muchinga formed 2011-11 incl. Chama from Eastern.",
-              "accessed": "2026-10-05"
-            },
-            {
-              "url": "https://media.zambialii.org/media/legislation/20584/source_file/e3d0362052983629/zm-act-si-2021-114-publication-document.pdf",
-              "title": "Statutory Instrument No. 114 of 2021",
-              "says": "Moves Itezhi-tezhi (from Central) and Chirundu (from Lusaka) to Southern, and Chama from Muchinga to Eastern, amending S.I. 106 of 1996.",
-              "accessed": "2026-10-05"
+              "title": "Statoids: Provinces of Zambia (G. Law, updated 2015-06-30)",
+              "says": "8 provinces at independence; ~1969 renames only; Lusaka split from Central ~1973 (initially 360 km², later enlarged); Muchinga formed 2011-11 from Chinsali, Isoka, Mafinga, Mpika, Nakonde (Northern) and Chama (Eastern). No other inter-provincial change listed.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Earliest primary schedule seen is S.I. 106 of 1996 (day not established); Lusaka had reached its present size by 1988 (statoids). NE puts Itezhi-Tezhi and Chirundu in Southern and Shibuyunji in Central — the pre-2012 arrangement."
-        }
-      ]
-    },
-    {
-      "id": "ZMB:Southern@1996",
-      "names": {
-        "en": "Southern Province",
-        "ja": "南部州",
-        "local": "Southern Province"
-      },
-      "wikidata": "Q738382",
-      "spans": [
+          "dateNote": "S.I. 106 of 1996 (day not established): Chongwe, Kafue, Luangwa, Lusaka. Before 1996 see unresolved."
+        },
         {
-          "from": "1996",
-          "precision": "year",
-          "to": "2012-01",
+          "from": "2012-02",
+          "precision": "month",
+          "to": "2012-07-12",
           "atoms": [
-            "ZMB-522"
+            "ZMB-ADM2-96606910B81629947645825",
+            "ZMB-ADM2-96606910B35256638811207",
+            "ZMB-ADM2-96606910B32717004733154",
+            "ZMB-ADM2-96606910B70191271227661",
+            "ZMB-ADM2-96606910B48730551364911",
+            "ZMB-ADM2-96606910B10621059217070",
+            "ZMB-ADM2-96606910B83885559265483"
           ],
           "sources": [
             {
-              "url": "https://www.parliament.gov.zm/sites/default/files/documents/acts/Provincial%20and%20District%20Boundaries%20Act_0.pdf",
-              "title": "Provincial and District Boundaries Act, Cap. 286, with S.I. 106 of 1996 (Provinces and Districts Boundaries (Division) Order)",
-              "says": "S.I. 106/1996 divides Zambia into 9 provinces with listed districts (Lusaka: Chongwe, Kafue, Luangwa, Lusaka), revoking S.I. 211 of 1977.",
-              "accessed": "2026-10-05"
+              "url": "https://www.lusakatimes.com/2012/02/06/president-sata-moves-chirundu-itezhi-tezhi-districts-southern-province-upnd-reacts/",
+              "title": "Lusaka Times, 6 Feb 2012: President Sata moves Chirundu and Itezhi Tezhi districts",
+              "says": "Sata directed a gazette notice moving newly created Chirundu District to Lusaka and Itezhi-Tezhi to Central Province.",
+              "accessed": "2026-10-06"
             },
             {
-              "url": "https://www.statoids.com/uzm.html",
-              "title": "Statoids: Provinces of Zambia (G. Law)",
-              "says": "At independence 8 provinces; ~1969 renames; Lusaka split from Central ~1973, enlarged to present size by 1988; Muchinga formed 2011-11 incl. Chama from Eastern.",
-              "accessed": "2026-10-05"
-            },
-            {
-              "url": "https://media.zambialii.org/media/legislation/20584/source_file/e3d0362052983629/zm-act-si-2021-114-publication-document.pdf",
-              "title": "Statutory Instrument No. 114 of 2021",
-              "says": "Moves Itezhi-tezhi (from Central) and Chirundu (from Lusaka) to Southern, and Chama from Muchinga to Eastern, amending S.I. 106 of 1996.",
-              "accessed": "2026-10-05"
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1375623653",
+              "title": "Wikipedia: Chirundu District, rev. 1375623653",
+              "says": "Separated from Siavonga (Southern) in 2012 and moved to Lusaka Province; return announced 17 Nov 2021.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Earliest primary schedule seen is S.I. 106 of 1996 (day not established); Lusaka had reached its present size by 1988 (statoids). NE puts Itezhi-Tezhi and Chirundu in Southern and Shibuyunji in Central — the pre-2012 arrangement."
+          "dateNote": "With Chirundu."
+        },
+        {
+          "from": "2012-07-12",
+          "precision": "day",
+          "to": "2018-04-13",
+          "atoms": [
+            "ZMB-ADM2-96606910B81629947645825",
+            "ZMB-ADM2-96606910B35256638811207",
+            "ZMB-ADM2-96606910B32717004733154",
+            "ZMB-ADM2-96606910B70191271227661",
+            "ZMB-ADM2-96606910B48730551364911",
+            "ZMB-ADM2-96606910B10621059217070",
+            "ZMB-ADM2-96606910B83885559265483",
+            "ZMB-ADM2-96606910B97598096149790"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/yzm.html",
+              "title": "Statoids: Districts of Zambia (G. Law, updated 2015-02-22)",
+              "says": "District changes: Lusaka Rural split ~1990; Mafinga from Isoka 2011-02; Muchinga 2011-11; 2012-07-09 Sibuyunji split from Mumbwa; 2012-07-12 Sibuyunji transferred from Central to Lusaka; 2012-07 Luapula splits.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1376854919",
+              "title": "Wikipedia: Shibuyunji District, rev. 1376854919",
+              "says": "Separated from Mumbwa and moved from Central to Lusaka in 2012; returned to Central by S.I. 28 of 2018 (Gazette 13 April 2018).",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "With Shibuyunji."
+        },
+        {
+          "from": "2018-04-13",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ZMB-ADM2-96606910B81629947645825",
+            "ZMB-ADM2-96606910B35256638811207",
+            "ZMB-ADM2-96606910B32717004733154",
+            "ZMB-ADM2-96606910B70191271227661",
+            "ZMB-ADM2-96606910B48730551364911",
+            "ZMB-ADM2-96606910B10621059217070",
+            "ZMB-ADM2-96606910B83885559265483"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1376854919",
+              "title": "Wikipedia: Shibuyunji District, rev. 1376854919",
+              "says": "Separated from Mumbwa and moved from Central to Lusaka in 2012; returned to Central by S.I. 28 of 2018 (Gazette 13 April 2018).",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Shibuyunji returned to Central (S.I. 28 of 2018)."
         }
       ]
     }
@@ -336,34 +906,47 @@
       "sources": [
         {
           "url": "https://www.statoids.com/uzm.html",
-          "title": "Statoids: Provinces of Zambia (G. Law)",
-          "says": "At independence 8 provinces; ~1969 renames; Lusaka split from Central ~1973, enlarged to present size by 1988; Muchinga formed 2011-11 incl. Chama from Eastern.",
-          "accessed": "2026-10-05"
+          "title": "Statoids: Provinces of Zambia (G. Law, updated 2015-06-30)",
+          "says": "8 provinces at independence; ~1969 renames only; Lusaka split from Central ~1973 (initially 360 km², later enlarged); Muchinga formed 2011-11 from Chinsali, Isoka, Mafinga, Mpika, Nakonde (Northern) and Chama (Eastern). No other inter-provincial change listed.",
+          "accessed": "2026-10-06"
         },
         {
           "url": "https://en.wikipedia.org/w/index.php?oldid=1352041990",
           "title": "Wikipedia: Provinces of Zambia, rev. 1352041990",
-          "says": "Copperbelt was Western Province until 1969, Barotseland renamed Western; Lusaka split from Central 1973; Muchinga created Nov 2011 from 5 Northern districts and one Eastern.",
-          "accessed": "2026-10-05"
+          "says": "Copperbelt was Western Province until 1969, Barotseland renamed Western; Lusaka split from Central 1973 (360 km², present size by 1988); Muchinga created 2011.",
+          "accessed": "2026-10-06"
         }
       ]
     },
     {
       "date": "1973",
       "precision": "year",
-      "what": "Lusaka Province split from Central (initially ~360 km²; enlarged by 1988)",
+      "what": "Lusaka Province split from Central (initially ~360 km²; enlarged by 1988; others date the split 1976)",
       "sources": [
         {
           "url": "https://www.statoids.com/uzm.html",
-          "title": "Statoids: Provinces of Zambia (G. Law)",
-          "says": "At independence 8 provinces; ~1969 renames; Lusaka split from Central ~1973, enlarged to present size by 1988; Muchinga formed 2011-11 incl. Chama from Eastern.",
-          "accessed": "2026-10-05"
+          "title": "Statoids: Provinces of Zambia (G. Law, updated 2015-06-30)",
+          "says": "8 provinces at independence; ~1969 renames only; Lusaka split from Central ~1973 (initially 360 km², later enlarged); Muchinga formed 2011-11 from Chinsali, Isoka, Mafinga, Mpika, Nakonde (Northern) and Chama (Eastern). No other inter-provincial change listed.",
+          "accessed": "2026-10-06"
         },
         {
           "url": "https://en.wikipedia.org/w/index.php?oldid=1352041990",
           "title": "Wikipedia: Provinces of Zambia, rev. 1352041990",
-          "says": "Copperbelt was Western Province until 1969, Barotseland renamed Western; Lusaka split from Central 1973; Muchinga created Nov 2011 from 5 Northern districts and one Eastern.",
-          "accessed": "2026-10-05"
+          "says": "Copperbelt was Western Province until 1969, Barotseland renamed Western; Lusaka split from Central 1973 (360 km², present size by 1988); Muchinga created 2011.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "1996",
+      "precision": "year",
+      "what": "S.I. 106 of 1996 schedules the nine provinces and their districts",
+      "sources": [
+        {
+          "url": "https://www.parliament.gov.zm/sites/default/files/documents/acts/Provincial%20and%20District%20Boundaries%20Act_0.pdf",
+          "title": "Provincial and District Boundaries Act, Cap. 286, with S.I. 106 of 1996 (Provinces and Districts Boundaries (Division) Order)",
+          "says": "S.I. 106/1996 divides Zambia into 9 provinces with listed districts and boundary descriptions (Lusaka: Chongwe, Kafue, Luangwa, Lusaka; Southern: 9 districts without Kafue), revoking S.I. 211 of 1977.",
+          "accessed": "2026-10-06"
         }
       ]
     },
@@ -374,47 +957,66 @@
       "sources": [
         {
           "url": "https://www.statoids.com/uzm.html",
-          "title": "Statoids: Provinces of Zambia (G. Law)",
-          "says": "At independence 8 provinces; ~1969 renames; Lusaka split from Central ~1973, enlarged to present size by 1988; Muchinga formed 2011-11 incl. Chama from Eastern.",
-          "accessed": "2026-10-05"
+          "title": "Statoids: Provinces of Zambia (G. Law, updated 2015-06-30)",
+          "says": "8 provinces at independence; ~1969 renames only; Lusaka split from Central ~1973 (initially 360 km², later enlarged); Muchinga formed 2011-11 from Chinsali, Isoka, Mafinga, Mpika, Nakonde (Northern) and Chama (Eastern). No other inter-provincial change listed.",
+          "accessed": "2026-10-06"
         },
         {
-          "url": "https://en.wikipedia.org/w/index.php?oldid=1352041990",
-          "title": "Wikipedia: Provinces of Zambia, rev. 1352041990",
-          "says": "Copperbelt was Western Province until 1969, Barotseland renamed Western; Lusaka split from Central 1973; Muchinga created Nov 2011 from 5 Northern districts and one Eastern.",
-          "accessed": "2026-10-05"
+          "url": "https://www.statoids.com/yzm.html",
+          "title": "Statoids: Districts of Zambia (G. Law, updated 2015-02-22)",
+          "says": "District changes: Lusaka Rural split ~1990; Mafinga from Isoka 2011-02; Muchinga 2011-11; 2012-07-09 Sibuyunji split from Mumbwa; 2012-07-12 Sibuyunji transferred from Central to Lusaka; 2012-07 Luapula splits.",
+          "accessed": "2026-10-06"
         }
       ]
     },
     {
       "date": "2012-02",
       "precision": "month",
-      "what": "Chirundu moved to Lusaka, Itezhi-Tezhi to Central, Shibuyunji (from Mumbwa) to Lusaka",
+      "what": "Itezhi-Tezhi moved to Central, Chirundu (new, from Siavonga) to Lusaka",
       "sources": [
         {
           "url": "https://www.lusakatimes.com/2012/02/06/president-sata-moves-chirundu-itezhi-tezhi-districts-southern-province-upnd-reacts/",
           "title": "Lusaka Times, 6 Feb 2012: President Sata moves Chirundu and Itezhi Tezhi districts",
           "says": "Sata directed a gazette notice moving newly created Chirundu District to Lusaka and Itezhi-Tezhi to Central Province.",
-          "accessed": "2026-10-05"
+          "accessed": "2026-10-06"
         },
         {
-          "url": "https://en.wikipedia.org/w/index.php?oldid=1376854919",
-          "title": "Wikipedia: Shibuyunji District, rev. 1376854919",
-          "says": "Separated from Mumbwa and transferred from Central to Lusaka in 2012; moved back to Central in 2018 (cites S.I. 28 of 2018).",
-          "accessed": "2026-10-05"
+          "url": "https://en.wikipedia.org/w/index.php?oldid=1376242056",
+          "title": "Wikipedia: Itezhi-Tezhi District, rev. 1376242056",
+          "says": "Created Sept 1997 from Namwala; moved from Southern to Central by Sata in 2012; returned to Southern in 2021.",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?oldid=1375623653",
+          "title": "Wikipedia: Chirundu District, rev. 1375623653",
+          "says": "Separated from Siavonga (Southern) in 2012 and moved to Lusaka Province; return announced 17 Nov 2021.",
+          "accessed": "2026-10-06"
         }
       ]
     },
     {
-      "date": "2018",
-      "precision": "year",
+      "date": "2012-07-12",
+      "precision": "day",
+      "what": "Shibuyunji (split from Mumbwa 2012-07-09) transferred from Central to Lusaka",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/yzm.html",
+          "title": "Statoids: Districts of Zambia (G. Law, updated 2015-02-22)",
+          "says": "District changes: Lusaka Rural split ~1990; Mafinga from Isoka 2011-02; Muchinga 2011-11; 2012-07-09 Sibuyunji split from Mumbwa; 2012-07-12 Sibuyunji transferred from Central to Lusaka; 2012-07 Luapula splits.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "2018-04-13",
+      "precision": "day",
       "what": "Shibuyunji returned to Central (S.I. 28 of 2018)",
       "sources": [
         {
           "url": "https://en.wikipedia.org/w/index.php?oldid=1376854919",
           "title": "Wikipedia: Shibuyunji District, rev. 1376854919",
-          "says": "Separated from Mumbwa and transferred from Central to Lusaka in 2012; moved back to Central in 2018 (cites S.I. 28 of 2018).",
-          "accessed": "2026-10-05"
+          "says": "Separated from Mumbwa and moved from Central to Lusaka in 2012; returned to Central by S.I. 28 of 2018 (Gazette 13 April 2018).",
+          "accessed": "2026-10-06"
         }
       ]
     }
@@ -426,9 +1028,27 @@
       "sources": [
         {
           "url": "https://www.statoids.com/uzm.html",
-          "title": "Statoids: Provinces of Zambia (G. Law)",
-          "says": "At independence 8 provinces; ~1969 renames; Lusaka split from Central ~1973, enlarged to present size by 1988; Muchinga formed 2011-11 incl. Chama from Eastern.",
-          "accessed": "2026-10-05"
+          "title": "Statoids: Provinces of Zambia (G. Law, updated 2015-06-30)",
+          "says": "8 provinces at independence; ~1969 renames only; Lusaka split from Central ~1973 (initially 360 km², later enlarged); Muchinga formed 2011-11 from Chinsali, Isoka, Mafinga, Mpika, Nakonde (Northern) and Chama (Eastern). No other inter-provincial change listed.",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://doi.org/10.7910/DVN/BM4WW0",
+          "title": "Müller-Crepon (2021), State Reach and Development in Africa since the 1960s, replication data: africa_regions_panel and adminnum_bycountry (CC0)",
+          "says": "Zambia regions: Central 1964–1973 covering today’s Lusaka Province (Kafue, Luangwa inside it); Lusaka from 1974; Southern 1964–2013 unchanged; 8 regions 1964–1973, 9 1974–2011, 10 from 2012.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "1980-01-01",
+      "n": 9,
+      "sources": [
+        {
+          "url": "https://doi.org/10.7910/DVN/BM4WW0",
+          "title": "Müller-Crepon (2021), State Reach and Development in Africa since the 1960s, replication data: africa_regions_panel and adminnum_bycountry (CC0)",
+          "says": "Zambia regions: Central 1964–1973 covering today’s Lusaka Province (Kafue, Luangwa inside it); Lusaka from 1974; Southern 1964–2013 unchanged; 8 regions 1964–1973, 9 1974–2011, 10 from 2012.",
+          "accessed": "2026-10-06"
         }
       ]
     },
@@ -439,8 +1059,8 @@
         {
           "url": "https://www.parliament.gov.zm/sites/default/files/documents/acts/Provincial%20and%20District%20Boundaries%20Act_0.pdf",
           "title": "Provincial and District Boundaries Act, Cap. 286, with S.I. 106 of 1996 (Provinces and Districts Boundaries (Division) Order)",
-          "says": "S.I. 106/1996 divides Zambia into 9 provinces with listed districts (Lusaka: Chongwe, Kafue, Luangwa, Lusaka), revoking S.I. 211 of 1977.",
-          "accessed": "2026-10-05"
+          "says": "S.I. 106/1996 divides Zambia into 9 provinces with listed districts and boundary descriptions (Lusaka: Chongwe, Kafue, Luangwa, Lusaka; Southern: 9 districts without Kafue), revoking S.I. 211 of 1977.",
+          "accessed": "2026-10-06"
         }
       ]
     },
@@ -450,9 +1070,15 @@
       "sources": [
         {
           "url": "https://www.statoids.com/uzm.html",
-          "title": "Statoids: Provinces of Zambia (G. Law)",
-          "says": "At independence 8 provinces; ~1969 renames; Lusaka split from Central ~1973, enlarged to present size by 1988; Muchinga formed 2011-11 incl. Chama from Eastern.",
-          "accessed": "2026-10-05"
+          "title": "Statoids: Provinces of Zambia (G. Law, updated 2015-06-30)",
+          "says": "8 provinces at independence; ~1969 renames only; Lusaka split from Central ~1973 (initially 360 km², later enlarged); Muchinga formed 2011-11 from Chinsali, Isoka, Mafinga, Mpika, Nakonde (Northern) and Chama (Eastern). No other inter-provincial change listed.",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://doi.org/10.7910/DVN/BM4WW0",
+          "title": "Müller-Crepon (2021), State Reach and Development in Africa since the 1960s, replication data: africa_regions_panel and adminnum_bycountry (CC0)",
+          "says": "Zambia regions: Central 1964–1973 covering today’s Lusaka Province (Kafue, Luangwa inside it); Lusaka from 1974; Southern 1964–2013 unchanged; 8 regions 1964–1973, 9 1974–2011, 10 from 2012.",
+          "accessed": "2026-10-06"
         }
       ]
     }
@@ -460,185 +1086,63 @@
   "atomsOutside": [],
   "unresolved": [
     {
-      "what": "Central, Lusaka and Southern before the 1996 schedule",
+      "what": "Central and Lusaka between the Lusaka split and the 1996 schedule",
       "atoms": [
-        "ZMB-516",
-        "ZMB-520",
-        "ZMB-522"
+        "ZMB-ADM2-96606910B53104033004120",
+        "ZMB-ADM2-96606910B82726316050571",
+        "ZMB-ADM2-96606910B62371668778538",
+        "ZMB-ADM2-96606910B72559103883158",
+        "ZMB-ADM2-96606910B40769326482894",
+        "ZMB-ADM2-96606910B16035329871790",
+        "ZMB-ADM2-96606910B76461295717926",
+        "ZMB-ADM2-96606910B37920738728221",
+        "ZMB-ADM2-96606910B70902538429016",
+        "ZMB-ADM2-96606910B77122166525946",
+        "ZMB-ADM2-96606910B97598096149790",
+        "ZMB-ADM2-96606910B81629947645825",
+        "ZMB-ADM2-96606910B32717004733154",
+        "ZMB-ADM2-96606910B70191271227661",
+        "ZMB-ADM2-96606910B48730551364911",
+        "ZMB-ADM2-96606910B10621059217070",
+        "ZMB-ADM2-96606910B83885559265483"
       ],
-      "from": "1964-10-24",
+      "from": "1973",
       "to": "1996",
-      "why": "Lusaka Province was split from Central in 1973 (other sources: 1976) at ~360 km² and enlarged in undated steps until 1988; which districts came from Central (and whether any from Southern) and when is not established.",
+      "why": "Lusaka Province began as ~360 km² around the city (1973 or 1976) and was enlarged from Central in undated steps until 1988; which parts of Lusaka Rural and Feira/Luangwa moved when is not established, and the 360 km² city area is not a district atom.",
       "checked": [
-        "statoids uzm.html",
-        "Wikipedia Provinces of Zambia rev. 1352041990",
-        "Wikipedia Lusaka Province rev. 1373665675 (no history)",
-        "Cap. 286 / S.I. 106 of 1996 (revokes S.I. 211 of 1977, text not found)"
+        "statoids uzm.html and yzm.html",
+        "Wikipedia Provinces of Zambia rev. 1352041990, Lusaka Province rev. 1373665675 (no history), Kafue District rev. 1376267873, Chongwe District rev. 1375625671",
+        "Cap. 286 / S.I. 106 of 1996 (revokes S.I. 211 of 1977; text of 211/1977 and its amendments not found)",
+        "Lusaka Provincial Administration site lsk.gov.zm (no history)",
+        "Müller-Crepon regions panel DVN/BM4WW0 (models Lusaka at its final size from 1974, so it says nothing about the growth)"
       ],
-      "needs": "district-level atoms with dated memberships (S.I. 211 of 1977 and its amendments)"
+      "needs": "S.I. 211 of 1977 and its amendments (district schedules), and an atom for Lusaka urban district of the 1970s"
     },
     {
-      "what": "Central Province 1964–1996",
-      "unit": "ZMB:Central@1964",
-      "from": "1964-10-24",
+      "what": "Central Province 1973-1996",
+      "unit": "ZMB:Central@1973",
+      "from": "1973",
       "to": "1996",
       "why": "see previous entry",
       "checked": [
-        "statoids uzm.html"
+        "statoids uzm.html and yzm.html",
+        "Wikipedia Provinces of Zambia rev. 1352041990, Lusaka Province rev. 1373665675 (no history), Kafue District rev. 1376267873, Chongwe District rev. 1375625671",
+        "Cap. 286 / S.I. 106 of 1996 (revokes S.I. 211 of 1977; text of 211/1977 and its amendments not found)"
       ],
-      "needs": "district-level atoms"
+      "needs": "S.I. 211 of 1977 and amendments"
     },
     {
-      "what": "Southern Province 1964–1996",
-      "unit": "ZMB:Southern@1964",
-      "from": "1964-10-24",
-      "to": "1996",
-      "why": "see previous entry (Kafue area membership before Lusaka Province not established)",
-      "checked": [
-        "statoids uzm.html"
-      ],
-      "needs": "district-level atoms"
-    },
-    {
-      "what": "Lusaka Province 1973–1996",
+      "what": "Lusaka Province 1973-1996",
       "unit": "ZMB:Lusaka@1973",
       "from": "1973",
       "to": "1996",
-      "why": "Grew from ~360 km² to present size in undated steps by 1988.",
-      "checked": [
-        "statoids uzm.html",
-        "Wikipedia Provinces of Zambia rev. 1352041990"
-      ],
-      "needs": "dated enlargement instruments"
-    },
-    {
-      "what": "Central, Lusaka, Southern after the 2012 transfers",
-      "atoms": [
-        "ZMB-516",
-        "ZMB-520",
-        "ZMB-522"
-      ],
-      "from": "2012-01",
-      "to": null,
-      "why": "Itezhi-Tezhi (Southern→Central) and Chirundu (Southern→Lusaka) moved in early 2012 and back only by S.I. 114 of 2021; Shibuyunji was in Lusaka 2012–2018. NE shows the pre-2012 lines, so these provinces need district atoms.",
-      "checked": [
-        "Lusaka Times 2012-02-06",
-        "S.I. 114 of 2021",
-        "Wikipedia Shibuyunji District rev. 1376854919",
-        "Wikipedia Itezhi-Tezhi District rev. 1376242056",
-        "Wikipedia Chirundu District rev. 1375623653",
-        "Natural Earth point tests"
-      ],
-      "needs": "geoBoundaries ZMB ADM2 (CC BY 4.0) — Itezhi-Tezhi, Chirundu, Shibuyunji districts"
-    },
-    {
-      "what": "Central Province 2012–2019",
-      "unit": "ZMB:Central@2012",
-      "from": "2012-01",
-      "to": null,
       "why": "see previous entry",
       "checked": [
-        "S.I. 114 of 2021"
+        "statoids uzm.html and yzm.html",
+        "Wikipedia Provinces of Zambia rev. 1352041990, Lusaka Province rev. 1373665675 (no history), Kafue District rev. 1376267873, Chongwe District rev. 1375625671",
+        "Cap. 286 / S.I. 106 of 1996 (revokes S.I. 211 of 1977; text of 211/1977 and its amendments not found)"
       ],
-      "needs": "geoBoundaries ZMB ADM2"
-    },
-    {
-      "what": "Lusaka Province 2012–2019",
-      "unit": "ZMB:Lusaka@2012",
-      "from": "2012-01",
-      "to": null,
-      "why": "see previous entry",
-      "checked": [
-        "S.I. 114 of 2021"
-      ],
-      "needs": "geoBoundaries ZMB ADM2"
-    },
-    {
-      "what": "Southern Province 2012–2019",
-      "unit": "ZMB:Southern@2012",
-      "from": "2012-01",
-      "to": null,
-      "why": "see previous entry",
-      "checked": [
-        "S.I. 114 of 2021"
-      ],
-      "needs": "geoBoundaries ZMB ADM2"
-    },
-    {
-      "what": "Northern and Eastern before Muchinga",
-      "atoms": [
-        "ZMB-515",
-        "ZMB-5511",
-        "ZMB-518"
-      ],
-      "from": "1964-10-24",
-      "to": "2011-11",
-      "why": "Pre-2011 Eastern included Chama, which NE puts in Muchinga; pre-2011 Northern = Northern + Muchinga minus Chama — the Chama line runs through the NE Muchinga atom.",
-      "checked": [
-        "statoids uzm.html",
-        "S.I. 114 of 2021 (Chama boundary description)"
-      ],
-      "needs": "geoBoundaries ZMB ADM2 (Chama district)"
-    },
-    {
-      "what": "Northern Province 1964–2011",
-      "unit": "ZMB:Northern@1964",
-      "from": "1964-10-24",
-      "to": "2011-11",
-      "why": "see previous entry",
-      "checked": [
-        "statoids uzm.html"
-      ],
-      "needs": "geoBoundaries ZMB ADM2"
-    },
-    {
-      "what": "Eastern Province 1964–2011",
-      "unit": "ZMB:Eastern@1964",
-      "from": "1964-10-24",
-      "to": "2011-11",
-      "why": "see previous entry",
-      "checked": [
-        "statoids uzm.html"
-      ],
-      "needs": "geoBoundaries ZMB ADM2"
-    },
-    {
-      "what": "Northern and Muchinga 2011–2019",
-      "atoms": [
-        "ZMB-515",
-        "ZMB-5511"
-      ],
-      "from": "2011-11",
-      "to": null,
-      "why": "The NE Northern/Muchinga line is not the real one: Mungwi (a Northern Province district) falls inside the NE Muchinga atom (point test), and NE areas (Muchinga 96,104 / Northern 69,382 km²) differ from official ones (87,806 / 77,650).",
-      "checked": [
-        "Wikipedia Mungwi District rev. 1376864224",
-        "statoids uzm.html areas",
-        "Natural Earth point test (Mungwi 31.37E 10.17S)"
-      ],
-      "needs": "geoBoundaries ZMB ADM2 (CC BY 4.0) to rebuild the Northern/Muchinga line"
-    },
-    {
-      "what": "Northern Province 2011–2019",
-      "unit": "ZMB:Northern@2011",
-      "from": "2011-11",
-      "to": null,
-      "why": "see previous entry",
-      "checked": [
-        "Wikipedia Mungwi District rev. 1376864224"
-      ],
-      "needs": "geoBoundaries ZMB ADM2"
-    },
-    {
-      "what": "Muchinga Province 2011–2019",
-      "unit": "ZMB:Muchinga@2011",
-      "from": "2011-11",
-      "to": null,
-      "why": "see previous entry",
-      "checked": [
-        "Wikipedia Mungwi District rev. 1376864224"
-      ],
-      "needs": "geoBoundaries ZMB ADM2"
+      "needs": "S.I. 211 of 1977 and amendments"
     }
   ]
 }

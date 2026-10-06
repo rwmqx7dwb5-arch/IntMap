@@ -1,0 +1,1282 @@
+{
+ "country": "SWE",
+ "atomSet": "gb-adm2@2026-10-06",
+ "scope": {
+  "from": "1974-01-01",
+  "to": "1997-12-31"
+ },
+ "polityNote": "Kingdom of Sweden. First level = län. The scope starts 1974-01-01, when the kommun reform was complete and SCB's list of kommun changes begins (the 1971–1973 reform moved parishes between län and is not proven here); it ends the day before the 1998-01-01 Västra Götaland merger, from which data/hist-admin-fill.js draws the present län. Each län is the union of the 2017 kommuner (geoBoundaries SWE ADM2) whose 1995–1996 SCB code carries its län number; the only kommun to change län after 1974 and before 2017 outside the 1997/1998 mergers is Heby (2007), assigned to Västmanland here. Boundary adjustments of single properties between kommuner (fastighetsreglering) are not in SCB's list; none across a län line is known to us, but the list cannot prove their absence.",
+ "units": [
+  {
+   "id": "SWE:Blekinge_län@1974",
+   "names": {
+    "en": "Blekinge County",
+    "ja": "ブレーキンゲ県",
+    "local": "Blekinge län"
+   },
+   "wikidata": "Q102377",
+   "spans": [
+    {
+     "from": "1974-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SWE-ADM2-70781695B37822340313581",
+      "SWE-ADM2-70781695B90758337491220",
+      "SWE-ADM2-70781695B12582384293132",
+      "SWE-ADM2-70781695B61980194146420",
+      "SWE-ADM2-70781695B53871800350845"
+     ],
+     "sources": [
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/kommunandringar_20230829.pdf",
+       "title": "SCB, Ändringar i kommunindelningen efter 1974",
+       "accessed": "2026-10-06",
+       "says": "Lists every change of kommun division from 1974 (278 kommuner): Bara joined Svedala 1977, Alfta parish moved Bollnäs→Ovanåker 1977, and splits in 1980–2003 — all inside one län; Heby moved Västmanland→Uppsala län on 2007-01-01."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/knkodnyckel.xls",
+       "title": "SCB, kommunkodnyckel (kommuner och koder per period 1974–2008-)",
+       "accessed": "2026-10-06",
+       "says": "Kommun codes for 1974–1976 and 1995–1996; the first two digits are the län code, so each 1995 kommun (and its 1974 predecessor) lies in this län."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SWE:Kristianstads_län@1974",
+   "names": {
+    "en": "Kristianstad County",
+    "ja": "クリスチャンスタード県",
+    "local": "Kristianstads län"
+   },
+   "wikidata": "Q339637",
+   "spans": [
+    {
+     "from": "1974-01-01",
+     "precision": "day",
+     "to": "1997-01-01",
+     "atoms": [
+      "SWE-ADM2-70781695B81213219414601",
+      "SWE-ADM2-70781695B30639939072107",
+      "SWE-ADM2-70781695B3781926649981",
+      "SWE-ADM2-70781695B13105561347564",
+      "SWE-ADM2-70781695B2310974409616",
+      "SWE-ADM2-70781695B63196163664063",
+      "SWE-ADM2-70781695B37771083391359",
+      "SWE-ADM2-70781695B63851832202754",
+      "SWE-ADM2-70781695B77141748378348",
+      "SWE-ADM2-70781695B19839460749296",
+      "SWE-ADM2-70781695B54182185465620",
+      "SWE-ADM2-70781695B62390377140785",
+      "SWE-ADM2-70781695B70463852837114"
+     ],
+     "sources": [
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/kommunandringar_20230829.pdf",
+       "title": "SCB, Ändringar i kommunindelningen efter 1974",
+       "accessed": "2026-10-06",
+       "says": "Lists every change of kommun division from 1974 (278 kommuner): Bara joined Svedala 1977, Alfta parish moved Bollnäs→Ovanåker 1977, and splits in 1980–2003 — all inside one län; Heby moved Västmanland→Uppsala län on 2007-01-01."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/knkodnyckel.xls",
+       "title": "SCB, kommunkodnyckel (kommuner och koder per period 1974–2008-)",
+       "accessed": "2026-10-06",
+       "says": "Kommun codes for 1974–1976 and 1995–1996; the first two digits are the län code, so each 1995 kommun (and its 1974 predecessor) lies in this län."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/skanekod.xls",
+       "title": "SCB, Kommunkoder i nya Skåne län fr.o.m. 1997-01-01",
+       "accessed": "2026-10-06",
+       "says": "Kristianstads and Malmöhus län merged into Skåne län on 1997-01-01; kommun codes 11xx/12xx became 12xx."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SWE:Malmöhus_län@1974",
+   "names": {
+    "en": "Malmöhus County",
+    "ja": "マルメヒュース県",
+    "local": "Malmöhus län"
+   },
+   "wikidata": "Q533915",
+   "spans": [
+    {
+     "from": "1974-01-01",
+     "precision": "day",
+     "to": "1997-01-01",
+     "atoms": [
+      "SWE-ADM2-70781695B23199884308581",
+      "SWE-ADM2-70781695B77389935020700",
+      "SWE-ADM2-70781695B11789611241227",
+      "SWE-ADM2-70781695B51244524104",
+      "SWE-ADM2-70781695B14589656511888",
+      "SWE-ADM2-70781695B22737117685830",
+      "SWE-ADM2-70781695B99189289928954",
+      "SWE-ADM2-70781695B95937301884210",
+      "SWE-ADM2-70781695B48074135992982",
+      "SWE-ADM2-70781695B21975001691252",
+      "SWE-ADM2-70781695B43697052539522",
+      "SWE-ADM2-70781695B31496650101497",
+      "SWE-ADM2-70781695B77585109803763",
+      "SWE-ADM2-70781695B18480802794079",
+      "SWE-ADM2-70781695B29606605667306",
+      "SWE-ADM2-70781695B13433668994781",
+      "SWE-ADM2-70781695B15028769687560",
+      "SWE-ADM2-70781695B8533917899851",
+      "SWE-ADM2-70781695B45241162189836",
+      "SWE-ADM2-70781695B74587424027080"
+     ],
+     "sources": [
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/kommunandringar_20230829.pdf",
+       "title": "SCB, Ändringar i kommunindelningen efter 1974",
+       "accessed": "2026-10-06",
+       "says": "Lists every change of kommun division from 1974 (278 kommuner): Bara joined Svedala 1977, Alfta parish moved Bollnäs→Ovanåker 1977, and splits in 1980–2003 — all inside one län; Heby moved Västmanland→Uppsala län on 2007-01-01."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/knkodnyckel.xls",
+       "title": "SCB, kommunkodnyckel (kommuner och koder per period 1974–2008-)",
+       "accessed": "2026-10-06",
+       "says": "Kommun codes for 1974–1976 and 1995–1996; the first two digits are the län code, so each 1995 kommun (and its 1974 predecessor) lies in this län."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/skanekod.xls",
+       "title": "SCB, Kommunkoder i nya Skåne län fr.o.m. 1997-01-01",
+       "accessed": "2026-10-06",
+       "says": "Kristianstads and Malmöhus län merged into Skåne län on 1997-01-01; kommun codes 11xx/12xx became 12xx."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SWE:Hallands_län@1974",
+   "names": {
+    "en": "Halland County",
+    "ja": "ハッランド県",
+    "local": "Hallands län"
+   },
+   "wikidata": "Q103691",
+   "spans": [
+    {
+     "from": "1974-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SWE-ADM2-70781695B93011743740918",
+      "SWE-ADM2-70781695B45101098387914",
+      "SWE-ADM2-70781695B16577787693192",
+      "SWE-ADM2-70781695B60260564619256",
+      "SWE-ADM2-70781695B78273070971821",
+      "SWE-ADM2-70781695B21714207094800"
+     ],
+     "sources": [
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/kommunandringar_20230829.pdf",
+       "title": "SCB, Ändringar i kommunindelningen efter 1974",
+       "accessed": "2026-10-06",
+       "says": "Lists every change of kommun division from 1974 (278 kommuner): Bara joined Svedala 1977, Alfta parish moved Bollnäs→Ovanåker 1977, and splits in 1980–2003 — all inside one län; Heby moved Västmanland→Uppsala län on 2007-01-01."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/knkodnyckel.xls",
+       "title": "SCB, kommunkodnyckel (kommuner och koder per period 1974–2008-)",
+       "accessed": "2026-10-06",
+       "says": "Kommun codes for 1974–1976 and 1995–1996; the first two digits are the län code, so each 1995 kommun (and its 1974 predecessor) lies in this län."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SWE:Göteborgs_och_Bohus_län@1974",
+   "names": {
+    "en": "Gothenburg and Bohus County",
+    "ja": "ヨーテボリ・ブーヒュース県",
+    "local": "Göteborgs och Bohus län"
+   },
+   "wikidata": "Q579801",
+   "spans": [
+    {
+     "from": "1974-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SWE-ADM2-70781695B82968096890663",
+      "SWE-ADM2-70781695B68601782286735",
+      "SWE-ADM2-70781695B40038989009726",
+      "SWE-ADM2-70781695B99737060400485",
+      "SWE-ADM2-70781695B70291115197472",
+      "SWE-ADM2-70781695B49447773116889",
+      "SWE-ADM2-70781695B73142432831902",
+      "SWE-ADM2-70781695B34611163933513",
+      "SWE-ADM2-70781695B30860810516281",
+      "SWE-ADM2-70781695B61994796728943",
+      "SWE-ADM2-70781695B34337656625588",
+      "SWE-ADM2-70781695B41142122613038",
+      "SWE-ADM2-70781695B44388212160911",
+      "SWE-ADM2-70781695B76264906816615",
+      "SWE-ADM2-70781695B5566617801013"
+     ],
+     "sources": [
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/kommunandringar_20230829.pdf",
+       "title": "SCB, Ändringar i kommunindelningen efter 1974",
+       "accessed": "2026-10-06",
+       "says": "Lists every change of kommun division from 1974 (278 kommuner): Bara joined Svedala 1977, Alfta parish moved Bollnäs→Ovanåker 1977, and splits in 1980–2003 — all inside one län; Heby moved Västmanland→Uppsala län on 2007-01-01."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/knkodnyckel.xls",
+       "title": "SCB, kommunkodnyckel (kommuner och koder per period 1974–2008-)",
+       "accessed": "2026-10-06",
+       "says": "Kommun codes for 1974–1976 and 1995–1996; the first two digits are the län code, so each 1995 kommun (and its 1974 predecessor) lies in this län."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/vgkodandring.xls",
+       "title": "SCB, Ändrade läns- och kommunkoder i Västra Götalands län 1998-01-01",
+       "accessed": "2026-10-06",
+       "says": "From 1998-01-01 the kommuner of Göteborgs och Bohus (14xx), Älvsborgs (15xx) and Skaraborgs (16xx) län form Västra Götaland, except Habo and Mullsjö (Skaraborg) which went to Jönköpings län."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SWE:Älvsborgs_län@1974",
+   "names": {
+    "en": "Älvsborg County",
+    "ja": "エルヴスボリ県",
+    "local": "Älvsborgs län"
+   },
+   "wikidata": "Q254990",
+   "spans": [
+    {
+     "from": "1974-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SWE-ADM2-70781695B92952656574297",
+      "SWE-ADM2-70781695B82404495889294",
+      "SWE-ADM2-70781695B94862964500573",
+      "SWE-ADM2-70781695B39673713776629",
+      "SWE-ADM2-70781695B44475344779169",
+      "SWE-ADM2-70781695B31966174790968",
+      "SWE-ADM2-70781695B46333437136536",
+      "SWE-ADM2-70781695B73988580655611",
+      "SWE-ADM2-70781695B65957957058719",
+      "SWE-ADM2-70781695B65797043519152",
+      "SWE-ADM2-70781695B89566338626874",
+      "SWE-ADM2-70781695B92226486656888",
+      "SWE-ADM2-70781695B47342349503328",
+      "SWE-ADM2-70781695B56175452529333",
+      "SWE-ADM2-70781695B25080467136500",
+      "SWE-ADM2-70781695B86197919704884",
+      "SWE-ADM2-70781695B68260395604399",
+      "SWE-ADM2-70781695B28344262532925",
+      "SWE-ADM2-70781695B41562985263566"
+     ],
+     "sources": [
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/kommunandringar_20230829.pdf",
+       "title": "SCB, Ändringar i kommunindelningen efter 1974",
+       "accessed": "2026-10-06",
+       "says": "Lists every change of kommun division from 1974 (278 kommuner): Bara joined Svedala 1977, Alfta parish moved Bollnäs→Ovanåker 1977, and splits in 1980–2003 — all inside one län; Heby moved Västmanland→Uppsala län on 2007-01-01."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/knkodnyckel.xls",
+       "title": "SCB, kommunkodnyckel (kommuner och koder per period 1974–2008-)",
+       "accessed": "2026-10-06",
+       "says": "Kommun codes for 1974–1976 and 1995–1996; the first two digits are the län code, so each 1995 kommun (and its 1974 predecessor) lies in this län."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/vgkodandring.xls",
+       "title": "SCB, Ändrade läns- och kommunkoder i Västra Götalands län 1998-01-01",
+       "accessed": "2026-10-06",
+       "says": "From 1998-01-01 the kommuner of Göteborgs och Bohus (14xx), Älvsborgs (15xx) and Skaraborgs (16xx) län form Västra Götaland, except Habo and Mullsjö (Skaraborg) which went to Jönköpings län."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SWE:Skaraborgs_län@1974",
+   "names": {
+    "en": "Skaraborg County",
+    "ja": "スカラボリ県",
+    "local": "Skaraborgs län"
+   },
+   "wikidata": "Q922842",
+   "spans": [
+    {
+     "from": "1974-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SWE-ADM2-70781695B30148016618551",
+      "SWE-ADM2-70781695B50055255303815",
+      "SWE-ADM2-70781695B48750252514095",
+      "SWE-ADM2-70781695B53745153341539",
+      "SWE-ADM2-70781695B60471396362754",
+      "SWE-ADM2-70781695B19460929055016",
+      "SWE-ADM2-70781695B31041938637991",
+      "SWE-ADM2-70781695B34872352941630",
+      "SWE-ADM2-70781695B28625719623637",
+      "SWE-ADM2-70781695B33450377436150",
+      "SWE-ADM2-70781695B49993264725167",
+      "SWE-ADM2-70781695B52360167495619",
+      "SWE-ADM2-70781695B85574102169861",
+      "SWE-ADM2-70781695B12491812596610",
+      "SWE-ADM2-70781695B58829616428329",
+      "SWE-ADM2-70781695B15977475092104",
+      "SWE-ADM2-70781695B77814656475649"
+     ],
+     "sources": [
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/kommunandringar_20230829.pdf",
+       "title": "SCB, Ändringar i kommunindelningen efter 1974",
+       "accessed": "2026-10-06",
+       "says": "Lists every change of kommun division from 1974 (278 kommuner): Bara joined Svedala 1977, Alfta parish moved Bollnäs→Ovanåker 1977, and splits in 1980–2003 — all inside one län; Heby moved Västmanland→Uppsala län on 2007-01-01."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/knkodnyckel.xls",
+       "title": "SCB, kommunkodnyckel (kommuner och koder per period 1974–2008-)",
+       "accessed": "2026-10-06",
+       "says": "Kommun codes for 1974–1976 and 1995–1996; the first two digits are the län code, so each 1995 kommun (and its 1974 predecessor) lies in this län."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/vgkodandring.xls",
+       "title": "SCB, Ändrade läns- och kommunkoder i Västra Götalands län 1998-01-01",
+       "accessed": "2026-10-06",
+       "says": "From 1998-01-01 the kommuner of Göteborgs och Bohus (14xx), Älvsborgs (15xx) and Skaraborgs (16xx) län form Västra Götaland, except Habo and Mullsjö (Skaraborg) which went to Jönköpings län."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SWE:Värmlands_län@1974",
+   "names": {
+    "en": "Värmland County",
+    "ja": "ヴェルムランド県",
+    "local": "Värmlands län"
+   },
+   "wikidata": "Q106789",
+   "spans": [
+    {
+     "from": "1974-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SWE-ADM2-70781695B46628667043921",
+      "SWE-ADM2-70781695B60576309350500",
+      "SWE-ADM2-70781695B29968345732345",
+      "SWE-ADM2-70781695B82025139549560",
+      "SWE-ADM2-70781695B34912889430401",
+      "SWE-ADM2-70781695B11595834980673",
+      "SWE-ADM2-70781695B71435448631031",
+      "SWE-ADM2-70781695B19557897917232",
+      "SWE-ADM2-70781695B94802593774032",
+      "SWE-ADM2-70781695B82922715808284",
+      "SWE-ADM2-70781695B82553413626675",
+      "SWE-ADM2-70781695B32698767031926",
+      "SWE-ADM2-70781695B31376401870693",
+      "SWE-ADM2-70781695B88737594548437",
+      "SWE-ADM2-70781695B43025182622692",
+      "SWE-ADM2-70781695B91017717929133"
+     ],
+     "sources": [
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/kommunandringar_20230829.pdf",
+       "title": "SCB, Ändringar i kommunindelningen efter 1974",
+       "accessed": "2026-10-06",
+       "says": "Lists every change of kommun division from 1974 (278 kommuner): Bara joined Svedala 1977, Alfta parish moved Bollnäs→Ovanåker 1977, and splits in 1980–2003 — all inside one län; Heby moved Västmanland→Uppsala län on 2007-01-01."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/knkodnyckel.xls",
+       "title": "SCB, kommunkodnyckel (kommuner och koder per period 1974–2008-)",
+       "accessed": "2026-10-06",
+       "says": "Kommun codes for 1974–1976 and 1995–1996; the first two digits are the län code, so each 1995 kommun (and its 1974 predecessor) lies in this län."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SWE:Örebro_län@1974",
+   "names": {
+    "en": "Örebro County",
+    "ja": "エレブルー県",
+    "local": "Örebro län"
+   },
+   "wikidata": "Q104257",
+   "spans": [
+    {
+     "from": "1974-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SWE-ADM2-70781695B8757223654229",
+      "SWE-ADM2-70781695B86731793095106",
+      "SWE-ADM2-70781695B35702082689476",
+      "SWE-ADM2-70781695B98583425778893",
+      "SWE-ADM2-70781695B86171963253303",
+      "SWE-ADM2-70781695B62731669961325",
+      "SWE-ADM2-70781695B77797038305071",
+      "SWE-ADM2-70781695B87625473444636",
+      "SWE-ADM2-70781695B57717414810507",
+      "SWE-ADM2-70781695B32779810801713",
+      "SWE-ADM2-70781695B5690265718253",
+      "SWE-ADM2-70781695B5834456968412"
+     ],
+     "sources": [
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/kommunandringar_20230829.pdf",
+       "title": "SCB, Ändringar i kommunindelningen efter 1974",
+       "accessed": "2026-10-06",
+       "says": "Lists every change of kommun division from 1974 (278 kommuner): Bara joined Svedala 1977, Alfta parish moved Bollnäs→Ovanåker 1977, and splits in 1980–2003 — all inside one län; Heby moved Västmanland→Uppsala län on 2007-01-01."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/knkodnyckel.xls",
+       "title": "SCB, kommunkodnyckel (kommuner och koder per period 1974–2008-)",
+       "accessed": "2026-10-06",
+       "says": "Kommun codes for 1974–1976 and 1995–1996; the first two digits are the län code, so each 1995 kommun (and its 1974 predecessor) lies in this län."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SWE:Västmanlands_län@1974",
+   "names": {
+    "en": "Västmanland County",
+    "ja": "ヴェストマンランド県",
+    "local": "Västmanlands län"
+   },
+   "wikidata": "Q105075",
+   "spans": [
+    {
+     "from": "1974-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SWE-ADM2-70781695B62242352773373",
+      "SWE-ADM2-70781695B94571539406434",
+      "SWE-ADM2-70781695B50955826038578",
+      "SWE-ADM2-70781695B82098029436339",
+      "SWE-ADM2-70781695B12351867111175",
+      "SWE-ADM2-70781695B32854023437758",
+      "SWE-ADM2-70781695B76106000376718",
+      "SWE-ADM2-70781695B32403913124939",
+      "SWE-ADM2-70781695B79048986379567",
+      "SWE-ADM2-70781695B70233385943782",
+      "SWE-ADM2-70781695B35489604221157"
+     ],
+     "sources": [
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/kommunandringar_20230829.pdf",
+       "title": "SCB, Ändringar i kommunindelningen efter 1974",
+       "accessed": "2026-10-06",
+       "says": "Lists every change of kommun division from 1974 (278 kommuner): Bara joined Svedala 1977, Alfta parish moved Bollnäs→Ovanåker 1977, and splits in 1980–2003 — all inside one län; Heby moved Västmanland→Uppsala län on 2007-01-01."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/knkodnyckel.xls",
+       "title": "SCB, kommunkodnyckel (kommuner och koder per period 1974–2008-)",
+       "accessed": "2026-10-06",
+       "says": "Kommun codes for 1974–1976 and 1995–1996; the first two digits are the län code, so each 1995 kommun (and its 1974 predecessor) lies in this län."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/kommunandringar_20230829.pdf",
+       "title": "SCB, Ändringar i kommunindelningen efter 1974",
+       "accessed": "2026-10-06",
+       "says": "Heby kommun belonged to Västmanlands län until 2007-01-01 (code 1917, then 0331)."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SWE:Kopparbergs_län@1974",
+   "names": {
+    "en": "Kopparberg County",
+    "ja": "コッパルベリ県",
+    "local": "Kopparbergs län"
+   },
+   "wikidata": "Q103732",
+   "spans": [
+    {
+     "from": "1974-01-01",
+     "precision": "day",
+     "to": "1997-01-01",
+     "atoms": [
+      "SWE-ADM2-70781695B21384318328317",
+      "SWE-ADM2-70781695B70096269486185",
+      "SWE-ADM2-70781695B64555643883155",
+      "SWE-ADM2-70781695B88380498553182",
+      "SWE-ADM2-70781695B69535190961561",
+      "SWE-ADM2-70781695B18183991959246",
+      "SWE-ADM2-70781695B69393603078099",
+      "SWE-ADM2-70781695B24825049730842",
+      "SWE-ADM2-70781695B69424081161255",
+      "SWE-ADM2-70781695B12440080986596",
+      "SWE-ADM2-70781695B54233926818688",
+      "SWE-ADM2-70781695B35872572180279",
+      "SWE-ADM2-70781695B75139337401174",
+      "SWE-ADM2-70781695B88125325572611",
+      "SWE-ADM2-70781695B61189370844714"
+     ],
+     "sources": [
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/kommunandringar_20230829.pdf",
+       "title": "SCB, Ändringar i kommunindelningen efter 1974",
+       "accessed": "2026-10-06",
+       "says": "Lists every change of kommun division from 1974 (278 kommuner): Bara joined Svedala 1977, Alfta parish moved Bollnäs→Ovanåker 1977, and splits in 1980–2003 — all inside one län; Heby moved Västmanland→Uppsala län on 2007-01-01."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/knkodnyckel.xls",
+       "title": "SCB, kommunkodnyckel (kommuner och koder per period 1974–2008-)",
+       "accessed": "2026-10-06",
+       "says": "Kommun codes for 1974–1976 and 1995–1996; the first two digits are the län code, so each 1995 kommun (and its 1974 predecessor) lies in this län."
+      },
+      {
+       "url": "https://statoids.com/use.html",
+       "title": "Counties of Sweden (Statoids, Gwillim Law)",
+       "accessed": "2026-10-06",
+       "says": "Kopparberg county renamed Dalarna on 1997-01-01."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SWE:Dalarnas_län@1997",
+   "names": {
+    "en": "Dalarna County",
+    "ja": "ダーラナ県",
+    "local": "Dalarnas län"
+   },
+   "wikidata": "Q103732",
+   "spans": [
+    {
+     "from": "1997-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SWE-ADM2-70781695B21384318328317",
+      "SWE-ADM2-70781695B70096269486185",
+      "SWE-ADM2-70781695B64555643883155",
+      "SWE-ADM2-70781695B88380498553182",
+      "SWE-ADM2-70781695B69535190961561",
+      "SWE-ADM2-70781695B18183991959246",
+      "SWE-ADM2-70781695B69393603078099",
+      "SWE-ADM2-70781695B24825049730842",
+      "SWE-ADM2-70781695B69424081161255",
+      "SWE-ADM2-70781695B12440080986596",
+      "SWE-ADM2-70781695B54233926818688",
+      "SWE-ADM2-70781695B35872572180279",
+      "SWE-ADM2-70781695B75139337401174",
+      "SWE-ADM2-70781695B88125325572611",
+      "SWE-ADM2-70781695B61189370844714"
+     ],
+     "sources": [
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/kommunandringar_20230829.pdf",
+       "title": "SCB, Ändringar i kommunindelningen efter 1974",
+       "accessed": "2026-10-06",
+       "says": "Lists every change of kommun division from 1974 (278 kommuner): Bara joined Svedala 1977, Alfta parish moved Bollnäs→Ovanåker 1977, and splits in 1980–2003 — all inside one län; Heby moved Västmanland→Uppsala län on 2007-01-01."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/knkodnyckel.xls",
+       "title": "SCB, kommunkodnyckel (kommuner och koder per period 1974–2008-)",
+       "accessed": "2026-10-06",
+       "says": "Kommun codes for 1974–1976 and 1995–1996; the first two digits are the län code, so each 1995 kommun (and its 1974 predecessor) lies in this län."
+      },
+      {
+       "url": "https://statoids.com/use.html",
+       "title": "Counties of Sweden (Statoids, Gwillim Law)",
+       "accessed": "2026-10-06",
+       "says": "Kopparberg county renamed Dalarna on 1997-01-01."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SWE:Gävleborgs_län@1974",
+   "names": {
+    "en": "Gävleborg County",
+    "ja": "イェヴレボリ県",
+    "local": "Gävleborgs län"
+   },
+   "wikidata": "Q103699",
+   "spans": [
+    {
+     "from": "1974-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SWE-ADM2-70781695B45160094549088",
+      "SWE-ADM2-70781695B16992576360669",
+      "SWE-ADM2-70781695B81949975609357",
+      "SWE-ADM2-70781695B40946253487831",
+      "SWE-ADM2-70781695B36702634985897",
+      "SWE-ADM2-70781695B37346954790486",
+      "SWE-ADM2-70781695B90060355953602",
+      "SWE-ADM2-70781695B31368722399437",
+      "SWE-ADM2-70781695B62100483486123",
+      "SWE-ADM2-70781695B54333453376025"
+     ],
+     "sources": [
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/kommunandringar_20230829.pdf",
+       "title": "SCB, Ändringar i kommunindelningen efter 1974",
+       "accessed": "2026-10-06",
+       "says": "Lists every change of kommun division from 1974 (278 kommuner): Bara joined Svedala 1977, Alfta parish moved Bollnäs→Ovanåker 1977, and splits in 1980–2003 — all inside one län; Heby moved Västmanland→Uppsala län on 2007-01-01."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/knkodnyckel.xls",
+       "title": "SCB, kommunkodnyckel (kommuner och koder per period 1974–2008-)",
+       "accessed": "2026-10-06",
+       "says": "Kommun codes for 1974–1976 and 1995–1996; the first two digits are the län code, so each 1995 kommun (and its 1974 predecessor) lies in this län."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SWE:Västernorrlands_län@1974",
+   "names": {
+    "en": "Västernorrland County",
+    "ja": "ヴェステルノールランド県",
+    "local": "Västernorrlands län"
+   },
+   "wikidata": "Q104891",
+   "spans": [
+    {
+     "from": "1974-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SWE-ADM2-70781695B95877755672969",
+      "SWE-ADM2-70781695B48901631872346",
+      "SWE-ADM2-70781695B14713554089347",
+      "SWE-ADM2-70781695B20063345867362",
+      "SWE-ADM2-70781695B55487721764807",
+      "SWE-ADM2-70781695B50013402635272",
+      "SWE-ADM2-70781695B99117995283452"
+     ],
+     "sources": [
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/kommunandringar_20230829.pdf",
+       "title": "SCB, Ändringar i kommunindelningen efter 1974",
+       "accessed": "2026-10-06",
+       "says": "Lists every change of kommun division from 1974 (278 kommuner): Bara joined Svedala 1977, Alfta parish moved Bollnäs→Ovanåker 1977, and splits in 1980–2003 — all inside one län; Heby moved Västmanland→Uppsala län on 2007-01-01."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/knkodnyckel.xls",
+       "title": "SCB, kommunkodnyckel (kommuner och koder per period 1974–2008-)",
+       "accessed": "2026-10-06",
+       "says": "Kommun codes for 1974–1976 and 1995–1996; the first two digits are the län code, so each 1995 kommun (and its 1974 predecessor) lies in this län."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SWE:Jämtlands_län@1974",
+   "names": {
+    "en": "Jämtland County",
+    "ja": "イェムトランド県",
+    "local": "Jämtlands län"
+   },
+   "wikidata": "Q103679",
+   "spans": [
+    {
+     "from": "1974-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SWE-ADM2-70781695B21663414086588",
+      "SWE-ADM2-70781695B29171482831525",
+      "SWE-ADM2-70781695B83252740141506",
+      "SWE-ADM2-70781695B75500523526502",
+      "SWE-ADM2-70781695B37612072070756",
+      "SWE-ADM2-70781695B27486788902069",
+      "SWE-ADM2-70781695B53803129879670",
+      "SWE-ADM2-70781695B96181238671333"
+     ],
+     "sources": [
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/kommunandringar_20230829.pdf",
+       "title": "SCB, Ändringar i kommunindelningen efter 1974",
+       "accessed": "2026-10-06",
+       "says": "Lists every change of kommun division from 1974 (278 kommuner): Bara joined Svedala 1977, Alfta parish moved Bollnäs→Ovanåker 1977, and splits in 1980–2003 — all inside one län; Heby moved Västmanland→Uppsala län on 2007-01-01."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/knkodnyckel.xls",
+       "title": "SCB, kommunkodnyckel (kommuner och koder per period 1974–2008-)",
+       "accessed": "2026-10-06",
+       "says": "Kommun codes for 1974–1976 and 1995–1996; the first two digits are the län code, so each 1995 kommun (and its 1974 predecessor) lies in this län."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SWE:Västerbottens_län@1974",
+   "names": {
+    "en": "Västerbotten County",
+    "ja": "ヴェステルボッテン県",
+    "local": "Västerbottens län"
+   },
+   "wikidata": "Q104877",
+   "spans": [
+    {
+     "from": "1974-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SWE-ADM2-70781695B2170511041252",
+      "SWE-ADM2-70781695B25837784643259",
+      "SWE-ADM2-70781695B84383625110676",
+      "SWE-ADM2-70781695B85403631212767",
+      "SWE-ADM2-70781695B71787766152021",
+      "SWE-ADM2-70781695B44534775351427",
+      "SWE-ADM2-70781695B28951573568604",
+      "SWE-ADM2-70781695B10174824853138",
+      "SWE-ADM2-70781695B82980713589977",
+      "SWE-ADM2-70781695B17714148738486",
+      "SWE-ADM2-70781695B45286900623809",
+      "SWE-ADM2-70781695B10556345050301",
+      "SWE-ADM2-70781695B22798016989349",
+      "SWE-ADM2-70781695B42306672423643",
+      "SWE-ADM2-70781695B31589151940817"
+     ],
+     "sources": [
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/kommunandringar_20230829.pdf",
+       "title": "SCB, Ändringar i kommunindelningen efter 1974",
+       "accessed": "2026-10-06",
+       "says": "Lists every change of kommun division from 1974 (278 kommuner): Bara joined Svedala 1977, Alfta parish moved Bollnäs→Ovanåker 1977, and splits in 1980–2003 — all inside one län; Heby moved Västmanland→Uppsala län on 2007-01-01."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/knkodnyckel.xls",
+       "title": "SCB, kommunkodnyckel (kommuner och koder per period 1974–2008-)",
+       "accessed": "2026-10-06",
+       "says": "Kommun codes for 1974–1976 and 1995–1996; the first two digits are the län code, so each 1995 kommun (and its 1974 predecessor) lies in this län."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SWE:Norrbottens_län@1974",
+   "names": {
+    "en": "Norrbotten County",
+    "ja": "ノールボッテン県",
+    "local": "Norrbottens län"
+   },
+   "wikidata": "Q103686",
+   "spans": [
+    {
+     "from": "1974-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SWE-ADM2-70781695B94600430897975",
+      "SWE-ADM2-70781695B61999332123961",
+      "SWE-ADM2-70781695B22534233820232",
+      "SWE-ADM2-70781695B64947384355586",
+      "SWE-ADM2-70781695B66074520393344",
+      "SWE-ADM2-70781695B60696857291405",
+      "SWE-ADM2-70781695B62511504929607",
+      "SWE-ADM2-70781695B9243274568958",
+      "SWE-ADM2-70781695B63326994968930",
+      "SWE-ADM2-70781695B74672839302489",
+      "SWE-ADM2-70781695B99694780009800",
+      "SWE-ADM2-70781695B62555588892194",
+      "SWE-ADM2-70781695B36834641182296",
+      "SWE-ADM2-70781695B53013800846692"
+     ],
+     "sources": [
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/kommunandringar_20230829.pdf",
+       "title": "SCB, Ändringar i kommunindelningen efter 1974",
+       "accessed": "2026-10-06",
+       "says": "Lists every change of kommun division from 1974 (278 kommuner): Bara joined Svedala 1977, Alfta parish moved Bollnäs→Ovanåker 1977, and splits in 1980–2003 — all inside one län; Heby moved Västmanland→Uppsala län on 2007-01-01."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/knkodnyckel.xls",
+       "title": "SCB, kommunkodnyckel (kommuner och koder per period 1974–2008-)",
+       "accessed": "2026-10-06",
+       "says": "Kommun codes for 1974–1976 and 1995–1996; the first two digits are the län code, so each 1995 kommun (and its 1974 predecessor) lies in this län."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SWE:Stockholms_län@1974",
+   "names": {
+    "en": "Stockholm County",
+    "ja": "ストックホルム県",
+    "local": "Stockholms län"
+   },
+   "wikidata": "Q104231",
+   "spans": [
+    {
+     "from": "1974-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SWE-ADM2-70781695B82449789410879",
+      "SWE-ADM2-70781695B30902194250212",
+      "SWE-ADM2-70781695B28053547140840",
+      "SWE-ADM2-70781695B62142289931887",
+      "SWE-ADM2-70781695B48387323711272",
+      "SWE-ADM2-70781695B75191882374760",
+      "SWE-ADM2-70781695B80728861937235",
+      "SWE-ADM2-70781695B29923564052107",
+      "SWE-ADM2-70781695B5805413017960",
+      "SWE-ADM2-70781695B98440364310876",
+      "SWE-ADM2-70781695B90671145668871",
+      "SWE-ADM2-70781695B67027071836241",
+      "SWE-ADM2-70781695B36454711221889",
+      "SWE-ADM2-70781695B39328954210913",
+      "SWE-ADM2-70781695B12821480851485",
+      "SWE-ADM2-70781695B74265456300359",
+      "SWE-ADM2-70781695B91357499899745",
+      "SWE-ADM2-70781695B78362616734409",
+      "SWE-ADM2-70781695B23311697219676",
+      "SWE-ADM2-70781695B54178975412741",
+      "SWE-ADM2-70781695B44466819558577",
+      "SWE-ADM2-70781695B58172703423372",
+      "SWE-ADM2-70781695B4978180418475",
+      "SWE-ADM2-70781695B902417386827",
+      "SWE-ADM2-70781695B7495287433606",
+      "SWE-ADM2-70781695B57297019096090"
+     ],
+     "sources": [
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/kommunandringar_20230829.pdf",
+       "title": "SCB, Ändringar i kommunindelningen efter 1974",
+       "accessed": "2026-10-06",
+       "says": "Lists every change of kommun division from 1974 (278 kommuner): Bara joined Svedala 1977, Alfta parish moved Bollnäs→Ovanåker 1977, and splits in 1980–2003 — all inside one län; Heby moved Västmanland→Uppsala län on 2007-01-01."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/knkodnyckel.xls",
+       "title": "SCB, kommunkodnyckel (kommuner och koder per period 1974–2008-)",
+       "accessed": "2026-10-06",
+       "says": "Kommun codes for 1974–1976 and 1995–1996; the first two digits are the län code, so each 1995 kommun (and its 1974 predecessor) lies in this län."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SWE:Uppsala_län@1974",
+   "names": {
+    "en": "Uppsala County",
+    "ja": "ウプサラ県",
+    "local": "Uppsala län"
+   },
+   "wikidata": "Q104926",
+   "spans": [
+    {
+     "from": "1974-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SWE-ADM2-70781695B87799416140928",
+      "SWE-ADM2-70781695B92369389474001",
+      "SWE-ADM2-70781695B19211904151309",
+      "SWE-ADM2-70781695B75791016824649",
+      "SWE-ADM2-70781695B50893548218993",
+      "SWE-ADM2-70781695B25535474598498",
+      "SWE-ADM2-70781695B92179947733234"
+     ],
+     "sources": [
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/kommunandringar_20230829.pdf",
+       "title": "SCB, Ändringar i kommunindelningen efter 1974",
+       "accessed": "2026-10-06",
+       "says": "Lists every change of kommun division from 1974 (278 kommuner): Bara joined Svedala 1977, Alfta parish moved Bollnäs→Ovanåker 1977, and splits in 1980–2003 — all inside one län; Heby moved Västmanland→Uppsala län on 2007-01-01."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/knkodnyckel.xls",
+       "title": "SCB, kommunkodnyckel (kommuner och koder per period 1974–2008-)",
+       "accessed": "2026-10-06",
+       "says": "Kommun codes for 1974–1976 and 1995–1996; the first two digits are the län code, so each 1995 kommun (and its 1974 predecessor) lies in this län."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SWE:Södermanlands_län@1974",
+   "names": {
+    "en": "Södermanland County",
+    "ja": "セーデルマンランド県",
+    "local": "Södermanlands län"
+   },
+   "wikidata": "Q106915",
+   "spans": [
+    {
+     "from": "1974-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SWE-ADM2-70781695B99698101105625",
+      "SWE-ADM2-70781695B57968979850180",
+      "SWE-ADM2-70781695B16692343242132",
+      "SWE-ADM2-70781695B52980930896753",
+      "SWE-ADM2-70781695B66296838510215",
+      "SWE-ADM2-70781695B18684833515036",
+      "SWE-ADM2-70781695B34612539381669",
+      "SWE-ADM2-70781695B59557682139675",
+      "SWE-ADM2-70781695B8890772854641"
+     ],
+     "sources": [
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/kommunandringar_20230829.pdf",
+       "title": "SCB, Ändringar i kommunindelningen efter 1974",
+       "accessed": "2026-10-06",
+       "says": "Lists every change of kommun division from 1974 (278 kommuner): Bara joined Svedala 1977, Alfta parish moved Bollnäs→Ovanåker 1977, and splits in 1980–2003 — all inside one län; Heby moved Västmanland→Uppsala län on 2007-01-01."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/knkodnyckel.xls",
+       "title": "SCB, kommunkodnyckel (kommuner och koder per period 1974–2008-)",
+       "accessed": "2026-10-06",
+       "says": "Kommun codes for 1974–1976 and 1995–1996; the first two digits are the län code, so each 1995 kommun (and its 1974 predecessor) lies in this län."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SWE:Östergötlands_län@1974",
+   "names": {
+    "en": "Östergötland County",
+    "ja": "エステルイェータランド県",
+    "local": "Östergötlands län"
+   },
+   "wikidata": "Q104940",
+   "spans": [
+    {
+     "from": "1974-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SWE-ADM2-70781695B38762641138003",
+      "SWE-ADM2-70781695B1956121953089",
+      "SWE-ADM2-70781695B81557548138278",
+      "SWE-ADM2-70781695B77319052576645",
+      "SWE-ADM2-70781695B68012298271842",
+      "SWE-ADM2-70781695B36298278943399",
+      "SWE-ADM2-70781695B57213599568931",
+      "SWE-ADM2-70781695B49758831077864",
+      "SWE-ADM2-70781695B90308748952791",
+      "SWE-ADM2-70781695B67213820771723",
+      "SWE-ADM2-70781695B24148973800204",
+      "SWE-ADM2-70781695B31876776123918",
+      "SWE-ADM2-70781695B48628112229025"
+     ],
+     "sources": [
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/kommunandringar_20230829.pdf",
+       "title": "SCB, Ändringar i kommunindelningen efter 1974",
+       "accessed": "2026-10-06",
+       "says": "Lists every change of kommun division from 1974 (278 kommuner): Bara joined Svedala 1977, Alfta parish moved Bollnäs→Ovanåker 1977, and splits in 1980–2003 — all inside one län; Heby moved Västmanland→Uppsala län on 2007-01-01."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/knkodnyckel.xls",
+       "title": "SCB, kommunkodnyckel (kommuner och koder per period 1974–2008-)",
+       "accessed": "2026-10-06",
+       "says": "Kommun codes for 1974–1976 and 1995–1996; the first two digits are the län code, so each 1995 kommun (and its 1974 predecessor) lies in this län."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SWE:Jönköpings_län@1974",
+   "names": {
+    "en": "Jönköping County",
+    "ja": "ヨンショーピング県",
+    "local": "Jönköpings län"
+   },
+   "wikidata": "Q103672",
+   "spans": [
+    {
+     "from": "1974-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SWE-ADM2-70781695B55162633112415",
+      "SWE-ADM2-70781695B84556885124155",
+      "SWE-ADM2-70781695B2934686109995",
+      "SWE-ADM2-70781695B29714549657152",
+      "SWE-ADM2-70781695B97967886830889",
+      "SWE-ADM2-70781695B68897114765136",
+      "SWE-ADM2-70781695B29308499168486",
+      "SWE-ADM2-70781695B19954774542686",
+      "SWE-ADM2-70781695B54746446562471",
+      "SWE-ADM2-70781695B63607124803210",
+      "SWE-ADM2-70781695B94890902843100"
+     ],
+     "sources": [
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/kommunandringar_20230829.pdf",
+       "title": "SCB, Ändringar i kommunindelningen efter 1974",
+       "accessed": "2026-10-06",
+       "says": "Lists every change of kommun division from 1974 (278 kommuner): Bara joined Svedala 1977, Alfta parish moved Bollnäs→Ovanåker 1977, and splits in 1980–2003 — all inside one län; Heby moved Västmanland→Uppsala län on 2007-01-01."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/knkodnyckel.xls",
+       "title": "SCB, kommunkodnyckel (kommuner och koder per period 1974–2008-)",
+       "accessed": "2026-10-06",
+       "says": "Kommun codes for 1974–1976 and 1995–1996; the first two digits are the län code, so each 1995 kommun (and its 1974 predecessor) lies in this län."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SWE:Kronobergs_län@1974",
+   "names": {
+    "en": "Kronoberg County",
+    "ja": "クロノベリ県",
+    "local": "Kronobergs län"
+   },
+   "wikidata": "Q104746",
+   "spans": [
+    {
+     "from": "1974-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SWE-ADM2-70781695B56962203648696",
+      "SWE-ADM2-70781695B43314679953791",
+      "SWE-ADM2-70781695B11327054975431",
+      "SWE-ADM2-70781695B73042132081687",
+      "SWE-ADM2-70781695B44136897167596",
+      "SWE-ADM2-70781695B14820024771032",
+      "SWE-ADM2-70781695B81795147571937",
+      "SWE-ADM2-70781695B32930756633279"
+     ],
+     "sources": [
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/kommunandringar_20230829.pdf",
+       "title": "SCB, Ändringar i kommunindelningen efter 1974",
+       "accessed": "2026-10-06",
+       "says": "Lists every change of kommun division from 1974 (278 kommuner): Bara joined Svedala 1977, Alfta parish moved Bollnäs→Ovanåker 1977, and splits in 1980–2003 — all inside one län; Heby moved Västmanland→Uppsala län on 2007-01-01."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/knkodnyckel.xls",
+       "title": "SCB, kommunkodnyckel (kommuner och koder per period 1974–2008-)",
+       "accessed": "2026-10-06",
+       "says": "Kommun codes for 1974–1976 and 1995–1996; the first two digits are the län code, so each 1995 kommun (and its 1974 predecessor) lies in this län."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SWE:Kalmar_län@1974",
+   "names": {
+    "en": "Kalmar County",
+    "ja": "カルマル県",
+    "local": "Kalmar län"
+   },
+   "wikidata": "Q103707",
+   "spans": [
+    {
+     "from": "1974-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SWE-ADM2-70781695B75785870323724",
+      "SWE-ADM2-70781695B81651026792808",
+      "SWE-ADM2-70781695B16590141300701",
+      "SWE-ADM2-70781695B56315309655935",
+      "SWE-ADM2-70781695B14809952368056",
+      "SWE-ADM2-70781695B22116404340246",
+      "SWE-ADM2-70781695B81120519064145",
+      "SWE-ADM2-70781695B5554293763510",
+      "SWE-ADM2-70781695B52045533675939",
+      "SWE-ADM2-70781695B21983327863025",
+      "SWE-ADM2-70781695B15457803066593",
+      "SWE-ADM2-70781695B97428107441054"
+     ],
+     "sources": [
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/kommunandringar_20230829.pdf",
+       "title": "SCB, Ändringar i kommunindelningen efter 1974",
+       "accessed": "2026-10-06",
+       "says": "Lists every change of kommun division from 1974 (278 kommuner): Bara joined Svedala 1977, Alfta parish moved Bollnäs→Ovanåker 1977, and splits in 1980–2003 — all inside one län; Heby moved Västmanland→Uppsala län on 2007-01-01."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/knkodnyckel.xls",
+       "title": "SCB, kommunkodnyckel (kommuner och koder per period 1974–2008-)",
+       "accessed": "2026-10-06",
+       "says": "Kommun codes for 1974–1976 and 1995–1996; the first two digits are the län code, so each 1995 kommun (and its 1974 predecessor) lies in this län."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SWE:Gotlands_län@1974",
+   "names": {
+    "en": "Gotland County",
+    "ja": "ゴットランド県",
+    "local": "Gotlands län"
+   },
+   "wikidata": "Q103738",
+   "spans": [
+    {
+     "from": "1974-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SWE-ADM2-70781695B80690990768870"
+     ],
+     "sources": [
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/kommunandringar_20230829.pdf",
+       "title": "SCB, Ändringar i kommunindelningen efter 1974",
+       "accessed": "2026-10-06",
+       "says": "Lists every change of kommun division from 1974 (278 kommuner): Bara joined Svedala 1977, Alfta parish moved Bollnäs→Ovanåker 1977, and splits in 1980–2003 — all inside one län; Heby moved Västmanland→Uppsala län on 2007-01-01."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/knkodnyckel.xls",
+       "title": "SCB, kommunkodnyckel (kommuner och koder per period 1974–2008-)",
+       "accessed": "2026-10-06",
+       "says": "Kommun codes for 1974–1976 and 1995–1996; the first two digits are the län code, so each 1995 kommun (and its 1974 predecessor) lies in this län."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SWE:Skåne_län@1997",
+   "names": {
+    "en": "Skåne County",
+    "ja": "スコーネ県",
+    "local": "Skåne län"
+   },
+   "wikidata": "Q103659",
+   "spans": [
+    {
+     "from": "1997-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SWE-ADM2-70781695B81213219414601",
+      "SWE-ADM2-70781695B30639939072107",
+      "SWE-ADM2-70781695B3781926649981",
+      "SWE-ADM2-70781695B13105561347564",
+      "SWE-ADM2-70781695B2310974409616",
+      "SWE-ADM2-70781695B63196163664063",
+      "SWE-ADM2-70781695B37771083391359",
+      "SWE-ADM2-70781695B63851832202754",
+      "SWE-ADM2-70781695B77141748378348",
+      "SWE-ADM2-70781695B19839460749296",
+      "SWE-ADM2-70781695B54182185465620",
+      "SWE-ADM2-70781695B62390377140785",
+      "SWE-ADM2-70781695B70463852837114",
+      "SWE-ADM2-70781695B23199884308581",
+      "SWE-ADM2-70781695B77389935020700",
+      "SWE-ADM2-70781695B11789611241227",
+      "SWE-ADM2-70781695B51244524104",
+      "SWE-ADM2-70781695B14589656511888",
+      "SWE-ADM2-70781695B22737117685830",
+      "SWE-ADM2-70781695B99189289928954",
+      "SWE-ADM2-70781695B95937301884210",
+      "SWE-ADM2-70781695B48074135992982",
+      "SWE-ADM2-70781695B21975001691252",
+      "SWE-ADM2-70781695B43697052539522",
+      "SWE-ADM2-70781695B31496650101497",
+      "SWE-ADM2-70781695B77585109803763",
+      "SWE-ADM2-70781695B18480802794079",
+      "SWE-ADM2-70781695B29606605667306",
+      "SWE-ADM2-70781695B13433668994781",
+      "SWE-ADM2-70781695B15028769687560",
+      "SWE-ADM2-70781695B8533917899851",
+      "SWE-ADM2-70781695B45241162189836",
+      "SWE-ADM2-70781695B74587424027080"
+     ],
+     "sources": [
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/kommunandringar_20230829.pdf",
+       "title": "SCB, Ändringar i kommunindelningen efter 1974",
+       "accessed": "2026-10-06",
+       "says": "Lists every change of kommun division from 1974 (278 kommuner): Bara joined Svedala 1977, Alfta parish moved Bollnäs→Ovanåker 1977, and splits in 1980–2003 — all inside one län; Heby moved Västmanland→Uppsala län on 2007-01-01."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/knkodnyckel.xls",
+       "title": "SCB, kommunkodnyckel (kommuner och koder per period 1974–2008-)",
+       "accessed": "2026-10-06",
+       "says": "Kommun codes for 1974–1976 and 1995–1996; the first two digits are the län code, so each 1995 kommun (and its 1974 predecessor) lies in this län."
+      },
+      {
+       "url": "https://www.scb.se/contentassets/6a74a52b28994e2bbe23dcdd6754987c/skanekod.xls",
+       "title": "SCB, Kommunkoder i nya Skåne län fr.o.m. 1997-01-01",
+       "accessed": "2026-10-06",
+       "says": "Skåne län formed 1997-01-01 from all kommuner of Kristianstads and Malmöhus län."
+      },
+      {
+       "url": "https://statoids.com/use.html",
+       "title": "Counties of Sweden (Statoids, Gwillim Law)",
+       "accessed": "2026-10-06",
+       "says": "1997-01-01: Kristianstad and Malmöhus merged to form Skåne."
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1997-01-01",
+   "what": "Skåne län formed (Kristianstads + Malmöhus); Kopparbergs län renamed Dalarnas län",
+   "sources": [
+    {
+     "url": "https://statoids.com/use.html",
+     "title": "Counties of Sweden (Statoids, Gwillim Law)",
+     "accessed": "2026-10-06",
+     "says": "1997-01-01: Kristianstad and Malmöhus merged to form Skåne; Kopparberg renamed Dalarna."
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1974-01-01",
+   "n": 24,
+   "sources": [
+    {
+     "url": "https://sv.wikipedia.org/w/index.php?title=Sveriges_l%C3%A4n&oldid=59698521",
+     "title": "Sveriges län (svenska Wikipedia, oldid 59698521)",
+     "accessed": "2026-10-06",
+     "says": "Stockholms stad and Stockholms län merged in 1968; 24 län until Skåne (1997) and Västra Götaland (1998) reduced them to 21."
+    }
+   ]
+  },
+  {
+   "date": "1997-01-01",
+   "n": 23,
+   "sources": [
+    {
+     "url": "https://sv.wikipedia.org/w/index.php?title=Sveriges_l%C3%A4n&oldid=59698521",
+     "title": "Sveriges län (svenska Wikipedia, oldid 59698521)",
+     "accessed": "2026-10-06",
+     "says": "Kristianstads and Malmöhus län merged into Skåne län on 1 January 1997; Västra Götaland followed on 1 January 1998 (21 län since 1998)."
+    }
+   ]
+  }
+ ],
+ "unresolved": []
+}

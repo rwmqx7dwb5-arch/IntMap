@@ -1,0 +1,506 @@
+{
+ "country": "SUR",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1987-10-30",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Republic of Suriname. The ten districts of the decree Districtenindeling 1983 (S.B. 1983 no. 24), whose lines the 1987 Constitution (art. 160(2)) makes the district boundaries. The scope starts when that constitution entered into force (1987-10-30), because the sources disagree on when the 1983 decree took effect on the ground (statoids and nl.wikipedia say 1985) — the years 1983–1987 are not claimed. Ground claimed by Guyana (Tigri/New River triangle) or by France (between the Lawa and the Litani) lies only where the polity record places it in Suriname. (1) independent check 2026-10-06: NE atom areas against statoids 2012 areas — nine districts 0.81-1.08 (Paramaribo 147 vs 182 km2); Sipaliwini 112,058 vs 130,567 km2 because statoids counts the two claimed triangles.",
+ "units": [
+  {
+   "id": "SUR:Paramaribo@1983",
+   "names": {
+    "en": "Paramaribo District",
+    "ja": "パラマリボ地方",
+    "local": "District Paramaribo"
+   },
+   "wikidata": "Q1130134",
+   "spans": [
+    {
+     "from": "1987-10-30",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SUR-72"
+     ],
+     "sources": [
+      {
+       "url": "https://nl.wikisource.org/wiki/Grondwet_van_Suriname/Hoofdstuk_21",
+       "title": "Grondwet van de Republiek Suriname (S.B. 1987 no. 116), art. 160 lid 2 (Wikisource)",
+       "says": "The boundaries of the districts coincide with those indicated in the decree Districtenindeling 1983 (S.B. 1983 no. 24).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.sris.sr/wp-content/uploads/2020/06/Grondwet-met-Mvt.pdf",
+       "title": "Grondwet van de Republiek Suriname (S.B. 1987 no. 116) met memorie van toelichting",
+       "says": "The Constitution approved by referendum on 30 September 1987 entered into force on 30 October 1987.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://chs.gov.sr/wp-content/uploads/2024/02/CHS-Verslag-Verkiezingen-2005.pdf",
+       "title": "Centraal Hoofdstembureau — Verslag Verkiezingen 2005",
+       "says": "The electoral districts of 2005 coincide with the districts of the decree Districtenindeling 1983 (S.B. 1983 no. 24).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/usr.html",
+       "title": "Statoids — Districts of Suriname (change history)",
+       "says": "Ten districts since the reorganisation that divided Suriname district among Commewijne, Para, Saramacca and new Wanica and formed Sipaliwini; no later change listed.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SUR:Wanica@1983",
+   "names": {
+    "en": "Wanica District",
+    "ja": "ワニカ地方",
+    "local": "District Wanica"
+   },
+   "wikidata": "Q1147524",
+   "spans": [
+    {
+     "from": "1987-10-30",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SUR-74"
+     ],
+     "sources": [
+      {
+       "url": "https://nl.wikisource.org/wiki/Grondwet_van_Suriname/Hoofdstuk_21",
+       "title": "Grondwet van de Republiek Suriname (S.B. 1987 no. 116), art. 160 lid 2 (Wikisource)",
+       "says": "The boundaries of the districts coincide with those indicated in the decree Districtenindeling 1983 (S.B. 1983 no. 24).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.sris.sr/wp-content/uploads/2020/06/Grondwet-met-Mvt.pdf",
+       "title": "Grondwet van de Republiek Suriname (S.B. 1987 no. 116) met memorie van toelichting",
+       "says": "The Constitution approved by referendum on 30 September 1987 entered into force on 30 October 1987.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://chs.gov.sr/wp-content/uploads/2024/02/CHS-Verslag-Verkiezingen-2005.pdf",
+       "title": "Centraal Hoofdstembureau — Verslag Verkiezingen 2005",
+       "says": "The electoral districts of 2005 coincide with the districts of the decree Districtenindeling 1983 (S.B. 1983 no. 24).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/usr.html",
+       "title": "Statoids — Districts of Suriname (change history)",
+       "says": "Ten districts since the reorganisation that divided Suriname district among Commewijne, Para, Saramacca and new Wanica and formed Sipaliwini; no later change listed.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://nl.wikipedia.org/w/index.php?title=Districten_van_Suriname&oldid=69931308",
+       "title": "Wikipedia (nl) — Districten van Suriname (oldid 69931308)",
+       "says": "Since the redistricting of the 1980s Suriname consists of ten districts; the 1985 change divided Suriname district and created Wanica and Sipaliwini.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SUR:Nickerie@1983",
+   "names": {
+    "en": "Nickerie District",
+    "ja": "ニッケリー地方",
+    "local": "District Nickerie"
+   },
+   "wikidata": "Q1147515",
+   "spans": [
+    {
+     "from": "1987-10-30",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SUR-37"
+     ],
+     "sources": [
+      {
+       "url": "https://nl.wikisource.org/wiki/Grondwet_van_Suriname/Hoofdstuk_21",
+       "title": "Grondwet van de Republiek Suriname (S.B. 1987 no. 116), art. 160 lid 2 (Wikisource)",
+       "says": "The boundaries of the districts coincide with those indicated in the decree Districtenindeling 1983 (S.B. 1983 no. 24).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.sris.sr/wp-content/uploads/2020/06/Grondwet-met-Mvt.pdf",
+       "title": "Grondwet van de Republiek Suriname (S.B. 1987 no. 116) met memorie van toelichting",
+       "says": "The Constitution approved by referendum on 30 September 1987 entered into force on 30 October 1987.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://chs.gov.sr/wp-content/uploads/2024/02/CHS-Verslag-Verkiezingen-2005.pdf",
+       "title": "Centraal Hoofdstembureau — Verslag Verkiezingen 2005",
+       "says": "The electoral districts of 2005 coincide with the districts of the decree Districtenindeling 1983 (S.B. 1983 no. 24).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/usr.html",
+       "title": "Statoids — Districts of Suriname (change history)",
+       "says": "Ten districts since the reorganisation that divided Suriname district among Commewijne, Para, Saramacca and new Wanica and formed Sipaliwini; no later change listed.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SUR:Coronie@1983",
+   "names": {
+    "en": "Coronie District",
+    "ja": "コロニー地方",
+    "local": "District Coronie"
+   },
+   "wikidata": "Q1130141",
+   "spans": [
+    {
+     "from": "1987-10-30",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SUR-71"
+     ],
+     "sources": [
+      {
+       "url": "https://nl.wikisource.org/wiki/Grondwet_van_Suriname/Hoofdstuk_21",
+       "title": "Grondwet van de Republiek Suriname (S.B. 1987 no. 116), art. 160 lid 2 (Wikisource)",
+       "says": "The boundaries of the districts coincide with those indicated in the decree Districtenindeling 1983 (S.B. 1983 no. 24).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.sris.sr/wp-content/uploads/2020/06/Grondwet-met-Mvt.pdf",
+       "title": "Grondwet van de Republiek Suriname (S.B. 1987 no. 116) met memorie van toelichting",
+       "says": "The Constitution approved by referendum on 30 September 1987 entered into force on 30 October 1987.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://chs.gov.sr/wp-content/uploads/2024/02/CHS-Verslag-Verkiezingen-2005.pdf",
+       "title": "Centraal Hoofdstembureau — Verslag Verkiezingen 2005",
+       "says": "The electoral districts of 2005 coincide with the districts of the decree Districtenindeling 1983 (S.B. 1983 no. 24).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/usr.html",
+       "title": "Statoids — Districts of Suriname (change history)",
+       "says": "Ten districts since the reorganisation that divided Suriname district among Commewijne, Para, Saramacca and new Wanica and formed Sipaliwini; no later change listed.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SUR:Saramacca@1983",
+   "names": {
+    "en": "Saramacca District",
+    "ja": "サラマッカ地方",
+    "local": "District Saramacca"
+   },
+   "wikidata": "Q1351157",
+   "spans": [
+    {
+     "from": "1987-10-30",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SUR-73"
+     ],
+     "sources": [
+      {
+       "url": "https://nl.wikisource.org/wiki/Grondwet_van_Suriname/Hoofdstuk_21",
+       "title": "Grondwet van de Republiek Suriname (S.B. 1987 no. 116), art. 160 lid 2 (Wikisource)",
+       "says": "The boundaries of the districts coincide with those indicated in the decree Districtenindeling 1983 (S.B. 1983 no. 24).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.sris.sr/wp-content/uploads/2020/06/Grondwet-met-Mvt.pdf",
+       "title": "Grondwet van de Republiek Suriname (S.B. 1987 no. 116) met memorie van toelichting",
+       "says": "The Constitution approved by referendum on 30 September 1987 entered into force on 30 October 1987.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://chs.gov.sr/wp-content/uploads/2024/02/CHS-Verslag-Verkiezingen-2005.pdf",
+       "title": "Centraal Hoofdstembureau — Verslag Verkiezingen 2005",
+       "says": "The electoral districts of 2005 coincide with the districts of the decree Districtenindeling 1983 (S.B. 1983 no. 24).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/usr.html",
+       "title": "Statoids — Districts of Suriname (change history)",
+       "says": "Ten districts since the reorganisation that divided Suriname district among Commewijne, Para, Saramacca and new Wanica and formed Sipaliwini; no later change listed.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SUR:Commewijne@1983",
+   "names": {
+    "en": "Commewijne District",
+    "ja": "コメウィネ地方",
+    "local": "District Commewijne"
+   },
+   "wikidata": "Q952510",
+   "spans": [
+    {
+     "from": "1987-10-30",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SUR-70"
+     ],
+     "sources": [
+      {
+       "url": "https://nl.wikisource.org/wiki/Grondwet_van_Suriname/Hoofdstuk_21",
+       "title": "Grondwet van de Republiek Suriname (S.B. 1987 no. 116), art. 160 lid 2 (Wikisource)",
+       "says": "The boundaries of the districts coincide with those indicated in the decree Districtenindeling 1983 (S.B. 1983 no. 24).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.sris.sr/wp-content/uploads/2020/06/Grondwet-met-Mvt.pdf",
+       "title": "Grondwet van de Republiek Suriname (S.B. 1987 no. 116) met memorie van toelichting",
+       "says": "The Constitution approved by referendum on 30 September 1987 entered into force on 30 October 1987.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://chs.gov.sr/wp-content/uploads/2024/02/CHS-Verslag-Verkiezingen-2005.pdf",
+       "title": "Centraal Hoofdstembureau — Verslag Verkiezingen 2005",
+       "says": "The electoral districts of 2005 coincide with the districts of the decree Districtenindeling 1983 (S.B. 1983 no. 24).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/usr.html",
+       "title": "Statoids — Districts of Suriname (change history)",
+       "says": "Ten districts since the reorganisation that divided Suriname district among Commewijne, Para, Saramacca and new Wanica and formed Sipaliwini; no later change listed.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SUR:Marowijne@1983",
+   "names": {
+    "en": "Marowijne District",
+    "ja": "マロワイネ地方",
+    "local": "District Marowijne"
+   },
+   "wikidata": "Q1140897",
+   "spans": [
+    {
+     "from": "1987-10-30",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SUR-67"
+     ],
+     "sources": [
+      {
+       "url": "https://nl.wikisource.org/wiki/Grondwet_van_Suriname/Hoofdstuk_21",
+       "title": "Grondwet van de Republiek Suriname (S.B. 1987 no. 116), art. 160 lid 2 (Wikisource)",
+       "says": "The boundaries of the districts coincide with those indicated in the decree Districtenindeling 1983 (S.B. 1983 no. 24).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.sris.sr/wp-content/uploads/2020/06/Grondwet-met-Mvt.pdf",
+       "title": "Grondwet van de Republiek Suriname (S.B. 1987 no. 116) met memorie van toelichting",
+       "says": "The Constitution approved by referendum on 30 September 1987 entered into force on 30 October 1987.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://chs.gov.sr/wp-content/uploads/2024/02/CHS-Verslag-Verkiezingen-2005.pdf",
+       "title": "Centraal Hoofdstembureau — Verslag Verkiezingen 2005",
+       "says": "The electoral districts of 2005 coincide with the districts of the decree Districtenindeling 1983 (S.B. 1983 no. 24).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/usr.html",
+       "title": "Statoids — Districts of Suriname (change history)",
+       "says": "Ten districts since the reorganisation that divided Suriname district among Commewijne, Para, Saramacca and new Wanica and formed Sipaliwini; no later change listed.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SUR:Para@1983",
+   "names": {
+    "en": "Para District",
+    "ja": "パラ地方",
+    "local": "District Para"
+   },
+   "wikidata": "Q1140891",
+   "spans": [
+    {
+     "from": "1987-10-30",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SUR-68"
+     ],
+     "sources": [
+      {
+       "url": "https://nl.wikisource.org/wiki/Grondwet_van_Suriname/Hoofdstuk_21",
+       "title": "Grondwet van de Republiek Suriname (S.B. 1987 no. 116), art. 160 lid 2 (Wikisource)",
+       "says": "The boundaries of the districts coincide with those indicated in the decree Districtenindeling 1983 (S.B. 1983 no. 24).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.sris.sr/wp-content/uploads/2020/06/Grondwet-met-Mvt.pdf",
+       "title": "Grondwet van de Republiek Suriname (S.B. 1987 no. 116) met memorie van toelichting",
+       "says": "The Constitution approved by referendum on 30 September 1987 entered into force on 30 October 1987.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://chs.gov.sr/wp-content/uploads/2024/02/CHS-Verslag-Verkiezingen-2005.pdf",
+       "title": "Centraal Hoofdstembureau — Verslag Verkiezingen 2005",
+       "says": "The electoral districts of 2005 coincide with the districts of the decree Districtenindeling 1983 (S.B. 1983 no. 24).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/usr.html",
+       "title": "Statoids — Districts of Suriname (change history)",
+       "says": "Ten districts since the reorganisation that divided Suriname district among Commewijne, Para, Saramacca and new Wanica and formed Sipaliwini; no later change listed.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SUR:Brokopondo@1983",
+   "names": {
+    "en": "Brokopondo District",
+    "ja": "ブロコポンド地方",
+    "local": "District Brokopondo"
+   },
+   "wikidata": "Q847680",
+   "spans": [
+    {
+     "from": "1987-10-30",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SUR-66"
+     ],
+     "sources": [
+      {
+       "url": "https://nl.wikisource.org/wiki/Grondwet_van_Suriname/Hoofdstuk_21",
+       "title": "Grondwet van de Republiek Suriname (S.B. 1987 no. 116), art. 160 lid 2 (Wikisource)",
+       "says": "The boundaries of the districts coincide with those indicated in the decree Districtenindeling 1983 (S.B. 1983 no. 24).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.sris.sr/wp-content/uploads/2020/06/Grondwet-met-Mvt.pdf",
+       "title": "Grondwet van de Republiek Suriname (S.B. 1987 no. 116) met memorie van toelichting",
+       "says": "The Constitution approved by referendum on 30 September 1987 entered into force on 30 October 1987.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://chs.gov.sr/wp-content/uploads/2024/02/CHS-Verslag-Verkiezingen-2005.pdf",
+       "title": "Centraal Hoofdstembureau — Verslag Verkiezingen 2005",
+       "says": "The electoral districts of 2005 coincide with the districts of the decree Districtenindeling 1983 (S.B. 1983 no. 24).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/usr.html",
+       "title": "Statoids — Districts of Suriname (change history)",
+       "says": "Ten districts since the reorganisation that divided Suriname district among Commewijne, Para, Saramacca and new Wanica and formed Sipaliwini; no later change listed.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SUR:Sipaliwini@1983",
+   "names": {
+    "en": "Sipaliwini District",
+    "ja": "シパリウィニ地方",
+    "local": "District Sipaliwini"
+   },
+   "wikidata": "Q1130138",
+   "spans": [
+    {
+     "from": "1987-10-30",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SUR-69"
+     ],
+     "sources": [
+      {
+       "url": "https://nl.wikisource.org/wiki/Grondwet_van_Suriname/Hoofdstuk_21",
+       "title": "Grondwet van de Republiek Suriname (S.B. 1987 no. 116), art. 160 lid 2 (Wikisource)",
+       "says": "The boundaries of the districts coincide with those indicated in the decree Districtenindeling 1983 (S.B. 1983 no. 24).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.sris.sr/wp-content/uploads/2020/06/Grondwet-met-Mvt.pdf",
+       "title": "Grondwet van de Republiek Suriname (S.B. 1987 no. 116) met memorie van toelichting",
+       "says": "The Constitution approved by referendum on 30 September 1987 entered into force on 30 October 1987.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://chs.gov.sr/wp-content/uploads/2024/02/CHS-Verslag-Verkiezingen-2005.pdf",
+       "title": "Centraal Hoofdstembureau — Verslag Verkiezingen 2005",
+       "says": "The electoral districts of 2005 coincide with the districts of the decree Districtenindeling 1983 (S.B. 1983 no. 24).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/usr.html",
+       "title": "Statoids — Districts of Suriname (change history)",
+       "says": "Ten districts since the reorganisation that divided Suriname district among Commewijne, Para, Saramacca and new Wanica and formed Sipaliwini; no later change listed.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://nl.wikipedia.org/w/index.php?title=Districten_van_Suriname&oldid=69931308",
+       "title": "Wikipedia (nl) — Districten van Suriname (oldid 69931308)",
+       "says": "Since the redistricting of the 1980s Suriname consists of ten districts; the 1985 change divided Suriname district and created Wanica and Sipaliwini.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1987-10-30",
+   "n": 10,
+   "sources": [
+    {
+     "url": "https://nl.wikisource.org/wiki/Grondwet_van_Suriname/Hoofdstuk_21",
+     "title": "Grondwet van de Republiek Suriname (S.B. 1987 no. 116), art. 160 lid 2 (Wikisource)",
+     "says": "The boundaries of the districts coincide with those indicated in the decree Districtenindeling 1983 (S.B. 1983 no. 24).",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://www.statoids.com/usr.html",
+     "title": "Statoids — Districts of Suriname (change history)",
+     "says": "Ten districts since the reorganisation that divided Suriname district among Commewijne, Para, Saramacca and new Wanica and formed Sipaliwini; no later change listed.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "2005-05-25",
+   "n": 10,
+   "sources": [
+    {
+     "url": "https://chs.gov.sr/wp-content/uploads/2024/02/CHS-Verslag-Verkiezingen-2005.pdf",
+     "title": "Centraal Hoofdstembureau — Verslag Verkiezingen 2005",
+     "says": "The electoral districts of 2005 coincide with the districts of the decree Districtenindeling 1983 (S.B. 1983 no. 24).",
+     "accessed": "2026-10-06"
+    }
+   ]
+  }
+ ],
+ "unresolved": []
+}

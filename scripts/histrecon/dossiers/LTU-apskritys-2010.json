@@ -1,0 +1,514 @@
+{
+ "country": "LTU",
+ "atomSet": "gb-adm1@2026-10-06",
+ "scope": {
+  "from": "2010-07-01",
+  "to": "2019-12-31"
+ },
+ "polityNote": "The 10 counties (apskritys) of Lithuania as territorial units, from the abolition of the county governors’ administrations (1 Jul 2010) to the end of 2019; OpenHistoricalMap draws them as administrative units 1994–2010 (to 1 Jan 2011), and this dossier yields to it there. Atoms: geoBoundaries LTU ADM1 (OpenStreetMap/Wambacher 2017; ODbL), one atom per county; the 60 municipalities of the same publisher nest in them exactly (0 overlap, 0 hole at 0.02°). The outline dates from the municipal reform law of 21 Dec 1999 (Elektrėnai to Vilnius County, Pagėgiai to Tauragė County); no later change of a municipality is recorded. ① check: union areas against the Statistics Lithuania county areas (via Statoids) agree within −0.6%…−0.2% for 9 counties; Klaipėda −7.9%, the stated area including the Lithuanian part of the Curonian Lagoon.",
+ "units": [
+  {
+   "id": "LTU:Utena",
+   "names": {
+    "en": "Utena County",
+    "ja": "ウテナ郡",
+    "local": "Utenos apskritis"
+   },
+   "wikidata": "Q188659",
+   "spans": [
+    {
+     "from": "2010-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "LTU-ADM1-39236102B43626903589456"
+     ],
+     "sources": [
+      {
+       "url": "https://lt.wikipedia.org/w/index.php?title=Lietuvos_apskritys&oldid=7504937",
+       "title": "Vikipedija — Lietuvos apskritys",
+       "says": "The 1994 law (No. I-558) divided Lithuania into 10 counties; county governors’ administrations were abolished on 1 Jul 2010; the 10 counties remain as territorial, not administrative, units.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Lithuania&oldid=1362464905",
+       "title": "Wikipedia — Counties of Lithuania",
+       "says": "Ten counties, divided into 60 municipalities; the division was created in 1994 and slightly modified in 2000; on 1 July 2010 the county administrations were abolished but the counties are retained.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://lt.wikipedia.org/w/index.php?title=Lietuvos_administracinis_suskirstymas&oldid=7765202",
+       "title": "Vikipedija — Lietuvos administracinis suskirstymas",
+       "says": "Since the 1999–2000 municipal reform Lithuania has 60 municipalities; in 1995–2010 they were subordinate to 10 counties, abolished as administrative units but kept as territorial ones.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://lt.wikipedia.org/w/index.php?title=Savivaldybi%C5%B3_reforma&oldid=7865300",
+       "title": "Vikipedija — Savivaldybių reforma",
+       "says": "The reform law was adopted on 21 Dec 1999: new municipalities were split from large district municipalities and some municipal borders were moved.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From 1 Jul 2010 the county is a territorial unit only (its governor’s administration abolished); its outline is that of the 1999–2000 municipal reform (Elektrėnai into Vilnius County, Pagėgiai into Tauragė County), which no later change of a municipality moved. In 1994–2010 OpenHistoricalMap draws the counties."
+    }
+   ]
+  },
+  {
+   "id": "LTU:Marijampolė",
+   "names": {
+    "en": "Marijampolė County",
+    "ja": "マリヤンポレ郡",
+    "local": "Marijampolės apskritis"
+   },
+   "wikidata": "Q853948",
+   "spans": [
+    {
+     "from": "2010-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "LTU-ADM1-39236102B36357844716419"
+     ],
+     "sources": [
+      {
+       "url": "https://lt.wikipedia.org/w/index.php?title=Lietuvos_apskritys&oldid=7504937",
+       "title": "Vikipedija — Lietuvos apskritys",
+       "says": "The 1994 law (No. I-558) divided Lithuania into 10 counties; county governors’ administrations were abolished on 1 Jul 2010; the 10 counties remain as territorial, not administrative, units.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Lithuania&oldid=1362464905",
+       "title": "Wikipedia — Counties of Lithuania",
+       "says": "Ten counties, divided into 60 municipalities; the division was created in 1994 and slightly modified in 2000; on 1 July 2010 the county administrations were abolished but the counties are retained.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://lt.wikipedia.org/w/index.php?title=Lietuvos_administracinis_suskirstymas&oldid=7765202",
+       "title": "Vikipedija — Lietuvos administracinis suskirstymas",
+       "says": "Since the 1999–2000 municipal reform Lithuania has 60 municipalities; in 1995–2010 they were subordinate to 10 counties, abolished as administrative units but kept as territorial ones.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://lt.wikipedia.org/w/index.php?title=Savivaldybi%C5%B3_reforma&oldid=7865300",
+       "title": "Vikipedija — Savivaldybių reforma",
+       "says": "The reform law was adopted on 21 Dec 1999: new municipalities were split from large district municipalities and some municipal borders were moved.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From 1 Jul 2010 the county is a territorial unit only (its governor’s administration abolished); its outline is that of the 1999–2000 municipal reform (Elektrėnai into Vilnius County, Pagėgiai into Tauragė County), which no later change of a municipality moved. In 1994–2010 OpenHistoricalMap draws the counties."
+    }
+   ]
+  },
+  {
+   "id": "LTU:Vilnius",
+   "names": {
+    "en": "Vilnius County",
+    "ja": "ヴィルニュス郡",
+    "local": "Vilniaus apskritis"
+   },
+   "wikidata": "Q188061",
+   "spans": [
+    {
+     "from": "2010-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "LTU-ADM1-39236102B79521903246642"
+     ],
+     "sources": [
+      {
+       "url": "https://lt.wikipedia.org/w/index.php?title=Lietuvos_apskritys&oldid=7504937",
+       "title": "Vikipedija — Lietuvos apskritys",
+       "says": "The 1994 law (No. I-558) divided Lithuania into 10 counties; county governors’ administrations were abolished on 1 Jul 2010; the 10 counties remain as territorial, not administrative, units.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Lithuania&oldid=1362464905",
+       "title": "Wikipedia — Counties of Lithuania",
+       "says": "Ten counties, divided into 60 municipalities; the division was created in 1994 and slightly modified in 2000; on 1 July 2010 the county administrations were abolished but the counties are retained.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://lt.wikipedia.org/w/index.php?title=Lietuvos_administracinis_suskirstymas&oldid=7765202",
+       "title": "Vikipedija — Lietuvos administracinis suskirstymas",
+       "says": "Since the 1999–2000 municipal reform Lithuania has 60 municipalities; in 1995–2010 they were subordinate to 10 counties, abolished as administrative units but kept as territorial ones.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://lt.wikipedia.org/w/index.php?title=Savivaldybi%C5%B3_reforma&oldid=7865300",
+       "title": "Vikipedija — Savivaldybių reforma",
+       "says": "The reform law was adopted on 21 Dec 1999: new municipalities were split from large district municipalities and some municipal borders were moved.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From 1 Jul 2010 the county is a territorial unit only (its governor’s administration abolished); its outline is that of the 1999–2000 municipal reform (Elektrėnai into Vilnius County, Pagėgiai into Tauragė County), which no later change of a municipality moved. In 1994–2010 OpenHistoricalMap draws the counties."
+    }
+   ]
+  },
+  {
+   "id": "LTU:Panevėžys",
+   "names": {
+    "en": "Panevėžys County",
+    "ja": "パネヴェジース郡",
+    "local": "Panevėžio apskritis"
+   },
+   "wikidata": "Q188085",
+   "spans": [
+    {
+     "from": "2010-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "LTU-ADM1-39236102B83915359981162"
+     ],
+     "sources": [
+      {
+       "url": "https://lt.wikipedia.org/w/index.php?title=Lietuvos_apskritys&oldid=7504937",
+       "title": "Vikipedija — Lietuvos apskritys",
+       "says": "The 1994 law (No. I-558) divided Lithuania into 10 counties; county governors’ administrations were abolished on 1 Jul 2010; the 10 counties remain as territorial, not administrative, units.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Lithuania&oldid=1362464905",
+       "title": "Wikipedia — Counties of Lithuania",
+       "says": "Ten counties, divided into 60 municipalities; the division was created in 1994 and slightly modified in 2000; on 1 July 2010 the county administrations were abolished but the counties are retained.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://lt.wikipedia.org/w/index.php?title=Lietuvos_administracinis_suskirstymas&oldid=7765202",
+       "title": "Vikipedija — Lietuvos administracinis suskirstymas",
+       "says": "Since the 1999–2000 municipal reform Lithuania has 60 municipalities; in 1995–2010 they were subordinate to 10 counties, abolished as administrative units but kept as territorial ones.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://lt.wikipedia.org/w/index.php?title=Savivaldybi%C5%B3_reforma&oldid=7865300",
+       "title": "Vikipedija — Savivaldybių reforma",
+       "says": "The reform law was adopted on 21 Dec 1999: new municipalities were split from large district municipalities and some municipal borders were moved.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From 1 Jul 2010 the county is a territorial unit only (its governor’s administration abolished); its outline is that of the 1999–2000 municipal reform (Elektrėnai into Vilnius County, Pagėgiai into Tauragė County), which no later change of a municipality moved. In 1994–2010 OpenHistoricalMap draws the counties."
+    }
+   ]
+  },
+  {
+   "id": "LTU:Kaunas",
+   "names": {
+    "en": "Kaunas County",
+    "ja": "カウナス郡",
+    "local": "Kauno apskritis"
+   },
+   "wikidata": "Q853861",
+   "spans": [
+    {
+     "from": "2010-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "LTU-ADM1-39236102B54951608919811"
+     ],
+     "sources": [
+      {
+       "url": "https://lt.wikipedia.org/w/index.php?title=Lietuvos_apskritys&oldid=7504937",
+       "title": "Vikipedija — Lietuvos apskritys",
+       "says": "The 1994 law (No. I-558) divided Lithuania into 10 counties; county governors’ administrations were abolished on 1 Jul 2010; the 10 counties remain as territorial, not administrative, units.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Lithuania&oldid=1362464905",
+       "title": "Wikipedia — Counties of Lithuania",
+       "says": "Ten counties, divided into 60 municipalities; the division was created in 1994 and slightly modified in 2000; on 1 July 2010 the county administrations were abolished but the counties are retained.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://lt.wikipedia.org/w/index.php?title=Lietuvos_administracinis_suskirstymas&oldid=7765202",
+       "title": "Vikipedija — Lietuvos administracinis suskirstymas",
+       "says": "Since the 1999–2000 municipal reform Lithuania has 60 municipalities; in 1995–2010 they were subordinate to 10 counties, abolished as administrative units but kept as territorial ones.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://lt.wikipedia.org/w/index.php?title=Savivaldybi%C5%B3_reforma&oldid=7865300",
+       "title": "Vikipedija — Savivaldybių reforma",
+       "says": "The reform law was adopted on 21 Dec 1999: new municipalities were split from large district municipalities and some municipal borders were moved.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From 1 Jul 2010 the county is a territorial unit only (its governor’s administration abolished); its outline is that of the 1999–2000 municipal reform (Elektrėnai into Vilnius County, Pagėgiai into Tauragė County), which no later change of a municipality moved. In 1994–2010 OpenHistoricalMap draws the counties."
+    }
+   ]
+  },
+  {
+   "id": "LTU:Alytus",
+   "names": {
+    "en": "Alytus County",
+    "ja": "アリートゥス郡",
+    "local": "Alytaus apskritis"
+   },
+   "wikidata": "Q669470",
+   "spans": [
+    {
+     "from": "2010-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "LTU-ADM1-39236102B93217040597196"
+     ],
+     "sources": [
+      {
+       "url": "https://lt.wikipedia.org/w/index.php?title=Lietuvos_apskritys&oldid=7504937",
+       "title": "Vikipedija — Lietuvos apskritys",
+       "says": "The 1994 law (No. I-558) divided Lithuania into 10 counties; county governors’ administrations were abolished on 1 Jul 2010; the 10 counties remain as territorial, not administrative, units.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Lithuania&oldid=1362464905",
+       "title": "Wikipedia — Counties of Lithuania",
+       "says": "Ten counties, divided into 60 municipalities; the division was created in 1994 and slightly modified in 2000; on 1 July 2010 the county administrations were abolished but the counties are retained.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://lt.wikipedia.org/w/index.php?title=Lietuvos_administracinis_suskirstymas&oldid=7765202",
+       "title": "Vikipedija — Lietuvos administracinis suskirstymas",
+       "says": "Since the 1999–2000 municipal reform Lithuania has 60 municipalities; in 1995–2010 they were subordinate to 10 counties, abolished as administrative units but kept as territorial ones.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://lt.wikipedia.org/w/index.php?title=Savivaldybi%C5%B3_reforma&oldid=7865300",
+       "title": "Vikipedija — Savivaldybių reforma",
+       "says": "The reform law was adopted on 21 Dec 1999: new municipalities were split from large district municipalities and some municipal borders were moved.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From 1 Jul 2010 the county is a territorial unit only (its governor’s administration abolished); its outline is that of the 1999–2000 municipal reform (Elektrėnai into Vilnius County, Pagėgiai into Tauragė County), which no later change of a municipality moved. In 1994–2010 OpenHistoricalMap draws the counties."
+    }
+   ]
+  },
+  {
+   "id": "LTU:Klaipėda",
+   "names": {
+    "en": "Klaipėda County",
+    "ja": "クライペダ郡",
+    "local": "Klaipėdos apskritis"
+   },
+   "wikidata": "Q475207",
+   "spans": [
+    {
+     "from": "2010-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "LTU-ADM1-39236102B21585051382269"
+     ],
+     "sources": [
+      {
+       "url": "https://lt.wikipedia.org/w/index.php?title=Lietuvos_apskritys&oldid=7504937",
+       "title": "Vikipedija — Lietuvos apskritys",
+       "says": "The 1994 law (No. I-558) divided Lithuania into 10 counties; county governors’ administrations were abolished on 1 Jul 2010; the 10 counties remain as territorial, not administrative, units.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Lithuania&oldid=1362464905",
+       "title": "Wikipedia — Counties of Lithuania",
+       "says": "Ten counties, divided into 60 municipalities; the division was created in 1994 and slightly modified in 2000; on 1 July 2010 the county administrations were abolished but the counties are retained.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://lt.wikipedia.org/w/index.php?title=Lietuvos_administracinis_suskirstymas&oldid=7765202",
+       "title": "Vikipedija — Lietuvos administracinis suskirstymas",
+       "says": "Since the 1999–2000 municipal reform Lithuania has 60 municipalities; in 1995–2010 they were subordinate to 10 counties, abolished as administrative units but kept as territorial ones.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://lt.wikipedia.org/w/index.php?title=Savivaldybi%C5%B3_reforma&oldid=7865300",
+       "title": "Vikipedija — Savivaldybių reforma",
+       "says": "The reform law was adopted on 21 Dec 1999: new municipalities were split from large district municipalities and some municipal borders were moved.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From 1 Jul 2010 the county is a territorial unit only (its governor’s administration abolished); its outline is that of the 1999–2000 municipal reform (Elektrėnai into Vilnius County, Pagėgiai into Tauragė County), which no later change of a municipality moved. In 1994–2010 OpenHistoricalMap draws the counties."
+    }
+   ]
+  },
+  {
+   "id": "LTU:Telšiai",
+   "names": {
+    "en": "Telšiai County",
+    "ja": "テルシェイ郡",
+    "local": "Telšių apskritis"
+   },
+   "wikidata": "Q188963",
+   "spans": [
+    {
+     "from": "2010-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "LTU-ADM1-39236102B31218690811927"
+     ],
+     "sources": [
+      {
+       "url": "https://lt.wikipedia.org/w/index.php?title=Lietuvos_apskritys&oldid=7504937",
+       "title": "Vikipedija — Lietuvos apskritys",
+       "says": "The 1994 law (No. I-558) divided Lithuania into 10 counties; county governors’ administrations were abolished on 1 Jul 2010; the 10 counties remain as territorial, not administrative, units.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Lithuania&oldid=1362464905",
+       "title": "Wikipedia — Counties of Lithuania",
+       "says": "Ten counties, divided into 60 municipalities; the division was created in 1994 and slightly modified in 2000; on 1 July 2010 the county administrations were abolished but the counties are retained.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://lt.wikipedia.org/w/index.php?title=Lietuvos_administracinis_suskirstymas&oldid=7765202",
+       "title": "Vikipedija — Lietuvos administracinis suskirstymas",
+       "says": "Since the 1999–2000 municipal reform Lithuania has 60 municipalities; in 1995–2010 they were subordinate to 10 counties, abolished as administrative units but kept as territorial ones.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://lt.wikipedia.org/w/index.php?title=Savivaldybi%C5%B3_reforma&oldid=7865300",
+       "title": "Vikipedija — Savivaldybių reforma",
+       "says": "The reform law was adopted on 21 Dec 1999: new municipalities were split from large district municipalities and some municipal borders were moved.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From 1 Jul 2010 the county is a territorial unit only (its governor’s administration abolished); its outline is that of the 1999–2000 municipal reform (Elektrėnai into Vilnius County, Pagėgiai into Tauragė County), which no later change of a municipality moved. In 1994–2010 OpenHistoricalMap draws the counties."
+    }
+   ]
+  },
+  {
+   "id": "LTU:Šiauliai",
+   "names": {
+    "en": "Šiauliai County",
+    "ja": "シャウレイ郡",
+    "local": "Šiaulių apskritis"
+   },
+   "wikidata": "Q186410",
+   "spans": [
+    {
+     "from": "2010-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "LTU-ADM1-39236102B46747206322764"
+     ],
+     "sources": [
+      {
+       "url": "https://lt.wikipedia.org/w/index.php?title=Lietuvos_apskritys&oldid=7504937",
+       "title": "Vikipedija — Lietuvos apskritys",
+       "says": "The 1994 law (No. I-558) divided Lithuania into 10 counties; county governors’ administrations were abolished on 1 Jul 2010; the 10 counties remain as territorial, not administrative, units.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Lithuania&oldid=1362464905",
+       "title": "Wikipedia — Counties of Lithuania",
+       "says": "Ten counties, divided into 60 municipalities; the division was created in 1994 and slightly modified in 2000; on 1 July 2010 the county administrations were abolished but the counties are retained.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://lt.wikipedia.org/w/index.php?title=Lietuvos_administracinis_suskirstymas&oldid=7765202",
+       "title": "Vikipedija — Lietuvos administracinis suskirstymas",
+       "says": "Since the 1999–2000 municipal reform Lithuania has 60 municipalities; in 1995–2010 they were subordinate to 10 counties, abolished as administrative units but kept as territorial ones.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://lt.wikipedia.org/w/index.php?title=Savivaldybi%C5%B3_reforma&oldid=7865300",
+       "title": "Vikipedija — Savivaldybių reforma",
+       "says": "The reform law was adopted on 21 Dec 1999: new municipalities were split from large district municipalities and some municipal borders were moved.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From 1 Jul 2010 the county is a territorial unit only (its governor’s administration abolished); its outline is that of the 1999–2000 municipal reform (Elektrėnai into Vilnius County, Pagėgiai into Tauragė County), which no later change of a municipality moved. In 1994–2010 OpenHistoricalMap draws the counties."
+    }
+   ]
+  },
+  {
+   "id": "LTU:Tauragė",
+   "names": {
+    "en": "Tauragė County",
+    "ja": "タウラゲ郡",
+    "local": "Tauragės apskritis"
+   },
+   "wikidata": "Q188960",
+   "spans": [
+    {
+     "from": "2010-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "LTU-ADM1-39236102B1026114868474"
+     ],
+     "sources": [
+      {
+       "url": "https://lt.wikipedia.org/w/index.php?title=Lietuvos_apskritys&oldid=7504937",
+       "title": "Vikipedija — Lietuvos apskritys",
+       "says": "The 1994 law (No. I-558) divided Lithuania into 10 counties; county governors’ administrations were abolished on 1 Jul 2010; the 10 counties remain as territorial, not administrative, units.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Lithuania&oldid=1362464905",
+       "title": "Wikipedia — Counties of Lithuania",
+       "says": "Ten counties, divided into 60 municipalities; the division was created in 1994 and slightly modified in 2000; on 1 July 2010 the county administrations were abolished but the counties are retained.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://lt.wikipedia.org/w/index.php?title=Lietuvos_administracinis_suskirstymas&oldid=7765202",
+       "title": "Vikipedija — Lietuvos administracinis suskirstymas",
+       "says": "Since the 1999–2000 municipal reform Lithuania has 60 municipalities; in 1995–2010 they were subordinate to 10 counties, abolished as administrative units but kept as territorial ones.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://lt.wikipedia.org/w/index.php?title=Savivaldybi%C5%B3_reforma&oldid=7865300",
+       "title": "Vikipedija — Savivaldybių reforma",
+       "says": "The reform law was adopted on 21 Dec 1999: new municipalities were split from large district municipalities and some municipal borders were moved.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From 1 Jul 2010 the county is a territorial unit only (its governor’s administration abolished); its outline is that of the 1999–2000 municipal reform (Elektrėnai into Vilnius County, Pagėgiai into Tauragė County), which no later change of a municipality moved. In 1994–2010 OpenHistoricalMap draws the counties."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "2010-07-01",
+   "precision": "day",
+   "what": "County governors’ administrations abolished; the 10 counties remain territorial units",
+   "sources": [
+    {
+     "url": "https://lt.wikipedia.org/w/index.php?title=Lietuvos_apskritys&oldid=7504937",
+     "title": "Vikipedija — Lietuvos apskritys",
+     "says": "The 1994 law (No. I-558) divided Lithuania into 10 counties; county governors’ administrations were abolished on 1 Jul 2010; the 10 counties remain as territorial, not administrative, units.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Lithuania&oldid=1362464905",
+     "title": "Wikipedia — Counties of Lithuania",
+     "says": "Ten counties, divided into 60 municipalities; the division was created in 1994 and slightly modified in 2000; on 1 July 2010 the county administrations were abolished but the counties are retained.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "2011-03-01",
+   "n": 10,
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Lithuania&oldid=1362464905",
+     "title": "Wikipedia — Counties of Lithuania",
+     "says": "Ten counties, divided into 60 municipalities; the division was created in 1994 and slightly modified in 2000; on 1 July 2010 the county administrations were abolished but the counties are retained.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://lt.wikipedia.org/w/index.php?title=Lietuvos_apskritys&oldid=7504937",
+     "title": "Vikipedija — Lietuvos apskritys",
+     "says": "The 1994 law (No. I-558) divided Lithuania into 10 counties; county governors’ administrations were abolished on 1 Jul 2010; the 10 counties remain as territorial, not administrative, units.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": []
+}

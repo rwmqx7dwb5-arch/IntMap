@@ -2,10 +2,10 @@
  "country": "VEN",
  "atomSet": "ne-admin1@ca96624",
  "scope": {
-  "from": "1933-12-13",
+  "from": "1909-08-05",
   "to": "2019-12-31"
  },
- "polityNote": "Venezuela (Estados Unidos de Venezuela; República de Venezuela; República Bolivariana from 1999). The Guayana Esequiba claim is not administered and has no NE atom.",
+ "polityNote": "Venezuela (Estados Unidos de Venezuela; República de Venezuela; República Bolivariana from 1999). The Guayana Esequiba claim is not administered and has no NE atom. From 1909-08-05 (constitution of 5 August 1909, twenty states, two federal territories and the Federal District): states untouched by the 1917/1933 Aragua–Carabobo–Guárico adjustments, by the 1941 Colombian treaty, by the 1995 Bolívar–Delta Amacuro annexation and by Cubagua are drawn from that day; the others stay unresolved until the change that gives them the atom's line.",
  "units": [
   {
    "id": "VEN:Anzoategui@1909",
@@ -17,7 +17,7 @@
    "wikidata": "Q190922",
    "spans": [
     {
-     "from": "1933-12-13",
+     "from": "1909-08-05",
      "precision": "day",
      "to": null,
      "atoms": [
@@ -25,13 +25,25 @@
      ],
      "sources": [
       {
+       "url": "https://derechodelacultura.org/wp-content/uploads/2015/02/3_1_1_ven_cn_eu_1909.pdf",
+       "title": "Constitución de los Estados Unidos de Venezuela de 1909 (promulgated 5 August 1909)",
+       "says": "Twenty states, each a former state of 1864 (Mérida gains Parroquia Independencia from Zulia); limits those of the 1856 law; territories Amazonas and Delta Amacuro; Federal District.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Between the 1909-08-05 constitution and 1933 the only inter-state change listed is an Aragua–Carabobo adjustment in 1917; then the 1933-12-13 Carabobo/Aragua/Guárico exchanges, 1948 Cubagua, 1995, 1998.",
+       "accessed": "2026-10-06"
+      },
+      {
        "url": "https://www.statoids.com/uve.html",
        "title": "Statoids — States of Venezuela (change history)",
        "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
        "accessed": "2026-10-05"
       }
      ],
-     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes."
+     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes. Extended to 1909-08-05: no inter-state change touching this unit is listed between the 1909 constitution and 1933."
     }
    ]
   },
@@ -73,7 +85,7 @@
    "wikidata": "Q43271",
    "spans": [
     {
-     "from": "1933-12-13",
+     "from": "1909-08-05",
      "precision": "day",
      "to": null,
      "atoms": [
@@ -81,13 +93,25 @@
      ],
      "sources": [
       {
+       "url": "https://derechodelacultura.org/wp-content/uploads/2015/02/3_1_1_ven_cn_eu_1909.pdf",
+       "title": "Constitución de los Estados Unidos de Venezuela de 1909 (promulgated 5 August 1909)",
+       "says": "Twenty states, each a former state of 1864 (Mérida gains Parroquia Independencia from Zulia); limits those of the 1856 law; territories Amazonas and Delta Amacuro; Federal District.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Between the 1909-08-05 constitution and 1933 the only inter-state change listed is an Aragua–Carabobo adjustment in 1917; then the 1933-12-13 Carabobo/Aragua/Guárico exchanges, 1948 Cubagua, 1995, 1998.",
+       "accessed": "2026-10-06"
+      },
+      {
        "url": "https://www.statoids.com/uve.html",
        "title": "Statoids — States of Venezuela (change history)",
        "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
        "accessed": "2026-10-05"
       }
      ],
-     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes."
+     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes. Extended to 1909-08-05: no inter-state change touching this unit is listed between the 1909 constitution and 1933."
     }
    ]
   },
@@ -129,7 +153,7 @@
    "wikidata": "Q205460",
    "spans": [
     {
-     "from": "1933-12-13",
+     "from": "1909-08-05",
      "precision": "day",
      "to": null,
      "atoms": [
@@ -137,13 +161,25 @@
      ],
      "sources": [
       {
+       "url": "https://derechodelacultura.org/wp-content/uploads/2015/02/3_1_1_ven_cn_eu_1909.pdf",
+       "title": "Constitución de los Estados Unidos de Venezuela de 1909 (promulgated 5 August 1909)",
+       "says": "Twenty states, each a former state of 1864 (Mérida gains Parroquia Independencia from Zulia); limits those of the 1856 law; territories Amazonas and Delta Amacuro; Federal District.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Between the 1909-08-05 constitution and 1933 the only inter-state change listed is an Aragua–Carabobo adjustment in 1917; then the 1933-12-13 Carabobo/Aragua/Guárico exchanges, 1948 Cubagua, 1995, 1998.",
+       "accessed": "2026-10-06"
+      },
+      {
        "url": "https://www.statoids.com/uve.html",
        "title": "Statoids — States of Venezuela (change history)",
        "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
        "accessed": "2026-10-05"
       }
      ],
-     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes."
+     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes. Extended to 1909-08-05: no inter-state change touching this unit is listed between the 1909 constitution and 1933."
     }
    ]
   },
@@ -157,7 +193,7 @@
    "wikidata": "Q202071",
    "spans": [
     {
-     "from": "1933-12-13",
+     "from": "1909-08-05",
      "precision": "day",
      "to": null,
      "atoms": [
@@ -165,13 +201,25 @@
      ],
      "sources": [
       {
+       "url": "https://derechodelacultura.org/wp-content/uploads/2015/02/3_1_1_ven_cn_eu_1909.pdf",
+       "title": "Constitución de los Estados Unidos de Venezuela de 1909 (promulgated 5 August 1909)",
+       "says": "Twenty states, each a former state of 1864 (Mérida gains Parroquia Independencia from Zulia); limits those of the 1856 law; territories Amazonas and Delta Amacuro; Federal District.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Between the 1909-08-05 constitution and 1933 the only inter-state change listed is an Aragua–Carabobo adjustment in 1917; then the 1933-12-13 Carabobo/Aragua/Guárico exchanges, 1948 Cubagua, 1995, 1998.",
+       "accessed": "2026-10-06"
+      },
+      {
        "url": "https://www.statoids.com/uve.html",
        "title": "Statoids — States of Venezuela (change history)",
        "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
        "accessed": "2026-10-05"
       }
      ],
-     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes."
+     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes. Extended to 1909-08-05: no inter-state change touching this unit is listed between the 1909 constitution and 1933."
     }
    ]
   },
@@ -213,7 +261,7 @@
    "wikidata": "Q205796",
    "spans": [
     {
-     "from": "1933-12-13",
+     "from": "1909-08-05",
      "precision": "day",
      "to": null,
      "atoms": [
@@ -221,13 +269,25 @@
      ],
      "sources": [
       {
+       "url": "https://derechodelacultura.org/wp-content/uploads/2015/02/3_1_1_ven_cn_eu_1909.pdf",
+       "title": "Constitución de los Estados Unidos de Venezuela de 1909 (promulgated 5 August 1909)",
+       "says": "Twenty states, each a former state of 1864 (Mérida gains Parroquia Independencia from Zulia); limits those of the 1856 law; territories Amazonas and Delta Amacuro; Federal District.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Between the 1909-08-05 constitution and 1933 the only inter-state change listed is an Aragua–Carabobo adjustment in 1917; then the 1933-12-13 Carabobo/Aragua/Guárico exchanges, 1948 Cubagua, 1995, 1998.",
+       "accessed": "2026-10-06"
+      },
+      {
        "url": "https://www.statoids.com/uve.html",
        "title": "Statoids — States of Venezuela (change history)",
        "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
        "accessed": "2026-10-05"
       }
      ],
-     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes."
+     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes. Extended to 1909-08-05: no inter-state change touching this unit is listed between the 1909 constitution and 1933."
     }
    ]
   },
@@ -241,7 +301,7 @@
    "wikidata": "Q165582",
    "spans": [
     {
-     "from": "1933-12-13",
+     "from": "1909-08-05",
      "precision": "day",
      "to": null,
      "atoms": [
@@ -249,13 +309,25 @@
      ],
      "sources": [
       {
+       "url": "https://derechodelacultura.org/wp-content/uploads/2015/02/3_1_1_ven_cn_eu_1909.pdf",
+       "title": "Constitución de los Estados Unidos de Venezuela de 1909 (promulgated 5 August 1909)",
+       "says": "Twenty states, each a former state of 1864 (Mérida gains Parroquia Independencia from Zulia); limits those of the 1856 law; territories Amazonas and Delta Amacuro; Federal District.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Between the 1909-08-05 constitution and 1933 the only inter-state change listed is an Aragua–Carabobo adjustment in 1917; then the 1933-12-13 Carabobo/Aragua/Guárico exchanges, 1948 Cubagua, 1995, 1998.",
+       "accessed": "2026-10-06"
+      },
+      {
        "url": "https://www.statoids.com/uve.html",
        "title": "Statoids — States of Venezuela (change history)",
        "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
        "accessed": "2026-10-05"
       }
      ],
-     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes."
+     "dateNote": "1909 art. 4: Mérida took the Parroquia Independencia from Zulia at the founding of this state layout. Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes. Extended to 1909-08-05: no inter-state change touching this unit is listed between the 1909 constitution and 1933."
     }
    ]
   },
@@ -269,7 +341,7 @@
    "wikidata": "Q191174",
    "spans": [
     {
-     "from": "1933-12-13",
+     "from": "1909-08-05",
      "precision": "day",
      "to": null,
      "atoms": [
@@ -277,13 +349,25 @@
      ],
      "sources": [
       {
+       "url": "https://derechodelacultura.org/wp-content/uploads/2015/02/3_1_1_ven_cn_eu_1909.pdf",
+       "title": "Constitución de los Estados Unidos de Venezuela de 1909 (promulgated 5 August 1909)",
+       "says": "Twenty states, each a former state of 1864 (Mérida gains Parroquia Independencia from Zulia); limits those of the 1856 law; territories Amazonas and Delta Amacuro; Federal District.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Between the 1909-08-05 constitution and 1933 the only inter-state change listed is an Aragua–Carabobo adjustment in 1917; then the 1933-12-13 Carabobo/Aragua/Guárico exchanges, 1948 Cubagua, 1995, 1998.",
+       "accessed": "2026-10-06"
+      },
+      {
        "url": "https://www.statoids.com/uve.html",
        "title": "Statoids — States of Venezuela (change history)",
        "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
        "accessed": "2026-10-05"
       }
      ],
-     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes."
+     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes. Extended to 1909-08-05: no inter-state change touching this unit is listed between the 1909 constitution and 1933."
     }
    ]
   },
@@ -297,7 +381,7 @@
    "wikidata": "Q205776",
    "spans": [
     {
-     "from": "1933-12-13",
+     "from": "1909-08-05",
      "precision": "day",
      "to": null,
      "atoms": [
@@ -305,13 +389,25 @@
      ],
      "sources": [
       {
+       "url": "https://derechodelacultura.org/wp-content/uploads/2015/02/3_1_1_ven_cn_eu_1909.pdf",
+       "title": "Constitución de los Estados Unidos de Venezuela de 1909 (promulgated 5 August 1909)",
+       "says": "Twenty states, each a former state of 1864 (Mérida gains Parroquia Independencia from Zulia); limits those of the 1856 law; territories Amazonas and Delta Amacuro; Federal District.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Between the 1909-08-05 constitution and 1933 the only inter-state change listed is an Aragua–Carabobo adjustment in 1917; then the 1933-12-13 Carabobo/Aragua/Guárico exchanges, 1948 Cubagua, 1995, 1998.",
+       "accessed": "2026-10-06"
+      },
+      {
        "url": "https://www.statoids.com/uve.html",
        "title": "Statoids — States of Venezuela (change history)",
        "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
        "accessed": "2026-10-05"
       }
      ],
-     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes."
+     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes. Extended to 1909-08-05: no inter-state change touching this unit is listed between the 1909 constitution and 1933."
     }
    ]
   },
@@ -325,7 +421,7 @@
    "wikidata": "Q205784",
    "spans": [
     {
-     "from": "1933-12-13",
+     "from": "1909-08-05",
      "precision": "day",
      "to": null,
      "atoms": [
@@ -333,13 +429,25 @@
      ],
      "sources": [
       {
+       "url": "https://derechodelacultura.org/wp-content/uploads/2015/02/3_1_1_ven_cn_eu_1909.pdf",
+       "title": "Constitución de los Estados Unidos de Venezuela de 1909 (promulgated 5 August 1909)",
+       "says": "Twenty states, each a former state of 1864 (Mérida gains Parroquia Independencia from Zulia); limits those of the 1856 law; territories Amazonas and Delta Amacuro; Federal District.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Between the 1909-08-05 constitution and 1933 the only inter-state change listed is an Aragua–Carabobo adjustment in 1917; then the 1933-12-13 Carabobo/Aragua/Guárico exchanges, 1948 Cubagua, 1995, 1998.",
+       "accessed": "2026-10-06"
+      },
+      {
        "url": "https://www.statoids.com/uve.html",
        "title": "Statoids — States of Venezuela (change history)",
        "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
        "accessed": "2026-10-05"
       }
      ],
-     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes."
+     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes. Extended to 1909-08-05: no inter-state change touching this unit is listed between the 1909 constitution and 1933."
     }
    ]
   },
@@ -353,7 +461,7 @@
    "wikidata": "Q205824",
    "spans": [
     {
-     "from": "1933-12-13",
+     "from": "1909-08-05",
      "precision": "day",
      "to": null,
      "atoms": [
@@ -361,13 +469,25 @@
      ],
      "sources": [
       {
+       "url": "https://derechodelacultura.org/wp-content/uploads/2015/02/3_1_1_ven_cn_eu_1909.pdf",
+       "title": "Constitución de los Estados Unidos de Venezuela de 1909 (promulgated 5 August 1909)",
+       "says": "Twenty states, each a former state of 1864 (Mérida gains Parroquia Independencia from Zulia); limits those of the 1856 law; territories Amazonas and Delta Amacuro; Federal District.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Between the 1909-08-05 constitution and 1933 the only inter-state change listed is an Aragua–Carabobo adjustment in 1917; then the 1933-12-13 Carabobo/Aragua/Guárico exchanges, 1948 Cubagua, 1995, 1998.",
+       "accessed": "2026-10-06"
+      },
+      {
        "url": "https://www.statoids.com/uve.html",
        "title": "Statoids — States of Venezuela (change history)",
        "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
        "accessed": "2026-10-05"
       }
      ],
-     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes."
+     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes. Extended to 1909-08-05: no inter-state change touching this unit is listed between the 1909 constitution and 1933."
     }
    ]
   },
@@ -381,7 +501,7 @@
    "wikidata": "Q202068",
    "spans": [
     {
-     "from": "1933-12-13",
+     "from": "1909-08-05",
      "precision": "day",
      "to": null,
      "atoms": [
@@ -389,13 +509,25 @@
      ],
      "sources": [
       {
+       "url": "https://derechodelacultura.org/wp-content/uploads/2015/02/3_1_1_ven_cn_eu_1909.pdf",
+       "title": "Constitución de los Estados Unidos de Venezuela de 1909 (promulgated 5 August 1909)",
+       "says": "Twenty states, each a former state of 1864 (Mérida gains Parroquia Independencia from Zulia); limits those of the 1856 law; territories Amazonas and Delta Amacuro; Federal District.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Between the 1909-08-05 constitution and 1933 the only inter-state change listed is an Aragua–Carabobo adjustment in 1917; then the 1933-12-13 Carabobo/Aragua/Guárico exchanges, 1948 Cubagua, 1995, 1998.",
+       "accessed": "2026-10-06"
+      },
+      {
        "url": "https://www.statoids.com/uve.html",
        "title": "Statoids — States of Venezuela (change history)",
        "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
        "accessed": "2026-10-05"
       }
      ],
-     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes."
+     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes. Extended to 1909-08-05: no inter-state change touching this unit is listed between the 1909 constitution and 1933."
     }
    ]
   },
@@ -409,7 +541,7 @@
    "wikidata": "Q201121",
    "spans": [
     {
-     "from": "1933-12-13",
+     "from": "1909-08-05",
      "precision": "day",
      "to": null,
      "atoms": [
@@ -417,13 +549,25 @@
      ],
      "sources": [
       {
+       "url": "https://derechodelacultura.org/wp-content/uploads/2015/02/3_1_1_ven_cn_eu_1909.pdf",
+       "title": "Constitución de los Estados Unidos de Venezuela de 1909 (promulgated 5 August 1909)",
+       "says": "Twenty states, each a former state of 1864 (Mérida gains Parroquia Independencia from Zulia); limits those of the 1856 law; territories Amazonas and Delta Amacuro; Federal District.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Between the 1909-08-05 constitution and 1933 the only inter-state change listed is an Aragua–Carabobo adjustment in 1917; then the 1933-12-13 Carabobo/Aragua/Guárico exchanges, 1948 Cubagua, 1995, 1998.",
+       "accessed": "2026-10-06"
+      },
+      {
        "url": "https://www.statoids.com/uve.html",
        "title": "Statoids — States of Venezuela (change history)",
        "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
        "accessed": "2026-10-05"
       }
      ],
-     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes."
+     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes. Extended to 1909-08-05: no inter-state change touching this unit is listed between the 1909 constitution and 1933."
     }
    ]
   },
@@ -710,12 +854,13 @@
    "id": "VEN:DistritoFederal@1909",
    "names": {
     "en": "Federal District (Venezuela)",
-    "local": "Distrito Federal"
+    "local": "Distrito Federal",
+    "ja": "連邦区"
    },
    "wikidata": "Q5410691",
    "spans": [
     {
-     "from": "1933-12-13",
+     "from": "1909-08-05",
      "precision": "day",
      "to": "1998-05-29",
      "atoms": [
@@ -723,6 +868,18 @@
       "VEN-42"
      ],
      "sources": [
+      {
+       "url": "https://derechodelacultura.org/wp-content/uploads/2015/02/3_1_1_ven_cn_eu_1909.pdf",
+       "title": "Constitución de los Estados Unidos de Venezuela de 1909 (promulgated 5 August 1909)",
+       "says": "Twenty states, each a former state of 1864 (Mérida gains Parroquia Independencia from Zulia); limits those of the 1856 law; territories Amazonas and Delta Amacuro; Federal District.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Between the 1909-08-05 constitution and 1933 the only inter-state change listed is an Aragua–Carabobo adjustment in 1917; then the 1933-12-13 Carabobo/Aragua/Guárico exchanges, 1948 Cubagua, 1995, 1998.",
+       "accessed": "2026-10-06"
+      },
       {
        "url": "https://www.statoids.com/uve.html",
        "title": "Statoids — States of Venezuela (change history)",
@@ -736,7 +893,7 @@
        "accessed": "2026-10-05"
       }
      ],
-     "dateNote": "Libertador and Vargas departments/municipalities; Vargas municipality later became the whole of Vargas."
+     "dateNote": "1909 art. 10: the city of Caracas with its outer parishes (El Recreo, El Valle, La Vega, Antímano, Macarao, Macuto) and the Vargas department. Libertador and Vargas departments/municipalities; Vargas municipality later became the whole of Vargas. Extended to 1909-08-05: no inter-state change touching this unit is listed between the 1909 constitution and 1933."
     },
     {
      "from": "1998-05-29",
@@ -827,6 +984,19 @@
  ],
  "events": [
   {
+   "date": "1909-08-05",
+   "precision": "day",
+   "what": "Constitution of 1909: twenty states, territories Amazonas and Delta Amacuro, Federal District",
+   "sources": [
+    {
+     "url": "https://derechodelacultura.org/wp-content/uploads/2015/02/3_1_1_ven_cn_eu_1909.pdf",
+     "title": "Constitución de los Estados Unidos de Venezuela de 1909 (promulgated 5 August 1909)",
+     "says": "Twenty states, each a former state of 1864 (Mérida gains Parroquia Independencia from Zulia); limits those of the 1856 law; territories Amazonas and Delta Amacuro; Federal District.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
    "date": "1933-12-13",
    "precision": "day",
    "what": "Turiamo transferred from Carabobo to Aragua; municipalities exchanged between Aragua and Guárico",
@@ -913,6 +1083,18 @@
  ],
  "counts": [
   {
+   "date": "1910-01-01",
+   "n": 23,
+   "sources": [
+    {
+     "url": "https://derechodelacultura.org/wp-content/uploads/2015/02/3_1_1_ven_cn_eu_1909.pdf",
+     "title": "Constitución de los Estados Unidos de Venezuela de 1909 (promulgated 5 August 1909)",
+     "says": "Twenty states, each a former state of 1864 (Mérida gains Parroquia Independencia from Zulia); limits those of the 1856 law; territories Amazonas and Delta Amacuro; Federal District.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
    "date": "1935-01-01",
    "n": 24,
    "sources": [
@@ -940,66 +1122,70 @@
  "atomsOutside": [],
  "unresolved": [
   {
-   "what": "Zulia, Táchira, Apure, Amazonas 1933-12-13 – 1941-09-12",
+   "what": "Zulia, Táchira, Apure, Amazonas 1909-08-05 – 1941-09-12",
    "unit": "VEN:Zulia@1909",
    "atoms": [
     "VEN-31"
    ],
-   "from": "1933-12-13",
+   "from": "1909-08-05",
    "to": "1941-09-12",
    "why": "The 1941 treaty with Colombia moved territory in these states (Sarare basin and Rómulo Gallegos in Apure, Yavita in Amazonas, eastern Perijá in Zulia); before it their outer lines are not the atoms' lines.",
    "checked": [
     "es.wikipedia Tratado López de Mesa-Gil Borges oldid 170963218",
     "en.wikipedia Colombia–Venezuela border oldid 1377302928",
-    "statoids uve.html"
+    "statoids uve.html",
+    "Constitución 1909 (derechodelacultura.org PDF), statoids uve.html"
    ],
    "needs": "pre-1941 boundary line with Colombia (not available as atoms)"
   },
   {
-   "what": "Zulia, Táchira, Apure, Amazonas 1933-12-13 – 1941-09-12",
+   "what": "Zulia, Táchira, Apure, Amazonas 1909-08-05 – 1941-09-12",
    "unit": "VEN:Tachira@1909",
    "atoms": [
     "VEN-28"
    ],
-   "from": "1933-12-13",
+   "from": "1909-08-05",
    "to": "1941-09-12",
    "why": "The 1941 treaty with Colombia moved territory in these states (Sarare basin and Rómulo Gallegos in Apure, Yavita in Amazonas, eastern Perijá in Zulia); before it their outer lines are not the atoms' lines.",
    "checked": [
     "es.wikipedia Tratado López de Mesa-Gil Borges oldid 170963218",
     "en.wikipedia Colombia–Venezuela border oldid 1377302928",
-    "statoids uve.html"
+    "statoids uve.html",
+    "Constitución 1909 (derechodelacultura.org PDF), statoids uve.html"
    ],
    "needs": "pre-1941 boundary line with Colombia (not available as atoms)"
   },
   {
-   "what": "Zulia, Táchira, Apure, Amazonas 1933-12-13 – 1941-09-12",
+   "what": "Zulia, Táchira, Apure, Amazonas 1909-08-05 – 1941-09-12",
    "unit": "VEN:Apure@1909",
    "atoms": [
     "VEN-25"
    ],
-   "from": "1933-12-13",
+   "from": "1909-08-05",
    "to": "1941-09-12",
    "why": "The 1941 treaty with Colombia moved territory in these states (Sarare basin and Rómulo Gallegos in Apure, Yavita in Amazonas, eastern Perijá in Zulia); before it their outer lines are not the atoms' lines.",
    "checked": [
     "es.wikipedia Tratado López de Mesa-Gil Borges oldid 170963218",
     "en.wikipedia Colombia–Venezuela border oldid 1377302928",
-    "statoids uve.html"
+    "statoids uve.html",
+    "Constitución 1909 (derechodelacultura.org PDF), statoids uve.html"
    ],
    "needs": "pre-1941 boundary line with Colombia (not available as atoms)"
   },
   {
-   "what": "Zulia, Táchira, Apure, Amazonas 1933-12-13 – 1941-09-12",
+   "what": "Zulia, Táchira, Apure, Amazonas 1909-08-05 – 1941-09-12",
    "unit": "VEN:Amazonas@1909",
    "atoms": [
     "VEN-38"
    ],
-   "from": "1933-12-13",
+   "from": "1909-08-05",
    "to": "1941-09-12",
    "why": "The 1941 treaty with Colombia moved territory in these states (Sarare basin and Rómulo Gallegos in Apure, Yavita in Amazonas, eastern Perijá in Zulia); before it their outer lines are not the atoms' lines.",
    "checked": [
     "es.wikipedia Tratado López de Mesa-Gil Borges oldid 170963218",
     "en.wikipedia Colombia–Venezuela border oldid 1377302928",
-    "statoids uve.html"
+    "statoids uve.html",
+    "Constitución 1909 (derechodelacultura.org PDF), statoids uve.html"
    ],
    "needs": "pre-1941 boundary line with Colombia (not available as atoms)"
   },
@@ -1009,12 +1195,13 @@
    "atoms": [
     "VEN-39"
    ],
-   "from": "1933-12-13",
+   "from": "1909-08-05",
    "to": "1995-01-25",
    "why": "The 1995 annexation of hamlets by Delta Amacuro moved the Bolívar–Delta Amacuro line inside the present atoms.",
    "checked": [
     "es.wikipedia Estado Delta Amacuro oldid 174833783",
-    "statoids uve.html"
+    "statoids uve.html",
+    "Constitución 1909 (derechodelacultura.org PDF), statoids uve.html"
    ],
    "needs": "parish-level atoms (INE Venezuela parroquias) carrying the pre-1995 line"
   },
@@ -1024,12 +1211,13 @@
    "atoms": [
     "VEN-65"
    ],
-   "from": "1933-12-13",
+   "from": "1909-08-05",
    "to": "1995-01-25",
    "why": "The 1995 annexation of hamlets by Delta Amacuro moved the Bolívar–Delta Amacuro line inside the present atoms.",
    "checked": [
     "es.wikipedia Estado Delta Amacuro oldid 174833783",
-    "statoids uve.html"
+    "statoids uve.html",
+    "Constitución 1909 (derechodelacultura.org PDF), statoids uve.html"
    ],
    "needs": "parish-level atoms (INE Venezuela parroquias) carrying the pre-1995 line"
   },
@@ -1039,25 +1227,32 @@
    "atoms": [
     "VEN-48"
    ],
-   "from": "1933-12-13",
+   "from": "1909-08-05",
    "to": "1949-01-01",
    "why": "Cubagua (inside the Nueva Esparta atom) belonged to the Federal Dependencies until 1947/1948; the two sources disagree on the year, so the span starts only once both agree.",
    "checked": [
     "statoids uve.html",
     "Wikisource Constitución de 1953",
-    "es.wikipedia Dependencias federales oldid 174774087"
+    "es.wikipedia Dependencias federales oldid 174774087",
+    "Constitución 1909 (derechodelacultura.org PDF), statoids uve.html"
    ],
    "needs": "Cubagua as a separate atom, and the 1947 constitution text to fix the date"
   },
   {
-   "what": "Layouts 1909-08-05 – 1933-12-13",
-   "from": "1909-08-05",
-   "to": "1933-12-13",
-   "why": "1917 and 1933 transfers between Carabobo, Aragua and Guárico run through NE atoms. Not claimed (outside scope).",
-   "checked": [
-    "statoids uve.html"
+   "what": "Territorio Colón / Federal Dependencies islands and Cubagua 1909-08-05 – 1928-05-22",
+   "unit": null,
+   "atoms": [
+    "VEN-44",
+    "VEN+99?"
    ],
-   "needs": "municipal atoms (INE Venezuela)"
+   "from": "1909-08-05",
+   "to": "1928-05-22",
+   "why": "The islands were the Territorio Colón (1871 decree) and the Federal Dependencies were created by the 1928 constitution; the 1909 constitution names only Amazonas and Delta Amacuro as territories, and Cubagua (inside the Nueva Esparta atom) was not yet Nueva Esparta's.",
+   "checked": [
+    "statoids uve.html",
+    "Constitución 1909 art. 9–10"
+   ],
+   "needs": "Cubagua as a separate atom and the legal status of the islands 1909–1928"
   },
   {
    "what": "Nueva Esparta and Federal Dependencies before Cubagua's transfer",
@@ -1066,15 +1261,61 @@
     "VEN-44",
     "VEN+99?"
    ],
-   "from": "1933-12-13",
+   "from": "1928-05-22",
    "to": "1949-01-01",
    "why": "Cubagua (inside the Nueva Esparta atom) belonged to the Federal Dependencies until 1947/1948; the two sources disagree on the year, so the span starts only once both agree.",
    "checked": [
     "statoids uve.html",
     "Wikisource Constitución de 1953",
-    "es.wikipedia Dependencias federales oldid 174774087"
+    "es.wikipedia Dependencias federales oldid 174774087",
+    "Constitución 1909 (derechodelacultura.org PDF), statoids uve.html"
    ],
    "needs": "Cubagua as a separate atom, and the 1947 constitution text to fix the date"
+  },
+  {
+   "what": "Aragua, Carabobo, Guárico 1909-08-05 – 1933-12-13",
+   "unit": "VEN:Aragua@1909",
+   "atoms": [
+    "VEN-41"
+   ],
+   "from": "1909-08-05",
+   "to": "1933-12-13",
+   "why": "An Aragua–Carabobo adjustment in 1917 and the 1933-12-13 exchanges (Turiamo from Carabobo to Aragua; municipalities between Aragua and Guárico, Aragua net +1,414 km²) moved lines that run through these NE atoms.",
+   "checked": [
+    "statoids uve.html",
+    "Constitución 1909 (derechodelacultura.org PDF)"
+   ],
+   "needs": "municipal atoms carrying the pre-1933 lines (the 1917 and 1933 instruments name the moved municipalities)"
+  },
+  {
+   "what": "Aragua, Carabobo, Guárico 1909-08-05 – 1933-12-13",
+   "unit": "VEN:Carabobo@1909",
+   "atoms": [
+    "VEN-33"
+   ],
+   "from": "1909-08-05",
+   "to": "1933-12-13",
+   "why": "An Aragua–Carabobo adjustment in 1917 and the 1933-12-13 exchanges (Turiamo from Carabobo to Aragua; municipalities between Aragua and Guárico, Aragua net +1,414 km²) moved lines that run through these NE atoms.",
+   "checked": [
+    "statoids uve.html",
+    "Constitución 1909 (derechodelacultura.org PDF)"
+   ],
+   "needs": "municipal atoms carrying the pre-1933 lines (the 1917 and 1933 instruments name the moved municipalities)"
+  },
+  {
+   "what": "Aragua, Carabobo, Guárico 1909-08-05 – 1933-12-13",
+   "unit": "VEN:Guarico@1909",
+   "atoms": [
+    "VEN-45"
+   ],
+   "from": "1909-08-05",
+   "to": "1933-12-13",
+   "why": "An Aragua–Carabobo adjustment in 1917 and the 1933-12-13 exchanges (Turiamo from Carabobo to Aragua; municipalities between Aragua and Guárico, Aragua net +1,414 km²) moved lines that run through these NE atoms.",
+   "checked": [
+    "statoids uve.html",
+    "Constitución 1909 (derechodelacultura.org PDF)"
+   ],
+   "needs": "municipal atoms carrying the pre-1933 lines (the 1917 and 1933 instruments name the moved municipalities)"
   }
  ]
 }

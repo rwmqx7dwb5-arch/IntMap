@@ -1,0 +1,804 @@
+{
+  "country": "MOZ",
+  "atomSet": "gb-adm2@2026-10-06",
+  "scope": {
+    "from": "1954-10-20",
+    "to": "1975-06-24"
+  },
+  "polityNote": "Portuguese Mozambique (overseas province) from the district reform of 1954-10-20 to independence; the units are the colonial distritos (9, then 10 from 1970-08-05). Atoms: geoBoundaries MOZ ADM2 (INE / OCHA ROSEA 2019, 159 districts incl. the city districts and Lago Niassa, CC BY 3.0 IGO). Province/district = union of present districts (gb ADM1 is OSM/Wambacher and does not nest; membership is INE’s, the best ADM1 overlap of every district agrees). Two gb atoms (Ilha Licom = Likoma, Ilha Risunodo = Chizumulu) are Malawian islands and are named outside. Each district is the union of the present districts of its successor province: statoids lists no boundary change between 1954 and independence other than the 1970 split of Manica e Sofala and the 1975 transfer of Tambara and Guro, both of which follow present district lines. The lake sector off Niassa became Portuguese by the 1954 Anglo-Portuguese agreement, whose day relative to the reform is not established.",
+  "units": [
+    {
+      "id": "MOZ:CaboDelgado@1954",
+      "names": {
+        "en": "Cabo Delgado District",
+        "ja": "カボ・デルガード地区",
+        "local": "Distrito de Cabo Delgado"
+      },
+      "spans": [
+        {
+          "from": "1954-10-20",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MOZ-ADM2-85939544B72266919853878",
+            "MOZ-ADM2-85939544B58572468312701",
+            "MOZ-ADM2-85939544B22682737370097",
+            "MOZ-ADM2-85939544B35031207172791",
+            "MOZ-ADM2-85939544B74766547400417",
+            "MOZ-ADM2-85939544B73793826279493",
+            "MOZ-ADM2-85939544B68242516881190",
+            "MOZ-ADM2-85939544B28801965730987",
+            "MOZ-ADM2-85939544B43724113746926",
+            "MOZ-ADM2-85939544B26812417695120",
+            "MOZ-ADM2-85939544B2345621089228",
+            "MOZ-ADM2-85939544B54758933622764",
+            "MOZ-ADM2-85939544B12924931865401",
+            "MOZ-ADM2-85939544B29216683074298",
+            "MOZ-ADM2-85939544B28759712944697",
+            "MOZ-ADM2-85939544B92892346973749",
+            "MOZ-ADM2-85939544B17838134976629"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umz.html",
+              "title": "Statoids: Provinces of Mozambique (G. Law, updated 2015-06-30)",
+              "says": "1954-10-20: Cabo Delgado and Moçambique from Niassa, Sul do Save into Gaza, Inhambane, Lourenço Marques, Tete from Manica e Sofala; independence 1975-06-25; renames 1976-77; Maputo city separated (~1984). No other boundary change listed.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Created or bounded by the reform of 1954-10-20 (statoids). No change to this unit’s outline is listed after the 1954 reform (statoids; the only later transfer is Tambara/Guro in 1975), so the union of its present districts is its outline."
+        }
+      ]
+    },
+    {
+      "id": "MOZ:Mocambique@1954",
+      "names": {
+        "en": "Moçambique District",
+        "ja": "モサンビーク地区",
+        "local": "Distrito de Moçambique"
+      },
+      "spans": [
+        {
+          "from": "1954-10-20",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MOZ-ADM2-85939544B37446089230364",
+            "MOZ-ADM2-85939544B80247740523844",
+            "MOZ-ADM2-85939544B26201267157646",
+            "MOZ-ADM2-85939544B1665883546251",
+            "MOZ-ADM2-85939544B64339198961844",
+            "MOZ-ADM2-85939544B80255250880532",
+            "MOZ-ADM2-85939544B68369930448432",
+            "MOZ-ADM2-85939544B71599092008043",
+            "MOZ-ADM2-85939544B53018455745149",
+            "MOZ-ADM2-85939544B76219123027909",
+            "MOZ-ADM2-85939544B68532442394498",
+            "MOZ-ADM2-85939544B78261911608408",
+            "MOZ-ADM2-85939544B28799715012212",
+            "MOZ-ADM2-85939544B26264863650897",
+            "MOZ-ADM2-85939544B62807674730552",
+            "MOZ-ADM2-85939544B36345946298130",
+            "MOZ-ADM2-85939544B70859422468328",
+            "MOZ-ADM2-85939544B84793619782311",
+            "MOZ-ADM2-85939544B32350532447413",
+            "MOZ-ADM2-85939544B30642509050116",
+            "MOZ-ADM2-85939544B7087427782291",
+            "MOZ-ADM2-85939544B80156310814638",
+            "MOZ-ADM2-85939544B86182788788384"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umz.html",
+              "title": "Statoids: Provinces of Mozambique (G. Law, updated 2015-06-30)",
+              "says": "1954-10-20: Cabo Delgado and Moçambique from Niassa, Sul do Save into Gaza, Inhambane, Lourenço Marques, Tete from Manica e Sofala; independence 1975-06-25; renames 1976-77; Maputo city separated (~1984). No other boundary change listed.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Created or bounded by the reform of 1954-10-20 (statoids). No change to this unit’s outline is listed after the 1954 reform (statoids; the only later transfer is Tambara/Guro in 1975), so the union of its present districts is its outline."
+        }
+      ]
+    },
+    {
+      "id": "MOZ:Zambezia@1954",
+      "names": {
+        "en": "Zambézia District",
+        "ja": "ザンベジア地区",
+        "local": "Distrito da Zambézia"
+      },
+      "spans": [
+        {
+          "from": "1954-10-20",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MOZ-ADM2-85939544B82585183947830",
+            "MOZ-ADM2-85939544B56224707964526",
+            "MOZ-ADM2-85939544B52550879093260",
+            "MOZ-ADM2-85939544B83504353793512",
+            "MOZ-ADM2-85939544B55280380491119",
+            "MOZ-ADM2-85939544B5310870224650",
+            "MOZ-ADM2-85939544B50332228011696",
+            "MOZ-ADM2-85939544B33364168787730",
+            "MOZ-ADM2-85939544B65123265698186",
+            "MOZ-ADM2-85939544B84899286441367",
+            "MOZ-ADM2-85939544B61462515035200",
+            "MOZ-ADM2-85939544B24654814708458",
+            "MOZ-ADM2-85939544B38416709222197",
+            "MOZ-ADM2-85939544B40669081557189",
+            "MOZ-ADM2-85939544B72257349680566",
+            "MOZ-ADM2-85939544B3686787806290",
+            "MOZ-ADM2-85939544B172449318268",
+            "MOZ-ADM2-85939544B26352047498043",
+            "MOZ-ADM2-85939544B358257057392",
+            "MOZ-ADM2-85939544B54372279750556",
+            "MOZ-ADM2-85939544B74893021327700",
+            "MOZ-ADM2-85939544B64189871111735",
+            "MOZ-ADM2-85939544B24973508625893"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umz.html",
+              "title": "Statoids: Provinces of Mozambique (G. Law, updated 2015-06-30)",
+              "says": "1954-10-20: Cabo Delgado and Moçambique from Niassa, Sul do Save into Gaza, Inhambane, Lourenço Marques, Tete from Manica e Sofala; independence 1975-06-25; renames 1976-77; Maputo city separated (~1984). No other boundary change listed.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Created or bounded by the reform of 1954-10-20 (statoids). No change to this unit’s outline is listed after the 1954 reform (statoids; the only later transfer is Tambara/Guro in 1975), so the union of its present districts is its outline."
+        }
+      ]
+    },
+    {
+      "id": "MOZ:Tete@1954",
+      "names": {
+        "en": "Tete District",
+        "ja": "テテ地区",
+        "local": "Distrito de Tete"
+      },
+      "spans": [
+        {
+          "from": "1954-10-20",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MOZ-ADM2-85939544B58328889190937",
+            "MOZ-ADM2-85939544B50674606181773",
+            "MOZ-ADM2-85939544B38440784035247",
+            "MOZ-ADM2-85939544B96154885816761",
+            "MOZ-ADM2-85939544B26060528055494",
+            "MOZ-ADM2-85939544B8789366603018",
+            "MOZ-ADM2-85939544B34189520387166",
+            "MOZ-ADM2-85939544B12573256040215",
+            "MOZ-ADM2-85939544B82621359487865",
+            "MOZ-ADM2-85939544B63348478902842",
+            "MOZ-ADM2-85939544B71238690131788",
+            "MOZ-ADM2-85939544B94790467869630",
+            "MOZ-ADM2-85939544B4853369515096",
+            "MOZ-ADM2-85939544B33116803936279",
+            "MOZ-ADM2-85939544B55684561557182"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umz.html",
+              "title": "Statoids: Provinces of Mozambique (G. Law, updated 2015-06-30)",
+              "says": "1954-10-20: Cabo Delgado and Moçambique from Niassa, Sul do Save into Gaza, Inhambane, Lourenço Marques, Tete from Manica e Sofala; independence 1975-06-25; renames 1976-77; Maputo city separated (~1984). No other boundary change listed.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Created or bounded by the reform of 1954-10-20 (statoids). No change to this unit’s outline is listed after the 1954 reform (statoids; the only later transfer is Tambara/Guro in 1975), so the union of its present districts is its outline."
+        }
+      ]
+    },
+    {
+      "id": "MOZ:Inhambane@1954",
+      "names": {
+        "en": "Inhambane District",
+        "ja": "イニャンバネ地区",
+        "local": "Distrito de Inhambane"
+      },
+      "spans": [
+        {
+          "from": "1954-10-20",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MOZ-ADM2-85939544B42929876675904",
+            "MOZ-ADM2-85939544B65323255513357",
+            "MOZ-ADM2-85939544B19302565001464",
+            "MOZ-ADM2-85939544B19130781251351",
+            "MOZ-ADM2-85939544B37735984540105",
+            "MOZ-ADM2-85939544B74614871029564",
+            "MOZ-ADM2-85939544B63223307878319",
+            "MOZ-ADM2-85939544B45831091528789",
+            "MOZ-ADM2-85939544B70195584825603",
+            "MOZ-ADM2-85939544B69817996790019",
+            "MOZ-ADM2-85939544B58581363474884",
+            "MOZ-ADM2-85939544B96403406066950",
+            "MOZ-ADM2-85939544B85400452133709",
+            "MOZ-ADM2-85939544B9969435799517"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umz.html",
+              "title": "Statoids: Provinces of Mozambique (G. Law, updated 2015-06-30)",
+              "says": "1954-10-20: Cabo Delgado and Moçambique from Niassa, Sul do Save into Gaza, Inhambane, Lourenço Marques, Tete from Manica e Sofala; independence 1975-06-25; renames 1976-77; Maputo city separated (~1984). No other boundary change listed.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Created or bounded by the reform of 1954-10-20 (statoids). No change to this unit’s outline is listed after the 1954 reform (statoids; the only later transfer is Tambara/Guro in 1975), so the union of its present districts is its outline."
+        }
+      ]
+    },
+    {
+      "id": "MOZ:Gaza@1954",
+      "names": {
+        "en": "Gaza District",
+        "ja": "ガザ地区",
+        "local": "Distrito de Gaza"
+      },
+      "spans": [
+        {
+          "from": "1954-10-20",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MOZ-ADM2-85939544B43586850524471",
+            "MOZ-ADM2-85939544B24219595709494",
+            "MOZ-ADM2-85939544B81330952052148",
+            "MOZ-ADM2-85939544B66615302004978",
+            "MOZ-ADM2-85939544B98651386750815",
+            "MOZ-ADM2-85939544B8547864433088",
+            "MOZ-ADM2-85939544B66771942168992",
+            "MOZ-ADM2-85939544B15867606683535",
+            "MOZ-ADM2-85939544B23893317259127",
+            "MOZ-ADM2-85939544B37239521731461",
+            "MOZ-ADM2-85939544B1211152631593",
+            "MOZ-ADM2-85939544B55875453752427",
+            "MOZ-ADM2-85939544B83676990250137",
+            "MOZ-ADM2-85939544B45935423796795"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umz.html",
+              "title": "Statoids: Provinces of Mozambique (G. Law, updated 2015-06-30)",
+              "says": "1954-10-20: Cabo Delgado and Moçambique from Niassa, Sul do Save into Gaza, Inhambane, Lourenço Marques, Tete from Manica e Sofala; independence 1975-06-25; renames 1976-77; Maputo city separated (~1984). No other boundary change listed.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Created or bounded by the reform of 1954-10-20 (statoids). No change to this unit’s outline is listed after the 1954 reform (statoids; the only later transfer is Tambara/Guro in 1975), so the union of its present districts is its outline."
+        }
+      ]
+    },
+    {
+      "id": "MOZ:LourencoMarques@1954",
+      "names": {
+        "en": "Lourenço Marques District",
+        "ja": "ロウレンソ・マルケス地区",
+        "local": "Distrito de Lourenço Marques"
+      },
+      "spans": [
+        {
+          "from": "1954-10-20",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MOZ-ADM2-85939544B59479814848654",
+            "MOZ-ADM2-85939544B68927430168058",
+            "MOZ-ADM2-85939544B12261721998883",
+            "MOZ-ADM2-85939544B2591372162698",
+            "MOZ-ADM2-85939544B97303459234614",
+            "MOZ-ADM2-85939544B91620585279817",
+            "MOZ-ADM2-85939544B308430160587",
+            "MOZ-ADM2-85939544B51879158696861",
+            "MOZ-ADM2-85939544B88728478280907"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umz.html",
+              "title": "Statoids: Provinces of Mozambique (G. Law, updated 2015-06-30)",
+              "says": "1954-10-20: Cabo Delgado and Moçambique from Niassa, Sul do Save into Gaza, Inhambane, Lourenço Marques, Tete from Manica e Sofala; independence 1975-06-25; renames 1976-77; Maputo city separated (~1984). No other boundary change listed.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Created or bounded by the reform of 1954-10-20 (statoids). No change to this unit’s outline is listed after the 1954 reform (statoids; the only later transfer is Tambara/Guro in 1975), so the union of its present districts is its outline."
+        }
+      ]
+    },
+    {
+      "id": "MOZ:Niassa@1954",
+      "names": {
+        "en": "Niassa District",
+        "ja": "ニアサ地区",
+        "local": "Distrito do Niassa"
+      },
+      "spans": [
+        {
+          "from": "1954-10-20",
+          "precision": "day",
+          "to": "1955",
+          "atoms": [
+            "MOZ-ADM2-85939544B55402666252817",
+            "MOZ-ADM2-85939544B86519405521682",
+            "MOZ-ADM2-85939544B26738067837562",
+            "MOZ-ADM2-85939544B95923837460414",
+            "MOZ-ADM2-85939544B27352268742856",
+            "MOZ-ADM2-85939544B26392807278532",
+            "MOZ-ADM2-85939544B52795804394919",
+            "MOZ-ADM2-85939544B69199020344442",
+            "MOZ-ADM2-85939544B1529593178446",
+            "MOZ-ADM2-85939544B99370318353636",
+            "MOZ-ADM2-85939544B92418523619922",
+            "MOZ-ADM2-85939544B62365198391986",
+            "MOZ-ADM2-85939544B16952446601864",
+            "MOZ-ADM2-85939544B48761792497071",
+            "MOZ-ADM2-85939544B33000714085001",
+            "MOZ-ADM2-85939544B2234925194697"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umz.html",
+              "title": "Statoids: Provinces of Mozambique (G. Law, updated 2015-06-30)",
+              "says": "1954-10-20: Cabo Delgado and Moçambique from Niassa, Sul do Save into Gaza, Inhambane, Lourenço Marques, Tete from Manica e Sofala; independence 1975-06-25; renames 1976-77; Maputo city separated (~1984). No other boundary change listed.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1378635373",
+              "title": "Wikipedia: Lake Malawi, rev. 1378635373",
+              "says": "A 1954 Anglo-Portuguese agreement made the middle of the lake the boundary, except Likoma and Chizumulu islands, which stayed British and are now Malawi.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Created or bounded by the reform of 1954-10-20 (statoids). Without the lake sector until the 1954 agreement is in force (see unresolved)."
+        },
+        {
+          "from": "1955",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "MOZ-ADM2-85939544B11916103118899",
+            "MOZ-ADM2-85939544B55402666252817",
+            "MOZ-ADM2-85939544B86519405521682",
+            "MOZ-ADM2-85939544B26738067837562",
+            "MOZ-ADM2-85939544B95923837460414",
+            "MOZ-ADM2-85939544B27352268742856",
+            "MOZ-ADM2-85939544B26392807278532",
+            "MOZ-ADM2-85939544B52795804394919",
+            "MOZ-ADM2-85939544B69199020344442",
+            "MOZ-ADM2-85939544B1529593178446",
+            "MOZ-ADM2-85939544B99370318353636",
+            "MOZ-ADM2-85939544B92418523619922",
+            "MOZ-ADM2-85939544B62365198391986",
+            "MOZ-ADM2-85939544B16952446601864",
+            "MOZ-ADM2-85939544B48761792497071",
+            "MOZ-ADM2-85939544B33000714085001",
+            "MOZ-ADM2-85939544B2234925194697"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umz.html",
+              "title": "Statoids: Provinces of Mozambique (G. Law, updated 2015-06-30)",
+              "says": "1954-10-20: Cabo Delgado and Moçambique from Niassa, Sul do Save into Gaza, Inhambane, Lourenço Marques, Tete from Manica e Sofala; independence 1975-06-25; renames 1976-77; Maputo city separated (~1984). No other boundary change listed.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1378635373",
+              "title": "Wikipedia: Lake Malawi, rev. 1378635373",
+              "says": "A 1954 Anglo-Portuguese agreement made the middle of the lake the boundary, except Likoma and Chizumulu islands, which stayed British and are now Malawi.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1377838870",
+              "title": "Wikipedia: Likoma Island, rev. 1377838870",
+              "says": "Likoma and Chizumulu belong to Malawi (Likoma District), exclaves surrounded by Mozambican waters.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "With the Mozambican sector of Lake Niassa (median line, 1954 agreement); Likoma and Chizumulu remain British."
+        }
+      ]
+    },
+    {
+      "id": "MOZ:ManicaESofala@1954",
+      "names": {
+        "en": "Manica e Sofala District",
+        "ja": "マニカ・エ・ソファラ地区",
+        "local": "Distrito de Manica e Sofala"
+      },
+      "spans": [
+        {
+          "from": "1954-10-20",
+          "precision": "day",
+          "to": "1970-08-05",
+          "atoms": [
+            "MOZ-ADM2-85939544B20117006553770",
+            "MOZ-ADM2-85939544B71036498933536",
+            "MOZ-ADM2-85939544B86118750013731",
+            "MOZ-ADM2-85939544B86319968156717",
+            "MOZ-ADM2-85939544B24800488676804",
+            "MOZ-ADM2-85939544B88211826741163",
+            "MOZ-ADM2-85939544B32725727804377",
+            "MOZ-ADM2-85939544B72355494669336",
+            "MOZ-ADM2-85939544B81104327117882",
+            "MOZ-ADM2-85939544B78941967379031",
+            "MOZ-ADM2-85939544B35135302322965",
+            "MOZ-ADM2-85939544B829507062217",
+            "MOZ-ADM2-85939544B25886081823580",
+            "MOZ-ADM2-85939544B96550484342715",
+            "MOZ-ADM2-85939544B66501899539367",
+            "MOZ-ADM2-85939544B94652077383293",
+            "MOZ-ADM2-85939544B48412147332355",
+            "MOZ-ADM2-85939544B71313946873981",
+            "MOZ-ADM2-85939544B78683919401949",
+            "MOZ-ADM2-85939544B35485552295049",
+            "MOZ-ADM2-85939544B84282844658581",
+            "MOZ-ADM2-85939544B17350721147016",
+            "MOZ-ADM2-85939544B98429522964184",
+            "MOZ-ADM2-85939544B41216917110496",
+            "MOZ-ADM2-85939544B50673994435668"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umz.html",
+              "title": "Statoids: Provinces of Mozambique (G. Law, updated 2015-06-30)",
+              "says": "1954-10-20: Cabo Delgado and Moçambique from Niassa, Sul do Save into Gaza, Inhambane, Lourenço Marques, Tete from Manica e Sofala; independence 1975-06-25; renames 1976-77; Maputo city separated (~1984). No other boundary change listed.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=70677288",
+              "title": "Wikipédia (pt): Manica (província), rev. 70677288",
+              "says": "Manica e Sofala divided 5 Aug 1970 into Vila Pery and Sofala; Decreto-Lei 61/75 of 3 June 1975 moved Tambara and Guro from Sofala to Vila Pery (now Manica).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=73109674",
+              "title": "Wikipédia (pt): Sofala (província), rev. 73109674",
+              "says": "Sofala district created 5 Aug 1970; by Decreto-Lei 61/75 of 3 June 1975, Tambara and Guro transferred to Vila Pery.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Created or bounded by the reform of 1954-10-20 (statoids). Tete was split from it in 1954; divided 1970-08-05."
+        }
+      ]
+    },
+    {
+      "id": "MOZ:VilaPery@1970",
+      "names": {
+        "en": "Vila Pery District (Manica)",
+        "ja": "ヴィラ・ペリ地区",
+        "local": "Distrito de Vila Pery"
+      },
+      "spans": [
+        {
+          "from": "1970-08-05",
+          "precision": "day",
+          "to": "1975-06-03",
+          "atoms": [
+            "MOZ-ADM2-85939544B20117006553770",
+            "MOZ-ADM2-85939544B71036498933536",
+            "MOZ-ADM2-85939544B24800488676804",
+            "MOZ-ADM2-85939544B88211826741163",
+            "MOZ-ADM2-85939544B32725727804377",
+            "MOZ-ADM2-85939544B72355494669336",
+            "MOZ-ADM2-85939544B81104327117882",
+            "MOZ-ADM2-85939544B78941967379031",
+            "MOZ-ADM2-85939544B35135302322965",
+            "MOZ-ADM2-85939544B829507062217"
+          ],
+          "sources": [
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=70677288",
+              "title": "Wikipédia (pt): Manica (província), rev. 70677288",
+              "says": "Manica e Sofala divided 5 Aug 1970 into Vila Pery and Sofala; Decreto-Lei 61/75 of 3 June 1975 moved Tambara and Guro from Sofala to Vila Pery (now Manica).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=73109674",
+              "title": "Wikipédia (pt): Sofala (província), rev. 73109674",
+              "says": "Sofala district created 5 Aug 1970; by Decreto-Lei 61/75 of 3 June 1975, Tambara and Guro transferred to Vila Pery.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=70677307",
+              "title": "Wikipédia (pt): Guro (distrito), rev. 70677307",
+              "says": "Guro district was transferred from Sofala to Vila Pery (Manica) by Decreto-Lei 61/75 of 3 June 1975.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=70677306",
+              "title": "Wikipédia (pt): Tambara (distrito), rev. 70677306",
+              "says": "Tambara district was transferred from Sofala to Vila Pery (Manica) by Decreto-Lei 61/75 of 3 June 1975.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Tambara and Guro were then in Sofala."
+        },
+        {
+          "from": "1975-06-03",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MOZ-ADM2-85939544B20117006553770",
+            "MOZ-ADM2-85939544B71036498933536",
+            "MOZ-ADM2-85939544B86118750013731",
+            "MOZ-ADM2-85939544B86319968156717",
+            "MOZ-ADM2-85939544B24800488676804",
+            "MOZ-ADM2-85939544B88211826741163",
+            "MOZ-ADM2-85939544B32725727804377",
+            "MOZ-ADM2-85939544B72355494669336",
+            "MOZ-ADM2-85939544B81104327117882",
+            "MOZ-ADM2-85939544B78941967379031",
+            "MOZ-ADM2-85939544B35135302322965",
+            "MOZ-ADM2-85939544B829507062217"
+          ],
+          "sources": [
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=70677288",
+              "title": "Wikipédia (pt): Manica (província), rev. 70677288",
+              "says": "Manica e Sofala divided 5 Aug 1970 into Vila Pery and Sofala; Decreto-Lei 61/75 of 3 June 1975 moved Tambara and Guro from Sofala to Vila Pery (now Manica).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=73109674",
+              "title": "Wikipédia (pt): Sofala (província), rev. 73109674",
+              "says": "Sofala district created 5 Aug 1970; by Decreto-Lei 61/75 of 3 June 1975, Tambara and Guro transferred to Vila Pery.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=70677307",
+              "title": "Wikipédia (pt): Guro (distrito), rev. 70677307",
+              "says": "Guro district was transferred from Sofala to Vila Pery (Manica) by Decreto-Lei 61/75 of 3 June 1975.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=70677306",
+              "title": "Wikipédia (pt): Tambara (distrito), rev. 70677306",
+              "says": "Tambara district was transferred from Sofala to Vila Pery (Manica) by Decreto-Lei 61/75 of 3 June 1975.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=63909474",
+              "title": "Wikipédia (pt): Macossa (distrito), rev. 63909474",
+              "says": "Until the reform of 25 June 1986 Macossa was an administrative post of Báruè district (Manica), so the 1975 transfer is exactly Tambara + Guro.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "With Tambara and Guro (Decreto-Lei 61/75); Macossa was an internal post of Báruè, so the transfer is exactly the two present districts."
+        }
+      ]
+    },
+    {
+      "id": "MOZ:Sofala@1970",
+      "names": {
+        "en": "Sofala District",
+        "ja": "ソファラ地区",
+        "local": "Distrito de Sofala"
+      },
+      "spans": [
+        {
+          "from": "1970-08-05",
+          "precision": "day",
+          "to": "1975-06-03",
+          "atoms": [
+            "MOZ-ADM2-85939544B25886081823580",
+            "MOZ-ADM2-85939544B96550484342715",
+            "MOZ-ADM2-85939544B66501899539367",
+            "MOZ-ADM2-85939544B94652077383293",
+            "MOZ-ADM2-85939544B48412147332355",
+            "MOZ-ADM2-85939544B71313946873981",
+            "MOZ-ADM2-85939544B78683919401949",
+            "MOZ-ADM2-85939544B35485552295049",
+            "MOZ-ADM2-85939544B84282844658581",
+            "MOZ-ADM2-85939544B17350721147016",
+            "MOZ-ADM2-85939544B98429522964184",
+            "MOZ-ADM2-85939544B41216917110496",
+            "MOZ-ADM2-85939544B50673994435668",
+            "MOZ-ADM2-85939544B86118750013731",
+            "MOZ-ADM2-85939544B86319968156717"
+          ],
+          "sources": [
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=70677288",
+              "title": "Wikipédia (pt): Manica (província), rev. 70677288",
+              "says": "Manica e Sofala divided 5 Aug 1970 into Vila Pery and Sofala; Decreto-Lei 61/75 of 3 June 1975 moved Tambara and Guro from Sofala to Vila Pery (now Manica).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=73109674",
+              "title": "Wikipédia (pt): Sofala (província), rev. 73109674",
+              "says": "Sofala district created 5 Aug 1970; by Decreto-Lei 61/75 of 3 June 1975, Tambara and Guro transferred to Vila Pery.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=70677307",
+              "title": "Wikipédia (pt): Guro (distrito), rev. 70677307",
+              "says": "Guro district was transferred from Sofala to Vila Pery (Manica) by Decreto-Lei 61/75 of 3 June 1975.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=70677306",
+              "title": "Wikipédia (pt): Tambara (distrito), rev. 70677306",
+              "says": "Tambara district was transferred from Sofala to Vila Pery (Manica) by Decreto-Lei 61/75 of 3 June 1975.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Including Tambara and Guro."
+        },
+        {
+          "from": "1975-06-03",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MOZ-ADM2-85939544B25886081823580",
+            "MOZ-ADM2-85939544B96550484342715",
+            "MOZ-ADM2-85939544B66501899539367",
+            "MOZ-ADM2-85939544B94652077383293",
+            "MOZ-ADM2-85939544B48412147332355",
+            "MOZ-ADM2-85939544B71313946873981",
+            "MOZ-ADM2-85939544B78683919401949",
+            "MOZ-ADM2-85939544B35485552295049",
+            "MOZ-ADM2-85939544B84282844658581",
+            "MOZ-ADM2-85939544B17350721147016",
+            "MOZ-ADM2-85939544B98429522964184",
+            "MOZ-ADM2-85939544B41216917110496",
+            "MOZ-ADM2-85939544B50673994435668"
+          ],
+          "sources": [
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=70677288",
+              "title": "Wikipédia (pt): Manica (província), rev. 70677288",
+              "says": "Manica e Sofala divided 5 Aug 1970 into Vila Pery and Sofala; Decreto-Lei 61/75 of 3 June 1975 moved Tambara and Guro from Sofala to Vila Pery (now Manica).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=73109674",
+              "title": "Wikipédia (pt): Sofala (província), rev. 73109674",
+              "says": "Sofala district created 5 Aug 1970; by Decreto-Lei 61/75 of 3 June 1975, Tambara and Guro transferred to Vila Pery.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=70677307",
+              "title": "Wikipédia (pt): Guro (distrito), rev. 70677307",
+              "says": "Guro district was transferred from Sofala to Vila Pery (Manica) by Decreto-Lei 61/75 of 3 June 1975.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=70677306",
+              "title": "Wikipédia (pt): Tambara (distrito), rev. 70677306",
+              "says": "Tambara district was transferred from Sofala to Vila Pery (Manica) by Decreto-Lei 61/75 of 3 June 1975.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "After Tambara and Guro went to Vila Pery."
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1954-10-20",
+      "precision": "day",
+      "what": "District reform: nine districts",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/umz.html",
+          "title": "Statoids: Provinces of Mozambique (G. Law, updated 2015-06-30)",
+          "says": "1954-10-20: Cabo Delgado and Moçambique from Niassa, Sul do Save into Gaza, Inhambane, Lourenço Marques, Tete from Manica e Sofala; independence 1975-06-25; renames 1976-77; Maputo city separated (~1984). No other boundary change listed.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "1970-08-05",
+      "precision": "day",
+      "what": "Manica e Sofala divided into Vila Pery and Sofala (Tambara and Guro in Sofala)",
+      "sources": [
+        {
+          "url": "https://pt.wikipedia.org/w/index.php?oldid=70677288",
+          "title": "Wikipédia (pt): Manica (província), rev. 70677288",
+          "says": "Manica e Sofala divided 5 Aug 1970 into Vila Pery and Sofala; Decreto-Lei 61/75 of 3 June 1975 moved Tambara and Guro from Sofala to Vila Pery (now Manica).",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://pt.wikipedia.org/w/index.php?oldid=73109674",
+          "title": "Wikipédia (pt): Sofala (província), rev. 73109674",
+          "says": "Sofala district created 5 Aug 1970; by Decreto-Lei 61/75 of 3 June 1975, Tambara and Guro transferred to Vila Pery.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "1975-06-03",
+      "precision": "day",
+      "what": "Tambara and Guro moved from Sofala to Vila Pery (Decreto-Lei 61/75)",
+      "sources": [
+        {
+          "url": "https://pt.wikipedia.org/w/index.php?oldid=70677288",
+          "title": "Wikipédia (pt): Manica (província), rev. 70677288",
+          "says": "Manica e Sofala divided 5 Aug 1970 into Vila Pery and Sofala; Decreto-Lei 61/75 of 3 June 1975 moved Tambara and Guro from Sofala to Vila Pery (now Manica).",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://pt.wikipedia.org/w/index.php?oldid=73109674",
+          "title": "Wikipédia (pt): Sofala (província), rev. 73109674",
+          "says": "Sofala district created 5 Aug 1970; by Decreto-Lei 61/75 of 3 June 1975, Tambara and Guro transferred to Vila Pery.",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://pt.wikipedia.org/w/index.php?oldid=70677307",
+          "title": "Wikipédia (pt): Guro (distrito), rev. 70677307",
+          "says": "Guro district was transferred from Sofala to Vila Pery (Manica) by Decreto-Lei 61/75 of 3 June 1975.",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://pt.wikipedia.org/w/index.php?oldid=70677306",
+          "title": "Wikipédia (pt): Tambara (distrito), rev. 70677306",
+          "says": "Tambara district was transferred from Sofala to Vila Pery (Manica) by Decreto-Lei 61/75 of 3 June 1975.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "1960-01-01",
+      "n": 9,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/umz.html",
+          "title": "Statoids: Provinces of Mozambique (G. Law, updated 2015-06-30)",
+          "says": "1954-10-20: Cabo Delgado and Moçambique from Niassa, Sul do Save into Gaza, Inhambane, Lourenço Marques, Tete from Manica e Sofala; independence 1975-06-25; renames 1976-77; Maputo city separated (~1984). No other boundary change listed.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "1972-01-01",
+      "n": 10,
+      "sources": [
+        {
+          "url": "https://pt.wikipedia.org/w/index.php?oldid=70677288",
+          "title": "Wikipédia (pt): Manica (província), rev. 70677288",
+          "says": "Manica e Sofala divided 5 Aug 1970 into Vila Pery and Sofala; Decreto-Lei 61/75 of 3 June 1975 moved Tambara and Guro from Sofala to Vila Pery (now Manica).",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://pt.wikipedia.org/w/index.php?oldid=73109674",
+          "title": "Wikipédia (pt): Sofala (província), rev. 73109674",
+          "says": "Sofala district created 5 Aug 1970; by Decreto-Lei 61/75 of 3 June 1975, Tambara and Guro transferred to Vila Pery.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [
+    {
+      "atom": "MOZ-ADM2-85939544B53859921366962",
+      "from": null,
+      "to": null,
+      "why": "Likoma Island: British (Nyasaland), then Malawian (Likoma District); not Mozambican territory"
+    },
+    {
+      "atom": "MOZ-ADM2-85939544B49635827229265",
+      "from": null,
+      "to": null,
+      "why": "Chizumulu Island: British (Nyasaland), then Malawian (Likoma District); not Mozambican territory"
+    }
+  ],
+  "unresolved": [
+    {
+      "what": "Lake Niassa sector before the 1954 Anglo-Portuguese agreement took effect",
+      "atoms": [
+        "MOZ-ADM2-85939544B11916103118899"
+      ],
+      "from": "1954-10-20",
+      "to": "1955",
+      "why": "Until the 1954 agreement the boundary ran along the eastern shore and the whole lake was British (Nyasaland); the agreement is dated only to 1954, so whether the lake sector was Portuguese on 1954-10-20 is not established.",
+      "checked": [
+        "Wikipedia Lake Malawi rev. 1378635373",
+        "Wikipedia Likoma Island rev. 1377838870",
+        "pt.wikipedia Lago Niassa rev. 68311706 (no date)"
+      ],
+      "needs": "the date of signature/entry into force of the 1954 Anglo-Portuguese Lake Nyasa agreement"
+    }
+  ]
+}

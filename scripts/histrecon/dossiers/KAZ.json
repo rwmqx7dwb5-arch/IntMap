@@ -2,10 +2,10 @@
  "country": "KAZ",
  "atomSet": "ne-admin1@ca96624",
  "scope": {
-  "from": "1991-12-16",
+  "from": "1999-04-10",
   "to": "2019-12-31"
  },
- "polityNote": "Republic of Kazakhstan from 16 Dec 1991. NE depicts the 1999–2018 layout (14 regions, Almaty and Astana cities; no Shymkent, no 2022 regions).",
+ "polityNote": "Republic of Kazakhstan from 16 Dec 1991. NE depicts the 1999–2018 layout (14 regions, Almaty and Astana cities; no Shymkent, no 2022 regions). From 10 Apr 1999 only; 1991-12-16 to 1999-04-09 is drawn from district atoms by KAZ-regions-1991.json.",
  "units": [
   {
    "id": "KAZ:West Kazakhstan",
@@ -17,7 +17,7 @@
    "wikidata": "Q486007",
    "spans": [
     {
-     "from": "1991-12-16",
+     "from": "1999-04-10",
      "precision": "day",
      "to": null,
      "atoms": [
@@ -36,7 +36,8 @@
        "says": "After the 1997 reform the last change took place in 1999 (former Kokshetau parts of North Kazakhstan to Akmola); new regions next created in 2022.",
        "accessed": "2026-10-05"
       }
-     ]
+     ],
+     "dateNote": "Before 10 Apr 1999 this ground is drawn by KAZ-regions-1991.json (district atoms)."
     }
    ]
   },
@@ -50,7 +51,7 @@
    "wikidata": "Q485437",
    "spans": [
     {
-     "from": "1991-12-16",
+     "from": "1999-04-10",
      "precision": "day",
      "to": null,
      "atoms": [
@@ -69,7 +70,8 @@
        "says": "After the 1997 reform the last change took place in 1999 (former Kokshetau parts of North Kazakhstan to Akmola); new regions next created in 2022.",
        "accessed": "2026-10-05"
       }
-     ]
+     ],
+     "dateNote": "Before 10 Apr 1999 this ground is drawn by KAZ-regions-1991.json (district atoms)."
     }
    ]
   },
@@ -83,7 +85,7 @@
    "wikidata": "Q427658",
    "spans": [
     {
-     "from": "1991-12-16",
+     "from": "1999-04-10",
      "precision": "day",
      "to": null,
      "atoms": [
@@ -102,7 +104,8 @@
        "says": "After the 1997 reform the last change took place in 1999 (former Kokshetau parts of North Kazakhstan to Akmola); new regions next created in 2022.",
        "accessed": "2026-10-05"
       }
-     ]
+     ],
+     "dateNote": "Before 10 Apr 1999 this ground is drawn by KAZ-regions-1991.json (district atoms)."
     }
    ]
   },
@@ -116,7 +119,7 @@
    "wikidata": "Q238931",
    "spans": [
     {
-     "from": "1991-12-16",
+     "from": "1999-04-10",
      "precision": "day",
      "to": null,
      "atoms": [
@@ -135,7 +138,8 @@
        "says": "After the 1997 reform the last change took place in 1999 (former Kokshetau parts of North Kazakhstan to Akmola); new regions next created in 2022.",
        "accessed": "2026-10-05"
       }
-     ]
+     ],
+     "dateNote": "Before 10 Apr 1999 this ground is drawn by KAZ-regions-1991.json (district atoms)."
     }
    ]
   },
@@ -149,7 +153,7 @@
    "wikidata": "Q485322",
    "spans": [
     {
-     "from": "1991-12-16",
+     "from": "1999-04-10",
      "precision": "day",
      "to": null,
      "atoms": [
@@ -169,7 +173,7 @@
        "accessed": "2026-10-05"
       }
      ],
-     "dateNote": "Includes the Baikonur complex leased to Russia since 1994–95, which remains Kazakh territory (statoids treats it as part of Qyzylorda)."
+     "dateNote": "Includes the Baikonur complex leased to Russia since 1994–95, which remains Kazakh territory (statoids treats it as part of Qyzylorda). Before 10 Apr 1999 this ground is drawn by KAZ-regions-1991.json (district atoms)."
     }
    ]
   },
@@ -183,7 +187,7 @@
    "wikidata": "Q486657",
    "spans": [
     {
-     "from": "1991-12-16",
+     "from": "1999-04-10",
      "precision": "day",
      "to": null,
      "atoms": [
@@ -202,7 +206,8 @@
        "says": "After the 1997 reform the last change took place in 1999 (former Kokshetau parts of North Kazakhstan to Akmola); new regions next created in 2022.",
        "accessed": "2026-10-05"
       }
-     ]
+     ],
+     "dateNote": "Before 10 Apr 1999 this ground is drawn by KAZ-regions-1991.json (district atoms)."
     }
    ]
   },
@@ -216,7 +221,7 @@
    "wikidata": "Q486144",
    "spans": [
     {
-     "from": "1991-12-16",
+     "from": "1999-04-10",
      "precision": "day",
      "to": null,
      "atoms": [
@@ -235,7 +240,8 @@
        "says": "After the 1997 reform the last change took place in 1999 (former Kokshetau parts of North Kazakhstan to Akmola); new regions next created in 2022.",
        "accessed": "2026-10-05"
       }
-     ]
+     ],
+     "dateNote": "Before 10 Apr 1999 this ground is drawn by KAZ-regions-1991.json (district atoms)."
     }
    ]
   },
@@ -249,7 +255,7 @@
    "wikidata": "Q815330",
    "spans": [
     {
-     "from": "1991-12-16",
+     "from": "1999-04-10",
      "precision": "day",
      "to": "2018-06-19",
      "atoms": [
@@ -269,7 +275,7 @@
        "accessed": "2026-10-05"
       }
      ],
-     "dateNote": "NE still draws South Kazakhstan with Shymkent inside."
+     "dateNote": "NE still draws South Kazakhstan with Shymkent inside. Before 10 Apr 1999 this ground is drawn by KAZ-regions-1991.json (district atoms)."
     }
    ]
   },
@@ -283,7 +289,7 @@
    "wikidata": "Q36156",
    "spans": [
     {
-     "from": "1997-05-03",
+     "from": "1999-04-10",
      "precision": "day",
      "to": null,
      "atoms": [
@@ -302,7 +308,8 @@
        "says": "After the 1997 reform the last change took place in 1999 (former Kokshetau parts of North Kazakhstan to Akmola); new regions next created in 2022.",
        "accessed": "2026-10-05"
       }
-     ]
+     ],
+     "dateNote": "Before 10 Apr 1999 this ground is drawn by KAZ-regions-1991.json (district atoms)."
     }
    ]
   },
@@ -316,7 +323,7 @@
    "wikidata": "Q485605",
    "spans": [
     {
-     "from": "1997-05-03",
+     "from": "1999-04-10",
      "precision": "day",
      "to": null,
      "atoms": [
@@ -336,7 +343,7 @@
        "accessed": "2026-10-05"
       }
      ],
-     "dateNote": "Started at 1997-05-03, the last 1997 merger date, because the date on which former Torgay raions reached Akmola is not separately established."
+     "dateNote": "Started at 1997-05-03, the last 1997 merger date, because the date on which former Torgay raions reached Akmola is not separately established. Before 10 Apr 1999 this ground is drawn by KAZ-regions-1991.json (district atoms)."
     }
    ]
   },
@@ -350,7 +357,7 @@
    "wikidata": "Q485429",
    "spans": [
     {
-     "from": "1997-05-03",
+     "from": "1999-04-10",
      "precision": "day",
      "to": null,
      "atoms": [
@@ -369,7 +376,8 @@
        "says": "After the 1997 reform the last change took place in 1999 (former Kokshetau parts of North Kazakhstan to Akmola); new regions next created in 2022.",
        "accessed": "2026-10-05"
       }
-     ]
+     ],
+     "dateNote": "Before 10 Apr 1999 this ground is drawn by KAZ-regions-1991.json (district atoms)."
     }
    ]
   },
@@ -465,29 +473,13 @@
  "atomsOutside": [],
  "unresolved": [
   {
-   "what": "Semipalatinsk (Semey) and East Kazakhstan 1991–1997",
-   "unit": "KAZ:Semey",
-   "atoms": [
-    "KAZ-3206"
-   ],
-   "from": "1991-12-16",
-   "to": "1997-05-03",
-   "why": "Two regions inside one NE atom; the internal line is not an NE boundary.",
-   "checked": [
-    "statoids.com/ukz.html",
-    "Wikipedia Regions of Kazakhstan, Turkistan Region, Almaty; ru.wikipedia Астана, Алма-Ата",
-    "adilet.zan.kz (search not reachable)"
-   ],
-   "needs": "finer atoms: Kazakh raion (district) boundaries, e.g. geoBoundaries KAZ ADM2 (licence per source), with dated city-limit changes"
-  },
-  {
-   "what": "Taldykorgan and Almaty regions, Almaty city 1991–2019",
+   "what": "Almaty region and Almaty city 1999–2019",
    "unit": "KAZ:Almaty",
    "atoms": [
     "KAZ-3207",
     "KAZ-4829"
    ],
-   "from": "1991-12-16",
+   "from": "1999-04-10",
    "to": null,
    "why": "Taldykorgan merged into Almaty region 1997-04-22 (two regions in one atom before); the Almaty city/region line moved several times by annexation of suburbs (dates not all established), so NE’s line cannot be dated.",
    "checked": [
@@ -498,61 +490,13 @@
    "needs": "finer atoms: Kazakh raion (district) boundaries, e.g. geoBoundaries KAZ ADM2 (licence per source), with dated city-limit changes"
   },
   {
-   "what": "Torgay and Kostanay 1991–1997",
-   "unit": "KAZ:Torgay",
-   "atoms": [
-    "KAZ-3196"
-   ],
-   "from": "1991-12-16",
-   "to": "1997-05-03",
-   "why": "Torgay was divided between Kostanay and Akmola, so neither old region is a union of NE atoms.",
-   "checked": [
-    "statoids.com/ukz.html",
-    "Wikipedia Regions of Kazakhstan, Turkistan Region, Almaty; ru.wikipedia Астана, Алма-Ата",
-    "adilet.zan.kz (search not reachable)"
-   ],
-   "needs": "finer atoms: Kazakh raion (district) boundaries, e.g. geoBoundaries KAZ ADM2 (licence per source), with dated city-limit changes"
-  },
-  {
-   "what": "Zhezkazgan and Karaganda 1991–1997",
-   "unit": "KAZ:Zhezkazgan",
-   "atoms": [
-    "KAZ-3203"
-   ],
-   "from": "1991-12-16",
-   "to": "1997-05-03",
-   "why": "Old Karaganda’s western part went to Akmola; Zhezkazgan lies inside the modern Karaganda atom.",
-   "checked": [
-    "statoids.com/ukz.html",
-    "Wikipedia Regions of Kazakhstan, Turkistan Region, Almaty; ru.wikipedia Астана, Алма-Ата",
-    "adilet.zan.kz (search not reachable)"
-   ],
-   "needs": "finer atoms: Kazakh raion (district) boundaries, e.g. geoBoundaries KAZ ADM2 (licence per source), with dated city-limit changes"
-  },
-  {
-   "what": "Kokshetau and North Kazakhstan 1991–1999",
-   "unit": "KAZ:Kokshetau",
-   "atoms": [
-    "KAZ-3204"
-   ],
-   "from": "1991-12-16",
-   "to": "1999-04-10",
-   "why": "Kokshetau merged into North Kazakhstan 1997, then three of its raions went to Akmola 1999.",
-   "checked": [
-    "statoids.com/ukz.html",
-    "Wikipedia Regions of Kazakhstan, Turkistan Region, Almaty; ru.wikipedia Астана, Алма-Ата",
-    "adilet.zan.kz (search not reachable)"
-   ],
-   "needs": "finer atoms: Kazakh raion (district) boundaries, e.g. geoBoundaries KAZ ADM2 (licence per source), with dated city-limit changes"
-  },
-  {
-   "what": "Akmola region and Astana city 1991–2019",
+   "what": "Akmola region and Astana city 1999–2019",
    "unit": "KAZ:Akmola",
    "atoms": [
     "KAZ-3202",
     "KAZ-4830"
    ],
-   "from": "1991-12-16",
+   "from": "1999-04-10",
    "to": null,
    "why": "Akmola took parts of Torgay and Karaganda (1997) and raions of North Kazakhstan (1999); the Astana city limits were changed by decrees (latest in scope 7 Feb 2018), so NE’s city line cannot be dated.",
    "checked": [

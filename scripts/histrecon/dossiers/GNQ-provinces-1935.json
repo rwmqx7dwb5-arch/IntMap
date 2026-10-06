@@ -1,0 +1,358 @@
+{
+ "country": "GNQ",
+ "atomSet": "gb-adm1@2026-10-06",
+ "scope": {
+  "from": "1935-04-16",
+  "to": "2015-08-02"
+ },
+ "polityNote": "Spanish Guinea (colony; districts from 1935-04-16), Spanish provinces of Fernando Póo and Río Muni (1960-04-01), autonomous region (1963-12-20), Republic of Equatorial Guinea from 1968-10-12. Spanish Guinea is not in the Müller-Crepon colonial cross-sections (British and French colonies only). Atoms: the seven provinces of geoBoundaries GNQ ADM1 (OpenStreetMap/Wambacher 2016, ODbL); the two-unit layer is island vs mainland, so it is a union of whole provinces by geography. The scope ends before Djibloho (cut from Wele-Nzas) because the atoms predate it.",
+ "units": [
+  {
+   "id": "GNQ:FernandoPoo",
+   "names": {
+    "en": "Fernando Póo (Macías Nguema Biyogo 1973–1979, Bioko from 1979)",
+    "ja": "フェルナンド・ポー（ビオコ）",
+    "local": "Fernando Póo / Bioko"
+   },
+   "spans": [
+    {
+     "from": "1935-04-16",
+     "precision": "day",
+     "to": "1960-04-01",
+     "atoms": [
+      "GNQ-ADM1-51917635B51392139910348",
+      "GNQ-ADM1-51917635B89890013794964",
+      "GNQ-ADM1-51917635B39296927406250"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ugq.html",
+       "title": "Statoids — Provinces of Equatorial Guinea (change history)",
+       "says": "1935-04-16 two districts, Fernando Póo (with Annobón) and Guinea Continental (with Corisco and Elobey); 1960-04-01 Spanish provinces, Guinea Continental renamed Río Muni; 1973 and 1979 renames; ~1990 seven provinces; 2015-08-03 Djibloho.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "District of the colony of Spanish Guinea. The two units are the island of Bioko with Annobón, and the mainland with Corisco and the Elobeys: unions of whole provinces of today, whose outline is the coast and the national border."
+    },
+    {
+     "from": "1960-04-01",
+     "precision": "day",
+     "to": "1968-10-12",
+     "atoms": [
+      "GNQ-ADM1-51917635B51392139910348",
+      "GNQ-ADM1-51917635B89890013794964",
+      "GNQ-ADM1-51917635B39296927406250"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ugq.html",
+       "title": "Statoids — Provinces of Equatorial Guinea (change history)",
+       "says": "1935-04-16 two districts, Fernando Póo (with Annobón) and Guinea Continental (with Corisco and Elobey); 1960-04-01 Spanish provinces, Guinea Continental renamed Río Muni; 1973 and 1979 renames; ~1990 seven provinces; 2015-08-03 Djibloho.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Organizaci%C3%B3n_territorial_de_Guinea_Ecuatorial&oldid=175017323",
+       "title": "Wikipedia (es) — Organización territorial de Guinea Ecuatorial (oldid 175017323)",
+       "says": "Two Spanish provinces, Río Muni and Fernando Poo; after independence (1968) they became regions; in the 1990s the regions were divided into provinces, which in practice are the first-level divisions; Djibloho created June 2017.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Spanish province from 1 Apr 1960 (statoids; es.wikipedia dates the provinces from 1959); within the autonomous region of Equatorial Guinea from 1963-12-20."
+    },
+    {
+     "from": "1968-10-12",
+     "precision": "day",
+     "to": "1983-07-04",
+     "atoms": [
+      "GNQ-ADM1-51917635B51392139910348",
+      "GNQ-ADM1-51917635B89890013794964",
+      "GNQ-ADM1-51917635B39296927406250"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ugq.html",
+       "title": "Statoids — Provinces of Equatorial Guinea (change history)",
+       "says": "1935-04-16 two districts, Fernando Póo (with Annobón) and Guinea Continental (with Corisco and Elobey); 1960-04-01 Spanish provinces, Guinea Continental renamed Río Muni; 1973 and 1979 renames; ~1990 seven provinces; 2015-08-03 Djibloho.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Organizaci%C3%B3n_territorial_de_Guinea_Ecuatorial&oldid=175017323",
+       "title": "Wikipedia (es) — Organización territorial de Guinea Ecuatorial (oldid 175017323)",
+       "says": "Two Spanish provinces, Río Muni and Fernando Poo; after independence (1968) they became regions; in the 1990s the regions were divided into provinces, which in practice are the first-level divisions; Djibloho created June 2017.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Province/region of the Republic of Equatorial Guinea; renamed Macías Nguema Biyogo in 1973 and Bioko in 1979. Ends conservatively at the 1983 census, the first date a source tabulates the seven provinces."
+    }
+   ]
+  },
+  {
+   "id": "GNQ:RioMuni",
+   "names": {
+    "en": "Río Muni (Guinea Continental until 1960; Mbini 1973–1979)",
+    "ja": "リオ・ムニ",
+    "local": "Río Muni"
+   },
+   "spans": [
+    {
+     "from": "1935-04-16",
+     "precision": "day",
+     "to": "1960-04-01",
+     "atoms": [
+      "GNQ-ADM1-51917635B39894172986547",
+      "GNQ-ADM1-51917635B96022802158984",
+      "GNQ-ADM1-51917635B11975982083171",
+      "GNQ-ADM1-51917635B29423629069944"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ugq.html",
+       "title": "Statoids — Provinces of Equatorial Guinea (change history)",
+       "says": "1935-04-16 two districts, Fernando Póo (with Annobón) and Guinea Continental (with Corisco and Elobey); 1960-04-01 Spanish provinces, Guinea Continental renamed Río Muni; 1973 and 1979 renames; ~1990 seven provinces; 2015-08-03 Djibloho.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "District of Guinea Continental. The two units are the island of Bioko with Annobón, and the mainland with Corisco and the Elobeys: unions of whole provinces of today, whose outline is the coast and the national border."
+    },
+    {
+     "from": "1960-04-01",
+     "precision": "day",
+     "to": "1968-10-12",
+     "atoms": [
+      "GNQ-ADM1-51917635B39894172986547",
+      "GNQ-ADM1-51917635B96022802158984",
+      "GNQ-ADM1-51917635B11975982083171",
+      "GNQ-ADM1-51917635B29423629069944"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ugq.html",
+       "title": "Statoids — Provinces of Equatorial Guinea (change history)",
+       "says": "1935-04-16 two districts, Fernando Póo (with Annobón) and Guinea Continental (with Corisco and Elobey); 1960-04-01 Spanish provinces, Guinea Continental renamed Río Muni; 1973 and 1979 renames; ~1990 seven provinces; 2015-08-03 Djibloho.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Organizaci%C3%B3n_territorial_de_Guinea_Ecuatorial&oldid=175017323",
+       "title": "Wikipedia (es) — Organización territorial de Guinea Ecuatorial (oldid 175017323)",
+       "says": "Two Spanish provinces, Río Muni and Fernando Poo; after independence (1968) they became regions; in the 1990s the regions were divided into provinces, which in practice are the first-level divisions; Djibloho created June 2017.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Spanish province of Río Muni from 1 Apr 1960; within the autonomous region from 1963-12-20."
+    },
+    {
+     "from": "1968-10-12",
+     "precision": "day",
+     "to": "1983-07-04",
+     "atoms": [
+      "GNQ-ADM1-51917635B39894172986547",
+      "GNQ-ADM1-51917635B96022802158984",
+      "GNQ-ADM1-51917635B11975982083171",
+      "GNQ-ADM1-51917635B29423629069944"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ugq.html",
+       "title": "Statoids — Provinces of Equatorial Guinea (change history)",
+       "says": "1935-04-16 two districts, Fernando Póo (with Annobón) and Guinea Continental (with Corisco and Elobey); 1960-04-01 Spanish provinces, Guinea Continental renamed Río Muni; 1973 and 1979 renames; ~1990 seven provinces; 2015-08-03 Djibloho.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Organizaci%C3%B3n_territorial_de_Guinea_Ecuatorial&oldid=175017323",
+       "title": "Wikipedia (es) — Organización territorial de Guinea Ecuatorial (oldid 175017323)",
+       "says": "Two Spanish provinces, Río Muni and Fernando Poo; after independence (1968) they became regions; in the 1990s the regions were divided into provinces, which in practice are the first-level divisions; Djibloho created June 2017.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Province/region of the Republic; renamed Mbini 1973–1979. Ends conservatively at the 1983 census."
+    }
+   ]
+  },
+  {
+   "id": "GNQ:Annobn@1990s",
+   "names": {
+    "en": "Annobón Province",
+    "ja": "アンノボン州",
+    "local": "Annobón"
+   },
+   "spans": [
+    {
+     "from": "1994-09-09",
+     "precision": "day",
+     "atoms": [
+      "GNQ-ADM1-51917635B39296927406250"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ugq.html",
+       "title": "Statoids — Provinces of Equatorial Guinea (change history)",
+       "says": "1935-04-16 two districts, Fernando Póo (with Annobón) and Guinea Continental (with Corisco and Elobey); 1960-04-01 Spanish provinces, Guinea Continental renamed Río Muni; 1973 and 1979 renames; ~1990 seven provinces; 2015-08-03 Djibloho.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Organizaci%C3%B3n_territorial_de_Guinea_Ecuatorial&oldid=175017323",
+       "title": "Wikipedia (es) — Organización territorial de Guinea Ecuatorial (oldid 175017323)",
+       "says": "Two Spanish provinces, Río Muni and Fernando Poo; after independence (1968) they became regions; in the 1990s the regions were divided into provinces, which in practice are the first-level divisions; Djibloho created June 2017.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Drawn from the 1994-09-09 census, the earliest date a source shows the seven provinces in use (created in the 1990s / ~1990; the act was not found). Ends before Djibloho was split from Wele-Nzas (2015-08-03 per statoids, June 2017 per es.wikipedia). Annobón is an island, so its outline is the coast."
+    }
+   ]
+  }
+ ],
+ "events": [],
+ "counts": [
+  {
+   "date": "1950",
+   "n": 2,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ugq.html",
+     "title": "Statoids — Provinces of Equatorial Guinea (change history)",
+     "says": "1935-04-16 two districts, Fernando Póo (with Annobón) and Guinea Continental (with Corisco and Elobey); 1960-04-01 Spanish provinces, Guinea Continental renamed Río Muni; 1973 and 1979 renames; ~1990 seven provinces; 2015-08-03 Djibloho.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1965",
+   "n": 2,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ugq.html",
+     "title": "Statoids — Provinces of Equatorial Guinea (change history)",
+     "says": "1935-04-16 two districts, Fernando Póo (with Annobón) and Guinea Continental (with Corisco and Elobey); 1960-04-01 Spanish provinces, Guinea Continental renamed Río Muni; 1973 and 1979 renames; ~1990 seven provinces; 2015-08-03 Djibloho.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://es.wikipedia.org/w/index.php?title=Organizaci%C3%B3n_territorial_de_Guinea_Ecuatorial&oldid=175017323",
+     "title": "Wikipedia (es) — Organización territorial de Guinea Ecuatorial (oldid 175017323)",
+     "says": "Two Spanish provinces, Río Muni and Fernando Poo; after independence (1968) they became regions; in the 1990s the regions were divided into provinces, which in practice are the first-level divisions; Djibloho created June 2017.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "2001",
+   "n": 7,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ugq.html",
+     "title": "Statoids — Provinces of Equatorial Guinea (change history)",
+     "says": "Census 2001 by the seven provinces Annobón, Bioko Norte, Bioko Sur, Centro Sur, Kié-Ntem, Litoral, Wele-Nzas.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Bioko Norte Province 1994–2015",
+   "unit": "GNQ:BiokoNorte@1990s",
+   "atoms": [
+    "GNQ-ADM1-51917635B51392139910348",
+    "GNQ-ADM1-51917635B89890013794964",
+    "GNQ-ADM1-51917635B39894172986547",
+    "GNQ-ADM1-51917635B96022802158984",
+    "GNQ-ADM1-51917635B11975982083171",
+    "GNQ-ADM1-51917635B29423629069944"
+   ],
+   "from": "1994-09-09",
+   "to": null,
+   "why": "The province lines inside Bioko and inside the mainland are not settled: the two published layers disagree by blocks of 14–23 % of a district (WRI/Forest Atlas 2013 districts against the OSM 2016 provinces: Niefang 23 % in Litoral, Aconibe 22 % in Centro Sur, Mbini 18 % in Centro Sur, Nkimi 15 % in Kié-Ntem, Malabo 14 % in Bioko Sur).",
+   "checked": [
+    "geoBoundaries GNQ ADM1 (OSM 2016) against GNQ ADM2 (WRI Congo Forest Basin Atlas 2013)",
+    "statoids.com/ugq.html (published province areas also differ: Centro Sur 9,931 km² vs 8,454 in OSM, Bioko Norte 776 vs 616)"
+   ],
+   "needs": "an official province layer (INEGE / cartographic service) to settle the internal lines"
+  },
+  {
+   "what": "Bioko Sur Province 1994–2015",
+   "unit": "GNQ:BiokoSur@1990s",
+   "atoms": [],
+   "from": "1994-09-09",
+   "to": null,
+   "why": "The province lines inside Bioko and inside the mainland are not settled: the two published layers disagree by blocks of 14–23 % of a district (WRI/Forest Atlas 2013 districts against the OSM 2016 provinces: Niefang 23 % in Litoral, Aconibe 22 % in Centro Sur, Mbini 18 % in Centro Sur, Nkimi 15 % in Kié-Ntem, Malabo 14 % in Bioko Sur).",
+   "checked": [
+    "geoBoundaries GNQ ADM1 (OSM 2016) against GNQ ADM2 (WRI Congo Forest Basin Atlas 2013)",
+    "statoids.com/ugq.html (published province areas also differ: Centro Sur 9,931 km² vs 8,454 in OSM, Bioko Norte 776 vs 616)"
+   ],
+   "needs": "an official province layer (INEGE / cartographic service) to settle the internal lines"
+  },
+  {
+   "what": "Litoral Province 1994–2015",
+   "unit": "GNQ:Litoral@1990s",
+   "atoms": [],
+   "from": "1994-09-09",
+   "to": null,
+   "why": "The province lines inside Bioko and inside the mainland are not settled: the two published layers disagree by blocks of 14–23 % of a district (WRI/Forest Atlas 2013 districts against the OSM 2016 provinces: Niefang 23 % in Litoral, Aconibe 22 % in Centro Sur, Mbini 18 % in Centro Sur, Nkimi 15 % in Kié-Ntem, Malabo 14 % in Bioko Sur).",
+   "checked": [
+    "geoBoundaries GNQ ADM1 (OSM 2016) against GNQ ADM2 (WRI Congo Forest Basin Atlas 2013)",
+    "statoids.com/ugq.html (published province areas also differ: Centro Sur 9,931 km² vs 8,454 in OSM, Bioko Norte 776 vs 616)"
+   ],
+   "needs": "an official province layer (INEGE / cartographic service) to settle the internal lines"
+  },
+  {
+   "what": "Kié-Ntem Province 1994–2015",
+   "unit": "GNQ:KiNtem@1990s",
+   "atoms": [],
+   "from": "1994-09-09",
+   "to": null,
+   "why": "The province lines inside Bioko and inside the mainland are not settled: the two published layers disagree by blocks of 14–23 % of a district (WRI/Forest Atlas 2013 districts against the OSM 2016 provinces: Niefang 23 % in Litoral, Aconibe 22 % in Centro Sur, Mbini 18 % in Centro Sur, Nkimi 15 % in Kié-Ntem, Malabo 14 % in Bioko Sur).",
+   "checked": [
+    "geoBoundaries GNQ ADM1 (OSM 2016) against GNQ ADM2 (WRI Congo Forest Basin Atlas 2013)",
+    "statoids.com/ugq.html (published province areas also differ: Centro Sur 9,931 km² vs 8,454 in OSM, Bioko Norte 776 vs 616)"
+   ],
+   "needs": "an official province layer (INEGE / cartographic service) to settle the internal lines"
+  },
+  {
+   "what": "Centro Sur Province 1994–2015",
+   "unit": "GNQ:CentroSur@1990s",
+   "atoms": [],
+   "from": "1994-09-09",
+   "to": null,
+   "why": "The province lines inside Bioko and inside the mainland are not settled: the two published layers disagree by blocks of 14–23 % of a district (WRI/Forest Atlas 2013 districts against the OSM 2016 provinces: Niefang 23 % in Litoral, Aconibe 22 % in Centro Sur, Mbini 18 % in Centro Sur, Nkimi 15 % in Kié-Ntem, Malabo 14 % in Bioko Sur).",
+   "checked": [
+    "geoBoundaries GNQ ADM1 (OSM 2016) against GNQ ADM2 (WRI Congo Forest Basin Atlas 2013)",
+    "statoids.com/ugq.html (published province areas also differ: Centro Sur 9,931 km² vs 8,454 in OSM, Bioko Norte 776 vs 616)"
+   ],
+   "needs": "an official province layer (INEGE / cartographic service) to settle the internal lines"
+  },
+  {
+   "what": "Wele-Nzas Province 1994–2015",
+   "unit": "GNQ:WeleNzas@1990s",
+   "atoms": [],
+   "from": "1994-09-09",
+   "to": null,
+   "why": "The province lines inside Bioko and inside the mainland are not settled: the two published layers disagree by blocks of 14–23 % of a district (WRI/Forest Atlas 2013 districts against the OSM 2016 provinces: Niefang 23 % in Litoral, Aconibe 22 % in Centro Sur, Mbini 18 % in Centro Sur, Nkimi 15 % in Kié-Ntem, Malabo 14 % in Bioko Sur).",
+   "checked": [
+    "geoBoundaries GNQ ADM1 (OSM 2016) against GNQ ADM2 (WRI Congo Forest Basin Atlas 2013)",
+    "statoids.com/ugq.html (published province areas also differ: Centro Sur 9,931 km² vs 8,454 in OSM, Bioko Norte 776 vs 616)"
+   ],
+   "needs": "an official province layer (INEGE / cartographic service) to settle the internal lines"
+  },
+  {
+   "what": "Change from the two regions to the seven provinces (1983-07-04 → 1994-09-09)",
+   "atoms": [
+    "GNQ-ADM1-51917635B51392139910348",
+    "GNQ-ADM1-51917635B89890013794964",
+    "GNQ-ADM1-51917635B39296927406250",
+    "GNQ-ADM1-51917635B39894172986547",
+    "GNQ-ADM1-51917635B96022802158984",
+    "GNQ-ADM1-51917635B11975982083171",
+    "GNQ-ADM1-51917635B29423629069944"
+   ],
+   "from": "1983-07-04",
+   "to": "1994-09-09",
+   "why": "Statoids dates the seven provinces ~1990 and es.wikipedia to the 1990s; statoids also tabulates the 1983 census by the seven provinces. The act and day are not established, so neither layout is claimed in between.",
+   "checked": [
+    "statoids.com/ugq.html and ygq.html",
+    "es.wikipedia Organización territorial de Guinea Ecuatorial oldid 175017323",
+    "en.wikipedia Provinces of Equatorial Guinea"
+   ],
+   "needs": "the decree creating the seven provinces (Boletín Oficial del Estado de Guinea Ecuatorial)"
+  }
+ ]
+}

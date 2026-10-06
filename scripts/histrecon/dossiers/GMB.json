@@ -1,0 +1,525 @@
+{
+  "country": "GMB",
+  "atomSet": "gb-adm1@2026-10-06",
+  "scope": {
+    "from": "1965-02-18",
+    "to": "2019-12-31"
+  },
+  "polityNote": "The Gambia, independent 1965-02-18. First-level units: the City of Banjul (Bathurst), Kombo St Mary / Kanifing, and the five divisions (regions from 2007). Atoms: the 8 local government areas of geoBoundaries GMB ADM1 (Knippenberg & Meyer / World Bank, 2020, CC BY 4.0); each division is one LGA except MacCarthy Island / Central River (Janjanbureh + Kuntaur). The LGAs carry census populations from 1963 to 2003 under the same names (Statoids). ① Atom area vs Statoids 1993 division area (km²): Upper River 2,035/2,069, Western 1,771/1,764, North Bank 2,216/2,256, Lower River 1,545/1,618, MacCarthy Island 2,978/2,894, Kanifing 53/76, Banjul 9/12; country 10,608/10,689 (0.99).",
+  "units": [
+    {
+      "id": "GMB:Bathurst@1965",
+      "names": {
+        "en": "Bathurst",
+        "ja": "バサースト市",
+        "local": "City of Bathurst"
+      },
+      "spans": [
+        {
+          "from": "1965-02-18",
+          "precision": "day",
+          "to": "1973-04-24",
+          "atoms": [
+            "GMB-ADM1-31243875B86288540800273"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ugm.html",
+              "title": "Regions of Gambia (Statoids), 1973 entry",
+              "says": "1973-04-24: name of the capital and its division changed from Bathurst to Banjul.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ugm.html",
+              "title": "Regions of Gambia (Statoids), LGA table",
+              "says": "Eight LGAs with census populations 1963-2003 and areas; each division equals one LGA except MacCarthy Island/Central River = Janjanbureh + Kuntaur; division areas equal the LGA areas.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "GMB:Banjul@1973",
+      "names": {
+        "en": "Banjul",
+        "ja": "バンジュール市",
+        "local": "City of Banjul"
+      },
+      "spans": [
+        {
+          "from": "1973-04-24",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "GMB-ADM1-31243875B86288540800273"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ugm.html",
+              "title": "Regions of Gambia (Statoids), 1973 entry",
+              "says": "1973-04-24: name of the capital and its division changed from Bathurst to Banjul.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ugm.html",
+              "title": "Regions of Gambia (Statoids)",
+              "says": "In 1973 Gambia had one city (Banjul) and six divisions: Kombo Saint Mary, Lower River, MacCarthy Island, North Bank, Upper River, Western; MacCarthy Island renamed Central River 1995; divisions became regions 2007; Western renamed West Coast 2010-10-19.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Subdivisions_of_the_Gambia&oldid=1372138442",
+              "title": "Subdivisions of the Gambia, Wikipedia",
+              "says": "Eight local government areas (Banjul, Basse, Brikama, Janjanbureh, Kanifing, Kerewan, Kuntaur, Mansa Konko); the regions were called divisions until 2007.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "GMB:KomboStMary@1965",
+      "names": {
+        "en": "Kombo Saint Mary (Kanifing)",
+        "ja": "コンボ・セントメアリー（カニフィン）",
+        "local": "Kombo St. Mary Division / Kanifing Municipality"
+      },
+      "spans": [
+        {
+          "from": "1973-04-24",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "GMB-ADM1-31243875B42421745591684"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ugm.html",
+              "title": "Regions of Gambia (Statoids)",
+              "says": "In 1973 Gambia had one city (Banjul) and six divisions: Kombo Saint Mary, Lower River, MacCarthy Island, North Bank, Upper River, Western; MacCarthy Island renamed Central River 1995; divisions became regions 2007; Western renamed West Coast 2010-10-19.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ugm.html",
+              "title": "Regions of Gambia (Statoids), LGA table",
+              "says": "Eight LGAs with census populations 1963-2003 and areas; each division equals one LGA except MacCarthy Island/Central River = Janjanbureh + Kuntaur; division areas equal the LGA areas.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Kanifing&oldid=1372931931",
+              "title": "Kanifing, Wikipedia",
+              "says": "The Kombo St. Mary LGA was created in the 1960s from part of Brikama LGA; Kanifing Urban District Council 1974, Kanifing Municipal Council 1991; 75.5 km2.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Same LGA throughout (Kanifing Urban District Council 1974, Municipal Council 1991). Statoids says it merged with Banjul about 2003 in the region table; the LGA and municipality remain separate from both Banjul and the West Coast region (Wikipedia LGA list)."
+        }
+      ]
+    },
+    {
+      "id": "GMB:Western@1965",
+      "names": {
+        "en": "Western Division",
+        "ja": "西部地方",
+        "local": "Western Division"
+      },
+      "spans": [
+        {
+          "from": "1973-04-24",
+          "precision": "day",
+          "to": "2010-10-19",
+          "atoms": [
+            "GMB-ADM1-31243875B88426941804625"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ugm.html",
+              "title": "Regions of Gambia (Statoids)",
+              "says": "In 1973 Gambia had one city (Banjul) and six divisions: Kombo Saint Mary, Lower River, MacCarthy Island, North Bank, Upper River, Western; MacCarthy Island renamed Central River 1995; divisions became regions 2007; Western renamed West Coast 2010-10-19.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ugm.html",
+              "title": "Regions of Gambia (Statoids), LGA table",
+              "says": "Eight LGAs with census populations 1963-2003 and areas; each division equals one LGA except MacCarthy Island/Central River = Janjanbureh + Kuntaur; division areas equal the LGA areas.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Status changed from division to region in 2007 without territorial change."
+        }
+      ]
+    },
+    {
+      "id": "GMB:WestCoast@2010",
+      "names": {
+        "en": "West Coast Region",
+        "ja": "ウェストコースト地方",
+        "local": "West Coast Region"
+      },
+      "spans": [
+        {
+          "from": "2010-10-19",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "GMB-ADM1-31243875B88426941804625"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ugm.html",
+              "title": "Regions of Gambia (Statoids), 2010 entry",
+              "says": "2010-10-19: name of Western region changed to West Coast region.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Subdivisions_of_the_Gambia&oldid=1372138442",
+              "title": "Subdivisions of the Gambia, Wikipedia",
+              "says": "Eight local government areas (Banjul, Basse, Brikama, Janjanbureh, Kanifing, Kerewan, Kuntaur, Mansa Konko); the regions were called divisions until 2007.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "GMB:LowerRiver@1965",
+      "names": {
+        "en": "Lower River",
+        "ja": "ローワーリバー地方",
+        "local": "Lower River Division"
+      },
+      "spans": [
+        {
+          "from": "1968-10-30",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "GMB-ADM1-31243875B75097494588605"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ugm.html",
+              "title": "Regions of Gambia (Statoids), 1968 entry",
+              "says": "1968-10-30: North Bank division split from Lower River division (the same page also says North Bank was a province from 1935).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ugm.html",
+              "title": "Regions of Gambia (Statoids)",
+              "says": "In 1973 Gambia had one city (Banjul) and six divisions: Kombo Saint Mary, Lower River, MacCarthy Island, North Bank, Upper River, Western; MacCarthy Island renamed Central River 1995; divisions became regions 2007; Western renamed West Coast 2010-10-19.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ugm.html",
+              "title": "Regions of Gambia (Statoids), LGA table",
+              "says": "Eight LGAs with census populations 1963-2003 and areas; each division equals one LGA except MacCarthy Island/Central River = Janjanbureh + Kuntaur; division areas equal the LGA areas.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "GMB:NorthBank@1968",
+      "names": {
+        "en": "North Bank",
+        "ja": "ノースバンク地方",
+        "local": "North Bank Division"
+      },
+      "spans": [
+        {
+          "from": "1968-10-30",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "GMB-ADM1-31243875B21899311231896"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ugm.html",
+              "title": "Regions of Gambia (Statoids), 1968 entry",
+              "says": "1968-10-30: North Bank division split from Lower River division (the same page also says North Bank was a province from 1935).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=North_Bank_Division&oldid=1378595404",
+              "title": "North Bank Division, Wikipedia",
+              "says": "One of the five divisions; reorganised as Kerewan LGA without any change in the area covered; 2,256 km2, six districts.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ugm.html",
+              "title": "Regions of Gambia (Statoids), LGA table",
+              "says": "Eight LGAs with census populations 1963-2003 and areas; each division equals one LGA except MacCarthy Island/Central River = Janjanbureh + Kuntaur; division areas equal the LGA areas.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "GMB:MacCarthyIsland@1965",
+      "names": {
+        "en": "MacCarthy Island",
+        "ja": "マッカーシー島地方",
+        "local": "MacCarthy Island Division"
+      },
+      "spans": [
+        {
+          "from": "1965-02-18",
+          "precision": "day",
+          "to": "1995",
+          "atoms": [
+            "GMB-ADM1-31243875B72482523363184",
+            "GMB-ADM1-31243875B86283726287100"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ugm.html",
+              "title": "Regions of Gambia (Statoids)",
+              "says": "In 1973 Gambia had one city (Banjul) and six divisions: Kombo Saint Mary, Lower River, MacCarthy Island, North Bank, Upper River, Western; MacCarthy Island renamed Central River 1995; divisions became regions 2007; Western renamed West Coast 2010-10-19.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Central_River_Division&oldid=1378528384",
+              "title": "Central River Division, Wikipedia",
+              "says": "Known as MacCarthy Island Division until 1995; divided into Janjanbureh (east) and Kuntaur (west) LGAs; 2,894.3 km2 in 2003.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ugm.html",
+              "title": "Regions of Gambia (Statoids), LGA table",
+              "says": "Eight LGAs with census populations 1963-2003 and areas; each division equals one LGA except MacCarthy Island/Central River = Janjanbureh + Kuntaur; division areas equal the LGA areas.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "GMB:CentralRiver@1995",
+      "names": {
+        "en": "Central River",
+        "ja": "セントラルリバー地方",
+        "local": "Central River Division"
+      },
+      "spans": [
+        {
+          "from": "1995",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "GMB-ADM1-31243875B72482523363184",
+            "GMB-ADM1-31243875B86283726287100"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ugm.html",
+              "title": "Regions of Gambia (Statoids)",
+              "says": "In 1973 Gambia had one city (Banjul) and six divisions: Kombo Saint Mary, Lower River, MacCarthy Island, North Bank, Upper River, Western; MacCarthy Island renamed Central River 1995; divisions became regions 2007; Western renamed West Coast 2010-10-19.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Central_River_Division&oldid=1378528384",
+              "title": "Central River Division, Wikipedia",
+              "says": "Known as MacCarthy Island Division until 1995; divided into Janjanbureh (east) and Kuntaur (west) LGAs; 2,894.3 km2 in 2003.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Only the year of the renaming is stated; the territory is unchanged across it."
+        }
+      ]
+    },
+    {
+      "id": "GMB:UpperRiver@1965",
+      "names": {
+        "en": "Upper River",
+        "ja": "アッパーリバー地方",
+        "local": "Upper River Division"
+      },
+      "spans": [
+        {
+          "from": "1965-02-18",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "GMB-ADM1-31243875B74768451122912"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ugm.html",
+              "title": "Regions of Gambia (Statoids)",
+              "says": "In 1973 Gambia had one city (Banjul) and six divisions: Kombo Saint Mary, Lower River, MacCarthy Island, North Bank, Upper River, Western; MacCarthy Island renamed Central River 1995; divisions became regions 2007; Western renamed West Coast 2010-10-19.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ugm.html",
+              "title": "Regions of Gambia (Statoids), LGA table",
+              "says": "Eight LGAs with census populations 1963-2003 and areas; each division equals one LGA except MacCarthy Island/Central River = Janjanbureh + Kuntaur; division areas equal the LGA areas.",
+              "accessed": "2026-10-06"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1968-10-30",
+      "precision": "day",
+      "what": "North Bank division separated from Lower River division (per Statoids)",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ugm.html",
+          "title": "Regions of Gambia (Statoids), 1968 entry",
+          "says": "1968-10-30: North Bank division split from Lower River division (the same page also says North Bank was a province from 1935).",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "1973-04-24",
+      "precision": "day",
+      "what": "Bathurst renamed Banjul",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ugm.html",
+          "title": "Regions of Gambia (Statoids), 1973 entry",
+          "says": "1973-04-24: name of the capital and its division changed from Bathurst to Banjul.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "1995",
+      "precision": "year",
+      "what": "MacCarthy Island Division renamed Central River Division",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/w/index.php?title=Central_River_Division&oldid=1378528384",
+          "title": "Central River Division, Wikipedia",
+          "says": "Known as MacCarthy Island Division until 1995; divided into Janjanbureh (east) and Kuntaur (west) LGAs; 2,894.3 km2 in 2003.",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://www.statoids.com/ugm.html",
+          "title": "Regions of Gambia (Statoids)",
+          "says": "In 1973 Gambia had one city (Banjul) and six divisions: Kombo Saint Mary, Lower River, MacCarthy Island, North Bank, Upper River, Western; MacCarthy Island renamed Central River 1995; divisions became regions 2007; Western renamed West Coast 2010-10-19.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "2007",
+      "precision": "year",
+      "what": "Divisions renamed regions",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ugm.html",
+          "title": "Regions of Gambia (Statoids)",
+          "says": "In 1973 Gambia had one city (Banjul) and six divisions: Kombo Saint Mary, Lower River, MacCarthy Island, North Bank, Upper River, Western; MacCarthy Island renamed Central River 1995; divisions became regions 2007; Western renamed West Coast 2010-10-19.",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?title=Subdivisions_of_the_Gambia&oldid=1372138442",
+          "title": "Subdivisions of the Gambia, Wikipedia",
+          "says": "Eight local government areas (Banjul, Basse, Brikama, Janjanbureh, Kanifing, Kerewan, Kuntaur, Mansa Konko); the regions were called divisions until 2007.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "2010-10-19",
+      "precision": "day",
+      "what": "Western region renamed West Coast region",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ugm.html",
+          "title": "Regions of Gambia (Statoids), 2010 entry",
+          "says": "2010-10-19: name of Western region changed to West Coast region.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "1973-04-24",
+      "n": 7,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ugm.html",
+          "title": "Regions of Gambia (Statoids)",
+          "says": "In 1973 Gambia had one city (Banjul) and six divisions: Kombo Saint Mary, Lower River, MacCarthy Island, North Bank, Upper River, Western; MacCarthy Island renamed Central River 1995; divisions became regions 2007; Western renamed West Coast 2010-10-19.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Lower River before 1968-10-30",
+      "unit": "GMB:LowerRiver@1965",
+      "atoms": [
+        "GMB-ADM1-31243875B75097494588605"
+      ],
+      "from": "1965-02-18",
+      "to": "1968-10-30",
+      "why": "Statoids states that North Bank split from Lower River on 1968-10-30, but the same page has North Bank as a separate province since the Provinces Act 1935, and no second source was found. If the 1968 entry is right, Lower River 1965-1968 = Mansakonko + Kerewan; otherwise Mansakonko alone.",
+      "checked": [
+        "statoids.com/ugm.html (1935 and 1968-10-30 entries)",
+        "en.wikipedia North Bank Division oldid 1378595404",
+        "en.wikipedia Subdivisions of the Gambia oldid 1372138442",
+        "en.wikipedia Lower River Division oldid 1347531324 (no history)"
+      ],
+      "needs": "a 1960s Gambian gazette or the 1963/1973 census report listing the divisions"
+    },
+    {
+      "what": "North Bank before 1968-10-30",
+      "unit": "GMB:NorthBank@1968",
+      "atoms": [
+        "GMB-ADM1-31243875B21899311231896"
+      ],
+      "from": "1965-02-18",
+      "to": "1968-10-30",
+      "why": "Same contradiction as Lower River: whether North Bank was its own division or part of Lower River between independence and 1968-10-30.",
+      "checked": [
+        "statoids.com/ugm.html",
+        "en.wikipedia North Bank Division oldid 1378595404"
+      ],
+      "needs": "a 1960s Gambian gazette or the 1963/1973 census report listing the divisions"
+    },
+    {
+      "what": "Kombo St Mary before 1973-04-24",
+      "unit": "GMB:KomboStMary@1965",
+      "atoms": [
+        "GMB-ADM1-31243875B42421745591684"
+      ],
+      "from": "1965-02-18",
+      "to": "1973-04-24",
+      "why": "Wikipedia says the Kombo St Mary LGA was created \"in the 1960s\" from part of Brikama (Western) without a date; Statoids lists it as a division only from 1973. Whether it was separate from Western on 1965-02-18 is not established.",
+      "checked": [
+        "en.wikipedia Kanifing oldid 1372931931",
+        "statoids.com/ugm.html",
+        "statoids.com/ygm.html"
+      ],
+      "needs": "the Local Government (Amendment) ordinance or act creating the Kombo St Mary Area Council"
+    },
+    {
+      "what": "Western Division before 1973-04-24",
+      "unit": "GMB:Western@1965",
+      "atoms": [
+        "GMB-ADM1-31243875B88426941804625"
+      ],
+      "from": "1965-02-18",
+      "to": "1973-04-24",
+      "why": "Western = Brikama alone, or Brikama + Kanifing, depending on when Kombo St Mary was separated (see above).",
+      "checked": [
+        "en.wikipedia Kanifing oldid 1372931931",
+        "statoids.com/ugm.html"
+      ],
+      "needs": "the act creating the Kombo St Mary Area Council"
+    }
+  ]
+}

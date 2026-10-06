@@ -1,0 +1,85 @@
+{
+ "country": "BIH",
+ "atomSet": "gb-adm1@2026-10-06",
+ "scope": {
+  "from": "1948",
+  "to": "1992-04-05"
+ },
+ "polityNote": "Federal People's / Socialist Federal Republic of Yugoslavia. The first level of Yugoslavia was its six republics (and from 1945/1946 the autonomous province and region within Serbia); this file draws only the Bosnian republic, which the map lacked before OpenHistoricalMap's SR BiH row (1963-04-07 on; the build yields to it there). Drawn from 1948 because Sutorina left the republic for Montenegro in 1947 (day not stated), after which its outline is the present state outline = the union of the three geoBoundaries BIH ADM1 atoms (Federation, Republika Srpska, Brčko). Not drawn here: SR Slovenia (the Slovenian–Croatian republican line in Istria and along the Mura/Dragonja has double cadastral records and the 1954–1956 attachment of Zone B is not dated to the day) and SR Macedonia (the 2001 border agreement with FR Yugoslavia moved about 2,500 ha, so the pre-2001 line runs inside today's outline).",
+ "units": [
+  {
+   "id": "BIH:NR_BiH@1948",
+   "names": {
+    "en": "People's Republic of Bosnia and Herzegovina",
+    "ja": "ボスニア・ヘルツェゴビナ人民共和国",
+    "local": "Narodna Republika Bosna i Hercegovina"
+   },
+   "wikidata": "Q208545",
+   "spans": [
+    {
+     "from": "1948",
+     "precision": "year",
+     "to": "1963-04-07",
+     "atoms": [
+      "BIH-ADM1-54001226B82378099338701",
+      "BIH-ADM1-54001226B66267900922909",
+      "BIH-ADM1-54001226B17629474923252"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Socialist_Republic_of_Bosnia_and_Herzegovina&oldid=1377913723",
+       "title": "Socialist Republic of Bosnia and Herzegovina (Wikipedia, oldid 1377913723)",
+       "accessed": "2026-10-06",
+       "says": "People's Republic of Bosnia and Herzegovina 1946–1963, one of the six republics; its borders, almost identical to the Austro-Hungarian condominium, were delineated with the People's Republic and inherited by the independent state."
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Sutorina&oldid=1374942414",
+       "title": "Sutorina (Wikipedia, oldid 1374942414)",
+       "accessed": "2026-10-06",
+       "says": "Sutorina belonged to Bosnia and Herzegovina until 1947, when it became part of Montenegro; a 2015 agreement confirmed Montenegrin sovereignty — so from 1948 the republic is today's Bosnia and Herzegovina."
+      }
+     ],
+     "dateNote": "Renamed Socialist Republic by the 1963 constitution (7 April 1963)."
+    }
+   ]
+  },
+  {
+   "id": "BIH:SR_BiH@1963",
+   "names": {
+    "en": "Socialist Republic of Bosnia and Herzegovina",
+    "ja": "ボスニア・ヘルツェゴビナ社会主義共和国",
+    "local": "Socijalistička Republika Bosna i Hercegovina"
+   },
+   "wikidata": "Q208545",
+   "spans": [
+    {
+     "from": "1963-04-07",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "BIH-ADM1-54001226B82378099338701",
+      "BIH-ADM1-54001226B66267900922909",
+      "BIH-ADM1-54001226B17629474923252"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Socialist_Republic_of_Bosnia_and_Herzegovina&oldid=1377913723",
+       "title": "Socialist Republic of Bosnia and Herzegovina (Wikipedia, oldid 1377913723)",
+       "accessed": "2026-10-06",
+       "says": "Renamed Socialist Republic on 7 April 1963; independence 6 April 1992 (referendum 1 March 1992)."
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Sutorina&oldid=1374942414",
+       "title": "Sutorina (Wikipedia, oldid 1374942414)",
+       "accessed": "2026-10-06",
+       "says": "Sutorina belonged to Bosnia and Herzegovina until 1947, when it became part of Montenegro; a 2015 agreement confirmed Montenegrin sovereignty — so from 1948 the republic is today's Bosnia and Herzegovina."
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "events": [],
+ "counts": [],
+ "unresolved": []
+}

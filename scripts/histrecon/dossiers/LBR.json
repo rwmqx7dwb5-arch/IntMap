@@ -1,11 +1,11 @@
 {
  "country": "LBR",
- "atomSet": "ne-admin1@ca96624",
+ "atomSet": "gb-adm2@2026-10-06",
  "scope": {
   "from": "1964",
   "to": "2019-12-31"
  },
- "polityNote": "Republic of Liberia. Coverage starts with the 1964 reorganisation that extended the coastal counties inland and turned the three interior provinces into counties; the earlier county/province layout is not expressible with these atoms.",
+ "polityNote": "Republic of Liberia from the 1964 reorganisation, drawn with the 136 districts of geoBoundaries LBR ADM2 (UNMIL/OCHA, 2021; the 2008-census districts). Rewritten from the ne-admin1 dossier: the codified decrees (Liberian Codes Revised, Title 20) date Bomi, Grand Kru, Margibi and Rivercess to the day and show that the two transfers statoids infers from re-based 1984 populations are parts of the creating decrees (Firestone to Margibi, Buah to Grand Kru); districts also leave room to split Grand Kru once its former territories are mapped. Every district lies wholly (sample share 1.00) in one gb ADM1 county.",
  "units": [
   {
    "id": "LBR:Bong@1964",
@@ -21,23 +21,34 @@
      "precision": "year",
      "to": null,
      "atoms": [
-      "LBR-784"
+      "LBR-ADM2-62588387B10021882083615",
+      "LBR-ADM2-62588387B10332133917800",
+      "LBR-ADM2-62588387B13478865264863",
+      "LBR-ADM2-62588387B17056544161092",
+      "LBR-ADM2-62588387B25170598917016",
+      "LBR-ADM2-62588387B50517390877930",
+      "LBR-ADM2-62588387B51807838510700",
+      "LBR-ADM2-62588387B55119976119769",
+      "LBR-ADM2-62588387B82841165757499",
+      "LBR-ADM2-62588387B85752437288892",
+      "LBR-ADM2-62588387B99058243343156",
+      "LBR-ADM2-62588387B99544432637290"
      ],
      "sources": [
       {
        "url": "https://www.statoids.com/ulr.html",
-       "title": "Statoids — Counties of Liberia (change history)",
-       "says": "1964 interior provinces became Bong, Nimba, Grand Gedeh, Lofa; Bomi 1984, Grand Kru ~1984, Margibi 1985, Rivercess 1985-04-18, River Gee 2000, Gbarpolu ~2001; 1984–2008 transfers Maryland→Grand Kru, Montserrado→Margibi.",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Counties of Liberia (Gwillim Law, updated 2015-06-30)",
+       "says": "1911–1964: five coastal counties and three interior provinces. 1964: coastal counties extended inland; Central province became Bong and Nimba, Eastern Grand Gedeh, Western Lofa; territories stayed inside counties.",
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Liberia&oldid=1358999403",
        "title": "Wikipedia — Counties of Liberia (oldid 1358999403)",
        "says": "Bong, Grand Gedeh, Lofa, Nimba created 1964; Bomi 1984 and Margibi 1985 from Montserrado; Rivercess 1985 from Grand Bassa; River Gee 2000 from Grand Gedeh; Gbarpolu 2001 from Lofa.",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "1964 reorganisation (only the year is established; legislature first met 1964-07-26). No later change touching this unit is recorded in the statoids change list or Wikipedia."
+     "dateNote": "1964 reorganisation (only the year is established; the new legislature first met 1964-07-26). The county's outer line is taken to be the 1964 line: no later act touching it is listed by statoids, the Liberian Codes Revised (Title 20) or Wikipedia."
     }
    ]
   },
@@ -55,23 +66,39 @@
      "precision": "year",
      "to": null,
      "atoms": [
-      "LBR-791"
+      "LBR-ADM2-62588387B21067170743113",
+      "LBR-ADM2-62588387B26498986950089",
+      "LBR-ADM2-62588387B27641742881305",
+      "LBR-ADM2-62588387B31416079447902",
+      "LBR-ADM2-62588387B4114270001160",
+      "LBR-ADM2-62588387B4230579459991",
+      "LBR-ADM2-62588387B45934307689461",
+      "LBR-ADM2-62588387B51124182778876",
+      "LBR-ADM2-62588387B53345215693508",
+      "LBR-ADM2-62588387B61657259363442",
+      "LBR-ADM2-62588387B64952289701703",
+      "LBR-ADM2-62588387B71258849496296",
+      "LBR-ADM2-62588387B71745180805277",
+      "LBR-ADM2-62588387B82144239475407",
+      "LBR-ADM2-62588387B90260404265556",
+      "LBR-ADM2-62588387B94510923567486",
+      "LBR-ADM2-62588387B99870761463073"
      ],
      "sources": [
       {
        "url": "https://www.statoids.com/ulr.html",
-       "title": "Statoids — Counties of Liberia (change history)",
-       "says": "1964 interior provinces became Bong, Nimba, Grand Gedeh, Lofa; Bomi 1984, Grand Kru ~1984, Margibi 1985, Rivercess 1985-04-18, River Gee 2000, Gbarpolu ~2001; 1984–2008 transfers Maryland→Grand Kru, Montserrado→Margibi.",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Counties of Liberia (Gwillim Law, updated 2015-06-30)",
+       "says": "1911–1964: five coastal counties and three interior provinces. 1964: coastal counties extended inland; Central province became Bong and Nimba, Eastern Grand Gedeh, Western Lofa; territories stayed inside counties.",
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Liberia&oldid=1358999403",
        "title": "Wikipedia — Counties of Liberia (oldid 1358999403)",
        "says": "Bong, Grand Gedeh, Lofa, Nimba created 1964; Bomi 1984 and Margibi 1985 from Montserrado; Rivercess 1985 from Grand Bassa; River Gee 2000 from Grand Gedeh; Gbarpolu 2001 from Lofa.",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "1964 reorganisation (only the year is established; legislature first met 1964-07-26). No later change touching this unit is recorded in the statoids change list or Wikipedia."
+     "dateNote": "1964 reorganisation (only the year is established; the new legislature first met 1964-07-26). The county's outer line is taken to be the 1964 line: no later act touching it is listed by statoids, the Liberian Codes Revised (Title 20) or Wikipedia."
     }
    ]
   },
@@ -89,57 +116,27 @@
      "precision": "year",
      "to": null,
      "atoms": [
-      "LBR-786"
+      "LBR-ADM2-62588387B21593373041420",
+      "LBR-ADM2-62588387B58887581868104",
+      "LBR-ADM2-62588387B70898832426748",
+      "LBR-ADM2-62588387B76680524179510",
+      "LBR-ADM2-62588387B80584494728088"
      ],
      "sources": [
       {
        "url": "https://www.statoids.com/ulr.html",
-       "title": "Statoids — Counties of Liberia (change history)",
-       "says": "1964 interior provinces became Bong, Nimba, Grand Gedeh, Lofa; Bomi 1984, Grand Kru ~1984, Margibi 1985, Rivercess 1985-04-18, River Gee 2000, Gbarpolu ~2001; 1984–2008 transfers Maryland→Grand Kru, Montserrado→Margibi.",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Counties of Liberia (Gwillim Law, updated 2015-06-30)",
+       "says": "1911–1964: five coastal counties and three interior provinces. 1964: coastal counties extended inland; Central province became Bong and Nimba, Eastern Grand Gedeh, Western Lofa; territories stayed inside counties.",
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Liberia&oldid=1358999403",
        "title": "Wikipedia — Counties of Liberia (oldid 1358999403)",
        "says": "Bong, Grand Gedeh, Lofa, Nimba created 1964; Bomi 1984 and Margibi 1985 from Montserrado; Rivercess 1985 from Grand Bassa; River Gee 2000 from Grand Gedeh; Gbarpolu 2001 from Lofa.",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "1964 reorganisation (only the year is established; legislature first met 1964-07-26). No later change touching this unit is recorded in the statoids change list or Wikipedia."
-    }
-   ]
-  },
-  {
-   "id": "LBR:Sinoe@1964",
-   "names": {
-    "en": "Sinoe County",
-    "ja": "シノエ郡",
-    "local": "Sinoe County"
-   },
-   "wikidata": "Q1043644",
-   "spans": [
-    {
-     "from": "1964",
-     "precision": "year",
-     "to": null,
-     "atoms": [
-      "LBR-782"
-     ],
-     "sources": [
-      {
-       "url": "https://www.statoids.com/ulr.html",
-       "title": "Statoids — Counties of Liberia (change history)",
-       "says": "1964 interior provinces became Bong, Nimba, Grand Gedeh, Lofa; Bomi 1984, Grand Kru ~1984, Margibi 1985, Rivercess 1985-04-18, River Gee 2000, Gbarpolu ~2001; 1984–2008 transfers Maryland→Grand Kru, Montserrado→Margibi.",
-       "accessed": "2026-10-05"
-      },
-      {
-       "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Liberia&oldid=1358999403",
-       "title": "Wikipedia — Counties of Liberia (oldid 1358999403)",
-       "says": "Bong, Grand Gedeh, Lofa, Nimba created 1964; Bomi 1984 and Margibi 1985 from Montserrado; Rivercess 1985 from Grand Bassa; River Gee 2000 from Grand Gedeh; Gbarpolu 2001 from Lofa.",
-       "accessed": "2026-10-05"
-      }
-     ],
-     "dateNote": "1964 reorganisation (only the year is established; legislature first met 1964-07-26). No later change touching this unit is recorded in the statoids change list or Wikipedia."
+     "dateNote": "1964 reorganisation (only the year is established; the new legislature first met 1964-07-26). The county's outer line is taken to be the 1964 line: no later act touching it is listed by statoids, the Liberian Codes Revised (Title 20) or Wikipedia."
     }
    ]
   },
@@ -157,47 +154,64 @@
      "precision": "year",
      "to": "2000-09-14",
      "atoms": [
-      "LBR-787",
-      "LBR-1459"
+      "LBR-ADM2-62588387B13670701840793",
+      "LBR-ADM2-62588387B17909685690178",
+      "LBR-ADM2-62588387B18809430914172",
+      "LBR-ADM2-62588387B25205457381815",
+      "LBR-ADM2-62588387B29328841835384",
+      "LBR-ADM2-62588387B39118473724395",
+      "LBR-ADM2-62588387B55137864763124",
+      "LBR-ADM2-62588387B58325877345443",
+      "LBR-ADM2-62588387B81783560061544",
+      "LBR-ADM2-62588387B82153656109433",
+      "LBR-ADM2-62588387B9251982733395",
+      "LBR-ADM2-62588387B94232483093280",
+      "LBR-ADM2-62588387B94896309973685"
      ],
      "sources": [
       {
        "url": "https://www.statoids.com/ulr.html",
-       "title": "Statoids — Counties of Liberia (change history)",
-       "says": "1964 interior provinces became Bong, Nimba, Grand Gedeh, Lofa; Bomi 1984, Grand Kru ~1984, Margibi 1985, Rivercess 1985-04-18, River Gee 2000, Gbarpolu ~2001; 1984–2008 transfers Maryland→Grand Kru, Montserrado→Margibi.",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Counties of Liberia (Gwillim Law, updated 2015-06-30)",
+       "says": "1911–1964: five coastal counties and three interior provinces. 1964: coastal counties extended inland; Central province became Bong and Nimba, Eastern Grand Gedeh, Western Lofa; territories stayed inside counties.",
+       "accessed": "2026-10-06"
       },
       {
-       "url": "https://en.wikipedia.org/w/index.php?title=Gbarpolu_County&oldid=1375891907",
-       "title": "Wikipedia — Gbarpolu County (oldid 1375891907)",
-       "says": "Created in 2001 when it was split from Lofa County.",
-       "accessed": "2026-10-05"
+       "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Liberia&oldid=1358999403",
+       "title": "Wikipedia — Counties of Liberia (oldid 1358999403)",
+       "says": "Bong, Grand Gedeh, Lofa, Nimba created 1964; Bomi 1984 and Margibi 1985 from Montserrado; Rivercess 1985 from Grand Bassa; River Gee 2000 from Grand Gedeh; Gbarpolu 2001 from Lofa.",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "1964 reorganisation (only the year is established; legislature first met 1964-07-26). No later change touching this unit is recorded in the statoids change list or Wikipedia. Gbarpolu was carved wholly from Lofa; ends when the Senate created Gbarpolu (2000-09-14)."
+     "dateNote": "1964 reorganisation (only the year is established; the new legislature first met 1964-07-26). The county's outer line is taken to be the 1964 line: no later act touching it is listed by statoids, the Liberian Codes Revised (Title 20) or Wikipedia. Ends when the Senate created Gbarpolu (2000-09-14); the following window is unresolved."
     },
     {
      "from": "2004-01-01",
      "precision": "day",
      "to": null,
      "atoms": [
-      "LBR-787"
+      "LBR-ADM2-62588387B13670701840793",
+      "LBR-ADM2-62588387B17909685690178",
+      "LBR-ADM2-62588387B25205457381815",
+      "LBR-ADM2-62588387B29328841835384",
+      "LBR-ADM2-62588387B39118473724395",
+      "LBR-ADM2-62588387B81783560061544",
+      "LBR-ADM2-62588387B94896309973685"
      ],
      "sources": [
       {
        "url": "https://www.statoids.com/ulr.html",
-       "title": "Statoids — Counties of Liberia (change history)",
-       "says": "1964 interior provinces became Bong, Nimba, Grand Gedeh, Lofa; Bomi 1984, Grand Kru ~1984, Margibi 1985, Rivercess 1985-04-18, River Gee 2000, Gbarpolu ~2001; 1984–2008 transfers Maryland→Grand Kru, Montserrado→Margibi.",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Counties of Liberia (Gwillim Law, updated 2015-06-30)",
+       "says": "Bomi 1984; Grand Kru ~1984 (Kru Coast + Sasstown); Margibi 1985 (Marshall + Gibi); Rivercess 1985-04-18; River Gee 2000-06 (Senate 2000-03-07); Gbarpolu ~2001 (Senate 2000-09-14; one source 2003).",
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://en.wikipedia.org/w/index.php?title=Gbarpolu_County&oldid=1375891907",
        "title": "Wikipedia — Gbarpolu County (oldid 1375891907)",
-       "says": "Created in 2001 when it was split from Lofa County.",
-       "accessed": "2026-10-05"
+       "says": "Created in 2001 from Lofa County.",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Starts after every date given for Gbarpolu's creation (2001 per statoids/Wikipedia, 2003 per statoids' source [5])."
+     "dateNote": "From 2004 Gbarpolu exists on every account (2001 or 2003)."
     }
    ]
   },
@@ -215,23 +229,28 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "LBR-1459"
+      "LBR-ADM2-62588387B18809430914172",
+      "LBR-ADM2-62588387B55137864763124",
+      "LBR-ADM2-62588387B58325877345443",
+      "LBR-ADM2-62588387B82153656109433",
+      "LBR-ADM2-62588387B9251982733395",
+      "LBR-ADM2-62588387B94232483093280"
      ],
      "sources": [
       {
        "url": "https://www.statoids.com/ulr.html",
-       "title": "Statoids — Counties of Liberia (change history)",
-       "says": "1964 interior provinces became Bong, Nimba, Grand Gedeh, Lofa; Bomi 1984, Grand Kru ~1984, Margibi 1985, Rivercess 1985-04-18, River Gee 2000, Gbarpolu ~2001; 1984–2008 transfers Maryland→Grand Kru, Montserrado→Margibi.",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Counties of Liberia (Gwillim Law, updated 2015-06-30)",
+       "says": "Bomi 1984; Grand Kru ~1984 (Kru Coast + Sasstown); Margibi 1985 (Marshall + Gibi); Rivercess 1985-04-18; River Gee 2000-06 (Senate 2000-03-07); Gbarpolu ~2001 (Senate 2000-09-14; one source 2003).",
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://en.wikipedia.org/w/index.php?title=Gbarpolu_County&oldid=1375891907",
        "title": "Wikipedia — Gbarpolu County (oldid 1375891907)",
-       "says": "Created in 2001 when it was split from Lofa County.",
-       "accessed": "2026-10-05"
+       "says": "Created in 2001 from Lofa County.",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "See Lofa: starts after the latest creation date any source gives."
+     "dateNote": "Effective 2001 (statoids, Wikipedia) or 2003 (County Development Agenda); drawn from the first day both accounts agree on."
     }
    ]
   },
@@ -247,49 +266,77 @@
     {
      "from": "1964",
      "precision": "year",
-     "to": "2000-03-07",
+     "to": "2000-03-16",
      "atoms": [
-      "LBR-793",
-      "LBR-1458"
+      "LBR-ADM2-62588387B18265546179194",
+      "LBR-ADM2-62588387B20671280647544",
+      "LBR-ADM2-62588387B27164468507335",
+      "LBR-ADM2-62588387B28588993408977",
+      "LBR-ADM2-62588387B47381315935072",
+      "LBR-ADM2-62588387B48887094579275",
+      "LBR-ADM2-62588387B49218131763508",
+      "LBR-ADM2-62588387B52564280766994",
+      "LBR-ADM2-62588387B52645090696794",
+      "LBR-ADM2-62588387B58359330496040",
+      "LBR-ADM2-62588387B62156042060365",
+      "LBR-ADM2-62588387B63271162227743",
+      "LBR-ADM2-62588387B68127744098501",
+      "LBR-ADM2-62588387B68728641169413",
+      "LBR-ADM2-62588387B79134287051190",
+      "LBR-ADM2-62588387B88320605520745",
+      "LBR-ADM2-62588387B90652682225930",
+      "LBR-ADM2-62588387B99879349198662"
      ],
      "sources": [
       {
        "url": "https://www.statoids.com/ulr.html",
-       "title": "Statoids — Counties of Liberia (change history)",
-       "says": "1964 interior provinces became Bong, Nimba, Grand Gedeh, Lofa; Bomi 1984, Grand Kru ~1984, Margibi 1985, Rivercess 1985-04-18, River Gee 2000, Gbarpolu ~2001; 1984–2008 transfers Maryland→Grand Kru, Montserrado→Margibi.",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Counties of Liberia (Gwillim Law, updated 2015-06-30)",
+       "says": "1911–1964: five coastal counties and three interior provinces. 1964: coastal counties extended inland; Central province became Bong and Nimba, Eastern Grand Gedeh, Western Lofa; territories stayed inside counties.",
+       "accessed": "2026-10-06"
       },
       {
-       "url": "https://en.wikipedia.org/w/index.php?title=River_Gee_County&oldid=1376600022",
-       "title": "Wikipedia — River Gee County (oldid 1376600022)",
-       "says": "River Gee County was created in 2000 from Grand Gedeh County.",
-       "accessed": "2026-10-05"
+       "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Liberia&oldid=1358999403",
+       "title": "Wikipedia — Counties of Liberia (oldid 1358999403)",
+       "says": "Bong, Grand Gedeh, Lofa, Nimba created 1964; Bomi 1984 and Margibi 1985 from Montserrado; Rivercess 1985 from Grand Bassa; River Gee 2000 from Grand Gedeh; Gbarpolu 2001 from Lofa.",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "1964 reorganisation (only the year is established; legislature first met 1964-07-26). No later change touching this unit is recorded in the statoids change list or Wikipedia. River Gee was carved wholly from Grand Gedeh; ends at Senate approval (2000-03-07)."
+     "dateNote": "1964 reorganisation (only the year is established; the new legislature first met 1964-07-26). The county's outer line is taken to be the 1964 line: no later act touching it is listed by statoids, the Liberian Codes Revised (Title 20) or Wikipedia."
     },
     {
-     "from": "2000-07-01",
+     "from": "2000-03-16",
      "precision": "day",
      "to": null,
      "atoms": [
-      "LBR-793"
+      "LBR-ADM2-62588387B18265546179194",
+      "LBR-ADM2-62588387B20671280647544",
+      "LBR-ADM2-62588387B47381315935072",
+      "LBR-ADM2-62588387B48887094579275",
+      "LBR-ADM2-62588387B49218131763508",
+      "LBR-ADM2-62588387B62156042060365",
+      "LBR-ADM2-62588387B63271162227743",
+      "LBR-ADM2-62588387B79134287051190"
      ],
      "sources": [
       {
+       "url": "https://verityonlinenews.com/river-gee-marks-26th-anniversary-with-calls-for-unity-flag-petition-and-guest-house-groundbreaking/",
+       "title": "Verity News (2026-03-19) — River Gee marks 26th anniversary",
+       "says": "River Gee County was signed into law by President Charles G. Taylor on 2000-03-16; the county anniversary is kept on 16 March.",
+       "accessed": "2026-10-06"
+      },
+      {
        "url": "https://www.statoids.com/ulr.html",
-       "title": "Statoids — Counties of Liberia (change history)",
-       "says": "1964 interior provinces became Bong, Nimba, Grand Gedeh, Lofa; Bomi 1984, Grand Kru ~1984, Margibi 1985, Rivercess 1985-04-18, River Gee 2000, Gbarpolu ~2001; 1984–2008 transfers Maryland→Grand Kru, Montserrado→Margibi.",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Counties of Liberia (Gwillim Law, updated 2015-06-30)",
+       "says": "Bomi 1984; Grand Kru ~1984 (Kru Coast + Sasstown); Margibi 1985 (Marshall + Gibi); Rivercess 1985-04-18; River Gee 2000-06 (Senate 2000-03-07); Gbarpolu ~2001 (Senate 2000-09-14; one source 2003).",
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://en.wikipedia.org/w/index.php?title=River_Gee_County&oldid=1376600022",
        "title": "Wikipedia — River Gee County (oldid 1376600022)",
-       "says": "River Gee County was created in 2000 from Grand Gedeh County.",
-       "accessed": "2026-10-05"
+       "says": "Split from Grand Gedeh after House approval (1997) and Senate approval (March 2000); in place May 2000.",
+       "accessed": "2026-10-06"
       }
-     ],
-     "dateNote": "Starts after the month statoids gives for River Gee's split (2000-06)."
+     ]
     }
    ]
   },
@@ -303,26 +350,42 @@
    "wikidata": "Q1047875",
    "spans": [
     {
-     "from": "2000-07-01",
+     "from": "2000-03-16",
      "precision": "day",
      "to": null,
      "atoms": [
-      "LBR-1458"
+      "LBR-ADM2-62588387B27164468507335",
+      "LBR-ADM2-62588387B28588993408977",
+      "LBR-ADM2-62588387B52564280766994",
+      "LBR-ADM2-62588387B52645090696794",
+      "LBR-ADM2-62588387B58359330496040",
+      "LBR-ADM2-62588387B68127744098501",
+      "LBR-ADM2-62588387B68728641169413",
+      "LBR-ADM2-62588387B88320605520745",
+      "LBR-ADM2-62588387B90652682225930",
+      "LBR-ADM2-62588387B99879349198662"
      ],
      "sources": [
       {
+       "url": "https://verityonlinenews.com/river-gee-marks-26th-anniversary-with-calls-for-unity-flag-petition-and-guest-house-groundbreaking/",
+       "title": "Verity News (2026-03-19) — River Gee marks 26th anniversary",
+       "says": "River Gee County was signed into law by President Charles G. Taylor on 2000-03-16; the county anniversary is kept on 16 March.",
+       "accessed": "2026-10-06"
+      },
+      {
        "url": "https://www.statoids.com/ulr.html",
-       "title": "Statoids — Counties of Liberia (change history)",
-       "says": "1964 interior provinces became Bong, Nimba, Grand Gedeh, Lofa; Bomi 1984, Grand Kru ~1984, Margibi 1985, Rivercess 1985-04-18, River Gee 2000, Gbarpolu ~2001; 1984–2008 transfers Maryland→Grand Kru, Montserrado→Margibi.",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Counties of Liberia (Gwillim Law, updated 2015-06-30)",
+       "says": "Bomi 1984; Grand Kru ~1984 (Kru Coast + Sasstown); Margibi 1985 (Marshall + Gibi); Rivercess 1985-04-18; River Gee 2000-06 (Senate 2000-03-07); Gbarpolu ~2001 (Senate 2000-09-14; one source 2003).",
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://en.wikipedia.org/w/index.php?title=River_Gee_County&oldid=1376600022",
        "title": "Wikipedia — River Gee County (oldid 1376600022)",
-       "says": "River Gee County was created in 2000 from Grand Gedeh County.",
-       "accessed": "2026-10-05"
+       "says": "Split from Grand Gedeh after House approval (1997) and Senate approval (March 2000); in place May 2000.",
+       "accessed": "2026-10-06"
       }
-     ]
+     ],
+     "dateNote": "Act signed by the President 2000-03-16 (Senate 2000-03-07); the county keeps 16 March as its anniversary. statoids (2000-06) and Wikipedia (May 2000) date the setting-up of the county administration."
     }
    ]
   },
@@ -338,40 +401,73 @@
     {
      "from": "1964",
      "precision": "year",
-     "to": "1985-04-18",
+     "to": "1985-12-13",
      "atoms": [
-      "LBR-785",
-      "LBR-792"
+      "LBR-ADM2-62588387B22492671376188",
+      "LBR-ADM2-62588387B27438362743371",
+      "LBR-ADM2-62588387B28377115536759",
+      "LBR-ADM2-62588387B32884824633153",
+      "LBR-ADM2-62588387B34334652858528",
+      "LBR-ADM2-62588387B40614732140726",
+      "LBR-ADM2-62588387B53220692513074",
+      "LBR-ADM2-62588387B61310853787803",
+      "LBR-ADM2-62588387B65596489935901",
+      "LBR-ADM2-62588387B6652087258063",
+      "LBR-ADM2-62588387B67611028502926",
+      "LBR-ADM2-62588387B78382325144882",
+      "LBR-ADM2-62588387B7916938294123",
+      "LBR-ADM2-62588387B80284911734552",
+      "LBR-ADM2-62588387B87205642323712",
+      "LBR-ADM2-62588387B88645489379872"
      ],
      "sources": [
       {
        "url": "https://www.statoids.com/ulr.html",
-       "title": "Statoids — Counties of Liberia (change history)",
-       "says": "1964 interior provinces became Bong, Nimba, Grand Gedeh, Lofa; Bomi 1984, Grand Kru ~1984, Margibi 1985, Rivercess 1985-04-18, River Gee 2000, Gbarpolu ~2001; 1984–2008 transfers Maryland→Grand Kru, Montserrado→Margibi.",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Counties of Liberia (Gwillim Law, updated 2015-06-30)",
+       "says": "1911–1964: five coastal counties and three interior provinces. 1964: coastal counties extended inland; Central province became Bong and Nimba, Eastern Grand Gedeh, Western Lofa; territories stayed inside counties.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.wto.org/english/thewto_e/acc_e/lbr_e/wtacclbr15_leg_15.pdf",
+       "title": "Liberian Codes Revised vol. IV, Title 20 Local Government Law, ch. 2–3 (pp. 395–403; WTO accession document)",
+       "says": "INA Decree 15, issued 1985-12-13, makes Rivercess Territory, Grand Bassa County, Rivercess County.",
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Liberia&oldid=1358999403",
        "title": "Wikipedia — Counties of Liberia (oldid 1358999403)",
        "says": "Bong, Grand Gedeh, Lofa, Nimba created 1964; Bomi 1984 and Margibi 1985 from Montserrado; Rivercess 1985 from Grand Bassa; River Gee 2000 from Grand Gedeh; Gbarpolu 2001 from Lofa.",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "1964 reorganisation (only the year is established; legislature first met 1964-07-26). No later change touching this unit is recorded in the statoids change list or Wikipedia. Rivercess territory (subordinate to Grand Bassa) became a county on 1985-04-18."
+     "dateNote": "1964 reorganisation (only the year is established; the new legislature first met 1964-07-26). The county's outer line is taken to be the 1964 line: no later act touching it is listed by statoids, the Liberian Codes Revised (Title 20) or Wikipedia. Rivercess Territory (1955) stayed inside the county until INA Decree 15."
     },
     {
-     "from": "1985-04-18",
+     "from": "1985-12-13",
      "precision": "day",
      "to": null,
      "atoms": [
-      "LBR-785"
+      "LBR-ADM2-62588387B22492671376188",
+      "LBR-ADM2-62588387B28377115536759",
+      "LBR-ADM2-62588387B32884824633153",
+      "LBR-ADM2-62588387B53220692513074",
+      "LBR-ADM2-62588387B61310853787803",
+      "LBR-ADM2-62588387B67611028502926",
+      "LBR-ADM2-62588387B7916938294123",
+      "LBR-ADM2-62588387B80284911734552"
      ],
      "sources": [
       {
+       "url": "https://www.wto.org/english/thewto_e/acc_e/lbr_e/wtacclbr15_leg_15.pdf",
+       "title": "Liberian Codes Revised vol. IV, Title 20 Local Government Law, ch. 2–3 (pp. 395–403; WTO accession document)",
+       "says": "INA Decree 15, issued 1985-12-13, makes Rivercess Territory, Grand Bassa County, Rivercess County.",
+       "accessed": "2026-10-06"
+      },
+      {
        "url": "https://www.statoids.com/ulr.html",
-       "title": "Statoids — Counties of Liberia (change history)",
-       "says": "1964 interior provinces became Bong, Nimba, Grand Gedeh, Lofa; Bomi 1984, Grand Kru ~1984, Margibi 1985, Rivercess 1985-04-18, River Gee 2000, Gbarpolu ~2001; 1984–2008 transfers Maryland→Grand Kru, Montserrado→Margibi.",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Counties of Liberia (Gwillim Law, updated 2015-06-30)",
+       "says": "Bomi 1984; Grand Kru ~1984 (Kru Coast + Sasstown); Margibi 1985 (Marshall + Gibi); Rivercess 1985-04-18; River Gee 2000-06 (Senate 2000-03-07); Gbarpolu ~2001 (Senate 2000-09-14; one source 2003).",
+       "accessed": "2026-10-06"
       }
      ]
     }
@@ -387,26 +483,46 @@
    "wikidata": "Q955095",
    "spans": [
     {
-     "from": "1985-04-18",
+     "from": "1985-12-13",
      "precision": "day",
      "to": null,
      "atoms": [
-      "LBR-792"
+      "LBR-ADM2-62588387B27438362743371",
+      "LBR-ADM2-62588387B34334652858528",
+      "LBR-ADM2-62588387B40614732140726",
+      "LBR-ADM2-62588387B65596489935901",
+      "LBR-ADM2-62588387B6652087258063",
+      "LBR-ADM2-62588387B78382325144882",
+      "LBR-ADM2-62588387B87205642323712",
+      "LBR-ADM2-62588387B88645489379872"
      ],
      "sources": [
       {
+       "url": "https://www.wto.org/english/thewto_e/acc_e/lbr_e/wtacclbr15_leg_15.pdf",
+       "title": "Liberian Codes Revised vol. IV, Title 20 Local Government Law, ch. 2–3 (pp. 395–403; WTO accession document)",
+       "says": "INA Decree 15, issued 1985-12-13, makes Rivercess Territory, Grand Bassa County, Rivercess County.",
+       "accessed": "2026-10-06"
+      },
+      {
        "url": "https://www.statoids.com/ulr.html",
-       "title": "Statoids — Counties of Liberia (change history)",
-       "says": "1964 interior provinces became Bong, Nimba, Grand Gedeh, Lofa; Bomi 1984, Grand Kru ~1984, Margibi 1985, Rivercess 1985-04-18, River Gee 2000, Gbarpolu ~2001; 1984–2008 transfers Maryland→Grand Kru, Montserrado→Margibi.",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Counties of Liberia (Gwillim Law, updated 2015-06-30)",
+       "says": "Bomi 1984; Grand Kru ~1984 (Kru Coast + Sasstown); Margibi 1985 (Marshall + Gibi); Rivercess 1985-04-18; River Gee 2000-06 (Senate 2000-03-07); Gbarpolu ~2001 (Senate 2000-09-14; one source 2003).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/ulr.html",
+       "title": "Statoids — Counties of Liberia (Gwillim Law, updated 2015-06-30)",
+       "says": "1984 census by county and territory; LISGIS 1984 figures re-based to 2008 lines imply 16,000 people Maryland→Grand Kru and 53,800 Montserrado→Margibi; 13 counties c. 1989.",
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Liberia&oldid=1358999403",
        "title": "Wikipedia — Counties of Liberia (oldid 1358999403)",
        "says": "Bong, Grand Gedeh, Lofa, Nimba created 1964; Bomi 1984 and Margibi 1985 from Montserrado; Rivercess 1985 from Grand Bassa; River Gee 2000 from Grand Gedeh; Gbarpolu 2001 from Lofa.",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       }
-     ]
+     ],
+     "dateNote": "INA Decree 15 issued 1985-12-13 (Liberian Codes Revised, Title 20 note 7). statoids gives 1985-04-18 without a source; the codified note is followed. The territory's 1984 population is unchanged on 2008 lines (statoids), so the county is the territory."
     }
    ]
   },
@@ -422,44 +538,106 @@
     {
      "from": "1964",
      "precision": "year",
-     "to": "1984",
+     "to": "1984-01-19",
      "atoms": [
-      "LBR-788",
-      "LBR-789",
-      "LBR-783"
+      "LBR-ADM2-62588387B18343621802172",
+      "LBR-ADM2-62588387B2159992345918",
+      "LBR-ADM2-62588387B31480436327445",
+      "LBR-ADM2-62588387B34365926899718",
+      "LBR-ADM2-62588387B44236806524966",
+      "LBR-ADM2-62588387B59975354142856",
+      "LBR-ADM2-62588387B62702599090886",
+      "LBR-ADM2-62588387B63326242332262",
+      "LBR-ADM2-62588387B63407074353739",
+      "LBR-ADM2-62588387B74380915330894",
+      "LBR-ADM2-62588387B7448810269647",
+      "LBR-ADM2-62588387B86192689871255",
+      "LBR-ADM2-62588387B88523823709040"
      ],
      "sources": [
       {
        "url": "https://www.statoids.com/ulr.html",
-       "title": "Statoids — Counties of Liberia (change history)",
-       "says": "1964 interior provinces became Bong, Nimba, Grand Gedeh, Lofa; Bomi 1984, Grand Kru ~1984, Margibi 1985, Rivercess 1985-04-18, River Gee 2000, Gbarpolu ~2001; 1984–2008 transfers Maryland→Grand Kru, Montserrado→Margibi.",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Counties of Liberia (Gwillim Law, updated 2015-06-30)",
+       "says": "1911–1964: five coastal counties and three interior provinces. 1964: coastal counties extended inland; Central province became Bong and Nimba, Eastern Grand Gedeh, Western Lofa; territories stayed inside counties.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.wto.org/english/thewto_e/acc_e/lbr_e/wtacclbr15_leg_15.pdf",
+       "title": "Liberian Codes Revised vol. IV, Title 20 Local Government Law, ch. 2–3 (pp. 395–403; WTO accession document)",
+       "says": "PRC Decree 80, issued 1984-01-19 and effective on signature, makes the Lofa-Gola, Day and Mecca chiefdoms of Bomi Territory, Montserrado, Bomi County.",
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Liberia&oldid=1358999403",
        "title": "Wikipedia — Counties of Liberia (oldid 1358999403)",
        "says": "Bong, Grand Gedeh, Lofa, Nimba created 1964; Bomi 1984 and Margibi 1985 from Montserrado; Rivercess 1985 from Grand Bassa; River Gee 2000 from Grand Gedeh; Gbarpolu 2001 from Lofa.",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "1964 reorganisation (only the year is established; legislature first met 1964-07-26). No later change touching this unit is recorded in the statoids change list or Wikipedia. Bomi (1984) and Margibi (1985) came wholly from Montserrado; the later Montserrado→Margibi transfer is internal to this union."
+     "dateNote": "1964 reorganisation (only the year is established; the new legislature first met 1964-07-26). The county's outer line is taken to be the 1964 line: no later act touching it is listed by statoids, the Liberian Codes Revised (Title 20) or Wikipedia. Bomi, Marshall and (from 1978) Gibi territories were inside the county."
     },
     {
-     "from": "2008-03-21",
+     "from": "1984-01-19",
      "precision": "day",
-     "to": null,
+     "to": "1985-12-13",
      "atoms": [
-      "LBR-788"
+      "LBR-ADM2-62588387B18343621802172",
+      "LBR-ADM2-62588387B2159992345918",
+      "LBR-ADM2-62588387B31480436327445",
+      "LBR-ADM2-62588387B59975354142856",
+      "LBR-ADM2-62588387B62702599090886",
+      "LBR-ADM2-62588387B63326242332262",
+      "LBR-ADM2-62588387B63407074353739",
+      "LBR-ADM2-62588387B74380915330894",
+      "LBR-ADM2-62588387B86192689871255"
      ],
      "sources": [
       {
+       "url": "https://www.wto.org/english/thewto_e/acc_e/lbr_e/wtacclbr15_leg_15.pdf",
+       "title": "Liberian Codes Revised vol. IV, Title 20 Local Government Law, ch. 2–3 (pp. 395–403; WTO accession document)",
+       "says": "PRC Decree 80, issued 1984-01-19 and effective on signature, makes the Lofa-Gola, Day and Mecca chiefdoms of Bomi Territory, Montserrado, Bomi County.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.wto.org/english/thewto_e/acc_e/lbr_e/wtacclbr15_leg_15.pdf",
+       "title": "Liberian Codes Revised vol. IV, Title 20 Local Government Law, ch. 2–3 (pp. 395–403; WTO accession document)",
+       "says": "INA Decree 14, issued 1985-12-13 and effective on issuance, makes Marshall Territory, Gibi Territory (Kakata District and Gibi sub-district) and the Firestone Plantations (Harbel) Margibi County.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    },
+    {
+     "from": "1985-12-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "LBR-ADM2-62588387B18343621802172",
+      "LBR-ADM2-62588387B2159992345918",
+      "LBR-ADM2-62588387B62702599090886",
+      "LBR-ADM2-62588387B63326242332262",
+      "LBR-ADM2-62588387B86192689871255"
+     ],
+     "sources": [
+      {
+       "url": "https://www.wto.org/english/thewto_e/acc_e/lbr_e/wtacclbr15_leg_15.pdf",
+       "title": "Liberian Codes Revised vol. IV, Title 20 Local Government Law, ch. 2–3 (pp. 395–403; WTO accession document)",
+       "says": "INA Decree 14, issued 1985-12-13 and effective on issuance, makes Marshall Territory, Gibi Territory (Kakata District and Gibi sub-district) and the Firestone Plantations (Harbel) Margibi County.",
+       "accessed": "2026-10-06"
+      },
+      {
        "url": "https://www.statoids.com/ulr.html",
-       "title": "Statoids — Counties of Liberia (change history)",
-       "says": "1964 interior provinces became Bong, Nimba, Grand Gedeh, Lofa; Bomi 1984, Grand Kru ~1984, Margibi 1985, Rivercess 1985-04-18, River Gee 2000, Gbarpolu ~2001; 1984–2008 transfers Maryland→Grand Kru, Montserrado→Margibi.",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Counties of Liberia (Gwillim Law, updated 2015-06-30)",
+       "says": "1984 census by county and territory; LISGIS 1984 figures re-based to 2008 lines imply 16,000 people Maryland→Grand Kru and 53,800 Montserrado→Margibi; 13 counties c. 1989.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Montserrado_County&oldid=1376840501",
+       "title": "Wikipedia — Montserrado County (oldid 1376840501)",
+       "says": "Population 491,078 at the 1984 census (on 2008 lines; the census as published gave 544,878 for the county without its territories).",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Drawn from the 2008 census (reference date 21 March 2008): statoids shows from LISGIS 2008 tables that territory moved Maryland→Grand Kru and Montserrado→Margibi at an unknown date between 1984 and 2008."
+     "dateNote": "The 53,800 people statoids infers were moved Montserrado→Margibi are the Firestone Plantations that INA Decree 14 itself gives to Margibi: 544,878 (published 1984) − 491,078 (1984 on 2008 lines) = 53,800, and Marshall 31,190 + Gibi 66,802 + 53,800 = 151,792 ≈ Margibi's 1984 density × area (146 × 1,039 sq mi = 151,694). No later transfer is needed."
     }
    ]
   },
@@ -473,27 +651,30 @@
    "wikidata": "Q844127",
    "spans": [
     {
-     "from": "1985",
-     "precision": "year",
+     "from": "1984-01-19",
+     "precision": "day",
      "to": null,
      "atoms": [
-      "LBR-783"
+      "LBR-ADM2-62588387B34365926899718",
+      "LBR-ADM2-62588387B44236806524966",
+      "LBR-ADM2-62588387B7448810269647",
+      "LBR-ADM2-62588387B88523823709040"
      ],
      "sources": [
       {
-       "url": "https://www.statoids.com/ulr.html",
-       "title": "Statoids — Counties of Liberia (change history)",
-       "says": "1964 interior provinces became Bong, Nimba, Grand Gedeh, Lofa; Bomi 1984, Grand Kru ~1984, Margibi 1985, Rivercess 1985-04-18, River Gee 2000, Gbarpolu ~2001; 1984–2008 transfers Maryland→Grand Kru, Montserrado→Margibi.",
-       "accessed": "2026-10-05"
+       "url": "https://www.wto.org/english/thewto_e/acc_e/lbr_e/wtacclbr15_leg_15.pdf",
+       "title": "Liberian Codes Revised vol. IV, Title 20 Local Government Law, ch. 2–3 (pp. 395–403; WTO accession document)",
+       "says": "PRC Decree 80, issued 1984-01-19 and effective on signature, makes the Lofa-Gola, Day and Mecca chiefdoms of Bomi Territory, Montserrado, Bomi County.",
+       "accessed": "2026-10-06"
       },
       {
-       "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Liberia&oldid=1358999403",
-       "title": "Wikipedia — Counties of Liberia (oldid 1358999403)",
-       "says": "Bong, Grand Gedeh, Lofa, Nimba created 1964; Bomi 1984 and Margibi 1985 from Montserrado; Rivercess 1985 from Grand Bassa; River Gee 2000 from Grand Gedeh; Gbarpolu 2001 from Lofa.",
-       "accessed": "2026-10-05"
+       "url": "https://www.statoids.com/ulr.html",
+       "title": "Statoids — Counties of Liberia (Gwillim Law, updated 2015-06-30)",
+       "says": "Bomi 1984; Grand Kru ~1984 (Kru Coast + Sasstown); Margibi 1985 (Marshall + Gibi); Rivercess 1985-04-18; River Gee 2000-06 (Senate 2000-03-07); Gbarpolu ~2001 (Senate 2000-09-14; one source 2003).",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Bomi territory became a county during 1984 (day not established); span starts 1985."
+     "dateNote": "PRC Decree 80 issued 1984-01-19, effective on signature (published 1984-03-19). Wikipedia's Bomi article says 1983; the codified decree date is followed."
     }
    ]
   },
@@ -507,27 +688,42 @@
    "wikidata": "Q1052737",
    "spans": [
     {
-     "from": "2008-03-21",
+     "from": "1985-12-13",
      "precision": "day",
      "to": null,
      "atoms": [
-      "LBR-789"
+      "LBR-ADM2-62588387B31480436327445",
+      "LBR-ADM2-62588387B59975354142856",
+      "LBR-ADM2-62588387B63407074353739",
+      "LBR-ADM2-62588387B74380915330894"
      ],
      "sources": [
       {
-       "url": "https://www.statoids.com/ulr.html",
-       "title": "Statoids — Counties of Liberia (change history)",
-       "says": "1964 interior provinces became Bong, Nimba, Grand Gedeh, Lofa; Bomi 1984, Grand Kru ~1984, Margibi 1985, Rivercess 1985-04-18, River Gee 2000, Gbarpolu ~2001; 1984–2008 transfers Maryland→Grand Kru, Montserrado→Margibi.",
-       "accessed": "2026-10-05"
+       "url": "https://www.wto.org/english/thewto_e/acc_e/lbr_e/wtacclbr15_leg_15.pdf",
+       "title": "Liberian Codes Revised vol. IV, Title 20 Local Government Law, ch. 2–3 (pp. 395–403; WTO accession document)",
+       "says": "INA Decree 14, issued 1985-12-13 and effective on issuance, makes Marshall Territory, Gibi Territory (Kakata District and Gibi sub-district) and the Firestone Plantations (Harbel) Margibi County.",
+       "accessed": "2026-10-06"
       },
       {
-       "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Liberia&oldid=1358999403",
-       "title": "Wikipedia — Counties of Liberia (oldid 1358999403)",
-       "says": "Bong, Grand Gedeh, Lofa, Nimba created 1964; Bomi 1984 and Margibi 1985 from Montserrado; Rivercess 1985 from Grand Bassa; River Gee 2000 from Grand Gedeh; Gbarpolu 2001 from Lofa.",
-       "accessed": "2026-10-05"
+       "url": "https://en.wikipedia.org/w/index.php?title=Margibi_County&oldid=1376411200",
+       "title": "Wikipedia — Margibi County (oldid 1376411200)",
+       "says": "Created by Interim National Assembly decree dated 1985-12-13; districts Firestone, Gibi, Kakata, Mambah-Kaba; 1984 density 146/sq mi on 1,039 sq mi (about 151,700 people on 2008 lines).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/ulr.html",
+       "title": "Statoids — Counties of Liberia (Gwillim Law, updated 2015-06-30)",
+       "says": "1984 census by county and territory; LISGIS 1984 figures re-based to 2008 lines imply 16,000 people Maryland→Grand Kru and 53,800 Montserrado→Margibi; 13 counties c. 1989.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Montserrado_County&oldid=1376840501",
+       "title": "Wikipedia — Montserrado County (oldid 1376840501)",
+       "says": "Population 491,078 at the 1984 census (on 2008 lines; the census as published gave 544,878 for the county without its territories).",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Drawn from the 2008 census (reference date 21 March 2008): statoids shows from LISGIS 2008 tables that territory moved Maryland→Grand Kru and Montserrado→Margibi at an unknown date between 1984 and 2008."
+     "dateNote": "INA Decree 14 issued 1985-12-13, effective on issuance: Marshall Territory + Gibi Territory (Kakata District and Gibi sub-district) + the Firestone Plantations (Harbel). See Montserrado for the population arithmetic showing the 2008 county is the decree's county."
     }
    ]
   },
@@ -541,45 +737,39 @@
    "wikidata": "Q870138",
    "spans": [
     {
-     "from": "1964",
-     "precision": "year",
-     "to": "1984",
+     "from": "1984-07-19",
+     "precision": "day",
+     "to": null,
      "atoms": [
-      "LBR-781",
-      "LBR-780"
+      "LBR-ADM2-62588387B21181915979204",
+      "LBR-ADM2-62588387B3504103493017",
+      "LBR-ADM2-62588387B36010153941862",
+      "LBR-ADM2-62588387B59551016114373",
+      "LBR-ADM2-62588387B65193305891299",
+      "LBR-ADM2-62588387B79277340487156",
+      "LBR-ADM2-62588387B88590052314441"
      ],
      "sources": [
       {
+       "url": "https://www.wto.org/english/thewto_e/acc_e/lbr_e/wtacclbr15_leg_15.pdf",
+       "title": "Liberian Codes Revised vol. IV, Title 20 Local Government Law, ch. 2–3 (pp. 395–403; WTO accession document)",
+       "says": "PRC Decree 87, issued 1984-07-19 and effective on signature, makes the Sasstown and Kru Coast territories and the Statutory District of Buah Grand Kru County.",
+       "accessed": "2026-10-06"
+      },
+      {
        "url": "https://www.statoids.com/ulr.html",
-       "title": "Statoids — Counties of Liberia (change history)",
-       "says": "1964 interior provinces became Bong, Nimba, Grand Gedeh, Lofa; Bomi 1984, Grand Kru ~1984, Margibi 1985, Rivercess 1985-04-18, River Gee 2000, Gbarpolu ~2001; 1984–2008 transfers Maryland→Grand Kru, Montserrado→Margibi.",
-       "accessed": "2026-10-05"
+       "title": "Statoids — Counties of Liberia (Gwillim Law, updated 2015-06-30)",
+       "says": "1984 census by county and territory; LISGIS 1984 figures re-based to 2008 lines imply 16,000 people Maryland→Grand Kru and 53,800 Montserrado→Margibi; 13 counties c. 1989.",
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://en.wikipedia.org/w/index.php?title=Grand_Kru_County&oldid=1375953826",
        "title": "Wikipedia — Grand Kru County (oldid 1375953826)",
-       "says": "Grand Kru County was formed in 1984 from Maryland County (Kru Coast and Sasstown territories).",
-       "accessed": "2026-10-05"
+       "says": "Created 1984 (PRC Decree 87) from Sasstown and Kru Coast territories; Kru Coast had been part of Maryland, Sasstown part of Sinoe. 1984 census population on 2008 lines 62,791.",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "1964 reorganisation (only the year is established; legislature first met 1964-07-26). No later change touching this unit is recorded in the statoids change list or Wikipedia. Grand Kru (Kru Coast + Sasstown territories) came wholly from Maryland."
-    },
-    {
-     "from": "2008-03-21",
-     "precision": "day",
-     "to": null,
-     "atoms": [
-      "LBR-781"
-     ],
-     "sources": [
-      {
-       "url": "https://www.statoids.com/ulr.html",
-       "title": "Statoids — Counties of Liberia (change history)",
-       "says": "1964 interior provinces became Bong, Nimba, Grand Gedeh, Lofa; Bomi 1984, Grand Kru ~1984, Margibi 1985, Rivercess 1985-04-18, River Gee 2000, Gbarpolu ~2001; 1984–2008 transfers Maryland→Grand Kru, Montserrado→Margibi.",
-       "accessed": "2026-10-05"
-      }
-     ],
-     "dateNote": "Drawn from the 2008 census (reference date 21 March 2008): statoids shows from LISGIS 2008 tables that territory moved Maryland→Grand Kru and Montserrado→Margibi at an unknown date between 1984 and 2008."
+     "dateNote": "From PRC Decree 87 (1984-07-19). The 16,000 people statoids infers were moved Maryland→Grand Kru are the Statutory District of Buah, which the decree itself puts in Grand Kru: Kru Coast 35,267 + Sasstown 11,524 + 16,000 = 62,791 = Grand Kru's 1984 population on 2008 lines. Before the decree see unresolved."
     }
    ]
   },
@@ -593,27 +783,118 @@
    "wikidata": "Q574952",
    "spans": [
     {
-     "from": "2008-03-21",
+     "from": "1984-07-19",
      "precision": "day",
      "to": null,
      "atoms": [
-      "LBR-780"
+      "LBR-ADM2-62588387B28167569470031",
+      "LBR-ADM2-62588387B34130334496008",
+      "LBR-ADM2-62588387B41100614633328",
+      "LBR-ADM2-62588387B53229219679368",
+      "LBR-ADM2-62588387B63754413826366",
+      "LBR-ADM2-62588387B63880548555579",
+      "LBR-ADM2-62588387B64851496201268",
+      "LBR-ADM2-62588387B65725534392235",
+      "LBR-ADM2-62588387B79313023095428",
+      "LBR-ADM2-62588387B83711466952292",
+      "LBR-ADM2-62588387B84481919127843",
+      "LBR-ADM2-62588387B86571798658395",
+      "LBR-ADM2-62588387B87662048762198",
+      "LBR-ADM2-62588387B92809240343923",
+      "LBR-ADM2-62588387B93003043713282",
+      "LBR-ADM2-62588387B93469506869608",
+      "LBR-ADM2-62588387B97917112158690",
+      "LBR-ADM2-62588387B98873845016712"
      ],
      "sources": [
       {
-       "url": "https://www.statoids.com/ulr.html",
-       "title": "Statoids — Counties of Liberia (change history)",
-       "says": "1964 interior provinces became Bong, Nimba, Grand Gedeh, Lofa; Bomi 1984, Grand Kru ~1984, Margibi 1985, Rivercess 1985-04-18, River Gee 2000, Gbarpolu ~2001; 1984–2008 transfers Maryland→Grand Kru, Montserrado→Margibi.",
-       "accessed": "2026-10-05"
+       "url": "https://www.wto.org/english/thewto_e/acc_e/lbr_e/wtacclbr15_leg_15.pdf",
+       "title": "Liberian Codes Revised vol. IV, Title 20 Local Government Law, ch. 2–3 (pp. 395–403; WTO accession document)",
+       "says": "PRC Decree 87, issued 1984-07-19 and effective on signature, makes the Sasstown and Kru Coast territories and the Statutory District of Buah Grand Kru County.",
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://en.wikipedia.org/w/index.php?title=Grand_Kru_County&oldid=1375953826",
        "title": "Wikipedia — Grand Kru County (oldid 1375953826)",
-       "says": "Grand Kru County was formed in 1984 from Maryland County (Kru Coast and Sasstown territories).",
-       "accessed": "2026-10-05"
+       "says": "Created 1984 (PRC Decree 87) from Sasstown and Kru Coast territories; Kru Coast had been part of Maryland, Sasstown part of Sinoe. 1984 census population on 2008 lines 62,791.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://senate.gov.lr/grand-kru-county/",
+       "title": "Liberian Senate — Grand Kru County",
+       "says": "Grand Kru created 1984/85 from the territories of Sasstown and Kru Coast; Kru Coast came from Maryland, Sasstown from Sinoe.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/ulr.html",
+       "title": "Statoids — Counties of Liberia (Gwillim Law, updated 2015-06-30)",
+       "says": "1984 census by county and territory; LISGIS 1984 figures re-based to 2008 lines imply 16,000 people Maryland→Grand Kru and 53,800 Montserrado→Margibi; 13 counties c. 1989.",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Drawn from the 2008 census (reference date 21 March 2008): statoids shows from LISGIS 2008 tables that territory moved Maryland→Grand Kru and Montserrado→Margibi at an unknown date between 1984 and 2008."
+     "dateNote": "PRC Decree 87 issued 1984-07-19, effective on signature (one source says 1985; statoids' source [5] 1980-04-12, possibly a boundary decree). The decree's county (Kru Coast + Sasstown + Buah) equals the 2008 county by the 1984 population arithmetic (see Maryland)."
+    }
+   ]
+  },
+  {
+   "id": "LBR:Sinoe@1964",
+   "names": {
+    "en": "Sinoe County",
+    "ja": "シノエ郡",
+    "local": "Sinoe County"
+   },
+   "wikidata": "Q1043644",
+   "spans": [
+    {
+     "from": "1984-07-19",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "LBR-ADM2-62588387B10493983903288",
+      "LBR-ADM2-62588387B27805419534049",
+      "LBR-ADM2-62588387B29712288551419",
+      "LBR-ADM2-62588387B37465422358714",
+      "LBR-ADM2-62588387B38040387852125",
+      "LBR-ADM2-62588387B44747363578735",
+      "LBR-ADM2-62588387B4912984440097",
+      "LBR-ADM2-62588387B5166019461138",
+      "LBR-ADM2-62588387B58471335034652",
+      "LBR-ADM2-62588387B59492535947478",
+      "LBR-ADM2-62588387B68895676065239",
+      "LBR-ADM2-62588387B74933582499482",
+      "LBR-ADM2-62588387B77612051850083",
+      "LBR-ADM2-62588387B80156561530658",
+      "LBR-ADM2-62588387B87591253137556",
+      "LBR-ADM2-62588387B89490647958390",
+      "LBR-ADM2-62588387B9002390323622"
+     ],
+     "sources": [
+      {
+       "url": "https://www.wto.org/english/thewto_e/acc_e/lbr_e/wtacclbr15_leg_15.pdf",
+       "title": "Liberian Codes Revised vol. IV, Title 20 Local Government Law, ch. 2–3 (pp. 395–403; WTO accession document)",
+       "says": "PRC Decree 87, issued 1984-07-19 and effective on signature, makes the Sasstown and Kru Coast territories and the Statutory District of Buah Grand Kru County.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Grand_Kru_County&oldid=1375953826",
+       "title": "Wikipedia — Grand Kru County (oldid 1375953826)",
+       "says": "Created 1984 (PRC Decree 87) from Sasstown and Kru Coast territories; Kru Coast had been part of Maryland, Sasstown part of Sinoe. 1984 census population on 2008 lines 62,791.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://senate.gov.lr/grand-kru-county/",
+       "title": "Liberian Senate — Grand Kru County",
+       "says": "Grand Kru created 1984/85 from the territories of Sasstown and Kru Coast; Kru Coast came from Maryland, Sasstown from Sinoe.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Maryland_County&oldid=1377294365",
+       "title": "Wikipedia — Maryland County (oldid 1377294365)",
+       "says": "In 1984 Kru Coast Territory, administered as part of Maryland, was detached and merged with the Sasstown Territory of Sinoe to form Grand Kru (PRC Decree 87).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From PRC Decree 87, when Sasstown Territory left for Grand Kru. Before that see unresolved."
     }
    ]
   }
@@ -622,96 +903,114 @@
   {
    "date": "1964",
    "precision": "year",
-   "what": "Interior provinces abolished; Bong, Nimba, Grand Gedeh, Lofa counties; coastal counties extended inland",
+   "what": "Interior provinces abolished; Bong, Nimba, Grand Gedeh, Lofa counties; coastal counties extended inland (9 counties)",
    "sources": [
     {
      "url": "https://www.statoids.com/ulr.html",
-     "title": "Statoids — Counties of Liberia (change history)",
-     "says": "1964 interior provinces became Bong, Nimba, Grand Gedeh, Lofa; Bomi 1984, Grand Kru ~1984, Margibi 1985, Rivercess 1985-04-18, River Gee 2000, Gbarpolu ~2001; 1984–2008 transfers Maryland→Grand Kru, Montserrado→Margibi.",
-     "accessed": "2026-10-05"
+     "title": "Statoids — Counties of Liberia (Gwillim Law, updated 2015-06-30)",
+     "says": "1911–1964: five coastal counties and three interior provinces. 1964: coastal counties extended inland; Central province became Bong and Nimba, Eastern Grand Gedeh, Western Lofa; territories stayed inside counties.",
+     "accessed": "2026-10-06"
     },
     {
      "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Liberia&oldid=1358999403",
      "title": "Wikipedia — Counties of Liberia (oldid 1358999403)",
      "says": "Bong, Grand Gedeh, Lofa, Nimba created 1964; Bomi 1984 and Margibi 1985 from Montserrado; Rivercess 1985 from Grand Bassa; River Gee 2000 from Grand Gedeh; Gbarpolu 2001 from Lofa.",
-     "accessed": "2026-10-05"
+     "accessed": "2026-10-06"
     }
    ]
   },
   {
-   "date": "1984",
-   "precision": "year",
-   "what": "Bomi county from Montserrado; Grand Kru from Maryland (1984 or 1985)",
+   "date": "1984-01-19",
+   "precision": "day",
+   "what": "Bomi County from Bomi Territory, Montserrado (PRC Decree 80)",
    "sources": [
     {
-     "url": "https://www.statoids.com/ulr.html",
-     "title": "Statoids — Counties of Liberia (change history)",
-     "says": "1964 interior provinces became Bong, Nimba, Grand Gedeh, Lofa; Bomi 1984, Grand Kru ~1984, Margibi 1985, Rivercess 1985-04-18, River Gee 2000, Gbarpolu ~2001; 1984–2008 transfers Maryland→Grand Kru, Montserrado→Margibi.",
-     "accessed": "2026-10-05"
+     "url": "https://www.wto.org/english/thewto_e/acc_e/lbr_e/wtacclbr15_leg_15.pdf",
+     "title": "Liberian Codes Revised vol. IV, Title 20 Local Government Law, ch. 2–3 (pp. 395–403; WTO accession document)",
+     "says": "PRC Decree 80, issued 1984-01-19 and effective on signature, makes the Lofa-Gola, Day and Mecca chiefdoms of Bomi Territory, Montserrado, Bomi County.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1984-07-19",
+   "precision": "day",
+   "what": "Grand Kru County from Kru Coast and Sasstown territories and the Statutory District of Buah (PRC Decree 87)",
+   "sources": [
+    {
+     "url": "https://www.wto.org/english/thewto_e/acc_e/lbr_e/wtacclbr15_leg_15.pdf",
+     "title": "Liberian Codes Revised vol. IV, Title 20 Local Government Law, ch. 2–3 (pp. 395–403; WTO accession document)",
+     "says": "PRC Decree 87, issued 1984-07-19 and effective on signature, makes the Sasstown and Kru Coast territories and the Statutory District of Buah Grand Kru County.",
+     "accessed": "2026-10-06"
     },
     {
      "url": "https://en.wikipedia.org/w/index.php?title=Grand_Kru_County&oldid=1375953826",
      "title": "Wikipedia — Grand Kru County (oldid 1375953826)",
-     "says": "Grand Kru County was formed in 1984 from Maryland County (Kru Coast and Sasstown territories).",
-     "accessed": "2026-10-05"
+     "says": "Created 1984 (PRC Decree 87) from Sasstown and Kru Coast territories; Kru Coast had been part of Maryland, Sasstown part of Sinoe. 1984 census population on 2008 lines 62,791.",
+     "accessed": "2026-10-06"
     }
    ]
   },
   {
-   "date": "1985",
-   "precision": "year",
-   "what": "Margibi county from Montserrado",
-   "sources": [
-    {
-     "url": "https://www.statoids.com/ulr.html",
-     "title": "Statoids — Counties of Liberia (change history)",
-     "says": "1964 interior provinces became Bong, Nimba, Grand Gedeh, Lofa; Bomi 1984, Grand Kru ~1984, Margibi 1985, Rivercess 1985-04-18, River Gee 2000, Gbarpolu ~2001; 1984–2008 transfers Maryland→Grand Kru, Montserrado→Margibi.",
-     "accessed": "2026-10-05"
-    }
-   ]
-  },
-  {
-   "date": "1985-04-18",
+   "date": "1985-12-13",
    "precision": "day",
-   "what": "Rivercess county from Grand Bassa",
+   "what": "Margibi County (Marshall, Gibi, Firestone) from Montserrado (INA Decree 14); Rivercess County from Grand Bassa (INA Decree 15)",
    "sources": [
     {
-     "url": "https://www.statoids.com/ulr.html",
-     "title": "Statoids — Counties of Liberia (change history)",
-     "says": "1964 interior provinces became Bong, Nimba, Grand Gedeh, Lofa; Bomi 1984, Grand Kru ~1984, Margibi 1985, Rivercess 1985-04-18, River Gee 2000, Gbarpolu ~2001; 1984–2008 transfers Maryland→Grand Kru, Montserrado→Margibi.",
-     "accessed": "2026-10-05"
-    }
-   ]
-  },
-  {
-   "date": "2000-06",
-   "precision": "month",
-   "what": "River Gee county from Grand Gedeh",
-   "sources": [
-    {
-     "url": "https://www.statoids.com/ulr.html",
-     "title": "Statoids — Counties of Liberia (change history)",
-     "says": "1964 interior provinces became Bong, Nimba, Grand Gedeh, Lofa; Bomi 1984, Grand Kru ~1984, Margibi 1985, Rivercess 1985-04-18, River Gee 2000, Gbarpolu ~2001; 1984–2008 transfers Maryland→Grand Kru, Montserrado→Margibi.",
-     "accessed": "2026-10-05"
+     "url": "https://www.wto.org/english/thewto_e/acc_e/lbr_e/wtacclbr15_leg_15.pdf",
+     "title": "Liberian Codes Revised vol. IV, Title 20 Local Government Law, ch. 2–3 (pp. 395–403; WTO accession document)",
+     "says": "INA Decree 14, issued 1985-12-13 and effective on issuance, makes Marshall Territory, Gibi Territory (Kakata District and Gibi sub-district) and the Firestone Plantations (Harbel) Margibi County.",
+     "accessed": "2026-10-06"
     },
     {
-     "url": "https://en.wikipedia.org/w/index.php?title=River_Gee_County&oldid=1376600022",
-     "title": "Wikipedia — River Gee County (oldid 1376600022)",
-     "says": "River Gee County was created in 2000 from Grand Gedeh County.",
-     "accessed": "2026-10-05"
+     "url": "https://www.wto.org/english/thewto_e/acc_e/lbr_e/wtacclbr15_leg_15.pdf",
+     "title": "Liberian Codes Revised vol. IV, Title 20 Local Government Law, ch. 2–3 (pp. 395–403; WTO accession document)",
+     "says": "INA Decree 15, issued 1985-12-13, makes Rivercess Territory, Grand Bassa County, Rivercess County.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Margibi_County&oldid=1376411200",
+     "title": "Wikipedia — Margibi County (oldid 1376411200)",
+     "says": "Created by Interim National Assembly decree dated 1985-12-13; districts Firestone, Gibi, Kakata, Mambah-Kaba; 1984 density 146/sq mi on 1,039 sq mi (about 151,700 people on 2008 lines).",
+     "accessed": "2026-10-06"
     }
    ]
   },
   {
-   "date": "2001",
-   "precision": "year",
-   "what": "Gbarpolu county from Lofa",
+   "date": "2000-03-16",
+   "precision": "day",
+   "what": "River Gee County from Grand Gedeh (act signed)",
    "sources": [
+    {
+     "url": "https://verityonlinenews.com/river-gee-marks-26th-anniversary-with-calls-for-unity-flag-petition-and-guest-house-groundbreaking/",
+     "title": "Verity News (2026-03-19) — River Gee marks 26th anniversary",
+     "says": "River Gee County was signed into law by President Charles G. Taylor on 2000-03-16; the county anniversary is kept on 16 March.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://www.statoids.com/ulr.html",
+     "title": "Statoids — Counties of Liberia (Gwillim Law, updated 2015-06-30)",
+     "says": "Bomi 1984; Grand Kru ~1984 (Kru Coast + Sasstown); Margibi 1985 (Marshall + Gibi); Rivercess 1985-04-18; River Gee 2000-06 (Senate 2000-03-07); Gbarpolu ~2001 (Senate 2000-09-14; one source 2003).",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "2000-09-14",
+   "precision": "day",
+   "what": "Senate creates Gbarpolu County from Lofa, effective 2001 (or 2003)",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ulr.html",
+     "title": "Statoids — Counties of Liberia (Gwillim Law, updated 2015-06-30)",
+     "says": "Bomi 1984; Grand Kru ~1984 (Kru Coast + Sasstown); Margibi 1985 (Marshall + Gibi); Rivercess 1985-04-18; River Gee 2000-06 (Senate 2000-03-07); Gbarpolu ~2001 (Senate 2000-09-14; one source 2003).",
+     "accessed": "2026-10-06"
+    },
     {
      "url": "https://en.wikipedia.org/w/index.php?title=Gbarpolu_County&oldid=1375891907",
      "title": "Wikipedia — Gbarpolu County (oldid 1375891907)",
-     "says": "Created in 2001 when it was split from Lofa County.",
-     "accessed": "2026-10-05"
+     "says": "Created in 2001 from Lofa County.",
+     "accessed": "2026-10-06"
     }
    ]
   }
@@ -723,9 +1022,9 @@
    "sources": [
     {
      "url": "https://www.statoids.com/ulr.html",
-     "title": "Statoids — Counties of Liberia (change history)",
-     "says": "1964 interior provinces became Bong, Nimba, Grand Gedeh, Lofa; Bomi 1984, Grand Kru ~1984, Margibi 1985, Rivercess 1985-04-18, River Gee 2000, Gbarpolu ~2001; 1984–2008 transfers Maryland→Grand Kru, Montserrado→Margibi.",
-     "accessed": "2026-10-05"
+     "title": "Statoids — Counties of Liberia (Gwillim Law, updated 2015-06-30)",
+     "says": "1911–1964: five coastal counties and three interior provinces. 1964: coastal counties extended inland; Central province became Bong and Nimba, Eastern Grand Gedeh, Western Lofa; territories stayed inside counties.",
+     "accessed": "2026-10-06"
     }
    ]
   },
@@ -735,9 +1034,9 @@
    "sources": [
     {
      "url": "https://www.statoids.com/ulr.html",
-     "title": "Statoids — Counties of Liberia (change history)",
-     "says": "1964 interior provinces became Bong, Nimba, Grand Gedeh, Lofa; Bomi 1984, Grand Kru ~1984, Margibi 1985, Rivercess 1985-04-18, River Gee 2000, Gbarpolu ~2001; 1984–2008 transfers Maryland→Grand Kru, Montserrado→Margibi.",
-     "accessed": "2026-10-05"
+     "title": "Statoids — Counties of Liberia (Gwillim Law, updated 2015-06-30)",
+     "says": "1984 census by county and territory; LISGIS 1984 figures re-based to 2008 lines imply 16,000 people Maryland→Grand Kru and 53,800 Montserrado→Margibi; 13 counties c. 1989.",
+     "accessed": "2026-10-06"
     }
    ]
   },
@@ -746,10 +1045,16 @@
    "n": 15,
    "sources": [
     {
-     "url": "https://www.statoids.com/ulr.html",
-     "title": "Statoids — Counties of Liberia (change history)",
-     "says": "1964 interior provinces became Bong, Nimba, Grand Gedeh, Lofa; Bomi 1984, Grand Kru ~1984, Margibi 1985, Rivercess 1985-04-18, River Gee 2000, Gbarpolu ~2001; 1984–2008 transfers Maryland→Grand Kru, Montserrado→Margibi.",
-     "accessed": "2026-10-05"
+     "url": "https://www.paris21.org/sites/default/files/LIBERIA_census.pdf",
+     "title": "LISGIS — 2008 Population and Housing Census highlights",
+     "says": "15 counties at the 2008-03-21 census.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://www.statoids.com/ylr.html",
+     "title": "Statoids — Districts of Liberia (2008 census, 136 districts)",
+     "says": "The 136 districts of the 2008 census by county; only change listed: Quardu Bondi split from Voinjama (~2008), inside Lofa.",
+     "accessed": "2026-10-06"
     }
    ]
   }
@@ -757,106 +1062,104 @@
  "atomsOutside": [],
  "unresolved": [
   {
-   "what": "Montserrado and Margibi 1984–2008",
-   "unit": "LBR:Montserrado@1964",
-   "atoms": [
-    "LBR-788",
-    "LBR-789"
-   ],
-   "from": "1984",
-   "to": "2008-03-21",
-   "why": "Margibi was split off in 1985 and later received more Montserrado territory (1984 population 53,800) at an unknown date before the 2008 census; the Montserrado/Margibi line in this window is not the NE line.",
-   "checked": [
-    "statoids ulr.html (LISGIS 2008 adjusted populations)",
-    "Wikipedia Counties of Liberia oldid 1358999403",
-    "Wikipedia Margibi County oldid 1376411200"
-   ],
-   "needs": "finer atoms: Liberian districts/clans (e.g. geoBoundaries LBR ADM2, LISGIS; licence to be checked) and the date of the transfer"
-  },
-  {
-   "what": "Margibi County 1985–2008",
-   "unit": "LBR:Margibi@1985",
-   "from": "1985",
-   "to": "2008-03-21",
-   "why": "Atoms withheld in the Montserrado entry.",
-   "checked": [
-    "statoids ulr.html"
-   ],
-   "needs": "as above"
-  },
-  {
-   "what": "Bomi County during 1984",
-   "unit": "LBR:Bomi@1984",
-   "atoms": [
-    "LBR-783"
-   ],
-   "from": "1984",
-   "to": "1985",
-   "why": "Created as a county in 1984 on a day not established.",
-   "checked": [
-    "statoids ulr.html",
-    "Wikipedia Bomi County oldid 1375147178"
-   ],
-   "needs": "dated act"
-  },
-  {
-   "what": "Maryland and Grand Kru 1984–2008",
+   "what": "Maryland, Sinoe and the Grand Kru area 1964 – 1984-07-19",
    "unit": "LBR:Maryland@1964",
    "atoms": [
-    "LBR-781",
-    "LBR-780"
+    "LBR-ADM2-62588387B10493983903288",
+    "LBR-ADM2-62588387B21181915979204",
+    "LBR-ADM2-62588387B27805419534049",
+    "LBR-ADM2-62588387B28167569470031",
+    "LBR-ADM2-62588387B29712288551419",
+    "LBR-ADM2-62588387B34130334496008",
+    "LBR-ADM2-62588387B3504103493017",
+    "LBR-ADM2-62588387B36010153941862",
+    "LBR-ADM2-62588387B37465422358714",
+    "LBR-ADM2-62588387B38040387852125",
+    "LBR-ADM2-62588387B41100614633328",
+    "LBR-ADM2-62588387B44747363578735",
+    "LBR-ADM2-62588387B4912984440097",
+    "LBR-ADM2-62588387B5166019461138",
+    "LBR-ADM2-62588387B53229219679368",
+    "LBR-ADM2-62588387B58471335034652",
+    "LBR-ADM2-62588387B59492535947478",
+    "LBR-ADM2-62588387B59551016114373",
+    "LBR-ADM2-62588387B63754413826366",
+    "LBR-ADM2-62588387B63880548555579",
+    "LBR-ADM2-62588387B64851496201268",
+    "LBR-ADM2-62588387B65193305891299",
+    "LBR-ADM2-62588387B65725534392235",
+    "LBR-ADM2-62588387B68895676065239",
+    "LBR-ADM2-62588387B74933582499482",
+    "LBR-ADM2-62588387B77612051850083",
+    "LBR-ADM2-62588387B79277340487156",
+    "LBR-ADM2-62588387B79313023095428",
+    "LBR-ADM2-62588387B80156561530658",
+    "LBR-ADM2-62588387B83711466952292",
+    "LBR-ADM2-62588387B84481919127843",
+    "LBR-ADM2-62588387B86571798658395",
+    "LBR-ADM2-62588387B87591253137556",
+    "LBR-ADM2-62588387B87662048762198",
+    "LBR-ADM2-62588387B88590052314441",
+    "LBR-ADM2-62588387B89490647958390",
+    "LBR-ADM2-62588387B9002390323622",
+    "LBR-ADM2-62588387B92809240343923",
+    "LBR-ADM2-62588387B93003043713282",
+    "LBR-ADM2-62588387B93469506869608",
+    "LBR-ADM2-62588387B97917112158690",
+    "LBR-ADM2-62588387B98873845016712"
    ],
-   "from": "1984",
-   "to": "2008-03-21",
-   "why": "Grand Kru split off in 1984/85 and later received more Maryland territory (1984 population 16,000) at an unknown date before 2008.",
+   "from": "1964",
+   "to": "1984-07-19",
+   "why": "Sasstown Territory (now in Grand Kru) is placed under Maryland by statoids but under Sinoe by Wikipedia and the Liberian Senate; none cites a law. Which census districts formed Sasstown Territory, Kru Coast Territory and the Statutory District of Buah is not established either, so neither county's outer line can be drawn.",
    "checked": [
     "statoids ulr.html",
-    "Wikipedia Grand Kru County oldid 1375953826"
+    "Liberian Codes Revised Title 20 (PRC Decree 87; repealed §§42–43 that created the Sasstown and Kroo Coast territories, text not reproduced)",
+    "Wikipedia Grand Kru County oldid 1375953826, Maryland County oldid 1377294365",
+    "senate.gov.lr Grand Kru County",
+    "liberiadata.com Grand Kru and Sinoe district pages (unsourced)",
+    "LISGIS 1974 CICRED population report (1962 census redistributed to the 1964 counties and territories)"
    ],
-   "needs": "district atoms and the transfer date"
+   "needs": "the acts creating Sasstown Territory and Kru Coast Territory (L. 1957-58 ch. XL) with their boundary clauses, and their extent in census districts"
   },
   {
-   "what": "Grand Kru County 1985–2008",
-   "unit": "LBR:GrandKru@1984",
-   "from": "1985",
-   "to": "2008-03-21",
-   "why": "Atoms withheld in the Maryland entry.",
+   "what": "Sinoe County 1964 – 1984-07-19",
+   "unit": "LBR:Sinoe@1964",
+   "from": "1964",
+   "to": "1984-07-19",
+   "why": "Atoms withheld in the Maryland entry (parentage of Sasstown Territory).",
    "checked": [
-    "statoids ulr.html"
+    "as in the Maryland entry"
    ],
    "needs": "as above"
-  },
-  {
-   "what": "Grand Gedeh / River Gee while River Gee was being created",
-   "unit": "LBR:GrandGedeh@1964",
-   "atoms": [
-    "LBR-793",
-    "LBR-1458"
-   ],
-   "from": "2000-03-07",
-   "to": "2000-07-01",
-   "why": "Senate approved 2000-03-07; statoids gives 2000-06 for the split; the effective day is not established.",
-   "checked": [
-    "statoids ulr.html",
-    "Wikipedia River Gee County oldid 1376600022"
-   ],
-   "needs": "dated act"
   },
   {
    "what": "Lofa / Gbarpolu while Gbarpolu was being created",
    "unit": "LBR:Lofa@1964",
    "atoms": [
-    "LBR-787",
-    "LBR-1459"
+    "LBR-ADM2-62588387B13670701840793",
+    "LBR-ADM2-62588387B17909685690178",
+    "LBR-ADM2-62588387B18809430914172",
+    "LBR-ADM2-62588387B25205457381815",
+    "LBR-ADM2-62588387B29328841835384",
+    "LBR-ADM2-62588387B39118473724395",
+    "LBR-ADM2-62588387B55137864763124",
+    "LBR-ADM2-62588387B58325877345443",
+    "LBR-ADM2-62588387B81783560061544",
+    "LBR-ADM2-62588387B82153656109433",
+    "LBR-ADM2-62588387B9251982733395",
+    "LBR-ADM2-62588387B94232483093280",
+    "LBR-ADM2-62588387B94896309973685"
    ],
    "from": "2000-09-14",
    "to": "2004-01-01",
-   "why": "Senate created Gbarpolu 2000-09-14 with effect in 2001 (statoids, Wikipedia); statoids' source [5] says 2003. The effective day is not established.",
+   "why": "Senate created Gbarpolu 2000-09-14 with effect in 2001 (statoids, Wikipedia); statoids' source [5] (County Development Agenda 2008) says 2003. No dated act or anniversary found.",
    "checked": [
     "statoids ulr.html",
-    "Wikipedia Gbarpolu County oldid 1375891907"
+    "Wikipedia Gbarpolu County oldid 1375891907",
+    "senate.gov.lr Gbarpolu County (2001 only)",
+    "web search for the act / anniversary date"
    ],
-   "needs": "dated act"
+   "needs": "dated act (publication in handbill)"
   },
   {
    "what": "Gbarpolu County 2001–2003",
@@ -873,11 +1176,12 @@
    "what": "Counties and interior provinces before 1964",
    "from": "1911",
    "to": "1964",
-   "why": "Before scope: coastal counties plus Central, Eastern, Western provinces with different lines (extended in 1964).",
+   "why": "Before scope: five coastal counties and the Central, Eastern and Western provinces, whose lines were moved in 1964 (coastal counties extended inland). The 2008 districts were drawn inside the 1964 counties and are not shown to follow the earlier county/province line; no map of that line in district terms was found.",
    "checked": [
-    "statoids ulr.html"
+    "statoids ulr.html",
+    "LISGIS 1974 CICRED report (1962 census re-tabulated to the 1964 divisions only)"
    ],
-   "needs": "pre-1964 district atoms"
+   "needs": "a map of the 1911–1964 county/province lines (e.g. von Gnielinski, Liberia in Maps, 1972) and atoms that carry them"
   }
  ]
 }

@@ -447,10 +447,12 @@
       "what": "Transitional regions 1992-01 → 1995-08-21 (14 regions of Proclamation 7/1992; regions 7–11 merged into SNNPR in 1992) and the 1987 and pre-1987 provinces",
       "from": "1992",
       "to": "1995-08-21",
-      "why": "Before scope. The 1987 regions and older provinces (awraja-based) do not follow present state lines; transitional-region lines 1992–95 are not documented against NE atoms.",
+      "why": "Before scope. The 1987 regions and older provinces (awraja-based) do not follow present state lines; transitional-region lines 1992–95 are not documented against NE atoms. Eritrea as a province (1952–1981) is drawn by ETH-eritrea-1952.json.",
       "checked": [
         "statoids uet.html",
-        "Wikipedia Regions of Ethiopia rev 1377657129"
+        "Wikipedia Regions of Ethiopia rev 1377657129",
+        "geoBoundaries ETH ADM1/ADM2/ADM3 (2016): regions, zones and woredas drawn after 1995; no source maps woredas onto the 1987 regions or the imperial awrajas",
+        "statoids uet.html (1981 Addis Ababa and Aseb; 1987-09 thirty regions)"
       ],
       "needs": "awraja/woreda atoms of the 1984/1994 census (CSA)"
     }

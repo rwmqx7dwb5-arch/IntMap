@@ -15,10 +15,10 @@
   "Don Cossack host lands"
  ],
  "scope": {
-  "from": "1782-01-03",
+  "from": "1708-12-29",
   "to": "1917-11-06"
  },
- "polityNote": "Russian Empire (Russian Republic from 1917-09-14) to 1917-11-06: Volga, Urals, Don and Ural-oblast units. Old Style decree dates converted to Gregorian (+11 before 1800-03-01, +12 to 1900-02-28, +13 after).",
+ "polityNote": "Russian Empire (Russian Republic from 1917-09-14) to 1917-11-06: Volga, Urals, Don and Ural-oblast units. Old Style decree dates converted to Gregorian (+11 before 1800-03-01, +12 to 1900-02-28, +13 after). Scope extended back to Peter I's governorates (29 Dec 1708); before the namestnichestva every atom is named unresolved.",
  "units": [
   {
    "id": "RUE:Kazan",
@@ -347,9 +347,15 @@
        "title": "Пермская губерния — Википедия (oldid 152904819)",
        "says": "Two oblasts of 7 and 5 uyezds 1797–1918; the first territorial change named is the creation of Ekaterinburg governorate on 15 July 1919.",
        "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=154778678",
+       "title": "Тобольское наместничество — Википедия (oldid 154778678)",
+       "says": "Founded by decree of 19 Jan 1782 (№ 15327) from the territory of the abolished Tobolsk province, with Tobolsk and Tomsk oblasts; opened 30 Aug 1782.",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "ПСЗ-1 № 15307, 1781-12-23 O.S. (Chelyabinsk uyezd to Ufa namestnichestvo) = 1782-01-03. Perm namestnichestvo until 12 Dec 1796 O.S., then Perm governorate; the 1796 abolition of Alapaevsk, Dalmatov, Obvinsk uyezds was internal. Den prints the founding decree as 27.01.1787 — a misprint for 1781 (ПСЗ-1 № 15113)."
+     "dateNote": "ПСЗ-1 № 15307, 1781-12-23 O.S. (Chelyabinsk uyezd to Ufa namestnichestvo) = 1782-01-03. Perm namestnichestvo until 12 Dec 1796 O.S., then Perm governorate; the 1796 abolition of Alapaevsk, Dalmatov, Obvinsk uyezds was internal. Den prints the founding decree as 27.01.1787 — a misprint for 1781 (ПСЗ-1 № 15113). The Tobolsk namestnichestvo founded east of it on 19 Jan 1782 O.S. (ПСЗ-1 № 15327) was the remnant of the Siberian governorate's Tobolsk province after Perm had been cut out, so it did not move the Perm line (the same treatment as the 1781 Moscow namestnichestvo in RUE-central)."
     }
    ]
   },
@@ -512,6 +518,32 @@
  ],
  "events": [
   {
+   "date": "1708-12-29",
+   "precision": "day",
+   "what": "Peter I's decree of 18 Dec 1708 O.S.: Kazan, Siberian and Azov governorates",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=153479057",
+     "title": "Губернская реформа Петра I — Википедия (oldid 153479057)",
+     "says": "Decree of 18 (29) Dec 1708: eight governorates as lists of towns, among them Kazan, Siberia and Azov.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1727-05-10",
+   "precision": "day",
+   "what": "Vyatka and Solikamsk provinces passed from the Siberian to Kazan governorate (29 Apr 1727 O.S.)",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=152587037",
+     "title": "Сибирская губерния — Википедия (oldid 152587037)",
+     "says": "Siberian governorate (18 Dec 1708 O.S.) held the Vyatka and Solikamsk provinces until 29 Apr 1727, when they passed to Kazan governorate; Iset province (1737) passed to Orenburg governorate in 1744.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
    "date": "1782-01-03",
    "precision": "day",
    "what": "Chelyabinsk uyezd moved from Perm to the new Ufa namestnichestvo (last outer change of Perm)",
@@ -645,6 +677,32 @@
  ],
  "unresolved": [
   {
+   "what": "Perm lands before the Perm namestnichestvo",
+   "atoms": [
+    "U1897-721",
+    "U1897-730",
+    "U1897-723",
+    "U1897-719",
+    "U1897-720",
+    "U1897-722",
+    "U1897-724",
+    "U1897-726",
+    "U1897-725",
+    "U1897-727",
+    "U1897-728",
+    "U1897-729"
+   ],
+   "from": "1708-12-29",
+   "to": "1782-01-03",
+   "why": "Solikamsk province of the Siberian governorate (to 1727) and of Kazan governorate, Verkhoturye and Irbit lands of the Siberian (Tobolsk) province, and Iset province (Siberian, from 1744 Orenburg governorate): lists of towns with their old uyezds. The Perm namestnichestvo (27 Jan 1781 O.S.) was assembled from them and re-cut on 23 Dec 1781 O.S. (Chelyabinsk to Ufa), so no earlier outline is a union of 1897 uyezds.",
+   "checked": [
+    "РНБ / Ден, appendix page perm.html",
+    "ru.wikipedia Сибирская губерния oldid 152587037",
+    "ru.wikipedia Губернская реформа Петра I oldid 153479057"
+   ],
+   "needs": "pre-reform uyezd lines as atoms"
+  },
+  {
    "what": "Kazan governorate 1782–1895",
    "unit": "RUE:Kazan",
    "atoms": [
@@ -661,14 +719,16 @@
     "U1897-662",
     "U1897-664"
    ],
-   "from": "1782-01-03",
+   "from": "1708-12-29",
    "to": "1895-03-01",
-   "why": "Until 17 Feb 1895 O.S. three villages now in Tsarevokokshaisk uyezd were in Yaransk uyezd of Viatka, so the outer line did not follow 1897 uyezd lines. ЭСБЕ also says the northern part of Stavropol uyezd was Kazan's until 1851 (Den does not list this).",
+   "why": "Until 17 Feb 1895 O.S. three villages now in Tsarevokokshaisk uyezd were in Yaransk uyezd of Viatka, so the outer line did not follow 1897 uyezd lines. ЭСБЕ also says the northern part of Stavropol uyezd was Kazan's until 1851 (Den does not list this). Before 1782: Kazan governorate of 1708 also held the Simbirsk, Penza, Ufa and (1727–1780) Vyatka lands; the 1780–1781 namestnichestva were built from parts of its old uyezds.",
    "checked": [
     "Den/РНБ Казанская губерния",
     "Den/РНБ Вятская губерния",
     "ЭСБЕ Самарская губерния (Викитека oldid 5351470)",
-    "ru.wikipedia Казанская губерния oldid 155091199"
+    "ru.wikipedia Казанская губерния oldid 155091199",
+    "ru.wikipedia Губернская реформа Петра I oldid 153479057",
+    "ru.wikipedia Сибирская губерния oldid 152587037"
    ],
    "needs": "finer atoms: the three 1895 villages (and, if ЭСБЕ is right, the 1850 Kazan line inside Stavropol uyezd)"
   },
@@ -688,12 +748,14 @@
     "U1897-194",
     "U1897-196"
    ],
-   "from": "1782-01-03",
+   "from": "1708-12-29",
    "to": "1895-03-01",
-   "why": "25 Nov 1888 O.S. Ramenskaya volost of Vetluga uyezd (Kostroma) joined Kotelnich uyezd, and 17 Feb 1895 O.S. three Yaransk villages went to Kazan — partial-uyezd transfers, so before them Viatka's line differs from the 1897 uyezd lines.",
+   "why": "25 Nov 1888 O.S. Ramenskaya volost of Vetluga uyezd (Kostroma) joined Kotelnich uyezd, and 17 Feb 1895 O.S. three Yaransk villages went to Kazan — partial-uyezd transfers, so before them Viatka's line differs from the 1897 uyezd lines. Before 1782: Vyatka and Solikamsk provinces of the Siberian governorate (to 1727), then of Kazan governorate; the Vyatka namestnichestvo (11 Sep 1780 O.S.) took Yaransk and Tsarevosanchursk lands from other namestnichestva (Yaransk was in Vologda's list of 25 Jan 1780 O.S.).",
    "checked": [
     "Den/РНБ Вятская губерния",
-    "ru.wikipedia Вятская губерния oldid 154631147"
+    "ru.wikipedia Вятская губерния oldid 154631147",
+    "ru.wikipedia Губернская реформа Петра I oldid 153479057",
+    "ru.wikipedia Сибирская губерния oldid 152587037"
    ],
    "needs": "finer atoms: Ramenskaya volost and the three 1895 villages"
   },
@@ -714,14 +776,16 @@
     "U1897-698",
     "U1897-699"
    ],
-   "from": "1782-01-03",
+   "from": "1708-12-29",
    "to": "1851-01-13",
-   "why": "Before 1851 Simbirsk held Stavropol uyezd and trans-Volga parts of its Samara and Syzran uyezds, merged in 1851 into a new Samara uyezd; whether those parts equal 1897 Samara/Stavropol uyezds is not established (ЭСБЕ puts north Stavropol in Kazan gub.). Bugulma, Buguruslan, Buzuluk were Orenburg's with unverified lines. 1798–1801 Simbirsk also held Penza uyezds.",
+   "why": "Before 1851 Simbirsk held Stavropol uyezd and trans-Volga parts of its Samara and Syzran uyezds, merged in 1851 into a new Samara uyezd; whether those parts equal 1897 Samara/Stavropol uyezds is not established (ЭСБЕ puts north Stavropol in Kazan gub.). Bugulma, Buguruslan, Buzuluk were Orenburg's with unverified lines. 1798–1801 Simbirsk also held Penza uyezds. Before 1782: Kazan governorate (Simbirsk province) and the Orenburg governorate (1744); Simbirsk namestnichestvo founded 15 Sep 1780 O.S.",
    "checked": [
     "Den/РНБ Симбирская, Самарская, Оренбургская губернии",
     "ЭСБЕ Самарская губерния (Викитека oldid 5351470)",
     "ru.wikipedia Самарский уезд oldid 154821129",
-    "ru.wikipedia Ставропольский уезд (Самарская губерния)"
+    "ru.wikipedia Ставропольский уезд (Самарская губерния)",
+    "ru.wikipedia Губернская реформа Петра I oldid 153479057",
+    "ru.wikipedia Сибирская губерния oldid 152587037"
    ],
    "needs": "finer atoms: the 1850 Simbirsk/Kazan/Orenburg lines inside Samara gub."
   },
@@ -742,14 +806,16 @@
     "U1897-695",
     "U1897-694"
    ],
-   "from": "1782-01-03",
+   "from": "1708-12-29",
    "to": "1851-01-13",
-   "why": "Before 1851 Saratov also held Tsarev, Nikolaevsk and Novouzensk uyezds; the 1850 decree ordered Nikolaevsk «divided into two», so its 1850 lines may not equal the 1897 Nikolaevsk uyezd. Earlier: 1796–1801 merger with Penza, 1806 partial village transfers with Astrakhan, 1835 three uyezds cut from parts of others.",
+   "why": "Before 1851 Saratov also held Tsarev, Nikolaevsk and Novouzensk uyezds; the 1850 decree ordered Nikolaevsk «divided into two», so its 1850 lines may not equal the 1897 Nikolaevsk uyezd. Earlier: 1796–1801 merger with Penza, 1806 partial village transfers with Astrakhan, 1835 three uyezds cut from parts of others. Before 1782: Astrakhan governorate (Saratov, Tsaritsyn) and the Volga German colonies; Saratov namestnichestvo founded 7 Nov 1780 O.S., re-cut with Tambov and Astrakhan in 1782–1783 by parts of uyezds.",
    "checked": [
     "Den/РНБ Саратовская губерния",
     "Den/РНБ Пензенская губерния",
     "ru.wikipedia Саратовская губерния oldid 152195758",
-    "ru.wikipedia Николаевский уезд (Самарская губерния) oldid 154695292"
+    "ru.wikipedia Николаевский уезд (Самарская губерния) oldid 154695292",
+    "ru.wikipedia Губернская реформа Петра I oldid 153479057",
+    "ru.wikipedia Сибирская губерния oldid 152587037"
    ],
    "needs": "finer atoms: the 1835/1850 lines of Nikolaevsk uyezd"
   },
@@ -763,14 +829,16 @@
     "U1897-689",
     "U1897-692"
    ],
-   "from": "1782-01-03",
+   "from": "1708-12-29",
    "to": "1860-03-25",
-   "why": "Before 13 Mar 1860 O.S. Astrakhan's Kalmyk steppe reached the Kuma, inside what is 1897 Stavropol gub.; 1785–1802 Astrakhan included Caucasian uyezds; 1806 partial village transfers with Saratov; Tsarev uyezd added 1851.",
+   "why": "Before 13 Mar 1860 O.S. Astrakhan's Kalmyk steppe reached the Kuma, inside what is 1897 Stavropol gub.; 1785–1802 Astrakhan included Caucasian uyezds; 1806 partial village transfers with Saratov; Tsarev uyezd added 1851. Before 1782: Kazan governorate to 1717, Astrakhan governorate from 1717 with the Kalmyk steppe, whose limits were not drawn.",
    "checked": [
     "Den/РНБ Астраханская губерния",
     "ЭСБЕ Астрахань, уезд и губерния (oldid 5693671)",
     "ru.wikipedia Ставропольская губерния oldid 154133354",
-    "ru.wikipedia Астраханская губерния oldid 155218916"
+    "ru.wikipedia Астраханская губерния oldid 155218916",
+    "ru.wikipedia Губернская реформа Петра I oldid 153479057",
+    "ru.wikipedia Сибирская губерния oldid 152587037"
    ],
    "needs": "finer atoms: the pre-1860 Kuma line south of the 1897 Kalmyk steppe"
   },
@@ -779,12 +847,14 @@
    "atoms": [
     "U1897-846"
    ],
-   "from": "1782-01-03",
+   "from": "1708-12-29",
    "to": "1876",
-   "why": "Kazakhs settled here from 1801; until 1876 the horde was under the Orenburg military governor and border commission, not inside a governorate with an attested outline; its pre-1876 line with the Ural Cossack lands and Samara is unverified.",
+   "why": "Kazakhs settled here from 1801; until 1876 the horde was under the Orenburg military governor and border commission, not inside a governorate with an attested outline; its pre-1876 line with the Ural Cossack lands and Samara is unverified. Before 1782: Kalmyk and then unsettled steppe between the Volga and the Ural without a governorate line.",
    "checked": [
     "ЭСБЕ Букеевская орда (Викитека oldid 5701024)",
-    "ru.wikipedia Букеевская Орда oldid 153645929"
+    "ru.wikipedia Букеевская Орда oldid 153645929",
+    "ru.wikipedia Губернская реформа Петра I oldid 153479057",
+    "ru.wikipedia Сибирская губерния oldid 152587037"
    ]
   },
   {
@@ -823,13 +893,15 @@
     "U1897-716",
     "U1897-718"
    ],
-   "from": "1782-01-03",
+   "from": "1708-12-29",
    "to": "1865-05-17",
-   "why": "The old governorate did not include the Orenburg Cossack lands added to Orenburg gub. in 1865 (their line is not attested), held Bugulma, Buguruslan, Buzuluk until 1851, and its 1781–1804 lines (Ufa namestnichestvo, 1796 abolition of uyezds) are not 1897 lines.",
+   "why": "The old governorate did not include the Orenburg Cossack lands added to Orenburg gub. in 1865 (their line is not attested), held Bugulma, Buguruslan, Buzuluk until 1851, and its 1781–1804 lines (Ufa namestnichestvo, 1796 abolition of uyezds) are not 1897 lines. Before 1782: Kazan governorate (Ufa province) and from 1744 Orenburg governorate, bounded by the fortified lines and the Bashkir lands; the Ufa namestnichestvo (23 Dec 1781 O.S.) re-cut them.",
    "checked": [
     "Den/РНБ Оренбургская (Уфимская) губерния",
     "Den/РНБ Уфимская губерния",
-    "ru.wikipedia Оренбургская губерния oldid 155011734"
+    "ru.wikipedia Оренбургская губерния oldid 155011734",
+    "ru.wikipedia Губернская реформа Петра I oldid 153479057",
+    "ru.wikipedia Сибирская губерния oldid 152587037"
    ],
    "needs": "finer atoms: Orenburg Cossack host lands vs. uyezds before 1865"
   },
@@ -841,12 +913,14 @@
     "U1897-706",
     "U1897-704"
    ],
-   "from": "1782-01-03",
+   "from": "1708-12-29",
    "to": "1870-02-14",
-   "why": "Before 21 Oct 1868 O.S. these were the Ural Cossack host lands plus part of the oblast of the Orenburg Kirghiz, not one unit with these lines; 1868–1870 Ural oblast also held the Mangyshlak pristavstvo (outside these atoms).",
+   "why": "Before 21 Oct 1868 O.S. these were the Ural Cossack host lands plus part of the oblast of the Orenburg Kirghiz, not one unit with these lines; 1868–1870 Ural oblast also held the Mangyshlak pristavstvo (outside these atoms). Before 1782: Lands of the Yaik (Ural) Cossack host and the Kazakh Junior zhuz, never inside a governorate line.",
    "checked": [
     "Den/РНБ Оренбургская губерния (ПСЗ-2 № 48380, № 47989-а)",
-    "ru.wikipedia Уральская область (Российская империя) oldid 155145374"
+    "ru.wikipedia Уральская область (Российская империя) oldid 155145374",
+    "ru.wikipedia Губернская реформа Петра I oldid 153479057",
+    "ru.wikipedia Сибирская губерния oldid 152587037"
    ],
    "needs": "Mangyshlak (a 1897 Transcaspian atom) and the pre-1868 Cossack/Kirghiz line"
   },
@@ -863,12 +937,14 @@
     "U1897-544",
     "U1897-551"
    ],
-   "from": "1782-01-03",
+   "from": "1708-12-29",
    "to": "1888-01-13",
-   "why": "The 1888 Rostov and Taganrog okrugs were made from Rostov uyezd and Taganrog gradonachalstvo (Ekaterinoslav gub.) with Miussky okrug and parts of Cherkassk okrug, so the pre-1888 Don line runs inside two 1897 okrugs.",
+   "why": "The 1888 Rostov and Taganrog okrugs were made from Rostov uyezd and Taganrog gradonachalstvo (Ekaterinoslav gub.) with Miussky okrug and parts of Cherkassk okrug, so the pre-1888 Don line runs inside two 1897 okrugs. Before 1782: Self-governing Don Host lands (Azov governorate 1708–1715 claimed the lower Don towns); no governorate line.",
    "checked": [
     "Den/РНБ Область Войска Донского",
-    "ru.wikipedia Область Войска Донского oldid 153473497"
+    "ru.wikipedia Область Войска Донского oldid 153473497",
+    "ru.wikipedia Губернская реформа Петра I oldid 153479057",
+    "ru.wikipedia Сибирская губерния oldid 152587037"
    ],
    "needs": "finer atoms: Rostov uyezd stans and Taganrog gradonachalstvo inside the 1897 okrugs"
   }

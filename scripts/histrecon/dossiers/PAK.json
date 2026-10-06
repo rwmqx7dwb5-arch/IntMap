@@ -395,11 +395,12 @@
    "what": "West Pakistan 1955–1970 and earlier provinces",
    "from": null,
    "to": null,
-   "why": "Outside scope. Before 1970 West Pakistan was one province (Karachi federal area until 1961, Gwadar from 1958, Rann of Kutch award 1968 changed Sindh); not built here.",
+   "why": "Outside scope. Before 1970 West Pakistan was one province (Karachi federal area until 1961, Gwadar from 1958, Rann of Kutch award 1968 changed Sindh); not built here. Examined 2026-10-06 with geoBoundaries districts: (1) the Frontier Regions (tribal areas outside NWFP province 1947–1955) are merged into the polygons of the settled districts Peshawar, Kohat, Bannu, Lakki Marwat, Tank and Dera Ismail Khan, so NWFP and the tribal areas of 1947–1955 cannot be separated; (2) the Rann of Kutch award (1968, implemented 1969) moved the line inside today’s Badin and Tharparkar districts, so Sindh (1947–1955) and West Pakistan (1955–1969) cannot be drawn with today’s districts; (3) the Kashmir ceasefire line of 1949 differs from today’s line of control inside the AJK/Gilgit-Baltistan atoms.",
    "checked": [
-    "statoids.com/upk.html"
+    "statoids.com/upk.html",
+    "geoBoundaries PAK ADM2 (2019, 126 districts, from Wikipedia) and ADM3 (2017, ODbL), examined 2026-10-06"
    ],
-   "needs": "pre-1970 outer lines (Kutch award, ceasefire line)"
+   "needs": "tribal-area and Frontier-Region outlines of 1947–1970, the pre-1969 Rann line, and the 1949 ceasefire line"
   }
  ]
 }

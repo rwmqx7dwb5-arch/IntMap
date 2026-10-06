@@ -396,13 +396,18 @@
       "what": "Guinea before 1994: four divisions (Guinée maritime, Moyenne, Haute, Forestière) over 33 prefectures + Conakry; earlier 29-33 «régions administratives»",
       "from": "1958-10-02",
       "to": "1994",
-      "why": "Whether the four pre-1994 divisions were first-level units with exact prefecture membership, and their dates, could not be established; the natural regions do not follow prefecture lines everywhere (e.g. Kissidougou).",
+      "why": "Two questions stay open. (1) Which units were first-level between 1985 and 1994: Binns says Guinea had four administrative divisions until 1994, but Statoids, FIPS 10-4 and the first ISO 3166-2 edition all treat the 33 prefectures + Conakry (called régions administratives before 1985) as the primary subdivisions, and no text was found that gives the four divisions a territory, a head or a date. The natural regions do not follow prefecture lines everywhere (e.g. Kissidougou). (2) The date of the 1994 regions is known only to the year. Before 1985 the 29 régions administratives differ from the prefectures by the 1985 splits (Coyah from Dubréka; Koubia and Lélouma from Labé; Lola from Nzérékoré; Mandiana from parts of Kankan and Siguiri), and the 1958-1980 changes are not listed by any source found.",
       "checked": [
         "webguine.site Binns introduction",
         "statoids.com/ugn.html",
-        "foncier-developpement.fr fiche pays Guinée (ordinance 079/PRG/86 of 25 March 1986 on territorial reorganization, text not found)"
+        "foncier-developpement.fr fiche pays Guinée (ordinance 079/PRG/86 of 25 March 1986 on territorial reorganization, text not found)",
+        "statoids.com/ugn.html change history (1980 Youkoukoun renamed Koundara; 1985 five new prefectures; nothing earlier) — read 2026-10-06",
+        "statoids.com/ygn.html (no change history before 1985)",
+        "fr.wikipedia Subdivision de la Guinée (current structure only, no history)",
+        "foncier-developpement.fr fiche pays Guinée, full text (1991 Loi fondamentale: régions, préfectures, sous-préfectures as circonscriptions; decentralised communities from 1992; ordinance 079/PRG/86 not quoted)",
+        "magoerevision.com course notes (four natural regions described as geographic, not administrative)"
       ],
-      "needs": "ordinance 079/PRG/86 and the 1994 text creating the regions"
+      "needs": "ordinance 079/PRG/86 and the 1994 text creating the regions (gouvernorats). If the prefectures are confirmed as the first level until 1994, geoBoundaries GIN ADM2 (34 prefectures, WFP/OCHA 2017) draws 1985-1994 directly; 1958-1985 additionally needs the dates of the régions administratives created after independence and ADM3 sous-préfectures to split Mandiana between Kankan and Siguiri."
     }
   ]
 }

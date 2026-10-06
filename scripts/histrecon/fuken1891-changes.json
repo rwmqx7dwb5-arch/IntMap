@@ -1,0 +1,132 @@
+{
+  "note": "Japanese prefectures (3府43県 + 北海道庁) from 1891-01-01 — the day after the Meiji reconstruction (meiji-prefectures.json) ends — to 1943-06-30, the last day of 東京府. Drawn by scripts/histrecon/assembled/fuken-1891.mjs as unions of the 1920 町村 of 国土数値情報 N03-1920 (munis-n03-1920.mjs). The 1920 prefecture of a 町村 is its prefecture on every day of the scope EXCEPT where a fact below says otherwise: `moves` (a whole 1920 町村 on the other side before/after a dated change), `mixed` (a 1920 町村 holding land of two prefectures in a window — withheld from both in that window, because no part finer than the 町村 is used here), `islands` (a polygon of a 1920 町村 that was not Japanese territory, or whose incorporation date is not settled, before a date). Prefecture identity (id, names, wikidata) is read from meiji-prefectures.json: the unit with no end whose names.ja is the 1920 prefecture name (alias below). Sources are Japanese Wikipedia revisions (oldid) summarised in `says`.",
+  "built": "2026-10-06",
+  "scope": { "from": "1891-01-01", "to": "1943-06-30", "toNote": "1943-07-01 東京府 became 東京都 (東京都制, 昭和18年法律第89号); the record stops for every unit on the same day so that one assembler states one era. 樺太庁 (内地 from 1943-04-01) is drawn by data/hist-admin1.js and is not part of this record." },
+  "aliases": [
+    { "pref1920": "北海道", "unit": "北海道庁", "why": "N03-1920 writes the prefecture name 北海道; the first-level unit of 1886-01-26 to 1947 is 北海道庁 (meiji-prefectures.json id 北海道庁)." }
+  ],
+  "counts": [
+    { "date": "1891-01-01", "n": 47, "stated": "47 (3府43県1庁)", "sources": [ { "url": "https://ja.wikipedia.org/w/index.php?title=%E9%83%BD%E9%81%93%E5%BA%9C%E7%9C%8C&oldid=111025913", "title": "都道府県", "says": "総数の推移の表: 1888-12-03 香川県分立で 47 (3府43県1庁)。次の総数の変化は 1943-01-20（樺太庁の内地編入の閣議決定で 48）と 1943-07-01（東京都）。", "accessed": "2026-10-06" } ] },
+    { "date": "1943-06-30", "n": 47, "stated": "47 (3府43県1庁) + 樺太庁", "note": "樺太庁 is counted by the source from 1943 but is outside this record (data/hist-admin1.js).", "sources": [ { "url": "https://ja.wikipedia.org/w/index.php?title=%E9%83%BD%E9%81%93%E5%BA%9C%E7%9C%8C&oldid=111025913", "title": "都道府県", "says": "1943-01-20 樺太庁の内地編入閣議決定で 48 (3府43県2庁)、1943-07-01 東京府を東京都に移行。", "accessed": "2026-10-06" } ] }
+  ],
+  "moves": [
+    { "id": "santama-1893", "date": "1893-04-01", "from": "神奈川県", "to": "東京府",
+      "munisRule": { "pref1920": "東京府", "gun": ["北多摩郡", "南多摩郡", "西多摩郡"], "except": ["東京府/北多摩郡/保谷村"] },
+      "basis": "東京府及神奈川県境域変更ニ関スル法律（明治26年法律第12号）",
+      "dateNote": "越境合併 (oldid 110558853) writes 4月11日; 北多摩郡 (oldid 110139460) writes 4月1日 and its 郡長 table ends the 神奈川県 郡長 on 1893-03-31 and starts the 東京府 郡長 on 1893-04-01 — 4月1日 is used.",
+      "sources": [
+        { "url": "https://ja.wikipedia.org/w/index.php?title=%E5%8C%97%E5%A4%9A%E6%91%A9%E9%83%A1&oldid=110139460", "title": "北多摩郡", "says": "1893年4月1日 東京府の管轄となる。郡長は 1893-03-31 まで神奈川県北多摩郡長、4-1 から東京府北多摩郡長。", "accessed": "2026-10-06" },
+        { "url": "https://ja.wikipedia.org/w/index.php?title=%E8%B6%8A%E5%A2%83%E5%90%88%E4%BD%B5&oldid=110558853", "title": "越境合併", "says": "明治26年 神奈川県北多摩郡・南多摩郡・西多摩郡の所属が東京府に変更。", "accessed": "2026-10-06" },
+        { "url": "https://ja.wikipedia.org/w/index.php?title=%E6%97%A5%E6%9C%AC%E3%81%AE%E5%BB%83%E6%AD%A2%E3%81%95%E3%82%8C%E3%81%9F%E6%B3%95%E5%BE%8B&oldid=110445708", "title": "日本の廃止された法律", "says": "東京府及神奈川県境域変更ニ関スル法律 明治26年法律第12号（実効性喪失）。", "accessed": "2026-10-06" }
+      ] },
+    { "id": "ishii-1896", "date": "1896-04-01", "from": "岡山県", "to": "兵庫県",
+      "munis": ["兵庫県/佐用郡/石井村"],
+      "basis": "岡山県兵庫県境界変更並福岡県大分県境界変更法律（明治29年法律第56号, 1896-03-30）",
+      "sources": [
+        { "url": "https://ja.wikipedia.org/w/index.php?title=%E7%9F%B3%E4%BA%95%E6%9D%91_(%E5%85%B5%E5%BA%AB%E7%9C%8C)&oldid=84220789", "title": "石井村 (兵庫県)", "says": "1889年 岡山県吉野郡石井村発足、1896年4月1日 兵庫県佐用郡に編入。", "accessed": "2026-10-06" },
+        { "url": "https://ja.wikipedia.org/w/index.php?title=%E8%B6%8A%E5%A2%83%E5%90%88%E4%BD%B5&oldid=110558853", "title": "越境合併", "says": "明治29年4月1日 岡山県吉野郡石井村の所属が兵庫県佐用郡に変更、讃甘村の一部も江川村に編入。", "accessed": "2026-10-06" }
+      ] },
+    { "id": "tone-1899-whole", "date": "1899-04-01", "from": "千葉県", "to": "茨城県",
+      "munis": ["茨城県/稲敷郡/十余島村", "茨城県/稲敷郡/金江津村", "茨城県/稲敷郡/本新島村"],
+      "basis": "千葉県茨城県境界変更法律（明治32年法律第4号）",
+      "why": "十余島村 = 千葉県香取郡十余島村 + 神崎町・本新島村の一部（いずれも千葉県）; 金江津村 = 千葉県 金江津村（一部は千葉県高岡村へ）; 本新島村（茨城）= 千葉県 佐原町・本新島村・新島村の各一部。どれも 1899-04-01 より前は全域が千葉県。",
+      "sources": [
+        { "url": "https://ja.wikipedia.org/w/index.php?title=%E9%A6%99%E5%8F%96%E9%83%A1&oldid=110336079", "title": "香取郡", "says": "1899年4月1日: 佐原町・本新島村・新島村の各一部が合併し茨城県稲敷郡本新島村が発足、神崎町・本新島村の一部が十余島村に編入、金江津村・十余島村の所属郡が茨城県稲敷郡に変更、金江津村の一部は高岡村に編入。", "accessed": "2026-10-06" },
+        { "url": "https://ja.wikipedia.org/w/index.php?title=%E7%A8%B2%E6%95%B7%E9%83%A1&oldid=108749668", "title": "稲敷郡", "says": "1899年4月1日 本新島村を新設、十余島村・金江津村の所属郡が本郡に変更。", "accessed": "2026-10-06" },
+        { "url": "https://ja.wikipedia.org/w/index.php?title=%E5%8D%81%E4%BD%99%E5%B3%B6%E6%9D%91&oldid=109583718", "title": "十余島村", "says": "1899年4月1日 茨城県稲敷郡に所属を変更、同日 神崎町の一部を編入。", "accessed": "2026-10-06" }
+      ] },
+    { "id": "hoya-1907", "date": "1907-04-01", "from": "埼玉県", "to": "東京府",
+      "munis": ["東京府/北多摩郡/保谷村"],
+      "basis": "東京府北多摩郡埼玉県北足立郡境界変更法律（明治40年法律第8号）",
+      "sources": [
+        { "url": "https://ja.wikipedia.org/w/index.php?title=%E4%BF%9D%E8%B0%B7%E5%B8%82&oldid=108646099", "title": "保谷市", "says": "1889年 埼玉県新座郡保谷村成立、1896年 北足立郡、1907年4月1日 東京府北多摩郡に移る（明治40年法律第8号、官報 明治40年3月18日）。", "accessed": "2026-10-06" }
+      ] }
+  ],
+  "mixed": [
+    { "id": "oizumi-1891", "until": "1891-06-15", "sides": ["東京府", "埼玉県"],
+      "munis": ["東京府/北豊島郡/大泉村"],
+      "what": "大泉村 (1920) = 東京府 石神井村大字上土支田 + 埼玉県新座郡 榑橋村（全域：小榑・橋戸）+ 新倉村の一部（字長沼・久保原・長久保）。1891-06-15 より前は二府県にまたがる。",
+      "sources": [
+        { "url": "https://ja.wikipedia.org/w/index.php?title=%E5%A4%A7%E6%B3%89%E6%9D%91_(%E6%9D%B1%E4%BA%AC%E5%BA%9C)&oldid=103472027", "title": "大泉村 (東京府)", "says": "1891年6月15日 東京府北豊島郡石神井村の一部（上土支田）と埼玉県新座郡榑橋村・新倉村の一部（長沼・久保原・長久保）が合併し東京府北豊島郡大泉村。", "accessed": "2026-10-06" },
+        { "url": "https://ja.wikipedia.org/w/index.php?title=%E6%A6%91%E6%A9%8B%E6%9D%91&oldid=107890461", "title": "榑橋村", "says": "1889年 小榑村・橋戸村で埼玉県新座郡榑橋村、1891年6月15日 東京府北豊島郡大泉村の一部となり廃止。", "accessed": "2026-10-06" }
+      ] },
+    { "id": "edogawa-1895", "until": "1895-04-01", "sides": ["東京府", "千葉県", "茨城県", "埼玉県"],
+      "munis": ["東京府/南葛飾郡/篠崎村", "東京府/南葛飾郡/瑞江村", "東京府/南葛飾郡/葛西村", "千葉県/東葛飾郡/行徳町", "埼玉県/北葛飾郡/豊岡村", "埼玉県/北葛飾郡/三輪野江村"],
+      "what": "東京府埼玉県千葉県茨城県境界変更法（明治28年法律第24号）: 旧江戸川の東岸にあった東京府の飛地（篠崎村 伊勢屋・上鎌田の一部）→千葉県行徳町、西岸の千葉県の飛地（行徳町 大和田・東行徳の一部→篠崎村、南行徳町 欠真間の一部→瑞穂村〔1913 瑞江村〕、浦安村 堀江の一部→葛西村）、関宿町 江戸川以西（向河岸・向下河岸ほか）→埼玉県豊岡村、新川村 深井新田・平方新田の江戸川西岸→埼玉県三輪野江村。受け手の 1920 町村は 1895 年より前に二府県の土地を含む。関宿町の権現堂川以北→茨城県五霞村は 1899 年の分とあわせて下の tone-1899 に入れる。",
+      "dateNote": "幸手市 (oldid 111223006) writes 1895-03-30 for 向河岸・向下河岸 → 豊岡村; 東葛飾郡・越境合併・三輪野江村 write 1895-04-01. The window is held to the later day.",
+      "sources": [
+        { "url": "https://ja.wikipedia.org/w/index.php?title=%E6%B1%9F%E6%88%B8%E5%B7%9D%E5%8C%BA%E3%81%AE%E7%94%BA%E5%90%8D&oldid=98377628", "title": "江戸川区の町名", "says": "明治28年 千葉県東葛飾郡と東京府南葛飾郡の境界変更: 旧江戸川東岸の東京府の飛地を千葉県に、西岸の千葉県の飛地を東京府に編入（篠崎村・瑞穂村・葛西村・行徳町の各一部）。", "accessed": "2026-10-06" },
+        { "url": "https://ja.wikipedia.org/w/index.php?title=%E6%9D%B1%E8%91%9B%E9%A3%BE%E9%83%A1&oldid=109167926", "title": "東葛飾郡", "says": "明治28年4月1日 関宿町の権現堂川以北が茨城県五霞村に、江戸川以西が埼玉県豊岡村に、新川村の江戸川西岸が埼玉県三輪野江村に編入。", "accessed": "2026-10-06" },
+        { "url": "https://ja.wikipedia.org/w/index.php?title=%E5%B9%B8%E6%89%8B%E5%B8%82&oldid=111223006", "title": "幸手市", "says": "1895年3月30日 千葉県関宿町大字向河岸・向下河岸が分離して中葛飾郡豊岡村に編入、豊岡村大字西関宿。", "accessed": "2026-10-06" },
+        { "url": "https://ja.wikipedia.org/w/index.php?title=%E6%97%A5%E6%9C%AC%E3%81%AE%E5%BB%83%E6%AD%A2%E3%81%95%E3%82%8C%E3%81%9F%E6%B3%95%E5%BE%8B&oldid=110445708", "title": "日本の廃止された法律", "says": "東京府埼玉県千葉県茨城県境界変更法 明治28年法律第24号。", "accessed": "2026-10-06" }
+      ] },
+    { "id": "sanuka-takahama-1896", "until": "1896-04-01", "sides": ["兵庫県", "岡山県", "大分県", "福岡県"],
+      "munis": ["兵庫県/佐用郡/江川村", "大分県/下毛郡/中津町"],
+      "what": "岡山県 讃甘村の一部→兵庫県佐用郡江川村、福岡県上毛郡高浜村大字小祝の一部（山国川以東）→大分県下毛郡中津町（明治29年法律第56号）。",
+      "dateNote": "高浜村 (福岡県) (oldid 104744694) writes 1896-03-26 for 小祝, which precedes the law of 1896-03-30; 越境合併 writes 4月1日 for the 1896 changes. The window is held to 1896-04-01.",
+      "sources": [
+        { "url": "https://ja.wikipedia.org/w/index.php?title=%E8%B6%8A%E5%A2%83%E5%90%88%E4%BD%B5&oldid=110558853", "title": "越境合併", "says": "明治29年4月1日 讃甘村の一部が兵庫県佐用郡江川村に、福岡県上毛郡高浜村の一部が大分県下毛郡中津町に編入。", "accessed": "2026-10-06" },
+        { "url": "https://ja.wikipedia.org/w/index.php?title=%E9%AB%98%E6%B5%9C%E6%9D%91_(%E7%A6%8F%E5%B2%A1%E7%9C%8C)&oldid=104744694", "title": "高浜村 (福岡県)", "says": "1896年3月26日 大字小祝の一部（山国川以東）を大分県下毛郡中津町に編入。", "accessed": "2026-10-06" }
+      ] },
+    { "id": "tone-1899", "until": "1899-04-01", "sides": ["千葉県", "茨城県"],
+      "munis": ["茨城県/猿島郡/五霞村", "茨城県/猿島郡/長須村", "茨城県/猿島郡/森戸村", "茨城県/北相馬郡/取手町", "茨城県/北相馬郡/布川町", "千葉県/東葛飾郡/川間村", "千葉県/東葛飾郡/我孫子町"],
+      "what": "千葉県茨城県境界変更法律（明治32年法律第4号）の利根川沿いの部分移動: 木間ヶ瀬村・二川村の一部→茨城県（東葛飾郡は長須村、猿島郡は五霞村と書く——両方を保留）、二川村の一部→森戸村、我孫子町の一部→取手町、布佐町の一部→布川町; 逆に茨城県 中川村の一部→川間村、稲戸井村・取手町の一部→我孫子町。五霞村は 1895 年にも関宿町の一部を受けている。",
+      "sources": [
+        { "url": "https://ja.wikipedia.org/w/index.php?title=%E6%9D%B1%E8%91%9B%E9%A3%BE%E9%83%A1&oldid=109167926", "title": "東葛飾郡", "says": "明治32年4月1日: 川間村が中川村の一部を、我孫子町が稲戸井村・取手町の一部を編入。木間ヶ瀬村・二川村の一部が長須村に、二川村の一部が森戸村に、布佐町の一部が布川町に編入。", "accessed": "2026-10-06" },
+        { "url": "https://ja.wikipedia.org/w/index.php?title=%E7%8C%BF%E5%B3%B6%E9%83%A1&oldid=107492712", "title": "猿島郡", "says": "1899年4月1日: 中川村の一部が千葉県川間村に、千葉県 木間ヶ瀬村・二川村の一部が五霞村に、二川村の一部が森戸村に編入。", "accessed": "2026-10-06" },
+        { "url": "https://ja.wikipedia.org/w/index.php?title=%E4%BA%94%E9%9C%9E%E7%94%BA&oldid=109238698", "title": "五霞町", "says": "1895年 千葉県東葛飾郡関宿町の権現堂川以北（江戸町の一部）を編入。", "accessed": "2026-10-06" }
+      ] },
+    { "id": "tamagawa-1912", "until": "1912-04-01", "sides": ["東京府", "神奈川県"],
+      "munis": ["神奈川県/橘樹郡/稲田村", "神奈川県/橘樹郡/高津村", "神奈川県/橘樹郡/中原村", "神奈川県/橘樹郡/大師河原村", "神奈川県/橘樹郡/川崎町", "神奈川県/橘樹郡/御幸村", "東京府/北多摩郡/砧村", "東京府/北多摩郡/千歳村", "東京府/北多摩郡/狛江村", "東京府/荏原郡/矢口村"],
+      "what": "東京府神奈川県境界変更ニ関スル法律（明治45年法律第5号, 1912-04-01）: 多摩川を府県境に画定し対岸の飛地を交換。神奈川県の受け手 稲田村（布田・和泉の一部）・高津村（宇奈根・瀬田・下野毛の一部）・中原村（下沼部・嶺・等々力の一部）・大師河原村（羽田・羽田猟師・鈴木新田の一部）・川崎町（雑色・八幡塚の一部）・御幸村（古川・雑色・八幡塚・古市場・原の一部）; 東京府の受け手 砧村または千歳村（久地・諏訪河原・二子・宿河原の一部——北多摩郡は砧村、橘樹郡は千歳村と書く: 両方保留）・狛江村（宿河原の一部）・矢口村（上平間・小向の一部）。",
+      "sources": [
+        { "url": "https://ja.wikipedia.org/w/index.php?title=%E6%A9%98%E6%A8%B9%E9%83%A1&oldid=111231960", "title": "橘樹郡", "says": "1912年4月1日 多摩川を府県境に画定し対岸飛地を解消。高津村・稲田村の一部が千歳村に、御幸村の一部が矢口村に編入; 高津村・稲田村・川崎町・大師河原村・御幸村・中原村が東京府側の各一部を編入。", "accessed": "2026-10-06" },
+        { "url": "https://ja.wikipedia.org/w/index.php?title=%E8%8D%8F%E5%8E%9F%E9%83%A1&oldid=111152234", "title": "荏原郡", "says": "1912年4月1日 調布村・羽田村・六郷村・矢口村・玉川村の多摩川対岸部を橘樹郡の町村へ、矢口村が御幸村の一部を編入。", "accessed": "2026-10-06" },
+        { "url": "https://ja.wikipedia.org/w/index.php?title=%E5%8C%97%E5%A4%9A%E6%91%A9%E9%83%A1&oldid=110139460", "title": "北多摩郡", "says": "1912年4月1日 調布町・狛江村・砧村の一部を橘樹郡稲田村・高津村へ、砧村が高津村・稲田村の各一部を編入。", "accessed": "2026-10-06" },
+        { "url": "https://ja.wikipedia.org/w/index.php?title=%E6%97%A5%E6%9C%AC%E3%81%AE%E5%BB%83%E6%AD%A2%E3%81%95%E3%82%8C%E3%81%9F%E6%B3%95%E5%BE%8B&oldid=110445708", "title": "日本の廃止された法律", "says": "東京府神奈川県境界変更ニ関スル法律 明治45年法律第5号。", "accessed": "2026-10-06" }
+      ] },
+    { "id": "ukima-1926", "from": "1926-10-01", "sides": ["埼玉県", "東京府"],
+      "munis": ["埼玉県/北足立郡/横曽根村"],
+      "what": "1926-10-01 東京府北豊島郡岩淵町が埼玉県北足立郡横曽根村大字浮間を編入（荒川の新河道で横曽根村から分断された土地）。1920 の横曽根村はこの日から二府県にまたがる。岩淵町（1920）は浮間を含まず、前後とも全域が東京府。",
+      "sources": [
+        { "url": "https://ja.wikipedia.org/w/index.php?title=%E6%B5%AE%E9%96%93&oldid=104244572", "title": "浮間", "says": "1926年 埼玉県北足立郡横曽根村（大字浮間）から東京府北豊島郡岩淵町に編入。荒川の河道変更で右岸になったため。", "accessed": "2026-10-06" },
+        { "url": "https://ja.wikipedia.org/w/index.php?title=%E8%B6%8A%E5%A2%83%E5%90%88%E4%BD%B5&oldid=110558853", "title": "越境合併", "says": "大正15年10月1日 北豊島郡岩淵町が埼玉県北足立郡横曽根村大字浮間を編入。", "accessed": "2026-10-06" }
+      ] }
+  ],
+  "islands": [
+    { "id": "kazan-retto", "muni": "東京府//小笠原島庁", "centroids": [[141.2827, 25.4336], [141.3119, 24.7801], [141.4626, 24.2350]], "names": "北硫黄島・硫黄島・南硫黄島（火山列島）", "from": "1891-09-09",
+      "sources": [ { "url": "https://ja.wikipedia.org/w/index.php?title=%E7%A1%AB%E9%BB%84%E5%B3%B6_(%E6%9D%B1%E4%BA%AC%E9%83%BD)&oldid=110483629", "title": "硫黄島 (東京都)", "says": "1891年9月9日 勅令（明治24年勅令第190号）により日本領土に編入、東京府小笠原島庁所属。", "accessed": "2026-10-06" }, { "url": "https://ja.wikipedia.org/w/index.php?title=%E7%81%AB%E5%B1%B1%E5%88%97%E5%B3%B6&oldid=108813555", "title": "火山列島", "says": "1891年9月 勅令で正式に日本の所轄となる。", "accessed": "2026-10-06" } ] },
+    { "id": "minamitorishima", "muni": "東京府//小笠原島庁", "centroids": [[153.9764, 24.2928]], "names": "南鳥島", "from": "1898-07-24",
+      "sources": [ { "url": "https://ja.wikipedia.org/w/index.php?title=%E5%8D%97%E9%B3%A5%E5%B3%B6&oldid=110959691", "title": "南鳥島", "says": "1898年7月24日付 東京府告示第58号で南鳥島として日本の領土に編入。", "accessed": "2026-10-06" } ] },
+    { "id": "okinotorishima", "muni": "東京府//小笠原島庁", "centroids": [[136.0699, 20.4252]], "names": "沖ノ鳥島", "from": "1931-07-06",
+      "sources": [ { "url": "https://ja.wikipedia.org/w/index.php?title=%E6%B2%96%E3%83%8E%E9%B3%A5%E5%B3%B6&oldid=110617845", "title": "沖ノ鳥島", "says": "1931年7月6日 内務省告示第163号により沖ノ鳥島と命名、東京府小笠原支庁に編入。", "accessed": "2026-10-06" } ] },
+    { "id": "nishinoshima", "muni": "東京府//小笠原島庁", "centroids": [[140.8764, 27.2467]], "names": "西之島", "from": null,
+      "unresolved": { "why": "N03-1920 places 西之島 in 小笠原島庁, but no statement of when it was made part of 小笠原 / 東京府 was found: the article lists 1875 guano collectors, the name 西ノ島 from 1904 and a 1911 survey only.", "checked": ["西之島 (oldid 110327876) 歴史節"], "needs": "島嶼所属の告示（官報・東京府告示）" },
+      "sources": [ { "url": "https://ja.wikipedia.org/w/index.php?title=%E8%A5%BF%E4%B9%8B%E5%B3%B6&oldid=110327876", "title": "西之島", "says": "1875年 グアノ採取に渡る日本人、1904年 西ノ島と呼ばれる、1911年 測量。編入の日付は述べない。", "accessed": "2026-10-06" } ] },
+    { "id": "torishima", "muni": "東京府/八丈島庁/八丈島庁", "centroids": [[140.2980, 30.4870]], "names": "鳥島", "from": "1897-09-01", "unresolvedWindow": ["1891-01-01", "1897-09-01"],
+      "unresolved": { "why": "東京府 made 鳥島 an appurtenance of 小笠原島 in 1897-08 (day not stated); its status before that is not stated in what was read, so it is withheld from the scope start to the end of that month.", "checked": ["鳥島 (八丈支庁) (oldid 109586964)"], "needs": "1897年8月の東京府告示の日付と、それ以前の所属" },
+      "sources": [ { "url": "https://ja.wikipedia.org/w/index.php?title=%E9%B3%A5%E5%B3%B6_(%E5%85%AB%E4%B8%88%E6%94%AF%E5%BA%81)&oldid=109586964", "title": "鳥島 (八丈支庁)", "says": "東京府は1897年8月に鳥島を小笠原島の付属と定め、1901年4月に八丈島の付属と定めた。", "accessed": "2026-10-06" } ] },
+    { "id": "sumisu-sofugan", "muni": "東京府/八丈島庁/八丈島庁", "centroids": [[140.0510, 31.4390], [140.3420, 29.7930]], "names": "須美寿島・孀婦岩", "from": null,
+      "unresolved": { "why": "No statement of their incorporation into 東京府 was found.", "checked": ["須美寿島 (oldid 107192610)", "孀婦岩 (oldid 109869985)"], "needs": "島嶼所属の告示" },
+      "sources": [ { "url": "https://ja.wikipedia.org/w/index.php?title=%E9%A0%88%E7%BE%8E%E5%AF%BF%E5%B3%B6&oldid=107192610", "title": "須美寿島", "says": "1870年の海底噴火などを述べ、所属の決定は述べない。", "accessed": "2026-10-06" } ] },
+    { "id": "takeshima", "muni": "島根県//隠岐島司", "whole": true, "names": "竹島", "from": "1905-02-22",
+      "sources": [ { "url": "https://ja.wikipedia.org/w/index.php?title=%E7%AB%B9%E5%B3%B6_(%E5%B3%B6%E6%A0%B9%E7%9C%8C)&oldid=111228689", "title": "竹島 (島根県)", "says": "1905年1月28日 島根県隠岐島庁への編入を閣議決定、同年2月22日 島根県告示（庶十一号）で県に編入。", "accessed": "2026-10-06" } ] },
+    { "id": "okidaitojima", "muni": "沖縄県/島尻郡/沖大東島", "whole": true, "names": "沖大東島", "from": "1901-01-01", "unresolvedWindow": ["1900-09-11", "1901-01-01"],
+      "unresolved": { "why": "The proposal to place it in 沖縄県島尻郡 went to the cabinet on 1900-09-11 and was approved; the day of the decision is not stated (大東諸島 gives the year 1900).", "checked": ["沖大東島 (oldid 109455802)", "大東諸島 (oldid 110989056)"], "needs": "閣議決定・沖縄県告示の日付" },
+      "sources": [ { "url": "https://ja.wikipedia.org/w/index.php?title=%E6%B2%96%E5%A4%A7%E6%9D%B1%E5%B3%B6&oldid=109455802", "title": "沖大東島", "says": "1885年の北・南大東島の編入では沖大東島は編入されず、1900年9月11日 内務大臣が沖縄県島尻郡への編入を閣議に諮り了承。", "accessed": "2026-10-06" }, { "url": "https://ja.wikipedia.org/w/index.php?title=%E5%A4%A7%E6%9D%B1%E8%AB%B8%E5%B3%B6&oldid=110989056", "title": "大東諸島", "says": "1900年 沖大東島につき日本が領有を宣言し沖縄県に編入。", "accessed": "2026-10-06" } ] },
+    { "id": "senkaku-named", "muni": "沖縄県/八重山郡/石垣村", "centroids": [[123.4741, 25.7418], [123.6816, 25.9238]], "names": "魚釣島・久場島", "from": "1895-01-14",
+      "sources": [ { "url": "https://ja.wikipedia.org/w/index.php?title=%E5%B0%96%E9%96%A3%E8%AB%B8%E5%B3%B6&oldid=110366948", "title": "尖閣諸島", "says": "1895年1月14日 閣議決定で日本の領土（沖縄県）に編入; 1896年 魚釣島と久場島は八重山郡に、北小島・南小島とともに国有地に。", "accessed": "2026-10-06" } ] },
+    { "id": "senkaku-other", "muni": "沖縄県/八重山郡/石垣村", "centroids": [[123.5412, 25.7302], [123.5492, 25.7223], [124.5576, 25.9220]], "alsoMuni": "沖縄県/所属未定/所属未定", "alsoBox": [123.3, 25.6, 124.7, 26.1], "names": "北小島・南小島・大正島と周辺の岩礁", "from": null,
+      "unresolved": { "why": "The sources read name 魚釣島 and 久場島 in the 1895 decision and 1896 郡編制; for 北小島・南小島 they state only state-land designation in 1896 (day not given), for 大正島 nothing in the period.", "checked": ["尖閣諸島 (oldid 110366948)"], "needs": "各島の編入（国有地編入・郡所属）の日付を述べる一次資料" },
+      "sources": [ { "url": "https://ja.wikipedia.org/w/index.php?title=%E5%B0%96%E9%96%A3%E8%AB%B8%E5%B3%B6&oldid=110366948", "title": "尖閣諸島", "says": "1896年 北小島・南小島が国有地に指定（日付なし）。", "accessed": "2026-10-06" } ] }
+  ],
+  "completeness": {
+    "method": "Prefectural boundary changes 1891–1943 were collected from (1) 越境合併 §戦前の境界変更 (oldid 110558853), (2) every 府県境界変更 law in 日本の廃止された法律 (oldid 110445708: 明治26年法律第12号, 明治28年法律第24号, 明治29年法律第56号, 明治32年法律第4号, 明治40年法律第8号, 明治45年法律第5号 — no other title of the form 〜府〜県境界変更 1890–1945), (3) the 沿革 sections of the 郡 on each side (北多摩郡, 荏原郡, 橘樹郡, 東葛飾郡, 猿島郡, 稲敷郡, 香取郡) and of the municipalities named. Island incorporations were read island by island for every polygon of N03-1920 that lies outside the four main islands' coastal waters and is named in an incorporation after 1891.",
+    "limits": "From 1899 (府県制 改正) a municipal boundary change that crossed a prefectural line could move the prefectural line without a law of its own (the 1926 浮間 case has no law in the list). Such changes were looked for only through 越境合併 and the 郡 articles above; a cross-border 大字 move recorded nowhere in those would be missing."
+  },
+  "unresolved": [
+    { "what": "大字 geometry for the mixed 1920 町村", "why": "Every `mixed` entry withholds whole 1920 町村 from both prefectures in its window. Drawing them needs the moved pieces as parts: e-Stat 2020 小地域 clipped to the 1920 町村, as build-meiji-v2.mjs does for PART 町村 — feasible where the moved 大字 kept its name (浮間・布田・和泉・宇奈根・久地・二子・宿河原・上平間・小向・等々力・下野毛・瀬田・堀江・西関宿・深井新田), not where it did not (大泉村の小榑・橋戸).", "checked": ["the 郡 and 町村 articles cited in `mixed`"], "needs": "e-Stat 町丁・字 of the receiving 1920 町村 matched to the moved 大字 names, then clipped to the 1920 町村" },
+    { "what": "千島 north of 択捉 (得撫郡・新知郡・占守郡) — not drawn", "why": "N03-1920 was compiled on the 1950 municipalities and carries no polygon for the central and northern Kuril Islands (MEASURED 2026-10-06: the only 北海道 parts east of 145.5°E are 歯舞・色丹・国後・択捉・紗那・蘂取), so 北海道庁 is drawn without them although they were Japanese and under 根室支庁 from the 1875 樺太・千島交換条約 to 1945. This is an omission, not a claim: the record says nothing about that ground.", "checked": ["munis-n03-1920.mjs: every 北海道 町村 with its bounding box"], "needs": "a redistributable outline of 得撫島・新知島・占守島 etc. and the 郡 they formed (Natural Earth or OSM island polygons would carry the coast; the 郡 lines are the island groups)" },
+    { "what": "1891–1920 at the Meiji seam", "why": "meiji-prefectures.json draws 1890-12-31 on 1920 郡 blocks; the same pre-1891 pieces listed here (大泉村, 保谷村 in 北多摩郡, the 江戸川・利根川・多摩川 pieces) lie on the far side there too. Its unresolved entry «village-level transfers 1872-1920» names the gap; this record does not change meiji files.", "checked": ["meiji-prefectures.json unresolved"], "needs": "the same facts applied in build-meiji-v2.mjs" }
+  ]
+}

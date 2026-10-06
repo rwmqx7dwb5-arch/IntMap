@@ -20,10 +20,10 @@
   "Mogilev governorate"
  ],
  "scope": {
-  "from": "1802-03-11",
+  "from": "1798-01-01",
   "to": "1917-11-06"
  },
- "polityNote": "Russian Empire (from March 1917 the Russian Republic). North-West Krai governorates throughout; the Kingdom of Poland (in personal union with the Russian crown, administratively integrated after 1867) from 9 June 1815. Spans are the de jure Russian first-level units: they do not depict the French occupation of 1812, nor the German/Austro-Hungarian occupation from Aug–Sep 1915 (Kingdom of Poland, Kovno, Grodno, most of Vilna, western Minsk), during which the occupiers abolished the governorate level in their General Governments, nor the Provisional Government declaration on Polish independence of 16/29 March 1917.",
+ "polityNote": "Russian Empire (from March 1917 the Russian Republic). North-West Krai governorates throughout; the Kingdom of Poland (in personal union with the Russian crown, administratively integrated after 1867) from 9 June 1815. Spans are the de jure Russian first-level units: they do not depict the French occupation of 1812, nor the German/Austro-Hungarian occupation from Aug–Sep 1915 (Kingdom of Poland, Kovno, Grodno, most of Vilna, western Minsk), during which the occupiers abolished the governorate level in their General Governments, nor the Provisional Government declaration on Polish independence of 16/29 March 1917. Scope starts 1798 (first year of Paul's Minsk governorate with Rechitsa); Minsk is drawn from then; Lithuania and Belarus governorates of 1796–1802 are named unresolved.",
  "units": [
   {
    "id": "RUE:Vitebsk@1802",
@@ -321,8 +321,8 @@
    "wikidata": "Q593230",
    "spans": [
     {
-     "from": "1802-03-11",
-     "precision": "day",
+     "from": "1798",
+     "precision": "year",
      "to": "1843-07-13",
      "atoms": [
       "U1897-304",
@@ -336,13 +336,19 @@
       "U1897-209",
       "U1897-210"
      ],
-     "dateNote": "Scope start; composition since 1797 (Rechitsa added) with Vileyka and Disna, without Novogrudok.",
+     "dateNote": "Year precision, the first year the sources guarantee: the 10-povet governorate of Paul's reform with Rechitsa uyezd (added 1796 per ru.wikipedia, 1797 per the Belarusian archives) and with Vileyka and Disna, without Novogrudok (Slonim/Lithuania), unchanged until 1843. Its neighbours were re-organised internally (Lithuania governorate 1797 = Vilna + Slonim, split again 1801–1802; Belarus governorate 1796–1802 = Polotsk + Mogilev) without a recorded transfer across the Minsk line.",
      "sources": [
       {
        "url": "https://web.archive.org/web/20210603025416/http://archives.gov.by/home/genealogiya/administrativno-territorialnoe-delenie-belarusi",
        "title": "Архивы Беларуси — Административно-территориальное деление Беларуси (archived 2021-06-03)",
        "says": "Minsk governorate: Rechitsa added 1797; in 1842/43 received Novogrudok from Grodno and gave Vileyka and Disna to Vilna.",
        "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=151213596",
+       "title": "Минская губерния — Википедия (oldid 151213596)",
+       "says": "After Paul's accession (1796) the 13 uyezds of the namestnichestvo became 10 povets (David-Gorodok, Dokshitsy, Nesvizh, Postavy gone, Rechitsa added); in 1842 Vileyka and Disna went to Vilna and Novogrudok came from Grodno.",
+       "accessed": "2026-10-06"
       }
      ]
     },
@@ -866,6 +872,25 @@
  ],
  "events": [
   {
+   "date": "1796-12-23",
+   "precision": "day",
+   "what": "Paul's decree of 12 Dec 1796 O.S.: Lithuania (Vilna + Slonim) and Belarus (Polotsk + Mogilev) governorates",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=155183425",
+     "title": "Литовская губерния — Википедия (oldid 155183425)",
+     "says": "Decree of 12 (23) Dec 1796 merged the Vilna and Slonim governorates into one Lithuania governorate of 19 uyezds; decrees of 9 (21) Sep 1801 and 28 Aug (9 Sep) 1802 restored Vilna and Slonim, the latter as Grodno.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=151198191",
+     "title": "Белорусская губерния — Википедия (oldid 151198191)",
+     "says": "Created 12 Dec 1796 from the Polotsk and Mogilev namestnichestva; divided in 1802 into Vitebsk and Mogilev governorates.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
    "date": "1802-03-11",
    "precision": "day",
    "what": "Belarus governorate divided into Vitebsk and Mogilev governorates",
@@ -947,530 +972,587 @@
  "atomsOutside": [
   {
    "atom": "U1897-199",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-200",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-201",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-202",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-203",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-204",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-205",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-213",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-214",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-215",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-216",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-218",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-219",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-220",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-222",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-223",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-224",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-225",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-226",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-227",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-228",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-229",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-230",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-231",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-232",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-233",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-234",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-235",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-236",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-237",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-238",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-239",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-240",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-241",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-242",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-221",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-279",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-280",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-281",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-282",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-283",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-290",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-291",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-293",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-243",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-244",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-245",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-246",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-247",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-248",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-249",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-250",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-251",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-252",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-253",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-254",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-255",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-256",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-257",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-258",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-259",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-260",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-261",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-262",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-263",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-264",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-265",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-266",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-267",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-268",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-269",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-270",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-271",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-272",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-273",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-274",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-275",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-276",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-277",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-278",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-284",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-286",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-288",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-289",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1815-06-09",
    "why": "Not part of the Russian Empire: Prussian/Austrian partition lands, then the Duchy of Warsaw (1807–1815), until the Congress of Vienna Final Act (9 June 1815) gave the Kingdom of Poland to the Russian crown."
   },
   {
    "atom": "U1897-294",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1807-07-09",
    "why": "Prussian (New East Prussia) until ceded to Russia by the Treaties of Tilsit (7/9 July 1807)."
   },
   {
    "atom": "U1897-295",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1807-07-09",
    "why": "Prussian (New East Prussia) until ceded to Russia by the Treaties of Tilsit (7/9 July 1807)."
   },
   {
    "atom": "U1897-296",
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1807-07-09",
    "why": "Prussian (New East Prussia) until ceded to Russia by the Treaties of Tilsit (7/9 July 1807)."
   }
  ],
  "unresolved": [
   {
-   "what": "Vilna governorate 1802–1819 (incl. the Palanga strip)",
+   "what": "Slonim (Grodno) uyezds inside the Lithuania governorate",
+   "atoms": [
+    "U1897-297",
+    "U1897-298",
+    "U1897-299",
+    "U1897-300",
+    "U1897-301",
+    "U1897-302",
+    "U1897-207",
+    "U1897-303"
+   ],
+   "from": "1798-01-01",
+   "to": "1802-03-11",
+   "why": "From 1797 the eight Slonim uyezds were part of the Lithuania governorate (decree of 12 Dec 1796 O.S.) together with the Vilna uyezds (including part of the 1897 Grobin uyezd at Palanga); Slonim was restored by decrees of 9 Sep 1801 and 28 Aug 1802 O.S. — the day the eight-uyezd unit took effect between them is not fixed, so the span starts at 1802 as before.",
+   "checked": [
+    "ru.wikipedia Литовская губерния oldid 155183425",
+    "Архивы Беларуси (archives.gov.by, archived 2021-06-03)"
+   ],
+   "needs": "the act that put the restored Slonim governorate into effect"
+  },
+  {
+   "what": "Belarus governorate 1796–1802 (Vitebsk + Mogilev)",
+   "atoms": [
+    "U1897-176",
+    "U1897-177",
+    "U1897-178",
+    "U1897-179",
+    "U1897-180",
+    "U1897-181",
+    "U1897-182",
+    "U1897-183",
+    "U1897-184",
+    "U1897-185",
+    "U1897-186",
+    "U1897-187",
+    "U1897-392",
+    "U1897-393",
+    "U1897-394",
+    "U1897-395",
+    "U1897-396",
+    "U1897-397",
+    "U1897-398",
+    "U1897-399",
+    "U1897-400",
+    "U1897-401",
+    "U1897-402"
+   ],
+   "from": "1798-01-01",
+   "to": "1802-03-11",
+   "why": "The Belarus governorate (12 Dec 1796 O.S.) was the Polotsk and Mogilev namestnichestva together; its outline lacks the Chernigov parcels that joined Mogilev governorate in 1889 and 1894 (inside 1897 Mogilev uyezds), so it is not a union of 1897 uyezds.",
+   "checked": [
+    "ru.wikipedia Белорусская губерния oldid 151198191",
+    "Архивы Беларуси (archives.gov.by, archived 2021-06-03)"
+   ],
+   "needs": "the 1889/1894 Chernigov parcels as atoms"
+  },
+  {
+   "what": "Vilna governorate 1798–1819 (Lithuania governorate to 1801; incl. the Palanga strip)",
    "unit": "RUE:Vilna@1795",
    "atoms": [
     "U1897-169",
@@ -1485,13 +1567,14 @@
     "U1897-211",
     "U1897-212"
    ],
-   "from": "1802-03-11",
+   "from": "1798-01-01",
    "to": "1819-03-25",
-   "why": "Until 13 Mar 1819 O.S. Vilna governorate also held the Palanga coastal strip, which lies inside the 1897 Grobin uyezd of Kurland (another group, only part of that atom); the governorate is not a union of these atoms.",
+   "why": "Until 13 Mar 1819 O.S. Vilna governorate also held the Palanga coastal strip, which lies inside the 1897 Grobin uyezd of Kurland (another group, only part of that atom); the governorate is not a union of these atoms. Before 1801–1802 these uyezds were part of the Lithuania governorate (Vilna + Slonim merged by decree of 12 Dec 1796 O.S.), whose outline also included the eight Slonim uyezds.",
    "checked": [
     "ru.wikipedia Курляндская губерния oldid 154901389 (ПСЗ-1 № 27718)",
     "ru.wikipedia Гробинский уезд oldid 147481405",
-    "archives.gov.by change list"
+    "archives.gov.by change list",
+    "ru.wikipedia Литовская губерния oldid 155183425"
    ],
    "needs": "the Palanga strip as a separate atom (1897 Grobin uyezd split along the 1819 line)"
   },
@@ -1741,17 +1824,6 @@
     "ru.wikipedia Холмская губерния oldid 152187087"
    ],
    "needs": "gmina/village-level atoms of 1912–1913 (Wrzyszcz 1991, «Delimitacja guberni chełmskiej»)"
-  },
-  {
-   "what": "Belarus governorate 1796–1802 and the earlier Polotsk/Mogilev units (before scope)",
-   "from": "1772",
-   "to": "1802-03-11",
-   "why": "Before the 1802 split the Belarus governorate had 16 uyezds with other lines (Babinovichi divided 1796 between Vitebsk and Orsha uyezds, restored 1802); not established as unions of 1897 uyezds, left outside scope.",
-   "checked": [
-    "archives.gov.by change list",
-    "ru.wikipedia Могилёвская губерния oldid 153057639",
-    "ru.wikipedia Бабиновичский уезд oldid 146931972"
-   ]
   },
   {
    "what": "Mogilev governorate 1802–1894",

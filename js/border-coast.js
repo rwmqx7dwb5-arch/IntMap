@@ -51,13 +51,16 @@ import { IntMapGeoEngine } from './geo-engine.js';
                     publishers into the two by their own licence
      reconstructed  IntMap assembled the row from cited facts as a union of finer units (scripts/build-hist-admin-recon.mjs,
                     docs/HIST-RECONSTRUCTION.md) — derived (the reader is told), but a cited timeline: it yields to every
-                    record that is not derived and outranks the present-day outline carried back */
+                    record that is not derived and outranks the present-day outline carried back
+     withheld       (with reconstructed) build-time data — the ground and windows the dossiers researched and could not
+                    settle (`unresolved`), written to the reconstruction's cache by its builder (scripts/histrecon/withheld-file.mjs). It is never drawn, but the present-day outline carried back yields to it as to a
+                    drawn row: research that says «the line here is not known» must not be answered by today's line */
 export const HIST_ADMIN_GAPS = [
   { file: 'data/hist-kuni.js',             global: '__HISTKUNI',        set: 'hk',              derived: true },
   { file: 'data/hist-admin-surveys.js',    global: '__HISTADMSURVEY',   set: 'histadmsurvey',   derived: false },
   { file: 'data/hist-admin-surveys-nc.js', global: '__HISTADMSURVEYNC', set: 'histadmsurveync', derived: false, nonCommercial: true },
   { file: 'data/hist-admin-fill.js',       global: '__HISTADMFILL',     set: 'histadmfill',     derived: true },
-  { file: 'data/hist-admin-recon.js',      global: '__HISTADMRECON',    set: 'histadmrecon',    derived: true, reconstructed: true },
+  { file: 'data/hist-admin-recon.js',      global: '__HISTADMRECON',    set: 'histadmrecon',    derived: true, reconstructed: true, withheld: true },
 ];
 export const IntMapBorderCoast = (function () {
   let _D = null, _P = null;

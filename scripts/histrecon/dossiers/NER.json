@@ -215,7 +215,8 @@
       "id": "NER:Niamey-dept@1964",
       "names": {
         "en": "Niamey Department",
-        "local": "Département de Niamey"
+        "local": "Département de Niamey",
+        "ja": "ニアメ県（1964–1988）"
       },
       "spans": [
         {
@@ -415,12 +416,17 @@
       "what": "Niger before 1964-07-17 (16 colonial cercles, 31 circonscriptions from 1961-12-31)",
       "from": "1960-08-03",
       "to": "1964-07-17",
-      "why": "The cercle/circonscription grid is finer than and not aligned with the NE atoms.",
+      "why": "First level 1960-08-03 → 1964-07-17 = the 16 colonial cercles (Agadez, Birni N'Konni, Dogondoutchi, Dosso, Filingué, Gouré, Madaoua, Magaria, Maradi, N'Guigmi, Niamey, Tahoua, Téra, Tessaoua, Tillabéry, Zinder), kept de facto above the 31 circonscriptions of law 61-50 (1961-12-31). The 1964 arrondissements «corresponded to the former circonscriptions», so each cercle is a union of 1964 arrondissements and hence of geoBoundaries NER ADM2 2018 departments (63 departments of 2011 + 4 city departments, all carved inside a 2001 department) — but no source found lists which circonscriptions formed each cercle (only that Dogondoutchi, Filingué, N'Guigmi and Téra had one each), e.g. whether Diffa and Maïné-Soroa lay in Gouré or N'Guigmi cercle.",
       "checked": [
         "statoids.com/une.html",
-        "fr.wikipedia Régions du Niger"
+        "fr.wikipedia Régions du Niger",
+        "en.wikipedia Administrative divisions of Niger oldid 1353771108",
+        "fr.wikipedia Subdivisions du Niger oldid 220789773 (laws 61-50, 64-023)",
+        "statoids.com/yne.html (1964 arrondissements, 1969 Arlit, 1972 Maradi split, ~2002 Kollo and Abalak)",
+        "Müller-Crepon DVN/9JI06R col_units_full (Niger only to 1937)",
+        "geoBoundaries NER ADM2 2018 (67 departments; usable as atoms once the cercle lists are known)"
       ],
-      "needs": "arrondissement atoms (geoBoundaries NER ADM2, CC BY 4.0) with 1961-64 lineage"
+      "needs": "the annex of law 61-50 of 31 Dec 1961 (circonscriptions by cercle); then geoBoundaries NER ADM2 2018 departments carry the cercles"
     }
   ]
 }

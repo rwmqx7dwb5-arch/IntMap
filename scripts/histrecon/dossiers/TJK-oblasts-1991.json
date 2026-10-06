@@ -1,0 +1,385 @@
+{
+ "country": "TJK",
+ "atomSet": "gb-adm2@2026-10-06",
+ "scope": {
+  "from": "1991-12-26",
+  "to": "1992-12-01"
+ },
+ "polityNote": "First-level units of the Republic of Tajikistan from the dissolution of the USSR (26 Dec 1991) to the eve of the second Khatlon (2 Dec 1992). In this year Kulob and Kurgan-Tyube were separate oblasts, and Yovon district and Nurek town were under the republic — the Natural Earth fill drew the modern Khatlon for it, which did not exist. Atoms: geoBoundaries TJK ADM2 (OpenStreetMap 2017, 58 districts, 20,509 vertices; cities folded into their districts; no separate Dushanbe atom). Check ① (geodesic area of the unions against the areas the sources state): Kulob 11,615 km² vs 12.0 thousand km² (1987) = 0.97; Kurgan-Tyube 11,363 km² vs 12.6 thousand km² (1987, with Yovon) less Yovon 976 km² = 0.98. OpenHistoricalMap carries only the SSR for these years, so no unit-level IoU is possible.",
+ "units": [
+  {
+   "id": "TJK:Leninabad",
+   "names": {
+    "en": "Leninabad Region",
+    "ja": "レニナバード州",
+    "local": "Вилояти Ленинобод"
+   },
+   "wikidata": "Q241582",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1992-12-02",
+     "atoms": [
+      "TJK-ADM2-16282066B9753024733058",
+      "TJK-ADM2-16282066B48594859138803",
+      "TJK-ADM2-16282066B74570235757169",
+      "TJK-ADM2-16282066B31805734535535",
+      "TJK-ADM2-16282066B4928854450407",
+      "TJK-ADM2-16282066B22139868689936",
+      "TJK-ADM2-16282066B17537121350265",
+      "TJK-ADM2-16282066B90901920365195",
+      "TJK-ADM2-16282066B70669453487294",
+      "TJK-ADM2-16282066B76167982569757",
+      "TJK-ADM2-16282066B60603147525969",
+      "TJK-ADM2-16282066B88907719432894",
+      "TJK-ADM2-16282066B40436225162508",
+      "TJK-ADM2-16282066B25952413622692"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%B4%D0%BC%D0%B8%D0%BD%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%B8%D0%B2%D0%BD%D0%BE%D0%B5_%D0%B4%D0%B5%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_%D0%A2%D0%B0%D0%B4%D0%B6%D0%B8%D0%BA%D0%B8%D1%81%D1%82%D0%B0%D0%BD%D0%B0&oldid=149753052",
+       "title": "Wikipedia (ru) — Административное деление Таджикистана (oldid 149753052)",
+       "says": "Cities of republican subordination in 1987 included Dushanbe and Nurek; Khatlon was split into Kulob and Kurgan-Tyube oblasts, re-merged on 2 Dec 1992; Leninabad renamed Sughd 11 Nov 2000.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%A1%D0%BE%D0%B3%D0%B4%D0%B8%D0%B9%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=154909833",
+       "title": "Wikipedia (ru) — Согдийская область (oldid 154909833)",
+       "says": "Leninabad oblast, renamed Sughd in 2000.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/utj.html",
+       "title": "Statoids — Regions of Tajikistan, change history",
+       "says": "Kulob and Qurghonteppa regions merged to form Khatlon (dated 1993 there); Leninobod renamed Sogd in 2000; Sogd includes the Vorukh exclave.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Renamed Sughd on 11 Nov 2000 (outside this scope). The Vorukh exclave in Kyrgyzstan is carried inside the Isfara atom."
+    }
+   ]
+  },
+  {
+   "id": "TJK:Gorno-Badakhshan",
+   "names": {
+    "en": "Gorno-Badakhshan Autonomous Region",
+    "ja": "ゴルノ・バダフシャン自治州",
+    "local": "Вилояти Мухтори Кӯҳистони Бадахшон"
+   },
+   "wikidata": "Q207319",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1992-12-02",
+     "atoms": [
+      "TJK-ADM2-16282066B84799714594258",
+      "TJK-ADM2-16282066B16686410577714",
+      "TJK-ADM2-16282066B70033230103640",
+      "TJK-ADM2-16282066B67507686696316",
+      "TJK-ADM2-16282066B11451591144202",
+      "TJK-ADM2-16282066B28036456763405",
+      "TJK-ADM2-16282066B75905457590964"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%93%D0%BE%D1%80%D0%BD%D0%BE-%D0%91%D0%B0%D0%B4%D0%B0%D1%85%D1%88%D0%B0%D0%BD%D1%81%D0%BA%D0%B0%D1%8F_%D0%B0%D0%B2%D1%82%D0%BE%D0%BD%D0%BE%D0%BC%D0%BD%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=154909908",
+       "title": "Wikipedia (ru) — Горно-Бадахшанская автономная область (oldid 154909908)",
+       "says": "Gorno-Badakhshan Autonomous Oblast; its soviet proclaimed an Autonomous Republic of Badakhshan on 11 Apr 1992, which the Supreme Council did not recognise.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%B4%D0%BC%D0%B8%D0%BD%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%B8%D0%B2%D0%BD%D0%BE%D0%B5_%D0%B4%D0%B5%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_%D0%A2%D0%B0%D0%B4%D0%B6%D0%B8%D0%BA%D0%B8%D1%81%D1%82%D0%B0%D0%BD%D0%B0&oldid=149753052",
+       "title": "Wikipedia (ru) — Административное деление Таджикистана (oldid 149753052)",
+       "says": "Cities of republican subordination in 1987 included Dushanbe and Nurek; Khatlon was split into Kulob and Kurgan-Tyube oblasts, re-merged on 2 Dec 1992; Leninabad renamed Sughd 11 Nov 2000.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "The 11 Apr 1992 proclamation of an Autonomous Republic of Badakhshan was not recognised; the oblast is drawn as the unit of the national administration. The atom (62,796 km²) follows today’s border with China, after the 2011 transfer of about 1,100 km² in the Murghob sector — a change of the national border, not of the oblast line."
+    }
+   ]
+  },
+  {
+   "id": "TJK:Kulob",
+   "names": {
+    "en": "Kulob Region",
+    "ja": "クリャブ州",
+    "local": "Вилояти Кӯлоб"
+   },
+   "wikidata": "Q1999787",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1992-12-02",
+     "atoms": [
+      "TJK-ADM2-16282066B62241494872527",
+      "TJK-ADM2-16282066B61264330221622",
+      "TJK-ADM2-16282066B93565945438282",
+      "TJK-ADM2-16282066B24878365760731",
+      "TJK-ADM2-16282066B64291455675046",
+      "TJK-ADM2-16282066B59205536320691",
+      "TJK-ADM2-16282066B93073619052009",
+      "TJK-ADM2-16282066B49983472993835",
+      "TJK-ADM2-16282066B44711875302411",
+      "TJK-ADM2-16282066B12337308871344"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9A%D1%83%D0%BB%D1%8F%D0%B1%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=148382984",
+       "title": "Wikipedia (ru) — Кулябская область (oldid 148382984)",
+       "says": "Kulob oblast abolished 8 Sep 1988 into Khatlon; restored 24 Jan 1990 with Kulob city and the Vose, Danghara, Kulob, Leningrad (Muminobod), Moskva (Hamadoni), Parkhar (Farkhor), Sovetsky (Temurmalik) and Khovaling districts; merged into the restored Khatlon on 2 Dec 1992.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%A8%D0%B0%D0%BC%D1%81%D0%B8%D0%B4%D0%B4%D0%B8%D0%BD_%D0%A8%D0%BE%D1%85%D0%B8%D0%BD_(%D1%80%D0%B0%D0%B9%D0%BE%D0%BD)&oldid=141074699",
+       "title": "Wikipedia (ru) — Шамсиддин Шохин (район) (oldid 141074699)",
+       "says": "Shuroobod district re-formed 26 Feb 1991 inside Kulob oblast from parts of the Leningrad and Moskva districts.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://tg.wikipedia.org/w/index.php?title=%D0%9D%D0%BE%D2%B3%D0%B8%D1%8F%D0%B8_%D0%91%D0%B0%D0%BB%D2%B7%D1%83%D0%B2%D0%BE%D0%BD&oldid=1411983",
+       "title": "Wikipedia (tg) — Ноҳияи Балҷувон (oldid 1411983)",
+       "says": "Baljuvon district abolished in 1954, its land given to Sovetsky (Temurmalik) and Khovaling districts; re-formed by Majlisi Oli decision No. 245 of 2 Feb 1996.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%A5%D0%B0%D1%82%D0%BB%D0%BE%D0%BD%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=154389186",
+       "title": "Wikipedia (ru) — Хатлонская область (oldid 154389186)",
+       "says": "Khatlon formed 8 Sep 1988 from Kulob and Kurgan-Tyube oblasts plus Nurek town; abolished 24 Jan 1990; restored 2 Dec 1992 by the Supreme Council, without Nurek and Yovon district.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Kulob city lies in the Kulob District atom. Shuroobod (1991) was cut from Leningrad and Moskva districts and Baljuvon (1996) from Sovetsky and Khovaling — all inside this oblast, so the union is unchanged."
+    }
+   ]
+  },
+  {
+   "id": "TJK:Kurgan-Tyube",
+   "names": {
+    "en": "Kurgan-Tyube Region",
+    "ja": "クルガン・チュベ州",
+    "local": "Вилояти Қӯрғонтеппа"
+   },
+   "wikidata": "Q1999779",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1992-12-02",
+     "atoms": [
+      "TJK-ADM2-16282066B93255092957093",
+      "TJK-ADM2-16282066B30218976566428",
+      "TJK-ADM2-16282066B28152733056959",
+      "TJK-ADM2-16282066B9263642408144",
+      "TJK-ADM2-16282066B9795593157075",
+      "TJK-ADM2-16282066B4049549671764",
+      "TJK-ADM2-16282066B36674591611238",
+      "TJK-ADM2-16282066B18617461158044",
+      "TJK-ADM2-16282066B18060616011371",
+      "TJK-ADM2-16282066B29350614893000",
+      "TJK-ADM2-16282066B75483976473554",
+      "TJK-ADM2-16282066B29862957146199"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9A%D1%83%D1%80%D0%B3%D0%B0%D0%BD-%D0%A2%D1%8E%D0%B1%D0%B8%D0%BD%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=148839153",
+       "title": "Wikipedia (ru) — Курган-Тюбинская область (oldid 148839153)",
+       "says": "Restored 24 Jan 1990 with Kurgan-Tyube city and the Vakhsh, Jilikul, Ilyich, Qabodiyon, Kolkhozabad, Kommunistichesky, Kuybyshev, Qumsangir, Panj, Shahrtuz and Yovon districts; Yovon moved to republican subordination on 1 Apr 1991; merged into Khatlon on 2 Dec 1992.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%A5%D1%83%D1%80%D0%BE%D1%81%D0%BE%D0%BD%D1%81%D0%BA%D0%B8%D0%B9_%D1%80%D0%B0%D0%B9%D0%BE%D0%BD&oldid=141418885",
+       "title": "Wikipedia (ru) — Хуросонский район (oldid 141418885)",
+       "says": "Formed in 1983 as Ilyich district of Kurgan-Tyube oblast; renamed Ghozimalik in 1992 and Khuroson in 2004.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%A8%D0%B0%D1%85%D1%80%D0%B8%D1%82%D1%83%D1%81%D1%81%D0%BA%D0%B8%D0%B9_%D1%80%D0%B0%D0%B9%D0%BE%D0%BD&oldid=141642222",
+       "title": "Wikipedia (ru) — Шахритусский район (oldid 141642222)",
+       "says": "Qabodiyon and Shahrtuz districts returned to Kurgan-Tyube oblast in 1990 and entered Khatlon on 2 Dec 1992; Beshkent (Nosiri Khusrav) district split from Shahrtuz on 2 Feb 1996.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%A5%D0%B0%D1%82%D0%BB%D0%BE%D0%BD%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=154389186",
+       "title": "Wikipedia (ru) — Хатлонская область (oldid 154389186)",
+       "says": "Khatlon formed 8 Sep 1988 from Kulob and Kurgan-Tyube oblasts plus Nurek town; abolished 24 Jan 1990; restored 2 Dec 1992 by the Supreme Council, without Nurek and Yovon district.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Kurgan-Tyube (Bokhtar) city lies in the Bokhtar District atom; Kalininabad (Sarband, Levakant) is the Sarband atom. Nosiri Khusrav (1996) was cut from Shahrtuz — inside the oblast. Yovon is not here: it left the oblast on 1 Apr 1991."
+    }
+   ]
+  },
+  {
+   "id": "TJK:RRP",
+   "names": {
+    "en": "Districts of Republican Subordination",
+    "ja": "共和国直轄地区",
+    "local": "Ноҳияҳои тобеи ҷумҳурӣ"
+   },
+   "wikidata": "Q633490",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1992-12-02",
+     "atoms": [
+      "TJK-ADM2-16282066B72950436230144",
+      "TJK-ADM2-16282066B21622581905056",
+      "TJK-ADM2-16282066B89680526344847",
+      "TJK-ADM2-16282066B63470098096953",
+      "TJK-ADM2-16282066B14620359228188",
+      "TJK-ADM2-16282066B73921551904477",
+      "TJK-ADM2-16282066B42853000788658",
+      "TJK-ADM2-16282066B95450197588643",
+      "TJK-ADM2-16282066B88100265425771",
+      "TJK-ADM2-16282066B85282984712387",
+      "TJK-ADM2-16282066B61410458799891",
+      "TJK-ADM2-16282066B70165182377284",
+      "TJK-ADM2-16282066B23180237533892",
+      "TJK-ADM2-16282066B18278602900186"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9A%D1%83%D1%80%D0%B3%D0%B0%D0%BD-%D0%A2%D1%8E%D0%B1%D0%B8%D0%BD%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=148839153",
+       "title": "Wikipedia (ru) — Курган-Тюбинская область (oldid 148839153)",
+       "says": "Restored 24 Jan 1990 with Kurgan-Tyube city and the Vakhsh, Jilikul, Ilyich, Qabodiyon, Kolkhozabad, Kommunistichesky, Kuybyshev, Qumsangir, Panj, Shahrtuz and Yovon districts; Yovon moved to republican subordination on 1 Apr 1991; merged into Khatlon on 2 Dec 1992.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%A5%D0%B0%D1%82%D0%BB%D0%BE%D0%BD%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=154389186",
+       "title": "Wikipedia (ru) — Хатлонская область (oldid 154389186)",
+       "says": "Khatlon formed 8 Sep 1988 from Kulob and Kurgan-Tyube oblasts plus Nurek town; abolished 24 Jan 1990; restored 2 Dec 1992 by the Supreme Council, without Nurek and Yovon district.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%B4%D0%BC%D0%B8%D0%BD%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%B8%D0%B2%D0%BD%D0%BE%D0%B5_%D0%B4%D0%B5%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_%D0%A2%D0%B0%D0%B4%D0%B6%D0%B8%D0%BA%D0%B8%D1%81%D1%82%D0%B0%D0%BD%D0%B0&oldid=149753052",
+       "title": "Wikipedia (ru) — Административное деление Таджикистана (oldid 149753052)",
+       "says": "Cities of republican subordination in 1987 included Dushanbe and Nurek; Khatlon was split into Kulob and Kurgan-Tyube oblasts, re-merged on 2 Dec 1992; Leninabad renamed Sughd 11 Nov 2000.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9D%D1%83%D1%80%D0%B0%D0%B1%D0%B0%D0%B4%D1%81%D0%BA%D0%B8%D0%B9_%D1%80%D0%B0%D0%B9%D0%BE%D0%BD_(%D0%A2%D0%B0%D0%B4%D0%B6%D0%B8%D0%BA%D0%B8%D1%81%D1%82%D0%B0%D0%BD)&oldid=152654945",
+       "title": "Wikipedia (ru) — Нурабадский район (Таджикистан) (oldid 152654945)",
+       "says": "Tavildara district was split from the eastern part of Darband (Nurobod) district on 26 Feb 1991; both are districts of republican subordination.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9D%D1%83%D1%80%D0%B5%D0%BA&oldid=148832985",
+       "title": "Wikipedia (ru) — Нурек (oldid 148832985)",
+       "says": "Nurek became a town in 1960; it entered Khatlon oblast on 8 Sep 1988.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Yovon (from 1 Apr 1991) and Nurek town (in neither oblast after 24 Jan 1990) were under the republic until at least 2 Dec 1992. The Rudaki atom is withheld (see unresolved): it also covers Dushanbe."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1991-04-01",
+   "precision": "day",
+   "what": "Yovon district moved from Kurgan-Tyube oblast to republican subordination (before scope; fixes the oblast line)",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9A%D1%83%D1%80%D0%B3%D0%B0%D0%BD-%D0%A2%D1%8E%D0%B1%D0%B8%D0%BD%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=148839153",
+     "title": "Wikipedia (ru) — Курган-Тюбинская область (oldid 148839153)",
+     "says": "Restored 24 Jan 1990 with Kurgan-Tyube city and the Vakhsh, Jilikul, Ilyich, Qabodiyon, Kolkhozabad, Kommunistichesky, Kuybyshev, Qumsangir, Panj, Shahrtuz and Yovon districts; Yovon moved to republican subordination on 1 Apr 1991; merged into Khatlon on 2 Dec 1992.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1992-12-02",
+   "precision": "day",
+   "what": "Kulob and Kurgan-Tyube oblasts merged into the restored Khatlon (the day after this scope)",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%A5%D0%B0%D1%82%D0%BB%D0%BE%D0%BD%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=154389186",
+     "title": "Wikipedia (ru) — Хатлонская область (oldid 154389186)",
+     "says": "Khatlon formed 8 Sep 1988 from Kulob and Kurgan-Tyube oblasts plus Nurek town; abolished 24 Jan 1990; restored 2 Dec 1992 by the Supreme Council, without Nurek and Yovon district.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%B4%D0%BC%D0%B8%D0%BD%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%B8%D0%B2%D0%BD%D0%BE%D0%B5_%D0%B4%D0%B5%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_%D0%A2%D0%B0%D0%B4%D0%B6%D0%B8%D0%BA%D0%B8%D1%81%D1%82%D0%B0%D0%BD%D0%B0&oldid=149753052",
+     "title": "Wikipedia (ru) — Административное деление Таджикистана (oldid 149753052)",
+     "says": "Cities of republican subordination in 1987 included Dushanbe and Nurek; Khatlon was split into Kulob and Kurgan-Tyube oblasts, re-merged on 2 Dec 1992; Leninabad renamed Sughd 11 Nov 2000.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1992-01-01",
+   "n": 6,
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%B4%D0%BC%D0%B8%D0%BD%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%B8%D0%B2%D0%BD%D0%BE%D0%B5_%D0%B4%D0%B5%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_%D0%A2%D0%B0%D0%B4%D0%B6%D0%B8%D0%BA%D0%B8%D1%81%D1%82%D0%B0%D0%BD%D0%B0&oldid=149753052",
+     "title": "Wikipedia (ru) — Административное деление Таджикистана (oldid 149753052)",
+     "says": "Cities of republican subordination in 1987 included Dushanbe and Nurek; Khatlon was split into Kulob and Kurgan-Tyube oblasts, re-merged on 2 Dec 1992; Leninabad renamed Sughd 11 Nov 2000.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9A%D1%83%D0%BB%D1%8F%D0%B1%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=148382984",
+     "title": "Wikipedia (ru) — Кулябская область (oldid 148382984)",
+     "says": "Kulob oblast abolished 8 Sep 1988 into Khatlon; restored 24 Jan 1990 with Kulob city and the Vose, Danghara, Kulob, Leningrad (Muminobod), Moskva (Hamadoni), Parkhar (Farkhor), Sovetsky (Temurmalik) and Khovaling districts; merged into the restored Khatlon on 2 Dec 1992.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9A%D1%83%D1%80%D0%B3%D0%B0%D0%BD-%D0%A2%D1%8E%D0%B1%D0%B8%D0%BD%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=148839153",
+     "title": "Wikipedia (ru) — Курган-Тюбинская область (oldid 148839153)",
+     "says": "Restored 24 Jan 1990 with Kurgan-Tyube city and the Vakhsh, Jilikul, Ilyich, Qabodiyon, Kolkhozabad, Kommunistichesky, Kuybyshev, Qumsangir, Panj, Shahrtuz and Yovon districts; Yovon moved to republican subordination on 1 Apr 1991; merged into Khatlon on 2 Dec 1992.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1992-06-01",
+   "n": 6,
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%B4%D0%BC%D0%B8%D0%BD%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%B8%D0%B2%D0%BD%D0%BE%D0%B5_%D0%B4%D0%B5%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_%D0%A2%D0%B0%D0%B4%D0%B6%D0%B8%D0%BA%D0%B8%D1%81%D1%82%D0%B0%D0%BD%D0%B0&oldid=149753052",
+     "title": "Wikipedia (ru) — Административное деление Таджикистана (oldid 149753052)",
+     "says": "Cities of republican subordination in 1987 included Dushanbe and Nurek; Khatlon was split into Kulob and Kurgan-Tyube oblasts, re-merged on 2 Dec 1992; Leninabad renamed Sughd 11 Nov 2000.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9A%D1%83%D0%BB%D1%8F%D0%B1%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=148382984",
+     "title": "Wikipedia (ru) — Кулябская область (oldid 148382984)",
+     "says": "Kulob oblast abolished 8 Sep 1988 into Khatlon; restored 24 Jan 1990 with Kulob city and the Vose, Danghara, Kulob, Leningrad (Muminobod), Moskva (Hamadoni), Parkhar (Farkhor), Sovetsky (Temurmalik) and Khovaling districts; merged into the restored Khatlon on 2 Dec 1992.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9A%D1%83%D1%80%D0%B3%D0%B0%D0%BD-%D0%A2%D1%8E%D0%B1%D0%B8%D0%BD%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=148839153",
+     "title": "Wikipedia (ru) — Курган-Тюбинская область (oldid 148839153)",
+     "says": "Restored 24 Jan 1990 with Kurgan-Tyube city and the Vakhsh, Jilikul, Ilyich, Qabodiyon, Kolkhozabad, Kommunistichesky, Kuybyshev, Qumsangir, Panj, Shahrtuz and Yovon districts; Yovon moved to republican subordination on 1 Apr 1991; merged into Khatlon on 2 Dec 1992.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Dushanbe city and Lenin (Rudaki) district of republican subordination",
+   "unit": "TJK:Dushanbe",
+   "atoms": [
+    "TJK-ADM2-16282066B50587073780273"
+   ],
+   "from": "1991-12-26",
+   "to": "1992-12-02",
+   "why": "The OSM 2017 district layer has no Dushanbe atom: the Rudaki polygon covers the capital too (the Dushanbe point falls inside it), and the city line moved later (76.6 km² from Rudaki to Dushanbe in 2020). Neither the city nor the district can be drawn alone.",
+   "checked": [
+    "geoBoundaries TJK ADM2 (OSM 2017): point-in-polygon of Dushanbe 68.78E 38.56N falls in Rudaki District",
+    "partq ADM2 vs ADM1: 0 overlaps; a quarter of the Rudaki atom samples lie inside ADM1 Dushanbe",
+    "ru.wikipedia Рудаки (район) oldid 154003068",
+    "ru.wikipedia Душанбе oldid 155404686"
+   ],
+   "needs": "A district layer that keeps Dushanbe separate, with the 1991 city limits"
+  }
+ ]
+}

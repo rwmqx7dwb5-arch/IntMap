@@ -1,0 +1,1104 @@
+{
+ "country": "KAZ",
+ "atomSet": "gb-adm2@2026-10-06",
+ "scope": {
+  "from": "1991-12-16",
+  "to": "1999-04-09"
+ },
+ "polityNote": "Regions of the Republic of Kazakhstan from independence (16 Dec 1991) to the last region-level transfer before the Natural Earth layout (10 Apr 1999; KAZ.json draws from then). Atoms: geoBoundaries KAZ ADM2 (174 districts, ODbL; stated as OpenStreetMap 2017, but the district names — Shuchinsk, Tselinny, Sovetsky, Leninogorsk, no Eskeldi — are those of about 1999–2000, and city territories are folded into districts). It is a clean partition (0 overlaps measured at 0.1°) at 22,675 vertices — finer than the Natural Earth units it replaces (6,331). A 1991 region is drawn only where every 1997 district merger on its line is shown to have stayed on one side.",
+ "units": [
+  {
+   "id": "KAZ:West Kazakhstan",
+   "names": {
+    "en": "West Kazakhstan Region",
+    "ja": "西カザフスタン州",
+    "local": "Батыс Қазақстан облысы"
+   },
+   "wikidata": "Q486007",
+   "spans": [
+    {
+     "from": "1991-12-16",
+     "precision": "day",
+     "to": "1999-04-10",
+     "atoms": [
+      "KAZ-ADM2-9891525B29412221680291",
+      "KAZ-ADM2-9891525B48409861981673",
+      "KAZ-ADM2-9891525B81394773974850",
+      "KAZ-ADM2-9891525B46477269808436",
+      "KAZ-ADM2-9891525B44961106732022",
+      "KAZ-ADM2-9891525B14229558856766",
+      "KAZ-ADM2-9891525B6552459074784",
+      "KAZ-ADM2-9891525B55146365406928",
+      "KAZ-ADM2-9891525B23938329626938",
+      "KAZ-ADM2-9891525B86846607343045",
+      "KAZ-ADM2-9891525B13412806462035",
+      "KAZ-ADM2-9891525B90796593834175"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ukz.html",
+       "title": "Statoids — Regions of Kazakhstan, change history",
+       "says": "At independence Kazakhstan had 19 regions plus Almaty city; 1997-04-22 Taldyqorghan into Almaty and Torghay into Qostanay; 1997-05-03 Kokshetau, Semey and Zhezqazghan merged; 1999-04-10 three raions to Aqmola.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "KAZ:Aktobe",
+   "names": {
+    "en": "Aktobe Region",
+    "ja": "アクトベ州",
+    "local": "Ақтөбе облысы"
+   },
+   "wikidata": "Q485437",
+   "spans": [
+    {
+     "from": "1991-12-16",
+     "precision": "day",
+     "to": "1999-04-10",
+     "atoms": [
+      "KAZ-ADM2-9891525B5390352263066",
+      "KAZ-ADM2-9891525B31042919552642",
+      "KAZ-ADM2-9891525B40089471305572",
+      "KAZ-ADM2-9891525B11861912196309",
+      "KAZ-ADM2-9891525B30451835729317",
+      "KAZ-ADM2-9891525B49643131796470",
+      "KAZ-ADM2-9891525B9195242261928",
+      "KAZ-ADM2-9891525B75364407860375",
+      "KAZ-ADM2-9891525B45366613377645",
+      "KAZ-ADM2-9891525B77019336651831",
+      "KAZ-ADM2-9891525B29473032189270",
+      "KAZ-ADM2-9891525B37446052654763",
+      "KAZ-ADM2-9891525B3029562563142"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ukz.html",
+       "title": "Statoids — Regions of Kazakhstan, change history",
+       "says": "At independence Kazakhstan had 19 regions plus Almaty city; 1997-04-22 Taldyqorghan into Almaty and Torghay into Qostanay; 1997-05-03 Kokshetau, Semey and Zhezqazghan merged; 1999-04-10 three raions to Aqmola.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "KAZ:Atyrau",
+   "names": {
+    "en": "Atyrau Region",
+    "ja": "アティラウ州",
+    "local": "Атырау облысы"
+   },
+   "wikidata": "Q427658",
+   "spans": [
+    {
+     "from": "1991-12-16",
+     "precision": "day",
+     "to": "1999-04-10",
+     "atoms": [
+      "KAZ-ADM2-9891525B74968886197951",
+      "KAZ-ADM2-9891525B88921479030871",
+      "KAZ-ADM2-9891525B83767949590461",
+      "KAZ-ADM2-9891525B35609562121842",
+      "KAZ-ADM2-9891525B2129007545371",
+      "KAZ-ADM2-9891525B40189279728767",
+      "KAZ-ADM2-9891525B53075937326736",
+      "KAZ-ADM2-9891525B14689860230406"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ukz.html",
+       "title": "Statoids — Regions of Kazakhstan, change history",
+       "says": "At independence Kazakhstan had 19 regions plus Almaty city; 1997-04-22 Taldyqorghan into Almaty and Torghay into Qostanay; 1997-05-03 Kokshetau, Semey and Zhezqazghan merged; 1999-04-10 three raions to Aqmola.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "KAZ:Mangystau",
+   "names": {
+    "en": "Mangystau Region",
+    "ja": "マンギスタウ州",
+    "local": "Маңғыстау облысы"
+   },
+   "wikidata": "Q238931",
+   "spans": [
+    {
+     "from": "1991-12-16",
+     "precision": "day",
+     "to": "1999-04-10",
+     "atoms": [
+      "KAZ-ADM2-9891525B90361051378327",
+      "KAZ-ADM2-9891525B2667021511617",
+      "KAZ-ADM2-9891525B69533138221842",
+      "KAZ-ADM2-9891525B61118581798100",
+      "KAZ-ADM2-9891525B91607639772284"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ukz.html",
+       "title": "Statoids — Regions of Kazakhstan, change history",
+       "says": "At independence Kazakhstan had 19 regions plus Almaty city; 1997-04-22 Taldyqorghan into Almaty and Torghay into Qostanay; 1997-05-03 Kokshetau, Semey and Zhezqazghan merged; 1999-04-10 three raions to Aqmola.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "KAZ:Kyzylorda",
+   "names": {
+    "en": "Kyzylorda Region",
+    "ja": "クズロルダ州",
+    "local": "Қызылорда облысы"
+   },
+   "wikidata": "Q485322",
+   "spans": [
+    {
+     "from": "1991-12-16",
+     "precision": "day",
+     "to": "1999-04-10",
+     "atoms": [
+      "KAZ-ADM2-9891525B20568160586477",
+      "KAZ-ADM2-9891525B2172576540475",
+      "KAZ-ADM2-9891525B16415280148457",
+      "KAZ-ADM2-9891525B77589368790240",
+      "KAZ-ADM2-9891525B74676052305742",
+      "KAZ-ADM2-9891525B78511175106534",
+      "KAZ-ADM2-9891525B29819169613225",
+      "KAZ-ADM2-9891525B84924581617307"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ukz.html",
+       "title": "Statoids — Regions of Kazakhstan, change history",
+       "says": "At independence Kazakhstan had 19 regions plus Almaty city; 1997-04-22 Taldyqorghan into Almaty and Torghay into Qostanay; 1997-05-03 Kokshetau, Semey and Zhezqazghan merged; 1999-04-10 three raions to Aqmola.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Includes the Baikonur complex leased to Russia from 1994–95 (Kazakh territory)."
+    }
+   ]
+  },
+  {
+   "id": "KAZ:Jambyl",
+   "names": {
+    "en": "Jambyl Region",
+    "ja": "ジャンブール州",
+    "local": "Жамбыл облысы"
+   },
+   "wikidata": "Q486657",
+   "spans": [
+    {
+     "from": "1991-12-16",
+     "precision": "day",
+     "to": "1999-04-10",
+     "atoms": [
+      "KAZ-ADM2-9891525B60736101778825",
+      "KAZ-ADM2-9891525B97715510859109",
+      "KAZ-ADM2-9891525B38388460911892",
+      "KAZ-ADM2-9891525B1707645989139",
+      "KAZ-ADM2-9891525B77452281688660",
+      "KAZ-ADM2-9891525B89439479753564",
+      "KAZ-ADM2-9891525B54238400016653",
+      "KAZ-ADM2-9891525B28377598632345",
+      "KAZ-ADM2-9891525B49011564087565",
+      "KAZ-ADM2-9891525B62157809207251",
+      "KAZ-ADM2-9891525B50399930684689",
+      "KAZ-ADM2-9891525B13705604007606"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ukz.html",
+       "title": "Statoids — Regions of Kazakhstan, change history",
+       "says": "At independence Kazakhstan had 19 regions plus Almaty city; 1997-04-22 Taldyqorghan into Almaty and Torghay into Qostanay; 1997-05-03 Kokshetau, Semey and Zhezqazghan merged; 1999-04-10 three raions to Aqmola.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "KAZ:Pavlodar",
+   "names": {
+    "en": "Pavlodar Region",
+    "ja": "パブロダール州",
+    "local": "Павлодар облысы"
+   },
+   "wikidata": "Q486144",
+   "spans": [
+    {
+     "from": "1991-12-16",
+     "precision": "day",
+     "to": "1999-04-10",
+     "atoms": [
+      "KAZ-ADM2-9891525B57881818520678",
+      "KAZ-ADM2-9891525B3395793098905",
+      "KAZ-ADM2-9891525B7015158273764",
+      "KAZ-ADM2-9891525B30775471295398",
+      "KAZ-ADM2-9891525B65214582738908",
+      "KAZ-ADM2-9891525B72314075363925",
+      "KAZ-ADM2-9891525B2073414560970",
+      "KAZ-ADM2-9891525B72174949992008",
+      "KAZ-ADM2-9891525B36736073999325",
+      "KAZ-ADM2-9891525B27254512620607",
+      "KAZ-ADM2-9891525B27284335503251",
+      "KAZ-ADM2-9891525B98229517012899"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ukz.html",
+       "title": "Statoids — Regions of Kazakhstan, change history",
+       "says": "At independence Kazakhstan had 19 regions plus Almaty city; 1997-04-22 Taldyqorghan into Almaty and Torghay into Qostanay; 1997-05-03 Kokshetau, Semey and Zhezqazghan merged; 1999-04-10 three raions to Aqmola.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "KAZ:South Kazakhstan",
+   "names": {
+    "en": "South Kazakhstan Region",
+    "ja": "南カザフスタン州",
+    "local": "Түркістан облысы"
+   },
+   "wikidata": "Q815330",
+   "spans": [
+    {
+     "from": "1991-12-16",
+     "precision": "day",
+     "to": "1999-04-10",
+     "atoms": [
+      "KAZ-ADM2-9891525B91568049754123",
+      "KAZ-ADM2-9891525B44210110580275",
+      "KAZ-ADM2-9891525B62106585181407",
+      "KAZ-ADM2-9891525B88642868140489",
+      "KAZ-ADM2-9891525B45749482281835",
+      "KAZ-ADM2-9891525B23047987928012",
+      "KAZ-ADM2-9891525B1387468369569",
+      "KAZ-ADM2-9891525B88228936088900",
+      "KAZ-ADM2-9891525B8049816971735",
+      "KAZ-ADM2-9891525B68436750823948",
+      "KAZ-ADM2-9891525B85859186368254",
+      "KAZ-ADM2-9891525B55423514815526",
+      "KAZ-ADM2-9891525B79835173187971",
+      "KAZ-ADM2-9891525B34991844410441"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ukz.html",
+       "title": "Statoids — Regions of Kazakhstan, change history",
+       "says": "At independence Kazakhstan had 19 regions plus Almaty city; 1997-04-22 Taldyqorghan into Almaty and Torghay into Qostanay; 1997-05-03 Kokshetau, Semey and Zhezqazghan merged; 1999-04-10 three raions to Aqmola.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "KAZ:Taldykorgan",
+   "names": {
+    "en": "Taldykorgan Region",
+    "ja": "タルディコルガン州",
+    "local": "Талдықорған облысы"
+   },
+   "wikidata": "Q684441",
+   "spans": [
+    {
+     "from": "1991-12-16",
+     "precision": "day",
+     "to": "1997-04-22",
+     "atoms": [
+      "KAZ-ADM2-9891525B33487357631204",
+      "KAZ-ADM2-9891525B43212403616795",
+      "KAZ-ADM2-9891525B31721358968315",
+      "KAZ-ADM2-9891525B94411602981391",
+      "KAZ-ADM2-9891525B70442580955905",
+      "KAZ-ADM2-9891525B22712804397208",
+      "KAZ-ADM2-9891525B34969446984364",
+      "KAZ-ADM2-9891525B8942428750447"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%A2%D0%B0%D0%BB%D0%B4%D1%8B-%D0%9A%D1%83%D1%80%D0%B3%D0%B0%D0%BD%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=154543990",
+       "title": "Википедия — Талды-Курганская область",
+       "says": "In 1989 the oblast had the Taldy-Kurgan and Tekeli city soviets and 11 districts (Aksu, Alakol, Andreyev, Burlyu-Tobe, Gvardeysky, Kapal, Karatal, Kirov, Panfilov, Sarkand, Taldy-Kurgan); abolished 1997.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%BB%D0%BC%D0%B0%D1%82%D0%B8%D0%BD%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=154481478",
+       "title": "Википедия — Алматинская область",
+       "says": "In April 1997 the districts of the abolished Taldy-Kurgan oblast passed to Almaty oblast; in May the Gvardeysky, Kapal, Kegen, Kurty, Uygentas and Chilik districts were abolished.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9A%D0%B5%D1%80%D0%B1%D1%83%D0%BB%D0%B0%D0%BA%D1%81%D0%BA%D0%B8%D0%B9_%D1%80%D0%B0%D0%B9%D0%BE%D0%BD&oldid=151780529",
+       "title": "Википедия — Кербулакский район",
+       "says": "In 1997 the district passed to Almaty oblast and took in the abolished Gvardeysky district (both of the former Taldy-Kurgan oblast).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%BA%D1%81%D1%83%D1%81%D0%BA%D0%B8%D0%B9_%D1%80%D0%B0%D0%B9%D0%BE%D0%BD&oldid=152610304",
+       "title": "Википедия — Аксуский район",
+       "says": "In 1967–1997 in Taldy-Kurgan oblast; in May 1997 it received the abolished Kapal district.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%91%D1%83%D1%80%D0%BB%D1%8E-%D0%A2%D0%BE%D0%B1%D0%B8%D0%BD%D1%81%D0%BA%D0%B8%D0%B9_%D1%80%D0%B0%D0%B9%D0%BE%D0%BD&oldid=148425376",
+       "title": "Википедия — Бурлю-Тобинский район",
+       "says": "Abolished 28 Feb 1997, its territory divided between the Aksu, Kapal, Karatal and Sarkand districts (all of Taldy-Kurgan oblast).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9A%D1%83%D1%80%D1%82%D0%B8%D0%BD%D1%81%D0%BA%D0%B8%D0%B9_%D1%80%D0%B0%D0%B9%D0%BE%D0%BD&oldid=148495005",
+       "title": "Википедия — Куртинский район",
+       "says": "Kurty district of Alma-Ata oblast was abolished on 23 May 1997, its rural okrugs divided between the Balkhash, Zhambyl and Ili districts.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "The 1997–98 district mergers were all inside the former oblast (Gvardeysky into Kerbulak, Kapal into Aksu, Uygentas into Alakol, Burlyu-Tobe divided among Taldykorgan districts); Kurty, the Almaty-oblast district on the line, was divided among Almaty-oblast districts."
+    }
+   ]
+  },
+  {
+   "id": "KAZ:Kokshetau",
+   "names": {
+    "en": "Kokshetau Region",
+    "ja": "コクシェタウ州",
+    "local": "Көкшетау облысы"
+   },
+   "wikidata": "Q1538206",
+   "spans": [
+    {
+     "from": "1991-12-16",
+     "precision": "day",
+     "to": "1997-05-03",
+     "atoms": [
+      "KAZ-ADM2-9891525B62975532975937",
+      "KAZ-ADM2-9891525B68466162825805",
+      "KAZ-ADM2-9891525B85189731955038",
+      "KAZ-ADM2-9891525B47834251469299",
+      "KAZ-ADM2-9891525B73231455923468",
+      "KAZ-ADM2-9891525B49691587242628",
+      "KAZ-ADM2-9891525B48756499720859",
+      "KAZ-ADM2-9891525B55992449235040"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9A%D0%BE%D0%BA%D1%88%D0%B5%D1%82%D0%B0%D1%83%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=154543977",
+       "title": "Википедия — Кокшетауская область",
+       "says": "In 1989 the oblast had 15 districts and the Kokchetav and Shchuchinsk city soviets; abolished 3 May 1997.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9B%D0%B5%D0%BD%D0%B8%D0%BD%D0%B3%D1%80%D0%B0%D0%B4%D1%81%D0%BA%D0%B8%D0%B9_%D1%80%D0%B0%D0%B9%D0%BE%D0%BD_(%D0%9A%D0%BE%D0%BA%D1%87%D0%B5%D1%82%D0%B0%D0%B2%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C)&oldid=148414540",
+       "title": "Википедия — Ленинградский район (Кокчетавская область)",
+       "says": "Abolished 2 May 1997 into the newly formed Akzhar district of Kokshetau oblast, which passed to North Kazakhstan the next day.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%A2%D0%B0%D0%B9%D1%8B%D0%BD%D1%88%D0%B8%D0%BD%D1%81%D0%BA%D0%B8%D0%B9_%D1%80%D0%B0%D0%B9%D0%BE%D0%BD&oldid=153464792",
+       "title": "Википедия — Тайыншинский район",
+       "says": "On 2 May 1997 Krasnoarmeysk district was renamed Tayynsha and took in the abolished Keller and Chkalov districts (all of Kokshetau oblast).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%B9%D1%8B%D1%80%D1%82%D0%B0%D1%83%D1%81%D0%BA%D0%B8%D0%B9_%D1%80%D0%B0%D0%B9%D0%BE%D0%BD&oldid=148372819",
+       "title": "Википедия — Айыртауский район",
+       "says": "On 2 May 1997 the abolished Arykbalyk district joined Ayyrtau; on 3 May the district, like all of Kokshetau oblast, passed to North Kazakhstan.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%A0%D0%B0%D0%B9%D0%BE%D0%BD_%D0%B8%D0%BC%D0%B5%D0%BD%D0%B8_%D0%93%D0%B0%D0%B1%D0%B8%D1%82%D0%B0_%D0%9C%D1%83%D1%81%D1%80%D0%B5%D0%BF%D0%BE%D0%B2%D0%B0&oldid=155346171",
+       "title": "Википедия — Район имени Габита Мусрепова",
+       "says": "On 2 May 1997 the district took in the abolished Ruzayevka and Chistopol districts and was renamed Tselinny; on 3 May it passed from Kokshetau to North Kazakhstan.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%A3%D0%B0%D0%BB%D0%B8%D1%85%D0%B0%D0%BD%D0%BE%D0%B2%D1%81%D0%BA%D0%B8%D0%B9_%D1%80%D0%B0%D0%B9%D0%BE%D0%BD&oldid=152606816",
+       "title": "Википедия — Уалихановский район",
+       "says": "On 2 May 1997 Kzyltu district absorbed part of the abolished Valikhanov district (both of Kokshetau oblast) and became Ualikhanov district.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9A%D0%BE%D0%BA%D1%87%D0%B5%D1%82%D0%B0%D0%B2%D1%81%D0%BA%D0%B8%D0%B9_%D1%80%D0%B0%D0%B9%D0%BE%D0%BD&oldid=148414239",
+       "title": "Википедия — Кокчетавский район",
+       "says": "Abolished 2 May 1997, its territory joined Zerendi district of Kokshetau oblast.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%BA%D0%BC%D0%BE%D0%BB%D0%B8%D0%BD%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=154911739",
+       "title": "Википедия — Акмолинская область",
+       "says": "On 22 Apr 1997 five districts of Torgay oblast passed to Akmola; on 10 Apr 1999 the Zerendi, Shchuchinsk and Enbekshilder districts with Kokshetau passed from North Kazakhstan to Akmola.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "The mergers of 2 May 1997 (Akzhar, Tayynsha, Ayyrtau, Tselinny, Ualikhanov, Zerendi) were made inside Kokshetau oblast the day before it was abolished; Kokshetau city lies in the Zerendi atom."
+    }
+   ]
+  },
+  {
+   "id": "KAZ:North Kazakhstan",
+   "names": {
+    "en": "North Kazakhstan Region",
+    "ja": "北カザフスタン州",
+    "local": "Солтүстік Қазақстан облысы"
+   },
+   "wikidata": "Q485088",
+   "spans": [
+    {
+     "from": "1991-12-16",
+     "precision": "day",
+     "to": "1997-05-03",
+     "atoms": [
+      "KAZ-ADM2-9891525B12497549856029",
+      "KAZ-ADM2-9891525B74289585516310",
+      "KAZ-ADM2-9891525B4175044781460",
+      "KAZ-ADM2-9891525B23450940169479",
+      "KAZ-ADM2-9891525B79097177662278",
+      "KAZ-ADM2-9891525B95333336171773",
+      "KAZ-ADM2-9891525B71815302785603",
+      "KAZ-ADM2-9891525B72514792366825"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ukz.html",
+       "title": "Statoids — Regions of Kazakhstan, change history",
+       "says": "At independence Kazakhstan had 19 regions plus Almaty city; 1997-04-22 Taldyqorghan into Almaty and Torghay into Qostanay; 1997-05-03 Kokshetau, Semey and Zhezqazghan merged; 1999-04-10 three raions to Aqmola.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%A1%D0%B5%D0%B2%D0%B5%D1%80%D0%BE-%D0%9A%D0%B0%D0%B7%D0%B0%D1%85%D1%81%D1%82%D0%B0%D0%BD%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=155356339",
+       "title": "Википедия — Северо-Казахстанская область",
+       "says": "In the 1997 reform the districts of the abolished Kokshetau oblast were included in North Kazakhstan oblast.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Petropavl lies in the Kyzylzhar atom."
+    },
+    {
+     "from": "1997-05-03",
+     "precision": "day",
+     "to": "1999-04-10",
+     "atoms": [
+      "KAZ-ADM2-9891525B68466162825805",
+      "KAZ-ADM2-9891525B62975532975937",
+      "KAZ-ADM2-9891525B12497549856029",
+      "KAZ-ADM2-9891525B74289585516310",
+      "KAZ-ADM2-9891525B4175044781460",
+      "KAZ-ADM2-9891525B23450940169479",
+      "KAZ-ADM2-9891525B79097177662278",
+      "KAZ-ADM2-9891525B95333336171773",
+      "KAZ-ADM2-9891525B85189731955038",
+      "KAZ-ADM2-9891525B71815302785603",
+      "KAZ-ADM2-9891525B47834251469299",
+      "KAZ-ADM2-9891525B73231455923468",
+      "KAZ-ADM2-9891525B72514792366825",
+      "KAZ-ADM2-9891525B49691587242628",
+      "KAZ-ADM2-9891525B48756499720859",
+      "KAZ-ADM2-9891525B55992449235040"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ukz.html",
+       "title": "Statoids — Regions of Kazakhstan, change history",
+       "says": "At independence Kazakhstan had 19 regions plus Almaty city; 1997-04-22 Taldyqorghan into Almaty and Torghay into Qostanay; 1997-05-03 Kokshetau, Semey and Zhezqazghan merged; 1999-04-10 three raions to Aqmola.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%A1%D0%B5%D0%B2%D0%B5%D1%80%D0%BE-%D0%9A%D0%B0%D0%B7%D0%B0%D1%85%D1%81%D1%82%D0%B0%D0%BD%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=155356339",
+       "title": "Википедия — Северо-Казахстанская область",
+       "says": "In the 1997 reform the districts of the abolished Kokshetau oblast were included in North Kazakhstan oblast.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%BA%D0%BC%D0%BE%D0%BB%D0%B8%D0%BD%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=154911739",
+       "title": "Википедия — Акмолинская область",
+       "says": "On 22 Apr 1997 five districts of Torgay oblast passed to Akmola; on 10 Apr 1999 the Zerendi, Shchuchinsk and Enbekshilder districts with Kokshetau passed from North Kazakhstan to Akmola.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "With all of former Kokshetau oblast until three districts passed to Akmola on 10 Apr 1999."
+    }
+   ]
+  },
+  {
+   "id": "KAZ:Akmola",
+   "names": {
+    "en": "Akmola Region",
+    "ja": "アクモラ州",
+    "local": "Ақмола облысы"
+   },
+   "wikidata": "Q485056",
+   "spans": [
+    {
+     "from": "1991-12-16",
+     "precision": "day",
+     "to": "1997-04-22",
+     "atoms": [
+      "KAZ-ADM2-9891525B99671027453568",
+      "KAZ-ADM2-9891525B90656598279735",
+      "KAZ-ADM2-9891525B36473427600822",
+      "KAZ-ADM2-9891525B2325773906172",
+      "KAZ-ADM2-9891525B83013347039658",
+      "KAZ-ADM2-9891525B43673993839483",
+      "KAZ-ADM2-9891525B32188509788858",
+      "KAZ-ADM2-9891525B30379541145757",
+      "KAZ-ADM2-9891525B43905311141395",
+      "KAZ-ADM2-9891525B24357337483480",
+      "KAZ-ADM2-9891525B15592648176932"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ukz.html",
+       "title": "Statoids — Regions of Kazakhstan, change history",
+       "says": "At independence Kazakhstan had 19 regions plus Almaty city; 1997-04-22 Taldyqorghan into Almaty and Torghay into Qostanay; 1997-05-03 Kokshetau, Semey and Zhezqazghan merged; 1999-04-10 three raions to Aqmola.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%BA%D0%BC%D0%BE%D0%BB%D0%B8%D0%BD%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=154911739",
+       "title": "Википедия — Акмолинская область",
+       "says": "On 22 Apr 1997 five districts of Torgay oblast passed to Akmola; on 10 Apr 1999 the Zerendi, Shchuchinsk and Enbekshilder districts with Kokshetau passed from North Kazakhstan to Akmola.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%A2%D0%B5%D0%BD%D0%B3%D0%B8%D0%B7%D1%81%D0%BA%D0%B8%D0%B9_%D1%80%D0%B0%D0%B9%D0%BE%D0%BD&oldid=146507238",
+       "title": "Википедия — Тенгизский район",
+       "says": "In Karaganda oblast 1985–1988 and 1990–1997; abolished 23 May 1997 into Nura district (Karaganda).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Named Tselinograd oblast until 1992; Akmola city (Astana) was a city of the oblast and lies in the Tselinograd district atom."
+    }
+   ]
+  },
+  {
+   "id": "KAZ:Kostanay",
+   "names": {
+    "en": "Kostanay Region",
+    "ja": "コスタナイ州",
+    "local": "Қостанай облысы"
+   },
+   "wikidata": "Q485605",
+   "spans": [
+    {
+     "from": "1997-04-22",
+     "precision": "day",
+     "to": "1999-04-10",
+     "atoms": [
+      "KAZ-ADM2-9891525B60251523265063",
+      "KAZ-ADM2-9891525B58466533960922",
+      "KAZ-ADM2-9891525B26543365108500",
+      "KAZ-ADM2-9891525B64074841904953",
+      "KAZ-ADM2-9891525B14893672514077",
+      "KAZ-ADM2-9891525B54734218930608",
+      "KAZ-ADM2-9891525B55696019577443",
+      "KAZ-ADM2-9891525B13144525550794",
+      "KAZ-ADM2-9891525B27039214711297",
+      "KAZ-ADM2-9891525B26270475466361",
+      "KAZ-ADM2-9891525B51280099986304",
+      "KAZ-ADM2-9891525B36650340400030",
+      "KAZ-ADM2-9891525B22727597704873",
+      "KAZ-ADM2-9891525B50577405469950",
+      "KAZ-ADM2-9891525B78781143088389",
+      "KAZ-ADM2-9891525B88932935012165",
+      "KAZ-ADM2-9891525B29142320833271"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ukz.html",
+       "title": "Statoids — Regions of Kazakhstan, change history",
+       "says": "At independence Kazakhstan had 19 regions plus Almaty city; 1997-04-22 Taldyqorghan into Almaty and Torghay into Qostanay; 1997-05-03 Kokshetau, Semey and Zhezqazghan merged; 1999-04-10 three raions to Aqmola.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%A2%D1%83%D1%80%D0%B3%D0%B0%D0%B9%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C_(%D0%9A%D0%B0%D0%B7%D0%B0%D1%85%D1%81%D1%82%D0%B0%D0%BD)&oldid=155145593",
+       "title": "Википедия — Тургайская область (Казахстан)",
+       "says": "Restored 17 Aug 1990 from districts of Kustanay and Tselinograd oblasts; abolished 22 Apr 1997, its districts divided between Akmola and Kustanay oblasts.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9A%D0%B0%D1%80%D0%B0%D1%81%D1%83%D1%81%D0%BA%D0%B8%D0%B9_%D1%80%D0%B0%D0%B9%D0%BE%D0%BD&oldid=154887568",
+       "title": "Википедия — Карасуский район",
+       "says": "In August 1997 the territory of the abolished Oktyabrsky district of former Torgay oblast was joined to Karasu district.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "With the Torgay districts of Arkalyk, Amangeldy, Amantogay, Dzhangeldy and Oktyabrsky."
+    }
+   ]
+  },
+  {
+   "id": "KAZ:East Kazakhstan",
+   "names": {
+    "en": "East Kazakhstan Region",
+    "ja": "東カザフスタン州",
+    "local": "Шығыс Қазақстан облысы"
+   },
+   "wikidata": "Q36156",
+   "spans": [
+    {
+     "from": "1997-05-03",
+     "precision": "day",
+     "to": "1999-04-10",
+     "atoms": [
+      "KAZ-ADM2-9891525B60983742718144",
+      "KAZ-ADM2-9891525B20116602637665",
+      "KAZ-ADM2-9891525B20148854849737",
+      "KAZ-ADM2-9891525B58334758086532",
+      "KAZ-ADM2-9891525B63367051987895",
+      "KAZ-ADM2-9891525B43029270255856",
+      "KAZ-ADM2-9891525B71087532878019",
+      "KAZ-ADM2-9891525B49183104731371",
+      "KAZ-ADM2-9891525B64741474874739",
+      "KAZ-ADM2-9891525B31322588303916",
+      "KAZ-ADM2-9891525B3296579749596",
+      "KAZ-ADM2-9891525B39771874668253",
+      "KAZ-ADM2-9891525B91590173027779",
+      "KAZ-ADM2-9891525B87505611212602",
+      "KAZ-ADM2-9891525B85756403891366",
+      "KAZ-ADM2-9891525B33209790854073",
+      "KAZ-ADM2-9891525B3707090472903"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ukz.html",
+       "title": "Statoids — Regions of Kazakhstan, change history",
+       "says": "At independence Kazakhstan had 19 regions plus Almaty city; 1997-04-22 Taldyqorghan into Almaty and Torghay into Qostanay; 1997-05-03 Kokshetau, Semey and Zhezqazghan merged; 1999-04-10 three raions to Aqmola.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%A1%D0%B5%D0%BC%D0%B8%D0%BF%D0%B0%D0%BB%D0%B0%D1%82%D0%B8%D0%BD%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C_(%D0%9A%D0%B0%D0%B7%D0%B0%D1%85%D1%81%D1%82%D0%B0%D0%BD)&oldid=153371171",
+       "title": "Википедия — Семипалатинская область (Казахстан)",
+       "says": "Abolished 3 May 1997, its whole territory passed to East Kazakhstan oblast.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9A%D0%BE%D0%BA%D0%BF%D0%B5%D0%BA%D1%82%D0%B8%D0%BD%D1%81%D0%BA%D0%B8%D0%B9_%D1%80%D0%B0%D0%B9%D0%BE%D0%BD&oldid=154441961",
+       "title": "Википедия — Кокпектинский район",
+       "says": "On 23 May 1997 the territory of the abolished Samarsky district of East Kazakhstan oblast was included in Kokpekty district (of former Semipalatinsk oblast).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "KAZ:Zhezkazgan",
+   "names": {
+    "en": "Zhezkazgan Region",
+    "ja": "ジェズカズガン州",
+    "local": "Жезқазған облысы"
+   },
+   "wikidata": "Q3719123",
+   "spans": [
+    {
+     "from": "1991-12-16",
+     "precision": "day",
+     "to": "1997-05-03",
+     "atoms": [
+      "KAZ-ADM2-9891525B20883713747408",
+      "KAZ-ADM2-9891525B92074395824295",
+      "KAZ-ADM2-9891525B78336617309794",
+      "KAZ-ADM2-9891525B79475728088691"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%96%D0%B5%D0%B7%D0%BA%D0%B0%D0%B7%D0%B3%D0%B0%D0%BD%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=150380919",
+       "title": "Википедия — Жезказганская область",
+       "says": "In 1989 the oblast had four city soviets (Balkhash, Dzhezkazgan, Karazhal, Nikolsky) and the Agadyr, Aktogay, Dzhezdy, Zhanaarka, Priozerny, Ulytau and Shet districts.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9A%D0%B0%D1%80%D0%B0%D0%B3%D0%B0%D0%BD%D0%B4%D0%B8%D0%BD%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=154480480",
+       "title": "Википедия — Карагандинская область",
+       "says": "In 1997 Zhezkazgan oblast with its districts and cities joined Karaganda oblast; the Agadyr, Zhezdy, Kazybekbi, Molodezhny, Telman, Tengiz and Tokyraun districts were abolished.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%B3%D0%B0%D0%B4%D1%8B%D1%80%D1%81%D0%BA%D0%B8%D0%B9_%D1%80%D0%B0%D0%B9%D0%BE%D0%BD&oldid=146518451",
+       "title": "Википедия — Агадырский район",
+       "says": "Abolished 23 May 1997, its whole territory passed to Shet district (both of former Zhezkazgan oblast).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%96%D0%B5%D0%B7%D0%B4%D1%8B_(%D0%BF%D0%BE%D1%81%D1%91%D0%BB%D0%BE%D0%BA)&oldid=154340590",
+       "title": "Википедия — Жезды (посёлок)",
+       "says": "Zhezdy, centre of the former Zhezdy district, lies in Ulytau district.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "The 1997 abolitions inside the former oblast (Agadyr into Shet, Tokyraun into Aktogay, Zhezdy into Ulytau) stayed inside it; its cities (Balkhash, Zhezkazgan, Karazhal, Satpayev) lie inside these atoms."
+    }
+   ]
+  },
+  {
+   "id": "KAZ:Karaganda",
+   "names": {
+    "en": "Karaganda Region",
+    "ja": "カラガンダ州",
+    "local": "Қарағанды облысы"
+   },
+   "wikidata": "Q485429",
+   "spans": [
+    {
+     "from": "1991-12-16",
+     "precision": "day",
+     "to": "1997-05-03",
+     "atoms": [
+      "KAZ-ADM2-9891525B21358957516429",
+      "KAZ-ADM2-9891525B60028498041579",
+      "KAZ-ADM2-9891525B17920128744537",
+      "KAZ-ADM2-9891525B24166085071276",
+      "KAZ-ADM2-9891525B82202485563630"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9A%D0%B0%D1%80%D0%B0%D0%B3%D0%B0%D0%BD%D0%B4%D0%B8%D0%BD%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=154480480",
+       "title": "Википедия — Карагандинская область",
+       "says": "In 1997 Zhezkazgan oblast with its districts and cities joined Karaganda oblast; the Agadyr, Zhezdy, Kazybekbi, Molodezhny, Telman, Tengiz and Tokyraun districts were abolished.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%A2%D0%B5%D0%BD%D0%B3%D0%B8%D0%B7%D1%81%D0%BA%D0%B8%D0%B9_%D1%80%D0%B0%D0%B9%D0%BE%D0%BD&oldid=146507238",
+       "title": "Википедия — Тенгизский район",
+       "says": "In Karaganda oblast 1985–1988 and 1990–1997; abolished 23 May 1997 into Nura district (Karaganda).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/ukz.html",
+       "title": "Statoids — Regions of Kazakhstan, change history",
+       "says": "At independence Kazakhstan had 19 regions plus Almaty city; 1997-04-22 Taldyqorghan into Almaty and Torghay into Qostanay; 1997-05-03 Kokshetau, Semey and Zhezqazghan merged; 1999-04-10 three raions to Aqmola.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Karaganda, Temirtau, Saran and Shakhtinsk lie inside these atoms; the abolished Kazybekbi, Molodezhny, Telman and Tengiz districts went to Karaganda-oblast districts."
+    },
+    {
+     "from": "1997-05-03",
+     "precision": "day",
+     "to": "1999-04-10",
+     "atoms": [
+      "KAZ-ADM2-9891525B21358957516429",
+      "KAZ-ADM2-9891525B20883713747408",
+      "KAZ-ADM2-9891525B60028498041579",
+      "KAZ-ADM2-9891525B17920128744537",
+      "KAZ-ADM2-9891525B24166085071276",
+      "KAZ-ADM2-9891525B82202485563630",
+      "KAZ-ADM2-9891525B92074395824295",
+      "KAZ-ADM2-9891525B78336617309794",
+      "KAZ-ADM2-9891525B79475728088691"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ukz.html",
+       "title": "Statoids — Regions of Kazakhstan, change history",
+       "says": "At independence Kazakhstan had 19 regions plus Almaty city; 1997-04-22 Taldyqorghan into Almaty and Torghay into Qostanay; 1997-05-03 Kokshetau, Semey and Zhezqazghan merged; 1999-04-10 three raions to Aqmola.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9A%D0%B0%D1%80%D0%B0%D0%B3%D0%B0%D0%BD%D0%B4%D0%B8%D0%BD%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=154480480",
+       "title": "Википедия — Карагандинская область",
+       "says": "In 1997 Zhezkazgan oblast with its districts and cities joined Karaganda oblast; the Agadyr, Zhezdy, Kazybekbi, Molodezhny, Telman, Tengiz and Tokyraun districts were abolished.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1997-04-22",
+   "precision": "day",
+   "what": "Taldykorgan into Almaty; Torgay divided between Kostanay and Akmola",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ukz.html",
+     "title": "Statoids — Regions of Kazakhstan, change history",
+     "says": "At independence Kazakhstan had 19 regions plus Almaty city; 1997-04-22 Taldyqorghan into Almaty and Torghay into Qostanay; 1997-05-03 Kokshetau, Semey and Zhezqazghan merged; 1999-04-10 three raions to Aqmola.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%A2%D1%83%D1%80%D0%B3%D0%B0%D0%B9%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C_(%D0%9A%D0%B0%D0%B7%D0%B0%D1%85%D1%81%D1%82%D0%B0%D0%BD)&oldid=155145593",
+     "title": "Википедия — Тургайская область (Казахстан)",
+     "says": "Restored 17 Aug 1990 from districts of Kustanay and Tselinograd oblasts; abolished 22 Apr 1997, its districts divided between Akmola and Kustanay oblasts.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1997-05-03",
+   "precision": "day",
+   "what": "Kokshetau into North Kazakhstan; Semipalatinsk into East Kazakhstan; Zhezkazgan into Karaganda",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ukz.html",
+     "title": "Statoids — Regions of Kazakhstan, change history",
+     "says": "At independence Kazakhstan had 19 regions plus Almaty city; 1997-04-22 Taldyqorghan into Almaty and Torghay into Qostanay; 1997-05-03 Kokshetau, Semey and Zhezqazghan merged; 1999-04-10 three raions to Aqmola.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1992-01-01",
+   "n": 20,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ukz.html",
+     "title": "Statoids — Regions of Kazakhstan, change history",
+     "says": "At independence Kazakhstan had 19 regions plus Almaty city; 1997-04-22 Taldyqorghan into Almaty and Torghay into Qostanay; 1997-05-03 Kokshetau, Semey and Zhezqazghan merged; 1999-04-10 three raions to Aqmola.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1997-05-01",
+   "n": 18,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ukz.html",
+     "title": "Statoids — Regions of Kazakhstan, change history",
+     "says": "At independence Kazakhstan had 19 regions plus Almaty city; 1997-04-22 Taldyqorghan into Almaty and Torghay into Qostanay; 1997-05-03 Kokshetau, Semey and Zhezqazghan merged; 1999-04-10 three raions to Aqmola.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1997-06-01",
+   "n": 15,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ukz.html",
+     "title": "Statoids — Regions of Kazakhstan, change history",
+     "says": "At independence Kazakhstan had 19 regions plus Almaty city; 1997-04-22 Taldyqorghan into Almaty and Torghay into Qostanay; 1997-05-03 Kokshetau, Semey and Zhezqazghan merged; 1999-04-10 three raions to Aqmola.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Almaty Region 1991–1999",
+   "unit": "KAZ:Almaty",
+   "atoms": [
+    "KAZ-ADM2-9891525B86925875973875",
+    "KAZ-ADM2-9891525B8054752834340",
+    "KAZ-ADM2-9891525B73915717472079",
+    "KAZ-ADM2-9891525B84255385948646",
+    "KAZ-ADM2-9891525B83641090822540",
+    "KAZ-ADM2-9891525B95340364678526",
+    "KAZ-ADM2-9891525B30190790757225",
+    "KAZ-ADM2-9891525B44828116774713"
+   ],
+   "from": "1991-12-16",
+   "to": "1997-04-22",
+   "why": "The line between the region and Almaty city moved by decrees (1998-04-29, 2001-04-02, 2002-12-21 and later); the layer’s city line is undated, so the region’s inner line for 1991–1997 is not established.",
+   "checked": [
+    "ru.wikipedia Алматинская область oldid 154481478",
+    "ru.wikipedia Карасайский район oldid 154926904 (transfers into the city 1998, 2001, 2002)",
+    "statoids.com/ukz.html",
+    "the geoBoundaries layer carries one Almaty city line whose date is not stated"
+   ],
+   "needs": "Almaty city limits as of 1991–1999 (the 1998 decree’s cartography)"
+  },
+  {
+   "what": "Almaty Region (with former Taldykorgan) 1997–1999",
+   "unit": "KAZ:Almaty",
+   "atoms": [
+    "KAZ-ADM2-9891525B33487357631204",
+    "KAZ-ADM2-9891525B43212403616795",
+    "KAZ-ADM2-9891525B86925875973875",
+    "KAZ-ADM2-9891525B8054752834340",
+    "KAZ-ADM2-9891525B73915717472079",
+    "KAZ-ADM2-9891525B84255385948646",
+    "KAZ-ADM2-9891525B31721358968315",
+    "KAZ-ADM2-9891525B94411602981391",
+    "KAZ-ADM2-9891525B70442580955905",
+    "KAZ-ADM2-9891525B22712804397208",
+    "KAZ-ADM2-9891525B83641090822540",
+    "KAZ-ADM2-9891525B34969446984364",
+    "KAZ-ADM2-9891525B8942428750447",
+    "KAZ-ADM2-9891525B95340364678526",
+    "KAZ-ADM2-9891525B30190790757225",
+    "KAZ-ADM2-9891525B44828116774713"
+   ],
+   "from": "1997-04-22",
+   "to": "1999-04-10",
+   "why": "Same city line as above.",
+   "checked": [
+    "ru.wikipedia Алматинская область oldid 154481478",
+    "ru.wikipedia Карасайский район oldid 154926904 (transfers into the city 1998, 2001, 2002)",
+    "statoids.com/ukz.html",
+    "the geoBoundaries layer carries one Almaty city line whose date is not stated"
+   ],
+   "needs": "same"
+  },
+  {
+   "what": "Almaty city 1991–1999",
+   "unit": "KAZ:Almaty City",
+   "atoms": [
+    "KAZ-ADM2-9891525B73689436723461"
+   ],
+   "from": "1991-12-16",
+   "to": "1999-04-10",
+   "why": "The city limits were changed by decree on 1998-04-29 and later; the layer’s city line is undated.",
+   "checked": [
+    "ru.wikipedia Алматинская область oldid 154481478",
+    "ru.wikipedia Карасайский район oldid 154926904 (transfers into the city 1998, 2001, 2002)",
+    "statoids.com/ukz.html",
+    "the geoBoundaries layer carries one Almaty city line whose date is not stated"
+   ],
+   "needs": "dated city limits"
+  },
+  {
+   "what": "Torgay Region 1991–1997",
+   "unit": "KAZ:Torgay",
+   "atoms": [
+    "KAZ-ADM2-9891525B4135647276886",
+    "KAZ-ADM2-9891525B71406304713623",
+    "KAZ-ADM2-9891525B7918129248045",
+    "KAZ-ADM2-9891525B58466533960922",
+    "KAZ-ADM2-9891525B26543365108500",
+    "KAZ-ADM2-9891525B54734218930608"
+   ],
+   "from": "1991-12-16",
+   "to": "1997-04-22",
+   "why": "Torgay’s Oktyabrsky district was merged into Kostanay’s Karasu district in August 1997, so the Karasu atom straddles the 1991–1997 line; Amantogay also held sovets taken from Kostanay’s Naurzum district in 1990.",
+   "checked": [
+    "ru.wikipedia Тургайская область (Казахстан) oldid 155145593",
+    "ru.wikipedia Карасуский район oldid 154887568",
+    "ru.wikipedia Наурзумский район oldid 152262993 (sovets moved to Amantogay in 1990)",
+    "statoids.com/ukz.html"
+   ],
+   "needs": "finer atoms (rural okrugs) for Karasu and Naurzum districts"
+  },
+  {
+   "what": "Kostanay Region 1991–1997",
+   "unit": "KAZ:Kostanay",
+   "atoms": [
+    "KAZ-ADM2-9891525B60251523265063",
+    "KAZ-ADM2-9891525B64074841904953",
+    "KAZ-ADM2-9891525B14893672514077",
+    "KAZ-ADM2-9891525B55696019577443",
+    "KAZ-ADM2-9891525B13144525550794",
+    "KAZ-ADM2-9891525B27039214711297",
+    "KAZ-ADM2-9891525B26270475466361",
+    "KAZ-ADM2-9891525B51280099986304",
+    "KAZ-ADM2-9891525B36650340400030",
+    "KAZ-ADM2-9891525B22727597704873",
+    "KAZ-ADM2-9891525B50577405469950",
+    "KAZ-ADM2-9891525B78781143088389",
+    "KAZ-ADM2-9891525B88932935012165",
+    "KAZ-ADM2-9891525B29142320833271"
+   ],
+   "from": "1991-12-16",
+   "to": "1997-04-22",
+   "why": "Same line as Torgay above.",
+   "checked": [
+    "ru.wikipedia Тургайская область (Казахстан) oldid 155145593",
+    "ru.wikipedia Карасуский район oldid 154887568",
+    "ru.wikipedia Наурзумский район oldid 152262993 (sovets moved to Amantogay in 1990)",
+    "statoids.com/ukz.html"
+   ],
+   "needs": "same"
+  },
+  {
+   "what": "Akmola Region (with Torgay districts) 1997–1999",
+   "unit": "KAZ:Akmola",
+   "atoms": [
+    "KAZ-ADM2-9891525B99671027453568",
+    "KAZ-ADM2-9891525B90656598279735",
+    "KAZ-ADM2-9891525B36473427600822",
+    "KAZ-ADM2-9891525B2325773906172",
+    "KAZ-ADM2-9891525B83013347039658",
+    "KAZ-ADM2-9891525B43673993839483",
+    "KAZ-ADM2-9891525B32188509788858",
+    "KAZ-ADM2-9891525B30379541145757",
+    "KAZ-ADM2-9891525B43905311141395",
+    "KAZ-ADM2-9891525B24357337483480",
+    "KAZ-ADM2-9891525B15592648176932",
+    "KAZ-ADM2-9891525B4135647276886",
+    "KAZ-ADM2-9891525B71406304713623",
+    "KAZ-ADM2-9891525B7918129248045"
+   ],
+   "from": "1997-04-22",
+   "to": "1999-04-10",
+   "why": "Akmola city (Astana) was taken out of the oblast in 1997 on a day not established, and the layer has no atom for the city.",
+   "checked": [
+    "ru.wikipedia Астана oldid 155357228 (status of city of republican significance «from 1997», day not given)",
+    "statoids.com/ukz.html («1997: Astana city split from Aqmola», day not given)",
+    "the geoBoundaries layer has no atom for Astana (it lies in the Tselinograd district atom)"
+   ],
+   "needs": "the decree date and an atom for the Astana city limits"
+  },
+  {
+   "what": "Astana city 1997–1999",
+   "unit": "KAZ:Astana",
+   "atoms": [],
+   "from": "1997-12-10",
+   "to": "1999-04-10",
+   "why": "No atom; the separation day in 1997 is not established (drawn from the capital move at the latest).",
+   "checked": [
+    "ru.wikipedia Астана oldid 155357228 (status of city of republican significance «from 1997», day not given)",
+    "statoids.com/ukz.html («1997: Astana city split from Aqmola», day not given)",
+    "the geoBoundaries layer has no atom for Astana (it lies in the Tselinograd district atom)"
+   ],
+   "needs": "atom for the city limits"
+  },
+  {
+   "what": "Semipalatinsk Region 1991–1997",
+   "unit": "KAZ:Semey",
+   "atoms": [],
+   "from": "1991-12-16",
+   "to": "1997-05-03",
+   "why": "East Kazakhstan’s Samarsky district was merged into Semipalatinsk’s Kokpekty district on 23 May 1997, so the Kokpekty atom straddles the 1991–1997 line (Aksuat and Tarbagatay likewise need checking).",
+   "checked": [
+    "ru.wikipedia Кокпектинский район oldid 154441961",
+    "ru.wikipedia Семипалатинская область (Казахстан) oldid 153371171",
+    "statoids.com/ukz.html"
+   ],
+   "needs": "finer atoms (rural okrugs) for Kokpekty district"
+  },
+  {
+   "what": "East Kazakhstan and Semipalatinsk Regions 1991–1997",
+   "unit": "KAZ:East Kazakhstan",
+   "atoms": [
+    "KAZ-ADM2-9891525B60983742718144",
+    "KAZ-ADM2-9891525B20116602637665",
+    "KAZ-ADM2-9891525B20148854849737",
+    "KAZ-ADM2-9891525B58334758086532",
+    "KAZ-ADM2-9891525B63367051987895",
+    "KAZ-ADM2-9891525B43029270255856",
+    "KAZ-ADM2-9891525B71087532878019",
+    "KAZ-ADM2-9891525B49183104731371",
+    "KAZ-ADM2-9891525B64741474874739",
+    "KAZ-ADM2-9891525B31322588303916",
+    "KAZ-ADM2-9891525B3296579749596",
+    "KAZ-ADM2-9891525B39771874668253",
+    "KAZ-ADM2-9891525B91590173027779",
+    "KAZ-ADM2-9891525B87505611212602",
+    "KAZ-ADM2-9891525B85756403891366",
+    "KAZ-ADM2-9891525B33209790854073",
+    "KAZ-ADM2-9891525B3707090472903"
+   ],
+   "from": "1991-12-16",
+   "to": "1997-05-03",
+   "why": "Same line as above.",
+   "checked": [
+    "ru.wikipedia Кокпектинский район oldid 154441961",
+    "ru.wikipedia Семипалатинская область (Казахстан) oldid 153371171",
+    "statoids.com/ukz.html"
+   ],
+   "needs": "same"
+  }
+ ]
+}

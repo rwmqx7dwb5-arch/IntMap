@@ -5,7 +5,7 @@
     "from": "2002-10-17",
     "to": "2019-12-31"
   },
-  "polityNote": "Republic of Chad throughout the scope. NE depicts the 22-unit layout of 2008-02-19 → 2012-09-04 (Ennedi not yet split into Ennedi Est / Ennedi Ouest).",
+  "polityNote": "Republic of Chad throughout the scope. NE depicts the 22-unit layout of 2008-02-19 → 2012-09-04 (Ennedi not yet split into Ennedi Est / Ennedi Ouest). Before 2002-10-17 (prefectures 1960–1999, departments 1999–2002): TCD-prefectures-1960.json (geoBoundaries ADM2 atoms).",
   "units": [
     {
       "id": "TCD:Batha@2002",
@@ -981,18 +981,6 @@
         "fr.wikipedia Administration territoriale du Tchad oldid 235042492"
       ],
       "needs": "department atoms: geoBoundaries TCD ADM2 (CC BY 4.0) or OCHA COD-AB Chad ADM2 with the Ennedi Est (Amdjarass, Wadi Hawar) / Ennedi Ouest (Fada, Mourtcha) departments"
-    },
-    {
-      "what": "Chad before 2002-10-17: 14 prefectures (1962/1973-1999) and 28 departments (1999-09-01, decree 355/PR/MISD/99)",
-      "from": "1960-08-11",
-      "to": "2002-10-17",
-      "why": "No source found stating that the 2002 regions were formed from whole prefectures without sub-prefecture transfers; the 1999 departments were a new grid. Unions such as Mayo-Kebbi = Est + Ouest are plausible but unproven, so nothing is claimed.",
-      "checked": [
-        "statoids.com/utd.html",
-        "fr.wikipedia Administration territoriale du Tchad",
-        "en.wikipedia Regions of Chad"
-      ],
-      "needs": "sub-prefecture lineage 1962-2002 and sub-prefecture atoms (geoBoundaries TCD ADM3, CC BY 4.0)"
     }
   ]
 }

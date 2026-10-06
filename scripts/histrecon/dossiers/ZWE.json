@@ -1,14 +1,14 @@
 {
   "country": "ZWE",
-  "atomSet": "ne-admin1@ca96624",
+  "atomSet": "gb-adm2@2026-10-06",
   "scope": {
     "from": "1980-04-18",
     "to": "2019-12-31"
   },
-  "polityNote": "Republic of Zimbabwe from independence on 1980-04-18 (Rhodesia / Zimbabwe Rhodesia before; outside scope).",
+  "polityNote": "Republic of Zimbabwe from independence on 1980-04-18. Atoms: geoBoundaries ZWE ADM2 (ZIMSTAT/OCHA 2020, 91 districts, CC BY 3.0 IGO). A province is the union of its districts as ZIMSTAT assigns them (gb ADM1 of the same publisher nests exactly). Ruwa is in Mashonaland East (ZIMSTAT; the 2022 Harare Province population excludes it); Harare Province = Harare, Harare Rural, Chitungwiza, Epworth. Rewritten from ne-admin1 to gb-adm2 (2026-10-06) because the 1982-1997 provinces are unions of districts that NE cannot split. (1) Independent check against Müller-Crepon’s CC0 regions panel (DVN/BM4WW0): in 1990 every district falls >=0.96 inside the panel region this dossier gives it; in 2000 likewise except the panel’s coarse Harare/Bulawayo outlines (0.80-0.93). Manicaland: union 35,954 km² vs 1969 table 35,775 (+0.5%).",
   "units": [
     {
-      "id": "ZWE:Manicaland@1997",
+      "id": "ZWE:Manicaland@1980",
       "names": {
         "en": "Manicaland Province",
         "ja": "マニカランド州",
@@ -17,32 +17,47 @@
       "wikidata": "Q465847",
       "spans": [
         {
-          "from": "1997",
-          "precision": "year",
+          "from": "1980-04-18",
+          "precision": "day",
           "to": null,
           "atoms": [
-            "ZWE-529"
+            "ZWE-ADM2-62879985B49874859197959",
+            "ZWE-ADM2-62879985B88663690016764",
+            "ZWE-ADM2-62879985B99568881619892",
+            "ZWE-ADM2-62879985B32287047423365",
+            "ZWE-ADM2-62879985B27116987268551",
+            "ZWE-ADM2-62879985B35185654442710",
+            "ZWE-ADM2-62879985B34329227357286",
+            "ZWE-ADM2-62879985B28116741742257",
+            "ZWE-ADM2-62879985B16821678583413",
+            "ZWE-ADM2-62879985B51591282802552"
           ],
           "sources": [
             {
-              "url": "https://en.wikipedia.org/w/index.php?oldid=1326976713",
-              "title": "Wikipedia: Provinces of Zimbabwe, rev. 1326976713",
-              "says": "Mashonaland North and South reorganised into three provinces in the 1980s (Central and West 1983); Bulawayo and Harare created in 1997.",
-              "accessed": "2026-10-05"
+              "url": "https://www.statoids.com/uzw.html",
+              "title": "Statoids: Provinces of Zimbabwe (G. Law, updated 2015-06-30)",
+              "says": "1969 table: 7 provinces (Manicaland 35,775 km², Victoria 53,786). ~1981 Mashonaland North/South became Central, East, West and the Zvishavane area moved from Matabeleland South to Midlands; ~1997 Bulawayo and Harare split off. No other change listed.",
+              "accessed": "2026-10-06"
             },
             {
-              "url": "https://www.statoids.com/uzw.html",
-              "title": "Statoids: Provinces of Zimbabwe (G. Law)",
-              "says": "1969 seven provinces with areas differing from today's; ~1981 Mashonaland split into three, Zvishavane area to Midlands; ~1997 Bulawayo and Harare split off.",
-              "accessed": "2026-10-05"
+              "url": "https://doi.org/10.7910/DVN/BM4WW0",
+              "title": "Müller-Crepon (2021), State Reach and Development in Africa since the 1960s, replication data: africa_regions_panel and adminnum_bycountry (CC0)",
+              "says": "Zimbabwe regions: Mashonaland North/South 1965–1981; Mashonaland Central/East/West from 1982; Harare and Bulawayo from 1998; 7 regions 1974–1981, 8 in 1982–1997, 10 from 1998.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1326976713",
+              "title": "Wikipedia: Provinces of Zimbabwe, rev. 1326976713",
+              "says": "Table of the ten provinces with year of creation: Matabeleland North and South 1973, Mashonaland Central and West 1983, Harare and Bulawayo 1997.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Span begins with the 1997 creation of the metropolitan provinces (year precision; day and instrument not found). Earlier lines differ (see unresolved). No later change recorded."
+          "dateNote": "No change to Manicaland is listed from 1969 on; its 1969 area (35,775 km²) agrees with the union of its present districts (35,954 km², +0.5%)."
         }
       ]
     },
     {
-      "id": "ZWE:MashonalandCentral@1997",
+      "id": "ZWE:MashonalandCentral@1982",
       "names": {
         "en": "Mashonaland Central Province",
         "ja": "中央マショナランド州",
@@ -51,32 +66,59 @@
       "wikidata": "Q596156",
       "spans": [
         {
-          "from": "1997",
-          "precision": "year",
+          "from": "1982-08-18",
+          "precision": "day",
           "to": null,
           "atoms": [
-            "ZWE-524"
+            "ZWE-ADM2-62879985B50430993830170",
+            "ZWE-ADM2-62879985B95649455057602",
+            "ZWE-ADM2-62879985B33993196799610",
+            "ZWE-ADM2-62879985B94788523957313",
+            "ZWE-ADM2-62879985B76003628227782",
+            "ZWE-ADM2-62879985B94368680034661",
+            "ZWE-ADM2-62879985B29850987700829",
+            "ZWE-ADM2-62879985B19451757525909",
+            "ZWE-ADM2-62879985B22521901004108",
+            "ZWE-ADM2-62879985B93379184763454"
           ],
           "sources": [
             {
-              "url": "https://en.wikipedia.org/w/index.php?oldid=1326976713",
-              "title": "Wikipedia: Provinces of Zimbabwe, rev. 1326976713",
-              "says": "Mashonaland North and South reorganised into three provinces in the 1980s (Central and West 1983); Bulawayo and Harare created in 1997.",
-              "accessed": "2026-10-05"
+              "url": "https://catalog.ihsn.org/index.php/catalog/4123",
+              "title": "IHSN catalogue: Zimbabwe Population Census 2002 (ZIMSTAT), background",
+              "says": "The 1982 census was taken on a de-facto basis for the night of 17/18 August 1982.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1196782529",
+              "title": "Wikipedia: List of Zimbabwean provinces by population, rev. 1196782529",
+              "says": "1982 census by province: Mashonaland Central, East and West already separate; Harare and Bulawayo have no 1982 row (inside Mashonaland East and Matabeleland North).",
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://www.statoids.com/uzw.html",
-              "title": "Statoids: Provinces of Zimbabwe (G. Law)",
-              "says": "1969 seven provinces with areas differing from today's; ~1981 Mashonaland split into three, Zvishavane area to Midlands; ~1997 Bulawayo and Harare split off.",
-              "accessed": "2026-10-05"
+              "title": "Statoids: Provinces of Zimbabwe (G. Law, updated 2015-06-30)",
+              "says": "1969 table: 7 provinces (Manicaland 35,775 km², Victoria 53,786). ~1981 Mashonaland North/South became Central, East, West and the Zvishavane area moved from Matabeleland South to Midlands; ~1997 Bulawayo and Harare split off. No other change listed.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1326976713",
+              "title": "Wikipedia: Provinces of Zimbabwe, rev. 1326976713",
+              "says": "Table of the ten provinces with year of creation: Matabeleland North and South 1973, Mashonaland Central and West 1983, Harare and Bulawayo 1997.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://doi.org/10.7910/DVN/BM4WW0",
+              "title": "Müller-Crepon (2021), State Reach and Development in Africa since the 1960s, replication data: africa_regions_panel and adminnum_bycountry (CC0)",
+              "says": "Zimbabwe regions: Mashonaland North/South 1965–1981; Mashonaland Central/East/West from 1982; Harare and Bulawayo from 1998; 7 regions 1974–1981, 8 in 1982–1997, 10 from 1998.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Span begins with the 1997 creation of the metropolitan provinces (year precision; day and instrument not found). Earlier lines differ (see unresolved). No later change recorded."
+          "dateNote": "The 1982 census night (17/18 Aug 1982) is the earliest date the eight-province layout is attested; the reorganisation itself is dated ~1981 (statoids) and 1983 (Wikipedia, contradicted by the census). The span starts at the attested date; the window before it is unresolved."
         }
       ]
     },
     {
-      "id": "ZWE:MashonalandWest@1997",
+      "id": "ZWE:MashonalandWest@1982",
       "names": {
         "en": "Mashonaland West Province",
         "ja": "西マショナランド州",
@@ -85,66 +127,270 @@
       "wikidata": "Q457189",
       "spans": [
         {
+          "from": "1982-08-18",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ZWE-ADM2-62879985B20095614329171",
+            "ZWE-ADM2-62879985B25835202040787",
+            "ZWE-ADM2-62879985B33346343467018",
+            "ZWE-ADM2-62879985B85730198836463",
+            "ZWE-ADM2-62879985B53444954846030",
+            "ZWE-ADM2-62879985B94385115404707",
+            "ZWE-ADM2-62879985B80856032780976",
+            "ZWE-ADM2-62879985B2724410998329",
+            "ZWE-ADM2-62879985B9452203972303",
+            "ZWE-ADM2-62879985B70697135902781",
+            "ZWE-ADM2-62879985B7429577065299",
+            "ZWE-ADM2-62879985B67434637878842",
+            "ZWE-ADM2-62879985B3462136177187"
+          ],
+          "sources": [
+            {
+              "url": "https://catalog.ihsn.org/index.php/catalog/4123",
+              "title": "IHSN catalogue: Zimbabwe Population Census 2002 (ZIMSTAT), background",
+              "says": "The 1982 census was taken on a de-facto basis for the night of 17/18 August 1982.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1196782529",
+              "title": "Wikipedia: List of Zimbabwean provinces by population, rev. 1196782529",
+              "says": "1982 census by province: Mashonaland Central, East and West already separate; Harare and Bulawayo have no 1982 row (inside Mashonaland East and Matabeleland North).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uzw.html",
+              "title": "Statoids: Provinces of Zimbabwe (G. Law, updated 2015-06-30)",
+              "says": "1969 table: 7 provinces (Manicaland 35,775 km², Victoria 53,786). ~1981 Mashonaland North/South became Central, East, West and the Zvishavane area moved from Matabeleland South to Midlands; ~1997 Bulawayo and Harare split off. No other change listed.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1326976713",
+              "title": "Wikipedia: Provinces of Zimbabwe, rev. 1326976713",
+              "says": "Table of the ten provinces with year of creation: Matabeleland North and South 1973, Mashonaland Central and West 1983, Harare and Bulawayo 1997.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://doi.org/10.7910/DVN/BM4WW0",
+              "title": "Müller-Crepon (2021), State Reach and Development in Africa since the 1960s, replication data: africa_regions_panel and adminnum_bycountry (CC0)",
+              "says": "Zimbabwe regions: Mashonaland North/South 1965–1981; Mashonaland Central/East/West from 1982; Harare and Bulawayo from 1998; 7 regions 1974–1981, 8 in 1982–1997, 10 from 1998.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "The 1982 census night (17/18 Aug 1982) is the earliest date the eight-province layout is attested; the reorganisation itself is dated ~1981 (statoids) and 1983 (Wikipedia, contradicted by the census). The span starts at the attested date; the window before it is unresolved."
+        }
+      ]
+    },
+    {
+      "id": "ZWE:MashonalandEast@1982",
+      "names": {
+        "en": "Mashonaland East Province",
+        "ja": "東マショナランド州",
+        "local": "Mashonaland East Province"
+      },
+      "wikidata": "Q465853",
+      "spans": [
+        {
+          "from": "1982-08-18",
+          "precision": "day",
+          "to": "1997",
+          "atoms": [
+            "ZWE-ADM2-62879985B62139417575129",
+            "ZWE-ADM2-62879985B13905566839040",
+            "ZWE-ADM2-62879985B61982490553927",
+            "ZWE-ADM2-62879985B19621940565976",
+            "ZWE-ADM2-62879985B19801447956475",
+            "ZWE-ADM2-62879985B77595643638308",
+            "ZWE-ADM2-62879985B35130574204282",
+            "ZWE-ADM2-62879985B11813721132111",
+            "ZWE-ADM2-62879985B71976011533530",
+            "ZWE-ADM2-62879985B71906244719276",
+            "ZWE-ADM2-62879985B20819792882543",
+            "ZWE-ADM2-62879985B31454704835515",
+            "ZWE-ADM2-62879985B25596949610081",
+            "ZWE-ADM2-62879985B33947363062254",
+            "ZWE-ADM2-62879985B75244512710705"
+          ],
+          "sources": [
+            {
+              "url": "https://catalog.ihsn.org/index.php/catalog/4123",
+              "title": "IHSN catalogue: Zimbabwe Population Census 2002 (ZIMSTAT), background",
+              "says": "The 1982 census was taken on a de-facto basis for the night of 17/18 August 1982.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1196782529",
+              "title": "Wikipedia: List of Zimbabwean provinces by population, rev. 1196782529",
+              "says": "1982 census by province: Mashonaland Central, East and West already separate; Harare and Bulawayo have no 1982 row (inside Mashonaland East and Matabeleland North).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uzw.html",
+              "title": "Statoids: Provinces of Zimbabwe (G. Law, updated 2015-06-30)",
+              "says": "1969 table: 7 provinces (Manicaland 35,775 km², Victoria 53,786). ~1981 Mashonaland North/South became Central, East, West and the Zvishavane area moved from Matabeleland South to Midlands; ~1997 Bulawayo and Harare split off. No other change listed.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://doi.org/10.7910/DVN/BM4WW0",
+              "title": "Müller-Crepon (2021), State Reach and Development in Africa since the 1960s, replication data: africa_regions_panel and adminnum_bycountry (CC0)",
+              "says": "Zimbabwe regions: Mashonaland North/South 1965–1981; Mashonaland Central/East/West from 1982; Harare and Bulawayo from 1998; 7 regions 1974–1981, 8 in 1982–1997, 10 from 1998.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "The 1982 census night (17/18 Aug 1982) is the earliest date the eight-province layout is attested; the reorganisation itself is dated ~1981 (statoids) and 1983 (Wikipedia, contradicted by the census). The span starts at the attested date; the window before it is unresolved. Includes Harare until the metropolitan province."
+        },
+        {
           "from": "1997",
           "precision": "year",
           "to": null,
           "atoms": [
-            "ZWE-533"
+            "ZWE-ADM2-62879985B62139417575129",
+            "ZWE-ADM2-62879985B13905566839040",
+            "ZWE-ADM2-62879985B61982490553927",
+            "ZWE-ADM2-62879985B19621940565976",
+            "ZWE-ADM2-62879985B19801447956475",
+            "ZWE-ADM2-62879985B77595643638308",
+            "ZWE-ADM2-62879985B35130574204282",
+            "ZWE-ADM2-62879985B11813721132111",
+            "ZWE-ADM2-62879985B71976011533530",
+            "ZWE-ADM2-62879985B71906244719276",
+            "ZWE-ADM2-62879985B20819792882543"
           ],
           "sources": [
             {
               "url": "https://en.wikipedia.org/w/index.php?oldid=1326976713",
               "title": "Wikipedia: Provinces of Zimbabwe, rev. 1326976713",
-              "says": "Mashonaland North and South reorganised into three provinces in the 1980s (Central and West 1983); Bulawayo and Harare created in 1997.",
-              "accessed": "2026-10-05"
+              "says": "Table of the ten provinces with year of creation: Matabeleland North and South 1973, Mashonaland Central and West 1983, Harare and Bulawayo 1997.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1377374402",
+              "title": "Wikipedia: Harare Province, rev. 1377374402",
+              "says": "Metropolitan province established 1997; its 2022 census population is Harare proper plus Chitungwiza and Epworth (Ruwa not counted).",
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://www.statoids.com/uzw.html",
-              "title": "Statoids: Provinces of Zimbabwe (G. Law)",
-              "says": "1969 seven provinces with areas differing from today's; ~1981 Mashonaland split into three, Zvishavane area to Midlands; ~1997 Bulawayo and Harare split off.",
-              "accessed": "2026-10-05"
+              "title": "Statoids: Provinces of Zimbabwe (G. Law, updated 2015-06-30)",
+              "says": "1969 table: 7 provinces (Manicaland 35,775 km², Victoria 53,786). ~1981 Mashonaland North/South became Central, East, West and the Zvishavane area moved from Matabeleland South to Midlands; ~1997 Bulawayo and Harare split off. No other change listed.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://doi.org/10.7910/DVN/BM4WW0",
+              "title": "Müller-Crepon (2021), State Reach and Development in Africa since the 1960s, replication data: africa_regions_panel and adminnum_bycountry (CC0)",
+              "says": "Zimbabwe regions: Mashonaland North/South 1965–1981; Mashonaland Central/East/West from 1982; Harare and Bulawayo from 1998; 7 regions 1974–1981, 8 in 1982–1997, 10 from 1998.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Span begins with the 1997 creation of the metropolitan provinces (year precision; day and instrument not found). Earlier lines differ (see unresolved). No later change recorded."
+          "dateNote": "Year of the metropolitan provinces (day and proclamation not found). Ruwa stays in Mashonaland East (ZIMSTAT)."
         }
       ]
     },
     {
-      "id": "ZWE:Masvingo@1997",
+      "id": "ZWE:Harare@1997",
       "names": {
-        "en": "Masvingo Province (Victoria until c. 1980s)",
-        "ja": "マシンゴ州",
-        "local": "Masvingo Province (Victoria until c. 1980s)"
+        "en": "Harare Metropolitan Province",
+        "ja": "ハラレ州",
+        "local": "Harare Metropolitan Province"
       },
-      "wikidata": "Q498351",
+      "wikidata": "Q16928358",
       "spans": [
         {
           "from": "1997",
           "precision": "year",
           "to": null,
           "atoms": [
-            "ZWE-532"
+            "ZWE-ADM2-62879985B31454704835515",
+            "ZWE-ADM2-62879985B25596949610081",
+            "ZWE-ADM2-62879985B33947363062254",
+            "ZWE-ADM2-62879985B75244512710705"
           ],
           "sources": [
             {
               "url": "https://en.wikipedia.org/w/index.php?oldid=1326976713",
               "title": "Wikipedia: Provinces of Zimbabwe, rev. 1326976713",
-              "says": "Mashonaland North and South reorganised into three provinces in the 1980s (Central and West 1983); Bulawayo and Harare created in 1997.",
-              "accessed": "2026-10-05"
+              "says": "Table of the ten provinces with year of creation: Matabeleland North and South 1973, Mashonaland Central and West 1983, Harare and Bulawayo 1997.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1377374402",
+              "title": "Wikipedia: Harare Province, rev. 1377374402",
+              "says": "Metropolitan province established 1997; its 2022 census population is Harare proper plus Chitungwiza and Epworth (Ruwa not counted).",
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://www.statoids.com/uzw.html",
-              "title": "Statoids: Provinces of Zimbabwe (G. Law)",
-              "says": "1969 seven provinces with areas differing from today's; ~1981 Mashonaland split into three, Zvishavane area to Midlands; ~1997 Bulawayo and Harare split off.",
-              "accessed": "2026-10-05"
+              "title": "Statoids: Provinces of Zimbabwe (G. Law, updated 2015-06-30)",
+              "says": "1969 table: 7 provinces (Manicaland 35,775 km², Victoria 53,786). ~1981 Mashonaland North/South became Central, East, West and the Zvishavane area moved from Matabeleland South to Midlands; ~1997 Bulawayo and Harare split off. No other change listed.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://doi.org/10.7910/DVN/BM4WW0",
+              "title": "Müller-Crepon (2021), State Reach and Development in Africa since the 1960s, replication data: africa_regions_panel and adminnum_bycountry (CC0)",
+              "says": "Zimbabwe regions: Mashonaland North/South 1965–1981; Mashonaland Central/East/West from 1982; Harare and Bulawayo from 1998; 7 regions 1974–1981, 8 in 1982–1997, 10 from 1998.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Span begins with the 1997 creation of the metropolitan provinces (year precision; day and instrument not found). Earlier lines differ (see unresolved). No later change recorded."
+          "dateNote": "Year of the metropolitan provinces (day and proclamation not found)."
         }
       ]
     },
     {
-      "id": "ZWE:MatabelelandNorth@1997",
+      "id": "ZWE:Masvingo@1982",
+      "names": {
+        "en": "Masvingo Province (Victoria until 1982)",
+        "ja": "マシンゴ州",
+        "local": "Masvingo Province (Victoria until 1982)"
+      },
+      "wikidata": "Q498351",
+      "spans": [
+        {
+          "from": "1982-08-18",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ZWE-ADM2-62879985B26822606878793",
+            "ZWE-ADM2-62879985B37979176120849",
+            "ZWE-ADM2-62879985B81925630456869",
+            "ZWE-ADM2-62879985B12004776276546",
+            "ZWE-ADM2-62879985B73698916591345",
+            "ZWE-ADM2-62879985B11590561680965",
+            "ZWE-ADM2-62879985B82265466456290",
+            "ZWE-ADM2-62879985B12430304395671",
+            "ZWE-ADM2-62879985B3510020236883"
+          ],
+          "sources": [
+            {
+              "url": "https://catalog.ihsn.org/index.php/catalog/4123",
+              "title": "IHSN catalogue: Zimbabwe Population Census 2002 (ZIMSTAT), background",
+              "says": "The 1982 census was taken on a de-facto basis for the night of 17/18 August 1982.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1196782529",
+              "title": "Wikipedia: List of Zimbabwean provinces by population, rev. 1196782529",
+              "says": "1982 census by province: Mashonaland Central, East and West already separate; Harare and Bulawayo have no 1982 row (inside Mashonaland East and Matabeleland North).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uzw.html",
+              "title": "Statoids: Provinces of Zimbabwe (G. Law, updated 2015-06-30)",
+              "says": "1969 table: 7 provinces (Manicaland 35,775 km², Victoria 53,786). ~1981 Mashonaland North/South became Central, East, West and the Zvishavane area moved from Matabeleland South to Midlands; ~1997 Bulawayo and Harare split off. No other change listed.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://doi.org/10.7910/DVN/BM4WW0",
+              "title": "Müller-Crepon (2021), State Reach and Development in Africa since the 1960s, replication data: africa_regions_panel and adminnum_bycountry (CC0)",
+              "says": "Zimbabwe regions: Mashonaland North/South 1965–1981; Mashonaland Central/East/West from 1982; Harare and Bulawayo from 1998; 7 regions 1974–1981, 8 in 1982–1997, 10 from 1998.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "The 1982 census night (17/18 Aug 1982) is the earliest date the eight-province layout is attested; the reorganisation itself is dated ~1981 (statoids) and 1983 (Wikipedia, contradicted by the census). The span starts at the attested date; the window before it is unresolved. Victoria in 1969 (53,786 km²) was smaller than today’s union (56,614 km²); when it grew is not established, so 1980-1982 is unresolved."
+        }
+      ]
+    },
+    {
+      "id": "ZWE:MatabelelandNorth@1982",
       "names": {
         "en": "Matabeleland North Province",
         "ja": "北マタベレランド州",
@@ -153,32 +399,129 @@
       "wikidata": "Q456562",
       "spans": [
         {
+          "from": "1982-08-18",
+          "precision": "day",
+          "to": "1997",
+          "atoms": [
+            "ZWE-ADM2-62879985B54181646880786",
+            "ZWE-ADM2-62879985B291328644758",
+            "ZWE-ADM2-62879985B77670672881921",
+            "ZWE-ADM2-62879985B63106535588765",
+            "ZWE-ADM2-62879985B9904230629136",
+            "ZWE-ADM2-62879985B68584159333685",
+            "ZWE-ADM2-62879985B28907517418650",
+            "ZWE-ADM2-62879985B92853728292751",
+            "ZWE-ADM2-62879985B6381696170590",
+            "ZWE-ADM2-62879985B51719638002761"
+          ],
+          "sources": [
+            {
+              "url": "https://catalog.ihsn.org/index.php/catalog/4123",
+              "title": "IHSN catalogue: Zimbabwe Population Census 2002 (ZIMSTAT), background",
+              "says": "The 1982 census was taken on a de-facto basis for the night of 17/18 August 1982.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1196782529",
+              "title": "Wikipedia: List of Zimbabwean provinces by population, rev. 1196782529",
+              "says": "1982 census by province: Mashonaland Central, East and West already separate; Harare and Bulawayo have no 1982 row (inside Mashonaland East and Matabeleland North).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uzw.html",
+              "title": "Statoids: Provinces of Zimbabwe (G. Law, updated 2015-06-30)",
+              "says": "1969 table: 7 provinces (Manicaland 35,775 km², Victoria 53,786). ~1981 Mashonaland North/South became Central, East, West and the Zvishavane area moved from Matabeleland South to Midlands; ~1997 Bulawayo and Harare split off. No other change listed.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://doi.org/10.7910/DVN/BM4WW0",
+              "title": "Müller-Crepon (2021), State Reach and Development in Africa since the 1960s, replication data: africa_regions_panel and adminnum_bycountry (CC0)",
+              "says": "Zimbabwe regions: Mashonaland North/South 1965–1981; Mashonaland Central/East/West from 1982; Harare and Bulawayo from 1998; 7 regions 1974–1981, 8 in 1982–1997, 10 from 1998.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "The 1982 census night (17/18 Aug 1982) is the earliest date the eight-province layout is attested; the reorganisation itself is dated ~1981 (statoids) and 1983 (Wikipedia, contradicted by the census). The span starts at the attested date; the window before it is unresolved. Includes Bulawayo until the metropolitan province."
+        },
+        {
           "from": "1997",
           "precision": "year",
           "to": null,
           "atoms": [
-            "ZWE-526"
+            "ZWE-ADM2-62879985B54181646880786",
+            "ZWE-ADM2-62879985B291328644758",
+            "ZWE-ADM2-62879985B77670672881921",
+            "ZWE-ADM2-62879985B63106535588765",
+            "ZWE-ADM2-62879985B9904230629136",
+            "ZWE-ADM2-62879985B68584159333685",
+            "ZWE-ADM2-62879985B28907517418650",
+            "ZWE-ADM2-62879985B92853728292751",
+            "ZWE-ADM2-62879985B6381696170590"
           ],
           "sources": [
             {
               "url": "https://en.wikipedia.org/w/index.php?oldid=1326976713",
               "title": "Wikipedia: Provinces of Zimbabwe, rev. 1326976713",
-              "says": "Mashonaland North and South reorganised into three provinces in the 1980s (Central and West 1983); Bulawayo and Harare created in 1997.",
-              "accessed": "2026-10-05"
+              "says": "Table of the ten provinces with year of creation: Matabeleland North and South 1973, Mashonaland Central and West 1983, Harare and Bulawayo 1997.",
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://www.statoids.com/uzw.html",
-              "title": "Statoids: Provinces of Zimbabwe (G. Law)",
-              "says": "1969 seven provinces with areas differing from today's; ~1981 Mashonaland split into three, Zvishavane area to Midlands; ~1997 Bulawayo and Harare split off.",
-              "accessed": "2026-10-05"
+              "title": "Statoids: Provinces of Zimbabwe (G. Law, updated 2015-06-30)",
+              "says": "1969 table: 7 provinces (Manicaland 35,775 km², Victoria 53,786). ~1981 Mashonaland North/South became Central, East, West and the Zvishavane area moved from Matabeleland South to Midlands; ~1997 Bulawayo and Harare split off. No other change listed.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://doi.org/10.7910/DVN/BM4WW0",
+              "title": "Müller-Crepon (2021), State Reach and Development in Africa since the 1960s, replication data: africa_regions_panel and adminnum_bycountry (CC0)",
+              "says": "Zimbabwe regions: Mashonaland North/South 1965–1981; Mashonaland Central/East/West from 1982; Harare and Bulawayo from 1998; 7 regions 1974–1981, 8 in 1982–1997, 10 from 1998.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Span begins with the 1997 creation of the metropolitan provinces (year precision; day and instrument not found). Earlier lines differ (see unresolved). No later change recorded."
+          "dateNote": "Year of the metropolitan provinces (day and proclamation not found)."
         }
       ]
     },
     {
-      "id": "ZWE:MatabelelandSouth@1997",
+      "id": "ZWE:Bulawayo@1997",
+      "names": {
+        "en": "Bulawayo Metropolitan Province",
+        "ja": "ブラワヨ州",
+        "local": "Bulawayo Metropolitan Province"
+      },
+      "spans": [
+        {
+          "from": "1997",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "ZWE-ADM2-62879985B51719638002761"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1326976713",
+              "title": "Wikipedia: Provinces of Zimbabwe, rev. 1326976713",
+              "says": "Table of the ten provinces with year of creation: Matabeleland North and South 1973, Mashonaland Central and West 1983, Harare and Bulawayo 1997.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uzw.html",
+              "title": "Statoids: Provinces of Zimbabwe (G. Law, updated 2015-06-30)",
+              "says": "1969 table: 7 provinces (Manicaland 35,775 km², Victoria 53,786). ~1981 Mashonaland North/South became Central, East, West and the Zvishavane area moved from Matabeleland South to Midlands; ~1997 Bulawayo and Harare split off. No other change listed.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://doi.org/10.7910/DVN/BM4WW0",
+              "title": "Müller-Crepon (2021), State Reach and Development in Africa since the 1960s, replication data: africa_regions_panel and adminnum_bycountry (CC0)",
+              "says": "Zimbabwe regions: Mashonaland North/South 1965–1981; Mashonaland Central/East/West from 1982; Harare and Bulawayo from 1998; 7 regions 1974–1981, 8 in 1982–1997, 10 from 1998.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Year of the metropolitan provinces (day and proclamation not found)."
+        }
+      ]
+    },
+    {
+      "id": "ZWE:MatabelelandSouth@1982",
       "names": {
         "en": "Matabeleland South Province",
         "ja": "南マタベレランド州",
@@ -187,32 +530,53 @@
       "wikidata": "Q498355",
       "spans": [
         {
-          "from": "1997",
-          "precision": "year",
+          "from": "1982-08-18",
+          "precision": "day",
           "to": null,
           "atoms": [
-            "ZWE-530"
+            "ZWE-ADM2-62879985B95307090216295",
+            "ZWE-ADM2-62879985B8135663934724",
+            "ZWE-ADM2-62879985B39326733261715",
+            "ZWE-ADM2-62879985B81037274427079",
+            "ZWE-ADM2-62879985B63510140227201",
+            "ZWE-ADM2-62879985B6112756891378",
+            "ZWE-ADM2-62879985B72758591248620",
+            "ZWE-ADM2-62879985B11044582115440",
+            "ZWE-ADM2-62879985B2376154175895",
+            "ZWE-ADM2-62879985B43566873745809"
           ],
           "sources": [
             {
-              "url": "https://en.wikipedia.org/w/index.php?oldid=1326976713",
-              "title": "Wikipedia: Provinces of Zimbabwe, rev. 1326976713",
-              "says": "Mashonaland North and South reorganised into three provinces in the 1980s (Central and West 1983); Bulawayo and Harare created in 1997.",
-              "accessed": "2026-10-05"
+              "url": "https://catalog.ihsn.org/index.php/catalog/4123",
+              "title": "IHSN catalogue: Zimbabwe Population Census 2002 (ZIMSTAT), background",
+              "says": "The 1982 census was taken on a de-facto basis for the night of 17/18 August 1982.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1196782529",
+              "title": "Wikipedia: List of Zimbabwean provinces by population, rev. 1196782529",
+              "says": "1982 census by province: Mashonaland Central, East and West already separate; Harare and Bulawayo have no 1982 row (inside Mashonaland East and Matabeleland North).",
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://www.statoids.com/uzw.html",
-              "title": "Statoids: Provinces of Zimbabwe (G. Law)",
-              "says": "1969 seven provinces with areas differing from today's; ~1981 Mashonaland split into three, Zvishavane area to Midlands; ~1997 Bulawayo and Harare split off.",
-              "accessed": "2026-10-05"
+              "title": "Statoids: Provinces of Zimbabwe (G. Law, updated 2015-06-30)",
+              "says": "1969 table: 7 provinces (Manicaland 35,775 km², Victoria 53,786). ~1981 Mashonaland North/South became Central, East, West and the Zvishavane area moved from Matabeleland South to Midlands; ~1997 Bulawayo and Harare split off. No other change listed.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://doi.org/10.7910/DVN/BM4WW0",
+              "title": "Müller-Crepon (2021), State Reach and Development in Africa since the 1960s, replication data: africa_regions_panel and adminnum_bycountry (CC0)",
+              "says": "Zimbabwe regions: Mashonaland North/South 1965–1981; Mashonaland Central/East/West from 1982; Harare and Bulawayo from 1998; 7 regions 1974–1981, 8 in 1982–1997, 10 from 1998.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Span begins with the 1997 creation of the metropolitan provinces (year precision; day and instrument not found). Earlier lines differ (see unresolved). No later change recorded."
+          "dateNote": "The 1982 census night (17/18 Aug 1982) is the earliest date the eight-province layout is attested; the reorganisation itself is dated ~1981 (statoids) and 1983 (Wikipedia, contradicted by the census). The span starts at the attested date; the window before it is unresolved. After the Zvishavane area passed to Midlands."
         }
       ]
     },
     {
-      "id": "ZWE:Midlands@1997",
+      "id": "ZWE:Midlands@1982",
       "names": {
         "en": "Midlands Province",
         "ja": "ミッドランズ州",
@@ -221,106 +585,110 @@
       "wikidata": "Q456556",
       "spans": [
         {
-          "from": "1997",
-          "precision": "year",
+          "from": "1982-08-18",
+          "precision": "day",
           "to": null,
           "atoms": [
-            "ZWE-527"
+            "ZWE-ADM2-62879985B8175030067165",
+            "ZWE-ADM2-62879985B87269615821372",
+            "ZWE-ADM2-62879985B62286453442238",
+            "ZWE-ADM2-62879985B9450607738823",
+            "ZWE-ADM2-62879985B38074336306054",
+            "ZWE-ADM2-62879985B64547719639207",
+            "ZWE-ADM2-62879985B25079588336993",
+            "ZWE-ADM2-62879985B80414783582816",
+            "ZWE-ADM2-62879985B72104982716343",
+            "ZWE-ADM2-62879985B17872129948675",
+            "ZWE-ADM2-62879985B74735389049647",
+            "ZWE-ADM2-62879985B16966915887003",
+            "ZWE-ADM2-62879985B59782036697495",
+            "ZWE-ADM2-62879985B32453879798080"
           ],
           "sources": [
             {
-              "url": "https://en.wikipedia.org/w/index.php?oldid=1326976713",
-              "title": "Wikipedia: Provinces of Zimbabwe, rev. 1326976713",
-              "says": "Mashonaland North and South reorganised into three provinces in the 1980s (Central and West 1983); Bulawayo and Harare created in 1997.",
-              "accessed": "2026-10-05"
+              "url": "https://catalog.ihsn.org/index.php/catalog/4123",
+              "title": "IHSN catalogue: Zimbabwe Population Census 2002 (ZIMSTAT), background",
+              "says": "The 1982 census was taken on a de-facto basis for the night of 17/18 August 1982.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1196782529",
+              "title": "Wikipedia: List of Zimbabwean provinces by population, rev. 1196782529",
+              "says": "1982 census by province: Mashonaland Central, East and West already separate; Harare and Bulawayo have no 1982 row (inside Mashonaland East and Matabeleland North).",
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://www.statoids.com/uzw.html",
-              "title": "Statoids: Provinces of Zimbabwe (G. Law)",
-              "says": "1969 seven provinces with areas differing from today's; ~1981 Mashonaland split into three, Zvishavane area to Midlands; ~1997 Bulawayo and Harare split off.",
-              "accessed": "2026-10-05"
-            }
-          ],
-          "dateNote": "Span begins with the 1997 creation of the metropolitan provinces (year precision; day and instrument not found). Earlier lines differ (see unresolved). No later change recorded."
-        }
-      ]
-    },
-    {
-      "id": "ZWE:Bulawayo@1997",
-      "names": {
-        "en": "Bulawayo (metropolitan province)",
-        "ja": "ブラワヨ州",
-        "local": "Bulawayo (metropolitan province)"
-      },
-      "spans": [
-        {
-          "from": "1997",
-          "precision": "year",
-          "to": null,
-          "atoms": [
-            "ZWE-531"
-          ],
-          "sources": [
-            {
-              "url": "https://en.wikipedia.org/w/index.php?oldid=1326976713",
-              "title": "Wikipedia: Provinces of Zimbabwe, rev. 1326976713",
-              "says": "Mashonaland North and South reorganised into three provinces in the 1980s (Central and West 1983); Bulawayo and Harare created in 1997.",
-              "accessed": "2026-10-05"
+              "title": "Statoids: Provinces of Zimbabwe (G. Law, updated 2015-06-30)",
+              "says": "1969 table: 7 provinces (Manicaland 35,775 km², Victoria 53,786). ~1981 Mashonaland North/South became Central, East, West and the Zvishavane area moved from Matabeleland South to Midlands; ~1997 Bulawayo and Harare split off. No other change listed.",
+              "accessed": "2026-10-06"
             },
             {
-              "url": "https://www.statoids.com/uzw.html",
-              "title": "Statoids: Provinces of Zimbabwe (G. Law)",
-              "says": "1969 seven provinces with areas differing from today's; ~1981 Mashonaland split into three, Zvishavane area to Midlands; ~1997 Bulawayo and Harare split off.",
-              "accessed": "2026-10-05"
+              "url": "https://doi.org/10.7910/DVN/BM4WW0",
+              "title": "Müller-Crepon (2021), State Reach and Development in Africa since the 1960s, replication data: africa_regions_panel and adminnum_bycountry (CC0)",
+              "says": "Zimbabwe regions: Mashonaland North/South 1965–1981; Mashonaland Central/East/West from 1982; Harare and Bulawayo from 1998; 7 regions 1974–1981, 8 in 1982–1997, 10 from 1998.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Span begins with the 1997 creation of the metropolitan provinces (year precision; day and instrument not found). Earlier lines differ (see unresolved). No later change recorded."
+          "dateNote": "The 1982 census night (17/18 Aug 1982) is the earliest date the eight-province layout is attested; the reorganisation itself is dated ~1981 (statoids) and 1983 (Wikipedia, contradicted by the census). The span starts at the attested date; the window before it is unresolved. Includes the Zvishavane area."
         }
       ]
     }
   ],
   "events": [
     {
-      "date": "1983",
-      "precision": "year",
-      "what": "Mashonaland North and South reorganised into Mashonaland Central, East and West (statoids: ~1981)",
+      "date": "1982-08-18",
+      "precision": "day",
+      "what": "Earliest attestation (census night) of Mashonaland Central, East and West and of Zvishavane in Midlands; reorganisation dated ~1981 (statoids) / 1983 (Wikipedia)",
       "sources": [
         {
-          "url": "https://en.wikipedia.org/w/index.php?oldid=1326976713",
-          "title": "Wikipedia: Provinces of Zimbabwe, rev. 1326976713",
-          "says": "Mashonaland North and South reorganised into three provinces in the 1980s (Central and West 1983); Bulawayo and Harare created in 1997.",
-          "accessed": "2026-10-05"
+          "url": "https://catalog.ihsn.org/index.php/catalog/4123",
+          "title": "IHSN catalogue: Zimbabwe Population Census 2002 (ZIMSTAT), background",
+          "says": "The 1982 census was taken on a de-facto basis for the night of 17/18 August 1982.",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?oldid=1196782529",
+          "title": "Wikipedia: List of Zimbabwean provinces by population, rev. 1196782529",
+          "says": "1982 census by province: Mashonaland Central, East and West already separate; Harare and Bulawayo have no 1982 row (inside Mashonaland East and Matabeleland North).",
+          "accessed": "2026-10-06"
         },
         {
           "url": "https://www.statoids.com/uzw.html",
-          "title": "Statoids: Provinces of Zimbabwe (G. Law)",
-          "says": "1969 seven provinces with areas differing from today's; ~1981 Mashonaland split into three, Zvishavane area to Midlands; ~1997 Bulawayo and Harare split off.",
-          "accessed": "2026-10-05"
+          "title": "Statoids: Provinces of Zimbabwe (G. Law, updated 2015-06-30)",
+          "says": "1969 table: 7 provinces (Manicaland 35,775 km², Victoria 53,786). ~1981 Mashonaland North/South became Central, East, West and the Zvishavane area moved from Matabeleland South to Midlands; ~1997 Bulawayo and Harare split off. No other change listed.",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?oldid=1326976713",
+          "title": "Wikipedia: Provinces of Zimbabwe, rev. 1326976713",
+          "says": "Table of the ten provinces with year of creation: Matabeleland North and South 1973, Mashonaland Central and West 1983, Harare and Bulawayo 1997.",
+          "accessed": "2026-10-06"
         }
       ]
     },
     {
       "date": "1997",
       "precision": "year",
-      "what": "Harare (from Mashonaland East) and Bulawayo became metropolitan provinces",
+      "what": "Harare (from Mashonaland East) and Bulawayo (from Matabeleland North) became metropolitan provinces",
       "sources": [
         {
           "url": "https://en.wikipedia.org/w/index.php?oldid=1326976713",
           "title": "Wikipedia: Provinces of Zimbabwe, rev. 1326976713",
-          "says": "Mashonaland North and South reorganised into three provinces in the 1980s (Central and West 1983); Bulawayo and Harare created in 1997.",
-          "accessed": "2026-10-05"
+          "says": "Table of the ten provinces with year of creation: Matabeleland North and South 1973, Mashonaland Central and West 1983, Harare and Bulawayo 1997.",
+          "accessed": "2026-10-06"
         },
         {
           "url": "https://en.wikipedia.org/w/index.php?oldid=1377374402",
           "title": "Wikipedia: Harare Province, rev. 1377374402",
-          "says": "Became a metropolitan province in 1997 from Mashonaland East; comprises Harare, Chitungwiza, Epworth and Ruwa.",
-          "accessed": "2026-10-05"
+          "says": "Metropolitan province established 1997; its 2022 census population is Harare proper plus Chitungwiza and Epworth (Ruwa not counted).",
+          "accessed": "2026-10-06"
         },
         {
           "url": "https://www.statoids.com/uzw.html",
-          "title": "Statoids: Provinces of Zimbabwe (G. Law)",
-          "says": "1969 seven provinces with areas differing from today's; ~1981 Mashonaland split into three, Zvishavane area to Midlands; ~1997 Bulawayo and Harare split off.",
-          "accessed": "2026-10-05"
+          "title": "Statoids: Provinces of Zimbabwe (G. Law, updated 2015-06-30)",
+          "says": "1969 table: 7 provinces (Manicaland 35,775 km², Victoria 53,786). ~1981 Mashonaland North/South became Central, East, West and the Zvishavane area moved from Matabeleland South to Midlands; ~1997 Bulawayo and Harare split off. No other change listed.",
+          "accessed": "2026-10-06"
         }
       ]
     }
@@ -332,9 +700,33 @@
       "sources": [
         {
           "url": "https://www.statoids.com/uzw.html",
-          "title": "Statoids: Provinces of Zimbabwe (G. Law)",
-          "says": "1969 seven provinces with areas differing from today's; ~1981 Mashonaland split into three, Zvishavane area to Midlands; ~1997 Bulawayo and Harare split off.",
-          "accessed": "2026-10-05"
+          "title": "Statoids: Provinces of Zimbabwe (G. Law, updated 2015-06-30)",
+          "says": "1969 table: 7 provinces (Manicaland 35,775 km², Victoria 53,786). ~1981 Mashonaland North/South became Central, East, West and the Zvishavane area moved from Matabeleland South to Midlands; ~1997 Bulawayo and Harare split off. No other change listed.",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://doi.org/10.7910/DVN/BM4WW0",
+          "title": "Müller-Crepon (2021), State Reach and Development in Africa since the 1960s, replication data: africa_regions_panel and adminnum_bycountry (CC0)",
+          "says": "Zimbabwe regions: Mashonaland North/South 1965–1981; Mashonaland Central/East/West from 1982; Harare and Bulawayo from 1998; 7 regions 1974–1981, 8 in 1982–1997, 10 from 1998.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "1982-08-18",
+      "n": 8,
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/w/index.php?oldid=1196782529",
+          "title": "Wikipedia: List of Zimbabwean provinces by population, rev. 1196782529",
+          "says": "1982 census by province: Mashonaland Central, East and West already separate; Harare and Bulawayo have no 1982 row (inside Mashonaland East and Matabeleland North).",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://catalog.ihsn.org/index.php/catalog/4123",
+          "title": "IHSN catalogue: Zimbabwe Population Census 2002 (ZIMSTAT), background",
+          "says": "The 1982 census was taken on a de-facto basis for the night of 17/18 August 1982.",
+          "accessed": "2026-10-06"
         }
       ]
     },
@@ -343,16 +735,16 @@
       "n": 8,
       "sources": [
         {
-          "url": "https://en.wikipedia.org/w/index.php?oldid=1326976713",
-          "title": "Wikipedia: Provinces of Zimbabwe, rev. 1326976713",
-          "says": "Mashonaland North and South reorganised into three provinces in the 1980s (Central and West 1983); Bulawayo and Harare created in 1997.",
-          "accessed": "2026-10-05"
+          "url": "https://doi.org/10.7910/DVN/BM4WW0",
+          "title": "Müller-Crepon (2021), State Reach and Development in Africa since the 1960s, replication data: africa_regions_panel and adminnum_bycountry (CC0)",
+          "says": "Zimbabwe regions: Mashonaland North/South 1965–1981; Mashonaland Central/East/West from 1982; Harare and Bulawayo from 1998; 7 regions 1974–1981, 8 in 1982–1997, 10 from 1998.",
+          "accessed": "2026-10-06"
         },
         {
           "url": "https://www.statoids.com/uzw.html",
-          "title": "Statoids: Provinces of Zimbabwe (G. Law)",
-          "says": "1969 seven provinces with areas differing from today's; ~1981 Mashonaland split into three, Zvishavane area to Midlands; ~1997 Bulawayo and Harare split off.",
-          "accessed": "2026-10-05"
+          "title": "Statoids: Provinces of Zimbabwe (G. Law, updated 2015-06-30)",
+          "says": "1969 table: 7 provinces (Manicaland 35,775 km², Victoria 53,786). ~1981 Mashonaland North/South became Central, East, West and the Zvishavane area moved from Matabeleland South to Midlands; ~1997 Bulawayo and Harare split off. No other change listed.",
+          "accessed": "2026-10-06"
         }
       ]
     },
@@ -361,10 +753,16 @@
       "n": 10,
       "sources": [
         {
-          "url": "https://www.statoids.com/uzw.html",
-          "title": "Statoids: Provinces of Zimbabwe (G. Law)",
-          "says": "1969 seven provinces with areas differing from today's; ~1981 Mashonaland split into three, Zvishavane area to Midlands; ~1997 Bulawayo and Harare split off.",
-          "accessed": "2026-10-05"
+          "url": "https://doi.org/10.7910/DVN/BM4WW0",
+          "title": "Müller-Crepon (2021), State Reach and Development in Africa since the 1960s, replication data: africa_regions_panel and adminnum_bycountry (CC0)",
+          "says": "Zimbabwe regions: Mashonaland North/South 1965–1981; Mashonaland Central/East/West from 1982; Harare and Bulawayo from 1998; 7 regions 1974–1981, 8 in 1982–1997, 10 from 1998.",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?oldid=1326976713",
+          "title": "Wikipedia: Provinces of Zimbabwe, rev. 1326976713",
+          "says": "Table of the ten provinces with year of creation: Matabeleland North and South 1973, Mashonaland Central and West 1983, Harare and Bulawayo 1997.",
+          "accessed": "2026-10-06"
         }
       ]
     }
@@ -372,238 +770,172 @@
   "atomsOutside": [],
   "unresolved": [
     {
-      "what": "All provinces from independence to the 1997 metropolitan split",
+      "what": "The six provinces other than Manicaland between independence and the first attestation of the eight-province layout",
       "atoms": [
-        "ZWE-526",
-        "ZWE-530",
-        "ZWE-532",
-        "ZWE-533",
-        "ZWE-524",
-        "ZWE-528",
-        "ZWE-529",
-        "ZWE-527",
-        "ZWE-525",
-        "ZWE-531"
+        "ZWE-ADM2-62879985B95307090216295",
+        "ZWE-ADM2-62879985B8135663934724",
+        "ZWE-ADM2-62879985B26822606878793",
+        "ZWE-ADM2-62879985B50430993830170",
+        "ZWE-ADM2-62879985B95649455057602",
+        "ZWE-ADM2-62879985B54181646880786",
+        "ZWE-ADM2-62879985B291328644758",
+        "ZWE-ADM2-62879985B51719638002761",
+        "ZWE-ADM2-62879985B39326733261715",
+        "ZWE-ADM2-62879985B33993196799610",
+        "ZWE-ADM2-62879985B20095614329171",
+        "ZWE-ADM2-62879985B25835202040787",
+        "ZWE-ADM2-62879985B62139417575129",
+        "ZWE-ADM2-62879985B33346343467018",
+        "ZWE-ADM2-62879985B37979176120849",
+        "ZWE-ADM2-62879985B81925630456869",
+        "ZWE-ADM2-62879985B8175030067165",
+        "ZWE-ADM2-62879985B31454704835515",
+        "ZWE-ADM2-62879985B12004776276546",
+        "ZWE-ADM2-62879985B25596949610081",
+        "ZWE-ADM2-62879985B87269615821372",
+        "ZWE-ADM2-62879985B62286453442238",
+        "ZWE-ADM2-62879985B9450607738823",
+        "ZWE-ADM2-62879985B13905566839040",
+        "ZWE-ADM2-62879985B94788523957313",
+        "ZWE-ADM2-62879985B73698916591345",
+        "ZWE-ADM2-62879985B81037274427079",
+        "ZWE-ADM2-62879985B63510140227201",
+        "ZWE-ADM2-62879985B38074336306054",
+        "ZWE-ADM2-62879985B64547719639207",
+        "ZWE-ADM2-62879985B33947363062254",
+        "ZWE-ADM2-62879985B75244512710705",
+        "ZWE-ADM2-62879985B85730198836463",
+        "ZWE-ADM2-62879985B77670672881921",
+        "ZWE-ADM2-62879985B63106535588765",
+        "ZWE-ADM2-62879985B61982490553927",
+        "ZWE-ADM2-62879985B6112756891378",
+        "ZWE-ADM2-62879985B53444954846030",
+        "ZWE-ADM2-62879985B94385115404707",
+        "ZWE-ADM2-62879985B80856032780976",
+        "ZWE-ADM2-62879985B2724410998329",
+        "ZWE-ADM2-62879985B25079588336993",
+        "ZWE-ADM2-62879985B80414783582816",
+        "ZWE-ADM2-62879985B9904230629136",
+        "ZWE-ADM2-62879985B9452203972303",
+        "ZWE-ADM2-62879985B72758591248620",
+        "ZWE-ADM2-62879985B19621940565976",
+        "ZWE-ADM2-62879985B19801447956475",
+        "ZWE-ADM2-62879985B11590561680965",
+        "ZWE-ADM2-62879985B82265466456290",
+        "ZWE-ADM2-62879985B11044582115440",
+        "ZWE-ADM2-62879985B76003628227782",
+        "ZWE-ADM2-62879985B72104982716343",
+        "ZWE-ADM2-62879985B94368680034661",
+        "ZWE-ADM2-62879985B70697135902781",
+        "ZWE-ADM2-62879985B29850987700829",
+        "ZWE-ADM2-62879985B77595643638308",
+        "ZWE-ADM2-62879985B35130574204282",
+        "ZWE-ADM2-62879985B11813721132111",
+        "ZWE-ADM2-62879985B19451757525909",
+        "ZWE-ADM2-62879985B12430304395671",
+        "ZWE-ADM2-62879985B68584159333685",
+        "ZWE-ADM2-62879985B7429577065299",
+        "ZWE-ADM2-62879985B2376154175895",
+        "ZWE-ADM2-62879985B17872129948675",
+        "ZWE-ADM2-62879985B22521901004108",
+        "ZWE-ADM2-62879985B71976011533530",
+        "ZWE-ADM2-62879985B67434637878842",
+        "ZWE-ADM2-62879985B71906244719276",
+        "ZWE-ADM2-62879985B93379184763454",
+        "ZWE-ADM2-62879985B74735389049647",
+        "ZWE-ADM2-62879985B16966915887003",
+        "ZWE-ADM2-62879985B28907517418650",
+        "ZWE-ADM2-62879985B92853728292751",
+        "ZWE-ADM2-62879985B43566873745809",
+        "ZWE-ADM2-62879985B20819792882543",
+        "ZWE-ADM2-62879985B6381696170590",
+        "ZWE-ADM2-62879985B3510020236883",
+        "ZWE-ADM2-62879985B3462136177187",
+        "ZWE-ADM2-62879985B59782036697495",
+        "ZWE-ADM2-62879985B32453879798080"
       ],
       "from": "1980-04-18",
-      "to": "1997",
-      "why": "Mashonaland West was formed from parts of both Mashonaland North and South (lines inside NE atoms); Zvishavane area moved from Matabeleland South to Midlands; 1969 areas (e.g. Matabeleland North 89,619 vs ~75,500 km² incl. Bulawayo today, Midlands 54,472 vs 49,166) show further undated transfers; split year disputed (~1981 statoids vs 1983 Wikipedia).",
+      "to": "1982-08-18",
+      "why": "The 1980 provinces (Mashonaland North/South, Matabeleland North/South, Midlands, Victoria) sat on Rhodesian district lines: the 1969 areas differ from any union of today’s districts (Victoria 53,786 vs 56,614 km² today; Matabeleland South 49,691 vs 54,274 even without Zvishavane), the Mashonaland North/South line is not on today’s district lines (the CC0 panel splits Zvimba and puts Chikomba in Midlands), and the date of the ~1981 reorganisation is not established.",
       "checked": [
-        "statoids uzw.html change history and 1969 table",
-        "Wikipedia Provinces of Zimbabwe rev. 1326976713"
+        "statoids uzw.html change list and 1969 table (Mashonaland North 63,535, South 42,418, Matabeleland North 89,619, South 49,691, Midlands 54,472, Victoria 53,786 km²)",
+        "Wikipedia Provinces of Zimbabwe rev. 1326976713 and List of provinces by population rev. 1196782529",
+        "Müller-Crepon regions panel DVN/BM4WW0 (its 1980 layout is coarse: Zvimba split 0.81/0.19, Chikomba 0.97 in Midlands)",
+        "Provincial Councils and Administration Act Ch. 29:11 (declares provinces by proclamation; no schedule)"
       ],
-      "needs": "district-level atoms (geoBoundaries ZWE ADM2, CC BY 4.0) plus dated district memberships (Provincial Councils and Administration Act schedules)"
+      "needs": "Rhodesian district atoms of c. 1980 (e.g. the 1969/1982 census district maps) and the proclamation of the 1981-82 provinces"
     },
     {
-      "what": "Manicaland province 1980–1983",
-      "unit": "ZWE:Manicaland@1980",
-      "from": "1980-04-18",
-      "to": "1983",
-      "why": "see first entry",
-      "checked": [
-        "statoids uzw.html"
-      ],
-      "needs": "district-level atoms"
-    },
-    {
-      "what": "MashonalandNorth province 1980–1983",
+      "what": "Mashonaland North Province 1980-1982",
       "unit": "ZWE:MashonalandNorth@1980",
       "from": "1980-04-18",
-      "to": "1983",
+      "to": "1982-08-18",
       "why": "see first entry",
       "checked": [
-        "statoids uzw.html"
+        "statoids uzw.html change list and 1969 table (Mashonaland North 63,535, South 42,418, Matabeleland North 89,619, South 49,691, Midlands 54,472, Victoria 53,786 km²)",
+        "Wikipedia Provinces of Zimbabwe rev. 1326976713 and List of provinces by population rev. 1196782529"
       ],
-      "needs": "district-level atoms"
+      "needs": "Rhodesian district atoms of c. 1980"
     },
     {
-      "what": "MashonalandSouth province 1980–1983",
+      "what": "Mashonaland South Province 1980-1982",
       "unit": "ZWE:MashonalandSouth@1980",
       "from": "1980-04-18",
-      "to": "1983",
+      "to": "1982-08-18",
       "why": "see first entry",
       "checked": [
-        "statoids uzw.html"
+        "statoids uzw.html change list and 1969 table (Mashonaland North 63,535, South 42,418, Matabeleland North 89,619, South 49,691, Midlands 54,472, Victoria 53,786 km²)",
+        "Wikipedia Provinces of Zimbabwe rev. 1326976713 and List of provinces by population rev. 1196782529"
       ],
-      "needs": "district-level atoms"
+      "needs": "Rhodesian district atoms of c. 1980"
     },
     {
-      "what": "MatabelelandNorth province 1980–1983",
+      "what": "Matabeleland North Province 1980-1982",
       "unit": "ZWE:MatabelelandNorth@1980",
       "from": "1980-04-18",
-      "to": "1983",
+      "to": "1982-08-18",
       "why": "see first entry",
       "checked": [
-        "statoids uzw.html"
+        "statoids uzw.html change list and 1969 table (Mashonaland North 63,535, South 42,418, Matabeleland North 89,619, South 49,691, Midlands 54,472, Victoria 53,786 km²)",
+        "Wikipedia Provinces of Zimbabwe rev. 1326976713 and List of provinces by population rev. 1196782529"
       ],
-      "needs": "district-level atoms"
+      "needs": "Rhodesian district atoms of c. 1980"
     },
     {
-      "what": "MatabelelandSouth province 1980–1983",
+      "what": "Matabeleland South Province 1980-1982",
       "unit": "ZWE:MatabelelandSouth@1980",
       "from": "1980-04-18",
-      "to": "1983",
+      "to": "1982-08-18",
       "why": "see first entry",
       "checked": [
-        "statoids uzw.html"
+        "statoids uzw.html change list and 1969 table (Mashonaland North 63,535, South 42,418, Matabeleland North 89,619, South 49,691, Midlands 54,472, Victoria 53,786 km²)",
+        "Wikipedia Provinces of Zimbabwe rev. 1326976713 and List of provinces by population rev. 1196782529"
       ],
-      "needs": "district-level atoms"
+      "needs": "Rhodesian district atoms of c. 1980"
     },
     {
-      "what": "Midlands province 1980–1983",
+      "what": "Midlands Province 1980-1982",
       "unit": "ZWE:Midlands@1980",
       "from": "1980-04-18",
-      "to": "1983",
+      "to": "1982-08-18",
       "why": "see first entry",
       "checked": [
-        "statoids uzw.html"
+        "statoids uzw.html change list and 1969 table (Mashonaland North 63,535, South 42,418, Matabeleland North 89,619, South 49,691, Midlands 54,472, Victoria 53,786 km²)",
+        "Wikipedia Provinces of Zimbabwe rev. 1326976713 and List of provinces by population rev. 1196782529"
       ],
-      "needs": "district-level atoms"
+      "needs": "Rhodesian district atoms of c. 1980"
     },
     {
-      "what": "Victoria province 1980–1983",
+      "what": "Victoria Province 1980-1982",
       "unit": "ZWE:Victoria@1980",
       "from": "1980-04-18",
-      "to": "1983",
+      "to": "1982-08-18",
       "why": "see first entry",
       "checked": [
-        "statoids uzw.html"
+        "statoids uzw.html change list and 1969 table (Mashonaland North 63,535, South 42,418, Matabeleland North 89,619, South 49,691, Midlands 54,472, Victoria 53,786 km²)",
+        "Wikipedia Provinces of Zimbabwe rev. 1326976713 and List of provinces by population rev. 1196782529"
       ],
-      "needs": "district-level atoms"
-    },
-    {
-      "what": "Manicaland province 1983–1997",
-      "unit": "ZWE:Manicaland@1983",
-      "from": "1983",
-      "to": "1997",
-      "why": "see first entry",
-      "checked": [
-        "statoids uzw.html",
-        "Wikipedia Provinces of Zimbabwe rev. 1326976713"
-      ],
-      "needs": "district-level atoms"
-    },
-    {
-      "what": "MashonalandCentral province 1983–1997",
-      "unit": "ZWE:MashonalandCentral@1983",
-      "from": "1983",
-      "to": "1997",
-      "why": "see first entry",
-      "checked": [
-        "statoids uzw.html",
-        "Wikipedia Provinces of Zimbabwe rev. 1326976713"
-      ],
-      "needs": "district-level atoms"
-    },
-    {
-      "what": "MashonalandEast province 1983–1997",
-      "unit": "ZWE:MashonalandEast@1983",
-      "from": "1983",
-      "to": "1997",
-      "why": "see first entry",
-      "checked": [
-        "statoids uzw.html",
-        "Wikipedia Provinces of Zimbabwe rev. 1326976713"
-      ],
-      "needs": "district-level atoms"
-    },
-    {
-      "what": "MashonalandWest province 1983–1997",
-      "unit": "ZWE:MashonalandWest@1983",
-      "from": "1983",
-      "to": "1997",
-      "why": "see first entry",
-      "checked": [
-        "statoids uzw.html",
-        "Wikipedia Provinces of Zimbabwe rev. 1326976713"
-      ],
-      "needs": "district-level atoms"
-    },
-    {
-      "what": "Masvingo province 1983–1997",
-      "unit": "ZWE:Masvingo@1983",
-      "from": "1983",
-      "to": "1997",
-      "why": "see first entry",
-      "checked": [
-        "statoids uzw.html",
-        "Wikipedia Provinces of Zimbabwe rev. 1326976713"
-      ],
-      "needs": "district-level atoms"
-    },
-    {
-      "what": "MatabelelandNorth province 1983–1997",
-      "unit": "ZWE:MatabelelandNorth@1983",
-      "from": "1983",
-      "to": "1997",
-      "why": "see first entry",
-      "checked": [
-        "statoids uzw.html",
-        "Wikipedia Provinces of Zimbabwe rev. 1326976713"
-      ],
-      "needs": "district-level atoms"
-    },
-    {
-      "what": "MatabelelandSouth province 1983–1997",
-      "unit": "ZWE:MatabelelandSouth@1983",
-      "from": "1983",
-      "to": "1997",
-      "why": "see first entry",
-      "checked": [
-        "statoids uzw.html",
-        "Wikipedia Provinces of Zimbabwe rev. 1326976713"
-      ],
-      "needs": "district-level atoms"
-    },
-    {
-      "what": "Midlands province 1983–1997",
-      "unit": "ZWE:Midlands@1983",
-      "from": "1983",
-      "to": "1997",
-      "why": "see first entry",
-      "checked": [
-        "statoids uzw.html",
-        "Wikipedia Provinces of Zimbabwe rev. 1326976713"
-      ],
-      "needs": "district-level atoms"
-    },
-    {
-      "what": "Harare metropolitan province and Mashonaland East since 1997",
-      "atoms": [
-        "ZWE-525",
-        "ZWE-528"
-      ],
-      "from": "1997",
-      "to": null,
-      "why": "Wikipedia states Harare Province comprises Harare, Chitungwiza, Epworth and Ruwa; NE puts Ruwa in Mashonaland East (point test). Whether and when Ruwa moved is not established, so neither outline can be dated.",
-      "checked": [
-        "Wikipedia Harare Province rev. 1377374402",
-        "Wikipedia Ruwa rev. 1377928300",
-        "Natural Earth point tests (Chitungwiza, Epworth → Harare; Ruwa → Mashonaland East)"
-      ],
-      "needs": "Ruwa local-board boundary and the legal instrument defining Harare Metropolitan Province"
-    },
-    {
-      "what": "Harare 1997–2019",
-      "unit": "ZWE:Harare@1997",
-      "from": "1997",
-      "to": null,
-      "why": "see previous entry",
-      "checked": [
-        "Wikipedia Harare Province rev. 1377374402"
-      ],
-      "needs": "see previous entry"
-    },
-    {
-      "what": "Mashonaland East 1997–2019",
-      "unit": "ZWE:MashonalandEast@1997",
-      "from": "1997",
-      "to": null,
-      "why": "see previous entry",
-      "checked": [
-        "Wikipedia Ruwa rev. 1377928300"
-      ],
-      "needs": "see previous entry"
+      "needs": "Rhodesian district atoms of c. 1980"
     }
   ]
 }

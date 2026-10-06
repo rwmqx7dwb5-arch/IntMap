@@ -1457,23 +1457,24 @@
    "what": "PRC provincial layouts 1949-10-01 → 1979-07-01",
    "from": "1949-10-01",
    "to": "1979-07-01",
-   "why": "Every layout before the 1979 restoration of Inner Mongolia differs from the NE atoms along lines inside them: 1949–54 greater regions and abolished provinces (Chahar, Pingyuan, Suiyuan, Songjiang, Liaodong/Liaoxi, Rehe, Xikang, Ningxia Province), 1950–52 Sichuan and North/South Jiangsu/Anhui districts, Beijing/Shanghai/Tianjin county transfers 1958 and 1973, Qinzhou between Guangdong and Guangxi 1951–1965, the Inner Mongolia split 1969–79, and many county transfers. No complete pre-1978 annual change record was reachable to prove any unit unchanged before 1979.",
+   "why": "Before the scope of this dossier. Now treated in CHN-provinces-1958.json on geoBoundaries ADM3 (county-level) atoms: the xzqh.org province year pages, which do reach back to 1949, record every village- and commune-level transfer between provinces; 18 province-level units are drawn there from their last such transfer (1958–1978) to 1979-06-30, the rest stay unresolved with the transfer that blocks them.",
    "checked": [
-    "xzqh.org annual pages exist only from 1978",
     "zh.wikipedia 中华人民共和国行政区划 history section",
-    "statoids.com/ucn.html"
+    "statoids.com/ucn.html",
+    "xzqh.org province year pages 1949–2019 (e.g. https://www.xzqh.org/html/list/5.html), read 2026-10-06"
    ],
-   "needs": "county-level atoms carrying 1950s–1970s county lines, plus a complete 1949–1978 change list (e.g. 《中华人民共和国行政区划沿革地图集》 / MCA records)"
+   "needs": "see CHN-provinces-1958.json"
   },
   {
    "what": "Lines NE draws that the sources call disputed, undefined or changed below NE resolution (informational; no atom withheld)",
    "from": "1979-07-01",
    "to": null,
-   "why": "India LAC and Bhutan sectors of Tibet/Xinjiang (NE gives Bhutan/India land OSM gives China); Ejin middle section; Weishan; Zhejiang–Fujian Xingzi islands; Vietnam treaty (1999, line set 2008) and Russia 1991 island allocations; Zhenbao islet; Macau Hengqin campus 2013 and Shenzhen Bay Port 2007. Each moves under ~1 km² or lies within NE's own generalisation error (hundreds of km² vs OSM), so no NE atom shows it either way.",
+   "why": "India LAC and Bhutan sectors of Tibet/Xinjiang (NE gives Bhutan/India land OSM gives China); Ejin middle section; Weishan; Zhejiang–Fujian Xingzi islands; Vietnam treaty (1999, line set 2008) and Russia 1991 island allocations; Zhenbao islet; Macau Hengqin campus 2013 and Shenzhen Bay Port 2007. Each moves under ~1 km² or lies within NE's own generalisation error (hundreds of km² vs OSM), so no NE atom shows it either way. Also below NE resolution: Jinzhai forest (Anhui) to Luotian (Hubei), 2,900 mu, 23 March 1984; Qijiang–Xishui production-team exchange (Sichuan–Guizhou), 16 November 1979; Songzi teams to Li county (Hubei–Hunan), 1977. The 50 Zunhua brigades moved to Tianjin on 15 May 1979, before this scope.",
    "checked": [
     "NE ca96624 vs OSM relation 270056 polygon difference per atom",
     "zh.wikipedia 中国行政区域边界争议 oldid 88035747",
-    "en.wikipedia Territorial changes of the PRC oldid 1368459104"
+    "en.wikipedia Territorial changes of the PRC oldid 1368459104",
+    "xzqh.org province year pages 1979–2019 (安徽省1984年, 四川省1979年, 天津市1979年)"
    ],
    "needs": "a higher-precision atom set (OSM ADM1/ADM2, ODbL) if these lines are to be shown"
   }

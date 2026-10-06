@@ -1,0 +1,1261 @@
+{
+ "country": "OTT",
+ "atomCountries": [
+  "TUR"
+ ],
+ "atomSet": "oak-kaza@d897044",
+ "scope": {
+  "from": "1891-01-01",
+  "to": "1907-12-31"
+ },
+ "polityNote": "Ottoman Empire — the first-level units (vilayets, independent sanjaks and the Şehremaneti of Istanbul) whose ground is Anatolia and Eastern Thrace, 1891-01-01 to 1907-12-31, as unions of the 1893 kazas traced by Amasyalı from R. Huber's 1899 map. The scope starts after the reorganisations of 1888 (irade of 1/13 March 1888: Hakkari into Van, Dersim into Mamuretülaziz, Bayburt into Erzincan, Şiran and Kelkit to Trabzon; Karesi vilayet dissolved, Biga and İzmit independent) and after the Garbikaraağaç transfer (c. 1889); it ends before the first post-1908 changes of first-level outlines (Bolu independent after 1908, Karesi 1909, Istanbul vilayet 4 August 1909). Change list: Cuinet (t. I 1892, t. III 1894, t. IV 1894–95: caza lists and dated notes), the salname-based lists of Güneş (Istanbul), Söylemez and Aktaş (Çorum 1894), Karlangıç (Cebel-i Bereket), TDV and tr.wikipedia (1909 sanjak/kaza tables). Changes moving only a nahiye across a first-level line are not exhaustively known; the one found (Kargı, 1894) is handled in `unresolved`. ① measured 2026-10-06 on the atoms: 91 of 109 kaza seats matched by name to Wikidata district coordinates lie inside their own kaza polygon and 104 inside their own vilayet's (median offset 0 km, 90th percentile 3.2 km, worst 12.7 km); the traced coast departs from today's by up to ~10–20 km, so 19.7 % of Trabzon's union, 21 % of Istanbul's, 11.7 % of Çatalca's and 6–8 % of the Marmara and Black Sea units lie outside today's Turkey (mostly sea), while Kars–Ardahan–Artvin–Iğdır (Russian 1878–1918) are absent. Union areas against the Statesman's Year-Book figures for 1900 (statoids): Hüdavendigâr 1.08, Konya 0.96, Adana 1.08, Ankara 1.12, Kastamonu 0.96, Sivas 1.04, Trabzon 0.76, Erzurum 1.18, Van 0.84, Bitlis 1.04, Mamuretülaziz 0.98, İzmit 1.08, Biga 1.11, Çatalca 1.32, Istanbul 0.97; against Cuinet's own figures Hüdavendigâr 1.04, Aydın 1.06, Konya 1.07, Trabzon 1.05, Ankara (23 kazas) 0.86, İzmit 0.73.",
+ "units": [
+  {
+   "id": "OTT:Hudavendigar",
+   "names": {
+    "en": "Hüdavendigâr (Bursa) Vilayet",
+    "ja": "フダーヴェンディギャール州（ブルサ州）",
+    "local": "Hüdâvendigâr Vilâyeti"
+   },
+   "wikidata": "Q3928674",
+   "spans": [
+    {
+     "from": "1891-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "OAK-Bursa_Afyonkarahisar_AfyonMerkez",
+      "OAK-Bursa_Afyonkarahisar_Bolvadin",
+      "OAK-Bursa_Afyonkarahisar_Emirdag",
+      "OAK-Bursa_Afyonkarahisar_Gediz",
+      "OAK-Bursa_Afyonkarahisar_Sandikli",
+      "OAK-Bursa_Bursa_BursaMerkez",
+      "OAK-Bursa_Bursa_Gemlik",
+      "OAK-Bursa_Bursa_Kirmasti",
+      "OAK-Bursa_Bursa_Mihalic",
+      "OAK-Bursa_Bursa_Mudanya",
+      "OAK-Bursa_Bursa_Orhaneli",
+      "OAK-Bursa_Ertugrul_Bilecik",
+      "OAK-Bursa_Ertugrul_Inegol",
+      "OAK-Bursa_Ertugrul_Sogut",
+      "OAK-Bursa_Ertugrul_Yenisehir",
+      "OAK-Bursa_Karesi_Ayvalik",
+      "OAK-Bursa_Karesi_Balikesir",
+      "OAK-Bursa_Karesi_Bandirma",
+      "OAK-Bursa_Karesi_Bigadic",
+      "OAK-Bursa_Karesi_Edremit",
+      "OAK-Bursa_Karesi_Erdek",
+      "OAK-Bursa_Karesi_Gonen",
+      "OAK-Bursa_Karesi_Kemer",
+      "OAK-Bursa_Karesi_Sindirgi",
+      "OAK-Bursa_Kutahya_Eskisehir",
+      "OAK-Bursa_Kutahya_KutahyaMerkez",
+      "OAK-Bursa_Kutahya_Simav",
+      "OAK-Bursa_Kutahya_Usak"
+     ],
+     "sources": [
+      {
+       "url": "https://archive.org/details/laturquiedasieg01cuingoog",
+       "title": "V. Cuinet, La Turquie d'Asie, t. IV (1894–95) — Brousse, Castamouni, Constantinople, Ismidt",
+       "says": "Vilayet of Brousse: sanjaks Brousse, Erthogroul, Kutahia, Kara-Hissar, Karassi with their cazas (the 28 of the dataset).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://islamansiklopedisi.org.tr/hudavendigar--bursa",
+       "title": "TDV İslâm Ansiklopedisi, «Hudâvendigâr»",
+       "says": "In 1310 (1892) the vilayet had five sanjaks (Bursa, Ertuğrul, Kütahya, Karesi, Karahisar); İzmit independent since 1888.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://tr.wikipedia.org/w/index.php?oldid=38112050",
+       "title": "Karesi Sancağı — Vikipedi (oldid 38112050)",
+       "says": "Karesi vilayet dissolved in 1888, Karesi back to Hüdavendigâr as a sanjak; independent liva in 1909.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://github.com/emreamasyali/ottoman-anatolia-schooling-hgis/blob/d89704465b6f7f962ba9612c334100fbfc854874/README.md",
+       "title": "Amasyalı (2020), Ottoman Anatolia Schooling HGIS Dataset — README and kazas_boundaries.geojson (commit d897044)",
+       "says": "The 28 kazas of Bursa, Ertuğrul, Kütahya, Karahisar-ı Sahib and Karesi sanjaks.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Starts on the scope's first day (1891-01-01); the configuration is older — Karesi rejoined in 1888; the next change of the outline is Karesi's independence in 1909, after this dossier's scope. The scope starts in 1891 because Cuinet (writing in 1892) dates the move of Garbikaraağaç (Acıpayam) from Konya to Aydın only as «three years ago»."
+    }
+   ]
+  },
+  {
+   "id": "OTT:Aydin",
+   "names": {
+    "en": "Aydın Vilayet",
+    "ja": "アイドゥン州",
+    "local": "Aydın Vilâyeti"
+   },
+   "wikidata": "Q1550771",
+   "spans": [
+    {
+     "from": "1891-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "OAK-Aydin_Aydin_AydinMerkez",
+      "OAK-Aydin_Aydin_Bozdogan",
+      "OAK-Aydin_Aydin_Cine",
+      "OAK-Aydin_Aydin_Nazilli",
+      "OAK-Aydin_Aydin_Soke",
+      "OAK-Aydin_Denizli_Buldan",
+      "OAK-Aydin_Denizli_Cal",
+      "OAK-Aydin_Denizli_Denizli",
+      "OAK-Aydin_Denizli_Garbikaraagac",
+      "OAK-Aydin_Denizli_Saray",
+      "OAK-Aydin_Denizli_Tavas",
+      "OAK-Aydin_Izmir_Bayindir",
+      "OAK-Aydin_Izmir_Bergama",
+      "OAK-Aydin_Izmir_Cesme",
+      "OAK-Aydin_Izmir_Foca",
+      "OAK-Aydin_Izmir_IzmirMerkez",
+      "OAK-Aydin_Izmir_Kusadasi",
+      "OAK-Aydin_Izmir_Menemen",
+      "OAK-Aydin_Izmir_Odemis",
+      "OAK-Aydin_Izmir_Seferhisar",
+      "OAK-Aydin_Izmir_Tire",
+      "OAK-Aydin_Izmir_Urla",
+      "OAK-Aydin_Mentese_Bodrum",
+      "OAK-Aydin_Mentese_Fethiye",
+      "OAK-Aydin_Mentese_Koycegiz",
+      "OAK-Aydin_Mentese_Marmaris",
+      "OAK-Aydin_Mentese_Milas",
+      "OAK-Aydin_Mentese_Mugla",
+      "OAK-Aydin_Saruhan_Akhisar",
+      "OAK-Aydin_Saruhan_Alasehir",
+      "OAK-Aydin_Saruhan_Demirci",
+      "OAK-Aydin_Saruhan_Esme",
+      "OAK-Aydin_Saruhan_Gordes",
+      "OAK-Aydin_Saruhan_Kasaba",
+      "OAK-Aydin_Saruhan_Kirkagac",
+      "OAK-Aydin_Saruhan_Kula",
+      "OAK-Aydin_Saruhan_Manisa",
+      "OAK-Aydin_Saruhan_Salihli",
+      "OAK-Aydin_Saruhan_Soma"
+     ],
+     "sources": [
+      {
+       "url": "https://archive.org/details/laturquiedasieg00cuingoog",
+       "title": "V. Cuinet, La Turquie d'Asie, t. III (1894) — vilayet de Smyrne (Aïdin)",
+       "says": "Vilayet of Smyrne: 5 sanjaks and 39 cazas; Adji-Badem (Garbikaraağaç), formerly of Koniah, attached to Dénizli «three years ago».",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://github.com/emreamasyali/ottoman-anatolia-schooling-hgis/blob/d89704465b6f7f962ba9612c334100fbfc854874/README.md",
+       "title": "Amasyalı (2020), Ottoman Anatolia Schooling HGIS Dataset — README and kazas_boundaries.geojson (commit d897044)",
+       "says": "The 39 kazas of İzmir, Saruhan, Aydın, Denizli and Menteşe sanjaks, Garbikaraağaç among Denizli's.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Starts on the scope's first day (1891-01-01); the configuration is older — five sanjaks since 1867; Garbikaraağaç joined Denizli c. 1889. The scope starts in 1891 because Cuinet (writing in 1892) dates the move of Garbikaraağaç (Acıpayam) from Konya to Aydın only as «three years ago»."
+    }
+   ]
+  },
+  {
+   "id": "OTT:Konya",
+   "names": {
+    "en": "Konya Vilayet",
+    "ja": "コンヤ州",
+    "local": "Konya Vilâyeti"
+   },
+   "wikidata": "Q1410367",
+   "spans": [
+    {
+     "from": "1891-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "OAK-Konya_Antalya_Akseki",
+      "OAK-Konya_Antalya_Alanya",
+      "OAK-Konya_Antalya_AntalyaMerkez",
+      "OAK-Konya_Antalya_Elmali",
+      "OAK-Konya_Antalya_Kas",
+      "OAK-Konya_Burdur_BurdurMerkez",
+      "OAK-Konya_Burdur_Tefenni",
+      "OAK-Konya_Isparta_Egridir",
+      "OAK-Konya_Isparta_IspartaMerkez",
+      "OAK-Konya_Isparta_Karaagac",
+      "OAK-Konya_Isparta_Uluborlu",
+      "OAK-Konya_Isparta_Yalvac",
+      "OAK-Konya_Konya_Aksehir",
+      "OAK-Konya_Konya_Beysehri",
+      "OAK-Konya_Konya_Bozkir",
+      "OAK-Konya_Konya_Eregli",
+      "OAK-Konya_Konya_Hadim",
+      "OAK-Konya_Konya_Ilgin",
+      "OAK-Konya_Konya_Karaman",
+      "OAK-Konya_Konya_Karapinar",
+      "OAK-Konya_Konya_Kochisar",
+      "OAK-Konya_Konya_KonyaMerkez",
+      "OAK-Konya_Konya_Seydisehir",
+      "OAK-Konya_Nigde_Aksaray",
+      "OAK-Konya_Nigde_Arapsun",
+      "OAK-Konya_Nigde_Bor",
+      "OAK-Konya_Nigde_Nevsehir",
+      "OAK-Konya_Nigde_NigdeMerkez",
+      "OAK-Konya_Nigde_Ulukisla",
+      "OAK-Konya_Nigde_Urgub"
+     ],
+     "sources": [
+      {
+       "url": "https://archive.org/details/VitalCuinet.LaTurquieDAiseParisE.Leroux1892.Volume1",
+       "title": "V. Cuinet, La Turquie d'Asie, t. I (Paris, Leroux, 1892) — Trébizonde, Erzeroum, Angora, Sivas, Koniah",
+       "says": "Vilayet of Koniah: sanjaks Koniah, Nigdé, Hamid (Isparta), Tekké (Adalia) with Burdur; 91,600 km².",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://github.com/emreamasyali/ottoman-anatolia-schooling-hgis/blob/d89704465b6f7f962ba9612c334100fbfc854874/README.md",
+       "title": "Amasyalı (2020), Ottoman Anatolia Schooling HGIS Dataset — README and kazas_boundaries.geojson (commit d897044)",
+       "says": "The 30 kazas of Konya, Niğde, Isparta, Burdur and Antalya.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Starts on the scope's first day (1891-01-01); the configuration is older — Teke left only in 1914. The scope starts in 1891 because Cuinet (writing in 1892) dates the move of Garbikaraağaç (Acıpayam) from Konya to Aydın only as «three years ago»."
+    }
+   ]
+  },
+  {
+   "id": "OTT:Adana",
+   "names": {
+    "en": "Adana Vilayet",
+    "ja": "アダナ州",
+    "local": "Adana Vilâyeti"
+   },
+   "wikidata": "Q1862462",
+   "spans": [
+    {
+     "from": "1891-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "OAK-Adana_Adana_AdanaMerkez",
+      "OAK-Adana_Adana_Karaisali",
+      "OAK-Adana_Adana_Mersin",
+      "OAK-Adana_Adana_Tarsus",
+      "OAK-Adana_Cebelibereket_Bahce",
+      "OAK-Adana_Cebelibereket_Barpuz",
+      "OAK-Adana_Cebelibereket_Hassa",
+      "OAK-Adana_Cebelibereket_Islahiye",
+      "OAK-Adana_Cebelibereket_Osmaniye",
+      "OAK-Adana_Cebelibereket_Payas",
+      "OAK-Adana_Icel_Anamur",
+      "OAK-Adana_Icel_Ermenek",
+      "OAK-Adana_Icel_Gulnar",
+      "OAK-Adana_Icel_Mut",
+      "OAK-Adana_Icel_Silifke",
+      "OAK-Adana_Kozan_Feke",
+      "OAK-Adana_Kozan_Hacin",
+      "OAK-Adana_Kozan_Kadirli",
+      "OAK-Adana_Kozan_Sis"
+     ],
+     "sources": [
+      {
+       "url": "https://dergipark.org.tr/tr/download/article-file/2576882",
+       "title": "O. Karlangıç, «Kuruluşundan Lağvedilişine Kadar Cebel-i Bereket Sancağının İdari Yapısı [1879-1933]», Osmanlı Medeniyeti Araştırmaları Dergisi 15 (2022)",
+       "says": "Cebel-i Bereket sanjak of Adana formed by irade of 3 January 1879 with Payas, Osmaniye and Hassa, İslahiye, Bulanık taken from Maraş.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://islamansiklopedisi.org.tr/icel",
+       "title": "TDV İslâm Ansiklopedisi, «İçel»",
+       "says": "İçel was attached to Adana in 1867 and became a province of its own only in 1924.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://github.com/emreamasyali/ottoman-anatolia-schooling-hgis/blob/d89704465b6f7f962ba9612c334100fbfc854874/README.md",
+       "title": "Amasyalı (2020), Ottoman Anatolia Schooling HGIS Dataset — README and kazas_boundaries.geojson (commit d897044)",
+       "says": "The 19 kazas of Adana, İçel, Kozan and Cebel-i Bereket sanjaks.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Starts on the scope's first day (1891-01-01); the configuration is older — Cebel-i Bereket and its kazas taken from Maraş since 1879. The scope starts in 1891 because Cuinet (writing in 1892) dates the move of Garbikaraağaç (Acıpayam) from Konya to Aydın only as «three years ago»."
+    }
+   ]
+  },
+  {
+   "id": "OTT:Ankara",
+   "names": {
+    "en": "Ankara (Angora) Vilayet",
+    "ja": "アンカラ州",
+    "local": "Ankara Vilâyeti"
+   },
+   "wikidata": "Q1345660",
+   "spans": [
+    {
+     "from": "1891-01-01",
+     "precision": "day",
+     "to": "1892-03",
+     "atoms": [
+      "OAK-Ankara_Ankara_AnkaraMerkez",
+      "OAK-Ankara_Ankara_Ayas",
+      "OAK-Ankara_Ankara_Bala",
+      "OAK-Ankara_Ankara_Beypazari",
+      "OAK-Ankara_Ankara_Cubuk",
+      "OAK-Ankara_Ankara_Haymana",
+      "OAK-Ankara_Ankara_Mihaliccik",
+      "OAK-Ankara_Ankara_Nallihan",
+      "OAK-Ankara_Ankara_Sivrihisar",
+      "OAK-Ankara_Ankara_Yabanabat",
+      "OAK-Ankara_Ankara_Zir",
+      "OAK-Ankara_Kayseri_Develi",
+      "OAK-Ankara_Kayseri_Incesu",
+      "OAK-Ankara_Kayseri_KayseriMerkez",
+      "OAK-Ankara_Kirsehir_Avanos",
+      "OAK-Ankara_Kirsehir_Keskin",
+      "OAK-Ankara_Kirsehir_KirsehirMerkez",
+      "OAK-Ankara_Kirsehir_Mecidiye",
+      "OAK-Ankara_Yozgat_Bogazliyan",
+      "OAK-Ankara_Yozgat_Corum",
+      "OAK-Ankara_Yozgat_Maden",
+      "OAK-Ankara_Yozgat_Sungurlu",
+      "OAK-Ankara_Yozgat_YozgatMerkez"
+     ],
+     "sources": [
+      {
+       "url": "https://archive.org/details/VitalCuinet.LaTurquieDAiseParisE.Leroux1892.Volume1",
+       "title": "V. Cuinet, La Turquie d'Asie, t. I (Paris, Leroux, 1892) — Trébizonde, Erzeroum, Angora, Sivas, Koniah",
+       "says": "Vilayet of Angora: 4 sanjaks (Angora, Yuzgat with Tchoroum, Césarée, Kir-Chéhir) and 23 cazas.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://archive.org/details/laturquiedasieg01cuingoog",
+       "title": "V. Cuinet, La Turquie d'Asie, t. IV (1894–95) — Brousse, Castamouni, Constantinople, Ismidt",
+       "says": "Until 1 March 1892 Castamouni had 23 cazas; from that date Kalédjik caza (Kanghéri sanjak) belongs to Angora.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://github.com/emreamasyali/ottoman-anatolia-schooling-hgis/blob/d89704465b6f7f962ba9612c334100fbfc854874/README.md",
+       "title": "Amasyalı (2020), Ottoman Anatolia Schooling HGIS Dataset — README and kazas_boundaries.geojson (commit d897044)",
+       "says": "Ankara's 24 kazas of 1893 = Cuinet's 23 + Kalecik.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Starts on the scope's first day (1891-01-01); the configuration is older — Ankara's four sanjaks date from 1867. The scope starts in 1891 because Cuinet (writing in 1892) dates the move of Garbikaraağaç (Acıpayam) from Konya to Aydın only as «three years ago»."
+    },
+    {
+     "from": "1892-03",
+     "precision": "month",
+     "to": "1894-05-20",
+     "atoms": [
+      "OAK-Ankara_Ankara_AnkaraMerkez",
+      "OAK-Ankara_Ankara_Ayas",
+      "OAK-Ankara_Ankara_Bala",
+      "OAK-Ankara_Ankara_Beypazari",
+      "OAK-Ankara_Ankara_Cubuk",
+      "OAK-Ankara_Ankara_Haymana",
+      "OAK-Ankara_Ankara_Kalecik",
+      "OAK-Ankara_Ankara_Mihaliccik",
+      "OAK-Ankara_Ankara_Nallihan",
+      "OAK-Ankara_Ankara_Sivrihisar",
+      "OAK-Ankara_Ankara_Yabanabat",
+      "OAK-Ankara_Ankara_Zir",
+      "OAK-Ankara_Kayseri_Develi",
+      "OAK-Ankara_Kayseri_Incesu",
+      "OAK-Ankara_Kayseri_KayseriMerkez",
+      "OAK-Ankara_Kirsehir_Avanos",
+      "OAK-Ankara_Kirsehir_Keskin",
+      "OAK-Ankara_Kirsehir_KirsehirMerkez",
+      "OAK-Ankara_Kirsehir_Mecidiye",
+      "OAK-Ankara_Yozgat_Bogazliyan",
+      "OAK-Ankara_Yozgat_Corum",
+      "OAK-Ankara_Yozgat_Maden",
+      "OAK-Ankara_Yozgat_Sungurlu",
+      "OAK-Ankara_Yozgat_YozgatMerkez"
+     ],
+     "sources": [
+      {
+       "url": "https://archive.org/details/laturquiedasieg01cuingoog",
+       "title": "V. Cuinet, La Turquie d'Asie, t. IV (1894–95) — Brousse, Castamouni, Constantinople, Ismidt",
+       "says": "From 1 March 1892 Kalédjik caza was incorporated into the vilayet of Angora.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://github.com/emreamasyali/ottoman-anatolia-schooling-hgis/blob/d89704465b6f7f962ba9612c334100fbfc854874/README.md",
+       "title": "Amasyalı (2020), Ottoman Anatolia Schooling HGIS Dataset — README and kazas_boundaries.geojson (commit d897044)",
+       "says": "In 1893 Kalecik is a kaza of Ankara sanjak.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Cuinet writes «1er mars 1892»; if that is the Rumi fiscal new year (1 Mart 1308) it is 13 March 1892 — the same month."
+    },
+    {
+     "from": "1894-05-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "OAK-Ankara_Ankara_AnkaraMerkez",
+      "OAK-Ankara_Ankara_Ayas",
+      "OAK-Ankara_Ankara_Bala",
+      "OAK-Ankara_Ankara_Beypazari",
+      "OAK-Ankara_Ankara_Cubuk",
+      "OAK-Ankara_Ankara_Haymana",
+      "OAK-Ankara_Ankara_Kalecik",
+      "OAK-Ankara_Ankara_Mihaliccik",
+      "OAK-Ankara_Ankara_Nallihan",
+      "OAK-Ankara_Ankara_Sivrihisar",
+      "OAK-Ankara_Ankara_Yabanabat",
+      "OAK-Ankara_Ankara_Zir",
+      "OAK-Ankara_Kayseri_Develi",
+      "OAK-Ankara_Kayseri_Incesu",
+      "OAK-Ankara_Kayseri_KayseriMerkez",
+      "OAK-Ankara_Kirsehir_Avanos",
+      "OAK-Ankara_Kirsehir_Keskin",
+      "OAK-Ankara_Kirsehir_KirsehirMerkez",
+      "OAK-Ankara_Kirsehir_Mecidiye",
+      "OAK-Ankara_Yozgat_Bogazliyan",
+      "OAK-Ankara_Yozgat_Corum",
+      "OAK-Ankara_Yozgat_Maden",
+      "OAK-Ankara_Yozgat_Sungurlu",
+      "OAK-Ankara_Yozgat_YozgatMerkez",
+      "OAK-Kastamonu_Cankiri_Iskilip",
+      "OAK-Sivas_Amasya_Osmancik"
+     ],
+     "sources": [
+      {
+       "url": "https://dergipark.org.tr/en/download/article-file/1383460",
+       "title": "E. Aktaş, «Çorum Sancağında Salgın Hastalıklar (1894-1914)», Karadeniz Araştırmaları Enstitüsü Dergisi 7/12 (2021)",
+       "says": "Irade of 8 Mayıs 1310 (20 May 1894) makes Çorum a mutasarrıflık of Ankara: Çorum, Osmancık, İskilip, Sungurlu kazas; Kargı nahiye from Tosya to Osmancık.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://dergipark.org.tr/en/download/article-file/85846",
+       "title": "M. M. Söylemez, «Ankara Vilayet Salnâmelerine Göre Osmanlı'nın Son Döneminde Çorum», Hitit Üniv. İlahiyat Fak. Dergisi 6/12 (2007)",
+       "says": "In 1310/1894 Çorum became a sanjak of Ankara with Sungurlu (Yozgat), İskilip (Kastamonu) and Osmancık (Amasya).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://tr.wikipedia.org/w/index.php?oldid=38089989",
+       "title": "Ankara Vilayeti — Vikipedi (oldid 38089989)",
+       "says": "In 1909 Ankara's Çorum sanjak holds the kazas Çorum, İskilip, Osmancık, Sungurlu.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Irade of 8 Mayıs 1310 Rumi = 20 May 1894 (BOA İ.DH 1313/14, cited by Aktaş); a budget document of 7 Cemaziyelahir 1312 (≈ 6 December 1894, cited by Söylemez) records the change as done. Kargı nahiye (Tosya → Osmancık) and Dodurga already lie inside the dataset's Osmancık polygon (traced from Huber 1899)."
+    }
+   ]
+  },
+  {
+   "id": "OTT:Kastamonu",
+   "names": {
+    "en": "Kastamonu Vilayet",
+    "ja": "カスタモヌ州",
+    "local": "Kastamonu Vilâyeti"
+   },
+   "wikidata": "Q1164593",
+   "spans": [
+    {
+     "from": "1894-05-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "OAK-Kastamonu_Bolu_Bartin",
+      "OAK-Kastamonu_Bolu_BoluMerkez",
+      "OAK-Kastamonu_Bolu_Duzce",
+      "OAK-Kastamonu_Bolu_Eregli_Karadeniz",
+      "OAK-Kastamonu_Bolu_Gerede",
+      "OAK-Kastamonu_Bolu_Goynuk",
+      "OAK-Kastamonu_Bolu_Hamidiye_Bolu",
+      "OAK-Kastamonu_Bolu_Mudurnu",
+      "OAK-Kastamonu_Cankiri_CankiriMerkez",
+      "OAK-Kastamonu_Cankiri_Cerkes",
+      "OAK-Kastamonu_Kastamonu_Arac",
+      "OAK-Kastamonu_Kastamonu_Cide",
+      "OAK-Kastamonu_Kastamonu_Daday",
+      "OAK-Kastamonu_Kastamonu_Inebolu",
+      "OAK-Kastamonu_Kastamonu_KastamonuMerkez",
+      "OAK-Kastamonu_Kastamonu_Safranbolu",
+      "OAK-Kastamonu_Kastamonu_Taskopru",
+      "OAK-Kastamonu_Kastamonu_Tosya",
+      "OAK-Kastamonu_Sinop_Ayancik",
+      "OAK-Kastamonu_Sinop_Boyabat",
+      "OAK-Kastamonu_Sinop_SinopMerkez"
+     ],
+     "sources": [
+      {
+       "url": "https://dergipark.org.tr/en/download/article-file/1383460",
+       "title": "E. Aktaş, «Çorum Sancağında Salgın Hastalıklar (1894-1914)», Karadeniz Araştırmaları Enstitüsü Dergisi 7/12 (2021)",
+       "says": "Irade of 8 Mayıs 1310 (20 May 1894) makes Çorum a mutasarrıflık of Ankara: Çorum, Osmancık, İskilip, Sungurlu kazas; Kargı nahiye from Tosya to Osmancık.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://dergipark.org.tr/en/download/article-file/85846",
+       "title": "M. M. Söylemez, «Ankara Vilayet Salnâmelerine Göre Osmanlı'nın Son Döneminde Çorum», Hitit Üniv. İlahiyat Fak. Dergisi 6/12 (2007)",
+       "says": "In 1310/1894 Çorum became a sanjak of Ankara with Sungurlu (Yozgat), İskilip (Kastamonu) and Osmancık (Amasya).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://islamansiklopedisi.org.tr/kastamonu",
+       "title": "TDV İslâm Ansiklopedisi, «Kastamonu»",
+       "says": "In 1894 the vilayet's sanjaks were Kastamonu, Bolu, Sinop and Çankırı.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://tr.wikipedia.org/w/index.php?oldid=35843629",
+       "title": "Bolu Sancağı — Vikipedi (oldid 35843629)",
+       "says": "Bolu became an independent sanjak only after 1908.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Irade of 8 Mayıs 1310 Rumi = 20 May 1894 (BOA İ.DH 1313/14, cited by Aktaş); a budget document of 7 Cemaziyelahir 1312 (≈ 6 December 1894, cited by Söylemez) records the change as done."
+    }
+   ]
+  },
+  {
+   "id": "OTT:Sivas",
+   "names": {
+    "en": "Sivas Vilayet",
+    "ja": "スィヴァス州",
+    "local": "Sivas Vilâyeti"
+   },
+   "wikidata": "Q1586406",
+   "spans": [
+    {
+     "from": "1894-05-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "OAK-Sivas_Amasya_AmasyaMerkez",
+      "OAK-Sivas_Amasya_Gumushacikoy",
+      "OAK-Sivas_Amasya_Havza",
+      "OAK-Sivas_Amasya_Ladik",
+      "OAK-Sivas_Amasya_Mecitozu",
+      "OAK-Sivas_Amasya_Merzifon",
+      "OAK-Sivas_Amasya_Vezirkopru",
+      "OAK-Sivas_Karahisar_Alucra",
+      "OAK-Sivas_Karahisar_KarahisarMerkez",
+      "OAK-Sivas_Karahisar_Koyulhisar",
+      "OAK-Sivas_Karahisar_Mesudiye",
+      "OAK-Sivas_Karahisar_Susehri",
+      "OAK-Sivas_Sivas_Aziziye",
+      "OAK-Sivas_Sivas_Darende",
+      "OAK-Sivas_Sivas_Divrigi",
+      "OAK-Sivas_Sivas_Gurun",
+      "OAK-Sivas_Sivas_Hafik",
+      "OAK-Sivas_Sivas_Sarkisla",
+      "OAK-Sivas_Sivas_SivasMerkez",
+      "OAK-Sivas_Sivas_Yildizeli",
+      "OAK-Sivas_Sivas_Zara",
+      "OAK-Sivas_Tokat_Erbaa",
+      "OAK-Sivas_Tokat_Niksar",
+      "OAK-Sivas_Tokat_TokatMerkez",
+      "OAK-Sivas_Tokat_Zile"
+     ],
+     "sources": [
+      {
+       "url": "https://dergipark.org.tr/en/download/article-file/1383460",
+       "title": "E. Aktaş, «Çorum Sancağında Salgın Hastalıklar (1894-1914)», Karadeniz Araştırmaları Enstitüsü Dergisi 7/12 (2021)",
+       "says": "Irade of 8 Mayıs 1310 (20 May 1894) makes Çorum a mutasarrıflık of Ankara: Çorum, Osmancık, İskilip, Sungurlu kazas; Kargı nahiye from Tosya to Osmancık.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://dergipark.org.tr/en/download/article-file/85846",
+       "title": "M. M. Söylemez, «Ankara Vilayet Salnâmelerine Göre Osmanlı'nın Son Döneminde Çorum», Hitit Üniv. İlahiyat Fak. Dergisi 6/12 (2007)",
+       "says": "In 1310/1894 Çorum became a sanjak of Ankara with Sungurlu (Yozgat), İskilip (Kastamonu) and Osmancık (Amasya).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://archive.org/details/VitalCuinet.LaTurquieDAiseParisE.Leroux1892.Volume1",
+       "title": "V. Cuinet, La Turquie d'Asie, t. I (Paris, Leroux, 1892) — Trébizonde, Erzeroum, Angora, Sivas, Koniah",
+       "says": "Vilayet of Sivas: 4 sanjaks (Sivas, Tokat with Niksar, Amassia with Osmandjik, Kara-Hissar) and 26 cazas; statistics of 1890.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://tr.wikipedia.org/w/index.php?oldid=38089993",
+       "title": "Sivas Vilayeti — Vikipedi (oldid 38089993)",
+       "says": "In 1909 Sivas has the sanjaks Sivas, Amasya, Karahisar-ı Şarki, Tokat (with Niksar); Osmancık no longer listed.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Irade of 8 Mayıs 1310 Rumi = 20 May 1894 (BOA İ.DH 1313/14, cited by Aktaş); a budget document of 7 Cemaziyelahir 1312 (≈ 6 December 1894, cited by Söylemez) records the change as done."
+    }
+   ]
+  },
+  {
+   "id": "OTT:Trabzon",
+   "names": {
+    "en": "Trabzon (Trebizond) Vilayet",
+    "ja": "トラブゾン州",
+    "local": "Trabzon Vilâyeti"
+   },
+   "wikidata": "Q116408",
+   "spans": [
+    {
+     "from": "1891-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "OAK-Trabzon_Gumushane_Gumushane",
+      "OAK-Trabzon_Gumushane_Kelkit",
+      "OAK-Trabzon_Gumushane_Siran",
+      "OAK-Trabzon_Gumushane_Torul",
+      "OAK-Trabzon_Lazistan_Atina",
+      "OAK-Trabzon_Lazistan_Hopa",
+      "OAK-Trabzon_Lazistan_Rize",
+      "OAK-Trabzon_Samsun_Bafra",
+      "OAK-Trabzon_Samsun_Carsamba",
+      "OAK-Trabzon_Samsun_Fatsa",
+      "OAK-Trabzon_Samsun_SamsunMerkez",
+      "OAK-Trabzon_Samsun_Terme",
+      "OAK-Trabzon_Samsun_Unye",
+      "OAK-Trabzon_Trabzon_Akcaabat",
+      "OAK-Trabzon_Trabzon_Giresun",
+      "OAK-Trabzon_Trabzon_Gorele",
+      "OAK-Trabzon_Trabzon_Of",
+      "OAK-Trabzon_Trabzon_Ordu",
+      "OAK-Trabzon_Trabzon_Surmene",
+      "OAK-Trabzon_Trabzon_Tirebolu",
+      "OAK-Trabzon_Trabzon_TrabzonMerkez",
+      "OAK-Trabzon_Trabzon_Vakfikebir"
+     ],
+     "sources": [
+      {
+       "url": "https://archive.org/details/VitalCuinet.LaTurquieDAiseParisE.Leroux1892.Volume1",
+       "title": "V. Cuinet, La Turquie d'Asie, t. I (Paris, Leroux, 1892) — Trébizonde, Erzeroum, Angora, Sivas, Koniah",
+       "says": "Vilayet of Trébizonde: 4 sanjaks and 22 cazas; Samsoun sanjak with Fatza, not Niksar; Of moved to Trebizond sanjak early 1891.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://tr.wikipedia.org/w/index.php?oldid=38090051",
+       "title": "Lazistan Sancağı — Vikipedi (oldid 38090051)",
+       "says": "After 1878 Lazistan sanjak (centre Rize) holds the kazas Rize, Atina and Hopa.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://tr.wikipedia.org/w/index.php?oldid=37433742",
+       "title": "Canik (sancak) — Vikipedi (oldid 37433742)",
+       "says": "Dates Niksar's exit from Canik and Fatsa's entry to 1892 (Cuinet's statistics of 1890 already show both).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://github.com/emreamasyali/ottoman-anatolia-schooling-hgis/blob/d89704465b6f7f962ba9612c334100fbfc854874/README.md",
+       "title": "Amasyalı (2020), Ottoman Anatolia Schooling HGIS Dataset — README and kazas_boundaries.geojson (commit d897044)",
+       "says": "The 22 kazas of Trabzon, Samsun (Canik), Gümüşhane and Lazistan.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Starts on the scope's first day (1891-01-01); the configuration is older — Şiran and Kelkit joined from Erzurum by the irade of 1/13 March 1888; Niksar had left Canik for Tokat (Sivas) by 1890 per Cuinet — tr.wikipedia's «1892» is read here as the salname in which the change is first seen. The scope starts in 1891 because Cuinet (writing in 1892) dates the move of Garbikaraağaç (Acıpayam) from Konya to Aydın only as «three years ago»."
+    }
+   ]
+  },
+  {
+   "id": "OTT:Erzurum",
+   "names": {
+    "en": "Erzurum Vilayet",
+    "ja": "エルズルム州",
+    "local": "Erzurum Vilâyeti"
+   },
+   "wikidata": "Q1366246",
+   "spans": [
+    {
+     "from": "1891-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "OAK-Erzurum_Bayezit_BayezitMerkez",
+      "OAK-Erzurum_Bayezit_Diyadin",
+      "OAK-Erzurum_Bayezit_Eleskirt",
+      "OAK-Erzurum_Bayezit_Karakilise",
+      "OAK-Erzurum_Bayezit_Tutak",
+      "OAK-Erzurum_Erzincan_ErzincanMerkez",
+      "OAK-Erzurum_Erzincan_Kemah",
+      "OAK-Erzurum_Erzincan_Kurucay",
+      "OAK-Erzurum_Erzincan_Pulumur",
+      "OAK-Erzurum_Erzincan_Refahiye",
+      "OAK-Erzurum_Erzurum_Bayburt",
+      "OAK-Erzurum_Erzurum_ErzurumMerkez",
+      "OAK-Erzurum_Erzurum_Gisgim",
+      "OAK-Erzurum_Erzurum_Hinis",
+      "OAK-Erzurum_Erzurum_Ispir",
+      "OAK-Erzurum_Erzurum_Kigi",
+      "OAK-Erzurum_Erzurum_Ova",
+      "OAK-Erzurum_Erzurum_Pasinler",
+      "OAK-Erzurum_Erzurum_Tercan",
+      "OAK-Erzurum_Erzurum_Tortum"
+     ],
+     "sources": [
+      {
+       "url": "https://archive.org/details/VitalCuinet.LaTurquieDAiseParisE.Leroux1892.Volume1",
+       "title": "V. Cuinet, La Turquie d'Asie, t. I (Paris, Leroux, 1892) — Trébizonde, Erzeroum, Angora, Sivas, Koniah",
+       "says": "Irade of 1/13 March 1888: Bayburt sanjak merged into Erzindjan, Chiran and Kelkit to Trebizond; vilayet now Erzeroum, Erzindjan, Bayazid.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://tr.wikipedia.org/w/index.php?oldid=38090077",
+       "title": "Erzurum Vilayeti — Vikipedi (oldid 38090077)",
+       "says": "1909: sanjaks Erzurum, Bayezit, Erzincan with the same kazas.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://github.com/emreamasyali/ottoman-anatolia-schooling-hgis/blob/d89704465b6f7f962ba9612c334100fbfc854874/README.md",
+       "title": "Amasyalı (2020), Ottoman Anatolia Schooling HGIS Dataset — README and kazas_boundaries.geojson (commit d897044)",
+       "says": "The 20 kazas of Erzurum, Erzincan and Bayezid sanjaks.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Starts on the scope's first day (1891-01-01); the configuration is older — the outline dates from the irade of 1/13 March 1888. The scope starts in 1891 because Cuinet (writing in 1892) dates the move of Garbikaraağaç (Acıpayam) from Konya to Aydın only as «three years ago»."
+    }
+   ]
+  },
+  {
+   "id": "OTT:Van",
+   "names": {
+    "en": "Van Vilayet",
+    "ja": "ヴァン州",
+    "local": "Van Vilâyeti"
+   },
+   "wikidata": "Q3975923",
+   "spans": [
+    {
+     "from": "1891-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "OAK-Van_Hakkari_Albak",
+      "OAK-Van_Hakkari_Beytussebap",
+      "OAK-Van_Hakkari_Colemerik",
+      "OAK-Van_Hakkari_Gevar",
+      "OAK-Van_Hakkari_Hamidiye_Van",
+      "OAK-Van_Hakkari_Semdinyan",
+      "OAK-Van_Van_Adilcevaz",
+      "OAK-Van_Van_Bargiri",
+      "OAK-Van_Van_Catak",
+      "OAK-Van_Van_Ercis",
+      "OAK-Van_Van_Gevas",
+      "OAK-Van_Van_Karickan",
+      "OAK-Van_Van_Mekri",
+      "OAK-Van_Van_VanMerkez"
+     ],
+     "sources": [
+      {
+       "url": "https://archive.org/details/VitalCuinet.LaTurquieDAiseParisE.Leroux1892.Volume1",
+       "title": "V. Cuinet, La Turquie d'Asie, t. I (Paris, Leroux, 1892) — Trébizonde, Erzeroum, Angora, Sivas, Koniah",
+       "says": "Irade of 1/13 March 1888 reunited the vilayet of Hakkari with that of Van.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://tr.wikipedia.org/w/index.php?oldid=38090071",
+       "title": "Hakkâri Vilayeti — Vikipedi (oldid 38090071)",
+       "says": "Hakkari vilayet 1876–1888, then a sanjak of Van.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://tr.wikipedia.org/w/index.php?oldid=38090095",
+       "title": "Van Vilayeti — Vikipedi (oldid 38090095)",
+       "says": "1909: Van and Hakkâri sanjaks.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://github.com/emreamasyali/ottoman-anatolia-schooling-hgis/blob/d89704465b6f7f962ba9612c334100fbfc854874/README.md",
+       "title": "Amasyalı (2020), Ottoman Anatolia Schooling HGIS Dataset — README and kazas_boundaries.geojson (commit d897044)",
+       "says": "The 14 kazas of Van and Hakkari sanjaks.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Starts on the scope's first day (1891-01-01); the configuration is older — Hakkari joined on 1/13 March 1888. The scope starts in 1891 because Cuinet (writing in 1892) dates the move of Garbikaraağaç (Acıpayam) from Konya to Aydın only as «three years ago»."
+    }
+   ]
+  },
+  {
+   "id": "OTT:Bitlis",
+   "names": {
+    "en": "Bitlis Vilayet",
+    "ja": "ビトリス州",
+    "local": "Bitlis Vilâyeti"
+   },
+   "wikidata": "Q1587075",
+   "spans": [
+    {
+     "from": "1891-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "OAK-Bitlis_Bitlis_Ahlat",
+      "OAK-Bitlis_Bitlis_BitlisMerkez",
+      "OAK-Bitlis_Bitlis_Hizan",
+      "OAK-Bitlis_Bitlis_Mutki",
+      "OAK-Bitlis_Genc_Capakcur",
+      "OAK-Bitlis_Genc_Genc",
+      "OAK-Bitlis_Genc_Kulp",
+      "OAK-Bitlis_Mus_Bulanik",
+      "OAK-Bitlis_Mus_Malazgirt",
+      "OAK-Bitlis_Mus_MusMerkez",
+      "OAK-Bitlis_Mus_Sasun",
+      "OAK-Bitlis_Mus_Varto",
+      "OAK-Bitlis_Siirt_Eruh",
+      "OAK-Bitlis_Siirt_Garzan",
+      "OAK-Bitlis_Siirt_Pervani",
+      "OAK-Bitlis_Siirt_SiirtMerkez",
+      "OAK-Bitlis_Siirt_Sirvan"
+     ],
+     "sources": [
+      {
+       "url": "https://tr.wikipedia.org/w/index.php?oldid=38089998",
+       "title": "Diyarbekir Vilayeti — Vikipedi (oldid 38089998)",
+       "says": "In 1883 Siirt sanjak passed from Diyarbekir to Bitlis.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://tr.wikipedia.org/w/index.php?oldid=38090046",
+       "title": "Bitlis Vilayeti — Vikipedi (oldid 38090046)",
+       "says": "1909: sanjaks Bitlis, Genç, Muş, Siirt with the same kazas as in 1893.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://github.com/emreamasyali/ottoman-anatolia-schooling-hgis/blob/d89704465b6f7f962ba9612c334100fbfc854874/README.md",
+       "title": "Amasyalı (2020), Ottoman Anatolia Schooling HGIS Dataset — README and kazas_boundaries.geojson (commit d897044)",
+       "says": "The 17 kazas of Bitlis, Genç, Muş and Siirt sanjaks.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Starts on the scope's first day (1891-01-01); the configuration is older — Siirt joined in 1883. The scope starts in 1891 because Cuinet (writing in 1892) dates the move of Garbikaraağaç (Acıpayam) from Konya to Aydın only as «three years ago»."
+    }
+   ]
+  },
+  {
+   "id": "OTT:MamuretulAziz",
+   "names": {
+    "en": "Mamuret-ul-Aziz (Harput) Vilayet",
+    "ja": "マームーレテュルアズィズ州",
+    "local": "Ma'mûretü'l-Azîz Vilâyeti"
+   },
+   "wikidata": "Q1356647",
+   "spans": [
+    {
+     "from": "1892",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "OAK-Elazig_Dersim_Carsancak",
+      "OAK-Elazig_Dersim_Cemisgezek",
+      "OAK-Elazig_Dersim_Hozat",
+      "OAK-Elazig_Dersim_Kizilkilise",
+      "OAK-Elazig_Dersim_Mazgirt",
+      "OAK-Elazig_Dersim_Ovacik",
+      "OAK-Elazig_Malatya_Adiyaman",
+      "OAK-Elazig_Malatya_Akcadag",
+      "OAK-Elazig_Malatya_Behisni",
+      "OAK-Elazig_Malatya_Kahta",
+      "OAK-Elazig_Malatya_MalatyaMerkez",
+      "OAK-Elazig_MamuretulAziz_Arabkir",
+      "OAK-Elazig_MamuretulAziz_Egin",
+      "OAK-Elazig_MamuretulAziz_Harput",
+      "OAK-Elazig_MamuretulAziz_KebanMaden"
+     ],
+     "sources": [
+      {
+       "url": "https://islamansiklopedisi.org.tr/elazig",
+       "title": "TDV İslâm Ansiklopedisi, «Elazığ»",
+       "says": "Vilayet since 1877; Malatya and Dersim joined it in 1892.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://github.com/emreamasyali/ottoman-anatolia-schooling-hgis/blob/d89704465b6f7f962ba9612c334100fbfc854874/README.md",
+       "title": "Amasyalı (2020), Ottoman Anatolia Schooling HGIS Dataset — README and kazas_boundaries.geojson (commit d897044)",
+       "says": "The 15 kazas of Mamuretülaziz, Malatya and Dersim sanjaks.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Starts in 1892, the latest of the dates the sources give for Malatya and Dersim joining (Cuinet t. I: Dersim by the irade of 1/13 March 1888; tr.wikipedia Diyarbekir Vilayeti: Malatya 1879; TDV: both 1892). 1891 is left unresolved."
+    }
+   ]
+  },
+  {
+   "id": "OTT:Izmit",
+   "names": {
+    "en": "İzmit (Kocaeli) independent sanjak",
+    "ja": "イズミト独立県（コジャエリ）",
+    "local": "İzmid Mutasarrıflığı"
+   },
+   "wikidata": "Q20988510",
+   "spans": [
+    {
+     "from": "1891-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "OAK-Izmit_Adapazari",
+      "OAK-Izmit_Geyve",
+      "OAK-Izmit_IzmitMerkez",
+      "OAK-Izmit_Kandira",
+      "OAK-Izmit_Karamursel"
+     ],
+     "sources": [
+      {
+       "url": "https://dergipark.org.tr/tr/download/article-file/165205",
+       "title": "M. Güneş, «Osmanlı Döneminde İstanbul'da Vilayet İdaresinin Teşekkülü», Türkiyat Araştırmaları Dergisi",
+       "says": "Salnames 1306–1310 and 1311–1326: İzmid and Çatalca are independent sanjaks; in 1305 İzmid was a liva of the Şehremaneti.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://islamansiklopedisi.org.tr/hudavendigar--bursa",
+       "title": "TDV İslâm Ansiklopedisi, «Hudâvendigâr»",
+       "says": "Kocaeli, called İzmit after 1867, became an independent mutasarrıflık in 1888.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://github.com/emreamasyali/ottoman-anatolia-schooling-hgis/blob/d89704465b6f7f962ba9612c334100fbfc854874/README.md",
+       "title": "Amasyalı (2020), Ottoman Anatolia Schooling HGIS Dataset — README and kazas_boundaries.geojson (commit d897044)",
+       "says": "The five kazas İzmit, Adapazarı, Kandıra, Karamürsel, Geyve.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Starts on the scope's first day (1891-01-01); the configuration is older — independent since 1888. The scope starts in 1891 because Cuinet (writing in 1892) dates the move of Garbikaraağaç (Acıpayam) from Konya to Aydın only as «three years ago»."
+    }
+   ]
+  },
+  {
+   "id": "OTT:Biga",
+   "names": {
+    "en": "Biga (Kal'a-i Sultaniye) independent sanjak",
+    "ja": "ビガ独立県（チャナッカレ）",
+    "local": "Biga Mutasarrıflığı (Kal'a-i Sultâniye)"
+   },
+   "wikidata": "Q20988509",
+   "spans": [
+    {
+     "from": "1891-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "OAK-Biga_Ayvacik",
+      "OAK-Biga_BigaMerkez",
+      "OAK-Biga_Canakkale",
+      "OAK-Biga_Ezine",
+      "OAK-Biga_Lapseki"
+     ],
+     "sources": [
+      {
+       "url": "https://tr.wikipedia.org/w/index.php?oldid=38090110",
+       "title": "Biga Sancağı — Vikipedi (oldid 38090110)",
+       "says": "Detached from Karesi vilayet in 1888 as the independent Biga sanjak; kazas Kale-i Sultaniye, Ezine, Ayvacık, Bayramiç, Biga, Lapseki.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://tr.wikipedia.org/w/index.php?oldid=38112050",
+       "title": "Karesi Sancağı — Vikipedi (oldid 38112050)",
+       "says": "In 1888 Biga sanjak separated again from Karesi.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://github.com/emreamasyali/ottoman-anatolia-schooling-hgis/blob/d89704465b6f7f962ba9612c334100fbfc854874/README.md",
+       "title": "Amasyalı (2020), Ottoman Anatolia Schooling HGIS Dataset — README and kazas_boundaries.geojson (commit d897044)",
+       "says": "The five kazas Biga, Lapseki, Çanakkale, Ayvacık, Ezine.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Starts on the scope's first day (1891-01-01); the configuration is older — independent since 1888. The scope starts in 1891 because Cuinet (writing in 1892) dates the move of Garbikaraağaç (Acıpayam) from Konya to Aydın only as «three years ago»."
+    }
+   ]
+  },
+  {
+   "id": "OTT:Catalca",
+   "names": {
+    "en": "Çatalca independent sanjak",
+    "ja": "チャタルジャ独立県",
+    "local": "Çatalca Mutasarrıflığı"
+   },
+   "wikidata": "Q20476704",
+   "spans": [
+    {
+     "from": "1891-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "OAK-Catalca_Buyukcekmece",
+      "OAK-Catalca_CatalcaMerkez",
+      "OAK-Catalca_Silivri"
+     ],
+     "sources": [
+      {
+       "url": "https://tr.wikipedia.org/w/index.php?oldid=38090113",
+       "title": "Çatalca Sancağı — Vikipedi (oldid 38090113)",
+       "says": "Independent sanjak from 1877; kazas Çatalca, Büyükçekmece, Silivri.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://dergipark.org.tr/tr/download/article-file/165205",
+       "title": "M. Güneş, «Osmanlı Döneminde İstanbul'da Vilayet İdaresinin Teşekkülü», Türkiyat Araştırmaları Dergisi",
+       "says": "Salnames 1306–1326: Çatalca (with Silivri and Büyükçekmece) an independent sanjak.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://github.com/emreamasyali/ottoman-anatolia-schooling-hgis/blob/d89704465b6f7f962ba9612c334100fbfc854874/README.md",
+       "title": "Amasyalı (2020), Ottoman Anatolia Schooling HGIS Dataset — README and kazas_boundaries.geojson (commit d897044)",
+       "says": "The three kazas Çatalca, Büyükçekmece, Silivri.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Starts on the scope's first day (1891-01-01); the configuration is older — independent since 1877. The scope starts in 1891 because Cuinet (writing in 1892) dates the move of Garbikaraağaç (Acıpayam) from Konya to Aydın only as «three years ago»."
+    }
+   ]
+  },
+  {
+   "id": "OTT:Istanbul",
+   "names": {
+    "en": "Istanbul (Dersaadet: the Şehremaneti and its kazas)",
+    "ja": "イスタンブル（デルサアーデト・市政庁管区）",
+    "local": "Dersaadet / Şehremâneti"
+   },
+   "spans": [
+    {
+     "from": "1891-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "OAK-Istanbul_Adalar",
+      "OAK-Istanbul_Beykoz",
+      "OAK-Istanbul_Gebze",
+      "OAK-Istanbul_Istanbul_Merkez",
+      "OAK-Istanbul_Kartal",
+      "OAK-Istanbul_Kucukcekmece",
+      "OAK-Istanbul_Sile"
+     ],
+     "sources": [
+      {
+       "url": "https://dergipark.org.tr/tr/download/article-file/165205",
+       "title": "M. Güneş, «Osmanlı Döneminde İstanbul'da Vilayet İdaresinin Teşekkülü», Türkiyat Araştırmaları Dergisi",
+       "says": "Salnames 1306–1326: Şehremaneti with the kazas Adalar, Gebze, Beykoz, Kartal, Küçükçekmece, Şile; a vilayet of Istanbul only by the law of 4 August 1909.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/utr.html",
+       "title": "Statoids — Provinces of Turkey, change history",
+       "says": "Lists Constantinople among the 18 first-level units of 1900 mainly in today's Turkey.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://github.com/emreamasyali/ottoman-anatolia-schooling-hgis/blob/d89704465b6f7f962ba9612c334100fbfc854874/README.md",
+       "title": "Amasyalı (2020), Ottoman Anatolia Schooling HGIS Dataset — README and kazas_boundaries.geojson (commit d897044)",
+       "says": "The city and the kazas Şile, Gebze, Beykoz, Kartal, Küçükçekmece, Adalar.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Starts on the scope's first day (1891-01-01); the configuration is older — the Şehremaneti held these kazas from the salname of 1306. The scope starts in 1891 because Cuinet (writing in 1892) dates the move of Garbikaraağaç (Acıpayam) from Konya to Aydın only as «three years ago»."
+    }
+   ]
+  }
+ ],
+ "unresolved": [
+  {
+   "what": "Sivas before the Çorum sanjak (1891 – 20 May 1894)",
+   "unit": "OTT:Sivas",
+   "atoms": [
+    "OAK-Sivas_Amasya_AmasyaMerkez",
+    "OAK-Sivas_Amasya_Gumushacikoy",
+    "OAK-Sivas_Amasya_Havza",
+    "OAK-Sivas_Amasya_Ladik",
+    "OAK-Sivas_Amasya_Mecitozu",
+    "OAK-Sivas_Amasya_Merzifon",
+    "OAK-Sivas_Amasya_Osmancik",
+    "OAK-Sivas_Amasya_Vezirkopru",
+    "OAK-Sivas_Karahisar_Alucra",
+    "OAK-Sivas_Karahisar_KarahisarMerkez",
+    "OAK-Sivas_Karahisar_Koyulhisar",
+    "OAK-Sivas_Karahisar_Mesudiye",
+    "OAK-Sivas_Karahisar_Susehri",
+    "OAK-Sivas_Sivas_Aziziye",
+    "OAK-Sivas_Sivas_Darende",
+    "OAK-Sivas_Sivas_Divrigi",
+    "OAK-Sivas_Sivas_Gurun",
+    "OAK-Sivas_Sivas_Hafik",
+    "OAK-Sivas_Sivas_Sarkisla",
+    "OAK-Sivas_Sivas_SivasMerkez",
+    "OAK-Sivas_Sivas_Yildizeli",
+    "OAK-Sivas_Sivas_Zara",
+    "OAK-Sivas_Tokat_Erbaa",
+    "OAK-Sivas_Tokat_Niksar",
+    "OAK-Sivas_Tokat_TokatMerkez",
+    "OAK-Sivas_Tokat_Zile"
+   ],
+   "from": "1891-01-01",
+   "to": "1894-05-20",
+   "why": "Before 1894 the Kargı nahiye belonged to Tosya kaza (Kastamonu), but the dataset — traced from Huber's 1899 map — already puts Kargı (and Dodurga) inside the Osmancık polygon (Sivas until 1894). Neither vilayet's pre-1894 outline is a union of these atoms.",
+   "checked": [
+    "Aktaş 2021 (Kargı nahiye from Tosya to Osmancık, 1894)",
+    "Söylemez 2007",
+    "point-in-polygon of Kargı (41.134 N, 34.489 E) and Dodurga (40.856 N, 34.815 E) in the dataset: both inside OAK-Sivas_Amasya_Osmancik",
+    "Cuinet t. I and IV kaza lists"
+   ],
+   "needs": "a polygon of the Kargı nahiye (village-level atoms) to subtract from the Osmancık kaza"
+  },
+  {
+   "what": "Kastamonu before the Çorum sanjak (1891 – 20 May 1894)",
+   "unit": "OTT:Kastamonu",
+   "atoms": [
+    "OAK-Kastamonu_Bolu_Bartin",
+    "OAK-Kastamonu_Bolu_BoluMerkez",
+    "OAK-Kastamonu_Bolu_Duzce",
+    "OAK-Kastamonu_Bolu_Eregli_Karadeniz",
+    "OAK-Kastamonu_Bolu_Gerede",
+    "OAK-Kastamonu_Bolu_Goynuk",
+    "OAK-Kastamonu_Bolu_Hamidiye_Bolu",
+    "OAK-Kastamonu_Bolu_Mudurnu",
+    "OAK-Kastamonu_Cankiri_CankiriMerkez",
+    "OAK-Kastamonu_Cankiri_Cerkes",
+    "OAK-Kastamonu_Cankiri_Iskilip",
+    "OAK-Kastamonu_Kastamonu_Arac",
+    "OAK-Kastamonu_Kastamonu_Cide",
+    "OAK-Kastamonu_Kastamonu_Daday",
+    "OAK-Kastamonu_Kastamonu_Inebolu",
+    "OAK-Kastamonu_Kastamonu_KastamonuMerkez",
+    "OAK-Kastamonu_Kastamonu_Safranbolu",
+    "OAK-Kastamonu_Kastamonu_Taskopru",
+    "OAK-Kastamonu_Kastamonu_Tosya",
+    "OAK-Kastamonu_Sinop_Ayancik",
+    "OAK-Kastamonu_Sinop_Boyabat",
+    "OAK-Kastamonu_Sinop_SinopMerkez"
+   ],
+   "from": "1891-01-01",
+   "to": "1894-05-20",
+   "why": "Same cause: Kastamonu then held Kargı (in Tosya kaza), which the dataset draws inside Osmancık; it also held Kalecik until March 1892.",
+   "checked": [
+    "Aktaş 2021",
+    "Cuinet t. IV (Kalecik to Angora on 1 March 1892)",
+    "point-in-polygon of Kargı in the dataset"
+   ],
+   "needs": "a polygon of the Kargı nahiye"
+  },
+  {
+   "what": "Kalecik kaza while it was still in Kastamonu (1891 – March 1892)",
+   "unit": "OTT:Kastamonu",
+   "atoms": [
+    "OAK-Ankara_Ankara_Kalecik"
+   ],
+   "from": "1891-01-01",
+   "to": "1892-03",
+   "why": "Kalecik belonged to Kastamonu (Çankırı sanjak) until 1 March 1892 (Cuinet t. IV), and Kastamonu itself cannot be drawn before 1894 (Kargı, above).",
+   "checked": [
+    "Cuinet t. IV, vilayet de Castamouni, «Division administrative»"
+   ],
+   "needs": "as above (the Kargı nahiye polygon)"
+  },
+  {
+   "what": "Mamuret-ul-Aziz in 1891",
+   "unit": "OTT:MamuretulAziz",
+   "atoms": [
+    "OAK-Elazig_Dersim_Carsancak",
+    "OAK-Elazig_Dersim_Cemisgezek",
+    "OAK-Elazig_Dersim_Hozat",
+    "OAK-Elazig_Dersim_Kizilkilise",
+    "OAK-Elazig_Dersim_Mazgirt",
+    "OAK-Elazig_Dersim_Ovacik",
+    "OAK-Elazig_Malatya_Adiyaman",
+    "OAK-Elazig_Malatya_Akcadag",
+    "OAK-Elazig_Malatya_Behisni",
+    "OAK-Elazig_Malatya_Kahta",
+    "OAK-Elazig_Malatya_MalatyaMerkez",
+    "OAK-Elazig_MamuretulAziz_Arabkir",
+    "OAK-Elazig_MamuretulAziz_Egin",
+    "OAK-Elazig_MamuretulAziz_Harput",
+    "OAK-Elazig_MamuretulAziz_KebanMaden"
+   ],
+   "from": "1891-01-01",
+   "to": "1892",
+   "why": "Sources disagree on when Malatya and Dersim became sanjaks of this vilayet: tr.wikipedia (Diyarbekir Vilayeti) 1879 for Malatya, Cuinet 1888 for Dersim, TDV «Elazığ» 1892 for both. Whether Malatya then lay in Diyarbekir is not settled.",
+   "checked": [
+    "TDV «Elazığ»",
+    "Cuinet t. I (Erzeroum: irade 1/13 March 1888)",
+    "tr.wikipedia Diyarbekir Vilayeti oldid 38089998",
+    "tr.wikipedia Dersim Vilayeti (vilayet 1879, mutasarrıflık 1886, sanjak of Mamuretülaziz 1892, as summarised by a search)"
+   ],
+   "needs": "the salnames of 1307–1309 (vilayet lists of Mamuretülaziz and Diyarbekir) or Cuinet t. II"
+  },
+  {
+   "what": "Diyarbekir vilayet (whole scope)",
+   "unit": "OTT:Diyarbekir",
+   "atoms": [
+    "OAK-Diyarbakir_Diyarbakir_Derik",
+    "OAK-Diyarbakir_Diyarbakir_DiyarbakirMerkez",
+    "OAK-Diyarbakir_Diyarbakir_Lice",
+    "OAK-Diyarbakir_Diyarbakir_Silvan",
+    "OAK-Diyarbakir_Diyarbakir_Siverek",
+    "OAK-Diyarbakir_Ergani_Cermik",
+    "OAK-Diyarbakir_Ergani_ErganiMaden",
+    "OAK-Diyarbakir_Ergani_Palu",
+    "OAK-Diyarbakir_Mardin_Avniye",
+    "OAK-Diyarbakir_Mardin_Cizre",
+    "OAK-Diyarbakir_Mardin_MardinMerkez",
+    "OAK-Diyarbakir_Mardin_Midyat",
+    "OAK-Diyarbakir_Mardin_Nusaybin"
+   ],
+   "from": "1891-01-01",
+   "to": null,
+   "why": "The dataset draws the Diyarbekir–Aleppo line so that Viranşehir and Karacürün (Hilvan) fall inside the Urfa-sanjak polygons (Harran, Urfa Merkez) of Aleppo vilayet, while the sources place both in Diyarbekir (Viranşehir a nahiye of Siverek until 1908, later a kaza of Mardin; Karacürün under Siverek's Uluyazı nahiye). The drawn outline would give Diyarbekir land to Aleppo. 1891 also carries the Malatya question above.",
+   "checked": [
+    "point-in-polygon: Viranşehir (37.23 N, 39.76 E) → OAK-Halep_Urfa_Harran; Hilvan (37.58 N, 38.95 E) → OAK-Halep_Urfa_UrfaMerkez",
+    "tr.wikipedia Viranşehir oldid 37547862 (a kaza of Mardin until 1924)",
+    "tr.wikipedia Hilvan oldid 37697153 (Karacürün under Siverek)",
+    "tr.wikipedia Diyarbekir Vilayeti oldid 38089998 (1909: Siverek sanjak with Viranşehir)"
+   ],
+   "needs": "an independent drawing of the Diyarbekir–Aleppo line of the 1890s (Kiepert, the 1907 Ottoman atlas) or finer atoms to move the Viranşehir and Karacürün nahiyes"
+  },
+  {
+   "what": "Edirne (Adrianople) vilayet — only its part inside today's Turkey is in the atom set",
+   "unit": "OTT:Edirne",
+   "atoms": [
+    "OAK-Edirne_Edirne_Dedeagac",
+    "OAK-Edirne_Edirne_Edirne",
+    "OAK-Edirne_Edirne_Gelibolu",
+    "OAK-Edirne_Edirne_Kirkkilise",
+    "OAK-Edirne_Edirne_Tekirdag"
+   ],
+   "from": "1891-01-01",
+   "to": null,
+   "why": "The dataset gives Edirne vilayet as five polygons labelled by sanjak, only where they lie in or next to today's Turkey; Gümülcine sanjak and most of Dedeağaç (Greece, Bulgaria) are absent, so the vilayet cannot be drawn. Samothrace was added to it in 1891 (Cuinet t. I).",
+   "checked": [
+    "dataset README «Incomplete vilayet coverage»",
+    "area: 31,318 km² in the dataset vs 38,389 km² (Statesman's Year-Book via statoids)",
+    "OpenHistoricalMap: no Edirne vilayet for 1878–1912 in data/hist-admin1.js"
+   ],
+   "needs": "atoms covering Western Thrace and southern Bulgaria with lines that held 1878–1912 (no such set is pinned)"
+  },
+  {
+   "what": "Aleppo vilayet — only its northern sanjaks (Maraş, Urfa, the Turkish part of Aleppo sanjak) are in the atom set",
+   "atoms": [
+    "OAK-Halep_Halep_Antakya",
+    "OAK-Halep_Halep_Antep",
+    "OAK-Halep_Halep_Belen",
+    "OAK-Halep_Halep_Harim",
+    "OAK-Halep_Halep_Iskenderun",
+    "OAK-Halep_Halep_Kilis",
+    "OAK-Halep_Maras_Elbistan",
+    "OAK-Halep_Maras_Goksun",
+    "OAK-Halep_Maras_MarasMerkez",
+    "OAK-Halep_Maras_Pazarcik",
+    "OAK-Halep_Maras_Zeytun",
+    "OAK-Halep_Urfa_Birecik",
+    "OAK-Halep_Urfa_Harran",
+    "OAK-Halep_Urfa_Rumkale",
+    "OAK-Halep_Urfa_Suruc",
+    "OAK-Halep_Urfa_UrfaMerkez"
+   ],
+   "from": "1891-01-01",
+   "to": null,
+   "why": "Aleppo vilayet lies mainly in today's Syria; its northern kazas alone are not the unit. (Left without a unit key: statoids' count of 18 first-level units «mainly within modern Turkey» also leaves Aleppo out.)",
+   "checked": [
+    "dataset README (Halep vilayet only partly covered)",
+    "gb-adm2 SYR (2017 districts) — today's lines, not the Ottoman sanjak lines"
+   ],
+   "needs": "atoms for the Syrian part with lines that held in the 1890s"
+  }
+ ],
+ "counts": [
+  {
+   "date": "1900",
+   "n": 18,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/utr.html",
+     "title": "Statoids — Provinces of Turkey, change history",
+     "says": "In 1900 the vilayets falling mainly within modern Turkey: 18 (15 vilayets with Constantinople, and the mutessarifats Bigha, Chatalja, Ismid).",
+     "accessed": "2026-10-06"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": []
+}

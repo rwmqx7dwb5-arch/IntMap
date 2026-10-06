@@ -34,17 +34,24 @@
  *   overview only; data/border-detail serves the unsimplified union when the reader zooms in.
  *
  * Usage:  node scripts/build-hist-admin-recon.mjs [--only ISO3] [--report <file.json>]
- *         node scripts/build-hist-admin-recon.mjs --check      verify dossiers + committed bundle, offline
+ *         node scripts/build-hist-admin-recon.mjs --check      verify dossiers + committed bundle, offline (atom ids from the catalogue lock)
+ *         node scripts/build-hist-admin-recon.mjs --lock       rewrite only the catalogue lock (reads the atom sets)
  * ========================================================================== */
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
+import { createHash } from 'node:crypto';
+import { cacheDir } from './histrecon/atoms/ne-admin1.mjs';
+import { withheldFile } from './histrecon/withheld-file.mjs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import pc from 'polygon-clipping';
+import turfUnion from '@turf/union';
 import { simplifyGeoJSON } from './lib/elections-geo.mjs';
 import { HIST_ADMIN_GAPS } from '../js/border-coast.js';
-import { checkDossier, norm } from './histrecon/dossier-check.mjs';
-import { samplePoints, hitMask, answeredSpans, eraIndex, recordUnits, recordFiles, LOCATED_MIN, STRADDLE_MAX, OVERLAP_MIN } from './build-hist-admin-fill.mjs';
+import { checkDossier, norm, atomCountriesOf, catalogueView } from './histrecon/dossier-check.mjs';
+import { datasetOf } from './histrecon/atoms/geoboundaries.mjs';
+import { hitMask, answeredSpans, eraIndex, recordUnits, recordFiles, LOCATED_MIN, STRADDLE_MAX, OVERLAP_MIN } from './build-hist-admin-fill.mjs';
+import { samplePointsFast as samplePoints } from './histrecon/sample-points.mjs';   /* the fill's samplePoints, by scanline — identical points (scripts/histrecon/sample-points.mjs) */
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DOSSIERS = path.join(ROOT, 'scripts', 'histrecon', 'dossiers');
@@ -55,6 +62,68 @@ const ONLY = argOf('--only', null);
 const G = HIST_ADMIN_GAPS.find((g) => g.reconstructed);
 const LEVEL = 4;
 const REPO = 'https://github.com/rwmqx7dwb5-arch/IntMap/blob/main/';
+
+/* ── geoBoundaries datasets in use, read from the dossiers. The licence is per dataset (public domain, CC BY,
+   CC BY IGO, ODbL, CC BY-SA …). LICENSE §5: a record derived from a share-alike source is offered under THAT
+   licence — so each record's sources entry names its datasets and their licences, and the governance record
+   lists one upstream per licence. ─────────────────────────────────────────────────────────────────────── */
+const LICENCE_URL = [
+  [/Open Database License/i, 'https://opendatacommons.org/licenses/odbl/1-0/'],
+  [/Public Domain Dedication and License|PDDL/i, 'https://opendatacommons.org/licenses/pddl/1-0/'],
+  [/CC0/i, 'https://creativecommons.org/publicdomain/zero/1.0/'],
+  [/ShareAlike 4.0/i, 'https://creativecommons.org/licenses/by-sa/4.0/'],
+  [/ShareAlike 3.0/i, 'https://creativecommons.org/licenses/by-sa/3.0/'],
+  [/ShareAlike 2.0/i, 'https://creativecommons.org/licenses/by-sa/2.0/'],
+  [/3.0 Intergovernmental|3.0 IGO/i, 'https://creativecommons.org/licenses/by/3.0/igo/'],
+  [/Attribution 4.0/i, 'https://creativecommons.org/licenses/by/4.0/'],
+  [/Attribution 3.0/i, 'https://creativecommons.org/licenses/by/3.0/'],
+  [/Attribution 2.5 India/i, 'https://creativecommons.org/licenses/by/2.5/in/'],
+  [/Attribution 2.5/i, 'https://creativecommons.org/licenses/by/2.5/'],
+  [/Open Government Licence v3/i, 'https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/'],
+  [/Open Government Canada/i, 'https://open.canada.ca/en/open-government-licence-canada'],
+  [/Etalab/i, 'https://www.etalab.gouv.fr/licence-ouverte-open-licence/'],
+  [/Data license Germany/i, 'https://www.govdata.de/dl-de/by-2-0'],
+  [/swisstopo/i, 'https://www.swisstopo.admin.ch/en/terms-of-use-free-geodata-and-geoservices'],
+  [/ShareAlike 4.0/i, 'https://creativecommons.org/licenses/by-sa/4.0/'],
+];
+export function licenceUrlOf(licence) { for (const [re, u] of LICENCE_URL) if (re.test(licence)) return u; return null; }
+const isPublicDomain = (l) => /^Public Domain$|CC0|PDDL|Public Domain Dedication/i.test(l);
+export const isShareAlike = (l) => /Open Database License|ShareAlike/i.test(l);
+/** [{ iso, level, …manifest entry }] a dossier draws on, when its atom set is a geoBoundaries one */
+export function gbDatasetsOf(D) {
+  const m = /^gb-(adm[123])@/.exec(D.atomSet || '');
+  if (!m) return [];
+  const level = m[1].toUpperCase();
+  return atomCountriesOf(D).map((iso) => ({ iso, level, ...(datasetOf(iso, level) || {}) })).filter((d) => d.licence);
+}
+/* the one js/reference-data.js row that credits every geoBoundaries dataset: it links to the list of each dataset's original
+   publisher and licence (the manifest, and each record's sources entry) — CC BY 4.0 §3(a)(1) allows credit by such a URI */
+export const GB_ROW = 'geoBoundaries (William & Mary geoLab) — national boundary datasets used as parts of the reconstructed historical divisions';
+/* the atom modules and the dossiers, read once: an atom set that is neither Natural Earth, RISTAT nor geoBoundaries
+   states its own credit (SOURCE.creditRow) and the geoBoundaries datasets it reads (GB_PARTS). ⚠ GOVERNANCE below
+   must stay pure data (scripts/data-governance.mjs evaluates it sliced out of this file — a call is «unreadable»,
+   measured 2026-10-06), so these derivations are what tests/hist-recon-expand-checks.test.mjs compares that literal
+   with: every credit row and every licence the dossiers actually use must be declared. */
+const ATOM_MODULES = await Promise.all(fs.readdirSync(ATOMS).filter((n) => n.endsWith('.mjs')).sort().map((n) => import(pathToFileURL(path.join(ATOMS, n)).href)));
+const DOSSIERS_READ = fs.existsSync(DOSSIERS) ? fs.readdirSync(DOSSIERS).filter((x) => x.endsWith('.json')).sort().map((n) => JSON.parse(fs.readFileSync(path.join(DOSSIERS, n), 'utf8'))) : [];
+const SETS_USED = new Set(DOSSIERS_READ.map((D) => D.atomSet));
+const OWN_CREDIT_MODULES = ATOM_MODULES.filter((m) => m.SET && SETS_USED.has(m.SET) && m.SOURCE && m.SOURCE.creditRow);
+export function moduleUpstreams() {
+  return OWN_CREDIT_MODULES.map((m) => ({ publisher: m.SOURCE.publisher, url: m.SOURCE.url, licence: m.SOURCE.licence, licenceUrl: m.SOURCE.licenceUrl,
+    attribution: !!m.SOURCE.attribution, creditRequired: !!m.SOURCE.creditRequired, paidBy: m.SOURCE.creditRow }));
+}
+export function gbUpstreams() {
+  const byLic = new Map();
+  const add = (d) => { if (!d || !d.licence) return; if (!byLic.has(d.licence)) byLic.set(d.licence, new Set()); byLic.get(d.licence).add(d.iso + ' ' + d.level); };
+  for (const D of DOSSIERS_READ) for (const d of gbDatasetsOf(D)) add(d);
+  for (const m of OWN_CREDIT_MODULES) for (const p of m.GB_PARTS || []) add({ iso: p.iso, level: p.level, ...(datasetOf(p.iso, p.level) || {}) });
+  return [...byLic].sort((a, b) => (a[0] < b[0] ? -1 : 1)).map(([licence, ds]) => ({
+    publisher: 'geoBoundaries (William & Mary geoLab) — gbOpen datasets under ' + licence, url: 'https://www.geoboundaries.org/',
+    licence, licenceUrl: licenceUrlOf(licence) || 'https://www.geoboundaries.org/', attribution: !isPublicDomain(licence), creditRequired: !isPublicDomain(licence),
+    datasets: [...ds].sort(), offeredUnder: isShareAlike(licence) ? licence : null,
+    paidBy: GB_ROW,
+  }));
+}
 
 /* ⚠ 出自は値である（js/data-governance.js の read() と npm run check:datagov が読む）。 */
 export const GOVERNANCE = {
@@ -75,6 +144,13 @@ export const GOVERNANCE = {
       { publisher: '政府統計の総合窓口(e-Stat)', url: 'https://www.e-stat.go.jp/gis', licence: '政府標準利用規約（第2.0版）',
         licenceUrl: 'https://www.e-stat.go.jp/terms-of-use', attribution: true, creditRequired: true,
         paidBy: '政府統計の総合窓口（e-Stat）国勢調査 2020 年 小地域（町丁・字等別）境界データ — 明治の府県の復元で旧村を切り分ける部品' },
+      { publisher: 'geoBoundaries (William & Mary geoLab)', url: 'https://www.geoboundaries.org/',
+        licence: 'per dataset, as each publisher states (public domain, CC0, CC BY, CC BY IGO, ODbL 1.0, CC BY-SA, OGL …) — scripts/histrecon/atoms/geoboundaries-manifest.json; a record derived from a share-alike dataset is offered under that licence (LICENSE §5)',
+        licenceUrl: 'https://github.com/rwmqx7dwb5-arch/IntMap/blob/main/scripts/histrecon/atoms/geoboundaries-manifest.json', attribution: true, creditRequired: true,
+        paidBy: GB_ROW },
+      { publisher: 'Emre Amasyalı (McGill University)', url: 'https://github.com/emreamasyali/ottoman-anatolia-schooling-hgis', licence: 'CC BY 4.0',
+        licenceUrl: 'https://creativecommons.org/licenses/by/4.0/', attribution: true, creditRequired: true,
+        paidBy: 'Emre Amasyalı (McGill University) — Ottoman Anatolia Schooling HGIS: kaza boundaries c. 1893 (CC BY 4.0), parts of the reconstructed Ottoman provinces' },
     ],
     cadence: 'static',
     cadenceBasis: { observed: 'on 2026-10-05 every atom set is pinned (Natural Earth commit ca96624, RISTAT version 3, N03 1920, e-Stat 2020); the record changes only when the research in a dossier changes', expires: 'when a dossier is revised or an atom set is re-pinned', canon: 'scripts/histrecon/atoms/*.mjs SET and scripts/histrecon/dossiers/*.json' },
@@ -90,13 +166,18 @@ const addDay = (iso) => new Date(Date.parse(iso + 'T00:00:00Z') + 864e5).toISOSt
 const ERA_RES = 0.1;
 const SHIFTS = [[ERA_RES, 0], [-ERA_RES, 0], [0, ERA_RES], [0, -ERA_RES], [ERA_RES, ERA_RES], [ERA_RES, -ERA_RES], [-ERA_RES, ERA_RES], [-ERA_RES, -ERA_RES]];
 
+/* a record unit's sample points do not change during a build — computed once per unit.
+   MEASURED 2026-10-06: Belarus 1991 (5 rows) took 6,135 s, 99 % inside samplePoints: every seam test re-sampled the
+   record unit beside it, and beside Belarus stand continent-sized units (a 0.1° lattice over their whole box). */
+const SAMPLED = new WeakMap();
+const samplesOf = (r) => { let p = SAMPLED.get(r); if (!p) { p = samplePoints(r.polys); SAMPLED.set(r, p); } return p; };
 /** the smaller of: the share of this unit's sample points the other units cover, and the share of theirs this covers */
 function sameUnit(polys, pts, others) {
   let a = 0; const m = new Uint8Array(pts.length);
   for (const r of others) { const h = hitMask(r.polys, pts); for (let i = 0; i < h.length; i++) if (h[i]) m[i] = 1; }
   for (let i = 0; i < m.length; i++) a += m[i];
   let b = 0, n = 0;
-  for (const r of others) { const op = samplePoints(r.polys); const h = hitMask(polys, op); n += op.length; for (let i = 0; i < h.length; i++) b += h[i]; }
+  for (const r of others) { const op = samplesOf(r); const h = hitMask(polys, op); n += op.length; for (let i = 0; i < h.length; i++) b += h[i]; }
   return Math.min(pts.length ? a / pts.length : 0, n ? b / n : 0);
 }
 const dayOf = (v) => Date.parse(isoOf(v) + 'T00:00:00Z') / 864e5;
@@ -121,27 +202,145 @@ async function atomModule(set) {
   throw new Error('no atom module declares SET = ' + set);
 }
 
+/** no two dossiers may describe the same land on the same day. On one atom set that is the same atom in
+    overlapping scopes (two regions of the Russian Empire split its 1897 uyezds by group); across atom sets it is
+    the same present-day country in overlapping scopes — a 1967 dossier on geoBoundaries districts must end where
+    the Natural Earth one begins, or the map would carry two answers with seams between them.
+    entries: [{ file, D, atoms: the catalogue rows D draws on }] → the refusals, as sentences */
+export function sameLandClaims(entries) {
+  const bad = [];
+  const win = (D) => [norm(D.scope.from), D.scope.to ? addDay(norm(D.scope.to)) : '9999-12-31'];
+  const meet = (p, q) => p[0] < q[1] && q[0] < p[1];
+  const claim = new Map();
+  for (const { file, D, atoms } of entries) {
+    const mine = D.atomGroups ? atoms.filter((x) => D.atomGroups.includes(x.group)) : atoms;
+    const w = win(D);
+    for (const x of mine) {
+      const k = D.atomSet + '|' + x.id;
+      for (const prev of claim.get(k) || []) if (meet(prev.w, w)) bad.push(file + ': atom ' + x.id + ' is also covered by ' + prev.file + ' in an overlapping scope');
+      if (!claim.has(k)) claim.set(k, []);
+      claim.get(k).push({ w, file });
+    }
+  }
+  for (let i = 0; i < entries.length; i++) for (let j = i + 1; j < entries.length; j++) {
+    const P = entries[i].D, Q = entries[j].D;
+    if (P.atomSet === Q.atomSet) continue;
+    const shared = atomCountriesOf(P).filter((c) => atomCountriesOf(Q).includes(c));
+    if (shared.length && meet(win(P), win(Q))) bad.push(entries[i].file + ' and ' + entries[j].file + ' both describe ' + shared.join(',') + ' in overlapping scopes on different atom sets');
+  }
+  return bad;
+}
+
 /** the dossiers, each checked; a dossier that fails ③②④ stops the build */
-export async function loadDossiers() {
+/* ══ THE ATOM CATALOGUE, LOCKED — so that the gate never downloads the atoms ══════════════════════════════════
+   ③ (each atom of a country in exactly one unit) needs the list of a country's atoms, not their shapes. The full
+   build reads it from the atom sets (Natural Earth, RISTAT, geoBoundaries — gigabytes: the Philippines' ADM3 alone is
+   532 MB) and writes the ids it read here; `--check` — which CI runs on every push — reads only this file.
+   MEASURED 2026-10-06: `--check` reading the sets ran out of memory at node's default heap on this machine, and on
+   CI it would have fetched every country's dataset. If a dossier names a set or country the lock lacks, the gate
+   fails and says to run the build — it never falls back to the network. */
+export const CATALOGUE_LOCK = path.join(ROOT, 'scripts', 'histrecon', 'atoms', 'catalogue-lock.json');
+function readLock() {
+  if (!fs.existsSync(CATALOGUE_LOCK)) return null;
+  const j = JSON.parse(fs.readFileSync(CATALOGUE_LOCK, 'utf8'));
+  const out = {};
+  for (const [set, byCountry] of Object.entries(j.sets)) {
+    out[set] = {};
+    for (const [c, rows] of Object.entries(byCountry)) out[set][c] = rows.map((r) => (Array.isArray(r) ? { id: r[0], group: r[1] } : { id: r }));
+  }
+  return out;
+}
+function writeLock(mods) {
+  const sets = {};
+  for (const [set, { cat, countries }] of [...mods].sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
+    sets[set] = {};
+    for (const c of countries.slice().sort()) if (cat[c]) sets[set][c] = cat[c].map((a) => (a.group != null && a.group !== c ? [a.id, a.group] : a.id)).sort((p, q) => (String(p) < String(q) ? -1 : 1));
+  }
+  fs.writeFileSync(CATALOGUE_LOCK, JSON.stringify({ note: 'The atom ids (and their group where a dossier selects by it) of every atom set and country the dossiers name — written by the full build of scripts/build-hist-admin-recon.mjs, read by its --check (the gate never downloads atoms).', sets }) + '\n');
+  console.error('· wrote ' + path.relative(ROOT, CATALOGUE_LOCK) + ' ' + (fs.statSync(CATALOGUE_LOCK).size / 1e6).toFixed(2) + ' MB');
+}
+
+export async function loadDossiers({ fromLock = false } = {}) {
   const out = [], mods = new Map(), bad = [];
-  for (const f of dossierFiles()) {
-    const D = JSON.parse(fs.readFileSync(f, 'utf8'));
-    if (ONLY && D.country !== ONLY) continue;
-    if (!mods.has(D.atomSet)) { const m = await atomModule(D.atomSet); mods.set(D.atomSet, { m, cat: await m.catalogue() }); }
+  const lock = fromLock ? readLock() : null;
+  if (fromLock && !lock) bad.push(path.relative(ROOT, CATALOGUE_LOCK) + ' is missing — run node scripts/build-hist-admin-recon.mjs');
+  const read = dossierFiles().map((f) => ({ f, D: JSON.parse(fs.readFileSync(f, 'utf8')) })).filter(({ D }) => !ONLY || D.country === ONLY);
+  /* an atom set is asked only for the countries its dossiers name (geoBoundaries has 459 datasets) */
+  const countriesOf = new Map();
+  for (const { D } of read) { if (!countriesOf.has(D.atomSet)) countriesOf.set(D.atomSet, new Set()); for (const c of atomCountriesOf(D)) countriesOf.get(D.atomSet).add(c); }
+  for (const [set, cs] of countriesOf) {
+    if (fromLock) {
+      const cat = (lock && lock[set]) || {};
+      for (const c of cs) if (!cat[c]) bad.push('the catalogue lock has no ' + set + ' atoms for ' + c + ' — run node scripts/build-hist-admin-recon.mjs to refresh it');
+      mods.set(set, { m: null, countries: [...cs], cat });
+    } else { const m = await atomModule(set); mods.set(set, { m, countries: [...cs], cat: await m.catalogue([...cs]) }); }
+  }
+  if (fromLock && bad.length) return { dossiers: [], mods, bad };
+  for (const { f, D } of read) {
     const r = checkDossier(D, mods.get(D.atomSet).cat);
     if (r.err.length) bad.push(path.basename(f) + ': ' + r.err.slice(0, 5).join(' | '));
     out.push({ file: f, D });
   }
-  /* two dossiers of one polity on one atom set must not claim the same atoms */
-  const claim = new Map();
-  for (const { file, D } of out) {
-    const key = D.atomSet + '|' + D.country;
-    const cat = mods.get(D.atomSet).cat[D.country] || [];
-    const mine = D.atomGroups ? cat.filter((a) => D.atomGroups.includes(a.group)) : cat;
-    if (!claim.has(key)) claim.set(key, new Map());
-    for (const a of mine) { const prev = claim.get(key).get(a.id); if (prev) bad.push(path.basename(file) + ': atom ' + a.id + ' is also covered by ' + prev); else claim.get(key).set(a.id, path.basename(file)); }
-  }
+  bad.push(...sameLandClaims(out.map(({ file, D }) => ({ file: path.basename(file), D, atoms: catalogueView(D, mods.get(D.atomSet).cat)[D.country] || [] }))));
   return { dossiers: out, mods, bad };
+}
+
+/** the union of atoms. polygon-clipping can throw on large unions of many small polygons.
+    MEASURED 2026-10-06: «Infinite loop when putting segment endpoints in a priority queue» on 5 of 12 Bangladesh
+    division unions of 34–163 upazilas (geoBoundaries ADM3), and «Unable to complete output ring» on 9 of 19 Ottoman
+    vilayets. Snapping the coordinates did NOT cure Bangladesh; unioning PAIRWISE (a balanced tree of two-way unions)
+    did, and gave the same area as polyclip-ts's one-shot union to the fourth decimal of a square degree for all 12.
+    British India's Bengal (the same upazilas among 400+ atoms) failed even pairwise; @turf/union (a declared
+    dependency, built on polyclip-ts, the maintained successor of polygon-clipping) completes it.
+    So: one-shot → pairwise tree → @turf/union → pairwise on a 1e-9° (≈ 0.1 mm) and then 1e-8° grid — far below any
+    surveyed line's precision and the overview's 0.004° — and the step used is reported. Expires if the union library
+    is replaced. */
+function turfUnionOf(gs) {
+  const fc = { type: 'FeatureCollection', features: gs.map((g) => ({ type: 'Feature', properties: {}, geometry: { type: 'MultiPolygon', coordinates: g } })) };
+  const u = turfUnion(fc);
+  if (!u) return [];
+  return u.geometry.type === 'Polygon' ? [u.geometry.coordinates] : u.geometry.coordinates;
+}
+export function robustUnion(gs, label, log = console.error, union = (...g) => pc.union(...g), whole = turfUnionOf) {
+  if (gs.length === 1) return gs[0];
+  const tree = (xs) => { while (xs.length > 1) { const n = []; for (let i = 0; i < xs.length; i += 2) n.push(i + 1 < xs.length ? union(xs[i], xs[i + 1]) : xs[i]); xs = n; } return xs[0]; };
+  let e0;
+  try { return union(...gs); } catch (e) { e0 = e; }
+  try { const u = tree(gs.slice()); log('    union of ' + label + ' computed pairwise (' + e0.message.slice(0, 60) + ')'); return u; } catch { /* next */ }
+  try { const u = whole(gs); log('    union of ' + label + ' computed by @turf/union (' + e0.message.slice(0, 60) + ')'); return u; } catch { /* next */ }
+  for (const k of [1e9, 1e8]) {
+    const snap = (g) => g.map((poly) => poly.map((ring) => {
+      const out = [];
+      for (const [x, y] of ring) { const p = [Math.round(x * k) / k, Math.round(y * k) / k]; const q = out[out.length - 1]; if (!q || q[0] !== p[0] || q[1] !== p[1]) out.push(p); }
+      if (out.length && (out[0][0] !== out[out.length - 1][0] || out[0][1] !== out[out.length - 1][1])) out.push(out[0].slice());
+      return out;
+    }).filter((r) => r.length >= 4)).filter((p) => p.length);
+    try { const u = tree(gs.map(snap)); log('    union of ' + label + ' recomputed pairwise on a ' + (1 / k) + '° grid (' + e0.message.slice(0, 60) + ')'); return u; } catch { /* next grid */ }
+  }
+  throw new Error('union of ' + label + ' failed even pairwise on a 1e-8° grid: ' + e0.message);
+}
+
+/* a union of pinned atoms is the same bytes every build — kept on disk outside the repository, keyed by the atom
+   set, the sorted atoms and a digest of their geometry (so a re-pinned or edited atom never reuses a stale union).
+   The assembler and fineUnits (data/border-detail) share it. MEASURED 2026-10-06: the unions of Indonesia's and the
+   Philippines' regencies took ~55 s and ~900 s per build. */
+const unionMemo = new Map();
+export function cachedUnion(set, atoms, geom) {
+  const sorted = atoms.slice().sort();
+  const key = set + '|' + sorted.join(',');
+  if (unionMemo.has(key)) return unionMemo.get(key);
+  const gs = sorted.map((a) => geom.get(a));
+  if (gs.some((g) => !g)) throw new Error('atom without geometry in ' + key.slice(0, 200));
+  const h = createHash('sha256').update(key);
+  for (const g of gs) h.update(JSON.stringify(g));
+  const dir = path.join(cacheDir(), 'recon-unions');
+  fs.mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, h.digest('hex').slice(0, 40) + '.json');
+  let u;
+  if (fs.existsSync(file)) u = JSON.parse(fs.readFileSync(file, 'utf8'));
+  else { u = robustUnion(gs, key.slice(0, 120)); fs.writeFileSync(file, JSON.stringify(u)); }
+  unionMemo.set(key, u);
+  return u;
 }
 
 function bboxOf(polys) {
@@ -153,24 +352,19 @@ function bboxOf(polys) {
 async function build() {
   const { dossiers, mods, bad } = await loadDossiers();
   if (bad.length) { console.error('✖ dossiers refused:\n  ' + bad.join('\n  ')); process.exit(1); }
+  if (!ONLY) writeLock(mods);
   console.error('· ' + dossiers.length + ' dossier(s)');
   const geomOf = new Map();
-  for (const [set, { m }] of mods) geomOf.set(set, await m.geometries());
+  for (const [set, { m, countries }] of mods) geomOf.set(set, await m.geometries(countries));
   const era = eraIndex();
   /* the records it yields to — never its own previous build */
   const rec = recordUnits(recordFiles().filter((f) => f !== G.file));
   console.error('· record units consulted for the yield: ' + rec.length);
 
-  const unionMemo = new Map();
-  const unionOf = (set, atoms) => {
-    const key = set + '|' + atoms.slice().sort().join(',');
-    if (unionMemo.has(key)) return unionMemo.get(key);
-    const gs = atoms.map((a) => geomOf.get(set).get(a)).filter(Boolean);
-    if (gs.length !== atoms.length) throw new Error('atom without geometry in ' + key);
-    const u = gs.length === 1 ? gs[0] : pc.union(...gs);
-    unionMemo.set(key, u);
-    return u;
-  };
+  /* a union of pinned atoms is the same bytes every build — kept on disk outside the repository, keyed by the
+     atom set, the sorted atoms and a digest of their geometry (so a re-pinned or edited atom never reuses a stale
+     union). MEASURED 2026-10-06: the unions of Indonesia's and the Philippines' regencies took ~55 s and ~900 s. */
+  const unionOf = (set, atoms) => cachedUnion(set, atoms, geomOf.get(set));
 
   /* ── the candidates: one per (unit, span) — from dossiers (unions of atoms) and from the assemblers in
      scripts/histrecon/assembled/ (a reconstruction that needs more than a union, e.g. Meiji's partly moved
@@ -183,7 +377,7 @@ async function build() {
       list.push({ unit: u, span: s, k, from: ymd(norm(s.from)), to: ymd(s.to != null ? norm(s.to) : scopeEnd),
         polys: () => unionOf(D.atomSet, s.atoms).map((p) => p.filter((r) => r.length >= 4)).filter((p) => p.length) });
     }
-    groups.push({ key: path.basename(file, '.json'), country: D.country, file: path.relative(ROOT, file).split(path.sep).join('/'), units: D.units.length, unresolved: (D.unresolved || []).length, list });
+    groups.push({ key: path.basename(file, '.json'), country: D.country, file: path.relative(ROOT, file).split(path.sep).join('/'), units: D.units.length, unresolved: (D.unresolved || []).length, list, parts: gbDatasetsOf(D) });
   }
   for (const m of await assemblers()) {
     if (ONLY && m.COUNTRY !== ONLY) continue;
@@ -288,13 +482,53 @@ async function build() {
         });
       }
       for (const [p, q] of alive) {
-        rows.push({ country: grp.country, key: grp.key, unit: u, span: s, k, a: p, b: q, polys, dossier: grp.file, dates: c.dates || null, startStated: p === from, endStated: q === to && s.to != null });
+        rows.push({ country: grp.country, key: grp.key, unit: u, span: s, k, a: p, b: q, polys, dossier: grp.file, parts: grp.parts || [], dates: c.dates || null, startStated: p === from, endStated: q === to && s.to != null });
         R.drawn++;
       }
     }
     console.error('  ' + grp.key + ': ' + R.units + ' units, ' + R.spans + ' spans → ' + R.drawn + ' rows · yielded ' + R.yielded + ' · withheld ' + R.withheld.length + ' · unresolved ' + R.unresolved + ' · ' + ((Date.now() - t0) / 1000).toFixed(0) + 's');
   }
-  return { rows, report };
+  /* ── the ground the dossiers researched and could not settle (`unresolved` with atoms and a window): not drawn,
+     but written to G.withheld so the present-day outline carried back yields to it (js/border-coast.js `withheld`).
+     MEASURED 2026-10-06 (hist-recon-expand): without it the fill drew today's Almaty, East Kazakhstan and Kostanay
+     regions across 1991–97 — before the 1997 mergers that made those shapes — exactly where the KAZ dossier had
+     found the old lines cut through today's districts; the same for Georgia's regions from 1995-01-01 (the last of
+     them was created 1995-12-19) and Moldova's raioane from 2003-01-01 (in force 2003-03-21). */
+  const withheld = [];
+  for (const { file, D } of dossiers) {
+    const scopeFrom = norm(D.scope.from), scopeEnd = addDay(norm(D.scope.to));
+    for (const u of D.unresolved || []) {
+      if (!Array.isArray(u.atoms) || !u.atoms.length) continue;
+      let a = u.from != null ? norm(u.from) : scopeFrom, b = u.to != null ? norm(u.to) : scopeEnd;
+      if (a < scopeFrom) a = scopeFrom;
+      if (b > scopeEnd) b = scopeEnd;
+      if (!(a < b)) continue;
+      const atoms = u.atoms.filter((x) => geomOf.get(D.atomSet).has(x));
+      if (!atoms.length) continue;
+      withheld.push({ key: path.basename(file, '.json'), from: ymd(a), to: ymd(b), what: String(u.what || u.unit || '').slice(0, 200),
+        /* the atoms side by side, not their union: the fill only asks which of its lattice points lie inside, and a union
+           of an enclave belt failed even pairwise (Bangladesh, measured 2026-10-06) */
+        polys: atoms.flatMap((x) => geomOf.get(D.atomSet).get(x)).map((p) => p.filter((r) => r.length >= 4)).filter((p) => p.length) });
+    }
+  }
+  return { rows, report, withheld };
+}
+
+/** the withheld ground, simplified as the overview is (it is compared with the fill's lattice, never drawn) */
+function writeWithheld(withheld, file, tol, dec) {
+  /* each atom on its own: an islet the overview's tolerance would erase is kept unsimplified (rounded to the same
+     decimals) — this ground is only asked «which lattice points lie inside», never drawn */
+  const k = 10 ** dec, round = (polys) => polys.map((p) => p.map((r) => r.map(([x, y]) => [Math.round(x * k) / k, Math.round(y * k) / k])));
+  const one = (poly) => {
+    try {
+      const fc = simplifyGeoJSON({ type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: poly } }] }, { tolerance: tol, decimals: dec });
+      const g = fc.features[0].geometry;
+      return g.type === 'Polygon' ? [g.coordinates] : g.coordinates;
+    } catch { return round([poly]); }
+  };
+  const out = withheld.map((w) => ({ key: w.key, s: w.from, e: w.to, what: w.what, polys: w.polys.flatMap(one) })).sort((p, q) => p.s - q.s || (p.key < q.key ? -1 : p.key > q.key ? 1 : 0));
+  fs.writeFileSync(file, JSON.stringify({ note: 'Ground the reconstruction dossiers researched and could not settle (their unresolved entries with atoms), per window [s, e) as YYYYMMDD. Never drawn; the present-day outline carried back (scripts/build-hist-admin-fill.mjs) yields to it. Written by scripts/build-hist-admin-recon.mjs.', built: new Date().toISOString().slice(0, 10), tolerance: tol, decimals: dec, units: out }) + '\n');
+  console.error('· wrote ' + file + ' ' + (fs.statSync(file).size / 1e6).toFixed(2) + ' MB | ' + out.length + ' withheld windows');
 }
 
 /** the full-precision outlines of one record (a dossier's basename or an assembler's KEY), for
@@ -305,13 +539,8 @@ export async function fineUnits(recordKey) {
   for (const f of dossierFiles()) {
     if (path.basename(f, '.json') !== recordKey) continue;
     const D = JSON.parse(fs.readFileSync(f, 'utf8'));
-    const geom = await (await atomModule(D.atomSet)).geometries();
-    const memo = new Map();
-    for (const u of D.units) for (const s of u.spans) {
-      const key = s.atoms.slice().sort().join(',');
-      if (!memo.has(key)) { const gs = s.atoms.map((a) => geom.get(a)); memo.set(key, gs.length === 1 ? gs[0] : pc.union(...gs)); }
-      out.push({ id: u.id, coords: memo.get(key) });
-    }
+    const geom = await (await atomModule(D.atomSet)).geometries(atomCountriesOf(D));
+    for (const u of D.units) for (const s of u.spans) out.push({ id: u.id, coords: cachedUnion(D.atomSet, s.atoms, geom) });
   }
   for (const m of await assemblers()) {
     if (m.KEY !== recordKey) continue;
@@ -328,7 +557,7 @@ export async function fineUnits(recordKey) {
 function readTol() {
   const head = fs.readFileSync(path.join(ROOT, 'data', 'hist-admin1.js'), 'utf8').slice(0, 4000);
   const tol = Number(/"tolerance":([0-9.]+)/.exec(head)[1]);
-  const m = /"decimals":(d+)/.exec(head);
+  const m = /"decimals":(\d+)/.exec(head);
   const dec = m ? Number(m[1]) : 4;
   if (!(tol > 0) || !Number.isInteger(dec)) throw new Error('data/hist-admin1.js: no usable tolerance/decimals (' + tol + ', ' + dec + ')');
   return { tol, dec };
@@ -350,8 +579,13 @@ function write(rows, file, tol, dec) {
       polys = simplified.get(polys);
     }
     const key = 'recon:' + r.key;
-    sources[key] ||= { publisher: 'IntMap', title: 'Reconstructed first-level divisions — ' + r.key + ' (one cited fact per membership)', url: REPO + r.dossier,
-      citation: 'IntMap reconstruction from cited facts (' + r.dossier + ').' };
+    if (!sources[key]) {
+      const parts = (r.parts || []).map((d) => ({ dataset: 'geoBoundaries ' + d.iso + ' ' + d.level, url: d.url, year: d.year, source: d.source, licence: d.licence }));
+      const sa = [...new Set(parts.map((p) => p.licence).filter(isShareAlike))];
+      sources[key] = { publisher: 'IntMap', title: 'Reconstructed first-level divisions — ' + r.key + ' (one cited fact per membership)', url: REPO + r.dossier,
+        citation: 'IntMap reconstruction from cited facts (' + r.dossier + ')' + (parts.length ? '; parts: ' + parts.map((p) => p.dataset + ' (' + p.source + ', ' + p.licence + ')').join('; ') : '') + '.',
+        ...(parts.length ? { parts } : {}), ...(sa.length ? { offeredUnder: sa } : {}) };
+    }
     const [sy, sm, sd] = isoOf(r.a).split('-').map(Number), [ey, em, ed] = isoOf(r.b).split('-').map(Number);
     const names = { en: r.unit.names.en, ...(r.unit.names.ja ? { ja: r.unit.names.ja } : {}), ...(r.unit.names.local ? { local: r.unit.names.local } : {}) };
     feats.push([r.unit.names.en, LEVEL, sy, sm, sd, ey, em, ed, polys.map((p) => p.map(pool)), names, key, r.unit.id, r.country]);
@@ -361,9 +595,10 @@ function write(rows, file, tol, dec) {
       end: r.endStated ? { raw: String(r.span.to), precision: String(r.span.to).length === 10 ? 'day' : String(r.span.to).length === 7 ? 'month' : 'year' }
         : { raw: isoOf(r.b), precision: 'day', derived: true, basis: r.span.to == null ? 'the dossier\'s scope ends' : 'the era map or a dated record changes on this day' },
       ...(r.unit.wikidata ? { wikidata: r.unit.wikidata } : {}),
+      ...(r.unit.iso ? { iso: r.unit.iso } : {}),
     };
   });
-  const data = { v: 1, src: 'IntMap reconstruction: first-level units as unions of Natural Earth admin-1 (public domain), one cited fact per membership (scripts/histrecon/dossiers) · assembled by scripts/build-hist-admin-recon.mjs',
+  const data = { v: 1, src: 'IntMap reconstruction: first-level units as unions of finer units (Natural Earth admin-1, RISTAT 1897 uyezds, geoBoundaries, N03 and e-Stat for Meiji), one cited fact per membership (scripts/histrecon/dossiers); a record derived from a share-alike source is offered under that licence, named in its sources entry (LICENSE §5) · assembled by scripts/build-hist-admin-recon.mjs',
     built: new Date().toISOString().slice(0, 10), tolerance: tol, decimals: dec, levels: [LEVEL], dateSemantics: 'exclusive-end', reconstructed: true, sources, dates, rings, feats };
   fs.writeFileSync(file, 'window.' + G.global + '=' + JSON.stringify(data) + ';\n');
   console.error('· wrote ' + path.relative(ROOT, file) + ' ' + (fs.statSync(file).size / 1e6).toFixed(2) + ' MB | rows ' + feats.length + ' | rings ' + rings.length);
@@ -374,7 +609,7 @@ function write(rows, file, tol, dec) {
 async function check() {
   let fail = 0;
   const F = (m) => { console.log('  ✖ ' + m); fail++; };
-  const { dossiers, bad } = await loadDossiers();
+  const { dossiers, bad } = await loadDossiers({ fromLock: true });
   for (const b of bad) F('dossier ' + b);
   const file = path.join(ROOT, G.file);
   if (!fs.existsSync(file)) { if (dossiers.length) F(G.file + ' missing while ' + dossiers.length + ' dossier(s) exist'); }
@@ -415,10 +650,16 @@ async function check() {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   if (!G) { console.error('HIST_ADMIN_GAPS has no `reconstructed` record (js/border-coast.js)'); process.exit(2); }
   if (args.includes('--check')) await check();
+  else if (args.includes('--lock')) {
+    const { mods, bad } = await loadDossiers();
+    if (bad.length) { for (const b of bad) console.error(b); process.exit(1); }
+    writeLock(mods);
+  }
   else {
-    const { rows, report } = await build();
+    const { rows, report, withheld } = await build();
     const { tol, dec } = readTol();
     if (!ONLY) write(rows, path.join(ROOT, G.file), tol, dec);
+    if (!ONLY && G.withheld) writeWithheld(withheld, withheldFile(), tol, dec);
     const rep = argOf('--report', null);
     if (rep) fs.writeFileSync(rep, JSON.stringify(report, null, 1));
   }

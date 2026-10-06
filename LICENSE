@@ -42,6 +42,12 @@ All rights reserved.
    property of their respective owners and are subject to their own licenses and
    terms of use. This license does not grant any rights to such third-party
    materials; you are responsible for complying with their terms.
+   Data files that IntMap derives from sources under share-alike licenses (for
+   example the Open Database License (ODbL) 1.0, CC BY-SA or the GPL) are made
+   available under the license of the source they derive from, not under this
+   license; such a file names, for each record in it, the source and the license
+   it is offered under (for the reconstructed historical divisions,
+   data/hist-admin-recon.js, see docs/HIST-RECONSTRUCTION.md).
 
 6. Commercial Licensing
    To obtain a commercial license, contact the copyright holder.

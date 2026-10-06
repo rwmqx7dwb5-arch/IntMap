@@ -1,0 +1,288 @@
+{
+ "country": "KGZ",
+ "atomSet": "gb-adm1@2026-10-06",
+ "scope": {
+  "from": "1991-12-26",
+  "to": "1999-10-12"
+ },
+ "polityNote": "First-level units of the Kyrgyz Republic from the dissolution of the USSR (26 Dec 1991) to the eve of Batken oblast (13 Oct 1999; the Natural Earth fill draws from then). Atoms: geoBoundaries KGZ ADM1 (OpenStreetMap 2017, 7 regions, 29,257 vertices). The 1999 Osh oblast is the union of the 2017 Osh and Batken atoms. The 2010 district layer (Wikipedia) was rejected: it is coarser than the Natural Earth line (Naryn district 83 vertices for 8,001 km²). Chuy, Bishkek, Jalal-Abad and Naryn stay unresolved — the OSM 2017 Chuy atom contains Bishkek, and its Naryn atom contains Toguz-Toro district of Jalal-Abad. Check ① (geodesic area of the union against statoids’ areas at independence): Osh 45,979 vs 46,189 km² = 0.995; Talas 11,429 vs 11,446 km² = 0.999; Issyk-Kul 41,994 vs 43,144 km² = 0.973; the same measure exposed the Toguz-Toro error (Jalal-Abad 0.881, Naryn 1.053). OpenHistoricalMap carries only the country for these years.",
+ "units": [
+  {
+   "id": "KGZ:Osh",
+   "names": {
+    "en": "Osh Region",
+    "ja": "オシ州",
+    "local": "Ош облусу"
+   },
+   "wikidata": "Q231987",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1999-10-13",
+     "atoms": [
+      "KGZ-ADM1-38789647B74878035894071",
+      "KGZ-ADM1-38789647B43528262636538"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%91%D0%B0%D1%82%D0%BA%D0%B5%D0%BD%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=152231585",
+       "title": "Wikipedia (ru) — Баткенская область (oldid 152231585)",
+       "says": "Batken oblast formed on 13 Oct 1999 within the boundaries of the Batken, Kadamjay and Leilek districts and Kyzyl-Kiya city of Osh oblast.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%B4%D0%BC%D0%B8%D0%BD%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%B8%D0%B2%D0%BD%D0%BE-%D1%82%D0%B5%D1%80%D1%80%D0%B8%D1%82%D0%BE%D1%80%D0%B8%D0%B0%D0%BB%D1%8C%D0%BD%D0%BE%D0%B5_%D0%B4%D0%B5%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_%D0%9A%D0%B8%D1%80%D0%B3%D0%B8%D0%B7%D0%B8%D0%B8&oldid=154189708",
+       "title": "Wikipedia (ru) — Административно-территориальное деление Киргизии (oldid 154189708)",
+       "says": "Year-by-year list: oblasts restored or created 14 Dec 1990; Suusamyr district formed in Naryn 6 Mar 1992 and given to Chuy 28 May 1994; Batken oblast 13 Oct 1999; no other change between oblasts.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9E%D1%88&oldid=154518243",
+       "title": "Wikipedia (ru) — Ош (oldid 154518243)",
+       "says": "Osh received the status of a city of republican significance on 11 Jun 2003.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/ukg.html",
+       "title": "Statoids — Regions of Kyrgyzstan, change history",
+       "says": "Areas of the regions at independence: Chuy 18,684, Jalal-Abad 33,648, Naryn 46,707, Osh 46,189, Talas 11,446, Ysyk-Kul 43,144 km²; 1999-10-12 Batken split from Osh.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Before 13 Oct 1999 the oblast included the later Batken oblast (carved whole from the Batken, Kadamjay and Leilek districts and Kyzyl-Kiya) and Osh city (republican status only from 11 Jun 2003; the Osh point lies inside the OSM 2017 Osh Region atom)."
+    }
+   ]
+  },
+  {
+   "id": "KGZ:Talas",
+   "names": {
+    "en": "Talas Region",
+    "ja": "タラス州",
+    "local": "Талас облусу"
+   },
+   "wikidata": "Q109838",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1999-10-13",
+     "atoms": [
+      "KGZ-ADM1-38789647B46237219042962"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%A2%D0%B0%D0%BB%D0%B0%D1%81%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=155145044",
+       "title": "Wikipedia (ru) — Таласская область (oldid 155145044)",
+       "says": "Talas oblast abolished 5 Oct 1988 and restored by the law of 14 Dec 1990.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%B4%D0%BC%D0%B8%D0%BD%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%B8%D0%B2%D0%BD%D0%BE-%D1%82%D0%B5%D1%80%D1%80%D0%B8%D1%82%D0%BE%D1%80%D0%B8%D0%B0%D0%BB%D1%8C%D0%BD%D0%BE%D0%B5_%D0%B4%D0%B5%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_%D0%9A%D0%B8%D1%80%D0%B3%D0%B8%D0%B7%D0%B8%D0%B8&oldid=154189708",
+       "title": "Wikipedia (ru) — Административно-территориальное деление Киргизии (oldid 154189708)",
+       "says": "Year-by-year list: oblasts restored or created 14 Dec 1990; Suusamyr district formed in Naryn 6 Mar 1992 and given to Chuy 28 May 1994; Batken oblast 13 Oct 1999; no other change between oblasts.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "KGZ:Issyk-Kul",
+   "names": {
+    "en": "Issyk-Kul Region",
+    "ja": "イシク・クル州",
+    "local": "Ысык-Көл облусу"
+   },
+   "wikidata": "Q487413",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1999-10-13",
+     "atoms": [
+      "KGZ-ADM1-38789647B57762434555293"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%98%D1%81%D1%81%D1%8B%D0%BA-%D0%9A%D1%83%D0%BB%D1%8C%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=151887696",
+       "title": "Wikipedia (ru) — Иссык-Кульская область (oldid 151887696)",
+       "says": "Issyk-Kul oblast; Naryn was merged into it in 1988 and separated again on 14 Dec 1990.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%B4%D0%BC%D0%B8%D0%BD%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%B8%D0%B2%D0%BD%D0%BE-%D1%82%D0%B5%D1%80%D1%80%D0%B8%D1%82%D0%BE%D1%80%D0%B8%D0%B0%D0%BB%D1%8C%D0%BD%D0%BE%D0%B5_%D0%B4%D0%B5%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_%D0%9A%D0%B8%D1%80%D0%B3%D0%B8%D0%B7%D0%B8%D0%B8&oldid=154189708",
+       "title": "Wikipedia (ru) — Административно-территориальное деление Киргизии (oldid 154189708)",
+       "says": "Year-by-year list: oblasts restored or created 14 Dec 1990; Suusamyr district formed in Naryn 6 Mar 1992 and given to Chuy 28 May 1994; Batken oblast 13 Oct 1999; no other change between oblasts.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Drawn with the lake. The atom is 2.7% smaller than the area statoids gives for the 1990s (41,994 vs 43,144 km²); the difference is consistent with the eastern border sector settled with China in 1996–1999, which today’s atom follows — a change of the national border, not of the oblast line."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1994-05-28",
+   "precision": "day",
+   "what": "Suusamyr district transferred from Naryn to Chuy oblast",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9D%D0%B0%D1%80%D1%8B%D0%BD%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=155145358",
+     "title": "Wikipedia (ru) — Нарынская область (oldid 155145358)",
+     "says": "Naryn oblast separated again from Issyk-Kul on 14 Dec 1990; on 6 Mar 1992 Suusamyr district was formed from the Suusamyr rural soviet of Jumgal district and on 28 May 1994 transferred to Chuy oblast.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%B4%D0%BC%D0%B8%D0%BD%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%B8%D0%B2%D0%BD%D0%BE-%D1%82%D0%B5%D1%80%D1%80%D0%B8%D1%82%D0%BE%D1%80%D0%B8%D0%B0%D0%BB%D1%8C%D0%BD%D0%BE%D0%B5_%D0%B4%D0%B5%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_%D0%9A%D0%B8%D1%80%D0%B3%D0%B8%D0%B7%D0%B8%D0%B8&oldid=154189708",
+     "title": "Wikipedia (ru) — Административно-территориальное деление Киргизии (oldid 154189708)",
+     "says": "Year-by-year list: oblasts restored or created 14 Dec 1990; Suusamyr district formed in Naryn 6 Mar 1992 and given to Chuy 28 May 1994; Batken oblast 13 Oct 1999; no other change between oblasts.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1999-10-13",
+   "precision": "day",
+   "what": "Batken oblast formed from the western districts of Osh oblast (the day after this scope)",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%91%D0%B0%D1%82%D0%BA%D0%B5%D0%BD%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=152231585",
+     "title": "Wikipedia (ru) — Баткенская область (oldid 152231585)",
+     "says": "Batken oblast formed on 13 Oct 1999 within the boundaries of the Batken, Kadamjay and Leilek districts and Kyzyl-Kiya city of Osh oblast.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%B4%D0%BC%D0%B8%D0%BD%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%B8%D0%B2%D0%BD%D0%BE-%D1%82%D0%B5%D1%80%D1%80%D0%B8%D1%82%D0%BE%D1%80%D0%B8%D0%B0%D0%BB%D1%8C%D0%BD%D0%BE%D0%B5_%D0%B4%D0%B5%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_%D0%9A%D0%B8%D1%80%D0%B3%D0%B8%D0%B7%D0%B8%D0%B8&oldid=154189708",
+     "title": "Wikipedia (ru) — Административно-территориальное деление Киргизии (oldid 154189708)",
+     "says": "Year-by-year list: oblasts restored or created 14 Dec 1990; Suusamyr district formed in Naryn 6 Mar 1992 and given to Chuy 28 May 1994; Batken oblast 13 Oct 1999; no other change between oblasts.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1992-01-01",
+   "n": 7,
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%B4%D0%BC%D0%B8%D0%BD%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%B8%D0%B2%D0%BD%D0%BE-%D1%82%D0%B5%D1%80%D1%80%D0%B8%D1%82%D0%BE%D1%80%D0%B8%D0%B0%D0%BB%D1%8C%D0%BD%D0%BE%D0%B5_%D0%B4%D0%B5%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_%D0%9A%D0%B8%D1%80%D0%B3%D0%B8%D0%B7%D0%B8%D0%B8&oldid=154189708",
+     "title": "Wikipedia (ru) — Административно-территориальное деление Киргизии (oldid 154189708)",
+     "says": "Year-by-year list: oblasts restored or created 14 Dec 1990; Suusamyr district formed in Naryn 6 Mar 1992 and given to Chuy 28 May 1994; Batken oblast 13 Oct 1999; no other change between oblasts.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%A7%D1%83%D0%B9%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=153433420",
+     "title": "Wikipedia (ru) — Чуйская область (oldid 153433420)",
+     "says": "Chuy oblast re-created in 1990 from districts of republican subordination; Bishkek is a city of republican subordination and not part of the oblast; Suusamyr district came from Naryn in 1994 and was merged into Jayyl in 1995.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1995-01-01",
+   "n": 7,
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%B4%D0%BC%D0%B8%D0%BD%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%B8%D0%B2%D0%BD%D0%BE-%D1%82%D0%B5%D1%80%D1%80%D0%B8%D1%82%D0%BE%D1%80%D0%B8%D0%B0%D0%BB%D1%8C%D0%BD%D0%BE%D0%B5_%D0%B4%D0%B5%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_%D0%9A%D0%B8%D1%80%D0%B3%D0%B8%D0%B7%D0%B8%D0%B8&oldid=154189708",
+     "title": "Wikipedia (ru) — Административно-территориальное деление Киргизии (oldid 154189708)",
+     "says": "Year-by-year list: oblasts restored or created 14 Dec 1990; Suusamyr district formed in Naryn 6 Mar 1992 and given to Chuy 28 May 1994; Batken oblast 13 Oct 1999; no other change between oblasts.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%A7%D1%83%D0%B9%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=153433420",
+     "title": "Wikipedia (ru) — Чуйская область (oldid 153433420)",
+     "says": "Chuy oblast re-created in 1990 from districts of republican subordination; Bishkek is a city of republican subordination and not part of the oblast; Suusamyr district came from Naryn in 1994 and was merged into Jayyl in 1995.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1999-01-01",
+   "n": 7,
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%B4%D0%BC%D0%B8%D0%BD%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%B8%D0%B2%D0%BD%D0%BE-%D1%82%D0%B5%D1%80%D1%80%D0%B8%D1%82%D0%BE%D1%80%D0%B8%D0%B0%D0%BB%D1%8C%D0%BD%D0%BE%D0%B5_%D0%B4%D0%B5%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_%D0%9A%D0%B8%D1%80%D0%B3%D0%B8%D0%B7%D0%B8%D0%B8&oldid=154189708",
+     "title": "Wikipedia (ru) — Административно-территориальное деление Киргизии (oldid 154189708)",
+     "says": "Year-by-year list: oblasts restored or created 14 Dec 1990; Suusamyr district formed in Naryn 6 Mar 1992 and given to Chuy 28 May 1994; Batken oblast 13 Oct 1999; no other change between oblasts.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%A7%D1%83%D0%B9%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=153433420",
+     "title": "Wikipedia (ru) — Чуйская область (oldid 153433420)",
+     "says": "Chuy oblast re-created in 1990 from districts of republican subordination; Bishkek is a city of republican subordination and not part of the oblast; Suusamyr district came from Naryn in 1994 and was merged into Jayyl in 1995.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Chuy Region 1991–1999",
+   "unit": "KGZ:Chuy",
+   "atoms": [
+    "KGZ-ADM1-38789647B49701521312730"
+   ],
+   "from": "1991-12-26",
+   "to": "1999-10-13",
+   "why": "The OSM 2017 Chuy atom also covers Bishkek (the Bishkek point falls inside it), a city of republican subordination outside the oblast, and before 28 May 1994 it also covers Suusamyr, then in Naryn. The oblast cannot be drawn without the city line.",
+   "checked": [
+    "geoBoundaries KGZ ADM1 (OSM 2017): point-in-polygon of Bishkek 74.60E 42.87N and of Suusamyr 73.95E 42.18N both fall in Chuy Region",
+    "geoBoundaries KGZ ADM2 (Wikipedia 2010): leaves Bishkek as a hole, but is far coarser (Naryn district 83 vertices for 8,001 km²) than the Natural Earth line it would replace",
+    "ru.wikipedia Чуйская область oldid 153433420",
+    "ru.wikipedia Административно-территориальное деление Киргизии oldid 154189708"
+   ],
+   "needs": "A first-level layer that keeps Bishkek separate (with its 1990s city limits) and a Suusamyr line"
+  },
+  {
+   "what": "Bishkek city 1991–1999",
+   "unit": "KGZ:Bishkek",
+   "atoms": [],
+   "from": "1991-12-26",
+   "to": "1999-10-13",
+   "why": "Inside the Chuy atom; no atom carries the city alone.",
+   "checked": [
+    "geoBoundaries KGZ ADM1 and ADM2",
+    "ru.wikipedia Чуйская область oldid 153433420"
+   ],
+   "needs": "Bishkek city limits of the 1990s"
+  },
+  {
+   "what": "Jalal-Abad Region 1991–1999",
+   "unit": "KGZ:Jalal-Abad",
+   "atoms": [
+    "KGZ-ADM1-38789647B85532999857943"
+   ],
+   "from": "1991-12-26",
+   "to": "1999-10-13",
+   "why": "The OSM 2017 first-level layer puts Toguz-Toro district (Kazarman) inside its Naryn polygon, although the district has been in Jalal-Abad oblast since 14 Dec 1990 and still is; the Jalal-Abad atom is short of about 4,000 km² (29,641 km² against 33,648 km² stated).",
+   "checked": [
+    "point-in-polygon of Kazarman 74.03E 41.40N: Naryn Region in KGZ ADM1, Toguz-Toro in KGZ ADM2",
+    "geodesic area of the atom 29,641 km² vs statoids 33,648 km²",
+    "ru.wikipedia Джалал-Абадская область oldid 155145159 (Toguz-Toro in the 1990 list)",
+    "ru.wikipedia Административно-территориальное деление Киргизии oldid 154189708"
+   ],
+   "needs": "A first-level or district layer with Toguz-Toro on the Jalal-Abad side and a precision at least that of Natural Earth (the 2010 district layer is coarser)"
+  },
+  {
+   "what": "Naryn Region 1991–1999",
+   "unit": "KGZ:Naryn",
+   "atoms": [
+    "KGZ-ADM1-38789647B68189783551847"
+   ],
+   "from": "1991-12-26",
+   "to": "1999-10-13",
+   "why": "The OSM 2017 Naryn atom wrongly includes Toguz-Toro district of Jalal-Abad (see above), and until 28 May 1994 it lacks Suusamyr (then in Naryn, now inside the Chuy atom).",
+   "checked": [
+    "point-in-polygon of Kazarman 74.03E 41.40N and Suusamyr 73.95E 42.18N in KGZ ADM1",
+    "geodesic area 49,188 km² vs statoids 46,707 km²",
+    "ru.wikipedia Нарынская область oldid 155145358",
+    "ru.wikipedia Суусамыр oldid 153427235"
+   ],
+   "needs": "Same as Jalal-Abad, plus the Suusamyr ayil okmotu as an atom for 1992–1994"
+  }
+ ]
+}

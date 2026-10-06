@@ -10,8 +10,7 @@
   "Taurida governorate",
   "Ekaterinoslav governorate",
   "Poltava governorate",
-  "Chernigov governorate",
-  "Kharkov governorate"
+  "Chernigov governorate"
  ],
  "scope": {
   "from": "1802-03-18",
@@ -19,126 +18,6 @@
  },
  "polityNote": "Russian Empire (from March 1917 the Russian Republic): Little Russia, Sloboda Ukraine, New Russia, the right-bank (south-western) governorates and Bessarabia (Russian from 16/28 May 1812). Dates converted from Old Style. Gradonachalstvos with their own administration (Odessa, Nikolaev, Kerch-Enikale, Sevastopol) are drawn inside the governorate the 1897 census grouped them with. Wartime occupation (1915–17) not depicted.",
  "units": [
-  {
-   "id": "RUE:SlobodaUkraine@1796",
-   "names": {
-    "en": "Sloboda Ukraine Governorate",
-    "ja": "スロボダ・ウクライナ県",
-    "local": "Слободско-Украинская губерния"
-   },
-   "wikidata": "Q4423717",
-   "spans": [
-    {
-     "from": "1802-03-18",
-     "precision": "day",
-     "to": "1824-01-21",
-     "atoms": [
-      "U1897-478",
-      "U1897-479",
-      "U1897-480",
-      "U1897-481",
-      "U1897-482",
-      "U1897-483",
-      "U1897-484",
-      "U1897-485",
-      "U1897-486",
-      "U1897-488"
-     ],
-     "sources": [
-      {
-       "url": "https://web.archive.org/web/20251009174338/https://nlr.ru/res/refer/r_imp/gub/harkov.html",
-       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (по В. Э. Дену, 1902) — Харьковская (Слободско-Украинская) губерния",
-       "says": "ПСЗ-1 № 20205 (6/29.03.1802): Bogucharsky, Ostrogozhsky, Starobelsky uyezds moved to Voronezh; 1803 division into 10 uyezds; next outer change 1824.",
-       "accessed": "2026-10-05"
-      },
-      {
-       "url": "https://web.archive.org/web/20251115224819/https://nlr.ru/res/refer/r_imp/gub/voron.html",
-       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (по В. Э. Дену, 1902) — Воронежская губерния",
-       "says": "Voronezh received the three Sloboda uyezds in March 1802 and returned Starobelsk uyezd on 9 Jan 1824.",
-       "accessed": "2026-10-05"
-      }
-     ],
-     "dateNote": "Report approved 1802-03-06 O.S., Senate decree published 1802-03-29 O.S. (ПСЗ-1 № 20205); approval date used (+12 → 1802-03-18). The 1803 re-division into 10 uyezds (ПСЗ-1 № 20660) was internal; the 1797–1802 composition (with Ostrogozhsk, Boguchar) is outside this span."
-    },
-    {
-     "from": "1824-01-21",
-     "precision": "day",
-     "to": "1835-12-17",
-     "atoms": [
-      "U1897-478",
-      "U1897-479",
-      "U1897-480",
-      "U1897-481",
-      "U1897-482",
-      "U1897-483",
-      "U1897-484",
-      "U1897-485",
-      "U1897-486",
-      "U1897-487",
-      "U1897-488"
-     ],
-     "sources": [
-      {
-       "url": "https://web.archive.org/web/20251009174338/https://nlr.ru/res/refer/r_imp/gub/harkov.html",
-       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (по В. Э. Дену, 1902) — Харьковская (Слободско-Украинская) губерния",
-       "says": "ПСЗ-1 № 29729 (09.01.1824): Starobelsk uyezd joined from Voronezh to Sloboda-Ukrainian governorate.",
-       "accessed": "2026-10-05"
-      },
-      {
-       "url": "https://ru.wikipedia.org/w/index.php?oldid=153208688",
-       "title": "Старобельский уезд — Википедия (oldid 153208688)",
-       "says": "Starobelsk uyezd in Voronezh 1802–1824, returned to Sloboda governorate by decree of 9 January 1824.",
-       "accessed": "2026-10-05"
-      }
-     ],
-     "dateNote": "Именной указ 1824-01-09 O.S. (ПСЗ-1 № 29729) → 1824-01-21."
-    }
-   ]
-  },
-  {
-   "id": "RUE:Kharkov@1835",
-   "names": {
-    "en": "Kharkov Governorate",
-    "ja": "ハリコフ県",
-    "local": "Харьковская губерния"
-   },
-   "wikidata": "Q2363136",
-   "spans": [
-    {
-     "from": "1835-12-17",
-     "precision": "day",
-     "to": null,
-     "atoms": [
-      "U1897-478",
-      "U1897-479",
-      "U1897-480",
-      "U1897-481",
-      "U1897-482",
-      "U1897-483",
-      "U1897-484",
-      "U1897-485",
-      "U1897-486",
-      "U1897-487",
-      "U1897-488"
-     ],
-     "sources": [
-      {
-       "url": "https://web.archive.org/web/20251009174338/https://nlr.ru/res/refer/r_imp/gub/harkov.html",
-       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (по В. Э. Дену, 1902) — Харьковская (Слободско-Украинская) губерния",
-       "says": "ПСЗ-2 № 8654 (5/20.12.1835): renamed Kharkov governorate; the only later entry (1861) moves villages between its own uyezds.",
-       "accessed": "2026-10-05"
-      },
-      {
-       "url": "https://ru.wikipedia.org/w/index.php?oldid=153208694",
-       "title": "Харьковская губерния — Википедия (oldid 153208694)",
-       "says": "Formed 1835 with 11 uyezds; Izyum and Starobelsk uyezds left only in 1920 for Donetsk governorate.",
-       "accessed": "2026-10-05"
-      }
-     ],
-     "dateNote": "Rename only (same territory): 1835-12-05 O.S. (published 20.12) → 1835-12-17. No outer change 1835–1897 in Den; none 1897–1917 per the Wikipedia history (first change 1920)."
-    }
-   ]
-  },
   {
    "id": "RUE:Poltava@1802",
    "names": {
@@ -571,6 +450,46 @@
      "dateNote": "Effective 1888-01-01 O.S. (ПСЗ-3 № 4701) → 1888-01-13. No later outer change to 1917 (the 1872/1874 Aleksandrovsk–Mariupol re-cut is internal and earlier)."
     }
    ]
+  },
+  {
+   "id": "RUE:BessarabiaOblast@1812",
+   "names": {
+    "en": "Bessarabia Oblast",
+    "ja": "ベッサラビア州",
+    "local": "Бессарабская область"
+   },
+   "spans": [
+    {
+     "from": "1813",
+     "precision": "year",
+     "to": "1829-09-14",
+     "atoms": [
+      "U1897-348",
+      "U1897-349",
+      "U1897-350",
+      "U1897-351",
+      "U1897-352",
+      "U1897-353",
+      "U1897-354",
+      "U1897-355"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikisource.org/w/index.php?oldid=5617723",
+       "title": "Бухарестский мирный договор 1812 года — Викитека (oldid 5617723)",
+       "says": "Art. 4: border along the Prut, then the left bank of the Danube to the Kiliya mouth; the small islands near that bank belong to neither power.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=154901447",
+       "title": "Бессарабская область — Википедия (oldid 154901447)",
+       "says": "Russian from 1812; oblast administration from the 1813 rules (9 cinuturi, 6 from 1818); the delta ceded at Adrianople (1829) joined the oblast.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Year precision: annexed 16 (28) May 1812; the oblast administration was formed under the 1813 rules on the temporary government of Bessarabia (the day is not fixed by the sources read). Ends with the Treaty of Adrianople, 2 (14) Sep 1829, after which the Danube delta belonged to the oblast. Its Danube line was the left bank of the Kiliya arm with the near islands left to neither power (treaty art. 4); the 1897 Izmail and Akkerman uyezd atoms of RISTAT stop at that bank (Kiliya town falls in the Akkerman atom, the Kiliya-delta islands such as Ermakov in neither — tested point-in-polygon), and the Prut, Bukovina and Dniester lines are those of 1897. Internal re-cuts (1818 six cinuturi, 1819 Trans-Danubian okrugs) do not move the outline."
+    }
+   ]
   }
  ],
  "events": [
@@ -709,20 +628,6 @@
   }
  ],
  "unresolved": [
-  {
-   "what": "Starobelsk uyezd while in Voronezh governorate",
-   "atoms": [
-    "U1897-487"
-   ],
-   "from": "1802-03-18",
-   "to": "1824-01-21",
-   "why": "The uyezd belonged to Voronezh governorate (atoms of another region’s dossier); it cannot be assigned to a unit in this region.",
-   "checked": [
-    "Den: Voronezh and Kharkov lists",
-    "ru.wikipedia Старобельский уезд"
-   ],
-   "needs": "the Voronezh governorate entry of the central-region dossier"
-  },
   {
    "what": "Poltava governorate before the Berestovaya–Orel transfer",
    "unit": "RUE:Poltava@1802",
@@ -946,8 +851,7 @@
    "needs": "finer atoms (stan/volost level)"
   },
   {
-   "what": "Bessarabia oblast/governorate 1812–1878",
-   "unit": "RUE:BessarabiaOblast@1812",
+   "what": "Bessarabia between annexation and the oblast administration",
    "atoms": [
     "U1897-348",
     "U1897-349",
@@ -959,12 +863,37 @@
     "U1897-355"
    ],
    "from": "1812-05-28",
-   "to": "1878-10",
-   "why": "1829–1857 the oblast included Danube delta islands (outside the atoms); 1812–1829 delta line unverified; 1857–1878 the handover date and whether the 1857 line equals the 1897 Izmail uyezd line are not established (Komrat uyezd split 1857–58).",
+   "to": "1813",
+   "why": "Annexed by the Bucharest treaty of 16 (28) May 1812 (ratified July 1812); the temporary government that made it an oblast was set up only under the 1813 rules — the day is not fixed by the sources read.",
    "checked": [
-    "ru/uk/en.wikipedia Бессарабская губерния, Измаильский/Аккерманский уезд, Southern Bessarabia"
+    "ru.wikisource Бухарестский мирный договор 1812 года oldid 5617723",
+    "ru.wikipedia Бессарабская область oldid 154901447"
    ],
-   "needs": "1857 delimitation protocol and handover date; finer atoms"
+   "needs": "the date of the rules on the temporary government (1812/1813)"
+  },
+  {
+   "what": "Bessarabia oblast/governorate 1829–1878",
+   "unit": "RUE:BessarabiaOblast@1812",
+   "atoms": [
+    "U1897-348",
+    "U1897-349",
+    "U1897-350",
+    "U1897-351",
+    "U1897-352",
+    "U1897-353",
+    "U1897-354",
+    "U1897-355"
+   ],
+   "from": "1829-09-14",
+   "to": "1878-10",
+   "why": "1829–1856 the oblast included the Danube delta ceded at Adrianople (outside the atoms). In 1856–1857 Moldavia received most of Kagul and Izmail uyezds and the Black Sea part of Akkerman uyezd; the land returned in 1878 became Izmail uyezd, but in the 1897 atoms the returned town of Kiliya lies in the Akkerman atom, so 1857–1878 Bessarabia is not the 1897 governorate less one atom (Komrat uyezd of 1857 was divided between Akkerman and Bender in 1858).",
+   "checked": [
+    "ru/uk/en.wikipedia Бессарабская губерния, Измаильский/Аккерманский уезд, Southern Bessarabia",
+    "ru.wikipedia Бессарабская область oldid 154901447",
+    "ru.wikipedia Измаильский уезд oldid 155147299",
+    "point-in-polygon test of Kiliya, Bolgrad, Reni, Cahul, Komrat against the RISTAT 1897 atoms"
+   ],
+   "needs": "the 1857 line and the 1878 Izmail/Akkerman line as atoms"
   }
  ]
 }

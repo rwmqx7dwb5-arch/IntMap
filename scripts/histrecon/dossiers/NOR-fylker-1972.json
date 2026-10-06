@@ -1,0 +1,1930 @@
+{
+ "country": "NOR",
+ "atomSet": "gb-adm2@2026-10-06",
+ "scope": {
+  "from": "1972-01-01",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Kingdom of Norway (mainland; Svalbard and Jan Mayen are outside the fylker and outside these atoms). First level = fylker: 19 from 1972-01-01 (Bergen joined Hordaland) to 2017, 18 from 2018-01-01 (Trøndelag). Each fylke is the union of the geoBoundaries NOR ADM2 kommuner whose KLASS 2013 number carries its fylke number (same-name pairs Bø, Herøy, Nes, Os, Sande, Våler decided by the atom's position; Sámi-named atoms matched to their kommune numbers). The atom set's manifest year is 2013 but its Vestfold carries the 2017 Sandefjord merger; SSB lists no inter-fylke change between 2002 and 2017 other than whole-kommune moves, so either vintage gives the same fylke lines. SSB notes its record of boundary adjustments in uninhabited areas may be incomplete before 1996.",
+ "units": [
+  {
+   "id": "NOR:Vest-Agder@1972",
+   "names": {
+    "en": "Vest-Agder",
+    "ja": "ヴェスト・アグデル県",
+    "local": "Vest-Agder"
+   },
+   "wikidata": "Q50623",
+   "spans": [
+    {
+     "from": "1972-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NOR-ADM2-86288312B34972554267052",
+      "NOR-ADM2-86288312B20196044889227",
+      "NOR-ADM2-86288312B19723632220281",
+      "NOR-ADM2-86288312B87147956600326",
+      "NOR-ADM2-86288312B2212467057349",
+      "NOR-ADM2-86288312B66644758166065",
+      "NOR-ADM2-86288312B28435141064864",
+      "NOR-ADM2-86288312B41344454307945",
+      "NOR-ADM2-86288312B80239267683726",
+      "NOR-ADM2-86288312B8031937761256",
+      "NOR-ADM2-86288312B17397528681230",
+      "NOR-ADM2-86288312B37428940692053",
+      "NOR-ADM2-86288312B23771706622322",
+      "NOR-ADM2-86288312B34679713059782",
+      "NOR-ADM2-86288312B80796740306495"
+     ],
+     "sources": [
+      {
+       "url": "https://data.ssb.no/api/klass/v1/classifications/131/codesAt?date=2013-06-01",
+       "title": "SSB KLASS 131 (Standard for kommuneinndeling), codes valid 2013-06-01",
+       "accessed": "2026-10-06",
+       "says": "The kommune numbers valid in 2013; the first two digits are the fylke, so each atom's kommune lies in this fylke."
+      },
+      {
+       "url": "https://www.ssb.no/a/publikasjoner/pdf/rapp_9913/rapp_9913.pdf",
+       "title": "SSB Rapporter 99/13, Dag Juvkam: Historisk oversikt over endringer i kommune- og fylkesinndelingen (1999)",
+       "accessed": "2026-10-06",
+       "says": "Complete list of kommune changes 1838–1996 and of changes in the fylke division; inter-fylke boundary adjustments after 1972: 1980 Skedsmo→Oslo, 1984 Nittedal→Oslo, 1990-09-28 Sør-Fron→Folldal, 1996 Asker→Røyken."
+      },
+      {
+       "url": "https://www.ssb.no/metadata/alle-endringer-i-de-regionale-inndelingene",
+       "title": "SSB, Alle endringer i de regionale inndelingene",
+       "accessed": "2026-10-06",
+       "says": "Changes 1997–2020: inter-fylke only Godfjord Kvæfjord→Sortland (2000), Ølen Hordaland→Rogaland (2002), Trøndelag (2018), Rindal (2019) and the 2020 reform."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "NOR:Rogaland@2002",
+   "names": {
+    "en": "Rogaland",
+    "ja": "ローガラン県",
+    "local": "Rogaland"
+   },
+   "wikidata": "Q50624",
+   "spans": [
+    {
+     "from": "2002-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NOR-ADM2-86288312B97968708027313",
+      "NOR-ADM2-86288312B31081381702542",
+      "NOR-ADM2-86288312B95647148503835",
+      "NOR-ADM2-86288312B80331552977224",
+      "NOR-ADM2-86288312B23516572714138",
+      "NOR-ADM2-86288312B75018184533449",
+      "NOR-ADM2-86288312B70741506044896",
+      "NOR-ADM2-86288312B12151058165586",
+      "NOR-ADM2-86288312B27050334738576",
+      "NOR-ADM2-86288312B53803854392710",
+      "NOR-ADM2-86288312B7818860618631",
+      "NOR-ADM2-86288312B92458440996482",
+      "NOR-ADM2-86288312B43548013531547",
+      "NOR-ADM2-86288312B80966124868443",
+      "NOR-ADM2-86288312B22381651590620",
+      "NOR-ADM2-86288312B95219475773394",
+      "NOR-ADM2-86288312B30341713179901",
+      "NOR-ADM2-86288312B53863768587168",
+      "NOR-ADM2-86288312B14474209678121",
+      "NOR-ADM2-86288312B57729087865321",
+      "NOR-ADM2-86288312B22433756147713",
+      "NOR-ADM2-86288312B74998451175401",
+      "NOR-ADM2-86288312B13309254360301",
+      "NOR-ADM2-86288312B48942403855190",
+      "NOR-ADM2-86288312B13640802673877",
+      "NOR-ADM2-86288312B2742263230079"
+     ],
+     "sources": [
+      {
+       "url": "https://data.ssb.no/api/klass/v1/classifications/131/codesAt?date=2013-06-01",
+       "title": "SSB KLASS 131 (Standard for kommuneinndeling), codes valid 2013-06-01",
+       "accessed": "2026-10-06",
+       "says": "The kommune numbers valid in 2013; the first two digits are the fylke, so each atom's kommune lies in this fylke."
+      },
+      {
+       "url": "https://www.ssb.no/a/publikasjoner/pdf/rapp_9913/rapp_9913.pdf",
+       "title": "SSB Rapporter 99/13, Dag Juvkam: Historisk oversikt over endringer i kommune- og fylkesinndelingen (1999)",
+       "accessed": "2026-10-06",
+       "says": "Complete list of kommune changes 1838–1996 and of changes in the fylke division; inter-fylke boundary adjustments after 1972: 1980 Skedsmo→Oslo, 1984 Nittedal→Oslo, 1990-09-28 Sør-Fron→Folldal, 1996 Asker→Røyken."
+      },
+      {
+       "url": "https://www.ssb.no/metadata/alle-endringer-i-de-regionale-inndelingene",
+       "title": "SSB, Alle endringer i de regionale inndelingene",
+       "accessed": "2026-10-06",
+       "says": "Changes 1997–2020: inter-fylke only Godfjord Kvæfjord→Sortland (2000), Ølen Hordaland→Rogaland (2002), Trøndelag (2018), Rindal (2019) and the 2020 reform."
+      },
+      {
+       "url": "https://www.ssb.no/a/publikasjoner/pdf/rapp_9913/rapp_9913.pdf",
+       "title": "SSB Rapporter 99/13, Dag Juvkam: Historisk oversikt over endringer i kommune- og fylkesinndelingen (1999)",
+       "accessed": "2026-10-06",
+       "says": "Ølen kommune was in Hordaland until 2002-01-01 and is inside today's Vindafjord atom (merged 2006), so the Hordaland/Rogaland line before 2002 runs inside that atom."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "NOR:Hordaland@2002",
+   "names": {
+    "en": "Hordaland",
+    "ja": "ホルダラン県",
+    "local": "Hordaland"
+   },
+   "wikidata": "Q50625",
+   "spans": [
+    {
+     "from": "2002-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NOR-ADM2-86288312B29393912466053",
+      "NOR-ADM2-86288312B30337724533689",
+      "NOR-ADM2-86288312B58767518046388",
+      "NOR-ADM2-86288312B69589401279703",
+      "NOR-ADM2-86288312B51144520840876",
+      "NOR-ADM2-86288312B30857166423127",
+      "NOR-ADM2-86288312B23917972553599",
+      "NOR-ADM2-86288312B21987069747825",
+      "NOR-ADM2-86288312B98052754922139",
+      "NOR-ADM2-86288312B12130707961185",
+      "NOR-ADM2-86288312B50170416612347",
+      "NOR-ADM2-86288312B43421694562872",
+      "NOR-ADM2-86288312B70399865031783",
+      "NOR-ADM2-86288312B27116623213145",
+      "NOR-ADM2-86288312B86706978449473",
+      "NOR-ADM2-86288312B62165724203406",
+      "NOR-ADM2-86288312B29955336638723",
+      "NOR-ADM2-86288312B17491497636164",
+      "NOR-ADM2-86288312B50611449563949",
+      "NOR-ADM2-86288312B90213483192723",
+      "NOR-ADM2-86288312B8204828697072",
+      "NOR-ADM2-86288312B69924208122443",
+      "NOR-ADM2-86288312B73350405058148",
+      "NOR-ADM2-86288312B29517582925264",
+      "NOR-ADM2-86288312B21434642963",
+      "NOR-ADM2-86288312B67781995425218",
+      "NOR-ADM2-86288312B18429617226236",
+      "NOR-ADM2-86288312B99631604465694",
+      "NOR-ADM2-86288312B59600167870114",
+      "NOR-ADM2-86288312B18833292732183",
+      "NOR-ADM2-86288312B11299132347208",
+      "NOR-ADM2-86288312B65460294234921",
+      "NOR-ADM2-86288312B82260053973659"
+     ],
+     "sources": [
+      {
+       "url": "https://data.ssb.no/api/klass/v1/classifications/131/codesAt?date=2013-06-01",
+       "title": "SSB KLASS 131 (Standard for kommuneinndeling), codes valid 2013-06-01",
+       "accessed": "2026-10-06",
+       "says": "The kommune numbers valid in 2013; the first two digits are the fylke, so each atom's kommune lies in this fylke."
+      },
+      {
+       "url": "https://www.ssb.no/a/publikasjoner/pdf/rapp_9913/rapp_9913.pdf",
+       "title": "SSB Rapporter 99/13, Dag Juvkam: Historisk oversikt over endringer i kommune- og fylkesinndelingen (1999)",
+       "accessed": "2026-10-06",
+       "says": "Complete list of kommune changes 1838–1996 and of changes in the fylke division; inter-fylke boundary adjustments after 1972: 1980 Skedsmo→Oslo, 1984 Nittedal→Oslo, 1990-09-28 Sør-Fron→Folldal, 1996 Asker→Røyken."
+      },
+      {
+       "url": "https://www.ssb.no/metadata/alle-endringer-i-de-regionale-inndelingene",
+       "title": "SSB, Alle endringer i de regionale inndelingene",
+       "accessed": "2026-10-06",
+       "says": "Changes 1997–2020: inter-fylke only Godfjord Kvæfjord→Sortland (2000), Ølen Hordaland→Rogaland (2002), Trøndelag (2018), Rindal (2019) and the 2020 reform."
+      },
+      {
+       "url": "https://www.ssb.no/a/publikasjoner/pdf/rapp_9913/rapp_9913.pdf",
+       "title": "SSB Rapporter 99/13, Dag Juvkam: Historisk oversikt over endringer i kommune- og fylkesinndelingen (1999)",
+       "accessed": "2026-10-06",
+       "says": "See Rogaland (Ølen, 2002-01-01)."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "NOR:Sogn_og_Fjordane@1972",
+   "names": {
+    "en": "Sogn og Fjordane",
+    "ja": "ソグン・オ・フィヨーラネ県",
+    "local": "Sogn og Fjordane"
+   },
+   "wikidata": "Q50626",
+   "spans": [
+    {
+     "from": "1972-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NOR-ADM2-86288312B98133792313273",
+      "NOR-ADM2-86288312B90490853965577",
+      "NOR-ADM2-86288312B26006873057513",
+      "NOR-ADM2-86288312B14759313964595",
+      "NOR-ADM2-86288312B91120351294699",
+      "NOR-ADM2-86288312B34871191687124",
+      "NOR-ADM2-86288312B68265317088275",
+      "NOR-ADM2-86288312B68620067445368",
+      "NOR-ADM2-86288312B33434910544397",
+      "NOR-ADM2-86288312B38432559775747",
+      "NOR-ADM2-86288312B95170740502461",
+      "NOR-ADM2-86288312B39702039742049",
+      "NOR-ADM2-86288312B45194793520857",
+      "NOR-ADM2-86288312B29957343323174",
+      "NOR-ADM2-86288312B93534014402224",
+      "NOR-ADM2-86288312B93640020116268",
+      "NOR-ADM2-86288312B26469823377508",
+      "NOR-ADM2-86288312B68175693588321",
+      "NOR-ADM2-86288312B82743571298171",
+      "NOR-ADM2-86288312B49751827405886",
+      "NOR-ADM2-86288312B84255717767611",
+      "NOR-ADM2-86288312B43013877276358",
+      "NOR-ADM2-86288312B20375787798731",
+      "NOR-ADM2-86288312B31787825848012",
+      "NOR-ADM2-86288312B32892511897079",
+      "NOR-ADM2-86288312B33021922891933"
+     ],
+     "sources": [
+      {
+       "url": "https://data.ssb.no/api/klass/v1/classifications/131/codesAt?date=2013-06-01",
+       "title": "SSB KLASS 131 (Standard for kommuneinndeling), codes valid 2013-06-01",
+       "accessed": "2026-10-06",
+       "says": "The kommune numbers valid in 2013; the first two digits are the fylke, so each atom's kommune lies in this fylke."
+      },
+      {
+       "url": "https://www.ssb.no/a/publikasjoner/pdf/rapp_9913/rapp_9913.pdf",
+       "title": "SSB Rapporter 99/13, Dag Juvkam: Historisk oversikt over endringer i kommune- og fylkesinndelingen (1999)",
+       "accessed": "2026-10-06",
+       "says": "Complete list of kommune changes 1838–1996 and of changes in the fylke division; inter-fylke boundary adjustments after 1972: 1980 Skedsmo→Oslo, 1984 Nittedal→Oslo, 1990-09-28 Sør-Fron→Folldal, 1996 Asker→Røyken."
+      },
+      {
+       "url": "https://www.ssb.no/metadata/alle-endringer-i-de-regionale-inndelingene",
+       "title": "SSB, Alle endringer i de regionale inndelingene",
+       "accessed": "2026-10-06",
+       "says": "Changes 1997–2020: inter-fylke only Godfjord Kvæfjord→Sortland (2000), Ølen Hordaland→Rogaland (2002), Trøndelag (2018), Rindal (2019) and the 2020 reform."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "NOR:Møre_og_Romsdal@1972",
+   "names": {
+    "en": "Møre og Romsdal",
+    "ja": "ムーレ・オ・ロムスダール県",
+    "local": "Møre og Romsdal"
+   },
+   "wikidata": "Q50627",
+   "spans": [
+    {
+     "from": "1972-01-01",
+     "precision": "day",
+     "to": "2019-01-01",
+     "atoms": [
+      "NOR-ADM2-86288312B88311782618273",
+      "NOR-ADM2-86288312B27071382350329",
+      "NOR-ADM2-86288312B52502401984724",
+      "NOR-ADM2-86288312B47478936056679",
+      "NOR-ADM2-86288312B29042304945393",
+      "NOR-ADM2-86288312B15747524615282",
+      "NOR-ADM2-86288312B24407924476588",
+      "NOR-ADM2-86288312B96680032749803",
+      "NOR-ADM2-86288312B40497939679228",
+      "NOR-ADM2-86288312B63087388072573",
+      "NOR-ADM2-86288312B66983801026495",
+      "NOR-ADM2-86288312B43880270832618",
+      "NOR-ADM2-86288312B75373979576065",
+      "NOR-ADM2-86288312B6850280746884",
+      "NOR-ADM2-86288312B1434706694830",
+      "NOR-ADM2-86288312B31017239945246",
+      "NOR-ADM2-86288312B4999748251605",
+      "NOR-ADM2-86288312B43762277095742",
+      "NOR-ADM2-86288312B59453092590792",
+      "NOR-ADM2-86288312B46732094957179",
+      "NOR-ADM2-86288312B33492217014163",
+      "NOR-ADM2-86288312B25663992073727",
+      "NOR-ADM2-86288312B81426606335863",
+      "NOR-ADM2-86288312B66077972443640",
+      "NOR-ADM2-86288312B65221364882540",
+      "NOR-ADM2-86288312B39553824960786",
+      "NOR-ADM2-86288312B90203417254551",
+      "NOR-ADM2-86288312B76061639437413",
+      "NOR-ADM2-86288312B78124054872734",
+      "NOR-ADM2-86288312B41504021313270",
+      "NOR-ADM2-86288312B48311014337711",
+      "NOR-ADM2-86288312B50264654015152",
+      "NOR-ADM2-86288312B9709733023788",
+      "NOR-ADM2-86288312B12375056094040",
+      "NOR-ADM2-86288312B50103571231900",
+      "NOR-ADM2-86288312B47484772904149"
+     ],
+     "sources": [
+      {
+       "url": "https://data.ssb.no/api/klass/v1/classifications/131/codesAt?date=2013-06-01",
+       "title": "SSB KLASS 131 (Standard for kommuneinndeling), codes valid 2013-06-01",
+       "accessed": "2026-10-06",
+       "says": "The kommune numbers valid in 2013; the first two digits are the fylke, so each atom's kommune lies in this fylke."
+      },
+      {
+       "url": "https://www.ssb.no/a/publikasjoner/pdf/rapp_9913/rapp_9913.pdf",
+       "title": "SSB Rapporter 99/13, Dag Juvkam: Historisk oversikt over endringer i kommune- og fylkesinndelingen (1999)",
+       "accessed": "2026-10-06",
+       "says": "Complete list of kommune changes 1838–1996 and of changes in the fylke division; inter-fylke boundary adjustments after 1972: 1980 Skedsmo→Oslo, 1984 Nittedal→Oslo, 1990-09-28 Sør-Fron→Folldal, 1996 Asker→Røyken."
+      },
+      {
+       "url": "https://www.ssb.no/metadata/alle-endringer-i-de-regionale-inndelingene",
+       "title": "SSB, Alle endringer i de regionale inndelingene",
+       "accessed": "2026-10-06",
+       "says": "Changes 1997–2020: inter-fylke only Godfjord Kvæfjord→Sortland (2000), Ølen Hordaland→Rogaland (2002), Trøndelag (2018), Rindal (2019) and the 2020 reform."
+      },
+      {
+       "url": "https://no.wikipedia.org/w/index.php?title=Norske_kommuner_som_har_skiftet_fylke&oldid=25852096",
+       "title": "Norske kommuner som har skiftet fylke (norsk Wikipedia, oldid 25852096)",
+       "accessed": "2026-10-06",
+       "says": "Rindal moved from Møre og Romsdal to Trøndelag in 2019 (new number 5061)."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "NOR:Møre_og_Romsdal@2019",
+   "names": {
+    "en": "Møre og Romsdal",
+    "ja": "ムーレ・オ・ロムスダール県",
+    "local": "Møre og Romsdal"
+   },
+   "wikidata": "Q50627",
+   "spans": [
+    {
+     "from": "2019-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NOR-ADM2-86288312B88311782618273",
+      "NOR-ADM2-86288312B27071382350329",
+      "NOR-ADM2-86288312B52502401984724",
+      "NOR-ADM2-86288312B47478936056679",
+      "NOR-ADM2-86288312B29042304945393",
+      "NOR-ADM2-86288312B15747524615282",
+      "NOR-ADM2-86288312B24407924476588",
+      "NOR-ADM2-86288312B96680032749803",
+      "NOR-ADM2-86288312B40497939679228",
+      "NOR-ADM2-86288312B63087388072573",
+      "NOR-ADM2-86288312B66983801026495",
+      "NOR-ADM2-86288312B43880270832618",
+      "NOR-ADM2-86288312B75373979576065",
+      "NOR-ADM2-86288312B6850280746884",
+      "NOR-ADM2-86288312B1434706694830",
+      "NOR-ADM2-86288312B31017239945246",
+      "NOR-ADM2-86288312B4999748251605",
+      "NOR-ADM2-86288312B43762277095742",
+      "NOR-ADM2-86288312B59453092590792",
+      "NOR-ADM2-86288312B46732094957179",
+      "NOR-ADM2-86288312B33492217014163",
+      "NOR-ADM2-86288312B25663992073727",
+      "NOR-ADM2-86288312B81426606335863",
+      "NOR-ADM2-86288312B66077972443640",
+      "NOR-ADM2-86288312B65221364882540",
+      "NOR-ADM2-86288312B39553824960786",
+      "NOR-ADM2-86288312B90203417254551",
+      "NOR-ADM2-86288312B76061639437413",
+      "NOR-ADM2-86288312B41504021313270",
+      "NOR-ADM2-86288312B48311014337711",
+      "NOR-ADM2-86288312B50264654015152",
+      "NOR-ADM2-86288312B9709733023788",
+      "NOR-ADM2-86288312B12375056094040",
+      "NOR-ADM2-86288312B50103571231900",
+      "NOR-ADM2-86288312B47484772904149"
+     ],
+     "sources": [
+      {
+       "url": "https://data.ssb.no/api/klass/v1/classifications/131/codesAt?date=2013-06-01",
+       "title": "SSB KLASS 131 (Standard for kommuneinndeling), codes valid 2013-06-01",
+       "accessed": "2026-10-06",
+       "says": "The kommune numbers valid in 2013; the first two digits are the fylke, so each atom's kommune lies in this fylke."
+      },
+      {
+       "url": "https://www.ssb.no/a/publikasjoner/pdf/rapp_9913/rapp_9913.pdf",
+       "title": "SSB Rapporter 99/13, Dag Juvkam: Historisk oversikt over endringer i kommune- og fylkesinndelingen (1999)",
+       "accessed": "2026-10-06",
+       "says": "Complete list of kommune changes 1838–1996 and of changes in the fylke division; inter-fylke boundary adjustments after 1972: 1980 Skedsmo→Oslo, 1984 Nittedal→Oslo, 1990-09-28 Sør-Fron→Folldal, 1996 Asker→Røyken."
+      },
+      {
+       "url": "https://www.ssb.no/metadata/alle-endringer-i-de-regionale-inndelingene",
+       "title": "SSB, Alle endringer i de regionale inndelingene",
+       "accessed": "2026-10-06",
+       "says": "Changes 1997–2020: inter-fylke only Godfjord Kvæfjord→Sortland (2000), Ølen Hordaland→Rogaland (2002), Trøndelag (2018), Rindal (2019) and the 2020 reform."
+      },
+      {
+       "url": "https://no.wikipedia.org/w/index.php?title=Norske_kommuner_som_har_skiftet_fylke&oldid=25852096",
+       "title": "Norske kommuner som har skiftet fylke (norsk Wikipedia, oldid 25852096)",
+       "accessed": "2026-10-06",
+       "says": "Rindal moved from Møre og Romsdal to Trøndelag in 2019; Halsa and others moved only in 2020."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "NOR:Sør-Trøndelag@1972",
+   "names": {
+    "en": "Sør-Trøndelag",
+    "ja": "ソール・トロンデラーグ県",
+    "local": "Sør-Trøndelag"
+   },
+   "wikidata": "Q50628",
+   "spans": [
+    {
+     "from": "1972-01-01",
+     "precision": "day",
+     "to": "2018-01-01",
+     "atoms": [
+      "NOR-ADM2-86288312B40278854732862",
+      "NOR-ADM2-86288312B83613644252663",
+      "NOR-ADM2-86288312B32128147413448",
+      "NOR-ADM2-86288312B44051007085093",
+      "NOR-ADM2-86288312B1227555163680",
+      "NOR-ADM2-86288312B1781368759016",
+      "NOR-ADM2-86288312B5608393876733",
+      "NOR-ADM2-86288312B11498019904431",
+      "NOR-ADM2-86288312B5203152162858",
+      "NOR-ADM2-86288312B14672421796799",
+      "NOR-ADM2-86288312B48706769721538",
+      "NOR-ADM2-86288312B97318118947912",
+      "NOR-ADM2-86288312B45972287407526",
+      "NOR-ADM2-86288312B67430343511851",
+      "NOR-ADM2-86288312B80275455305326",
+      "NOR-ADM2-86288312B17793327792400",
+      "NOR-ADM2-86288312B16498959259468",
+      "NOR-ADM2-86288312B69677732452167",
+      "NOR-ADM2-86288312B65745471966188",
+      "NOR-ADM2-86288312B3203953779566",
+      "NOR-ADM2-86288312B70767973443782",
+      "NOR-ADM2-86288312B63643757450384",
+      "NOR-ADM2-86288312B71092976212534",
+      "NOR-ADM2-86288312B46091891234397",
+      "NOR-ADM2-86288312B36520451776758",
+      "NOR-ADM2-86288312B97150685823203",
+      "NOR-ADM2-86288312B66000336849668"
+     ],
+     "sources": [
+      {
+       "url": "https://data.ssb.no/api/klass/v1/classifications/131/codesAt?date=2013-06-01",
+       "title": "SSB KLASS 131 (Standard for kommuneinndeling), codes valid 2013-06-01",
+       "accessed": "2026-10-06",
+       "says": "The kommune numbers valid in 2013; the first two digits are the fylke, so each atom's kommune lies in this fylke."
+      },
+      {
+       "url": "https://www.ssb.no/a/publikasjoner/pdf/rapp_9913/rapp_9913.pdf",
+       "title": "SSB Rapporter 99/13, Dag Juvkam: Historisk oversikt over endringer i kommune- og fylkesinndelingen (1999)",
+       "accessed": "2026-10-06",
+       "says": "Complete list of kommune changes 1838–1996 and of changes in the fylke division; inter-fylke boundary adjustments after 1972: 1980 Skedsmo→Oslo, 1984 Nittedal→Oslo, 1990-09-28 Sør-Fron→Folldal, 1996 Asker→Røyken."
+      },
+      {
+       "url": "https://www.ssb.no/metadata/alle-endringer-i-de-regionale-inndelingene",
+       "title": "SSB, Alle endringer i de regionale inndelingene",
+       "accessed": "2026-10-06",
+       "says": "Changes 1997–2020: inter-fylke only Godfjord Kvæfjord→Sortland (2000), Ølen Hordaland→Rogaland (2002), Trøndelag (2018), Rindal (2019) and the 2020 reform."
+      },
+      {
+       "url": "https://no.wikipedia.org/w/index.php?title=Norges_fylker&oldid=25797927",
+       "title": "Norges fylker (norsk Wikipedia, oldid 25797927)",
+       "accessed": "2026-10-06",
+       "says": "The two Trøndelag fylker were merged on 1 January 2018 (19 fylker until 2018, 18 until 2020)."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "NOR:Nord-Trøndelag@1972",
+   "names": {
+    "en": "Nord-Trøndelag",
+    "ja": "ノール・トロンデラーグ県",
+    "local": "Nord-Trøndelag"
+   },
+   "wikidata": "Q50629",
+   "spans": [
+    {
+     "from": "1972-01-01",
+     "precision": "day",
+     "to": "2018-01-01",
+     "atoms": [
+      "NOR-ADM2-86288312B89960362745418",
+      "NOR-ADM2-86288312B4648926178288",
+      "NOR-ADM2-86288312B77000887435239",
+      "NOR-ADM2-86288312B18115078768764",
+      "NOR-ADM2-86288312B32212303283583",
+      "NOR-ADM2-86288312B47983318016023",
+      "NOR-ADM2-86288312B29222354807484",
+      "NOR-ADM2-86288312B74220528840082",
+      "NOR-ADM2-86288312B15566061957795",
+      "NOR-ADM2-86288312B82574062898212",
+      "NOR-ADM2-86288312B92736978662870",
+      "NOR-ADM2-86288312B18361683612622",
+      "NOR-ADM2-86288312B25157872919585",
+      "NOR-ADM2-86288312B81438149454650",
+      "NOR-ADM2-86288312B93862258107530",
+      "NOR-ADM2-86288312B7521239931161",
+      "NOR-ADM2-86288312B10441547296233",
+      "NOR-ADM2-86288312B18564926842494",
+      "NOR-ADM2-86288312B13820537707867",
+      "NOR-ADM2-86288312B5983253954554",
+      "NOR-ADM2-86288312B80976394887598",
+      "NOR-ADM2-86288312B41208068814146",
+      "NOR-ADM2-86288312B29366905893457"
+     ],
+     "sources": [
+      {
+       "url": "https://data.ssb.no/api/klass/v1/classifications/131/codesAt?date=2013-06-01",
+       "title": "SSB KLASS 131 (Standard for kommuneinndeling), codes valid 2013-06-01",
+       "accessed": "2026-10-06",
+       "says": "The kommune numbers valid in 2013; the first two digits are the fylke, so each atom's kommune lies in this fylke."
+      },
+      {
+       "url": "https://www.ssb.no/a/publikasjoner/pdf/rapp_9913/rapp_9913.pdf",
+       "title": "SSB Rapporter 99/13, Dag Juvkam: Historisk oversikt over endringer i kommune- og fylkesinndelingen (1999)",
+       "accessed": "2026-10-06",
+       "says": "Complete list of kommune changes 1838–1996 and of changes in the fylke division; inter-fylke boundary adjustments after 1972: 1980 Skedsmo→Oslo, 1984 Nittedal→Oslo, 1990-09-28 Sør-Fron→Folldal, 1996 Asker→Røyken."
+      },
+      {
+       "url": "https://www.ssb.no/metadata/alle-endringer-i-de-regionale-inndelingene",
+       "title": "SSB, Alle endringer i de regionale inndelingene",
+       "accessed": "2026-10-06",
+       "says": "Changes 1997–2020: inter-fylke only Godfjord Kvæfjord→Sortland (2000), Ølen Hordaland→Rogaland (2002), Trøndelag (2018), Rindal (2019) and the 2020 reform."
+      },
+      {
+       "url": "https://no.wikipedia.org/w/index.php?title=Norges_fylker&oldid=25797927",
+       "title": "Norges fylker (norsk Wikipedia, oldid 25797927)",
+       "accessed": "2026-10-06",
+       "says": "The two Trøndelag fylker were merged on 1 January 2018 (19 fylker until 2018, 18 until 2020)."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "NOR:Nordland@2000",
+   "names": {
+    "en": "Nordland",
+    "ja": "ヌールラン県",
+    "local": "Nordland"
+   },
+   "wikidata": "Q50630",
+   "spans": [
+    {
+     "from": "2000-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NOR-ADM2-86288312B1701312811751",
+      "NOR-ADM2-86288312B94814604845877",
+      "NOR-ADM2-86288312B3163335119560",
+      "NOR-ADM2-86288312B28402978584720",
+      "NOR-ADM2-86288312B52145854471889",
+      "NOR-ADM2-86288312B63422016976384",
+      "NOR-ADM2-86288312B2671252892867",
+      "NOR-ADM2-86288312B50581402621032",
+      "NOR-ADM2-86288312B94702681329617",
+      "NOR-ADM2-86288312B40270143357623",
+      "NOR-ADM2-86288312B82396448317791",
+      "NOR-ADM2-86288312B55953165899475",
+      "NOR-ADM2-86288312B75314465532393",
+      "NOR-ADM2-86288312B44883610080028",
+      "NOR-ADM2-86288312B15447104540063",
+      "NOR-ADM2-86288312B60983517204025",
+      "NOR-ADM2-86288312B80996435697818",
+      "NOR-ADM2-86288312B42207661783439",
+      "NOR-ADM2-86288312B24861070458091",
+      "NOR-ADM2-86288312B41330497985738",
+      "NOR-ADM2-86288312B17859654216493",
+      "NOR-ADM2-86288312B9312616634750",
+      "NOR-ADM2-86288312B90944773523196",
+      "NOR-ADM2-86288312B55921880538341",
+      "NOR-ADM2-86288312B95710758455481",
+      "NOR-ADM2-86288312B94479588968211",
+      "NOR-ADM2-86288312B99132950125054",
+      "NOR-ADM2-86288312B19862201560696",
+      "NOR-ADM2-86288312B56909660985265",
+      "NOR-ADM2-86288312B61921156724393",
+      "NOR-ADM2-86288312B82996278706743",
+      "NOR-ADM2-86288312B95964377762384",
+      "NOR-ADM2-86288312B44209185687579",
+      "NOR-ADM2-86288312B23095338426398",
+      "NOR-ADM2-86288312B97384996030155",
+      "NOR-ADM2-86288312B15540071122538",
+      "NOR-ADM2-86288312B36206301754919",
+      "NOR-ADM2-86288312B85977259263541",
+      "NOR-ADM2-86288312B81726238902221",
+      "NOR-ADM2-86288312B44340312529107",
+      "NOR-ADM2-86288312B60558696179500",
+      "NOR-ADM2-86288312B68472629952470",
+      "NOR-ADM2-86288312B17604167467724",
+      "NOR-ADM2-86288312B90819759899265"
+     ],
+     "sources": [
+      {
+       "url": "https://data.ssb.no/api/klass/v1/classifications/131/codesAt?date=2013-06-01",
+       "title": "SSB KLASS 131 (Standard for kommuneinndeling), codes valid 2013-06-01",
+       "accessed": "2026-10-06",
+       "says": "The kommune numbers valid in 2013; the first two digits are the fylke, so each atom's kommune lies in this fylke."
+      },
+      {
+       "url": "https://www.ssb.no/a/publikasjoner/pdf/rapp_9913/rapp_9913.pdf",
+       "title": "SSB Rapporter 99/13, Dag Juvkam: Historisk oversikt over endringer i kommune- og fylkesinndelingen (1999)",
+       "accessed": "2026-10-06",
+       "says": "Complete list of kommune changes 1838–1996 and of changes in the fylke division; inter-fylke boundary adjustments after 1972: 1980 Skedsmo→Oslo, 1984 Nittedal→Oslo, 1990-09-28 Sør-Fron→Folldal, 1996 Asker→Røyken."
+      },
+      {
+       "url": "https://www.ssb.no/metadata/alle-endringer-i-de-regionale-inndelingene",
+       "title": "SSB, Alle endringer i de regionale inndelingene",
+       "accessed": "2026-10-06",
+       "says": "Changes 1997–2020: inter-fylke only Godfjord Kvæfjord→Sortland (2000), Ølen Hordaland→Rogaland (2002), Trøndelag (2018), Rindal (2019) and the 2020 reform."
+      },
+      {
+       "url": "https://www.ssb.no/a/publikasjoner/pdf/rapp_9913/rapp_9913.pdf",
+       "title": "SSB Rapporter 99/13, Dag Juvkam: Historisk oversikt over endringer i kommune- og fylkesinndelingen (1999)",
+       "accessed": "2026-10-06",
+       "says": "Godfjorden (102 inhabitants) was transferred from Kvæfjord (Troms) to Sortland (Nordland) on 2000-01-01; before that the present Sortland atom holds Troms ground."
+      },
+      {
+       "url": "https://no.wikipedia.org/w/index.php?title=Godfjorden&oldid=25954983",
+       "title": "Godfjorden (norsk Wikipedia, oldid 25954983)",
+       "accessed": "2026-10-06",
+       "says": "Godfjorden was transferred from Kvæfjord (Troms) to Sortland (Nordland) on 1 January 2000."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "NOR:Troms@2000",
+   "names": {
+    "en": "Troms",
+    "ja": "トロムス県",
+    "local": "Troms"
+   },
+   "wikidata": "Q50631",
+   "spans": [
+    {
+     "from": "2000-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NOR-ADM2-86288312B39619690303479",
+      "NOR-ADM2-86288312B12055584821312",
+      "NOR-ADM2-86288312B95435650072468",
+      "NOR-ADM2-86288312B15388933867653",
+      "NOR-ADM2-86288312B28202364266720",
+      "NOR-ADM2-86288312B72673303782724",
+      "NOR-ADM2-86288312B25142202859534",
+      "NOR-ADM2-86288312B50158709887361",
+      "NOR-ADM2-86288312B82966611739072",
+      "NOR-ADM2-86288312B52632964277123",
+      "NOR-ADM2-86288312B27152726766865",
+      "NOR-ADM2-86288312B8991276694955",
+      "NOR-ADM2-86288312B73235006037434",
+      "NOR-ADM2-86288312B34366506977107",
+      "NOR-ADM2-86288312B71509568732439",
+      "NOR-ADM2-86288312B24070411232655",
+      "NOR-ADM2-86288312B43318148071115",
+      "NOR-ADM2-86288312B24921561512033",
+      "NOR-ADM2-86288312B68786515183071",
+      "NOR-ADM2-86288312B92584171254866",
+      "NOR-ADM2-86288312B75737452629522",
+      "NOR-ADM2-86288312B71092207563612",
+      "NOR-ADM2-86288312B64496782861055",
+      "NOR-ADM2-86288312B7453580545213"
+     ],
+     "sources": [
+      {
+       "url": "https://data.ssb.no/api/klass/v1/classifications/131/codesAt?date=2013-06-01",
+       "title": "SSB KLASS 131 (Standard for kommuneinndeling), codes valid 2013-06-01",
+       "accessed": "2026-10-06",
+       "says": "The kommune numbers valid in 2013; the first two digits are the fylke, so each atom's kommune lies in this fylke."
+      },
+      {
+       "url": "https://www.ssb.no/a/publikasjoner/pdf/rapp_9913/rapp_9913.pdf",
+       "title": "SSB Rapporter 99/13, Dag Juvkam: Historisk oversikt over endringer i kommune- og fylkesinndelingen (1999)",
+       "accessed": "2026-10-06",
+       "says": "Complete list of kommune changes 1838–1996 and of changes in the fylke division; inter-fylke boundary adjustments after 1972: 1980 Skedsmo→Oslo, 1984 Nittedal→Oslo, 1990-09-28 Sør-Fron→Folldal, 1996 Asker→Røyken."
+      },
+      {
+       "url": "https://www.ssb.no/metadata/alle-endringer-i-de-regionale-inndelingene",
+       "title": "SSB, Alle endringer i de regionale inndelingene",
+       "accessed": "2026-10-06",
+       "says": "Changes 1997–2020: inter-fylke only Godfjord Kvæfjord→Sortland (2000), Ølen Hordaland→Rogaland (2002), Trøndelag (2018), Rindal (2019) and the 2020 reform."
+      },
+      {
+       "url": "https://www.ssb.no/a/publikasjoner/pdf/rapp_9913/rapp_9913.pdf",
+       "title": "SSB Rapporter 99/13, Dag Juvkam: Historisk oversikt over endringer i kommune- og fylkesinndelingen (1999)",
+       "accessed": "2026-10-06",
+       "says": "See Nordland (Godfjorden, 2000-01-01)."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "NOR:Finnmark@1972",
+   "names": {
+    "en": "Finnmark",
+    "ja": "フィンマルク県",
+    "local": "Finnmark"
+   },
+   "wikidata": "Q50632",
+   "spans": [
+    {
+     "from": "1972-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NOR-ADM2-86288312B60394141718177",
+      "NOR-ADM2-86288312B8683339582307",
+      "NOR-ADM2-86288312B97693798592449",
+      "NOR-ADM2-86288312B28845238871652",
+      "NOR-ADM2-86288312B7407058385806",
+      "NOR-ADM2-86288312B61529177731516",
+      "NOR-ADM2-86288312B40106717450016",
+      "NOR-ADM2-86288312B81169350398117",
+      "NOR-ADM2-86288312B22085656530390",
+      "NOR-ADM2-86288312B73614960684794",
+      "NOR-ADM2-86288312B50454164159248",
+      "NOR-ADM2-86288312B55537413701399",
+      "NOR-ADM2-86288312B53598341368845",
+      "NOR-ADM2-86288312B98224162040661",
+      "NOR-ADM2-86288312B74284621306348",
+      "NOR-ADM2-86288312B66062966513984",
+      "NOR-ADM2-86288312B77332611217314",
+      "NOR-ADM2-86288312B72047105202096",
+      "NOR-ADM2-86288312B48399951224278"
+     ],
+     "sources": [
+      {
+       "url": "https://data.ssb.no/api/klass/v1/classifications/131/codesAt?date=2013-06-01",
+       "title": "SSB KLASS 131 (Standard for kommuneinndeling), codes valid 2013-06-01",
+       "accessed": "2026-10-06",
+       "says": "The kommune numbers valid in 2013; the first two digits are the fylke, so each atom's kommune lies in this fylke."
+      },
+      {
+       "url": "https://www.ssb.no/a/publikasjoner/pdf/rapp_9913/rapp_9913.pdf",
+       "title": "SSB Rapporter 99/13, Dag Juvkam: Historisk oversikt over endringer i kommune- og fylkesinndelingen (1999)",
+       "accessed": "2026-10-06",
+       "says": "Complete list of kommune changes 1838–1996 and of changes in the fylke division; inter-fylke boundary adjustments after 1972: 1980 Skedsmo→Oslo, 1984 Nittedal→Oslo, 1990-09-28 Sør-Fron→Folldal, 1996 Asker→Røyken."
+      },
+      {
+       "url": "https://www.ssb.no/metadata/alle-endringer-i-de-regionale-inndelingene",
+       "title": "SSB, Alle endringer i de regionale inndelingene",
+       "accessed": "2026-10-06",
+       "says": "Changes 1997–2020: inter-fylke only Godfjord Kvæfjord→Sortland (2000), Ølen Hordaland→Rogaland (2002), Trøndelag (2018), Rindal (2019) and the 2020 reform."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "NOR:Østfold@1972",
+   "names": {
+    "en": "Østfold",
+    "ja": "エストフォル県",
+    "local": "Østfold"
+   },
+   "wikidata": "Q50614",
+   "spans": [
+    {
+     "from": "1972-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NOR-ADM2-86288312B70342807980905",
+      "NOR-ADM2-86288312B33808129410619",
+      "NOR-ADM2-86288312B88858527960319",
+      "NOR-ADM2-86288312B6065445509759",
+      "NOR-ADM2-86288312B9110433923998",
+      "NOR-ADM2-86288312B4137874429707",
+      "NOR-ADM2-86288312B781121604536",
+      "NOR-ADM2-86288312B38891464101956",
+      "NOR-ADM2-86288312B47904591856116",
+      "NOR-ADM2-86288312B17022032090609",
+      "NOR-ADM2-86288312B28275954576976",
+      "NOR-ADM2-86288312B32613923772103",
+      "NOR-ADM2-86288312B50253419979546",
+      "NOR-ADM2-86288312B48934534405414",
+      "NOR-ADM2-86288312B44573726791656",
+      "NOR-ADM2-86288312B77346500929668",
+      "NOR-ADM2-86288312B37493332543742",
+      "NOR-ADM2-86288312B75077332019349"
+     ],
+     "sources": [
+      {
+       "url": "https://data.ssb.no/api/klass/v1/classifications/131/codesAt?date=2013-06-01",
+       "title": "SSB KLASS 131 (Standard for kommuneinndeling), codes valid 2013-06-01",
+       "accessed": "2026-10-06",
+       "says": "The kommune numbers valid in 2013; the first two digits are the fylke, so each atom's kommune lies in this fylke."
+      },
+      {
+       "url": "https://www.ssb.no/a/publikasjoner/pdf/rapp_9913/rapp_9913.pdf",
+       "title": "SSB Rapporter 99/13, Dag Juvkam: Historisk oversikt over endringer i kommune- og fylkesinndelingen (1999)",
+       "accessed": "2026-10-06",
+       "says": "Complete list of kommune changes 1838–1996 and of changes in the fylke division; inter-fylke boundary adjustments after 1972: 1980 Skedsmo→Oslo, 1984 Nittedal→Oslo, 1990-09-28 Sør-Fron→Folldal, 1996 Asker→Røyken."
+      },
+      {
+       "url": "https://www.ssb.no/metadata/alle-endringer-i-de-regionale-inndelingene",
+       "title": "SSB, Alle endringer i de regionale inndelingene",
+       "accessed": "2026-10-06",
+       "says": "Changes 1997–2020: inter-fylke only Godfjord Kvæfjord→Sortland (2000), Ølen Hordaland→Rogaland (2002), Trøndelag (2018), Rindal (2019) and the 2020 reform."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "NOR:Akershus@1996",
+   "names": {
+    "en": "Akershus",
+    "ja": "アーケシュフース県",
+    "local": "Akershus"
+   },
+   "wikidata": "Q50615",
+   "spans": [
+    {
+     "from": "1996-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NOR-ADM2-86288312B33593652809253",
+      "NOR-ADM2-86288312B18050772568406",
+      "NOR-ADM2-86288312B13989294808730",
+      "NOR-ADM2-86288312B77939080811439",
+      "NOR-ADM2-86288312B90903207900290",
+      "NOR-ADM2-86288312B7520340450988",
+      "NOR-ADM2-86288312B40852234595117",
+      "NOR-ADM2-86288312B34896382200122",
+      "NOR-ADM2-86288312B57848423677588",
+      "NOR-ADM2-86288312B73393856679097",
+      "NOR-ADM2-86288312B89206777827564",
+      "NOR-ADM2-86288312B89021281635202",
+      "NOR-ADM2-86288312B19466548216946",
+      "NOR-ADM2-86288312B53332495919573",
+      "NOR-ADM2-86288312B15837471533028",
+      "NOR-ADM2-86288312B33939315722531",
+      "NOR-ADM2-86288312B90693098258026",
+      "NOR-ADM2-86288312B44440966574319",
+      "NOR-ADM2-86288312B1963892276689",
+      "NOR-ADM2-86288312B86934644879837",
+      "NOR-ADM2-86288312B79220193025286",
+      "NOR-ADM2-86288312B20700127257552",
+      "NOR-ADM2-86288312B17302655292255"
+     ],
+     "sources": [
+      {
+       "url": "https://data.ssb.no/api/klass/v1/classifications/131/codesAt?date=2013-06-01",
+       "title": "SSB KLASS 131 (Standard for kommuneinndeling), codes valid 2013-06-01",
+       "accessed": "2026-10-06",
+       "says": "The kommune numbers valid in 2013; the first two digits are the fylke, so each atom's kommune lies in this fylke."
+      },
+      {
+       "url": "https://www.ssb.no/a/publikasjoner/pdf/rapp_9913/rapp_9913.pdf",
+       "title": "SSB Rapporter 99/13, Dag Juvkam: Historisk oversikt over endringer i kommune- og fylkesinndelingen (1999)",
+       "accessed": "2026-10-06",
+       "says": "Complete list of kommune changes 1838–1996 and of changes in the fylke division; inter-fylke boundary adjustments after 1972: 1980 Skedsmo→Oslo, 1984 Nittedal→Oslo, 1990-09-28 Sør-Fron→Folldal, 1996 Asker→Røyken."
+      },
+      {
+       "url": "https://www.ssb.no/metadata/alle-endringer-i-de-regionale-inndelingene",
+       "title": "SSB, Alle endringer i de regionale inndelingene",
+       "accessed": "2026-10-06",
+       "says": "Changes 1997–2020: inter-fylke only Godfjord Kvæfjord→Sortland (2000), Ølen Hordaland→Rogaland (2002), Trøndelag (2018), Rindal (2019) and the 2020 reform."
+      },
+      {
+       "url": "https://www.ssb.no/a/publikasjoner/pdf/rapp_9913/rapp_9913.pdf",
+       "title": "SSB Rapporter 99/13, Dag Juvkam: Historisk oversikt over endringer i kommune- og fylkesinndelingen (1999)",
+       "accessed": "2026-10-06",
+       "says": "See Oslo (Skedsmo 1980, Nittedal 1984); and on 1996-01-01 a part of Asker (gnr. 6, 9, 10, 13, 17) was transferred to Røyken in Buskerud, so the earlier Akershus/Buskerud line runs inside today's Røyken atom."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "NOR:Oslo@1984",
+   "names": {
+    "en": "Oslo",
+    "ja": "オスロ",
+    "local": "Oslo"
+   },
+   "wikidata": "Q585",
+   "spans": [
+    {
+     "from": "1984-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NOR-ADM2-86288312B18463313731869"
+     ],
+     "sources": [
+      {
+       "url": "https://data.ssb.no/api/klass/v1/classifications/131/codesAt?date=2013-06-01",
+       "title": "SSB KLASS 131 (Standard for kommuneinndeling), codes valid 2013-06-01",
+       "accessed": "2026-10-06",
+       "says": "The kommune numbers valid in 2013; the first two digits are the fylke, so each atom's kommune lies in this fylke."
+      },
+      {
+       "url": "https://www.ssb.no/a/publikasjoner/pdf/rapp_9913/rapp_9913.pdf",
+       "title": "SSB Rapporter 99/13, Dag Juvkam: Historisk oversikt over endringer i kommune- og fylkesinndelingen (1999)",
+       "accessed": "2026-10-06",
+       "says": "Complete list of kommune changes 1838–1996 and of changes in the fylke division; inter-fylke boundary adjustments after 1972: 1980 Skedsmo→Oslo, 1984 Nittedal→Oslo, 1990-09-28 Sør-Fron→Folldal, 1996 Asker→Røyken."
+      },
+      {
+       "url": "https://www.ssb.no/metadata/alle-endringer-i-de-regionale-inndelingene",
+       "title": "SSB, Alle endringer i de regionale inndelingene",
+       "accessed": "2026-10-06",
+       "says": "Changes 1997–2020: inter-fylke only Godfjord Kvæfjord→Sortland (2000), Ølen Hordaland→Rogaland (2002), Trøndelag (2018), Rindal (2019) and the 2020 reform."
+      },
+      {
+       "url": "https://www.ssb.no/a/publikasjoner/pdf/rapp_9913/rapp_9913.pdf",
+       "title": "SSB Rapporter 99/13, Dag Juvkam: Historisk oversikt over endringer i kommune- og fylkesinndelingen (1999)",
+       "accessed": "2026-10-06",
+       "says": "Uninhabited parts of Skedsmo (1980-01-01) and Nittedal (Danielshøgde, Sandungen; 1984-01-01) in Akershus were transferred to Oslo; before 1984 the present Oslo atom holds Akershus ground."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "NOR:Hedmark@1990",
+   "names": {
+    "en": "Hedmark",
+    "ja": "ヘードマルク県",
+    "local": "Hedmark"
+   },
+   "wikidata": "Q50616",
+   "spans": [
+    {
+     "from": "1990-09-28",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NOR-ADM2-86288312B76423456121539",
+      "NOR-ADM2-86288312B77330418137149",
+      "NOR-ADM2-86288312B80993822941630",
+      "NOR-ADM2-86288312B62333254933331",
+      "NOR-ADM2-86288312B29283811421655",
+      "NOR-ADM2-86288312B34159000507118",
+      "NOR-ADM2-86288312B7297449616309",
+      "NOR-ADM2-86288312B77863424793957",
+      "NOR-ADM2-86288312B6884926742190",
+      "NOR-ADM2-86288312B82659531388015",
+      "NOR-ADM2-86288312B42722797095637",
+      "NOR-ADM2-86288312B32893116539202",
+      "NOR-ADM2-86288312B88288048958724",
+      "NOR-ADM2-86288312B58904882216706",
+      "NOR-ADM2-86288312B35132489533254",
+      "NOR-ADM2-86288312B88034001552428",
+      "NOR-ADM2-86288312B93894082847731",
+      "NOR-ADM2-86288312B6649018055667",
+      "NOR-ADM2-86288312B89753737771336",
+      "NOR-ADM2-86288312B45853408060445",
+      "NOR-ADM2-86288312B76254808109163",
+      "NOR-ADM2-86288312B23847912636129"
+     ],
+     "sources": [
+      {
+       "url": "https://data.ssb.no/api/klass/v1/classifications/131/codesAt?date=2013-06-01",
+       "title": "SSB KLASS 131 (Standard for kommuneinndeling), codes valid 2013-06-01",
+       "accessed": "2026-10-06",
+       "says": "The kommune numbers valid in 2013; the first two digits are the fylke, so each atom's kommune lies in this fylke."
+      },
+      {
+       "url": "https://www.ssb.no/a/publikasjoner/pdf/rapp_9913/rapp_9913.pdf",
+       "title": "SSB Rapporter 99/13, Dag Juvkam: Historisk oversikt over endringer i kommune- og fylkesinndelingen (1999)",
+       "accessed": "2026-10-06",
+       "says": "Complete list of kommune changes 1838–1996 and of changes in the fylke division; inter-fylke boundary adjustments after 1972: 1980 Skedsmo→Oslo, 1984 Nittedal→Oslo, 1990-09-28 Sør-Fron→Folldal, 1996 Asker→Røyken."
+      },
+      {
+       "url": "https://www.ssb.no/metadata/alle-endringer-i-de-regionale-inndelingene",
+       "title": "SSB, Alle endringer i de regionale inndelingene",
+       "accessed": "2026-10-06",
+       "says": "Changes 1997–2020: inter-fylke only Godfjord Kvæfjord→Sortland (2000), Ølen Hordaland→Rogaland (2002), Trøndelag (2018), Rindal (2019) and the 2020 reform."
+      },
+      {
+       "url": "https://www.ssb.no/a/publikasjoner/pdf/rapp_9913/rapp_9913.pdf",
+       "title": "SSB Rapporter 99/13, Dag Juvkam: Historisk oversikt over endringer i kommune- og fylkesinndelingen (1999)",
+       "accessed": "2026-10-06",
+       "says": "A part of Sør-Fron (Oppland) was transferred to Folldal (Hedmark) by boundary description on 1990-09-28; before that the present Folldal atom holds Oppland ground."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "NOR:Oppland@1990",
+   "names": {
+    "en": "Oppland",
+    "ja": "オップラン県",
+    "local": "Oppland"
+   },
+   "wikidata": "Q50617",
+   "spans": [
+    {
+     "from": "1990-09-28",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NOR-ADM2-86288312B91511415851123",
+      "NOR-ADM2-86288312B33934459205841",
+      "NOR-ADM2-86288312B31660011539204",
+      "NOR-ADM2-86288312B35215540023018",
+      "NOR-ADM2-86288312B79344664474428",
+      "NOR-ADM2-86288312B32418406906807",
+      "NOR-ADM2-86288312B91782674250169",
+      "NOR-ADM2-86288312B5494531478451",
+      "NOR-ADM2-86288312B15503490624265",
+      "NOR-ADM2-86288312B61542642146209",
+      "NOR-ADM2-86288312B61487149869578",
+      "NOR-ADM2-86288312B15696105865546",
+      "NOR-ADM2-86288312B59851098510460",
+      "NOR-ADM2-86288312B86605767458860",
+      "NOR-ADM2-86288312B14831556842488",
+      "NOR-ADM2-86288312B39232135925615",
+      "NOR-ADM2-86288312B19107162508437",
+      "NOR-ADM2-86288312B11903368745588",
+      "NOR-ADM2-86288312B26637374154815",
+      "NOR-ADM2-86288312B96709074525664",
+      "NOR-ADM2-86288312B94593147545538",
+      "NOR-ADM2-86288312B23530540977593",
+      "NOR-ADM2-86288312B2745383229775",
+      "NOR-ADM2-86288312B86660801630456",
+      "NOR-ADM2-86288312B46682555778915",
+      "NOR-ADM2-86288312B18082183204851"
+     ],
+     "sources": [
+      {
+       "url": "https://data.ssb.no/api/klass/v1/classifications/131/codesAt?date=2013-06-01",
+       "title": "SSB KLASS 131 (Standard for kommuneinndeling), codes valid 2013-06-01",
+       "accessed": "2026-10-06",
+       "says": "The kommune numbers valid in 2013; the first two digits are the fylke, so each atom's kommune lies in this fylke."
+      },
+      {
+       "url": "https://www.ssb.no/a/publikasjoner/pdf/rapp_9913/rapp_9913.pdf",
+       "title": "SSB Rapporter 99/13, Dag Juvkam: Historisk oversikt over endringer i kommune- og fylkesinndelingen (1999)",
+       "accessed": "2026-10-06",
+       "says": "Complete list of kommune changes 1838–1996 and of changes in the fylke division; inter-fylke boundary adjustments after 1972: 1980 Skedsmo→Oslo, 1984 Nittedal→Oslo, 1990-09-28 Sør-Fron→Folldal, 1996 Asker→Røyken."
+      },
+      {
+       "url": "https://www.ssb.no/metadata/alle-endringer-i-de-regionale-inndelingene",
+       "title": "SSB, Alle endringer i de regionale inndelingene",
+       "accessed": "2026-10-06",
+       "says": "Changes 1997–2020: inter-fylke only Godfjord Kvæfjord→Sortland (2000), Ølen Hordaland→Rogaland (2002), Trøndelag (2018), Rindal (2019) and the 2020 reform."
+      },
+      {
+       "url": "https://www.ssb.no/a/publikasjoner/pdf/rapp_9913/rapp_9913.pdf",
+       "title": "SSB Rapporter 99/13, Dag Juvkam: Historisk oversikt over endringer i kommune- og fylkesinndelingen (1999)",
+       "accessed": "2026-10-06",
+       "says": "See Hedmark (Sør-Fron → Folldal, 1990-09-28)."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "NOR:Buskerud@1996",
+   "names": {
+    "en": "Buskerud",
+    "ja": "ブスケルー県",
+    "local": "Buskerud"
+   },
+   "wikidata": "Q50618",
+   "spans": [
+    {
+     "from": "1996-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NOR-ADM2-86288312B73826406337019",
+      "NOR-ADM2-86288312B72447023629583",
+      "NOR-ADM2-86288312B77514254220313",
+      "NOR-ADM2-86288312B15384371721411",
+      "NOR-ADM2-86288312B11516416194364",
+      "NOR-ADM2-86288312B66646203611151",
+      "NOR-ADM2-86288312B66114336296766",
+      "NOR-ADM2-86288312B23608976115217",
+      "NOR-ADM2-86288312B33339816949909",
+      "NOR-ADM2-86288312B18183247868673",
+      "NOR-ADM2-86288312B57956747563508",
+      "NOR-ADM2-86288312B81209358374385",
+      "NOR-ADM2-86288312B702333415323",
+      "NOR-ADM2-86288312B5778191287767",
+      "NOR-ADM2-86288312B88500439281521",
+      "NOR-ADM2-86288312B40631627404098",
+      "NOR-ADM2-86288312B74882659121257",
+      "NOR-ADM2-86288312B28419209750879",
+      "NOR-ADM2-86288312B66874291334067",
+      "NOR-ADM2-86288312B37235196254679",
+      "NOR-ADM2-86288312B91895261820086"
+     ],
+     "sources": [
+      {
+       "url": "https://data.ssb.no/api/klass/v1/classifications/131/codesAt?date=2013-06-01",
+       "title": "SSB KLASS 131 (Standard for kommuneinndeling), codes valid 2013-06-01",
+       "accessed": "2026-10-06",
+       "says": "The kommune numbers valid in 2013; the first two digits are the fylke, so each atom's kommune lies in this fylke."
+      },
+      {
+       "url": "https://www.ssb.no/a/publikasjoner/pdf/rapp_9913/rapp_9913.pdf",
+       "title": "SSB Rapporter 99/13, Dag Juvkam: Historisk oversikt over endringer i kommune- og fylkesinndelingen (1999)",
+       "accessed": "2026-10-06",
+       "says": "Complete list of kommune changes 1838–1996 and of changes in the fylke division; inter-fylke boundary adjustments after 1972: 1980 Skedsmo→Oslo, 1984 Nittedal→Oslo, 1990-09-28 Sør-Fron→Folldal, 1996 Asker→Røyken."
+      },
+      {
+       "url": "https://www.ssb.no/metadata/alle-endringer-i-de-regionale-inndelingene",
+       "title": "SSB, Alle endringer i de regionale inndelingene",
+       "accessed": "2026-10-06",
+       "says": "Changes 1997–2020: inter-fylke only Godfjord Kvæfjord→Sortland (2000), Ølen Hordaland→Rogaland (2002), Trøndelag (2018), Rindal (2019) and the 2020 reform."
+      },
+      {
+       "url": "https://www.ssb.no/a/publikasjoner/pdf/rapp_9913/rapp_9913.pdf",
+       "title": "SSB Rapporter 99/13, Dag Juvkam: Historisk oversikt over endringer i kommune- og fylkesinndelingen (1999)",
+       "accessed": "2026-10-06",
+       "says": "A part of Asker (Akershus) was transferred to Røyken (Buskerud) on 1996-01-01; before that the present Røyken atom holds Akershus ground."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "NOR:Vestfold@1972",
+   "names": {
+    "en": "Vestfold",
+    "ja": "ヴェストフォル県",
+    "local": "Vestfold"
+   },
+   "wikidata": "Q50619",
+   "spans": [
+    {
+     "from": "1972-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NOR-ADM2-86288312B65509327591170",
+      "NOR-ADM2-86288312B37991214799587",
+      "NOR-ADM2-86288312B65045037066100",
+      "NOR-ADM2-86288312B49956030196475",
+      "NOR-ADM2-86288312B28519776233063",
+      "NOR-ADM2-86288312B41370900035863",
+      "NOR-ADM2-86288312B10899957207180",
+      "NOR-ADM2-86288312B25066460859021",
+      "NOR-ADM2-86288312B46976910861287",
+      "NOR-ADM2-86288312B12801335052403",
+      "NOR-ADM2-86288312B24065042628748",
+      "NOR-ADM2-86288312B83701369955488",
+      "NOR-ADM2-86288312B12201330718372"
+     ],
+     "sources": [
+      {
+       "url": "https://data.ssb.no/api/klass/v1/classifications/131/codesAt?date=2013-06-01",
+       "title": "SSB KLASS 131 (Standard for kommuneinndeling), codes valid 2013-06-01",
+       "accessed": "2026-10-06",
+       "says": "The kommune numbers valid in 2013; the first two digits are the fylke, so each atom's kommune lies in this fylke."
+      },
+      {
+       "url": "https://www.ssb.no/a/publikasjoner/pdf/rapp_9913/rapp_9913.pdf",
+       "title": "SSB Rapporter 99/13, Dag Juvkam: Historisk oversikt over endringer i kommune- og fylkesinndelingen (1999)",
+       "accessed": "2026-10-06",
+       "says": "Complete list of kommune changes 1838–1996 and of changes in the fylke division; inter-fylke boundary adjustments after 1972: 1980 Skedsmo→Oslo, 1984 Nittedal→Oslo, 1990-09-28 Sør-Fron→Folldal, 1996 Asker→Røyken."
+      },
+      {
+       "url": "https://www.ssb.no/metadata/alle-endringer-i-de-regionale-inndelingene",
+       "title": "SSB, Alle endringer i de regionale inndelingene",
+       "accessed": "2026-10-06",
+       "says": "Changes 1997–2020: inter-fylke only Godfjord Kvæfjord→Sortland (2000), Ølen Hordaland→Rogaland (2002), Trøndelag (2018), Rindal (2019) and the 2020 reform."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "NOR:Telemark@1972",
+   "names": {
+    "en": "Telemark",
+    "ja": "テレマルク県",
+    "local": "Telemark"
+   },
+   "wikidata": "Q2254",
+   "spans": [
+    {
+     "from": "1972-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NOR-ADM2-86288312B57586281322059",
+      "NOR-ADM2-86288312B40873375407983",
+      "NOR-ADM2-86288312B26401918029146",
+      "NOR-ADM2-86288312B29220446300399",
+      "NOR-ADM2-86288312B18605763304298",
+      "NOR-ADM2-86288312B68880560441515",
+      "NOR-ADM2-86288312B14139397514158",
+      "NOR-ADM2-86288312B10810953516710",
+      "NOR-ADM2-86288312B49574496849742",
+      "NOR-ADM2-86288312B28765776683305",
+      "NOR-ADM2-86288312B6017689781650",
+      "NOR-ADM2-86288312B3743055335069",
+      "NOR-ADM2-86288312B98862303596044",
+      "NOR-ADM2-86288312B55078713948498",
+      "NOR-ADM2-86288312B68801046194280",
+      "NOR-ADM2-86288312B50854696471252",
+      "NOR-ADM2-86288312B99450308134053",
+      "NOR-ADM2-86288312B25517815255384",
+      "NOR-ADM2-86288312B76434721018946"
+     ],
+     "sources": [
+      {
+       "url": "https://data.ssb.no/api/klass/v1/classifications/131/codesAt?date=2013-06-01",
+       "title": "SSB KLASS 131 (Standard for kommuneinndeling), codes valid 2013-06-01",
+       "accessed": "2026-10-06",
+       "says": "The kommune numbers valid in 2013; the first two digits are the fylke, so each atom's kommune lies in this fylke."
+      },
+      {
+       "url": "https://www.ssb.no/a/publikasjoner/pdf/rapp_9913/rapp_9913.pdf",
+       "title": "SSB Rapporter 99/13, Dag Juvkam: Historisk oversikt over endringer i kommune- og fylkesinndelingen (1999)",
+       "accessed": "2026-10-06",
+       "says": "Complete list of kommune changes 1838–1996 and of changes in the fylke division; inter-fylke boundary adjustments after 1972: 1980 Skedsmo→Oslo, 1984 Nittedal→Oslo, 1990-09-28 Sør-Fron→Folldal, 1996 Asker→Røyken."
+      },
+      {
+       "url": "https://www.ssb.no/metadata/alle-endringer-i-de-regionale-inndelingene",
+       "title": "SSB, Alle endringer i de regionale inndelingene",
+       "accessed": "2026-10-06",
+       "says": "Changes 1997–2020: inter-fylke only Godfjord Kvæfjord→Sortland (2000), Ølen Hordaland→Rogaland (2002), Trøndelag (2018), Rindal (2019) and the 2020 reform."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "NOR:Aust-Agder@1972",
+   "names": {
+    "en": "Aust-Agder",
+    "ja": "アウスト・アグデル県",
+    "local": "Aust-Agder"
+   },
+   "wikidata": "Q50621",
+   "spans": [
+    {
+     "from": "1972-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NOR-ADM2-86288312B79556045752597",
+      "NOR-ADM2-86288312B21568126373131",
+      "NOR-ADM2-86288312B5594304829508",
+      "NOR-ADM2-86288312B22941385681513",
+      "NOR-ADM2-86288312B48692676973437",
+      "NOR-ADM2-86288312B47311775566626",
+      "NOR-ADM2-86288312B64085971286736",
+      "NOR-ADM2-86288312B47450701300036",
+      "NOR-ADM2-86288312B17252919876128",
+      "NOR-ADM2-86288312B11283211528178",
+      "NOR-ADM2-86288312B46813879091591",
+      "NOR-ADM2-86288312B24572790615824",
+      "NOR-ADM2-86288312B73251107165471",
+      "NOR-ADM2-86288312B29149661311008",
+      "NOR-ADM2-86288312B9784031992888"
+     ],
+     "sources": [
+      {
+       "url": "https://data.ssb.no/api/klass/v1/classifications/131/codesAt?date=2013-06-01",
+       "title": "SSB KLASS 131 (Standard for kommuneinndeling), codes valid 2013-06-01",
+       "accessed": "2026-10-06",
+       "says": "The kommune numbers valid in 2013; the first two digits are the fylke, so each atom's kommune lies in this fylke."
+      },
+      {
+       "url": "https://www.ssb.no/a/publikasjoner/pdf/rapp_9913/rapp_9913.pdf",
+       "title": "SSB Rapporter 99/13, Dag Juvkam: Historisk oversikt over endringer i kommune- og fylkesinndelingen (1999)",
+       "accessed": "2026-10-06",
+       "says": "Complete list of kommune changes 1838–1996 and of changes in the fylke division; inter-fylke boundary adjustments after 1972: 1980 Skedsmo→Oslo, 1984 Nittedal→Oslo, 1990-09-28 Sør-Fron→Folldal, 1996 Asker→Røyken."
+      },
+      {
+       "url": "https://www.ssb.no/metadata/alle-endringer-i-de-regionale-inndelingene",
+       "title": "SSB, Alle endringer i de regionale inndelingene",
+       "accessed": "2026-10-06",
+       "says": "Changes 1997–2020: inter-fylke only Godfjord Kvæfjord→Sortland (2000), Ølen Hordaland→Rogaland (2002), Trøndelag (2018), Rindal (2019) and the 2020 reform."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "NOR:Trøndelag@2018",
+   "names": {
+    "en": "Trøndelag",
+    "ja": "トロンデラーグ県",
+    "local": "Trøndelag"
+   },
+   "wikidata": "Q127676",
+   "spans": [
+    {
+     "from": "2018-01-01",
+     "precision": "day",
+     "to": "2019-01-01",
+     "atoms": [
+      "NOR-ADM2-86288312B40278854732862",
+      "NOR-ADM2-86288312B83613644252663",
+      "NOR-ADM2-86288312B32128147413448",
+      "NOR-ADM2-86288312B44051007085093",
+      "NOR-ADM2-86288312B1227555163680",
+      "NOR-ADM2-86288312B1781368759016",
+      "NOR-ADM2-86288312B5608393876733",
+      "NOR-ADM2-86288312B11498019904431",
+      "NOR-ADM2-86288312B5203152162858",
+      "NOR-ADM2-86288312B14672421796799",
+      "NOR-ADM2-86288312B48706769721538",
+      "NOR-ADM2-86288312B97318118947912",
+      "NOR-ADM2-86288312B45972287407526",
+      "NOR-ADM2-86288312B67430343511851",
+      "NOR-ADM2-86288312B80275455305326",
+      "NOR-ADM2-86288312B17793327792400",
+      "NOR-ADM2-86288312B16498959259468",
+      "NOR-ADM2-86288312B69677732452167",
+      "NOR-ADM2-86288312B65745471966188",
+      "NOR-ADM2-86288312B3203953779566",
+      "NOR-ADM2-86288312B70767973443782",
+      "NOR-ADM2-86288312B63643757450384",
+      "NOR-ADM2-86288312B71092976212534",
+      "NOR-ADM2-86288312B46091891234397",
+      "NOR-ADM2-86288312B36520451776758",
+      "NOR-ADM2-86288312B97150685823203",
+      "NOR-ADM2-86288312B66000336849668",
+      "NOR-ADM2-86288312B89960362745418",
+      "NOR-ADM2-86288312B4648926178288",
+      "NOR-ADM2-86288312B77000887435239",
+      "NOR-ADM2-86288312B18115078768764",
+      "NOR-ADM2-86288312B32212303283583",
+      "NOR-ADM2-86288312B47983318016023",
+      "NOR-ADM2-86288312B29222354807484",
+      "NOR-ADM2-86288312B74220528840082",
+      "NOR-ADM2-86288312B15566061957795",
+      "NOR-ADM2-86288312B82574062898212",
+      "NOR-ADM2-86288312B92736978662870",
+      "NOR-ADM2-86288312B18361683612622",
+      "NOR-ADM2-86288312B25157872919585",
+      "NOR-ADM2-86288312B81438149454650",
+      "NOR-ADM2-86288312B93862258107530",
+      "NOR-ADM2-86288312B7521239931161",
+      "NOR-ADM2-86288312B10441547296233",
+      "NOR-ADM2-86288312B18564926842494",
+      "NOR-ADM2-86288312B13820537707867",
+      "NOR-ADM2-86288312B5983253954554",
+      "NOR-ADM2-86288312B80976394887598",
+      "NOR-ADM2-86288312B41208068814146",
+      "NOR-ADM2-86288312B29366905893457"
+     ],
+     "sources": [
+      {
+       "url": "https://data.ssb.no/api/klass/v1/classifications/131/codesAt?date=2013-06-01",
+       "title": "SSB KLASS 131 (Standard for kommuneinndeling), codes valid 2013-06-01",
+       "accessed": "2026-10-06",
+       "says": "The kommune numbers valid in 2013; the first two digits are the fylke, so each atom's kommune lies in this fylke."
+      },
+      {
+       "url": "https://www.ssb.no/a/publikasjoner/pdf/rapp_9913/rapp_9913.pdf",
+       "title": "SSB Rapporter 99/13, Dag Juvkam: Historisk oversikt over endringer i kommune- og fylkesinndelingen (1999)",
+       "accessed": "2026-10-06",
+       "says": "Complete list of kommune changes 1838–1996 and of changes in the fylke division; inter-fylke boundary adjustments after 1972: 1980 Skedsmo→Oslo, 1984 Nittedal→Oslo, 1990-09-28 Sør-Fron→Folldal, 1996 Asker→Røyken."
+      },
+      {
+       "url": "https://www.ssb.no/metadata/alle-endringer-i-de-regionale-inndelingene",
+       "title": "SSB, Alle endringer i de regionale inndelingene",
+       "accessed": "2026-10-06",
+       "says": "Changes 1997–2020: inter-fylke only Godfjord Kvæfjord→Sortland (2000), Ølen Hordaland→Rogaland (2002), Trøndelag (2018), Rindal (2019) and the 2020 reform."
+      },
+      {
+       "url": "https://no.wikipedia.org/w/index.php?title=Norges_fylker&oldid=25797927",
+       "title": "Norges fylker (norsk Wikipedia, oldid 25797927)",
+       "accessed": "2026-10-06",
+       "says": "Sør- and Nord-Trøndelag merged into Trøndelag on 1 January 2018."
+      }
+     ]
+    },
+    {
+     "from": "2019-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NOR-ADM2-86288312B40278854732862",
+      "NOR-ADM2-86288312B83613644252663",
+      "NOR-ADM2-86288312B32128147413448",
+      "NOR-ADM2-86288312B44051007085093",
+      "NOR-ADM2-86288312B1227555163680",
+      "NOR-ADM2-86288312B1781368759016",
+      "NOR-ADM2-86288312B5608393876733",
+      "NOR-ADM2-86288312B11498019904431",
+      "NOR-ADM2-86288312B5203152162858",
+      "NOR-ADM2-86288312B14672421796799",
+      "NOR-ADM2-86288312B48706769721538",
+      "NOR-ADM2-86288312B97318118947912",
+      "NOR-ADM2-86288312B45972287407526",
+      "NOR-ADM2-86288312B67430343511851",
+      "NOR-ADM2-86288312B80275455305326",
+      "NOR-ADM2-86288312B17793327792400",
+      "NOR-ADM2-86288312B16498959259468",
+      "NOR-ADM2-86288312B69677732452167",
+      "NOR-ADM2-86288312B65745471966188",
+      "NOR-ADM2-86288312B3203953779566",
+      "NOR-ADM2-86288312B70767973443782",
+      "NOR-ADM2-86288312B63643757450384",
+      "NOR-ADM2-86288312B71092976212534",
+      "NOR-ADM2-86288312B46091891234397",
+      "NOR-ADM2-86288312B36520451776758",
+      "NOR-ADM2-86288312B97150685823203",
+      "NOR-ADM2-86288312B66000336849668",
+      "NOR-ADM2-86288312B89960362745418",
+      "NOR-ADM2-86288312B4648926178288",
+      "NOR-ADM2-86288312B77000887435239",
+      "NOR-ADM2-86288312B18115078768764",
+      "NOR-ADM2-86288312B32212303283583",
+      "NOR-ADM2-86288312B47983318016023",
+      "NOR-ADM2-86288312B29222354807484",
+      "NOR-ADM2-86288312B74220528840082",
+      "NOR-ADM2-86288312B15566061957795",
+      "NOR-ADM2-86288312B82574062898212",
+      "NOR-ADM2-86288312B92736978662870",
+      "NOR-ADM2-86288312B18361683612622",
+      "NOR-ADM2-86288312B25157872919585",
+      "NOR-ADM2-86288312B81438149454650",
+      "NOR-ADM2-86288312B93862258107530",
+      "NOR-ADM2-86288312B7521239931161",
+      "NOR-ADM2-86288312B10441547296233",
+      "NOR-ADM2-86288312B18564926842494",
+      "NOR-ADM2-86288312B13820537707867",
+      "NOR-ADM2-86288312B5983253954554",
+      "NOR-ADM2-86288312B80976394887598",
+      "NOR-ADM2-86288312B41208068814146",
+      "NOR-ADM2-86288312B29366905893457",
+      "NOR-ADM2-86288312B78124054872734"
+     ],
+     "sources": [
+      {
+       "url": "https://data.ssb.no/api/klass/v1/classifications/131/codesAt?date=2013-06-01",
+       "title": "SSB KLASS 131 (Standard for kommuneinndeling), codes valid 2013-06-01",
+       "accessed": "2026-10-06",
+       "says": "The kommune numbers valid in 2013; the first two digits are the fylke, so each atom's kommune lies in this fylke."
+      },
+      {
+       "url": "https://www.ssb.no/a/publikasjoner/pdf/rapp_9913/rapp_9913.pdf",
+       "title": "SSB Rapporter 99/13, Dag Juvkam: Historisk oversikt over endringer i kommune- og fylkesinndelingen (1999)",
+       "accessed": "2026-10-06",
+       "says": "Complete list of kommune changes 1838–1996 and of changes in the fylke division; inter-fylke boundary adjustments after 1972: 1980 Skedsmo→Oslo, 1984 Nittedal→Oslo, 1990-09-28 Sør-Fron→Folldal, 1996 Asker→Røyken."
+      },
+      {
+       "url": "https://www.ssb.no/metadata/alle-endringer-i-de-regionale-inndelingene",
+       "title": "SSB, Alle endringer i de regionale inndelingene",
+       "accessed": "2026-10-06",
+       "says": "Changes 1997–2020: inter-fylke only Godfjord Kvæfjord→Sortland (2000), Ølen Hordaland→Rogaland (2002), Trøndelag (2018), Rindal (2019) and the 2020 reform."
+      },
+      {
+       "url": "https://no.wikipedia.org/w/index.php?title=Norske_kommuner_som_har_skiftet_fylke&oldid=25852096",
+       "title": "Norske kommuner som har skiftet fylke (norsk Wikipedia, oldid 25852096)",
+       "accessed": "2026-10-06",
+       "says": "Rindal joined Trøndelag in 2019."
+      }
+     ],
+     "dateNote": "Rindal transferred with effect from 2019-01-01 (kommune number 1567 → 5061)."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "2018-01-01",
+   "what": "Sør-Trøndelag and Nord-Trøndelag merged into Trøndelag",
+   "sources": [
+    {
+     "url": "https://no.wikipedia.org/w/index.php?title=Norges_fylker&oldid=25797927",
+     "title": "Norges fylker (norsk Wikipedia, oldid 25797927)",
+     "accessed": "2026-10-06",
+     "says": "19 fylker until 2018, 18 until 2020."
+    }
+   ]
+  },
+  {
+   "date": "2019-01-01",
+   "what": "Rindal transferred from Møre og Romsdal to Trøndelag",
+   "sources": [
+    {
+     "url": "https://no.wikipedia.org/w/index.php?title=Norske_kommuner_som_har_skiftet_fylke&oldid=25852096",
+     "title": "Norske kommuner som har skiftet fylke (norsk Wikipedia, oldid 25852096)",
+     "accessed": "2026-10-06",
+     "says": "Rindal moved to Trøndelag in 2019."
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1972-01-01",
+   "n": 19,
+   "sources": [
+    {
+     "url": "https://no.wikipedia.org/w/index.php?title=Norges_fylker&oldid=25797927",
+     "title": "Norges fylker (norsk Wikipedia, oldid 25797927)",
+     "accessed": "2026-10-06",
+     "says": "20 fylker until 1972, 19 until 2018, 18 until 2020."
+    }
+   ]
+  },
+  {
+   "date": "2000-06-01",
+   "n": 19,
+   "sources": [
+    {
+     "url": "https://no.wikipedia.org/w/index.php?title=Norges_fylker&oldid=25797927",
+     "title": "Norges fylker (norsk Wikipedia, oldid 25797927)",
+     "accessed": "2026-10-06",
+     "says": "19 fylker from 1972 to 2018."
+    }
+   ]
+  },
+  {
+   "date": "2018-01-01",
+   "n": 18,
+   "sources": [
+    {
+     "url": "https://no.wikipedia.org/w/index.php?title=Norges_fylker&oldid=25797927",
+     "title": "Norges fylker (norsk Wikipedia, oldid 25797927)",
+     "accessed": "2026-10-06",
+     "says": "After the Trøndelag merger on 1 January 2018 there were 18 fylker."
+    }
+   ]
+  }
+ ],
+ "unresolved": [
+  {
+   "what": "Rogaland before 2002-01-01",
+   "unit": "NOR:Rogaland@1972",
+   "atoms": [
+    "NOR-ADM2-86288312B97968708027313",
+    "NOR-ADM2-86288312B31081381702542",
+    "NOR-ADM2-86288312B95647148503835",
+    "NOR-ADM2-86288312B80331552977224",
+    "NOR-ADM2-86288312B23516572714138",
+    "NOR-ADM2-86288312B75018184533449",
+    "NOR-ADM2-86288312B70741506044896",
+    "NOR-ADM2-86288312B12151058165586",
+    "NOR-ADM2-86288312B27050334738576",
+    "NOR-ADM2-86288312B53803854392710",
+    "NOR-ADM2-86288312B7818860618631",
+    "NOR-ADM2-86288312B92458440996482",
+    "NOR-ADM2-86288312B43548013531547",
+    "NOR-ADM2-86288312B80966124868443",
+    "NOR-ADM2-86288312B22381651590620",
+    "NOR-ADM2-86288312B95219475773394",
+    "NOR-ADM2-86288312B30341713179901",
+    "NOR-ADM2-86288312B53863768587168",
+    "NOR-ADM2-86288312B14474209678121",
+    "NOR-ADM2-86288312B57729087865321",
+    "NOR-ADM2-86288312B22433756147713",
+    "NOR-ADM2-86288312B74998451175401",
+    "NOR-ADM2-86288312B13309254360301",
+    "NOR-ADM2-86288312B48942403855190",
+    "NOR-ADM2-86288312B13640802673877",
+    "NOR-ADM2-86288312B2742263230079"
+   ],
+   "from": "1972-01-01",
+   "to": "2002-01-01",
+   "why": "Ølen kommune was in Hordaland until 2002-01-01 and is inside today's Vindafjord atom (merged 2006), so the Hordaland/Rogaland line before 2002 runs inside that atom.",
+   "checked": [
+    "SSB Rapporter 99/13 (fylke division changes and inter-fylke boundary adjustments 1838–1996, pp. 86–89)",
+    "SSB «Alle endringer i de regionale inndelingene» 1997–2020",
+    "Norsk Wikipedia «Norske kommuner som har skiftet fylke»",
+    "geoBoundaries NOR ADM2: kommune atoms only — no finer atoms to carry a partial transfer"
+   ],
+   "needs": "grunnkrets or property-level atoms (SSB grunnkretser / Kartverket matrikkel) to carry the pre-transfer line"
+  },
+  {
+   "what": "Hordaland before 2002-01-01",
+   "unit": "NOR:Hordaland@1972",
+   "atoms": [
+    "NOR-ADM2-86288312B29393912466053",
+    "NOR-ADM2-86288312B30337724533689",
+    "NOR-ADM2-86288312B58767518046388",
+    "NOR-ADM2-86288312B69589401279703",
+    "NOR-ADM2-86288312B51144520840876",
+    "NOR-ADM2-86288312B30857166423127",
+    "NOR-ADM2-86288312B23917972553599",
+    "NOR-ADM2-86288312B21987069747825",
+    "NOR-ADM2-86288312B98052754922139",
+    "NOR-ADM2-86288312B12130707961185",
+    "NOR-ADM2-86288312B50170416612347",
+    "NOR-ADM2-86288312B43421694562872",
+    "NOR-ADM2-86288312B70399865031783",
+    "NOR-ADM2-86288312B27116623213145",
+    "NOR-ADM2-86288312B86706978449473",
+    "NOR-ADM2-86288312B62165724203406",
+    "NOR-ADM2-86288312B29955336638723",
+    "NOR-ADM2-86288312B17491497636164",
+    "NOR-ADM2-86288312B50611449563949",
+    "NOR-ADM2-86288312B90213483192723",
+    "NOR-ADM2-86288312B8204828697072",
+    "NOR-ADM2-86288312B69924208122443",
+    "NOR-ADM2-86288312B73350405058148",
+    "NOR-ADM2-86288312B29517582925264",
+    "NOR-ADM2-86288312B21434642963",
+    "NOR-ADM2-86288312B67781995425218",
+    "NOR-ADM2-86288312B18429617226236",
+    "NOR-ADM2-86288312B99631604465694",
+    "NOR-ADM2-86288312B59600167870114",
+    "NOR-ADM2-86288312B18833292732183",
+    "NOR-ADM2-86288312B11299132347208",
+    "NOR-ADM2-86288312B65460294234921",
+    "NOR-ADM2-86288312B82260053973659"
+   ],
+   "from": "1972-01-01",
+   "to": "2002-01-01",
+   "why": "See Rogaland (Ølen, 2002-01-01).",
+   "checked": [
+    "SSB Rapporter 99/13 (fylke division changes and inter-fylke boundary adjustments 1838–1996, pp. 86–89)",
+    "SSB «Alle endringer i de regionale inndelingene» 1997–2020",
+    "Norsk Wikipedia «Norske kommuner som har skiftet fylke»",
+    "geoBoundaries NOR ADM2: kommune atoms only — no finer atoms to carry a partial transfer"
+   ],
+   "needs": "grunnkrets or property-level atoms (SSB grunnkretser / Kartverket matrikkel) to carry the pre-transfer line"
+  },
+  {
+   "what": "Nordland before 2000-01-01",
+   "unit": "NOR:Nordland@1972",
+   "atoms": [
+    "NOR-ADM2-86288312B1701312811751",
+    "NOR-ADM2-86288312B94814604845877",
+    "NOR-ADM2-86288312B3163335119560",
+    "NOR-ADM2-86288312B28402978584720",
+    "NOR-ADM2-86288312B52145854471889",
+    "NOR-ADM2-86288312B63422016976384",
+    "NOR-ADM2-86288312B2671252892867",
+    "NOR-ADM2-86288312B50581402621032",
+    "NOR-ADM2-86288312B94702681329617",
+    "NOR-ADM2-86288312B40270143357623",
+    "NOR-ADM2-86288312B82396448317791",
+    "NOR-ADM2-86288312B55953165899475",
+    "NOR-ADM2-86288312B75314465532393",
+    "NOR-ADM2-86288312B44883610080028",
+    "NOR-ADM2-86288312B15447104540063",
+    "NOR-ADM2-86288312B60983517204025",
+    "NOR-ADM2-86288312B80996435697818",
+    "NOR-ADM2-86288312B42207661783439",
+    "NOR-ADM2-86288312B24861070458091",
+    "NOR-ADM2-86288312B41330497985738",
+    "NOR-ADM2-86288312B17859654216493",
+    "NOR-ADM2-86288312B9312616634750",
+    "NOR-ADM2-86288312B90944773523196",
+    "NOR-ADM2-86288312B55921880538341",
+    "NOR-ADM2-86288312B95710758455481",
+    "NOR-ADM2-86288312B94479588968211",
+    "NOR-ADM2-86288312B99132950125054",
+    "NOR-ADM2-86288312B19862201560696",
+    "NOR-ADM2-86288312B56909660985265",
+    "NOR-ADM2-86288312B61921156724393",
+    "NOR-ADM2-86288312B82996278706743",
+    "NOR-ADM2-86288312B95964377762384",
+    "NOR-ADM2-86288312B44209185687579",
+    "NOR-ADM2-86288312B23095338426398",
+    "NOR-ADM2-86288312B97384996030155",
+    "NOR-ADM2-86288312B15540071122538",
+    "NOR-ADM2-86288312B36206301754919",
+    "NOR-ADM2-86288312B85977259263541",
+    "NOR-ADM2-86288312B81726238902221",
+    "NOR-ADM2-86288312B44340312529107",
+    "NOR-ADM2-86288312B60558696179500",
+    "NOR-ADM2-86288312B68472629952470",
+    "NOR-ADM2-86288312B17604167467724",
+    "NOR-ADM2-86288312B90819759899265"
+   ],
+   "from": "1972-01-01",
+   "to": "2000-01-01",
+   "why": "Godfjorden (102 inhabitants) was transferred from Kvæfjord (Troms) to Sortland (Nordland) on 2000-01-01; before that the present Sortland atom holds Troms ground.",
+   "checked": [
+    "SSB Rapporter 99/13 (fylke division changes and inter-fylke boundary adjustments 1838–1996, pp. 86–89)",
+    "SSB «Alle endringer i de regionale inndelingene» 1997–2020",
+    "Norsk Wikipedia «Norske kommuner som har skiftet fylke»",
+    "geoBoundaries NOR ADM2: kommune atoms only — no finer atoms to carry a partial transfer"
+   ],
+   "needs": "grunnkrets or property-level atoms (SSB grunnkretser / Kartverket matrikkel) to carry the pre-transfer line"
+  },
+  {
+   "what": "Troms before 2000-01-01",
+   "unit": "NOR:Troms@1972",
+   "atoms": [
+    "NOR-ADM2-86288312B39619690303479",
+    "NOR-ADM2-86288312B12055584821312",
+    "NOR-ADM2-86288312B95435650072468",
+    "NOR-ADM2-86288312B15388933867653",
+    "NOR-ADM2-86288312B28202364266720",
+    "NOR-ADM2-86288312B72673303782724",
+    "NOR-ADM2-86288312B25142202859534",
+    "NOR-ADM2-86288312B50158709887361",
+    "NOR-ADM2-86288312B82966611739072",
+    "NOR-ADM2-86288312B52632964277123",
+    "NOR-ADM2-86288312B27152726766865",
+    "NOR-ADM2-86288312B8991276694955",
+    "NOR-ADM2-86288312B73235006037434",
+    "NOR-ADM2-86288312B34366506977107",
+    "NOR-ADM2-86288312B71509568732439",
+    "NOR-ADM2-86288312B24070411232655",
+    "NOR-ADM2-86288312B43318148071115",
+    "NOR-ADM2-86288312B24921561512033",
+    "NOR-ADM2-86288312B68786515183071",
+    "NOR-ADM2-86288312B92584171254866",
+    "NOR-ADM2-86288312B75737452629522",
+    "NOR-ADM2-86288312B71092207563612",
+    "NOR-ADM2-86288312B64496782861055",
+    "NOR-ADM2-86288312B7453580545213"
+   ],
+   "from": "1972-01-01",
+   "to": "2000-01-01",
+   "why": "See Nordland (Godfjorden, 2000-01-01).",
+   "checked": [
+    "SSB Rapporter 99/13 (fylke division changes and inter-fylke boundary adjustments 1838–1996, pp. 86–89)",
+    "SSB «Alle endringer i de regionale inndelingene» 1997–2020",
+    "Norsk Wikipedia «Norske kommuner som har skiftet fylke»",
+    "geoBoundaries NOR ADM2: kommune atoms only — no finer atoms to carry a partial transfer"
+   ],
+   "needs": "grunnkrets or property-level atoms (SSB grunnkretser / Kartverket matrikkel) to carry the pre-transfer line"
+  },
+  {
+   "what": "Akershus before 1996-01-01",
+   "unit": "NOR:Akershus@1972",
+   "atoms": [
+    "NOR-ADM2-86288312B33593652809253",
+    "NOR-ADM2-86288312B18050772568406",
+    "NOR-ADM2-86288312B13989294808730",
+    "NOR-ADM2-86288312B77939080811439",
+    "NOR-ADM2-86288312B90903207900290",
+    "NOR-ADM2-86288312B7520340450988",
+    "NOR-ADM2-86288312B40852234595117",
+    "NOR-ADM2-86288312B34896382200122",
+    "NOR-ADM2-86288312B57848423677588",
+    "NOR-ADM2-86288312B73393856679097",
+    "NOR-ADM2-86288312B89206777827564",
+    "NOR-ADM2-86288312B89021281635202",
+    "NOR-ADM2-86288312B19466548216946",
+    "NOR-ADM2-86288312B53332495919573",
+    "NOR-ADM2-86288312B15837471533028",
+    "NOR-ADM2-86288312B33939315722531",
+    "NOR-ADM2-86288312B90693098258026",
+    "NOR-ADM2-86288312B44440966574319",
+    "NOR-ADM2-86288312B1963892276689",
+    "NOR-ADM2-86288312B86934644879837",
+    "NOR-ADM2-86288312B79220193025286",
+    "NOR-ADM2-86288312B20700127257552",
+    "NOR-ADM2-86288312B17302655292255"
+   ],
+   "from": "1972-01-01",
+   "to": "1996-01-01",
+   "why": "See Oslo (Skedsmo 1980, Nittedal 1984); and on 1996-01-01 a part of Asker (gnr. 6, 9, 10, 13, 17) was transferred to Røyken in Buskerud, so the earlier Akershus/Buskerud line runs inside today's Røyken atom.",
+   "checked": [
+    "SSB Rapporter 99/13 (fylke division changes and inter-fylke boundary adjustments 1838–1996, pp. 86–89)",
+    "SSB «Alle endringer i de regionale inndelingene» 1997–2020",
+    "Norsk Wikipedia «Norske kommuner som har skiftet fylke»",
+    "geoBoundaries NOR ADM2: kommune atoms only — no finer atoms to carry a partial transfer"
+   ],
+   "needs": "grunnkrets or property-level atoms (SSB grunnkretser / Kartverket matrikkel) to carry the pre-transfer line"
+  },
+  {
+   "what": "Oslo before 1984-01-01",
+   "unit": "NOR:Oslo@1972",
+   "atoms": [
+    "NOR-ADM2-86288312B18463313731869"
+   ],
+   "from": "1972-01-01",
+   "to": "1984-01-01",
+   "why": "Uninhabited parts of Skedsmo (1980-01-01) and Nittedal (Danielshøgde, Sandungen; 1984-01-01) in Akershus were transferred to Oslo; before 1984 the present Oslo atom holds Akershus ground.",
+   "checked": [
+    "SSB Rapporter 99/13 (fylke division changes and inter-fylke boundary adjustments 1838–1996, pp. 86–89)",
+    "SSB «Alle endringer i de regionale inndelingene» 1997–2020",
+    "Norsk Wikipedia «Norske kommuner som har skiftet fylke»",
+    "geoBoundaries NOR ADM2: kommune atoms only — no finer atoms to carry a partial transfer"
+   ],
+   "needs": "grunnkrets or property-level atoms (SSB grunnkretser / Kartverket matrikkel) to carry the pre-transfer line"
+  },
+  {
+   "what": "Hedmark before 1990-09-28",
+   "unit": "NOR:Hedmark@1972",
+   "atoms": [
+    "NOR-ADM2-86288312B76423456121539",
+    "NOR-ADM2-86288312B77330418137149",
+    "NOR-ADM2-86288312B80993822941630",
+    "NOR-ADM2-86288312B62333254933331",
+    "NOR-ADM2-86288312B29283811421655",
+    "NOR-ADM2-86288312B34159000507118",
+    "NOR-ADM2-86288312B7297449616309",
+    "NOR-ADM2-86288312B77863424793957",
+    "NOR-ADM2-86288312B6884926742190",
+    "NOR-ADM2-86288312B82659531388015",
+    "NOR-ADM2-86288312B42722797095637",
+    "NOR-ADM2-86288312B32893116539202",
+    "NOR-ADM2-86288312B88288048958724",
+    "NOR-ADM2-86288312B58904882216706",
+    "NOR-ADM2-86288312B35132489533254",
+    "NOR-ADM2-86288312B88034001552428",
+    "NOR-ADM2-86288312B93894082847731",
+    "NOR-ADM2-86288312B6649018055667",
+    "NOR-ADM2-86288312B89753737771336",
+    "NOR-ADM2-86288312B45853408060445",
+    "NOR-ADM2-86288312B76254808109163",
+    "NOR-ADM2-86288312B23847912636129"
+   ],
+   "from": "1972-01-01",
+   "to": "1990-09-28",
+   "why": "A part of Sør-Fron (Oppland) was transferred to Folldal (Hedmark) by boundary description on 1990-09-28; before that the present Folldal atom holds Oppland ground.",
+   "checked": [
+    "SSB Rapporter 99/13 (fylke division changes and inter-fylke boundary adjustments 1838–1996, pp. 86–89)",
+    "SSB «Alle endringer i de regionale inndelingene» 1997–2020",
+    "Norsk Wikipedia «Norske kommuner som har skiftet fylke»",
+    "geoBoundaries NOR ADM2: kommune atoms only — no finer atoms to carry a partial transfer"
+   ],
+   "needs": "grunnkrets or property-level atoms (SSB grunnkretser / Kartverket matrikkel) to carry the pre-transfer line"
+  },
+  {
+   "what": "Oppland before 1990-09-28",
+   "unit": "NOR:Oppland@1972",
+   "atoms": [
+    "NOR-ADM2-86288312B91511415851123",
+    "NOR-ADM2-86288312B33934459205841",
+    "NOR-ADM2-86288312B31660011539204",
+    "NOR-ADM2-86288312B35215540023018",
+    "NOR-ADM2-86288312B79344664474428",
+    "NOR-ADM2-86288312B32418406906807",
+    "NOR-ADM2-86288312B91782674250169",
+    "NOR-ADM2-86288312B5494531478451",
+    "NOR-ADM2-86288312B15503490624265",
+    "NOR-ADM2-86288312B61542642146209",
+    "NOR-ADM2-86288312B61487149869578",
+    "NOR-ADM2-86288312B15696105865546",
+    "NOR-ADM2-86288312B59851098510460",
+    "NOR-ADM2-86288312B86605767458860",
+    "NOR-ADM2-86288312B14831556842488",
+    "NOR-ADM2-86288312B39232135925615",
+    "NOR-ADM2-86288312B19107162508437",
+    "NOR-ADM2-86288312B11903368745588",
+    "NOR-ADM2-86288312B26637374154815",
+    "NOR-ADM2-86288312B96709074525664",
+    "NOR-ADM2-86288312B94593147545538",
+    "NOR-ADM2-86288312B23530540977593",
+    "NOR-ADM2-86288312B2745383229775",
+    "NOR-ADM2-86288312B86660801630456",
+    "NOR-ADM2-86288312B46682555778915",
+    "NOR-ADM2-86288312B18082183204851"
+   ],
+   "from": "1972-01-01",
+   "to": "1990-09-28",
+   "why": "See Hedmark (Sør-Fron → Folldal, 1990-09-28).",
+   "checked": [
+    "SSB Rapporter 99/13 (fylke division changes and inter-fylke boundary adjustments 1838–1996, pp. 86–89)",
+    "SSB «Alle endringer i de regionale inndelingene» 1997–2020",
+    "Norsk Wikipedia «Norske kommuner som har skiftet fylke»",
+    "geoBoundaries NOR ADM2: kommune atoms only — no finer atoms to carry a partial transfer"
+   ],
+   "needs": "grunnkrets or property-level atoms (SSB grunnkretser / Kartverket matrikkel) to carry the pre-transfer line"
+  },
+  {
+   "what": "Buskerud before 1996-01-01",
+   "unit": "NOR:Buskerud@1972",
+   "atoms": [
+    "NOR-ADM2-86288312B73826406337019",
+    "NOR-ADM2-86288312B72447023629583",
+    "NOR-ADM2-86288312B77514254220313",
+    "NOR-ADM2-86288312B15384371721411",
+    "NOR-ADM2-86288312B11516416194364",
+    "NOR-ADM2-86288312B66646203611151",
+    "NOR-ADM2-86288312B66114336296766",
+    "NOR-ADM2-86288312B23608976115217",
+    "NOR-ADM2-86288312B33339816949909",
+    "NOR-ADM2-86288312B18183247868673",
+    "NOR-ADM2-86288312B57956747563508",
+    "NOR-ADM2-86288312B81209358374385",
+    "NOR-ADM2-86288312B702333415323",
+    "NOR-ADM2-86288312B5778191287767",
+    "NOR-ADM2-86288312B88500439281521",
+    "NOR-ADM2-86288312B40631627404098",
+    "NOR-ADM2-86288312B74882659121257",
+    "NOR-ADM2-86288312B28419209750879",
+    "NOR-ADM2-86288312B66874291334067",
+    "NOR-ADM2-86288312B37235196254679",
+    "NOR-ADM2-86288312B91895261820086"
+   ],
+   "from": "1972-01-01",
+   "to": "1996-01-01",
+   "why": "A part of Asker (Akershus) was transferred to Røyken (Buskerud) on 1996-01-01; before that the present Røyken atom holds Akershus ground.",
+   "checked": [
+    "SSB Rapporter 99/13 (fylke division changes and inter-fylke boundary adjustments 1838–1996, pp. 86–89)",
+    "SSB «Alle endringer i de regionale inndelingene» 1997–2020",
+    "Norsk Wikipedia «Norske kommuner som har skiftet fylke»",
+    "geoBoundaries NOR ADM2: kommune atoms only — no finer atoms to carry a partial transfer"
+   ],
+   "needs": "grunnkrets or property-level atoms (SSB grunnkretser / Kartverket matrikkel) to carry the pre-transfer line"
+  }
+ ]
+}

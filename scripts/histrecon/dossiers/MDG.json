@@ -1075,14 +1075,29 @@
  "atomsOutside": [],
  "unresolved": [
   {
-   "what": "Malagasy provinces before independence (1946–1960)",
+   "what": "Malagasy provinces 1946 → 1956-11 (five provinces: Tananarive, Fianarantsoa, Tamatave, Majunga, Tuléar)",
    "from": "1946",
-   "to": "1960-06-26",
-   "why": "Outside the polity scope (French colony / autonomous republic within the French Community from 1958-10-14); not claimed.",
+   "to": "1956-11",
+   "why": "Diégo-Suarez province was carved in November 1956 out of the northern parts of Majunga and Tamatave, so before it those two provinces reached the north. The 1962 Code officiel géographique numbers the Diégo-Suarez sous-préfectures 7-10..7-12 (Antalaha, Sambava, Andapa) and 7-15..7-19 (Diégo-Suarez, Vohémar, Ambilobe, Nossi-Bé, Ambanja), exactly the numbers missing from Tamatave (3-10..3-12) and Majunga (4-15..4-19) — which implies Vohémar came from Majunga and the rest of Sava from Tamatave; that line runs inside the Sava atom of this set. The same code list also leaves Tuléar without 5-12..5-14 while Fianarantsoa ends with Ihosy, Vondrozo and Ivohibe (2-16..2-18), a sign of other undated transfers between 1946 and 1962, so the 1960 outlines cannot simply be carried back.",
    "checked": [
-    "Wikipedia Provinces of Madagascar oldid 1373981556"
+    "fr.wikipedia Provinces de Madagascar rev. 239635189 and en.wikipedia Provinces of Madagascar rev. 1373981556 (Deschamps 1960: five provinces 1946, sixth before the 1957 provincial elections)",
+    "fr.wikipedia Province de Diego-Suarez rev. 239652421 (vote of 1956-11-11; parts of Tamatave and Majunga)",
+    "Code officiel géographique de Madagascar, édition janvier 1962 (ireda.ceped.org mdg-1959-1964-onc-c1)",
+    "Müller-Crepon DVN/9JI06R: Madagascar is only in the full 26-colony database at district level, years not published; not in the 20-colony main sample (paper Fig. 4 and note 17)"
    ],
-   "needs": "nothing — scope decision"
+   "needs": "the 1946 decree / arrêtés fixing the districts of each province and of the 1956 Diégo-Suarez province (Journal officiel de Madagascar), plus district atoms (geoBoundaries MDG ADM2) to carry the Vohémar line"
+  },
+  {
+   "what": "Malagasy provinces 1956-11 → 1960-06-26 (six provinces)",
+   "from": "1956-11",
+   "to": "1960-06-26",
+   "why": "Six provinces as in 1960, but the undated transfers implied by the 1962 code list (Tuléar → Fianarantsoa: Ihosy, Ivohibe, Vondrozo?) may fall in this window; no source fixes the outlines between the creation of Diégo-Suarez and independence.",
+   "checked": [
+    "Code officiel géographique de Madagascar, édition janvier 1962",
+    "fr.wikipedia Province de Diego-Suarez rev. 239652421",
+    "statoids umg.html (no change listed before 1975)"
+   ],
+   "needs": "a dated list of the districts of each province 1956–1960 (Journal officiel de Madagascar)"
   }
  ]
 }

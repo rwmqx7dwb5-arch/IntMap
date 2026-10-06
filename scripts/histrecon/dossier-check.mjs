@@ -45,11 +45,24 @@ function windowOf(e, scope) {
   return [a < scope.from ? scope.from : a, b > scope.end ? scope.end : b];
 }
 
-export function checkDossier(D, atomsByCountry) {
+/** the atom catalogues a dossier draws on: its own country's, or — for a unit that crosses today's borders (an
+    Ottoman vilayet, a Qing province) — every country it names in `atomCountries`, read under its polity key */
+export function atomCountriesOf(D) { return Array.isArray(D.atomCountries) && D.atomCountries.length ? D.atomCountries : [D.country]; }
+export function catalogueView(D, cat) {
+  const cs = atomCountriesOf(D);
+  if (cs.length === 1 && cs[0] === D.country) return cat;
+  const merged = [];
+  for (const c of cs) if (cat[c]) merged.push(...cat[c]);
+  return { ...cat, [D.country]: merged.length ? merged : undefined };
+}
+
+export function checkDossier(D, atomsByCountryIn) {
+  const atomsByCountry = catalogueView(D, atomsByCountryIn);
   const err = [], warn = [];
   const E = (m) => err.push(m), W = (m) => warn.push(m);
   if (!D || typeof D !== 'object') return { err: ['not an object'], warn };
-  if (!/^[A-Z]{3}$/.test(D.country || '')) E('country must be ISO3');
+  if (!/^[A-Z]{3}$/.test(D.country || '')) E('country must be ISO3 (or a three-letter polity key with atomCountries)');
+  if (D.atomCountries) for (const c of D.atomCountries) if (!/^[A-Z]{3}$/.test(c) || !atomsByCountryIn[c]) E('atomCountries: no atoms for ' + c + ' in atom set ' + D.atomSet);
   const catAll = atomsByCountry[D.country];
   if (!catAll) { E('no atoms for country ' + D.country + ' in atom set ' + D.atomSet); return { err, warn }; }
   /* a dossier may cover only some groups of a polity's atoms (e.g. the 1897 guberniyas of one region of the
@@ -162,11 +175,11 @@ export function checkDossier(D, atomsByCountry) {
 function compact(ws) { return ws.length <= 3 ? ws.join(', ') : ws[0] + ' … ' + ws[ws.length - 1] + ' (' + ws.length + ' intervals)'; }
 
 /** the atom catalogue a dossier's atomSet names */
-export async function atomsFor(atomSet) {
+export async function atomsFor(atomSet, countries) {
   const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), 'atoms');
   for (const f of fs.readdirSync(dir).filter((n) => n.endsWith('.mjs'))) {
     const m = await import(pathToFileURL(path.join(dir, f)).href);
-    if (m.SET === atomSet) return m.catalogue();
+    if (m.SET === atomSet) return m.catalogue(countries);
   }
   throw new Error('no atom module declares SET = ' + atomSet + ' in scripts/histrecon/atoms/');
 }
@@ -179,8 +192,11 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   for (const f of files) {
     let D;
     try { D = JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { console.log('✖ ' + f + ': ' + e.message); bad++; continue; }
-    if (!cats.has(D.atomSet)) cats.set(D.atomSet, await atomsFor(D.atomSet));
-    const r = checkDossier(D, cats.get(D.atomSet));
+    /* the cache key is every country the dossier draws on — two dossiers of one polity key may name different
+       countries (British India before and after Burma's separation), and the second must not reuse the first's catalogue */
+    const ck = D.atomSet + '|' + D.country + '|' + atomCountriesOf(D).join(',');
+    if (!cats.has(ck)) cats.set(ck, await atomsFor(D.atomSet, atomCountriesOf(D)));
+    const r = checkDossier(D, cats.get(ck));
     console.log((r.err.length ? '✖ ' : '✓ ') + path.basename(f) + ' — ' + (r.units || 0) + ' units, ' + (r.spans || 0) + ' spans, ' + r.err.length + ' error(s), ' + r.warn.length + ' warning(s)');
     for (const m of r.err.slice(0, 60)) console.log('   ✖ ' + m);
     if (r.err.length > 60) console.log('   … ' + (r.err.length - 60) + ' more');

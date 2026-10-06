@@ -1,0 +1,1670 @@
+{
+ "country": "MDA",
+ "atomSet": "gb-adm1@2026-10-06",
+ "scope": {
+  "from": "1991-12-26",
+  "to": "2003-03-20"
+ },
+ "polityNote": "First-level units of the Republic of Moldova from the dissolution of the USSR (26 Dec 1991) to the eve of the entry into force of Law 37-XV (21 Mar 2003), which set up the raions of Law 764-XV/2001 for the 25 May 2003 elections; Law 764 Art. 21 kept the counties until the raions were formed, so the counties stood at least until then. Atoms: geoBoundaries MDA ADM1 (OCHA/UNHCR 2020, 37 units: the 32 raions of Law 764, Chișinău, Bălți and Bender municipalities, UTA Găgăuzia and the Transnistria unit; CC BY 3.0 IGO). Each unit drawn was matched locality by locality: the town and village lists of Law 306-XIII/1994 (raions 1995–98), Law 191-XIV/1998 (counties 1999–2003) and Law 764-XV/2001 (raions 2003) were parsed and compared; a unit is drawn only where its list equals that of the 2003 raion(s) on the same ground (and, before 1995, where the 1992 yearbook area equals the 2003 area). Result: of the 1995–98 raions only Briceni, Fălești, Șoldănești, Ungheni and Leova (Orhei and Telenești each differ by one village: Zahoreni came from Rezina, Cozești went to Sîngerei), and of the 1999–2003 counties only Cahul, Taraclia and UTA Găgăuzia, are unions of today's atoms; the other counties were assembled from communes and cut across the raions (unresolved, with the moved villages named). Transnistria (left bank) is outside Moldovan administration for the whole scope, Bender since the battle of 19–21 June 1992. The Căușeni atom includes right-bank villages under PMR administration (Chițcani, Gîsca, Cremenciug) and the Dubăsari atom left-bank communes under Moldovan administration (Cocieri, Molovata Nouă, Corjova); both are unresolved throughout. Check ① (2026-10-06): geodesic atom areas against published areas — Briceni 814.4 vs 814 (1992) / 814.44 (2010) km²; Fălești 1,071.4 vs 1,073 / 1,072.60; Șoldănești 595.1 vs 598 / 598.37; Ungheni 1,081.4 vs 1,082.62; Leova 764.3 vs 764.73; Găgăuzia 1,842.9 vs 1,848.5; Cahul county 2,408.4 vs 2,413.14 (Cahul + Cantemir, 2010); Taraclia 670.2 vs 673.69 — all within 0.6%.",
+ "units": [
+  {
+   "id": "MDA:Briceni raion",
+   "names": {
+    "en": "Briceni",
+    "ja": "ブリチェニ地区",
+    "local": "Raionul Briceni"
+   },
+   "wikidata": "Q753795",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1998-12-30",
+     "atoms": [
+      "MDA-ADM1-25212430B46101437811477"
+     ],
+     "sources": [
+      {
+       "url": "https://ro.wikisource.org/w/index.php?title=Legea_nr._306-XIII/1994/Anexa_3&oldid=67886",
+       "title": "Wikisource — Law 306-XIII/1994, Annex 3 (raions, towns and villages)",
+       "says": "Lists the towns and villages (communes) of each raion under Law 306-XIII of 7 Dec 1994, consolidated with its 1995–97 amendments.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ro.wikisource.org/w/index.php?title=Legea_nr._764-XV/2001/Anexa_3&oldid=67891",
+       "title": "Wikisource — Law 764-XV/2001, Annex 3 (raions and their localities)",
+       "says": "Lists the towns and villages of each of the 32 raions as amended by Laws 37-XV and 124-XV of 2003 (Borceag in Cahul).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/umd.html",
+       "title": "Statoids — Districts of Moldova (Gwillim Law)",
+       "says": "From 1991-08-27 Moldova had 40 raions, 6 towns and 4 municipal councils (1992 yearbook, with areas); Taraclia county split from Cahul 1999-10-22, giving 10 counties, 1 city, 1 autonomous and 1 territorial unit.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ro.wikipedia.org/w/index.php?title=Raioanele_Republicii_Moldova&oldid=17103636",
+       "title": "Wikipedia (ro) — Raioanele Republicii Moldova",
+       "says": "Table of raion areas from the statistics office (Populația Republicii Moldova 2010, p. 12).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Same localities in Law 306 (1994) and Law 764 (2003) except one spelling (Ghilavăț/Chilavăț in 1994, Beleavinți/Bilăvăți in 2003, neither found in any other raion). Areas: 1992 yearbook 814 km², 2010 statistics 814.44 km², atom 814.4 km² — the Soviet raion is the same ground. Law 191-XIV Art. 21 kept the raions only until the counties were formed; the formation day is not established, so the span ends at that law's entry into force (30 Dec 1998) and the window to 4 Nov 1999 is held in unresolved."
+    }
+   ]
+  },
+  {
+   "id": "MDA:Fălești raion",
+   "names": {
+    "en": "Fălești",
+    "ja": "ファレシュティ地区",
+    "local": "Raionul Fălești"
+   },
+   "wikidata": "Q878375",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1998-12-30",
+     "atoms": [
+      "MDA-ADM1-25212430B61222791146584"
+     ],
+     "sources": [
+      {
+       "url": "https://ro.wikisource.org/w/index.php?title=Legea_nr._306-XIII/1994/Anexa_3&oldid=67886",
+       "title": "Wikisource — Law 306-XIII/1994, Annex 3 (raions, towns and villages)",
+       "says": "Lists the towns and villages (communes) of each raion under Law 306-XIII of 7 Dec 1994, consolidated with its 1995–97 amendments.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ro.wikisource.org/w/index.php?title=Legea_nr._764-XV/2001/Anexa_3&oldid=67891",
+       "title": "Wikisource — Law 764-XV/2001, Annex 3 (raions and their localities)",
+       "says": "Lists the towns and villages of each of the 32 raions as amended by Laws 37-XV and 124-XV of 2003 (Borceag in Cahul).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/umd.html",
+       "title": "Statoids — Districts of Moldova (Gwillim Law)",
+       "says": "From 1991-08-27 Moldova had 40 raions, 6 towns and 4 municipal councils (1992 yearbook, with areas); Taraclia county split from Cahul 1999-10-22, giving 10 counties, 1 city, 1 autonomous and 1 territorial unit.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ro.wikipedia.org/w/index.php?title=Raioanele_Republicii_Moldova&oldid=17103636",
+       "title": "Wikipedia (ro) — Raioanele Republicii Moldova",
+       "says": "Table of raion areas from the statistics office (Populația Republicii Moldova 2010, p. 12).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Same localities in Law 306 (1994, compartment amended by Law 706-XIII of 26 Dec 1995) and Law 764 (2003; Fabrica de Zahăr listed as part of the town). Areas: 1992 yearbook 1,073 km², 2010 statistics 1,072.60 km², atom 1,071.4 km². Law 191-XIV Art. 21 kept the raions only until the counties were formed; the formation day is not established, so the span ends at that law's entry into force (30 Dec 1998) and the window to 4 Nov 1999 is held in unresolved."
+    }
+   ]
+  },
+  {
+   "id": "MDA:Șoldănești raion",
+   "names": {
+    "en": "Șoldănești",
+    "ja": "ショルダネシュティ地区",
+    "local": "Raionul Șoldănești"
+   },
+   "wikidata": "Q865639",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1998-12-30",
+     "atoms": [
+      "MDA-ADM1-25212430B52468939139965"
+     ],
+     "sources": [
+      {
+       "url": "https://ro.wikisource.org/w/index.php?title=Legea_nr._306-XIII/1994/Anexa_3&oldid=67886",
+       "title": "Wikisource — Law 306-XIII/1994, Annex 3 (raions, towns and villages)",
+       "says": "Lists the towns and villages (communes) of each raion under Law 306-XIII of 7 Dec 1994, consolidated with its 1995–97 amendments.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ro.wikisource.org/w/index.php?title=Legea_nr._764-XV/2001/Anexa_3&oldid=67891",
+       "title": "Wikisource — Law 764-XV/2001, Annex 3 (raions and their localities)",
+       "says": "Lists the towns and villages of each of the 32 raions as amended by Laws 37-XV and 124-XV of 2003 (Borceag in Cahul).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.wikidata.org/wiki/Q1991202",
+       "title": "Wikidata — Glinjeni, Șoldănești (Q1991202)",
+       "says": "The village of Glinjeni in Șoldănești district is also recorded as Hligeni (the 1994 spelling).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/umd.html",
+       "title": "Statoids — Districts of Moldova (Gwillim Law)",
+       "says": "From 1991-08-27 Moldova had 40 raions, 6 towns and 4 municipal councils (1992 yearbook, with areas); Taraclia county split from Cahul 1999-10-22, giving 10 counties, 1 city, 1 autonomous and 1 territorial unit.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ro.wikipedia.org/w/index.php?title=Raioanele_Republicii_Moldova&oldid=17103636",
+       "title": "Wikipedia (ro) — Raioanele Republicii Moldova",
+       "says": "Table of raion areas from the statistics office (Populația Republicii Moldova 2010, p. 12).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Same localities in Law 306 (1994, amended by Laws 676 and 706 of Dec 1995) and Law 764 (2003); Hligeni (1994) is Glinjeni (2003). Areas: 1992 yearbook 598 km², 2010 statistics 598.37 km², atom 595.1 km². Law 191-XIV Art. 21 kept the raions only until the counties were formed; the formation day is not established, so the span ends at that law's entry into force (30 Dec 1998) and the window to 4 Nov 1999 is held in unresolved."
+    }
+   ]
+  },
+  {
+   "id": "MDA:Ungheni raion",
+   "names": {
+    "en": "Ungheni",
+    "ja": "ウンゲニ地区",
+    "local": "Raionul Ungheni"
+   },
+   "wikidata": "Q854443",
+   "spans": [
+    {
+     "from": "1995-01-14",
+     "precision": "day",
+     "to": "1998-12-30",
+     "atoms": [
+      "MDA-ADM1-25212430B23943377724140"
+     ],
+     "sources": [
+      {
+       "url": "https://ro.wikisource.org/w/index.php?title=Legea_nr._306-XIII/1994/Anexa_3&oldid=67886",
+       "title": "Wikisource — Law 306-XIII/1994, Annex 3 (raions, towns and villages)",
+       "says": "Lists the towns and villages (communes) of each raion under Law 306-XIII of 7 Dec 1994, consolidated with its 1995–97 amendments.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://web.archive.org/web/20160304064021/http://lex.justice.md/index.php?action=view&view=doc&lang=2&id=310874",
+       "title": "Law 306-XIII of 07.12.1994 (Russian text, Ministry of Justice register, archived)",
+       "says": "Promulgated 4 Jan 1995 and published in Monitorul Oficial no. 3-4/40 of 14 Jan 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ro.wikisource.org/w/index.php?title=Legea_nr._764-XV/2001/Anexa_3&oldid=67891",
+       "title": "Wikisource — Law 764-XV/2001, Annex 3 (raions and their localities)",
+       "says": "Lists the towns and villages of each of the 32 raions as amended by Laws 37-XV and 124-XV of 2003 (Borceag in Cahul).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%B4%D0%BC%D0%B8%D0%BD%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%B8%D0%B2%D0%BD%D0%BE%D0%B5_%D0%B4%D0%B5%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_%D0%9C%D0%BE%D0%BB%D0%B4%D0%BE%D0%B2%D1%8B&oldid=151731241",
+       "title": "Wikipedia (ru) — Административное деление Молдовы",
+       "says": "1991–94: the Soviet division was kept (40 raions, 10 cities of republican subordination); Law 306 made four cities municipalities, merged Dubăsari, Cahul, Orhei, Rîbnița, Soroca, Ungheni into their raions and enlarged Chișinău.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ro.wikipedia.org/w/index.php?title=Raioanele_Republicii_Moldova&oldid=17103636",
+       "title": "Wikipedia (ro) — Raioanele Republicii Moldova",
+       "says": "Table of raion areas from the statistics office (Populația Republicii Moldova 2010, p. 12).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Law 306 put the town of Ungheni, until then a separate unit, into the raion; the list (no amendment 1995–98) equals the 2003 raion except Corești, which is in no 2003 raion (absorbed, not transferred). Areas: 2010 statistics 1,082.62 km², atom 1,081.4 km². Law 191-XIV Art. 21 kept the raions only until the counties were formed; the formation day is not established, so the span ends at that law's entry into force (30 Dec 1998) and the window to 4 Nov 1999 is held in unresolved."
+    }
+   ]
+  },
+  {
+   "id": "MDA:Leova raion",
+   "names": {
+    "en": "Leova",
+    "ja": "レオヴァ地区",
+    "local": "Raionul Leova"
+   },
+   "wikidata": "Q1826662",
+   "spans": [
+    {
+     "from": "1995-08",
+     "precision": "month",
+     "to": "1998-12-30",
+     "atoms": [
+      "MDA-ADM1-25212430B269818099865"
+     ],
+     "sources": [
+      {
+       "url": "https://ro.wikisource.org/w/index.php?title=Legea_nr._306-XIII/1994/Anexa_3&oldid=67886",
+       "title": "Wikisource — Law 306-XIII/1994, Annex 3 (raions, towns and villages)",
+       "says": "Lists the towns and villages (communes) of each raion under Law 306-XIII of 7 Dec 1994, consolidated with its 1995–97 amendments.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ro.wikisource.org/w/index.php?title=Legea_nr._764-XV/2001/Anexa_3&oldid=67891",
+       "title": "Wikisource — Law 764-XV/2001, Annex 3 (raions and their localities)",
+       "says": "Lists the towns and villages of each of the 32 raions as amended by Laws 37-XV and 124-XV of 2003 (Borceag in Cahul).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/umd.html",
+       "title": "Statoids — Districts of Moldova (Gwillim Law)",
+       "says": "From 1991-08-27 Moldova had 40 raions, 6 towns and 4 municipal councils (1992 yearbook, with areas); Taraclia county split from Cahul 1999-10-22, giving 10 counties, 1 city, 1 autonomous and 1 territorial unit.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ro.wikipedia.org/w/index.php?title=Raioanele_Republicii_Moldova&oldid=17103636",
+       "title": "Wikipedia (ro) — Raioanele Republicii Moldova",
+       "says": "Table of raion areas from the statistics office (Populația Republicii Moldova 2010, p. 12).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "The compartment as rewritten by Law 563-XIII of 22 Jul 1995 (the Găgăuzia settlement) equals the 2003 raion. Law 563's publication day is not established; Statoids dates the Găgăuzia change to 1995-08. Areas: 2010 statistics 764.73 km², atom 764.3 km² (1992 yearbook 699 km²: the earlier raion was smaller). Law 191-XIV Art. 21 kept the raions only until the counties were formed; the formation day is not established, so the span ends at that law's entry into force (30 Dec 1998) and the window to 4 Nov 1999 is held in unresolved."
+    }
+   ]
+  },
+  {
+   "id": "MDA:Găgăuzia",
+   "names": {
+    "en": "Găgăuzia (UTA Găgăuzia)",
+    "ja": "ガガウズ自治区",
+    "local": "Unitatea teritorială autonomă Găgăuzia"
+   },
+   "wikidata": "Q164819",
+   "spans": [
+    {
+     "from": "1995-08",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "MDA-ADM1-25212430B55748044124793"
+     ],
+     "sources": [
+      {
+       "url": "https://ro.wikisource.org/w/index.php?title=Legea_nr._306-XIII/1994/Anexa_4&oldid=67887",
+       "title": "Wikisource — Law 306-XIII/1994, Annex 4 (UTA Găgăuzia)",
+       "says": "Găgăuzia consists of 3 towns (Comrat, Ceadîr-Lunga, Vulcănești) and 23 communes; annex introduced by Law 563-XIII of 22 Jul 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Gagauzia&oldid=1369975815",
+       "title": "Wikipedia — Gagauzia",
+       "says": "The law on Gagauzia's special status of 23 Dec 1994 entered into force 14 Jan 1995; after the 5 Mar 1995 referendum the towns and communes that voted to join formed the autonomy.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ro.wikisource.org/w/index.php?title=Legea_Nr._191_din_12_noiembrie_1998&oldid=150415",
+       "title": "Wikisource — Law 191-XIV of 12.11.1998 on administrative-territorial organisation",
+       "says": "In force 30 Dec 1998; Art. 21 keeps the raions until the counties are formed; Annex 2 lists each county's localities (rewritten by Law 292-XIV of 19 Feb 1999, amended to 2000); Annex 4 Găgăuzia, Annex 5 the left bank.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ro.wikisource.org/w/index.php?title=Legea_nr._764-XV/2001_(cu_modific%C4%83ri)&oldid=90293",
+       "title": "Wikisource — Law 764-XV/2001 consolidated to 2008",
+       "says": "Consolidated text with amendments to 2008; Law 124-XV of 18 Mar 2003 moved Borceag from Taraclia to Cahul raion; no other change to the raions drawn here.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/umd.html",
+       "title": "Statoids — Districts of Moldova (Gwillim Law)",
+       "says": "From 1991-08-27 Moldova had 40 raions, 6 towns and 4 municipal councils (1992 yearbook, with areas); Taraclia county split from Cahul 1999-10-22, giving 10 counties, 1 city, 1 autonomous and 1 territorial unit.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Composition fixed by Law 563-XIII of 22 Jul 1995 after the 5 Mar 1995 referendum (Statoids: 1995-08; publication day of Law 563 not established). The same 3 towns and 23 communes in Law 191 Annex 4 (1999) and Law 764 Annex 4 (2003). Areas: published 1,848.5 km², atom 1,842.9 km²."
+    }
+   ]
+  },
+  {
+   "id": "MDA:Cahul county",
+   "names": {
+    "en": "Cahul County",
+    "ja": "カフル県",
+    "local": "Județul Cahul"
+   },
+   "wikidata": "Q2442138",
+   "spans": [
+    {
+     "from": "1999-11-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MDA-ADM1-25212430B51059014460141",
+      "MDA-ADM1-25212430B81482951983667"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/20160304080321/http://lex.justice.md/index.php?action=view&id=311365&lang=2&view=doc",
+       "title": "Law 650-XIV of 22.10.1999 (Russian text, archived)",
+       "says": "Published in Monitorul Oficial no. 120 of 4 Nov 1999; adds Taraclia county to Annex 1 and rewrites Cahul county (106 localities, incl. Borceag) in Annex 2.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ro.wikisource.org/w/index.php?title=Legea_Nr._191_din_12_noiembrie_1998&oldid=150415",
+       "title": "Wikisource — Law 191-XIV of 12.11.1998 on administrative-territorial organisation",
+       "says": "In force 30 Dec 1998; Art. 21 keeps the raions until the counties are formed; Annex 2 lists each county's localities (rewritten by Law 292-XIV of 19 Feb 1999, amended to 2000); Annex 4 Găgăuzia, Annex 5 the left bank.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ro.wikisource.org/w/index.php?title=Legea_nr._764-XV/2001/Anexa_3&oldid=67891",
+       "title": "Wikisource — Law 764-XV/2001, Annex 3 (raions and their localities)",
+       "says": "Lists the towns and villages of each of the 32 raions as amended by Laws 37-XV and 124-XV of 2003 (Borceag in Cahul).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ro.wikisource.org/w/index.php?title=Legea_nr._764-XV/2001_(cu_modific%C4%83ri)&oldid=90293",
+       "title": "Wikisource — Law 764-XV/2001 consolidated to 2008",
+       "says": "Consolidated text with amendments to 2008; Law 124-XV of 18 Mar 2003 moved Borceag from Taraclia to Cahul raion; no other change to the raions drawn here.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/umd.html",
+       "title": "Statoids — Districts of Moldova (Gwillim Law)",
+       "says": "From 1991-08-27 Moldova had 40 raions, 6 towns and 4 municipal councils (1992 yearbook, with areas); Taraclia county split from Cahul 1999-10-22, giving 10 counties, 1 city, 1 autonomous and 1 territorial unit.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ro.wikipedia.org/w/index.php?title=Raioanele_Republicii_Moldova&oldid=17103636",
+       "title": "Wikipedia (ro) — Raioanele Republicii Moldova",
+       "says": "Table of raion areas from the statistics office (Populația Republicii Moldova 2010, p. 12).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From Law 650-XIV (MO 120, 4 Nov 1999) Cahul county lists the same localities as the 2003 raions Cahul and Cantemir together (Borceag/Borciag in Cahul both times; Law 124-XV of 2003 moved it back from Taraclia raion). Before 4 Nov 1999 the county also held Taraclia, and the day the counties were formed is not established. Areas: atoms 2,408.4 km²; 2010 statistics 1,545.28 + 867.86 = 2,413.14 km²."
+    }
+   ]
+  },
+  {
+   "id": "MDA:Taraclia county",
+   "names": {
+    "en": "Taraclia County",
+    "ja": "タラクリア県",
+    "local": "Județul Taraclia"
+   },
+   "wikidata": "Q17627479",
+   "spans": [
+    {
+     "from": "1999-11-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MDA-ADM1-25212430B43456438192105"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/20160304080321/http://lex.justice.md/index.php?action=view&id=311365&lang=2&view=doc",
+       "title": "Law 650-XIV of 22.10.1999 (Russian text, archived)",
+       "says": "Published in Monitorul Oficial no. 120 of 4 Nov 1999; adds Taraclia county to Annex 1 and rewrites Cahul county (106 localities, incl. Borceag) in Annex 2.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ro.wikisource.org/w/index.php?title=Legea_Nr._191_din_12_noiembrie_1998&oldid=150415",
+       "title": "Wikisource — Law 191-XIV of 12.11.1998 on administrative-territorial organisation",
+       "says": "In force 30 Dec 1998; Art. 21 keeps the raions until the counties are formed; Annex 2 lists each county's localities (rewritten by Law 292-XIV of 19 Feb 1999, amended to 2000); Annex 4 Găgăuzia, Annex 5 the left bank.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ro.wikisource.org/w/index.php?title=Legea_nr._764-XV/2001/Anexa_3&oldid=67891",
+       "title": "Wikisource — Law 764-XV/2001, Annex 3 (raions and their localities)",
+       "says": "Lists the towns and villages of each of the 32 raions as amended by Laws 37-XV and 124-XV of 2003 (Borceag in Cahul).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/umd.html",
+       "title": "Statoids — Districts of Moldova (Gwillim Law)",
+       "says": "From 1991-08-27 Moldova had 40 raions, 6 towns and 4 municipal councils (1992 yearbook, with areas); Taraclia county split from Cahul 1999-10-22, giving 10 counties, 1 city, 1 autonomous and 1 territorial unit.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ro.wikipedia.org/w/index.php?title=Raioanele_Republicii_Moldova&oldid=17103636",
+       "title": "Wikipedia (ro) — Raioanele Republicii Moldova",
+       "says": "Table of raion areas from the statistics office (Populația Republicii Moldova 2010, p. 12).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Created out of Cahul county by Law 650-XIV of 22 Oct 1999 (published and in force 4 Nov 1999); its 26 localities equal the 2003 Taraclia raion after Law 124-XV of 2003. Areas: 2010 statistics 673.69 km², atom 670.2 km²."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1995-01-14",
+   "precision": "day",
+   "what": "Law 306-XIII (7 Dec 1994) published and in force: 40 raions, 4 municipalities; the 6 towns of republican subordination merged into their raions; the Găgăuzia special-status law in force the same day",
+   "sources": [
+    {
+     "url": "https://web.archive.org/web/20160304064021/http://lex.justice.md/index.php?action=view&view=doc&lang=2&id=310874",
+     "title": "Law 306-XIII of 07.12.1994 (Russian text, Ministry of Justice register, archived)",
+     "says": "Promulgated 4 Jan 1995 and published in Monitorul Oficial no. 3-4/40 of 14 Jan 1995.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%B4%D0%BC%D0%B8%D0%BD%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%B8%D0%B2%D0%BD%D0%BE%D0%B5_%D0%B4%D0%B5%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_%D0%9C%D0%BE%D0%BB%D0%B4%D0%BE%D0%B2%D1%8B&oldid=151731241",
+     "title": "Wikipedia (ru) — Административное деление Молдовы",
+     "says": "1991–94: the Soviet division was kept (40 raions, 10 cities of republican subordination); Law 306 made four cities municipalities, merged Dubăsari, Cahul, Orhei, Rîbnița, Soroca, Ungheni into their raions and enlarged Chișinău.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Gagauzia&oldid=1369975815",
+     "title": "Wikipedia — Gagauzia",
+     "says": "The law on Gagauzia's special status of 23 Dec 1994 entered into force 14 Jan 1995; after the 5 Mar 1995 referendum the towns and communes that voted to join formed the autonomy.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1995-08",
+   "precision": "month",
+   "what": "Law 563-XIII (22 Jul 1995): Ciadîr-Lunga and Comrat raions struck; UTA Găgăuzia composed after the 5 Mar 1995 referendum",
+   "sources": [
+    {
+     "url": "https://ro.wikisource.org/w/index.php?title=Legea_nr._306-XIII/1994/Anexa_1&oldid=67883",
+     "title": "Wikisource — Law 306-XIII/1994, Annex 1 (raions)",
+     "says": "Lists 40 raions; Law 563-XIII of 22 Jul 1995 struck Ciadîr-Lunga and Comrat, leaving 38.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://ro.wikisource.org/w/index.php?title=Legea_nr._306-XIII/1994/Anexa_4&oldid=67887",
+     "title": "Wikisource — Law 306-XIII/1994, Annex 4 (UTA Găgăuzia)",
+     "says": "Găgăuzia consists of 3 towns (Comrat, Ceadîr-Lunga, Vulcănești) and 23 communes; annex introduced by Law 563-XIII of 22 Jul 1995.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://www.statoids.com/umd.html",
+     "title": "Statoids — Districts of Moldova (Gwillim Law)",
+     "says": "From 1991-08-27 Moldova had 40 raions, 6 towns and 4 municipal councils (1992 yearbook, with areas); Taraclia county split from Cahul 1999-10-22, giving 10 counties, 1 city, 1 autonomous and 1 territorial unit.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1998-12-30",
+   "precision": "day",
+   "what": "Law 191-XIV in force: 9 counties, Chișinău municipality, UTA Găgăuzia, left-bank unit (the raions kept until the counties are formed)",
+   "sources": [
+    {
+     "url": "https://web.archive.org/web/20141112004710/http://lex.justice.md/index.php?action=view&view=doc&lang=2&id=310818",
+     "title": "Law 191-XIV of 12.11.1998 (Russian text, Ministry of Justice register, archived)",
+     "says": "Published in Monitorul Oficial no. 116 of 30 Dec 1998, in force the same day; repealed by Law 764 (MO 16 of 29 Jan 2002).",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://ro.wikisource.org/w/index.php?title=Legea_Nr._191_din_12_noiembrie_1998&oldid=150415",
+     "title": "Wikisource — Law 191-XIV of 12.11.1998 on administrative-territorial organisation",
+     "says": "In force 30 Dec 1998; Art. 21 keeps the raions until the counties are formed; Annex 2 lists each county's localities (rewritten by Law 292-XIV of 19 Feb 1999, amended to 2000); Annex 4 Găgăuzia, Annex 5 the left bank.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1999-11-04",
+   "precision": "day",
+   "what": "Law 650-XIV in force: Taraclia county created from Cahul county",
+   "sources": [
+    {
+     "url": "https://web.archive.org/web/20160304080321/http://lex.justice.md/index.php?action=view&id=311365&lang=2&view=doc",
+     "title": "Law 650-XIV of 22.10.1999 (Russian text, archived)",
+     "says": "Published in Monitorul Oficial no. 120 of 4 Nov 1999; adds Taraclia county to Annex 1 and rewrites Cahul county (106 localities, incl. Borceag) in Annex 2.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "2002-01-29",
+   "precision": "day",
+   "what": "Law 764-XV published: 32 raions; the counties kept until the raions are formed",
+   "sources": [
+    {
+     "url": "https://ro.wikisource.org/w/index.php?title=Legea_nr._764-XV/2001&oldid=74390",
+     "title": "Wikisource — Law 764-XV of 27.12.2001 on administrative-territorial organisation",
+     "says": "Published in Monitorul Oficial 16/53 of 29 Jan 2002; 32 raions; the counties are kept in their boundaries until the raions are formed; the 2003 elections are held under the new organisation.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "2003-03-21",
+   "precision": "day",
+   "what": "Law 37-XV (14 Feb 2003) in force on the day the 2003 local elections were set; raion councils elected 25 May 2003",
+   "sources": [
+    {
+     "url": "https://web.archive.org/web/20051226152204/http://www.parlament.md/download/laws/ru/37-XV-14.02.2003.doc",
+     "title": "Law 37-XV of 14.02.2003 amending Law 764 (Russian translation, Parliament site, archived)",
+     "says": "Amends the raion annexes and adds the article on the 2003 local elections; Art. II: in force on the day the date of the local elections is set.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://ro.wikisource.org/w/index.php?title=Legea_nr._764-XV/2001_(cu_modific%C4%83ri)&oldid=90293",
+     "title": "Wikisource — Law 764-XV/2001 consolidated to 2008",
+     "says": "Consolidated text with amendments to 2008; Law 124-XV of 18 Mar 2003 moved Borceag from Taraclia to Cahul raion; no other change to the raions drawn here.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://www.osce.org/files/f/documents/4/e/42389.pdf",
+     "title": "OSCE/ODIHR — Moldova local elections 25 May and 8 June 2003, final report",
+     "says": "A reform of February 2003 replaced the 10 counties of 1998 with 32 raions; Transdniestria has not been under the de facto control of the central government since the end of the 1992 conflict.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1992-01-01",
+   "n": 50,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/umd.html",
+     "title": "Statoids — Districts of Moldova (Gwillim Law)",
+     "says": "From 1991-08-27 Moldova had 40 raions, 6 towns and 4 municipal councils (1992 yearbook, with areas); Taraclia county split from Cahul 1999-10-22, giving 10 counties, 1 city, 1 autonomous and 1 territorial unit.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1995-01-14",
+   "n": 44,
+   "sources": [
+    {
+     "url": "https://ro.wikisource.org/w/index.php?title=Legea_nr._306-XIII/1994/Anexa_1&oldid=67883",
+     "title": "Wikisource — Law 306-XIII/1994, Annex 1 (raions)",
+     "says": "Lists 40 raions; Law 563-XIII of 22 Jul 1995 struck Ciadîr-Lunga and Comrat, leaving 38.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://ro.wikisource.org/w/index.php?title=Legea_nr._306-XIII/1994/Anexa_2&oldid=67885",
+     "title": "Wikisource — Law 306-XIII/1994, Annex 2 (municipalities)",
+     "says": "Four municipalities: Chișinău (with 6 towns and 8 communes), Bălți (with Elizaveta), Bender (with Protegailovca and Varnița), Tiraspol.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1996-01-01",
+   "n": 43,
+   "sources": [
+    {
+     "url": "https://ro.wikisource.org/w/index.php?title=Legea_nr._306-XIII/1994/Anexa_1&oldid=67883",
+     "title": "Wikisource — Law 306-XIII/1994, Annex 1 (raions)",
+     "says": "Lists 40 raions; Law 563-XIII of 22 Jul 1995 struck Ciadîr-Lunga and Comrat, leaving 38.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://ro.wikisource.org/w/index.php?title=Legea_nr._306-XIII/1994/Anexa_2&oldid=67885",
+     "title": "Wikisource — Law 306-XIII/1994, Annex 2 (municipalities)",
+     "says": "Four municipalities: Chișinău (with 6 towns and 8 communes), Bălți (with Elizaveta), Bender (with Protegailovca and Varnița), Tiraspol.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://ro.wikisource.org/w/index.php?title=Legea_nr._306-XIII/1994/Anexa_4&oldid=67887",
+     "title": "Wikisource — Law 306-XIII/1994, Annex 4 (UTA Găgăuzia)",
+     "says": "Găgăuzia consists of 3 towns (Comrat, Ceadîr-Lunga, Vulcănești) and 23 communes; annex introduced by Law 563-XIII of 22 Jul 1995.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "2000-01-01",
+   "n": 13,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/umd.html",
+     "title": "Statoids — Districts of Moldova (Gwillim Law)",
+     "says": "From 1991-08-27 Moldova had 40 raions, 6 towns and 4 municipal councils (1992 yearbook, with areas); Taraclia county split from Cahul 1999-10-22, giving 10 counties, 1 city, 1 autonomous and 1 territorial unit.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://ro.wikisource.org/w/index.php?title=Legea_Nr._191_din_12_noiembrie_1998&oldid=150415",
+     "title": "Wikisource — Law 191-XIV of 12.11.1998 on administrative-territorial organisation",
+     "says": "In force 30 Dec 1998; Art. 21 keeps the raions until the counties are formed; Annex 2 lists each county's localities (rewritten by Law 292-XIV of 19 Feb 1999, amended to 2000); Annex 4 Găgăuzia, Annex 5 the left bank.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [
+  {
+   "atom": "MDA-ADM1-25212430B22111314945643",
+   "from": "1991-12-26",
+   "why": "Left bank of the Dniester under the administration of the Pridnestrovian Moldavian Republic (proclaimed 2 Sep 1990; Tiraspol and Rîbnița police under the PMR from late 1991; ceasefire of 21 Jul 1992). Sources: https://en.wikipedia.org/w/index.php?title=Transnistrian_War&oldid=1373958443 ; https://www.osce.org/files/f/documents/4/e/42389.pdf"
+  },
+  {
+   "atom": "MDA-ADM1-25212430B95154791539173",
+   "from": "1992-06-21",
+   "why": "Bender (with Proteagailovca) under PMR administration since the battle of 19–21 June 1992. Source: https://en.wikipedia.org/w/index.php?title=Battle_of_Bender_(1992)&oldid=1371812017"
+  }
+ ],
+ "unresolved": [
+  {
+   "what": "Raions and cities of republican subordination, 26 Dec 1991 – 14 Jan 1995 (all atoms except Briceni, Fălești, Șoldănești; Bender and Transnistria listed separately)",
+   "from": "1991-12-26",
+   "to": "1995-01-14",
+   "atoms": [
+    "MDA-ADM1-25212430B51059014460141",
+    "MDA-ADM1-25212430B55748044124793",
+    "MDA-ADM1-25212430B43456438192105",
+    "MDA-ADM1-25212430B81482951983667",
+    "MDA-ADM1-25212430B41329206409501",
+    "MDA-ADM1-25212430B269818099865",
+    "MDA-ADM1-25212430B51243918943413",
+    "MDA-ADM1-25212430B10989766506063",
+    "MDA-ADM1-25212430B31479954216778",
+    "MDA-ADM1-25212430B73317679220215",
+    "MDA-ADM1-25212430B74275153833775",
+    "MDA-ADM1-25212430B5738533784066",
+    "MDA-ADM1-25212430B29368029244886",
+    "MDA-ADM1-25212430B26910735221199",
+    "MDA-ADM1-25212430B57403780332927",
+    "MDA-ADM1-25212430B9063126289167",
+    "MDA-ADM1-25212430B23943377724140",
+    "MDA-ADM1-25212430B37177221829666",
+    "MDA-ADM1-25212430B70495112373630",
+    "MDA-ADM1-25212430B45328982281571",
+    "MDA-ADM1-25212430B89307550133505",
+    "MDA-ADM1-25212430B53322619224262",
+    "MDA-ADM1-25212430B80524279714584",
+    "MDA-ADM1-25212430B37613660942888",
+    "MDA-ADM1-25212430B1615629371845",
+    "MDA-ADM1-25212430B36697629718061",
+    "MDA-ADM1-25212430B38040597710669",
+    "MDA-ADM1-25212430B3857280687737",
+    "MDA-ADM1-25212430B65458906379390",
+    "MDA-ADM1-25212430B70903588336793",
+    "MDA-ADM1-25212430B39831138215863",
+    "MDA-ADM1-25212430B35951071556291"
+   ],
+   "why": "In 1991–94 the Soviet division stood: 40 raions, 4 cities and 6 towns of republican subordination (Cahul, Dubăsari, Orhei, Rîbnița, Soroca, Ungheni) cut out of their raions. The atoms are the 2003 raions; no 1991 locality list per raion was found, and the 1992 areas differ from the atoms except for the three raions drawn.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)",
+    "Wikipedia (ru) Административное деление Молдовы oldid 151731241 (1991–94 table: counts, not locality lists)"
+   ],
+   "needs": "the 1991–93 locality list per raion (e.g. \"RSS Moldovenească. Orânduire administrativ-teritorială\", 1988, with later decrees) and commune-level atoms for the raions whose borders moved"
+  },
+  {
+   "what": "Raions and municipalities, 14 Jan 1995 – Aug 1995 (before Law 563-XIII)",
+   "from": "1995-01-14",
+   "to": "1995-08",
+   "atoms": [
+    "MDA-ADM1-25212430B51059014460141",
+    "MDA-ADM1-25212430B55748044124793",
+    "MDA-ADM1-25212430B43456438192105",
+    "MDA-ADM1-25212430B81482951983667",
+    "MDA-ADM1-25212430B41329206409501",
+    "MDA-ADM1-25212430B269818099865",
+    "MDA-ADM1-25212430B51243918943413",
+    "MDA-ADM1-25212430B10989766506063",
+    "MDA-ADM1-25212430B31479954216778",
+    "MDA-ADM1-25212430B73317679220215",
+    "MDA-ADM1-25212430B74275153833775",
+    "MDA-ADM1-25212430B5738533784066",
+    "MDA-ADM1-25212430B29368029244886",
+    "MDA-ADM1-25212430B26910735221199",
+    "MDA-ADM1-25212430B57403780332927",
+    "MDA-ADM1-25212430B9063126289167",
+    "MDA-ADM1-25212430B37177221829666",
+    "MDA-ADM1-25212430B70495112373630",
+    "MDA-ADM1-25212430B45328982281571",
+    "MDA-ADM1-25212430B89307550133505",
+    "MDA-ADM1-25212430B53322619224262",
+    "MDA-ADM1-25212430B80524279714584",
+    "MDA-ADM1-25212430B37613660942888",
+    "MDA-ADM1-25212430B1615629371845",
+    "MDA-ADM1-25212430B36697629718061",
+    "MDA-ADM1-25212430B38040597710669",
+    "MDA-ADM1-25212430B3857280687737",
+    "MDA-ADM1-25212430B65458906379390",
+    "MDA-ADM1-25212430B70903588336793",
+    "MDA-ADM1-25212430B39831138215863",
+    "MDA-ADM1-25212430B35951071556291"
+   ],
+   "why": "Their 1994 locality lists differ from those of the 2003 raions (atoms), or were rewritten by Law 563-XIII (Leova, Basarabeasca, Taraclia, Ciadîr-Lunga, Comrat) and the original text is not at hand.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "the original (pre-amendment) Law 306 annexes and commune-level atoms"
+  },
+  {
+   "what": "Raions and municipalities, Aug 1995 – 30 Dec 1998",
+   "from": "1995-08",
+   "to": "1998-12-30",
+   "atoms": [
+    "MDA-ADM1-25212430B51059014460141",
+    "MDA-ADM1-25212430B43456438192105",
+    "MDA-ADM1-25212430B81482951983667",
+    "MDA-ADM1-25212430B41329206409501",
+    "MDA-ADM1-25212430B51243918943413",
+    "MDA-ADM1-25212430B10989766506063",
+    "MDA-ADM1-25212430B31479954216778",
+    "MDA-ADM1-25212430B73317679220215",
+    "MDA-ADM1-25212430B74275153833775",
+    "MDA-ADM1-25212430B5738533784066",
+    "MDA-ADM1-25212430B29368029244886",
+    "MDA-ADM1-25212430B26910735221199",
+    "MDA-ADM1-25212430B57403780332927",
+    "MDA-ADM1-25212430B9063126289167",
+    "MDA-ADM1-25212430B37177221829666",
+    "MDA-ADM1-25212430B70495112373630",
+    "MDA-ADM1-25212430B45328982281571",
+    "MDA-ADM1-25212430B89307550133505",
+    "MDA-ADM1-25212430B53322619224262",
+    "MDA-ADM1-25212430B80524279714584",
+    "MDA-ADM1-25212430B37613660942888",
+    "MDA-ADM1-25212430B1615629371845",
+    "MDA-ADM1-25212430B36697629718061",
+    "MDA-ADM1-25212430B38040597710669",
+    "MDA-ADM1-25212430B3857280687737",
+    "MDA-ADM1-25212430B65458906379390",
+    "MDA-ADM1-25212430B70903588336793",
+    "MDA-ADM1-25212430B39831138215863",
+    "MDA-ADM1-25212430B35951071556291"
+   ],
+   "why": "Locality by locality, each of these raions or municipalities differs from the 2003 raion(s) on the same ground (see the unit entries); no union of 2003 raions carries it.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms (geoBoundaries has no MDA ADM2), e.g. commune boundaries from the Moldovan cadastre"
+  },
+  {
+   "what": "Change from raions to counties, 30 Dec 1998 – 4 Nov 1999 (all atoms except Găgăuzia)",
+   "from": "1998-12-30",
+   "to": "1999-11-04",
+   "atoms": [
+    "MDA-ADM1-25212430B51059014460141",
+    "MDA-ADM1-25212430B43456438192105",
+    "MDA-ADM1-25212430B81482951983667",
+    "MDA-ADM1-25212430B41329206409501",
+    "MDA-ADM1-25212430B269818099865",
+    "MDA-ADM1-25212430B51243918943413",
+    "MDA-ADM1-25212430B10989766506063",
+    "MDA-ADM1-25212430B31479954216778",
+    "MDA-ADM1-25212430B73317679220215",
+    "MDA-ADM1-25212430B74275153833775",
+    "MDA-ADM1-25212430B5738533784066",
+    "MDA-ADM1-25212430B29368029244886",
+    "MDA-ADM1-25212430B26910735221199",
+    "MDA-ADM1-25212430B57403780332927",
+    "MDA-ADM1-25212430B9063126289167",
+    "MDA-ADM1-25212430B23943377724140",
+    "MDA-ADM1-25212430B37177221829666",
+    "MDA-ADM1-25212430B70495112373630",
+    "MDA-ADM1-25212430B61222791146584",
+    "MDA-ADM1-25212430B45328982281571",
+    "MDA-ADM1-25212430B89307550133505",
+    "MDA-ADM1-25212430B53322619224262",
+    "MDA-ADM1-25212430B80524279714584",
+    "MDA-ADM1-25212430B37613660942888",
+    "MDA-ADM1-25212430B1615629371845",
+    "MDA-ADM1-25212430B36697629718061",
+    "MDA-ADM1-25212430B52468939139965",
+    "MDA-ADM1-25212430B38040597710669",
+    "MDA-ADM1-25212430B3857280687737",
+    "MDA-ADM1-25212430B65458906379390",
+    "MDA-ADM1-25212430B46101437811477",
+    "MDA-ADM1-25212430B70903588336793",
+    "MDA-ADM1-25212430B39831138215863",
+    "MDA-ADM1-25212430B35951071556291"
+   ],
+   "why": "Law 191-XIV entered into force 30 Dec 1998 but kept the raions until the counties were formed (Art. 21); its county annex was rewritten by Law 292-XIV of 19 Feb 1999; the county councils were elected 23 May 1999. The day the counties replaced the raions is not established; by 4 Nov 1999 (Law 650-XIV) they existed.",
+   "checked": [
+    "Law 191-XIV Russian register text (published and in force 30 Dec 1998; Art. 21)",
+    "Law 650-XIV (MO 120, 4 Nov 1999)",
+    "Wikipedia (ru) says Law 191 entered into force 1 Jan 1999; Statoids dates the reorganisation 1998-12-30; Factbook 1999 says the raions \"have been reorganized\"",
+    "1999 local elections of 23 May 1999 (ro.wikipedia Alegeri locale în Republica Moldova, 1999, oldid 18024257)"
+   ],
+   "needs": "the act or date by which the 1999 county councils and prefectures were constituted, and the Law 292-XIV county annex with its publication date"
+  },
+  {
+   "what": "Counties and Chișinău municipality, 4 Nov 1999 – 20 Mar 2003 (all atoms except Cahul, Cantemir, Taraclia, Găgăuzia)",
+   "from": "1999-11-04",
+   "to": "2003-03-21",
+   "atoms": [
+    "MDA-ADM1-25212430B41329206409501",
+    "MDA-ADM1-25212430B269818099865",
+    "MDA-ADM1-25212430B51243918943413",
+    "MDA-ADM1-25212430B10989766506063",
+    "MDA-ADM1-25212430B31479954216778",
+    "MDA-ADM1-25212430B73317679220215",
+    "MDA-ADM1-25212430B74275153833775",
+    "MDA-ADM1-25212430B5738533784066",
+    "MDA-ADM1-25212430B29368029244886",
+    "MDA-ADM1-25212430B26910735221199",
+    "MDA-ADM1-25212430B57403780332927",
+    "MDA-ADM1-25212430B9063126289167",
+    "MDA-ADM1-25212430B23943377724140",
+    "MDA-ADM1-25212430B37177221829666",
+    "MDA-ADM1-25212430B70495112373630",
+    "MDA-ADM1-25212430B61222791146584",
+    "MDA-ADM1-25212430B45328982281571",
+    "MDA-ADM1-25212430B89307550133505",
+    "MDA-ADM1-25212430B53322619224262",
+    "MDA-ADM1-25212430B80524279714584",
+    "MDA-ADM1-25212430B37613660942888",
+    "MDA-ADM1-25212430B1615629371845",
+    "MDA-ADM1-25212430B36697629718061",
+    "MDA-ADM1-25212430B52468939139965",
+    "MDA-ADM1-25212430B38040597710669",
+    "MDA-ADM1-25212430B3857280687737",
+    "MDA-ADM1-25212430B65458906379390",
+    "MDA-ADM1-25212430B46101437811477",
+    "MDA-ADM1-25212430B70903588336793",
+    "MDA-ADM1-25212430B39831138215863",
+    "MDA-ADM1-25212430B35951071556291"
+   ],
+   "why": "Matching Law 191 Annex 2 with Law 764 Annex 3 shows that eight counties and Chișinău municipality are not unions of the 2003 raions: the 1999 counties were built from communes and cut through the raions (see the unit entries).",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms"
+  },
+  {
+   "what": "Bender city (republican subordination), 26 Dec 1991 – 21 Jun 1992",
+   "unit": "MDA:Bender",
+   "from": "1991-12-26",
+   "to": "1992-06-21",
+   "atoms": [
+    "MDA-ADM1-25212430B95154791539173"
+   ],
+   "why": "The 1992 yearbook gives Bender 65 km², with Varnița and Protegailovca (Law 306 Annex 2); the atom (37.9 km²) is the 2003 municipality (city and Proteagailovca) and Varnița lies in the Anenii Noi atom.",
+   "checked": [
+    "Statoids umd (1992 area)",
+    "Law 306 Annex 2",
+    "Law 764 Annex 2",
+    "point test: Varnița (Q2331113) falls in the Anenii Noi atom, Proteagailovca (Q3924179) in the Bender atom"
+   ],
+   "needs": "a Varnița atom"
+  },
+  {
+   "what": "Raion Anenii Noi, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Anenii Noi raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "The 2003 raion adds Ochiul Roș, Picus, Zolotievca, Larga and Nicolaevca (Căinari raion in 1994) and Varnița (Bender municipality), and loses Humulești to Chișinău municipality.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Basarabeasca, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Basarabeasca raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "Troițcoe was in Basarabeasca in 1994 and is in Cimișlia raion in 2003; the compartment was rewritten by Law 563-XIII.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Cahul, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Cahul raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "The 2003 raion adds the non-Gagauz part of Vulcănești raion, Borceag (Taraclia raion in 1994) and Doina, Iasnaia Poleana, Rumeanțev (Cantemir raion in 1994); the town of Cahul was a separate unit before 14 Jan 1995.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Camenca, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Camenca raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "Straddled the Dniester: its right-bank villages (Cuhurești, Japca, Vertiujeni, Cerlina, Nimereuca, Văscăuți …) are in the 2003 Florești and Soroca raions; the left bank has been outside Moldovan administration.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Cantemir, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Cantemir raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "Doina, Iasnaia Poleana and Rumeanțev were in Cantemir in 1994 and are in Cahul raion in 2003.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Căinari, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Căinari raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "Abolished in the 1999 reorganisation; in 2003 its villages are split among Căușeni, Anenii Noi, Cimișlia and Ialoveni raions.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Călărași, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Călărași raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "Rassvet was in Călărași in 1994 and is in Strășeni in 2003.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Căușeni, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Căușeni raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "The 2003 raion is Căușeni plus most of Căinari raion and Grădinița, Leuntea, Valea Verde (Ștefan Vodă in 1994); it also includes right-bank villages under PMR administration (Chițcani, Gîsca, Cremenciug).",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Ciadîr-Lunga, 1991-12-26 – 1995-08",
+   "unit": "MDA:Ciadîr-Lunga raion",
+   "from": "1991-12-26",
+   "to": "1995-08",
+   "atoms": [],
+   "why": "Struck by Law 563-XIII of 1995; its villages went to Găgăuzia or to neighbouring raions by referendum.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Cimișlia, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Cimișlia raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "The 2003 raion adds Batîr, Codreni, Zloți, Sagaidacul Nou (Căinari) and Troițcoe (Basarabeasca).",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Comrat, 1991-12-26 – 1995-08",
+   "unit": "MDA:Comrat raion",
+   "from": "1991-12-26",
+   "to": "1995-08",
+   "atoms": [],
+   "why": "Struck by Law 563-XIII of 1995; its villages went to Găgăuzia or to neighbouring raions by referendum.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Criuleni, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Criuleni raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "Budești, Văduleni, Stăuceni and Goianul Nou were in Criuleni in 1994 and are in Chișinău municipality in 2003.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Dondușeni, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Dondușeni raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "Fîntînița, Ghizdita, Maramonovca, Mîndîc (to Drochia) and Niorcani, Tolocănești, Rudi, Tătărăuca Veche, Tătărăuca Nouă, Decebal, Slobozia Nouă, Visoca (to Soroca) left Dondușeni between 1994 and 2003.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Drochia, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Drochia raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "The 2003 raion adds Fîntînița, Ghizdita, Maramonovca, Mîndîc (Dondușeni) and Pelinia (Rîșcani).",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Dubăsari, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Dubăsari raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "The Soviet raion straddled the Dniester and its town was a separate unit; the 2003 Dubăsari atom holds only the communes under Moldovan administration (Cocieri, Molovata Nouă, Corjova, Coșnița, Pîrîta, Doroțcaia, Ustia …); the rest lies in the Transnistria atom.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Edineț, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Edineț raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "Cepeleuți, Rîngaci and Vancicăuți (Ocnița in 1994) are in Edineț in 2003, and Heredeuca went the other way; Alexăndreni was struck by Law 124-XV of 2003.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Florești, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Florești raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "The 2003 raion adds the right-bank villages of Camenca raion (Cuhurești de Jos and de Sus, Japca, Năpadova, Sănătăuca, Temeleuți, Tîrgul-Vertiujeni, Văscăuți, Vertiujeni, Zăluceni …).",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Glodeni, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Glodeni raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "Sadovoe was in Glodeni in 1994 and is in Bălți municipality in 2003.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Grigoriopol, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Grigoriopol raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "Left-bank raion outside Moldovan administration; the Moldovan-held villages near it are in the 2003 Dubăsari atom.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Hîncești, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Hîncești raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "The 2003 raion adds Cateleni, Ciuciuleni, Drăgușenii Noi and Horodca (Nisporeni in 1994).",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Ialoveni, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Ialoveni raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "Băcioi, Brăila, Frumușica and Străisteni went to Chișinău municipality; the 2003 raion adds Cărbuna, Cigîrleni, Gangura, Homuteanovca, Mileștii Noi, Misovca and others from Căinari.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Leova before 1995-08",
+   "unit": "MDA:Leova raion",
+   "from": "1991-12-26",
+   "to": "1995-08",
+   "atoms": [],
+   "why": "Its compartment was rewritten by Law 563-XIII of 1995 and the earlier text is not at hand; the 1992 area (699 km²) is smaller than the atom (764 km²).",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Nisporeni, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Nisporeni raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "Cateleni, Ciuciuleni, Drăgușenii Noi, Horodca (to Hîncești) and Micleușeni, Huzun, Dolna (to Strășeni) left Nisporeni between 1994 and 2003.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Ocnița, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Ocnița raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "Cepeleuți, Rîngaci and Vancicăuți were in Ocnița in 1994 and are in Edineț in 2003.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Orhei, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Orhei raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "Zahoreni (Rezina raion in 1994) is in the 2003 Orhei raion; before 14 Jan 1995 the town of Orhei was also a separate unit.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Rezina, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Rezina raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "Zahoreni was in Rezina in 1994 and is in Orhei raion in 2003 (Wikidata Q2382669); Ciorna appears in the 2003 list only.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Rîbnița, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Rîbnița raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "Left-bank raion outside Moldovan administration.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Rîșcani, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Rîșcani raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "Pelinia was in Rîșcani in 1994 and is in Drochia in 2003.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Sîngerei, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Sîngerei raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "Cozești (Telenești raion in 1994) is in Sîngerei in 2003, as are Slobozia-Chișcăreni and Mărășești, absent from the 1994 list.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Slobozia, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Slobozia raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "Left-bank raion outside Moldovan administration.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Soroca, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Soroca raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "The 2003 raion adds Nimereuca, Cerlina (Camenca) and nine Dondușeni villages; the town of Soroca was a separate unit before 1995.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Strășeni, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Strășeni raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "The 2003 raion adds Rassvet (Călărași) and Dolna, Micleușeni, Huzun (Nisporeni).",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Ștefan Vodă, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Ștefan Vodă raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "Grădinița, Leuntea and Valea Verde were in Ștefan Vodă in 1994 and are in Căușeni in 2003.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Taraclia, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Taraclia raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "Borceag was in Taraclia raion in 1994 and is in Cahul in 2003; the compartment was rewritten by Law 563-XIII.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Telenești, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Telenești raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "Cozești was in Telenești in 1994 and is in Sîngerei raion in 2003 (Wikidata Q4226557).",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Ungheni before 1995-01-14",
+   "unit": "MDA:Ungheni raion",
+   "from": "1991-12-26",
+   "to": "1995-01-14",
+   "atoms": [],
+   "why": "Before 14 Jan 1995 the town of Ungheni was a separate unit inside the raion; the atom holds both.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Raion Vulcănești, 1991-12-26 – 1998-12-30",
+   "unit": "MDA:Vulcănești raion",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "After 1995 only its non-Gagauz villages remained; they are in the 2003 Cahul raion.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Chișinău city / municipality 1991–1998",
+   "unit": "MDA:Chișinău",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "Law 306 enlarged the city (6 towns, 8 communes); the 2003 municipality (atom 568.4 km²) adds Băcioi, Budești, Condrița, Dumbrava, Humulești, Stăuceni, Trușeni and others; 1992 area 321 km².",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Bălți city / municipality 1991–1998",
+   "unit": "MDA:Bălți",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "Sadovoe (Glodeni raion in 1994) is in the 2003 municipality; 1992 area 66 km², atom 77.7 km².",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Bender municipality after the battle of June 1992",
+   "unit": "MDA:Bender",
+   "from": "1992-06-21",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "A de jure unit not under Moldovan administration since 19–21 June 1992; its atom is in atomsOutside.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Tiraspol city / municipality 1991–1998",
+   "unit": "MDA:Tiraspol",
+   "from": "1991-12-26",
+   "to": "1998-12-30",
+   "atoms": [],
+   "why": "A de jure unit not under Moldovan administration (PMR); its ground is in the Transnistria atom (atomsOutside).",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Town of Cahul (republican subordination) 1991–1995",
+   "unit": "MDA:Cahul town",
+   "from": "1991-12-26",
+   "to": "1995-01-14",
+   "atoms": [],
+   "why": "A separate unit until Law 306 (14 Jan 1995) merged it into its raion; the atoms do not separate the town from the raion.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Town of Orhei (republican subordination) 1991–1995",
+   "unit": "MDA:Orhei town",
+   "from": "1991-12-26",
+   "to": "1995-01-14",
+   "atoms": [],
+   "why": "A separate unit until Law 306 (14 Jan 1995) merged it into its raion; the atoms do not separate the town from the raion.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Town of Soroca (republican subordination) 1991–1995",
+   "unit": "MDA:Soroca town",
+   "from": "1991-12-26",
+   "to": "1995-01-14",
+   "atoms": [],
+   "why": "A separate unit until Law 306 (14 Jan 1995) merged it into its raion; the atoms do not separate the town from the raion.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Town of Ungheni (republican subordination) 1991–1995",
+   "unit": "MDA:Ungheni town",
+   "from": "1991-12-26",
+   "to": "1995-01-14",
+   "atoms": [],
+   "why": "A separate unit until Law 306 (14 Jan 1995) merged it into its raion; the atoms do not separate the town from the raion.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Town of Dubăsari (republican subordination) 1991–1995",
+   "unit": "MDA:Dubăsari town",
+   "from": "1991-12-26",
+   "to": "1995-01-14",
+   "atoms": [],
+   "why": "Left bank, under PMR administration; its ground is in the Transnistria atom (atomsOutside).",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Town of Rîbnița (republican subordination) 1991–1995",
+   "unit": "MDA:Rîbnița town",
+   "from": "1991-12-26",
+   "to": "1995-01-14",
+   "atoms": [],
+   "why": "Left bank, under PMR administration; its ground is in the Transnistria atom (atomsOutside).",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "County Bălți 1999–2003",
+   "unit": "MDA:Bălți county",
+   "from": "1999-11-04",
+   "to": "2003-03-21",
+   "atoms": [],
+   "why": "Holds Ghiliceni, Cucioaia, Cișla, Zgărdești, Bondareuca, Ciofu (2003 Telenești), Dominteni, Hăsnășenii Mari, Pelinia, Sofia and others (2003 Drochia), Frumușica Nouă, Maiscoe, Valea Rădoaiei (2003 Florești); lacks Pociumbeni, Pociumbăuți, Druța and others (2003 Rîșcani, then in Edineț county).",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "County Chișinău 1999–2003",
+   "unit": "MDA:Chișinău county",
+   "from": "1999-11-04",
+   "to": "2003-03-21",
+   "atoms": [],
+   "why": "Holds Condrița (2003 Chișinău municipality), Sadova (2003 Călărași), Zloți and Sagaidacul Nou (2003 Cimișlia); lacks Ochiul Roș, Picus, Zolotievca, Larga, Nicolaevca (Tighina county, 2003 Anenii Noi).",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "County Edineț 1999–2003",
+   "unit": "MDA:Edineț county",
+   "from": "1999-11-04",
+   "to": "2003-03-21",
+   "atoms": [],
+   "why": "Holds Maramonovca (2003 Drochia) and Pociumbeni, Pociumbăuți, Druța, Duruitoarea Nouă, Zăicani (2003 Rîșcani); lacks Teleșeuca Nouă (Soroca county, 2003 Dondușeni).",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "County Lăpușna 1999–2003",
+   "unit": "MDA:Lăpușna county",
+   "from": "1999-11-04",
+   "to": "2003-03-21",
+   "atoms": [],
+   "why": "Lacks Zloți and Sagaidacul Nou (Chișinău county, 2003 Cimișlia).",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "County Orhei 1999–2003",
+   "unit": "MDA:Orhei county",
+   "from": "1999-11-04",
+   "to": "2003-03-21",
+   "atoms": [],
+   "why": "Holds Bahu, Bravicea, Săseni (2003 Călărași); lacks the Soroca-county villages of the 2003 Șoldănești raion and the Bălți-county villages of the 2003 Telenești raion.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "County Soroca 1999–2003",
+   "unit": "MDA:Soroca county",
+   "from": "1999-11-04",
+   "to": "2003-03-21",
+   "atoms": [],
+   "why": "Holds Cotiujenii Mari, Cobîlea, Cușelăuca, Dobrușa, Recești, Zahorna, Pohoarna, Rogojeni (2003 Șoldănești) and Criscăuți, Teleșeuca (2003 Dondușeni); lacks the Bălți-county villages of the 2003 Drochia and Florești raions.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "County Tighina 1999–2003",
+   "unit": "MDA:Tighina county",
+   "from": "1999-11-04",
+   "to": "2003-03-21",
+   "atoms": [],
+   "why": "Holds Ochiul Roș, Picus, Zolotievca, Larga, Nicolaevca (2003 Anenii Noi); Bender, its de jure seat, has been under PMR administration since 1992.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "County Ungheni 1999–2003",
+   "unit": "MDA:Ungheni county",
+   "from": "1999-11-04",
+   "to": "2003-03-21",
+   "atoms": [],
+   "why": "Lacks Bahu, Bravicea, Săseni (Orhei county) and Sadova (Chișinău county), all in the 2003 Călărași raion.",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Chișinău municipality 1999–2003",
+   "unit": "MDA:Chișinău municipality 1999",
+   "from": "1999-11-04",
+   "to": "2003-03-21",
+   "atoms": [],
+   "why": "Its Law 191 Annex 3 list lacks Condrița and Dumbrava, which are in the 2003 municipality (atom).",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  },
+  {
+   "what": "Stînga Nistrului territorial unit 1999–2003",
+   "unit": "MDA:Stînga Nistrului",
+   "from": "1999-11-04",
+   "to": "2003-03-21",
+   "atoms": [],
+   "why": "A de jure unit (Law 191 Annex 5) not under Moldovan administration; its ground is in the Transnistria atom (atomsOutside).",
+   "checked": [
+    "Law 306-XIII/1994 Annex 3 (Wikisource oldid 67886) against Law 764-XV/2001 Annex 3 (oldid 67891), locality by locality",
+    "Law 191-XIV/1998 Annex 2 (Wikisource oldid 150415) against the same, locality by locality",
+    "Statoids umd (1992 yearbook areas)"
+   ],
+   "needs": "commune-level atoms, or the locality lists named in why"
+  }
+ ]
+}
