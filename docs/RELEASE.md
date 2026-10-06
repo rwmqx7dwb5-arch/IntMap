@@ -416,6 +416,48 @@ domain for your GitHub Pages site」2026-10-01 に確認）。**結ぶのは Pag
 コミットに戻すと、Pages の設定は変わらないので一致検査が赤になる——ドメインを跨いで戻すときは
 Pages の `cname` も合わせる。
 
+## AWS（S3 + CloudFront）での配信
+
+**決定は [`DECISIONS.md`](../DECISIONS.md)「配信とビルド」の 1 行目**（Pages は 1 GB の上限を超え、規約が
+商用サービスを対象外とする）。ドメインは `intmap.app`（Route 53 で取得・管理）、CloudFront は定額プラン Pro。
+⚠ **2026-10-06 時点で AWS アカウントはまだ無い**——下の手順の 1〜3 が済むまで `ci.yml` の `aws` ジョブは
+スキップ（緑）で、本番は Pages のまま。
+
+**同じ `dist/` を 1 つのオリジンから配る**ので、ページ（相対パス・`data/hvt` の Range 読み・Service Worker・
+CSP）は変わらない。変わるのは応答ヘッダの出どころだけで、Pages が送っていたもの（2026-10-06 実測）を同じにする:
+
+| 何 | どこで決まるか |
+|---|---|
+| Content-Type | `scripts/aws-publish.mjs` の `CONTENT_TYPES`（拡張子ごとに Pages の実測値。未知の拡張子は公開を止める） |
+| Cache-Control | 同上。ブラウザは Pages と同じ 600 秒、Vite のハッシュ付きの名前だけ 1 年。CDN は 1 年保ち、公開のたびに `/*` を無効化する |
+| 圧縮 | CloudFront が 1,000〜10,000,000 B のテキストを gzip/br。それを超えるテキスト（いま 6 本）は gzip 済みで置く。`.gz` は置いたバイトのまま（Range のため） |
+| `Access-Control-Allow-Origin: *` | CloudFront の管理ポリシー SimpleCORS（`infra/aws/hosting.yaml`） |
+| `/ja/` → `ja/index.html`、`/ja` → `/ja/`、`www` → apex | CloudFront Function（同上） |
+
+### 構成（`infra/aws/`）
+
+| ファイル | リージョン | 作るもの |
+|---|---|---|
+| `certificate.yaml` | **us-east-1**（CloudFront の決まり。他では作れないように Rules で拒む） | ACM 証明書（apex と `www`、DNS 検証は Route 53 に自動で書かれる） |
+| `hosting.yaml` | ap-northeast-1 | 非公開・バージョニング付きの S3、OAC、CloudFront、Function、GitHub OIDC と公開用ロール（このリポジトリの `aws-production` 環境だけが引き受けられる）、`PointDns=true` のときだけ Route 53 の A/AAAA |
+
+### 手順（誰がやるか）
+
+| # | 誰 | やること |
+|---|---|---|
+| 1 | **利用者** | AWS アカウントを作る。⚠ **「有料プラン（Paid account plan）」を選ぶ**——無料プランのアカウントは CloudFront の定額プランに入れず、6 か月かクレジットを使い切った時点で閉鎖される。ルートユーザーに MFA を付ける。 |
+| 2 | **利用者** | Route 53 で `intmap.app` を登録する（連絡先と支払いは本人）。ホストゾーンは登録が自動で作る。 |
+| 3 | **利用者** | AWS CLI（2.32 以上）で `aws login` を実行し、ブラウザでサインインする（一時的な認証情報・最長 12 時間。エージェントは鍵を見ない）。 |
+| 4 | エージェント | `certificate.yaml` を us-east-1 に、`hosting.yaml` を ap-northeast-1 に `aws cloudformation deploy` する（`PointDns=false`）。出力の 4 値を GitHub の変数 `AWS_PUBLISH_ROLE_ARN`・`AWS_SITE_BUCKET`・`AWS_DISTRIBUTION_ID`・`AWS_REGION` に入れ、環境 `aws-production` を作って `main` だけに絞る。 |
+| 5 | エージェント（コンソールが要るなら利用者） | ディストリビューションを定額プラン Pro に入れる。 |
+| 6 | エージェント | `main` の次の公開から Pages と並行に S3 へも出る。`*.cloudfront.net` の名前で本番検証（`intmap-prod-verifier`）: 地図・Range 206・border-detail・`www`/スラッシュの転送・ヘッダが Pages と一致。 |
+| 7 | エージェント | 切り替え: `hosting.yaml` を `PointDns=true` で更新、`site-origin.js` の `CUSTOM_DOMAIN` を `intmap.app` に（上の「独自ドメインへの移行」の手順 6〜12。手順 2〜5 の Pages の DNS と `cname` は**行わない**——ドメインは CloudFront を指す）。Pages の公開物を旧アドレスから新しいアドレスへ送るページに替える（別の PR）。 |
+
+**ロールバック**: 切り替え前は何もしなくてよい（読者は Pages にいる）。切り替え後は `PointDns=false` に戻すと
+ドメインの A/AAAA が消える——その間は旧アドレス（Pages）が本番になるので、Pages の転送ページを止めて
+`dist/` を再び公開する（`deploy.yml`）。個々のファイルは S3 のバージョン（30 日）から戻せ、どのコミットも
+`data-assets.json` の sha256 から再構築できる。
+
 ## Manual steps summary (GitHub UI)
 
 | Goal | Where | What |

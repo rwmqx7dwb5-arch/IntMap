@@ -1,0 +1,315 @@
+# IntMap · where the site is served from: a private S3 bucket behind one CloudFront distribution.
+#
+# WHY (DECISIONS.md «配信先は AWS（S3 + CloudFront）»): GitHub Pages caps a published site at 1 GB
+# (dist/ measured 1,028,746,955 B in 15,899 files on 2026-10-06) and its terms exclude running a
+# commercial service on it. This is ONE origin serving the same dist/, so the page does not change:
+# relative data paths, Range reads of data/hvt, the service worker and the CSP all stay as they are.
+#
+# WHAT IT KEEPS FROM PAGES (measured on the live Pages site 2026-10-06): every response carries
+# `Access-Control-Allow-Origin: *` (the managed SimpleCORS policy below); a directory URL answers its
+# index.html and a directory named without its slash is redirected to it (the viewer-request function);
+# Range requests are answered from the stored bytes. Content-Type and Cache-Control are object metadata,
+# written by scripts/aws-publish.mjs, which states where each value comes from.
+#
+# ⚠ DNS IS NOT TOUCHED UNTIL PointDns=true. The stack can be created, filled and tested on its
+#   *.cloudfront.net name while the domain still answers whatever it answered before; flipping the
+#   parameter is the cut-over, and flipping it back is the rollback of the cut-over.
+#
+# Procedure, order, parameters and who does what: docs/RELEASE.md «AWS（S3 + CloudFront）での配信».
+# Written in the long form (Fn::…, not !Ref) so any YAML parser reads it — tests/aws-hosting-checks.
+
+AWSTemplateFormatVersion: "2010-09-09"
+Description: IntMap - site hosting (S3 + CloudFront) and the GitHub Actions role that publishes it
+
+Parameters:
+  DomainName:
+    Type: String
+    Description: The apex domain, e.g. intmap.app (www.<domain> is redirected to it)
+    AllowedPattern: "^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z][a-z0-9-]{0,61}[a-z0-9]$"
+  HostedZoneId:
+    Type: AWS::Route53::HostedZone::Id
+    Description: The Route 53 hosted zone of that domain
+  CertificateArn:
+    Type: String
+    Description: Output CertificateArn of infra/aws/certificate.yaml (us-east-1)
+    AllowedPattern: "^arn:aws:acm:us-east-1:[0-9]{12}:certificate/[0-9a-f-]+$"
+  GitHubRepository:
+    Type: String
+    Description: owner/name of the repository whose CI may publish
+    Default: rwmqx7dwb5-arch/IntMap
+  PublishEnvironment:
+    Type: String
+    Description: The GitHub Actions environment of the publishing job (ci.yml `aws`); only it may assume the role
+    Default: aws-production
+  PointDns:
+    Type: String
+    Description: "true = the domain's A/AAAA records point at this distribution (the cut-over)"
+    AllowedValues: ["true", "false"]
+    Default: "false"
+
+Conditions:
+  DnsHere:
+    Fn::Equals: [{ Ref: PointDns }, "true"]
+
+Resources:
+  SiteBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      # Versioned: a publish never destroys the previous bytes. Thirty days of them is the window in
+      # which an object can be restored without rebuilding (any commit can always be rebuilt: its
+      # data-assets.json names its data by sha256).
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: expire-replaced-versions
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 30
+            ExpiredObjectDeleteMarker: true
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+      Tags:
+        - Key: project
+          Value: intmap
+
+  OriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name:
+          Fn::Sub: "intmap-site-${AWS::StackName}"
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  # Only the distribution reads the bucket. ListBucket is granted so that a missing key is a 404
+  # (as on Pages) and not S3's 403; the cache policy forwards no query string, so no listing is
+  # reachable through CloudFront.
+  SiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: { Ref: SiteBucket }
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: CloudFrontReadsObjects
+            Effect: Allow
+            Principal: { Service: cloudfront.amazonaws.com }
+            Action: s3:GetObject
+            Resource:
+              Fn::Sub: "${SiteBucket.Arn}/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn:
+                  Fn::Sub: "arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}"
+          - Sid: CloudFrontSeesMissingKeysAs404
+            Effect: Allow
+            Principal: { Service: cloudfront.amazonaws.com }
+            Action: s3:ListBucket
+            Resource:
+              Fn::GetAtt: [SiteBucket, Arn]
+            Condition:
+              StringEquals:
+                AWS:SourceArn:
+                  Fn::Sub: "arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}"
+
+  # What Pages did for paths, measured 2026-10-06: «/ja/» answers ja/index.html, «/ja» is redirected
+  # to «/ja/». And www.<domain> is redirected to the apex. The query string is carried on every
+  # redirect (Pages keeps it too). No template literals: Fn::Sub owns ${…} in this block.
+  ViewerRequest:
+    Type: AWS::CloudFront::Function
+    Properties:
+      Name:
+        Fn::Sub: "intmap-viewer-request-${AWS::StackName}"
+      AutoPublish: true
+      FunctionConfig:
+        Comment: IntMap - directory index, slash redirect, www to apex
+        Runtime: cloudfront-js-2.0
+      FunctionCode:
+        Fn::Sub: |
+          var APEX = '${DomainName}';
+          function query(q) {
+            var out = [];
+            for (var k in q) {
+              var list = q[k].multiValue ? q[k].multiValue : [q[k]];
+              for (var i = 0; i < list.length; i++) out.push(list[i].value === '' ? k : k + '=' + list[i].value);
+            }
+            return out.length ? '?' + out.join('&') : '';
+          }
+          function moved(location) {
+            return { statusCode: 301, statusDescription: 'Moved Permanently', headers: { location: { value: location } } };
+          }
+          function handler(event) {
+            var r = event.request;
+            var host = r.headers.host ? r.headers.host.value : '';
+            if (host === 'www.' + APEX) return moved('https://' + APEX + r.uri + query(r.querystring));
+            var uri = r.uri;
+            if (uri.charAt(uri.length - 1) === '/') { r.uri = uri + 'index.html'; return r; }
+            var last = uri.substring(uri.lastIndexOf('/') + 1);
+            if (last.indexOf('.') === -1) return moved(uri + '/' + query(r.querystring));
+            return r;
+          }
+
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Comment:
+          Fn::Sub: "IntMap (${DomainName})"
+        Enabled: true
+        Aliases:
+          - { Ref: DomainName }
+          - Fn::Sub: "www.${DomainName}"
+        ViewerCertificate:
+          AcmCertificateArn: { Ref: CertificateArn }
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2021
+        HttpVersion: http2and3
+        IPV6Enabled: true
+        DefaultRootObject: index.html
+        PriceClass: PriceClass_All
+        Origins:
+          - Id: site
+            DomainName:
+              Fn::GetAtt: [SiteBucket, RegionalDomainName]
+            OriginAccessControlId:
+              Fn::GetAtt: [OriginAccessControl, Id]
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+        DefaultCacheBehavior:
+          TargetOriginId: site
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          CachedMethods: [GET, HEAD]
+          Compress: true
+          # Managed «CachingOptimized»: no query string or cookie in the key, gzip and br cached
+          # apart, TTL from the object's Cache-Control (scripts/aws-publish.mjs writes it).
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          # Managed «SimpleCORS»: Access-Control-Allow-Origin: * — what Pages sends on every response.
+          ResponseHeadersPolicyId: 60669652-455b-4ae9-85a4-c4c02393f86c
+          FunctionAssociations:
+            - EventType: viewer-request
+              FunctionARN:
+                Fn::GetAtt: [ViewerRequest, FunctionMetadata.FunctionARN]
+      Tags:
+        - Key: project
+          Value: intmap
+
+  ApexA:
+    Type: AWS::Route53::RecordSet
+    Condition: DnsHere
+    Properties:
+      HostedZoneId: { Ref: HostedZoneId }
+      Name: { Ref: DomainName }
+      Type: A
+      AliasTarget:
+        DNSName: { "Fn::GetAtt": [Distribution, DomainName] }
+        HostedZoneId: Z2FDTNDATAQYW2   # CloudFront's fixed alias zone (docs: AliasTarget)
+  ApexAAAA:
+    Type: AWS::Route53::RecordSet
+    Condition: DnsHere
+    Properties:
+      HostedZoneId: { Ref: HostedZoneId }
+      Name: { Ref: DomainName }
+      Type: AAAA
+      AliasTarget:
+        DNSName: { "Fn::GetAtt": [Distribution, DomainName] }
+        HostedZoneId: Z2FDTNDATAQYW2
+  WwwA:
+    Type: AWS::Route53::RecordSet
+    Condition: DnsHere
+    Properties:
+      HostedZoneId: { Ref: HostedZoneId }
+      Name:
+        Fn::Sub: "www.${DomainName}"
+      Type: A
+      AliasTarget:
+        DNSName: { "Fn::GetAtt": [Distribution, DomainName] }
+        HostedZoneId: Z2FDTNDATAQYW2
+  WwwAAAA:
+    Type: AWS::Route53::RecordSet
+    Condition: DnsHere
+    Properties:
+      HostedZoneId: { Ref: HostedZoneId }
+      Name:
+        Fn::Sub: "www.${DomainName}"
+      Type: AAAA
+      AliasTarget:
+        DNSName: { "Fn::GetAtt": [Distribution, DomainName] }
+        HostedZoneId: Z2FDTNDATAQYW2
+
+  # GitHub Actions signs in with a short-lived OIDC token — no access key is stored anywhere.
+  GitHubOidc:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList: [sts.amazonaws.com]
+
+  # The role the publishing job assumes. Only that repository's job running in the named environment
+  # can take it (the token's `sub` names both), and it can only write this bucket and invalidate this
+  # distribution.
+  PublishRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Description: IntMap - CI publishes dist/ to the site bucket and invalidates the CDN
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: { Ref: GitHubOidc }
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+                token.actions.githubusercontent.com:sub:
+                  Fn::Sub: "repo:${GitHubRepository}:environment:${PublishEnvironment}"
+      Policies:
+        - PolicyName: publish-site
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: s3:ListBucket
+                Resource:
+                  Fn::GetAtt: [SiteBucket, Arn]
+              - Effect: Allow
+                Action: [s3:GetObject, s3:PutObject, s3:DeleteObject]
+                Resource:
+                  Fn::Sub: "${SiteBucket.Arn}/*"
+              - Effect: Allow
+                Action: [cloudfront:CreateInvalidation, cloudfront:GetInvalidation]
+                Resource:
+                  Fn::Sub: "arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}"
+
+Outputs:
+  BucketName:
+    Description: GitHub variable AWS_SITE_BUCKET
+    Value: { Ref: SiteBucket }
+  DistributionId:
+    Description: GitHub variable AWS_DISTRIBUTION_ID
+    Value: { Ref: Distribution }
+  DistributionDomain:
+    Description: The *.cloudfront.net name - the site is reachable here before PointDns=true
+    Value:
+      Fn::GetAtt: [Distribution, DomainName]
+  PublishRoleArn:
+    Description: GitHub variable AWS_PUBLISH_ROLE_ARN
+    Value:
+      Fn::GetAtt: [PublishRole, Arn]

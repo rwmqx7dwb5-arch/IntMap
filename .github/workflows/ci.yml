@@ -2,7 +2,8 @@
 # The site is built ONCE per run (the `build` job); the gates, the browser tiers and — on a push to
 # main whose run is green — the production publish all use that one build (ci-build-once).
 # Least-privilege by default: the whole workflow only needs to read the repo; the one job that
-# publishes (`pages`) and the one that files the nightly alarm (`deep-alarm`) widen it for themselves.
+# publish (`pages`, and `aws` once the AWS account exists) and the one that files the nightly alarm
+# (`deep-alarm`) widen it for themselves.
 name: CI
 
 on:
@@ -14,10 +15,11 @@ on:
     - cron: '0 18 * * *'
   workflow_dispatch:
 
-# Read-only token — no job here writes to the repo or needs secrets. `pages` and `deep-alarm` add
+# Read-only token — no job here writes to the repo or needs secrets. `pages`, `aws` and `deep-alarm` add
 # the one scope each needs at job level; nothing else can deploy or write. (The ceiling bot that
 # acts on main's measurement is its own workflow, perf-ceiling.yml, so this stays true.)
 #
+# green-skip-by-design vars.AWS_PUBLISH_ROLE_ARN: the AWS account is the operator's to create (docs/RELEASE.md «AWS（S3 + CloudFront）での配信»); until its role exists there is nothing to publish to, and «did not publish» is the job done. Once it is set, a missing bucket or distribution variable is RED (the script refuses).
 # green-skip-by-design vars.ENABLE_PAGES_DEPLOY: the operator's stop switch for publishing, the same one deploy.yml reads (the `build` job's Pages steps and the `pages` job skip on it). With it off «did not publish» IS the job done and every test still ran; a red run on every push would make the switch unusable.
 permissions:
   contents: read
@@ -805,6 +807,51 @@ jobs:
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346  # v5.0.1
         with:
           artifact_name: ${{ needs.build.outputs.pages }}
+
+  # ══ (aws-hosting) THE SAME dist/, PUBLISHED TO S3 BEHIND CLOUDFRONT ═══════════════════════════════
+  # The site is moving off GitHub Pages (over its 1 GB limit; its terms exclude a commercial service —
+  # DECISIONS.md «配信先は AWS（S3 + CloudFront）»). Until the cut-over this job publishes IN PARALLEL with
+  # `pages`, from the same green run and the same artifact, so the AWS copy can be served and tested on
+  # its own address while readers stay on Pages. It needs exactly what `pages` needs.
+  # Credentials: a short-lived OIDC token for the role infra/aws/hosting.yaml creates, which only this
+  # repository's jobs in the `aws-production` environment can assume — no key is stored in GitHub.
+  # (the `if:` reads vars.AWS_PUBLISH_ROLE_ARN — declared green-skip-by-design at the top of this file)
+  aws:
+    name: Publish to AWS (S3 + CloudFront)
+    needs: [build, static, checks-gate, browser-gate]
+    if: ${{ !cancelled() && github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.AWS_PUBLISH_ROLE_ARN != '' && needs.build.result == 'success' && needs.static.result == 'success' && needs.checks-gate.result == 'success' && needs.browser-gate.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write         # the OIDC token the role trusts
+      contents: read
+    concurrency:
+      group: aws-production   # publishes to the bucket never overlap
+      cancel-in-progress: false
+    environment:
+      name: aws-production
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          sparse-checkout: |
+            scripts/aws-publish.mjs
+            scripts/pages-publish-guard.mjs
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          name: ${{ needs.build.outputs.site }}
+          path: .
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd  # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_PUBLISH_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - id: guard
+        name: Refuse to publish an ancestor of what is live
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/aws-publish.mjs --guard --bucket "${{ vars.AWS_SITE_BUCKET }}" --sha "${GITHUB_SHA}"
+      - name: Publish dist/ (changed objects only) and invalidate the CDN
+        if: ${{ steps.guard.outputs.publish == 'true' }}
+        run: node scripts/aws-publish.mjs --stamp --dist dist --bucket "${{ vars.AWS_SITE_BUCKET }}" --distribution "${{ vars.AWS_DISTRIBUTION_ID }}"
 
   # The same post-deploy smoke deploy.yml ran: it tests the one thing no pre-merge run can — the site
   # actually published.
