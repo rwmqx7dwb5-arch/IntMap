@@ -34,6 +34,22 @@
  *   · Page «Author(s)» Christian Henriot; «Cartographer(s)» Pierre-Henri Dubois; «Year range» 1912-1949;
  *     «Last update: Friday 19 June 2026».
  *
+ *  LINEAGE — IS THE GEOMETRY DERIVED FROM CHGIS? (checked 2026-10-06; record: dev-notes/2026-10-06-
+ *  virtualshanghai-provinces-lineage.md). Asked because the same publisher's «Prefectures in 1909 Qing
+ *  China» (ID 2211), also labelled CC0, carries an ArcGIS processing history «Dissolve v6_1911_pref_pgn_utf»
+ *  (2019-06-17) = CHGIS V6, which is non-commercial and forbids redistribution → unusable.
+ *   · WHAT THESE FILES SAY: nothing about a source. The only lineage-bearing file, No-06's
+ *     1912_1921.shp.xml, holds CreaDate 20210616 and no <Lineage>/<Process> at all; the five GeoPackages'
+ *     gpkg_metadata is an empty QGIS 3.20 template; gpkg_contents.description is empty; the page's
+ *     «Comments» and the release post (enepchina.hypotheses.org/3554, 2021-06-16) name no source.
+ *     A stripped history is ABSENCE OF A STATEMENT, not a statement of independence — hence the test below.
+ *   · MEASURED: a dissolve or a Douglas-Peucker simplification keeps the input's vertices, so geometry
+ *     from CHGIS V6 1911 would share vertices with ID 2211 (a dissolve of it). Of the 20 615 vertices of
+ *     the 1912–1921 layer, 0.0% lie within 1 m and 0.2% within 50 m of a 2211 vertex; the median distance
+ *     to a 2211 LINE is 1.8 km and 23.6% are > 5 km from one. Same against Natural Earth 10m admin-1
+ *     (0.0% within 1 m, median 2.3 km). ⇒ an independently drawn line, not CHGIS-derived as far as can be
+ *     measured. ⚠ NOT TESTED: GADM and CHGIS V4 (not downloaded). Re-ask if the publisher adds a history.
+ *
  *  DATES — WHAT THE PUBLISHER STATES, AND WHAT THIS MODULE DERIVES
  *   · Each period is stated as a span of whole YEARS («1922–1928», «1947–1949»). The start is
  *     `YYYY-01-01` at year precision and the end is the first day of the year AFTER the last stated
