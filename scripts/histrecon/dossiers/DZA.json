@@ -1995,9 +1995,10 @@
       "why": "Loi 19-12 moved whole communes of this wilaya into new wilaya(s); the new line runs through the inside of the NE atom.",
       "checked": [
         "JORADP n°78 of 2019-12-18 (Loi 19-12, arts 2-3, commune lists)",
-        "Natural Earth admin-1 (48 wilayas, pre-2019)"
+        "Natural Earth admin-1 (48 wilayas, pre-2019)",
+        "geoBoundaries DZA ADM3 (OpenStreetMap 2021, 1,540 communes, CC BY-SA 2.0; checked 2026-10-06): the communes carry the 2019 lines, but one dossier takes one atom set, so drawing them means re-basing all 48 wilayas 1984–2019 on communes for 13 days of the scope (2019-12-18 → 2019-12-31) — left for the record that extends past 2019"
       ],
-      "needs": "commune-level atoms carrying the 2019 lines: e.g. geoBoundaries DZA ADM2 or OCHA COD-AB Algeria communes (licence to check), or an atom set of the 1541 communes"
+      "needs": "re-base DZA on gb-adm3 communes (commune→wilaya lists of Loi 84-09 art. 5–52 and Loi 19-12 art. 2–3) when the scope extends past 2019"
     },
     {
       "what": "Tamanghasset wilaya after Loi 19-12 (reduced territory) — the communes ceded to In Salah and In Guezzam lie inside the NE atom",
@@ -2010,9 +2011,10 @@
       "why": "Loi 19-12 moved whole communes of this wilaya into new wilaya(s); the new line runs through the inside of the NE atom.",
       "checked": [
         "JORADP n°78 of 2019-12-18 (Loi 19-12, arts 2-3, commune lists)",
-        "Natural Earth admin-1 (48 wilayas, pre-2019)"
+        "Natural Earth admin-1 (48 wilayas, pre-2019)",
+        "geoBoundaries DZA ADM3 (OpenStreetMap 2021, 1,540 communes, CC BY-SA 2.0; checked 2026-10-06): the communes carry the 2019 lines, but one dossier takes one atom set, so drawing them means re-basing all 48 wilayas 1984–2019 on communes for 13 days of the scope (2019-12-18 → 2019-12-31) — left for the record that extends past 2019"
       ],
-      "needs": "commune-level atoms carrying the 2019 lines: e.g. geoBoundaries DZA ADM2 or OCHA COD-AB Algeria communes (licence to check), or an atom set of the 1541 communes"
+      "needs": "re-base DZA on gb-adm3 communes (commune→wilaya lists of Loi 84-09 art. 5–52 and Loi 19-12 art. 2–3) when the scope extends past 2019"
     },
     {
       "what": "Béchar wilaya after Loi 19-12 (reduced territory) — the communes ceded to Béni Abbès lie inside the NE atom",
@@ -2025,9 +2027,10 @@
       "why": "Loi 19-12 moved whole communes of this wilaya into new wilaya(s); the new line runs through the inside of the NE atom.",
       "checked": [
         "JORADP n°78 of 2019-12-18 (Loi 19-12, arts 2-3, commune lists)",
-        "Natural Earth admin-1 (48 wilayas, pre-2019)"
+        "Natural Earth admin-1 (48 wilayas, pre-2019)",
+        "geoBoundaries DZA ADM3 (OpenStreetMap 2021, 1,540 communes, CC BY-SA 2.0; checked 2026-10-06): the communes carry the 2019 lines, but one dossier takes one atom set, so drawing them means re-basing all 48 wilayas 1984–2019 on communes for 13 days of the scope (2019-12-18 → 2019-12-31) — left for the record that extends past 2019"
       ],
-      "needs": "commune-level atoms carrying the 2019 lines: e.g. geoBoundaries DZA ADM2 or OCHA COD-AB Algeria communes (licence to check), or an atom set of the 1541 communes"
+      "needs": "re-base DZA on gb-adm3 communes (commune→wilaya lists of Loi 84-09 art. 5–52 and Loi 19-12 art. 2–3) when the scope extends past 2019"
     },
     {
       "what": "El Oued wilaya after Loi 19-12 (reduced territory) — the communes ceded to El M'Ghair lie inside the NE atom",
@@ -2040,9 +2043,10 @@
       "why": "Loi 19-12 moved whole communes of this wilaya into new wilaya(s); the new line runs through the inside of the NE atom.",
       "checked": [
         "JORADP n°78 of 2019-12-18 (Loi 19-12, arts 2-3, commune lists)",
-        "Natural Earth admin-1 (48 wilayas, pre-2019)"
+        "Natural Earth admin-1 (48 wilayas, pre-2019)",
+        "geoBoundaries DZA ADM3 (OpenStreetMap 2021, 1,540 communes, CC BY-SA 2.0; checked 2026-10-06): the communes carry the 2019 lines, but one dossier takes one atom set, so drawing them means re-basing all 48 wilayas 1984–2019 on communes for 13 days of the scope (2019-12-18 → 2019-12-31) — left for the record that extends past 2019"
       ],
-      "needs": "commune-level atoms carrying the 2019 lines: e.g. geoBoundaries DZA ADM2 or OCHA COD-AB Algeria communes (licence to check), or an atom set of the 1541 communes"
+      "needs": "re-base DZA on gb-adm3 communes (commune→wilaya lists of Loi 84-09 art. 5–52 and Loi 19-12 art. 2–3) when the scope extends past 2019"
     },
     {
       "what": "Ouargla wilaya after Loi 19-12 (reduced territory) — the communes ceded to Touggourt lie inside the NE atom",
@@ -2055,9 +2059,10 @@
       "why": "Loi 19-12 moved whole communes of this wilaya into new wilaya(s); the new line runs through the inside of the NE atom.",
       "checked": [
         "JORADP n°78 of 2019-12-18 (Loi 19-12, arts 2-3, commune lists)",
-        "Natural Earth admin-1 (48 wilayas, pre-2019)"
+        "Natural Earth admin-1 (48 wilayas, pre-2019)",
+        "geoBoundaries DZA ADM3 (OpenStreetMap 2021, 1,540 communes, CC BY-SA 2.0; checked 2026-10-06): the communes carry the 2019 lines, but one dossier takes one atom set, so drawing them means re-basing all 48 wilayas 1984–2019 on communes for 13 days of the scope (2019-12-18 → 2019-12-31) — left for the record that extends past 2019"
       ],
-      "needs": "commune-level atoms carrying the 2019 lines: e.g. geoBoundaries DZA ADM2 or OCHA COD-AB Algeria communes (licence to check), or an atom set of the 1541 communes"
+      "needs": "re-base DZA on gb-adm3 communes (commune→wilaya lists of Loi 84-09 art. 5–52 and Loi 19-12 art. 2–3) when the scope extends past 2019"
     },
     {
       "what": "Illizi wilaya after Loi 19-12 (reduced territory) — the communes ceded to Djanet lie inside the NE atom",
@@ -2070,9 +2075,10 @@
       "why": "Loi 19-12 moved whole communes of this wilaya into new wilaya(s); the new line runs through the inside of the NE atom.",
       "checked": [
         "JORADP n°78 of 2019-12-18 (Loi 19-12, arts 2-3, commune lists)",
-        "Natural Earth admin-1 (48 wilayas, pre-2019)"
+        "Natural Earth admin-1 (48 wilayas, pre-2019)",
+        "geoBoundaries DZA ADM3 (OpenStreetMap 2021, 1,540 communes, CC BY-SA 2.0; checked 2026-10-06): the communes carry the 2019 lines, but one dossier takes one atom set, so drawing them means re-basing all 48 wilayas 1984–2019 on communes for 13 days of the scope (2019-12-18 → 2019-12-31) — left for the record that extends past 2019"
       ],
-      "needs": "commune-level atoms carrying the 2019 lines: e.g. geoBoundaries DZA ADM2 or OCHA COD-AB Algeria communes (licence to check), or an atom set of the 1541 communes"
+      "needs": "re-base DZA on gb-adm3 communes (commune→wilaya lists of Loi 84-09 art. 5–52 and Loi 19-12 art. 2–3) when the scope extends past 2019"
     },
     {
       "what": "Ghardaïa wilaya after Loi 19-12 (reduced territory) — the communes ceded to El Meniaa lie inside the NE atom",
@@ -2085,9 +2091,10 @@
       "why": "Loi 19-12 moved whole communes of this wilaya into new wilaya(s); the new line runs through the inside of the NE atom.",
       "checked": [
         "JORADP n°78 of 2019-12-18 (Loi 19-12, arts 2-3, commune lists)",
-        "Natural Earth admin-1 (48 wilayas, pre-2019)"
+        "Natural Earth admin-1 (48 wilayas, pre-2019)",
+        "geoBoundaries DZA ADM3 (OpenStreetMap 2021, 1,540 communes, CC BY-SA 2.0; checked 2026-10-06): the communes carry the 2019 lines, but one dossier takes one atom set, so drawing them means re-basing all 48 wilayas 1984–2019 on communes for 13 days of the scope (2019-12-18 → 2019-12-31) — left for the record that extends past 2019"
       ],
-      "needs": "commune-level atoms carrying the 2019 lines: e.g. geoBoundaries DZA ADM2 or OCHA COD-AB Algeria communes (licence to check), or an atom set of the 1541 communes"
+      "needs": "re-base DZA on gb-adm3 communes (commune→wilaya lists of Loi 84-09 art. 5–52 and Loi 19-12 art. 2–3) when the scope extends past 2019"
     },
     {
       "what": "Biskra wilaya after Loi 19-12 (reduced territory) — the communes ceded to Ouled Djellal lie inside the NE atom",
@@ -2100,9 +2107,10 @@
       "why": "Loi 19-12 moved whole communes of this wilaya into new wilaya(s); the new line runs through the inside of the NE atom.",
       "checked": [
         "JORADP n°78 of 2019-12-18 (Loi 19-12, arts 2-3, commune lists)",
-        "Natural Earth admin-1 (48 wilayas, pre-2019)"
+        "Natural Earth admin-1 (48 wilayas, pre-2019)",
+        "geoBoundaries DZA ADM3 (OpenStreetMap 2021, 1,540 communes, CC BY-SA 2.0; checked 2026-10-06): the communes carry the 2019 lines, but one dossier takes one atom set, so drawing them means re-basing all 48 wilayas 1984–2019 on communes for 13 days of the scope (2019-12-18 → 2019-12-31) — left for the record that extends past 2019"
       ],
-      "needs": "commune-level atoms carrying the 2019 lines: e.g. geoBoundaries DZA ADM2 or OCHA COD-AB Algeria communes (licence to check), or an atom set of the 1541 communes"
+      "needs": "re-base DZA on gb-adm3 communes (commune→wilaya lists of Loi 84-09 art. 5–52 and Loi 19-12 art. 2–3) when the scope extends past 2019"
     },
     {
       "what": "Timimoun wilaya, created by Loi 19-12 from whole communes of one older wilaya",
@@ -2111,9 +2119,10 @@
       "to": null,
       "why": "Its territory is a set of communes inside one NE atom; no NE boundary carries it.",
       "checked": [
-        "JORADP n°78 of 2019-12-18 (Loi 19-12, art. 3, arts 52 bis to 52 bis 9)"
+        "JORADP n°78 of 2019-12-18 (Loi 19-12, art. 3, arts 52 bis to 52 bis 9)",
+        "geoBoundaries DZA ADM3 (OpenStreetMap 2021, 1,540 communes, CC BY-SA 2.0; checked 2026-10-06): the communes carry the 2019 lines, but one dossier takes one atom set, so drawing them means re-basing all 48 wilayas 1984–2019 on communes for 13 days of the scope (2019-12-18 → 2019-12-31) — left for the record that extends past 2019"
       ],
-      "needs": "commune-level atoms (see above)"
+      "needs": "re-base DZA on gb-adm3 communes (commune→wilaya lists of Loi 84-09 art. 5–52 and Loi 19-12 art. 2–3) when the scope extends past 2019"
     },
     {
       "what": "Bordj Badji Mokhtar wilaya, created by Loi 19-12 from whole communes of one older wilaya",
@@ -2122,9 +2131,10 @@
       "to": null,
       "why": "Its territory is a set of communes inside one NE atom; no NE boundary carries it.",
       "checked": [
-        "JORADP n°78 of 2019-12-18 (Loi 19-12, art. 3, arts 52 bis to 52 bis 9)"
+        "JORADP n°78 of 2019-12-18 (Loi 19-12, art. 3, arts 52 bis to 52 bis 9)",
+        "geoBoundaries DZA ADM3 (OpenStreetMap 2021, 1,540 communes, CC BY-SA 2.0; checked 2026-10-06): the communes carry the 2019 lines, but one dossier takes one atom set, so drawing them means re-basing all 48 wilayas 1984–2019 on communes for 13 days of the scope (2019-12-18 → 2019-12-31) — left for the record that extends past 2019"
       ],
-      "needs": "commune-level atoms (see above)"
+      "needs": "re-base DZA on gb-adm3 communes (commune→wilaya lists of Loi 84-09 art. 5–52 and Loi 19-12 art. 2–3) when the scope extends past 2019"
     },
     {
       "what": "Ouled Djellal wilaya, created by Loi 19-12 from whole communes of one older wilaya",
@@ -2133,9 +2143,10 @@
       "to": null,
       "why": "Its territory is a set of communes inside one NE atom; no NE boundary carries it.",
       "checked": [
-        "JORADP n°78 of 2019-12-18 (Loi 19-12, art. 3, arts 52 bis to 52 bis 9)"
+        "JORADP n°78 of 2019-12-18 (Loi 19-12, art. 3, arts 52 bis to 52 bis 9)",
+        "geoBoundaries DZA ADM3 (OpenStreetMap 2021, 1,540 communes, CC BY-SA 2.0; checked 2026-10-06): the communes carry the 2019 lines, but one dossier takes one atom set, so drawing them means re-basing all 48 wilayas 1984–2019 on communes for 13 days of the scope (2019-12-18 → 2019-12-31) — left for the record that extends past 2019"
       ],
-      "needs": "commune-level atoms (see above)"
+      "needs": "re-base DZA on gb-adm3 communes (commune→wilaya lists of Loi 84-09 art. 5–52 and Loi 19-12 art. 2–3) when the scope extends past 2019"
     },
     {
       "what": "Béni Abbès wilaya, created by Loi 19-12 from whole communes of one older wilaya",
@@ -2144,9 +2155,10 @@
       "to": null,
       "why": "Its territory is a set of communes inside one NE atom; no NE boundary carries it.",
       "checked": [
-        "JORADP n°78 of 2019-12-18 (Loi 19-12, art. 3, arts 52 bis to 52 bis 9)"
+        "JORADP n°78 of 2019-12-18 (Loi 19-12, art. 3, arts 52 bis to 52 bis 9)",
+        "geoBoundaries DZA ADM3 (OpenStreetMap 2021, 1,540 communes, CC BY-SA 2.0; checked 2026-10-06): the communes carry the 2019 lines, but one dossier takes one atom set, so drawing them means re-basing all 48 wilayas 1984–2019 on communes for 13 days of the scope (2019-12-18 → 2019-12-31) — left for the record that extends past 2019"
       ],
-      "needs": "commune-level atoms (see above)"
+      "needs": "re-base DZA on gb-adm3 communes (commune→wilaya lists of Loi 84-09 art. 5–52 and Loi 19-12 art. 2–3) when the scope extends past 2019"
     },
     {
       "what": "In Salah wilaya, created by Loi 19-12 from whole communes of one older wilaya",
@@ -2155,9 +2167,10 @@
       "to": null,
       "why": "Its territory is a set of communes inside one NE atom; no NE boundary carries it.",
       "checked": [
-        "JORADP n°78 of 2019-12-18 (Loi 19-12, art. 3, arts 52 bis to 52 bis 9)"
+        "JORADP n°78 of 2019-12-18 (Loi 19-12, art. 3, arts 52 bis to 52 bis 9)",
+        "geoBoundaries DZA ADM3 (OpenStreetMap 2021, 1,540 communes, CC BY-SA 2.0; checked 2026-10-06): the communes carry the 2019 lines, but one dossier takes one atom set, so drawing them means re-basing all 48 wilayas 1984–2019 on communes for 13 days of the scope (2019-12-18 → 2019-12-31) — left for the record that extends past 2019"
       ],
-      "needs": "commune-level atoms (see above)"
+      "needs": "re-base DZA on gb-adm3 communes (commune→wilaya lists of Loi 84-09 art. 5–52 and Loi 19-12 art. 2–3) when the scope extends past 2019"
     },
     {
       "what": "In Guezzam wilaya, created by Loi 19-12 from whole communes of one older wilaya",
@@ -2166,9 +2179,10 @@
       "to": null,
       "why": "Its territory is a set of communes inside one NE atom; no NE boundary carries it.",
       "checked": [
-        "JORADP n°78 of 2019-12-18 (Loi 19-12, art. 3, arts 52 bis to 52 bis 9)"
+        "JORADP n°78 of 2019-12-18 (Loi 19-12, art. 3, arts 52 bis to 52 bis 9)",
+        "geoBoundaries DZA ADM3 (OpenStreetMap 2021, 1,540 communes, CC BY-SA 2.0; checked 2026-10-06): the communes carry the 2019 lines, but one dossier takes one atom set, so drawing them means re-basing all 48 wilayas 1984–2019 on communes for 13 days of the scope (2019-12-18 → 2019-12-31) — left for the record that extends past 2019"
       ],
-      "needs": "commune-level atoms (see above)"
+      "needs": "re-base DZA on gb-adm3 communes (commune→wilaya lists of Loi 84-09 art. 5–52 and Loi 19-12 art. 2–3) when the scope extends past 2019"
     },
     {
       "what": "Touggourt wilaya, created by Loi 19-12 from whole communes of one older wilaya",
@@ -2177,9 +2191,10 @@
       "to": null,
       "why": "Its territory is a set of communes inside one NE atom; no NE boundary carries it.",
       "checked": [
-        "JORADP n°78 of 2019-12-18 (Loi 19-12, art. 3, arts 52 bis to 52 bis 9)"
+        "JORADP n°78 of 2019-12-18 (Loi 19-12, art. 3, arts 52 bis to 52 bis 9)",
+        "geoBoundaries DZA ADM3 (OpenStreetMap 2021, 1,540 communes, CC BY-SA 2.0; checked 2026-10-06): the communes carry the 2019 lines, but one dossier takes one atom set, so drawing them means re-basing all 48 wilayas 1984–2019 on communes for 13 days of the scope (2019-12-18 → 2019-12-31) — left for the record that extends past 2019"
       ],
-      "needs": "commune-level atoms (see above)"
+      "needs": "re-base DZA on gb-adm3 communes (commune→wilaya lists of Loi 84-09 art. 5–52 and Loi 19-12 art. 2–3) when the scope extends past 2019"
     },
     {
       "what": "Djanet wilaya, created by Loi 19-12 from whole communes of one older wilaya",
@@ -2188,9 +2203,10 @@
       "to": null,
       "why": "Its territory is a set of communes inside one NE atom; no NE boundary carries it.",
       "checked": [
-        "JORADP n°78 of 2019-12-18 (Loi 19-12, art. 3, arts 52 bis to 52 bis 9)"
+        "JORADP n°78 of 2019-12-18 (Loi 19-12, art. 3, arts 52 bis to 52 bis 9)",
+        "geoBoundaries DZA ADM3 (OpenStreetMap 2021, 1,540 communes, CC BY-SA 2.0; checked 2026-10-06): the communes carry the 2019 lines, but one dossier takes one atom set, so drawing them means re-basing all 48 wilayas 1984–2019 on communes for 13 days of the scope (2019-12-18 → 2019-12-31) — left for the record that extends past 2019"
       ],
-      "needs": "commune-level atoms (see above)"
+      "needs": "re-base DZA on gb-adm3 communes (commune→wilaya lists of Loi 84-09 art. 5–52 and Loi 19-12 art. 2–3) when the scope extends past 2019"
     },
     {
       "what": "El M'Ghair wilaya, created by Loi 19-12 from whole communes of one older wilaya",
@@ -2199,9 +2215,10 @@
       "to": null,
       "why": "Its territory is a set of communes inside one NE atom; no NE boundary carries it.",
       "checked": [
-        "JORADP n°78 of 2019-12-18 (Loi 19-12, art. 3, arts 52 bis to 52 bis 9)"
+        "JORADP n°78 of 2019-12-18 (Loi 19-12, art. 3, arts 52 bis to 52 bis 9)",
+        "geoBoundaries DZA ADM3 (OpenStreetMap 2021, 1,540 communes, CC BY-SA 2.0; checked 2026-10-06): the communes carry the 2019 lines, but one dossier takes one atom set, so drawing them means re-basing all 48 wilayas 1984–2019 on communes for 13 days of the scope (2019-12-18 → 2019-12-31) — left for the record that extends past 2019"
       ],
-      "needs": "commune-level atoms (see above)"
+      "needs": "re-base DZA on gb-adm3 communes (commune→wilaya lists of Loi 84-09 art. 5–52 and Loi 19-12 art. 2–3) when the scope extends past 2019"
     },
     {
       "what": "El Meniaa wilaya, created by Loi 19-12 from whole communes of one older wilaya",
@@ -2210,9 +2227,10 @@
       "to": null,
       "why": "Its territory is a set of communes inside one NE atom; no NE boundary carries it.",
       "checked": [
-        "JORADP n°78 of 2019-12-18 (Loi 19-12, art. 3, arts 52 bis to 52 bis 9)"
+        "JORADP n°78 of 2019-12-18 (Loi 19-12, art. 3, arts 52 bis to 52 bis 9)",
+        "geoBoundaries DZA ADM3 (OpenStreetMap 2021, 1,540 communes, CC BY-SA 2.0; checked 2026-10-06): the communes carry the 2019 lines, but one dossier takes one atom set, so drawing them means re-basing all 48 wilayas 1984–2019 on communes for 13 days of the scope (2019-12-18 → 2019-12-31) — left for the record that extends past 2019"
       ],
-      "needs": "commune-level atoms (see above)"
+      "needs": "re-base DZA on gb-adm3 communes (commune→wilaya lists of Loi 84-09 art. 5–52 and Loi 19-12 art. 2–3) when the scope extends past 2019"
     },
     {
       "what": "31 wilayas of Ordonnance 74-69 (1974-07-09 → 1984-02-07)",
@@ -2222,9 +2240,10 @@
       "checked": [
         "JORADP n°55 of 1974-07-09 (Ordonnance 74-69, arts 1-4: list of 31 wilayas, limits by decree)",
         "JORADP n°6 of 1984-02-07 (Loi 84-09, arts 1-4)",
-        "statoids.com/udz.html (1974 table with contributing departments; 1983-12-15 change list and areas)"
+        "statoids.com/udz.html (1974 table with contributing departments; 1983-12-15 change list and areas)",
+        "geoBoundaries DZA ADM3 (OpenStreetMap 2021, 1,540 communes; checked 2026-10-06): the atoms now exist, but they are the communes of 1984 (704 → 1,541), formed by dividing and merging parts of the 1974 communes; whether every 1984 commune lies inside one 1974 wilaya is stated nowhere open"
       ],
-      "needs": "1974 wilaya composition decrees (daïras/communes) and 1974-1984 commune geometry — no open atom set found"
+      "needs": "Décret 84-365 (composition of the 1984 communes from parts of the old ones) and the 1974 wilaya composition decrees, to assign each 1984 commune to one 1974 wilaya or name the split ones"
     },
     {
       "what": "15 departments inherited at independence (1962-07-05 → 1974-07-09)",
@@ -2232,9 +2251,10 @@
       "to": "1974-07-09",
       "why": "Departments of 1959 (Alger, Batna, Bône/Annaba, … Oasis, Saoura) were reorganised in 1974 by commune transfers; their lines do not follow 1984 wilaya boundaries.",
       "checked": [
-        "statoids.com/udz.html (1959-11-07 table, 1974 contributors)"
+        "statoids.com/udz.html (1959-11-07 table, 1974 contributors)",
+        "geoBoundaries DZA ADM3 (OpenStreetMap 2021, 1,540 communes; checked 2026-10-06): the atoms now exist, but they are the communes of 1984 (704 → 1,541), formed by dividing and merging parts of the 1974 communes; whether every 1984 commune lies inside one 1974 wilaya is stated nowhere open"
       ],
-      "needs": "1959-1974 arrondissement/commune geometry"
+      "needs": "Décret 84-365 (composition of the 1984 communes from parts of the old ones) and the 1974 wilaya composition decrees, to assign each 1984 commune to one 1974 wilaya or name the split ones"
     }
   ]
 }

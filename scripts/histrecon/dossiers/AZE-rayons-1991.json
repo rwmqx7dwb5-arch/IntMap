@@ -1,0 +1,3176 @@
+{
+ "country": "AZE",
+ "atomSet": "gb-adm2@2026-10-06",
+ "scope": {
+  "from": "1991-12-26",
+  "to": "2004-03-18"
+ },
+ "polityNote": "Azerbaijan from the dissolution of the USSR (26 Dec 1991) to the eve of Kangarli rayon (19 Mar 2004), from which the present-day record carries the rayons back. First-level units as the CIA World Factbook (US BGN) lists them 1995-2003: 59 rayons, 11 cities of republican subordination and the Nakhchivan Autonomous Republic as ONE unit (its rayons are subordinate to it, so the 2004 split of Babek and Sharur does not move a first-level line). Atoms: geoBoundaries AZE ADM2 (2020, traced from Wikipedia, CC BY-SA 3.0; 79 polygons, 11,130 vertices — 2.5 times Natural Earth's 4,516). A rayon is drawn as its 2020 atom because no rayon line outside the war zone moved 1991-2020 except Samukh (organised 18 Feb 1992 from Khanlar; withheld before) and Kangarli (inside the AR). Under the rule 'drawn only where Azerbaijan administered it': Khankendi and, after the ceasefire of 12 May 1994, the wholly occupied Lachin, Kalbajar, Qubadli, Zangilan, Khojaly, Khojavend and Shusha rayons and Shusha city are atomsOutside; the partly occupied Agdam, Tartar, Fuzuli, Jabrayil and Goranboy, and every war-zone rayon while the front moved (1991-1994), are unresolved because the line of contact is not an atom line. The era map (CShapes) places all of this ground in Azerbaijan; the split follows administration, not the map. Small exclaves held by the other side (Karki in the Sadarak atom, the Qazakh exclaves) cannot be separated from their atoms and are drawn with them. Check 1 (2026-10-06): the AR's union vs OpenHistoricalMap's Naxçıvan MR IoU 0.953 and vs geoBoundaries' OpenStreetMap ADM1 0.942 (Natural Earth 0.881); rayon by rayon the atoms agree with Natural Earth only at median IoU 0.73 (pooled 0.757), and the city atoms are undersized against published areas (Ganja 38.5 km2 vs 110, Mingachevir 44 vs 130), so lines between rayons are only as good as the Wikipedia trace.",
+ "units": [
+  {
+   "id": "AZE:Baku",
+   "names": {
+    "en": "Baku",
+    "ja": "バクー",
+    "local": "Bakı"
+   },
+   "wikidata": "Q9248",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B61947743987915"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://az.wikipedia.org/w/index.php?title=L%C9%99nk%C9%99ran&oldid=9103604",
+       "title": "Vikipediya — Lənkəran (oldid 9103604)",
+       "says": "Lankaran is a city of republican subordination since 28 July 1971 (Shaki since 1963, Yevlakh since 1965, Naftalan since 1967, Mingachevir since 1954, Shirvan since 1963 per their own articles).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Ganja",
+   "names": {
+    "en": "Ganja",
+    "ja": "ギャンジャ",
+    "local": "Gəncə"
+   },
+   "wikidata": "Q131290",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B84154267491992"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://az.wikipedia.org/w/index.php?title=L%C9%99nk%C9%99ran&oldid=9103604",
+       "title": "Vikipediya — Lənkəran (oldid 9103604)",
+       "says": "Lankaran is a city of republican subordination since 28 July 1971 (Shaki since 1963, Yevlakh since 1965, Naftalan since 1967, Mingachevir since 1954, Shirvan since 1963 per their own articles).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Sumqayit",
+   "names": {
+    "en": "Sumqayit",
+    "ja": "スムガイト",
+    "local": "Sumqayıt"
+   },
+   "wikidata": "Q179833",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B75219613739908"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://az.wikipedia.org/w/index.php?title=L%C9%99nk%C9%99ran&oldid=9103604",
+       "title": "Vikipediya — Lənkəran (oldid 9103604)",
+       "says": "Lankaran is a city of republican subordination since 28 July 1971 (Shaki since 1963, Yevlakh since 1965, Naftalan since 1967, Mingachevir since 1954, Shirvan since 1963 per their own articles).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Mingachevir",
+   "names": {
+    "en": "Mingachevir",
+    "ja": "ミンゲチェヴィル",
+    "local": "Mingəçevir"
+   },
+   "wikidata": "Q230932",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B16521863868797"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://az.wikipedia.org/w/index.php?title=L%C9%99nk%C9%99ran&oldid=9103604",
+       "title": "Vikipediya — Lənkəran (oldid 9103604)",
+       "says": "Lankaran is a city of republican subordination since 28 July 1971 (Shaki since 1963, Yevlakh since 1965, Naftalan since 1967, Mingachevir since 1954, Shirvan since 1963 per their own articles).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Ali Bayramli",
+   "names": {
+    "en": "Ali Bayramli (Shirvan from 2008)",
+    "ja": "アリ・バイラムル（2008年からシルヴァン）",
+    "local": "Əli Bayramlı"
+   },
+   "wikidata": "Q241116",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B45272408011177"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://az.wikipedia.org/w/index.php?title=L%C9%99nk%C9%99ran&oldid=9103604",
+       "title": "Vikipediya — Lənkəran (oldid 9103604)",
+       "says": "Lankaran is a city of republican subordination since 28 July 1971 (Shaki since 1963, Yevlakh since 1965, Naftalan since 1967, Mingachevir since 1954, Shirvan since 1963 per their own articles).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Naftalan",
+   "names": {
+    "en": "Naftalan",
+    "ja": "ナフタラン",
+    "local": "Naftalan"
+   },
+   "wikidata": "Q21979624",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B32389340464615"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://az.wikipedia.org/w/index.php?title=L%C9%99nk%C9%99ran&oldid=9103604",
+       "title": "Vikipediya — Lənkəran (oldid 9103604)",
+       "says": "Lankaran is a city of republican subordination since 28 July 1971 (Shaki since 1963, Yevlakh since 1965, Naftalan since 1967, Mingachevir since 1954, Shirvan since 1963 per their own articles).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Yevlakh city",
+   "names": {
+    "en": "Yevlakh (city)",
+    "ja": "イェヴラフ市",
+    "local": "Yevlax"
+   },
+   "wikidata": "Q175459",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B78344971255813"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://az.wikipedia.org/w/index.php?title=L%C9%99nk%C9%99ran&oldid=9103604",
+       "title": "Vikipediya — Lənkəran (oldid 9103604)",
+       "says": "Lankaran is a city of republican subordination since 28 July 1971 (Shaki since 1963, Yevlakh since 1965, Naftalan since 1967, Mingachevir since 1954, Shirvan since 1963 per their own articles).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Shaki city",
+   "names": {
+    "en": "Shaki (city)",
+    "ja": "シャキ市",
+    "local": "Şəki"
+   },
+   "wikidata": "Q234783",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B24616396985677"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://az.wikipedia.org/w/index.php?title=L%C9%99nk%C9%99ran&oldid=9103604",
+       "title": "Vikipediya — Lənkəran (oldid 9103604)",
+       "says": "Lankaran is a city of republican subordination since 28 July 1971 (Shaki since 1963, Yevlakh since 1965, Naftalan since 1967, Mingachevir since 1954, Shirvan since 1963 per their own articles).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Lankaran city",
+   "names": {
+    "en": "Lankaran (city)",
+    "ja": "ランカラン市",
+    "local": "Lənkəran"
+   },
+   "wikidata": "Q228811",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B92317303093203"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://az.wikipedia.org/w/index.php?title=L%C9%99nk%C9%99ran&oldid=9103604",
+       "title": "Vikipediya — Lənkəran (oldid 9103604)",
+       "says": "Lankaran is a city of republican subordination since 28 July 1971 (Shaki since 1963, Yevlakh since 1965, Naftalan since 1967, Mingachevir since 1954, Shirvan since 1963 per their own articles).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Nakhchivan",
+   "names": {
+    "en": "Nakhchivan Autonomous Republic",
+    "ja": "ナヒチェヴァン自治共和国",
+    "local": "Naxçıvan Muxtar Respublikası"
+   },
+   "wikidata": "Q131083",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B79262118902245",
+      "AZE-ADM2-54616110B53070579367508",
+      "AZE-ADM2-54616110B75082210580506",
+      "AZE-ADM2-54616110B53436270368491",
+      "AZE-ADM2-54616110B79964383852369",
+      "AZE-ADM2-54616110B68105682916253",
+      "AZE-ADM2-54616110B53393721771174",
+      "AZE-ADM2-54616110B24607032839399"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%B4%D0%BC%D0%B8%D0%BD%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%B8%D0%B2%D0%BD%D0%BE%D0%B5_%D0%B4%D0%B5%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_%D0%90%D0%B7%D0%B5%D1%80%D0%B1%D0%B0%D0%B9%D0%B4%D0%B6%D0%B0%D0%BD%D0%B0&oldid=153474825",
+       "title": "Википедия — Административное деление Азербайджана (oldid 153474825)",
+       "says": "Changes since 1991: Goranboy formed Feb 1991; NKAO abolished 26 Nov 1991 and its raions redistributed; next change Kangarli rayon in Nakhchivan in 2004. The Nakhchivan AR comprises 7 rayons and 1 city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://az.wikipedia.org/w/index.php?title=K%C9%99ng%C9%99rli_rayonu&oldid=8859761",
+       "title": "Vikipediya — Kəngərli rayonu (oldid 8859761)",
+       "says": "Kangarli rayon was created by presidential decree of 19 March 2004.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "The autonomous republic is the first-level unit; its rayons (Kangarli carved from Babek and Sharur on 2004-03-19) are subordinate to it, so its outline did not move. The Karki exclave of Sadarak, held by Armenia from 1992, lies inside the Sadarak atom and is drawn with it."
+    }
+   ]
+  },
+  {
+   "id": "AZE:Absheron",
+   "names": {
+    "en": "Absheron Rayon",
+    "ja": "アブシェロン県",
+    "local": "Abşeron rayonu"
+   },
+   "wikidata": "Q179538",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B88432173472444"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Agstafa",
+   "names": {
+    "en": "Agstafa Rayon",
+    "ja": "アグスタファ県",
+    "local": "Ağstafa rayonu"
+   },
+   "wikidata": "Q275744",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B36354954300290"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Qazakh",
+   "names": {
+    "en": "Qazakh Rayon",
+    "ja": "ガザフ県",
+    "local": "Qazax rayonu"
+   },
+   "wikidata": "Q389381",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B43488292017990"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "The atom carries the two exclaves inside Armenia (Yukhari Askipara, Barkhudarly), held by Armenia from 1992; they are drawn with the rayon."
+    }
+   ]
+  },
+  {
+   "id": "AZE:Tovuz",
+   "names": {
+    "en": "Tovuz Rayon",
+    "ja": "トヴズ県",
+    "local": "Tovuz rayonu"
+   },
+   "wikidata": "Q388980",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B84187356839814"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Gadabay",
+   "names": {
+    "en": "Gadabay Rayon",
+    "ja": "ガダバイ県",
+    "local": "Gədəbəy rayonu"
+   },
+   "wikidata": "Q330749",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B46799199998097"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Dashkasan",
+   "names": {
+    "en": "Dashkasan Rayon",
+    "ja": "ダシュキャサン県",
+    "local": "Daşkəsən rayonu"
+   },
+   "wikidata": "Q457494",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B88384638285498"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Shamkir",
+   "names": {
+    "en": "Shamkir Rayon",
+    "ja": "シャムキル県",
+    "local": "Şəmkir rayonu"
+   },
+   "wikidata": "Q467491",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B57585842497805"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Balakan",
+   "names": {
+    "en": "Balakan Rayon",
+    "ja": "バラキャン県",
+    "local": "Balakən rayonu"
+   },
+   "wikidata": "Q330850",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B63924922129682"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Zaqatala",
+   "names": {
+    "en": "Zaqatala Rayon",
+    "ja": "ザガタラ県",
+    "local": "Zaqatala rayonu"
+   },
+   "wikidata": "Q147553",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B4759617374649"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Qakh",
+   "names": {
+    "en": "Qakh Rayon",
+    "ja": "ガフ県",
+    "local": "Qax rayonu"
+   },
+   "wikidata": "Q330796",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B49356278605879"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Shaki",
+   "names": {
+    "en": "Shaki Rayon",
+    "ja": "シャキ県",
+    "local": "Şəki rayonu"
+   },
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B25010354244926"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Oghuz",
+   "names": {
+    "en": "Oghuz Rayon",
+    "ja": "オグズ県",
+    "local": "Oğuz rayonu"
+   },
+   "wikidata": "Q643989",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B99657283459996"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Qabala",
+   "names": {
+    "en": "Qabala Rayon",
+    "ja": "ガバラ県",
+    "local": "Qəbələ rayonu"
+   },
+   "wikidata": "Q593872",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B33746839775993"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Ismailli",
+   "names": {
+    "en": "Ismailli Rayon",
+    "ja": "イスマイルル県",
+    "local": "İsmayıllı rayonu"
+   },
+   "wikidata": "Q344252",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B45290451128830"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Agsu",
+   "names": {
+    "en": "Agsu Rayon",
+    "ja": "アグス県",
+    "local": "Ağsu rayonu"
+   },
+   "wikidata": "Q330800",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B12323901372431"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Shamakhi",
+   "names": {
+    "en": "Shamakhi Rayon",
+    "ja": "シャマフ県",
+    "local": "Şamaxı rayonu"
+   },
+   "wikidata": "Q330839",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B16651088424667"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Gobustan",
+   "names": {
+    "en": "Gobustan Rayon",
+    "ja": "ゴブスタン県",
+    "local": "Qobustan rayonu"
+   },
+   "wikidata": "Q457508",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B43271825035432"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Khizi",
+   "names": {
+    "en": "Khizi Rayon",
+    "ja": "ヒジ県",
+    "local": "Xızı rayonu"
+   },
+   "wikidata": "Q476708",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B97026515433008"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Siazan",
+   "names": {
+    "en": "Siazan Rayon",
+    "ja": "シアザン県",
+    "local": "Siyəzən rayonu"
+   },
+   "wikidata": "Q820940",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B9592293002412"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Shabran",
+   "names": {
+    "en": "Davachi Rayon (Shabran from 2010)",
+    "ja": "ダヴァチ県（2010年からシャブラン県）",
+    "local": "Dəvəçi rayonu"
+   },
+   "wikidata": "Q387994",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B33183266084070"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Khachmaz",
+   "names": {
+    "en": "Khachmaz Rayon",
+    "ja": "ハチマズ県",
+    "local": "Xaçmaz rayonu"
+   },
+   "wikidata": "Q6398826",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B89497242950609"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Quba",
+   "names": {
+    "en": "Quba Rayon",
+    "ja": "クバ県",
+    "local": "Quba rayonu"
+   },
+   "wikidata": "Q457499",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B77048085748362"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Qusar",
+   "names": {
+    "en": "Qusar Rayon",
+    "ja": "クサル県",
+    "local": "Qusar rayonu"
+   },
+   "wikidata": "Q386506",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B21517829058101"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Hajigabul",
+   "names": {
+    "en": "Hajigabul Rayon",
+    "ja": "ハジュガブル県",
+    "local": "Hacıqabul rayonu"
+   },
+   "wikidata": "Q476690",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B48173541517146"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Kurdamir",
+   "names": {
+    "en": "Kurdamir Rayon",
+    "ja": "キュルダミル県",
+    "local": "Kürdəmir rayonu"
+   },
+   "wikidata": "Q688589",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B82810927503709"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Ujar",
+   "names": {
+    "en": "Ujar Rayon",
+    "ja": "ウジャル県",
+    "local": "Ucar rayonu"
+   },
+   "wikidata": "Q476703",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B8701125158325"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Goychay",
+   "names": {
+    "en": "Goychay Rayon",
+    "ja": "ギョイチャイ県",
+    "local": "Göyçay rayonu"
+   },
+   "wikidata": "Q477163",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B88730523237575"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Agdash",
+   "names": {
+    "en": "Agdash Rayon",
+    "ja": "アグダシュ県",
+    "local": "Ağdaş rayonu"
+   },
+   "wikidata": "Q275784",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B75800990015815"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Yevlakh",
+   "names": {
+    "en": "Yevlakh Rayon",
+    "ja": "イェヴラフ県",
+    "local": "Yevlax rayonu"
+   },
+   "wikidata": "Q458524",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B52362464060400"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Barda",
+   "names": {
+    "en": "Barda Rayon",
+    "ja": "バルダ県",
+    "local": "Bərdə rayonu"
+   },
+   "wikidata": "Q330857",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B76249555634218"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Aghjabadi",
+   "names": {
+    "en": "Aghjabadi Rayon",
+    "ja": "アグジャバディ県",
+    "local": "Ağcabədi rayonu"
+   },
+   "wikidata": "Q330818",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B84161876100413"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Beylagan",
+   "names": {
+    "en": "Beylagan Rayon",
+    "ja": "ベイラガン県",
+    "local": "Beyləqan rayonu"
+   },
+   "wikidata": "Q330807",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B20470092766685"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Imishli",
+   "names": {
+    "en": "Imishli Rayon",
+    "ja": "イミシュリ県",
+    "local": "İmişli rayonu"
+   },
+   "wikidata": "Q343908",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B47039748407948"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Saatly",
+   "names": {
+    "en": "Saatly Rayon",
+    "ja": "サアトル県",
+    "local": "Saatlı rayonu"
+   },
+   "wikidata": "Q601105",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B939777630101"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Sabirabad",
+   "names": {
+    "en": "Sabirabad Rayon",
+    "ja": "サビラバド県",
+    "local": "Sabirabad rayonu"
+   },
+   "wikidata": "Q382132",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B21396185337631"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Zardab",
+   "names": {
+    "en": "Zardab Rayon",
+    "ja": "ザルダブ県",
+    "local": "Zərdab rayonu"
+   },
+   "wikidata": "Q249293",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B34042895235078"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Salyan",
+   "names": {
+    "en": "Salyan Rayon",
+    "ja": "サルヤン県",
+    "local": "Salyan rayonu"
+   },
+   "wikidata": "Q457485",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B55207089168458"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Neftchala",
+   "names": {
+    "en": "Neftchala Rayon",
+    "ja": "ネフトチャラ県",
+    "local": "Neftçala rayonu"
+   },
+   "wikidata": "Q688633",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B40961788089107"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Bilasuvar",
+   "names": {
+    "en": "Bilasuvar Rayon",
+    "ja": "ビラスヴァル県",
+    "local": "Biləsuvar rayonu"
+   },
+   "wikidata": "Q330834",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B16304773097912"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Jalilabad",
+   "names": {
+    "en": "Jalilabad Rayon",
+    "ja": "ジャリラバド県",
+    "local": "Cəlilabad rayonu"
+   },
+   "wikidata": "Q372795",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B78302808254353"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Masally",
+   "names": {
+    "en": "Masally Rayon",
+    "ja": "マサッル県",
+    "local": "Masallı rayonu"
+   },
+   "wikidata": "Q476695",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B86237771899826"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Yardymli",
+   "names": {
+    "en": "Yardymli Rayon",
+    "ja": "ヤルディムリ県",
+    "local": "Yardımlı rayonu"
+   },
+   "wikidata": "Q127255",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B63590673188827"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Lerik",
+   "names": {
+    "en": "Lerik Rayon",
+    "ja": "レリク県",
+    "local": "Lerik rayonu"
+   },
+   "wikidata": "Q688626",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B59366301344355"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Astara",
+   "names": {
+    "en": "Astara Rayon",
+    "ja": "アスタラ県",
+    "local": "Astara rayonu"
+   },
+   "wikidata": "Q269680",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B5213879595332"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Lankaran",
+   "names": {
+    "en": "Lankaran Rayon",
+    "ja": "ランカラン県",
+    "local": "Lənkəran rayonu"
+   },
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B17009633679109",
+      "AZE-ADM2-54616110B2076465815790"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Khanlar",
+   "names": {
+    "en": "Khanlar Rayon (Goygol from 2008)",
+    "ja": "ハンラル県（2008年からギョイギョル県）",
+    "local": "Xanlar rayonu"
+   },
+   "wikidata": "Q388087",
+   "spans": [
+    {
+     "from": "1992-02-18",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B13615645655589"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://az.wikipedia.org/w/index.php?title=Samux_rayonu&oldid=8964265",
+       "title": "Vikipediya — Samux rayonu (oldid 8964265)",
+       "says": "Samux rayon was organised by decision No. 72 of 18 Feb 1992 on the territory of the former Safaraliyev rayon, which had belonged to Khanlar rayon since 1963.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Samukh",
+   "names": {
+    "en": "Samukh Rayon",
+    "ja": "サムフ県",
+    "local": "Samux rayonu"
+   },
+   "wikidata": "Q498437",
+   "spans": [
+    {
+     "from": "1992-02-18",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "AZE-ADM2-54616110B65018719015844"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://az.wikipedia.org/w/index.php?title=Samux_rayonu&oldid=8964265",
+       "title": "Vikipediya — Samux rayonu (oldid 8964265)",
+       "says": "Samux rayon was organised by decision No. 72 of 18 Feb 1992 on the territory of the former Safaraliyev rayon, which had belonged to Khanlar rayon since 1963.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Shusha city",
+   "names": {
+    "en": "Shusha (city)",
+    "ja": "シュシャ市",
+    "local": "Şuşa şəhəri"
+   },
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1992-05-09",
+     "atoms": [
+      "AZE-ADM2-54616110B73470411147872"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://az.wikipedia.org/w/index.php?title=%C5%9Eu%C5%9Fa&oldid=9075276",
+       "title": "Vikipediya — Şuşa (oldid 9075276)",
+       "says": "Shusha town became a city of the NKAO on 7 Feb 1991 and a city of republican subordination on 26 Nov 1991.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Shusha&oldid=1376857993",
+       "title": "Wikipedia — Shusha (oldid 1376857993)",
+       "says": "On 9 May 1992 the town was captured by Armenian forces and its Azerbaijani population fled.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Captured on 9 May 1992 after fighting from 8 May."
+    }
+   ]
+  },
+  {
+   "id": "AZE:Lachin",
+   "names": {
+    "en": "Lachin Rayon",
+    "ja": "ラチン県",
+    "local": "Laçın rayonu"
+   },
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1992-05-18",
+     "atoms": [
+      "AZE-ADM2-54616110B46945931752574"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Lachin_District&oldid=1376593210",
+       "title": "Wikipedia — Lachin District (oldid 1376593210)",
+       "says": "Lachin was captured by Armenian forces on 18 May 1992; the district was held by Artsakh until late 2020.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Qubadli",
+   "names": {
+    "en": "Qubadli Rayon",
+    "ja": "グバドリ県",
+    "local": "Qubadlı rayonu"
+   },
+   "wikidata": "Q644048",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1993-08-31",
+     "atoms": [
+      "AZE-ADM2-54616110B66639423042347"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Qubadli_District&oldid=1376580342",
+       "title": "Wikipedia — Qubadli District (oldid 1376580342)",
+       "says": "Qubadli district was held by Armenian forces from 1993 until 2020.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Qubadli fell on 31 Aug 1993 (Azerbaijani record)."
+    }
+   ]
+  },
+  {
+   "id": "AZE:Zangilan",
+   "names": {
+    "en": "Zangilan Rayon",
+    "ja": "ザンギラン県",
+    "local": "Zəngilan rayonu"
+   },
+   "wikidata": "Q249252",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1993-10-29",
+     "atoms": [
+      "AZE-ADM2-54616110B64107713492867"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Zangilan_District&oldid=1378491725",
+       "title": "Wikipedia — Zangilan District (oldid 1378491725)",
+       "says": "The district came under occupation on 29 Oct 1993.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Jabrayil",
+   "names": {
+    "en": "Jabrayil Rayon",
+    "ja": "ジャブライル県",
+    "local": "Cəbrayıl rayonu"
+   },
+   "wikidata": "Q457491",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1993-08-23",
+     "atoms": [
+      "AZE-ADM2-54616110B25171122868047"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Jabrayil_District&oldid=1376244559",
+       "title": "Wikipedia — Jabrayil District (oldid 1376244559)",
+       "says": "Occupied on 23 Aug 1993, save the village of Jojug Marjanly, recaptured on 6 Jan 1994.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "AZE:Fuzuli",
+   "names": {
+    "en": "Fuzuli Rayon",
+    "ja": "フュズリ県",
+    "local": "Füzuli rayonu"
+   },
+   "wikidata": "Q331687",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1993-08-23",
+     "atoms": [
+      "AZE-ADM2-54616110B29637726057754"
+     ],
+     "sources": [
+      {
+       "url": "https://www.gutenberg.org/ebooks/571",
+       "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "59 rayons, 11 cities and 1 autonomous republic (Naxcivan), listed by name, incl. Samux, Xanlar, Davaci, Ali Bayramli city, Susa city and Xankandi city.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.gutenberg.org/ebooks/27558",
+       "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+       "says": "Still 59 rayons, 11 cities and 1 autonomous republic, with the same names as in 1995.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uaz.html",
+       "title": "Statoids — Rayons of Azerbaijan, change history",
+       "says": "After the abolition of the NKAO (1991-11-26) the next change listed is Kangarli rayon (2004) from parts of Babek and Sharur; later only renamings (Ali-Bayramli to Shirvan 2008, Khanlar to Goygol 2008, Davachi to Shabran 2010).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Fuzuli_District&oldid=1375883013",
+       "title": "Wikipedia — Fuzuli District (oldid 1375883013)",
+       "says": "The city of Fuzuli was occupied on 23 Aug 1993; Horadiz became the temporary district centre.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1991-11-26",
+   "precision": "day",
+   "what": "NKAO abolished; Khojaly and Khojavend rayons formed, Stepanakert renamed Khankendi, Shusha a city of republican subordination (before this scope)",
+   "sources": [
+    {
+     "url": "https://az.wikipedia.org/w/index.php?title=Xocal%C4%B1_rayonu&oldid=9061851",
+     "title": "Vikipediya — Xocalı rayonu (oldid 9061851)",
+     "says": "Khojaly rayon was formed on 26 Nov 1991 on the base of Askeran raion (Law 279-XII); Khojaly town was occupied on 26 Feb 1992 and the villages near Agdam in 1993.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://az.wikipedia.org/w/index.php?title=%C5%9Eu%C5%9Fa&oldid=9075276",
+     "title": "Vikipediya — Şuşa (oldid 9075276)",
+     "says": "Shusha town became a city of the NKAO on 7 Feb 1991 and a city of republican subordination on 26 Nov 1991.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1992-02-18",
+   "precision": "day",
+   "what": "Samukh rayon organised",
+   "sources": [
+    {
+     "url": "https://az.wikipedia.org/w/index.php?title=Samux_rayonu&oldid=8964265",
+     "title": "Vikipediya — Samux rayonu (oldid 8964265)",
+     "says": "Samux rayon was organised by decision No. 72 of 18 Feb 1992 on the territory of the former Safaraliyev rayon, which had belonged to Khanlar rayon since 1963.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1992-05-09",
+   "precision": "day",
+   "what": "Shusha captured",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Shusha&oldid=1376857993",
+     "title": "Wikipedia — Shusha (oldid 1376857993)",
+     "says": "On 9 May 1992 the town was captured by Armenian forces and its Azerbaijani population fled.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1992-05-18",
+   "precision": "day",
+   "what": "Lachin captured",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Lachin_District&oldid=1376593210",
+     "title": "Wikipedia — Lachin District (oldid 1376593210)",
+     "says": "Lachin was captured by Armenian forces on 18 May 1992; the district was held by Artsakh until late 2020.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1992-10-13",
+   "precision": "day",
+   "what": "Agdara rayon abolished and divided among Agdam, Kalbajar and Tartar",
+   "sources": [
+    {
+     "url": "https://az.wikipedia.org/w/index.php?title=A%C4%9Fd%C9%99r%C9%99_rayonu&oldid=8901604",
+     "title": "Vikipediya — Ağdərə rayonu (oldid 8901604)",
+     "says": "Agdara rayon (the former Mardakert raion) was abolished by Milli Majlis decision No. 327 of 13 Oct 1992 and its territory divided among Agdam, Kalbajar and Tartar.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1993-04-03",
+   "precision": "day",
+   "what": "Kalbajar occupied",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Kalbajar_District&oldid=1376270961",
+     "title": "Wikipedia — Kalbajar District (oldid 1376270961)",
+     "says": "The district was occupied by Armenian forces on 3 April 1993.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1993-07-23",
+   "precision": "day",
+   "what": "Agdam occupied",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Agdam_District&oldid=1374573099",
+     "title": "Wikipedia — Agdam District (oldid 1374573099)",
+     "says": "Agdam was occupied on 23 July 1993.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1993-08-23",
+   "precision": "day",
+   "what": "Fuzuli and Jabrayil occupied",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Fuzuli_District&oldid=1375883013",
+     "title": "Wikipedia — Fuzuli District (oldid 1375883013)",
+     "says": "The city of Fuzuli was occupied on 23 Aug 1993; Horadiz became the temporary district centre.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Jabrayil_District&oldid=1376244559",
+     "title": "Wikipedia — Jabrayil District (oldid 1376244559)",
+     "says": "Occupied on 23 Aug 1993, save the village of Jojug Marjanly, recaptured on 6 Jan 1994.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1993-10-29",
+   "precision": "day",
+   "what": "Zangilan occupied",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Zangilan_District&oldid=1378491725",
+     "title": "Wikipedia — Zangilan District (oldid 1378491725)",
+     "says": "The district came under occupation on 29 Oct 1993.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1994-05-12",
+   "precision": "day",
+   "what": "Ceasefire (Bishkek Protocol)",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Bishkek_Protocol&oldid=1346763433",
+     "title": "Wikipedia — Bishkek Protocol (oldid 1346763433)",
+     "says": "Ceasefire signed on 12 May 1994; Azerbaijani forces then held Shahumian and the eastern parts of Martakert and Martuni.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Armenian-occupied_territories_surrounding_Nagorno-Karabakh&oldid=1367031690",
+     "title": "Wikipedia — Armenian-occupied territories surrounding Nagorno-Karabakh (oldid 1367031690)",
+     "says": "Before 2020 Kalbajar, Lachin, Qubadli, Zangilan and Jabrayil (except Jojug Marjanly) were occupied in whole, Fuzuli about 33% and Agdam 77%.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "2004-03-19",
+   "precision": "day",
+   "what": "Kangarli rayon formed inside the Nakhchivan AR (the day after this scope; the present-day record takes over)",
+   "sources": [
+    {
+     "url": "https://az.wikipedia.org/w/index.php?title=K%C9%99ng%C9%99rli_rayonu&oldid=8859761",
+     "title": "Vikipediya — Kəngərli rayonu (oldid 8859761)",
+     "says": "Kangarli rayon was created by presidential decree of 19 March 2004.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1995",
+   "n": 71,
+   "note": "De jure 59 rayons, 11 cities and 1 autonomous republic; the dossier draws those under Azerbaijani administration and names the rest outside (atomsOutside) or unresolved, so the drawn count is lower (57 drawn + 5 unresolved + 9 outside = 71 on each Factbook date).",
+   "sources": [
+    {
+     "url": "https://www.gutenberg.org/ebooks/571",
+     "title": "The 1995 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+     "says": "59 rayons, 11 cities and 1 autonomous republic.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1996",
+   "n": 71,
+   "note": "De jure 59 rayons, 11 cities and 1 autonomous republic; the dossier draws those under Azerbaijani administration and names the rest outside (atomsOutside) or unresolved, so the drawn count is lower (57 drawn + 5 unresolved + 9 outside = 71 on each Factbook date).",
+   "sources": [
+    {
+     "url": "https://www.gutenberg.org/ebooks/27675",
+     "title": "The 1996 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+     "says": "59 rayons, 11 cities and 1 autonomous republic.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1997",
+   "n": 71,
+   "note": "De jure 59 rayons, 11 cities and 1 autonomous republic; the dossier draws those under Azerbaijani administration and names the rest outside (atomsOutside) or unresolved, so the drawn count is lower (57 drawn + 5 unresolved + 9 outside = 71 on each Factbook date).",
+   "sources": [
+    {
+     "url": "https://www.gutenberg.org/ebooks/1662",
+     "title": "The 1997 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+     "says": "59 rayons, 11 cities and 1 autonomous republic.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1998",
+   "n": 71,
+   "note": "De jure 59 rayons, 11 cities and 1 autonomous republic; the dossier draws those under Azerbaijani administration and names the rest outside (atomsOutside) or unresolved, so the drawn count is lower (57 drawn + 5 unresolved + 9 outside = 71 on each Factbook date).",
+   "sources": [
+    {
+     "url": "https://www.gutenberg.org/ebooks/2016",
+     "title": "The 1998 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+     "says": "59 rayons, 11 cities and 1 autonomous republic.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1999",
+   "n": 71,
+   "note": "De jure 59 rayons, 11 cities and 1 autonomous republic; the dossier draws those under Azerbaijani administration and names the rest outside (atomsOutside) or unresolved, so the drawn count is lower (57 drawn + 5 unresolved + 9 outside = 71 on each Factbook date).",
+   "sources": [
+    {
+     "url": "https://www.gutenberg.org/ebooks/27676",
+     "title": "The 1999 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+     "says": "59 rayons, 11 cities and 1 autonomous republic.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "2000",
+   "n": 71,
+   "note": "De jure 59 rayons, 11 cities and 1 autonomous republic; the dossier draws those under Azerbaijani administration and names the rest outside (atomsOutside) or unresolved, so the drawn count is lower (57 drawn + 5 unresolved + 9 outside = 71 on each Factbook date).",
+   "sources": [
+    {
+     "url": "https://www.gutenberg.org/ebooks/3672",
+     "title": "The 2000 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+     "says": "59 rayons, 11 cities and 1 autonomous republic.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "2001",
+   "n": 71,
+   "note": "De jure 59 rayons, 11 cities and 1 autonomous republic; the dossier draws those under Azerbaijani administration and names the rest outside (atomsOutside) or unresolved, so the drawn count is lower (57 drawn + 5 unresolved + 9 outside = 71 on each Factbook date).",
+   "sources": [
+    {
+     "url": "https://www.gutenberg.org/ebooks/27638",
+     "title": "The 2001 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+     "says": "59 rayons, 11 cities and 1 autonomous republic.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "2002",
+   "n": 71,
+   "note": "De jure 59 rayons, 11 cities and 1 autonomous republic; the dossier draws those under Azerbaijani administration and names the rest outside (atomsOutside) or unresolved, so the drawn count is lower (57 drawn + 5 unresolved + 9 outside = 71 on each Factbook date).",
+   "sources": [
+    {
+     "url": "https://www.gutenberg.org/ebooks/6344",
+     "title": "The 2002 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+     "says": "59 rayons, 11 cities and 1 autonomous republic.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "2003",
+   "n": 71,
+   "note": "De jure 59 rayons, 11 cities and 1 autonomous republic; the dossier draws those under Azerbaijani administration and names the rest outside (atomsOutside) or unresolved, so the drawn count is lower (57 drawn + 5 unresolved + 9 outside = 71 on each Factbook date).",
+   "sources": [
+    {
+     "url": "https://www.gutenberg.org/ebooks/27558",
+     "title": "The 2003 CIA World Factbook (Project Gutenberg) — Azerbaijan, Administrative divisions",
+     "says": "59 rayons, 11 cities and 1 autonomous republic.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [
+  {
+   "atom": "AZE-ADM2-54616110B15657888815271",
+   "from": "1991-12-26",
+   "to": null,
+   "why": "Khankendi (Stepanakert), a city of republican subordination of Azerbaijan from 26 Nov 1991, was the capital of the self-proclaimed Nagorno-Karabakh Republic and never under Azerbaijani administration in this scope."
+  },
+  {
+   "atom": "AZE-ADM2-54616110B73470411147872",
+   "from": "1992-05-09",
+   "to": null,
+   "why": "Held by Nagorno-Karabakh Armenian forces from the capture of Shusha (9 May 1992) until 2020."
+  },
+  {
+   "atom": "AZE-ADM2-54616110B46945931752574",
+   "from": "1994-05-12",
+   "to": null,
+   "why": "Wholly under the control of Nagorno-Karabakh Armenian forces from the ceasefire of 12 May 1994 until 2020 (occupied 100%)."
+  },
+  {
+   "atom": "AZE-ADM2-54616110B66639423042347",
+   "from": "1994-05-12",
+   "to": null,
+   "why": "Occupied 100% from the ceasefire of 12 May 1994 until 2020."
+  },
+  {
+   "atom": "AZE-ADM2-54616110B64107713492867",
+   "from": "1994-05-12",
+   "to": null,
+   "why": "Occupied 100% from the ceasefire of 12 May 1994 until 2020."
+  },
+  {
+   "atom": "AZE-ADM2-54616110B37358032697149",
+   "from": "1994-05-12",
+   "to": null,
+   "why": "Occupied 100% from the ceasefire of 12 May 1994 until 2020."
+  },
+  {
+   "atom": "AZE-ADM2-54616110B87325868620163",
+   "from": "1994-05-12",
+   "to": null,
+   "why": "Part of the former NKAO, wholly under the control of the self-proclaimed Nagorno-Karabakh Republic from the ceasefire of 12 May 1994 until 2020."
+  },
+  {
+   "atom": "AZE-ADM2-54616110B38461317640181",
+   "from": "1994-05-12",
+   "to": null,
+   "why": "Part of the former NKAO, wholly under the control of the self-proclaimed Nagorno-Karabakh Republic from the ceasefire of 12 May 1994 until 2020."
+  },
+  {
+   "atom": "AZE-ADM2-54616110B49912296290484",
+   "from": "1994-05-12",
+   "to": null,
+   "why": "Part of the former NKAO, wholly under the control of the self-proclaimed Nagorno-Karabakh Republic from the ceasefire of 12 May 1994 until 2020."
+  }
+ ],
+ "unresolved": [
+  {
+   "what": "Khanlar rayon before Samukh rayon was organised (26 Dec 1991 – 18 Feb 1992)",
+   "unit": "AZE:Khanlar",
+   "atoms": [
+    "AZE-ADM2-54616110B13615645655589",
+    "AZE-ADM2-54616110B65018719015844"
+   ],
+   "from": "1991-12-26",
+   "to": "1992-02-18",
+   "why": "Samukh was organised on 18 Feb 1992 on the former Safaraliyev rayon (part of Khanlar since 1963), but ru.wikipedia dates its formation to 18 May 1990, and whether every part of today’s Samukh came from Khanlar (none from Shamkir or Yevlakh) is not stated.",
+   "checked": [
+    "az.wikipedia Samux rayonu oldid 8964265 (decision No. 72 of 18 Feb 1992)",
+    "ru.wikipedia Административно-территориальное деление Азербайджанской ССР oldid 140665988 (Samukh among the rayons formed 18 May 1990)",
+    "statoids uaz.html (no entry)",
+    "CIA World Factbook 1995 (Samux rayonu listed)"
+   ],
+   "needs": "the text of decision No. 72 (e-qanun.az) naming the villages placed in Samukh"
+  },
+  {
+   "what": "Lachin rayon from the fall of Lachin to the ceasefire",
+   "unit": "AZE:Lachin",
+   "atoms": [
+    "AZE-ADM2-54616110B46945931752574"
+   ],
+   "from": "1992-05-18",
+   "to": "1994-05-12",
+   "why": "The district passed under Armenian control from 18 May 1992; that every part of it was held continuously until the ceasefire is not established.",
+   "checked": [
+    "en.wikipedia Lachin District oldid 1376593210",
+    "en.wikipedia Armenian-occupied territories oldid 1367031690 (100% before 2020)"
+   ],
+   "needs": "the line of control on each date as a line, or village-level atoms with dated control"
+  },
+  {
+   "what": "Qubadli rayon from its occupation to the ceasefire",
+   "unit": "AZE:Qubadli",
+   "atoms": [
+    "AZE-ADM2-54616110B66639423042347"
+   ],
+   "from": "1993-08-31",
+   "to": "1994-05-12",
+   "why": "Control of the district’s parts between Aug 1993 and May 1994 is not established day by day.",
+   "checked": [
+    "en.wikipedia Qubadli District oldid 1376580342",
+    "en.wikipedia Armenian-occupied territories oldid 1367031690"
+   ],
+   "needs": "the line of control on each date as a line, or village-level atoms with dated control"
+  },
+  {
+   "what": "Zangilan rayon from its occupation to the ceasefire",
+   "unit": "AZE:Zangilan",
+   "atoms": [
+    "AZE-ADM2-54616110B64107713492867"
+   ],
+   "from": "1993-10-29",
+   "to": "1994-05-12",
+   "why": "Control between Oct 1993 and May 1994 is not established day by day.",
+   "checked": [
+    "en.wikipedia Zangilan District oldid 1378491725"
+   ],
+   "needs": "the line of control on each date as a line, or village-level atoms with dated control"
+  },
+  {
+   "what": "Jabrayil rayon after 23 Aug 1993",
+   "unit": "AZE:Jabrayil",
+   "atoms": [
+    "AZE-ADM2-54616110B25171122868047"
+   ],
+   "from": "1993-08-23",
+   "to": null,
+   "why": "Occupied except the village of Jojug Marjanly (recaptured 6 Jan 1994); the line around it is not an atom line.",
+   "checked": [
+    "en.wikipedia Jabrayil District oldid 1376244559",
+    "en.wikipedia Armenian-occupied territories oldid 1367031690"
+   ],
+   "needs": "the line of control on each date as a line, or village-level atoms with dated control"
+  },
+  {
+   "what": "Fuzuli rayon after the fall of Fuzuli",
+   "unit": "AZE:Fuzuli",
+   "atoms": [
+    "AZE-ADM2-54616110B29637726057754"
+   ],
+   "from": "1993-08-23",
+   "to": null,
+   "why": "About a third of the district was occupied and the rest administered from Horadiz; the line of contact is not an atom line.",
+   "checked": [
+    "en.wikipedia Fuzuli District oldid 1375883013",
+    "en.wikipedia Armenian-occupied territories oldid 1367031690 (33%)"
+   ],
+   "needs": "the line of control on each date as a line, or village-level atoms with dated control"
+  },
+  {
+   "what": "Agdara (Mardakert) rayon and its neighbours Kalbajar, Tartar and Agdam until Agdara was divided",
+   "unit": "AZE:Agdara",
+   "atoms": [
+    "AZE-ADM2-54616110B37358032697149",
+    "AZE-ADM2-54616110B79809370995070",
+    "AZE-ADM2-54616110B71765796178707"
+   ],
+   "from": "1991-12-26",
+   "to": "1992-10-13",
+   "why": "Agdara existed until 13 Oct 1992 and was then divided among Agdam, Kalbajar and Tartar; today’s three districts include its parts and the division line is not an atom line. Control of Agdara itself changed hands in 1992.",
+   "checked": [
+    "az.wikipedia Ağdərə rayonu oldid 8901604 (decision No. 327 of 13 Oct 1992)",
+    "ru.wikipedia Административное деление Азербайджана oldid 153474825",
+    "en.wikipedia Armenian-occupied territories oldid 1367031690 (Kalbajar 1,936 km2 in 1979; its 2020 atom measures 2,858 km2)"
+   ],
+   "needs": "the 1992 decision’s list of villages assigned to each rayon, and village-level atoms"
+  },
+  {
+   "what": "Kalbajar rayon before the division of Agdara",
+   "unit": "AZE:Kalbajar",
+   "atoms": [],
+   "from": "1991-12-26",
+   "to": "1992-10-13",
+   "why": "Its outline then is not today’s (the Agdara entry withholds the atoms).",
+   "checked": [
+    "az.wikipedia Ağdərə rayonu oldid 8901604"
+   ],
+   "needs": "see the Agdara entry"
+  },
+  {
+   "what": "Tartar rayon before the division of Agdara",
+   "unit": "AZE:Tartar",
+   "atoms": [],
+   "from": "1991-12-26",
+   "to": "1992-10-13",
+   "why": "Its outline then is not today’s (the Agdara entry withholds the atoms).",
+   "checked": [
+    "az.wikipedia Ağdərə rayonu oldid 8901604"
+   ],
+   "needs": "see the Agdara entry"
+  },
+  {
+   "what": "Agdam rayon before the division of Agdara",
+   "unit": "AZE:Agdam",
+   "atoms": [],
+   "from": "1991-12-26",
+   "to": "1992-10-13",
+   "why": "Its outline then is not today’s (the Agdara entry withholds the atoms).",
+   "checked": [
+    "az.wikipedia Ağdərə rayonu oldid 8901604"
+   ],
+   "needs": "see the Agdara entry"
+  },
+  {
+   "what": "Kalbajar rayon from the division of Agdara to the ceasefire",
+   "unit": "AZE:Kalbajar",
+   "atoms": [
+    "AZE-ADM2-54616110B37358032697149"
+   ],
+   "from": "1992-10-13",
+   "to": "1994-05-12",
+   "why": "The former Mardakert villages added in Oct 1992 were contested and the rest of the district fell on 3 Apr 1993; control is not established as a line.",
+   "checked": [
+    "en.wikipedia Kalbajar District oldid 1376270961",
+    "az.wikipedia Ağdərə rayonu oldid 8901604"
+   ],
+   "needs": "the line of control on each date as a line, or village-level atoms with dated control"
+  },
+  {
+   "what": "Tartar rayon after receiving part of Agdara",
+   "unit": "AZE:Tartar",
+   "atoms": [
+    "AZE-ADM2-54616110B79809370995070"
+   ],
+   "from": "1992-10-13",
+   "to": null,
+   "why": "Its share of the former Mardakert raion was largely under Armenian control after 1993 while the rest was administered by Azerbaijan; the line of contact is not an atom line.",
+   "checked": [
+    "az.wikipedia Ağdərə rayonu oldid 8901604",
+    "en.wikipedia Bishkek Protocol oldid 1346763433"
+   ],
+   "needs": "the line of control on each date as a line, or village-level atoms with dated control"
+  },
+  {
+   "what": "Agdam rayon after receiving part of Agdara",
+   "unit": "AZE:Agdam",
+   "atoms": [
+    "AZE-ADM2-54616110B71765796178707"
+   ],
+   "from": "1992-10-13",
+   "to": null,
+   "why": "Agdam fell on 23 Jul 1993; about 77% of the district was then occupied and the rest administered by Azerbaijan; the line of contact is not an atom line.",
+   "checked": [
+    "en.wikipedia Agdam District oldid 1374573099",
+    "en.wikipedia Armenian-occupied territories oldid 1367031690 (77%)"
+   ],
+   "needs": "the line of control on each date as a line, or village-level atoms with dated control"
+  },
+  {
+   "what": "Goranboy rayon (with the former Shahumyan raion)",
+   "unit": "AZE:Goranboy",
+   "atoms": [
+    "AZE-ADM2-54616110B75141866412524"
+   ],
+   "from": "1991-12-26",
+   "to": null,
+   "why": "The former Shahumyan villages were held by Armenian forces in late 1991, taken by Azerbaijan in June 1992, and part of the district was occupied again in 1993; the line of contact is not an atom line.",
+   "checked": [
+    "ru.wikipedia Административное деление Азербайджана oldid 153474825 (Shahumyan and Kasum-Ismailov merged into Goranboy Feb 1991)",
+    "en.wikipedia First Nagorno-Karabakh War oldid 1370619559 (June 1992 Goranboy offensive)",
+    "en.wikipedia Bishkek Protocol oldid 1346763433"
+   ],
+   "needs": "the line of control on each date as a line, or village-level atoms with dated control"
+  },
+  {
+   "what": "Khojaly rayon (former Askeran raion) until the ceasefire",
+   "unit": "AZE:Khojaly",
+   "atoms": [
+    "AZE-ADM2-54616110B87325868620163"
+   ],
+   "from": "1991-12-26",
+   "to": "1994-05-12",
+   "why": "Its Armenian and Azerbaijani villages were under different control in 1991–1994 and changed hands; no line of control is an atom line.",
+   "checked": [
+    "Vikipediya — Xocalı rayonu (oldid 9061851)",
+    "en.wikipedia First Nagorno-Karabakh War oldid 1370619559"
+   ],
+   "needs": "the line of control on each date as a line, or village-level atoms with dated control"
+  },
+  {
+   "what": "Khojavend rayon (former Martuni and Hadrut raions) until the ceasefire",
+   "unit": "AZE:Khojavend",
+   "atoms": [
+    "AZE-ADM2-54616110B38461317640181"
+   ],
+   "from": "1991-12-26",
+   "to": "1994-05-12",
+   "why": "Its Armenian and Azerbaijani villages were under different control in 1991–1994 and changed hands; no line of control is an atom line.",
+   "checked": [
+    "Vikipediya — Xocavənd rayonu (oldid 9051306)",
+    "en.wikipedia First Nagorno-Karabakh War oldid 1370619559"
+   ],
+   "needs": "the line of control on each date as a line, or village-level atoms with dated control"
+  },
+  {
+   "what": "Shusha rayon until the ceasefire",
+   "unit": "AZE:Shusha",
+   "atoms": [
+    "AZE-ADM2-54616110B49912296290484"
+   ],
+   "from": "1991-12-26",
+   "to": "1994-05-12",
+   "why": "Its Armenian and Azerbaijani villages were under different control in 1991–1994 and changed hands; no line of control is an atom line.",
+   "checked": [
+    "Wikipedia — Shusha (oldid 1376857993)",
+    "en.wikipedia First Nagorno-Karabakh War oldid 1370619559"
+   ],
+   "needs": "the line of control on each date as a line, or village-level atoms with dated control"
+  }
+ ]
+}

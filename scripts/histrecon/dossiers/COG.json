@@ -474,7 +474,8 @@
    "why": "The prefectures were merged and redrawn into the 1967 regions (e.g. Alima+Équateur+Likouala-Mossaka → Cuvette; Bouenza-Louessé, Niari-Bouenza, Nyanga-Louessé straddle Niari/Bouenza/Lékoumou); no prefecture is shown to equal a union of NE atoms.",
    "checked": [
     "statoids ucg (Britannica 1964 list, 1967 note)",
-    "fr.wikipedia Subdivisions oldid 236839395"
+    "fr.wikipedia Subdivisions oldid 236839395",
+    "geoBoundaries COG ADM2 (Map Maker/Stanford 2007, 46 units, measured 2026-10-06): shape names are misassigned (the polygon named Impfondo lies in Bouenza, Ngamaba (Brazzaville) in Cuvette) and the polygon around Brazzaville is again ~5,900 km²; geoBoundaries COG ADM1 (OSM 2017): Brazzaville 6,065 km², Pointe-Noire 81 km² — no gb level carries the district or Brazzaville lines needed"
    ],
    "needs": "district atoms of the Republic of Congo with 1960s district lines (none open found)"
   },
@@ -491,7 +492,8 @@
    "checked": [
     "NE geometry measured (COG-4855 bbox 14.96–15.96E, 3.45–4.52S)",
     "statoids ucg (1967 \"capital district\" vs 1980 \"split from Pool\")",
-    "fr.wikipedia oldid 236839395"
+    "fr.wikipedia oldid 236839395",
+    "geoBoundaries COG ADM2 (Map Maker/Stanford 2007, 46 units, measured 2026-10-06): shape names are misassigned (the polygon named Impfondo lies in Bouenza, Ngamaba (Brazzaville) in Cuvette) and the polygon around Brazzaville is again ~5,900 km²; geoBoundaries COG ADM1 (OSM 2017): Brazzaville 6,065 km², Pointe-Noire 81 km² — no gb level carries the district or Brazzaville lines needed"
    ],
    "needs": "a correct Brazzaville/Pool boundary, e.g. geoBoundaries COG ADM1 (OSM-derived, ODbL) or the 2003/2017 laws on the Brazzaville limits"
   },
@@ -503,7 +505,8 @@
    "to": null,
    "why": "Drawn by no atom (see Pool entry).",
    "checked": [
-    "as above"
+    "as above",
+    "geoBoundaries COG ADM2 (Map Maker/Stanford 2007, 46 units, measured 2026-10-06): shape names are misassigned (the polygon named Impfondo lies in Bouenza, Ngamaba (Brazzaville) in Cuvette) and the polygon around Brazzaville is again ~5,900 km²; geoBoundaries COG ADM1 (OSM 2017): Brazzaville 6,065 km², Pointe-Noire 81 km² — no gb level carries the district or Brazzaville lines needed"
    ],
    "needs": "as above"
   },
@@ -519,7 +522,8 @@
    "checked": [
     "statoids ucg",
     "fr.wikipedia Subdivisions oldid 236839395",
-    "fr.wikipedia Pointe-Noire (département) oldid 235851828"
+    "fr.wikipedia Pointe-Noire (département) oldid 235851828",
+    "geoBoundaries COG ADM2 (Map Maker/Stanford 2007, 46 units, measured 2026-10-06): shape names are misassigned (the polygon named Impfondo lies in Bouenza, Ngamaba (Brazzaville) in Cuvette) and the polygon around Brazzaville is again ~5,900 km²; geoBoundaries COG ADM1 (OSM 2017): Brazzaville 6,065 km², Pointe-Noire 81 km² — no gb level carries the district or Brazzaville lines needed"
    ],
    "needs": "the Journal officiel text of Laws 3-2003 and 10-2003"
   },
@@ -536,7 +540,8 @@
    "checked": [
     "Law 19-2011 (finances.gouv.cg)",
     "fr.wikipedia Pointe-Noire (département) oldid 235851828",
-    "statoids ucg (Law 21-2011, Kouilou 12,516.8 km²)"
+    "statoids ucg (Law 21-2011, Kouilou 12,516.8 km²)",
+    "geoBoundaries COG ADM2 (Map Maker/Stanford 2007, 46 units, measured 2026-10-06): shape names are misassigned (the polygon named Impfondo lies in Bouenza, Ngamaba (Brazzaville) in Cuvette) and the polygon around Brazzaville is again ~5,900 km²; geoBoundaries COG ADM1 (OSM 2017): Brazzaville 6,065 km², Pointe-Noire 81 km² — no gb level carries the district or Brazzaville lines needed"
    ],
    "needs": "district atoms (Tchiamba-Nzassi) e.g. geoBoundaries COG ADM2 (OSM, ODbL)"
   },
@@ -548,7 +553,8 @@
    "to": null,
    "why": "see Kouilou entry",
    "checked": [
-    "as above"
+    "as above",
+    "geoBoundaries COG ADM2 (Map Maker/Stanford 2007, 46 units, measured 2026-10-06): shape names are misassigned (the polygon named Impfondo lies in Bouenza, Ngamaba (Brazzaville) in Cuvette) and the polygon around Brazzaville is again ~5,900 km²; geoBoundaries COG ADM1 (OSM 2017): Brazzaville 6,065 km², Pointe-Noire 81 km² — no gb level carries the district or Brazzaville lines needed"
    ],
    "needs": "as above"
   }

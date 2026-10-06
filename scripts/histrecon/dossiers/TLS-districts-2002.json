@@ -1,0 +1,691 @@
+{
+ "country": "TLS",
+ "atomSet": "gb-adm2@2026-10-06",
+ "scope": {
+  "from": "2002-05-20",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Democratic Republic of Timor-Leste from independence (UNTAET handed over on 2002-05-20). First level: the thirteen districts (called municipalities from 2009/2014; Oecusse a special administrative region from 2014 with the same territory); Atauro became a fourteenth municipality only on 1 Jan 2022, after this scope. Atoms: the 65 administrative posts of geoBoundaries TLS ADM2 (WHO / OCHA 2020); a district is the union of its posts. The Indonesian province of Timor Timur (1976–1999) is drawn by OpenHistoricalMap and not here. ① Areas (union of atoms / Statoids table, km²): Aileu 740/729 = 1.015, Ainaro 806/797 = 1.011, Oecusse 817/815 = 1.002, Baucau 1,508/1,494 = 1.009, Bobonaro 1,381/1,368 = 1.010, Cova Lima 1,207/1,226 = 0.985, Dili 368/372 = 0.989, Ermera 771/746 = 1.034, Lautém 1,813/1,702 = 1.065, Liquiçá 551/543 = 1.015, Manatuto 1,786/1,706 = 1.047, Manufahi 1,327/1,325 = 1.002, Viqueque 1,880/1,781 = 1.056.",
+ "units": [
+  {
+   "id": "TLS:Aileu",
+   "names": {
+    "en": "Aileu District",
+    "ja": "アイレウ県",
+    "local": "Aileu"
+   },
+   "wikidata": "Q405100",
+   "spans": [
+    {
+     "from": "2002-05-20",
+     "precision": "day",
+     "atoms": [
+      "TLS-ADM2-22284137B9751791093782",
+      "TLS-ADM2-22284137B18374352558819",
+      "TLS-ADM2-22284137B83063719556593",
+      "TLS-ADM2-22284137B74211319076421"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utl.html",
+       "title": "Statoids — Districts of Timor-Leste",
+       "says": "Thirteen districts (Aileu, Ainaro, Ambeno/Oecusse, Baucau, Bobonaro, Cova Lima, Dili, Ermera, Lautém, Liquiçá, Manatuto, Manufahi, Viqueque) with 2004 and 2010 census figures; UNTAET handed over on 2002-05-20.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Municipalities_of_Timor-Leste&oldid=1356374962",
+       "title": "Wikipedia — Municipalities of Timor-Leste (oldid 1356374962)",
+       "says": "Fourteen municipalities (former districts); Atauro separated from Dili on 1 Jan 2022; the Cova Lima–Ainaro and Baucau–Viqueque borders were changed in 2003.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/TLS/ADM2/geoBoundaries-TLS-ADM2.geojson",
+       "title": "geoBoundaries TLS ADM2 (WHO / OCHA ROAP, 2020) — administrative posts",
+       "says": "65 administrative posts; each lies in one municipality (Atauro post inside Dili).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TLS:Ainaro",
+   "names": {
+    "en": "Ainaro District",
+    "ja": "アイナロ県",
+    "local": "Ainaro"
+   },
+   "wikidata": "Q405926",
+   "spans": [
+    {
+     "from": "2003",
+     "precision": "year",
+     "atoms": [
+      "TLS-ADM2-22284137B67278963884363",
+      "TLS-ADM2-22284137B50442427378542",
+      "TLS-ADM2-22284137B3809405900530",
+      "TLS-ADM2-22284137B40449592168850"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Municipalities_of_Timor-Leste&oldid=1356374962",
+       "title": "Wikipedia — Municipalities of Timor-Leste (oldid 1356374962)",
+       "says": "Fourteen municipalities (former districts); Atauro separated from Dili on 1 Jan 2022; the Cova Lima–Ainaro and Baucau–Viqueque borders were changed in 2003.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Zumalai&oldid=1328727370",
+       "title": "Wikipedia — Zumalai (oldid 1328727370)",
+       "says": "Zumalai (formerly Mape-Zumalai) subdistrict has been part of Cova Lima since 2003; before that it was part of Ainaro.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/TLS/ADM2/geoBoundaries-TLS-ADM2.geojson",
+       "title": "geoBoundaries TLS ADM2 (WHO / OCHA ROAP, 2020) — administrative posts",
+       "says": "65 administrative posts; each lies in one municipality (Atauro post inside Dili).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "The 2003 border change is dated to the year only; this outline is claimed for 2003 at year precision and is not drawn before 2003."
+    }
+   ]
+  },
+  {
+   "id": "TLS:Oecusse",
+   "names": {
+    "en": "Oecusse (Ambeno)",
+    "ja": "オエクシ県",
+    "local": "Oé-Cusse Ambeno"
+   },
+   "wikidata": "Q860639",
+   "spans": [
+    {
+     "from": "2002-05-20",
+     "precision": "day",
+     "atoms": [
+      "TLS-ADM2-22284137B96760248350473",
+      "TLS-ADM2-22284137B5780280326887",
+      "TLS-ADM2-22284137B41915999739632",
+      "TLS-ADM2-22284137B78589082369873"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utl.html",
+       "title": "Statoids — Districts of Timor-Leste",
+       "says": "Thirteen districts (Aileu, Ainaro, Ambeno/Oecusse, Baucau, Bobonaro, Cova Lima, Dili, Ermera, Lautém, Liquiçá, Manatuto, Manufahi, Viqueque) with 2004 and 2010 census figures; UNTAET handed over on 2002-05-20.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Municipalities_of_Timor-Leste&oldid=1356374962",
+       "title": "Wikipedia — Municipalities of Timor-Leste (oldid 1356374962)",
+       "says": "Fourteen municipalities (former districts); Atauro separated from Dili on 1 Jan 2022; the Cova Lima–Ainaro and Baucau–Viqueque borders were changed in 2003.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/TLS/ADM2/geoBoundaries-TLS-ADM2.geojson",
+       "title": "geoBoundaries TLS ADM2 (WHO / OCHA ROAP, 2020) — administrative posts",
+       "says": "65 administrative posts; each lies in one municipality (Atauro post inside Dili).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TLS:Baucau",
+   "names": {
+    "en": "Baucau District",
+    "ja": "バウカウ県",
+    "local": "Baucau"
+   },
+   "wikidata": "Q811132",
+   "spans": [
+    {
+     "from": "2003",
+     "precision": "year",
+     "atoms": [
+      "TLS-ADM2-22284137B48176451746687",
+      "TLS-ADM2-22284137B73846644477643",
+      "TLS-ADM2-22284137B62238566078682",
+      "TLS-ADM2-22284137B85640858688348",
+      "TLS-ADM2-22284137B19870753775512",
+      "TLS-ADM2-22284137B53868942540237"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Municipalities_of_Timor-Leste&oldid=1356374962",
+       "title": "Wikipedia — Municipalities of Timor-Leste (oldid 1356374962)",
+       "says": "Fourteen municipalities (former districts); Atauro separated from Dili on 1 Jan 2022; the Cova Lima–Ainaro and Baucau–Viqueque borders were changed in 2003.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Zumalai&oldid=1328727370",
+       "title": "Wikipedia — Zumalai (oldid 1328727370)",
+       "says": "Zumalai (formerly Mape-Zumalai) subdistrict has been part of Cova Lima since 2003; before that it was part of Ainaro.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/TLS/ADM2/geoBoundaries-TLS-ADM2.geojson",
+       "title": "geoBoundaries TLS ADM2 (WHO / OCHA ROAP, 2020) — administrative posts",
+       "says": "65 administrative posts; each lies in one municipality (Atauro post inside Dili).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "The 2003 border change is dated to the year only; this outline is claimed for 2003 at year precision and is not drawn before 2003."
+    }
+   ]
+  },
+  {
+   "id": "TLS:Bobonaro",
+   "names": {
+    "en": "Bobonaro District",
+    "ja": "ボボナロ県",
+    "local": "Bobonaro"
+   },
+   "wikidata": "Q860913",
+   "spans": [
+    {
+     "from": "2002-05-20",
+     "precision": "day",
+     "atoms": [
+      "TLS-ADM2-22284137B39370724774054",
+      "TLS-ADM2-22284137B63057021325797",
+      "TLS-ADM2-22284137B12808122576881",
+      "TLS-ADM2-22284137B47334481051",
+      "TLS-ADM2-22284137B16004980931012",
+      "TLS-ADM2-22284137B67837040381832"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utl.html",
+       "title": "Statoids — Districts of Timor-Leste",
+       "says": "Thirteen districts (Aileu, Ainaro, Ambeno/Oecusse, Baucau, Bobonaro, Cova Lima, Dili, Ermera, Lautém, Liquiçá, Manatuto, Manufahi, Viqueque) with 2004 and 2010 census figures; UNTAET handed over on 2002-05-20.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Municipalities_of_Timor-Leste&oldid=1356374962",
+       "title": "Wikipedia — Municipalities of Timor-Leste (oldid 1356374962)",
+       "says": "Fourteen municipalities (former districts); Atauro separated from Dili on 1 Jan 2022; the Cova Lima–Ainaro and Baucau–Viqueque borders were changed in 2003.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/TLS/ADM2/geoBoundaries-TLS-ADM2.geojson",
+       "title": "geoBoundaries TLS ADM2 (WHO / OCHA ROAP, 2020) — administrative posts",
+       "says": "65 administrative posts; each lies in one municipality (Atauro post inside Dili).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TLS:CovaLima",
+   "names": {
+    "en": "Cova Lima District",
+    "ja": "コバリマ県",
+    "local": "Cova Lima"
+   },
+   "wikidata": "Q165575",
+   "spans": [
+    {
+     "from": "2003",
+     "precision": "year",
+     "atoms": [
+      "TLS-ADM2-22284137B33809863123080",
+      "TLS-ADM2-22284137B11881161065747",
+      "TLS-ADM2-22284137B96492698120269",
+      "TLS-ADM2-22284137B61331736580364",
+      "TLS-ADM2-22284137B60263836524270",
+      "TLS-ADM2-22284137B39285760424005",
+      "TLS-ADM2-22284137B47375840688188"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Municipalities_of_Timor-Leste&oldid=1356374962",
+       "title": "Wikipedia — Municipalities of Timor-Leste (oldid 1356374962)",
+       "says": "Fourteen municipalities (former districts); Atauro separated from Dili on 1 Jan 2022; the Cova Lima–Ainaro and Baucau–Viqueque borders were changed in 2003.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Zumalai&oldid=1328727370",
+       "title": "Wikipedia — Zumalai (oldid 1328727370)",
+       "says": "Zumalai (formerly Mape-Zumalai) subdistrict has been part of Cova Lima since 2003; before that it was part of Ainaro.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/TLS/ADM2/geoBoundaries-TLS-ADM2.geojson",
+       "title": "geoBoundaries TLS ADM2 (WHO / OCHA ROAP, 2020) — administrative posts",
+       "says": "65 administrative posts; each lies in one municipality (Atauro post inside Dili).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "The 2003 border change is dated to the year only; this outline is claimed for 2003 at year precision and is not drawn before 2003."
+    }
+   ]
+  },
+  {
+   "id": "TLS:Dili",
+   "names": {
+    "en": "Dili District",
+    "ja": "ディリ県",
+    "local": "Díli"
+   },
+   "wikidata": "Q860901",
+   "spans": [
+    {
+     "from": "2002-05-20",
+     "precision": "day",
+     "atoms": [
+      "TLS-ADM2-22284137B11289182458696",
+      "TLS-ADM2-22284137B23086342577141",
+      "TLS-ADM2-22284137B34351426942246",
+      "TLS-ADM2-22284137B6793847155334",
+      "TLS-ADM2-22284137B75963303915609",
+      "TLS-ADM2-22284137B41604792993839"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utl.html",
+       "title": "Statoids — Districts of Timor-Leste",
+       "says": "Thirteen districts (Aileu, Ainaro, Ambeno/Oecusse, Baucau, Bobonaro, Cova Lima, Dili, Ermera, Lautém, Liquiçá, Manatuto, Manufahi, Viqueque) with 2004 and 2010 census figures; UNTAET handed over on 2002-05-20.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Municipalities_of_Timor-Leste&oldid=1356374962",
+       "title": "Wikipedia — Municipalities of Timor-Leste (oldid 1356374962)",
+       "says": "Fourteen municipalities (former districts); Atauro separated from Dili on 1 Jan 2022; the Cova Lima–Ainaro and Baucau–Viqueque borders were changed in 2003.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/TLS/ADM2/geoBoundaries-TLS-ADM2.geojson",
+       "title": "geoBoundaries TLS ADM2 (WHO / OCHA ROAP, 2020) — administrative posts",
+       "says": "65 administrative posts; each lies in one municipality (Atauro post inside Dili).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TLS:Ermera",
+   "names": {
+    "en": "Ermera District",
+    "ja": "エルメラ県",
+    "local": "Ermera"
+   },
+   "wikidata": "Q668171",
+   "spans": [
+    {
+     "from": "2002-05-20",
+     "precision": "day",
+     "atoms": [
+      "TLS-ADM2-22284137B3640160656935",
+      "TLS-ADM2-22284137B14876648157947",
+      "TLS-ADM2-22284137B62574363374050",
+      "TLS-ADM2-22284137B23883045309989",
+      "TLS-ADM2-22284137B49797009799058"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utl.html",
+       "title": "Statoids — Districts of Timor-Leste",
+       "says": "Thirteen districts (Aileu, Ainaro, Ambeno/Oecusse, Baucau, Bobonaro, Cova Lima, Dili, Ermera, Lautém, Liquiçá, Manatuto, Manufahi, Viqueque) with 2004 and 2010 census figures; UNTAET handed over on 2002-05-20.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Municipalities_of_Timor-Leste&oldid=1356374962",
+       "title": "Wikipedia — Municipalities of Timor-Leste (oldid 1356374962)",
+       "says": "Fourteen municipalities (former districts); Atauro separated from Dili on 1 Jan 2022; the Cova Lima–Ainaro and Baucau–Viqueque borders were changed in 2003.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/TLS/ADM2/geoBoundaries-TLS-ADM2.geojson",
+       "title": "geoBoundaries TLS ADM2 (WHO / OCHA ROAP, 2020) — administrative posts",
+       "says": "65 administrative posts; each lies in one municipality (Atauro post inside Dili).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TLS:Lautem",
+   "names": {
+    "en": "Lautém District",
+    "ja": "ラウテン県",
+    "local": "Lautém"
+   },
+   "wikidata": "Q686554",
+   "spans": [
+    {
+     "from": "2002-05-20",
+     "precision": "day",
+     "atoms": [
+      "TLS-ADM2-22284137B19934279863207",
+      "TLS-ADM2-22284137B78833871172178",
+      "TLS-ADM2-22284137B26175223982630",
+      "TLS-ADM2-22284137B78720484995027",
+      "TLS-ADM2-22284137B2107732035789"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utl.html",
+       "title": "Statoids — Districts of Timor-Leste",
+       "says": "Thirteen districts (Aileu, Ainaro, Ambeno/Oecusse, Baucau, Bobonaro, Cova Lima, Dili, Ermera, Lautém, Liquiçá, Manatuto, Manufahi, Viqueque) with 2004 and 2010 census figures; UNTAET handed over on 2002-05-20.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Municipalities_of_Timor-Leste&oldid=1356374962",
+       "title": "Wikipedia — Municipalities of Timor-Leste (oldid 1356374962)",
+       "says": "Fourteen municipalities (former districts); Atauro separated from Dili on 1 Jan 2022; the Cova Lima–Ainaro and Baucau–Viqueque borders were changed in 2003.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/TLS/ADM2/geoBoundaries-TLS-ADM2.geojson",
+       "title": "geoBoundaries TLS ADM2 (WHO / OCHA ROAP, 2020) — administrative posts",
+       "says": "65 administrative posts; each lies in one municipality (Atauro post inside Dili).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TLS:Liquica",
+   "names": {
+    "en": "Liquiçá District",
+    "ja": "リキサ県",
+    "local": "Liquiçá"
+   },
+   "wikidata": "Q860897",
+   "spans": [
+    {
+     "from": "2002-05-20",
+     "precision": "day",
+     "atoms": [
+      "TLS-ADM2-22284137B77878310699205",
+      "TLS-ADM2-22284137B50300896823957",
+      "TLS-ADM2-22284137B70669575760565"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utl.html",
+       "title": "Statoids — Districts of Timor-Leste",
+       "says": "Thirteen districts (Aileu, Ainaro, Ambeno/Oecusse, Baucau, Bobonaro, Cova Lima, Dili, Ermera, Lautém, Liquiçá, Manatuto, Manufahi, Viqueque) with 2004 and 2010 census figures; UNTAET handed over on 2002-05-20.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Municipalities_of_Timor-Leste&oldid=1356374962",
+       "title": "Wikipedia — Municipalities of Timor-Leste (oldid 1356374962)",
+       "says": "Fourteen municipalities (former districts); Atauro separated from Dili on 1 Jan 2022; the Cova Lima–Ainaro and Baucau–Viqueque borders were changed in 2003.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/TLS/ADM2/geoBoundaries-TLS-ADM2.geojson",
+       "title": "geoBoundaries TLS ADM2 (WHO / OCHA ROAP, 2020) — administrative posts",
+       "says": "65 administrative posts; each lies in one municipality (Atauro post inside Dili).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TLS:Manatuto",
+   "names": {
+    "en": "Manatuto District",
+    "ja": "マナトゥト県",
+    "local": "Manatuto"
+   },
+   "wikidata": "Q860630",
+   "spans": [
+    {
+     "from": "2002-05-20",
+     "precision": "day",
+     "atoms": [
+      "TLS-ADM2-22284137B73743119127991",
+      "TLS-ADM2-22284137B24782951850467",
+      "TLS-ADM2-22284137B50587397066696",
+      "TLS-ADM2-22284137B53372282779403",
+      "TLS-ADM2-22284137B59851217666313",
+      "TLS-ADM2-22284137B69618697341021"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utl.html",
+       "title": "Statoids — Districts of Timor-Leste",
+       "says": "Thirteen districts (Aileu, Ainaro, Ambeno/Oecusse, Baucau, Bobonaro, Cova Lima, Dili, Ermera, Lautém, Liquiçá, Manatuto, Manufahi, Viqueque) with 2004 and 2010 census figures; UNTAET handed over on 2002-05-20.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Municipalities_of_Timor-Leste&oldid=1356374962",
+       "title": "Wikipedia — Municipalities of Timor-Leste (oldid 1356374962)",
+       "says": "Fourteen municipalities (former districts); Atauro separated from Dili on 1 Jan 2022; the Cova Lima–Ainaro and Baucau–Viqueque borders were changed in 2003.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/TLS/ADM2/geoBoundaries-TLS-ADM2.geojson",
+       "title": "geoBoundaries TLS ADM2 (WHO / OCHA ROAP, 2020) — administrative posts",
+       "says": "65 administrative posts; each lies in one municipality (Atauro post inside Dili).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TLS:Manufahi",
+   "names": {
+    "en": "Manufahi District",
+    "ja": "マヌファヒ県",
+    "local": "Manufahi"
+   },
+   "wikidata": "Q629934",
+   "spans": [
+    {
+     "from": "2002-05-20",
+     "precision": "day",
+     "atoms": [
+      "TLS-ADM2-22284137B36199594403094",
+      "TLS-ADM2-22284137B51170089916625",
+      "TLS-ADM2-22284137B41872156490215",
+      "TLS-ADM2-22284137B60481947224566"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/utl.html",
+       "title": "Statoids — Districts of Timor-Leste",
+       "says": "Thirteen districts (Aileu, Ainaro, Ambeno/Oecusse, Baucau, Bobonaro, Cova Lima, Dili, Ermera, Lautém, Liquiçá, Manatuto, Manufahi, Viqueque) with 2004 and 2010 census figures; UNTAET handed over on 2002-05-20.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Municipalities_of_Timor-Leste&oldid=1356374962",
+       "title": "Wikipedia — Municipalities of Timor-Leste (oldid 1356374962)",
+       "says": "Fourteen municipalities (former districts); Atauro separated from Dili on 1 Jan 2022; the Cova Lima–Ainaro and Baucau–Viqueque borders were changed in 2003.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/TLS/ADM2/geoBoundaries-TLS-ADM2.geojson",
+       "title": "geoBoundaries TLS ADM2 (WHO / OCHA ROAP, 2020) — administrative posts",
+       "says": "65 administrative posts; each lies in one municipality (Atauro post inside Dili).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TLS:Viqueque",
+   "names": {
+    "en": "Viqueque District",
+    "ja": "ビケケ県",
+    "local": "Viqueque"
+   },
+   "wikidata": "Q610726",
+   "spans": [
+    {
+     "from": "2003",
+     "precision": "year",
+     "atoms": [
+      "TLS-ADM2-22284137B55605414153919",
+      "TLS-ADM2-22284137B78761758678939",
+      "TLS-ADM2-22284137B41938791268987",
+      "TLS-ADM2-22284137B52677210689185",
+      "TLS-ADM2-22284137B80785204174249"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Municipalities_of_Timor-Leste&oldid=1356374962",
+       "title": "Wikipedia — Municipalities of Timor-Leste (oldid 1356374962)",
+       "says": "Fourteen municipalities (former districts); Atauro separated from Dili on 1 Jan 2022; the Cova Lima–Ainaro and Baucau–Viqueque borders were changed in 2003.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Zumalai&oldid=1328727370",
+       "title": "Wikipedia — Zumalai (oldid 1328727370)",
+       "says": "Zumalai (formerly Mape-Zumalai) subdistrict has been part of Cova Lima since 2003; before that it was part of Ainaro.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/TLS/ADM2/geoBoundaries-TLS-ADM2.geojson",
+       "title": "geoBoundaries TLS ADM2 (WHO / OCHA ROAP, 2020) — administrative posts",
+       "says": "65 administrative posts; each lies in one municipality (Atauro post inside Dili).",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "The 2003 border change is dated to the year only; this outline is claimed for 2003 at year precision and is not drawn before 2003."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "2003",
+   "precision": "year",
+   "what": "Zumalai subdistrict moved from Ainaro to Cova Lima; Baucau–Viqueque border changed",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Municipalities_of_Timor-Leste&oldid=1356374962",
+     "title": "Wikipedia — Municipalities of Timor-Leste (oldid 1356374962)",
+     "says": "Fourteen municipalities (former districts); Atauro separated from Dili on 1 Jan 2022; the Cova Lima–Ainaro and Baucau–Viqueque borders were changed in 2003.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Zumalai&oldid=1328727370",
+     "title": "Wikipedia — Zumalai (oldid 1328727370)",
+     "says": "Zumalai (formerly Mape-Zumalai) subdistrict has been part of Cova Lima since 2003; before that it was part of Ainaro.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "2004-07-01",
+   "n": 13,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/utl.html",
+     "title": "Statoids — Districts of Timor-Leste",
+     "says": "Thirteen districts (Aileu, Ainaro, Ambeno/Oecusse, Baucau, Bobonaro, Cova Lima, Dili, Ermera, Lautém, Liquiçá, Manatuto, Manufahi, Viqueque) with 2004 and 2010 census figures; UNTAET handed over on 2002-05-20.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "2019-12-31",
+   "n": 13,
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Municipalities_of_Timor-Leste&oldid=1356374962",
+     "title": "Wikipedia — Municipalities of Timor-Leste (oldid 1356374962)",
+     "says": "Fourteen municipalities (former districts); Atauro separated from Dili on 1 Jan 2022; the Cova Lima–Ainaro and Baucau–Viqueque borders were changed in 2003.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Ainaro, Cova Lima, Baucau and Viqueque 2002-05-20 to 2003",
+   "from": "2002-05-20",
+   "to": "2003",
+   "atoms": [
+    "TLS-ADM2-22284137B67278963884363",
+    "TLS-ADM2-22284137B50442427378542",
+    "TLS-ADM2-22284137B3809405900530",
+    "TLS-ADM2-22284137B40449592168850",
+    "TLS-ADM2-22284137B33809863123080",
+    "TLS-ADM2-22284137B11881161065747",
+    "TLS-ADM2-22284137B96492698120269",
+    "TLS-ADM2-22284137B61331736580364",
+    "TLS-ADM2-22284137B60263836524270",
+    "TLS-ADM2-22284137B39285760424005",
+    "TLS-ADM2-22284137B47375840688188",
+    "TLS-ADM2-22284137B48176451746687",
+    "TLS-ADM2-22284137B73846644477643",
+    "TLS-ADM2-22284137B62238566078682",
+    "TLS-ADM2-22284137B85640858688348",
+    "TLS-ADM2-22284137B19870753775512",
+    "TLS-ADM2-22284137B53868942540237",
+    "TLS-ADM2-22284137B55605414153919",
+    "TLS-ADM2-22284137B78761758678939",
+    "TLS-ADM2-22284137B41938791268987",
+    "TLS-ADM2-22284137B52677210689185",
+    "TLS-ADM2-22284137B80785204174249"
+   ],
+   "why": "Their borders were changed in 2003 (Zumalai from Ainaro to Cova Lima; a Baucau–Viqueque change whose extent was not found), on a date known only to the year; the earlier Baucau–Viqueque line is not established on post atoms.",
+   "checked": [
+    "Wikipedia Municipalities of Timor-Leste oldid 1356374962",
+    "Wikipedia Zumalai oldid 1328727370",
+    "Statoids utl.html (no change history)"
+   ],
+   "needs": "the 2003 decree (date and the sucos moved between Baucau and Viqueque)"
+  },
+  {
+   "what": "Ainaro District (2002–2003 outline)",
+   "unit": "TLS:Ainaro",
+   "from": "2002-05-20",
+   "to": "2003",
+   "why": "See the previous entry.",
+   "checked": [
+    "Wikipedia Zumalai oldid 1328727370"
+   ],
+   "needs": "the 2003 decree"
+  },
+  {
+   "what": "Cova Lima District (2002–2003 outline)",
+   "unit": "TLS:CovaLima",
+   "from": "2002-05-20",
+   "to": "2003",
+   "why": "See the first entry.",
+   "checked": [
+    "Wikipedia Zumalai oldid 1328727370"
+   ],
+   "needs": "the 2003 decree"
+  },
+  {
+   "what": "Baucau District (2002–2003 outline)",
+   "unit": "TLS:Baucau",
+   "from": "2002-05-20",
+   "to": "2003",
+   "why": "See the first entry.",
+   "checked": [
+    "Wikipedia Municipalities of Timor-Leste oldid 1356374962"
+   ],
+   "needs": "the 2003 decree"
+  },
+  {
+   "what": "Viqueque District (2002–2003 outline)",
+   "unit": "TLS:Viqueque",
+   "from": "2002-05-20",
+   "to": "2003",
+   "why": "See the first entry.",
+   "checked": [
+    "Wikipedia Municipalities of Timor-Leste oldid 1356374962"
+   ],
+   "needs": "the 2003 decree"
+  }
+ ]
+}

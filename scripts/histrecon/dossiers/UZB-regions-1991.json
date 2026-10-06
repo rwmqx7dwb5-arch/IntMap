@@ -1,0 +1,687 @@
+{
+ "country": "UZB",
+ "atomSet": "gb-adm2@2026-10-06",
+ "scope": {
+  "from": "1991-12-26",
+  "to": "1992-01-26"
+ },
+ "polityNote": "First-level units of the Republic of Uzbekistan from the dissolution of the USSR (26 Dec 1991) to the restoration of Navoi oblast (27 Jan 1992). In this month there was no Navoi oblast — its districts were in Bukhara and Samarkand — and Yangiabad was in Syrdarya; the Natural Earth fill drew the modern 14 units. Atoms: geoBoundaries UZB ADM2 (OCHA 2020, 199 districts and towns, 17,848 vertices; a clean partition, 0 overlaps at 0.01°). Check ① (geodesic area of the union against stated areas): Samarkand with Nurata and Khatirchi 25,378 km² vs 16,770 + 6,500 + 1,382 = 24,652 km² = 1.03; Bukhara with the six Navoi districts 145,284 km² vs 40,320 + 110,800 − 7,882 = 143,238 km² = 1.01. The OCHA lines and the OSM 2017 first-level lines disagree most along the Amu Darya (Khorezm 5,276 km² in OCHA against 6,828 km² in OSM); the river line is the publisher’s, not reconstructed here. OpenHistoricalMap carries only the country for these years.",
+ "units": [
+  {
+   "id": "UZB:Andijan",
+   "names": {
+    "en": "Andijan Region",
+    "ja": "アンディジャン州",
+    "local": "Andijon viloyati"
+   },
+   "wikidata": "Q487384",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1992-01-27",
+     "atoms": [
+      "UZB-ADM2-79887680B74226906580742",
+      "UZB-ADM2-79887680B97911252833963",
+      "UZB-ADM2-79887680B20673665411961",
+      "UZB-ADM2-79887680B89624246820139",
+      "UZB-ADM2-79887680B69641421993469",
+      "UZB-ADM2-79887680B98657239808063",
+      "UZB-ADM2-79887680B29412867637503",
+      "UZB-ADM2-79887680B24137157284199",
+      "UZB-ADM2-79887680B25262696508510",
+      "UZB-ADM2-79887680B5008780353484",
+      "UZB-ADM2-79887680B83783750285082",
+      "UZB-ADM2-79887680B68939090872138",
+      "UZB-ADM2-79887680B88758805168239",
+      "UZB-ADM2-79887680B95216524949975",
+      "UZB-ADM2-79887680B50454088446008",
+      "UZB-ADM2-79887680B2052385520334"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%B4%D0%BC%D0%B8%D0%BD%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%B8%D0%B2%D0%BD%D0%BE%D0%B5_%D0%B4%D0%B5%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_%D0%A3%D0%B7%D0%B1%D0%B5%D0%BA%D0%B8%D1%81%D1%82%D0%B0%D0%BD%D0%B0&oldid=155417252",
+       "title": "Wikipedia (ru) — Административное деление Узбекистана (oldid 155417252)",
+       "says": "1988: Jizzakh merged into Syrdarya, Navoi into Samarkand; May 1989 most of former Navoi to Bukhara; Jizzakh restored 1990, Navoi 1992; last major change as of 2012: Yangiabad from Syrdarya to Jizzakh in 1999.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "UZB:Namangan",
+   "names": {
+    "en": "Namangan Region",
+    "ja": "ナマンガン州",
+    "local": "Namangan viloyati"
+   },
+   "wikidata": "Q474876",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1992-01-27",
+     "atoms": [
+      "UZB-ADM2-79887680B13435458352129",
+      "UZB-ADM2-79887680B504113599955",
+      "UZB-ADM2-79887680B11323044548647",
+      "UZB-ADM2-79887680B74841511889074",
+      "UZB-ADM2-79887680B99414619772230",
+      "UZB-ADM2-79887680B29549243080653",
+      "UZB-ADM2-79887680B90500403808249",
+      "UZB-ADM2-79887680B51859555841506",
+      "UZB-ADM2-79887680B13123627114568",
+      "UZB-ADM2-79887680B4348480109525",
+      "UZB-ADM2-79887680B43665894395177",
+      "UZB-ADM2-79887680B35727766671193"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%B4%D0%BC%D0%B8%D0%BD%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%B8%D0%B2%D0%BD%D0%BE%D0%B5_%D0%B4%D0%B5%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_%D0%A3%D0%B7%D0%B1%D0%B5%D0%BA%D0%B8%D1%81%D1%82%D0%B0%D0%BD%D0%B0&oldid=155417252",
+       "title": "Wikipedia (ru) — Административное деление Узбекистана (oldid 155417252)",
+       "says": "1988: Jizzakh merged into Syrdarya, Navoi into Samarkand; May 1989 most of former Navoi to Bukhara; Jizzakh restored 1990, Navoi 1992; last major change as of 2012: Yangiabad from Syrdarya to Jizzakh in 1999.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "UZB:Fergana",
+   "names": {
+    "en": "Fergana Region",
+    "ja": "フェルガナ州",
+    "local": "Fargʻona viloyati"
+   },
+   "wikidata": "Q487089",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1992-01-27",
+     "atoms": [
+      "UZB-ADM2-79887680B98811003326112",
+      "UZB-ADM2-79887680B27601964839948",
+      "UZB-ADM2-79887680B21144428059049",
+      "UZB-ADM2-79887680B62053175719936",
+      "UZB-ADM2-79887680B63252769213541",
+      "UZB-ADM2-79887680B55536658077788",
+      "UZB-ADM2-79887680B43666703114629",
+      "UZB-ADM2-79887680B70026965799334",
+      "UZB-ADM2-79887680B20364300518134",
+      "UZB-ADM2-79887680B52321906088540",
+      "UZB-ADM2-79887680B18672713259949",
+      "UZB-ADM2-79887680B57578382028963",
+      "UZB-ADM2-79887680B56995537187313",
+      "UZB-ADM2-79887680B35623710055833",
+      "UZB-ADM2-79887680B26065504827015",
+      "UZB-ADM2-79887680B59640879655565",
+      "UZB-ADM2-79887680B41793707673960",
+      "UZB-ADM2-79887680B62642842050546",
+      "UZB-ADM2-79887680B77286395999691"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%B4%D0%BC%D0%B8%D0%BD%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%B8%D0%B2%D0%BD%D0%BE%D0%B5_%D0%B4%D0%B5%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_%D0%A3%D0%B7%D0%B1%D0%B5%D0%BA%D0%B8%D1%81%D1%82%D0%B0%D0%BD%D0%B0&oldid=155417252",
+       "title": "Wikipedia (ru) — Административное деление Узбекистана (oldid 155417252)",
+       "says": "1988: Jizzakh merged into Syrdarya, Navoi into Samarkand; May 1989 most of former Navoi to Bukhara; Jizzakh restored 1990, Navoi 1992; last major change as of 2012: Yangiabad from Syrdarya to Jizzakh in 1999.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uuz.html",
+       "title": "Statoids — Regions of Uzbekistan, change history",
+       "says": "Navoi oblast split from Bukhara around 1981; Tashkent City split from Tashkent region around 1996 (marked as needing confirmation); Fergana includes five exclaves in Batken province of Kyrgyzstan.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "The Sokh exclave is its own atom; Shohimardon lies in the Fergana district atom."
+    }
+   ]
+  },
+  {
+   "id": "UZB:Kashkadarya",
+   "names": {
+    "en": "Kashkadarya Region",
+    "ja": "カシュカダリヤ州",
+    "local": "Qashqadaryo viloyati"
+   },
+   "wikidata": "Q487577",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1992-01-27",
+     "atoms": [
+      "UZB-ADM2-79887680B94594709209403",
+      "UZB-ADM2-79887680B34481827361029",
+      "UZB-ADM2-79887680B39289348705167",
+      "UZB-ADM2-79887680B29394566639719",
+      "UZB-ADM2-79887680B27761464779200",
+      "UZB-ADM2-79887680B4185016404575",
+      "UZB-ADM2-79887680B57210975668042",
+      "UZB-ADM2-79887680B36641058684147",
+      "UZB-ADM2-79887680B51602053820604",
+      "UZB-ADM2-79887680B27619716135754",
+      "UZB-ADM2-79887680B88652544593040",
+      "UZB-ADM2-79887680B89374870504997",
+      "UZB-ADM2-79887680B77871690978000",
+      "UZB-ADM2-79887680B91386955898676",
+      "UZB-ADM2-79887680B15767509154771"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%B4%D0%BC%D0%B8%D0%BD%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%B8%D0%B2%D0%BD%D0%BE%D0%B5_%D0%B4%D0%B5%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_%D0%A3%D0%B7%D0%B1%D0%B5%D0%BA%D0%B8%D1%81%D1%82%D0%B0%D0%BD%D0%B0&oldid=155417252",
+       "title": "Wikipedia (ru) — Административное деление Узбекистана (oldid 155417252)",
+       "says": "1988: Jizzakh merged into Syrdarya, Navoi into Samarkand; May 1989 most of former Navoi to Bukhara; Jizzakh restored 1990, Navoi 1992; last major change as of 2012: Yangiabad from Syrdarya to Jizzakh in 1999.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "UZB:Surkhandarya",
+   "names": {
+    "en": "Surkhandarya Region",
+    "ja": "スルハンダリヤ州",
+    "local": "Surxondaryo viloyati"
+   },
+   "wikidata": "Q487537",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1992-01-27",
+     "atoms": [
+      "UZB-ADM2-79887680B61721126470320",
+      "UZB-ADM2-79887680B59449198277137",
+      "UZB-ADM2-79887680B13108405395902",
+      "UZB-ADM2-79887680B39986035389422",
+      "UZB-ADM2-79887680B78109356235747",
+      "UZB-ADM2-79887680B82153546012261",
+      "UZB-ADM2-79887680B28452062330935",
+      "UZB-ADM2-79887680B32786671178541",
+      "UZB-ADM2-79887680B98909134943467",
+      "UZB-ADM2-79887680B75578252058464",
+      "UZB-ADM2-79887680B83701806850214",
+      "UZB-ADM2-79887680B11166150999612",
+      "UZB-ADM2-79887680B9573461396891",
+      "UZB-ADM2-79887680B8984486268693"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%B4%D0%BC%D0%B8%D0%BD%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%B8%D0%B2%D0%BD%D0%BE%D0%B5_%D0%B4%D0%B5%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_%D0%A3%D0%B7%D0%B1%D0%B5%D0%BA%D0%B8%D1%81%D1%82%D0%B0%D0%BD%D0%B0&oldid=155417252",
+       "title": "Wikipedia (ru) — Административное деление Узбекистана (oldid 155417252)",
+       "says": "1988: Jizzakh merged into Syrdarya, Navoi into Samarkand; May 1989 most of former Navoi to Bukhara; Jizzakh restored 1990, Navoi 1992; last major change as of 2012: Yangiabad from Syrdarya to Jizzakh in 1999.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "UZB:Khorezm",
+   "names": {
+    "en": "Khorezm Region",
+    "ja": "ホラズム州",
+    "local": "Xorazm viloyati"
+   },
+   "wikidata": "Q487561",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1992-01-27",
+     "atoms": [
+      "UZB-ADM2-79887680B67856776963689",
+      "UZB-ADM2-79887680B59227978445029",
+      "UZB-ADM2-79887680B63967245583955",
+      "UZB-ADM2-79887680B99792663535597",
+      "UZB-ADM2-79887680B22974802062613",
+      "UZB-ADM2-79887680B75905541481130",
+      "UZB-ADM2-79887680B98987238414073",
+      "UZB-ADM2-79887680B39463987044413",
+      "UZB-ADM2-79887680B5155786713045",
+      "UZB-ADM2-79887680B22803301231900",
+      "UZB-ADM2-79887680B89988624723633",
+      "UZB-ADM2-79887680B59806370896431"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%B4%D0%BC%D0%B8%D0%BD%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%B8%D0%B2%D0%BD%D0%BE%D0%B5_%D0%B4%D0%B5%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_%D0%A3%D0%B7%D0%B1%D0%B5%D0%BA%D0%B8%D1%81%D1%82%D0%B0%D0%BD%D0%B0&oldid=155417252",
+       "title": "Wikipedia (ru) — Административное деление Узбекистана (oldid 155417252)",
+       "says": "1988: Jizzakh merged into Syrdarya, Navoi into Samarkand; May 1989 most of former Navoi to Bukhara; Jizzakh restored 1990, Navoi 1992; last major change as of 2012: Yangiabad from Syrdarya to Jizzakh in 1999.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "UZB:Karakalpakstan",
+   "names": {
+    "en": "Karakalpakstan",
+    "ja": "カラカルパクスタン",
+    "local": "Qaraqalpaqstan"
+   },
+   "wikidata": "Q484245",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1992-01-27",
+     "atoms": [
+      "UZB-ADM2-79887680B51354655878923",
+      "UZB-ADM2-79887680B80838990154601",
+      "UZB-ADM2-79887680B11316331959400",
+      "UZB-ADM2-79887680B3643857389786",
+      "UZB-ADM2-79887680B11359237520420",
+      "UZB-ADM2-79887680B6584573429161",
+      "UZB-ADM2-79887680B45163084066424",
+      "UZB-ADM2-79887680B60420038747049",
+      "UZB-ADM2-79887680B8314614924968",
+      "UZB-ADM2-79887680B81962210104758",
+      "UZB-ADM2-79887680B8081809775743",
+      "UZB-ADM2-79887680B72468614432552",
+      "UZB-ADM2-79887680B61567760278746",
+      "UZB-ADM2-79887680B22143596455299",
+      "UZB-ADM2-79887680B9862753118700"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9A%D0%B0%D1%80%D0%B0%D0%BA%D0%B0%D0%BB%D0%BF%D0%B0%D0%BA%D1%81%D1%82%D0%B0%D0%BD&oldid=155412866",
+       "title": "Wikipedia (ru) — Каракалпакстан (oldid 155412866)",
+       "says": "The Karakalpak ASSR declared sovereignty on 14 Dec 1990 and was transformed into the Republic of Karakalpakstan on 9 Jan 1992 (the infobox dates the name to 9 Jan 1993).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%B4%D0%BC%D0%B8%D0%BD%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%B8%D0%B2%D0%BD%D0%BE%D0%B5_%D0%B4%D0%B5%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_%D0%A3%D0%B7%D0%B1%D0%B5%D0%BA%D0%B8%D1%81%D1%82%D0%B0%D0%BD%D0%B0&oldid=155417252",
+       "title": "Wikipedia (ru) — Административное деление Узбекистана (oldid 155417252)",
+       "says": "1988: Jizzakh merged into Syrdarya, Navoi into Samarkand; May 1989 most of former Navoi to Bukhara; Jizzakh restored 1990, Navoi 1992; last major change as of 2012: Yangiabad from Syrdarya to Jizzakh in 1999.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Karakalpak ASSR until its transformation into the Republic of Karakalpakstan, dated 9 Jan 1992 in the article text (9 Jan 1993 in its infobox); the territory is the same, so one unit is drawn."
+    }
+   ]
+  },
+  {
+   "id": "UZB:Bukhara",
+   "names": {
+    "en": "Bukhara Region",
+    "ja": "ブハラ州",
+    "local": "Buxoro viloyati"
+   },
+   "wikidata": "Q487372",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1992-01-27",
+     "atoms": [
+      "UZB-ADM2-79887680B67164743475948",
+      "UZB-ADM2-79887680B68174345072699",
+      "UZB-ADM2-79887680B15595975584782",
+      "UZB-ADM2-79887680B39876155507460",
+      "UZB-ADM2-79887680B6404412845327",
+      "UZB-ADM2-79887680B37320061840085",
+      "UZB-ADM2-79887680B12609316203717",
+      "UZB-ADM2-79887680B78868749126062",
+      "UZB-ADM2-79887680B8503255979419",
+      "UZB-ADM2-79887680B25452666066533",
+      "UZB-ADM2-79887680B41570808134522",
+      "UZB-ADM2-79887680B42366565573671",
+      "UZB-ADM2-79887680B72546583413926",
+      "UZB-ADM2-79887680B30897386041175",
+      "UZB-ADM2-79887680B23954211598190",
+      "UZB-ADM2-79887680B67095237367046",
+      "UZB-ADM2-79887680B40306907655933",
+      "UZB-ADM2-79887680B53513489447097",
+      "UZB-ADM2-79887680B37906364425566"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9D%D0%B0%D0%B2%D0%BE%D0%B8%D0%B9%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=155330308",
+       "title": "Wikipedia (ru) — Навоийская область (oldid 155330308)",
+       "says": "Navoi oblast formed 20 Apr 1982 from Bukhara and Samarkand districts; merged into Samarkand 9 Sep 1988; 16 May 1989 seven former Navoi districts given to Bukhara; restored by a Supreme Council Presidium resolution of 27 Jan 1992.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%A2%D0%B0%D0%BC%D0%B4%D1%8B%D0%BD%D1%81%D0%BA%D0%B8%D0%B9_%D1%80%D0%B0%D0%B9%D0%BE%D0%BD&oldid=153483306",
+       "title": "Wikipedia (ru) — Тамдынский район (oldid 153483306)",
+       "says": "Navoi oblast was absorbed by Samarkand on 6 Sep 1988; on 16 May 1989 Tamdy district, among others, returned to Bukhara oblast; on 27 Jan 1992 it entered the restored Navoi oblast.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9A%D0%B0%D1%80%D0%BC%D0%B0%D0%BD%D0%B8%D0%BD%D1%81%D0%BA%D0%B8%D0%B9_%D1%80%D0%B0%D0%B9%D0%BE%D0%BD&oldid=146440614",
+       "title": "Wikipedia (ru) — Карманинский район (oldid 146440614)",
+       "says": "Navoi (now Karmana) district was part of Bukhara oblast in 1988–1992.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9A%D0%B0%D0%BD%D0%B8%D0%BC%D0%B5%D1%85%D1%81%D0%BA%D0%B8%D0%B9_%D1%80%D0%B0%D0%B9%D0%BE%D0%BD&oldid=154654249",
+       "title": "Wikipedia (ru) — Канимехский район (oldid 154654249)",
+       "says": "Kanimekh district was part of Bukhara oblast in 1988–1992; in 2018 it received 106.51 km² of Gijduvan district (Bukhara).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9A%D1%8B%D0%B7%D1%8B%D0%BB%D1%82%D0%B5%D0%BF%D0%B8%D0%BD%D1%81%D0%BA%D0%B8%D0%B9_%D1%80%D0%B0%D0%B9%D0%BE%D0%BD&oldid=146431638",
+       "title": "Wikipedia (ru) — Кызылтепинский район (oldid 146431638)",
+       "says": "Kyzyltepa district was part of Bukhara oblast in 1988–1992.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9D%D0%B0%D0%B2%D0%B1%D0%B0%D1%85%D0%BE%D1%80%D1%81%D0%BA%D0%B8%D0%B9_%D1%80%D0%B0%D0%B9%D0%BE%D0%BD&oldid=147143814",
+       "title": "Wikipedia (ru) — Навбахорский район (oldid 147143814)",
+       "says": "Navbahor district merged into Navoi district in 1988 and restored 27 Feb 1990; part of Bukhara oblast in 1988–1992.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%A3%D1%87%D0%BA%D1%83%D0%B4%D1%83%D0%BA%D1%81%D0%BA%D0%B8%D0%B9_%D1%80%D0%B0%D0%B9%D0%BE%D0%BD&oldid=154422473",
+       "title": "Wikipedia (ru) — Учкудукский район (oldid 154422473)",
+       "says": "Uchkuduk district formed 25 Mar 1982; in Navoi oblast today.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "With the six former Navoi districts returned on 16 May 1989 (Navoi/Karmana, Kanimekh, Kyzyltepa, Tamdy, Uchkuduk; Navbahor restored inside in 1990). Uchkuduk is not named in the 1989 sources; it is assigned to Bukhara by contiguity — it touches only Tamdy and Kanimekh (both Bukharan then), Karakalpakstan, Kazakhstan and Bukharan Peshku, so in Samarkand it would have been a detached exclave. The 2018 transfer from Gijduvan to Kanimekh moved land between two districts that were both Bukharan in 1991, so the union is unchanged. Navoi and Zarafshan towns are withheld (unresolved)."
+    }
+   ]
+  },
+  {
+   "id": "UZB:Samarkand",
+   "names": {
+    "en": "Samarkand Region",
+    "ja": "サマルカンド州",
+    "local": "Samarqand viloyati"
+   },
+   "wikidata": "Q487532",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1992-01-27",
+     "atoms": [
+      "UZB-ADM2-79887680B60529301489463",
+      "UZB-ADM2-79887680B26985573212547",
+      "UZB-ADM2-79887680B34073464647672",
+      "UZB-ADM2-79887680B73801633322119",
+      "UZB-ADM2-79887680B24658662729517",
+      "UZB-ADM2-79887680B42303592957509",
+      "UZB-ADM2-79887680B69055285128401",
+      "UZB-ADM2-79887680B475609361313",
+      "UZB-ADM2-79887680B93322168569220",
+      "UZB-ADM2-79887680B70899429425762",
+      "UZB-ADM2-79887680B77379666017529",
+      "UZB-ADM2-79887680B65824401013757",
+      "UZB-ADM2-79887680B27058586610976",
+      "UZB-ADM2-79887680B84985398573177",
+      "UZB-ADM2-79887680B91755073573876",
+      "UZB-ADM2-79887680B67251663283691",
+      "UZB-ADM2-79887680B28423618609803",
+      "UZB-ADM2-79887680B3077995484164"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9D%D0%B0%D0%B2%D0%BE%D0%B8%D0%B9%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=155330308",
+       "title": "Wikipedia (ru) — Навоийская область (oldid 155330308)",
+       "says": "Navoi oblast formed 20 Apr 1982 from Bukhara and Samarkand districts; merged into Samarkand 9 Sep 1988; 16 May 1989 seven former Navoi districts given to Bukhara; restored by a Supreme Council Presidium resolution of 27 Jan 1992.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9D%D1%83%D1%80%D0%B0%D1%82%D0%B8%D0%BD%D1%81%D0%BA%D0%B8%D0%B9_%D1%80%D0%B0%D0%B9%D0%BE%D0%BD&oldid=147902807",
+       "title": "Wikipedia (ru) — Нуратинский район (oldid 147902807)",
+       "says": "From 6 Sep 1988 to 27 Jan 1992 Nurata district was again part of Samarkand oblast; on 27 Jan 1992 it returned to the restored Navoi oblast.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%A5%D0%B0%D1%82%D1%8B%D1%80%D1%87%D0%B8%D0%BD%D1%81%D0%BA%D0%B8%D0%B9_%D1%80%D0%B0%D0%B9%D0%BE%D0%BD&oldid=148067058",
+       "title": "Wikipedia (ru) — Хатырчинский район (oldid 148067058)",
+       "says": "In Sep 1988 Khatirchi district was included in Samarkand oblast; in 1992 it returned to the re-created Navoi oblast.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "With Nurata and Khatirchi districts, which stayed in Samarkand from 6 Sep 1988 to 27 Jan 1992."
+    }
+   ]
+  },
+  {
+   "id": "UZB:Jizzakh",
+   "names": {
+    "en": "Jizzakh Region",
+    "ja": "ジザフ州",
+    "local": "Jizzax viloyati"
+   },
+   "wikidata": "Q488811",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1992-01-27",
+     "atoms": [
+      "UZB-ADM2-79887680B52998751839701",
+      "UZB-ADM2-79887680B5401835148625",
+      "UZB-ADM2-79887680B67219555279556",
+      "UZB-ADM2-79887680B12051780015721",
+      "UZB-ADM2-79887680B75726526377189",
+      "UZB-ADM2-79887680B9171225127728",
+      "UZB-ADM2-79887680B43682608044415",
+      "UZB-ADM2-79887680B19323950575966",
+      "UZB-ADM2-79887680B29992956990251",
+      "UZB-ADM2-79887680B47043896675236",
+      "UZB-ADM2-79887680B4064718832090",
+      "UZB-ADM2-79887680B99021392156444"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%94%D0%B6%D0%B8%D0%B7%D0%B0%D0%BA%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=155330318",
+       "title": "Wikipedia (ru) — Джизакская область (oldid 155330318)",
+       "says": "Jizzakh oblast abolished 6 Sep 1988 with its territory given to Syrdarya oblast; restored 16 Feb 1990.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%B4%D0%BC%D0%B8%D0%BD%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%B8%D0%B2%D0%BD%D0%BE%D0%B5_%D0%B4%D0%B5%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_%D0%A3%D0%B7%D0%B1%D0%B5%D0%BA%D0%B8%D1%81%D1%82%D0%B0%D0%BD%D0%B0&oldid=155417252",
+       "title": "Wikipedia (ru) — Административное деление Узбекистана (oldid 155417252)",
+       "says": "1988: Jizzakh merged into Syrdarya, Navoi into Samarkand; May 1989 most of former Navoi to Bukhara; Jizzakh restored 1990, Navoi 1992; last major change as of 2012: Yangiabad from Syrdarya to Jizzakh in 1999.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Without Yangiabad district, which was in Syrdarya until 1999."
+    }
+   ]
+  },
+  {
+   "id": "UZB:Syrdarya",
+   "names": {
+    "en": "Syrdarya Region",
+    "ja": "シルダリヤ州",
+    "local": "Sirdaryo viloyati"
+   },
+   "wikidata": "Q487547",
+   "spans": [
+    {
+     "from": "1991-12-26",
+     "precision": "day",
+     "to": "1992-01-27",
+     "atoms": [
+      "UZB-ADM2-79887680B81197262322731",
+      "UZB-ADM2-79887680B15135305398470",
+      "UZB-ADM2-79887680B49500838680737",
+      "UZB-ADM2-79887680B47457060484858",
+      "UZB-ADM2-79887680B81011252135215",
+      "UZB-ADM2-79887680B26381938594852",
+      "UZB-ADM2-79887680B2941590396585",
+      "UZB-ADM2-79887680B43594264952232",
+      "UZB-ADM2-79887680B92810274159920",
+      "UZB-ADM2-79887680B82422734608067",
+      "UZB-ADM2-79887680B49075560647606",
+      "UZB-ADM2-79887680B4215620522937"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%A1%D1%8B%D1%80%D0%B4%D0%B0%D1%80%D1%8C%D0%B8%D0%BD%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=155145848",
+       "title": "Wikipedia (ru) — Сырдарьинская область (oldid 155145848)",
+       "says": "In 1988–1990 the lands of the abolished Jizzakh oblast were part of Syrdarya oblast.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%B4%D0%BC%D0%B8%D0%BD%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%B8%D0%B2%D0%BD%D0%BE%D0%B5_%D0%B4%D0%B5%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_%D0%A3%D0%B7%D0%B1%D0%B5%D0%BA%D0%B8%D1%81%D1%82%D0%B0%D0%BD%D0%B0&oldid=155417252",
+       "title": "Wikipedia (ru) — Административное деление Узбекистана (oldid 155417252)",
+       "says": "1988: Jizzakh merged into Syrdarya, Navoi into Samarkand; May 1989 most of former Navoi to Bukhara; Jizzakh restored 1990, Navoi 1992; last major change as of 2012: Yangiabad from Syrdarya to Jizzakh in 1999.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "With Yangiabad district (moved to Jizzakh in 1999)."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1992-01-27",
+   "precision": "day",
+   "what": "Navoi oblast restored from Bukhara and Samarkand districts (the day after this scope)",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9D%D0%B0%D0%B2%D0%BE%D0%B8%D0%B9%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=155330308",
+     "title": "Wikipedia (ru) — Навоийская область (oldid 155330308)",
+     "says": "Navoi oblast formed 20 Apr 1982 from Bukhara and Samarkand districts; merged into Samarkand 9 Sep 1988; 16 May 1989 seven former Navoi districts given to Bukhara; restored by a Supreme Council Presidium resolution of 27 Jan 1992.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9D%D1%83%D1%80%D0%B0%D1%82%D0%B8%D0%BD%D1%81%D0%BA%D0%B8%D0%B9_%D1%80%D0%B0%D0%B9%D0%BE%D0%BD&oldid=147902807",
+     "title": "Wikipedia (ru) — Нуратинский район (oldid 147902807)",
+     "says": "From 6 Sep 1988 to 27 Jan 1992 Nurata district was again part of Samarkand oblast; on 27 Jan 1992 it returned to the restored Navoi oblast.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%A2%D0%B0%D0%BC%D0%B4%D1%8B%D0%BD%D1%81%D0%BA%D0%B8%D0%B9_%D1%80%D0%B0%D0%B9%D0%BE%D0%BD&oldid=153483306",
+     "title": "Wikipedia (ru) — Тамдынский район (oldid 153483306)",
+     "says": "Navoi oblast was absorbed by Samarkand on 6 Sep 1988; on 16 May 1989 Tamdy district, among others, returned to Bukhara oblast; on 27 Jan 1992 it entered the restored Navoi oblast.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1992-01-01",
+   "n": 13,
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%B4%D0%BC%D0%B8%D0%BD%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%B8%D0%B2%D0%BD%D0%BE%D0%B5_%D0%B4%D0%B5%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_%D0%A3%D0%B7%D0%B1%D0%B5%D0%BA%D0%B8%D1%81%D1%82%D0%B0%D0%BD%D0%B0&oldid=155417252",
+     "title": "Wikipedia (ru) — Административное деление Узбекистана (oldid 155417252)",
+     "says": "1988: Jizzakh merged into Syrdarya, Navoi into Samarkand; May 1989 most of former Navoi to Bukhara; Jizzakh restored 1990, Navoi 1992; last major change as of 2012: Yangiabad from Syrdarya to Jizzakh in 1999.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9D%D0%B0%D0%B2%D0%BE%D0%B8%D0%B9%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=155330308",
+     "title": "Wikipedia (ru) — Навоийская область (oldid 155330308)",
+     "says": "Navoi oblast formed 20 Apr 1982 from Bukhara and Samarkand districts; merged into Samarkand 9 Sep 1988; 16 May 1989 seven former Navoi districts given to Bukhara; restored by a Supreme Council Presidium resolution of 27 Jan 1992.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1992-01-20",
+   "n": 13,
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%90%D0%B4%D0%BC%D0%B8%D0%BD%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%B8%D0%B2%D0%BD%D0%BE%D0%B5_%D0%B4%D0%B5%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_%D0%A3%D0%B7%D0%B1%D0%B5%D0%BA%D0%B8%D1%81%D1%82%D0%B0%D0%BD%D0%B0&oldid=155417252",
+     "title": "Wikipedia (ru) — Административное деление Узбекистана (oldid 155417252)",
+     "says": "1988: Jizzakh merged into Syrdarya, Navoi into Samarkand; May 1989 most of former Navoi to Bukhara; Jizzakh restored 1990, Navoi 1992; last major change as of 2012: Yangiabad from Syrdarya to Jizzakh in 1999.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?title=%D0%9D%D0%B0%D0%B2%D0%BE%D0%B8%D0%B9%D1%81%D0%BA%D0%B0%D1%8F_%D0%BE%D0%B1%D0%BB%D0%B0%D1%81%D1%82%D1%8C&oldid=155330308",
+     "title": "Wikipedia (ru) — Навоийская область (oldid 155330308)",
+     "says": "Navoi oblast formed 20 Apr 1982 from Bukhara and Samarkand districts; merged into Samarkand 9 Sep 1988; 16 May 1989 seven former Navoi districts given to Bukhara; restored by a Supreme Council Presidium resolution of 27 Jan 1992.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Tashkent city 1991–1992",
+   "unit": "UZB:Tashkent City",
+   "atoms": [
+    "UZB-ADM2-79887680B30402232719617",
+    "UZB-ADM2-79887680B84205310122057",
+    "UZB-ADM2-79887680B42148642049849",
+    "UZB-ADM2-79887680B36749064688690",
+    "UZB-ADM2-79887680B16922356170962",
+    "UZB-ADM2-79887680B98736397831484",
+    "UZB-ADM2-79887680B42032774497005",
+    "UZB-ADM2-79887680B41064680481751",
+    "UZB-ADM2-79887680B40109116454398",
+    "UZB-ADM2-79887680B58716268454454",
+    "UZB-ADM2-79887680B78178339313098"
+   ],
+   "from": "1991-12-26",
+   "to": "1992-01-27",
+   "why": "The city covered 256 km² in 1983 and 357.84 km² before the 2021 enlargement; the eleven city-district atoms (2020) sum to 344 km², i.e. the later line. When the city grew between 1983 and the 2010s is not dated in any source found, so neither the city nor the inner line of Tashkent region can be drawn for 1991.",
+   "checked": [
+    "ru.wikipedia Ташкент oldid 155293987 (area 1983 and before 2021)",
+    "ru.wikipedia Ташкентская область oldid 154462428",
+    "statoids.com/uuz.html",
+    "geodesic area of the OCHA 2020 city-district atoms: 344 km²"
+   ],
+   "needs": "Dated decrees extending the Tashkent city limits between 1983 and 2020"
+  },
+  {
+   "what": "Tashkent Region 1991–1992",
+   "unit": "UZB:Tashkent",
+   "atoms": [
+    "UZB-ADM2-79887680B93724335665185",
+    "UZB-ADM2-79887680B94622992244208",
+    "UZB-ADM2-79887680B65075786438492",
+    "UZB-ADM2-79887680B71620655639392",
+    "UZB-ADM2-79887680B87312828707789",
+    "UZB-ADM2-79887680B39999061670418",
+    "UZB-ADM2-79887680B42380635367979",
+    "UZB-ADM2-79887680B10165721529704",
+    "UZB-ADM2-79887680B75193688061986",
+    "UZB-ADM2-79887680B75027378773615",
+    "UZB-ADM2-79887680B16924900870232",
+    "UZB-ADM2-79887680B33047546093113",
+    "UZB-ADM2-79887680B38656408263459",
+    "UZB-ADM2-79887680B90536772878840",
+    "UZB-ADM2-79887680B72544223780666",
+    "UZB-ADM2-79887680B57714411837097",
+    "UZB-ADM2-79887680B47591797278473",
+    "UZB-ADM2-79887680B68716596189274",
+    "UZB-ADM2-79887680B41962593359700",
+    "UZB-ADM2-79887680B98166747305726",
+    "UZB-ADM2-79887680B87118778033148",
+    "UZB-ADM2-79887680B3865119870711"
+   ],
+   "from": "1991-12-26",
+   "to": "1992-01-27",
+   "why": "Its inner line is the Tashkent city line, undated for 1991 (see above).",
+   "checked": [
+    "ru.wikipedia Ташкент oldid 155293987",
+    "ru.wikipedia Ташкентская область oldid 154462428"
+   ],
+   "needs": "Same as Tashkent city"
+  },
+  {
+   "what": "Navoi and Zarafshan towns 1989–1992",
+   "atoms": [
+    "UZB-ADM2-79887680B50515464661087",
+    "UZB-ADM2-79887680B3674714767305"
+   ],
+   "from": "1991-12-26",
+   "to": "1992-01-27",
+   "why": "Both towns went to Navoi oblast in 1982; the sources name the districts that went to Bukhara in 1989 and stayed in Samarkand, but not these two towns of oblast subordination.",
+   "checked": [
+    "ru.wikipedia Навоийская область oldid 155330308",
+    "ru.wikipedia Навои (город) oldid 154472707",
+    "ru.wikipedia Бухарская область oldid 155145134",
+    "ru.wikipedia Тамдынский район oldid 153483306"
+   ],
+   "needs": "The 16 May 1989 decree or a 1990–1991 list of towns of Bukhara and Samarkand oblasts"
+  }
+ ]
+}

@@ -262,7 +262,9 @@
       "why": "Before scope: the provinces (Akele Guzai, Barka, Denkalia, Gash-Setit, Hamasien, Sahel, Semhar, Senhit, Seraye, Asmara) were redrawn into the six regions, whose lines cut across them.",
       "checked": [
         "statoids uer.html",
-        "Wikipedia Regions of Eritrea rev 1344960307"
+        "Wikipedia Regions of Eritrea rev 1344960307",
+        "geoBoundaries ERI ADM2 (58 subzobas, OCHA 2020): drawn inside the 1996 regions; no source relates them to the 1993 awraja lines",
+        "statoids uer.html: awraja areas (e.g. Denkalia 24,300 km²) do not equal any union of 1996 regions"
       ],
       "needs": "sub-zoba / village atoms tagged with former awraja"
     }

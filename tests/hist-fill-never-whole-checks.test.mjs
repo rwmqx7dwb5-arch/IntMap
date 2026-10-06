@@ -100,7 +100,26 @@ test('④ the shipped bundle draws Latvia whole, from its predecessors\' lives, 
   assert.ok(!fill.refused.LVA, 'Latvia is refused: ' + JSON.stringify(fill.refused.LVA));
   const lv = fill.feats.filter((f) => f[11] === 'LVA');
   const at = (y, m, d) => new Set(lv.filter((f) => f[2] * 10000 + f[3] * 100 + f[4] <= y * 10000 + m * 100 + d && f[5] * 10000 + f[6] * 100 + f[7] > y * 10000 + m * 100 + d).map((f) => f[10]));
-  assert.deepEqual([...at(2015, 6, 15)].sort(), [...codes].sort(), 'Latvia in 2015 is not drawn whole');
+  /* (hist-recon-expand) the defect #1015 fixed is «Latvia refused whole». Since the reconstruction draws Latvia's
+     rajoni, novadi and cities 1991–2019 the fill yields there unit by unit, so «drawn whole» is asked of the GROUND
+     the READER sees on the day: a point inside every one of Natural Earth's Latvian units must lie inside a fill row
+     or a reconstruction row in force. (Measured 2026-10-06: in 2015 the fill draws 1 unit, the reconstruction 118.) */
+  const recon = load('data/hist-admin-recon.js');
+  const day = 20150615;
+  const live = (f) => f[2] * 10000 + f[3] * 100 + f[4] <= day && f[5] * 10000 + f[6] * 100 + f[7] > day;
+  const inRing = (r, x, y) => { let c = false; for (let i = 0, j = r.length - 1; i < r.length; j = i++) { const [xi, yi] = r[i], [xj, yj] = r[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; };
+  const holds = (b, f, x, y) => f[8].some((poly) => inRing(b.rings[poly[0]], x, y) && !poly.slice(1).some((ri) => inRing(b.rings[ri], x, y)));
+  const seen = [...fill.feats.filter((f) => f[11] === 'LVA' && live(f)).map((f) => [fill, f]), ...recon.feats.filter((f) => f[12] === 'LVA' && live(f)).map((f) => [recon, f])];
+  const missing = [];
+  for (const u of ne.f.filter((x) => x.i === 'LVA')) {
+    const outer = (u.g.type === 'Polygon' ? [u.g.coordinates] : u.g.coordinates).map((p) => p[0]).sort((p, q) => q.length - p.length)[0];
+    /* a point surely inside: the first of a few candidate points that the unit's own outer ring holds */
+    let pt = null;
+    const [x0, y0] = outer.reduce(([a, b], [x, y]) => [a + x / outer.length, b + y / outer.length], [0, 0]);
+    for (const c of [[x0, y0], ...outer.map(([x, y]) => [(x + x0) / 2, (y + y0) / 2])]) if (inRing(outer, c[0], c[1])) { pt = c; break; }
+    if (pt && !seen.some(([b, f]) => holds(b, f, pt[0], pt[1]))) missing.push(u.n.split('|')[0]);
+  }
+  assert.deepEqual(missing, [], 'Latvia in 2015 is not drawn whole — no fill or reconstruction row holds: ' + missing.join(', '));
   assert.equal(at(2022, 6, 15).size, 0, 'the 2009 outlines are drawn after the 2021 reform');
   assert.ok(fill.lives['LV-058'], 'the evidence for drawing a reused code in its predecessor\'s life is not carried');
   assert.deepEqual(fillInceptionProblems([{ file: 'data/hist-admin-fill.js', b: fill }]), []);

@@ -1,0 +1,1058 @@
+{
+ "country": "EST",
+ "atomSet": "gb-adm2@2026-10-06",
+ "scope": {
+  "from": "1991-08-20",
+  "to": "2017-10-20"
+ },
+ "polityNote": "Counties (maakonnad) of the Republic of Estonia from the restoration of independence (20 Aug 1991) to 20 Oct 2017, the eve of the first 2017 reform merger that moved a county border (21 Oct 2017); EST-maakonnad-2017.json (village atoms) takes over from 21 Oct 2017. Atoms: geoBoundaries EST ADM2 (OpenStreetMap/Wambacher 2017, the pre-reform municipalities, Kiviõli and Maidla still drawn apart from Lüganuse; ODbL), assigned by the 2016 ADM1 counties of the same publisher (nested: 0 overlap, 0 hole at 0.02°). A county is the union of its pre-reform municipalities because no municipality crossed a county line between 1991 and 2017 except Lehtse (2005), which is withheld. ① check: union areas against the Statistics Estonia county areas of 31 Dec 2011 (via Statoids) agree within −0.8%…+1.2% for all 15 counties (most −0.4 to −0.6%, the coast and inland water); a missed transfer of the Lehtse size (164 km²) would show as 5–7%.",
+ "units": [
+  {
+   "id": "EST:Harju",
+   "names": {
+    "en": "Harju County",
+    "ja": "ハリュ県",
+    "local": "Harju maakond"
+   },
+   "wikidata": "Q180200",
+   "spans": [
+    {
+     "from": "1994-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "EST-ADM2-1311010B83529915046256",
+      "EST-ADM2-1311010B21881699726273",
+      "EST-ADM2-1311010B86749809773579",
+      "EST-ADM2-1311010B35366892100791",
+      "EST-ADM2-1311010B6903470303041",
+      "EST-ADM2-1311010B38876062624246",
+      "EST-ADM2-1311010B8678160430492",
+      "EST-ADM2-1311010B45194860456478",
+      "EST-ADM2-1311010B70307753580653",
+      "EST-ADM2-1311010B140021748303",
+      "EST-ADM2-1311010B14283489081857",
+      "EST-ADM2-1311010B98989295601337",
+      "EST-ADM2-1311010B8638996222621",
+      "EST-ADM2-1311010B47974718243747",
+      "EST-ADM2-1311010B87913631554910",
+      "EST-ADM2-1311010B47397496577888",
+      "EST-ADM2-1311010B52453290555795",
+      "EST-ADM2-1311010B52285142273244",
+      "EST-ADM2-1311010B52979520707817",
+      "EST-ADM2-1311010B69466415988966",
+      "EST-ADM2-1311010B25054231269702",
+      "EST-ADM2-1311010B88719194427594",
+      "EST-ADM2-1311010B72994418002343"
+     ],
+     "sources": [
+      {
+       "url": "https://et.wikipedia.org/w/index.php?title=Maavalitsus&oldid=6428632",
+       "title": "Vikipeedia — Maavalitsus",
+       "says": "In 1989–1993 counties were self-governing units; the councils of the counties and of the cities of republican subordination began work on 1 Jan 1990; from 1993 the county government was a state agency.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uee.html",
+       "title": "Statoids — Counties of Estonia, change history",
+       "says": "1990: the Soviet rajoonid became the counties; 1992: the six independent cities merged into their counties; comparing area data, Järva lost about 164 km² to Lääne-Viru; 15 counties in 2011.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.riigiteataja.ee/akt/13071322",
+       "title": "Riigi Teataja — Kohaliku omavalitsuse terminite ja nimetuste korrastamise kohta (RT 1991, 24, 288)",
+       "says": "Decree of 11 Jul 1991, in force that day: the counties of the Republic of Estonia are Harju, Hiiu, Ida-Viru, Jõgeva, Järva, Lääne, Lääne-Viru, Põlva, Pärnu, Rapla, Saare, Tartu, Valga, Viljandi and Võru.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "The six cities of republican subordination (Tallinn, Tartu, Narva, Kohtla-Järve, Pärnu, Sillamäe) were county-level units from 1 Jan 1990 and became municipalities inside their counties when the two-tier local government ended (1992 per Statoids; with the 1993 Local Government Organisation Act per Vikipeedia). The day is not established, so the county is drawn from 1 Jan 1994, the first day on which every source agrees."
+    }
+   ]
+  },
+  {
+   "id": "EST:Hiiu",
+   "names": {
+    "en": "Hiiu County",
+    "ja": "ヒーウ県",
+    "local": "Hiiu maakond"
+   },
+   "wikidata": "Q1466462",
+   "spans": [
+    {
+     "from": "1991-08-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "EST-ADM2-1311010B30795400698425",
+      "EST-ADM2-1311010B73290752251507",
+      "EST-ADM2-1311010B48816549673714",
+      "EST-ADM2-1311010B53491644956579"
+     ],
+     "sources": [
+      {
+       "url": "https://www.riigiteataja.ee/akt/13071322",
+       "title": "Riigi Teataja — Kohaliku omavalitsuse terminite ja nimetuste korrastamise kohta (RT 1991, 24, 288)",
+       "says": "Decree of 11 Jul 1991, in force that day: the counties of the Republic of Estonia are Harju, Hiiu, Ida-Viru, Jõgeva, Järva, Lääne, Lääne-Viru, Põlva, Pärnu, Rapla, Saare, Tartu, Valga, Viljandi and Võru.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uee.html",
+       "title": "Statoids — Counties of Estonia, change history",
+       "says": "1990: the Soviet rajoonid became the counties; 1992: the six independent cities merged into their counties; comparing area data, Järva lost about 164 km² to Lääne-Viru; 15 counties in 2011.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://et.wikipedia.org/w/index.php?title=Maakond&oldid=7002216",
+       "title": "Vikipeedia — Maakond",
+       "says": "The 1960s reforms left 15 rural rajoons, renamed counties in the early 1990s; Estonia has 15 counties.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "EST:Ida-Viru",
+   "names": {
+    "en": "Ida-Viru County",
+    "ja": "イダ＝ヴィル県",
+    "local": "Ida-Viru maakond"
+   },
+   "wikidata": "Q189963",
+   "spans": [
+    {
+     "from": "1994-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "EST-ADM2-1311010B42149159829057",
+      "EST-ADM2-1311010B51134542025676",
+      "EST-ADM2-1311010B83196805378318",
+      "EST-ADM2-1311010B31753692191013",
+      "EST-ADM2-1311010B98363675047029",
+      "EST-ADM2-1311010B45664282629319",
+      "EST-ADM2-1311010B33722502421814",
+      "EST-ADM2-1311010B58121004819572",
+      "EST-ADM2-1311010B94664056611530",
+      "EST-ADM2-1311010B61322847083180",
+      "EST-ADM2-1311010B38398904353108",
+      "EST-ADM2-1311010B53698115213579",
+      "EST-ADM2-1311010B12870424653907",
+      "EST-ADM2-1311010B69580576325907",
+      "EST-ADM2-1311010B28109082085448",
+      "EST-ADM2-1311010B79670406577873",
+      "EST-ADM2-1311010B78545392718918",
+      "EST-ADM2-1311010B53393024733165",
+      "EST-ADM2-1311010B35935809878042",
+      "EST-ADM2-1311010B11583700541251"
+     ],
+     "sources": [
+      {
+       "url": "https://et.wikipedia.org/w/index.php?title=Maavalitsus&oldid=6428632",
+       "title": "Vikipeedia — Maavalitsus",
+       "says": "In 1989–1993 counties were self-governing units; the councils of the counties and of the cities of republican subordination began work on 1 Jan 1990; from 1993 the county government was a state agency.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uee.html",
+       "title": "Statoids — Counties of Estonia, change history",
+       "says": "1990: the Soviet rajoonid became the counties; 1992: the six independent cities merged into their counties; comparing area data, Järva lost about 164 km² to Lääne-Viru; 15 counties in 2011.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.riigiteataja.ee/akt/13071322",
+       "title": "Riigi Teataja — Kohaliku omavalitsuse terminite ja nimetuste korrastamise kohta (RT 1991, 24, 288)",
+       "says": "Decree of 11 Jul 1991, in force that day: the counties of the Republic of Estonia are Harju, Hiiu, Ida-Viru, Jõgeva, Järva, Lääne, Lääne-Viru, Põlva, Pärnu, Rapla, Saare, Tartu, Valga, Viljandi and Võru.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "The six cities of republican subordination (Tallinn, Tartu, Narva, Kohtla-Järve, Pärnu, Sillamäe) were county-level units from 1 Jan 1990 and became municipalities inside their counties when the two-tier local government ended (1992 per Statoids; with the 1993 Local Government Organisation Act per Vikipeedia). The day is not established, so the county is drawn from 1 Jan 1994, the first day on which every source agrees."
+    }
+   ]
+  },
+  {
+   "id": "EST:Jõgeva",
+   "names": {
+    "en": "Jõgeva County",
+    "ja": "ヨゲヴァ県",
+    "local": "Jõgeva maakond"
+   },
+   "wikidata": "Q189974",
+   "spans": [
+    {
+     "from": "1991-08-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "EST-ADM2-1311010B64312387575157",
+      "EST-ADM2-1311010B58480770812003",
+      "EST-ADM2-1311010B48530541547286",
+      "EST-ADM2-1311010B88714475247520",
+      "EST-ADM2-1311010B36450523479643",
+      "EST-ADM2-1311010B60814833555163",
+      "EST-ADM2-1311010B61169285262023",
+      "EST-ADM2-1311010B53170565994329",
+      "EST-ADM2-1311010B51002978770029",
+      "EST-ADM2-1311010B31317246084681",
+      "EST-ADM2-1311010B37892416631750",
+      "EST-ADM2-1311010B91123492941222",
+      "EST-ADM2-1311010B79943408539391"
+     ],
+     "sources": [
+      {
+       "url": "https://www.riigiteataja.ee/akt/13071322",
+       "title": "Riigi Teataja — Kohaliku omavalitsuse terminite ja nimetuste korrastamise kohta (RT 1991, 24, 288)",
+       "says": "Decree of 11 Jul 1991, in force that day: the counties of the Republic of Estonia are Harju, Hiiu, Ida-Viru, Jõgeva, Järva, Lääne, Lääne-Viru, Põlva, Pärnu, Rapla, Saare, Tartu, Valga, Viljandi and Võru.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uee.html",
+       "title": "Statoids — Counties of Estonia, change history",
+       "says": "1990: the Soviet rajoonid became the counties; 1992: the six independent cities merged into their counties; comparing area data, Järva lost about 164 km² to Lääne-Viru; 15 counties in 2011.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://et.wikipedia.org/w/index.php?title=Maakond&oldid=7002216",
+       "title": "Vikipeedia — Maakond",
+       "says": "The 1960s reforms left 15 rural rajoons, renamed counties in the early 1990s; Estonia has 15 counties.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "EST:Järva",
+   "names": {
+    "en": "Järva County",
+    "ja": "イェルヴァ県",
+    "local": "Järva maakond"
+   },
+   "wikidata": "Q188068",
+   "spans": [
+    {
+     "from": "2005-10-21",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "EST-ADM2-1311010B94636180847931",
+      "EST-ADM2-1311010B15313330943063",
+      "EST-ADM2-1311010B86811921140774",
+      "EST-ADM2-1311010B42102623907701",
+      "EST-ADM2-1311010B75285651945439",
+      "EST-ADM2-1311010B60406908674203",
+      "EST-ADM2-1311010B27017575593512",
+      "EST-ADM2-1311010B11874356942843",
+      "EST-ADM2-1311010B71183042875097",
+      "EST-ADM2-1311010B65050189927302",
+      "EST-ADM2-1311010B52135075044132",
+      "EST-ADM2-1311010B64202471316654"
+     ],
+     "sources": [
+      {
+       "url": "https://et.wikipedia.org/w/index.php?title=Lehtse_vald&oldid=6482280",
+       "title": "Vikipeedia — Lehtse vald",
+       "says": "Lehtse parish was in Järva County 1991–2005; on 21 Oct 2005 it merged with Saksi parish and Tapa town into Tapa parish, and its territory passed from Järva to Lääne-Viru County.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uee.html",
+       "title": "Statoids — Counties of Estonia, change history",
+       "says": "1990: the Soviet rajoonid became the counties; 1992: the six independent cities merged into their counties; comparing area data, Järva lost about 164 km² to Lääne-Viru; 15 counties in 2011.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.riigiteataja.ee/akt/13071322",
+       "title": "Riigi Teataja — Kohaliku omavalitsuse terminite ja nimetuste korrastamise kohta (RT 1991, 24, 288)",
+       "says": "Decree of 11 Jul 1991, in force that day: the counties of the Republic of Estonia are Harju, Hiiu, Ida-Viru, Jõgeva, Järva, Lääne, Lääne-Viru, Põlva, Pärnu, Rapla, Saare, Tartu, Valga, Viljandi and Võru.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Outline from the Lehtse transfer (merger in force 21 Oct 2005)."
+    }
+   ]
+  },
+  {
+   "id": "EST:Lääne",
+   "names": {
+    "en": "Lääne County",
+    "ja": "レーネ県",
+    "local": "Lääne maakond"
+   },
+   "wikidata": "Q189968",
+   "spans": [
+    {
+     "from": "1991-08-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "EST-ADM2-1311010B95618748530073",
+      "EST-ADM2-1311010B53856095076368",
+      "EST-ADM2-1311010B44477589542413",
+      "EST-ADM2-1311010B48358278046505",
+      "EST-ADM2-1311010B86493957605061",
+      "EST-ADM2-1311010B71722109157093",
+      "EST-ADM2-1311010B30045468229038",
+      "EST-ADM2-1311010B40779301106449",
+      "EST-ADM2-1311010B11332888380883",
+      "EST-ADM2-1311010B45189365118351"
+     ],
+     "sources": [
+      {
+       "url": "https://www.riigiteataja.ee/akt/13071322",
+       "title": "Riigi Teataja — Kohaliku omavalitsuse terminite ja nimetuste korrastamise kohta (RT 1991, 24, 288)",
+       "says": "Decree of 11 Jul 1991, in force that day: the counties of the Republic of Estonia are Harju, Hiiu, Ida-Viru, Jõgeva, Järva, Lääne, Lääne-Viru, Põlva, Pärnu, Rapla, Saare, Tartu, Valga, Viljandi and Võru.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uee.html",
+       "title": "Statoids — Counties of Estonia, change history",
+       "says": "1990: the Soviet rajoonid became the counties; 1992: the six independent cities merged into their counties; comparing area data, Järva lost about 164 km² to Lääne-Viru; 15 counties in 2011.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://et.wikipedia.org/w/index.php?title=Maakond&oldid=7002216",
+       "title": "Vikipeedia — Maakond",
+       "says": "The 1960s reforms left 15 rural rajoons, renamed counties in the early 1990s; Estonia has 15 counties.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "EST:Lääne-Viru",
+   "names": {
+    "en": "Lääne-Viru County",
+    "ja": "レーネ＝ヴィル県",
+    "local": "Lääne-Viru maakond"
+   },
+   "wikidata": "Q189952",
+   "spans": [
+    {
+     "from": "2005-10-21",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "EST-ADM2-1311010B83803499603716",
+      "EST-ADM2-1311010B16419858727128",
+      "EST-ADM2-1311010B29712431738212",
+      "EST-ADM2-1311010B28697548317815",
+      "EST-ADM2-1311010B30502718985029",
+      "EST-ADM2-1311010B29233401042552",
+      "EST-ADM2-1311010B22723955606381",
+      "EST-ADM2-1311010B71569739295437",
+      "EST-ADM2-1311010B20804046846224",
+      "EST-ADM2-1311010B38192461341302",
+      "EST-ADM2-1311010B47859119941621",
+      "EST-ADM2-1311010B55106871441997",
+      "EST-ADM2-1311010B74271968542573",
+      "EST-ADM2-1311010B92722428424593",
+      "EST-ADM2-1311010B35543471542854"
+     ],
+     "sources": [
+      {
+       "url": "https://et.wikipedia.org/w/index.php?title=Lehtse_vald&oldid=6482280",
+       "title": "Vikipeedia — Lehtse vald",
+       "says": "Lehtse parish was in Järva County 1991–2005; on 21 Oct 2005 it merged with Saksi parish and Tapa town into Tapa parish, and its territory passed from Järva to Lääne-Viru County.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uee.html",
+       "title": "Statoids — Counties of Estonia, change history",
+       "says": "1990: the Soviet rajoonid became the counties; 1992: the six independent cities merged into their counties; comparing area data, Järva lost about 164 km² to Lääne-Viru; 15 counties in 2011.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.riigiteataja.ee/akt/13071322",
+       "title": "Riigi Teataja — Kohaliku omavalitsuse terminite ja nimetuste korrastamise kohta (RT 1991, 24, 288)",
+       "says": "Decree of 11 Jul 1991, in force that day: the counties of the Republic of Estonia are Harju, Hiiu, Ida-Viru, Jõgeva, Järva, Lääne, Lääne-Viru, Põlva, Pärnu, Rapla, Saare, Tartu, Valga, Viljandi and Võru.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Outline from the Lehtse transfer (merger in force 21 Oct 2005)."
+    }
+   ]
+  },
+  {
+   "id": "EST:Põlva",
+   "names": {
+    "en": "Põlva County",
+    "ja": "ポルヴァ県",
+    "local": "Põlva maakond"
+   },
+   "wikidata": "Q191813",
+   "spans": [
+    {
+     "from": "1991-08-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "EST-ADM2-1311010B50501050952798",
+      "EST-ADM2-1311010B97602543926759",
+      "EST-ADM2-1311010B28618707469906",
+      "EST-ADM2-1311010B54186390739218",
+      "EST-ADM2-1311010B53382744704387",
+      "EST-ADM2-1311010B618324590524",
+      "EST-ADM2-1311010B66621087161443",
+      "EST-ADM2-1311010B97742737828455",
+      "EST-ADM2-1311010B71644990225106",
+      "EST-ADM2-1311010B3337257835747",
+      "EST-ADM2-1311010B26129556816589",
+      "EST-ADM2-1311010B54902840460043",
+      "EST-ADM2-1311010B85635529745394"
+     ],
+     "sources": [
+      {
+       "url": "https://www.riigiteataja.ee/akt/13071322",
+       "title": "Riigi Teataja — Kohaliku omavalitsuse terminite ja nimetuste korrastamise kohta (RT 1991, 24, 288)",
+       "says": "Decree of 11 Jul 1991, in force that day: the counties of the Republic of Estonia are Harju, Hiiu, Ida-Viru, Jõgeva, Järva, Lääne, Lääne-Viru, Põlva, Pärnu, Rapla, Saare, Tartu, Valga, Viljandi and Võru.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uee.html",
+       "title": "Statoids — Counties of Estonia, change history",
+       "says": "1990: the Soviet rajoonid became the counties; 1992: the six independent cities merged into their counties; comparing area data, Järva lost about 164 km² to Lääne-Viru; 15 counties in 2011.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://et.wikipedia.org/w/index.php?title=Maakond&oldid=7002216",
+       "title": "Vikipeedia — Maakond",
+       "says": "The 1960s reforms left 15 rural rajoons, renamed counties in the early 1990s; Estonia has 15 counties.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "EST:Pärnu",
+   "names": {
+    "en": "Pärnu County",
+    "ja": "ペルヌ県",
+    "local": "Pärnu maakond"
+   },
+   "wikidata": "Q185036",
+   "spans": [
+    {
+     "from": "1994-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "EST-ADM2-1311010B35506705685029",
+      "EST-ADM2-1311010B67573695254555",
+      "EST-ADM2-1311010B60164476510639",
+      "EST-ADM2-1311010B84453125464232",
+      "EST-ADM2-1311010B5373461700535",
+      "EST-ADM2-1311010B10160124565821",
+      "EST-ADM2-1311010B6224437320425",
+      "EST-ADM2-1311010B70804595202339",
+      "EST-ADM2-1311010B73343590761295",
+      "EST-ADM2-1311010B29096535937461",
+      "EST-ADM2-1311010B54123834804098",
+      "EST-ADM2-1311010B91568869544841",
+      "EST-ADM2-1311010B47067404608196",
+      "EST-ADM2-1311010B11631843097428",
+      "EST-ADM2-1311010B56635048856734",
+      "EST-ADM2-1311010B80552513154698",
+      "EST-ADM2-1311010B17313629643664",
+      "EST-ADM2-1311010B61996713319378",
+      "EST-ADM2-1311010B44723082448471"
+     ],
+     "sources": [
+      {
+       "url": "https://et.wikipedia.org/w/index.php?title=Maavalitsus&oldid=6428632",
+       "title": "Vikipeedia — Maavalitsus",
+       "says": "In 1989–1993 counties were self-governing units; the councils of the counties and of the cities of republican subordination began work on 1 Jan 1990; from 1993 the county government was a state agency.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uee.html",
+       "title": "Statoids — Counties of Estonia, change history",
+       "says": "1990: the Soviet rajoonid became the counties; 1992: the six independent cities merged into their counties; comparing area data, Järva lost about 164 km² to Lääne-Viru; 15 counties in 2011.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.riigiteataja.ee/akt/13071322",
+       "title": "Riigi Teataja — Kohaliku omavalitsuse terminite ja nimetuste korrastamise kohta (RT 1991, 24, 288)",
+       "says": "Decree of 11 Jul 1991, in force that day: the counties of the Republic of Estonia are Harju, Hiiu, Ida-Viru, Jõgeva, Järva, Lääne, Lääne-Viru, Põlva, Pärnu, Rapla, Saare, Tartu, Valga, Viljandi and Võru.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "The six cities of republican subordination (Tallinn, Tartu, Narva, Kohtla-Järve, Pärnu, Sillamäe) were county-level units from 1 Jan 1990 and became municipalities inside their counties when the two-tier local government ended (1992 per Statoids; with the 1993 Local Government Organisation Act per Vikipeedia). The day is not established, so the county is drawn from 1 Jan 1994, the first day on which every source agrees."
+    }
+   ]
+  },
+  {
+   "id": "EST:Rapla",
+   "names": {
+    "en": "Rapla County",
+    "ja": "ラプラ県",
+    "local": "Rapla maakond"
+   },
+   "wikidata": "Q192352",
+   "spans": [
+    {
+     "from": "1991-08-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "EST-ADM2-1311010B71604883594633",
+      "EST-ADM2-1311010B76811669176095",
+      "EST-ADM2-1311010B705805300628",
+      "EST-ADM2-1311010B29085962523247",
+      "EST-ADM2-1311010B31324210822214",
+      "EST-ADM2-1311010B43783148777275",
+      "EST-ADM2-1311010B81056878488721",
+      "EST-ADM2-1311010B77329633016321",
+      "EST-ADM2-1311010B49856223973903"
+     ],
+     "sources": [
+      {
+       "url": "https://www.riigiteataja.ee/akt/13071322",
+       "title": "Riigi Teataja — Kohaliku omavalitsuse terminite ja nimetuste korrastamise kohta (RT 1991, 24, 288)",
+       "says": "Decree of 11 Jul 1991, in force that day: the counties of the Republic of Estonia are Harju, Hiiu, Ida-Viru, Jõgeva, Järva, Lääne, Lääne-Viru, Põlva, Pärnu, Rapla, Saare, Tartu, Valga, Viljandi and Võru.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uee.html",
+       "title": "Statoids — Counties of Estonia, change history",
+       "says": "1990: the Soviet rajoonid became the counties; 1992: the six independent cities merged into their counties; comparing area data, Järva lost about 164 km² to Lääne-Viru; 15 counties in 2011.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://et.wikipedia.org/w/index.php?title=Maakond&oldid=7002216",
+       "title": "Vikipeedia — Maakond",
+       "says": "The 1960s reforms left 15 rural rajoons, renamed counties in the early 1990s; Estonia has 15 counties.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "EST:Saare",
+   "names": {
+    "en": "Saare County",
+    "ja": "サーレ県",
+    "local": "Saare maakond"
+   },
+   "wikidata": "Q203272",
+   "spans": [
+    {
+     "from": "1991-08-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "EST-ADM2-1311010B84667976024971",
+      "EST-ADM2-1311010B25302488633840",
+      "EST-ADM2-1311010B58868630877292",
+      "EST-ADM2-1311010B17810364792691",
+      "EST-ADM2-1311010B56317923053608",
+      "EST-ADM2-1311010B45415706107546",
+      "EST-ADM2-1311010B82256116755289",
+      "EST-ADM2-1311010B51088125789266",
+      "EST-ADM2-1311010B20960178367150",
+      "EST-ADM2-1311010B78278065776890",
+      "EST-ADM2-1311010B88167681268080",
+      "EST-ADM2-1311010B13562334950326",
+      "EST-ADM2-1311010B85559275402695",
+      "EST-ADM2-1311010B2000322207453",
+      "EST-ADM2-1311010B95923468450834",
+      "EST-ADM2-1311010B78600175292414"
+     ],
+     "sources": [
+      {
+       "url": "https://www.riigiteataja.ee/akt/13071322",
+       "title": "Riigi Teataja — Kohaliku omavalitsuse terminite ja nimetuste korrastamise kohta (RT 1991, 24, 288)",
+       "says": "Decree of 11 Jul 1991, in force that day: the counties of the Republic of Estonia are Harju, Hiiu, Ida-Viru, Jõgeva, Järva, Lääne, Lääne-Viru, Põlva, Pärnu, Rapla, Saare, Tartu, Valga, Viljandi and Võru.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uee.html",
+       "title": "Statoids — Counties of Estonia, change history",
+       "says": "1990: the Soviet rajoonid became the counties; 1992: the six independent cities merged into their counties; comparing area data, Järva lost about 164 km² to Lääne-Viru; 15 counties in 2011.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://et.wikipedia.org/w/index.php?title=Maakond&oldid=7002216",
+       "title": "Vikipeedia — Maakond",
+       "says": "The 1960s reforms left 15 rural rajoons, renamed counties in the early 1990s; Estonia has 15 counties.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "EST:Tartu",
+   "names": {
+    "en": "Tartu County",
+    "ja": "タルトゥ県",
+    "local": "Tartu maakond"
+   },
+   "wikidata": "Q192370",
+   "spans": [
+    {
+     "from": "1994-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "EST-ADM2-1311010B23772582989033",
+      "EST-ADM2-1311010B74987904561570",
+      "EST-ADM2-1311010B19032369928442",
+      "EST-ADM2-1311010B77000992610869",
+      "EST-ADM2-1311010B30309440304309",
+      "EST-ADM2-1311010B27828470617326",
+      "EST-ADM2-1311010B16667630982146",
+      "EST-ADM2-1311010B16611681551532",
+      "EST-ADM2-1311010B91293140456750",
+      "EST-ADM2-1311010B98667517766516",
+      "EST-ADM2-1311010B96115389155974",
+      "EST-ADM2-1311010B57235016776847",
+      "EST-ADM2-1311010B8402168649238",
+      "EST-ADM2-1311010B84238750480708",
+      "EST-ADM2-1311010B48306272105770",
+      "EST-ADM2-1311010B96161059283507",
+      "EST-ADM2-1311010B9607631296215",
+      "EST-ADM2-1311010B66495880133962",
+      "EST-ADM2-1311010B87033906049048",
+      "EST-ADM2-1311010B16346599601288",
+      "EST-ADM2-1311010B48260480013334",
+      "EST-ADM2-1311010B23065748190049"
+     ],
+     "sources": [
+      {
+       "url": "https://et.wikipedia.org/w/index.php?title=Maavalitsus&oldid=6428632",
+       "title": "Vikipeedia — Maavalitsus",
+       "says": "In 1989–1993 counties were self-governing units; the councils of the counties and of the cities of republican subordination began work on 1 Jan 1990; from 1993 the county government was a state agency.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uee.html",
+       "title": "Statoids — Counties of Estonia, change history",
+       "says": "1990: the Soviet rajoonid became the counties; 1992: the six independent cities merged into their counties; comparing area data, Järva lost about 164 km² to Lääne-Viru; 15 counties in 2011.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.riigiteataja.ee/akt/13071322",
+       "title": "Riigi Teataja — Kohaliku omavalitsuse terminite ja nimetuste korrastamise kohta (RT 1991, 24, 288)",
+       "says": "Decree of 11 Jul 1991, in force that day: the counties of the Republic of Estonia are Harju, Hiiu, Ida-Viru, Jõgeva, Järva, Lääne, Lääne-Viru, Põlva, Pärnu, Rapla, Saare, Tartu, Valga, Viljandi and Võru.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "The six cities of republican subordination (Tallinn, Tartu, Narva, Kohtla-Järve, Pärnu, Sillamäe) were county-level units from 1 Jan 1990 and became municipalities inside their counties when the two-tier local government ended (1992 per Statoids; with the 1993 Local Government Organisation Act per Vikipeedia). The day is not established, so the county is drawn from 1 Jan 1994, the first day on which every source agrees."
+    }
+   ]
+  },
+  {
+   "id": "EST:Valga",
+   "names": {
+    "en": "Valga County",
+    "ja": "ヴァルガ県",
+    "local": "Valga maakond"
+   },
+   "wikidata": "Q192362",
+   "spans": [
+    {
+     "from": "1991-08-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "EST-ADM2-1311010B52892677113970",
+      "EST-ADM2-1311010B88626198871258",
+      "EST-ADM2-1311010B15820091199987",
+      "EST-ADM2-1311010B40427434107256",
+      "EST-ADM2-1311010B38420542420569",
+      "EST-ADM2-1311010B99553131767817",
+      "EST-ADM2-1311010B88570954181649",
+      "EST-ADM2-1311010B55295739846087",
+      "EST-ADM2-1311010B3547761909590",
+      "EST-ADM2-1311010B12366376901143",
+      "EST-ADM2-1311010B83530134147894",
+      "EST-ADM2-1311010B59805037386668",
+      "EST-ADM2-1311010B18031846736859"
+     ],
+     "sources": [
+      {
+       "url": "https://www.riigiteataja.ee/akt/13071322",
+       "title": "Riigi Teataja — Kohaliku omavalitsuse terminite ja nimetuste korrastamise kohta (RT 1991, 24, 288)",
+       "says": "Decree of 11 Jul 1991, in force that day: the counties of the Republic of Estonia are Harju, Hiiu, Ida-Viru, Jõgeva, Järva, Lääne, Lääne-Viru, Põlva, Pärnu, Rapla, Saare, Tartu, Valga, Viljandi and Võru.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uee.html",
+       "title": "Statoids — Counties of Estonia, change history",
+       "says": "1990: the Soviet rajoonid became the counties; 1992: the six independent cities merged into their counties; comparing area data, Järva lost about 164 km² to Lääne-Viru; 15 counties in 2011.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://et.wikipedia.org/w/index.php?title=Maakond&oldid=7002216",
+       "title": "Vikipeedia — Maakond",
+       "says": "The 1960s reforms left 15 rural rajoons, renamed counties in the early 1990s; Estonia has 15 counties.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "EST:Viljandi",
+   "names": {
+    "en": "Viljandi County",
+    "ja": "ヴィリャンディ県",
+    "local": "Viljandi maakond"
+   },
+   "wikidata": "Q192061",
+   "spans": [
+    {
+     "from": "1991-08-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "EST-ADM2-1311010B91296459923825",
+      "EST-ADM2-1311010B98573526217000",
+      "EST-ADM2-1311010B986085306823",
+      "EST-ADM2-1311010B7195557091412",
+      "EST-ADM2-1311010B78016922107611",
+      "EST-ADM2-1311010B9907706841540",
+      "EST-ADM2-1311010B56305681516395",
+      "EST-ADM2-1311010B3836691763850",
+      "EST-ADM2-1311010B79164412201215",
+      "EST-ADM2-1311010B80198421584817",
+      "EST-ADM2-1311010B41380693898443",
+      "EST-ADM2-1311010B53005493831393"
+     ],
+     "sources": [
+      {
+       "url": "https://www.riigiteataja.ee/akt/13071322",
+       "title": "Riigi Teataja — Kohaliku omavalitsuse terminite ja nimetuste korrastamise kohta (RT 1991, 24, 288)",
+       "says": "Decree of 11 Jul 1991, in force that day: the counties of the Republic of Estonia are Harju, Hiiu, Ida-Viru, Jõgeva, Järva, Lääne, Lääne-Viru, Põlva, Pärnu, Rapla, Saare, Tartu, Valga, Viljandi and Võru.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uee.html",
+       "title": "Statoids — Counties of Estonia, change history",
+       "says": "1990: the Soviet rajoonid became the counties; 1992: the six independent cities merged into their counties; comparing area data, Järva lost about 164 km² to Lääne-Viru; 15 counties in 2011.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://et.wikipedia.org/w/index.php?title=Maakond&oldid=7002216",
+       "title": "Vikipeedia — Maakond",
+       "says": "The 1960s reforms left 15 rural rajoons, renamed counties in the early 1990s; Estonia has 15 counties.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "EST:Võru",
+   "names": {
+    "en": "Võru County",
+    "ja": "ヴォル県",
+    "local": "Võru maakond"
+   },
+   "wikidata": "Q188076",
+   "spans": [
+    {
+     "from": "1991-08-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "EST-ADM2-1311010B46440255172299",
+      "EST-ADM2-1311010B4850455565809",
+      "EST-ADM2-1311010B42202403752203",
+      "EST-ADM2-1311010B49288180306995",
+      "EST-ADM2-1311010B31513242597163",
+      "EST-ADM2-1311010B36634694075874",
+      "EST-ADM2-1311010B94887399296524",
+      "EST-ADM2-1311010B47123420697709",
+      "EST-ADM2-1311010B59053529992042",
+      "EST-ADM2-1311010B74211986671289",
+      "EST-ADM2-1311010B95567994255122",
+      "EST-ADM2-1311010B82088696601517",
+      "EST-ADM2-1311010B21351499469005"
+     ],
+     "sources": [
+      {
+       "url": "https://www.riigiteataja.ee/akt/13071322",
+       "title": "Riigi Teataja — Kohaliku omavalitsuse terminite ja nimetuste korrastamise kohta (RT 1991, 24, 288)",
+       "says": "Decree of 11 Jul 1991, in force that day: the counties of the Republic of Estonia are Harju, Hiiu, Ida-Viru, Jõgeva, Järva, Lääne, Lääne-Viru, Põlva, Pärnu, Rapla, Saare, Tartu, Valga, Viljandi and Võru.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/uee.html",
+       "title": "Statoids — Counties of Estonia, change history",
+       "says": "1990: the Soviet rajoonid became the counties; 1992: the six independent cities merged into their counties; comparing area data, Järva lost about 164 km² to Lääne-Viru; 15 counties in 2011.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://et.wikipedia.org/w/index.php?title=Maakond&oldid=7002216",
+       "title": "Vikipeedia — Maakond",
+       "says": "The 1960s reforms left 15 rural rajoons, renamed counties in the early 1990s; Estonia has 15 counties.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "2005-10-21",
+   "precision": "day",
+   "what": "Lehtse parish merges into Tapa parish and passes from Järva to Lääne-Viru County",
+   "sources": [
+    {
+     "url": "https://et.wikipedia.org/w/index.php?title=Lehtse_vald&oldid=6482280",
+     "title": "Vikipeedia — Lehtse vald",
+     "says": "Lehtse parish was in Järva County 1991–2005; on 21 Oct 2005 it merged with Saksi parish and Tapa town into Tapa parish, and its territory passed from Järva to Lääne-Viru County.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "2011-12-31",
+   "n": 15,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uee.html",
+     "title": "Statoids — Counties of Estonia, change history",
+     "says": "1990: the Soviet rajoonid became the counties; 1992: the six independent cities merged into their counties; comparing area data, Järva lost about 164 km² to Lääne-Viru; 15 counties in 2011.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1994-01-01",
+   "n": 15,
+   "sources": [
+    {
+     "url": "https://et.wikipedia.org/w/index.php?title=Maakond&oldid=7002216",
+     "title": "Vikipeedia — Maakond",
+     "says": "The 1960s reforms left 15 rural rajoons, renamed counties in the early 1990s; Estonia has 15 counties.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://www.riigiteataja.ee/akt/13071322",
+     "title": "Riigi Teataja — Kohaliku omavalitsuse terminite ja nimetuste korrastamise kohta (RT 1991, 24, 288)",
+     "says": "Decree of 11 Jul 1991, in force that day: the counties of the Republic of Estonia are Harju, Hiiu, Ida-Viru, Jõgeva, Järva, Lääne, Lääne-Viru, Põlva, Pärnu, Rapla, Saare, Tartu, Valga, Viljandi and Võru.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Harju County and Tallinn (city of republican subordination), 20 Aug 1991 – end of 1993",
+   "unit": "EST:Harju",
+   "atoms": [
+    "EST-ADM2-1311010B83529915046256",
+    "EST-ADM2-1311010B21881699726273",
+    "EST-ADM2-1311010B86749809773579",
+    "EST-ADM2-1311010B35366892100791",
+    "EST-ADM2-1311010B6903470303041",
+    "EST-ADM2-1311010B38876062624246",
+    "EST-ADM2-1311010B8678160430492",
+    "EST-ADM2-1311010B45194860456478",
+    "EST-ADM2-1311010B70307753580653",
+    "EST-ADM2-1311010B140021748303",
+    "EST-ADM2-1311010B14283489081857",
+    "EST-ADM2-1311010B98989295601337",
+    "EST-ADM2-1311010B8638996222621",
+    "EST-ADM2-1311010B47974718243747",
+    "EST-ADM2-1311010B87913631554910",
+    "EST-ADM2-1311010B47397496577888",
+    "EST-ADM2-1311010B52453290555795",
+    "EST-ADM2-1311010B52285142273244",
+    "EST-ADM2-1311010B52979520707817",
+    "EST-ADM2-1311010B69466415988966",
+    "EST-ADM2-1311010B25054231269702",
+    "EST-ADM2-1311010B88719194427594",
+    "EST-ADM2-1311010B72994418002343"
+   ],
+   "from": "1991-08-20",
+   "to": "1994-01-01",
+   "why": "Until the two-tier local government ended, Tallinn stood outside the county at county level; the date it entered the county (1992 per Statoids, 1993 per the Local Government Organisation Act; 1990 per ru.wikipedia) and the 1991 city limits are not established.",
+   "checked": [
+    "statoids.com/uee.html (1992, under the new constitution)",
+    "et.wikipedia Maavalitsus oldid 6428632 (counties self-governing 1989–1993; councils of republican cities from 1 Jan 1990)",
+    "ru.wikipedia Административное деление Эстонии oldid 152626248 (says the cities were put in the counties in 1990 — conflicts)",
+    "riigiteataja.ee original texts: the 1993 Local Government Organisation Act (RT I 1993, 37, 558) is not returned by the public original-text search; its amendments of 1994 (RT I 1994, 19, 340) are",
+    "et.wikipedia Kohtla-Järve oldid 7222392"
+   ],
+   "needs": "the in-force date of the provision that placed the republican cities in their counties, and those cities’ limits in 1991–1993 (the atoms carry the 2017 limits)"
+  },
+  {
+   "what": "Ida-Viru County and Narva, Kohtla-Järve and Sillamäe (city of republican subordination), 20 Aug 1991 – end of 1993",
+   "unit": "EST:Ida-Viru",
+   "atoms": [
+    "EST-ADM2-1311010B42149159829057",
+    "EST-ADM2-1311010B51134542025676",
+    "EST-ADM2-1311010B83196805378318",
+    "EST-ADM2-1311010B31753692191013",
+    "EST-ADM2-1311010B98363675047029",
+    "EST-ADM2-1311010B45664282629319",
+    "EST-ADM2-1311010B33722502421814",
+    "EST-ADM2-1311010B58121004819572",
+    "EST-ADM2-1311010B94664056611530",
+    "EST-ADM2-1311010B61322847083180",
+    "EST-ADM2-1311010B38398904353108",
+    "EST-ADM2-1311010B53698115213579",
+    "EST-ADM2-1311010B12870424653907",
+    "EST-ADM2-1311010B69580576325907",
+    "EST-ADM2-1311010B28109082085448",
+    "EST-ADM2-1311010B79670406577873",
+    "EST-ADM2-1311010B78545392718918",
+    "EST-ADM2-1311010B53393024733165",
+    "EST-ADM2-1311010B35935809878042",
+    "EST-ADM2-1311010B11583700541251"
+   ],
+   "from": "1991-08-20",
+   "to": "1994-01-01",
+   "why": "Until the two-tier local government ended, Narva, Kohtla-Järve and Sillamäe stood outside the county at county level; the date it entered the county (1992 per Statoids, 1993 per the Local Government Organisation Act; 1990 per ru.wikipedia) and the 1991 city limits are not established (Kohtla-Järve still included Jõhvi, Kiviõli, Püssi and Kohtla-Nõmme until 1991).",
+   "checked": [
+    "statoids.com/uee.html (1992, under the new constitution)",
+    "et.wikipedia Maavalitsus oldid 6428632 (counties self-governing 1989–1993; councils of republican cities from 1 Jan 1990)",
+    "ru.wikipedia Административное деление Эстонии oldid 152626248 (says the cities were put in the counties in 1990 — conflicts)",
+    "riigiteataja.ee original texts: the 1993 Local Government Organisation Act (RT I 1993, 37, 558) is not returned by the public original-text search; its amendments of 1994 (RT I 1994, 19, 340) are",
+    "et.wikipedia Kohtla-Järve oldid 7222392"
+   ],
+   "needs": "the in-force date of the provision that placed the republican cities in their counties, and those cities’ limits in 1991–1993 (the atoms carry the 2017 limits)"
+  },
+  {
+   "what": "Järva County 20 Aug 1991 – 20 Oct 2005 (Lehtse parish on the Järva side)",
+   "unit": "EST:Järva",
+   "atoms": [
+    "EST-ADM2-1311010B94636180847931",
+    "EST-ADM2-1311010B15313330943063",
+    "EST-ADM2-1311010B86811921140774",
+    "EST-ADM2-1311010B42102623907701",
+    "EST-ADM2-1311010B75285651945439",
+    "EST-ADM2-1311010B60406908674203",
+    "EST-ADM2-1311010B27017575593512",
+    "EST-ADM2-1311010B11874356942843",
+    "EST-ADM2-1311010B71183042875097",
+    "EST-ADM2-1311010B65050189927302",
+    "EST-ADM2-1311010B52135075044132",
+    "EST-ADM2-1311010B64202471316654"
+   ],
+   "from": "1991-08-20",
+   "to": "2005-10-21",
+   "why": "Lehtse parish (Järva) lies inside the 2017 Tapa parish atom (Lääne-Viru); no atom of this set separates it, so neither county’s outline before 21 Oct 2005 is a union of these atoms.",
+   "checked": [
+    "et.wikipedia Lehtse vald oldid 6482280",
+    "statoids.com/uee.html (Järva lost about 164 km² to Lääne-Viru)"
+   ],
+   "needs": "Lehtse parish as an atom (the gb-adm3 villages carry it, but one dossier uses one level)"
+  },
+  {
+   "what": "Lääne-Viru County 20 Aug 1991 – 20 Oct 2005 (Lehtse parish on the Järva side)",
+   "unit": "EST:Lääne-Viru",
+   "atoms": [
+    "EST-ADM2-1311010B83803499603716",
+    "EST-ADM2-1311010B16419858727128",
+    "EST-ADM2-1311010B29712431738212",
+    "EST-ADM2-1311010B28697548317815",
+    "EST-ADM2-1311010B30502718985029",
+    "EST-ADM2-1311010B29233401042552",
+    "EST-ADM2-1311010B22723955606381",
+    "EST-ADM2-1311010B71569739295437",
+    "EST-ADM2-1311010B20804046846224",
+    "EST-ADM2-1311010B38192461341302",
+    "EST-ADM2-1311010B47859119941621",
+    "EST-ADM2-1311010B55106871441997",
+    "EST-ADM2-1311010B74271968542573",
+    "EST-ADM2-1311010B92722428424593",
+    "EST-ADM2-1311010B35543471542854"
+   ],
+   "from": "1991-08-20",
+   "to": "2005-10-21",
+   "why": "Lehtse parish (Järva) lies inside the 2017 Tapa parish atom (Lääne-Viru); no atom of this set separates it, so neither county’s outline before 21 Oct 2005 is a union of these atoms.",
+   "checked": [
+    "et.wikipedia Lehtse vald oldid 6482280",
+    "statoids.com/uee.html (Järva lost about 164 km² to Lääne-Viru)"
+   ],
+   "needs": "Lehtse parish as an atom (the gb-adm3 villages carry it, but one dossier uses one level)"
+  },
+  {
+   "what": "Pärnu County and Pärnu (city of republican subordination), 20 Aug 1991 – end of 1993",
+   "unit": "EST:Pärnu",
+   "atoms": [
+    "EST-ADM2-1311010B35506705685029",
+    "EST-ADM2-1311010B67573695254555",
+    "EST-ADM2-1311010B60164476510639",
+    "EST-ADM2-1311010B84453125464232",
+    "EST-ADM2-1311010B5373461700535",
+    "EST-ADM2-1311010B10160124565821",
+    "EST-ADM2-1311010B6224437320425",
+    "EST-ADM2-1311010B70804595202339",
+    "EST-ADM2-1311010B73343590761295",
+    "EST-ADM2-1311010B29096535937461",
+    "EST-ADM2-1311010B54123834804098",
+    "EST-ADM2-1311010B91568869544841",
+    "EST-ADM2-1311010B47067404608196",
+    "EST-ADM2-1311010B11631843097428",
+    "EST-ADM2-1311010B56635048856734",
+    "EST-ADM2-1311010B80552513154698",
+    "EST-ADM2-1311010B17313629643664",
+    "EST-ADM2-1311010B61996713319378",
+    "EST-ADM2-1311010B44723082448471"
+   ],
+   "from": "1991-08-20",
+   "to": "1994-01-01",
+   "why": "Until the two-tier local government ended, Pärnu stood outside the county at county level; the date it entered the county (1992 per Statoids, 1993 per the Local Government Organisation Act; 1990 per ru.wikipedia) and the 1991 city limits are not established.",
+   "checked": [
+    "statoids.com/uee.html (1992, under the new constitution)",
+    "et.wikipedia Maavalitsus oldid 6428632 (counties self-governing 1989–1993; councils of republican cities from 1 Jan 1990)",
+    "ru.wikipedia Административное деление Эстонии oldid 152626248 (says the cities were put in the counties in 1990 — conflicts)",
+    "riigiteataja.ee original texts: the 1993 Local Government Organisation Act (RT I 1993, 37, 558) is not returned by the public original-text search; its amendments of 1994 (RT I 1994, 19, 340) are",
+    "et.wikipedia Kohtla-Järve oldid 7222392"
+   ],
+   "needs": "the in-force date of the provision that placed the republican cities in their counties, and those cities’ limits in 1991–1993 (the atoms carry the 2017 limits)"
+  },
+  {
+   "what": "Tartu County and Tartu (city of republican subordination), 20 Aug 1991 – end of 1993",
+   "unit": "EST:Tartu",
+   "atoms": [
+    "EST-ADM2-1311010B23772582989033",
+    "EST-ADM2-1311010B74987904561570",
+    "EST-ADM2-1311010B19032369928442",
+    "EST-ADM2-1311010B77000992610869",
+    "EST-ADM2-1311010B30309440304309",
+    "EST-ADM2-1311010B27828470617326",
+    "EST-ADM2-1311010B16667630982146",
+    "EST-ADM2-1311010B16611681551532",
+    "EST-ADM2-1311010B91293140456750",
+    "EST-ADM2-1311010B98667517766516",
+    "EST-ADM2-1311010B96115389155974",
+    "EST-ADM2-1311010B57235016776847",
+    "EST-ADM2-1311010B8402168649238",
+    "EST-ADM2-1311010B84238750480708",
+    "EST-ADM2-1311010B48306272105770",
+    "EST-ADM2-1311010B96161059283507",
+    "EST-ADM2-1311010B9607631296215",
+    "EST-ADM2-1311010B66495880133962",
+    "EST-ADM2-1311010B87033906049048",
+    "EST-ADM2-1311010B16346599601288",
+    "EST-ADM2-1311010B48260480013334",
+    "EST-ADM2-1311010B23065748190049"
+   ],
+   "from": "1991-08-20",
+   "to": "1994-01-01",
+   "why": "Until the two-tier local government ended, Tartu stood outside the county at county level; the date it entered the county (1992 per Statoids, 1993 per the Local Government Organisation Act; 1990 per ru.wikipedia) and the 1991 city limits are not established.",
+   "checked": [
+    "statoids.com/uee.html (1992, under the new constitution)",
+    "et.wikipedia Maavalitsus oldid 6428632 (counties self-governing 1989–1993; councils of republican cities from 1 Jan 1990)",
+    "ru.wikipedia Административное деление Эстонии oldid 152626248 (says the cities were put in the counties in 1990 — conflicts)",
+    "riigiteataja.ee original texts: the 1993 Local Government Organisation Act (RT I 1993, 37, 558) is not returned by the public original-text search; its amendments of 1994 (RT I 1994, 19, 340) are",
+    "et.wikipedia Kohtla-Järve oldid 7222392"
+   ],
+   "needs": "the in-force date of the provision that placed the republican cities in their counties, and those cities’ limits in 1991–1993 (the atoms carry the 2017 limits)"
+  }
+ ]
+}

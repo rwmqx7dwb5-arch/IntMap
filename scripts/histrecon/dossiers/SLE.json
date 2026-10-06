@@ -220,26 +220,30 @@
    ],
    "from": "2017",
    "to": null,
-   "why": "The 2017 Order moved Kambia and Port Loko districts to the new North West Province and created Karene District from five Bombali and three Port Loko chiefdoms; the new Northern/North West line runs through the NE Northern atom. The exact day the Order took effect in 2017 was not established (Karene sources say ratified Dec 2017; the Local Government (Amendment) Act 2017 in Gazette No. 34 of 22 June 2017 already refers to it).",
+   "why": "The 2017 reform moved Kambia and Port Loko districts to the new North West Province and formed Karene District from five whole Bombali chiefdoms (Libeisaygahun, Sanda Loko, Sanda Tendaren, Sella Limba, Tambakha), three whole Port Loko chiefdoms (Buya Romende, Dibia, Sanda Magbolontor) and the Gbanti half of Bombali's Gbanti Kamaranka chiefdom, whose Kamaranka half stayed in Bombali (Northern). The Northern/North West line therefore runs through a pre-2017 chiefdom, so it cannot be drawn with the 2016 chiefdom atoms (geoBoundaries SLE ADM3) either, let alone the NE Northern atom. The effective day in 2017 is also not established (August 2017 per sierra-leone.org; ratified December 2017 per Wikipedia).",
    "checked": [
     "statoids usl.html / ysl.html",
     "Wikipedia Northern Province, Sierra Leone oldid 1378596584",
     "Wikipedia Karene District",
-    "parliament.gov.sl Local Government (Amendment) Act 2017 (PDF not retrievable)"
+    "parliament.gov.sl Local Government (Amendment) Act 2017 (PDF not retrievable)",
+    "geoBoundaries SLE ADM3 2016 (149 chiefdoms + Western Area; Gbanti Kamaranka is one atom)",
+    "Wikipedia Karene District oldid 1374449922 and Bombali District oldid 1373622812 (Gbanti Kamaranka split: Gbanti to Karene, Kamaranka to Bombali)",
+    "sierra-leone.org chiefdoms.html (post-2017 lists: Gbanti in both Karene and Bombali; 41 chiefdoms created by de-amalgamation in August 2017)"
    ],
-   "needs": "finer atoms: Sierra Leone chiefdoms (e.g. geoBoundaries SLE ADM3 / Stats SL 2015 census chiefdom boundaries; licence to be checked)"
+   "needs": "post-2017 chiefdom atoms (190 chiefdoms, e.g. Stats SL 2021 mid-term census boundaries) and the date the 2017 Provinces and Districts Boundaries Delimitation instrument took effect"
   },
   {
    "what": "North West Province (2017–): Kambia, Port Loko, Karene",
    "unit": "SLE:NorthWest@2017",
    "from": "2017",
    "to": null,
-   "why": "Created inside the NE Northern atom (see previous entry); atoms withheld there.",
+   "why": "Created by the 2017 reform; its line with Northern runs through the pre-2017 Gbanti Kamaranka chiefdom (see previous entry); atoms withheld there.",
    "checked": [
     "Wikipedia Northern Province, Sierra Leone oldid 1378596584",
-    "Wikipedia Karene District"
+    "Wikipedia Karene District",
+    "geoBoundaries SLE ADM3 2016"
    ],
-   "needs": "chiefdom atoms (as above)"
+   "needs": "post-2017 chiefdom atoms (as above)"
   }
  ]
 }

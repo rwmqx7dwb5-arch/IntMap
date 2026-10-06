@@ -1,11 +1,11 @@
 {
   "country": "KEN",
-  "atomSet": "ne-admin1@ca96624",
+  "atomSet": "gb-adm1@2026-10-06",
   "scope": {
     "from": "1963-12-12",
     "to": "2019-12-31"
   },
-  "polityNote": "Kenya, independent since 1963-12-12.",
+  "polityNote": "Kenya, independent since 1963-12-12. Atoms are the 47 counties of geoBoundaries KEN ADM1 (2020, RCMRD / Africa GeoPortal, public domain). 1963-2013 the eight provinces (regions in the 1963 constitution) are the unions of the counties (= 1992 districts) each contained; the districts were split only inside provinces (statoids), so the province lines are county lines. From 2013-03-04 the 47 counties are the first level.",
   "units": [
     {
       "id": "KEN:RiftValley@1963",
@@ -21,26 +21,45 @@
           "precision": "day",
           "to": "2013-03-04",
           "atoms": [
-            "KEN-890"
+            "KEN-ADM1-32016919B10848562282373",
+            "KEN-ADM1-32016919B1149170155930",
+            "KEN-ADM1-32016919B28150779100642",
+            "KEN-ADM1-32016919B31527762068828",
+            "KEN-ADM1-32016919B40191501607276",
+            "KEN-ADM1-32016919B50719068904883",
+            "KEN-ADM1-32016919B53683499362611",
+            "KEN-ADM1-32016919B58088177642376",
+            "KEN-ADM1-32016919B59887050611600",
+            "KEN-ADM1-32016919B72266624462344",
+            "KEN-ADM1-32016919B77230315601578",
+            "KEN-ADM1-32016919B81086936948851",
+            "KEN-ADM1-32016919B83281423333591",
+            "KEN-ADM1-32016919B96045830258165"
           ],
           "sources": [
             {
               "url": "https://www.statoids.com/yke.html",
               "title": "Statoids — Districts of Kenya, change history (Gwillim Law)",
               "says": "Lists Kenya's 40 districts on 1966-07-31 with their provinces; later districts were split inside provinces (one Turkana→West Pokot transfer within Rift Valley).",
-              "accessed": "2026-10-05"
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://www.statoids.com/uke.html",
               "title": "Statoids — Counties of Kenya, change history (Gwillim Law)",
               "says": "1963: North-Eastern formed from Northern and part of Coast; table of the eight provinces (incl. Nairobi Area); 2013 reorganized into 47 counties.",
-              "accessed": "2026-10-05"
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
               "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
               "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
-              "accessed": "2026-10-05"
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
             }
           ],
           "dateNote": "From independence (regions of the 1963 constitution, renamed provinces later). Ends on the 2013-03-04 general election, from which the 2010 constitution's devolved counties took effect (statoids gives 2013-03-27)."
@@ -61,26 +80,39 @@
           "precision": "day",
           "to": "2013-03-04",
           "atoms": [
-            "KEN-889"
+            "KEN-ADM1-32016919B39119671019936",
+            "KEN-ADM1-32016919B40030396675644",
+            "KEN-ADM1-32016919B42227953152284",
+            "KEN-ADM1-32016919B42702125036935",
+            "KEN-ADM1-32016919B43560273720920",
+            "KEN-ADM1-32016919B62684442090944",
+            "KEN-ADM1-32016919B63496705134089",
+            "KEN-ADM1-32016919B87039477224343"
           ],
           "sources": [
             {
               "url": "https://www.statoids.com/yke.html",
               "title": "Statoids — Districts of Kenya, change history (Gwillim Law)",
               "says": "Lists Kenya's 40 districts on 1966-07-31 with their provinces; later districts were split inside provinces (one Turkana→West Pokot transfer within Rift Valley).",
-              "accessed": "2026-10-05"
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://www.statoids.com/uke.html",
               "title": "Statoids — Counties of Kenya, change history (Gwillim Law)",
               "says": "1963: North-Eastern formed from Northern and part of Coast; table of the eight provinces (incl. Nairobi Area); 2013 reorganized into 47 counties.",
-              "accessed": "2026-10-05"
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
               "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
               "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
-              "accessed": "2026-10-05"
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
             }
           ],
           "dateNote": "From independence (regions of the 1963 constitution, renamed provinces later). Ends on the 2013-03-04 general election, from which the 2010 constitution's devolved counties took effect (statoids gives 2013-03-27)."
@@ -101,26 +133,34 @@
           "precision": "day",
           "to": "2013-03-04",
           "atoms": [
-            "KEN-893"
+            "KEN-ADM1-32016919B2031803566233",
+            "KEN-ADM1-32016919B57902629823981",
+            "KEN-ADM1-32016919B89873713911655"
           ],
           "sources": [
             {
               "url": "https://www.statoids.com/yke.html",
               "title": "Statoids — Districts of Kenya, change history (Gwillim Law)",
               "says": "Lists Kenya's 40 districts on 1966-07-31 with their provinces; later districts were split inside provinces (one Turkana→West Pokot transfer within Rift Valley).",
-              "accessed": "2026-10-05"
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://www.statoids.com/uke.html",
               "title": "Statoids — Counties of Kenya, change history (Gwillim Law)",
               "says": "1963: North-Eastern formed from Northern and part of Coast; table of the eight provinces (incl. Nairobi Area); 2013 reorganized into 47 counties.",
-              "accessed": "2026-10-05"
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
               "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
               "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
-              "accessed": "2026-10-05"
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
             }
           ],
           "dateNote": "From independence (regions of the 1963 constitution, renamed provinces later). Ends on the 2013-03-04 general election, from which the 2010 constitution's devolved counties took effect (statoids gives 2013-03-27)."
@@ -141,26 +181,37 @@
           "precision": "day",
           "to": "2013-03-04",
           "atoms": [
-            "KEN-1193"
+            "KEN-ADM1-32016919B10079274489584",
+            "KEN-ADM1-32016919B21030921481039",
+            "KEN-ADM1-32016919B27781338411646",
+            "KEN-ADM1-32016919B38538724963648",
+            "KEN-ADM1-32016919B50438423394723",
+            "KEN-ADM1-32016919B56782604912852"
           ],
           "sources": [
             {
               "url": "https://www.statoids.com/yke.html",
               "title": "Statoids — Districts of Kenya, change history (Gwillim Law)",
               "says": "Lists Kenya's 40 districts on 1966-07-31 with their provinces; later districts were split inside provinces (one Turkana→West Pokot transfer within Rift Valley).",
-              "accessed": "2026-10-05"
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://www.statoids.com/uke.html",
               "title": "Statoids — Counties of Kenya, change history (Gwillim Law)",
               "says": "1963: North-Eastern formed from Northern and part of Coast; table of the eight provinces (incl. Nairobi Area); 2013 reorganized into 47 counties.",
-              "accessed": "2026-10-05"
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
               "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
               "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
-              "accessed": "2026-10-05"
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
             }
           ],
           "dateNote": "From independence (regions of the 1963 constitution, renamed provinces later). Ends on the 2013-03-04 general election, from which the 2010 constitution's devolved counties took effect (statoids gives 2013-03-27)."
@@ -181,26 +232,37 @@
           "precision": "day",
           "to": "2013-03-04",
           "atoms": [
-            "KEN-1197"
+            "KEN-ADM1-32016919B12007380424127",
+            "KEN-ADM1-32016919B3301153840115",
+            "KEN-ADM1-32016919B35081513576883",
+            "KEN-ADM1-32016919B45734544235065",
+            "KEN-ADM1-32016919B50702580177250",
+            "KEN-ADM1-32016919B92888924192138"
           ],
           "sources": [
             {
               "url": "https://www.statoids.com/yke.html",
               "title": "Statoids — Districts of Kenya, change history (Gwillim Law)",
               "says": "Lists Kenya's 40 districts on 1966-07-31 with their provinces; later districts were split inside provinces (one Turkana→West Pokot transfer within Rift Valley).",
-              "accessed": "2026-10-05"
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://www.statoids.com/uke.html",
               "title": "Statoids — Counties of Kenya, change history (Gwillim Law)",
               "says": "1963: North-Eastern formed from Northern and part of Coast; table of the eight provinces (incl. Nairobi Area); 2013 reorganized into 47 counties.",
-              "accessed": "2026-10-05"
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
               "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
               "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
-              "accessed": "2026-10-05"
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
             }
           ],
           "dateNote": "From independence (regions of the 1963 constitution, renamed provinces later). Ends on the 2013-03-04 general election, from which the 2010 constitution's devolved counties took effect (statoids gives 2013-03-27)."
@@ -221,26 +283,35 @@
           "precision": "day",
           "to": "2013-03-04",
           "atoms": [
-            "KEN-891"
+            "KEN-ADM1-32016919B17784979587790",
+            "KEN-ADM1-32016919B20488296424250",
+            "KEN-ADM1-32016919B68325359473156",
+            "KEN-ADM1-32016919B72187572718143"
           ],
           "sources": [
             {
               "url": "https://www.statoids.com/yke.html",
               "title": "Statoids — Districts of Kenya, change history (Gwillim Law)",
               "says": "Lists Kenya's 40 districts on 1966-07-31 with their provinces; later districts were split inside provinces (one Turkana→West Pokot transfer within Rift Valley).",
-              "accessed": "2026-10-05"
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://www.statoids.com/uke.html",
               "title": "Statoids — Counties of Kenya, change history (Gwillim Law)",
               "says": "1963: North-Eastern formed from Northern and part of Coast; table of the eight provinces (incl. Nairobi Area); 2013 reorganized into 47 counties.",
-              "accessed": "2026-10-05"
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
               "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
               "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
-              "accessed": "2026-10-05"
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
             }
           ],
           "dateNote": "From independence (regions of the 1963 constitution, renamed provinces later). Ends on the 2013-03-04 general election, from which the 2010 constitution's devolved counties took effect (statoids gives 2013-03-27)."
@@ -261,26 +332,32 @@
           "precision": "day",
           "to": "2013-03-04",
           "atoms": [
-            "KEN-1196"
+            "KEN-ADM1-32016919B57908315498598"
           ],
           "sources": [
             {
               "url": "https://www.statoids.com/yke.html",
               "title": "Statoids — Districts of Kenya, change history (Gwillim Law)",
               "says": "Lists Kenya's 40 districts on 1966-07-31 with their provinces; later districts were split inside provinces (one Turkana→West Pokot transfer within Rift Valley).",
-              "accessed": "2026-10-05"
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://www.statoids.com/uke.html",
               "title": "Statoids — Counties of Kenya, change history (Gwillim Law)",
               "says": "1963: North-Eastern formed from Northern and part of Coast; table of the eight provinces (incl. Nairobi Area); 2013 reorganized into 47 counties.",
-              "accessed": "2026-10-05"
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
               "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
               "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
-              "accessed": "2026-10-05"
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
             }
           ],
           "dateNote": "From independence (regions of the 1963 constitution, renamed provinces later). Ends on the 2013-03-04 general election, from which the 2010 constitution's devolved counties took effect (statoids gives 2013-03-27)."
@@ -301,29 +378,1919 @@
           "precision": "day",
           "to": "2013-03-04",
           "atoms": [
-            "KEN-1195"
+            "KEN-ADM1-32016919B11020559484650",
+            "KEN-ADM1-32016919B26862024603939",
+            "KEN-ADM1-32016919B58720683486854",
+            "KEN-ADM1-32016919B92229445677015",
+            "KEN-ADM1-32016919B99956097556155"
           ],
           "sources": [
             {
               "url": "https://www.statoids.com/yke.html",
               "title": "Statoids — Districts of Kenya, change history (Gwillim Law)",
               "says": "Lists Kenya's 40 districts on 1966-07-31 with their provinces; later districts were split inside provinces (one Turkana→West Pokot transfer within Rift Valley).",
-              "accessed": "2026-10-05"
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://www.statoids.com/uke.html",
               "title": "Statoids — Counties of Kenya, change history (Gwillim Law)",
               "says": "1963: North-Eastern formed from Northern and part of Coast; table of the eight provinces (incl. Nairobi Area); 2013 reorganized into 47 counties.",
-              "accessed": "2026-10-05"
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
               "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
               "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
-              "accessed": "2026-10-05"
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
             }
           ],
           "dateNote": "From independence (regions of the 1963 constitution, renamed provinces later). Ends on the 2013-03-04 general election, from which the 2010 constitution's devolved counties took effect (statoids gives 2013-03-27)."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Baringo@2013",
+      "names": {
+        "en": "Baringo County",
+        "ja": "バリンゴ郡",
+        "local": "Baringo County"
+      },
+      "wikidata": "Q808201",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B50719068904883"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Bomet@2013",
+      "names": {
+        "en": "Bomet County",
+        "ja": "ボメット郡",
+        "local": "Bomet County"
+      },
+      "wikidata": "Q891952",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B53683499362611"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Bungoma@2013",
+      "names": {
+        "en": "Bungoma County",
+        "ja": "ブンゴマ郡",
+        "local": "Bungoma County"
+      },
+      "wikidata": "Q2928204",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B68325359473156"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Busia@2013",
+      "names": {
+        "en": "Busia County",
+        "ja": "ブシア郡",
+        "local": "Busia County"
+      },
+      "wikidata": "Q1017519",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B17784979587790"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:ElgeyoMarakwet@2013",
+      "names": {
+        "en": "Elgeyo-Marakwet County",
+        "ja": "エルゲーヨ＝マラクウェト郡",
+        "local": "Elgeyo-Marakwet County"
+      },
+      "wikidata": "Q15216433",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B59887050611600"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Embu@2013",
+      "names": {
+        "en": "Embu County",
+        "ja": "エンブ郡",
+        "local": "Embu County"
+      },
+      "wikidata": "Q1335242",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B43560273720920"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Garissa@2013",
+      "names": {
+        "en": "Garissa County",
+        "ja": "ガリッサ郡",
+        "local": "Garissa County"
+      },
+      "wikidata": "Q1494292",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B57902629823981"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:HomaBay@2013",
+      "names": {
+        "en": "Homa Bay County",
+        "ja": "ホマ・ベイ郡",
+        "local": "Homa Bay County"
+      },
+      "wikidata": "Q1625834",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B3301153840115"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Isiolo@2013",
+      "names": {
+        "en": "Isiolo County",
+        "ja": "イシオロ郡",
+        "local": "Isiolo County"
+      },
+      "wikidata": "Q1499046",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B62684442090944"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Kajiado@2013",
+      "names": {
+        "en": "Kajiado County",
+        "ja": "カジアド郡",
+        "local": "Kajiado County"
+      },
+      "wikidata": "Q285072",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B31527762068828"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Kakamega@2013",
+      "names": {
+        "en": "Kakamega County",
+        "ja": "カカメガ郡",
+        "local": "Kakamega County"
+      },
+      "wikidata": "Q1721867",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B72187572718143"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Kericho@2013",
+      "names": {
+        "en": "Kericho County",
+        "ja": "ケリチョ郡",
+        "local": "Kericho County"
+      },
+      "wikidata": "Q1739252",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B28150779100642"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Kiambu@2013",
+      "names": {
+        "en": "Kiambu County",
+        "ja": "キアンブ郡",
+        "local": "Kiambu County"
+      },
+      "wikidata": "Q2575594",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B11020559484650"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Kilifi@2013",
+      "names": {
+        "en": "Kilifi County",
+        "ja": "キリフィ郡",
+        "local": "Kilifi County"
+      },
+      "wikidata": "Q1741307",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B27781338411646"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Kirinyaga@2013",
+      "names": {
+        "en": "Kirinyaga County",
+        "ja": "キリーニャガ郡",
+        "local": "Kirinyaga County"
+      },
+      "wikidata": "Q2230311",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B58720683486854"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Kisii@2013",
+      "names": {
+        "en": "Kisii County",
+        "ja": "キシイ郡",
+        "local": "Kisii County"
+      },
+      "wikidata": "Q1743730",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B92888924192138"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Kisumu@2013",
+      "names": {
+        "en": "Kisumu County",
+        "ja": "キスム郡",
+        "local": "Kisumu County"
+      },
+      "wikidata": "Q1743809",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B35081513576883"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Kitui@2013",
+      "names": {
+        "en": "Kitui County",
+        "ja": "キツイ郡",
+        "local": "Kitui County"
+      },
+      "wikidata": "Q1722597",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B87039477224343"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Kwale@2013",
+      "names": {
+        "en": "Kwale County",
+        "ja": "クワレ郡",
+        "local": "Kwale County"
+      },
+      "wikidata": "Q952571",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B50438423394723"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Laikipia@2013",
+      "names": {
+        "en": "Laikipia County",
+        "ja": "ライキピア郡",
+        "local": "Laikipia County"
+      },
+      "wikidata": "Q1800699",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B40191501607276"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Lamu@2013",
+      "names": {
+        "en": "Lamu County",
+        "ja": "ラム郡",
+        "local": "Lamu County"
+      },
+      "wikidata": "Q1951652",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B38538724963648"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Machakos@2013",
+      "names": {
+        "en": "Machakos County",
+        "ja": "マチャコス郡",
+        "local": "Machakos County"
+      },
+      "wikidata": "Q1882639",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B39119671019936"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Makueni@2013",
+      "names": {
+        "en": "Makueni County",
+        "ja": "マクエニ郡",
+        "local": "Makueni County"
+      },
+      "wikidata": "Q473717",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B42227953152284"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Mandera@2013",
+      "names": {
+        "en": "Mandera County",
+        "ja": "マンデラ郡",
+        "local": "Mandera County"
+      },
+      "wikidata": "Q1477874",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B2031803566233"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Marsabit@2013",
+      "names": {
+        "en": "Marsabit County",
+        "ja": "マルサビット郡",
+        "local": "Marsabit County"
+      },
+      "wikidata": "Q1323683",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B63496705134089"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Meru@2013",
+      "names": {
+        "en": "Meru County",
+        "ja": "メルー郡",
+        "local": "Meru County"
+      },
+      "wikidata": "Q15045704",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B42702125036935"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Migori@2013",
+      "names": {
+        "en": "Migori County",
+        "ja": "ミゴリ郡",
+        "local": "Migori County"
+      },
+      "wikidata": "Q429955",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B50702580177250"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Mombasa@2013",
+      "names": {
+        "en": "Mombasa County",
+        "ja": "モンバサ郡",
+        "local": "Mombasa County"
+      },
+      "wikidata": "Q1112885",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B10079274489584"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Muranga@2013",
+      "names": {
+        "en": "Muranga County",
+        "ja": "ムランガ郡",
+        "local": "Murang'a County"
+      },
+      "wikidata": "Q1781723",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B92229445677015"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Nairobi@2013",
+      "names": {
+        "en": "Nairobi City County",
+        "ja": "ナイロビ郡",
+        "local": "Nairobi County"
+      },
+      "wikidata": "Q3335223",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B57908315498598"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Nakuru@2013",
+      "names": {
+        "en": "Nakuru County",
+        "ja": "ナクル郡",
+        "local": "Nakuru County"
+      },
+      "wikidata": "Q1852202",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B58088177642376"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Nandi@2013",
+      "names": {
+        "en": "Nandi County",
+        "ja": "ナンディ郡",
+        "local": "Nandi County"
+      },
+      "wikidata": "Q1964569",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B10848562282373"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Narok@2013",
+      "names": {
+        "en": "Narok County",
+        "ja": "ナロク郡",
+        "local": "Narok County"
+      },
+      "wikidata": "Q1852220",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B83281423333591"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Nyamira@2013",
+      "names": {
+        "en": "Nyamira County",
+        "ja": "ニャミラ郡",
+        "local": "Nyamira County"
+      },
+      "wikidata": "Q1569613",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B45734544235065"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Nyandarua@2013",
+      "names": {
+        "en": "Nyandarua County",
+        "ja": "ニャンダルア郡",
+        "local": "Nyandarua County"
+      },
+      "wikidata": "Q1714352",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B99956097556155"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Nyeri@2013",
+      "names": {
+        "en": "Nyeri County",
+        "ja": "ニエリ郡",
+        "local": "Nyeri County"
+      },
+      "wikidata": "Q749665",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B26862024603939"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Samburu@2013",
+      "names": {
+        "en": "Samburu County",
+        "ja": "サンブル郡",
+        "local": "Samburu County"
+      },
+      "wikidata": "Q2096419",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B77230315601578"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Siaya@2013",
+      "names": {
+        "en": "Siaya County",
+        "ja": "シアヤ郡",
+        "local": "Siaya County"
+      },
+      "wikidata": "Q3482913",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B12007380424127"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:TaitaTaveta@2013",
+      "names": {
+        "en": "Taita–Taveta County",
+        "ja": "タイタ＝タヴェタ郡",
+        "local": "Taita Taveta County"
+      },
+      "wikidata": "Q7193788",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B21030921481039"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:TanaRiver@2013",
+      "names": {
+        "en": "Tana River County",
+        "ja": "タナ・リバー郡",
+        "local": "Tana River County"
+      },
+      "wikidata": "Q383150",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B56782604912852"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Tharaka@2013",
+      "names": {
+        "en": "Tharaka Nithi County",
+        "ja": "タラカ＝ニシ郡",
+        "local": "Tharaka County"
+      },
+      "wikidata": "Q2189432",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B40030396675644"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:TransNzoia@2013",
+      "names": {
+        "en": "Trans-Nzoia County",
+        "ja": "トランス・ンゾイア郡",
+        "local": "Trans Nzoia County"
+      },
+      "wikidata": "Q1278653",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B1149170155930"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Turkana@2013",
+      "names": {
+        "en": "Turkana County",
+        "ja": "トゥルカナ郡",
+        "local": "Turkana County"
+      },
+      "wikidata": "Q1633078",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B72266624462344"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:UasinGishu@2013",
+      "names": {
+        "en": "Uasin Gishu County",
+        "ja": "ウアシン・ギシュ郡",
+        "local": "Uasin Gishu County"
+      },
+      "wikidata": "Q1121429",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B81086936948851"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Vihiga@2013",
+      "names": {
+        "en": "Vihiga County",
+        "ja": "ヴィヒガ郡",
+        "local": "Vihiga County"
+      },
+      "wikidata": "Q1313202",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B20488296424250"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:Wajir@2013",
+      "names": {
+        "en": "Wajir County",
+        "ja": "ワジール郡",
+        "local": "Wajir County"
+      },
+      "wikidata": "Q1852209",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B89873713911655"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
+        }
+      ]
+    },
+    {
+      "id": "KEN:WestPokot@2013",
+      "names": {
+        "en": "West Pokot County",
+        "ja": "ウェスト・ポコット郡",
+        "local": "West Pokot County"
+      },
+      "wikidata": "Q590860",
+      "spans": [
+        {
+          "from": "2013-03-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KEN-ADM1-32016919B96045830258165"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+              "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+              "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "http://kenyalaw.org/kl/index.php?id=398",
+              "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+              "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Kenya&oldid=1334399350",
+              "title": "Wikipedia: Provinces of Kenya (rev 1334399350)",
+              "says": "The eight provinces were replaced by 47 counties in 2013 following the general elections of 4 March 2013.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "County governments took office after the general election of 2013-03-04 (statoids gives 2013-03-27). The county is the district of the 1992 Districts and Provinces Act, whose line is the atom."
         }
       ]
     }
@@ -358,40 +2325,37 @@
           "url": "https://www.statoids.com/yke.html",
           "title": "Statoids — Districts of Kenya, change history (Gwillim Law)",
           "says": "Lists Kenya's 40 districts on 1966-07-31 with their provinces; later districts were split inside provinces (one Turkana→West Pokot transfer within Rift Valley).",
-          "accessed": "2026-10-05"
+          "accessed": "2026-10-06"
         },
         {
           "url": "https://www.statoids.com/uke.html",
           "title": "Statoids — Counties of Kenya, change history (Gwillim Law)",
           "says": "1963: North-Eastern formed from Northern and part of Coast; table of the eight provinces (incl. Nairobi Area); 2013 reorganized into 47 counties.",
-          "accessed": "2026-10-05"
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "2013-03-04",
+      "n": 47,
+      "sources": [
+        {
+          "url": "http://kenyalaw.org/kl/index.php?id=398",
+          "title": "Constitution of Kenya 2010, First Schedule (Kenya Law)",
+          "says": "Lists the 47 counties, numbered 1 Mombasa to 47 Nairobi City.",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?title=Counties_of_Kenya&oldid=1374636832",
+          "title": "Wikipedia: Counties of Kenya (rev 1374636832)",
+          "says": "The 47 counties of the 2010 constitution (First Schedule), each listed with its former province; they are the districts of the 1992 Districts and Provinces Act.",
+          "accessed": "2026-10-06"
         }
       ]
     }
   ],
   "atomsOutside": [],
   "unresolved": [
-    {
-      "what": "47 counties 2013-03-04 → 2019-12-31",
-      "atoms": [
-        "KEN-890",
-        "KEN-889",
-        "KEN-893",
-        "KEN-1193",
-        "KEN-1197",
-        "KEN-891",
-        "KEN-1196",
-        "KEN-1195"
-      ],
-      "from": "2013-03-04",
-      "to": null,
-      "why": "The counties (= the 46 districts of 1992 plus Nairobi) nest inside the old provinces but NE carries only the eight provinces; county lines run inside every NE atom.",
-      "checked": [
-        "statoids uke.html",
-        "Wikipedia Provinces of Kenya rev 1334399350"
-      ],
-      "needs": "geoBoundaries KEN ADM1 (47 counties; licence to check) or IEBC/KNBS county boundaries"
-    },
     {
       "what": "Colonial provinces before independence (1902–1963)",
       "from": "1902",

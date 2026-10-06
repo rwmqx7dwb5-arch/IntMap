@@ -1,0 +1,532 @@
+{
+ "country": "SYR",
+ "atomSet": "gb-adm2@2026-10-06",
+ "scope": {
+  "from": "1957-11-17",
+  "to": "1974-06-25"
+ },
+ "polityNote": "Syrian Republic (from 22 Feb 1958 to 28 Sep 1961 the Northern Region of the United Arab Republic; governorates continued) and Syrian Arab Republic. The governorates (muhafazat) from the creation of Idlib and al-Rashid (17 Nov 1957) to the day before SYR.json (Natural Earth, 1974-06-26 onward) begins. Atoms: geoBoundaries SYR ADM2 (61 districts, OCHA/UN Cartographic Section, CC BY 3.0 IGO, 2017) — finer than Natural Earth and including the Golan districts, which stay unresolved here. Independent check (①), union area ÷ the official area in ar.Wikipedia’s governorate table (oldid 74603004, Central Bureau of Statistics figures): Aleppo 1.07, Idlib 0.89, Raqqa 0.90, Deir ez-Zor 0.76, Hasakah 0.99, Hama 1.25, Homs 1.02, Suwayda 1.15, Latakia 1.04, Tartus 0.99 (Dar’a 1.03, Quneitra 0.92, Rif Dimashq 1.46 — unresolved here). The desert lines (Deir ez-Zor / Homs / Rif Dimashq / Hama / Raqqa) of the OCHA districts disagree with the official areas by up to 8,000 km²; which modern line is right is not settled by this dossier, and the same question applies to the Natural Earth lines of SYR.json. Earlier layouts (1946–1957: Aleppo with Idlib, Euphrates with al-Rashid; mandate states before 1946) are not drawn: they would be unions of the same atoms but the dossier has no change list proving the lines for 1946–1957.",
+ "units": [
+  {
+   "id": "SYR:Aleppo@1957",
+   "names": {
+    "en": "Aleppo Governorate",
+    "ja": "アレッポ県",
+    "local": "محافظة حلب"
+   },
+   "wikidata": "Q214064",
+   "spans": [
+    {
+     "from": "1957-11-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SYR-ADM2-27442178B26836039619487",
+      "SYR-ADM2-27442178B88911382861768",
+      "SYR-ADM2-27442178B6640625460328",
+      "SYR-ADM2-27442178B24628051118006",
+      "SYR-ADM2-27442178B22464389911891",
+      "SYR-ADM2-27442178B60985416821817",
+      "SYR-ADM2-27442178B96508006833869",
+      "SYR-ADM2-27442178B68936835306318"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1377408664",
+       "title": "en.Wikipedia «Idlib Governorate» (oldid 1377408664)",
+       "says": "Idlib Governorate was separated from Aleppo Governorate on 17 November 1957.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://statoids.com/usy.html",
+       "title": "Statoids — Governorates of Syria, change history",
+       "says": "~1946 nine provinces; ~1960 Euphrates split into al-Rashid and Deir ez-Zor, Idlib split from Aleppo; ~1962 Damascus city; 1964-08-27 Quneitra; ~1972 Tartus split from Latakia; 1987 Damascus city a province, Rif Dimashq. No other change is listed.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ar.wikipedia.org/w/index.php?oldid=74603004",
+       "title": "ar.Wikipedia «التقسيم الإداري في سوريا» (oldid 74603004)",
+       "says": "Idlib (from Aleppo) and al-Rashid (from Deir ez-Zor) created 1957; Quneitra 1964 from Quneitra district (Damascus) and Fiq district (Dar'a); Tartus 1966 because Latakia was too large; Damascus city made a governorate 1972–73.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From the separation of Idlib (17 Nov 1957). Outline = the union of today's districts (mantiqa) of the governorate. No transfer of a district or sub-district across this governorate's line after 1957 is listed by Statoids, ar.Wikipedia (التقسيم الإداري في سوريا) or en.Wikipedia (Governorates of Syria); a transfer below district level not recorded there would invalidate the span."
+    }
+   ]
+  },
+  {
+   "id": "SYR:Idlib@1957",
+   "names": {
+    "en": "Idlib Governorate",
+    "ja": "イドリブ県",
+    "local": "محافظة إدلب"
+   },
+   "wikidata": "Q233218",
+   "spans": [
+    {
+     "from": "1957-11-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SYR-ADM2-27442178B71280190344240",
+      "SYR-ADM2-27442178B18977709066888",
+      "SYR-ADM2-27442178B79082810780972",
+      "SYR-ADM2-27442178B9567094438554",
+      "SYR-ADM2-27442178B84192320308694"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1377408664",
+       "title": "en.Wikipedia «Idlib Governorate» (oldid 1377408664)",
+       "says": "Idlib Governorate was separated from Aleppo Governorate on 17 November 1957.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ar.wikipedia.org/w/index.php?oldid=74603004",
+       "title": "ar.Wikipedia «التقسيم الإداري في سوريا» (oldid 74603004)",
+       "says": "Idlib (from Aleppo) and al-Rashid (from Deir ez-Zor) created 1957; Quneitra 1964 from Quneitra district (Damascus) and Fiq district (Dar'a); Tartus 1966 because Latakia was too large; Damascus city made a governorate 1972–73.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Created 17 Nov 1957 from Aleppo. Outline = the union of today's districts (mantiqa) of the governorate. No transfer of a district or sub-district across this governorate's line after 1957 is listed by Statoids, ar.Wikipedia (التقسيم الإداري في سوريا) or en.Wikipedia (Governorates of Syria); a transfer below district level not recorded there would invalidate the span."
+    }
+   ]
+  },
+  {
+   "id": "SYR:Raqqa@1957",
+   "names": {
+    "en": "Raqqa Governorate",
+    "ja": "ラッカ県",
+    "local": "محافظة الرقة"
+   },
+   "wikidata": "Q235563",
+   "spans": [
+    {
+     "from": "1957-11-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SYR-ADM2-27442178B57458390277946",
+      "SYR-ADM2-27442178B46572819209410",
+      "SYR-ADM2-27442178B34075692761550"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1377411966",
+       "title": "en.Wikipedia «Raqqa Governorate» (oldid 1377411966)",
+       "says": "On 17 November 1957 al-Rashid Governorate was carved out of Deir ez-Zor Governorate; renamed Raqqa Governorate on 1 January 1970 (cites the Syrian parliament record).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ar.wikipedia.org/w/index.php?oldid=74603004",
+       "title": "ar.Wikipedia «التقسيم الإداري في سوريا» (oldid 74603004)",
+       "says": "Idlib (from Aleppo) and al-Rashid (from Deir ez-Zor) created 1957; Quneitra 1964 from Quneitra district (Damascus) and Fiq district (Dar'a); Tartus 1966 because Latakia was too large; Damascus city made a governorate 1972–73.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Created 17 Nov 1957 from Deir ez-Zor as al-Rashid Governorate; named Raqqa from 1 Jan 1970. Outline = the union of today's districts (mantiqa) of the governorate. No transfer of a district or sub-district across this governorate's line after 1957 is listed by Statoids, ar.Wikipedia (التقسيم الإداري في سوريا) or en.Wikipedia (Governorates of Syria); a transfer below district level not recorded there would invalidate the span."
+    }
+   ]
+  },
+  {
+   "id": "SYR:DeirEzZor@1957",
+   "names": {
+    "en": "Deir ez-Zor Governorate",
+    "ja": "デリゾール県",
+    "local": "محافظة دير الزور"
+   },
+   "wikidata": "Q232387",
+   "spans": [
+    {
+     "from": "1957-11-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SYR-ADM2-27442178B22276011833046",
+      "SYR-ADM2-27442178B96470480022323",
+      "SYR-ADM2-27442178B9541206135539"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1377411966",
+       "title": "en.Wikipedia «Raqqa Governorate» (oldid 1377411966)",
+       "says": "On 17 November 1957 al-Rashid Governorate was carved out of Deir ez-Zor Governorate; renamed Raqqa Governorate on 1 January 1970 (cites the Syrian parliament record).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://statoids.com/usy.html",
+       "title": "Statoids — Governorates of Syria, change history",
+       "says": "~1946 nine provinces; ~1960 Euphrates split into al-Rashid and Deir ez-Zor, Idlib split from Aleppo; ~1962 Damascus city; 1964-08-27 Quneitra; ~1972 Tartus split from Latakia; 1987 Damascus city a province, Rif Dimashq. No other change is listed.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From the separation of al-Rashid (17 Nov 1957). Outline = the union of today's districts (mantiqa) of the governorate. No transfer of a district or sub-district across this governorate's line after 1957 is listed by Statoids, ar.Wikipedia (التقسيم الإداري في سوريا) or en.Wikipedia (Governorates of Syria); a transfer below district level not recorded there would invalidate the span."
+    }
+   ]
+  },
+  {
+   "id": "SYR:Hasakah@1957",
+   "names": {
+    "en": "Hasakah Governorate",
+    "ja": "ハサカ県",
+    "local": "محافظة الحسكة"
+   },
+   "wikidata": "Q233914",
+   "spans": [
+    {
+     "from": "1957-11-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SYR-ADM2-27442178B13029247631939",
+      "SYR-ADM2-27442178B99216687489351",
+      "SYR-ADM2-27442178B53577550578456",
+      "SYR-ADM2-27442178B16567144851356"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/usy.html",
+       "title": "Statoids — Governorates of Syria, change history",
+       "says": "~1946 nine provinces; ~1960 Euphrates split into al-Rashid and Deir ez-Zor, Idlib split from Aleppo; ~1962 Damascus city; 1964-08-27 Quneitra; ~1972 Tartus split from Latakia; 1987 Damascus city a province, Rif Dimashq. No other change is listed.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1371192542",
+       "title": "en.Wikipedia «Governorates of Syria» (oldid 1371192542)",
+       "says": "At independence (17 April 1946) nine districts; Euphrates divided into al-Rashid and Deir ez-Zor and Idlib separated from Aleppo; 27 August 1964 Quneitra created from parts of Damascus Governorate; 1987 Damascus city a governorate.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ar.wikipedia.org/w/index.php?oldid=74603004",
+       "title": "ar.Wikipedia «التقسيم الإداري في سوريا» (oldid 74603004)",
+       "says": "Idlib (from Aleppo) and al-Rashid (from Deir ez-Zor) created 1957; Quneitra 1964 from Quneitra district (Damascus) and Fiq district (Dar'a); Tartus 1966 because Latakia was too large; Damascus city made a governorate 1972–73.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Scope start (the 1957 creations of Idlib and al-Rashid); no change to this governorate is listed before or after. Outline = the union of today's districts (mantiqa) of the governorate. No transfer of a district or sub-district across this governorate's line after 1957 is listed by Statoids, ar.Wikipedia (التقسيم الإداري في سوريا) or en.Wikipedia (Governorates of Syria); a transfer below district level not recorded there would invalidate the span."
+    }
+   ]
+  },
+  {
+   "id": "SYR:Hama@1957",
+   "names": {
+    "en": "Hama Governorate",
+    "ja": "ハマー県",
+    "local": "محافظة حماة"
+   },
+   "wikidata": "Q232355",
+   "spans": [
+    {
+     "from": "1957-11-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SYR-ADM2-27442178B43082534172912",
+      "SYR-ADM2-27442178B45767266881892",
+      "SYR-ADM2-27442178B84195179221003",
+      "SYR-ADM2-27442178B31990643139600",
+      "SYR-ADM2-27442178B78133098408237"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/usy.html",
+       "title": "Statoids — Governorates of Syria, change history",
+       "says": "~1946 nine provinces; ~1960 Euphrates split into al-Rashid and Deir ez-Zor, Idlib split from Aleppo; ~1962 Damascus city; 1964-08-27 Quneitra; ~1972 Tartus split from Latakia; 1987 Damascus city a province, Rif Dimashq. No other change is listed.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1371192542",
+       "title": "en.Wikipedia «Governorates of Syria» (oldid 1371192542)",
+       "says": "At independence (17 April 1946) nine districts; Euphrates divided into al-Rashid and Deir ez-Zor and Idlib separated from Aleppo; 27 August 1964 Quneitra created from parts of Damascus Governorate; 1987 Damascus city a governorate.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ar.wikipedia.org/w/index.php?oldid=74603004",
+       "title": "ar.Wikipedia «التقسيم الإداري في سوريا» (oldid 74603004)",
+       "says": "Idlib (from Aleppo) and al-Rashid (from Deir ez-Zor) created 1957; Quneitra 1964 from Quneitra district (Damascus) and Fiq district (Dar'a); Tartus 1966 because Latakia was too large; Damascus city made a governorate 1972–73.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Scope start (the 1957 creations of Idlib and al-Rashid); no change to this governorate is listed before or after. Outline = the union of today's districts (mantiqa) of the governorate. No transfer of a district or sub-district across this governorate's line after 1957 is listed by Statoids, ar.Wikipedia (التقسيم الإداري في سوريا) or en.Wikipedia (Governorates of Syria); a transfer below district level not recorded there would invalidate the span."
+    }
+   ]
+  },
+  {
+   "id": "SYR:Homs@1957",
+   "names": {
+    "en": "Homs Governorate",
+    "ja": "ホムス県",
+    "local": "محافظة حمص"
+   },
+   "wikidata": "Q214094",
+   "spans": [
+    {
+     "from": "1957-11-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SYR-ADM2-27442178B17685723948764",
+      "SYR-ADM2-27442178B51656539269606",
+      "SYR-ADM2-27442178B10190550865888",
+      "SYR-ADM2-27442178B91557549439519",
+      "SYR-ADM2-27442178B76261641700856",
+      "SYR-ADM2-27442178B60418009452869"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/usy.html",
+       "title": "Statoids — Governorates of Syria, change history",
+       "says": "~1946 nine provinces; ~1960 Euphrates split into al-Rashid and Deir ez-Zor, Idlib split from Aleppo; ~1962 Damascus city; 1964-08-27 Quneitra; ~1972 Tartus split from Latakia; 1987 Damascus city a province, Rif Dimashq. No other change is listed.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1371192542",
+       "title": "en.Wikipedia «Governorates of Syria» (oldid 1371192542)",
+       "says": "At independence (17 April 1946) nine districts; Euphrates divided into al-Rashid and Deir ez-Zor and Idlib separated from Aleppo; 27 August 1964 Quneitra created from parts of Damascus Governorate; 1987 Damascus city a governorate.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ar.wikipedia.org/w/index.php?oldid=74603004",
+       "title": "ar.Wikipedia «التقسيم الإداري في سوريا» (oldid 74603004)",
+       "says": "Idlib (from Aleppo) and al-Rashid (from Deir ez-Zor) created 1957; Quneitra 1964 from Quneitra district (Damascus) and Fiq district (Dar'a); Tartus 1966 because Latakia was too large; Damascus city made a governorate 1972–73.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Scope start (the 1957 creations of Idlib and al-Rashid); no change to this governorate is listed before or after. Outline = the union of today's districts (mantiqa) of the governorate. No transfer of a district or sub-district across this governorate's line after 1957 is listed by Statoids, ar.Wikipedia (التقسيم الإداري في سوريا) or en.Wikipedia (Governorates of Syria); a transfer below district level not recorded there would invalidate the span."
+    }
+   ]
+  },
+  {
+   "id": "SYR:Suwayda@1957",
+   "names": {
+    "en": "Suwayda Governorate",
+    "ja": "スワイダー県",
+    "local": "محافظة السويداء"
+   },
+   "wikidata": "Q236797",
+   "spans": [
+    {
+     "from": "1957-11-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SYR-ADM2-27442178B49241886307156",
+      "SYR-ADM2-27442178B39967895671995",
+      "SYR-ADM2-27442178B615257865565"
+     ],
+     "sources": [
+      {
+       "url": "https://statoids.com/usy.html",
+       "title": "Statoids — Governorates of Syria, change history",
+       "says": "~1946 nine provinces; ~1960 Euphrates split into al-Rashid and Deir ez-Zor, Idlib split from Aleppo; ~1962 Damascus city; 1964-08-27 Quneitra; ~1972 Tartus split from Latakia; 1987 Damascus city a province, Rif Dimashq. No other change is listed.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1371192542",
+       "title": "en.Wikipedia «Governorates of Syria» (oldid 1371192542)",
+       "says": "At independence (17 April 1946) nine districts; Euphrates divided into al-Rashid and Deir ez-Zor and Idlib separated from Aleppo; 27 August 1964 Quneitra created from parts of Damascus Governorate; 1987 Damascus city a governorate.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ar.wikipedia.org/w/index.php?oldid=74603004",
+       "title": "ar.Wikipedia «التقسيم الإداري في سوريا» (oldid 74603004)",
+       "says": "Idlib (from Aleppo) and al-Rashid (from Deir ez-Zor) created 1957; Quneitra 1964 from Quneitra district (Damascus) and Fiq district (Dar'a); Tartus 1966 because Latakia was too large; Damascus city made a governorate 1972–73.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Scope start (the 1957 creations of Idlib and al-Rashid); no change to this governorate is listed before or after. Outline = the union of today's districts (mantiqa) of the governorate. No transfer of a district or sub-district across this governorate's line after 1957 is listed by Statoids, ar.Wikipedia (التقسيم الإداري في سوريا) or en.Wikipedia (Governorates of Syria); a transfer below district level not recorded there would invalidate the span."
+    }
+   ]
+  },
+  {
+   "id": "SYR:Latakia@1957",
+   "names": {
+    "en": "Latakia Governorate",
+    "ja": "ラタキア県",
+    "local": "محافظة اللاذقية"
+   },
+   "wikidata": "Q233236",
+   "spans": [
+    {
+     "from": "1957-11-17",
+     "precision": "day",
+     "to": "1966-01-01",
+     "atoms": [
+      "SYR-ADM2-27442178B95231031847739",
+      "SYR-ADM2-27442178B45607569668873",
+      "SYR-ADM2-27442178B5090378365720",
+      "SYR-ADM2-27442178B94813764709421",
+      "SYR-ADM2-27442178B62310236233952",
+      "SYR-ADM2-27442178B79430829635583",
+      "SYR-ADM2-27442178B1888341304206",
+      "SYR-ADM2-27442178B44438051869980",
+      "SYR-ADM2-27442178B78381061793998"
+     ],
+     "sources": [
+      {
+       "url": "https://ar.wikipedia.org/w/index.php?oldid=74603004",
+       "title": "ar.Wikipedia «التقسيم الإداري في سوريا» (oldid 74603004)",
+       "says": "Idlib (from Aleppo) and al-Rashid (from Deir ez-Zor) created 1957; Quneitra 1964 from Quneitra district (Damascus) and Fiq district (Dar'a); Tartus 1966 because Latakia was too large; Damascus city made a governorate 1972–73.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1377412918",
+       "title": "en.Wikipedia «Tartus Governorate» (oldid 1377412918)",
+       "says": "In 1972 the Ba'athist administration established Tartus Governorate, detaching it from Latakia Governorate.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://statoids.com/usy.html",
+       "title": "Statoids — Governorates of Syria, change history",
+       "says": "~1946 nine provinces; ~1960 Euphrates split into al-Rashid and Deir ez-Zor, Idlib split from Aleppo; ~1962 Damascus city; 1964-08-27 Quneitra; ~1972 Tartus split from Latakia; 1987 Damascus city a province, Rif Dimashq. No other change is listed.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Latakia including today's Tartus governorate, until Tartus was detached (1966 per ar.Wikipedia; 1972 per en.Wikipedia and Statoids). Outline = the union of today's districts (mantiqa) of the governorate. No transfer of a district or sub-district across this governorate's line after 1957 is listed by Statoids, ar.Wikipedia (التقسيم الإداري في سوريا) or en.Wikipedia (Governorates of Syria); a transfer below district level not recorded there would invalidate the span."
+    },
+    {
+     "from": "1973-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SYR-ADM2-27442178B95231031847739",
+      "SYR-ADM2-27442178B45607569668873",
+      "SYR-ADM2-27442178B5090378365720",
+      "SYR-ADM2-27442178B94813764709421"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1377412918",
+       "title": "en.Wikipedia «Tartus Governorate» (oldid 1377412918)",
+       "says": "In 1972 the Ba'athist administration established Tartus Governorate, detaching it from Latakia Governorate.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://statoids.com/usy.html",
+       "title": "Statoids — Governorates of Syria, change history",
+       "says": "~1946 nine provinces; ~1960 Euphrates split into al-Rashid and Deir ez-Zor, Idlib split from Aleppo; ~1962 Damascus city; 1964-08-27 Quneitra; ~1972 Tartus split from Latakia; 1987 Damascus city a province, Rif Dimashq. No other change is listed.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "After Tartus was detached (latest stated year 1972). Outline = the union of today's districts (mantiqa) of the governorate. No transfer of a district or sub-district across this governorate's line after 1957 is listed by Statoids, ar.Wikipedia (التقسيم الإداري في سوريا) or en.Wikipedia (Governorates of Syria); a transfer below district level not recorded there would invalidate the span."
+    }
+   ]
+  },
+  {
+   "id": "SYR:Tartus@1957",
+   "names": {
+    "en": "Tartus Governorate",
+    "ja": "タルトゥース県",
+    "local": "محافظة طرطوس"
+   },
+   "wikidata": "Q232382",
+   "spans": [
+    {
+     "from": "1973-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SYR-ADM2-27442178B62310236233952",
+      "SYR-ADM2-27442178B79430829635583",
+      "SYR-ADM2-27442178B1888341304206",
+      "SYR-ADM2-27442178B44438051869980",
+      "SYR-ADM2-27442178B78381061793998"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1377412918",
+       "title": "en.Wikipedia «Tartus Governorate» (oldid 1377412918)",
+       "says": "In 1972 the Ba'athist administration established Tartus Governorate, detaching it from Latakia Governorate.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://ar.wikipedia.org/w/index.php?oldid=74603004",
+       "title": "ar.Wikipedia «التقسيم الإداري في سوريا» (oldid 74603004)",
+       "says": "Idlib (from Aleppo) and al-Rashid (from Deir ez-Zor) created 1957; Quneitra 1964 from Quneitra district (Damascus) and Fiq district (Dar'a); Tartus 1966 because Latakia was too large; Damascus city made a governorate 1972–73.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://statoids.com/usy.html",
+       "title": "Statoids — Governorates of Syria, change history",
+       "says": "~1946 nine provinces; ~1960 Euphrates split into al-Rashid and Deir ez-Zor, Idlib split from Aleppo; ~1962 Damascus city; 1964-08-27 Quneitra; ~1972 Tartus split from Latakia; 1987 Damascus city a province, Rif Dimashq. No other change is listed.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Made of Latakia's southern districts; drawn from the year after the latest stated creation year (1972; ar.Wikipedia says 1966)."
+    }
+   ]
+  }
+ ],
+ "events": [],
+ "counts": [],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Latakia and Tartus between the two stated dates of Tartus's creation",
+   "unit": "SYR:Latakia@1957",
+   "atoms": [
+    "SYR-ADM2-27442178B95231031847739",
+    "SYR-ADM2-27442178B45607569668873",
+    "SYR-ADM2-27442178B5090378365720",
+    "SYR-ADM2-27442178B94813764709421",
+    "SYR-ADM2-27442178B62310236233952",
+    "SYR-ADM2-27442178B79430829635583",
+    "SYR-ADM2-27442178B1888341304206",
+    "SYR-ADM2-27442178B44438051869980",
+    "SYR-ADM2-27442178B78381061793998"
+   ],
+   "from": "1966-01-01",
+   "to": "1973-01-01",
+   "why": "ar.Wikipedia (التقسيم الإداري في سوريا) dates Tartus Governorate to 1966, en.Wikipedia and Statoids to 1972; no decree date found, so on any day in between the Latakia–Tartus split is unknown.",
+   "checked": [
+    "ar.Wikipedia oldid 74603004",
+    "en.Wikipedia Tartus Governorate oldid 1377412918",
+    "Statoids usy.html",
+    "ar.Wikipedia محافظة طرطوس oldid 71169233 (no date)"
+   ],
+   "needs": "the legislative decree creating Tartus Governorate"
+  },
+  {
+   "what": "Tartus 1966–1972",
+   "unit": "SYR:Tartus@1957",
+   "from": "1966-01-01",
+   "to": "1973-01-01",
+   "why": "As above (the atoms are withheld by the entry above).",
+   "checked": [
+    "as above"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "Damascus, Dar'a and (from 1964) Quneitra governorates, and Damascus city, 1957–1974",
+   "atoms": [
+    "SYR-ADM2-27442178B98358455064560",
+    "SYR-ADM2-27442178B38649296158741",
+    "SYR-ADM2-27442178B3893178613366",
+    "SYR-ADM2-27442178B67726505950673",
+    "SYR-ADM2-27442178B99944519185371",
+    "SYR-ADM2-27442178B63021739925615",
+    "SYR-ADM2-27442178B81131748986773",
+    "SYR-ADM2-27442178B63006606807907",
+    "SYR-ADM2-27442178B59833257068654",
+    "SYR-ADM2-27442178B13792068888358",
+    "SYR-ADM2-27442178B16442606574703",
+    "SYR-ADM2-27442178B63011141740515",
+    "SYR-ADM2-27442178B80699161134092",
+    "SYR-ADM2-27442178B56496530106269",
+    "SYR-ADM2-27442178B22471987034404"
+   ],
+   "from": "1957-11-17",
+   "to": null,
+   "why": "Three things run inside these atoms: (1) the 1949 Israel–Syria demilitarised zones and the June-1967 line, which Syria administered/claims west of the 1923 border that the atoms follow; (2) the 1967 and 1973–74 occupation lines (Golan, the 1973 salient) across Quneitra, Dar'a and Rif Dimashq; (3) the limits of Damascus city, separated from Damascus governorate in 1962 (Statoids) or 1972–73 (ar.Wikipedia), whose pre-1987 extent is not shown to equal today's 116 km² (the later dossier SYR.json leaves the same question open to 1987). Quneitra itself was made of two whole districts on 27 Aug 1964 (Quneitra from Damascus, Fiq from Dar'a).",
+   "checked": [
+    "Statoids usy.html",
+    "en.Wikipedia Governorates of Syria oldid 1371192542",
+    "en.Wikipedia Quneitra Governorate oldid 1377411753",
+    "ar.Wikipedia oldid 74603004",
+    "SYR.json (1974–) unresolved entries"
+   ],
+   "needs": "the DMZ and armistice-line geometry 1949–1967, the 1967/1973/1974 front lines, and the Damascus city-limit decrees of 1962 and 1972–73"
+  }
+ ]
+}

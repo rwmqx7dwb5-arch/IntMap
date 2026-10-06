@@ -1,0 +1,3652 @@
+{
+ "country": "FRA",
+ "atomSet": "gb-adm2@2026-10-06",
+ "scope": {
+  "from": "1943-01-01",
+  "to": "1975-12-31"
+ },
+ "polityNote": "French Republic (French State 1940–1944, Provisional Government, Fourth and Fifth Republics), metropolitan France. First level = the départements: 90 from 1922 to 1967, 95 from 1968-01-01, 96 from 1976-01-01 (Corsica split; drawn from then by data/hist-admin-fill.js). 1870–1940 is left to the TRF-GIS import (docs/HIST-RECONSTRUCTION.md §4); the scope starts in 1943 because the INSEE event list (the completeness proof for commune transfers between departments) starts then. Alsace-Moselle was annexed de facto by Germany 1940–1944 (statoids); the departments persisted de jure and the build's test 3 withholds ground the era map places in another polity. Boundary rectifications between communes of two departments that move only parcels are not commune events in the COG; none is known to us but the COG cannot prove their absence. Atoms: geoBoundaries FRA ADM2 (IGN, 2022).",
+ "units": [
+  {
+   "id": "FRA:ain@1943",
+   "names": {
+    "en": "Ain",
+    "ja": "アン県",
+    "local": "Ain"
+   },
+   "wikidata": "Q3083",
+   "spans": [
+    {
+     "from": "1967-12-31",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B68738187753831"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "Six communes of Ain were transferred to Rhône on 1967-12-31 (Lyon agglomeration). No other department change touches this line through 1975."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:allier@1943",
+   "names": {
+    "en": "Allier",
+    "ja": "アリエ県",
+    "local": "Allier"
+   },
+   "wikidata": "Q3113",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B93800494358231"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:alpesdehauteprovence-old@1943",
+   "names": {
+    "en": "Basses-Alpes",
+    "ja": "バス＝ザルプ県",
+    "local": "Basses-Alpes"
+   },
+   "wikidata": "Q3131",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": "1970-04-13",
+     "atoms": [
+      "FRA-ADM2-29444166B35951695576760"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "Basses-Alpes renamed Alpes-de-Haute-Provence on 1970-04-13."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:alpesdehauteprovence@1970",
+   "names": {
+    "en": "Alpes-de-Haute-Provence",
+    "ja": "アルプ＝ド＝オート＝プロヴァンス県",
+    "local": "Alpes-de-Haute-Provence"
+   },
+   "wikidata": "Q3131",
+   "spans": [
+    {
+     "from": "1970-04-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B35951695576760"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "Basses-Alpes renamed Alpes-de-Haute-Provence on 1970-04-13."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:hautesalpes@1943",
+   "names": {
+    "en": "Hautes-Alpes",
+    "ja": "オート＝アルプ県",
+    "local": "Hautes-Alpes"
+   },
+   "wikidata": "Q3125",
+   "spans": [
+    {
+     "from": "1947-09-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B36939425112061"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "Ground near Montgenèvre (Chaberton) was ceded by Italy under the same 1947 treaty; before that the present atom includes Italian ground. No other department change touches this line through 1975."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:alpesmaritimes@1943",
+   "names": {
+    "en": "Alpes-Maritimes",
+    "ja": "アルプ＝マリティーム県",
+    "local": "Alpes-Maritimes"
+   },
+   "wikidata": "Q3139",
+   "spans": [
+    {
+     "from": "1947-09-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B5209283925001"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "Tende, La Brigue and other ground were ceded by Italy under the 1947 peace treaty (communes created in the COG on 1947-09-17); before that the present atom includes Italian ground. No other department change touches this line through 1975."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:ardeche@1943",
+   "names": {
+    "en": "Ardèche",
+    "ja": "アルデシュ県",
+    "local": "Ardèche"
+   },
+   "wikidata": "Q3148",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B5188880309581"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:ardennes@1943",
+   "names": {
+    "en": "Ardennes",
+    "ja": "アルデンヌ県",
+    "local": "Ardennes"
+   },
+   "wikidata": "Q3164",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B82146643431704"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:ariege@1943",
+   "names": {
+    "en": "Ariège",
+    "ja": "アリエージュ県",
+    "local": "Ariège"
+   },
+   "wikidata": "Q3184",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B39237806830896"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:aube@1943",
+   "names": {
+    "en": "Aube",
+    "ja": "オーブ県",
+    "local": "Aube"
+   },
+   "wikidata": "Q3194",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B59009150054618"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:aude@1943",
+   "names": {
+    "en": "Aude",
+    "ja": "オード県",
+    "local": "Aude"
+   },
+   "wikidata": "Q3207",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B69755025252743"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:aveyron@1943",
+   "names": {
+    "en": "Aveyron",
+    "ja": "アヴェロン県",
+    "local": "Aveyron"
+   },
+   "wikidata": "Q3216",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B75659216331829"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:bouchesdurhone@1943",
+   "names": {
+    "en": "Bouches-du-Rhône",
+    "ja": "ブーシュ＝デュ＝ローヌ県",
+    "local": "Bouches-du-Rhône"
+   },
+   "wikidata": "Q3240",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B17788527993089"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:cantal@1943",
+   "names": {
+    "en": "Cantal",
+    "ja": "カンタル県",
+    "local": "Cantal"
+   },
+   "wikidata": "Q3259",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B17636645797139"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:charente@1943",
+   "names": {
+    "en": "Charente",
+    "ja": "シャラント県",
+    "local": "Charente"
+   },
+   "wikidata": "Q3266",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B23450851942643"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:charentemaritime@1943",
+   "names": {
+    "en": "Charente-Maritime",
+    "ja": "シャラント＝マリティーム県",
+    "local": "Charente-Maritime"
+   },
+   "wikidata": "Q3278",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B72910508035207"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:cher@1943",
+   "names": {
+    "en": "Cher",
+    "ja": "シェール県",
+    "local": "Cher"
+   },
+   "wikidata": "Q3286",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B99899011218746"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:correze@1943",
+   "names": {
+    "en": "Corrèze",
+    "ja": "コレーズ県",
+    "local": "Corrèze"
+   },
+   "wikidata": "Q3326",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B65585012195292"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:cotedor@1943",
+   "names": {
+    "en": "Côte-d’Or",
+    "ja": "コート＝ドール県",
+    "local": "Côte-d'Or"
+   },
+   "wikidata": "Q3342",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B37681458471024"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:cotesdarmor@1943",
+   "names": {
+    "en": "Côtes-d'Armor",
+    "ja": "コート＝ダルモール県",
+    "local": "Côtes d'Armor"
+   },
+   "wikidata": "Q3349",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B88952061285466"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:creuse@1943",
+   "names": {
+    "en": "Creuse",
+    "ja": "クルーズ県",
+    "local": "Creuse"
+   },
+   "wikidata": "Q3353",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B65722517525705"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:dordogne@1943",
+   "names": {
+    "en": "Dordogne",
+    "ja": "ドルドーニュ県",
+    "local": "Dordogne"
+   },
+   "wikidata": "Q3357",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B3241556097254"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:doubs@1943",
+   "names": {
+    "en": "Doubs",
+    "ja": "ドゥー県",
+    "local": "Doubs"
+   },
+   "wikidata": "Q3361",
+   "spans": [
+    {
+     "from": "1974-06-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B35503960464671"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "See Jura (Antorpe, 1974-06-01). No other department change touches this line through 1975."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:drome@1943",
+   "names": {
+    "en": "Drôme",
+    "ja": "ドローム県",
+    "local": "Drôme"
+   },
+   "wikidata": "Q3364",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B81319189614535"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:eure@1943",
+   "names": {
+    "en": "Eure",
+    "ja": "ウール県",
+    "local": "Eure"
+   },
+   "wikidata": "Q3372",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B58139106097457"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:eureetloir@1943",
+   "names": {
+    "en": "Eure-et-Loir",
+    "ja": "ウール＝エ＝ロワール県",
+    "local": "Eure-et-Loir"
+   },
+   "wikidata": "Q3377",
+   "spans": [
+    {
+     "from": "1974-11-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B66992959571509"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "Dommerville (Eure-et-Loir) merged into Angerville (Essonne) on 1974-11-01. No other department change touches this line through 1975."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:finistere@1943",
+   "names": {
+    "en": "Finistère",
+    "ja": "フィニステール県",
+    "local": "Finistère"
+   },
+   "wikidata": "Q3389",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B28282788434260"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:gard@1943",
+   "names": {
+    "en": "Gard",
+    "ja": "ガール県",
+    "local": "Gard"
+   },
+   "wikidata": "Q12515",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B65685353516975"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:hautegaronne@1943",
+   "names": {
+    "en": "Haute-Garonne",
+    "ja": "オート＝ガロンヌ県",
+    "local": "Haute-Garonne"
+   },
+   "wikidata": "Q12538",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B14857210007928"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:gers@1943",
+   "names": {
+    "en": "Gers",
+    "ja": "ジェール県",
+    "local": "Gers"
+   },
+   "wikidata": "Q12517",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B47069974768565"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:gironde@1943",
+   "names": {
+    "en": "Gironde",
+    "ja": "ジロンド県",
+    "local": "Gironde"
+   },
+   "wikidata": "Q12526",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B86553747081520"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:herault@1943",
+   "names": {
+    "en": "Hérault",
+    "ja": "エロー県",
+    "local": "Hérault"
+   },
+   "wikidata": "Q12545",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B6585722780804"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:illeetvilaine@1943",
+   "names": {
+    "en": "Ille-et-Vilaine",
+    "ja": "イル＝エ＝ヴィレーヌ県",
+    "local": "Ille-et-Vilaine"
+   },
+   "wikidata": "Q12549",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B68700463469318"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:indre@1943",
+   "names": {
+    "en": "Indre",
+    "ja": "アンドル県",
+    "local": "Indre"
+   },
+   "wikidata": "Q12553",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B54615812601715"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:indreetloire@1943",
+   "names": {
+    "en": "Indre-et-Loire",
+    "ja": "アンドル＝エ＝ロワール県",
+    "local": "Indre-et-Loire"
+   },
+   "wikidata": "Q12556",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B19195541270637"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:isere@1943",
+   "names": {
+    "en": "Isère",
+    "ja": "イゼール県",
+    "local": "Isère"
+   },
+   "wikidata": "Q12559",
+   "spans": [
+    {
+     "from": "1971-04-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B91645868350210"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "Twenty-three communes moved to Rhône on 1967-12-31 and Colombier-Saugnieu on 1971-04-01. No other department change touches this line through 1975."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:jura@1943",
+   "names": {
+    "en": "Jura",
+    "ja": "ジュラ県",
+    "local": "Jura"
+   },
+   "wikidata": "Q3120",
+   "spans": [
+    {
+     "from": "1974-06-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B73543866728585"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "Antorpe (Jura) became an associated commune of Saint-Vit (Doubs) on 1974-06-01. No other department change touches this line through 1975."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:landes@1943",
+   "names": {
+    "en": "Landes",
+    "ja": "ランド県",
+    "local": "Landes"
+   },
+   "wikidata": "Q12563",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B39932690726806"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:loiretcher@1943",
+   "names": {
+    "en": "Loir-et-Cher",
+    "ja": "ロワール＝エ＝シェール県",
+    "local": "Loir-et-Cher"
+   },
+   "wikidata": "Q12564",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B49073830062787"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:loire@1943",
+   "names": {
+    "en": "Loire",
+    "ja": "ロワール県",
+    "local": "Loire"
+   },
+   "wikidata": "Q12569",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B11036857103617"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:hauteloire@1943",
+   "names": {
+    "en": "Haute-Loire",
+    "ja": "オート＝ロワール県",
+    "local": "Haute-Loire"
+   },
+   "wikidata": "Q12572",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B92097492937040"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:loiret@1943",
+   "names": {
+    "en": "Loiret",
+    "ja": "ロワレ県",
+    "local": "Loiret"
+   },
+   "wikidata": "Q12574",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B76955339583295"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:lot@1943",
+   "names": {
+    "en": "Lot",
+    "ja": "ロット県",
+    "local": "Lot"
+   },
+   "wikidata": "Q12576",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B44586442299991"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:lotetgaronne@1943",
+   "names": {
+    "en": "Lot-et-Garonne",
+    "ja": "ロット＝エ＝ガロンヌ県",
+    "local": "Lot-et-Garonne"
+   },
+   "wikidata": "Q12578",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B43955208715015"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:lozere@1943",
+   "names": {
+    "en": "Lozère",
+    "ja": "ロゼール県",
+    "local": "Lozère"
+   },
+   "wikidata": "Q12580",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B39231555768445"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:hautemarne@1943",
+   "names": {
+    "en": "Haute-Marne",
+    "ja": "オート＝マルヌ県",
+    "local": "Haute-Marne"
+   },
+   "wikidata": "Q12607",
+   "spans": [
+    {
+     "from": "1975-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B63123006968328"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "Frettes left for Haute-Saône on 1974-07-01 and Sainte-Livière (Marne) joined Éclaron-Braucourt on 1975-01-01. No other department change touches this line through 1975."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:mayenne@1943",
+   "names": {
+    "en": "Mayenne",
+    "ja": "マイエンヌ県",
+    "local": "Mayenne"
+   },
+   "wikidata": "Q12620",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B79150552688542"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:morbihan@1943",
+   "names": {
+    "en": "Morbihan",
+    "ja": "モルビアン県",
+    "local": "Morbihan"
+   },
+   "wikidata": "Q12642",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B27439380359881"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:moselle@1943",
+   "names": {
+    "en": "Moselle",
+    "ja": "モゼル県",
+    "local": "Moselle"
+   },
+   "wikidata": "Q12652",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B44143395752523"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:nievre@1943",
+   "names": {
+    "en": "Nièvre",
+    "ja": "ニエーヴル県",
+    "local": "Nièvre"
+   },
+   "wikidata": "Q12657",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B85399142595811"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:nord@1943",
+   "names": {
+    "en": "Nord",
+    "ja": "ノール県",
+    "local": "Nord"
+   },
+   "wikidata": "Q12661",
+   "spans": [
+    {
+     "from": "1973-09-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B41843467801289"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "Escaufourt (Aisne) joined Saint-Souplet (Nord) on 1973-09-01; before that date the present Nord atom includes Aisne ground. No other department change touches this line through 1975."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:oise@1943",
+   "names": {
+    "en": "Oise",
+    "ja": "オワーズ県",
+    "local": "Oise"
+   },
+   "wikidata": "Q12675",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B63675080210399"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:orne@1943",
+   "names": {
+    "en": "Orne",
+    "ja": "オルヌ県",
+    "local": "Orne"
+   },
+   "wikidata": "Q12679",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B96504219230077"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:pasdecalais@1943",
+   "names": {
+    "en": "Pas-de-Calais",
+    "ja": "パ＝ド＝カレー県",
+    "local": "Pas-de-Calais"
+   },
+   "wikidata": "Q12689",
+   "spans": [
+    {
+     "from": "1974-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B36983248378212"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "See Somme (Ytres 1971-01-01, Beauvoir-Rivière 1974-01-01). No other department change touches this line through 1975."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:puydedome@1943",
+   "names": {
+    "en": "Puy-de-Dôme",
+    "ja": "ピュイ＝ド＝ドーム県",
+    "local": "Puy-de-Dôme"
+   },
+   "wikidata": "Q12694",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B44853968900127"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:pyreneesatlantiques-old@1943",
+   "names": {
+    "en": "Basses-Pyrénées",
+    "ja": "バス＝ピレネー県",
+    "local": "Basses-Pyrénées"
+   },
+   "wikidata": "Q12703",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": "1969-10-10",
+     "atoms": [
+      "FRA-ADM2-29444166B97877070376653"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "Basses-Pyrénées renamed Pyrénées-Atlantiques on 1969-10-10."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:pyreneesatlantiques@1969",
+   "names": {
+    "en": "Pyrénées-Atlantiques",
+    "ja": "ピレネー＝アトランティック県",
+    "local": "Pyrénées-Atlantiques"
+   },
+   "wikidata": "Q12703",
+   "spans": [
+    {
+     "from": "1969-10-10",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B97877070376653"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "Basses-Pyrénées renamed Pyrénées-Atlantiques on 1969-10-10."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:hautespyrenees@1943",
+   "names": {
+    "en": "Hautes-Pyrénées",
+    "ja": "オート＝ピレネー県",
+    "local": "Hautes-Pyrénées"
+   },
+   "wikidata": "Q12700",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B21169725107025"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:pyreneesorientales@1943",
+   "names": {
+    "en": "Pyrénées-Orientales",
+    "ja": "ピレネー＝オリアンタル県",
+    "local": "Pyrénées-Orientales"
+   },
+   "wikidata": "Q12709",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B63064653570654"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:basrhin@1943",
+   "names": {
+    "en": "Bas-Rhin",
+    "ja": "バ＝ラン県",
+    "local": "Bas-Rhin"
+   },
+   "wikidata": "Q12717",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B31239437168490"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:hautrhin@1943",
+   "names": {
+    "en": "Haut-Rhin",
+    "ja": "オー＝ラン県",
+    "local": "Haut-Rhin"
+   },
+   "wikidata": "Q12722",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B51480055383033"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:rhone@1943",
+   "names": {
+    "en": "departmental district of the Rhône",
+    "ja": "Rhône",
+    "local": "Rhône"
+   },
+   "wikidata": "Q18914778",
+   "spans": [
+    {
+     "from": "1971-04-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B37867629412878"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "See Ain and Isère: the present Rhône atom holds communes added on 1967-12-31 and 1971-04-01. No other department change touches this line through 1975."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:hautesaone@1943",
+   "names": {
+    "en": "Haute-Saône",
+    "ja": "オート＝ソーヌ県",
+    "local": "Haute-Saône"
+   },
+   "wikidata": "Q12730",
+   "spans": [
+    {
+     "from": "1974-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B41622072756868"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "Frettes (Haute-Marne) became an associated commune of Champlitte (Haute-Saône) on 1974-07-01. No other department change touches this line through 1975."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:saoneetloire@1943",
+   "names": {
+    "en": "Saône-et-Loire",
+    "ja": "ソーヌ＝エ＝ロワール県",
+    "local": "Saône-et-Loire"
+   },
+   "wikidata": "Q12736",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B17013349851570"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:sarthe@1943",
+   "names": {
+    "en": "Sarthe",
+    "ja": "サルト県",
+    "local": "Sarthe"
+   },
+   "wikidata": "Q12740",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B36367114502918"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:savoie@1943",
+   "names": {
+    "en": "Savoie",
+    "ja": "サヴォワ",
+    "local": "Savoie"
+   },
+   "wikidata": "Q12745",
+   "spans": [
+    {
+     "from": "1947-09-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B62265126010794"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The Mont-Cenis plateau was ceded by Italy under the same 1947 treaty; before that the present atom includes Italian ground. No other department change touches this line through 1975."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:hautesavoie@1943",
+   "names": {
+    "en": "Haute-Savoie",
+    "ja": "オート＝サヴォワ県",
+    "local": "Haute-Savoie"
+   },
+   "wikidata": "Q12751",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B73077327330789"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:paris@1968",
+   "names": {
+    "en": "Paris",
+    "ja": "パリ",
+    "local": "Paris"
+   },
+   "wikidata": "Q90",
+   "spans": [
+    {
+     "from": "1968-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B33792924009837"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "Seine and Seine-et-Oise reorganized by the law of 1964-07-10 into Paris, Hauts-de-Seine, Seine-Saint-Denis, Val-de-Marne, Val-d'Oise, Essonne and Yvelines."
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Departments_of_France&oldid=1375709167",
+       "title": "Departments of France (Wikipedia, oldid 1375709167)",
+       "accessed": "2026-10-06",
+       "says": "The Île-de-France reorganisation took effect on 1 January 1968."
+      }
+     ],
+     "dateNote": "Law 64-707 of 1964-07-10, in force 1968-01-01."
+    }
+   ]
+  },
+  {
+   "id": "FRA:seinemaritime-old@1943",
+   "names": {
+    "en": "Seine-Inférieure",
+    "ja": "セーヌ＝アンフェリウール県",
+    "local": "Seine-Inférieure"
+   },
+   "wikidata": "Q12758",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": "1955-01-18",
+     "atoms": [
+      "FRA-ADM2-29444166B55885149928258"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "Seine-Inférieure renamed Seine-Maritime on 1955-01-18."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:seinemaritime@1955",
+   "names": {
+    "en": "Seine-Maritime",
+    "ja": "セーヌ＝マリティーム県",
+    "local": "Seine-Maritime"
+   },
+   "wikidata": "Q12758",
+   "spans": [
+    {
+     "from": "1955-01-18",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B55885149928258"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "Seine-Inférieure renamed Seine-Maritime on 1955-01-18."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:seineetmarne@1943",
+   "names": {
+    "en": "Seine-et-Marne",
+    "ja": "セーヌ＝エ＝マルヌ県",
+    "local": "Seine-et-Marne"
+   },
+   "wikidata": "Q12753",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B64437327790506"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:yvelines@1968",
+   "names": {
+    "en": "Yvelines",
+    "ja": "イヴリーヌ県",
+    "local": "Yvelines"
+   },
+   "wikidata": "Q12820",
+   "spans": [
+    {
+     "from": "1969-11-29",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B89686889104194"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "Châteaufort and Toussus-le-Noble moved from Essonne to Yvelines on 1969-11-29. No other department change touches this line through 1975."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "Seine and Seine-et-Oise reorganized by the law of 1964-07-10 into Paris, Hauts-de-Seine, Seine-Saint-Denis, Val-de-Marne, Val-d'Oise, Essonne and Yvelines."
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Departments_of_France&oldid=1375709167",
+       "title": "Departments of France (Wikipedia, oldid 1375709167)",
+       "accessed": "2026-10-06",
+       "says": "The Île-de-France reorganisation took effect on 1 January 1968."
+      }
+     ],
+     "dateNote": "Law 64-707 of 1964-07-10, in force 1968-01-01."
+    }
+   ]
+  },
+  {
+   "id": "FRA:deuxsevres@1943",
+   "names": {
+    "en": "Deux-Sèvres",
+    "ja": "ドゥー＝セーヴル県",
+    "local": "Deux-Sèvres"
+   },
+   "wikidata": "Q12765",
+   "spans": [
+    {
+     "from": "1973-09-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B3130633303914"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "Le Puy-Saint-Bonnet joined Cholet (Maine-et-Loire) on 1973-09-01; before that date the present Deux-Sèvres atom lacks it. No other department change touches this line through 1975."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:somme@1943",
+   "names": {
+    "en": "Somme",
+    "ja": "ソンム県",
+    "local": "Somme"
+   },
+   "wikidata": "Q12770",
+   "spans": [
+    {
+     "from": "1974-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B47374384537090"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "Ytres moved to Pas-de-Calais on 1971-01-01 and Beauvoir-Rivière merged into Beauvoir-Wavans (Pas-de-Calais) on 1974-01-01. No other department change touches this line through 1975."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:tarn@1943",
+   "names": {
+    "en": "Tarn",
+    "ja": "タルヌ県",
+    "local": "Tarn"
+   },
+   "wikidata": "Q12772",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B69257597057849"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:tarnetgaronne@1943",
+   "names": {
+    "en": "Tarn-et-Garonne",
+    "ja": "タルヌ＝エ＝ガロンヌ県",
+    "local": "Tarn-et-Garonne"
+   },
+   "wikidata": "Q12779",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B74037442766285"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:var@1943",
+   "names": {
+    "en": "Var",
+    "ja": "ヴァール県",
+    "local": "Var"
+   },
+   "wikidata": "Q12789",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B96369043825533"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:vaucluse@1943",
+   "names": {
+    "en": "Vaucluse",
+    "ja": "ヴォクリューズ県",
+    "local": "Vaucluse"
+   },
+   "wikidata": "Q12792",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B40811589398759"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:vendee@1943",
+   "names": {
+    "en": "Vendée",
+    "ja": "ヴァンデ県",
+    "local": "Vendée"
+   },
+   "wikidata": "Q12798",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B84862613094844"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:vienne@1943",
+   "names": {
+    "en": "Vienne",
+    "ja": "ヴィエンヌ県",
+    "local": "Vienne"
+   },
+   "wikidata": "Q12804",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B96315142170190"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:hautevienne@1943",
+   "names": {
+    "en": "Haute-Vienne",
+    "ja": "オート＝ヴィエンヌ県",
+    "local": "Haute-Vienne"
+   },
+   "wikidata": "Q12808",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B22545752371567"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:vosges@1943",
+   "names": {
+    "en": "Vosges",
+    "ja": "ヴォージュ県",
+    "local": "Vosges"
+   },
+   "wikidata": "Q3105",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B15812281755892"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:yonne@1943",
+   "names": {
+    "en": "Yonne",
+    "ja": "ヨンヌ県",
+    "local": "Yonne"
+   },
+   "wikidata": "Q12816",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B9446677840281"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:territoiredebelfort@1943",
+   "names": {
+    "en": "Territoire de Belfort",
+    "ja": "テリトワール・ド・ベルフォール県",
+    "local": "Territoire de Belfort"
+   },
+   "wikidata": "Q12782",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B23158534197665"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FRA:essonne@1968",
+   "names": {
+    "en": "Essonne",
+    "ja": "エソンヌ県",
+    "local": "Essonne"
+   },
+   "wikidata": "Q3368",
+   "spans": [
+    {
+     "from": "1974-11-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B9117646007403"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "See Yvelines (1969-11-29) and Eure-et-Loir (Dommerville, 1974-11-01). No other department change touches this line through 1975."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "Seine and Seine-et-Oise reorganized by the law of 1964-07-10 into Paris, Hauts-de-Seine, Seine-Saint-Denis, Val-de-Marne, Val-d'Oise, Essonne and Yvelines."
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Departments_of_France&oldid=1375709167",
+       "title": "Departments of France (Wikipedia, oldid 1375709167)",
+       "accessed": "2026-10-06",
+       "says": "The Île-de-France reorganisation took effect on 1 January 1968."
+      }
+     ],
+     "dateNote": "Law 64-707 of 1964-07-10, in force 1968-01-01."
+    }
+   ]
+  },
+  {
+   "id": "FRA:hautsdeseine@1968",
+   "names": {
+    "en": "Hauts-de-Seine",
+    "ja": "オー＝ド＝セーヌ県",
+    "local": "Hauts-de-Seine"
+   },
+   "wikidata": "Q12543",
+   "spans": [
+    {
+     "from": "1968-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B3280539319107"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "Seine and Seine-et-Oise reorganized by the law of 1964-07-10 into Paris, Hauts-de-Seine, Seine-Saint-Denis, Val-de-Marne, Val-d'Oise, Essonne and Yvelines."
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Departments_of_France&oldid=1375709167",
+       "title": "Departments of France (Wikipedia, oldid 1375709167)",
+       "accessed": "2026-10-06",
+       "says": "The Île-de-France reorganisation took effect on 1 January 1968."
+      }
+     ],
+     "dateNote": "Law 64-707 of 1964-07-10, in force 1968-01-01."
+    }
+   ]
+  },
+  {
+   "id": "FRA:seinesaintdenis@1968",
+   "names": {
+    "en": "Seine-Saint-Denis",
+    "ja": "セーヌ＝サン＝ドニ県",
+    "local": "Seine-Saint-Denis"
+   },
+   "wikidata": "Q12761",
+   "spans": [
+    {
+     "from": "1968-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B11945742862669"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "Seine and Seine-et-Oise reorganized by the law of 1964-07-10 into Paris, Hauts-de-Seine, Seine-Saint-Denis, Val-de-Marne, Val-d'Oise, Essonne and Yvelines."
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Departments_of_France&oldid=1375709167",
+       "title": "Departments of France (Wikipedia, oldid 1375709167)",
+       "accessed": "2026-10-06",
+       "says": "The Île-de-France reorganisation took effect on 1 January 1968."
+      }
+     ],
+     "dateNote": "Law 64-707 of 1964-07-10, in force 1968-01-01."
+    }
+   ]
+  },
+  {
+   "id": "FRA:valdemarne@1968",
+   "names": {
+    "en": "Val-de-Marne",
+    "ja": "ヴァル＝ド＝マルヌ県",
+    "local": "Val-de-Marne"
+   },
+   "wikidata": "Q12788",
+   "spans": [
+    {
+     "from": "1968-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B83164575229799"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "Seine and Seine-et-Oise reorganized by the law of 1964-07-10 into Paris, Hauts-de-Seine, Seine-Saint-Denis, Val-de-Marne, Val-d'Oise, Essonne and Yvelines."
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Departments_of_France&oldid=1375709167",
+       "title": "Departments of France (Wikipedia, oldid 1375709167)",
+       "accessed": "2026-10-06",
+       "says": "The Île-de-France reorganisation took effect on 1 January 1968."
+      }
+     ],
+     "dateNote": "Law 64-707 of 1964-07-10, in force 1968-01-01."
+    }
+   ]
+  },
+  {
+   "id": "FRA:valdoise@1968",
+   "names": {
+    "en": "Val-d'Oise",
+    "ja": "ヴァル＝ドワーズ県",
+    "local": "Val-d'Oise"
+   },
+   "wikidata": "Q12784",
+   "spans": [
+    {
+     "from": "1968-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "FRA-ADM2-29444166B99414288339208"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "No creation, abolition or boundary change of this department is listed between 1922 and 1976."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "Seine and Seine-et-Oise reorganized by the law of 1964-07-10 into Paris, Hauts-de-Seine, Seine-Saint-Denis, Val-de-Marne, Val-d'Oise, Essonne and Yvelines."
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Departments_of_France&oldid=1375709167",
+       "title": "Departments of France (Wikipedia, oldid 1375709167)",
+       "accessed": "2026-10-06",
+       "says": "The Île-de-France reorganisation took effect on 1 January 1968."
+      }
+     ],
+     "dateNote": "Law 64-707 of 1964-07-10, in force 1968-01-01."
+    }
+   ]
+  },
+  {
+   "id": "FRA:corse@1943",
+   "names": {
+    "en": "Corse",
+    "ja": "コルス県",
+    "local": "Corse"
+   },
+   "wikidata": "Q2998020",
+   "spans": [
+    {
+     "from": "1943-01-01",
+     "precision": "day",
+     "to": "1976-01-01",
+     "atoms": [
+      "FRA-ADM2-29444166B58069914139647",
+      "FRA-ADM2-29444166B63382640804813"
+     ],
+     "sources": [
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "The complete list of commune events since 1943 records no change of department (code change MOD 41, or a merger joining communes of two departments) touching this department's boundary in this window."
+      },
+      {
+       "url": "https://statoids.com/yfr.html",
+       "title": "Departments of France (Statoids, Gwillim Law) — change history",
+       "accessed": "2026-10-06",
+       "says": "Corse department split into Corse-du-Sud and Haute-Corse on 1976-01-01."
+      },
+      {
+       "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+       "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+       "accessed": "2026-10-06",
+       "says": "All 360 communes of department 20 were recoded to 2A (124) or 2B (236) on 1976-01-01; no commune entered or left Corsica."
+      }
+     ],
+     "dateNote": "Law 75-356 of 1975-05-15; in force 1976-01-01."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1947-09-17",
+   "what": "Tende, La Brigue and frontier ground ceded by Italy (Treaty of Paris 1947-02-10) join Alpes-Maritimes, Savoie and Hautes-Alpes",
+   "sources": [
+    {
+     "url": "https://statoids.com/yfr.html",
+     "title": "Departments of France (Statoids, Gwillim Law) — change history",
+     "accessed": "2026-10-06",
+     "says": "1947-02-10 Tende, La Brigue and other villages annexed to Alpes-Maritimes by the peace treaty."
+    },
+    {
+     "url": "https://www.insee.fr/fr/statistiques/fichier/8377162/v_mvt_commune_2025.csv",
+     "title": "INSEE, Code officiel géographique 2025 — événements sur les communes depuis 1943 (v_mvt_commune_2025.csv)",
+     "accessed": "2026-10-06",
+     "says": "Communes of Tende (06163) and La Brigue (06162) created 1947-09-17."
+    }
+   ]
+  },
+  {
+   "date": "1968-01-01",
+   "what": "Seine and Seine-et-Oise replaced by seven departments",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Departments_of_France&oldid=1375709167",
+     "title": "Departments of France (Wikipedia, oldid 1375709167)",
+     "accessed": "2026-10-06",
+     "says": "Île-de-France reorganisation of 1968 added departments; Seine and Seine-et-Oise divided on 1 January 1968."
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1943-01-01",
+   "n": 90,
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Departments_of_France&oldid=1375709167",
+     "title": "Departments of France (Wikipedia, oldid 1375709167)",
+     "accessed": "2026-10-06",
+     "says": "Territoire de Belfort became the 90th department in 1922; the 1968 and 1975 changes raised metropolitan France to 96."
+    }
+   ]
+  },
+  {
+   "date": "1960-01-01",
+   "n": 90,
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Departments_of_France&oldid=1375709167",
+     "title": "Departments of France (Wikipedia, oldid 1375709167)",
+     "accessed": "2026-10-06",
+     "says": "90 departments from 1922 until the 1968 reorganisation."
+    }
+   ]
+  },
+  {
+   "date": "1968-01-01",
+   "n": 95,
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Departments_of_France&oldid=1375709167",
+     "title": "Departments of France (Wikipedia, oldid 1375709167)",
+     "accessed": "2026-10-06",
+     "says": "Seine and Seine-et-Oise were divided into seven departments on 1 January 1968 (90 − 2 + 7 = 95); Corsica was divided later (96)."
+    }
+   ]
+  },
+  {
+   "date": "1975-06-01",
+   "n": 95,
+   "sources": [
+    {
+     "url": "https://statoids.com/yfr.html",
+     "title": "Departments of France (Statoids, Gwillim Law) — change history",
+     "accessed": "2026-10-06",
+     "says": "Corse split into two departments only on 1976-01-01."
+    }
+   ]
+  }
+ ],
+ "unresolved": [
+  {
+   "what": "Ain before 1967-12-31",
+   "unit": "FRA:ain@1943",
+   "atoms": [
+    "FRA-ADM2-29444166B68738187753831"
+   ],
+   "from": "1943-01-01",
+   "to": "1967-12-31",
+   "why": "Six communes of Ain were transferred to Rhône on 1967-12-31 (Lyon agglomeration).",
+   "checked": [
+    "INSEE COG 2025 v_mvt_commune_2025.csv: every MOD 41 (department change) and every merger (MOD 31/32/33) joining communes of two departments, 1943–2025",
+    "Statoids yfr.html change history",
+    "geoBoundaries FRA ADM2 (IGN 2022) atoms: only whole departments, no finer atom in this set"
+   ],
+   "needs": "commune atoms (IGN ADMIN EXPRESS / OSM communes) with the INSEE COG event list, to carry the line through today's department"
+  },
+  {
+   "what": "Aisne before the end of the scope",
+   "unit": "FRA:aisne@1943",
+   "atoms": [
+    "FRA-ADM2-29444166B62247732126362"
+   ],
+   "from": "1943-01-01",
+   "to": null,
+   "why": "Gernicourt left Aisne for Marne on 2016-12-31 and Escaufourt joined Saint-Souplet (Nord) on 1973-09-01; the present Aisne atom lacks Gernicourt, so the 1943–1975 line runs inside the present Marne atom.",
+   "checked": [
+    "INSEE COG 2025 v_mvt_commune_2025.csv: every MOD 41 (department change) and every merger (MOD 31/32/33) joining communes of two departments, 1943–2025",
+    "Statoids yfr.html change history",
+    "geoBoundaries FRA ADM2 (IGN 2022) atoms: only whole departments, no finer atom in this set"
+   ],
+   "needs": "commune atoms (IGN ADMIN EXPRESS / OSM communes) with the INSEE COG event list, to carry the line through today's department"
+  },
+  {
+   "what": "Hautes-Alpes before 1947-09-17",
+   "unit": "FRA:hautesalpes@1943",
+   "atoms": [
+    "FRA-ADM2-29444166B36939425112061"
+   ],
+   "from": "1943-01-01",
+   "to": "1947-09-17",
+   "why": "Ground near Montgenèvre (Chaberton) was ceded by Italy under the same 1947 treaty; before that the present atom includes Italian ground.",
+   "checked": [
+    "INSEE COG 2025 v_mvt_commune_2025.csv: every MOD 41 (department change) and every merger (MOD 31/32/33) joining communes of two departments, 1943–2025",
+    "Statoids yfr.html change history",
+    "geoBoundaries FRA ADM2 (IGN 2022) atoms: only whole departments, no finer atom in this set"
+   ],
+   "needs": "commune atoms (IGN ADMIN EXPRESS / OSM communes) with the INSEE COG event list, to carry the line through today's department"
+  },
+  {
+   "what": "Alpes-Maritimes before 1947-09-17",
+   "unit": "FRA:alpesmaritimes@1943",
+   "atoms": [
+    "FRA-ADM2-29444166B5209283925001"
+   ],
+   "from": "1943-01-01",
+   "to": "1947-09-17",
+   "why": "Tende, La Brigue and other ground were ceded by Italy under the 1947 peace treaty (communes created in the COG on 1947-09-17); before that the present atom includes Italian ground.",
+   "checked": [
+    "INSEE COG 2025 v_mvt_commune_2025.csv: every MOD 41 (department change) and every merger (MOD 31/32/33) joining communes of two departments, 1943–2025",
+    "Statoids yfr.html change history",
+    "geoBoundaries FRA ADM2 (IGN 2022) atoms: only whole departments, no finer atom in this set"
+   ],
+   "needs": "commune atoms (IGN ADMIN EXPRESS / OSM communes) with the INSEE COG event list, to carry the line through today's department"
+  },
+  {
+   "what": "Calvados before the end of the scope",
+   "unit": "FRA:calvados@1943",
+   "atoms": [
+    "FRA-ADM2-29444166B48646093113646"
+   ],
+   "from": "1943-01-01",
+   "to": null,
+   "why": "Pont-Farcy (with its associated commune Pleines-Œuvres) moved from Calvados to Manche on 2018-01-01; the earlier line runs inside the present Manche atom.",
+   "checked": [
+    "INSEE COG 2025 v_mvt_commune_2025.csv: every MOD 41 (department change) and every merger (MOD 31/32/33) joining communes of two departments, 1943–2025",
+    "Statoids yfr.html change history",
+    "geoBoundaries FRA ADM2 (IGN 2022) atoms: only whole departments, no finer atom in this set"
+   ],
+   "needs": "commune atoms (IGN ADMIN EXPRESS / OSM communes) with the INSEE COG event list, to carry the line through today's department"
+  },
+  {
+   "what": "Doubs before 1974-06-01",
+   "unit": "FRA:doubs@1943",
+   "atoms": [
+    "FRA-ADM2-29444166B35503960464671"
+   ],
+   "from": "1943-01-01",
+   "to": "1974-06-01",
+   "why": "See Jura (Antorpe, 1974-06-01).",
+   "checked": [
+    "INSEE COG 2025 v_mvt_commune_2025.csv: every MOD 41 (department change) and every merger (MOD 31/32/33) joining communes of two departments, 1943–2025",
+    "Statoids yfr.html change history",
+    "geoBoundaries FRA ADM2 (IGN 2022) atoms: only whole departments, no finer atom in this set"
+   ],
+   "needs": "commune atoms (IGN ADMIN EXPRESS / OSM communes) with the INSEE COG event list, to carry the line through today's department"
+  },
+  {
+   "what": "Eure-et-Loir before 1974-11-01",
+   "unit": "FRA:eureetloir@1943",
+   "atoms": [
+    "FRA-ADM2-29444166B66992959571509"
+   ],
+   "from": "1943-01-01",
+   "to": "1974-11-01",
+   "why": "Dommerville (Eure-et-Loir) merged into Angerville (Essonne) on 1974-11-01.",
+   "checked": [
+    "INSEE COG 2025 v_mvt_commune_2025.csv: every MOD 41 (department change) and every merger (MOD 31/32/33) joining communes of two departments, 1943–2025",
+    "Statoids yfr.html change history",
+    "geoBoundaries FRA ADM2 (IGN 2022) atoms: only whole departments, no finer atom in this set"
+   ],
+   "needs": "commune atoms (IGN ADMIN EXPRESS / OSM communes) with the INSEE COG event list, to carry the line through today's department"
+  },
+  {
+   "what": "Isère before 1971-04-01",
+   "unit": "FRA:isere@1943",
+   "atoms": [
+    "FRA-ADM2-29444166B91645868350210"
+   ],
+   "from": "1943-01-01",
+   "to": "1971-04-01",
+   "why": "Twenty-three communes moved to Rhône on 1967-12-31 and Colombier-Saugnieu on 1971-04-01.",
+   "checked": [
+    "INSEE COG 2025 v_mvt_commune_2025.csv: every MOD 41 (department change) and every merger (MOD 31/32/33) joining communes of two departments, 1943–2025",
+    "Statoids yfr.html change history",
+    "geoBoundaries FRA ADM2 (IGN 2022) atoms: only whole departments, no finer atom in this set"
+   ],
+   "needs": "commune atoms (IGN ADMIN EXPRESS / OSM communes) with the INSEE COG event list, to carry the line through today's department"
+  },
+  {
+   "what": "Jura before 1974-06-01",
+   "unit": "FRA:jura@1943",
+   "atoms": [
+    "FRA-ADM2-29444166B73543866728585"
+   ],
+   "from": "1943-01-01",
+   "to": "1974-06-01",
+   "why": "Antorpe (Jura) became an associated commune of Saint-Vit (Doubs) on 1974-06-01.",
+   "checked": [
+    "INSEE COG 2025 v_mvt_commune_2025.csv: every MOD 41 (department change) and every merger (MOD 31/32/33) joining communes of two departments, 1943–2025",
+    "Statoids yfr.html change history",
+    "geoBoundaries FRA ADM2 (IGN 2022) atoms: only whole departments, no finer atom in this set"
+   ],
+   "needs": "commune atoms (IGN ADMIN EXPRESS / OSM communes) with the INSEE COG event list, to carry the line through today's department"
+  },
+  {
+   "what": "Maine-et-Loire before the end of the scope",
+   "unit": "FRA:maineetloire@1943",
+   "atoms": [
+    "FRA-ADM2-29444166B93652606552669"
+   ],
+   "from": "1943-01-01",
+   "to": null,
+   "why": "See Loire-Atlantique (Le Fresne-sur-Loire, Freigné), and Le Puy-Saint-Bonnet joined Cholet from Deux-Sèvres on 1973-09-01.",
+   "checked": [
+    "INSEE COG 2025 v_mvt_commune_2025.csv: every MOD 41 (department change) and every merger (MOD 31/32/33) joining communes of two departments, 1943–2025",
+    "Statoids yfr.html change history",
+    "geoBoundaries FRA ADM2 (IGN 2022) atoms: only whole departments, no finer atom in this set"
+   ],
+   "needs": "commune atoms (IGN ADMIN EXPRESS / OSM communes) with the INSEE COG event list, to carry the line through today's department"
+  },
+  {
+   "what": "Manche before the end of the scope",
+   "unit": "FRA:manche@1943",
+   "atoms": [
+    "FRA-ADM2-29444166B25199754609160"
+   ],
+   "from": "1943-01-01",
+   "to": null,
+   "why": "See Calvados (Pont-Farcy, 2018-01-01).",
+   "checked": [
+    "INSEE COG 2025 v_mvt_commune_2025.csv: every MOD 41 (department change) and every merger (MOD 31/32/33) joining communes of two departments, 1943–2025",
+    "Statoids yfr.html change history",
+    "geoBoundaries FRA ADM2 (IGN 2022) atoms: only whole departments, no finer atom in this set"
+   ],
+   "needs": "commune atoms (IGN ADMIN EXPRESS / OSM communes) with the INSEE COG event list, to carry the line through today's department"
+  },
+  {
+   "what": "Marne before the end of the scope",
+   "unit": "FRA:marne@1943",
+   "atoms": [
+    "FRA-ADM2-29444166B88365210161394"
+   ],
+   "from": "1943-01-01",
+   "to": null,
+   "why": "Gernicourt (Aisne until 2016-12-31) lies inside the present Marne atom, and Sainte-Livière left Marne for Éclaron (Haute-Marne) on 1975-01-01.",
+   "checked": [
+    "INSEE COG 2025 v_mvt_commune_2025.csv: every MOD 41 (department change) and every merger (MOD 31/32/33) joining communes of two departments, 1943–2025",
+    "Statoids yfr.html change history",
+    "geoBoundaries FRA ADM2 (IGN 2022) atoms: only whole departments, no finer atom in this set"
+   ],
+   "needs": "commune atoms (IGN ADMIN EXPRESS / OSM communes) with the INSEE COG event list, to carry the line through today's department"
+  },
+  {
+   "what": "Haute-Marne before 1975-01-01",
+   "unit": "FRA:hautemarne@1943",
+   "atoms": [
+    "FRA-ADM2-29444166B63123006968328"
+   ],
+   "from": "1943-01-01",
+   "to": "1975-01-01",
+   "why": "Frettes left for Haute-Saône on 1974-07-01 and Sainte-Livière (Marne) joined Éclaron-Braucourt on 1975-01-01.",
+   "checked": [
+    "INSEE COG 2025 v_mvt_commune_2025.csv: every MOD 41 (department change) and every merger (MOD 31/32/33) joining communes of two departments, 1943–2025",
+    "Statoids yfr.html change history",
+    "geoBoundaries FRA ADM2 (IGN 2022) atoms: only whole departments, no finer atom in this set"
+   ],
+   "needs": "commune atoms (IGN ADMIN EXPRESS / OSM communes) with the INSEE COG event list, to carry the line through today's department"
+  },
+  {
+   "what": "Meurthe-et-Moselle before the end of the scope",
+   "unit": "FRA:meurtheetmoselle@1943",
+   "atoms": [
+    "FRA-ADM2-29444166B55179033691193"
+   ],
+   "from": "1943-01-01",
+   "to": null,
+   "why": "See Meuse: the present atom contains Han-devant-Pierrepont, a Meuse commune until 1997-01-01.",
+   "checked": [
+    "INSEE COG 2025 v_mvt_commune_2025.csv: every MOD 41 (department change) and every merger (MOD 31/32/33) joining communes of two departments, 1943–2025",
+    "Statoids yfr.html change history",
+    "geoBoundaries FRA ADM2 (IGN 2022) atoms: only whole departments, no finer atom in this set"
+   ],
+   "needs": "commune atoms (IGN ADMIN EXPRESS / OSM communes) with the INSEE COG event list, to carry the line through today's department"
+  },
+  {
+   "what": "Meuse before the end of the scope",
+   "unit": "FRA:meuse@1943",
+   "atoms": [
+    "FRA-ADM2-29444166B31733296921467"
+   ],
+   "from": "1943-01-01",
+   "to": null,
+   "why": "Han-devant-Pierrepont moved from Meuse to Meurthe-et-Moselle on 1997-01-01; the 1943–1975 line runs inside the present Meurthe-et-Moselle atom.",
+   "checked": [
+    "INSEE COG 2025 v_mvt_commune_2025.csv: every MOD 41 (department change) and every merger (MOD 31/32/33) joining communes of two departments, 1943–2025",
+    "Statoids yfr.html change history",
+    "geoBoundaries FRA ADM2 (IGN 2022) atoms: only whole departments, no finer atom in this set"
+   ],
+   "needs": "commune atoms (IGN ADMIN EXPRESS / OSM communes) with the INSEE COG event list, to carry the line through today's department"
+  },
+  {
+   "what": "Nord before 1973-09-01",
+   "unit": "FRA:nord@1943",
+   "atoms": [
+    "FRA-ADM2-29444166B41843467801289"
+   ],
+   "from": "1943-01-01",
+   "to": "1973-09-01",
+   "why": "Escaufourt (Aisne) joined Saint-Souplet (Nord) on 1973-09-01; before that date the present Nord atom includes Aisne ground.",
+   "checked": [
+    "INSEE COG 2025 v_mvt_commune_2025.csv: every MOD 41 (department change) and every merger (MOD 31/32/33) joining communes of two departments, 1943–2025",
+    "Statoids yfr.html change history",
+    "geoBoundaries FRA ADM2 (IGN 2022) atoms: only whole departments, no finer atom in this set"
+   ],
+   "needs": "commune atoms (IGN ADMIN EXPRESS / OSM communes) with the INSEE COG event list, to carry the line through today's department"
+  },
+  {
+   "what": "Pas-de-Calais before 1974-01-01",
+   "unit": "FRA:pasdecalais@1943",
+   "atoms": [
+    "FRA-ADM2-29444166B36983248378212"
+   ],
+   "from": "1943-01-01",
+   "to": "1974-01-01",
+   "why": "See Somme (Ytres 1971-01-01, Beauvoir-Rivière 1974-01-01).",
+   "checked": [
+    "INSEE COG 2025 v_mvt_commune_2025.csv: every MOD 41 (department change) and every merger (MOD 31/32/33) joining communes of two departments, 1943–2025",
+    "Statoids yfr.html change history",
+    "geoBoundaries FRA ADM2 (IGN 2022) atoms: only whole departments, no finer atom in this set"
+   ],
+   "needs": "commune atoms (IGN ADMIN EXPRESS / OSM communes) with the INSEE COG event list, to carry the line through today's department"
+  },
+  {
+   "what": "Rhône before 1971-04-01",
+   "unit": "FRA:rhone@1943",
+   "atoms": [
+    "FRA-ADM2-29444166B37867629412878"
+   ],
+   "from": "1943-01-01",
+   "to": "1971-04-01",
+   "why": "See Ain and Isère: the present Rhône atom holds communes added on 1967-12-31 and 1971-04-01.",
+   "checked": [
+    "INSEE COG 2025 v_mvt_commune_2025.csv: every MOD 41 (department change) and every merger (MOD 31/32/33) joining communes of two departments, 1943–2025",
+    "Statoids yfr.html change history",
+    "geoBoundaries FRA ADM2 (IGN 2022) atoms: only whole departments, no finer atom in this set"
+   ],
+   "needs": "commune atoms (IGN ADMIN EXPRESS / OSM communes) with the INSEE COG event list, to carry the line through today's department"
+  },
+  {
+   "what": "Haute-Saône before 1974-07-01",
+   "unit": "FRA:hautesaone@1943",
+   "atoms": [
+    "FRA-ADM2-29444166B41622072756868"
+   ],
+   "from": "1943-01-01",
+   "to": "1974-07-01",
+   "why": "Frettes (Haute-Marne) became an associated commune of Champlitte (Haute-Saône) on 1974-07-01.",
+   "checked": [
+    "INSEE COG 2025 v_mvt_commune_2025.csv: every MOD 41 (department change) and every merger (MOD 31/32/33) joining communes of two departments, 1943–2025",
+    "Statoids yfr.html change history",
+    "geoBoundaries FRA ADM2 (IGN 2022) atoms: only whole departments, no finer atom in this set"
+   ],
+   "needs": "commune atoms (IGN ADMIN EXPRESS / OSM communes) with the INSEE COG event list, to carry the line through today's department"
+  },
+  {
+   "what": "Savoie before 1947-09-17",
+   "unit": "FRA:savoie@1943",
+   "atoms": [
+    "FRA-ADM2-29444166B62265126010794"
+   ],
+   "from": "1943-01-01",
+   "to": "1947-09-17",
+   "why": "The Mont-Cenis plateau was ceded by Italy under the same 1947 treaty; before that the present atom includes Italian ground.",
+   "checked": [
+    "INSEE COG 2025 v_mvt_commune_2025.csv: every MOD 41 (department change) and every merger (MOD 31/32/33) joining communes of two departments, 1943–2025",
+    "Statoids yfr.html change history",
+    "geoBoundaries FRA ADM2 (IGN 2022) atoms: only whole departments, no finer atom in this set"
+   ],
+   "needs": "commune atoms (IGN ADMIN EXPRESS / OSM communes) with the INSEE COG event list, to carry the line through today's department"
+  },
+  {
+   "what": "Yvelines before 1969-11-29",
+   "unit": "FRA:yvelines@1968",
+   "atoms": [
+    "FRA-ADM2-29444166B89686889104194"
+   ],
+   "from": "1968-01-01",
+   "to": "1969-11-29",
+   "why": "Châteaufort and Toussus-le-Noble moved from Essonne to Yvelines on 1969-11-29.",
+   "checked": [
+    "INSEE COG 2025 v_mvt_commune_2025.csv: every MOD 41 (department change) and every merger (MOD 31/32/33) joining communes of two departments, 1943–2025",
+    "Statoids yfr.html change history",
+    "geoBoundaries FRA ADM2 (IGN 2022) atoms: only whole departments, no finer atom in this set"
+   ],
+   "needs": "commune atoms (IGN ADMIN EXPRESS / OSM communes) with the INSEE COG event list, to carry the line through today's department"
+  },
+  {
+   "what": "Deux-Sèvres before 1973-09-01",
+   "unit": "FRA:deuxsevres@1943",
+   "atoms": [
+    "FRA-ADM2-29444166B3130633303914"
+   ],
+   "from": "1943-01-01",
+   "to": "1973-09-01",
+   "why": "Le Puy-Saint-Bonnet joined Cholet (Maine-et-Loire) on 1973-09-01; before that date the present Deux-Sèvres atom lacks it.",
+   "checked": [
+    "INSEE COG 2025 v_mvt_commune_2025.csv: every MOD 41 (department change) and every merger (MOD 31/32/33) joining communes of two departments, 1943–2025",
+    "Statoids yfr.html change history",
+    "geoBoundaries FRA ADM2 (IGN 2022) atoms: only whole departments, no finer atom in this set"
+   ],
+   "needs": "commune atoms (IGN ADMIN EXPRESS / OSM communes) with the INSEE COG event list, to carry the line through today's department"
+  },
+  {
+   "what": "Somme before 1974-01-01",
+   "unit": "FRA:somme@1943",
+   "atoms": [
+    "FRA-ADM2-29444166B47374384537090"
+   ],
+   "from": "1943-01-01",
+   "to": "1974-01-01",
+   "why": "Ytres moved to Pas-de-Calais on 1971-01-01 and Beauvoir-Rivière merged into Beauvoir-Wavans (Pas-de-Calais) on 1974-01-01.",
+   "checked": [
+    "INSEE COG 2025 v_mvt_commune_2025.csv: every MOD 41 (department change) and every merger (MOD 31/32/33) joining communes of two departments, 1943–2025",
+    "Statoids yfr.html change history",
+    "geoBoundaries FRA ADM2 (IGN 2022) atoms: only whole departments, no finer atom in this set"
+   ],
+   "needs": "commune atoms (IGN ADMIN EXPRESS / OSM communes) with the INSEE COG event list, to carry the line through today's department"
+  },
+  {
+   "what": "Essonne before 1974-11-01",
+   "unit": "FRA:essonne@1968",
+   "atoms": [
+    "FRA-ADM2-29444166B9117646007403"
+   ],
+   "from": "1968-01-01",
+   "to": "1974-11-01",
+   "why": "See Yvelines (1969-11-29) and Eure-et-Loir (Dommerville, 1974-11-01).",
+   "checked": [
+    "INSEE COG 2025 v_mvt_commune_2025.csv: every MOD 41 (department change) and every merger (MOD 31/32/33) joining communes of two departments, 1943–2025",
+    "Statoids yfr.html change history",
+    "geoBoundaries FRA ADM2 (IGN 2022) atoms: only whole departments, no finer atom in this set"
+   ],
+   "needs": "commune atoms (IGN ADMIN EXPRESS / OSM communes) with the INSEE COG event list, to carry the line through today's department"
+  },
+  {
+   "what": "Loire-Inférieure (to 1957-03-09)",
+   "unit": "FRA:loireinferieure@1943",
+   "atoms": [
+    "FRA-ADM2-29444166B39405184226314"
+   ],
+   "from": "1943-01-01",
+   "to": "1957-03-09",
+   "why": "Le Fresne-sur-Loire moved to Maine-et-Loire (2015-12-31) and Freigné came from Maine-et-Loire (2018-01-01); both lines run inside today's atoms.",
+   "checked": [
+    "INSEE COG 2025 v_mvt_commune_2025.csv: every MOD 41 (department change) and every merger (MOD 31/32/33) joining communes of two departments, 1943–2025",
+    "Statoids yfr.html change history",
+    "geoBoundaries FRA ADM2 (IGN 2022) atoms: only whole departments, no finer atom in this set"
+   ],
+   "needs": "commune atoms (IGN ADMIN EXPRESS / OSM communes) with the INSEE COG event list, to carry the line through today's department"
+  },
+  {
+   "what": "Loire-Atlantique 1957-03-09 to 1975",
+   "unit": "FRA:loireatlantique@1957",
+   "atoms": [
+    "FRA-ADM2-29444166B39405184226314"
+   ],
+   "from": "1957-03-09",
+   "to": null,
+   "why": "Le Fresne-sur-Loire moved to Maine-et-Loire (2015-12-31) and Freigné came from Maine-et-Loire (2018-01-01); both lines run inside today's atoms. Renamed from Loire-Inférieure on 1957-03-09 (statoids).",
+   "checked": [
+    "INSEE COG 2025 v_mvt_commune_2025.csv: every MOD 41 (department change) and every merger (MOD 31/32/33) joining communes of two departments, 1943–2025",
+    "Statoids yfr.html change history",
+    "geoBoundaries FRA ADM2 (IGN 2022) atoms: only whole departments, no finer atom in this set"
+   ],
+   "needs": "commune atoms (IGN ADMIN EXPRESS / OSM communes) with the INSEE COG event list, to carry the line through today's department"
+  },
+  {
+   "what": "Seine (département) 1943–1967",
+   "unit": "FRA:seine@1943",
+   "atoms": [
+    "FRA-ADM2-29444166B33792924009837",
+    "FRA-ADM2-29444166B3280539319107",
+    "FRA-ADM2-29444166B11945742862669",
+    "FRA-ADM2-29444166B83164575229799",
+    "FRA-ADM2-29444166B89686889104194",
+    "FRA-ADM2-29444166B9117646007403",
+    "FRA-ADM2-29444166B99414288339208"
+   ],
+   "from": "1943-01-01",
+   "to": "1968-01-01",
+   "why": "Seine is not a union of today's departments: on 1968-01-01 it went to Paris, Hauts-de-Seine, Seine-Saint-Denis and Val-de-Marne, which also received 43 communes of Seine-et-Oise (INSEE COG MOD 41: 9 to 92, 16 to 93, 18 to 94). The Seine/Seine-et-Oise line runs inside today's 92, 93 and 94.",
+   "checked": [
+    "INSEE COG 2025 v_mvt_commune_2025.csv: every MOD 41 (department change) and every merger (MOD 31/32/33) joining communes of two departments, 1943–2025",
+    "Statoids yfr.html change history",
+    "geoBoundaries FRA ADM2 (IGN 2022) atoms: only whole departments, no finer atom in this set"
+   ],
+   "needs": "commune atoms (IGN ADMIN EXPRESS / OSM communes) with the INSEE COG event list, to carry the line through today's department"
+  },
+  {
+   "what": "Seine-et-Oise 1943–1967",
+   "unit": "FRA:seineetoise@1943",
+   "atoms": [],
+   "from": "1943-01-01",
+   "to": "1968-01-01",
+   "why": "See Seine: Seine-et-Oise = Yvelines + Essonne + Val-d'Oise + 43 communes now in 92/93/94 (atoms withheld in the Seine entry).",
+   "checked": [
+    "INSEE COG 2025 v_mvt_commune_2025.csv: every MOD 41 (department change) and every merger (MOD 31/32/33) joining communes of two departments, 1943–2025",
+    "Statoids yfr.html change history",
+    "geoBoundaries FRA ADM2 (IGN 2022) atoms: only whole departments, no finer atom in this set"
+   ],
+   "needs": "commune atoms (IGN ADMIN EXPRESS / OSM communes) with the INSEE COG event list, to carry the line through today's department"
+  }
+ ]
+}

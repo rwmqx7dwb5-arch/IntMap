@@ -21,6 +21,7 @@ import { fileURLToPath } from 'node:url';
 import { resolve as resolveClassSpans } from '../scripts/histadmin/class-dates.mjs';
 import { ciRuns, npmTestRuns } from './helpers/ci-reach.mjs';
 import { scratchTree } from './helpers/scratch-tree.mjs';
+import { HIST_ADMIN_GAPS as GAPS } from '../js/border-coast.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -180,7 +181,12 @@ test('#R730 ⑦ a country whose record answers one unit is not shipped as one un
   };
   for (const year of [1900, 1918, 1950, 2000]) {
     let n = 0;
-    for (const rel of ['data/hist-admin1.js', 'data/hist-admin-fill.js', 'data/hist-kuni.js']) {
+    /* (hist-recon-expand) every record the reader sees, discovered: the OHM tiers and the gap records of
+       HIST_ADMIN_GAPS. The hand-written list here read three and missed the reconstruction — when it took over
+       1891–1943 Japan (and the fill rightly yielded), the count fell to 8 while the map showed 47. */
+    const recs = fs.readdirSync(path.join(ROOT, 'data')).filter((n) => /^hist-admin\d+\.js$/.test(n)).map((n) => 'data/' + n)
+      .concat(GAPS.map((g) => g.file).filter((f) => fs.existsSync(path.join(ROOT, f))));
+    for (const rel of recs) {
       const b = bundle(rel);
       for (const f of b.feats) if (f[1] === 4 && inForce(f, year) && inBox(b, f)) n++;
     }

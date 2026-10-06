@@ -1,0 +1,211 @@
+{
+ "country": "BLR",
+ "atomSet": "gb-adm1@2026-10-06",
+ "scope": {
+  "from": "1991-08-25",
+  "to": "1991-12-25"
+ },
+ "polityNote": "Regions of Belarus from the declaration of independence (25 Aug 1991) to the dissolution of the USSR; the present-day units are carried back from 26 Dec 1991 and OpenHistoricalMap’s Byelorussian SSR ends 18 Sep 1991. Atoms: geoBoundaries BLR ADM1 (CIESIN 2005, CC BY 3.0, 8,373 vertices vs. 5,761 in Natural Earth).",
+ "units": [
+  {
+   "id": "BLR:BY-HO",
+   "names": {
+    "en": "Gomel Region",
+    "ja": "ホメリ州",
+    "local": "Гомельская вобласць"
+   },
+   "wikidata": "Q188732",
+   "spans": [
+    {
+     "from": "1991-08-25",
+     "precision": "day",
+     "to": "1991-12-26",
+     "atoms": [
+      "BLR-ADM1-45462678B94500211462696"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uby.html",
+       "title": "Statoids — Regions of Belarus, change history",
+       "says": "The last changes listed between regions are the 1960 reorganisation (Molodechno divided, Begoml and Glusk transferred); in 1993 Minsk city was split from Minsk region and names were modernised.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Belarus&oldid=1352206892",
+       "title": "Wikipedia — Regions of Belarus",
+       "says": "Belarus is divided into six regions and the city of Minsk.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "BLR:BY-VI",
+   "names": {
+    "en": "Vitebsk Region",
+    "ja": "ヴィーツェプスク州",
+    "local": "Віцебская вобласць"
+   },
+   "wikidata": "Q185700",
+   "spans": [
+    {
+     "from": "1991-08-25",
+     "precision": "day",
+     "to": "1991-12-26",
+     "atoms": [
+      "BLR-ADM1-45462678B24636394065255"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uby.html",
+       "title": "Statoids — Regions of Belarus, change history",
+       "says": "The last changes listed between regions are the 1960 reorganisation (Molodechno divided, Begoml and Glusk transferred); in 1993 Minsk city was split from Minsk region and names were modernised.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Belarus&oldid=1352206892",
+       "title": "Wikipedia — Regions of Belarus",
+       "says": "Belarus is divided into six regions and the city of Minsk.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "BLR:BY-HR",
+   "names": {
+    "en": "Hrodna Region",
+    "ja": "フロドナ州",
+    "local": "Гродзенская вобласць"
+   },
+   "wikidata": "Q191061",
+   "spans": [
+    {
+     "from": "1991-08-25",
+     "precision": "day",
+     "to": "1991-12-26",
+     "atoms": [
+      "BLR-ADM1-45462678B41589714648574"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uby.html",
+       "title": "Statoids — Regions of Belarus, change history",
+       "says": "The last changes listed between regions are the 1960 reorganisation (Molodechno divided, Begoml and Glusk transferred); in 1993 Minsk city was split from Minsk region and names were modernised.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Belarus&oldid=1352206892",
+       "title": "Wikipedia — Regions of Belarus",
+       "says": "Belarus is divided into six regions and the city of Minsk.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "BLR:BY-BR",
+   "names": {
+    "en": "Brest region",
+    "ja": "ブレスト州",
+    "local": "Брэсцкая вобласць"
+   },
+   "wikidata": "Q173822",
+   "spans": [
+    {
+     "from": "1991-08-25",
+     "precision": "day",
+     "to": "1991-12-26",
+     "atoms": [
+      "BLR-ADM1-45462678B29468378769629"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uby.html",
+       "title": "Statoids — Regions of Belarus, change history",
+       "says": "The last changes listed between regions are the 1960 reorganisation (Molodechno divided, Begoml and Glusk transferred); in 1993 Minsk city was split from Minsk region and names were modernised.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Belarus&oldid=1352206892",
+       "title": "Wikipedia — Regions of Belarus",
+       "says": "Belarus is divided into six regions and the city of Minsk.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "BLR:BY-MA",
+   "names": {
+    "en": "Mahilyow Region",
+    "ja": "マヒリョウ州",
+    "local": "Магілёўская вобласць"
+   },
+   "wikidata": "Q189822",
+   "spans": [
+    {
+     "from": "1991-08-25",
+     "precision": "day",
+     "to": "1991-12-26",
+     "atoms": [
+      "BLR-ADM1-45462678B58682879627750"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uby.html",
+       "title": "Statoids — Regions of Belarus, change history",
+       "says": "The last changes listed between regions are the 1960 reorganisation (Molodechno divided, Begoml and Glusk transferred); in 1993 Minsk city was split from Minsk region and names were modernised.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Belarus&oldid=1352206892",
+       "title": "Wikipedia — Regions of Belarus",
+       "says": "Belarus is divided into six regions and the city of Minsk.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "events": [],
+ "counts": [],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Minsk region 1991",
+   "unit": "BLR:BY-MI",
+   "atoms": [
+    "BLR-ADM1-45462678B52111461583443"
+   ],
+   "from": "1991-08-25",
+   "to": "1991-12-26",
+   "why": "Its line with Minsk city depends on the city question above.",
+   "checked": [
+    "statoids.com/uby.html",
+    "en.wikipedia Regions of Belarus oldid 1352206892"
+   ],
+   "needs": "same"
+  },
+  {
+   "what": "Minsk 1991",
+   "unit": "BLR:BY-HM",
+   "atoms": [
+    "BLR-ADM1-45462678B57724394311820"
+   ],
+   "from": "1991-08-25",
+   "to": "1991-12-26",
+   "why": "Minsk city limits in 1991 and their changes since are not established; statoids dates the city’s separation from the region to 1993.",
+   "checked": [
+    "statoids.com/uby.html",
+    "en.wikipedia Regions of Belarus oldid 1352206892"
+   ],
+   "needs": "dated Minsk city limits and the date of its separate status"
+  }
+ ]
+}

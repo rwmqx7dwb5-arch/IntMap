@@ -1,11 +1,11 @@
 {
  "country": "ZAF",
- "atomSet": "ne-admin1@ca96624",
+ "atomSet": "gb-adm3@2026-10-06",
  "scope": {
   "from": "1994-04-27",
   "to": "2019-12-31"
  },
- "polityNote": "Republic of South Africa from the nine-province constitution of 1994-04-27 (Interim Constitution). Before that the four provinces and the bantustans (TBVC states claimed independent) are not expressible with these atoms. NE shows the provinces after the 2009 Sixteenth Amendment (verified: Carletonville/Khutsong in Gauteng, Matatiele in Eastern Cape, Umzimkulu in KwaZulu-Natal, Bushbuckridge in Mpumalanga, Groblersdal/Marble Hall in Limpopo).",
+ "polityNote": "Republic of South Africa from the nine-province constitution of 1994-04-27 (Interim Constitution). Atoms are the 213 local and metropolitan municipalities of geoBoundaries ZAF ADM3 (Municipal Demarcation Board, 2016 demarcation, release year 2020); a province is the union of the municipalities that lie in it (each of the 213 lies 100% in one province of the gb ADM1 release from the same source). Province lines have been municipal lines since the Twelfth Amendment (2006-03-01) and can change only by constitutional amendment (Sixteenth Amendment 2009-04-03, Merafong City; none since), so the 2016 municipalities carry the 2009+ provinces exactly. Before 1994-04-27 the four provinces 1910–1994 are answered by OpenHistoricalMap (relations 2691750/2691753/2691754/2691755) and are not reconstructed here. Independent check (①): union area / Stats SA Census 2011 province area — WC 129,527/129,462 = 1.0005, EC 169,082/168,966 = 1.0007, NC 373,352/372,889 = 1.0012, FS 130,008/129,825 = 1.0014, KZN 94,492/94,361 = 1.0014, NW 105,077/104,882 = 1.0019, GP 18,213/18,178 = 1.0019, MP 76,642/76,495 = 1.0019, LP 126,044/125,754 = 1.0023 (all within 0.25%, spherical area of the atoms).",
  "units": [
   {
    "id": "ZAF:WesternCape@1994",
@@ -21,7 +21,31 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "ZAF-1189"
+      "ZAF-ADM3-15628383B46275674627540",
+      "ZAF-ADM3-15628383B4913573600740",
+      "ZAF-ADM3-15628383B70327245637461",
+      "ZAF-ADM3-15628383B46768042592549",
+      "ZAF-ADM3-15628383B45277998127708",
+      "ZAF-ADM3-15628383B588317222273",
+      "ZAF-ADM3-15628383B95865124382580",
+      "ZAF-ADM3-15628383B58344705808288",
+      "ZAF-ADM3-15628383B23729286231059",
+      "ZAF-ADM3-15628383B36762535834519",
+      "ZAF-ADM3-15628383B76119886441371",
+      "ZAF-ADM3-15628383B74708406235770",
+      "ZAF-ADM3-15628383B34503575796370",
+      "ZAF-ADM3-15628383B41752648432939",
+      "ZAF-ADM3-15628383B66088030322014",
+      "ZAF-ADM3-15628383B56565941834020",
+      "ZAF-ADM3-15628383B24950367245541",
+      "ZAF-ADM3-15628383B80696664936096",
+      "ZAF-ADM3-15628383B22315624477969",
+      "ZAF-ADM3-15628383B22918874206511",
+      "ZAF-ADM3-15628383B53810498400879",
+      "ZAF-ADM3-15628383B41108868323970",
+      "ZAF-ADM3-15628383B28198425114752",
+      "ZAF-ADM3-15628383B17742819019912",
+      "ZAF-ADM3-15628383B53438128232803"
      ],
      "sources": [
       {
@@ -35,6 +59,12 @@
        "title": "Wikipedia — Twelfth Amendment of the Constitution of South Africa (oldid 1337687805)",
        "says": "Effective 1 March 2006, redrew seven provinces (cross-boundary municipalities); Western Cape and Free State were not affected.",
        "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/ZAF/ADM3/geoBoundaries-ZAF-ADM3.geojson",
+       "title": "geoBoundaries ZAF ADM3 (local municipalities, Municipal Demarcation Board via OCHA ROSEA, 2020)",
+       "says": "The 213 local and metropolitan municipalities of the 2016 demarcation; every one lies wholly in one of the nine provinces of the same release (area overlap 1.000 for all 213).",
+       "accessed": "2026-10-06"
       }
      ],
      "dateNote": "Not affected by the 2005–2009 boundary amendments."
@@ -55,7 +85,25 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "ZAF-1206"
+      "ZAF-ADM3-15628383B98466320732904",
+      "ZAF-ADM3-15628383B95874570647832",
+      "ZAF-ADM3-15628383B41355720683916",
+      "ZAF-ADM3-15628383B54089772316442",
+      "ZAF-ADM3-15628383B3612135390382",
+      "ZAF-ADM3-15628383B22599792684232",
+      "ZAF-ADM3-15628383B98897135095916",
+      "ZAF-ADM3-15628383B18474910363829",
+      "ZAF-ADM3-15628383B81566829241164",
+      "ZAF-ADM3-15628383B88999037487897",
+      "ZAF-ADM3-15628383B49239152180339",
+      "ZAF-ADM3-15628383B54507106575148",
+      "ZAF-ADM3-15628383B80610561870669",
+      "ZAF-ADM3-15628383B11748786271617",
+      "ZAF-ADM3-15628383B16370705883263",
+      "ZAF-ADM3-15628383B27105653038875",
+      "ZAF-ADM3-15628383B27786336068400",
+      "ZAF-ADM3-15628383B89728652792601",
+      "ZAF-ADM3-15628383B97037373759717"
      ],
      "sources": [
       {
@@ -69,6 +117,12 @@
        "title": "Wikipedia — Twelfth Amendment of the Constitution of South Africa (oldid 1337687805)",
        "says": "Effective 1 March 2006, redrew seven provinces (cross-boundary municipalities); Western Cape and Free State were not affected.",
        "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/ZAF/ADM3/geoBoundaries-ZAF-ADM3.geojson",
+       "title": "geoBoundaries ZAF ADM3 (local municipalities, Municipal Demarcation Board via OCHA ROSEA, 2020)",
+       "says": "The 213 local and metropolitan municipalities of the 2016 demarcation; every one lies wholly in one of the nine provinces of the same release (area overlap 1.000 for all 213).",
+       "accessed": "2026-10-06"
       }
      ],
      "dateNote": "Renamed 1995-06-29; not affected by the boundary amendments."
@@ -89,7 +143,39 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "ZAF-1926"
+      "ZAF-ADM3-15628383B22921038758267",
+      "ZAF-ADM3-15628383B80616091697700",
+      "ZAF-ADM3-15628383B85184421345333",
+      "ZAF-ADM3-15628383B99818150234159",
+      "ZAF-ADM3-15628383B24019341917361",
+      "ZAF-ADM3-15628383B46688478529811",
+      "ZAF-ADM3-15628383B4889923419833",
+      "ZAF-ADM3-15628383B67522024924235",
+      "ZAF-ADM3-15628383B7332879576770",
+      "ZAF-ADM3-15628383B88034979550306",
+      "ZAF-ADM3-15628383B92131487833225",
+      "ZAF-ADM3-15628383B23629152206602",
+      "ZAF-ADM3-15628383B33674951697181",
+      "ZAF-ADM3-15628383B36159893459203",
+      "ZAF-ADM3-15628383B78908098986015",
+      "ZAF-ADM3-15628383B15412398369676",
+      "ZAF-ADM3-15628383B43349124035682",
+      "ZAF-ADM3-15628383B5927961612819",
+      "ZAF-ADM3-15628383B11467516641790",
+      "ZAF-ADM3-15628383B87612584942124",
+      "ZAF-ADM3-15628383B35584475836677",
+      "ZAF-ADM3-15628383B28857154592205",
+      "ZAF-ADM3-15628383B43101438913708",
+      "ZAF-ADM3-15628383B21359415323699",
+      "ZAF-ADM3-15628383B44296191907272",
+      "ZAF-ADM3-15628383B29870836441497",
+      "ZAF-ADM3-15628383B51643995484882",
+      "ZAF-ADM3-15628383B98865365427996",
+      "ZAF-ADM3-15628383B16723794281290",
+      "ZAF-ADM3-15628383B56060894344771",
+      "ZAF-ADM3-15628383B24472250012031",
+      "ZAF-ADM3-15628383B69661172902968",
+      "ZAF-ADM3-15628383B59220525748831"
      ],
      "sources": [
       {
@@ -103,6 +189,12 @@
        "title": "Wikipedia — Provinces of South Africa (oldid 1365166680)",
        "says": "The 12th and 13th amendments (2006) altered the boundaries of seven provinces; the 16th (2009) altered North West and Gauteng.",
        "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/ZAF/ADM3/geoBoundaries-ZAF-ADM3.geojson",
+       "title": "geoBoundaries ZAF ADM3 (local municipalities, Municipal Demarcation Board via OCHA ROSEA, 2020)",
+       "says": "The 213 local and metropolitan municipalities of the 2016 demarcation; every one lies wholly in one of the nine provinces of the same release (area overlap 1.000 for all 213).",
+       "accessed": "2026-10-06"
       }
      ],
      "dateNote": "Same territory since the Twelfth Amendment (1 March 2006); Matatiele (to Eastern Cape) was struck down by the Constitutional Court in Aug 2006 with the invalidity suspended, and re-enacted by the Thirteenth Amendment (14 Dec 2007), so it never left Eastern Cape in practice."
@@ -123,7 +215,50 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "ZAF-1216"
+      "ZAF-ADM3-15628383B7049738786767",
+      "ZAF-ADM3-15628383B5643651506202",
+      "ZAF-ADM3-15628383B53437482814779",
+      "ZAF-ADM3-15628383B73156190774193",
+      "ZAF-ADM3-15628383B13555669719826",
+      "ZAF-ADM3-15628383B68393982164111",
+      "ZAF-ADM3-15628383B65289064858217",
+      "ZAF-ADM3-15628383B56796644270272",
+      "ZAF-ADM3-15628383B60178842862169",
+      "ZAF-ADM3-15628383B15970578895860",
+      "ZAF-ADM3-15628383B86066615117516",
+      "ZAF-ADM3-15628383B48291536006426",
+      "ZAF-ADM3-15628383B5837125139106",
+      "ZAF-ADM3-15628383B32392853457814",
+      "ZAF-ADM3-15628383B23770618200301",
+      "ZAF-ADM3-15628383B61836669217179",
+      "ZAF-ADM3-15628383B16733887405757",
+      "ZAF-ADM3-15628383B81102328331389",
+      "ZAF-ADM3-15628383B6898714257611",
+      "ZAF-ADM3-15628383B45262568422847",
+      "ZAF-ADM3-15628383B48775744068307",
+      "ZAF-ADM3-15628383B69683886729369",
+      "ZAF-ADM3-15628383B18669934425704",
+      "ZAF-ADM3-15628383B99550328665914",
+      "ZAF-ADM3-15628383B97834380912632",
+      "ZAF-ADM3-15628383B6389010886764",
+      "ZAF-ADM3-15628383B34666752536015",
+      "ZAF-ADM3-15628383B81788636322257",
+      "ZAF-ADM3-15628383B93091970558511",
+      "ZAF-ADM3-15628383B94614350175878",
+      "ZAF-ADM3-15628383B55646829528137",
+      "ZAF-ADM3-15628383B42702955327338",
+      "ZAF-ADM3-15628383B50034412175971",
+      "ZAF-ADM3-15628383B54808640674561",
+      "ZAF-ADM3-15628383B85816100363009",
+      "ZAF-ADM3-15628383B13242049883763",
+      "ZAF-ADM3-15628383B7897519412969",
+      "ZAF-ADM3-15628383B85017454632042",
+      "ZAF-ADM3-15628383B38357797168546",
+      "ZAF-ADM3-15628383B70795112074447",
+      "ZAF-ADM3-15628383B82450102835076",
+      "ZAF-ADM3-15628383B1738846702003",
+      "ZAF-ADM3-15628383B23037579047030",
+      "ZAF-ADM3-15628383B83069245545305"
      ],
      "sources": [
       {
@@ -137,6 +272,12 @@
        "title": "Wikipedia — Provinces of South Africa (oldid 1365166680)",
        "says": "The 12th and 13th amendments (2006) altered the boundaries of seven provinces; the 16th (2009) altered North West and Gauteng.",
        "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/ZAF/ADM3/geoBoundaries-ZAF-ADM3.geojson",
+       "title": "geoBoundaries ZAF ADM3 (local municipalities, Municipal Demarcation Board via OCHA ROSEA, 2020)",
+       "says": "The 213 local and metropolitan municipalities of the 2016 demarcation; every one lies wholly in one of the nine provinces of the same release (area overlap 1.000 for all 213).",
+       "accessed": "2026-10-06"
       }
      ],
      "dateNote": "Same territory since the Twelfth Amendment (1 March 2006); Matatiele (to Eastern Cape) was struck down by the Constitutional Court in Aug 2006 with the invalidity suspended, and re-enacted by the Thirteenth Amendment (14 Dec 2007), so it never left Eastern Cape in practice."
@@ -157,7 +298,32 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "ZAF-1188"
+      "ZAF-ADM3-15628383B86009182191517",
+      "ZAF-ADM3-15628383B10857408054288",
+      "ZAF-ADM3-15628383B29698007895414",
+      "ZAF-ADM3-15628383B95844669523964",
+      "ZAF-ADM3-15628383B81360864143836",
+      "ZAF-ADM3-15628383B84137500673583",
+      "ZAF-ADM3-15628383B87581242557684",
+      "ZAF-ADM3-15628383B93031826303928",
+      "ZAF-ADM3-15628383B13551745181443",
+      "ZAF-ADM3-15628383B44998866357068",
+      "ZAF-ADM3-15628383B57251515863423",
+      "ZAF-ADM3-15628383B20937674647485",
+      "ZAF-ADM3-15628383B42598503726448",
+      "ZAF-ADM3-15628383B1879233030807",
+      "ZAF-ADM3-15628383B14963180798708",
+      "ZAF-ADM3-15628383B9095746706118",
+      "ZAF-ADM3-15628383B44304939530750",
+      "ZAF-ADM3-15628383B97169336353078",
+      "ZAF-ADM3-15628383B22398881151445",
+      "ZAF-ADM3-15628383B20343011275792",
+      "ZAF-ADM3-15628383B61631469274814",
+      "ZAF-ADM3-15628383B27888516952282",
+      "ZAF-ADM3-15628383B84967339349714",
+      "ZAF-ADM3-15628383B77297968052391",
+      "ZAF-ADM3-15628383B10231305979692",
+      "ZAF-ADM3-15628383B72969932115434"
      ],
      "sources": [
       {
@@ -171,6 +337,12 @@
        "title": "Wikipedia — Provinces of South Africa (oldid 1365166680)",
        "says": "The 12th and 13th amendments (2006) altered the boundaries of seven provinces; the 16th (2009) altered North West and Gauteng.",
        "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/ZAF/ADM3/geoBoundaries-ZAF-ADM3.geojson",
+       "title": "geoBoundaries ZAF ADM3 (local municipalities, Municipal Demarcation Board via OCHA ROSEA, 2020)",
+       "says": "The 213 local and metropolitan municipalities of the 2016 demarcation; every one lies wholly in one of the nine provinces of the same release (area overlap 1.000 for all 213).",
+       "accessed": "2026-10-06"
       }
      ],
      "dateNote": "Gained Moshaweng from North West on 2006-03-01; no later change."
@@ -191,7 +363,28 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "ZAF-1210"
+      "ZAF-ADM3-15628383B175155379368",
+      "ZAF-ADM3-15628383B70995166326216",
+      "ZAF-ADM3-15628383B83278814134603",
+      "ZAF-ADM3-15628383B74534237927019",
+      "ZAF-ADM3-15628383B15882687938841",
+      "ZAF-ADM3-15628383B2775886496345",
+      "ZAF-ADM3-15628383B45801429507111",
+      "ZAF-ADM3-15628383B92780608982812",
+      "ZAF-ADM3-15628383B17638662829865",
+      "ZAF-ADM3-15628383B43736937905361",
+      "ZAF-ADM3-15628383B78103499968670",
+      "ZAF-ADM3-15628383B88632116880655",
+      "ZAF-ADM3-15628383B84884961472226",
+      "ZAF-ADM3-15628383B7678060115213",
+      "ZAF-ADM3-15628383B54951115928747",
+      "ZAF-ADM3-15628383B9479695775145",
+      "ZAF-ADM3-15628383B98666839265379",
+      "ZAF-ADM3-15628383B94123430351076",
+      "ZAF-ADM3-15628383B53706266463889",
+      "ZAF-ADM3-15628383B84414150036036",
+      "ZAF-ADM3-15628383B46845171983587",
+      "ZAF-ADM3-15628383B41203661454034"
      ],
      "sources": [
       {
@@ -205,6 +398,12 @@
        "title": "Wikipedia — Provinces of South Africa (oldid 1365166680)",
        "says": "The 12th and 13th amendments (2006) altered the boundaries of seven provinces; the 16th (2009) altered North West and Gauteng.",
        "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/ZAF/ADM3/geoBoundaries-ZAF-ADM3.geojson",
+       "title": "geoBoundaries ZAF ADM3 (local municipalities, Municipal Demarcation Board via OCHA ROSEA, 2020)",
+       "says": "The 213 local and metropolitan municipalities of the 2016 demarcation; every one lies wholly in one of the nine provinces of the same release (area overlap 1.000 for all 213).",
+       "accessed": "2026-10-06"
       }
      ],
      "dateNote": "Lost Bushbuckridge, gained Groblersdal/Sekhukhuneland on 2006-03-01; no later change."
@@ -225,7 +424,23 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "ZAF-1209"
+      "ZAF-ADM3-15628383B63173838521780",
+      "ZAF-ADM3-15628383B22507296568616",
+      "ZAF-ADM3-15628383B57924236425168",
+      "ZAF-ADM3-15628383B79754077720638",
+      "ZAF-ADM3-15628383B82081482790652",
+      "ZAF-ADM3-15628383B70767103982228",
+      "ZAF-ADM3-15628383B49434551949748",
+      "ZAF-ADM3-15628383B79900485911991",
+      "ZAF-ADM3-15628383B77142145531518",
+      "ZAF-ADM3-15628383B30127802260453",
+      "ZAF-ADM3-15628383B23048095503212",
+      "ZAF-ADM3-15628383B20102527858320",
+      "ZAF-ADM3-15628383B3812939933350",
+      "ZAF-ADM3-15628383B87112813359476",
+      "ZAF-ADM3-15628383B83650063742596",
+      "ZAF-ADM3-15628383B53462234009854",
+      "ZAF-ADM3-15628383B51783858104799"
      ],
      "sources": [
       {
@@ -239,6 +454,12 @@
        "title": "Wikipedia — Provinces of South Africa (oldid 1365166680)",
        "says": "The 12th and 13th amendments (2006) altered the boundaries of seven provinces; the 16th (2009) altered North West and Gauteng.",
        "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/ZAF/ADM3/geoBoundaries-ZAF-ADM3.geojson",
+       "title": "geoBoundaries ZAF ADM3 (local municipalities, Municipal Demarcation Board via OCHA ROSEA, 2020)",
+       "says": "The 213 local and metropolitan municipalities of the 2016 demarcation; every one lies wholly in one of the nine provinces of the same release (area overlap 1.000 for all 213).",
+       "accessed": "2026-10-06"
       }
      ],
      "dateNote": "Changed on 2006-03-01 (Bushbuckridge in, Groblersdal out, small areas to Gauteng); no later change."
@@ -259,7 +480,15 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "ZAF-1208"
+      "ZAF-ADM3-15628383B15418766532839",
+      "ZAF-ADM3-15628383B80921072750836",
+      "ZAF-ADM3-15628383B61881803671589",
+      "ZAF-ADM3-15628383B33735276955904",
+      "ZAF-ADM3-15628383B73981426352220",
+      "ZAF-ADM3-15628383B24995614588179",
+      "ZAF-ADM3-15628383B4021169730913",
+      "ZAF-ADM3-15628383B13881296162767",
+      "ZAF-ADM3-15628383B59802674221222"
      ],
      "sources": [
       {
@@ -273,6 +502,12 @@
        "title": "Wikipedia — Provinces of South Africa (oldid 1365166680)",
        "says": "The 12th and 13th amendments (2006) altered the boundaries of seven provinces; the 16th (2009) altered North West and Gauteng.",
        "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/ZAF/ADM3/geoBoundaries-ZAF-ADM3.geojson",
+       "title": "geoBoundaries ZAF ADM3 (local municipalities, Municipal Demarcation Board via OCHA ROSEA, 2020)",
+       "says": "The 213 local and metropolitan municipalities of the 2016 demarcation; every one lies wholly in one of the nine provinces of the same release (area overlap 1.000 for all 213).",
+       "accessed": "2026-10-06"
       }
      ],
      "dateNote": "Same territory since Merafong City returned on 2009-04-03."
@@ -293,7 +528,24 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "ZAF-1201"
+      "ZAF-ADM3-15628383B99813197331106",
+      "ZAF-ADM3-15628383B50977513509488",
+      "ZAF-ADM3-15628383B81730914179068",
+      "ZAF-ADM3-15628383B79703818366198",
+      "ZAF-ADM3-15628383B17721277899206",
+      "ZAF-ADM3-15628383B57700102928675",
+      "ZAF-ADM3-15628383B18572395899182",
+      "ZAF-ADM3-15628383B50612573820544",
+      "ZAF-ADM3-15628383B32940385818298",
+      "ZAF-ADM3-15628383B62442804941170",
+      "ZAF-ADM3-15628383B60744679242137",
+      "ZAF-ADM3-15628383B63481411965292",
+      "ZAF-ADM3-15628383B66727705229747",
+      "ZAF-ADM3-15628383B61432920624348",
+      "ZAF-ADM3-15628383B47394950220829",
+      "ZAF-ADM3-15628383B8341083957996",
+      "ZAF-ADM3-15628383B35491227383110",
+      "ZAF-ADM3-15628383B17839761001340"
      ],
      "sources": [
       {
@@ -307,6 +559,12 @@
        "title": "Wikipedia — Provinces of South Africa (oldid 1365166680)",
        "says": "The 12th and 13th amendments (2006) altered the boundaries of seven provinces; the 16th (2009) altered North West and Gauteng.",
        "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/ZAF/ADM3/geoBoundaries-ZAF-ADM3.geojson",
+       "title": "geoBoundaries ZAF ADM3 (local municipalities, Municipal Demarcation Board via OCHA ROSEA, 2020)",
+       "says": "The 213 local and metropolitan municipalities of the 2016 demarcation; every one lies wholly in one of the nine provinces of the same release (area overlap 1.000 for all 213).",
+       "accessed": "2026-10-06"
       }
      ],
      "dateNote": "Same territory since Merafong City left on 2009-04-03."
@@ -399,23 +657,186 @@
    "what": "Seven provinces before the Twelfth Amendment (1994 boundaries)",
    "unit": "ZAF:EasternCape@1994",
    "atoms": [
-    "ZAF-1926",
-    "ZAF-1216",
-    "ZAF-1188",
-    "ZAF-1210",
-    "ZAF-1209",
-    "ZAF-1208",
-    "ZAF-1201"
+    "ZAF-ADM3-15628383B22921038758267",
+    "ZAF-ADM3-15628383B80616091697700",
+    "ZAF-ADM3-15628383B85184421345333",
+    "ZAF-ADM3-15628383B99818150234159",
+    "ZAF-ADM3-15628383B24019341917361",
+    "ZAF-ADM3-15628383B46688478529811",
+    "ZAF-ADM3-15628383B4889923419833",
+    "ZAF-ADM3-15628383B67522024924235",
+    "ZAF-ADM3-15628383B7332879576770",
+    "ZAF-ADM3-15628383B88034979550306",
+    "ZAF-ADM3-15628383B92131487833225",
+    "ZAF-ADM3-15628383B23629152206602",
+    "ZAF-ADM3-15628383B33674951697181",
+    "ZAF-ADM3-15628383B36159893459203",
+    "ZAF-ADM3-15628383B78908098986015",
+    "ZAF-ADM3-15628383B15412398369676",
+    "ZAF-ADM3-15628383B43349124035682",
+    "ZAF-ADM3-15628383B5927961612819",
+    "ZAF-ADM3-15628383B11467516641790",
+    "ZAF-ADM3-15628383B87612584942124",
+    "ZAF-ADM3-15628383B35584475836677",
+    "ZAF-ADM3-15628383B28857154592205",
+    "ZAF-ADM3-15628383B43101438913708",
+    "ZAF-ADM3-15628383B21359415323699",
+    "ZAF-ADM3-15628383B44296191907272",
+    "ZAF-ADM3-15628383B29870836441497",
+    "ZAF-ADM3-15628383B51643995484882",
+    "ZAF-ADM3-15628383B98865365427996",
+    "ZAF-ADM3-15628383B16723794281290",
+    "ZAF-ADM3-15628383B56060894344771",
+    "ZAF-ADM3-15628383B24472250012031",
+    "ZAF-ADM3-15628383B69661172902968",
+    "ZAF-ADM3-15628383B59220525748831",
+    "ZAF-ADM3-15628383B7049738786767",
+    "ZAF-ADM3-15628383B5643651506202",
+    "ZAF-ADM3-15628383B53437482814779",
+    "ZAF-ADM3-15628383B73156190774193",
+    "ZAF-ADM3-15628383B13555669719826",
+    "ZAF-ADM3-15628383B68393982164111",
+    "ZAF-ADM3-15628383B65289064858217",
+    "ZAF-ADM3-15628383B56796644270272",
+    "ZAF-ADM3-15628383B60178842862169",
+    "ZAF-ADM3-15628383B15970578895860",
+    "ZAF-ADM3-15628383B86066615117516",
+    "ZAF-ADM3-15628383B48291536006426",
+    "ZAF-ADM3-15628383B5837125139106",
+    "ZAF-ADM3-15628383B32392853457814",
+    "ZAF-ADM3-15628383B23770618200301",
+    "ZAF-ADM3-15628383B61836669217179",
+    "ZAF-ADM3-15628383B16733887405757",
+    "ZAF-ADM3-15628383B81102328331389",
+    "ZAF-ADM3-15628383B6898714257611",
+    "ZAF-ADM3-15628383B45262568422847",
+    "ZAF-ADM3-15628383B48775744068307",
+    "ZAF-ADM3-15628383B69683886729369",
+    "ZAF-ADM3-15628383B18669934425704",
+    "ZAF-ADM3-15628383B99550328665914",
+    "ZAF-ADM3-15628383B97834380912632",
+    "ZAF-ADM3-15628383B6389010886764",
+    "ZAF-ADM3-15628383B34666752536015",
+    "ZAF-ADM3-15628383B81788636322257",
+    "ZAF-ADM3-15628383B93091970558511",
+    "ZAF-ADM3-15628383B94614350175878",
+    "ZAF-ADM3-15628383B55646829528137",
+    "ZAF-ADM3-15628383B42702955327338",
+    "ZAF-ADM3-15628383B50034412175971",
+    "ZAF-ADM3-15628383B54808640674561",
+    "ZAF-ADM3-15628383B85816100363009",
+    "ZAF-ADM3-15628383B13242049883763",
+    "ZAF-ADM3-15628383B7897519412969",
+    "ZAF-ADM3-15628383B85017454632042",
+    "ZAF-ADM3-15628383B38357797168546",
+    "ZAF-ADM3-15628383B70795112074447",
+    "ZAF-ADM3-15628383B82450102835076",
+    "ZAF-ADM3-15628383B1738846702003",
+    "ZAF-ADM3-15628383B23037579047030",
+    "ZAF-ADM3-15628383B83069245545305",
+    "ZAF-ADM3-15628383B86009182191517",
+    "ZAF-ADM3-15628383B10857408054288",
+    "ZAF-ADM3-15628383B29698007895414",
+    "ZAF-ADM3-15628383B95844669523964",
+    "ZAF-ADM3-15628383B81360864143836",
+    "ZAF-ADM3-15628383B84137500673583",
+    "ZAF-ADM3-15628383B87581242557684",
+    "ZAF-ADM3-15628383B93031826303928",
+    "ZAF-ADM3-15628383B13551745181443",
+    "ZAF-ADM3-15628383B44998866357068",
+    "ZAF-ADM3-15628383B57251515863423",
+    "ZAF-ADM3-15628383B20937674647485",
+    "ZAF-ADM3-15628383B42598503726448",
+    "ZAF-ADM3-15628383B1879233030807",
+    "ZAF-ADM3-15628383B14963180798708",
+    "ZAF-ADM3-15628383B9095746706118",
+    "ZAF-ADM3-15628383B44304939530750",
+    "ZAF-ADM3-15628383B97169336353078",
+    "ZAF-ADM3-15628383B22398881151445",
+    "ZAF-ADM3-15628383B20343011275792",
+    "ZAF-ADM3-15628383B61631469274814",
+    "ZAF-ADM3-15628383B27888516952282",
+    "ZAF-ADM3-15628383B84967339349714",
+    "ZAF-ADM3-15628383B77297968052391",
+    "ZAF-ADM3-15628383B10231305979692",
+    "ZAF-ADM3-15628383B72969932115434",
+    "ZAF-ADM3-15628383B175155379368",
+    "ZAF-ADM3-15628383B70995166326216",
+    "ZAF-ADM3-15628383B83278814134603",
+    "ZAF-ADM3-15628383B74534237927019",
+    "ZAF-ADM3-15628383B15882687938841",
+    "ZAF-ADM3-15628383B2775886496345",
+    "ZAF-ADM3-15628383B45801429507111",
+    "ZAF-ADM3-15628383B92780608982812",
+    "ZAF-ADM3-15628383B17638662829865",
+    "ZAF-ADM3-15628383B43736937905361",
+    "ZAF-ADM3-15628383B78103499968670",
+    "ZAF-ADM3-15628383B88632116880655",
+    "ZAF-ADM3-15628383B84884961472226",
+    "ZAF-ADM3-15628383B7678060115213",
+    "ZAF-ADM3-15628383B54951115928747",
+    "ZAF-ADM3-15628383B9479695775145",
+    "ZAF-ADM3-15628383B98666839265379",
+    "ZAF-ADM3-15628383B94123430351076",
+    "ZAF-ADM3-15628383B53706266463889",
+    "ZAF-ADM3-15628383B84414150036036",
+    "ZAF-ADM3-15628383B46845171983587",
+    "ZAF-ADM3-15628383B41203661454034",
+    "ZAF-ADM3-15628383B63173838521780",
+    "ZAF-ADM3-15628383B22507296568616",
+    "ZAF-ADM3-15628383B57924236425168",
+    "ZAF-ADM3-15628383B79754077720638",
+    "ZAF-ADM3-15628383B82081482790652",
+    "ZAF-ADM3-15628383B70767103982228",
+    "ZAF-ADM3-15628383B49434551949748",
+    "ZAF-ADM3-15628383B79900485911991",
+    "ZAF-ADM3-15628383B77142145531518",
+    "ZAF-ADM3-15628383B30127802260453",
+    "ZAF-ADM3-15628383B23048095503212",
+    "ZAF-ADM3-15628383B20102527858320",
+    "ZAF-ADM3-15628383B3812939933350",
+    "ZAF-ADM3-15628383B87112813359476",
+    "ZAF-ADM3-15628383B83650063742596",
+    "ZAF-ADM3-15628383B53462234009854",
+    "ZAF-ADM3-15628383B51783858104799",
+    "ZAF-ADM3-15628383B15418766532839",
+    "ZAF-ADM3-15628383B80921072750836",
+    "ZAF-ADM3-15628383B61881803671589",
+    "ZAF-ADM3-15628383B33735276955904",
+    "ZAF-ADM3-15628383B73981426352220",
+    "ZAF-ADM3-15628383B24995614588179",
+    "ZAF-ADM3-15628383B4021169730913",
+    "ZAF-ADM3-15628383B13881296162767",
+    "ZAF-ADM3-15628383B59802674221222",
+    "ZAF-ADM3-15628383B99813197331106",
+    "ZAF-ADM3-15628383B50977513509488",
+    "ZAF-ADM3-15628383B81730914179068",
+    "ZAF-ADM3-15628383B79703818366198",
+    "ZAF-ADM3-15628383B17721277899206",
+    "ZAF-ADM3-15628383B57700102928675",
+    "ZAF-ADM3-15628383B18572395899182",
+    "ZAF-ADM3-15628383B50612573820544",
+    "ZAF-ADM3-15628383B32940385818298",
+    "ZAF-ADM3-15628383B62442804941170",
+    "ZAF-ADM3-15628383B60744679242137",
+    "ZAF-ADM3-15628383B63481411965292",
+    "ZAF-ADM3-15628383B66727705229747",
+    "ZAF-ADM3-15628383B61432920624348",
+    "ZAF-ADM3-15628383B47394950220829",
+    "ZAF-ADM3-15628383B8341083957996",
+    "ZAF-ADM3-15628383B35491227383110",
+    "ZAF-ADM3-15628383B17839761001340"
    ],
    "from": "1994-04-27",
    "to": "2006-03-01",
-   "why": "Between 1994 and 2006 these provinces had cross-boundary municipalities and different lines (Umzimkulu, Matatiele, Bushbuckridge, Groblersdal/Sekhukhuneland, Moshaweng, Carletonville/Khutsong, Gauteng fringes). The 1994 lines run through the NE atoms.",
+   "why": "Between 1994 and 2006 the provincial lines followed the 1994 magisterial districts, and from 2000-12-05 the cross-boundary municipalities (Bushbuckridge, Greater Groblersdal, Greater Marble Hall, Greater Tubatse, Kungwini, Nokeng tsa Taemane, City of Tshwane, Merafong City, Moshaweng, Kagisano, Ga-Segonyana, Phokwane area, Matatiele, Umzimkulu …) straddled them. The 12th Amendment assigned each to one province, so the 1994 lines run INSIDE today's municipalities: no union of the 213 ADM3 atoms (the finest gbOpen level for ZAF) draws them.",
    "checked": [
     "statoids uza.html",
     "Wikipedia Twelfth Amendment oldid 1337687805",
-    "Wikipedia Provinces of South Africa oldid 1365166680"
+    "Wikipedia Provinces of South Africa oldid 1365166680",
+    "geoBoundaries ZAF ADM3 (2016 municipalities): finest gbOpen level; no ward or magisterial-district level is published in gbOpen for ZAF"
    ],
-   "needs": "finer atoms: 1994-era magisterial districts or 2001 census municipalities (Stats SA / Municipal Demarcation Board, licence to be checked)"
+   "needs": "1994-era magisterial district boundaries (Stats SA 1996 census) or 2000 wards — not in geoBoundaries"
   },
   {
    "what": "KwaZuluNatal 1994–2006 extent",
@@ -487,16 +908,44 @@
    "what": "Gauteng and North West between the 12th and 16th amendments (Merafong in North West)",
    "unit": "ZAF:Gauteng@1994",
    "atoms": [
-    "ZAF-1208",
-    "ZAF-1201"
+    "ZAF-ADM3-15628383B15418766532839",
+    "ZAF-ADM3-15628383B80921072750836",
+    "ZAF-ADM3-15628383B61881803671589",
+    "ZAF-ADM3-15628383B33735276955904",
+    "ZAF-ADM3-15628383B73981426352220",
+    "ZAF-ADM3-15628383B24995614588179",
+    "ZAF-ADM3-15628383B4021169730913",
+    "ZAF-ADM3-15628383B13881296162767",
+    "ZAF-ADM3-15628383B59802674221222",
+    "ZAF-ADM3-15628383B99813197331106",
+    "ZAF-ADM3-15628383B50977513509488",
+    "ZAF-ADM3-15628383B81730914179068",
+    "ZAF-ADM3-15628383B79703818366198",
+    "ZAF-ADM3-15628383B17721277899206",
+    "ZAF-ADM3-15628383B57700102928675",
+    "ZAF-ADM3-15628383B18572395899182",
+    "ZAF-ADM3-15628383B50612573820544",
+    "ZAF-ADM3-15628383B32940385818298",
+    "ZAF-ADM3-15628383B62442804941170",
+    "ZAF-ADM3-15628383B60744679242137",
+    "ZAF-ADM3-15628383B63481411965292",
+    "ZAF-ADM3-15628383B66727705229747",
+    "ZAF-ADM3-15628383B61432920624348",
+    "ZAF-ADM3-15628383B47394950220829",
+    "ZAF-ADM3-15628383B8341083957996",
+    "ZAF-ADM3-15628383B35491227383110",
+    "ZAF-ADM3-15628383B17839761001340"
    ],
    "from": "2006-03-01",
    "to": "2009-04-03",
-   "why": "Merafong City (Carletonville, Khutsong) was in North West in this window; NE draws it in Gauteng.",
+   "why": "Merafong City (Carletonville, Khutsong) was in North West in this window. It is one ADM3 atom, but its eastern line against Rand West City / Mogale City / Johannesburg was the provincial line only until 2009; after that it became internal to Gauteng and could be redetermined (2011, 2016 demarcations), and no change list shows it was not. Census 2011 area 1,631 km² vs 1,634 km² for the atom (consistent, not proof for 2006–2009).",
    "checked": [
-    "Wikipedia Sixteenth Amendment oldid 1337687567"
+    "Wikipedia Sixteenth Amendment oldid 1337687567",
+    "Wikipedia Merafong City Local Municipality oldid 1373618303 (area 1,631 km², 2011)",
+    "statoids yza.html (district municipality changes)",
+    "geoBoundaries ZAF ADM3 atom ZAF-ADM3-15628383B24995614588179 (1,634 km²)"
    ],
-   "needs": "finer atoms: Merafong City local municipality outline (MDB, licence to be checked)"
+   "needs": "MDB redetermination records for Merafong City 2009–2016, or the 2006 municipal boundary of Merafong"
   },
   {
    "what": "North West 2006–2009 extent",

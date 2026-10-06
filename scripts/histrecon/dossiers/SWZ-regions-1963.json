@@ -1,0 +1,233 @@
+{
+  "country": "SWZ",
+  "atomSet": "gb-adm1@2026-10-06",
+  "scope": {
+    "from": "1963-12",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Swaziland (British protectorate until 1968-09-06), then the Kingdom of Swaziland / Eswatini. First level: the four districts formed in 1963-12, called regions since 2005-07-26. Atoms are the four regions of geoBoundaries SWZ ADM1 (OpenStreetMap, 2017). The six (1946) / seven (Müller-Crepon 1914 section) colonial districts before 1963 are not drawn here. Independent check (①): atom area / statoids area — Hhohho 3,665/3,569 = 1.027, Lubombo 5,846/5,945 = 0.983, Manzini 4,099/4,070 = 1.007, Shiselweni 3,785/3,779 = 1.002; all four regions' 2017 OSM tinkhundla (gb ADM2, 53) nest in them.",
+  "units": [
+    {
+      "id": "SWZ:Hhohho@1963",
+      "names": {
+        "en": "Hhohho Region",
+        "ja": "ホホ地方",
+        "local": "Hhohho"
+      },
+      "wikidata": "Q735570",
+      "spans": [
+        {
+          "from": "1963-12",
+          "precision": "month",
+          "to": null,
+          "atoms": [
+            "SWZ-ADM1-75366066B25905390127614"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usz.html",
+              "title": "Statoids — Regions of Swaziland (Gwillim Law, updated 2015-06-30)",
+              "says": "1946: six districts (Bremersdorp, Hlatikulu, Mankaiana, Mbabane, Pigg's Peak, Stegi). 1963-12: reorganised into four districts. ~1980 capital of Shiselweni moved to Nhlangano; 2005-07-26 districts became regions. No boundary change after 1963.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Eswatini&oldid=1378538243",
+              "title": "Wikipedia — Regions of Eswatini (oldid 1378538243)",
+              "says": "Eswatini is divided into four regions (Hhohho, Lubombo, Manzini, Shiselweni), subdivided into tinkhundla.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/SWZ/ADM1/geoBoundaries-SWZ-ADM1.geojson",
+              "title": "geoBoundaries SWZ ADM1 (OpenStreetMap / Wambacher, 2017)",
+              "says": "The four regions of Eswatini.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Four districts since the reorganisation of 1963-12 (statoids gives the month only); regions since the 2005 constitution, same territory."
+        }
+      ]
+    },
+    {
+      "id": "SWZ:Lubombo@1963",
+      "names": {
+        "en": "Lubombo Region",
+        "ja": "ルボンボ地方",
+        "local": "Lubombo"
+      },
+      "wikidata": "Q856657",
+      "spans": [
+        {
+          "from": "1963-12",
+          "precision": "month",
+          "to": null,
+          "atoms": [
+            "SWZ-ADM1-75366066B12234306804593"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usz.html",
+              "title": "Statoids — Regions of Swaziland (Gwillim Law, updated 2015-06-30)",
+              "says": "1946: six districts (Bremersdorp, Hlatikulu, Mankaiana, Mbabane, Pigg's Peak, Stegi). 1963-12: reorganised into four districts. ~1980 capital of Shiselweni moved to Nhlangano; 2005-07-26 districts became regions. No boundary change after 1963.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Eswatini&oldid=1378538243",
+              "title": "Wikipedia — Regions of Eswatini (oldid 1378538243)",
+              "says": "Eswatini is divided into four regions (Hhohho, Lubombo, Manzini, Shiselweni), subdivided into tinkhundla.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/SWZ/ADM1/geoBoundaries-SWZ-ADM1.geojson",
+              "title": "geoBoundaries SWZ ADM1 (OpenStreetMap / Wambacher, 2017)",
+              "says": "The four regions of Eswatini.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Four districts since the reorganisation of 1963-12 (statoids gives the month only); regions since the 2005 constitution, same territory."
+        }
+      ]
+    },
+    {
+      "id": "SWZ:Manzini@1963",
+      "names": {
+        "en": "Manzini Region",
+        "ja": "マンジニ地方",
+        "local": "Manzini"
+      },
+      "wikidata": "Q305395",
+      "spans": [
+        {
+          "from": "1963-12",
+          "precision": "month",
+          "to": null,
+          "atoms": [
+            "SWZ-ADM1-75366066B3567364273406"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usz.html",
+              "title": "Statoids — Regions of Swaziland (Gwillim Law, updated 2015-06-30)",
+              "says": "1946: six districts (Bremersdorp, Hlatikulu, Mankaiana, Mbabane, Pigg's Peak, Stegi). 1963-12: reorganised into four districts. ~1980 capital of Shiselweni moved to Nhlangano; 2005-07-26 districts became regions. No boundary change after 1963.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Eswatini&oldid=1378538243",
+              "title": "Wikipedia — Regions of Eswatini (oldid 1378538243)",
+              "says": "Eswatini is divided into four regions (Hhohho, Lubombo, Manzini, Shiselweni), subdivided into tinkhundla.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/SWZ/ADM1/geoBoundaries-SWZ-ADM1.geojson",
+              "title": "geoBoundaries SWZ ADM1 (OpenStreetMap / Wambacher, 2017)",
+              "says": "The four regions of Eswatini.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Four districts since the reorganisation of 1963-12 (statoids gives the month only); regions since the 2005 constitution, same territory."
+        }
+      ]
+    },
+    {
+      "id": "SWZ:Shiselweni@1963",
+      "names": {
+        "en": "Shiselweni Region",
+        "ja": "シセルウェニ地方",
+        "local": "Shiselweni"
+      },
+      "wikidata": "Q845934",
+      "spans": [
+        {
+          "from": "1963-12",
+          "precision": "month",
+          "to": null,
+          "atoms": [
+            "SWZ-ADM1-75366066B21527038718027"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usz.html",
+              "title": "Statoids — Regions of Swaziland (Gwillim Law, updated 2015-06-30)",
+              "says": "1946: six districts (Bremersdorp, Hlatikulu, Mankaiana, Mbabane, Pigg's Peak, Stegi). 1963-12: reorganised into four districts. ~1980 capital of Shiselweni moved to Nhlangano; 2005-07-26 districts became regions. No boundary change after 1963.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Eswatini&oldid=1378538243",
+              "title": "Wikipedia — Regions of Eswatini (oldid 1378538243)",
+              "says": "Eswatini is divided into four regions (Hhohho, Lubombo, Manzini, Shiselweni), subdivided into tinkhundla.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/SWZ/ADM1/geoBoundaries-SWZ-ADM1.geojson",
+              "title": "geoBoundaries SWZ ADM1 (OpenStreetMap / Wambacher, 2017)",
+              "says": "The four regions of Eswatini.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Four districts since the reorganisation of 1963-12 (statoids gives the month only); regions since the 2005 constitution, same territory."
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1963-12",
+      "precision": "month",
+      "what": "Six districts reorganised into four",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/usz.html",
+          "title": "Statoids — Regions of Swaziland (Gwillim Law, updated 2015-06-30)",
+          "says": "1946: six districts (Bremersdorp, Hlatikulu, Mankaiana, Mbabane, Pigg's Peak, Stegi). 1963-12: reorganised into four districts. ~1980 capital of Shiselweni moved to Nhlangano; 2005-07-26 districts became regions. No boundary change after 1963.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "2005-07-26",
+      "precision": "day",
+      "what": "Districts become regions under the new constitution (no territorial change)",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/usz.html",
+          "title": "Statoids — Regions of Swaziland (Gwillim Law, updated 2015-06-30)",
+          "says": "1946: six districts (Bremersdorp, Hlatikulu, Mankaiana, Mbabane, Pigg's Peak, Stegi). 1963-12: reorganised into four districts. ~1980 capital of Shiselweni moved to Nhlangano; 2005-07-26 districts became regions. No boundary change after 1963.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "1966-05-24",
+      "n": 4,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/usz.html",
+          "title": "Statoids — Regions of Swaziland (Gwillim Law, updated 2015-06-30)",
+          "says": "Population history: four districts at the 1966-05-24 census.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "2007-05-12",
+      "n": 4,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/usz.html",
+          "title": "Statoids — Regions of Swaziland (Gwillim Law, updated 2015-06-30)",
+          "says": "2007-05-12 census: four regions.",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Eswatini&oldid=1378538243",
+          "title": "Wikipedia — Regions of Eswatini (oldid 1378538243)",
+          "says": "Eswatini is divided into four regions (Hhohho, Lubombo, Manzini, Shiselweni), subdivided into tinkhundla.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": []
+}

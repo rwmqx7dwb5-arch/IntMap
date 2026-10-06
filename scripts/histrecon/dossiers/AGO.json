@@ -1,12 +1,1142 @@
 {
   "country": "AGO",
-  "atomSet": "ne-admin1@ca96624",
+  "atomSet": "gb-adm3@2026-10-06",
   "scope": {
-    "from": "1975-11-11",
+    "from": "1970-07-10",
     "to": "2019-12-31"
   },
-  "polityNote": "People's Republic / Republic of Angola from independence on 1975-11-11 (Cabinda included throughout). Earlier colonial districts are outside this dossier (see unresolved).",
+  "polityNote": "Portuguese Angola (districts) from the creation of the Cunene district (1970-07-10) to independence, then the People's Republic / Republic of Angola (Cabinda included throughout). Atoms are the 558 communes of geoBoundaries AGO ADM3 (INE Angola, 2014 census; CC BY 3.0). Each commune is assigned to its 2014 municipality and province by name from the census list (all 558 names match; the province of every commune also agrees with the geoBoundaries AGO ADM1 2021 province it lies in, 551 of 558 at ≥99% of their area). Earlier provinces are unions of whole municipalities moved by named laws (Bengo 1980, Lei 29/11 of 2011) or splits of a province by whole municipalities (Lunda 1978). Independent check (①): the 2014 province unions agree with the published province areas (geohive/INE as tabulated in en.wikipedia Angola rev. 1377670946) within 3.0% for every unchanged province (e.g. Huambo 33,261 vs 33,296 km², Huíla 78,969 vs 78,897, Cuanza Sul 55,479 vs 55,554, Cabinda 7,021 vs 7,270).",
   "units": [
+    {
+      "id": "AGO:dist-Cabinda@1970",
+      "names": {
+        "en": "Cabinda District",
+        "ja": "カビンダ県",
+        "local": "Distrito de Cabinda"
+      },
+      "spans": [
+        {
+          "from": "1970-07-10",
+          "precision": "day",
+          "to": "1975-11-11",
+          "atoms": [
+            "AGO-ADM3-77060369B53844096846312",
+            "AGO-ADM3-77060369B46240764356667",
+            "AGO-ADM3-77060369B11998726908582",
+            "AGO-ADM3-77060369B67616166185939",
+            "AGO-ADM3-77060369B96109216428882",
+            "AGO-ADM3-77060369B12671566865050",
+            "AGO-ADM3-77060369B95098886278971",
+            "AGO-ADM3-77060369B62408777485320",
+            "AGO-ADM3-77060369B41515591647974",
+            "AGO-ADM3-77060369B53178706359891",
+            "AGO-ADM3-77060369B90406814208410",
+            "AGO-ADM3-77060369B15944251872141"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids — Provinces of Angola (Gwillim Law, updated 2016-10-06)",
+              "says": "Change history 1950–2016: district splits, independence 1975-11-11, Lunda and Luanda splits, Moçâmedes renamed Namibe 1985, otherwise only minor boundary changes; 18 provinces.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Colonial district (distrito; styled província from 1972) of Portuguese Angola. The span starts at the last district created before independence (Cunene, decree 330/70 of 1970-07-10). No change between districts is recorded from then until independence (statoids change history; pt.wikipedia district histories), so the districts are drawn with the lines the provinces had at independence; those are the 2014 communes' unions below (each later change is a whole-municipality transfer named by its law)."
+        }
+      ]
+    },
+    {
+      "id": "AGO:dist-Zaire@1970",
+      "names": {
+        "en": "Zaire District",
+        "ja": "ザイーレ県",
+        "local": "Distrito do Zaire"
+      },
+      "spans": [
+        {
+          "from": "1970-07-10",
+          "precision": "day",
+          "to": "1975-11-11",
+          "atoms": [
+            "AGO-ADM3-77060369B98497381266004",
+            "AGO-ADM3-77060369B11276087391128",
+            "AGO-ADM3-77060369B52683525356616",
+            "AGO-ADM3-77060369B7578775428772",
+            "AGO-ADM3-77060369B97913184130307",
+            "AGO-ADM3-77060369B73087633805950",
+            "AGO-ADM3-77060369B49103122890285",
+            "AGO-ADM3-77060369B40915931189899",
+            "AGO-ADM3-77060369B34412894643744",
+            "AGO-ADM3-77060369B23044018271158",
+            "AGO-ADM3-77060369B65058355993980",
+            "AGO-ADM3-77060369B38436347599365",
+            "AGO-ADM3-77060369B20236459109172",
+            "AGO-ADM3-77060369B64170206856618",
+            "AGO-ADM3-77060369B77678291650004",
+            "AGO-ADM3-77060369B85615150964604",
+            "AGO-ADM3-77060369B38755075225405",
+            "AGO-ADM3-77060369B12805916753711",
+            "AGO-ADM3-77060369B81211614720935",
+            "AGO-ADM3-77060369B95701143721218",
+            "AGO-ADM3-77060369B57795496962955",
+            "AGO-ADM3-77060369B61345751686566",
+            "AGO-ADM3-77060369B395993930345",
+            "AGO-ADM3-77060369B63006016372328",
+            "AGO-ADM3-77060369B6741864225880"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=71714212",
+              "title": "Wikipédia (pt): Uíge (província), rev. 71714212",
+              "says": "DLM nº 6 of 1 April 1961 renamed the Congo district Uíge and recreated the Zaire district from its land; in 1972 the Angolan districts became provinces.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids — Provinces of Angola (Gwillim Law, updated 2016-10-06)",
+              "says": "Change history 1950–2016: district splits, independence 1975-11-11, Lunda and Luanda splits, Moçâmedes renamed Namibe 1985, otherwise only minor boundary changes; 18 provinces.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Colonial district (distrito; styled província from 1972) of Portuguese Angola. The span starts at the last district created before independence (Cunene, decree 330/70 of 1970-07-10). No change between districts is recorded from then until independence (statoids change history; pt.wikipedia district histories), so the districts are drawn with the lines the provinces had at independence; those are the 2014 communes' unions below (each later change is a whole-municipality transfer named by its law)."
+        }
+      ]
+    },
+    {
+      "id": "AGO:dist-Uige@1970",
+      "names": {
+        "en": "Uíge District",
+        "ja": "ウイジェ県",
+        "local": "Distrito do Uíge"
+      },
+      "spans": [
+        {
+          "from": "1970-07-10",
+          "precision": "day",
+          "to": "1975-11-11",
+          "atoms": [
+            "AGO-ADM3-77060369B8724754654110",
+            "AGO-ADM3-77060369B21919827699564",
+            "AGO-ADM3-77060369B77096956125590",
+            "AGO-ADM3-77060369B70672226067782",
+            "AGO-ADM3-77060369B75739987748875",
+            "AGO-ADM3-77060369B59694875753223",
+            "AGO-ADM3-77060369B15032360575020",
+            "AGO-ADM3-77060369B9970090994358",
+            "AGO-ADM3-77060369B78262342163284",
+            "AGO-ADM3-77060369B52008564114429",
+            "AGO-ADM3-77060369B28055013608528",
+            "AGO-ADM3-77060369B45869818147690",
+            "AGO-ADM3-77060369B52650890210071",
+            "AGO-ADM3-77060369B65812900585271",
+            "AGO-ADM3-77060369B83992040436439",
+            "AGO-ADM3-77060369B45714590156957",
+            "AGO-ADM3-77060369B28518770822582",
+            "AGO-ADM3-77060369B44594423793319",
+            "AGO-ADM3-77060369B30672273982006",
+            "AGO-ADM3-77060369B63976390428608",
+            "AGO-ADM3-77060369B45062381592645",
+            "AGO-ADM3-77060369B21114926368088",
+            "AGO-ADM3-77060369B74626459365452",
+            "AGO-ADM3-77060369B38739912373951",
+            "AGO-ADM3-77060369B79670053384731",
+            "AGO-ADM3-77060369B47247410225072",
+            "AGO-ADM3-77060369B73157208565988",
+            "AGO-ADM3-77060369B39042350825343",
+            "AGO-ADM3-77060369B71063514186839",
+            "AGO-ADM3-77060369B43942901903314",
+            "AGO-ADM3-77060369B8780608781739",
+            "AGO-ADM3-77060369B27394885682790",
+            "AGO-ADM3-77060369B257357601470",
+            "AGO-ADM3-77060369B8365764174948",
+            "AGO-ADM3-77060369B18984741240027",
+            "AGO-ADM3-77060369B3832153370388",
+            "AGO-ADM3-77060369B38854531843540",
+            "AGO-ADM3-77060369B95033214763974",
+            "AGO-ADM3-77060369B66076053495974",
+            "AGO-ADM3-77060369B24417529322556",
+            "AGO-ADM3-77060369B39893669111629",
+            "AGO-ADM3-77060369B46485347117057",
+            "AGO-ADM3-77060369B86432216841262",
+            "AGO-ADM3-77060369B79373110658481",
+            "AGO-ADM3-77060369B81978010173083",
+            "AGO-ADM3-77060369B68118250541312",
+            "AGO-ADM3-77060369B9200177811615"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=71714212",
+              "title": "Wikipédia (pt): Uíge (província), rev. 71714212",
+              "says": "DLM nº 6 of 1 April 1961 renamed the Congo district Uíge and recreated the Zaire district from its land; in 1972 the Angolan districts became provinces.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids — Provinces of Angola (Gwillim Law, updated 2016-10-06)",
+              "says": "Change history 1950–2016: district splits, independence 1975-11-11, Lunda and Luanda splits, Moçâmedes renamed Namibe 1985, otherwise only minor boundary changes; 18 provinces.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Colonial district (distrito; styled província from 1972) of Portuguese Angola. The span starts at the last district created before independence (Cunene, decree 330/70 of 1970-07-10). No change between districts is recorded from then until independence (statoids change history; pt.wikipedia district histories), so the districts are drawn with the lines the provinces had at independence; those are the 2014 communes' unions below (each later change is a whole-municipality transfer named by its law)."
+        }
+      ]
+    },
+    {
+      "id": "AGO:dist-Luanda@1970",
+      "names": {
+        "en": "Luanda District",
+        "ja": "ルアンダ県",
+        "local": "Distrito de Luanda"
+      },
+      "spans": [
+        {
+          "from": "1970-07-10",
+          "precision": "day",
+          "to": "1975-11-11",
+          "atoms": [
+            "AGO-ADM3-77060369B80097652775654",
+            "AGO-ADM3-77060369B36959937971156",
+            "AGO-ADM3-77060369B25116241346444",
+            "AGO-ADM3-77060369B92100815422872",
+            "AGO-ADM3-77060369B2662139895422",
+            "AGO-ADM3-77060369B2146590991080",
+            "AGO-ADM3-77060369B12248368548140",
+            "AGO-ADM3-77060369B25040483801689",
+            "AGO-ADM3-77060369B64541948706998",
+            "AGO-ADM3-77060369B19343515024497",
+            "AGO-ADM3-77060369B55445459540972",
+            "AGO-ADM3-77060369B77052106222969",
+            "AGO-ADM3-77060369B91001242095302",
+            "AGO-ADM3-77060369B42595123801106",
+            "AGO-ADM3-77060369B2740863261582",
+            "AGO-ADM3-77060369B8583006032412",
+            "AGO-ADM3-77060369B43887382572005",
+            "AGO-ADM3-77060369B30045542282867",
+            "AGO-ADM3-77060369B12972990759222",
+            "AGO-ADM3-77060369B96394604665971",
+            "AGO-ADM3-77060369B61431552716691",
+            "AGO-ADM3-77060369B95378248266460",
+            "AGO-ADM3-77060369B26883802924931",
+            "AGO-ADM3-77060369B34891302870315",
+            "AGO-ADM3-77060369B2796777905421",
+            "AGO-ADM3-77060369B51952533310879",
+            "AGO-ADM3-77060369B56791963203012",
+            "AGO-ADM3-77060369B28747529142911",
+            "AGO-ADM3-77060369B86615925538188",
+            "AGO-ADM3-77060369B23203617018305",
+            "AGO-ADM3-77060369B30800528884791",
+            "AGO-ADM3-77060369B64474879848049",
+            "AGO-ADM3-77060369B12024358750574",
+            "AGO-ADM3-77060369B81683433469789",
+            "AGO-ADM3-77060369B40853382158296",
+            "AGO-ADM3-77060369B69277955567528",
+            "AGO-ADM3-77060369B12716640168232",
+            "AGO-ADM3-77060369B11786628673560",
+            "AGO-ADM3-77060369B30621476680114",
+            "AGO-ADM3-77060369B56533820561986",
+            "AGO-ADM3-77060369B75393229396649",
+            "AGO-ADM3-77060369B77627973760574",
+            "AGO-ADM3-77060369B85239768616224",
+            "AGO-ADM3-77060369B63835932515459",
+            "AGO-ADM3-77060369B51541486590553",
+            "AGO-ADM3-77060369B43614027541276",
+            "AGO-ADM3-77060369B93161311268651"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=72390930",
+              "title": "Wikipédia (pt): Bengo, rev. 72390930 (citing the Governo Provincial do Bengo)",
+              "says": "Bengo constituted 26 Apr 1980; the municipalities Pango Aluquém, Dembos and Bula Atumba were transferred from Cuanza Norte; Lei 29/11 (1 Sep 2011) moved Ícolo e Bengo and Quissama to Luanda.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids — Provinces of Angola (Gwillim Law, updated 2016-10-06)",
+              "says": "Change history 1950–2016: district splits, independence 1975-11-11, Lunda and Luanda splits, Moçâmedes renamed Namibe 1985, otherwise only minor boundary changes; 18 provinces.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Colonial district (distrito; styled província from 1972) of Portuguese Angola. The span starts at the last district created before independence (Cunene, decree 330/70 of 1970-07-10). No change between districts is recorded from then until independence (statoids change history; pt.wikipedia district histories), so the districts are drawn with the lines the provinces had at independence; those are the 2014 communes' unions below (each later change is a whole-municipality transfer named by its law)."
+        }
+      ]
+    },
+    {
+      "id": "AGO:dist-CuanzaNorte@1970",
+      "names": {
+        "en": "Cuanza Norte District",
+        "ja": "クアンザ・ノルテ県",
+        "local": "Distrito do Cuanza Norte"
+      },
+      "spans": [
+        {
+          "from": "1970-07-10",
+          "precision": "day",
+          "to": "1975-11-11",
+          "atoms": [
+            "AGO-ADM3-77060369B64908754787799",
+            "AGO-ADM3-77060369B36182690435402",
+            "AGO-ADM3-77060369B77066374258209",
+            "AGO-ADM3-77060369B15173041600301",
+            "AGO-ADM3-77060369B86106246345198",
+            "AGO-ADM3-77060369B32385966955160",
+            "AGO-ADM3-77060369B5282053484239",
+            "AGO-ADM3-77060369B98512697730625",
+            "AGO-ADM3-77060369B96536926609214",
+            "AGO-ADM3-77060369B84784078016809",
+            "AGO-ADM3-77060369B6178761244710",
+            "AGO-ADM3-77060369B84552585790644",
+            "AGO-ADM3-77060369B63130039325802",
+            "AGO-ADM3-77060369B82535970069239",
+            "AGO-ADM3-77060369B28902819966150",
+            "AGO-ADM3-77060369B43200383879194",
+            "AGO-ADM3-77060369B10441115959842",
+            "AGO-ADM3-77060369B89576025356774",
+            "AGO-ADM3-77060369B77670081159318",
+            "AGO-ADM3-77060369B64244006936424",
+            "AGO-ADM3-77060369B27252123326425",
+            "AGO-ADM3-77060369B83348907679704",
+            "AGO-ADM3-77060369B53049142243226",
+            "AGO-ADM3-77060369B8719947989356",
+            "AGO-ADM3-77060369B53530304528824",
+            "AGO-ADM3-77060369B72574508501938",
+            "AGO-ADM3-77060369B91094858094160",
+            "AGO-ADM3-77060369B2685959730049",
+            "AGO-ADM3-77060369B90631546857372",
+            "AGO-ADM3-77060369B14028225721604",
+            "AGO-ADM3-77060369B39474702068544",
+            "AGO-ADM3-77060369B37589770112593",
+            "AGO-ADM3-77060369B3044772179039",
+            "AGO-ADM3-77060369B68959959650812",
+            "AGO-ADM3-77060369B68292856056965",
+            "AGO-ADM3-77060369B67444145076089",
+            "AGO-ADM3-77060369B58719154966847",
+            "AGO-ADM3-77060369B5166810058375",
+            "AGO-ADM3-77060369B68320103235918"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=72390930",
+              "title": "Wikipédia (pt): Bengo, rev. 72390930 (citing the Governo Provincial do Bengo)",
+              "says": "Bengo constituted 26 Apr 1980; the municipalities Pango Aluquém, Dembos and Bula Atumba were transferred from Cuanza Norte; Lei 29/11 (1 Sep 2011) moved Ícolo e Bengo and Quissama to Luanda.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids — Provinces of Angola (Gwillim Law, updated 2016-10-06)",
+              "says": "Change history 1950–2016: district splits, independence 1975-11-11, Lunda and Luanda splits, Moçâmedes renamed Namibe 1985, otherwise only minor boundary changes; 18 provinces.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Colonial district (distrito; styled província from 1972) of Portuguese Angola. The span starts at the last district created before independence (Cunene, decree 330/70 of 1970-07-10). No change between districts is recorded from then until independence (statoids change history; pt.wikipedia district histories), so the districts are drawn with the lines the provinces had at independence; those are the 2014 communes' unions below (each later change is a whole-municipality transfer named by its law)."
+        }
+      ]
+    },
+    {
+      "id": "AGO:dist-CuanzaSul@1970",
+      "names": {
+        "en": "Cuanza Sul District",
+        "ja": "クアンザ・スル県",
+        "local": "Distrito do Cuanza Sul"
+      },
+      "spans": [
+        {
+          "from": "1970-07-10",
+          "precision": "day",
+          "to": "1975-11-11",
+          "atoms": [
+            "AGO-ADM3-77060369B87630140538050",
+            "AGO-ADM3-77060369B98895621640435",
+            "AGO-ADM3-77060369B6571135727164",
+            "AGO-ADM3-77060369B31561431071673",
+            "AGO-ADM3-77060369B10041221024197",
+            "AGO-ADM3-77060369B95819031172883",
+            "AGO-ADM3-77060369B44693804364776",
+            "AGO-ADM3-77060369B42779786656121",
+            "AGO-ADM3-77060369B6729273002670",
+            "AGO-ADM3-77060369B51351755961103",
+            "AGO-ADM3-77060369B57508479932977",
+            "AGO-ADM3-77060369B64576451873120",
+            "AGO-ADM3-77060369B95291994434185",
+            "AGO-ADM3-77060369B11378932442569",
+            "AGO-ADM3-77060369B55580708212746",
+            "AGO-ADM3-77060369B69242238300594",
+            "AGO-ADM3-77060369B42652262359360",
+            "AGO-ADM3-77060369B17289677641421",
+            "AGO-ADM3-77060369B87957674548120",
+            "AGO-ADM3-77060369B92576488069766",
+            "AGO-ADM3-77060369B74555783358009",
+            "AGO-ADM3-77060369B59288966828605",
+            "AGO-ADM3-77060369B32302184585006",
+            "AGO-ADM3-77060369B506123177579",
+            "AGO-ADM3-77060369B92240187142351",
+            "AGO-ADM3-77060369B10090731986965",
+            "AGO-ADM3-77060369B13316727586611",
+            "AGO-ADM3-77060369B53692892969777",
+            "AGO-ADM3-77060369B76926945765559",
+            "AGO-ADM3-77060369B11753956617851",
+            "AGO-ADM3-77060369B69227942612495",
+            "AGO-ADM3-77060369B11782273645018",
+            "AGO-ADM3-77060369B17906137242327",
+            "AGO-ADM3-77060369B44133695202500",
+            "AGO-ADM3-77060369B72103979297313",
+            "AGO-ADM3-77060369B80146021089692"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids — Provinces of Angola (Gwillim Law, updated 2016-10-06)",
+              "says": "Change history 1950–2016: district splits, independence 1975-11-11, Lunda and Luanda splits, Moçâmedes renamed Namibe 1985, otherwise only minor boundary changes; 18 provinces.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Colonial district (distrito; styled província from 1972) of Portuguese Angola. The span starts at the last district created before independence (Cunene, decree 330/70 of 1970-07-10). No change between districts is recorded from then until independence (statoids change history; pt.wikipedia district histories), so the districts are drawn with the lines the provinces had at independence; those are the 2014 communes' unions below (each later change is a whole-municipality transfer named by its law)."
+        }
+      ]
+    },
+    {
+      "id": "AGO:dist-Malanje@1970",
+      "names": {
+        "en": "Malanje District",
+        "ja": "マランジェ県",
+        "local": "Distrito de Malanje"
+      },
+      "spans": [
+        {
+          "from": "1970-07-10",
+          "precision": "day",
+          "to": "1975-11-11",
+          "atoms": [
+            "AGO-ADM3-77060369B59843141888146",
+            "AGO-ADM3-77060369B17278398059879",
+            "AGO-ADM3-77060369B68772445739537",
+            "AGO-ADM3-77060369B73426990372319",
+            "AGO-ADM3-77060369B85191624348232",
+            "AGO-ADM3-77060369B39803589215671",
+            "AGO-ADM3-77060369B67813711392802",
+            "AGO-ADM3-77060369B12312136499874",
+            "AGO-ADM3-77060369B76844153240272",
+            "AGO-ADM3-77060369B50522050801052",
+            "AGO-ADM3-77060369B62850221822638",
+            "AGO-ADM3-77060369B24802371502772",
+            "AGO-ADM3-77060369B67021433180168",
+            "AGO-ADM3-77060369B37464812485889",
+            "AGO-ADM3-77060369B88635246944590",
+            "AGO-ADM3-77060369B43726960673348",
+            "AGO-ADM3-77060369B45007780150014",
+            "AGO-ADM3-77060369B16034100651442",
+            "AGO-ADM3-77060369B9054113490683",
+            "AGO-ADM3-77060369B77448006656851",
+            "AGO-ADM3-77060369B23608539585387",
+            "AGO-ADM3-77060369B37450833822113",
+            "AGO-ADM3-77060369B17475300571562",
+            "AGO-ADM3-77060369B36985799369118",
+            "AGO-ADM3-77060369B15371088626430",
+            "AGO-ADM3-77060369B92531331725460",
+            "AGO-ADM3-77060369B79589461525133",
+            "AGO-ADM3-77060369B41536265520458",
+            "AGO-ADM3-77060369B51393636590249",
+            "AGO-ADM3-77060369B75168167732290",
+            "AGO-ADM3-77060369B97003536889765",
+            "AGO-ADM3-77060369B54438225950593",
+            "AGO-ADM3-77060369B73872140540114",
+            "AGO-ADM3-77060369B97753535604214",
+            "AGO-ADM3-77060369B65172210511691",
+            "AGO-ADM3-77060369B71941498064891",
+            "AGO-ADM3-77060369B4853250093545",
+            "AGO-ADM3-77060369B5531396522422",
+            "AGO-ADM3-77060369B66669068983606",
+            "AGO-ADM3-77060369B74518378967705",
+            "AGO-ADM3-77060369B31815462470394",
+            "AGO-ADM3-77060369B77027067901079",
+            "AGO-ADM3-77060369B69899904905313",
+            "AGO-ADM3-77060369B37512453043296",
+            "AGO-ADM3-77060369B44852416839055",
+            "AGO-ADM3-77060369B10855243025190",
+            "AGO-ADM3-77060369B51973945332105",
+            "AGO-ADM3-77060369B16371398826723",
+            "AGO-ADM3-77060369B18872343193807",
+            "AGO-ADM3-77060369B23267235408141",
+            "AGO-ADM3-77060369B13852045281646",
+            "AGO-ADM3-77060369B84146523003925"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids — Provinces of Angola (Gwillim Law, updated 2016-10-06)",
+              "says": "Change history 1950–2016: district splits, independence 1975-11-11, Lunda and Luanda splits, Moçâmedes renamed Namibe 1985, otherwise only minor boundary changes; 18 provinces.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Colonial district (distrito; styled província from 1972) of Portuguese Angola. The span starts at the last district created before independence (Cunene, decree 330/70 of 1970-07-10). No change between districts is recorded from then until independence (statoids change history; pt.wikipedia district histories), so the districts are drawn with the lines the provinces had at independence; those are the 2014 communes' unions below (each later change is a whole-municipality transfer named by its law)."
+        }
+      ]
+    },
+    {
+      "id": "AGO:dist-Lunda@1970",
+      "names": {
+        "en": "Lunda District",
+        "ja": "ルンダ県",
+        "local": "Distrito da Lunda"
+      },
+      "spans": [
+        {
+          "from": "1970-07-10",
+          "precision": "day",
+          "to": "1975-11-11",
+          "atoms": [
+            "AGO-ADM3-77060369B18724799547828",
+            "AGO-ADM3-77060369B48037380592035",
+            "AGO-ADM3-77060369B18810201099187",
+            "AGO-ADM3-77060369B3621671855926",
+            "AGO-ADM3-77060369B70164476788909",
+            "AGO-ADM3-77060369B11293858735911",
+            "AGO-ADM3-77060369B87421203241696",
+            "AGO-ADM3-77060369B87530803115818",
+            "AGO-ADM3-77060369B42345514442634",
+            "AGO-ADM3-77060369B60855109502066",
+            "AGO-ADM3-77060369B65655478084064",
+            "AGO-ADM3-77060369B98814516538742",
+            "AGO-ADM3-77060369B1859378709857",
+            "AGO-ADM3-77060369B16252841948436",
+            "AGO-ADM3-77060369B86452865101711",
+            "AGO-ADM3-77060369B65150305897940",
+            "AGO-ADM3-77060369B10485440869951",
+            "AGO-ADM3-77060369B14398140881807",
+            "AGO-ADM3-77060369B49327104596995",
+            "AGO-ADM3-77060369B86627355620556",
+            "AGO-ADM3-77060369B54918652534904",
+            "AGO-ADM3-77060369B98978170171128",
+            "AGO-ADM3-77060369B8144556329568",
+            "AGO-ADM3-77060369B61164278340142",
+            "AGO-ADM3-77060369B74843440676018",
+            "AGO-ADM3-77060369B1248651490010",
+            "AGO-ADM3-77060369B80098668520680",
+            "AGO-ADM3-77060369B9651396421326",
+            "AGO-ADM3-77060369B57295661507561",
+            "AGO-ADM3-77060369B17098227027710",
+            "AGO-ADM3-77060369B72721724821259",
+            "AGO-ADM3-77060369B6566673261041",
+            "AGO-ADM3-77060369B94005980110279",
+            "AGO-ADM3-77060369B78113988186637",
+            "AGO-ADM3-77060369B19256302513438",
+            "AGO-ADM3-77060369B68083579549647",
+            "AGO-ADM3-77060369B75875281282086",
+            "AGO-ADM3-77060369B11092571584192",
+            "AGO-ADM3-77060369B16265396622170"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=71712255",
+              "title": "Wikipédia (pt): Lunda Sul, rev. 71712255",
+              "says": "On 4 July 1978 Decreto-Lei 84/78 divided Lunda province in two: the original part became Lunda Sul, Lunda Norte was created.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids — Provinces of Angola (Gwillim Law, updated 2016-10-06)",
+              "says": "Change history 1950–2016: district splits, independence 1975-11-11, Lunda and Luanda splits, Moçâmedes renamed Namibe 1985, otherwise only minor boundary changes; 18 provinces.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Colonial district (distrito; styled província from 1972) of Portuguese Angola. The span starts at the last district created before independence (Cunene, decree 330/70 of 1970-07-10). No change between districts is recorded from then until independence (statoids change history; pt.wikipedia district histories), so the districts are drawn with the lines the provinces had at independence; those are the 2014 communes' unions below (each later change is a whole-municipality transfer named by its law)."
+        }
+      ]
+    },
+    {
+      "id": "AGO:dist-Benguela@1970",
+      "names": {
+        "en": "Benguela District",
+        "ja": "ベンゲラ県",
+        "local": "Distrito de Benguela"
+      },
+      "spans": [
+        {
+          "from": "1970-07-10",
+          "precision": "day",
+          "to": "1975-11-11",
+          "atoms": [
+            "AGO-ADM3-77060369B36814336181216",
+            "AGO-ADM3-77060369B88946499539190",
+            "AGO-ADM3-77060369B61202957986707",
+            "AGO-ADM3-77060369B23281425018450",
+            "AGO-ADM3-77060369B73566542841516",
+            "AGO-ADM3-77060369B93069921161216",
+            "AGO-ADM3-77060369B15205365494443",
+            "AGO-ADM3-77060369B23836493319043",
+            "AGO-ADM3-77060369B29418121899424",
+            "AGO-ADM3-77060369B34649164348041",
+            "AGO-ADM3-77060369B55920910684224",
+            "AGO-ADM3-77060369B13812651819964",
+            "AGO-ADM3-77060369B51898669586331",
+            "AGO-ADM3-77060369B69912057384474",
+            "AGO-ADM3-77060369B50113190568833",
+            "AGO-ADM3-77060369B27797258863767",
+            "AGO-ADM3-77060369B53769985573824",
+            "AGO-ADM3-77060369B13918027042749",
+            "AGO-ADM3-77060369B1786111829805",
+            "AGO-ADM3-77060369B80411179727557",
+            "AGO-ADM3-77060369B76032488799536",
+            "AGO-ADM3-77060369B28847566299072",
+            "AGO-ADM3-77060369B49474047145237",
+            "AGO-ADM3-77060369B75516260520897",
+            "AGO-ADM3-77060369B88686591557459",
+            "AGO-ADM3-77060369B69514487532768",
+            "AGO-ADM3-77060369B63043164487253",
+            "AGO-ADM3-77060369B80845722030199",
+            "AGO-ADM3-77060369B21380890352551",
+            "AGO-ADM3-77060369B53455592151654",
+            "AGO-ADM3-77060369B47019721443886",
+            "AGO-ADM3-77060369B71477384871463",
+            "AGO-ADM3-77060369B69526604087231",
+            "AGO-ADM3-77060369B69507694620785",
+            "AGO-ADM3-77060369B7349637789617",
+            "AGO-ADM3-77060369B28509712212339",
+            "AGO-ADM3-77060369B17940497405481",
+            "AGO-ADM3-77060369B73561740720155"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids — Provinces of Angola (Gwillim Law, updated 2016-10-06)",
+              "says": "Change history 1950–2016: district splits, independence 1975-11-11, Lunda and Luanda splits, Moçâmedes renamed Namibe 1985, otherwise only minor boundary changes; 18 provinces.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Colonial district (distrito; styled província from 1972) of Portuguese Angola. The span starts at the last district created before independence (Cunene, decree 330/70 of 1970-07-10). No change between districts is recorded from then until independence (statoids change history; pt.wikipedia district histories), so the districts are drawn with the lines the provinces had at independence; those are the 2014 communes' unions below (each later change is a whole-municipality transfer named by its law)."
+        }
+      ]
+    },
+    {
+      "id": "AGO:dist-NovaLisboa@1970",
+      "names": {
+        "en": "Nova Lisboa District (Huambo)",
+        "ja": "ノヴァ・リスボア県（ウアンボ）",
+        "local": "Distrito de Nova Lisboa"
+      },
+      "spans": [
+        {
+          "from": "1970-07-10",
+          "precision": "day",
+          "to": "1975-11-11",
+          "atoms": [
+            "AGO-ADM3-77060369B16311547761957",
+            "AGO-ADM3-77060369B32694102324478",
+            "AGO-ADM3-77060369B47603565589797",
+            "AGO-ADM3-77060369B40388829608236",
+            "AGO-ADM3-77060369B8555028237158",
+            "AGO-ADM3-77060369B10410810484867",
+            "AGO-ADM3-77060369B94671317679988",
+            "AGO-ADM3-77060369B76228427029780",
+            "AGO-ADM3-77060369B82770983026956",
+            "AGO-ADM3-77060369B29582199521869",
+            "AGO-ADM3-77060369B69345120669575",
+            "AGO-ADM3-77060369B89088332208949",
+            "AGO-ADM3-77060369B87257725762599",
+            "AGO-ADM3-77060369B10365195051024",
+            "AGO-ADM3-77060369B80305895745824",
+            "AGO-ADM3-77060369B45483550748446",
+            "AGO-ADM3-77060369B25048514616750",
+            "AGO-ADM3-77060369B50518409426985",
+            "AGO-ADM3-77060369B20749792089411",
+            "AGO-ADM3-77060369B22746126284292",
+            "AGO-ADM3-77060369B34366722133261",
+            "AGO-ADM3-77060369B68939826640340",
+            "AGO-ADM3-77060369B24614245075351",
+            "AGO-ADM3-77060369B79177821288191",
+            "AGO-ADM3-77060369B27863304434967",
+            "AGO-ADM3-77060369B76583340349729",
+            "AGO-ADM3-77060369B34645576590116",
+            "AGO-ADM3-77060369B50432471723166",
+            "AGO-ADM3-77060369B31537458571752",
+            "AGO-ADM3-77060369B26604395216811",
+            "AGO-ADM3-77060369B32173815344529",
+            "AGO-ADM3-77060369B41896874895902",
+            "AGO-ADM3-77060369B94124753255725",
+            "AGO-ADM3-77060369B24294910871022",
+            "AGO-ADM3-77060369B16771517557347",
+            "AGO-ADM3-77060369B27621457839783",
+            "AGO-ADM3-77060369B74661562977123"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=72266297",
+              "title": "Wikipédia (pt): Huambo (província), rev. 72266297",
+              "says": "From 1928 the Huambo district and its capital were named Nova Lisboa, regaining the name Huambo after independence in 1975.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids — Provinces of Angola (Gwillim Law, updated 2016-10-06)",
+              "says": "Change history 1950–2016: district splits, independence 1975-11-11, Lunda and Luanda splits, Moçâmedes renamed Namibe 1985, otherwise only minor boundary changes; 18 provinces.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Colonial district (distrito; styled província from 1972) of Portuguese Angola. The span starts at the last district created before independence (Cunene, decree 330/70 of 1970-07-10). No change between districts is recorded from then until independence (statoids change history; pt.wikipedia district histories), so the districts are drawn with the lines the provinces had at independence; those are the 2014 communes' unions below (each later change is a whole-municipality transfer named by its law)."
+        }
+      ]
+    },
+    {
+      "id": "AGO:dist-Bie@1970",
+      "names": {
+        "en": "Bié District",
+        "ja": "ビエ県",
+        "local": "Distrito do Bié"
+      },
+      "spans": [
+        {
+          "from": "1970-07-10",
+          "precision": "day",
+          "to": "1975-11-11",
+          "atoms": [
+            "AGO-ADM3-77060369B93804511416550",
+            "AGO-ADM3-77060369B38464751660047",
+            "AGO-ADM3-77060369B43120430467277",
+            "AGO-ADM3-77060369B80052629873297",
+            "AGO-ADM3-77060369B66503989008328",
+            "AGO-ADM3-77060369B95495269196267",
+            "AGO-ADM3-77060369B79583324336017",
+            "AGO-ADM3-77060369B73154373828158",
+            "AGO-ADM3-77060369B65236131612097",
+            "AGO-ADM3-77060369B45549409407850",
+            "AGO-ADM3-77060369B66287281579678",
+            "AGO-ADM3-77060369B54299833104903",
+            "AGO-ADM3-77060369B75924748896287",
+            "AGO-ADM3-77060369B95901949212510",
+            "AGO-ADM3-77060369B99427179645180",
+            "AGO-ADM3-77060369B37582952268389",
+            "AGO-ADM3-77060369B12145240629961",
+            "AGO-ADM3-77060369B56474075761168",
+            "AGO-ADM3-77060369B75571703919550",
+            "AGO-ADM3-77060369B74693089422396",
+            "AGO-ADM3-77060369B28077069729467",
+            "AGO-ADM3-77060369B92229856586310",
+            "AGO-ADM3-77060369B49397106450140",
+            "AGO-ADM3-77060369B30894079134765",
+            "AGO-ADM3-77060369B92856637114642",
+            "AGO-ADM3-77060369B20076228429698",
+            "AGO-ADM3-77060369B64692466195251",
+            "AGO-ADM3-77060369B56949413548686",
+            "AGO-ADM3-77060369B27186442579084",
+            "AGO-ADM3-77060369B77520761524905",
+            "AGO-ADM3-77060369B62594987031687",
+            "AGO-ADM3-77060369B87854118365341",
+            "AGO-ADM3-77060369B95322421002358",
+            "AGO-ADM3-77060369B22516302931322",
+            "AGO-ADM3-77060369B68027360320896",
+            "AGO-ADM3-77060369B18279542454806",
+            "AGO-ADM3-77060369B34254583735545",
+            "AGO-ADM3-77060369B66163136263346",
+            "AGO-ADM3-77060369B92167861991850"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=72620758",
+              "title": "Wikipédia (pt): Cuando Cubango, rev. 72620758 (citing Angop 2016)",
+              "says": "Cuando-Cubango district recreated on 21 October 1961 by diploma legislativo ministerial nº 51 with Serpa Pinto as capital.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids — Provinces of Angola (Gwillim Law, updated 2016-10-06)",
+              "says": "Change history 1950–2016: district splits, independence 1975-11-11, Lunda and Luanda splits, Moçâmedes renamed Namibe 1985, otherwise only minor boundary changes; 18 provinces.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Colonial district (distrito; styled província from 1972) of Portuguese Angola. The span starts at the last district created before independence (Cunene, decree 330/70 of 1970-07-10). No change between districts is recorded from then until independence (statoids change history; pt.wikipedia district histories), so the districts are drawn with the lines the provinces had at independence; those are the 2014 communes' unions below (each later change is a whole-municipality transfer named by its law)."
+        }
+      ]
+    },
+    {
+      "id": "AGO:dist-CuandoCubango@1970",
+      "names": {
+        "en": "Cuando Cubango District",
+        "ja": "クアンド・クバンゴ県",
+        "local": "Distrito do Cuando Cubango"
+      },
+      "spans": [
+        {
+          "from": "1970-07-10",
+          "precision": "day",
+          "to": "1975-11-11",
+          "atoms": [
+            "AGO-ADM3-77060369B4217710074432",
+            "AGO-ADM3-77060369B11674741899150",
+            "AGO-ADM3-77060369B45987060521818",
+            "AGO-ADM3-77060369B29402721391887",
+            "AGO-ADM3-77060369B10816717802247",
+            "AGO-ADM3-77060369B61622076497347",
+            "AGO-ADM3-77060369B41697518171391",
+            "AGO-ADM3-77060369B52621467610975",
+            "AGO-ADM3-77060369B21119391054748",
+            "AGO-ADM3-77060369B22130059919528",
+            "AGO-ADM3-77060369B11627980922359",
+            "AGO-ADM3-77060369B20947788764950",
+            "AGO-ADM3-77060369B6554030700482",
+            "AGO-ADM3-77060369B2211236779169",
+            "AGO-ADM3-77060369B79576560534783",
+            "AGO-ADM3-77060369B94729713134942",
+            "AGO-ADM3-77060369B60658492422194",
+            "AGO-ADM3-77060369B25014809943659",
+            "AGO-ADM3-77060369B93815043480535",
+            "AGO-ADM3-77060369B72935458331040",
+            "AGO-ADM3-77060369B54637784320399",
+            "AGO-ADM3-77060369B58889360786954",
+            "AGO-ADM3-77060369B24224206611305",
+            "AGO-ADM3-77060369B75330671635505",
+            "AGO-ADM3-77060369B86173465984953",
+            "AGO-ADM3-77060369B60068018423574",
+            "AGO-ADM3-77060369B87880730450464",
+            "AGO-ADM3-77060369B59224958455394",
+            "AGO-ADM3-77060369B48622771884277",
+            "AGO-ADM3-77060369B11899251087021",
+            "AGO-ADM3-77060369B46567747133488"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=72620758",
+              "title": "Wikipédia (pt): Cuando Cubango, rev. 72620758 (citing Angop 2016)",
+              "says": "Cuando-Cubango district recreated on 21 October 1961 by diploma legislativo ministerial nº 51 with Serpa Pinto as capital.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids — Provinces of Angola (Gwillim Law, updated 2016-10-06)",
+              "says": "Change history 1950–2016: district splits, independence 1975-11-11, Lunda and Luanda splits, Moçâmedes renamed Namibe 1985, otherwise only minor boundary changes; 18 provinces.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Colonial district (distrito; styled província from 1972) of Portuguese Angola. The span starts at the last district created before independence (Cunene, decree 330/70 of 1970-07-10). No change between districts is recorded from then until independence (statoids change history; pt.wikipedia district histories), so the districts are drawn with the lines the provinces had at independence; those are the 2014 communes' unions below (each later change is a whole-municipality transfer named by its law)."
+        }
+      ]
+    },
+    {
+      "id": "AGO:dist-Moxico@1970",
+      "names": {
+        "en": "Moxico District",
+        "ja": "モシコ県",
+        "local": "Distrito do Moxico"
+      },
+      "spans": [
+        {
+          "from": "1970-07-10",
+          "precision": "day",
+          "to": "1975-11-11",
+          "atoms": [
+            "AGO-ADM3-77060369B71236742351174",
+            "AGO-ADM3-77060369B31357528040134",
+            "AGO-ADM3-77060369B99363085414684",
+            "AGO-ADM3-77060369B38685846011401",
+            "AGO-ADM3-77060369B5309188737405",
+            "AGO-ADM3-77060369B83004048234313",
+            "AGO-ADM3-77060369B89833578504463",
+            "AGO-ADM3-77060369B67895185767344",
+            "AGO-ADM3-77060369B92270464035146",
+            "AGO-ADM3-77060369B82453031897814",
+            "AGO-ADM3-77060369B51673117543134",
+            "AGO-ADM3-77060369B22046631174287",
+            "AGO-ADM3-77060369B95319872444491",
+            "AGO-ADM3-77060369B25399273102864",
+            "AGO-ADM3-77060369B64160972919093",
+            "AGO-ADM3-77060369B15394046254360",
+            "AGO-ADM3-77060369B56918340049535",
+            "AGO-ADM3-77060369B29488462270990",
+            "AGO-ADM3-77060369B27728005019939",
+            "AGO-ADM3-77060369B47634576445452",
+            "AGO-ADM3-77060369B26677466833138",
+            "AGO-ADM3-77060369B90882207694633",
+            "AGO-ADM3-77060369B68710402302306",
+            "AGO-ADM3-77060369B53461679804754",
+            "AGO-ADM3-77060369B51743222359734",
+            "AGO-ADM3-77060369B18168321180288",
+            "AGO-ADM3-77060369B81990818370088",
+            "AGO-ADM3-77060369B61677292841042",
+            "AGO-ADM3-77060369B14480727542734",
+            "AGO-ADM3-77060369B78749533848376"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids — Provinces of Angola (Gwillim Law, updated 2016-10-06)",
+              "says": "Change history 1950–2016: district splits, independence 1975-11-11, Lunda and Luanda splits, Moçâmedes renamed Namibe 1985, otherwise only minor boundary changes; 18 provinces.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Colonial district (distrito; styled província from 1972) of Portuguese Angola. The span starts at the last district created before independence (Cunene, decree 330/70 of 1970-07-10). No change between districts is recorded from then until independence (statoids change history; pt.wikipedia district histories), so the districts are drawn with the lines the provinces had at independence; those are the 2014 communes' unions below (each later change is a whole-municipality transfer named by its law)."
+        }
+      ]
+    },
+    {
+      "id": "AGO:dist-Mocamedes@1970",
+      "names": {
+        "en": "Moçâmedes District",
+        "ja": "モサメデス県",
+        "local": "Distrito de Moçâmedes"
+      },
+      "spans": [
+        {
+          "from": "1970-07-10",
+          "precision": "day",
+          "to": "1975-11-11",
+          "atoms": [
+            "AGO-ADM3-77060369B30379715505162",
+            "AGO-ADM3-77060369B78923592532483",
+            "AGO-ADM3-77060369B80066422987000",
+            "AGO-ADM3-77060369B80345298798002",
+            "AGO-ADM3-77060369B91061868397768",
+            "AGO-ADM3-77060369B67052179202239",
+            "AGO-ADM3-77060369B43106351167077",
+            "AGO-ADM3-77060369B60159039272305",
+            "AGO-ADM3-77060369B83996160598224",
+            "AGO-ADM3-77060369B62710180302874",
+            "AGO-ADM3-77060369B96495267103179",
+            "AGO-ADM3-77060369B80425002259927",
+            "AGO-ADM3-77060369B34119314001159",
+            "AGO-ADM3-77060369B22256545285740"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids — Provinces of Angola (Gwillim Law, updated 2016-10-06)",
+              "says": "Change history 1950–2016: district splits, independence 1975-11-11, Lunda and Luanda splits, Moçâmedes renamed Namibe 1985, otherwise only minor boundary changes; 18 provinces.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Colonial district (distrito; styled província from 1972) of Portuguese Angola. The span starts at the last district created before independence (Cunene, decree 330/70 of 1970-07-10). No change between districts is recorded from then until independence (statoids change history; pt.wikipedia district histories), so the districts are drawn with the lines the provinces had at independence; those are the 2014 communes' unions below (each later change is a whole-municipality transfer named by its law)."
+        }
+      ]
+    },
+    {
+      "id": "AGO:dist-Huila@1970",
+      "names": {
+        "en": "Huíla District",
+        "ja": "ウイラ県",
+        "local": "Distrito da Huíla"
+      },
+      "spans": [
+        {
+          "from": "1970-07-10",
+          "precision": "day",
+          "to": "1975-11-11",
+          "atoms": [
+            "AGO-ADM3-77060369B68699648479023",
+            "AGO-ADM3-77060369B79303779097611",
+            "AGO-ADM3-77060369B3442435490622",
+            "AGO-ADM3-77060369B57885673461686",
+            "AGO-ADM3-77060369B68155412438244",
+            "AGO-ADM3-77060369B45968962224708",
+            "AGO-ADM3-77060369B22892102342691",
+            "AGO-ADM3-77060369B41753951535725",
+            "AGO-ADM3-77060369B6968718226551",
+            "AGO-ADM3-77060369B5106412888605",
+            "AGO-ADM3-77060369B54478031839570",
+            "AGO-ADM3-77060369B17268288447130",
+            "AGO-ADM3-77060369B43359139908946",
+            "AGO-ADM3-77060369B40001378853533",
+            "AGO-ADM3-77060369B4600149318389",
+            "AGO-ADM3-77060369B79091379244765",
+            "AGO-ADM3-77060369B68884961430338",
+            "AGO-ADM3-77060369B18898190852982",
+            "AGO-ADM3-77060369B80361566159389",
+            "AGO-ADM3-77060369B57367733992063",
+            "AGO-ADM3-77060369B67568826033515",
+            "AGO-ADM3-77060369B32759261397344",
+            "AGO-ADM3-77060369B8846276829985",
+            "AGO-ADM3-77060369B8240052746993",
+            "AGO-ADM3-77060369B15952310903816",
+            "AGO-ADM3-77060369B35203233320132",
+            "AGO-ADM3-77060369B88308204411446",
+            "AGO-ADM3-77060369B32004469388523",
+            "AGO-ADM3-77060369B76729243914715",
+            "AGO-ADM3-77060369B14686960886928",
+            "AGO-ADM3-77060369B47795992732607",
+            "AGO-ADM3-77060369B33373185819605",
+            "AGO-ADM3-77060369B78347355003608",
+            "AGO-ADM3-77060369B72655894715491",
+            "AGO-ADM3-77060369B21078697209317",
+            "AGO-ADM3-77060369B87597193610049",
+            "AGO-ADM3-77060369B10617483023714",
+            "AGO-ADM3-77060369B68647505200330",
+            "AGO-ADM3-77060369B97169655650003",
+            "AGO-ADM3-77060369B69337013005212",
+            "AGO-ADM3-77060369B68965526448719",
+            "AGO-ADM3-77060369B64624057735659",
+            "AGO-ADM3-77060369B51644940060017",
+            "AGO-ADM3-77060369B70357068119731",
+            "AGO-ADM3-77060369B30860300651366",
+            "AGO-ADM3-77060369B2980733332533",
+            "AGO-ADM3-77060369B13356421579773",
+            "AGO-ADM3-77060369B9098336979555",
+            "AGO-ADM3-77060369B48941851325832",
+            "AGO-ADM3-77060369B89451560353656",
+            "AGO-ADM3-77060369B92842053072498",
+            "AGO-ADM3-77060369B26604989429076"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=70675763",
+              "title": "Wikipédia (pt): Cunene, rev. 70675763",
+              "says": "The Cunene district was separated from the Huíla district on 10 July 1970 by decree 330/70.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids — Provinces of Angola (Gwillim Law, updated 2016-10-06)",
+              "says": "Change history 1950–2016: district splits, independence 1975-11-11, Lunda and Luanda splits, Moçâmedes renamed Namibe 1985, otherwise only minor boundary changes; 18 provinces.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Colonial district (distrito; styled província from 1972) of Portuguese Angola. The span starts at the last district created before independence (Cunene, decree 330/70 of 1970-07-10). No change between districts is recorded from then until independence (statoids change history; pt.wikipedia district histories), so the districts are drawn with the lines the provinces had at independence; those are the 2014 communes' unions below (each later change is a whole-municipality transfer named by its law). Cunene: statoids dates the split \"~1975\" and its 1970-12-15 census column shows no separate Cunene figure; the decree date (pt.wikipedia, decreto 330/70) is used."
+        }
+      ]
+    },
+    {
+      "id": "AGO:dist-Cunene@1970",
+      "names": {
+        "en": "Cunene District",
+        "ja": "クネネ県",
+        "local": "Distrito do Cunene"
+      },
+      "spans": [
+        {
+          "from": "1970-07-10",
+          "precision": "day",
+          "to": "1975-11-11",
+          "atoms": [
+            "AGO-ADM3-77060369B35372142131298",
+            "AGO-ADM3-77060369B93433657142280",
+            "AGO-ADM3-77060369B37342987752772",
+            "AGO-ADM3-77060369B31390857474060",
+            "AGO-ADM3-77060369B50411585544255",
+            "AGO-ADM3-77060369B4801723591442",
+            "AGO-ADM3-77060369B37858923470904",
+            "AGO-ADM3-77060369B33549675966860",
+            "AGO-ADM3-77060369B74201814933437",
+            "AGO-ADM3-77060369B71383041189659",
+            "AGO-ADM3-77060369B73047208431278",
+            "AGO-ADM3-77060369B82906501374796",
+            "AGO-ADM3-77060369B14536015009758",
+            "AGO-ADM3-77060369B19072309018308",
+            "AGO-ADM3-77060369B27792376194465",
+            "AGO-ADM3-77060369B32242745082402",
+            "AGO-ADM3-77060369B92035576065694",
+            "AGO-ADM3-77060369B78958042335534",
+            "AGO-ADM3-77060369B2228143759388",
+            "AGO-ADM3-77060369B69210130463092"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=70675763",
+              "title": "Wikipédia (pt): Cunene, rev. 70675763",
+              "says": "The Cunene district was separated from the Huíla district on 10 July 1970 by decree 330/70.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids — Provinces of Angola (Gwillim Law, updated 2016-10-06)",
+              "says": "Change history 1950–2016: district splits, independence 1975-11-11, Lunda and Luanda splits, Moçâmedes renamed Namibe 1985, otherwise only minor boundary changes; 18 provinces.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Colonial district (distrito; styled província from 1972) of Portuguese Angola. The span starts at the last district created before independence (Cunene, decree 330/70 of 1970-07-10). No change between districts is recorded from then until independence (statoids change history; pt.wikipedia district histories), so the districts are drawn with the lines the provinces had at independence; those are the 2014 communes' unions below (each later change is a whole-municipality transfer named by its law). Cunene: statoids dates the split \"~1975\" and its 1970-12-15 census column shows no separate Cunene figure; the decree date (pt.wikipedia, decreto 330/70) is used."
+        }
+      ]
+    },
     {
       "id": "AGO:Cabinda@1975",
       "names": {
@@ -21,17 +1151,40 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "AGO-1885"
+            "AGO-ADM3-77060369B53844096846312",
+            "AGO-ADM3-77060369B46240764356667",
+            "AGO-ADM3-77060369B11998726908582",
+            "AGO-ADM3-77060369B67616166185939",
+            "AGO-ADM3-77060369B96109216428882",
+            "AGO-ADM3-77060369B12671566865050",
+            "AGO-ADM3-77060369B95098886278971",
+            "AGO-ADM3-77060369B62408777485320",
+            "AGO-ADM3-77060369B41515591647974",
+            "AGO-ADM3-77060369B53178706359891",
+            "AGO-ADM3-77060369B90406814208410",
+            "AGO-ADM3-77060369B15944251872141"
           ],
           "sources": [
             {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=73078348",
+              "title": "Wikipédia (pt): Províncias de Angola, rev. 73078348",
+              "says": "The Lei Constitucional of 11 November 1975 divided the People's Republic of Angola into provinces, concelhos and communes (the former districts).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            },
+            {
               "url": "https://www.statoids.com/uao.html",
-              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
-              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
-              "accessed": "2026-10-05"
+              "title": "Statoids — Provinces of Angola (Gwillim Law, updated 2016-10-06)",
+              "says": "Change history 1950–2016: district splits, independence 1975-11-11, Lunda and Luanda splits, Moçâmedes renamed Namibe 1985, otherwise only minor boundary changes; 18 provinces.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Unit predates independence; span starts at the dossier scope (independence). No later inter-provincial change touching it is recorded by the sources consulted."
+          "dateNote": "Independence (1975-11-11): the Lei Constitucional turned the districts into provinces with the same territory. No later change between provinces touching it is recorded by the sources consulted (only renames: Moçâmedes → Namibe 1985)."
         }
       ]
     },
@@ -49,17 +1202,53 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "AGO-1882"
+            "AGO-ADM3-77060369B98497381266004",
+            "AGO-ADM3-77060369B11276087391128",
+            "AGO-ADM3-77060369B52683525356616",
+            "AGO-ADM3-77060369B7578775428772",
+            "AGO-ADM3-77060369B97913184130307",
+            "AGO-ADM3-77060369B73087633805950",
+            "AGO-ADM3-77060369B49103122890285",
+            "AGO-ADM3-77060369B40915931189899",
+            "AGO-ADM3-77060369B34412894643744",
+            "AGO-ADM3-77060369B23044018271158",
+            "AGO-ADM3-77060369B65058355993980",
+            "AGO-ADM3-77060369B38436347599365",
+            "AGO-ADM3-77060369B20236459109172",
+            "AGO-ADM3-77060369B64170206856618",
+            "AGO-ADM3-77060369B77678291650004",
+            "AGO-ADM3-77060369B85615150964604",
+            "AGO-ADM3-77060369B38755075225405",
+            "AGO-ADM3-77060369B12805916753711",
+            "AGO-ADM3-77060369B81211614720935",
+            "AGO-ADM3-77060369B95701143721218",
+            "AGO-ADM3-77060369B57795496962955",
+            "AGO-ADM3-77060369B61345751686566",
+            "AGO-ADM3-77060369B395993930345",
+            "AGO-ADM3-77060369B63006016372328",
+            "AGO-ADM3-77060369B6741864225880"
           ],
           "sources": [
             {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=73078348",
+              "title": "Wikipédia (pt): Províncias de Angola, rev. 73078348",
+              "says": "The Lei Constitucional of 11 November 1975 divided the People's Republic of Angola into provinces, concelhos and communes (the former districts).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            },
+            {
               "url": "https://www.statoids.com/uao.html",
-              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
-              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
-              "accessed": "2026-10-05"
+              "title": "Statoids — Provinces of Angola (Gwillim Law, updated 2016-10-06)",
+              "says": "Change history 1950–2016: district splits, independence 1975-11-11, Lunda and Luanda splits, Moçâmedes renamed Namibe 1985, otherwise only minor boundary changes; 18 provinces.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Unit predates independence; span starts at the dossier scope (independence). No later inter-provincial change touching it is recorded by the sources consulted."
+          "dateNote": "Independence (1975-11-11): the Lei Constitucional turned the districts into provinces with the same territory. No later change between provinces touching it is recorded by the sources consulted (only renames: Moçâmedes → Namibe 1985)."
         }
       ]
     },
@@ -77,17 +1266,75 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "AGO-1881"
+            "AGO-ADM3-77060369B8724754654110",
+            "AGO-ADM3-77060369B21919827699564",
+            "AGO-ADM3-77060369B77096956125590",
+            "AGO-ADM3-77060369B70672226067782",
+            "AGO-ADM3-77060369B75739987748875",
+            "AGO-ADM3-77060369B59694875753223",
+            "AGO-ADM3-77060369B15032360575020",
+            "AGO-ADM3-77060369B9970090994358",
+            "AGO-ADM3-77060369B78262342163284",
+            "AGO-ADM3-77060369B52008564114429",
+            "AGO-ADM3-77060369B28055013608528",
+            "AGO-ADM3-77060369B45869818147690",
+            "AGO-ADM3-77060369B52650890210071",
+            "AGO-ADM3-77060369B65812900585271",
+            "AGO-ADM3-77060369B83992040436439",
+            "AGO-ADM3-77060369B45714590156957",
+            "AGO-ADM3-77060369B28518770822582",
+            "AGO-ADM3-77060369B44594423793319",
+            "AGO-ADM3-77060369B30672273982006",
+            "AGO-ADM3-77060369B63976390428608",
+            "AGO-ADM3-77060369B45062381592645",
+            "AGO-ADM3-77060369B21114926368088",
+            "AGO-ADM3-77060369B74626459365452",
+            "AGO-ADM3-77060369B38739912373951",
+            "AGO-ADM3-77060369B79670053384731",
+            "AGO-ADM3-77060369B47247410225072",
+            "AGO-ADM3-77060369B73157208565988",
+            "AGO-ADM3-77060369B39042350825343",
+            "AGO-ADM3-77060369B71063514186839",
+            "AGO-ADM3-77060369B43942901903314",
+            "AGO-ADM3-77060369B8780608781739",
+            "AGO-ADM3-77060369B27394885682790",
+            "AGO-ADM3-77060369B257357601470",
+            "AGO-ADM3-77060369B8365764174948",
+            "AGO-ADM3-77060369B18984741240027",
+            "AGO-ADM3-77060369B3832153370388",
+            "AGO-ADM3-77060369B38854531843540",
+            "AGO-ADM3-77060369B95033214763974",
+            "AGO-ADM3-77060369B66076053495974",
+            "AGO-ADM3-77060369B24417529322556",
+            "AGO-ADM3-77060369B39893669111629",
+            "AGO-ADM3-77060369B46485347117057",
+            "AGO-ADM3-77060369B86432216841262",
+            "AGO-ADM3-77060369B79373110658481",
+            "AGO-ADM3-77060369B81978010173083",
+            "AGO-ADM3-77060369B68118250541312",
+            "AGO-ADM3-77060369B9200177811615"
           ],
           "sources": [
             {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=73078348",
+              "title": "Wikipédia (pt): Províncias de Angola, rev. 73078348",
+              "says": "The Lei Constitucional of 11 November 1975 divided the People's Republic of Angola into provinces, concelhos and communes (the former districts).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            },
+            {
               "url": "https://www.statoids.com/uao.html",
-              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
-              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
-              "accessed": "2026-10-05"
+              "title": "Statoids — Provinces of Angola (Gwillim Law, updated 2016-10-06)",
+              "says": "Change history 1950–2016: district splits, independence 1975-11-11, Lunda and Luanda splits, Moçâmedes renamed Namibe 1985, otherwise only minor boundary changes; 18 provinces.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Unit predates independence; span starts at the dossier scope (independence). No later inter-provincial change touching it is recorded by the sources consulted."
+          "dateNote": "Independence (1975-11-11): the Lei Constitucional turned the districts into provinces with the same territory. No later change between provinces touching it is recorded by the sources consulted (only renames: Moçâmedes → Namibe 1985)."
         }
       ]
     },
@@ -105,17 +1352,80 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "AGO-1876"
+            "AGO-ADM3-77060369B59843141888146",
+            "AGO-ADM3-77060369B17278398059879",
+            "AGO-ADM3-77060369B68772445739537",
+            "AGO-ADM3-77060369B73426990372319",
+            "AGO-ADM3-77060369B85191624348232",
+            "AGO-ADM3-77060369B39803589215671",
+            "AGO-ADM3-77060369B67813711392802",
+            "AGO-ADM3-77060369B12312136499874",
+            "AGO-ADM3-77060369B76844153240272",
+            "AGO-ADM3-77060369B50522050801052",
+            "AGO-ADM3-77060369B62850221822638",
+            "AGO-ADM3-77060369B24802371502772",
+            "AGO-ADM3-77060369B67021433180168",
+            "AGO-ADM3-77060369B37464812485889",
+            "AGO-ADM3-77060369B88635246944590",
+            "AGO-ADM3-77060369B43726960673348",
+            "AGO-ADM3-77060369B45007780150014",
+            "AGO-ADM3-77060369B16034100651442",
+            "AGO-ADM3-77060369B9054113490683",
+            "AGO-ADM3-77060369B77448006656851",
+            "AGO-ADM3-77060369B23608539585387",
+            "AGO-ADM3-77060369B37450833822113",
+            "AGO-ADM3-77060369B17475300571562",
+            "AGO-ADM3-77060369B36985799369118",
+            "AGO-ADM3-77060369B15371088626430",
+            "AGO-ADM3-77060369B92531331725460",
+            "AGO-ADM3-77060369B79589461525133",
+            "AGO-ADM3-77060369B41536265520458",
+            "AGO-ADM3-77060369B51393636590249",
+            "AGO-ADM3-77060369B75168167732290",
+            "AGO-ADM3-77060369B97003536889765",
+            "AGO-ADM3-77060369B54438225950593",
+            "AGO-ADM3-77060369B73872140540114",
+            "AGO-ADM3-77060369B97753535604214",
+            "AGO-ADM3-77060369B65172210511691",
+            "AGO-ADM3-77060369B71941498064891",
+            "AGO-ADM3-77060369B4853250093545",
+            "AGO-ADM3-77060369B5531396522422",
+            "AGO-ADM3-77060369B66669068983606",
+            "AGO-ADM3-77060369B74518378967705",
+            "AGO-ADM3-77060369B31815462470394",
+            "AGO-ADM3-77060369B77027067901079",
+            "AGO-ADM3-77060369B69899904905313",
+            "AGO-ADM3-77060369B37512453043296",
+            "AGO-ADM3-77060369B44852416839055",
+            "AGO-ADM3-77060369B10855243025190",
+            "AGO-ADM3-77060369B51973945332105",
+            "AGO-ADM3-77060369B16371398826723",
+            "AGO-ADM3-77060369B18872343193807",
+            "AGO-ADM3-77060369B23267235408141",
+            "AGO-ADM3-77060369B13852045281646",
+            "AGO-ADM3-77060369B84146523003925"
           ],
           "sources": [
             {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=73078348",
+              "title": "Wikipédia (pt): Províncias de Angola, rev. 73078348",
+              "says": "The Lei Constitucional of 11 November 1975 divided the People's Republic of Angola into provinces, concelhos and communes (the former districts).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            },
+            {
               "url": "https://www.statoids.com/uao.html",
-              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
-              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
-              "accessed": "2026-10-05"
+              "title": "Statoids — Provinces of Angola (Gwillim Law, updated 2016-10-06)",
+              "says": "Change history 1950–2016: district splits, independence 1975-11-11, Lunda and Luanda splits, Moçâmedes renamed Namibe 1985, otherwise only minor boundary changes; 18 provinces.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Unit predates independence; span starts at the dossier scope (independence). No later inter-provincial change touching it is recorded by the sources consulted."
+          "dateNote": "Independence (1975-11-11): the Lei Constitucional turned the districts into provinces with the same territory. No later change between provinces touching it is recorded by the sources consulted (only renames: Moçâmedes → Namibe 1985)."
         }
       ]
     },
@@ -133,17 +1443,64 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "AGO-1879"
+            "AGO-ADM3-77060369B87630140538050",
+            "AGO-ADM3-77060369B98895621640435",
+            "AGO-ADM3-77060369B6571135727164",
+            "AGO-ADM3-77060369B31561431071673",
+            "AGO-ADM3-77060369B10041221024197",
+            "AGO-ADM3-77060369B95819031172883",
+            "AGO-ADM3-77060369B44693804364776",
+            "AGO-ADM3-77060369B42779786656121",
+            "AGO-ADM3-77060369B6729273002670",
+            "AGO-ADM3-77060369B51351755961103",
+            "AGO-ADM3-77060369B57508479932977",
+            "AGO-ADM3-77060369B64576451873120",
+            "AGO-ADM3-77060369B95291994434185",
+            "AGO-ADM3-77060369B11378932442569",
+            "AGO-ADM3-77060369B55580708212746",
+            "AGO-ADM3-77060369B69242238300594",
+            "AGO-ADM3-77060369B42652262359360",
+            "AGO-ADM3-77060369B17289677641421",
+            "AGO-ADM3-77060369B87957674548120",
+            "AGO-ADM3-77060369B92576488069766",
+            "AGO-ADM3-77060369B74555783358009",
+            "AGO-ADM3-77060369B59288966828605",
+            "AGO-ADM3-77060369B32302184585006",
+            "AGO-ADM3-77060369B506123177579",
+            "AGO-ADM3-77060369B92240187142351",
+            "AGO-ADM3-77060369B10090731986965",
+            "AGO-ADM3-77060369B13316727586611",
+            "AGO-ADM3-77060369B53692892969777",
+            "AGO-ADM3-77060369B76926945765559",
+            "AGO-ADM3-77060369B11753956617851",
+            "AGO-ADM3-77060369B69227942612495",
+            "AGO-ADM3-77060369B11782273645018",
+            "AGO-ADM3-77060369B17906137242327",
+            "AGO-ADM3-77060369B44133695202500",
+            "AGO-ADM3-77060369B72103979297313",
+            "AGO-ADM3-77060369B80146021089692"
           ],
           "sources": [
             {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=73078348",
+              "title": "Wikipédia (pt): Províncias de Angola, rev. 73078348",
+              "says": "The Lei Constitucional of 11 November 1975 divided the People's Republic of Angola into provinces, concelhos and communes (the former districts).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            },
+            {
               "url": "https://www.statoids.com/uao.html",
-              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
-              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
-              "accessed": "2026-10-05"
+              "title": "Statoids — Provinces of Angola (Gwillim Law, updated 2016-10-06)",
+              "says": "Change history 1950–2016: district splits, independence 1975-11-11, Lunda and Luanda splits, Moçâmedes renamed Namibe 1985, otherwise only minor boundary changes; 18 provinces.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Unit predates independence; span starts at the dossier scope (independence). No later inter-provincial change touching it is recorded by the sources consulted."
+          "dateNote": "Independence (1975-11-11): the Lei Constitucional turned the districts into provinces with the same territory. No later change between provinces touching it is recorded by the sources consulted (only renames: Moçâmedes → Namibe 1985)."
         }
       ]
     },
@@ -161,17 +1518,66 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "AGO-1887"
+            "AGO-ADM3-77060369B36814336181216",
+            "AGO-ADM3-77060369B88946499539190",
+            "AGO-ADM3-77060369B61202957986707",
+            "AGO-ADM3-77060369B23281425018450",
+            "AGO-ADM3-77060369B73566542841516",
+            "AGO-ADM3-77060369B93069921161216",
+            "AGO-ADM3-77060369B15205365494443",
+            "AGO-ADM3-77060369B23836493319043",
+            "AGO-ADM3-77060369B29418121899424",
+            "AGO-ADM3-77060369B34649164348041",
+            "AGO-ADM3-77060369B55920910684224",
+            "AGO-ADM3-77060369B13812651819964",
+            "AGO-ADM3-77060369B51898669586331",
+            "AGO-ADM3-77060369B69912057384474",
+            "AGO-ADM3-77060369B50113190568833",
+            "AGO-ADM3-77060369B27797258863767",
+            "AGO-ADM3-77060369B53769985573824",
+            "AGO-ADM3-77060369B13918027042749",
+            "AGO-ADM3-77060369B1786111829805",
+            "AGO-ADM3-77060369B80411179727557",
+            "AGO-ADM3-77060369B76032488799536",
+            "AGO-ADM3-77060369B28847566299072",
+            "AGO-ADM3-77060369B49474047145237",
+            "AGO-ADM3-77060369B75516260520897",
+            "AGO-ADM3-77060369B88686591557459",
+            "AGO-ADM3-77060369B69514487532768",
+            "AGO-ADM3-77060369B63043164487253",
+            "AGO-ADM3-77060369B80845722030199",
+            "AGO-ADM3-77060369B21380890352551",
+            "AGO-ADM3-77060369B53455592151654",
+            "AGO-ADM3-77060369B47019721443886",
+            "AGO-ADM3-77060369B71477384871463",
+            "AGO-ADM3-77060369B69526604087231",
+            "AGO-ADM3-77060369B69507694620785",
+            "AGO-ADM3-77060369B7349637789617",
+            "AGO-ADM3-77060369B28509712212339",
+            "AGO-ADM3-77060369B17940497405481",
+            "AGO-ADM3-77060369B73561740720155"
           ],
           "sources": [
             {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=73078348",
+              "title": "Wikipédia (pt): Províncias de Angola, rev. 73078348",
+              "says": "The Lei Constitucional of 11 November 1975 divided the People's Republic of Angola into provinces, concelhos and communes (the former districts).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            },
+            {
               "url": "https://www.statoids.com/uao.html",
-              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
-              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
-              "accessed": "2026-10-05"
+              "title": "Statoids — Provinces of Angola (Gwillim Law, updated 2016-10-06)",
+              "says": "Change history 1950–2016: district splits, independence 1975-11-11, Lunda and Luanda splits, Moçâmedes renamed Namibe 1985, otherwise only minor boundary changes; 18 provinces.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Unit predates independence; span starts at the dossier scope (independence). No later inter-provincial change touching it is recorded by the sources consulted."
+          "dateNote": "Independence (1975-11-11): the Lei Constitucional turned the districts into provinces with the same territory. No later change between provinces touching it is recorded by the sources consulted (only renames: Moçâmedes → Namibe 1985)."
         }
       ]
     },
@@ -189,17 +1595,71 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "AGO-1890"
+            "AGO-ADM3-77060369B16311547761957",
+            "AGO-ADM3-77060369B32694102324478",
+            "AGO-ADM3-77060369B47603565589797",
+            "AGO-ADM3-77060369B40388829608236",
+            "AGO-ADM3-77060369B8555028237158",
+            "AGO-ADM3-77060369B10410810484867",
+            "AGO-ADM3-77060369B94671317679988",
+            "AGO-ADM3-77060369B76228427029780",
+            "AGO-ADM3-77060369B82770983026956",
+            "AGO-ADM3-77060369B29582199521869",
+            "AGO-ADM3-77060369B69345120669575",
+            "AGO-ADM3-77060369B89088332208949",
+            "AGO-ADM3-77060369B87257725762599",
+            "AGO-ADM3-77060369B10365195051024",
+            "AGO-ADM3-77060369B80305895745824",
+            "AGO-ADM3-77060369B45483550748446",
+            "AGO-ADM3-77060369B25048514616750",
+            "AGO-ADM3-77060369B50518409426985",
+            "AGO-ADM3-77060369B20749792089411",
+            "AGO-ADM3-77060369B22746126284292",
+            "AGO-ADM3-77060369B34366722133261",
+            "AGO-ADM3-77060369B68939826640340",
+            "AGO-ADM3-77060369B24614245075351",
+            "AGO-ADM3-77060369B79177821288191",
+            "AGO-ADM3-77060369B27863304434967",
+            "AGO-ADM3-77060369B76583340349729",
+            "AGO-ADM3-77060369B34645576590116",
+            "AGO-ADM3-77060369B50432471723166",
+            "AGO-ADM3-77060369B31537458571752",
+            "AGO-ADM3-77060369B26604395216811",
+            "AGO-ADM3-77060369B32173815344529",
+            "AGO-ADM3-77060369B41896874895902",
+            "AGO-ADM3-77060369B94124753255725",
+            "AGO-ADM3-77060369B24294910871022",
+            "AGO-ADM3-77060369B16771517557347",
+            "AGO-ADM3-77060369B27621457839783",
+            "AGO-ADM3-77060369B74661562977123"
           ],
           "sources": [
             {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=73078348",
+              "title": "Wikipédia (pt): Províncias de Angola, rev. 73078348",
+              "says": "The Lei Constitucional of 11 November 1975 divided the People's Republic of Angola into provinces, concelhos and communes (the former districts).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            },
+            {
               "url": "https://www.statoids.com/uao.html",
-              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
-              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
-              "accessed": "2026-10-05"
+              "title": "Statoids — Provinces of Angola (Gwillim Law, updated 2016-10-06)",
+              "says": "Change history 1950–2016: district splits, independence 1975-11-11, Lunda and Luanda splits, Moçâmedes renamed Namibe 1985, otherwise only minor boundary changes; 18 provinces.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=72266297",
+              "title": "Wikipédia (pt): Huambo (província), rev. 72266297",
+              "says": "From 1928 the Huambo district and its capital were named Nova Lisboa, regaining the name Huambo after independence in 1975.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Unit predates independence; span starts at the dossier scope (independence). No later inter-provincial change touching it is recorded by the sources consulted."
+          "dateNote": "Independence (1975-11-11): the Lei Constitucional turned the districts into provinces with the same territory. No later change between provinces touching it is recorded by the sources consulted (only renames: Moçâmedes → Namibe 1985)."
         }
       ]
     },
@@ -217,17 +1677,67 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "AGO-1886"
+            "AGO-ADM3-77060369B93804511416550",
+            "AGO-ADM3-77060369B38464751660047",
+            "AGO-ADM3-77060369B43120430467277",
+            "AGO-ADM3-77060369B80052629873297",
+            "AGO-ADM3-77060369B66503989008328",
+            "AGO-ADM3-77060369B95495269196267",
+            "AGO-ADM3-77060369B79583324336017",
+            "AGO-ADM3-77060369B73154373828158",
+            "AGO-ADM3-77060369B65236131612097",
+            "AGO-ADM3-77060369B45549409407850",
+            "AGO-ADM3-77060369B66287281579678",
+            "AGO-ADM3-77060369B54299833104903",
+            "AGO-ADM3-77060369B75924748896287",
+            "AGO-ADM3-77060369B95901949212510",
+            "AGO-ADM3-77060369B99427179645180",
+            "AGO-ADM3-77060369B37582952268389",
+            "AGO-ADM3-77060369B12145240629961",
+            "AGO-ADM3-77060369B56474075761168",
+            "AGO-ADM3-77060369B75571703919550",
+            "AGO-ADM3-77060369B74693089422396",
+            "AGO-ADM3-77060369B28077069729467",
+            "AGO-ADM3-77060369B92229856586310",
+            "AGO-ADM3-77060369B49397106450140",
+            "AGO-ADM3-77060369B30894079134765",
+            "AGO-ADM3-77060369B92856637114642",
+            "AGO-ADM3-77060369B20076228429698",
+            "AGO-ADM3-77060369B64692466195251",
+            "AGO-ADM3-77060369B56949413548686",
+            "AGO-ADM3-77060369B27186442579084",
+            "AGO-ADM3-77060369B77520761524905",
+            "AGO-ADM3-77060369B62594987031687",
+            "AGO-ADM3-77060369B87854118365341",
+            "AGO-ADM3-77060369B95322421002358",
+            "AGO-ADM3-77060369B22516302931322",
+            "AGO-ADM3-77060369B68027360320896",
+            "AGO-ADM3-77060369B18279542454806",
+            "AGO-ADM3-77060369B34254583735545",
+            "AGO-ADM3-77060369B66163136263346",
+            "AGO-ADM3-77060369B92167861991850"
           ],
           "sources": [
             {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=73078348",
+              "title": "Wikipédia (pt): Províncias de Angola, rev. 73078348",
+              "says": "The Lei Constitucional of 11 November 1975 divided the People's Republic of Angola into provinces, concelhos and communes (the former districts).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            },
+            {
               "url": "https://www.statoids.com/uao.html",
-              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
-              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
-              "accessed": "2026-10-05"
+              "title": "Statoids — Provinces of Angola (Gwillim Law, updated 2016-10-06)",
+              "says": "Change history 1950–2016: district splits, independence 1975-11-11, Lunda and Luanda splits, Moçâmedes renamed Namibe 1985, otherwise only minor boundary changes; 18 provinces.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Unit predates independence; span starts at the dossier scope (independence). No later inter-provincial change touching it is recorded by the sources consulted."
+          "dateNote": "Independence (1975-11-11): the Lei Constitucional turned the districts into provinces with the same territory. No later change between provinces touching it is recorded by the sources consulted (only renames: Moçâmedes → Namibe 1985)."
         }
       ]
     },
@@ -245,17 +1755,58 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "AGO-1892"
+            "AGO-ADM3-77060369B71236742351174",
+            "AGO-ADM3-77060369B31357528040134",
+            "AGO-ADM3-77060369B99363085414684",
+            "AGO-ADM3-77060369B38685846011401",
+            "AGO-ADM3-77060369B5309188737405",
+            "AGO-ADM3-77060369B83004048234313",
+            "AGO-ADM3-77060369B89833578504463",
+            "AGO-ADM3-77060369B67895185767344",
+            "AGO-ADM3-77060369B92270464035146",
+            "AGO-ADM3-77060369B82453031897814",
+            "AGO-ADM3-77060369B51673117543134",
+            "AGO-ADM3-77060369B22046631174287",
+            "AGO-ADM3-77060369B95319872444491",
+            "AGO-ADM3-77060369B25399273102864",
+            "AGO-ADM3-77060369B64160972919093",
+            "AGO-ADM3-77060369B15394046254360",
+            "AGO-ADM3-77060369B56918340049535",
+            "AGO-ADM3-77060369B29488462270990",
+            "AGO-ADM3-77060369B27728005019939",
+            "AGO-ADM3-77060369B47634576445452",
+            "AGO-ADM3-77060369B26677466833138",
+            "AGO-ADM3-77060369B90882207694633",
+            "AGO-ADM3-77060369B68710402302306",
+            "AGO-ADM3-77060369B53461679804754",
+            "AGO-ADM3-77060369B51743222359734",
+            "AGO-ADM3-77060369B18168321180288",
+            "AGO-ADM3-77060369B81990818370088",
+            "AGO-ADM3-77060369B61677292841042",
+            "AGO-ADM3-77060369B14480727542734",
+            "AGO-ADM3-77060369B78749533848376"
           ],
           "sources": [
             {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=73078348",
+              "title": "Wikipédia (pt): Províncias de Angola, rev. 73078348",
+              "says": "The Lei Constitucional of 11 November 1975 divided the People's Republic of Angola into provinces, concelhos and communes (the former districts).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            },
+            {
               "url": "https://www.statoids.com/uao.html",
-              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
-              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
-              "accessed": "2026-10-05"
+              "title": "Statoids — Provinces of Angola (Gwillim Law, updated 2016-10-06)",
+              "says": "Change history 1950–2016: district splits, independence 1975-11-11, Lunda and Luanda splits, Moçâmedes renamed Namibe 1985, otherwise only minor boundary changes; 18 provinces.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Unit predates independence; span starts at the dossier scope (independence). No later inter-provincial change touching it is recorded by the sources consulted."
+          "dateNote": "Independence (1975-11-11): the Lei Constitucional turned the districts into provinces with the same territory. No later change between provinces touching it is recorded by the sources consulted (only renames: Moçâmedes → Namibe 1985)."
         }
       ]
     },
@@ -273,17 +1824,59 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "AGO-1888"
+            "AGO-ADM3-77060369B4217710074432",
+            "AGO-ADM3-77060369B11674741899150",
+            "AGO-ADM3-77060369B45987060521818",
+            "AGO-ADM3-77060369B29402721391887",
+            "AGO-ADM3-77060369B10816717802247",
+            "AGO-ADM3-77060369B61622076497347",
+            "AGO-ADM3-77060369B41697518171391",
+            "AGO-ADM3-77060369B52621467610975",
+            "AGO-ADM3-77060369B21119391054748",
+            "AGO-ADM3-77060369B22130059919528",
+            "AGO-ADM3-77060369B11627980922359",
+            "AGO-ADM3-77060369B20947788764950",
+            "AGO-ADM3-77060369B6554030700482",
+            "AGO-ADM3-77060369B2211236779169",
+            "AGO-ADM3-77060369B79576560534783",
+            "AGO-ADM3-77060369B94729713134942",
+            "AGO-ADM3-77060369B60658492422194",
+            "AGO-ADM3-77060369B25014809943659",
+            "AGO-ADM3-77060369B93815043480535",
+            "AGO-ADM3-77060369B72935458331040",
+            "AGO-ADM3-77060369B54637784320399",
+            "AGO-ADM3-77060369B58889360786954",
+            "AGO-ADM3-77060369B24224206611305",
+            "AGO-ADM3-77060369B75330671635505",
+            "AGO-ADM3-77060369B86173465984953",
+            "AGO-ADM3-77060369B60068018423574",
+            "AGO-ADM3-77060369B87880730450464",
+            "AGO-ADM3-77060369B59224958455394",
+            "AGO-ADM3-77060369B48622771884277",
+            "AGO-ADM3-77060369B11899251087021",
+            "AGO-ADM3-77060369B46567747133488"
           ],
           "sources": [
             {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=73078348",
+              "title": "Wikipédia (pt): Províncias de Angola, rev. 73078348",
+              "says": "The Lei Constitucional of 11 November 1975 divided the People's Republic of Angola into provinces, concelhos and communes (the former districts).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            },
+            {
               "url": "https://www.statoids.com/uao.html",
-              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
-              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
-              "accessed": "2026-10-05"
+              "title": "Statoids — Provinces of Angola (Gwillim Law, updated 2016-10-06)",
+              "says": "Change history 1950–2016: district splits, independence 1975-11-11, Lunda and Luanda splits, Moçâmedes renamed Namibe 1985, otherwise only minor boundary changes; 18 provinces.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Unit predates independence; span starts at the dossier scope (independence). No later inter-provincial change touching it is recorded by the sources consulted."
+          "dateNote": "Independence (1975-11-11): the Lei Constitucional turned the districts into provinces with the same territory. No later change between provinces touching it is recorded by the sources consulted (only renames: Moçâmedes → Namibe 1985)."
         }
       ]
     },
@@ -301,17 +1894,42 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "AGO-1893"
+            "AGO-ADM3-77060369B30379715505162",
+            "AGO-ADM3-77060369B78923592532483",
+            "AGO-ADM3-77060369B80066422987000",
+            "AGO-ADM3-77060369B80345298798002",
+            "AGO-ADM3-77060369B91061868397768",
+            "AGO-ADM3-77060369B67052179202239",
+            "AGO-ADM3-77060369B43106351167077",
+            "AGO-ADM3-77060369B60159039272305",
+            "AGO-ADM3-77060369B83996160598224",
+            "AGO-ADM3-77060369B62710180302874",
+            "AGO-ADM3-77060369B96495267103179",
+            "AGO-ADM3-77060369B80425002259927",
+            "AGO-ADM3-77060369B34119314001159",
+            "AGO-ADM3-77060369B22256545285740"
           ],
           "sources": [
             {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=73078348",
+              "title": "Wikipédia (pt): Províncias de Angola, rev. 73078348",
+              "says": "The Lei Constitucional of 11 November 1975 divided the People's Republic of Angola into provinces, concelhos and communes (the former districts).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            },
+            {
               "url": "https://www.statoids.com/uao.html",
-              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
-              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
-              "accessed": "2026-10-05"
+              "title": "Statoids — Provinces of Angola (Gwillim Law, updated 2016-10-06)",
+              "says": "Change history 1950–2016: district splits, independence 1975-11-11, Lunda and Luanda splits, Moçâmedes renamed Namibe 1985, otherwise only minor boundary changes; 18 provinces.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Unit predates independence; span starts at the dossier scope (independence). No later inter-provincial change touching it is recorded by the sources consulted."
+          "dateNote": "Independence (1975-11-11): the Lei Constitucional turned the districts into provinces with the same territory. No later change between provinces touching it is recorded by the sources consulted (only renames: Moçâmedes → Namibe 1985)."
         }
       ]
     },
@@ -329,23 +1947,80 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "AGO-1891"
+            "AGO-ADM3-77060369B68699648479023",
+            "AGO-ADM3-77060369B79303779097611",
+            "AGO-ADM3-77060369B3442435490622",
+            "AGO-ADM3-77060369B57885673461686",
+            "AGO-ADM3-77060369B68155412438244",
+            "AGO-ADM3-77060369B45968962224708",
+            "AGO-ADM3-77060369B22892102342691",
+            "AGO-ADM3-77060369B41753951535725",
+            "AGO-ADM3-77060369B6968718226551",
+            "AGO-ADM3-77060369B5106412888605",
+            "AGO-ADM3-77060369B54478031839570",
+            "AGO-ADM3-77060369B17268288447130",
+            "AGO-ADM3-77060369B43359139908946",
+            "AGO-ADM3-77060369B40001378853533",
+            "AGO-ADM3-77060369B4600149318389",
+            "AGO-ADM3-77060369B79091379244765",
+            "AGO-ADM3-77060369B68884961430338",
+            "AGO-ADM3-77060369B18898190852982",
+            "AGO-ADM3-77060369B80361566159389",
+            "AGO-ADM3-77060369B57367733992063",
+            "AGO-ADM3-77060369B67568826033515",
+            "AGO-ADM3-77060369B32759261397344",
+            "AGO-ADM3-77060369B8846276829985",
+            "AGO-ADM3-77060369B8240052746993",
+            "AGO-ADM3-77060369B15952310903816",
+            "AGO-ADM3-77060369B35203233320132",
+            "AGO-ADM3-77060369B88308204411446",
+            "AGO-ADM3-77060369B32004469388523",
+            "AGO-ADM3-77060369B76729243914715",
+            "AGO-ADM3-77060369B14686960886928",
+            "AGO-ADM3-77060369B47795992732607",
+            "AGO-ADM3-77060369B33373185819605",
+            "AGO-ADM3-77060369B78347355003608",
+            "AGO-ADM3-77060369B72655894715491",
+            "AGO-ADM3-77060369B21078697209317",
+            "AGO-ADM3-77060369B87597193610049",
+            "AGO-ADM3-77060369B10617483023714",
+            "AGO-ADM3-77060369B68647505200330",
+            "AGO-ADM3-77060369B97169655650003",
+            "AGO-ADM3-77060369B69337013005212",
+            "AGO-ADM3-77060369B68965526448719",
+            "AGO-ADM3-77060369B64624057735659",
+            "AGO-ADM3-77060369B51644940060017",
+            "AGO-ADM3-77060369B70357068119731",
+            "AGO-ADM3-77060369B30860300651366",
+            "AGO-ADM3-77060369B2980733332533",
+            "AGO-ADM3-77060369B13356421579773",
+            "AGO-ADM3-77060369B9098336979555",
+            "AGO-ADM3-77060369B48941851325832",
+            "AGO-ADM3-77060369B89451560353656",
+            "AGO-ADM3-77060369B92842053072498",
+            "AGO-ADM3-77060369B26604989429076"
           ],
           "sources": [
             {
-              "url": "https://www.statoids.com/uao.html",
-              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
-              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
-              "accessed": "2026-10-05"
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=73078348",
+              "title": "Wikipédia (pt): Províncias de Angola, rev. 73078348",
+              "says": "The Lei Constitucional of 11 November 1975 divided the People's Republic of Angola into provinces, concelhos and communes (the former districts).",
+              "accessed": "2026-10-06"
             },
             {
-              "url": "https://pt.wikipedia.org/w/index.php?oldid=70675763",
-              "title": "Wikipédia (pt): Cunene, rev. 70675763",
-              "says": "Cunene was detached from Huíla district on 10 July 1970 by decree 330/70 (i.e. before independence).",
-              "accessed": "2026-10-05"
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids — Provinces of Angola (Gwillim Law, updated 2016-10-06)",
+              "says": "Change history 1950–2016: district splits, independence 1975-11-11, Lunda and Luanda splits, Moçâmedes renamed Namibe 1985, otherwise only minor boundary changes; 18 provinces.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Unit predates independence; span starts at the dossier scope (independence). No later inter-provincial change touching it is recorded by the sources consulted."
+          "dateNote": "Independence (1975-11-11): the Lei Constitucional turned the districts into provinces with the same territory. No later change between provinces touching it is recorded by the sources consulted (only renames: Moçâmedes → Namibe 1985)."
         }
       ]
     },
@@ -363,23 +2038,48 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "AGO-1889"
+            "AGO-ADM3-77060369B35372142131298",
+            "AGO-ADM3-77060369B93433657142280",
+            "AGO-ADM3-77060369B37342987752772",
+            "AGO-ADM3-77060369B31390857474060",
+            "AGO-ADM3-77060369B50411585544255",
+            "AGO-ADM3-77060369B4801723591442",
+            "AGO-ADM3-77060369B37858923470904",
+            "AGO-ADM3-77060369B33549675966860",
+            "AGO-ADM3-77060369B74201814933437",
+            "AGO-ADM3-77060369B71383041189659",
+            "AGO-ADM3-77060369B73047208431278",
+            "AGO-ADM3-77060369B82906501374796",
+            "AGO-ADM3-77060369B14536015009758",
+            "AGO-ADM3-77060369B19072309018308",
+            "AGO-ADM3-77060369B27792376194465",
+            "AGO-ADM3-77060369B32242745082402",
+            "AGO-ADM3-77060369B92035576065694",
+            "AGO-ADM3-77060369B78958042335534",
+            "AGO-ADM3-77060369B2228143759388",
+            "AGO-ADM3-77060369B69210130463092"
           ],
           "sources": [
             {
-              "url": "https://www.statoids.com/uao.html",
-              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
-              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
-              "accessed": "2026-10-05"
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=73078348",
+              "title": "Wikipédia (pt): Províncias de Angola, rev. 73078348",
+              "says": "The Lei Constitucional of 11 November 1975 divided the People's Republic of Angola into provinces, concelhos and communes (the former districts).",
+              "accessed": "2026-10-06"
             },
             {
-              "url": "https://pt.wikipedia.org/w/index.php?oldid=70675763",
-              "title": "Wikipédia (pt): Cunene, rev. 70675763",
-              "says": "Cunene was detached from Huíla district on 10 July 1970 by decree 330/70 (i.e. before independence).",
-              "accessed": "2026-10-05"
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids — Provinces of Angola (Gwillim Law, updated 2016-10-06)",
+              "says": "Change history 1950–2016: district splits, independence 1975-11-11, Lunda and Luanda splits, Moçâmedes renamed Namibe 1985, otherwise only minor boundary changes; 18 provinces.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Unit predates independence; span starts at the dossier scope (independence). No later inter-provincial change touching it is recorded by the sources consulted."
+          "dateNote": "Independence (1975-11-11): the Lei Constitucional turned the districts into provinces with the same territory. No later change between provinces touching it is recorded by the sources consulted (only renames: Moçâmedes → Namibe 1985)."
         }
       ]
     },
@@ -396,30 +2096,73 @@
           "precision": "day",
           "to": "1978-07-04",
           "atoms": [
-            "AGO-1874",
-            "AGO-1875"
+            "AGO-ADM3-77060369B18724799547828",
+            "AGO-ADM3-77060369B48037380592035",
+            "AGO-ADM3-77060369B18810201099187",
+            "AGO-ADM3-77060369B3621671855926",
+            "AGO-ADM3-77060369B70164476788909",
+            "AGO-ADM3-77060369B11293858735911",
+            "AGO-ADM3-77060369B87421203241696",
+            "AGO-ADM3-77060369B87530803115818",
+            "AGO-ADM3-77060369B42345514442634",
+            "AGO-ADM3-77060369B60855109502066",
+            "AGO-ADM3-77060369B65655478084064",
+            "AGO-ADM3-77060369B98814516538742",
+            "AGO-ADM3-77060369B1859378709857",
+            "AGO-ADM3-77060369B16252841948436",
+            "AGO-ADM3-77060369B86452865101711",
+            "AGO-ADM3-77060369B65150305897940",
+            "AGO-ADM3-77060369B10485440869951",
+            "AGO-ADM3-77060369B14398140881807",
+            "AGO-ADM3-77060369B49327104596995",
+            "AGO-ADM3-77060369B86627355620556",
+            "AGO-ADM3-77060369B54918652534904",
+            "AGO-ADM3-77060369B98978170171128",
+            "AGO-ADM3-77060369B8144556329568",
+            "AGO-ADM3-77060369B61164278340142",
+            "AGO-ADM3-77060369B74843440676018",
+            "AGO-ADM3-77060369B1248651490010",
+            "AGO-ADM3-77060369B80098668520680",
+            "AGO-ADM3-77060369B9651396421326",
+            "AGO-ADM3-77060369B57295661507561",
+            "AGO-ADM3-77060369B17098227027710",
+            "AGO-ADM3-77060369B72721724821259",
+            "AGO-ADM3-77060369B6566673261041",
+            "AGO-ADM3-77060369B94005980110279",
+            "AGO-ADM3-77060369B78113988186637",
+            "AGO-ADM3-77060369B19256302513438",
+            "AGO-ADM3-77060369B68083579549647",
+            "AGO-ADM3-77060369B75875281282086",
+            "AGO-ADM3-77060369B11092571584192",
+            "AGO-ADM3-77060369B16265396622170"
           ],
           "sources": [
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=73078348",
+              "title": "Wikipédia (pt): Províncias de Angola, rev. 73078348",
+              "says": "The Lei Constitucional of 11 November 1975 divided the People's Republic of Angola into provinces, concelhos and communes (the former districts).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            },
             {
               "url": "https://pt.wikipedia.org/w/index.php?oldid=71712255",
               "title": "Wikipédia (pt): Lunda Sul, rev. 71712255",
               "says": "On 4 July 1978 Decreto-Lei 84/78 divided Lunda province in two: the original part became Lunda Sul, Lunda Norte was created.",
-              "accessed": "2026-10-05"
+              "accessed": "2026-10-06"
             },
             {
               "url": "https://pt.wikipedia.org/w/index.php?oldid=72911093",
               "title": "Wikipédia (pt): Lunda Norte, rev. 72911093",
-              "says": "Lunda Norte officially created 4 July 1978 by decree-law 84/78, separated from Lunda; bounded by DR Congo, Lunda Sul and Malanje.",
-              "accessed": "2026-10-05"
-            },
-            {
-              "url": "https://www.statoids.com/uao.html",
-              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
-              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
-              "accessed": "2026-10-05"
+              "says": "Lunda Norte officially created 4 July 1978 by decree-law 84/78, separated from Lunda.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Lunda = Lunda Norte + Lunda Sul: the 1978 decree divided the whole province in two."
+          "dateNote": "Independence (1975-11-11): the Lei Constitucional turned the districts into provinces with the same territory."
         }
       ]
     },
@@ -437,23 +2180,47 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "AGO-1874"
+            "AGO-ADM3-77060369B18724799547828",
+            "AGO-ADM3-77060369B48037380592035",
+            "AGO-ADM3-77060369B18810201099187",
+            "AGO-ADM3-77060369B3621671855926",
+            "AGO-ADM3-77060369B70164476788909",
+            "AGO-ADM3-77060369B11293858735911",
+            "AGO-ADM3-77060369B87421203241696",
+            "AGO-ADM3-77060369B87530803115818",
+            "AGO-ADM3-77060369B42345514442634",
+            "AGO-ADM3-77060369B60855109502066",
+            "AGO-ADM3-77060369B65655478084064",
+            "AGO-ADM3-77060369B98814516538742",
+            "AGO-ADM3-77060369B1859378709857",
+            "AGO-ADM3-77060369B16252841948436",
+            "AGO-ADM3-77060369B86452865101711",
+            "AGO-ADM3-77060369B65150305897940",
+            "AGO-ADM3-77060369B10485440869951",
+            "AGO-ADM3-77060369B14398140881807",
+            "AGO-ADM3-77060369B49327104596995",
+            "AGO-ADM3-77060369B86627355620556",
+            "AGO-ADM3-77060369B54918652534904",
+            "AGO-ADM3-77060369B98978170171128",
+            "AGO-ADM3-77060369B8144556329568",
+            "AGO-ADM3-77060369B61164278340142",
+            "AGO-ADM3-77060369B74843440676018"
           ],
           "sources": [
             {
               "url": "https://pt.wikipedia.org/w/index.php?oldid=72911093",
               "title": "Wikipédia (pt): Lunda Norte, rev. 72911093",
-              "says": "Lunda Norte officially created 4 July 1978 by decree-law 84/78, separated from Lunda; bounded by DR Congo, Lunda Sul and Malanje.",
-              "accessed": "2026-10-05"
+              "says": "Lunda Norte officially created 4 July 1978 by decree-law 84/78, separated from Lunda.",
+              "accessed": "2026-10-06"
             },
             {
-              "url": "https://pt.wikipedia.org/w/index.php?oldid=71712255",
-              "title": "Wikipédia (pt): Lunda Sul, rev. 71712255",
-              "says": "On 4 July 1978 Decreto-Lei 84/78 divided Lunda province in two: the original part became Lunda Sul, Lunda Norte was created.",
-              "accessed": "2026-10-05"
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Date of Decreto-Lei 84/78 as stated; promulgation vs entry into force not distinguished by the source."
+          "dateNote": "Decreto-Lei 84/78 of 1978-07-04. The membership of each commune is that of the 2014 census."
         }
       ]
     },
@@ -471,21 +2238,126 @@
           "precision": "day",
           "to": null,
           "atoms": [
-            "AGO-1875"
+            "AGO-ADM3-77060369B1248651490010",
+            "AGO-ADM3-77060369B80098668520680",
+            "AGO-ADM3-77060369B9651396421326",
+            "AGO-ADM3-77060369B57295661507561",
+            "AGO-ADM3-77060369B17098227027710",
+            "AGO-ADM3-77060369B72721724821259",
+            "AGO-ADM3-77060369B6566673261041",
+            "AGO-ADM3-77060369B94005980110279",
+            "AGO-ADM3-77060369B78113988186637",
+            "AGO-ADM3-77060369B19256302513438",
+            "AGO-ADM3-77060369B68083579549647",
+            "AGO-ADM3-77060369B75875281282086",
+            "AGO-ADM3-77060369B11092571584192",
+            "AGO-ADM3-77060369B16265396622170"
           ],
           "sources": [
             {
               "url": "https://pt.wikipedia.org/w/index.php?oldid=71712255",
               "title": "Wikipédia (pt): Lunda Sul, rev. 71712255",
               "says": "On 4 July 1978 Decreto-Lei 84/78 divided Lunda province in two: the original part became Lunda Sul, Lunda Norte was created.",
-              "accessed": "2026-10-05"
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
             }
-          ]
+          ],
+          "dateNote": "Decreto-Lei 84/78 of 1978-07-04. The membership of each commune is that of the 2014 census."
         }
       ]
     },
     {
-      "id": "AGO:CuanzaNorte@1980",
+      "id": "AGO:Luanda@1975",
+      "names": {
+        "en": "Luanda Province",
+        "ja": "ルアンダ州",
+        "local": "Província de Luanda"
+      },
+      "spans": [
+        {
+          "from": "1975-11-11",
+          "precision": "day",
+          "to": "1980-04-26",
+          "atoms": [
+            "AGO-ADM3-77060369B80097652775654",
+            "AGO-ADM3-77060369B36959937971156",
+            "AGO-ADM3-77060369B25116241346444",
+            "AGO-ADM3-77060369B92100815422872",
+            "AGO-ADM3-77060369B2662139895422",
+            "AGO-ADM3-77060369B2146590991080",
+            "AGO-ADM3-77060369B12248368548140",
+            "AGO-ADM3-77060369B25040483801689",
+            "AGO-ADM3-77060369B64541948706998",
+            "AGO-ADM3-77060369B19343515024497",
+            "AGO-ADM3-77060369B55445459540972",
+            "AGO-ADM3-77060369B77052106222969",
+            "AGO-ADM3-77060369B91001242095302",
+            "AGO-ADM3-77060369B42595123801106",
+            "AGO-ADM3-77060369B2740863261582",
+            "AGO-ADM3-77060369B8583006032412",
+            "AGO-ADM3-77060369B43887382572005",
+            "AGO-ADM3-77060369B30045542282867",
+            "AGO-ADM3-77060369B12972990759222",
+            "AGO-ADM3-77060369B96394604665971",
+            "AGO-ADM3-77060369B61431552716691",
+            "AGO-ADM3-77060369B95378248266460",
+            "AGO-ADM3-77060369B26883802924931",
+            "AGO-ADM3-77060369B34891302870315",
+            "AGO-ADM3-77060369B2796777905421",
+            "AGO-ADM3-77060369B51952533310879",
+            "AGO-ADM3-77060369B56791963203012",
+            "AGO-ADM3-77060369B28747529142911",
+            "AGO-ADM3-77060369B86615925538188",
+            "AGO-ADM3-77060369B23203617018305",
+            "AGO-ADM3-77060369B30800528884791",
+            "AGO-ADM3-77060369B64474879848049",
+            "AGO-ADM3-77060369B12024358750574",
+            "AGO-ADM3-77060369B81683433469789",
+            "AGO-ADM3-77060369B40853382158296",
+            "AGO-ADM3-77060369B69277955567528",
+            "AGO-ADM3-77060369B12716640168232",
+            "AGO-ADM3-77060369B11786628673560",
+            "AGO-ADM3-77060369B30621476680114",
+            "AGO-ADM3-77060369B56533820561986",
+            "AGO-ADM3-77060369B75393229396649",
+            "AGO-ADM3-77060369B77627973760574",
+            "AGO-ADM3-77060369B85239768616224",
+            "AGO-ADM3-77060369B63835932515459",
+            "AGO-ADM3-77060369B51541486590553",
+            "AGO-ADM3-77060369B43614027541276",
+            "AGO-ADM3-77060369B93161311268651"
+          ],
+          "sources": [
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=73078348",
+              "title": "Wikipédia (pt): Províncias de Angola, rev. 73078348",
+              "says": "The Lei Constitucional of 11 November 1975 divided the People's Republic of Angola into provinces, concelhos and communes (the former districts).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=72390930",
+              "title": "Wikipédia (pt): Bengo, rev. 72390930 (citing the Governo Provincial do Bengo)",
+              "says": "Bengo constituted 26 Apr 1980; the municipalities Pango Aluquém, Dembos and Bula Atumba were transferred from Cuanza Norte; Lei 29/11 (1 Sep 2011) moved Ícolo e Bengo and Quissama to Luanda.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Before Bengo was formed: today's Luanda and Bengo provinces except the three municipalities Bengo received from Cuanza Norte in 1980."
+        }
+      ]
+    },
+    {
+      "id": "AGO:CuanzaNorte@1975",
       "names": {
         "en": "Cuanza Norte Province",
         "ja": "クアンザ・ノルテ州",
@@ -494,27 +2366,123 @@
       "wikidata": "Q216834",
       "spans": [
         {
+          "from": "1975-11-11",
+          "precision": "day",
+          "to": "1980-04-26",
+          "atoms": [
+            "AGO-ADM3-77060369B64908754787799",
+            "AGO-ADM3-77060369B36182690435402",
+            "AGO-ADM3-77060369B77066374258209",
+            "AGO-ADM3-77060369B15173041600301",
+            "AGO-ADM3-77060369B86106246345198",
+            "AGO-ADM3-77060369B32385966955160",
+            "AGO-ADM3-77060369B5282053484239",
+            "AGO-ADM3-77060369B98512697730625",
+            "AGO-ADM3-77060369B96536926609214",
+            "AGO-ADM3-77060369B84784078016809",
+            "AGO-ADM3-77060369B6178761244710",
+            "AGO-ADM3-77060369B84552585790644",
+            "AGO-ADM3-77060369B63130039325802",
+            "AGO-ADM3-77060369B82535970069239",
+            "AGO-ADM3-77060369B28902819966150",
+            "AGO-ADM3-77060369B43200383879194",
+            "AGO-ADM3-77060369B10441115959842",
+            "AGO-ADM3-77060369B89576025356774",
+            "AGO-ADM3-77060369B77670081159318",
+            "AGO-ADM3-77060369B64244006936424",
+            "AGO-ADM3-77060369B27252123326425",
+            "AGO-ADM3-77060369B83348907679704",
+            "AGO-ADM3-77060369B53049142243226",
+            "AGO-ADM3-77060369B8719947989356",
+            "AGO-ADM3-77060369B53530304528824",
+            "AGO-ADM3-77060369B72574508501938",
+            "AGO-ADM3-77060369B91094858094160",
+            "AGO-ADM3-77060369B2685959730049",
+            "AGO-ADM3-77060369B90631546857372",
+            "AGO-ADM3-77060369B14028225721604",
+            "AGO-ADM3-77060369B39474702068544",
+            "AGO-ADM3-77060369B37589770112593",
+            "AGO-ADM3-77060369B3044772179039",
+            "AGO-ADM3-77060369B68959959650812",
+            "AGO-ADM3-77060369B68292856056965",
+            "AGO-ADM3-77060369B67444145076089",
+            "AGO-ADM3-77060369B58719154966847",
+            "AGO-ADM3-77060369B5166810058375",
+            "AGO-ADM3-77060369B68320103235918"
+          ],
+          "sources": [
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=73078348",
+              "title": "Wikipédia (pt): Províncias de Angola, rev. 73078348",
+              "says": "The Lei Constitucional of 11 November 1975 divided the People's Republic of Angola into provinces, concelhos and communes (the former districts).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=72390930",
+              "title": "Wikipédia (pt): Bengo, rev. 72390930 (citing the Governo Provincial do Bengo)",
+              "says": "Bengo constituted 26 Apr 1980; the municipalities Pango Aluquém, Dembos and Bula Atumba were transferred from Cuanza Norte; Lei 29/11 (1 Sep 2011) moved Ícolo e Bengo and Quissama to Luanda.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Included Pango Aluquém, Dembos and Bula Atumba until 1980-04-26. Statoids (2005) noted that most maps still placed Bula Atumba and Pango Aluquém in Cuanza Norte; the provincial government of Bengo dates the transfer to the 1980 creation."
+        },
+        {
           "from": "1980-04-26",
           "precision": "day",
           "to": null,
           "atoms": [
-            "AGO-1878"
+            "AGO-ADM3-77060369B64908754787799",
+            "AGO-ADM3-77060369B36182690435402",
+            "AGO-ADM3-77060369B77066374258209",
+            "AGO-ADM3-77060369B15173041600301",
+            "AGO-ADM3-77060369B86106246345198",
+            "AGO-ADM3-77060369B32385966955160",
+            "AGO-ADM3-77060369B5282053484239",
+            "AGO-ADM3-77060369B98512697730625",
+            "AGO-ADM3-77060369B96536926609214",
+            "AGO-ADM3-77060369B84784078016809",
+            "AGO-ADM3-77060369B6178761244710",
+            "AGO-ADM3-77060369B84552585790644",
+            "AGO-ADM3-77060369B63130039325802",
+            "AGO-ADM3-77060369B82535970069239",
+            "AGO-ADM3-77060369B28902819966150",
+            "AGO-ADM3-77060369B43200383879194",
+            "AGO-ADM3-77060369B10441115959842",
+            "AGO-ADM3-77060369B89576025356774",
+            "AGO-ADM3-77060369B77670081159318",
+            "AGO-ADM3-77060369B64244006936424",
+            "AGO-ADM3-77060369B27252123326425",
+            "AGO-ADM3-77060369B83348907679704",
+            "AGO-ADM3-77060369B53049142243226",
+            "AGO-ADM3-77060369B8719947989356",
+            "AGO-ADM3-77060369B53530304528824",
+            "AGO-ADM3-77060369B72574508501938",
+            "AGO-ADM3-77060369B91094858094160",
+            "AGO-ADM3-77060369B2685959730049",
+            "AGO-ADM3-77060369B90631546857372",
+            "AGO-ADM3-77060369B14028225721604",
+            "AGO-ADM3-77060369B39474702068544"
           ],
           "sources": [
             {
               "url": "https://pt.wikipedia.org/w/index.php?oldid=72390930",
-              "title": "Wikipédia (pt): Bengo, rev. 72390930",
-              "says": "Bengo constituted 26 Apr 1980; Pango Aluquém, Dembos, Bula Atumba moved from Cuanza Norte; Lei 29/11 (1 Sep 2011) moved Ícolo e Bengo and Quissama to Luanda.",
-              "accessed": "2026-10-05"
+              "title": "Wikipédia (pt): Bengo, rev. 72390930 (citing the Governo Provincial do Bengo)",
+              "says": "Bengo constituted 26 Apr 1980; the municipalities Pango Aluquém, Dembos and Bula Atumba were transferred from Cuanza Norte; Lei 29/11 (1 Sep 2011) moved Ícolo e Bengo and Quissama to Luanda.",
+              "accessed": "2026-10-06"
             },
             {
-              "url": "https://www.statoids.com/uao.html",
-              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
-              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
-              "accessed": "2026-10-05"
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
             }
-          ],
-          "dateNote": "After Pango Aluquém, Dembos and Bula Atumba went to the new Bengo province. Statoids (2005 observation) notes maps still showing two of them in Cuanza Norte; Natural Earth places them in Bengo (point test), consistent with the 1980 statement."
+          ]
         }
       ]
     },
@@ -532,17 +2500,124 @@
           "precision": "day",
           "to": "2011-09-01",
           "atoms": [
-            "AGO-1877"
+            "AGO-ADM3-77060369B37589770112593",
+            "AGO-ADM3-77060369B3044772179039",
+            "AGO-ADM3-77060369B68959959650812",
+            "AGO-ADM3-77060369B68292856056965",
+            "AGO-ADM3-77060369B80097652775654",
+            "AGO-ADM3-77060369B36959937971156",
+            "AGO-ADM3-77060369B67444145076089",
+            "AGO-ADM3-77060369B58719154966847",
+            "AGO-ADM3-77060369B5166810058375",
+            "AGO-ADM3-77060369B68320103235918",
+            "AGO-ADM3-77060369B25116241346444",
+            "AGO-ADM3-77060369B92100815422872",
+            "AGO-ADM3-77060369B2662139895422",
+            "AGO-ADM3-77060369B2146590991080",
+            "AGO-ADM3-77060369B12248368548140",
+            "AGO-ADM3-77060369B25040483801689",
+            "AGO-ADM3-77060369B64541948706998",
+            "AGO-ADM3-77060369B19343515024497",
+            "AGO-ADM3-77060369B55445459540972",
+            "AGO-ADM3-77060369B77052106222969",
+            "AGO-ADM3-77060369B91001242095302",
+            "AGO-ADM3-77060369B42595123801106",
+            "AGO-ADM3-77060369B2740863261582",
+            "AGO-ADM3-77060369B8583006032412",
+            "AGO-ADM3-77060369B43887382572005",
+            "AGO-ADM3-77060369B30045542282867",
+            "AGO-ADM3-77060369B12972990759222",
+            "AGO-ADM3-77060369B96394604665971",
+            "AGO-ADM3-77060369B61431552716691",
+            "AGO-ADM3-77060369B56791963203012",
+            "AGO-ADM3-77060369B28747529142911",
+            "AGO-ADM3-77060369B23203617018305",
+            "AGO-ADM3-77060369B12024358750574"
           ],
           "sources": [
             {
               "url": "https://pt.wikipedia.org/w/index.php?oldid=72390930",
-              "title": "Wikipédia (pt): Bengo, rev. 72390930",
-              "says": "Bengo constituted 26 Apr 1980; Pango Aluquém, Dembos, Bula Atumba moved from Cuanza Norte; Lei 29/11 (1 Sep 2011) moved Ícolo e Bengo and Quissama to Luanda.",
-              "accessed": "2026-10-05"
+              "title": "Wikipédia (pt): Bengo, rev. 72390930 (citing the Governo Provincial do Bengo)",
+              "says": "Bengo constituted 26 Apr 1980; the municipalities Pango Aluquém, Dembos and Bula Atumba were transferred from Cuanza Norte; Lei 29/11 (1 Sep 2011) moved Ícolo e Bengo and Quissama to Luanda.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=71794182",
+              "title": "Wikipédia (pt): Ícolo e Bengo, rev. 71794182",
+              "says": "In 2011 Ícolo e Bengo was transferred from Bengo to Luanda province (Lei nº 29/11 of 1 September 2011).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=73089751",
+              "title": "Wikipédia (pt): Quissama, rev. 73089751",
+              "says": "Transferred by Lei nº 29/11 of 1 September 2011 from Bengo to Luanda province.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Natural Earth Bengo still contains Ícolo e Bengo and Quiçama (point tests at Catete and Muxima), i.e. the pre-2011 extent. Statoids dates Bengo to 1985; pt.wikipedia gives 26 Apr 1980 with a cited source — the specific date was taken."
+          "dateNote": "Until Lei 29/11 the province included the municipalities Ícolo e Bengo and Quissama."
+        },
+        {
+          "from": "2011-09-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "AGO-ADM3-77060369B37589770112593",
+            "AGO-ADM3-77060369B3044772179039",
+            "AGO-ADM3-77060369B68959959650812",
+            "AGO-ADM3-77060369B68292856056965",
+            "AGO-ADM3-77060369B80097652775654",
+            "AGO-ADM3-77060369B36959937971156",
+            "AGO-ADM3-77060369B67444145076089",
+            "AGO-ADM3-77060369B58719154966847",
+            "AGO-ADM3-77060369B5166810058375",
+            "AGO-ADM3-77060369B68320103235918",
+            "AGO-ADM3-77060369B25116241346444",
+            "AGO-ADM3-77060369B92100815422872",
+            "AGO-ADM3-77060369B2662139895422",
+            "AGO-ADM3-77060369B2146590991080",
+            "AGO-ADM3-77060369B12248368548140",
+            "AGO-ADM3-77060369B25040483801689",
+            "AGO-ADM3-77060369B64541948706998",
+            "AGO-ADM3-77060369B19343515024497",
+            "AGO-ADM3-77060369B55445459540972",
+            "AGO-ADM3-77060369B77052106222969",
+            "AGO-ADM3-77060369B91001242095302",
+            "AGO-ADM3-77060369B42595123801106",
+            "AGO-ADM3-77060369B2740863261582"
+          ],
+          "sources": [
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=72390930",
+              "title": "Wikipédia (pt): Bengo, rev. 72390930 (citing the Governo Provincial do Bengo)",
+              "says": "Bengo constituted 26 Apr 1980; the municipalities Pango Aluquém, Dembos and Bula Atumba were transferred from Cuanza Norte; Lei 29/11 (1 Sep 2011) moved Ícolo e Bengo and Quissama to Luanda.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=71794182",
+              "title": "Wikipédia (pt): Ícolo e Bengo, rev. 71794182",
+              "says": "In 2011 Ícolo e Bengo was transferred from Bengo to Luanda province (Lei nº 29/11 of 1 September 2011).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=73089751",
+              "title": "Wikipédia (pt): Quissama, rev. 73089751",
+              "says": "Transferred by Lei nº 29/11 of 1 September 2011 from Bengo to Luanda province.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Lei nº 29/11 of 1 September 2011."
         }
       ]
     },
@@ -560,28 +2635,153 @@
           "precision": "day",
           "to": "2011-09-01",
           "atoms": [
-            "AGO-1880"
+            "AGO-ADM3-77060369B95378248266460",
+            "AGO-ADM3-77060369B26883802924931",
+            "AGO-ADM3-77060369B34891302870315",
+            "AGO-ADM3-77060369B2796777905421",
+            "AGO-ADM3-77060369B51952533310879",
+            "AGO-ADM3-77060369B86615925538188",
+            "AGO-ADM3-77060369B30800528884791",
+            "AGO-ADM3-77060369B64474879848049",
+            "AGO-ADM3-77060369B81683433469789",
+            "AGO-ADM3-77060369B40853382158296",
+            "AGO-ADM3-77060369B69277955567528",
+            "AGO-ADM3-77060369B12716640168232",
+            "AGO-ADM3-77060369B11786628673560",
+            "AGO-ADM3-77060369B30621476680114",
+            "AGO-ADM3-77060369B56533820561986",
+            "AGO-ADM3-77060369B75393229396649",
+            "AGO-ADM3-77060369B77627973760574",
+            "AGO-ADM3-77060369B85239768616224",
+            "AGO-ADM3-77060369B63835932515459",
+            "AGO-ADM3-77060369B51541486590553",
+            "AGO-ADM3-77060369B43614027541276",
+            "AGO-ADM3-77060369B93161311268651"
           ],
           "sources": [
             {
               "url": "https://pt.wikipedia.org/w/index.php?oldid=72390930",
-              "title": "Wikipédia (pt): Bengo, rev. 72390930",
-              "says": "Bengo constituted 26 Apr 1980; Pango Aluquém, Dembos, Bula Atumba moved from Cuanza Norte; Lei 29/11 (1 Sep 2011) moved Ícolo e Bengo and Quissama to Luanda.",
-              "accessed": "2026-10-05"
+              "title": "Wikipédia (pt): Bengo, rev. 72390930 (citing the Governo Provincial do Bengo)",
+              "says": "Bengo constituted 26 Apr 1980; the municipalities Pango Aluquém, Dembos and Bula Atumba were transferred from Cuanza Norte; Lei 29/11 (1 Sep 2011) moved Ícolo e Bengo and Quissama to Luanda.",
+              "accessed": "2026-10-06"
             },
             {
-              "url": "https://www.statoids.com/uao.html",
-              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
-              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
-              "accessed": "2026-10-05"
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=71794182",
+              "title": "Wikipédia (pt): Ícolo e Bengo, rev. 71794182",
+              "says": "In 2011 Ícolo e Bengo was transferred from Bengo to Luanda province (Lei nº 29/11 of 1 September 2011).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=73089751",
+              "title": "Wikipédia (pt): Quissama, rev. 73089751",
+              "says": "Transferred by Lei nº 29/11 of 1 September 2011 from Bengo to Luanda province.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Natural Earth Luanda (2,814 km²) is the small pre-2011 province (Ícolo e Bengo / Quiçama fall in the Bengo atom)."
+          "dateNote": "The city province without Ícolo e Bengo and Quissama (internal municipal reorganisations of 2011 and later do not move its outer line)."
+        },
+        {
+          "from": "2011-09-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "AGO-ADM3-77060369B8583006032412",
+            "AGO-ADM3-77060369B43887382572005",
+            "AGO-ADM3-77060369B30045542282867",
+            "AGO-ADM3-77060369B12972990759222",
+            "AGO-ADM3-77060369B96394604665971",
+            "AGO-ADM3-77060369B61431552716691",
+            "AGO-ADM3-77060369B95378248266460",
+            "AGO-ADM3-77060369B26883802924931",
+            "AGO-ADM3-77060369B34891302870315",
+            "AGO-ADM3-77060369B2796777905421",
+            "AGO-ADM3-77060369B51952533310879",
+            "AGO-ADM3-77060369B56791963203012",
+            "AGO-ADM3-77060369B28747529142911",
+            "AGO-ADM3-77060369B86615925538188",
+            "AGO-ADM3-77060369B23203617018305",
+            "AGO-ADM3-77060369B30800528884791",
+            "AGO-ADM3-77060369B64474879848049",
+            "AGO-ADM3-77060369B12024358750574",
+            "AGO-ADM3-77060369B81683433469789",
+            "AGO-ADM3-77060369B40853382158296",
+            "AGO-ADM3-77060369B69277955567528",
+            "AGO-ADM3-77060369B12716640168232",
+            "AGO-ADM3-77060369B11786628673560",
+            "AGO-ADM3-77060369B30621476680114",
+            "AGO-ADM3-77060369B56533820561986",
+            "AGO-ADM3-77060369B75393229396649",
+            "AGO-ADM3-77060369B77627973760574",
+            "AGO-ADM3-77060369B85239768616224",
+            "AGO-ADM3-77060369B63835932515459",
+            "AGO-ADM3-77060369B51541486590553",
+            "AGO-ADM3-77060369B43614027541276",
+            "AGO-ADM3-77060369B93161311268651"
+          ],
+          "sources": [
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=71794182",
+              "title": "Wikipédia (pt): Ícolo e Bengo, rev. 71794182",
+              "says": "In 2011 Ícolo e Bengo was transferred from Bengo to Luanda province (Lei nº 29/11 of 1 September 2011).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=73089751",
+              "title": "Wikipédia (pt): Quissama, rev. 73089751",
+              "says": "Transferred by Lei nº 29/11 of 1 September 2011 from Bengo to Luanda province.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+              "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+              "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Lei nº 29/11 of 1 September 2011."
         }
       ]
     }
   ],
   "events": [
+    {
+      "date": "1970-07-10",
+      "precision": "day",
+      "what": "Cunene district separated from Huíla (decreto 330/70)",
+      "sources": [
+        {
+          "url": "https://pt.wikipedia.org/w/index.php?oldid=70675763",
+          "title": "Wikipédia (pt): Cunene, rev. 70675763",
+          "says": "The Cunene district was separated from the Huíla district on 10 July 1970 by decree 330/70.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "1975-11-11",
+      "precision": "day",
+      "what": "Independence; the districts become the provinces of the People's Republic of Angola (Nova Lisboa renamed Huambo)",
+      "sources": [
+        {
+          "url": "https://pt.wikipedia.org/w/index.php?oldid=73078348",
+          "title": "Wikipédia (pt): Províncias de Angola, rev. 73078348",
+          "says": "The Lei Constitucional of 11 November 1975 divided the People's Republic of Angola into provinces, concelhos and communes (the former districts).",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://pt.wikipedia.org/w/index.php?oldid=72266297",
+          "title": "Wikipédia (pt): Huambo (província), rev. 72266297",
+          "says": "From 1928 the Huambo district and its capital were named Nova Lisboa, regaining the name Huambo after independence in 1975.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
     {
       "date": "1978-07-04",
       "precision": "day",
@@ -591,26 +2791,26 @@
           "url": "https://pt.wikipedia.org/w/index.php?oldid=71712255",
           "title": "Wikipédia (pt): Lunda Sul, rev. 71712255",
           "says": "On 4 July 1978 Decreto-Lei 84/78 divided Lunda province in two: the original part became Lunda Sul, Lunda Norte was created.",
-          "accessed": "2026-10-05"
+          "accessed": "2026-10-06"
         },
         {
           "url": "https://pt.wikipedia.org/w/index.php?oldid=72911093",
           "title": "Wikipédia (pt): Lunda Norte, rev. 72911093",
-          "says": "Lunda Norte officially created 4 July 1978 by decree-law 84/78, separated from Lunda; bounded by DR Congo, Lunda Sul and Malanje.",
-          "accessed": "2026-10-05"
+          "says": "Lunda Norte officially created 4 July 1978 by decree-law 84/78, separated from Lunda.",
+          "accessed": "2026-10-06"
         }
       ]
     },
     {
       "date": "1980-04-26",
       "precision": "day",
-      "what": "Bengo province constituted; Pango Aluquém, Dembos, Bula Atumba transferred from Cuanza Norte",
+      "what": "Bengo province constituted from Luanda province outside the city and three municipalities of Cuanza Norte",
       "sources": [
         {
           "url": "https://pt.wikipedia.org/w/index.php?oldid=72390930",
-          "title": "Wikipédia (pt): Bengo, rev. 72390930",
-          "says": "Bengo constituted 26 Apr 1980; Pango Aluquém, Dembos, Bula Atumba moved from Cuanza Norte; Lei 29/11 (1 Sep 2011) moved Ícolo e Bengo and Quissama to Luanda.",
-          "accessed": "2026-10-05"
+          "title": "Wikipédia (pt): Bengo, rev. 72390930 (citing the Governo Provincial do Bengo)",
+          "says": "Bengo constituted 26 Apr 1980; the municipalities Pango Aluquém, Dembos and Bula Atumba were transferred from Cuanza Norte; Lei 29/11 (1 Sep 2011) moved Ícolo e Bengo and Quissama to Luanda.",
+          "accessed": "2026-10-06"
         }
       ]
     },
@@ -621,9 +2821,9 @@
       "sources": [
         {
           "url": "https://www.statoids.com/uao.html",
-          "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
-          "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
-          "accessed": "2026-10-05"
+          "title": "Statoids — Provinces of Angola (Gwillim Law, updated 2016-10-06)",
+          "says": "Change history 1950–2016: district splits, independence 1975-11-11, Lunda and Luanda splits, Moçâmedes renamed Namibe 1985, otherwise only minor boundary changes; 18 provinces.",
+          "accessed": "2026-10-06"
         }
       ]
     },
@@ -634,23 +2834,41 @@
       "sources": [
         {
           "url": "https://pt.wikipedia.org/w/index.php?oldid=72390930",
-          "title": "Lei n.º 29/11 de 1 de Setembro — Alteração da Divisão Político-Administrativa das Províncias de Luanda e Bengo (as cited in pt.wikipedia Bengo rev. 72390930)",
-          "says": "Law of 1 Sep 2011 transferred the municipalities Ícolo e Bengo and Quissama from Bengo to Luanda province.",
-          "accessed": "2026-10-05"
+          "title": "Wikipédia (pt): Bengo, rev. 72390930 (citing the Governo Provincial do Bengo)",
+          "says": "Bengo constituted 26 Apr 1980; the municipalities Pango Aluquém, Dembos and Bula Atumba were transferred from Cuanza Norte; Lei 29/11 (1 Sep 2011) moved Ícolo e Bengo and Quissama to Luanda.",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://pt.wikipedia.org/w/index.php?oldid=71794182",
+          "title": "Wikipédia (pt): Ícolo e Bengo, rev. 71794182",
+          "says": "In 2011 Ícolo e Bengo was transferred from Bengo to Luanda province (Lei nº 29/11 of 1 September 2011).",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://pt.wikipedia.org/w/index.php?oldid=73089751",
+          "title": "Wikipédia (pt): Quissama, rev. 73089751",
+          "says": "Transferred by Lei nº 29/11 of 1 September 2011 from Bengo to Luanda province.",
+          "accessed": "2026-10-06"
         }
       ]
     }
   ],
   "counts": [
     {
-      "date": "2015-01-01",
+      "date": "2014-05-16",
       "n": 18,
       "sources": [
         {
+          "url": "https://web.archive.org/web/2020/https://www.citypopulation.de/en/angola/admin/",
+          "title": "City Population — Angola: provinces, municipalities and communes, 2014 census (INE Angola), archived 2020",
+          "says": "2014 census: 18 provinces, 162 municipalities; each municipality page names its communes and its province.",
+          "accessed": "2026-10-06"
+        },
+        {
           "url": "https://www.statoids.com/uao.html",
-          "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
-          "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
-          "accessed": "2026-10-05"
+          "title": "Statoids — Provinces of Angola (Gwillim Law, updated 2016-10-06)",
+          "says": "Change history 1950–2016: district splits, independence 1975-11-11, Lunda and Luanda splits, Moçâmedes renamed Namibe 1985, otherwise only minor boundary changes; 18 provinces.",
+          "accessed": "2026-10-06"
         }
       ]
     }
@@ -658,70 +2876,17 @@
   "atomsOutside": [],
   "unresolved": [
     {
-      "what": "Luanda, Cuanza Norte and their territory before Bengo was formed",
-      "unit": "AGO:Luanda@1975",
-      "atoms": [
-        "AGO-1880",
-        "AGO-1877",
-        "AGO-1878"
-      ],
-      "from": "1975-11-11",
-      "to": "1980-04-26",
-      "why": "Bengo was formed from parts of both Luanda and Cuanza Norte (three Cuanza Norte municipalities plus the Dande/Icolo e Bengo/Quiçama area); the pre-1980 Luanda–Cuanza Norte line runs through the NE Bengo atom.",
-      "checked": [
-        "statoids uao.html change history",
-        "pt.wikipedia Bengo rev. 72390930",
-        "pt.wikipedia Cuanza Norte rev. 71714003"
-      ],
-      "needs": "municipality-level atoms (geoBoundaries AGO ADM2, CC BY 4.0, or OCHA COD-AB Angola ADM2) with 1980 municipality membership"
-    },
-    {
-      "what": "Cuanza Norte before 1980-04-26",
-      "unit": "AGO:CuanzaNorte@1975",
-      "from": "1975-11-11",
-      "to": "1980-04-26",
-      "why": "Included Pango Aluquém, Dembos and Bula Atumba, now inside the NE Bengo atom.",
-      "checked": [
-        "pt.wikipedia Bengo rev. 72390930"
-      ],
-      "needs": "geoBoundaries AGO ADM2 (CC BY 4.0)"
-    },
-    {
-      "what": "Luanda and Bengo after Lei 29/11",
-      "unit": "AGO:Luanda@2011",
-      "atoms": [
-        "AGO-1880",
-        "AGO-1877"
-      ],
-      "from": "2011-09-01",
-      "to": null,
-      "why": "Ícolo e Bengo and Quiçama moved from Bengo to Luanda; that line runs through the NE Bengo atom (NE still shows the pre-2011 layout).",
-      "checked": [
-        "pt.wikipedia Bengo rev. 72390930 citing Lei 29/11",
-        "Natural Earth point tests (Catete, Muxima fall in Bengo)"
-      ],
-      "needs": "geoBoundaries AGO ADM2 (CC BY 4.0) — Ícolo e Bengo and Quiçama municipalities"
-    },
-    {
-      "what": "Bengo after Lei 29/11",
-      "unit": "AGO:Bengo@2011",
-      "from": "2011-09-01",
-      "to": null,
-      "why": "Reduced Bengo is the NE Bengo atom minus two municipalities.",
-      "checked": [
-        "pt.wikipedia Bengo rev. 72390930"
-      ],
-      "needs": "geoBoundaries AGO ADM2 (CC BY 4.0)"
-    },
-    {
-      "what": "Colonial districts of Portuguese West Africa / Angola before independence (1900–1975)",
+      "what": "Districts of Portuguese West Africa / Angola before the Cunene district (1900 → 1970-07-10)",
       "from": "1900",
-      "to": "1975-11-11",
-      "why": "Outside scope; statoids reports 1950s–1971 splits with area transfers (e.g. Benguela→Bié/Malange, Congo→Luanda) not along present provincial lines, and dates only approximate.",
+      "to": "1970-07-10",
+      "why": "The district map was redrawn repeatedly (1901 Huíla; 1911 Huambo; 1914/1917 Cuanza; 1917 Moxico; 1919 Cabinda; 1921 Malanje; 1922 Bié and Zaire; 1930 reduction to eight districts; 1934 five provinces; decree 40 225 of 1955-06-05 thirteen districts; DLM 6 and 51 of 1961 Uíge/Zaire and Cuando Cubango). The 1960 areas of the thirteen districts (statoids, Britannica World Atlas 1964) differ from the unions of their successor provinces' 2014 communes by far more than measurement (Moçâmedes 34,340 km² vs 58,131; Huíla 188,830 vs Huíla+Cunene 156,475; Malanje 114,060 vs 88,475; Cuanza Sul 44,850 vs 55,479; Cuanza Norte 31,210 vs 24,228), so concelhos/circunscrições moved between districts at dates no consulted source names.",
       "checked": [
-        "statoids uao.html change history"
+        "statoids uao.html change history and 1960 table",
+        "pt.wikipedia histories of every province (Uíge 71714212, Zaire 73102860, Luanda 71712258, Cabinda 71827799, Cuanza Norte 71714003, Cuanza Sul 70364117, Malanje 71713960, Huambo 72266297, Bié 71713927, Cuando Cubango 72620758, Moxico 72731149, Namibe 71179695, Cunene 70675763, Lunda Sul 71712255)",
+        "pt.wikipedia Bibala, Virei, Camucuio (municipal histories without the district they belonged to)",
+        "Müller-Crepon DVN/9JI06R (British and French colonies only)"
       ],
-      "needs": "colonial district boundaries (no redistributable dataset found)"
+      "needs": "the concelho/circunscrição list of each district by date (Boletim Oficial de Angola; Anuário Estatístico de Angola) — the communes would then carry the lines"
     }
   ]
 }

@@ -554,9 +554,10 @@
       "why": "Walvis Bay (South African until 1994-03-01; joint administration from 1992-08) lies inside the NE Erongo atom; Erongo without it needs the Walvis Bay line.",
       "checked": [
         "statoids una.html",
-        "Natural Earth point test (Walvis Bay → NAM-3348)"
+        "Natural Earth point test (Walvis Bay → NAM-3348)",
+        "geoBoundaries NAM ADM2 (2007 constituencies, Stanford / NSA, public domain), measured 2026-10-06: the polygon at Walvis Bay town is 20.6 km² and the one holding Rooibank is 9,123 km² — the 2007 Walvis Bay Rural constituency reaches far beyond the 1,124 km² enclave, so no union of ADM2 atoms draws the enclave line; the release's name labels do not match their polygons (e.g. \"Swakopmund\" lies in Hardap), so atoms were identified by position"
       ],
-      "needs": "geoBoundaries NAM ADM2 constituencies (Walvis Bay Urban / Rural), CC BY 4.0"
+      "needs": "the 1994 enclave line (Walvis Bay Act / Treaty, Schedule) as a polygon, or a constituency release that keeps it"
     },
     {
       "what": "Kavango East and Kavango West",
@@ -569,9 +570,10 @@
       "why": "NE has only the undivided Kavango; the East/West line runs through the atom.",
       "checked": [
         "Regional Councils Act annotated (Proc. 25 of 2013)",
-        "statoids una.html"
+        "statoids una.html",
+        "geoBoundaries NAM ADM1 is the Natural Earth layer (undivided Kavango, public domain); geoBoundaries NAM ADM2 is the 2007 constituency set (before the 2013 delimitation), so neither carries the Kavango East/West line"
       ],
-      "needs": "geoBoundaries NAM ADM1 (2013+) or ADM2 constituencies, CC BY 4.0"
+      "needs": "2013 constituencies (Fourth Delimitation Commission) or a 2013+ regions layer"
     },
     {
       "what": "Kavango West",
@@ -590,7 +592,8 @@
       "to": "1992-08-31",
       "why": "Outside scope; the 1977-era districts do not follow region lines (statoids \"Became\" column: several districts map to two or three regions).",
       "checked": [
-        "statoids una.html"
+        "statoids una.html",
+        "geoBoundaries NAM: ADM1 = 1992-type regions (Natural Earth), ADM2 = 2007 constituencies; no district level"
       ],
       "needs": "magisterial district boundaries (no redistributable dataset found)"
     }

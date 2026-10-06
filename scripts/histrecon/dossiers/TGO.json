@@ -1,0 +1,257 @@
+{
+ "country": "TGO",
+ "atomSet": "gb-adm1@2026-10-06",
+ "scope": {
+  "from": "1981-06-23",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Togo from Loi 81-9 (1981-06-23): five regions, unchanged since (later prefectures were all cut inside one region: Noyoulewa; statoids). Atoms: the five regions of 2017 (OpenStreetMap via geoBoundaries TGO ADM1). Before 1981-06-23 see TGO-regions-1960.json. ① Areas (atom / Wikipedia 2015): Centrale 13289/13317 km² = 0.998; Kara 11544/11738 km² = 0.983; Maritime 6346/6100 km² = 1.040; Plateaux 17264/16975 km² = 1.017; Savanes 8695/8470 km² = 1.027.",
+ "units": [
+  {
+   "id": "TGO:Centrale@1981",
+   "names": {
+    "en": "Centrale Region",
+    "ja": "中央州",
+    "local": "Région Centrale"
+   },
+   "spans": [
+    {
+     "from": "1981-06-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TGO-ADM1-44829518B22237151485853"
+     ],
+     "sources": [
+      {
+       "url": "https://publication.lecames.org/index.php/hum/article/download/483/328",
+       "title": "T. A. Noyoulewa (Université de Kara), « Le couple population / territoire dans les découpages administratifs au Togo », Revue CAMES",
+       "says": "Loi 60-4 (10 Feb 1960): four regions, 17 circonscriptions. Décret 65-148 (18 Sep 1965): five economic regions, Kara taken from three Centrale and one Savanes circonscription. Loi 81-9 (23 Jun 1981) moved Bassar and Bafilo to Kara.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://publication.lecames.org/index.php/hum/article/download/483/328",
+       "title": "T. A. Noyoulewa, « Le couple population / territoire … au Togo », Revue CAMES — sub-prefectures and the 2009 law",
+       "says": "Loi 81-9 made 9 posts sub-prefectures inside their prefectures (raised to prefectures in 1992); Loi 2009-027 created Anié from five Ogou cantons and the Plaine du Mô from Sotouboua cantons.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Prefectures_of_Togo&oldid=1363685402",
+       "title": "Wikipedia — Prefectures of Togo (oldid 1363685402)",
+       "says": "Lists the prefectures of each of the five regions (Savanes, Kara, Centrale, Plateaux, Maritime).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Togo&oldid=1261884885",
+       "title": "Wikipedia — Regions of Togo (oldid 1261884885)",
+       "says": "Five regions with areas: Centrale 13,317 km², Kara 11,738, Maritime 6,100, Plateaux 16,975, Savanes 8,470.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TGO:Kara@1981",
+   "names": {
+    "en": "Kara Region",
+    "ja": "カラ州",
+    "local": "Région de la Kara"
+   },
+   "spans": [
+    {
+     "from": "1981-06-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TGO-ADM1-44829518B37847489557890"
+     ],
+     "sources": [
+      {
+       "url": "https://publication.lecames.org/index.php/hum/article/download/483/328",
+       "title": "T. A. Noyoulewa (Université de Kara), « Le couple population / territoire dans les découpages administratifs au Togo », Revue CAMES",
+       "says": "Loi 60-4 (10 Feb 1960): four regions, 17 circonscriptions. Décret 65-148 (18 Sep 1965): five economic regions, Kara taken from three Centrale and one Savanes circonscription. Loi 81-9 (23 Jun 1981) moved Bassar and Bafilo to Kara.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://publication.lecames.org/index.php/hum/article/download/483/328",
+       "title": "T. A. Noyoulewa, « Le couple population / territoire … au Togo », Revue CAMES — sub-prefectures and the 2009 law",
+       "says": "Loi 81-9 made 9 posts sub-prefectures inside their prefectures (raised to prefectures in 1992); Loi 2009-027 created Anié from five Ogou cantons and the Plaine du Mô from Sotouboua cantons.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Prefectures_of_Togo&oldid=1363685402",
+       "title": "Wikipedia — Prefectures of Togo (oldid 1363685402)",
+       "says": "Lists the prefectures of each of the five regions (Savanes, Kara, Centrale, Plateaux, Maritime).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Togo&oldid=1261884885",
+       "title": "Wikipedia — Regions of Togo (oldid 1261884885)",
+       "says": "Five regions with areas: Centrale 13,317 km², Kara 11,738, Maritime 6,100, Plateaux 16,975, Savanes 8,470.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Loi 81-9 of 23 Jun 1981 (JORT 6 Jul 1981) moved Bassar (incl. later Dankpen) and Bafilo (= Assoli) from Centrale to Kara."
+    }
+   ]
+  },
+  {
+   "id": "TGO:Maritime@1981",
+   "names": {
+    "en": "Maritime Region",
+    "ja": "マリティーム州",
+    "local": "Région Maritime"
+   },
+   "spans": [
+    {
+     "from": "1981-06-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TGO-ADM1-44829518B32493797453601"
+     ],
+     "sources": [
+      {
+       "url": "https://publication.lecames.org/index.php/hum/article/download/483/328",
+       "title": "T. A. Noyoulewa (Université de Kara), « Le couple population / territoire dans les découpages administratifs au Togo », Revue CAMES",
+       "says": "Loi 60-4 (10 Feb 1960): four regions, 17 circonscriptions. Décret 65-148 (18 Sep 1965): five economic regions, Kara taken from three Centrale and one Savanes circonscription. Loi 81-9 (23 Jun 1981) moved Bassar and Bafilo to Kara.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://publication.lecames.org/index.php/hum/article/download/483/328",
+       "title": "T. A. Noyoulewa, « Le couple population / territoire … au Togo », Revue CAMES — sub-prefectures and the 2009 law",
+       "says": "Loi 81-9 made 9 posts sub-prefectures inside their prefectures (raised to prefectures in 1992); Loi 2009-027 created Anié from five Ogou cantons and the Plaine du Mô from Sotouboua cantons.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Togo&oldid=1261884885",
+       "title": "Wikipedia — Regions of Togo (oldid 1261884885)",
+       "says": "Five regions with areas: Centrale 13,317 km², Kara 11,738, Maritime 6,100, Plateaux 16,975, Savanes 8,470.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TGO:Plateaux@1981",
+   "names": {
+    "en": "Plateaux Region",
+    "ja": "プラトー州",
+    "local": "Région des Plateaux"
+   },
+   "spans": [
+    {
+     "from": "1981-06-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TGO-ADM1-44829518B26250432968900"
+     ],
+     "sources": [
+      {
+       "url": "https://publication.lecames.org/index.php/hum/article/download/483/328",
+       "title": "T. A. Noyoulewa (Université de Kara), « Le couple population / territoire dans les découpages administratifs au Togo », Revue CAMES",
+       "says": "Loi 60-4 (10 Feb 1960): four regions, 17 circonscriptions. Décret 65-148 (18 Sep 1965): five economic regions, Kara taken from three Centrale and one Savanes circonscription. Loi 81-9 (23 Jun 1981) moved Bassar and Bafilo to Kara.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://publication.lecames.org/index.php/hum/article/download/483/328",
+       "title": "T. A. Noyoulewa, « Le couple population / territoire … au Togo », Revue CAMES — sub-prefectures and the 2009 law",
+       "says": "Loi 81-9 made 9 posts sub-prefectures inside their prefectures (raised to prefectures in 1992); Loi 2009-027 created Anié from five Ogou cantons and the Plaine du Mô from Sotouboua cantons.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Togo&oldid=1261884885",
+       "title": "Wikipedia — Regions of Togo (oldid 1261884885)",
+       "says": "Five regions with areas: Centrale 13,317 km², Kara 11,738, Maritime 6,100, Plateaux 16,975, Savanes 8,470.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "TGO:Savanes@1981",
+   "names": {
+    "en": "Savanes Region",
+    "ja": "サバンナ州",
+    "local": "Région des Savanes"
+   },
+   "spans": [
+    {
+     "from": "1981-06-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "TGO-ADM1-44829518B73084759902551"
+     ],
+     "sources": [
+      {
+       "url": "https://publication.lecames.org/index.php/hum/article/download/483/328",
+       "title": "T. A. Noyoulewa (Université de Kara), « Le couple population / territoire dans les découpages administratifs au Togo », Revue CAMES",
+       "says": "Loi 60-4 (10 Feb 1960): four regions, 17 circonscriptions. Décret 65-148 (18 Sep 1965): five economic regions, Kara taken from three Centrale and one Savanes circonscription. Loi 81-9 (23 Jun 1981) moved Bassar and Bafilo to Kara.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://publication.lecames.org/index.php/hum/article/download/483/328",
+       "title": "T. A. Noyoulewa, « Le couple population / territoire … au Togo », Revue CAMES — sub-prefectures and the 2009 law",
+       "says": "Loi 81-9 made 9 posts sub-prefectures inside their prefectures (raised to prefectures in 1992); Loi 2009-027 created Anié from five Ogou cantons and the Plaine du Mô from Sotouboua cantons.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Togo&oldid=1261884885",
+       "title": "Wikipedia — Regions of Togo (oldid 1261884885)",
+       "says": "Five regions with areas: Centrale 13,317 km², Kara 11,738, Maritime 6,100, Plateaux 16,975, Savanes 8,470.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1981-06-23",
+   "precision": "day",
+   "what": "Loi 81-9: circonscriptions become prefectures; Bassar and Bafilo moved from Centrale to Kara",
+   "sources": [
+    {
+     "url": "https://publication.lecames.org/index.php/hum/article/download/483/328",
+     "title": "T. A. Noyoulewa (Université de Kara), « Le couple population / territoire dans les découpages administratifs au Togo », Revue CAMES",
+     "says": "Loi 60-4 (10 Feb 1960): four regions, 17 circonscriptions. Décret 65-148 (18 Sep 1965): five economic regions, Kara taken from three Centrale and one Savanes circonscription. Loi 81-9 (23 Jun 1981) moved Bassar and Bafilo to Kara.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1990-01-01",
+   "n": 5,
+   "sources": [
+    {
+     "url": "https://publication.lecames.org/index.php/hum/article/download/483/328",
+     "title": "T. A. Noyoulewa (Université de Kara), « Le couple population / territoire dans les découpages administratifs au Togo », Revue CAMES",
+     "says": "Loi 60-4 (10 Feb 1960): four regions, 17 circonscriptions. Décret 65-148 (18 Sep 1965): five economic regions, Kara taken from three Centrale and one Savanes circonscription. Loi 81-9 (23 Jun 1981) moved Bassar and Bafilo to Kara.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "2019-12-31",
+   "n": 5,
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Togo&oldid=1261884885",
+     "title": "Wikipedia — Regions of Togo (oldid 1261884885)",
+     "says": "Five regions with areas: Centrale 13,317 km², Kara 11,738, Maritime 6,100, Plateaux 16,975, Savanes 8,470.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": []
+}

@@ -918,7 +918,8 @@
       "why": "Hizam al-Akhdar, Qubba, Ajdabiya/Wahat, Ghadames/Nalut, Mizda, Gharyan, Yafran, Tarhuna-Msallata, Bani Walid, Sabratha-Sorman, Tajura, Qatrun, Jaghbub, Marada cut across the 2006 shabiyat (e.g. Bani Walid is now inside Misrata, Mizda inside Jabal al Gharbi); start date itself uncertain (statoids ~2001, ISO list 2002).",
       "checked": [
         "statoids.com/uly.html (~2001 table, ~2002 note)",
-        "en.wikipedia Districts of Libya oldid 1375132041 (32-district table citing gpc.gov.ly 2006 archive)"
+        "en.wikipedia Districts of Libya oldid 1375132041 (32-district table citing gpc.gov.ly 2006 archive)",
+        "geoBoundaries gbOpen LBY (manifest read 2026-10-06): ADM1 only, and that ADM1 is Natural Earth itself — no baladiya/muhafaza/mahalla atoms; OpenHistoricalMap has no Libyan first-level relations (Overpass 2026-10-06)"
       ],
       "needs": "Libyan basic-people's-congress (mahalla) geometry for 2001-2006 — none open"
     },
@@ -929,7 +930,8 @@
       "why": "None coincides with the 2006 shabiyat boundaries along its whole length (e.g. 1963 Benghazi included Ajdabiya and Kufra but its line with Sirte differs); dates of several are approximate and sources disagree (statoids gives two contradictory 1995 lists).",
       "checked": [
         "statoids.com/uly.html",
-        "en.wikipedia Districts of Libya oldid 1375132041"
+        "en.wikipedia Districts of Libya oldid 1375132041",
+        "geoBoundaries gbOpen LBY (manifest read 2026-10-06): ADM1 only, and that ADM1 is Natural Earth itself — no baladiya/muhafaza/mahalla atoms; OpenHistoricalMap has no Libyan first-level relations (Overpass 2026-10-06)"
       ],
       "needs": "historical baladiya/muhafaza geometry — none open"
     }

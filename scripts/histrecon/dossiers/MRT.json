@@ -5,7 +5,7 @@
     "from": "1990-09-10",
     "to": "2019-12-31"
   },
-  "polityNote": "Islamic Republic of Mauritania throughout the scope (Tiris el Gharbia, held 1976-1979, lies outside both the scope and the MRT atoms). NE depicts the 13-unit layout of 1990-09-10 → 2014-11-25 (single Nouakchott wilaya).",
+  "polityNote": "Islamic Republic of Mauritania throughout the scope (Tiris el Gharbia, held 1976-1979, lies outside both the scope and the MRT atoms). NE depicts the 13-unit layout of 1990-09-10 → 2014-11-25 (single Nouakchott wilaya). Corrected 2026-10-06: Dakhlet Nouadhibou and Inchiri end at the Chami decree (2013-05-06) and Trarza at the Benichab moughataa (2018-02), whose lines the ne-admin1 atoms do not carry. Areas measured 2026-10-06: before Chami, Dakhlet Nouadhibou was 22,300 km² and Inchiri 46,800 (Statoids/Toupet; the ne-admin1 atoms give 17,151 and 44,779); today Dakhlet Nouadhibou is 37,793 and Inchiri 31,582 (de.wikipedia; geoBoundaries MRT ADM2 2020 gives 37,551 and 30,712), and 71 % of the geoBoundaries Chami moughataa lies inside the ne-admin1 Inchiri atom. So the 2013 moughataa moved about 15,000 km² from Inchiri to Dakhlet Nouadhibou; the 2018 Benichab moughataa took about a quarter of its 15,079 km² from Trarza (24 % of it lies in the ne-admin1 Trarza atom).",
   "units": [
     {
       "id": "MRT:Hodh-Ech-Chargui@1990",
@@ -189,7 +189,7 @@
         {
           "from": "1990-09-10",
           "precision": "day",
-          "to": null,
+          "to": "2018-02",
           "atoms": [
             "MRT-2788"
           ],
@@ -205,9 +205,15 @@
               "title": "Departments of Mauritania (Statoids)",
               "says": "Department change list: 1990-09-10 Nouakchott nine departments; 2010 N'Beiket Lehwach (within Hodh ech Chargui); 2013 Chami probably split from Nouadhibou.",
               "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://de.wikipedia.org/w/index.php?oldid=260306986",
+              "title": "Akjoujt (Département) — Wikipedia (de)",
+              "says": "Akjoujt once covered all of Inchiri; in February 2018 Benichab moughataa was formed from its west plus the part of Trarza north of Nouakchott.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "No inter-wilaya change in the region and department change lists between 1990 and 2019 except the 2014 Nouakchott split."
+          "dateNote": "No inter-wilaya change 1990 → 2018 in the change lists other than the 2014 Nouakchott split (inside the Nouakchott atom); the Benichab moughataa (February 2018) took the part of Trarza north of Nouakchott into Inchiri (see unresolved)."
         }
       ]
     },
@@ -257,7 +263,7 @@
         {
           "from": "1990-09-10",
           "precision": "day",
-          "to": null,
+          "to": "2013-05-06",
           "atoms": [
             "MRT-2785"
           ],
@@ -275,19 +281,19 @@
               "accessed": "2026-10-05"
             },
             {
-              "url": "https://en.wikipedia.org/w/index.php?oldid=1301636027",
-              "title": "Chami (National Assembly district) — Wikipedia",
-              "says": "Chami district (Dakhlet Nouadhibou wilaya) created 2013 from the Nouadhibou district.",
-              "accessed": "2026-10-05"
-            },
-            {
               "url": "https://horizon.documentation.ird.fr/exl-doc/pleins_textes/divers21-04/010080735.pdf",
               "title": "Chami, ville nouvelle et ville de l'or (L'Espace Politique 38, 2019)",
               "says": "Chami founded 2012 at the confines of Inchiri and Dakhlet Nouadhibou; erected a commune and department chef-lieu a year later.",
               "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://de.wikipedia.org/w/index.php?oldid=260236101",
+              "title": "Chami (Département) — Wikipedia (de)",
+              "says": "Chami moughataa set up by decree of 6 May 2013; 22,668 km², the south and east of Dakhlet Nouadhibou, bordering Akjoujt and Benichab (Inchiri).",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "No inter-wilaya change in the region and department change lists between 1990 and 2019 except the 2014 Nouakchott split."
+          "dateNote": "No inter-wilaya change 1990 → 2013 in the change lists; the Chami moughataa (decree 2013-05-06) moved the Dakhlet Nouadhibou/Inchiri line, which the ne-admin1 atoms do not follow afterwards (see unresolved)."
         }
       ]
     },
@@ -405,7 +411,7 @@
         {
           "from": "1990-09-10",
           "precision": "day",
-          "to": null,
+          "to": "2013-05-06",
           "atoms": [
             "MRT-2786"
           ],
@@ -423,19 +429,19 @@
               "accessed": "2026-10-05"
             },
             {
-              "url": "https://en.wikipedia.org/w/index.php?oldid=1301636027",
-              "title": "Chami (National Assembly district) — Wikipedia",
-              "says": "Chami district (Dakhlet Nouadhibou wilaya) created 2013 from the Nouadhibou district.",
-              "accessed": "2026-10-05"
-            },
-            {
               "url": "https://horizon.documentation.ird.fr/exl-doc/pleins_textes/divers21-04/010080735.pdf",
               "title": "Chami, ville nouvelle et ville de l'or (L'Espace Politique 38, 2019)",
               "says": "Chami founded 2012 at the confines of Inchiri and Dakhlet Nouadhibou; erected a commune and department chef-lieu a year later.",
               "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://de.wikipedia.org/w/index.php?oldid=260236101",
+              "title": "Chami (Département) — Wikipedia (de)",
+              "says": "Chami moughataa set up by decree of 6 May 2013; 22,668 km², the south and east of Dakhlet Nouadhibou, bordering Akjoujt and Benichab (Inchiri).",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "No inter-wilaya change in the region and department change lists between 1990 and 2019 except the 2014 Nouakchott split."
+          "dateNote": "No inter-wilaya change 1990 → 2013 in the change lists; the Chami moughataa (decree 2013-05-06) moved the Dakhlet Nouadhibou/Inchiri line, which the ne-admin1 atoms do not follow afterwards (see unresolved)."
         }
       ]
     },
@@ -536,6 +542,50 @@
           "accessed": "2026-10-05"
         }
       ]
+    },
+    {
+      "date": "2013-05-06",
+      "precision": "day",
+      "what": "Decree creating the Chami moughataa in Dakhlet Nouadhibou, on land taken largely from Inchiri",
+      "sources": [
+        {
+          "url": "https://de.wikipedia.org/w/index.php?oldid=260236101",
+          "title": "Chami (Département) — Wikipedia (de)",
+          "says": "Chami moughataa set up by decree of 6 May 2013; 22,668 km², the south and east of Dakhlet Nouadhibou, bordering Akjoujt and Benichab (Inchiri).",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://www.statoids.com/ymr.html",
+          "title": "Departments of Mauritania (Statoids)",
+          "says": "Department change list: 2013-05-06 Chami moughataa formed (probably from Nouadhibou).",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://www.statoids.com/umr.html",
+          "title": "Regions of Mauritania (Statoids)",
+          "says": "Areas (from Toupet, Atlas de la Mauritanie, 1977): Dakhlet Nouadhibou 22,300 km², Inchiri 46,800 km²; Nouakchott Nord 306, Ouest 146, Sud 252 km².",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "2018-02",
+      "precision": "month",
+      "what": "Benichab moughataa (Inchiri) formed from western Akjoujt and the part of Trarza north of Nouakchott",
+      "sources": [
+        {
+          "url": "https://de.wikipedia.org/w/index.php?oldid=260807307",
+          "title": "Benichab (Département) — Wikipedia (de)",
+          "says": "Formed February 2018 from western Akjoujt and the part of Trarza north of Nouakchott; borders Nouakchott Ouest.",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://de.wikipedia.org/w/index.php?oldid=260306986",
+          "title": "Akjoujt (Département) — Wikipedia (de)",
+          "says": "Akjoujt once covered all of Inchiri; in February 2018 Benichab moughataa was formed from its west plus the part of Trarza north of Nouakchott.",
+          "accessed": "2026-10-06"
+        }
+      ]
     }
   ],
   "counts": [
@@ -566,9 +616,10 @@
       "checked": [
         "décret 2014-182 bis (finances.gov.mr)",
         "statoids.com/umr.html",
-        "statoids.com/ymr.html"
+        "statoids.com/ymr.html",
+        "geoBoundaries MRT ADM2 2020 (WFP/OCHA ROWCA): has the nine moughataas, but their union is 360 km² against 704 km² (Statoids) and 218.7 km² for Nouakchott Nord alone vs 96 km² in the atoms, 624.3 km² for Nouakchott Ouest vs 122 km² (de.wikipedia) — the 2020 atoms do not carry the official wilaya lines"
       ],
-      "needs": "moughataa atoms for Nouakchott (geoBoundaries MRT ADM2, CC BY 4.0)"
+      "needs": "the annex of décret 2014-182 bis with the wilaya limits, or moughataa atoms that reproduce the official Nouakchott limits"
     },
     {
       "what": "Mauritania before 1990-09-10 (12 regions + Nouakchott district; Tiris Zemmour ~1962, Inchiri date unknown)",
@@ -580,9 +631,63 @@
         "statoids.com/ymr.html",
         "en.wikipedia Regions of Mauritania",
         "en.wikipedia Inchiri region",
-        "Persée REMMM 1989 «Centre et régions en Mauritanie»"
+        "Persée REMMM 1989 «Centre et régions en Mauritanie»",
+        "laws 68-242 and 68-243 of 30 Jul 1968 (territorial administration; regions and the Nouakchott district) — named in the literature, text not found online",
+        "geoBoundaries MRT ADM2 2020: Inchiri/Dakhlet Nouadhibou/Trarza/Nouakchott lines were redrawn in 2013 and 2018, so the 2020 moughataas cannot carry the pre-1990 west either",
+        "Müller-Crepon DVN/9JI06R col_units_full (Mauritania only to 1937)",
+        "Persée REMMM 1989 (12 regions + district in 1989, no dates)"
       ],
       "needs": "ordinances on the regions (e.g. ordinance 79-026 of 20 Feb 1979 on regions and the Nouakchott district) with their annexes"
+    },
+    {
+      "what": "Dakhlet Nouadhibou 2013-05-06 → 2019-12-31",
+      "unit": "MRT:Dakhlet-Nouadhibou@2013",
+      "atoms": [
+        "MRT-2785"
+      ],
+      "from": "2013-05-06",
+      "to": null,
+      "why": "The Chami moughataa (decree 2013-05-06) moved about 15,000 km² of Inchiri into Dakhlet Nouadhibou; the new line runs inside the ne-admin1 Inchiri atom. Areas measured 2026-10-06: before Chami, Dakhlet Nouadhibou was 22,300 km² and Inchiri 46,800 (Statoids/Toupet; the ne-admin1 atoms give 17,151 and 44,779); today Dakhlet Nouadhibou is 37,793 and Inchiri 31,582 (de.wikipedia; geoBoundaries MRT ADM2 2020 gives 37,551 and 30,712), and 71 % of the geoBoundaries Chami moughataa lies inside the ne-admin1 Inchiri atom. So the 2013 moughataa moved about 15,000 km² from Inchiri to Dakhlet Nouadhibou; the 2018 Benichab moughataa took about a quarter of its 15,079 km² from Trarza (24 % of it lies in the ne-admin1 Trarza atom).",
+      "checked": [
+        "de.wikipedia Chami (Département) oldid 260236101",
+        "de.wikipedia Dakhlet Nouadhibou oldid 259596842",
+        "de.wikipedia Inchiri oldid 259818517",
+        "statoids.com/umr.html and ymr.html",
+        "geoBoundaries MRT ADM2 2020 (Chami 71 % inside the ne-admin1 Inchiri atom)"
+      ],
+      "needs": "moughataa atoms for the whole country after 2013 that carry the Nouakchott wilaya lines too (geoBoundaries MRT ADM2 2020 does not, see the Nouakchott entry); then the country can be drawn from 2013 on one atom set"
+    },
+    {
+      "what": "Inchiri 2013-05-06 → 2019-12-31 (withheld with Dakhlet Nouadhibou; Benichab 2018)",
+      "unit": "MRT:Inchiri@2013",
+      "atoms": [
+        "MRT-2786"
+      ],
+      "from": "2013-05-06",
+      "to": null,
+      "why": "Inchiri lost the Chami part in 2013 and gained the part of Trarza north of Nouakchott with the Benichab moughataa in February 2018; both lines run inside ne-admin1 atoms.",
+      "checked": [
+        "de.wikipedia Akjoujt (Département) oldid 260306986",
+        "de.wikipedia Benichab (Département) oldid 260807307",
+        "Conseil des ministres of 2018-01-25 adopting the draft decree on Benichab moughataa (seen only in a web-search summary of ami.mr; communiqué not opened)"
+      ],
+      "needs": "as above"
+    },
+    {
+      "what": "Trarza 2018-02 → 2019-12-31 (Benichab)",
+      "unit": "MRT:Trarza@2018",
+      "atoms": [
+        "MRT-2788"
+      ],
+      "from": "2018-02",
+      "to": null,
+      "why": "The Benichab moughataa took the part of Trarza north of Nouakchott into Inchiri; the line runs inside the ne-admin1 Trarza atom. Month only: the draft decree was adopted 2018-01-25 and the moughataa is dated February 2018.",
+      "checked": [
+        "de.wikipedia Benichab (Département) oldid 260807307",
+        "de.wikipedia Akjoujt (Département) oldid 260306986",
+        "geoBoundaries MRT ADM2 2020 (Benichab 24 % inside the ne-admin1 Trarza atom)"
+      ],
+      "needs": "the Benichab decree with its limits, and moughataa atoms carrying them"
     }
   ]
 }

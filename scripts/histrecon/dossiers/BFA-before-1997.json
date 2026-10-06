@@ -1,0 +1,1254 @@
+{
+  "country": "BFA",
+  "atomSet": "gb-adm2@2026-10-06",
+  "scope": {
+    "from": "1960-08-05",
+    "to": "1996-12-31"
+  },
+  "polityNote": "Upper Volta (Burkina Faso from 1984-08-04), independence 1960-08-05 to the day before the ne-admin1 dossier (BFA.json, 1997-01). Atoms: geoBoundaries BFA ADM2 2017 (World Bank, CC BY 4.0) — the 45 provinces of 1997 onward. A 1984 province is drawn only where every 1996 province formed from it lists it alone as its former province (Statoids «Formerly»); the 15 provinces redistributed among several 1996 provinces need department atoms. ⚠ geoBoundaries BFA ADM3 (2007, the department level) cannot serve: its names do not match its shapes (2026-10-06: the shape named Ouagadougou lies at 2.63°W 11.30°N, about 150 km from the city; the seven shapes inside the 2017 Kadiogo province are named Bekuy, Bereba, Boni, Koussouka, Ndorola, Thyou, Zogore, departments of five other provinces). ① check: union areas against the 1985 areas (Statoids, 1984 table) — Bam 4,026/4,017 (1.00), Ganzourgou 4,182/4,087 (1.02), Gnagna 8,561/8,600 (1.00), Kossi 13,434/13,177 (1.02), Naouri 3,913/3,843 (1.02), Oudalan 10,045/10,046 (1.00), Passoré 3,996/4,078 (0.98), Poni 10,338/10,361 (1.00), Sanguié 5,131/5,165 (0.99), Sanmatenga 9,309/9,213 (1.01), Séno 13,570/13,473 (1.01), Soum 12,673/13,350 (0.95; fr.wikipedia's 1985 density gives 12,226 → 1.04), Sourou 9,780/9,487 (1.03), Tapoa 14,861/14,780 (1.01), Yatenga 12,473/12,292 (1.01); 1974 departments against the 1975 areas — Sahel 36,288/36,869 (0.98), Nord 12,473/12,293 (1.01).",
+  "units": [
+    {
+      "id": "BFA:dept-Sahel@1974",
+      "names": {
+        "en": "Sahel Department",
+        "ja": "サヘル県（1974）",
+        "local": "Département du Sahel"
+      },
+      "spans": [
+        {
+          "from": "1974-06-07",
+          "precision": "day",
+          "to": "1984-08-15",
+          "atoms": [
+            "BFA-ADM2-67063806B71789570765121",
+            "BFA-ADM2-67063806B86156352342594",
+            "BFA-ADM2-67063806B32901667163906",
+            "BFA-ADM2-67063806B70466570504467"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1960 four departments; ~1967 Sahel; 1974-06-07 ten departments (with the 1984 provinces formed from each); 1984-08-15 thirty provinces (with 1985 areas); 1997-01 fifteen new provinces.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "For each of the 45 provinces, the 1984 province(s) whose territory it corresponds to («Formerly»).",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Sahel after Nord was split off (1974-06-07); became the provinces Oudalan, Séno and Soum (1984-08-15), whose successors are Oudalan, Séno, Yagha and Soum. Capital Dori."
+        }
+      ]
+    },
+    {
+      "id": "BFA:dept-Nord@1974",
+      "names": {
+        "en": "Nord Department",
+        "ja": "ノール県（1974）",
+        "local": "Département du Nord"
+      },
+      "spans": [
+        {
+          "from": "1974-06-07",
+          "precision": "day",
+          "to": "1984-08-15",
+          "atoms": [
+            "BFA-ADM2-67063806B65280418727437",
+            "BFA-ADM2-67063806B11896750408185",
+            "BFA-ADM2-67063806B77925181323544"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1960 four departments; ~1967 Sahel; 1974-06-07 ten departments (with the 1984 provinces formed from each); 1984-08-15 thirty provinces (with 1985 areas); 1997-01 fifteen new provinces.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "For each of the 45 provinces, the 1984 province(s) whose territory it corresponds to («Formerly»).",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Nord = exactly the part of Sahel taken from Volta-Noire around 1967 (Statoids); became Yatenga province in 1984 (successors Yatenga, Loroum, Zondoma). Capital Ouahigouya."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Bam@1984",
+      "names": {
+        "en": "Bam Province",
+        "ja": "バム県",
+        "local": "Province du Bam"
+      },
+      "spans": [
+        {
+          "from": "1984-08-15",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BFA-ADM2-67063806B14953893434288"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1960 four departments; ~1967 Sahel; 1974-06-07 ten departments (with the 1984 provinces formed from each); 1984-08-15 thirty provinces (with 1985 areas); 1997-01 fifteen new provinces.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "For each of the 45 provinces, the 1984 province(s) whose territory it corresponds to («Formerly»).",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Province of ordinance 1984-08-15; unchanged by the 1996 reform (the 1996 province lists only it as its former province, and no other 1996 province lists it)."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Ganzourgou@1984",
+      "names": {
+        "en": "Ganzourgou Province",
+        "ja": "ガンズルグ県",
+        "local": "Province du Ganzourgou"
+      },
+      "spans": [
+        {
+          "from": "1984-08-15",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BFA-ADM2-67063806B50041184778807"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1960 four departments; ~1967 Sahel; 1974-06-07 ten departments (with the 1984 provinces formed from each); 1984-08-15 thirty provinces (with 1985 areas); 1997-01 fifteen new provinces.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "For each of the 45 provinces, the 1984 province(s) whose territory it corresponds to («Formerly»).",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Province of ordinance 1984-08-15; unchanged by the 1996 reform (the 1996 province lists only it as its former province, and no other 1996 province lists it)."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Gnagna@1984",
+      "names": {
+        "en": "Gnagna Province",
+        "ja": "ニャニャ県",
+        "local": "Province du Gnagna"
+      },
+      "spans": [
+        {
+          "from": "1984-08-15",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BFA-ADM2-67063806B53557788130503"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1960 four departments; ~1967 Sahel; 1974-06-07 ten departments (with the 1984 provinces formed from each); 1984-08-15 thirty provinces (with 1985 areas); 1997-01 fifteen new provinces.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "For each of the 45 provinces, the 1984 province(s) whose territory it corresponds to («Formerly»).",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Province of ordinance 1984-08-15; unchanged by the 1996 reform (the 1996 province lists only it as its former province, and no other 1996 province lists it)."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Naouri@1984",
+      "names": {
+        "en": "Naouri Province",
+        "ja": "ナウリ県",
+        "local": "Province du Naouri"
+      },
+      "spans": [
+        {
+          "from": "1984-08-15",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BFA-ADM2-67063806B90465948144495"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1960 four departments; ~1967 Sahel; 1974-06-07 ten departments (with the 1984 provinces formed from each); 1984-08-15 thirty provinces (with 1985 areas); 1997-01 fifteen new provinces.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "For each of the 45 provinces, the 1984 province(s) whose territory it corresponds to («Formerly»).",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Province of ordinance 1984-08-15; unchanged by the 1996 reform (the 1996 province lists only it as its former province, and no other 1996 province lists it)."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Oudalan@1984",
+      "names": {
+        "en": "Oudalan Province",
+        "ja": "ウダラン県",
+        "local": "Province de l'Oudalan"
+      },
+      "spans": [
+        {
+          "from": "1984-08-15",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BFA-ADM2-67063806B71789570765121"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1960 four departments; ~1967 Sahel; 1974-06-07 ten departments (with the 1984 provinces formed from each); 1984-08-15 thirty provinces (with 1985 areas); 1997-01 fifteen new provinces.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "For each of the 45 provinces, the 1984 province(s) whose territory it corresponds to («Formerly»).",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Province of ordinance 1984-08-15; unchanged by the 1996 reform (the 1996 province lists only it as its former province, and no other 1996 province lists it)."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Passoré@1984",
+      "names": {
+        "en": "Passoré Province",
+        "ja": "パソレ県",
+        "local": "Province du Passoré"
+      },
+      "spans": [
+        {
+          "from": "1984-08-15",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BFA-ADM2-67063806B82563699600395"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1960 four departments; ~1967 Sahel; 1974-06-07 ten departments (with the 1984 provinces formed from each); 1984-08-15 thirty provinces (with 1985 areas); 1997-01 fifteen new provinces.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "For each of the 45 provinces, the 1984 province(s) whose territory it corresponds to («Formerly»).",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Province of ordinance 1984-08-15; unchanged by the 1996 reform (the 1996 province lists only it as its former province, and no other 1996 province lists it)."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Sanguié@1984",
+      "names": {
+        "en": "Sanguié Province",
+        "ja": "サンギエ県",
+        "local": "Province du Sanguié"
+      },
+      "spans": [
+        {
+          "from": "1984-08-15",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BFA-ADM2-67063806B51289395143870"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1960 four departments; ~1967 Sahel; 1974-06-07 ten departments (with the 1984 provinces formed from each); 1984-08-15 thirty provinces (with 1985 areas); 1997-01 fifteen new provinces.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "For each of the 45 provinces, the 1984 province(s) whose territory it corresponds to («Formerly»).",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Province of ordinance 1984-08-15; unchanged by the 1996 reform (the 1996 province lists only it as its former province, and no other 1996 province lists it)."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Sanmatenga@1984",
+      "names": {
+        "en": "Sanmatenga Province",
+        "ja": "サンマテンガ県",
+        "local": "Province du Sanmatenga"
+      },
+      "spans": [
+        {
+          "from": "1984-08-15",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BFA-ADM2-67063806B54692073140068"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1960 four departments; ~1967 Sahel; 1974-06-07 ten departments (with the 1984 provinces formed from each); 1984-08-15 thirty provinces (with 1985 areas); 1997-01 fifteen new provinces.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "For each of the 45 provinces, the 1984 province(s) whose territory it corresponds to («Formerly»).",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Province of ordinance 1984-08-15; unchanged by the 1996 reform (the 1996 province lists only it as its former province, and no other 1996 province lists it)."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Soum@1984",
+      "names": {
+        "en": "Soum Province",
+        "ja": "スム県",
+        "local": "Province du Soum"
+      },
+      "spans": [
+        {
+          "from": "1984-08-15",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BFA-ADM2-67063806B70466570504467"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1960 four departments; ~1967 Sahel; 1974-06-07 ten departments (with the 1984 provinces formed from each); 1984-08-15 thirty provinces (with 1985 areas); 1997-01 fifteen new provinces.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "For each of the 45 provinces, the 1984 province(s) whose territory it corresponds to («Formerly»).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=234866630",
+              "title": "Djelgodji (province du Soum) — Wikipédia",
+              "says": "1985: 186,812 inhabitants at 15.28/km²; 1996: 252,993 at 20.70/km² — the same area (about 12,220 km²) in both censuses.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Province of ordinance 1984-08-15; unchanged by the 1996 reform (the 1996 province lists only it as its former province, and no other 1996 province lists it)."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Tapoa@1984",
+      "names": {
+        "en": "Tapoa Province",
+        "ja": "タポア県",
+        "local": "Province du Tapoa"
+      },
+      "spans": [
+        {
+          "from": "1984-08-15",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "BFA-ADM2-67063806B60723724569169"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1960 four departments; ~1967 Sahel; 1974-06-07 ten departments (with the 1984 provinces formed from each); 1984-08-15 thirty provinces (with 1985 areas); 1997-01 fifteen new provinces.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "For each of the 45 provinces, the 1984 province(s) whose territory it corresponds to («Formerly»).",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Province of ordinance 1984-08-15; unchanged by the 1996 reform (the 1996 province lists only it as its former province, and no other 1996 province lists it)."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Kossi@1984",
+      "names": {
+        "en": "Kossi Province",
+        "ja": "コッシ県",
+        "local": "Province du Kossi"
+      },
+      "spans": [
+        {
+          "from": "1984-08-15",
+          "precision": "day",
+          "to": "1995",
+          "atoms": [
+            "BFA-ADM2-67063806B77397496256894",
+            "BFA-ADM2-67063806B90065327421296"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1960 four departments; ~1967 Sahel; 1974-06-07 ten departments (with the 1984 provinces formed from each); 1984-08-15 thirty provinces (with 1985 areas); 1997-01 fifteen new provinces.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "For each of the 45 provinces, the 1984 province(s) whose territory it corresponds to («Formerly»).",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Province of ordinance 1984-08-15; its 1996 successors Kossi, Banwa list only it as their former province. Ends at the earliest date given for the 15 new provinces (1995, fr.wikipedia; Statoids gives 1997-01) — the window is unresolved."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Poni@1984",
+      "names": {
+        "en": "Poni Province",
+        "ja": "ポニ県",
+        "local": "Province du Poni"
+      },
+      "spans": [
+        {
+          "from": "1984-08-15",
+          "precision": "day",
+          "to": "1995",
+          "atoms": [
+            "BFA-ADM2-67063806B8041269423759",
+            "BFA-ADM2-67063806B78350075830190"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1960 four departments; ~1967 Sahel; 1974-06-07 ten departments (with the 1984 provinces formed from each); 1984-08-15 thirty provinces (with 1985 areas); 1997-01 fifteen new provinces.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "For each of the 45 provinces, the 1984 province(s) whose territory it corresponds to («Formerly»).",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Province of ordinance 1984-08-15; its 1996 successors Poni, Noumbiel list only it as their former province. Ends at the earliest date given for the 15 new provinces (1995, fr.wikipedia; Statoids gives 1997-01) — the window is unresolved."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Séno@1984",
+      "names": {
+        "en": "Séno Province",
+        "ja": "セノ県",
+        "local": "Province du Séno"
+      },
+      "spans": [
+        {
+          "from": "1984-08-15",
+          "precision": "day",
+          "to": "1995",
+          "atoms": [
+            "BFA-ADM2-67063806B86156352342594",
+            "BFA-ADM2-67063806B32901667163906"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1960 four departments; ~1967 Sahel; 1974-06-07 ten departments (with the 1984 provinces formed from each); 1984-08-15 thirty provinces (with 1985 areas); 1997-01 fifteen new provinces.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "For each of the 45 provinces, the 1984 province(s) whose territory it corresponds to («Formerly»).",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Province of ordinance 1984-08-15; its 1996 successors Seno, Yagha list only it as their former province. Ends at the earliest date given for the 15 new provinces (1995, fr.wikipedia; Statoids gives 1997-01) — the window is unresolved."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Sourou@1984",
+      "names": {
+        "en": "Sourou Province",
+        "ja": "スル県",
+        "local": "Province du Sourou"
+      },
+      "spans": [
+        {
+          "from": "1984-08-15",
+          "precision": "day",
+          "to": "1995",
+          "atoms": [
+            "BFA-ADM2-67063806B20155029653315",
+            "BFA-ADM2-67063806B13297228427715"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1960 four departments; ~1967 Sahel; 1974-06-07 ten departments (with the 1984 provinces formed from each); 1984-08-15 thirty provinces (with 1985 areas); 1997-01 fifteen new provinces.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "For each of the 45 provinces, the 1984 province(s) whose territory it corresponds to («Formerly»).",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Province of ordinance 1984-08-15; its 1996 successors Sourou, Nayala list only it as their former province. Ends at the earliest date given for the 15 new provinces (1995, fr.wikipedia; Statoids gives 1997-01) — the window is unresolved."
+        }
+      ]
+    },
+    {
+      "id": "BFA:prov-Yatenga@1984",
+      "names": {
+        "en": "Yatenga Province",
+        "ja": "ヤテンガ県",
+        "local": "Province du Yatenga"
+      },
+      "spans": [
+        {
+          "from": "1984-08-15",
+          "precision": "day",
+          "to": "1995",
+          "atoms": [
+            "BFA-ADM2-67063806B65280418727437",
+            "BFA-ADM2-67063806B11896750408185",
+            "BFA-ADM2-67063806B77925181323544"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ubf.html",
+              "title": "Regions of Burkina Faso (Statoids)",
+              "says": "Change list: 1960 four departments; ~1967 Sahel; 1974-06-07 ten departments (with the 1984 provinces formed from each); 1984-08-15 thirty provinces (with 1985 areas); 1997-01 fifteen new provinces.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/ybf.html",
+              "title": "Provinces of Burkina Faso (Statoids)",
+              "says": "For each of the 45 provinces, the 1984 province(s) whose territory it corresponds to («Formerly»).",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Province of ordinance 1984-08-15; its 1996 successors Yatenga, Loroum, Zondoma list only it as their former province. Ends at the earliest date given for the 15 new provinces (1995, fr.wikipedia; Statoids gives 1997-01) — the window is unresolved."
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1974-06-07",
+      "precision": "day",
+      "what": "Ten departments: Centre-Est, Centre-Nord, Centre-Ouest, Nord and Sud-Ouest split from the older departments",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ubf.html",
+          "title": "Regions of Burkina Faso (Statoids)",
+          "says": "Change list: 1960 four departments; ~1967 Sahel; 1974-06-07 ten departments (with the 1984 provinces formed from each); 1984-08-15 thirty provinces (with 1985 areas); 1997-01 fifteen new provinces.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "1984-08-15",
+      "precision": "day",
+      "what": "The ten departments reorganised into thirty provinces",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ubf.html",
+          "title": "Regions of Burkina Faso (Statoids)",
+          "says": "Change list: 1960 four departments; ~1967 Sahel; 1974-06-07 ten departments (with the 1984 provinces formed from each); 1984-08-15 thirty provinces (with 1985 areas); 1997-01 fifteen new provinces.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "1995",
+      "precision": "year",
+      "what": "Fifteen new provinces (from 1995 to 1997-01 depending on the source)",
+      "sources": [
+        {
+          "url": "https://fr.wikipedia.org/w/index.php?oldid=235692967",
+          "title": "Provinces du Burkina Faso — Wikipédia",
+          "says": "The list grew from 30 to 45 provinces when 15 populous departments were made separate provinces (dated 1995 there).",
+          "accessed": "2026-10-06"
+        },
+        {
+          "url": "https://www.statoids.com/ubf.html",
+          "title": "Regions of Burkina Faso (Statoids)",
+          "says": "Change list: 1960 four departments; ~1967 Sahel; 1974-06-07 ten departments (with the 1984 provinces formed from each); 1984-08-15 thirty provinces (with 1985 areas); 1997-01 fifteen new provinces.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "1960-08-05",
+      "n": 4,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ubf.html",
+          "title": "Regions of Burkina Faso (Statoids)",
+          "says": "Change list: 1960 four departments; ~1967 Sahel; 1974-06-07 ten departments (with the 1984 provinces formed from each); 1984-08-15 thirty provinces (with 1985 areas); 1997-01 fifteen new provinces.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "1974-06-07",
+      "n": 10,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ubf.html",
+          "title": "Regions of Burkina Faso (Statoids)",
+          "says": "Change list: 1960 four departments; ~1967 Sahel; 1974-06-07 ten departments (with the 1984 provinces formed from each); 1984-08-15 thirty provinces (with 1985 areas); 1997-01 fifteen new provinces.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    },
+    {
+      "date": "1984-08-15",
+      "n": 30,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ubf.html",
+          "title": "Regions of Burkina Faso (Statoids)",
+          "says": "Change list: 1960 four departments; ~1967 Sahel; 1974-06-07 ten departments (with the 1984 provinces formed from each); 1984-08-15 thirty provinces (with 1985 areas); 1997-01 fifteen new provinces.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "The four departments 1960-08-05 → 1974-06-07 (Sahel ~1967)",
+      "unit": "BFA:dept-Centre@1960",
+      "atoms": [
+        "BFA-ADM2-67063806B68807156447803",
+        "BFA-ADM2-67063806B95698273817509",
+        "BFA-ADM2-67063806B13297228427715",
+        "BFA-ADM2-67063806B25202403935187",
+        "BFA-ADM2-67063806B51289395143870",
+        "BFA-ADM2-67063806B63771125198412",
+        "BFA-ADM2-67063806B9563364372336",
+        "BFA-ADM2-67063806B93880456931202",
+        "BFA-ADM2-67063806B52798800731394",
+        "BFA-ADM2-67063806B53557788130503",
+        "BFA-ADM2-67063806B98154706729521",
+        "BFA-ADM2-67063806B37049013397139",
+        "BFA-ADM2-67063806B40595440400203",
+        "BFA-ADM2-67063806B99988316808523",
+        "BFA-ADM2-67063806B50041184778807",
+        "BFA-ADM2-67063806B35388046796178",
+        "BFA-ADM2-67063806B42476727458569",
+        "BFA-ADM2-67063806B11896750408185",
+        "BFA-ADM2-67063806B82563699600395",
+        "BFA-ADM2-67063806B77925181323544",
+        "BFA-ADM2-67063806B75312427459337",
+        "BFA-ADM2-67063806B75605811528327",
+        "BFA-ADM2-67063806B14953893434288",
+        "BFA-ADM2-67063806B10845212636131",
+        "BFA-ADM2-67063806B54692073140068",
+        "BFA-ADM2-67063806B9375485614542",
+        "BFA-ADM2-67063806B8254339248909",
+        "BFA-ADM2-67063806B6461887322435",
+        "BFA-ADM2-67063806B78350075830190",
+        "BFA-ADM2-67063806B8041269423759",
+        "BFA-ADM2-67063806B47797635439115",
+        "BFA-ADM2-67063806B75900195473972",
+        "BFA-ADM2-67063806B90465948144495",
+        "BFA-ADM2-67063806B79770817740465",
+        "BFA-ADM2-67063806B92956545078683",
+        "BFA-ADM2-67063806B63358793036390",
+        "BFA-ADM2-67063806B60723724569169",
+        "BFA-ADM2-67063806B32901667163906",
+        "BFA-ADM2-67063806B86156352342594",
+        "BFA-ADM2-67063806B71789570765121",
+        "BFA-ADM2-67063806B70466570504467",
+        "BFA-ADM2-67063806B65280418727437",
+        "BFA-ADM2-67063806B20155029653315",
+        "BFA-ADM2-67063806B77397496256894",
+        "BFA-ADM2-67063806B90065327421296"
+      ],
+      "from": "1960-08-05",
+      "to": "1974-06-07",
+      "why": "Centre, Est, Hauts-Bassins and Volta-Noire (and Sahel from about 1967) are not stated as unions of later provinces, and the date Sahel took effect is given only as «~1967» (approved 1963). (Est, Hauts-Bassins, Volta-Noire, Sahel also withheld.)",
+      "checked": [
+        "statoids.com/ubf.html (four departments 1960, Sahel ~1967, 83 → 44 cercles 1966)",
+        "Müller-Crepon DVN/9JI06R col_units_full (Upper Volta only to 1928)"
+      ],
+      "needs": "the decrees forming the departments (1959-1967) with their cercle lists, and cercle/department atoms"
+    },
+    {
+      "what": "Est department 1960-08-05 → 1974-06-07 (withheld with Centre)",
+      "unit": "BFA:dept-Est@1960",
+      "atoms": [],
+      "from": "1960-08-05",
+      "to": "1974-06-07",
+      "why": "See the Centre entry.",
+      "checked": [
+        "statoids.com/ubf.html (four departments 1960, Sahel ~1967, 83 → 44 cercles 1966)",
+        "Müller-Crepon DVN/9JI06R col_units_full (Upper Volta only to 1928)"
+      ],
+      "needs": "as for Centre"
+    },
+    {
+      "what": "Hauts-Bassins department 1960-08-05 → 1974-06-07 (withheld with Centre)",
+      "unit": "BFA:dept-Hauts-Bassins@1960",
+      "atoms": [],
+      "from": "1960-08-05",
+      "to": "1974-06-07",
+      "why": "See the Centre entry.",
+      "checked": [
+        "statoids.com/ubf.html (four departments 1960, Sahel ~1967, 83 → 44 cercles 1966)",
+        "Müller-Crepon DVN/9JI06R col_units_full (Upper Volta only to 1928)"
+      ],
+      "needs": "as for Centre"
+    },
+    {
+      "what": "Volta-Noire department 1960-08-05 → 1974-06-07 (withheld with Centre)",
+      "unit": "BFA:dept-Volta-Noire@1960",
+      "atoms": [],
+      "from": "1960-08-05",
+      "to": "1974-06-07",
+      "why": "See the Centre entry.",
+      "checked": [
+        "statoids.com/ubf.html (four departments 1960, Sahel ~1967, 83 → 44 cercles 1966)",
+        "Müller-Crepon DVN/9JI06R col_units_full (Upper Volta only to 1928)"
+      ],
+      "needs": "as for Centre"
+    },
+    {
+      "what": "Eight departments 1974-06-07 → 1984-08-15 (Centre, Centre-Est, Centre-Nord, Centre-Ouest, Est, Hauts-Bassins, Sud-Ouest, Volta-Noire)",
+      "unit": "BFA:dept-Centre@1974",
+      "atoms": [
+        "BFA-ADM2-67063806B68807156447803",
+        "BFA-ADM2-67063806B95698273817509",
+        "BFA-ADM2-67063806B13297228427715",
+        "BFA-ADM2-67063806B25202403935187",
+        "BFA-ADM2-67063806B51289395143870",
+        "BFA-ADM2-67063806B63771125198412",
+        "BFA-ADM2-67063806B9563364372336",
+        "BFA-ADM2-67063806B93880456931202",
+        "BFA-ADM2-67063806B52798800731394",
+        "BFA-ADM2-67063806B53557788130503",
+        "BFA-ADM2-67063806B98154706729521",
+        "BFA-ADM2-67063806B37049013397139",
+        "BFA-ADM2-67063806B40595440400203",
+        "BFA-ADM2-67063806B99988316808523",
+        "BFA-ADM2-67063806B50041184778807",
+        "BFA-ADM2-67063806B35388046796178",
+        "BFA-ADM2-67063806B42476727458569",
+        "BFA-ADM2-67063806B82563699600395",
+        "BFA-ADM2-67063806B75312427459337",
+        "BFA-ADM2-67063806B75605811528327",
+        "BFA-ADM2-67063806B14953893434288",
+        "BFA-ADM2-67063806B10845212636131",
+        "BFA-ADM2-67063806B54692073140068",
+        "BFA-ADM2-67063806B9375485614542",
+        "BFA-ADM2-67063806B8254339248909",
+        "BFA-ADM2-67063806B6461887322435",
+        "BFA-ADM2-67063806B78350075830190",
+        "BFA-ADM2-67063806B8041269423759",
+        "BFA-ADM2-67063806B47797635439115",
+        "BFA-ADM2-67063806B75900195473972",
+        "BFA-ADM2-67063806B90465948144495",
+        "BFA-ADM2-67063806B79770817740465",
+        "BFA-ADM2-67063806B92956545078683",
+        "BFA-ADM2-67063806B63358793036390",
+        "BFA-ADM2-67063806B60723724569169",
+        "BFA-ADM2-67063806B20155029653315",
+        "BFA-ADM2-67063806B77397496256894",
+        "BFA-ADM2-67063806B90065327421296"
+      ],
+      "from": "1974-06-07",
+      "to": "1984-08-15",
+      "why": "Their 1984 provinces were later redistributed among several 1996 provinces (e.g. Koulpélogo from Boulgou and Gourma, Balé from Mouhoun and Sissili, Tuy from Houet and Bougouriba), and Boulkiemdé and Passoré straddled the Centre/Centre-Ouest and Centre-Nord/Centre-Ouest lines, so the department lines run inside 2017 province atoms. (The other seven also withheld.)",
+      "checked": [
+        "statoids.com/ubf.html (1974 table: 1984 provinces formed from each department, «part of Boulkiemdé», «part of Passoré»)",
+        "statoids.com/ybf.html («Formerly»)"
+      ],
+      "needs": "department atoms with the 1984 → 1996 lineage (geoBoundaries BFA ADM3 2007 has shapes but wrong names)"
+    },
+    {
+      "what": "Centre-Est department 1974-06-07 → 1984-08-15 (withheld with Centre)",
+      "unit": "BFA:dept-Centre-Est@1974",
+      "atoms": [],
+      "from": "1974-06-07",
+      "to": "1984-08-15",
+      "why": "See the Centre entry.",
+      "checked": [
+        "statoids.com/ubf.html (1974 table: 1984 provinces formed from each department, «part of Boulkiemdé», «part of Passoré»)",
+        "statoids.com/ybf.html («Formerly»)"
+      ],
+      "needs": "as for Centre"
+    },
+    {
+      "what": "Centre-Nord department 1974-06-07 → 1984-08-15 (withheld with Centre)",
+      "unit": "BFA:dept-Centre-Nord@1974",
+      "atoms": [],
+      "from": "1974-06-07",
+      "to": "1984-08-15",
+      "why": "See the Centre entry.",
+      "checked": [
+        "statoids.com/ubf.html (1974 table: 1984 provinces formed from each department, «part of Boulkiemdé», «part of Passoré»)",
+        "statoids.com/ybf.html («Formerly»)"
+      ],
+      "needs": "as for Centre"
+    },
+    {
+      "what": "Centre-Ouest department 1974-06-07 → 1984-08-15 (withheld with Centre)",
+      "unit": "BFA:dept-Centre-Ouest@1974",
+      "atoms": [],
+      "from": "1974-06-07",
+      "to": "1984-08-15",
+      "why": "See the Centre entry.",
+      "checked": [
+        "statoids.com/ubf.html (1974 table: 1984 provinces formed from each department, «part of Boulkiemdé», «part of Passoré»)",
+        "statoids.com/ybf.html («Formerly»)"
+      ],
+      "needs": "as for Centre"
+    },
+    {
+      "what": "Est department 1974-06-07 → 1984-08-15 (withheld with Centre)",
+      "unit": "BFA:dept-Est@1974",
+      "atoms": [],
+      "from": "1974-06-07",
+      "to": "1984-08-15",
+      "why": "See the Centre entry.",
+      "checked": [
+        "statoids.com/ubf.html (1974 table: 1984 provinces formed from each department, «part of Boulkiemdé», «part of Passoré»)",
+        "statoids.com/ybf.html («Formerly»)"
+      ],
+      "needs": "as for Centre"
+    },
+    {
+      "what": "Hauts-Bassins department 1974-06-07 → 1984-08-15 (withheld with Centre)",
+      "unit": "BFA:dept-Hauts-Bassins@1974",
+      "atoms": [],
+      "from": "1974-06-07",
+      "to": "1984-08-15",
+      "why": "See the Centre entry.",
+      "checked": [
+        "statoids.com/ubf.html (1974 table: 1984 provinces formed from each department, «part of Boulkiemdé», «part of Passoré»)",
+        "statoids.com/ybf.html («Formerly»)"
+      ],
+      "needs": "as for Centre"
+    },
+    {
+      "what": "Sud-Ouest department 1974-06-07 → 1984-08-15 (withheld with Centre)",
+      "unit": "BFA:dept-Sud-Ouest@1974",
+      "atoms": [],
+      "from": "1974-06-07",
+      "to": "1984-08-15",
+      "why": "See the Centre entry.",
+      "checked": [
+        "statoids.com/ubf.html (1974 table: 1984 provinces formed from each department, «part of Boulkiemdé», «part of Passoré»)",
+        "statoids.com/ybf.html («Formerly»)"
+      ],
+      "needs": "as for Centre"
+    },
+    {
+      "what": "Volta-Noire department 1974-06-07 → 1984-08-15 (withheld with Centre)",
+      "unit": "BFA:dept-Volta-Noire@1974",
+      "atoms": [],
+      "from": "1974-06-07",
+      "to": "1984-08-15",
+      "why": "See the Centre entry.",
+      "checked": [
+        "statoids.com/ubf.html (1974 table: 1984 provinces formed from each department, «part of Boulkiemdé», «part of Passoré»)",
+        "statoids.com/ybf.html («Formerly»)"
+      ],
+      "needs": "as for Centre"
+    },
+    {
+      "what": "The 15 redistributed 1984 provinces 1984-08-15 → 1996-12-31 (Bazèga, Bougouriba, Boulgou, Boulkiemdé, Gourma, Houet, Kadiogo, Kénédougou, Komoé, Kouritenga, Mouhoun, Namentenga, Oubritenga, Sissili, Zoundwéogo)",
+      "unit": "BFA:prov-Kadiogo@1984",
+      "atoms": [
+        "BFA-ADM2-67063806B68807156447803",
+        "BFA-ADM2-67063806B75312427459337",
+        "BFA-ADM2-67063806B9563364372336",
+        "BFA-ADM2-67063806B79770817740465",
+        "BFA-ADM2-67063806B25202403935187",
+        "BFA-ADM2-67063806B6461887322435",
+        "BFA-ADM2-67063806B98154706729521",
+        "BFA-ADM2-67063806B93880456931202",
+        "BFA-ADM2-67063806B47797635439115",
+        "BFA-ADM2-67063806B99988316808523",
+        "BFA-ADM2-67063806B9375485614542",
+        "BFA-ADM2-67063806B37049013397139",
+        "BFA-ADM2-67063806B63358793036390",
+        "BFA-ADM2-67063806B92956545078683",
+        "BFA-ADM2-67063806B40595440400203",
+        "BFA-ADM2-67063806B35388046796178",
+        "BFA-ADM2-67063806B8254339248909",
+        "BFA-ADM2-67063806B95698273817509",
+        "BFA-ADM2-67063806B10845212636131",
+        "BFA-ADM2-67063806B42476727458569",
+        "BFA-ADM2-67063806B75900195473972",
+        "BFA-ADM2-67063806B52798800731394",
+        "BFA-ADM2-67063806B63771125198412",
+        "BFA-ADM2-67063806B75605811528327"
+      ],
+      "from": "1984-08-15",
+      "to": null,
+      "why": "Each of them gave departments to a 1996 province that also took land from another 1984 province (Kadiogo from Bazèga, Kadiogo, Oubritenga; Kourwéogo from Boulkiemdé, Kadiogo, Oubritenga; Balé, Ioba, Ziro from Mouhoun, Bougouriba, Sissili; Tuy; Léraba; Koulpélogo; Kouritenga from Namentenga; Zoundwéogo from Boulgou), so their 1984 lines run inside 2017 province atoms. Komandjoari and Kompienga (from Gourma only) are withheld with Gourma. (The other 14 also withheld.)",
+      "checked": [
+        "statoids.com/ybf.html («Formerly» column)",
+        "statoids.com/ubf.html (1984 provinces with 1985 areas)",
+        "fr.wikipedia Provinces du Burkina Faso oldid 235692967",
+        "geoBoundaries BFA ADM3 2007 (names do not match shapes — unusable)"
+      ],
+      "needs": "department atoms with correct names plus the annex of the 1996 law listing the departments of each new province"
+    },
+    {
+      "what": "Bazèga province 1984-08-15 → 1996-12-31 (withheld with Kadiogo)",
+      "unit": "BFA:prov-Bazèga@1984",
+      "atoms": [],
+      "from": "1984-08-15",
+      "to": null,
+      "why": "See the Kadiogo entry.",
+      "checked": [
+        "statoids.com/ybf.html («Formerly» column)",
+        "statoids.com/ubf.html (1984 provinces with 1985 areas)",
+        "fr.wikipedia Provinces du Burkina Faso oldid 235692967",
+        "geoBoundaries BFA ADM3 2007 (names do not match shapes — unusable)"
+      ],
+      "needs": "as for Kadiogo"
+    },
+    {
+      "what": "Bougouriba province 1984-08-15 → 1996-12-31 (withheld with Kadiogo)",
+      "unit": "BFA:prov-Bougouriba@1984",
+      "atoms": [],
+      "from": "1984-08-15",
+      "to": null,
+      "why": "See the Kadiogo entry.",
+      "checked": [
+        "statoids.com/ybf.html («Formerly» column)",
+        "statoids.com/ubf.html (1984 provinces with 1985 areas)",
+        "fr.wikipedia Provinces du Burkina Faso oldid 235692967",
+        "geoBoundaries BFA ADM3 2007 (names do not match shapes — unusable)"
+      ],
+      "needs": "as for Kadiogo"
+    },
+    {
+      "what": "Boulgou province 1984-08-15 → 1996-12-31 (withheld with Kadiogo)",
+      "unit": "BFA:prov-Boulgou@1984",
+      "atoms": [],
+      "from": "1984-08-15",
+      "to": null,
+      "why": "See the Kadiogo entry.",
+      "checked": [
+        "statoids.com/ybf.html («Formerly» column)",
+        "statoids.com/ubf.html (1984 provinces with 1985 areas)",
+        "fr.wikipedia Provinces du Burkina Faso oldid 235692967",
+        "geoBoundaries BFA ADM3 2007 (names do not match shapes — unusable)"
+      ],
+      "needs": "as for Kadiogo"
+    },
+    {
+      "what": "Boulkiemdé province 1984-08-15 → 1996-12-31 (withheld with Kadiogo)",
+      "unit": "BFA:prov-Boulkiemdé@1984",
+      "atoms": [],
+      "from": "1984-08-15",
+      "to": null,
+      "why": "See the Kadiogo entry.",
+      "checked": [
+        "statoids.com/ybf.html («Formerly» column)",
+        "statoids.com/ubf.html (1984 provinces with 1985 areas)",
+        "fr.wikipedia Provinces du Burkina Faso oldid 235692967",
+        "geoBoundaries BFA ADM3 2007 (names do not match shapes — unusable)"
+      ],
+      "needs": "as for Kadiogo"
+    },
+    {
+      "what": "Gourma province 1984-08-15 → 1996-12-31 (withheld with Kadiogo)",
+      "unit": "BFA:prov-Gourma@1984",
+      "atoms": [],
+      "from": "1984-08-15",
+      "to": null,
+      "why": "See the Kadiogo entry.",
+      "checked": [
+        "statoids.com/ybf.html («Formerly» column)",
+        "statoids.com/ubf.html (1984 provinces with 1985 areas)",
+        "fr.wikipedia Provinces du Burkina Faso oldid 235692967",
+        "geoBoundaries BFA ADM3 2007 (names do not match shapes — unusable)"
+      ],
+      "needs": "as for Kadiogo"
+    },
+    {
+      "what": "Houet province 1984-08-15 → 1996-12-31 (withheld with Kadiogo)",
+      "unit": "BFA:prov-Houet@1984",
+      "atoms": [],
+      "from": "1984-08-15",
+      "to": null,
+      "why": "See the Kadiogo entry.",
+      "checked": [
+        "statoids.com/ybf.html («Formerly» column)",
+        "statoids.com/ubf.html (1984 provinces with 1985 areas)",
+        "fr.wikipedia Provinces du Burkina Faso oldid 235692967",
+        "geoBoundaries BFA ADM3 2007 (names do not match shapes — unusable)"
+      ],
+      "needs": "as for Kadiogo"
+    },
+    {
+      "what": "Kénédougou province 1984-08-15 → 1996-12-31 (withheld with Kadiogo)",
+      "unit": "BFA:prov-Kénédougou@1984",
+      "atoms": [],
+      "from": "1984-08-15",
+      "to": null,
+      "why": "See the Kadiogo entry.",
+      "checked": [
+        "statoids.com/ybf.html («Formerly» column)",
+        "statoids.com/ubf.html (1984 provinces with 1985 areas)",
+        "fr.wikipedia Provinces du Burkina Faso oldid 235692967",
+        "geoBoundaries BFA ADM3 2007 (names do not match shapes — unusable)"
+      ],
+      "needs": "as for Kadiogo"
+    },
+    {
+      "what": "Komoé province 1984-08-15 → 1996-12-31 (withheld with Kadiogo)",
+      "unit": "BFA:prov-Komoé@1984",
+      "atoms": [],
+      "from": "1984-08-15",
+      "to": null,
+      "why": "See the Kadiogo entry.",
+      "checked": [
+        "statoids.com/ybf.html («Formerly» column)",
+        "statoids.com/ubf.html (1984 provinces with 1985 areas)",
+        "fr.wikipedia Provinces du Burkina Faso oldid 235692967",
+        "geoBoundaries BFA ADM3 2007 (names do not match shapes — unusable)"
+      ],
+      "needs": "as for Kadiogo"
+    },
+    {
+      "what": "Kouritenga province 1984-08-15 → 1996-12-31 (withheld with Kadiogo)",
+      "unit": "BFA:prov-Kouritenga@1984",
+      "atoms": [],
+      "from": "1984-08-15",
+      "to": null,
+      "why": "See the Kadiogo entry.",
+      "checked": [
+        "statoids.com/ybf.html («Formerly» column)",
+        "statoids.com/ubf.html (1984 provinces with 1985 areas)",
+        "fr.wikipedia Provinces du Burkina Faso oldid 235692967",
+        "geoBoundaries BFA ADM3 2007 (names do not match shapes — unusable)"
+      ],
+      "needs": "as for Kadiogo"
+    },
+    {
+      "what": "Mouhoun province 1984-08-15 → 1996-12-31 (withheld with Kadiogo)",
+      "unit": "BFA:prov-Mouhoun@1984",
+      "atoms": [],
+      "from": "1984-08-15",
+      "to": null,
+      "why": "See the Kadiogo entry.",
+      "checked": [
+        "statoids.com/ybf.html («Formerly» column)",
+        "statoids.com/ubf.html (1984 provinces with 1985 areas)",
+        "fr.wikipedia Provinces du Burkina Faso oldid 235692967",
+        "geoBoundaries BFA ADM3 2007 (names do not match shapes — unusable)"
+      ],
+      "needs": "as for Kadiogo"
+    },
+    {
+      "what": "Namentenga province 1984-08-15 → 1996-12-31 (withheld with Kadiogo)",
+      "unit": "BFA:prov-Namentenga@1984",
+      "atoms": [],
+      "from": "1984-08-15",
+      "to": null,
+      "why": "See the Kadiogo entry.",
+      "checked": [
+        "statoids.com/ybf.html («Formerly» column)",
+        "statoids.com/ubf.html (1984 provinces with 1985 areas)",
+        "fr.wikipedia Provinces du Burkina Faso oldid 235692967",
+        "geoBoundaries BFA ADM3 2007 (names do not match shapes — unusable)"
+      ],
+      "needs": "as for Kadiogo"
+    },
+    {
+      "what": "Oubritenga province 1984-08-15 → 1996-12-31 (withheld with Kadiogo)",
+      "unit": "BFA:prov-Oubritenga@1984",
+      "atoms": [],
+      "from": "1984-08-15",
+      "to": null,
+      "why": "See the Kadiogo entry.",
+      "checked": [
+        "statoids.com/ybf.html («Formerly» column)",
+        "statoids.com/ubf.html (1984 provinces with 1985 areas)",
+        "fr.wikipedia Provinces du Burkina Faso oldid 235692967",
+        "geoBoundaries BFA ADM3 2007 (names do not match shapes — unusable)"
+      ],
+      "needs": "as for Kadiogo"
+    },
+    {
+      "what": "Sissili province 1984-08-15 → 1996-12-31 (withheld with Kadiogo)",
+      "unit": "BFA:prov-Sissili@1984",
+      "atoms": [],
+      "from": "1984-08-15",
+      "to": null,
+      "why": "See the Kadiogo entry.",
+      "checked": [
+        "statoids.com/ybf.html («Formerly» column)",
+        "statoids.com/ubf.html (1984 provinces with 1985 areas)",
+        "fr.wikipedia Provinces du Burkina Faso oldid 235692967",
+        "geoBoundaries BFA ADM3 2007 (names do not match shapes — unusable)"
+      ],
+      "needs": "as for Kadiogo"
+    },
+    {
+      "what": "Zoundwéogo province 1984-08-15 → 1996-12-31 (withheld with Kadiogo)",
+      "unit": "BFA:prov-Zoundwéogo@1984",
+      "atoms": [],
+      "from": "1984-08-15",
+      "to": null,
+      "why": "See the Kadiogo entry.",
+      "checked": [
+        "statoids.com/ybf.html («Formerly» column)",
+        "statoids.com/ubf.html (1984 provinces with 1985 areas)",
+        "fr.wikipedia Provinces du Burkina Faso oldid 235692967",
+        "geoBoundaries BFA ADM3 2007 (names do not match shapes — unusable)"
+      ],
+      "needs": "as for Kadiogo"
+    },
+    {
+      "what": "Kossi and its 1996 successors, 1995 → 1996-12-31",
+      "unit": "BFA:prov-Kossi@1984",
+      "atoms": [
+        "BFA-ADM2-67063806B77397496256894",
+        "BFA-ADM2-67063806B90065327421296"
+      ],
+      "from": "1995",
+      "to": null,
+      "why": "The 15 new provinces are dated 1995 (fr.wikipedia), 1996 (law of 24 April 1996, per secondary summaries) or 1997-01 (Statoids); until the date of effect is settled the old and new forms cannot be told apart.",
+      "checked": [
+        "fr.wikipedia Provinces du Burkina Faso oldid 235692967",
+        "statoids.com/ubf.html",
+        "BFA.json (ne-admin1) starts the 45 provinces at 1997-01"
+      ],
+      "needs": "the 1996 law(s) on the new provinces and the date they took effect"
+    },
+    {
+      "what": "Poni and its 1996 successors, 1995 → 1996-12-31",
+      "unit": "BFA:prov-Poni@1984",
+      "atoms": [
+        "BFA-ADM2-67063806B8041269423759",
+        "BFA-ADM2-67063806B78350075830190"
+      ],
+      "from": "1995",
+      "to": null,
+      "why": "The 15 new provinces are dated 1995 (fr.wikipedia), 1996 (law of 24 April 1996, per secondary summaries) or 1997-01 (Statoids); until the date of effect is settled the old and new forms cannot be told apart.",
+      "checked": [
+        "fr.wikipedia Provinces du Burkina Faso oldid 235692967",
+        "statoids.com/ubf.html",
+        "BFA.json (ne-admin1) starts the 45 provinces at 1997-01"
+      ],
+      "needs": "the 1996 law(s) on the new provinces and the date they took effect"
+    },
+    {
+      "what": "Séno and its 1996 successors, 1995 → 1996-12-31",
+      "unit": "BFA:prov-Séno@1984",
+      "atoms": [
+        "BFA-ADM2-67063806B86156352342594",
+        "BFA-ADM2-67063806B32901667163906"
+      ],
+      "from": "1995",
+      "to": null,
+      "why": "The 15 new provinces are dated 1995 (fr.wikipedia), 1996 (law of 24 April 1996, per secondary summaries) or 1997-01 (Statoids); until the date of effect is settled the old and new forms cannot be told apart.",
+      "checked": [
+        "fr.wikipedia Provinces du Burkina Faso oldid 235692967",
+        "statoids.com/ubf.html",
+        "BFA.json (ne-admin1) starts the 45 provinces at 1997-01"
+      ],
+      "needs": "the 1996 law(s) on the new provinces and the date they took effect"
+    },
+    {
+      "what": "Sourou and its 1996 successors, 1995 → 1996-12-31",
+      "unit": "BFA:prov-Sourou@1984",
+      "atoms": [
+        "BFA-ADM2-67063806B20155029653315",
+        "BFA-ADM2-67063806B13297228427715"
+      ],
+      "from": "1995",
+      "to": null,
+      "why": "The 15 new provinces are dated 1995 (fr.wikipedia), 1996 (law of 24 April 1996, per secondary summaries) or 1997-01 (Statoids); until the date of effect is settled the old and new forms cannot be told apart.",
+      "checked": [
+        "fr.wikipedia Provinces du Burkina Faso oldid 235692967",
+        "statoids.com/ubf.html",
+        "BFA.json (ne-admin1) starts the 45 provinces at 1997-01"
+      ],
+      "needs": "the 1996 law(s) on the new provinces and the date they took effect"
+    },
+    {
+      "what": "Yatenga and its 1996 successors, 1995 → 1996-12-31",
+      "unit": "BFA:prov-Yatenga@1984",
+      "atoms": [
+        "BFA-ADM2-67063806B65280418727437",
+        "BFA-ADM2-67063806B11896750408185",
+        "BFA-ADM2-67063806B77925181323544"
+      ],
+      "from": "1995",
+      "to": null,
+      "why": "The 15 new provinces are dated 1995 (fr.wikipedia), 1996 (law of 24 April 1996, per secondary summaries) or 1997-01 (Statoids); until the date of effect is settled the old and new forms cannot be told apart.",
+      "checked": [
+        "fr.wikipedia Provinces du Burkina Faso oldid 235692967",
+        "statoids.com/ubf.html",
+        "BFA.json (ne-admin1) starts the 45 provinces at 1997-01"
+      ],
+      "needs": "the 1996 law(s) on the new provinces and the date they took effect"
+    }
+  ]
+}

@@ -1,619 +1,2297 @@
 {
-  "country": "MMR",
-  "atomSet": "ne-admin1@ca96624",
-  "scope": {
-    "from": "1974-01-04",
-    "to": "2019-12-31"
+ "country": "MMR",
+ "atomSet": "gb-adm3@2026-10-06",
+ "scope": {
+  "from": "1937-04-01",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Burma from its separation from British India (1 April 1937; before that its townships are drawn by BRI-provinces-1886.json) through the Union of Burma (1948), the Socialist Republic (1974) and Myanmar (1989) to 2019. Atoms: geoBoundaries ADM3 of MMR (2019 townships, Myanmar Analytics Project, CC BY 4.0), the set BRI-provinces-1886.json uses for Burma. A unit is the union of today’s townships whose lines carried the historical line; where a historical line runs through a township, or a township’s membership is not established, it is withheld (unresolved). Replaces the earlier Natural Earth dossier (1974–2019), whose Mandalay atom could not separate Nay Pyi Taw. ① The Arakan Division of 1948–74 (Rakhine with Paletwa) measures 42,973 km² against 41,442 km² in the division table statoids reproduces from Webster’s Geographical Dictionary (1957; ratio 1.04); every 1974–2019 unit is a union of the same townships the Myanmar Analytics Project assigns to that state or region (geoBoundaries ADM1, same publisher, so this is a consistency check only).",
+ "units": [
+  {
+   "id": "MMR:Kachin",
+   "names": {
+    "en": "Kachin State",
+    "ja": "カチン州",
+    "local": "ကချင်ပြည်နယ်"
+   },
+   "wikidata": "Q140646",
+   "spans": [
+    {
+     "from": "1948-01-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MMR-ADM3-66882298B3684723287244",
+      "MMR-ADM3-66882298B58400642266296",
+      "MMR-ADM3-66882298B59325512969250",
+      "MMR-ADM3-66882298B3817966441751",
+      "MMR-ADM3-66882298B73343718613746",
+      "MMR-ADM3-66882298B71588041682285",
+      "MMR-ADM3-66882298B83360582582831",
+      "MMR-ADM3-66882298B63943979787937",
+      "MMR-ADM3-66882298B33332446672250",
+      "MMR-ADM3-66882298B4579999731353",
+      "MMR-ADM3-66882298B59193658756261",
+      "MMR-ADM3-66882298B34211436690128",
+      "MMR-ADM3-66882298B42133100015884",
+      "MMR-ADM3-66882298B21056101662842",
+      "MMR-ADM3-66882298B45809862699230",
+      "MMR-ADM3-66882298B15199869857953",
+      "MMR-ADM3-66882298B17749520756313",
+      "MMR-ADM3-66882298B75810518265381"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1378340778",
+       "title": "Administrative divisions of Myanmar (en.wikipedia, revision 1378340778), History and «Historical evolution of states/regions»",
+       "says": "On 4 January 1948 Kachin State, Chin Special Division, Karenni State, Shan State and the Kaw-thu-lay Special Region were formed; the divisions of Burma proper continued.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/umm.html",
+       "title": "Statoids: Divisions of Myanmar, change history (Gwillim Law)",
+       "says": "1948-01-04: independence; Kachin, Karen(ni) and Shan states and the Chin Hills special division formed; next territorial change listed is 1964.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/umm.html",
+       "title": "Statoids: Divisions of Myanmar, change history",
+       "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+       "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
+       "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Formed from Myitkyina and Bhamo districts; no later change of its outer line is listed in the statoids change history or in the Wikipedia table of 1948–2011 first-level units (Mohnyin district was later carved inside it)."
+    }
+   ]
   },
-  "polityNote": "Socialist Republic of the Union of Burma from 1974, Union of Myanmar from 1989, Republic of the Union of Myanmar from 2011.",
-  "units": [
+  {
+   "id": "MMR:Sagaing",
+   "names": {
+    "en": "Sagaing Division / Sagaing Region",
+    "ja": "ザガイン管区",
+    "local": "စစ်ကိုင်းတိုင်းဒေသကြီး"
+   },
+   "wikidata": "Q847289",
+   "spans": [
     {
-      "id": "MMR:Rakhine",
-      "names": {
-        "en": "Rakhine State",
-        "ja": "ラカイン州",
-        "local": "ရခိုင်ပြည်နယ်"
+     "from": "1948-01-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MMR-ADM3-66882298B49231582531962",
+      "MMR-ADM3-66882298B69745000044463",
+      "MMR-ADM3-66882298B29413471910170",
+      "MMR-ADM3-66882298B35396935405838",
+      "MMR-ADM3-66882298B89556704578744",
+      "MMR-ADM3-66882298B91243771606208",
+      "MMR-ADM3-66882298B70906277786439",
+      "MMR-ADM3-66882298B30025626459135",
+      "MMR-ADM3-66882298B13690628237692",
+      "MMR-ADM3-66882298B96119842077960",
+      "MMR-ADM3-66882298B49369591286610",
+      "MMR-ADM3-66882298B13248015894559",
+      "MMR-ADM3-66882298B6815323696646",
+      "MMR-ADM3-66882298B81755465021971",
+      "MMR-ADM3-66882298B97049458692158",
+      "MMR-ADM3-66882298B98641573621791",
+      "MMR-ADM3-66882298B23467171997155",
+      "MMR-ADM3-66882298B12098743166013",
+      "MMR-ADM3-66882298B17369012055555",
+      "MMR-ADM3-66882298B33356488916188",
+      "MMR-ADM3-66882298B89854409890576",
+      "MMR-ADM3-66882298B67204722216921",
+      "MMR-ADM3-66882298B51229112661020",
+      "MMR-ADM3-66882298B46112702196623",
+      "MMR-ADM3-66882298B1974610332329",
+      "MMR-ADM3-66882298B55679759092569",
+      "MMR-ADM3-66882298B45625121552952",
+      "MMR-ADM3-66882298B66182128230817",
+      "MMR-ADM3-66882298B68369636205049",
+      "MMR-ADM3-66882298B16855386553806",
+      "MMR-ADM3-66882298B52908667237933",
+      "MMR-ADM3-66882298B93498834060199",
+      "MMR-ADM3-66882298B72647689440603",
+      "MMR-ADM3-66882298B7751003283272",
+      "MMR-ADM3-66882298B42378230623418",
+      "MMR-ADM3-66882298B46713308129486",
+      "MMR-ADM3-66882298B92692699810884"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/umm.html",
+       "title": "Statoids: Divisions of Myanmar, change history (Gwillim Law)",
+       "says": "1948-01-04: independence; Kachin, Karen(ni) and Shan states and the Chin Hills special division formed; next territorial change listed is 1964.",
+       "accessed": "2026-10-06"
       },
-      "wikidata": "Q233838",
-      "spans": [
-        {
-          "from": "1974-01-04",
-          "precision": "day",
-          "to": null,
-          "atoms": [
-            "MMR-3273"
-          ],
-          "sources": [
-            {
-              "url": "https://www.statoids.com/umm.html",
-              "title": "Statoids: Divisions of Myanmar, change history",
-              "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
-              "accessed": "2026-10-05"
-            },
-            {
-              "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
-              "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
-              "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
-              "accessed": "2026-10-05"
-            }
-          ],
-          "dateNote": "Named division/state as in 1974; 1989 English renamings (Burma→Myanmar spellings) and the 2008 division→region change did not alter territory."
-        }
-      ]
-    },
-    {
-      "id": "MMR:Chin",
-      "names": {
-        "en": "Chin State",
-        "ja": "チン州",
-        "local": "ချင်းပြည်နယ်"
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1378340778",
+       "title": "Administrative divisions of Myanmar (en.wikipedia, revision 1378340778), History and «Historical evolution of states/regions»",
+       "says": "Sagaing Division is unchanged in every column of the 1948–present table of first-level units.",
+       "accessed": "2026-10-06"
       },
-      "wikidata": "Q46910",
-      "spans": [
-        {
-          "from": "1974-01-04",
-          "precision": "day",
-          "to": null,
-          "atoms": [
-            "MMR-3274"
-          ],
-          "sources": [
-            {
-              "url": "https://www.statoids.com/umm.html",
-              "title": "Statoids: Divisions of Myanmar, change history",
-              "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
-              "accessed": "2026-10-05"
-            },
-            {
-              "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
-              "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
-              "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
-              "accessed": "2026-10-05"
-            }
-          ],
-          "dateNote": "Named division/state as in 1974; 1989 English renamings (Burma→Myanmar spellings) and the 2008 division→region change did not alter territory."
-        }
-      ]
-    },
-    {
-      "id": "MMR:Kachin",
-      "names": {
-        "en": "Kachin State",
-        "ja": "カチン州",
-        "local": "ကချင်ပြည်နယ်"
+      {
+       "url": "https://www.statoids.com/umm.html",
+       "title": "Statoids: Divisions of Myanmar, change history",
+       "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
+       "accessed": "2026-10-05"
       },
-      "wikidata": "Q140646",
-      "spans": [
-        {
-          "from": "1974-01-04",
-          "precision": "day",
-          "to": null,
-          "atoms": [
-            "MMR-3296"
-          ],
-          "sources": [
-            {
-              "url": "https://www.statoids.com/umm.html",
-              "title": "Statoids: Divisions of Myanmar, change history",
-              "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
-              "accessed": "2026-10-05"
-            },
-            {
-              "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
-              "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
-              "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
-              "accessed": "2026-10-05"
-            }
-          ],
-          "dateNote": "Named division/state as in 1974; 1989 English renamings (Burma→Myanmar spellings) and the 2008 division→region change did not alter territory."
-        }
-      ]
-    },
-    {
-      "id": "MMR:Sagaing",
-      "names": {
-        "en": "Sagaing Region",
-        "ja": "ザガイン管区",
-        "local": "စစ်ကိုင်းတိုင်းဒေသကြီး"
-      },
-      "wikidata": "Q847289",
-      "spans": [
-        {
-          "from": "1974-01-04",
-          "precision": "day",
-          "to": null,
-          "atoms": [
-            "MMR-3302"
-          ],
-          "sources": [
-            {
-              "url": "https://www.statoids.com/umm.html",
-              "title": "Statoids: Divisions of Myanmar, change history",
-              "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
-              "accessed": "2026-10-05"
-            },
-            {
-              "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
-              "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
-              "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
-              "accessed": "2026-10-05"
-            }
-          ],
-          "dateNote": "Named division/state as in 1974; 1989 English renamings (Burma→Myanmar spellings) and the 2008 division→region change did not alter territory."
-        }
-      ]
-    },
-    {
-      "id": "MMR:Shan",
-      "names": {
-        "en": "Shan State",
-        "ja": "シャン州",
-        "local": "ရှမ်းပြည်နယ်"
-      },
-      "wikidata": "Q456847",
-      "spans": [
-        {
-          "from": "1974-01-04",
-          "precision": "day",
-          "to": null,
-          "atoms": [
-            "MMR-3277"
-          ],
-          "sources": [
-            {
-              "url": "https://www.statoids.com/umm.html",
-              "title": "Statoids: Divisions of Myanmar, change history",
-              "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
-              "accessed": "2026-10-05"
-            },
-            {
-              "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
-              "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
-              "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
-              "accessed": "2026-10-05"
-            }
-          ],
-          "dateNote": "Named division/state as in 1974; 1989 English renamings (Burma→Myanmar spellings) and the 2008 division→region change did not alter territory."
-        }
-      ]
-    },
-    {
-      "id": "MMR:Kayah",
-      "names": {
-        "en": "Kayah State",
-        "ja": "カヤー州",
-        "local": "ကယားပြည်နယ်"
-      },
-      "wikidata": "Q652845",
-      "spans": [
-        {
-          "from": "1974-01-04",
-          "precision": "day",
-          "to": null,
-          "atoms": [
-            "MMR-2473"
-          ],
-          "sources": [
-            {
-              "url": "https://www.statoids.com/umm.html",
-              "title": "Statoids: Divisions of Myanmar, change history",
-              "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
-              "accessed": "2026-10-05"
-            },
-            {
-              "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
-              "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
-              "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
-              "accessed": "2026-10-05"
-            }
-          ],
-          "dateNote": "Named division/state as in 1974; 1989 English renamings (Burma→Myanmar spellings) and the 2008 division→region change did not alter territory."
-        }
-      ]
-    },
-    {
-      "id": "MMR:Kayin",
-      "names": {
-        "en": "Kayin State",
-        "ja": "カレン州",
-        "local": "ကရင်ပြည်နယ်"
-      },
-      "wikidata": "Q495342",
-      "spans": [
-        {
-          "from": "1974-01-04",
-          "precision": "day",
-          "to": null,
-          "atoms": [
-            "MMR-3266"
-          ],
-          "sources": [
-            {
-              "url": "https://www.statoids.com/umm.html",
-              "title": "Statoids: Divisions of Myanmar, change history",
-              "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
-              "accessed": "2026-10-05"
-            },
-            {
-              "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
-              "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
-              "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
-              "accessed": "2026-10-05"
-            }
-          ],
-          "dateNote": "Named division/state as in 1974; 1989 English renamings (Burma→Myanmar spellings) and the 2008 division→region change did not alter territory."
-        }
-      ]
-    },
-    {
-      "id": "MMR:Mon",
-      "names": {
-        "en": "Mon State",
-        "ja": "モン州",
-        "local": "မွန်ပြည်နယ်"
-      },
-      "wikidata": "Q818742",
-      "spans": [
-        {
-          "from": "1974-01-04",
-          "precision": "day",
-          "to": null,
-          "atoms": [
-            "MMR-3270"
-          ],
-          "sources": [
-            {
-              "url": "https://www.statoids.com/umm.html",
-              "title": "Statoids: Divisions of Myanmar, change history",
-              "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
-              "accessed": "2026-10-05"
-            },
-            {
-              "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
-              "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
-              "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
-              "accessed": "2026-10-05"
-            }
-          ],
-          "dateNote": "Named division/state as in 1974; 1989 English renamings (Burma→Myanmar spellings) and the 2008 division→region change did not alter territory."
-        }
-      ]
-    },
-    {
-      "id": "MMR:Tanintharyi",
-      "names": {
-        "en": "Tanintharyi Region",
-        "ja": "タニンダーイー管区",
-        "local": "တနင်္သာရီတိုင်းဒေသကြီး"
-      },
-      "wikidata": "Q843954",
-      "spans": [
-        {
-          "from": "1974-01-04",
-          "precision": "day",
-          "to": null,
-          "atoms": [
-            "MMR-3279"
-          ],
-          "sources": [
-            {
-              "url": "https://www.statoids.com/umm.html",
-              "title": "Statoids: Divisions of Myanmar, change history",
-              "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
-              "accessed": "2026-10-05"
-            },
-            {
-              "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
-              "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
-              "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
-              "accessed": "2026-10-05"
-            }
-          ],
-          "dateNote": "Named division/state as in 1974; 1989 English renamings (Burma→Myanmar spellings) and the 2008 division→region change did not alter territory."
-        }
-      ]
-    },
-    {
-      "id": "MMR:Ayeyarwady",
-      "names": {
-        "en": "Ayeyarwady Region",
-        "ja": "エーヤワディ管区",
-        "local": "ဧရာဝတီတိုင်းဒေသကြီး"
-      },
-      "wikidata": "Q47047",
-      "spans": [
-        {
-          "from": "1974-01-04",
-          "precision": "day",
-          "to": null,
-          "atoms": [
-            "MMR-3275"
-          ],
-          "sources": [
-            {
-              "url": "https://www.statoids.com/umm.html",
-              "title": "Statoids: Divisions of Myanmar, change history",
-              "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
-              "accessed": "2026-10-05"
-            },
-            {
-              "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
-              "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
-              "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
-              "accessed": "2026-10-05"
-            }
-          ],
-          "dateNote": "Named division/state as in 1974; 1989 English renamings (Burma→Myanmar spellings) and the 2008 division→region change did not alter territory."
-        }
-      ]
-    },
-    {
-      "id": "MMR:Yangon",
-      "names": {
-        "en": "Yangon Region",
-        "ja": "ヤンゴン管区",
-        "local": "ရန်ကုန်တိုင်းဒေသကြီး"
-      },
-      "wikidata": "Q856781",
-      "spans": [
-        {
-          "from": "1974-01-04",
-          "precision": "day",
-          "to": null,
-          "atoms": [
-            "MMR-3269"
-          ],
-          "sources": [
-            {
-              "url": "https://www.statoids.com/umm.html",
-              "title": "Statoids: Divisions of Myanmar, change history",
-              "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
-              "accessed": "2026-10-05"
-            },
-            {
-              "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
-              "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
-              "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
-              "accessed": "2026-10-05"
-            }
-          ],
-          "dateNote": "Named division/state as in 1974; 1989 English renamings (Burma→Myanmar spellings) and the 2008 division→region change did not alter territory."
-        }
-      ]
-    },
-    {
-      "id": "MMR:Bago",
-      "names": {
-        "en": "Bago Region",
-        "ja": "バゴー管区",
-        "local": "ပဲခူးတိုင်းဒေသကြီး"
-      },
-      "wikidata": "Q800124",
-      "spans": [
-        {
-          "from": "1974-01-04",
-          "precision": "day",
-          "to": null,
-          "atoms": [
-            "MMR-3268"
-          ],
-          "sources": [
-            {
-              "url": "https://www.statoids.com/umm.html",
-              "title": "Statoids: Divisions of Myanmar, change history",
-              "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
-              "accessed": "2026-10-05"
-            },
-            {
-              "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
-              "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
-              "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
-              "accessed": "2026-10-05"
-            }
-          ],
-          "dateNote": "Named division/state as in 1974; 1989 English renamings (Burma→Myanmar spellings) and the 2008 division→region change did not alter territory."
-        }
-      ]
-    },
-    {
-      "id": "MMR:Magway",
-      "names": {
-        "en": "Magway Region",
-        "ja": "マグウェ管区",
-        "local": "မကွေးတိုင်းဒေသကြီး"
-      },
-      "wikidata": "Q833013",
-      "spans": [
-        {
-          "from": "1974-01-04",
-          "precision": "day",
-          "to": null,
-          "atoms": [
-            "MMR-3276"
-          ],
-          "sources": [
-            {
-              "url": "https://www.statoids.com/umm.html",
-              "title": "Statoids: Divisions of Myanmar, change history",
-              "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
-              "accessed": "2026-10-05"
-            },
-            {
-              "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
-              "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
-              "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
-              "accessed": "2026-10-05"
-            }
-          ],
-          "dateNote": "Named division/state as in 1974; 1989 English renamings (Burma→Myanmar spellings) and the 2008 division→region change did not alter territory."
-        }
-      ]
-    },
-    {
-      "id": "MMR:Mandalay",
-      "names": {
-        "en": "Mandalay Region",
-        "ja": "マンダレー管区",
-        "local": "မန္တလေးတိုင်းဒေသကြီး"
-      },
-      "wikidata": "Q119494",
-      "spans": [
-        {
-          "from": "1974-01-04",
-          "precision": "day",
-          "to": "2008-05-29",
-          "atoms": [
-            "MMR-3267"
-          ],
-          "sources": [
-            {
-              "url": "https://www.statoids.com/umm.html",
-              "title": "Statoids: Divisions of Myanmar, change history",
-              "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
-              "accessed": "2026-10-05"
-            },
-            {
-              "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
-              "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
-              "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
-              "accessed": "2026-10-05"
-            },
-            {
-              "url": "https://www.statoids.com/umm.html",
-              "title": "Statoids: Divisions of Myanmar, change history",
-              "says": "2008-05-29: new constitution makes divisions regions and establishes Naypyidaw as a union territory, changing the extent of Mandalay.",
-              "accessed": "2026-10-05"
-            }
-          ],
-          "dateNote": "Mandalay Division including the Pyinmana/Lewe/Tatkon area that became Naypyidaw Union Territory."
-        }
-      ]
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+       "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
+       "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Division until 2011, region afterwards (renaming, no territorial change)."
     }
-  ],
-  "events": [
+   ]
+  },
+  {
+   "id": "MMR:Ayeyarwady",
+   "names": {
+    "en": "Irrawaddy Division / Ayeyarwady Region",
+    "ja": "エーヤワディ管区",
+    "local": "ဧရာဝတီတိုင်းဒေသကြီး"
+   },
+   "wikidata": "Q47047",
+   "spans": [
     {
-      "date": "1974-01-04",
-      "precision": "day",
-      "what": "1974 constitution: 7 states and 7 divisions (Mon State from Tenasserim; Chin and Arakan become states)",
-      "sources": [
-        {
-          "url": "https://www.statoids.com/umm.html",
-          "title": "Statoids: Divisions of Myanmar, change history",
-          "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
-          "accessed": "2026-10-05"
-        },
-        {
-          "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
-          "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
-          "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
-          "accessed": "2026-10-05"
-        }
-      ]
-    },
-    {
-      "date": "1989-06-19",
-      "precision": "day",
-      "what": "English names changed (Burma→Myanmar, Arakan→Rakhine, Karen→Kayin, Pegu→Bago, Rangoon→Yangon, Irrawaddy→Ayeyarwady, Magwe→Magway, Tenasserim→Tanintharyi); no territorial change",
-      "sources": [
-        {
-          "url": "https://www.statoids.com/umm.html",
-          "title": "Statoids: Divisions of Myanmar, change history",
-          "says": "1989-06-19 renamings of country, divisions and states.",
-          "accessed": "2026-10-05"
-        }
-      ]
-    },
-    {
-      "date": "2008-05-29",
-      "precision": "day",
-      "what": "2008 constitution approved: divisions become regions; Naypyidaw Union Territory separated from Mandalay",
-      "sources": [
-        {
-          "url": "https://www.statoids.com/umm.html",
-          "title": "Statoids: Divisions of Myanmar, change history",
-          "says": "2008-05-29: new constitution makes divisions regions and establishes Naypyidaw as a union territory, changing the extent of Mandalay.",
-          "accessed": "2026-10-05"
-        },
-        {
-          "url": "https://en.wikipedia.org/w/index.php?oldid=1377853481",
-          "title": "Nay Pyi Taw Union Territory (en.wikipedia, revision 1377853481)",
-          "says": "The union territory was officially separated from the Mandalay Region in 2008; the Naypyidaw Council was formed 30 Mar 2011.",
-          "accessed": "2026-10-05"
-        }
-      ]
+     "from": "1948-01-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MMR-ADM3-66882298B23149240101937",
+      "MMR-ADM3-66882298B10075532329949",
+      "MMR-ADM3-66882298B70728451341667",
+      "MMR-ADM3-66882298B92034765934079",
+      "MMR-ADM3-66882298B96340989204830",
+      "MMR-ADM3-66882298B98169404583454",
+      "MMR-ADM3-66882298B46433982831447",
+      "MMR-ADM3-66882298B45976501481961",
+      "MMR-ADM3-66882298B45599344473693",
+      "MMR-ADM3-66882298B9381677048276",
+      "MMR-ADM3-66882298B87618867269026",
+      "MMR-ADM3-66882298B27822047264791",
+      "MMR-ADM3-66882298B97791680692613",
+      "MMR-ADM3-66882298B35313795132071",
+      "MMR-ADM3-66882298B93394455443594",
+      "MMR-ADM3-66882298B5626975055677",
+      "MMR-ADM3-66882298B87314551665108",
+      "MMR-ADM3-66882298B59134367047252",
+      "MMR-ADM3-66882298B21473836197235",
+      "MMR-ADM3-66882298B98470543554215",
+      "MMR-ADM3-66882298B78974611272668",
+      "MMR-ADM3-66882298B3445717579771",
+      "MMR-ADM3-66882298B48553142968450",
+      "MMR-ADM3-66882298B62732217443925",
+      "MMR-ADM3-66882298B63844124977533",
+      "MMR-ADM3-66882298B62212267926712"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/umm.html",
+       "title": "Statoids: Divisions of Myanmar, change history (Gwillim Law)",
+       "says": "1948-01-04: independence; Kachin, Karen(ni) and Shan states and the Chin Hills special division formed; next territorial change listed is 1964.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1378340778",
+       "title": "Administrative divisions of Myanmar (en.wikipedia, revision 1378340778), History and «Historical evolution of states/regions»",
+       "says": "Irrawaddy Division is unchanged 1948–1989, renamed Ayeyarwady in 1989, a region from 2011.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/umm.html",
+       "title": "Statoids: Divisions of Myanmar, change history",
+       "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+       "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
+       "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
+       "accessed": "2026-10-05"
+      }
+     ]
     }
-  ],
-  "counts": [
+   ]
+  },
+  {
+   "id": "MMR:Kayah",
+   "names": {
+    "en": "Karenni State / Kayah State",
+    "ja": "カヤー州",
+    "local": "ကယားပြည်နယ်"
+   },
+   "wikidata": "Q652845",
+   "spans": [
     {
-      "date": "1980-01-01",
-      "n": 14,
-      "sources": [
-        {
-          "url": "https://www.statoids.com/umm.html",
-          "title": "Statoids: Divisions of Myanmar, change history",
-          "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
-          "accessed": "2026-10-05"
-        }
-      ]
-    },
-    {
-      "date": "2019-12-31",
-      "n": 15,
-      "sources": [
-        {
-          "url": "https://www.statoids.com/umm.html",
-          "title": "Statoids: Divisions of Myanmar, change history",
-          "says": "2008-05-29: new constitution makes divisions regions and establishes Naypyidaw as a union territory, changing the extent of Mandalay.",
-          "accessed": "2026-10-05"
-        },
-        {
-          "url": "https://en.wikipedia.org/w/index.php?oldid=1377853481",
-          "title": "Nay Pyi Taw Union Territory (en.wikipedia, revision 1377853481)",
-          "says": "Naypyidaw Union Territory: bordered by Mandalay Region on all sides.",
-          "accessed": "2026-10-05"
-        }
-      ]
+     "from": "1948-01-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MMR-ADM3-66882298B60703847395270",
+      "MMR-ADM3-66882298B62910908422931",
+      "MMR-ADM3-66882298B41652633840241",
+      "MMR-ADM3-66882298B21887991240008",
+      "MMR-ADM3-66882298B13513293373289",
+      "MMR-ADM3-66882298B50366352071932",
+      "MMR-ADM3-66882298B91132834391640"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1378340778",
+       "title": "Administrative divisions of Myanmar (en.wikipedia, revision 1378340778), History and «Historical evolution of states/regions»",
+       "says": "On 4 January 1948 Kachin State, Chin Special Division, Karenni State, Shan State and the Kaw-thu-lay Special Region were formed; the divisions of Burma proper continued.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/umm.html",
+       "title": "Statoids: Divisions of Myanmar, change history (Gwillim Law)",
+       "says": "1952-01-14: name of Karenni state changed to Kayah.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1378260363",
+       "title": "Kayah State (en.wikipedia, revision 1378260363), History",
+       "says": "In 1952 the former Shan state of Mong Pai was added to Karenni State and the whole renamed Kayah State.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/umm.html",
+       "title": "Statoids: Divisions of Myanmar, change history",
+       "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+       "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
+       "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Named Karenni State until 14 January 1952. Mong Pai (today inside Pekon Township, Shan State) is withheld on both sides (see unresolved)."
     }
-  ],
-  "atomsOutside": [],
-  "unresolved": [
+   ]
+  },
+  {
+   "id": "MMR:Shan",
+   "names": {
+    "en": "Shan State",
+    "ja": "シャン州",
+    "local": "ရှမ်းပြည်နယ်"
+   },
+   "wikidata": "Q456847",
+   "spans": [
     {
-      "what": "Mandalay Region and Naypyidaw Union Territory from 2008",
-      "unit": "MMR:Mandalay",
-      "atoms": [
-        "MMR-3267"
-      ],
-      "from": "2008-05-29",
-      "to": null,
-      "why": "NE has no Naypyidaw feature; MMR-3267 still covers Naypyidaw (its townships Pyinmana, Lewe, Tatkon and the new city townships). The legal start of the union territory is also unsettled: constitution approved 29 May 2008, in force 31 Jan 2011, council formed 30 Mar 2011.",
-      "checked": [
-        "NE atom catalogue (14 MMR atoms)",
-        "statoids umm.html",
-        "en.wikipedia Nay Pyi Taw Union Territory rev 1377853481"
-      ],
-      "needs": "Naypyidaw outline (MIMU township boundaries, licence to be checked; or geoBoundaries MMR ADM1/ADM3, CC BY)"
-    },
-    {
-      "what": "Naypyidaw Union Territory",
-      "unit": "MMR:Naypyidaw",
-      "from": "2008-05-29",
-      "to": null,
-      "why": "Exists since 2008/2011 without an NE atom (inside MMR-3267).",
-      "checked": [
-        "NE atom catalogue",
-        "statoids umm.html"
-      ],
-      "needs": "MIMU / geoBoundaries township-level atoms"
-    },
-    {
-      "what": "Burma 1948-01-04 to 1974-01-04",
-      "from": "1948-01-04",
-      "to": "1974-01-04",
-      "why": "The 1948-74 layout (Tenasserim including the later Mon State; Karen State created 1952 from parts of Amherst, Thaton and Toungoo districts; Rangoon Division from 1964 enlarged in 1972 by Hanthawaddy and Hmawbi) has lines that run inside NE atoms (Mon/Kayin/Tanintharyi, Yangon/Bago).",
-      "checked": [
-        "statoids umm.html change history"
-      ],
-      "needs": "district/township-level atoms with the 1948-74 district lines (e.g. MIMU township boundaries)"
+     "from": "1948-01-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MMR-ADM3-66882298B72712470803341",
+      "MMR-ADM3-66882298B47048273457297",
+      "MMR-ADM3-66882298B60976321477453",
+      "MMR-ADM3-66882298B45721516561493",
+      "MMR-ADM3-66882298B64902452012974",
+      "MMR-ADM3-66882298B66538175578783",
+      "MMR-ADM3-66882298B25077153637290",
+      "MMR-ADM3-66882298B1975009216242",
+      "MMR-ADM3-66882298B75795222477878",
+      "MMR-ADM3-66882298B71305619424637",
+      "MMR-ADM3-66882298B1444745531952",
+      "MMR-ADM3-66882298B52558825926265",
+      "MMR-ADM3-66882298B7276097362414",
+      "MMR-ADM3-66882298B42824629263373",
+      "MMR-ADM3-66882298B65618262001870",
+      "MMR-ADM3-66882298B40849713300247",
+      "MMR-ADM3-66882298B6726893280031",
+      "MMR-ADM3-66882298B93086807686764",
+      "MMR-ADM3-66882298B78020195364631",
+      "MMR-ADM3-66882298B88955609799525",
+      "MMR-ADM3-66882298B1027402144026",
+      "MMR-ADM3-66882298B65836239124186",
+      "MMR-ADM3-66882298B50744585948465",
+      "MMR-ADM3-66882298B9190211902717",
+      "MMR-ADM3-66882298B13890402968202",
+      "MMR-ADM3-66882298B50680078133072",
+      "MMR-ADM3-66882298B13788123332655",
+      "MMR-ADM3-66882298B13463527006273",
+      "MMR-ADM3-66882298B63575401111424",
+      "MMR-ADM3-66882298B53601763553196",
+      "MMR-ADM3-66882298B20930484280331",
+      "MMR-ADM3-66882298B25674046281618",
+      "MMR-ADM3-66882298B63446190048766",
+      "MMR-ADM3-66882298B20724664356365",
+      "MMR-ADM3-66882298B22679639113229",
+      "MMR-ADM3-66882298B84564180686688",
+      "MMR-ADM3-66882298B34816344861267",
+      "MMR-ADM3-66882298B2901571448543",
+      "MMR-ADM3-66882298B47645408331678",
+      "MMR-ADM3-66882298B95137376687287",
+      "MMR-ADM3-66882298B45954578024958",
+      "MMR-ADM3-66882298B40242085426704",
+      "MMR-ADM3-66882298B28152158505759",
+      "MMR-ADM3-66882298B28068937388118",
+      "MMR-ADM3-66882298B21195914889348",
+      "MMR-ADM3-66882298B45428910921286",
+      "MMR-ADM3-66882298B10322761457197",
+      "MMR-ADM3-66882298B28683607927808",
+      "MMR-ADM3-66882298B68963712992998",
+      "MMR-ADM3-66882298B85260109740996",
+      "MMR-ADM3-66882298B98753356299809",
+      "MMR-ADM3-66882298B6539259335056",
+      "MMR-ADM3-66882298B68274771791887",
+      "MMR-ADM3-66882298B54041300055844"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1378340778",
+       "title": "Administrative divisions of Myanmar (en.wikipedia, revision 1378340778), History and «Historical evolution of states/regions»",
+       "says": "On 4 January 1948 Kachin State, Chin Special Division, Karenni State, Shan State and the Kaw-thu-lay Special Region were formed; the divisions of Burma proper continued.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/umm.html",
+       "title": "Statoids: Divisions of Myanmar, change history (Gwillim Law)",
+       "says": "1948-01-04: independence; Kachin, Karen(ni) and Shan states and the Chin Hills special division formed; next territorial change listed is 1964.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/umm.html",
+       "title": "Statoids: Divisions of Myanmar, change history",
+       "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+       "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
+       "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Formed from the Federated Shan States and the Wa States. Pekon Township (which holds Mong Pai) is withheld."
     }
-  ]
+   ]
+  },
+  {
+   "id": "MMR:Arakan Division",
+   "names": {
+    "en": "Arakan Division",
+    "ja": "アラカン管区",
+    "local": "ရခိုင်တိုင်း"
+   },
+   "wikidata": "Q48725482",
+   "spans": [
+    {
+     "from": "1948-01-04",
+     "precision": "day",
+     "to": "1974-01-04",
+     "atoms": [
+      "MMR-ADM3-66882298B95740508814243",
+      "MMR-ADM3-66882298B17691670471295",
+      "MMR-ADM3-66882298B12562394642113",
+      "MMR-ADM3-66882298B25907056324587",
+      "MMR-ADM3-66882298B96066491873241",
+      "MMR-ADM3-66882298B98818104227605",
+      "MMR-ADM3-66882298B79927633810292",
+      "MMR-ADM3-66882298B24588945269730",
+      "MMR-ADM3-66882298B47520460749969",
+      "MMR-ADM3-66882298B80264177521474",
+      "MMR-ADM3-66882298B72213195308331",
+      "MMR-ADM3-66882298B19696970616392",
+      "MMR-ADM3-66882298B77467059166323",
+      "MMR-ADM3-66882298B64895356281796",
+      "MMR-ADM3-66882298B67553323255828",
+      "MMR-ADM3-66882298B19990050947650",
+      "MMR-ADM3-66882298B50609184171545",
+      "MMR-ADM3-66882298B10368150445219"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375810215",
+       "title": "Chin State (en.wikipedia, revision 1375810215), History",
+       "says": "The Chin Hills Special Division was created at independence in 1948; Mindat, Kanpetlet and Matupi (Pakokku Hill Tracts of Pakokku District) and Paletwa (Arakan Hill Tracts) became part of Chin State only on 4 January 1974.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1377347923",
+       "title": "Paletwa District (en.wikipedia, revision 1377347923)",
+       "says": "Paletwa District was formerly the Arakan Hill Tracts, part of Arakan Division until the formation of Chin State.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/umm.html",
+       "title": "Statoids: Divisions of Myanmar, change history (Gwillim Law)",
+       "says": "1948-01-04: independence; Kachin, Karen(ni) and Shan states and the Chin Hills special division formed; next territorial change listed is 1964.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "MMR:Rakhine",
+   "names": {
+    "en": "Arakan State / Rakhine State",
+    "ja": "ラカイン州",
+    "local": "ရခိုင်ပြည်နယ်"
+   },
+   "wikidata": "Q233838",
+   "spans": [
+    {
+     "from": "1974-01-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MMR-ADM3-66882298B95740508814243",
+      "MMR-ADM3-66882298B17691670471295",
+      "MMR-ADM3-66882298B12562394642113",
+      "MMR-ADM3-66882298B25907056324587",
+      "MMR-ADM3-66882298B96066491873241",
+      "MMR-ADM3-66882298B98818104227605",
+      "MMR-ADM3-66882298B79927633810292",
+      "MMR-ADM3-66882298B24588945269730",
+      "MMR-ADM3-66882298B47520460749969",
+      "MMR-ADM3-66882298B80264177521474",
+      "MMR-ADM3-66882298B72213195308331",
+      "MMR-ADM3-66882298B19696970616392",
+      "MMR-ADM3-66882298B77467059166323",
+      "MMR-ADM3-66882298B64895356281796",
+      "MMR-ADM3-66882298B67553323255828",
+      "MMR-ADM3-66882298B19990050947650",
+      "MMR-ADM3-66882298B50609184171545"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/umm.html",
+       "title": "Statoids: Divisions of Myanmar, change history",
+       "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+       "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
+       "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375810215",
+       "title": "Chin State (en.wikipedia, revision 1375810215), History",
+       "says": "The Chin Hills Special Division was created at independence in 1948; Mindat, Kanpetlet and Matupi (Pakokku Hill Tracts of Pakokku District) and Paletwa (Arakan Hill Tracts) became part of Chin State only on 4 January 1974.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Arakan State from 1974, Rakhine State from 1989 (renaming only)."
+    }
+   ]
+  },
+  {
+   "id": "MMR:Chin Special Division",
+   "names": {
+    "en": "Chin Special Division",
+    "ja": "チン特別管区"
+   },
+   "spans": [
+    {
+     "from": "1948-01-04",
+     "precision": "day",
+     "to": "1974-01-04",
+     "atoms": [
+      "MMR-ADM3-66882298B80362939759062",
+      "MMR-ADM3-66882298B6984635080223",
+      "MMR-ADM3-66882298B34348354141761",
+      "MMR-ADM3-66882298B89367867823284",
+      "MMR-ADM3-66882298B29817786092146"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375810215",
+       "title": "Chin State (en.wikipedia, revision 1375810215), History",
+       "says": "The Chin Hills Special Division was created at independence in 1948; Mindat, Kanpetlet and Matupi (Pakokku Hill Tracts of Pakokku District) and Paletwa (Arakan Hill Tracts) became part of Chin State only on 4 January 1974.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/umm.html",
+       "title": "Statoids: Divisions of Myanmar, change history (Gwillim Law)",
+       "says": "1948-01-04: independence; Kachin, Karen(ni) and Shan states and the Chin Hills special division formed; next territorial change listed is 1964.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "The Chin Hills district: today’s Falam, Tedim, Tonzang, Hakha and Thantlang townships."
+    }
+   ]
+  },
+  {
+   "id": "MMR:Chin",
+   "names": {
+    "en": "Chin State",
+    "ja": "チン州",
+    "local": "ချင်းပြည်နယ်"
+   },
+   "wikidata": "Q46910",
+   "spans": [
+    {
+     "from": "1974-01-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MMR-ADM3-66882298B80362939759062",
+      "MMR-ADM3-66882298B6984635080223",
+      "MMR-ADM3-66882298B34348354141761",
+      "MMR-ADM3-66882298B89367867823284",
+      "MMR-ADM3-66882298B29817786092146",
+      "MMR-ADM3-66882298B63813007351538",
+      "MMR-ADM3-66882298B44324373263157",
+      "MMR-ADM3-66882298B86048721832096",
+      "MMR-ADM3-66882298B10368150445219"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375810215",
+       "title": "Chin State (en.wikipedia, revision 1375810215), History",
+       "says": "The Chin Hills Special Division was created at independence in 1948; Mindat, Kanpetlet and Matupi (Pakokku Hill Tracts of Pakokku District) and Paletwa (Arakan Hill Tracts) became part of Chin State only on 4 January 1974.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/umm.html",
+       "title": "Statoids: Divisions of Myanmar, change history",
+       "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+       "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
+       "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "MMR:Magwe Division",
+   "names": {
+    "en": "Magwe Division",
+    "ja": "マグウェ管区",
+    "local": "မကွေးတိုင်း"
+   },
+   "spans": [
+    {
+     "from": "1948-01-04",
+     "precision": "day",
+     "to": "1974-01-04",
+     "atoms": [
+      "MMR-ADM3-66882298B89773471312366",
+      "MMR-ADM3-66882298B1730260664317",
+      "MMR-ADM3-66882298B47404455758769",
+      "MMR-ADM3-66882298B89467340661520",
+      "MMR-ADM3-66882298B44996389006069",
+      "MMR-ADM3-66882298B81825229811290",
+      "MMR-ADM3-66882298B63151602536718",
+      "MMR-ADM3-66882298B16268991431448",
+      "MMR-ADM3-66882298B88454685144664",
+      "MMR-ADM3-66882298B12852619244145",
+      "MMR-ADM3-66882298B33786035960838",
+      "MMR-ADM3-66882298B46692097237572",
+      "MMR-ADM3-66882298B45635597597474",
+      "MMR-ADM3-66882298B31423892279604",
+      "MMR-ADM3-66882298B68211952808704",
+      "MMR-ADM3-66882298B29008966103222",
+      "MMR-ADM3-66882298B20485481324229",
+      "MMR-ADM3-66882298B26737603972291",
+      "MMR-ADM3-66882298B14430328327961",
+      "MMR-ADM3-66882298B579870403900",
+      "MMR-ADM3-66882298B80439635441464",
+      "MMR-ADM3-66882298B34352035689963",
+      "MMR-ADM3-66882298B3522007750184",
+      "MMR-ADM3-66882298B63513669154243",
+      "MMR-ADM3-66882298B95710101882630",
+      "MMR-ADM3-66882298B86048721832096",
+      "MMR-ADM3-66882298B63813007351538",
+      "MMR-ADM3-66882298B44324373263157"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375810215",
+       "title": "Chin State (en.wikipedia, revision 1375810215), History",
+       "says": "The Chin Hills Special Division was created at independence in 1948; Mindat, Kanpetlet and Matupi (Pakokku Hill Tracts of Pakokku District) and Paletwa (Arakan Hill Tracts) became part of Chin State only on 4 January 1974.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1378340778",
+       "title": "Administrative divisions of Myanmar (en.wikipedia, revision 1378340778), History and «Historical evolution of states/regions»",
+       "says": "Magwe Division is in every column of the 1948–1974 table; there is no Pakokku unit at the first level.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1378075515",
+       "title": "British rule in Burma (en.wikipedia, revision 1378075515), Administrative divisions",
+       "says": "By 1931 Magwe Division held the Magwe, Minbu, Pakokku and Thayetmyo districts.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Wikipedia «Pakokku District» (rev 1374785318) calls Pakokku a «province» of two districts from 1948 to 1974; neither the statoids change history, the Wikipedia table of first-level units nor the 14 units of the 1973 census have a Pakokku unit, so Pakokku is drawn inside Magwe."
+    }
+   ]
+  },
+  {
+   "id": "MMR:Magway",
+   "names": {
+    "en": "Magwe Division / Magway Region",
+    "ja": "マグウェ管区",
+    "local": "မကွေးတိုင်းဒေသကြီး"
+   },
+   "wikidata": "Q833013",
+   "spans": [
+    {
+     "from": "1974-01-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MMR-ADM3-66882298B89773471312366",
+      "MMR-ADM3-66882298B1730260664317",
+      "MMR-ADM3-66882298B47404455758769",
+      "MMR-ADM3-66882298B89467340661520",
+      "MMR-ADM3-66882298B44996389006069",
+      "MMR-ADM3-66882298B81825229811290",
+      "MMR-ADM3-66882298B63151602536718",
+      "MMR-ADM3-66882298B16268991431448",
+      "MMR-ADM3-66882298B88454685144664",
+      "MMR-ADM3-66882298B12852619244145",
+      "MMR-ADM3-66882298B33786035960838",
+      "MMR-ADM3-66882298B46692097237572",
+      "MMR-ADM3-66882298B45635597597474",
+      "MMR-ADM3-66882298B31423892279604",
+      "MMR-ADM3-66882298B68211952808704",
+      "MMR-ADM3-66882298B29008966103222",
+      "MMR-ADM3-66882298B20485481324229",
+      "MMR-ADM3-66882298B26737603972291",
+      "MMR-ADM3-66882298B14430328327961",
+      "MMR-ADM3-66882298B579870403900",
+      "MMR-ADM3-66882298B80439635441464",
+      "MMR-ADM3-66882298B34352035689963",
+      "MMR-ADM3-66882298B3522007750184",
+      "MMR-ADM3-66882298B63513669154243",
+      "MMR-ADM3-66882298B95710101882630"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375810215",
+       "title": "Chin State (en.wikipedia, revision 1375810215), History",
+       "says": "The Chin Hills Special Division was created at independence in 1948; Mindat, Kanpetlet and Matupi (Pakokku Hill Tracts of Pakokku District) and Paletwa (Arakan Hill Tracts) became part of Chin State only on 4 January 1974.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/umm.html",
+       "title": "Statoids: Divisions of Myanmar, change history",
+       "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+       "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
+       "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "MMR:Mandalay",
+   "names": {
+    "en": "Mandalay Division / Mandalay Region",
+    "ja": "マンダレー管区",
+    "local": "မန္တလေးတိုင်းဒေသကြီး"
+   },
+   "wikidata": "Q119494",
+   "spans": [
+    {
+     "from": "1948-01-04",
+     "precision": "day",
+     "to": "2011-01-31",
+     "atoms": [
+      "MMR-ADM3-66882298B66298940741731",
+      "MMR-ADM3-66882298B94447219480250",
+      "MMR-ADM3-66882298B93334938803568",
+      "MMR-ADM3-66882298B8516616183629",
+      "MMR-ADM3-66882298B57980523152080",
+      "MMR-ADM3-66882298B2837304742341",
+      "MMR-ADM3-66882298B88549330826018",
+      "MMR-ADM3-66882298B27042252036531",
+      "MMR-ADM3-66882298B63555975911592",
+      "MMR-ADM3-66882298B50885959116277",
+      "MMR-ADM3-66882298B34690262834197",
+      "MMR-ADM3-66882298B81327673510426",
+      "MMR-ADM3-66882298B7137425941899",
+      "MMR-ADM3-66882298B68118440946572",
+      "MMR-ADM3-66882298B17021214963947",
+      "MMR-ADM3-66882298B52470244382010",
+      "MMR-ADM3-66882298B38184122909227",
+      "MMR-ADM3-66882298B34747828510750",
+      "MMR-ADM3-66882298B87672278705364",
+      "MMR-ADM3-66882298B67377062020558",
+      "MMR-ADM3-66882298B35239552440228",
+      "MMR-ADM3-66882298B91349186479025",
+      "MMR-ADM3-66882298B5713349170013",
+      "MMR-ADM3-66882298B79117526054683",
+      "MMR-ADM3-66882298B82577145530379",
+      "MMR-ADM3-66882298B45416158552835",
+      "MMR-ADM3-66882298B18463297130945",
+      "MMR-ADM3-66882298B93292463567228",
+      "MMR-ADM3-66882298B67796566444231",
+      "MMR-ADM3-66882298B5998860788816",
+      "MMR-ADM3-66882298B33434666759386",
+      "MMR-ADM3-66882298B65561284391558",
+      "MMR-ADM3-66882298B88009489570675",
+      "MMR-ADM3-66882298B85652760826241",
+      "MMR-ADM3-66882298B729678951605",
+      "MMR-ADM3-66882298B33372045303001"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/umm.html",
+       "title": "Statoids: Divisions of Myanmar, change history (Gwillim Law)",
+       "says": "1948-01-04: independence; Kachin, Karen(ni) and Shan states and the Chin Hills special division formed; next territorial change listed is 1964.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1378340778",
+       "title": "Administrative divisions of Myanmar (en.wikipedia, revision 1378340778), History and «Historical evolution of states/regions»",
+       "says": "Mandalay Division is unchanged 1948–2011; Nay Pyi Taw Union Territory was split from it under the 2008 constitution.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+       "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475)",
+       "says": "The 2008 constitution came into effect on 31 January 2011.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Includes the Pyinmana, Lewe and Tatkon area, and Naypyidaw (capital from 2005), until the 2008 constitution took effect."
+    },
+    {
+     "from": "2011-01-31",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MMR-ADM3-66882298B57980523152080",
+      "MMR-ADM3-66882298B2837304742341",
+      "MMR-ADM3-66882298B88549330826018",
+      "MMR-ADM3-66882298B27042252036531",
+      "MMR-ADM3-66882298B63555975911592",
+      "MMR-ADM3-66882298B50885959116277",
+      "MMR-ADM3-66882298B34690262834197",
+      "MMR-ADM3-66882298B81327673510426",
+      "MMR-ADM3-66882298B7137425941899",
+      "MMR-ADM3-66882298B68118440946572",
+      "MMR-ADM3-66882298B17021214963947",
+      "MMR-ADM3-66882298B52470244382010",
+      "MMR-ADM3-66882298B38184122909227",
+      "MMR-ADM3-66882298B34747828510750",
+      "MMR-ADM3-66882298B87672278705364",
+      "MMR-ADM3-66882298B67377062020558",
+      "MMR-ADM3-66882298B35239552440228",
+      "MMR-ADM3-66882298B91349186479025",
+      "MMR-ADM3-66882298B5713349170013",
+      "MMR-ADM3-66882298B79117526054683",
+      "MMR-ADM3-66882298B82577145530379",
+      "MMR-ADM3-66882298B5998860788816",
+      "MMR-ADM3-66882298B33434666759386",
+      "MMR-ADM3-66882298B65561284391558",
+      "MMR-ADM3-66882298B88009489570675",
+      "MMR-ADM3-66882298B85652760826241",
+      "MMR-ADM3-66882298B729678951605",
+      "MMR-ADM3-66882298B33372045303001"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+       "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475)",
+       "says": "The 2008 constitution came into effect on 31 January 2011.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1377853481",
+       "title": "Nay Pyi Taw Union Territory (en.wikipedia, revision 1377853481)",
+       "says": "The union territory comprises eight townships; its council was formed on 30 March 2011.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "The constitution was approved on 29 May 2008 (statoids dates the territory from then) but its provisions took effect on 31 January 2011; the Nay Pyi Taw Council was appointed on 30 March 2011."
+    }
+   ]
+  },
+  {
+   "id": "MMR:Naypyidaw",
+   "names": {
+    "en": "Nay Pyi Taw Union Territory",
+    "ja": "ネピドー連邦領",
+    "local": "နေပြည်တော် ပြည်ထောင်စုနယ်မြေ"
+   },
+   "spans": [
+    {
+     "from": "2011-01-31",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MMR-ADM3-66882298B66298940741731",
+      "MMR-ADM3-66882298B94447219480250",
+      "MMR-ADM3-66882298B93334938803568",
+      "MMR-ADM3-66882298B8516616183629",
+      "MMR-ADM3-66882298B45416158552835",
+      "MMR-ADM3-66882298B18463297130945",
+      "MMR-ADM3-66882298B93292463567228",
+      "MMR-ADM3-66882298B67796566444231"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+       "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475)",
+       "says": "The 2008 constitution came into effect on 31 January 2011.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1377853481",
+       "title": "Nay Pyi Taw Union Territory (en.wikipedia, revision 1377853481)",
+       "says": "The union territory (Ottarathiri, Dekkhinathiri, Pobbathiri, Zabuthiri, Zeyathiri, Pyinmana, Lewe, Tatkon) is under the direct administration of the President; council formed 30 March 2011.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/umm.html",
+       "title": "Statoids: Divisions of Myanmar, change history (Gwillim Law)",
+       "says": "2008-05-29: the constitution establishes Naypyidaw as a union territory, changing the extent of Mandalay.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Drawn from 31 January 2011, the day the 2008 constitution came into operation (approved 29 May 2008)."
+    }
+   ]
+  },
+  {
+   "id": "MMR:Pegu",
+   "names": {
+    "en": "Pegu Division",
+    "ja": "ペグー管区",
+    "local": "ပဲခူးတိုင်း"
+   },
+   "spans": [
+    {
+     "from": "1948-01-04",
+     "precision": "day",
+     "to": "1962",
+     "atoms": [
+      "MMR-ADM3-66882298B68180713951642",
+      "MMR-ADM3-66882298B63538367621884",
+      "MMR-ADM3-66882298B24871755522741",
+      "MMR-ADM3-66882298B473250225009",
+      "MMR-ADM3-66882298B32757043222788",
+      "MMR-ADM3-66882298B30932007959210",
+      "MMR-ADM3-66882298B23940339796351",
+      "MMR-ADM3-66882298B46667405999710",
+      "MMR-ADM3-66882298B85055122841413",
+      "MMR-ADM3-66882298B25642914164479",
+      "MMR-ADM3-66882298B45008250934541",
+      "MMR-ADM3-66882298B77779383139193",
+      "MMR-ADM3-66882298B95143347867260",
+      "MMR-ADM3-66882298B32624553805926",
+      "MMR-ADM3-66882298B81567459772817",
+      "MMR-ADM3-66882298B68213150011457",
+      "MMR-ADM3-66882298B32904454419610",
+      "MMR-ADM3-66882298B54717675050990",
+      "MMR-ADM3-66882298B80796384628851",
+      "MMR-ADM3-66882298B41950876090021",
+      "MMR-ADM3-66882298B27453772484333",
+      "MMR-ADM3-66882298B2808199193765",
+      "MMR-ADM3-66882298B51516707971749",
+      "MMR-ADM3-66882298B68032961128999",
+      "MMR-ADM3-66882298B46524934526038",
+      "MMR-ADM3-66882298B56545181758026",
+      "MMR-ADM3-66882298B79191065265451",
+      "MMR-ADM3-66882298B85150336292626",
+      "MMR-ADM3-66882298B42147134062925",
+      "MMR-ADM3-66882298B21496867083234",
+      "MMR-ADM3-66882298B8454750486674",
+      "MMR-ADM3-66882298B23965774078734",
+      "MMR-ADM3-66882298B55937010800072",
+      "MMR-ADM3-66882298B99723166439324",
+      "MMR-ADM3-66882298B35243403264622",
+      "MMR-ADM3-66882298B43036302779177",
+      "MMR-ADM3-66882298B54341055682393",
+      "MMR-ADM3-66882298B65350512294428",
+      "MMR-ADM3-66882298B63293959945836",
+      "MMR-ADM3-66882298B63229305376369",
+      "MMR-ADM3-66882298B39726343497588",
+      "MMR-ADM3-66882298B66365018883830",
+      "MMR-ADM3-66882298B81098727977819",
+      "MMR-ADM3-66882298B61286545202529",
+      "MMR-ADM3-66882298B26691855709091",
+      "MMR-ADM3-66882298B74112724053029",
+      "MMR-ADM3-66882298B46397740219200",
+      "MMR-ADM3-66882298B28699089666182",
+      "MMR-ADM3-66882298B563703845722",
+      "MMR-ADM3-66882298B66473456791866",
+      "MMR-ADM3-66882298B33396458700604",
+      "MMR-ADM3-66882298B40918846263989",
+      "MMR-ADM3-66882298B60215820889063",
+      "MMR-ADM3-66882298B67010796182523",
+      "MMR-ADM3-66882298B62363316861126",
+      "MMR-ADM3-66882298B51829015120623",
+      "MMR-ADM3-66882298B41675327542424",
+      "MMR-ADM3-66882298B13905773583964",
+      "MMR-ADM3-66882298B99974135096198",
+      "MMR-ADM3-66882298B29412764358741",
+      "MMR-ADM3-66882298B16142720444000",
+      "MMR-ADM3-66882298B17517026252885",
+      "MMR-ADM3-66882298B36150528851438",
+      "MMR-ADM3-66882298B69266881240494",
+      "MMR-ADM3-66882298B19267213510514",
+      "MMR-ADM3-66882298B47304075793437"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/umm.html",
+       "title": "Statoids: Divisions of Myanmar, change history (Gwillim Law)",
+       "says": "1948-01-04: independence; Kachin, Karen(ni) and Shan states and the Chin Hills special division formed; next territorial change listed is 1964.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/umm.html",
+       "title": "Statoids: Divisions of Myanmar, change history (Gwillim Law)",
+       "says": "1964: Rangoon division, formerly a district of Pegu division, split from Pegu.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://web.archive.org/web/20260611041434/https://myanmar.gov.mm/bago-region-government",
+       "title": "Myanmar National Portal, Bago Region Government, «Background history» (Burmese; archived 2026-06-11)",
+       "says": "Pegu Division had Pegu, Hanthawaddy, Tharrawaddy, Insein, Prome and Toungoo districts (kept in 1962); on 20 June 1972 Hmawbi and Hanthawaddy moved to Rangoon Division, leaving Pegu 28 townships.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Rangoon belonged to Pegu Division until 1964. Toungoo district is withheld before 1962 (see unresolved)."
+    },
+    {
+     "from": "1962",
+     "precision": "year",
+     "to": "1964",
+     "atoms": [
+      "MMR-ADM3-66882298B68180713951642",
+      "MMR-ADM3-66882298B63538367621884",
+      "MMR-ADM3-66882298B24871755522741",
+      "MMR-ADM3-66882298B473250225009",
+      "MMR-ADM3-66882298B32757043222788",
+      "MMR-ADM3-66882298B30932007959210",
+      "MMR-ADM3-66882298B23940339796351",
+      "MMR-ADM3-66882298B46667405999710",
+      "MMR-ADM3-66882298B85055122841413",
+      "MMR-ADM3-66882298B25642914164479",
+      "MMR-ADM3-66882298B45008250934541",
+      "MMR-ADM3-66882298B77779383139193",
+      "MMR-ADM3-66882298B95143347867260",
+      "MMR-ADM3-66882298B32624553805926",
+      "MMR-ADM3-66882298B37364266207848",
+      "MMR-ADM3-66882298B61714621013950",
+      "MMR-ADM3-66882298B33418919919508",
+      "MMR-ADM3-66882298B60221129231929",
+      "MMR-ADM3-66882298B10452599963502",
+      "MMR-ADM3-66882298B25229900655360",
+      "MMR-ADM3-66882298B81567459772817",
+      "MMR-ADM3-66882298B68213150011457",
+      "MMR-ADM3-66882298B32904454419610",
+      "MMR-ADM3-66882298B54717675050990",
+      "MMR-ADM3-66882298B80796384628851",
+      "MMR-ADM3-66882298B41950876090021",
+      "MMR-ADM3-66882298B27453772484333",
+      "MMR-ADM3-66882298B2808199193765",
+      "MMR-ADM3-66882298B51516707971749",
+      "MMR-ADM3-66882298B68032961128999",
+      "MMR-ADM3-66882298B46524934526038",
+      "MMR-ADM3-66882298B56545181758026",
+      "MMR-ADM3-66882298B79191065265451",
+      "MMR-ADM3-66882298B85150336292626",
+      "MMR-ADM3-66882298B42147134062925",
+      "MMR-ADM3-66882298B21496867083234",
+      "MMR-ADM3-66882298B8454750486674",
+      "MMR-ADM3-66882298B23965774078734",
+      "MMR-ADM3-66882298B55937010800072",
+      "MMR-ADM3-66882298B99723166439324",
+      "MMR-ADM3-66882298B35243403264622",
+      "MMR-ADM3-66882298B43036302779177",
+      "MMR-ADM3-66882298B54341055682393",
+      "MMR-ADM3-66882298B65350512294428",
+      "MMR-ADM3-66882298B63293959945836",
+      "MMR-ADM3-66882298B63229305376369",
+      "MMR-ADM3-66882298B39726343497588",
+      "MMR-ADM3-66882298B66365018883830",
+      "MMR-ADM3-66882298B81098727977819",
+      "MMR-ADM3-66882298B61286545202529",
+      "MMR-ADM3-66882298B26691855709091",
+      "MMR-ADM3-66882298B74112724053029",
+      "MMR-ADM3-66882298B46397740219200",
+      "MMR-ADM3-66882298B28699089666182",
+      "MMR-ADM3-66882298B563703845722",
+      "MMR-ADM3-66882298B66473456791866",
+      "MMR-ADM3-66882298B33396458700604",
+      "MMR-ADM3-66882298B40918846263989",
+      "MMR-ADM3-66882298B60215820889063",
+      "MMR-ADM3-66882298B67010796182523",
+      "MMR-ADM3-66882298B62363316861126",
+      "MMR-ADM3-66882298B51829015120623",
+      "MMR-ADM3-66882298B41675327542424",
+      "MMR-ADM3-66882298B13905773583964",
+      "MMR-ADM3-66882298B99974135096198",
+      "MMR-ADM3-66882298B29412764358741",
+      "MMR-ADM3-66882298B16142720444000",
+      "MMR-ADM3-66882298B17517026252885",
+      "MMR-ADM3-66882298B36150528851438",
+      "MMR-ADM3-66882298B69266881240494",
+      "MMR-ADM3-66882298B19267213510514",
+      "MMR-ADM3-66882298B47304075793437"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/20260611041434/https://myanmar.gov.mm/bago-region-government",
+       "title": "Myanmar National Portal, Bago Region Government, «Background history» (Burmese; archived 2026-06-11)",
+       "says": "Pegu Division had Pegu, Hanthawaddy, Tharrawaddy, Insein, Prome and Toungoo districts (kept in 1962); on 20 June 1972 Hmawbi and Hanthawaddy moved to Rangoon Division, leaving Pegu 28 townships.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/umm.html",
+       "title": "Statoids: Divisions of Myanmar, change history (Gwillim Law)",
+       "says": "1964: Rangoon division, formerly a district of Pegu division, split from Pegu.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "The Bago Region government attests Toungoo district in Pegu Division in 1962 but not the date it joined, so it is drawn only from 1962."
+    },
+    {
+     "from": "1964",
+     "precision": "year",
+     "to": "1972-06-20",
+     "atoms": [
+      "MMR-ADM3-66882298B68180713951642",
+      "MMR-ADM3-66882298B63538367621884",
+      "MMR-ADM3-66882298B24871755522741",
+      "MMR-ADM3-66882298B473250225009",
+      "MMR-ADM3-66882298B32757043222788",
+      "MMR-ADM3-66882298B30932007959210",
+      "MMR-ADM3-66882298B23940339796351",
+      "MMR-ADM3-66882298B46667405999710",
+      "MMR-ADM3-66882298B85055122841413",
+      "MMR-ADM3-66882298B25642914164479",
+      "MMR-ADM3-66882298B45008250934541",
+      "MMR-ADM3-66882298B77779383139193",
+      "MMR-ADM3-66882298B95143347867260",
+      "MMR-ADM3-66882298B32624553805926",
+      "MMR-ADM3-66882298B37364266207848",
+      "MMR-ADM3-66882298B61714621013950",
+      "MMR-ADM3-66882298B33418919919508",
+      "MMR-ADM3-66882298B60221129231929",
+      "MMR-ADM3-66882298B10452599963502",
+      "MMR-ADM3-66882298B25229900655360",
+      "MMR-ADM3-66882298B81567459772817",
+      "MMR-ADM3-66882298B68213150011457",
+      "MMR-ADM3-66882298B32904454419610",
+      "MMR-ADM3-66882298B54717675050990",
+      "MMR-ADM3-66882298B80796384628851",
+      "MMR-ADM3-66882298B41950876090021",
+      "MMR-ADM3-66882298B27453772484333",
+      "MMR-ADM3-66882298B2808199193765"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/20260611041434/https://myanmar.gov.mm/bago-region-government",
+       "title": "Myanmar National Portal, Bago Region Government, «Background history» (Burmese; archived 2026-06-11)",
+       "says": "Pegu Division had Pegu, Hanthawaddy, Tharrawaddy, Insein, Prome and Toungoo districts (kept in 1962); on 20 June 1972 Hmawbi and Hanthawaddy moved to Rangoon Division, leaving Pegu 28 townships.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/umm.html",
+       "title": "Statoids: Divisions of Myanmar, change history (Gwillim Law)",
+       "says": "1964: Rangoon division, formerly a district of Pegu division, split from Pegu.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Today’s Bago Region. The Hmawbi and Hanthawaddy districts (inside today’s Yangon Region) also belonged to Pegu until 20 June 1972 but their line against the 1964 Rangoon Division is not established, so they are withheld."
+    }
+   ]
+  },
+  {
+   "id": "MMR:Bago",
+   "names": {
+    "en": "Pegu Division / Bago Region",
+    "ja": "バゴー管区",
+    "local": "ပဲခူးတိုင်းဒေသကြီး"
+   },
+   "wikidata": "Q800124",
+   "spans": [
+    {
+     "from": "1972-06-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MMR-ADM3-66882298B68180713951642",
+      "MMR-ADM3-66882298B63538367621884",
+      "MMR-ADM3-66882298B24871755522741",
+      "MMR-ADM3-66882298B473250225009",
+      "MMR-ADM3-66882298B32757043222788",
+      "MMR-ADM3-66882298B30932007959210",
+      "MMR-ADM3-66882298B23940339796351",
+      "MMR-ADM3-66882298B46667405999710",
+      "MMR-ADM3-66882298B85055122841413",
+      "MMR-ADM3-66882298B25642914164479",
+      "MMR-ADM3-66882298B45008250934541",
+      "MMR-ADM3-66882298B77779383139193",
+      "MMR-ADM3-66882298B95143347867260",
+      "MMR-ADM3-66882298B32624553805926",
+      "MMR-ADM3-66882298B37364266207848",
+      "MMR-ADM3-66882298B61714621013950",
+      "MMR-ADM3-66882298B33418919919508",
+      "MMR-ADM3-66882298B60221129231929",
+      "MMR-ADM3-66882298B10452599963502",
+      "MMR-ADM3-66882298B25229900655360",
+      "MMR-ADM3-66882298B81567459772817",
+      "MMR-ADM3-66882298B68213150011457",
+      "MMR-ADM3-66882298B32904454419610",
+      "MMR-ADM3-66882298B54717675050990",
+      "MMR-ADM3-66882298B80796384628851",
+      "MMR-ADM3-66882298B41950876090021",
+      "MMR-ADM3-66882298B27453772484333",
+      "MMR-ADM3-66882298B2808199193765"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/20260611041434/https://myanmar.gov.mm/bago-region-government",
+       "title": "Myanmar National Portal, Bago Region Government, «Background history» (Burmese; archived 2026-06-11)",
+       "says": "Pegu Division had Pegu, Hanthawaddy, Tharrawaddy, Insein, Prome and Toungoo districts (kept in 1962); on 20 June 1972 Hmawbi and Hanthawaddy moved to Rangoon Division, leaving Pegu 28 townships.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/umm.html",
+       "title": "Statoids: Divisions of Myanmar, change history",
+       "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+       "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
+       "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 28 townships left to Pegu on 20 June 1972 are today’s 28 townships of Bago Region. Statoids dates this transfer to 1972-06; Wikipedia «Yangon Region» says June 1974 without a source."
+    }
+   ]
+  },
+  {
+   "id": "MMR:Yangon",
+   "names": {
+    "en": "Rangoon Division / Yangon Region",
+    "ja": "ヤンゴン管区",
+    "local": "ရန်ကုန်တိုင်းဒေသကြီး"
+   },
+   "wikidata": "Q856781",
+   "spans": [
+    {
+     "from": "1972-06-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MMR-ADM3-66882298B51516707971749",
+      "MMR-ADM3-66882298B68032961128999",
+      "MMR-ADM3-66882298B46524934526038",
+      "MMR-ADM3-66882298B56545181758026",
+      "MMR-ADM3-66882298B79191065265451",
+      "MMR-ADM3-66882298B85150336292626",
+      "MMR-ADM3-66882298B42147134062925",
+      "MMR-ADM3-66882298B21496867083234",
+      "MMR-ADM3-66882298B8454750486674",
+      "MMR-ADM3-66882298B23965774078734",
+      "MMR-ADM3-66882298B55937010800072",
+      "MMR-ADM3-66882298B99723166439324",
+      "MMR-ADM3-66882298B35243403264622",
+      "MMR-ADM3-66882298B43036302779177",
+      "MMR-ADM3-66882298B54341055682393",
+      "MMR-ADM3-66882298B65350512294428",
+      "MMR-ADM3-66882298B63293959945836",
+      "MMR-ADM3-66882298B63229305376369",
+      "MMR-ADM3-66882298B39726343497588",
+      "MMR-ADM3-66882298B66365018883830",
+      "MMR-ADM3-66882298B81098727977819",
+      "MMR-ADM3-66882298B61286545202529",
+      "MMR-ADM3-66882298B26691855709091",
+      "MMR-ADM3-66882298B74112724053029",
+      "MMR-ADM3-66882298B46397740219200",
+      "MMR-ADM3-66882298B28699089666182",
+      "MMR-ADM3-66882298B563703845722",
+      "MMR-ADM3-66882298B66473456791866",
+      "MMR-ADM3-66882298B33396458700604",
+      "MMR-ADM3-66882298B40918846263989",
+      "MMR-ADM3-66882298B60215820889063",
+      "MMR-ADM3-66882298B67010796182523",
+      "MMR-ADM3-66882298B62363316861126",
+      "MMR-ADM3-66882298B51829015120623",
+      "MMR-ADM3-66882298B41675327542424",
+      "MMR-ADM3-66882298B13905773583964",
+      "MMR-ADM3-66882298B99974135096198",
+      "MMR-ADM3-66882298B29412764358741",
+      "MMR-ADM3-66882298B16142720444000",
+      "MMR-ADM3-66882298B17517026252885",
+      "MMR-ADM3-66882298B36150528851438",
+      "MMR-ADM3-66882298B69266881240494",
+      "MMR-ADM3-66882298B19267213510514",
+      "MMR-ADM3-66882298B47304075793437"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/20260611041434/https://myanmar.gov.mm/bago-region-government",
+       "title": "Myanmar National Portal, Bago Region Government, «Background history» (Burmese; archived 2026-06-11)",
+       "says": "Pegu Division had Pegu, Hanthawaddy, Tharrawaddy, Insein, Prome and Toungoo districts (kept in 1962); on 20 June 1972 Hmawbi and Hanthawaddy moved to Rangoon Division, leaving Pegu 28 townships.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/umm.html",
+       "title": "Statoids: Divisions of Myanmar, change history (Gwillim Law)",
+       "says": "1972-06: Hanthawaddy and Hmawbi districts transferred from Pegu division to Rangoon division.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/umm.html",
+       "title": "Statoids: Divisions of Myanmar, change history",
+       "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+       "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
+       "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Rangoon Division existed from 1964, but only its extent from 20 June 1972 (with Hanthawaddy and Hmawbi) is a union of today’s townships. Cocokyun (Coco Islands) is withheld."
+    }
+   ]
+  },
+  {
+   "id": "MMR:Tenasserim",
+   "names": {
+    "en": "Tenasserim Division",
+    "ja": "テナセリム管区",
+    "local": "တနင်္သာရီတိုင်း"
+   },
+   "spans": [
+    {
+     "from": "1948-01-04",
+     "precision": "day",
+     "to": "1954-06-01",
+     "atoms": [
+      "MMR-ADM3-66882298B57686651613256",
+      "MMR-ADM3-66882298B55371715094402",
+      "MMR-ADM3-66882298B45439994111599",
+      "MMR-ADM3-66882298B22649797942784",
+      "MMR-ADM3-66882298B48286505509820",
+      "MMR-ADM3-66882298B73191723482857",
+      "MMR-ADM3-66882298B52510382995497",
+      "MMR-ADM3-66882298B30035671122346",
+      "MMR-ADM3-66882298B46374660355499",
+      "MMR-ADM3-66882298B50654546091874",
+      "MMR-ADM3-66882298B9277012619903",
+      "MMR-ADM3-66882298B80414211212402",
+      "MMR-ADM3-66882298B32460181384532",
+      "MMR-ADM3-66882298B48301856519721",
+      "MMR-ADM3-66882298B82483484204646",
+      "MMR-ADM3-66882298B86598910616989",
+      "MMR-ADM3-66882298B62167174305830",
+      "MMR-ADM3-66882298B36911639137507",
+      "MMR-ADM3-66882298B40667774005147",
+      "MMR-ADM3-66882298B30308301468052",
+      "MMR-ADM3-66882298B4365732465197",
+      "MMR-ADM3-66882298B94192188096874",
+      "MMR-ADM3-66882298B59879554977018",
+      "MMR-ADM3-66882298B20948488348117",
+      "MMR-ADM3-66882298B33854457780857"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/umm.html",
+       "title": "Statoids: Divisions of Myanmar, change history (Gwillim Law)",
+       "says": "1948-01-04: independence; Kachin, Karen(ni) and Shan states and the Chin Hills special division formed; next territorial change listed is 1964.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://kicnews.org/2016/10/%E1%80%80%E1%80%9B%E1%80%84%E1%80%B9%E1%80%BB%E1%80%95%E1%80%8A%E1%80%B9%E1%80%94%E1%80%9A%E1%80%B9%E1%80%B1%E1%80%94%E1%82%94-%E1%80%BB%E1%80%96%E1%80%85%E1%80%B9%E1%80%B1%E1%80%95%E1%81%9A%E1%80%9C/",
+       "title": "Karen Information Center (2016), «The origin of Karen State Day» (Burmese)",
+       "says": "Pa-an and Hlaingbwe (Thaton district) and Thandaung (Toungoo district) were handed to the Karen State on 1 June 1954; Kawkareik and Kyain Seikgyi (Amherst district) on 1 July 1955; Myawaddy became a separate township on 1 March 1960.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Amherst, Thaton, Tavoy and Mergui districts; the Salween district (Hpapun) is the Kaw-thu-lay Special Region; Thandaung (Toungoo district) is withheld."
+    },
+    {
+     "from": "1954-06-01",
+     "precision": "day",
+     "to": "1955-07-01",
+     "atoms": [
+      "MMR-ADM3-66882298B57686651613256",
+      "MMR-ADM3-66882298B55371715094402",
+      "MMR-ADM3-66882298B45439994111599",
+      "MMR-ADM3-66882298B22649797942784",
+      "MMR-ADM3-66882298B48286505509820",
+      "MMR-ADM3-66882298B73191723482857",
+      "MMR-ADM3-66882298B52510382995497",
+      "MMR-ADM3-66882298B30035671122346",
+      "MMR-ADM3-66882298B46374660355499",
+      "MMR-ADM3-66882298B50654546091874",
+      "MMR-ADM3-66882298B9277012619903",
+      "MMR-ADM3-66882298B80414211212402",
+      "MMR-ADM3-66882298B32460181384532",
+      "MMR-ADM3-66882298B48301856519721",
+      "MMR-ADM3-66882298B82483484204646",
+      "MMR-ADM3-66882298B86598910616989",
+      "MMR-ADM3-66882298B62167174305830",
+      "MMR-ADM3-66882298B36911639137507",
+      "MMR-ADM3-66882298B40667774005147",
+      "MMR-ADM3-66882298B30308301468052",
+      "MMR-ADM3-66882298B4365732465197",
+      "MMR-ADM3-66882298B94192188096874",
+      "MMR-ADM3-66882298B59879554977018"
+     ],
+     "sources": [
+      {
+       "url": "https://kicnews.org/2016/10/%E1%80%80%E1%80%9B%E1%80%84%E1%80%B9%E1%80%BB%E1%80%95%E1%80%8A%E1%80%B9%E1%80%94%E1%80%9A%E1%80%B9%E1%80%B1%E1%80%94%E1%82%94-%E1%80%BB%E1%80%96%E1%80%85%E1%80%B9%E1%80%B1%E1%80%95%E1%81%9A%E1%80%9C/",
+       "title": "Karen Information Center (2016), «The origin of Karen State Day» (Burmese)",
+       "says": "Pa-an and Hlaingbwe (Thaton district) and Thandaung (Toungoo district) were handed to the Karen State on 1 June 1954; Kawkareik and Kyain Seikgyi (Amherst district) on 1 July 1955; Myawaddy became a separate township on 1 March 1960.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Kawkareik includes today’s Myawaddy Township (separated 1960)."
+    },
+    {
+     "from": "1955-07-01",
+     "precision": "day",
+     "to": "1972",
+     "atoms": [
+      "MMR-ADM3-66882298B57686651613256",
+      "MMR-ADM3-66882298B55371715094402",
+      "MMR-ADM3-66882298B45439994111599",
+      "MMR-ADM3-66882298B22649797942784",
+      "MMR-ADM3-66882298B48286505509820",
+      "MMR-ADM3-66882298B73191723482857",
+      "MMR-ADM3-66882298B52510382995497",
+      "MMR-ADM3-66882298B30035671122346",
+      "MMR-ADM3-66882298B46374660355499",
+      "MMR-ADM3-66882298B50654546091874",
+      "MMR-ADM3-66882298B9277012619903",
+      "MMR-ADM3-66882298B80414211212402",
+      "MMR-ADM3-66882298B32460181384532",
+      "MMR-ADM3-66882298B48301856519721",
+      "MMR-ADM3-66882298B82483484204646",
+      "MMR-ADM3-66882298B86598910616989",
+      "MMR-ADM3-66882298B62167174305830",
+      "MMR-ADM3-66882298B36911639137507",
+      "MMR-ADM3-66882298B40667774005147",
+      "MMR-ADM3-66882298B30308301468052"
+     ],
+     "sources": [
+      {
+       "url": "https://kicnews.org/2016/10/%E1%80%80%E1%80%9B%E1%80%84%E1%80%B9%E1%80%BB%E1%80%95%E1%80%8A%E1%80%B9%E1%80%94%E1%80%9A%E1%80%B9%E1%80%B1%E1%80%94%E1%82%94-%E1%80%BB%E1%80%96%E1%80%85%E1%80%B9%E1%80%B1%E1%80%95%E1%81%9A%E1%80%9C/",
+       "title": "Karen Information Center (2016), «The origin of Karen State Day» (Burmese)",
+       "says": "Pa-an and Hlaingbwe (Thaton district) and Thandaung (Toungoo district) were handed to the Karen State on 1 June 1954; Kawkareik and Kyain Seikgyi (Amherst district) on 1 July 1955; Myawaddy became a separate township on 1 March 1960.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1378340778",
+       "title": "Administrative divisions of Myanmar (en.wikipedia, revision 1378340778), History and «Historical evolution of states/regions»",
+       "says": "In 1972 Tenasserim Division was divided: Moulmein and Thaton districts formed Tenasserim Division (1), Tavoy and Mergui Tenasserim Division (2).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "MMR:Mon",
+   "names": {
+    "en": "Tenasserim Division (1) / Mon State",
+    "ja": "モン州",
+    "local": "မွန်ပြည်နယ်"
+   },
+   "wikidata": "Q818742",
+   "spans": [
+    {
+     "from": "1972",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "MMR-ADM3-66882298B57686651613256",
+      "MMR-ADM3-66882298B55371715094402",
+      "MMR-ADM3-66882298B45439994111599",
+      "MMR-ADM3-66882298B22649797942784",
+      "MMR-ADM3-66882298B48286505509820",
+      "MMR-ADM3-66882298B73191723482857",
+      "MMR-ADM3-66882298B52510382995497",
+      "MMR-ADM3-66882298B30035671122346",
+      "MMR-ADM3-66882298B46374660355499",
+      "MMR-ADM3-66882298B50654546091874"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1378340778",
+       "title": "Administrative divisions of Myanmar (en.wikipedia, revision 1378340778), History and «Historical evolution of states/regions»",
+       "says": "1972: Moulmein and Thaton districts formed Tenasserim Division (1), which became Mon State under the 1974 constitution.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/umm.html",
+       "title": "Statoids: Divisions of Myanmar, change history",
+       "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+       "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
+       "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The month of the 1972 division is not stated (the Mon State government history, cited by Wikipedia, gives the year)."
+    }
+   ]
+  },
+  {
+   "id": "MMR:Tanintharyi",
+   "names": {
+    "en": "Tenasserim Division (2) / Tanintharyi Region",
+    "ja": "タニンダーイー管区",
+    "local": "တနင်္သာရီတိုင်းဒေသကြီး"
+   },
+   "wikidata": "Q843954",
+   "spans": [
+    {
+     "from": "1972",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "MMR-ADM3-66882298B9277012619903",
+      "MMR-ADM3-66882298B80414211212402",
+      "MMR-ADM3-66882298B32460181384532",
+      "MMR-ADM3-66882298B48301856519721",
+      "MMR-ADM3-66882298B82483484204646",
+      "MMR-ADM3-66882298B86598910616989",
+      "MMR-ADM3-66882298B62167174305830",
+      "MMR-ADM3-66882298B36911639137507",
+      "MMR-ADM3-66882298B40667774005147",
+      "MMR-ADM3-66882298B30308301468052"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1378340778",
+       "title": "Administrative divisions of Myanmar (en.wikipedia, revision 1378340778), History and «Historical evolution of states/regions»",
+       "says": "1972: Myeik (Mergui) and Tavoy districts formed Tenasserim Division (2), the only Tenasserim Division from 1974.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/umm.html",
+       "title": "Statoids: Divisions of Myanmar, change history",
+       "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+       "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
+       "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "MMR:Kawthulay",
+   "names": {
+    "en": "Kaw-thu-lay Special Region",
+    "ja": "コートゥーレー特別地域",
+    "local": "ကော့သူးလေ"
+   },
+   "spans": [
+    {
+     "from": "1948-01-04",
+     "precision": "day",
+     "to": "1954-06-01",
+     "atoms": [
+      "MMR-ADM3-66882298B27866808767172"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1378340778",
+       "title": "Administrative divisions of Myanmar (en.wikipedia, revision 1378340778), History and «Historical evolution of states/regions»",
+       "says": "Kaw-thu-lay Special Region existed 1948–1954, intended to evolve into Karen State.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://kicnews.org/2016/10/%E1%80%80%E1%80%9B%E1%80%84%E1%80%B9%E1%80%BB%E1%80%95%E1%80%8A%E1%80%B9%E1%80%94%E1%80%9A%E1%80%B9%E1%80%B1%E1%80%94%E1%82%94-%E1%80%BB%E1%80%96%E1%80%85%E1%80%B9%E1%80%B1%E1%80%95%E1%81%9A%E1%80%9C/",
+       "title": "Karen Information Center (2016), «The origin of Karen State Day» (Burmese)",
+       "says": "The 1951 constitutional amendment designated the Salween district (Papun area) as the Karen State; the state council governed from 1 June 1954.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "The Salween district, today’s Hpapun Township."
+    }
+   ]
+  },
+  {
+   "id": "MMR:Kayin",
+   "names": {
+    "en": "Karen State / Kawthoolei / Kayin State",
+    "ja": "カレン州",
+    "local": "ကရင်ပြည်နယ်"
+   },
+   "wikidata": "Q495342",
+   "spans": [
+    {
+     "from": "1954-06-01",
+     "precision": "day",
+     "to": "1955-07-01",
+     "atoms": [
+      "MMR-ADM3-66882298B27866808767172",
+      "MMR-ADM3-66882298B20948488348117",
+      "MMR-ADM3-66882298B33854457780857",
+      "MMR-ADM3-66882298B59821374859075"
+     ],
+     "sources": [
+      {
+       "url": "https://kicnews.org/2016/10/%E1%80%80%E1%80%9B%E1%80%84%E1%80%B9%E1%80%BB%E1%80%95%E1%80%8A%E1%80%B9%E1%80%94%E1%80%9A%E1%80%B9%E1%80%B1%E1%80%94%E1%82%94-%E1%80%BB%E1%80%96%E1%80%85%E1%80%B9%E1%80%B1%E1%80%95%E1%81%9A%E1%80%9C/",
+       "title": "Karen Information Center (2016), «The origin of Karen State Day» (Burmese)",
+       "says": "On 1 June 1954 the Karen State government took over the Salween district and the Pa-an, Hlaingbwe and Thandaung townships.",
+       "accessed": "2026-10-06"
+      }
+     ]
+    },
+    {
+     "from": "1955-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "MMR-ADM3-66882298B33854457780857",
+      "MMR-ADM3-66882298B20948488348117",
+      "MMR-ADM3-66882298B59821374859075",
+      "MMR-ADM3-66882298B27866808767172",
+      "MMR-ADM3-66882298B4365732465197",
+      "MMR-ADM3-66882298B94192188096874",
+      "MMR-ADM3-66882298B59879554977018"
+     ],
+     "sources": [
+      {
+       "url": "https://kicnews.org/2016/10/%E1%80%80%E1%80%9B%E1%80%84%E1%80%B9%E1%80%BB%E1%80%95%E1%80%8A%E1%80%B9%E1%80%94%E1%80%9A%E1%80%B9%E1%80%B1%E1%80%94%E1%82%94-%E1%80%BB%E1%80%96%E1%80%85%E1%80%B9%E1%80%B1%E1%80%95%E1%81%9A%E1%80%9C/",
+       "title": "Karen Information Center (2016), «The origin of Karen State Day» (Burmese)",
+       "says": "Kawkareik and Kyain Seikgyi townships were handed over on 1 July 1955; with Myawaddy (1960) the state had seven townships.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1378340778",
+       "title": "Administrative divisions of Myanmar (en.wikipedia, revision 1378340778), History and «Historical evolution of states/regions»",
+       "says": "Karen State renamed Kawthoolei in 1964 and Karen again in 1974; Kayin from 1989.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.statoids.com/umm.html",
+       "title": "Statoids: Divisions of Myanmar, change history",
+       "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+       "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
+       "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1948-01-04",
+   "precision": "day",
+   "what": "Independence: Kachin, Karenni and Shan states, Chin Special Division and Kaw-thu-lay Special Region formed beside the seven divisions",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1378340778",
+     "title": "Administrative divisions of Myanmar (en.wikipedia, revision 1378340778), History and «Historical evolution of states/regions»",
+     "says": "On 4 January 1948 Kachin State, Chin Special Division, Karenni State, Shan State and the Kaw-thu-lay Special Region were formed; the divisions of Burma proper continued.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://www.statoids.com/umm.html",
+     "title": "Statoids: Divisions of Myanmar, change history (Gwillim Law)",
+     "says": "1948-01-04: independence; Kachin, Karen(ni) and Shan states and the Chin Hills special division formed; next territorial change listed is 1964.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1954-06-01",
+   "precision": "day",
+   "what": "Karen State government takes over the Salween district, Pa-an, Hlaingbwe and Thandaung",
+   "sources": [
+    {
+     "url": "https://kicnews.org/2016/10/%E1%80%80%E1%80%9B%E1%80%84%E1%80%B9%E1%80%BB%E1%80%95%E1%80%8A%E1%80%B9%E1%80%94%E1%80%9A%E1%80%B9%E1%80%B1%E1%80%94%E1%82%94-%E1%80%BB%E1%80%96%E1%80%85%E1%80%B9%E1%80%B1%E1%80%95%E1%81%9A%E1%80%9C/",
+     "title": "Karen Information Center (2016), «The origin of Karen State Day» (Burmese)",
+     "says": "Pa-an and Hlaingbwe (Thaton district) and Thandaung (Toungoo district) were handed to the Karen State on 1 June 1954; Kawkareik and Kyain Seikgyi (Amherst district) on 1 July 1955; Myawaddy became a separate township on 1 March 1960.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1955-07-01",
+   "precision": "day",
+   "what": "Kawkareik and Kyain Seikgyi handed to the Karen State",
+   "sources": [
+    {
+     "url": "https://kicnews.org/2016/10/%E1%80%80%E1%80%9B%E1%80%84%E1%80%B9%E1%80%BB%E1%80%95%E1%80%8A%E1%80%B9%E1%80%94%E1%80%9A%E1%80%B9%E1%80%B1%E1%80%94%E1%82%94-%E1%80%BB%E1%80%96%E1%80%85%E1%80%B9%E1%80%B1%E1%80%95%E1%81%9A%E1%80%9C/",
+     "title": "Karen Information Center (2016), «The origin of Karen State Day» (Burmese)",
+     "says": "Pa-an and Hlaingbwe (Thaton district) and Thandaung (Toungoo district) were handed to the Karen State on 1 June 1954; Kawkareik and Kyain Seikgyi (Amherst district) on 1 July 1955; Myawaddy became a separate township on 1 March 1960.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1964",
+   "precision": "year",
+   "what": "Rangoon Division separated from Pegu Division",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/umm.html",
+     "title": "Statoids: Divisions of Myanmar, change history (Gwillim Law)",
+     "says": "1964: Rangoon division, formerly a district of Pegu division, split from Pegu.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1972-06-20",
+   "precision": "day",
+   "what": "Hmawbi and Hanthawaddy districts moved from Pegu to Rangoon Division",
+   "sources": [
+    {
+     "url": "https://web.archive.org/web/20260611041434/https://myanmar.gov.mm/bago-region-government",
+     "title": "Myanmar National Portal, Bago Region Government, «Background history» (Burmese; archived 2026-06-11)",
+     "says": "Pegu Division had Pegu, Hanthawaddy, Tharrawaddy, Insein, Prome and Toungoo districts (kept in 1962); on 20 June 1972 Hmawbi and Hanthawaddy moved to Rangoon Division, leaving Pegu 28 townships.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1972",
+   "precision": "year",
+   "what": "Tenasserim Division divided into Tenasserim (1) and (2)",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1378340778",
+     "title": "Administrative divisions of Myanmar (en.wikipedia, revision 1378340778), History and «Historical evolution of states/regions»",
+     "says": "1972: Tenasserim Division divided into (1) Moulmein and Thaton and (2) Tavoy and Mergui.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1974-01-04",
+   "precision": "day",
+   "what": "1974 constitution: 7 states and 7 divisions (Mon State from Tenasserim; Chin and Arakan become states)",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/umm.html",
+     "title": "Statoids: Divisions of Myanmar, change history",
+     "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+     "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
+     "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1989-06-19",
+   "precision": "day",
+   "what": "English names changed (Burma→Myanmar, Arakan→Rakhine, Karen→Kayin, Pegu→Bago, Rangoon→Yangon, Irrawaddy→Ayeyarwady, Magwe→Magway, Tenasserim→Tanintharyi); no territorial change",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/umm.html",
+     "title": "Statoids: Divisions of Myanmar, change history",
+     "says": "1989-06-19 renamings of country, divisions and states.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2011-01-31",
+   "precision": "day",
+   "what": "2008 constitution in force: divisions become regions; Nay Pyi Taw Union Territory separated from Mandalay",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+     "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475)",
+     "says": "The 2008 constitution came into effect on 31 January 2011.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1377853481",
+     "title": "Nay Pyi Taw Union Territory (en.wikipedia, revision 1377853481)",
+     "says": "Nay Pyi Taw Council formed 30 March 2011.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1950-01-01",
+   "n": 12,
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1378340778",
+     "title": "Administrative divisions of Myanmar (en.wikipedia, revision 1378340778), History and «Historical evolution of states/regions»",
+     "says": "1948–1952 column: Kachin, Shan, Karenni, Arakan, Chin Special Division, Kaw-thu-lay Special Region, Tenasserim, Pegu, Irrawaddy, Magwe, Sagaing, Mandalay.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1966-01-01",
+   "n": 13,
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1378340778",
+     "title": "Administrative divisions of Myanmar (en.wikipedia, revision 1378340778), History and «Historical evolution of states/regions»",
+     "says": "1964–1972 column: Rangoon Division added; Karen (Kawthoolei) State in place of Kaw-thu-lay.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1973-03-31",
+   "n": 14,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/umm.html",
+     "title": "Statoids: Divisions of Myanmar, change history (Gwillim Law)",
+     "says": "At the census of 1973-03-31 fourteen units were reported, including Tenasserim (I) and Tenasserim (II).",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1980-01-01",
+   "n": 14,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/umm.html",
+     "title": "Statoids: Divisions of Myanmar, change history",
+     "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2019-12-31",
+   "n": 15,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/umm.html",
+     "title": "Statoids: Divisions of Myanmar, change history",
+     "says": "2008-05-29: new constitution makes divisions regions and establishes Naypyidaw as a union territory, changing the extent of Mandalay.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1377853481",
+     "title": "Nay Pyi Taw Union Territory (en.wikipedia, revision 1377853481)",
+     "says": "Naypyidaw Union Territory: bordered by Mandalay Region on all sides.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "British Burma 1937–1948: divisions, Federated Shan States, Karenni and the Frontier (Excluded) Areas",
+   "atoms": [
+    "MMR-ADM3-66882298B23149240101937",
+    "MMR-ADM3-66882298B10075532329949",
+    "MMR-ADM3-66882298B70728451341667",
+    "MMR-ADM3-66882298B92034765934079",
+    "MMR-ADM3-66882298B96340989204830",
+    "MMR-ADM3-66882298B98169404583454",
+    "MMR-ADM3-66882298B46433982831447",
+    "MMR-ADM3-66882298B45976501481961",
+    "MMR-ADM3-66882298B45599344473693",
+    "MMR-ADM3-66882298B9381677048276",
+    "MMR-ADM3-66882298B87618867269026",
+    "MMR-ADM3-66882298B27822047264791",
+    "MMR-ADM3-66882298B97791680692613",
+    "MMR-ADM3-66882298B35313795132071",
+    "MMR-ADM3-66882298B93394455443594",
+    "MMR-ADM3-66882298B5626975055677",
+    "MMR-ADM3-66882298B87314551665108",
+    "MMR-ADM3-66882298B59134367047252",
+    "MMR-ADM3-66882298B21473836197235",
+    "MMR-ADM3-66882298B98470543554215",
+    "MMR-ADM3-66882298B78974611272668",
+    "MMR-ADM3-66882298B3445717579771",
+    "MMR-ADM3-66882298B48553142968450",
+    "MMR-ADM3-66882298B62732217443925",
+    "MMR-ADM3-66882298B63844124977533",
+    "MMR-ADM3-66882298B62212267926712",
+    "MMR-ADM3-66882298B68180713951642",
+    "MMR-ADM3-66882298B63538367621884",
+    "MMR-ADM3-66882298B24871755522741",
+    "MMR-ADM3-66882298B473250225009",
+    "MMR-ADM3-66882298B32757043222788",
+    "MMR-ADM3-66882298B30932007959210",
+    "MMR-ADM3-66882298B23940339796351",
+    "MMR-ADM3-66882298B46667405999710",
+    "MMR-ADM3-66882298B85055122841413",
+    "MMR-ADM3-66882298B25642914164479",
+    "MMR-ADM3-66882298B45008250934541",
+    "MMR-ADM3-66882298B77779383139193",
+    "MMR-ADM3-66882298B95143347867260",
+    "MMR-ADM3-66882298B32624553805926",
+    "MMR-ADM3-66882298B37364266207848",
+    "MMR-ADM3-66882298B61714621013950",
+    "MMR-ADM3-66882298B33418919919508",
+    "MMR-ADM3-66882298B60221129231929",
+    "MMR-ADM3-66882298B10452599963502",
+    "MMR-ADM3-66882298B25229900655360",
+    "MMR-ADM3-66882298B81567459772817",
+    "MMR-ADM3-66882298B68213150011457",
+    "MMR-ADM3-66882298B32904454419610",
+    "MMR-ADM3-66882298B54717675050990",
+    "MMR-ADM3-66882298B80796384628851",
+    "MMR-ADM3-66882298B41950876090021",
+    "MMR-ADM3-66882298B27453772484333",
+    "MMR-ADM3-66882298B2808199193765",
+    "MMR-ADM3-66882298B80362939759062",
+    "MMR-ADM3-66882298B6984635080223",
+    "MMR-ADM3-66882298B34348354141761",
+    "MMR-ADM3-66882298B89367867823284",
+    "MMR-ADM3-66882298B29817786092146",
+    "MMR-ADM3-66882298B63813007351538",
+    "MMR-ADM3-66882298B44324373263157",
+    "MMR-ADM3-66882298B86048721832096",
+    "MMR-ADM3-66882298B10368150445219",
+    "MMR-ADM3-66882298B3684723287244",
+    "MMR-ADM3-66882298B58400642266296",
+    "MMR-ADM3-66882298B59325512969250",
+    "MMR-ADM3-66882298B3817966441751",
+    "MMR-ADM3-66882298B73343718613746",
+    "MMR-ADM3-66882298B71588041682285",
+    "MMR-ADM3-66882298B83360582582831",
+    "MMR-ADM3-66882298B63943979787937",
+    "MMR-ADM3-66882298B33332446672250",
+    "MMR-ADM3-66882298B4579999731353",
+    "MMR-ADM3-66882298B59193658756261",
+    "MMR-ADM3-66882298B34211436690128",
+    "MMR-ADM3-66882298B42133100015884",
+    "MMR-ADM3-66882298B21056101662842",
+    "MMR-ADM3-66882298B45809862699230",
+    "MMR-ADM3-66882298B15199869857953",
+    "MMR-ADM3-66882298B17749520756313",
+    "MMR-ADM3-66882298B75810518265381",
+    "MMR-ADM3-66882298B60703847395270",
+    "MMR-ADM3-66882298B62910908422931",
+    "MMR-ADM3-66882298B41652633840241",
+    "MMR-ADM3-66882298B21887991240008",
+    "MMR-ADM3-66882298B13513293373289",
+    "MMR-ADM3-66882298B50366352071932",
+    "MMR-ADM3-66882298B91132834391640",
+    "MMR-ADM3-66882298B33854457780857",
+    "MMR-ADM3-66882298B20948488348117",
+    "MMR-ADM3-66882298B59821374859075",
+    "MMR-ADM3-66882298B27866808767172",
+    "MMR-ADM3-66882298B4365732465197",
+    "MMR-ADM3-66882298B94192188096874",
+    "MMR-ADM3-66882298B59879554977018",
+    "MMR-ADM3-66882298B89773471312366",
+    "MMR-ADM3-66882298B1730260664317",
+    "MMR-ADM3-66882298B47404455758769",
+    "MMR-ADM3-66882298B89467340661520",
+    "MMR-ADM3-66882298B44996389006069",
+    "MMR-ADM3-66882298B81825229811290",
+    "MMR-ADM3-66882298B63151602536718",
+    "MMR-ADM3-66882298B16268991431448",
+    "MMR-ADM3-66882298B88454685144664",
+    "MMR-ADM3-66882298B12852619244145",
+    "MMR-ADM3-66882298B33786035960838",
+    "MMR-ADM3-66882298B46692097237572",
+    "MMR-ADM3-66882298B45635597597474",
+    "MMR-ADM3-66882298B31423892279604",
+    "MMR-ADM3-66882298B68211952808704",
+    "MMR-ADM3-66882298B29008966103222",
+    "MMR-ADM3-66882298B20485481324229",
+    "MMR-ADM3-66882298B26737603972291",
+    "MMR-ADM3-66882298B14430328327961",
+    "MMR-ADM3-66882298B579870403900",
+    "MMR-ADM3-66882298B80439635441464",
+    "MMR-ADM3-66882298B34352035689963",
+    "MMR-ADM3-66882298B3522007750184",
+    "MMR-ADM3-66882298B63513669154243",
+    "MMR-ADM3-66882298B95710101882630",
+    "MMR-ADM3-66882298B66298940741731",
+    "MMR-ADM3-66882298B94447219480250",
+    "MMR-ADM3-66882298B93334938803568",
+    "MMR-ADM3-66882298B8516616183629",
+    "MMR-ADM3-66882298B57980523152080",
+    "MMR-ADM3-66882298B2837304742341",
+    "MMR-ADM3-66882298B88549330826018",
+    "MMR-ADM3-66882298B27042252036531",
+    "MMR-ADM3-66882298B63555975911592",
+    "MMR-ADM3-66882298B50885959116277",
+    "MMR-ADM3-66882298B34690262834197",
+    "MMR-ADM3-66882298B81327673510426",
+    "MMR-ADM3-66882298B7137425941899",
+    "MMR-ADM3-66882298B68118440946572",
+    "MMR-ADM3-66882298B17021214963947",
+    "MMR-ADM3-66882298B52470244382010",
+    "MMR-ADM3-66882298B38184122909227",
+    "MMR-ADM3-66882298B34747828510750",
+    "MMR-ADM3-66882298B87672278705364",
+    "MMR-ADM3-66882298B67377062020558",
+    "MMR-ADM3-66882298B35239552440228",
+    "MMR-ADM3-66882298B91349186479025",
+    "MMR-ADM3-66882298B5713349170013",
+    "MMR-ADM3-66882298B79117526054683",
+    "MMR-ADM3-66882298B82577145530379",
+    "MMR-ADM3-66882298B45416158552835",
+    "MMR-ADM3-66882298B18463297130945",
+    "MMR-ADM3-66882298B93292463567228",
+    "MMR-ADM3-66882298B67796566444231",
+    "MMR-ADM3-66882298B5998860788816",
+    "MMR-ADM3-66882298B33434666759386",
+    "MMR-ADM3-66882298B65561284391558",
+    "MMR-ADM3-66882298B88009489570675",
+    "MMR-ADM3-66882298B85652760826241",
+    "MMR-ADM3-66882298B729678951605",
+    "MMR-ADM3-66882298B33372045303001",
+    "MMR-ADM3-66882298B57686651613256",
+    "MMR-ADM3-66882298B55371715094402",
+    "MMR-ADM3-66882298B45439994111599",
+    "MMR-ADM3-66882298B22649797942784",
+    "MMR-ADM3-66882298B48286505509820",
+    "MMR-ADM3-66882298B73191723482857",
+    "MMR-ADM3-66882298B52510382995497",
+    "MMR-ADM3-66882298B30035671122346",
+    "MMR-ADM3-66882298B46374660355499",
+    "MMR-ADM3-66882298B50654546091874",
+    "MMR-ADM3-66882298B95740508814243",
+    "MMR-ADM3-66882298B17691670471295",
+    "MMR-ADM3-66882298B12562394642113",
+    "MMR-ADM3-66882298B25907056324587",
+    "MMR-ADM3-66882298B96066491873241",
+    "MMR-ADM3-66882298B98818104227605",
+    "MMR-ADM3-66882298B79927633810292",
+    "MMR-ADM3-66882298B24588945269730",
+    "MMR-ADM3-66882298B47520460749969",
+    "MMR-ADM3-66882298B80264177521474",
+    "MMR-ADM3-66882298B72213195308331",
+    "MMR-ADM3-66882298B19696970616392",
+    "MMR-ADM3-66882298B77467059166323",
+    "MMR-ADM3-66882298B64895356281796",
+    "MMR-ADM3-66882298B67553323255828",
+    "MMR-ADM3-66882298B19990050947650",
+    "MMR-ADM3-66882298B50609184171545",
+    "MMR-ADM3-66882298B49231582531962",
+    "MMR-ADM3-66882298B69745000044463",
+    "MMR-ADM3-66882298B29413471910170",
+    "MMR-ADM3-66882298B35396935405838",
+    "MMR-ADM3-66882298B89556704578744",
+    "MMR-ADM3-66882298B91243771606208",
+    "MMR-ADM3-66882298B70906277786439",
+    "MMR-ADM3-66882298B30025626459135",
+    "MMR-ADM3-66882298B13690628237692",
+    "MMR-ADM3-66882298B96119842077960",
+    "MMR-ADM3-66882298B49369591286610",
+    "MMR-ADM3-66882298B13248015894559",
+    "MMR-ADM3-66882298B6815323696646",
+    "MMR-ADM3-66882298B81755465021971",
+    "MMR-ADM3-66882298B97049458692158",
+    "MMR-ADM3-66882298B98641573621791",
+    "MMR-ADM3-66882298B23467171997155",
+    "MMR-ADM3-66882298B12098743166013",
+    "MMR-ADM3-66882298B17369012055555",
+    "MMR-ADM3-66882298B33356488916188",
+    "MMR-ADM3-66882298B89854409890576",
+    "MMR-ADM3-66882298B67204722216921",
+    "MMR-ADM3-66882298B51229112661020",
+    "MMR-ADM3-66882298B46112702196623",
+    "MMR-ADM3-66882298B1974610332329",
+    "MMR-ADM3-66882298B55679759092569",
+    "MMR-ADM3-66882298B45625121552952",
+    "MMR-ADM3-66882298B66182128230817",
+    "MMR-ADM3-66882298B68369636205049",
+    "MMR-ADM3-66882298B16855386553806",
+    "MMR-ADM3-66882298B52908667237933",
+    "MMR-ADM3-66882298B93498834060199",
+    "MMR-ADM3-66882298B72647689440603",
+    "MMR-ADM3-66882298B7751003283272",
+    "MMR-ADM3-66882298B42378230623418",
+    "MMR-ADM3-66882298B46713308129486",
+    "MMR-ADM3-66882298B92692699810884",
+    "MMR-ADM3-66882298B72712470803341",
+    "MMR-ADM3-66882298B47048273457297",
+    "MMR-ADM3-66882298B60976321477453",
+    "MMR-ADM3-66882298B45721516561493",
+    "MMR-ADM3-66882298B64902452012974",
+    "MMR-ADM3-66882298B66538175578783",
+    "MMR-ADM3-66882298B25077153637290",
+    "MMR-ADM3-66882298B1975009216242",
+    "MMR-ADM3-66882298B75795222477878",
+    "MMR-ADM3-66882298B71305619424637",
+    "MMR-ADM3-66882298B1444745531952",
+    "MMR-ADM3-66882298B52558825926265",
+    "MMR-ADM3-66882298B7276097362414",
+    "MMR-ADM3-66882298B42824629263373",
+    "MMR-ADM3-66882298B65618262001870",
+    "MMR-ADM3-66882298B40849713300247",
+    "MMR-ADM3-66882298B6726893280031",
+    "MMR-ADM3-66882298B93086807686764",
+    "MMR-ADM3-66882298B78020195364631",
+    "MMR-ADM3-66882298B88955609799525",
+    "MMR-ADM3-66882298B1027402144026",
+    "MMR-ADM3-66882298B65836239124186",
+    "MMR-ADM3-66882298B50744585948465",
+    "MMR-ADM3-66882298B9190211902717",
+    "MMR-ADM3-66882298B13890402968202",
+    "MMR-ADM3-66882298B50680078133072",
+    "MMR-ADM3-66882298B13788123332655",
+    "MMR-ADM3-66882298B13463527006273",
+    "MMR-ADM3-66882298B63575401111424",
+    "MMR-ADM3-66882298B53601763553196",
+    "MMR-ADM3-66882298B20930484280331",
+    "MMR-ADM3-66882298B25674046281618",
+    "MMR-ADM3-66882298B63446190048766",
+    "MMR-ADM3-66882298B20724664356365",
+    "MMR-ADM3-66882298B22679639113229",
+    "MMR-ADM3-66882298B84564180686688",
+    "MMR-ADM3-66882298B34816344861267",
+    "MMR-ADM3-66882298B2901571448543",
+    "MMR-ADM3-66882298B47645408331678",
+    "MMR-ADM3-66882298B95137376687287",
+    "MMR-ADM3-66882298B45954578024958",
+    "MMR-ADM3-66882298B40242085426704",
+    "MMR-ADM3-66882298B28152158505759",
+    "MMR-ADM3-66882298B28068937388118",
+    "MMR-ADM3-66882298B21195914889348",
+    "MMR-ADM3-66882298B45428910921286",
+    "MMR-ADM3-66882298B10322761457197",
+    "MMR-ADM3-66882298B28683607927808",
+    "MMR-ADM3-66882298B68963712992998",
+    "MMR-ADM3-66882298B85260109740996",
+    "MMR-ADM3-66882298B46108424305923",
+    "MMR-ADM3-66882298B98753356299809",
+    "MMR-ADM3-66882298B6539259335056",
+    "MMR-ADM3-66882298B68274771791887",
+    "MMR-ADM3-66882298B54041300055844",
+    "MMR-ADM3-66882298B9277012619903",
+    "MMR-ADM3-66882298B80414211212402",
+    "MMR-ADM3-66882298B32460181384532",
+    "MMR-ADM3-66882298B48301856519721",
+    "MMR-ADM3-66882298B82483484204646",
+    "MMR-ADM3-66882298B86598910616989",
+    "MMR-ADM3-66882298B62167174305830",
+    "MMR-ADM3-66882298B36911639137507",
+    "MMR-ADM3-66882298B40667774005147",
+    "MMR-ADM3-66882298B30308301468052",
+    "MMR-ADM3-66882298B51516707971749",
+    "MMR-ADM3-66882298B68032961128999",
+    "MMR-ADM3-66882298B46524934526038",
+    "MMR-ADM3-66882298B56545181758026",
+    "MMR-ADM3-66882298B79191065265451",
+    "MMR-ADM3-66882298B85150336292626",
+    "MMR-ADM3-66882298B42147134062925",
+    "MMR-ADM3-66882298B21496867083234",
+    "MMR-ADM3-66882298B8454750486674",
+    "MMR-ADM3-66882298B23965774078734",
+    "MMR-ADM3-66882298B55937010800072",
+    "MMR-ADM3-66882298B99723166439324",
+    "MMR-ADM3-66882298B35243403264622",
+    "MMR-ADM3-66882298B43036302779177",
+    "MMR-ADM3-66882298B54341055682393",
+    "MMR-ADM3-66882298B65350512294428",
+    "MMR-ADM3-66882298B63293959945836",
+    "MMR-ADM3-66882298B63229305376369",
+    "MMR-ADM3-66882298B39726343497588",
+    "MMR-ADM3-66882298B66365018883830",
+    "MMR-ADM3-66882298B81098727977819",
+    "MMR-ADM3-66882298B61286545202529",
+    "MMR-ADM3-66882298B36196103316909",
+    "MMR-ADM3-66882298B26691855709091",
+    "MMR-ADM3-66882298B74112724053029",
+    "MMR-ADM3-66882298B46397740219200",
+    "MMR-ADM3-66882298B28699089666182",
+    "MMR-ADM3-66882298B563703845722",
+    "MMR-ADM3-66882298B66473456791866",
+    "MMR-ADM3-66882298B33396458700604",
+    "MMR-ADM3-66882298B40918846263989",
+    "MMR-ADM3-66882298B60215820889063",
+    "MMR-ADM3-66882298B67010796182523",
+    "MMR-ADM3-66882298B62363316861126",
+    "MMR-ADM3-66882298B51829015120623",
+    "MMR-ADM3-66882298B41675327542424",
+    "MMR-ADM3-66882298B13905773583964",
+    "MMR-ADM3-66882298B99974135096198",
+    "MMR-ADM3-66882298B29412764358741",
+    "MMR-ADM3-66882298B16142720444000",
+    "MMR-ADM3-66882298B17517026252885",
+    "MMR-ADM3-66882298B36150528851438",
+    "MMR-ADM3-66882298B69266881240494",
+    "MMR-ADM3-66882298B19267213510514",
+    "MMR-ADM3-66882298B47304075793437"
+   ],
+   "from": "1937-04-01",
+   "to": "1948-01-04",
+   "why": "The sources reached disagree on which districts lay in which division (the Chin Hills district is placed in Magwe by one list, in Sagaing by the areas of 1931, and «split from Arakan» in 1948 by statoids; Myitkyina and Bhamo in Mandalay or in Sagaing), and the Excluded Areas of 1937 ran through districts (the hill tracts of Myitkyina, Bhamo and Katha). Kengtung and part of Mongpan were annexed by Thailand 1943–45.",
+   "checked": [
+    "statoids umm.html change history",
+    "Wikipedia British rule in Burma rev 1378075515 (two contradictory district lists)",
+    "Wikipedia Administrative divisions of Myanmar rev 1378340778",
+    "Wikipedia Karenni States rev 1362066375",
+    "Wikipedia Arakan Division rev 1337671421"
+   ],
+   "needs": "the district lists of the 1941 Burma census or Burma Gazetteer and the Excluded Areas of the Government of Burma Act 1935 as township atoms"
+  },
+  {
+   "what": "Pekon Township (Mong Pai)",
+   "atoms": [
+    "MMR-ADM3-66882298B46108424305923"
+   ],
+   "from": "1948-01-04",
+   "to": null,
+   "why": "Mong Pai (Mobye) was taken from the Shan States into Karenni/Kayah State (1948 per statoids, 1952 per Wikipedia «Kayah State») and lies today in Pekon Township, Shan State; when it returned to Shan State, and whether the rest of Pekon Township was ever Kayah, is not stated.",
+   "checked": [
+    "statoids umm.html",
+    "Wikipedia Kayah State rev 1378260363",
+    "Wikipedia Möng Pai rev 1360438392",
+    "Wikipedia Pekon Township rev 1377360033",
+    "Wikipedia Karenni States rev 1362066375"
+   ],
+   "needs": "the order returning Mong Pai to Shan State and its line inside Pekon Township"
+  },
+  {
+   "what": "Cocokyun (Coco Islands)",
+   "atoms": [
+    "MMR-ADM3-66882298B36196103316909"
+   ],
+   "from": "1948-01-04",
+   "to": null,
+   "why": "Statoids places the Coco Islands in Ayeyarwady; MIMU (this dataset) in Yangon Region. The date and the division they were attached to are not established.",
+   "checked": [
+    "statoids umm.html (territorial extent)",
+    "Wikipedia Coco Islands rev 1365520962"
+   ],
+   "needs": "the order attaching Cocokyun township to Rangoon/Yangon"
+  },
+  {
+   "what": "Toungoo district before 1962 (Pegu or Tenasserim)",
+   "atoms": [
+    "MMR-ADM3-66882298B37364266207848",
+    "MMR-ADM3-66882298B61714621013950",
+    "MMR-ADM3-66882298B33418919919508",
+    "MMR-ADM3-66882298B60221129231929",
+    "MMR-ADM3-66882298B10452599963502",
+    "MMR-ADM3-66882298B25229900655360"
+   ],
+   "from": "1948-01-04",
+   "to": "1962",
+   "why": "Toungoo was a district of Tenasserim Division under British rule; the Bago Region government attests it in Pegu Division in 1962 but gives no date for the transfer.",
+   "checked": [
+    "Bago Region government background history (archived 2026-06-11)",
+    "Wikipedia British rule in Burma rev 1378075515",
+    "statoids umm.html"
+   ],
+   "needs": "the date Toungoo district was transferred to Pegu Division"
+  },
+  {
+   "what": "Thandaunggyi (Thandaung township of Toungoo district) 1948–1954",
+   "atoms": [
+    "MMR-ADM3-66882298B59821374859075"
+   ],
+   "from": "1948-01-04",
+   "to": "1954-06-01",
+   "why": "It belonged to Toungoo district, whose division before 1962 is not established (see Toungoo).",
+   "checked": [
+    "KIC «Origin of Karen State Day»",
+    "Bago Region government background history"
+   ],
+   "needs": "as for Toungoo district"
+  },
+  {
+   "unit": "MMR:Rangoon Division 1964",
+   "what": "Rangoon Division 1964–1972 and the Insein/Hmawbi/Hanthawaddy districts of Pegu",
+   "atoms": [
+    "MMR-ADM3-66882298B51516707971749",
+    "MMR-ADM3-66882298B68032961128999",
+    "MMR-ADM3-66882298B46524934526038",
+    "MMR-ADM3-66882298B56545181758026",
+    "MMR-ADM3-66882298B79191065265451",
+    "MMR-ADM3-66882298B85150336292626",
+    "MMR-ADM3-66882298B42147134062925",
+    "MMR-ADM3-66882298B21496867083234",
+    "MMR-ADM3-66882298B8454750486674",
+    "MMR-ADM3-66882298B23965774078734",
+    "MMR-ADM3-66882298B55937010800072",
+    "MMR-ADM3-66882298B99723166439324",
+    "MMR-ADM3-66882298B35243403264622",
+    "MMR-ADM3-66882298B43036302779177",
+    "MMR-ADM3-66882298B54341055682393",
+    "MMR-ADM3-66882298B65350512294428",
+    "MMR-ADM3-66882298B63293959945836",
+    "MMR-ADM3-66882298B63229305376369",
+    "MMR-ADM3-66882298B39726343497588",
+    "MMR-ADM3-66882298B66365018883830",
+    "MMR-ADM3-66882298B81098727977819",
+    "MMR-ADM3-66882298B61286545202529",
+    "MMR-ADM3-66882298B26691855709091",
+    "MMR-ADM3-66882298B74112724053029",
+    "MMR-ADM3-66882298B46397740219200",
+    "MMR-ADM3-66882298B28699089666182",
+    "MMR-ADM3-66882298B563703845722",
+    "MMR-ADM3-66882298B66473456791866",
+    "MMR-ADM3-66882298B33396458700604",
+    "MMR-ADM3-66882298B40918846263989",
+    "MMR-ADM3-66882298B60215820889063",
+    "MMR-ADM3-66882298B67010796182523",
+    "MMR-ADM3-66882298B62363316861126",
+    "MMR-ADM3-66882298B51829015120623",
+    "MMR-ADM3-66882298B41675327542424",
+    "MMR-ADM3-66882298B13905773583964",
+    "MMR-ADM3-66882298B99974135096198",
+    "MMR-ADM3-66882298B29412764358741",
+    "MMR-ADM3-66882298B16142720444000",
+    "MMR-ADM3-66882298B17517026252885",
+    "MMR-ADM3-66882298B36150528851438",
+    "MMR-ADM3-66882298B69266881240494",
+    "MMR-ADM3-66882298B19267213510514",
+    "MMR-ADM3-66882298B47304075793437"
+   ],
+   "from": "1964",
+   "to": "1972-06-20",
+   "why": "Rangoon Division (1964) was the Rangoon district only; its line against the Insein, Hmawbi and Hanthawaddy districts of Pegu Division in 1964–72 does not follow today’s township lines in any source reached (several of today’s Yangon city townships were carved later from those districts).",
+   "checked": [
+    "statoids umm.html",
+    "Bago Region government background history",
+    "Wikipedia Yangon Region rev 1378292421"
+   ],
+   "needs": "the 1964 Rangoon district boundary as ward/village-tract atoms"
+  }
+ ]
 }

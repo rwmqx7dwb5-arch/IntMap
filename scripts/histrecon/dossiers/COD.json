@@ -1,168 +1,142 @@
 {
  "country": "COD",
- "atomSet": "ne-admin1@ca96624",
+ "atomSet": "gb-adm2@2026-10-06",
  "scope": {
-  "from": "1960-06-30",
+  "from": "1885-08-01",
   "to": "2019-12-31"
  },
- "polityNote": "Republic of the Congo (Léopoldville) from 1960-06-30, Democratic Republic of the Congo 1964, Zaire 1971-10-27 to 1997-05-17. Units are the de jure provinces: the State of Katanga (1960-07-11 to 1963-01) and South Kasai (1960–62) secessions are polity questions, not drawn here. Provinces were called regions 1972–1997.",
+ "polityNote": "Congo Free State 1885-08-01, Belgian Congo 1908-11-15, Republic of the Congo (Léopoldville) 1960-06-30, Democratic Republic of the Congo 1964, Zaire 1971-10-27 to 1997-05-17. Units are the de jure provinces: the State of Katanga (1960-07-11 to 1963-01) and South Kasai (1960–62) secessions are polity questions, not drawn here. Provinces were called regions 1972–1997. Atoms are the 189 territories and towns of the Référentiel Géographique Commun (OCHA DRC, 2019, CC BY 3.0 IGO) via geoBoundaries; every one lies ≥88% inside one 2015 province of the gb ADM1 layer (the rest is publisher line difference and lakes). Rewritten on gb-adm2 (from ne-admin1) on 2026-10-06 so that the 1962–66 provincettes and the 2015 provinces — which follow district and territory lines — can be drawn from one atom set. Check ①: the six 1960 provinces as gb unions measure Léopoldville 363,784 km², Équateur 399,161, Kasaï 327,628, Katanga 490,432, Kivu 251,902, Orientale 507,645 against the official 359,701 / 403,292 / 325,183 / 496,877 / 256,803 / 503,239 (ratios 1.011, 0.990, 1.008, 0.987, 0.981, 1.009).",
  "units": [
   {
    "id": "COD:Equateur",
    "names": {
-    "en": "Équateur",
+    "en": "Équateur (Coquilhatville Province 1933–1947)",
     "ja": "赤道州",
     "local": "Équateur"
    },
    "wikidata": "Q988104",
    "spans": [
     {
-     "from": "1960-06-30",
+     "from": "1933-10-01",
      "precision": "day",
      "to": "1962-08-14",
      "atoms": [
-      "COD-1461"
+      "COD-ADM2-63176286B36806520086654",
+      "COD-ADM2-63176286B16264123188485",
+      "COD-ADM2-63176286B3271137171664",
+      "COD-ADM2-63176286B14204108243102",
+      "COD-ADM2-63176286B53001735211155",
+      "COD-ADM2-63176286B59821830207387",
+      "COD-ADM2-63176286B68262610189121",
+      "COD-ADM2-63176286B82661241826895",
+      "COD-ADM2-63176286B77918114228452",
+      "COD-ADM2-63176286B4277783159614",
+      "COD-ADM2-63176286B4133354906354",
+      "COD-ADM2-63176286B75913983063727",
+      "COD-ADM2-63176286B56364191841329",
+      "COD-ADM2-63176286B49430673132917",
+      "COD-ADM2-63176286B86504731111535",
+      "COD-ADM2-63176286B7674321742221",
+      "COD-ADM2-63176286B55618881730154",
+      "COD-ADM2-63176286B10859728267394",
+      "COD-ADM2-63176286B50098701443330",
+      "COD-ADM2-63176286B72804638257173",
+      "COD-ADM2-63176286B77587123851522",
+      "COD-ADM2-63176286B98421000452360",
+      "COD-ADM2-63176286B30356596276779",
+      "COD-ADM2-63176286B53748739739840",
+      "COD-ADM2-63176286B16720510237815",
+      "COD-ADM2-63176286B55786633055845",
+      "COD-ADM2-63176286B43464771754704"
      ],
      "sources": [
       {
-       "url": "https://en.wikipedia.org/w/index.php?oldid=1353446106",
-       "title": "Provinces of the Democratic Republic of the Congo — en.wikipedia, oldid 1353446106",
-       "says": "Loi Fondamentale: six provinces; decree of 6 Apr 1966 cut them to 12; 24 Dec 1966 to eight; Kinshasa a province 1975; Kivu split 1988.",
-       "accessed": "2026-10-05"
+       "url": "http://www.statoids.com/ucd.html",
+       "title": "Provinces of the Democratic Republic of Congo — Statoids (Gwillim Law, last updated 2015-06-30)",
+       "says": "1933-10-01: four provinces reorganised into six; areas Coquilhatville 403,290 km², Costermansville 230,209, Élisabethville 496,962, Léopoldville 362,953, Lusambo 321,534, Stanleyville 528,925.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=237766489",
+       "title": "Provinces de la république démocratique du Congo — fr.wikipedia, oldid 237766489",
+       "says": "Areas of the six provinces of 1960: Équateur 403,292 km², Kasaï 325,183, Katanga 496,877, Kivu 256,803, Léopoldville 359,701, Orientale 503,239.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.africamuseum.be/sites/default/files/media/docs/research/publications/rmca/online/monographies-provinces/mongala.pdf",
+       "title": "Omasombo (dir.), Mongala — Monographies des provinces de la RDC, MRAC 2015",
+       "says": "Ordinance of 29 Sep 1933: Coquilhatville province reduced to the Congo-Ubangi and Tshuapa districts, Lac Léopold II going to Léopoldville.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.africamuseum.be/sites/default/files/media/docs/research/publications/rmca/online/monographies-provinces/equateur-pdf.pdf",
+       "title": "Omasombo (dir.), Équateur — Monographies des provinces de la RDC, MRAC 2013",
+       "says": "Ordinance 83 of 29 Sep 1933: Équateur becomes Coquilhatville province with two districts; renamed Équateur 27 May 1947.",
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://rulers.org/cngkprov.html",
        "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
-       "says": "14 Aug 1962: Cuvette Centrale and Ubangi separated from Équateur; remainder became Moyen-Congo 5 Feb 1963.",
-       "accessed": "2026-10-05"
+       "says": "Équateur: 14 Aug 1962 Cuvette Centrale and Ubangi separated; 25 Apr 1966 reunited; 11 Jul 2015 split into Équateur, Mongala, Nord-Ubangi, Sud-Ubangi, Tshuapa.",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Province of the Loi Fondamentale; the outer line is the union of the post-1966 provinces formed only from it (no inter-provincial transfer is recorded 1960–2015)."
+     "dateNote": "Arrêté royal of 25 Sep 1933, in force 1 Oct 1933. The 1933 area (403,290 km² for Coquilhatville / 496,962 for Élisabethville, statoids) equals the 1960 figure (403,292 / 496,877) within 0.02%, while the provinces whose boundary moved show the moves (Kivu +26,594 and Orientale −25,686: Lubutu and Beni–Lubero; Léopoldville −3,252 and Kasaï +3,649); the province monographs record no later transfer on its perimeter. The 1960 province is the union of the 2015 provinces carved from it; the 2015 provinces are the former districts (sub-regions), and the territories (gb-adm2) nest in them."
     },
     {
      "from": "1966-04-25",
      "precision": "day",
-     "to": "2015-06",
+     "to": "2015-07-11",
      "atoms": [
-      "COD-1461"
+      "COD-ADM2-63176286B36806520086654",
+      "COD-ADM2-63176286B16264123188485",
+      "COD-ADM2-63176286B3271137171664",
+      "COD-ADM2-63176286B14204108243102",
+      "COD-ADM2-63176286B53001735211155",
+      "COD-ADM2-63176286B59821830207387",
+      "COD-ADM2-63176286B68262610189121",
+      "COD-ADM2-63176286B82661241826895",
+      "COD-ADM2-63176286B77918114228452",
+      "COD-ADM2-63176286B4277783159614",
+      "COD-ADM2-63176286B4133354906354",
+      "COD-ADM2-63176286B75913983063727",
+      "COD-ADM2-63176286B56364191841329",
+      "COD-ADM2-63176286B49430673132917",
+      "COD-ADM2-63176286B86504731111535",
+      "COD-ADM2-63176286B7674321742221",
+      "COD-ADM2-63176286B55618881730154",
+      "COD-ADM2-63176286B10859728267394",
+      "COD-ADM2-63176286B50098701443330",
+      "COD-ADM2-63176286B72804638257173",
+      "COD-ADM2-63176286B77587123851522",
+      "COD-ADM2-63176286B98421000452360",
+      "COD-ADM2-63176286B30356596276779",
+      "COD-ADM2-63176286B53748739739840",
+      "COD-ADM2-63176286B16720510237815",
+      "COD-ADM2-63176286B55786633055845",
+      "COD-ADM2-63176286B43464771754704"
      ],
      "sources": [
       {
        "url": "https://rulers.org/cngkprov.html",
        "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
-       "says": "25 Apr 1966: Cuvette Centrale, Moyen-Congo and Ubangi reunited in a new Équateur province; split 11 Jul 2015.",
-       "accessed": "2026-10-05"
+       "says": "Équateur: 14 Aug 1962 Cuvette Centrale and Ubangi separated; 25 Apr 1966 reunited; 11 Jul 2015 split into Équateur, Mongala, Nord-Ubangi, Sud-Ubangi, Tshuapa.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.africamuseum.be/sites/default/files/media/docs/research/publications/rmca/online/monographies-provinces/equateur-pdf.pdf",
+       "title": "Omasombo (dir.), Équateur — Monographies des provinces de la RDC, MRAC 2013",
+       "says": "Ordinance-law 66-287 of 7 May 1966: Équateur subrogated to Cuvette centrale, Moyen-Congo and Ubangi; ordinance of 18 May 1966 delimited the province.",
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
        "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
        "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "New provinces became operational in June–July 2015 (rulers.org gives per-province dates in mid-July); ended at the earliest possible month."
-    }
-   ]
-  },
-  {
-   "id": "COD:Kasai@1960",
-   "names": {
-    "en": "Kasaï",
-    "ja": "カサイ州",
-    "local": "Kasaï"
-   },
-   "spans": [
-    {
-     "from": "1960-06-30",
-     "precision": "day",
-     "to": "1962-08-14",
-     "atoms": [
-      "COD-1872",
-      "COD-1896"
-     ],
-     "sources": [
-      {
-       "url": "https://en.wikipedia.org/w/index.php?oldid=1353446106",
-       "title": "Provinces of the Democratic Republic of the Congo — en.wikipedia, oldid 1353446106",
-       "says": "Loi Fondamentale: six provinces; decree of 6 Apr 1966 cut them to 12; 24 Dec 1966 to eight; Kinshasa a province 1975; Kivu split 1988.",
-       "accessed": "2026-10-05"
-      },
-      {
-       "url": "https://rulers.org/cngkprov.html",
-       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
-       "says": "14 Aug 1962: Kasaï divided into Lomami, Luluabourg, Sankuru, Sud-Kasaï, Unité Kasaïenne; 25 Apr 1966 these form Kasaï Occidental and Oriental.",
-       "accessed": "2026-10-05"
-      }
-     ],
-     "dateNote": "Province of the Loi Fondamentale; the outer line is the union of the post-1966 provinces formed only from it (no inter-provincial transfer is recorded 1960–2015)."
-    }
-   ]
-  },
-  {
-   "id": "COD:KasaiOccidental@1966",
-   "names": {
-    "en": "Kasaï-Occidental",
-    "ja": "西カサイ州",
-    "local": "Kasaï-Occidental"
-   },
-   "wikidata": "Q130576",
-   "spans": [
-    {
-     "from": "1966-04-25",
-     "precision": "day",
-     "to": "2015-06",
-     "atoms": [
-      "COD-1872"
-     ],
-     "sources": [
-      {
-       "url": "https://rulers.org/cngkprov.html",
-       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
-       "says": "25 Apr 1966: Luluabourg and Unité Kasaïenne unite to form Kasaï Occidental; split 18 Jul 2015 into Kasaï and Kasaï Central.",
-       "accessed": "2026-10-05"
-      },
-      {
-       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
-       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
-       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
-       "accessed": "2026-10-05"
-      }
-     ],
-     "dateNote": "New provinces became operational in June–July 2015 (rulers.org gives per-province dates in mid-July); ended at the earliest possible month."
-    }
-   ]
-  },
-  {
-   "id": "COD:KasaiOriental@1966",
-   "names": {
-    "en": "Kasaï-Oriental",
-    "ja": "東カサイ州",
-    "local": "Kasaï-Oriental"
-   },
-   "wikidata": "Q80953",
-   "spans": [
-    {
-     "from": "1966-04-25",
-     "precision": "day",
-     "to": "2015-06",
-     "atoms": [
-      "COD-1896"
-     ],
-     "sources": [
-      {
-       "url": "https://rulers.org/cngkprov.html",
-       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
-       "says": "25 Apr 1966: Lomami, Sankuru, Sud-Kasaï united as Kasaï Oriental; split 15 Jul 2015 into Kasaï Oriental, Lomami, Sankuru.",
-       "accessed": "2026-10-05"
-      },
-      {
-       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
-       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
-       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
-       "accessed": "2026-10-05"
-      }
-     ],
-     "dateNote": "New provinces became operational in June–July 2015 (rulers.org gives per-province dates in mid-July); ended at the earliest possible month."
+     "dateNote": "Reunited 25 Apr 1966 within its 1960 limits; split on the day rulers.org gives (11 Jul 2015)."
     }
    ]
   },
@@ -179,25 +153,214 @@
      "precision": "day",
      "to": "1962-08-14",
      "atoms": [
-      "COD-1871",
-      "COD-1883",
-      "COD-1884"
+      "COD-ADM2-63176286B7026545207042",
+      "COD-ADM2-63176286B88277060419996",
+      "COD-ADM2-63176286B98008703469616",
+      "COD-ADM2-63176286B83971453832478",
+      "COD-ADM2-63176286B65126745094635",
+      "COD-ADM2-63176286B47015384768636",
+      "COD-ADM2-63176286B29097498682851",
+      "COD-ADM2-63176286B8336769847246",
+      "COD-ADM2-63176286B40063645047483",
+      "COD-ADM2-63176286B538038850114",
+      "COD-ADM2-63176286B82592558575614",
+      "COD-ADM2-63176286B31425721317411",
+      "COD-ADM2-63176286B22382339186814",
+      "COD-ADM2-63176286B69853523616594",
+      "COD-ADM2-63176286B79360907689545",
+      "COD-ADM2-63176286B18264844623742",
+      "COD-ADM2-63176286B93121803325272",
+      "COD-ADM2-63176286B47421332346835",
+      "COD-ADM2-63176286B37251946319002",
+      "COD-ADM2-63176286B94968684087840",
+      "COD-ADM2-63176286B25992661497472",
+      "COD-ADM2-63176286B76945459106625",
+      "COD-ADM2-63176286B20425932648522",
+      "COD-ADM2-63176286B53815785774290",
+      "COD-ADM2-63176286B71176382547280",
+      "COD-ADM2-63176286B37254158064276",
+      "COD-ADM2-63176286B11990771214401",
+      "COD-ADM2-63176286B32367911689095",
+      "COD-ADM2-63176286B5937777491698",
+      "COD-ADM2-63176286B37259268611319",
+      "COD-ADM2-63176286B4112889633509",
+      "COD-ADM2-63176286B68796769615290",
+      "COD-ADM2-63176286B53648445078824",
+      "COD-ADM2-63176286B12311619160810",
+      "COD-ADM2-63176286B21856672762157",
+      "COD-ADM2-63176286B54443714119434",
+      "COD-ADM2-63176286B59505490488503",
+      "COD-ADM2-63176286B71096802464930"
      ],
      "sources": [
       {
        "url": "https://en.wikipedia.org/w/index.php?oldid=1353446106",
        "title": "Provinces of the Democratic Republic of the Congo — en.wikipedia, oldid 1353446106",
        "says": "Loi Fondamentale: six provinces; decree of 6 Apr 1966 cut them to 12; 24 Dec 1966 to eight; Kinshasa a province 1975; Kivu split 1988.",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://rulers.org/cngkprov.html",
        "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
-       "says": "14 Aug 1962: Léopoldville province divided into Kongo Central, Kwango, Kwilu and Mai-Ndombe.",
-       "accessed": "2026-10-05"
+       "says": "Léopoldville province 1 Oct 1933; 14 Aug 1962 Kongo Central, Kwango, Kwilu, Mai-Ndombe; 25 Apr 1966 Bandundu; split again 19 Jul 2015.",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Province of the Loi Fondamentale; the outer line is the union of the post-1966 provinces formed only from it (no inter-provincial transfer is recorded 1960–2015). Maluku (moved 1968–69 to Kinshasa) came from Kasa-Ngulu territory of the same province."
+     "dateNote": "The 1960 province is the union of the 2015 provinces carved from it; the 2015 provinces are the former districts (sub-regions), and the territories (gb-adm2) nest in them. Maluku (moved to Kinshasa 1968–69) came from Kasa-Ngulu territory of the same province."
+    }
+   ]
+  },
+  {
+   "id": "COD:Kwango@1962",
+   "names": {
+    "en": "Kwango (province 1962–1966)",
+    "ja": "クワンゴ州 (1962–66)",
+    "local": "Province du Kwango"
+   },
+   "spans": [
+    {
+     "from": "1962-08-14",
+     "precision": "day",
+     "to": "1966-04-25",
+     "atoms": [
+      "COD-ADM2-63176286B18264844623742",
+      "COD-ADM2-63176286B93121803325272",
+      "COD-ADM2-63176286B47421332346835",
+      "COD-ADM2-63176286B37251946319002",
+      "COD-ADM2-63176286B94968684087840"
+     ],
+     "sources": [
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Léopoldville province 1 Oct 1933; 14 Aug 1962 Kongo Central, Kwango, Kwilu, Mai-Ndombe; 25 Apr 1966 Bandundu; split again 19 Jul 2015.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.africamuseum.be/sites/default/files/media/docs/research/publications/rmca/online/monographies-provinces/kwango.pdf",
+       "title": "Omasombo (dir.), Kwango — Monographies des provinces de la RDC, MRAC",
+       "says": "After the law of 9 Mar 1962 Kwango became a province whose limits were those of the Kwango district at independence; merged into Bandundu by ordinance-law 66-205 of 6 Apr 1966.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Limits of the Kwango district of 30 Jun 1960 = the 2015 province of Kwango (Kenge, Feshi, Popokabaka, Kahemba, Kasongo-Lunda)."
+    }
+   ]
+  },
+  {
+   "id": "COD:Kwilu@1962",
+   "names": {
+    "en": "Kwilu (province 1962–1966)",
+    "ja": "クウィル州 (1962–66)",
+    "local": "Province du Kwilu"
+   },
+   "spans": [
+    {
+     "from": "1962-08-14",
+     "precision": "day",
+     "to": "1966-04-25",
+     "atoms": [
+      "COD-ADM2-63176286B25992661497472",
+      "COD-ADM2-63176286B76945459106625",
+      "COD-ADM2-63176286B20425932648522",
+      "COD-ADM2-63176286B53815785774290",
+      "COD-ADM2-63176286B71176382547280",
+      "COD-ADM2-63176286B37254158064276",
+      "COD-ADM2-63176286B11990771214401",
+      "COD-ADM2-63176286B32367911689095",
+      "COD-ADM2-63176286B5937777491698"
+     ],
+     "sources": [
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Léopoldville province 1 Oct 1933; 14 Aug 1962 Kongo Central, Kwango, Kwilu, Mai-Ndombe; 25 Apr 1966 Bandundu; split again 19 Jul 2015.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.africamuseum.be/sites/default/files/media/docs/research/publications/rmca/online/monographies-provinces/kwango.pdf",
+       "title": "Omasombo (dir.), Kwango — Monographies des provinces de la RDC, MRAC",
+       "says": "1954: the Kwango district split; Kwilu (chef-lieu Kikwit) formed of the territories of Kikwit, Gungu, Idiofa, Masi-Manimba and Banningville.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.africamuseum.be/sites/default/files/media/docs/research/publications/rmca/online/monographies-provinces/vol12_Mai_Ndombe.pdf",
+       "title": "Omasombo (dir.), Mai-Ndombe — Monographies des provinces de la RDC, MRAC",
+       "says": "Law of 14 Aug 1962: Mai-Ndombe = territories of Mushie, Kutu, Oshwe, Inongo and Kiri in their limits of 30 Jun 1960.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Léopoldville province was divided into Kongo Central, Kwango, Kwilu and Mai-Ndombe (+ the capital); with Kwango and Mai-Ndombe fixed by their laws, Kwilu is the Kwilu district of 1960 (Banningville included), = the 2015 province of Kwilu. Kwilu was under rebel control 1964–65 (de jure unit drawn)."
+    }
+   ]
+  },
+  {
+   "id": "COD:MaiNdombe@1962",
+   "names": {
+    "en": "Mai-Ndombe (Lac Léopold II province 1962–1966)",
+    "ja": "マイ＝ンドンベ州 (1962–66)",
+    "local": "Province du Mai-Ndombe"
+   },
+   "spans": [
+    {
+     "from": "1962-08-14",
+     "precision": "day",
+     "to": "1963-02-05",
+     "atoms": [
+      "COD-ADM2-63176286B37259268611319",
+      "COD-ADM2-63176286B4112889633509",
+      "COD-ADM2-63176286B68796769615290",
+      "COD-ADM2-63176286B53648445078824",
+      "COD-ADM2-63176286B12311619160810",
+      "COD-ADM2-63176286B21856672762157",
+      "COD-ADM2-63176286B54443714119434",
+      "COD-ADM2-63176286B59505490488503",
+      "COD-ADM2-63176286B71096802464930"
+     ],
+     "sources": [
+      {
+       "url": "https://www.africamuseum.be/sites/default/files/media/docs/research/publications/rmca/online/monographies-provinces/vol12_Mai_Ndombe.pdf",
+       "title": "Omasombo (dir.), Mai-Ndombe — Monographies des provinces de la RDC, MRAC",
+       "says": "Law of 14 Aug 1962: Mai-Ndombe = territories of Mushie, Kutu, Oshwe, Inongo and Kiri in their limits of 30 Jun 1960; the district of Plateaux (1990) = the former Mushie territory (Mushie, Bolobo, Yumbi, Kwamouth).",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Léopoldville province 1 Oct 1933; 14 Aug 1962 Kongo Central, Kwango, Kwilu, Mai-Ndombe; 25 Apr 1966 Bandundu; split again 19 Jul 2015.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Law promulgated 14 Aug 1962. The 2015 Mai-Ndombe = Lac Léopold II district of 1960 (Mushie later split into Mushie, Bolobo, Yumbi, Kwamouth)."
+    },
+    {
+     "from": "1963-02-05",
+     "precision": "day",
+     "to": "1966-04-25",
+     "atoms": [
+      "COD-ADM2-63176286B37259268611319",
+      "COD-ADM2-63176286B4112889633509",
+      "COD-ADM2-63176286B68796769615290",
+      "COD-ADM2-63176286B12311619160810",
+      "COD-ADM2-63176286B54443714119434",
+      "COD-ADM2-63176286B59505490488503",
+      "COD-ADM2-63176286B71096802464930"
+     ],
+     "sources": [
+      {
+       "url": "https://www.africamuseum.be/sites/default/files/media/docs/research/publications/rmca/online/monographies-provinces/vol12_Mai_Ndombe.pdf",
+       "title": "Omasombo (dir.), Mai-Ndombe — Monographies des provinces de la RDC, MRAC",
+       "says": "Law of 5 Feb 1963 creating Moyen-Congo took the Bolobo-Yumbi regions from Lac Léopold II and attached them to Lisala.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Léopoldville province 1 Oct 1933; 14 Aug 1962 Kongo Central, Kwango, Kwilu, Mai-Ndombe; 25 Apr 1966 Bandundu; split again 19 Jul 2015.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Without Bolobo and Yumbi (their regions were attached to Moyen-Congo; extent and later status unresolved)."
     }
    ]
   },
@@ -213,25 +376,53 @@
     {
      "from": "1966-04-25",
      "precision": "day",
-     "to": "2015-06",
+     "to": "2015-07-19",
      "atoms": [
-      "COD-1871"
+      "COD-ADM2-63176286B18264844623742",
+      "COD-ADM2-63176286B93121803325272",
+      "COD-ADM2-63176286B47421332346835",
+      "COD-ADM2-63176286B37251946319002",
+      "COD-ADM2-63176286B94968684087840",
+      "COD-ADM2-63176286B25992661497472",
+      "COD-ADM2-63176286B76945459106625",
+      "COD-ADM2-63176286B20425932648522",
+      "COD-ADM2-63176286B53815785774290",
+      "COD-ADM2-63176286B71176382547280",
+      "COD-ADM2-63176286B37254158064276",
+      "COD-ADM2-63176286B11990771214401",
+      "COD-ADM2-63176286B32367911689095",
+      "COD-ADM2-63176286B5937777491698",
+      "COD-ADM2-63176286B37259268611319",
+      "COD-ADM2-63176286B4112889633509",
+      "COD-ADM2-63176286B68796769615290",
+      "COD-ADM2-63176286B53648445078824",
+      "COD-ADM2-63176286B12311619160810",
+      "COD-ADM2-63176286B21856672762157",
+      "COD-ADM2-63176286B54443714119434",
+      "COD-ADM2-63176286B59505490488503",
+      "COD-ADM2-63176286B71096802464930"
      ],
      "sources": [
       {
        "url": "https://rulers.org/cngkprov.html",
        "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
-       "says": "25 Apr 1966: Kwango, Kwilu and Mai-Ndombe united in Bandundu; split again 19 Jul 2015.",
-       "accessed": "2026-10-05"
+       "says": "Léopoldville province 1 Oct 1933; 14 Aug 1962 Kongo Central, Kwango, Kwilu, Mai-Ndombe; 25 Apr 1966 Bandundu; split again 19 Jul 2015.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.africamuseum.be/sites/default/files/media/docs/research/publications/rmca/online/monographies-provinces/kwango.pdf",
+       "title": "Omasombo (dir.), Kwango — Monographies des provinces de la RDC, MRAC",
+       "says": "Ordinance-law 66-205 of 6 Apr 1966: Kwango again a district of Bandundu province, with Kwilu and Mai-Ndombe.",
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
        "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
        "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "New provinces became operational in June–July 2015 (rulers.org gives per-province dates in mid-July); ended at the earliest possible month."
+     "dateNote": "Bolobo-Yumbi returned with the merger. Split on the day rulers.org gives (19 Jul 2015)."
     }
    ]
   },
@@ -249,26 +440,33 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "COD-1883"
+      "COD-ADM2-63176286B7026545207042",
+      "COD-ADM2-63176286B88277060419996",
+      "COD-ADM2-63176286B98008703469616",
+      "COD-ADM2-63176286B83971453832478",
+      "COD-ADM2-63176286B65126745094635",
+      "COD-ADM2-63176286B47015384768636",
+      "COD-ADM2-63176286B29097498682851",
+      "COD-ADM2-63176286B8336769847246",
+      "COD-ADM2-63176286B40063645047483",
+      "COD-ADM2-63176286B538038850114",
+      "COD-ADM2-63176286B82592558575614",
+      "COD-ADM2-63176286B31425721317411",
+      "COD-ADM2-63176286B22382339186814",
+      "COD-ADM2-63176286B69853523616594"
      ],
      "sources": [
       {
        "url": "https://orbi.uliege.be/bitstream/2268/243692/1/Krossy_Th%C3%A8se_Gouvernance%20et%20services%20publics%20dans%20le%20territoire%20p%C3%A9riurbain%20de%20Maluku%20%C3%A0%20Kinshasa.pdf",
        "title": "Krossy, Gouvernance et services publics dans le territoire périurbain de Maluku (PhD thesis, ULiège), pp. 17–20",
        "says": "Maluku, a post of Kasa-Ngulu territory, became Kinshasa's 24th commune by ordinance 068-024 of 20 Feb 1968; its limits were fixed by arrêté 69-042 of 25 Jan 1969.",
-       "accessed": "2026-10-05"
-      },
-      {
-       "url": "https://fr.wikipedia.org/w/index.php?oldid=232244891",
-       "title": "Maluku (Kinshasa) — fr.wikipedia, oldid 232244891",
-       "says": "Maluku covers 7,948.8 km², 79% of the city-province; created as a commune by ordonnance-loi in early 1968.",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
        "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
        "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       }
      ],
      "dateNote": "From the day the limits of Maluku (taken from Kasa-Ngulu) were fixed; unchanged in 2015 (renamed only)."
@@ -289,86 +487,1067 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "COD-1884"
+      "COD-ADM2-63176286B79360907689545"
      ],
      "sources": [
       {
        "url": "https://orbi.uliege.be/bitstream/2268/243692/1/Krossy_Th%C3%A8se_Gouvernance%20et%20services%20publics%20dans%20le%20territoire%20p%C3%A9riurbain%20de%20Maluku%20%C3%A0%20Kinshasa.pdf",
        "title": "Krossy, Gouvernance et services publics dans le territoire périurbain de Maluku (PhD thesis, ULiège), pp. 17–20",
        "says": "Maluku, a post of Kasa-Ngulu territory, became Kinshasa's 24th commune by ordinance 068-024 of 20 Feb 1968; its limits were fixed by arrêté 69-042 of 25 Jan 1969.",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://fr.wikipedia.org/w/index.php?oldid=232244891",
        "title": "Maluku (Kinshasa) — fr.wikipedia, oldid 232244891",
        "says": "Maluku covers 7,948.8 km², 79% of the city-province; created as a commune by ordonnance-loi in early 1968.",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
        "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
        "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Includes Maluku (7,948.8 km²) from the fixing of its limits by arrêté 69-042; province status 1975 (no territorial change); unchanged in 2015."
+     "dateNote": "Includes Maluku (7,948.8 km²) from the fixing of its limits by arrêté 69-042; province status 1975 (no territorial change)."
     }
    ]
   },
   {
-   "id": "COD:Katanga",
+   "id": "COD:Kwango@2015",
    "names": {
-    "en": "Katanga (Shaba 1971–97)",
-    "ja": "カタンガ州",
-    "local": "Katanga"
+    "en": "Kwango",
+    "ja": "クワンゴ州",
+    "local": "Kwango"
    },
-   "wikidata": "Q217242",
+   "spans": [
+    {
+     "from": "2015-07-19",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COD-ADM2-63176286B18264844623742",
+      "COD-ADM2-63176286B93121803325272",
+      "COD-ADM2-63176286B47421332346835",
+      "COD-ADM2-63176286B37251946319002",
+      "COD-ADM2-63176286B94968684087840"
+     ],
+     "sources": [
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Léopoldville province 1 Oct 1933; 14 Aug 1962 Kongo Central, Kwango, Kwilu, Mai-Ndombe; 25 Apr 1966 Bandundu; split again 19 Jul 2015.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From the day rulers.org gives for the split of Bandundu along its district limits."
+    }
+   ]
+  },
+  {
+   "id": "COD:Kwilu@2015",
+   "names": {
+    "en": "Kwilu",
+    "ja": "クウィル州",
+    "local": "Kwilu"
+   },
+   "spans": [
+    {
+     "from": "2015-07-19",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COD-ADM2-63176286B25992661497472",
+      "COD-ADM2-63176286B76945459106625",
+      "COD-ADM2-63176286B20425932648522",
+      "COD-ADM2-63176286B53815785774290",
+      "COD-ADM2-63176286B71176382547280",
+      "COD-ADM2-63176286B37254158064276",
+      "COD-ADM2-63176286B11990771214401",
+      "COD-ADM2-63176286B32367911689095",
+      "COD-ADM2-63176286B5937777491698"
+     ],
+     "sources": [
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Léopoldville province 1 Oct 1933; 14 Aug 1962 Kongo Central, Kwango, Kwilu, Mai-Ndombe; 25 Apr 1966 Bandundu; split again 19 Jul 2015.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From the day rulers.org gives for the split of Bandundu along its district limits."
+    }
+   ]
+  },
+  {
+   "id": "COD:MaiNdombe@2015",
+   "names": {
+    "en": "Mai-Ndombe",
+    "ja": "マイ＝ンドンベ州",
+    "local": "Mai-Ndombe"
+   },
+   "spans": [
+    {
+     "from": "2015-07-19",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COD-ADM2-63176286B37259268611319",
+      "COD-ADM2-63176286B4112889633509",
+      "COD-ADM2-63176286B68796769615290",
+      "COD-ADM2-63176286B53648445078824",
+      "COD-ADM2-63176286B12311619160810",
+      "COD-ADM2-63176286B21856672762157",
+      "COD-ADM2-63176286B54443714119434",
+      "COD-ADM2-63176286B59505490488503",
+      "COD-ADM2-63176286B71096802464930"
+     ],
+     "sources": [
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Léopoldville province 1 Oct 1933; 14 Aug 1962 Kongo Central, Kwango, Kwilu, Mai-Ndombe; 25 Apr 1966 Bandundu; split again 19 Jul 2015.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From the day rulers.org gives for the split of Bandundu along its district limits."
+    }
+   ]
+  },
+  {
+   "id": "COD:Kasai@1960",
+   "names": {
+    "en": "Kasaï",
+    "ja": "カサイ州",
+    "local": "Kasaï"
+   },
    "spans": [
     {
      "from": "1960-06-30",
      "precision": "day",
-     "to": "1962-07-11",
+     "to": "1962-08-14",
      "atoms": [
-      "COD-1897"
+      "COD-ADM2-63176286B23528212594514",
+      "COD-ADM2-63176286B40120828568077",
+      "COD-ADM2-63176286B85649689551019",
+      "COD-ADM2-63176286B69668932062204",
+      "COD-ADM2-63176286B19501088760626",
+      "COD-ADM2-63176286B37681851712476",
+      "COD-ADM2-63176286B65160793690884",
+      "COD-ADM2-63176286B75664078742838",
+      "COD-ADM2-63176286B23998883625218",
+      "COD-ADM2-63176286B97272919542005",
+      "COD-ADM2-63176286B81146580347594",
+      "COD-ADM2-63176286B7058717383424",
+      "COD-ADM2-63176286B74390580243640",
+      "COD-ADM2-63176286B62322725812229",
+      "COD-ADM2-63176286B66669834222633",
+      "COD-ADM2-63176286B13611321695248",
+      "COD-ADM2-63176286B83227238071318",
+      "COD-ADM2-63176286B2433914913285",
+      "COD-ADM2-63176286B63969135863157",
+      "COD-ADM2-63176286B79011641071296",
+      "COD-ADM2-63176286B78021290688444",
+      "COD-ADM2-63176286B12881144084902",
+      "COD-ADM2-63176286B35852451405101",
+      "COD-ADM2-63176286B5322857834849",
+      "COD-ADM2-63176286B70348427219396",
+      "COD-ADM2-63176286B28359889537852",
+      "COD-ADM2-63176286B89784390033972",
+      "COD-ADM2-63176286B30844666641598",
+      "COD-ADM2-63176286B77592742780307",
+      "COD-ADM2-63176286B65571818133367",
+      "COD-ADM2-63176286B49230128630829",
+      "COD-ADM2-63176286B9358277012481",
+      "COD-ADM2-63176286B24830189223330",
+      "COD-ADM2-63176286B80144027802447"
      ],
      "sources": [
       {
        "url": "https://en.wikipedia.org/w/index.php?oldid=1353446106",
        "title": "Provinces of the Democratic Republic of the Congo — en.wikipedia, oldid 1353446106",
        "says": "Loi Fondamentale: six provinces; decree of 6 Apr 1966 cut them to 12; 24 Dec 1966 to eight; Kinshasa a province 1975; Kivu split 1988.",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://rulers.org/cngkprov.html",
        "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
-       "says": "11 Jul 1962: proclamation of the province of Nord-Katanga (Katanga itself in secession 11 Jul 1960–Jan 1963).",
-       "accessed": "2026-10-05"
+       "says": "Kasaï: Lusambo province 1 Oct 1933; 14 Aug 1962 five provinces; 25 Apr 1966 Kasaï Oriental and Occidental; split 15 and 18 Jul 2015.",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Province of the Loi Fondamentale; the outer line is the union of the post-1966 provinces formed only from it (no inter-provincial transfer is recorded 1960–2015)."
-    },
+     "dateNote": "The 1960 province is the union of the 2015 provinces carved from it; the 2015 provinces are the former districts (sub-regions), and the territories (gb-adm2) nest in them. South Kasai (Mining State, 1960–62) is a polity question, not drawn here."
+    }
+   ]
+  },
+  {
+   "id": "COD:KasaiOccidental@1966",
+   "names": {
+    "en": "Kasaï-Occidental",
+    "ja": "西カサイ州",
+    "local": "Kasaï-Occidental"
+   },
+   "wikidata": "Q130576",
+   "spans": [
     {
-     "from": "1966-12-28",
+     "from": "1966-04-25",
      "precision": "day",
-     "to": "2015-06",
+     "to": "2015-07-18",
      "atoms": [
-      "COD-1897"
+      "COD-ADM2-63176286B23528212594514",
+      "COD-ADM2-63176286B40120828568077",
+      "COD-ADM2-63176286B85649689551019",
+      "COD-ADM2-63176286B69668932062204",
+      "COD-ADM2-63176286B19501088760626",
+      "COD-ADM2-63176286B37681851712476",
+      "COD-ADM2-63176286B65160793690884",
+      "COD-ADM2-63176286B75664078742838",
+      "COD-ADM2-63176286B23998883625218",
+      "COD-ADM2-63176286B97272919542005",
+      "COD-ADM2-63176286B81146580347594",
+      "COD-ADM2-63176286B7058717383424",
+      "COD-ADM2-63176286B74390580243640"
      ],
      "sources": [
       {
        "url": "https://rulers.org/cngkprov.html",
        "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
-       "says": "28 Dec 1966: reconstruction of the province of Katanga; renamed Shaba 2 Jan 1972; split 16 Jul 2015.",
-       "accessed": "2026-10-05"
+       "says": "Kasaï: Lusambo province 1 Oct 1933; 14 Aug 1962 five provinces; 25 Apr 1966 Kasaï Oriental and Occidental; split 15 and 18 Jul 2015.",
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
        "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
        "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "New provinces became operational in June–July 2015 (rulers.org gives per-province dates in mid-July); ended at the earliest possible month."
+     "dateNote": "Luluabourg + Unité Kasaïenne; split on the day rulers.org gives (18 Jul 2015)."
+    }
+   ]
+  },
+  {
+   "id": "COD:KasaiOriental@1966",
+   "names": {
+    "en": "Kasaï-Oriental",
+    "ja": "東カサイ州",
+    "local": "Kasaï-Oriental"
+   },
+   "wikidata": "Q80953",
+   "spans": [
+    {
+     "from": "1966-04-25",
+     "precision": "day",
+     "to": "2015-07-15",
+     "atoms": [
+      "COD-ADM2-63176286B62322725812229",
+      "COD-ADM2-63176286B66669834222633",
+      "COD-ADM2-63176286B13611321695248",
+      "COD-ADM2-63176286B83227238071318",
+      "COD-ADM2-63176286B2433914913285",
+      "COD-ADM2-63176286B63969135863157",
+      "COD-ADM2-63176286B79011641071296",
+      "COD-ADM2-63176286B78021290688444",
+      "COD-ADM2-63176286B12881144084902",
+      "COD-ADM2-63176286B35852451405101",
+      "COD-ADM2-63176286B5322857834849",
+      "COD-ADM2-63176286B70348427219396",
+      "COD-ADM2-63176286B28359889537852",
+      "COD-ADM2-63176286B89784390033972",
+      "COD-ADM2-63176286B30844666641598",
+      "COD-ADM2-63176286B77592742780307",
+      "COD-ADM2-63176286B65571818133367",
+      "COD-ADM2-63176286B49230128630829",
+      "COD-ADM2-63176286B9358277012481",
+      "COD-ADM2-63176286B24830189223330",
+      "COD-ADM2-63176286B80144027802447"
+     ],
+     "sources": [
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Kasaï: Lusambo province 1 Oct 1933; 14 Aug 1962 five provinces; 25 Apr 1966 Kasaï Oriental and Occidental; split 15 and 18 Jul 2015.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.africamuseum.be/sites/default/files/media/docs/research/publications/rmca/online/monographies-provinces/kasai-oriental.pdf",
+       "title": "Omasombo (dir.), Kasaï-Oriental — Monographies des provinces de la RDC, MRAC",
+       "says": "The 1962 Sud-Kasaï limits took in Ngandajika, Bakwanga, and the Kashindji (Lusambo) and Kamiji (Dibaya) regions; Mwene-Ditu was neutralised until 1966.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Lomami + Sankuru + Sud-Kasaï (Mwene-Ditu annexed 18 Feb 1966); Kamiji and Kashindji fall inside the 2015 Lomami/Sankuru/Kasaï-Oriental. Kibombo (in Lomami 1962–66) is held in the Kivu unresolved window until 1966-12-28. Split on the day rulers.org gives (15 Jul 2015)."
+    }
+   ]
+  },
+  {
+   "id": "COD:Kasai@2015",
+   "names": {
+    "en": "Kasaï",
+    "ja": "カサイ州",
+    "local": "Kasaï"
+   },
+   "spans": [
+    {
+     "from": "2015-07-18",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COD-ADM2-63176286B23528212594514",
+      "COD-ADM2-63176286B40120828568077",
+      "COD-ADM2-63176286B85649689551019",
+      "COD-ADM2-63176286B69668932062204",
+      "COD-ADM2-63176286B19501088760626",
+      "COD-ADM2-63176286B37681851712476"
+     ],
+     "sources": [
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Kasaï: Lusambo province 1 Oct 1933; 14 Aug 1962 five provinces; 25 Apr 1966 Kasaï Oriental and Occidental; split 15 and 18 Jul 2015.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From the day rulers.org gives for the split along the former district limits."
+    }
+   ]
+  },
+  {
+   "id": "COD:KasaiCentral@2015",
+   "names": {
+    "en": "Kasaï-Central",
+    "ja": "中央カサイ州",
+    "local": "Kasaï-Central"
+   },
+   "spans": [
+    {
+     "from": "2015-07-18",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COD-ADM2-63176286B65160793690884",
+      "COD-ADM2-63176286B75664078742838",
+      "COD-ADM2-63176286B23998883625218",
+      "COD-ADM2-63176286B97272919542005",
+      "COD-ADM2-63176286B81146580347594",
+      "COD-ADM2-63176286B7058717383424",
+      "COD-ADM2-63176286B74390580243640"
+     ],
+     "sources": [
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Kasaï: Lusambo province 1 Oct 1933; 14 Aug 1962 five provinces; 25 Apr 1966 Kasaï Oriental and Occidental; split 15 and 18 Jul 2015.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From the day rulers.org gives for the split along the former district limits."
+    }
+   ]
+  },
+  {
+   "id": "COD:KasaiOriental@2015",
+   "names": {
+    "en": "Kasaï-Oriental (2015)",
+    "ja": "東カサイ州 (2015)",
+    "local": "Kasaï-Oriental"
+   },
+   "spans": [
+    {
+     "from": "2015-07-15",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COD-ADM2-63176286B62322725812229",
+      "COD-ADM2-63176286B66669834222633",
+      "COD-ADM2-63176286B13611321695248",
+      "COD-ADM2-63176286B83227238071318",
+      "COD-ADM2-63176286B2433914913285",
+      "COD-ADM2-63176286B63969135863157",
+      "COD-ADM2-63176286B79011641071296"
+     ],
+     "sources": [
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Kasaï: Lusambo province 1 Oct 1933; 14 Aug 1962 five provinces; 25 Apr 1966 Kasaï Oriental and Occidental; split 15 and 18 Jul 2015.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From the day rulers.org gives for the split along the former district limits."
+    }
+   ]
+  },
+  {
+   "id": "COD:Lomami@2015",
+   "names": {
+    "en": "Lomami",
+    "ja": "ロマミ州",
+    "local": "Lomami"
+   },
+   "spans": [
+    {
+     "from": "2015-07-15",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COD-ADM2-63176286B78021290688444",
+      "COD-ADM2-63176286B12881144084902",
+      "COD-ADM2-63176286B35852451405101",
+      "COD-ADM2-63176286B5322857834849",
+      "COD-ADM2-63176286B70348427219396",
+      "COD-ADM2-63176286B28359889537852"
+     ],
+     "sources": [
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Kasaï: Lusambo province 1 Oct 1933; 14 Aug 1962 five provinces; 25 Apr 1966 Kasaï Oriental and Occidental; split 15 and 18 Jul 2015.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From the day rulers.org gives for the split along the former district limits."
+    }
+   ]
+  },
+  {
+   "id": "COD:Sankuru@2015",
+   "names": {
+    "en": "Sankuru",
+    "ja": "サンクル州",
+    "local": "Sankuru"
+   },
+   "spans": [
+    {
+     "from": "2015-07-15",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COD-ADM2-63176286B89784390033972",
+      "COD-ADM2-63176286B30844666641598",
+      "COD-ADM2-63176286B77592742780307",
+      "COD-ADM2-63176286B65571818133367",
+      "COD-ADM2-63176286B49230128630829",
+      "COD-ADM2-63176286B9358277012481",
+      "COD-ADM2-63176286B24830189223330",
+      "COD-ADM2-63176286B80144027802447"
+     ],
+     "sources": [
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Kasaï: Lusambo province 1 Oct 1933; 14 Aug 1962 five provinces; 25 Apr 1966 Kasaï Oriental and Occidental; split 15 and 18 Jul 2015.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From the day rulers.org gives for the split along the former district limits."
+    }
+   ]
+  },
+  {
+   "id": "COD:Katanga",
+   "names": {
+    "en": "Katanga (Élisabethville Province 1933–1947; Shaba 1971–97)",
+    "ja": "カタンガ州",
+    "local": "Katanga"
+   },
+   "wikidata": "Q217242",
+   "spans": [
+    {
+     "from": "1933-10-01",
+     "precision": "day",
+     "to": "1962-07-11",
+     "atoms": [
+      "COD-ADM2-63176286B50481715267247",
+      "COD-ADM2-63176286B64695958976401",
+      "COD-ADM2-63176286B84034630662614",
+      "COD-ADM2-63176286B77262619841164",
+      "COD-ADM2-63176286B75279003671986",
+      "COD-ADM2-63176286B52056185132037",
+      "COD-ADM2-63176286B59059722008658",
+      "COD-ADM2-63176286B7033307846906",
+      "COD-ADM2-63176286B16885288794784",
+      "COD-ADM2-63176286B12691977822681",
+      "COD-ADM2-63176286B31000864957103",
+      "COD-ADM2-63176286B531915432051",
+      "COD-ADM2-63176286B11863220768150",
+      "COD-ADM2-63176286B52782039621830",
+      "COD-ADM2-63176286B26674316015082",
+      "COD-ADM2-63176286B41140464701712",
+      "COD-ADM2-63176286B57018267641486",
+      "COD-ADM2-63176286B33518015273847",
+      "COD-ADM2-63176286B96753486418064",
+      "COD-ADM2-63176286B76187105234082",
+      "COD-ADM2-63176286B47747519497786",
+      "COD-ADM2-63176286B25314267977171",
+      "COD-ADM2-63176286B6958016734749",
+      "COD-ADM2-63176286B74212537268608",
+      "COD-ADM2-63176286B58583497580401",
+      "COD-ADM2-63176286B90330150002289",
+      "COD-ADM2-63176286B34424841963647"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/ucd.html",
+       "title": "Provinces of the Democratic Republic of Congo — Statoids (Gwillim Law, last updated 2015-06-30)",
+       "says": "1933-10-01: four provinces reorganised into six; areas Coquilhatville 403,290 km², Costermansville 230,209, Élisabethville 496,962, Léopoldville 362,953, Lusambo 321,534, Stanleyville 528,925.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=237766489",
+       "title": "Provinces de la république démocratique du Congo — fr.wikipedia, oldid 237766489",
+       "says": "Areas of the six provinces of 1960: Équateur 403,292 km², Kasaï 325,183, Katanga 496,877, Kivu 256,803, Léopoldville 359,701, Orientale 503,239.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.africamuseum.be/sites/default/files/media/docs/research/publications/rmca/online/monographies-provinces/Haut-Katanga_Tome%201_WEB.pdf",
+       "title": "Omasombo (dir.), Haut-Katanga t. 1 — Monographies des provinces de la RDC, MRAC",
+       "says": "From October 1933 the reform took the Lomami district (with Kanda-Kanda) from Katanga to Kasaï.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Katanga: province of Élisabethville 1 Oct 1933; Nord-Katanga 11 Jul 1962; Lualaba 30 Jun 1963; Katanga Oriental 8 Jul 1963; Sud-Katanga 24 Apr 1966; reconstructed 28 Dec 1966; split 16 Jul 2015.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Arrêté royal of 25 Sep 1933, in force 1 Oct 1933 (after the Lomami district had passed to Kasaï). The 1933 area (403,290 km² for Coquilhatville / 496,962 for Élisabethville, statoids) equals the 1960 figure (403,292 / 496,877) within 0.02%, while the provinces whose boundary moved show the moves (Kivu +26,594 and Orientale −25,686: Lubutu and Beni–Lubero; Léopoldville −3,252 and Kasaï +3,649); the province monographs record no later transfer on its perimeter. The 1960 province is the union of the 2015 provinces carved from it; the 2015 provinces are the former districts (sub-regions), and the territories (gb-adm2) nest in them. The State of Katanga (secession 11 Jul 1960 – Jan 1963) is a polity question, not drawn here."
+    },
+    {
+     "from": "1962-07-11",
+     "precision": "day",
+     "to": "1963-06-30",
+     "atoms": [
+      "COD-ADM2-63176286B50481715267247",
+      "COD-ADM2-63176286B84034630662614",
+      "COD-ADM2-63176286B77262619841164",
+      "COD-ADM2-63176286B75279003671986",
+      "COD-ADM2-63176286B52056185132037",
+      "COD-ADM2-63176286B59059722008658",
+      "COD-ADM2-63176286B7033307846906",
+      "COD-ADM2-63176286B26674316015082",
+      "COD-ADM2-63176286B41140464701712",
+      "COD-ADM2-63176286B57018267641486",
+      "COD-ADM2-63176286B33518015273847",
+      "COD-ADM2-63176286B96753486418064",
+      "COD-ADM2-63176286B76187105234082"
+     ],
+     "sources": [
+      {
+       "url": "https://www.africamuseum.be/sites/default/files/media/docs/research/publications/rmca/online/monographies-provinces/tanganyika.pdf",
+       "title": "Omasombo (dir.), Tanganyika — Monographies des provinces de la RDC, MRAC",
+       "says": "11 Jul 1962: Tanganyika and Haut-Lomami districts merged into Nord-Katanga, with the territories of Lubudi and Mitwaba; on 8 Jul 1963 Katanga-Oriental took Mitwaba and Moba from it.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Katanga: province of Élisabethville 1 Oct 1933; Nord-Katanga 11 Jul 1962; Lualaba 30 Jun 1963; Katanga Oriental 8 Jul 1963; Sud-Katanga 24 Apr 1966; reconstructed 28 Dec 1966; split 16 Jul 2015.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "The remaining part of the province after Nord-Katanga was formed (Élisabethville and Lualaba districts without Mitwaba and Lubudi)."
+    },
+    {
+     "from": "1963-06-30",
+     "precision": "day",
+     "to": "1963-07-08",
+     "atoms": [
+      "COD-ADM2-63176286B50481715267247",
+      "COD-ADM2-63176286B84034630662614",
+      "COD-ADM2-63176286B77262619841164",
+      "COD-ADM2-63176286B75279003671986",
+      "COD-ADM2-63176286B52056185132037",
+      "COD-ADM2-63176286B59059722008658",
+      "COD-ADM2-63176286B7033307846906"
+     ],
+     "sources": [
+      {
+       "url": "https://www.africamuseum.be/sites/default/files/media/docs/research/publications/rmca/online/monographies-provinces/tanganyika.pdf",
+       "title": "Omasombo (dir.), Tanganyika — Monographies des provinces de la RDC, MRAC",
+       "says": "11 Jul 1962: Tanganyika and Haut-Lomami districts merged into Nord-Katanga, with the territories of Lubudi and Mitwaba; on 8 Jul 1963 Katanga-Oriental took Mitwaba and Moba from it.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Katanga: province of Élisabethville 1 Oct 1933; Nord-Katanga 11 Jul 1962; Lualaba 30 Jun 1963; Katanga Oriental 8 Jul 1963; Sud-Katanga 24 Apr 1966; reconstructed 28 Dec 1966; split 16 Jul 2015.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Remaining part after Lualaba was separated, until reorganised as Katanga-Oriental."
+    },
+    {
+     "from": "1966-12-28",
+     "precision": "day",
+     "to": "2015-07-16",
+     "atoms": [
+      "COD-ADM2-63176286B50481715267247",
+      "COD-ADM2-63176286B64695958976401",
+      "COD-ADM2-63176286B84034630662614",
+      "COD-ADM2-63176286B77262619841164",
+      "COD-ADM2-63176286B75279003671986",
+      "COD-ADM2-63176286B52056185132037",
+      "COD-ADM2-63176286B59059722008658",
+      "COD-ADM2-63176286B7033307846906",
+      "COD-ADM2-63176286B16885288794784",
+      "COD-ADM2-63176286B12691977822681",
+      "COD-ADM2-63176286B31000864957103",
+      "COD-ADM2-63176286B531915432051",
+      "COD-ADM2-63176286B11863220768150",
+      "COD-ADM2-63176286B52782039621830",
+      "COD-ADM2-63176286B26674316015082",
+      "COD-ADM2-63176286B41140464701712",
+      "COD-ADM2-63176286B57018267641486",
+      "COD-ADM2-63176286B33518015273847",
+      "COD-ADM2-63176286B96753486418064",
+      "COD-ADM2-63176286B76187105234082",
+      "COD-ADM2-63176286B47747519497786",
+      "COD-ADM2-63176286B25314267977171",
+      "COD-ADM2-63176286B6958016734749",
+      "COD-ADM2-63176286B74212537268608",
+      "COD-ADM2-63176286B58583497580401",
+      "COD-ADM2-63176286B90330150002289",
+      "COD-ADM2-63176286B34424841963647"
+     ],
+     "sources": [
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Katanga: province of Élisabethville 1 Oct 1933; Nord-Katanga 11 Jul 1962; Lualaba 30 Jun 1963; Katanga Oriental 8 Jul 1963; Sud-Katanga 24 Apr 1966; reconstructed 28 Dec 1966; split 16 Jul 2015.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Reconstructed 28 Dec 1966; split on the day rulers.org gives (16 Jul 2015)."
+    }
+   ]
+  },
+  {
+   "id": "COD:NordKatanga@1962",
+   "names": {
+    "en": "Nord-Katanga",
+    "ja": "北カタンガ州",
+    "local": "Nord-Katanga"
+   },
+   "spans": [
+    {
+     "from": "1962-07-11",
+     "precision": "day",
+     "to": "1963-07-08",
+     "atoms": [
+      "COD-ADM2-63176286B47747519497786",
+      "COD-ADM2-63176286B25314267977171",
+      "COD-ADM2-63176286B6958016734749",
+      "COD-ADM2-63176286B74212537268608",
+      "COD-ADM2-63176286B58583497580401",
+      "COD-ADM2-63176286B90330150002289",
+      "COD-ADM2-63176286B34424841963647",
+      "COD-ADM2-63176286B16885288794784",
+      "COD-ADM2-63176286B12691977822681",
+      "COD-ADM2-63176286B31000864957103",
+      "COD-ADM2-63176286B531915432051",
+      "COD-ADM2-63176286B11863220768150",
+      "COD-ADM2-63176286B52782039621830",
+      "COD-ADM2-63176286B64695958976401"
+     ],
+     "sources": [
+      {
+       "url": "https://www.africamuseum.be/sites/default/files/media/docs/research/publications/rmca/online/monographies-provinces/tanganyika.pdf",
+       "title": "Omasombo (dir.), Tanganyika — Monographies des provinces de la RDC, MRAC",
+       "says": "11 Jul 1962: Tanganyika and Haut-Lomami districts merged into Nord-Katanga, with the territories of Lubudi and Mitwaba; on 8 Jul 1963 Katanga-Oriental took Mitwaba and Moba from it.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Katanga: province of Élisabethville 1 Oct 1933; Nord-Katanga 11 Jul 1962; Lualaba 30 Jun 1963; Katanga Oriental 8 Jul 1963; Sud-Katanga 24 Apr 1966; reconstructed 28 Dec 1966; split 16 Jul 2015.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Districts of 1960 = 2015 provinces: Tanganyika (Albertville/Kalemie, Kabalo, Kongolo, Manono, Moba, Nyunzu), Haut-Lomami (Bukama, Kabongo, Kamina, Kaniama, Malemba-Nkulu), Lualaba (Dilolo, Kapanga, Lubudi, Mutshatsha, Sandoa, Kolwezi), Haut-Katanga (Kambove, Kasenga, Kipushi, Mitwaba, Pweto, Sakania, Likasi, Lubumbashi)."
+    },
+    {
+     "from": "1963-07-08",
+     "precision": "day",
+     "to": "1966-12-28",
+     "atoms": [
+      "COD-ADM2-63176286B6958016734749",
+      "COD-ADM2-63176286B74212537268608",
+      "COD-ADM2-63176286B58583497580401",
+      "COD-ADM2-63176286B90330150002289",
+      "COD-ADM2-63176286B34424841963647",
+      "COD-ADM2-63176286B16885288794784",
+      "COD-ADM2-63176286B12691977822681",
+      "COD-ADM2-63176286B31000864957103",
+      "COD-ADM2-63176286B531915432051",
+      "COD-ADM2-63176286B11863220768150",
+      "COD-ADM2-63176286B52782039621830"
+     ],
+     "sources": [
+      {
+       "url": "https://www.africamuseum.be/sites/default/files/media/docs/research/publications/rmca/online/monographies-provinces/tanganyika.pdf",
+       "title": "Omasombo (dir.), Tanganyika — Monographies des provinces de la RDC, MRAC",
+       "says": "11 Jul 1962: Tanganyika and Haut-Lomami districts merged into Nord-Katanga, with the territories of Lubudi and Mitwaba; on 8 Jul 1963 Katanga-Oriental took Mitwaba and Moba from it.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Katanga: province of Élisabethville 1 Oct 1933; Nord-Katanga 11 Jul 1962; Lualaba 30 Jun 1963; Katanga Oriental 8 Jul 1963; Sud-Katanga 24 Apr 1966; reconstructed 28 Dec 1966; split 16 Jul 2015.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Without Mitwaba and Moba (to Katanga-Oriental). Central administration from 5 Nov 1966."
+    }
+   ]
+  },
+  {
+   "id": "COD:Lualaba@1963",
+   "names": {
+    "en": "Lualaba (province 1963–1966)",
+    "ja": "ルアラバ州 (1963–66)",
+    "local": "Province du Lualaba"
+   },
+   "spans": [
+    {
+     "from": "1963-06-30",
+     "precision": "day",
+     "to": "1966-04-24",
+     "atoms": [
+      "COD-ADM2-63176286B26674316015082",
+      "COD-ADM2-63176286B41140464701712",
+      "COD-ADM2-63176286B57018267641486",
+      "COD-ADM2-63176286B33518015273847",
+      "COD-ADM2-63176286B96753486418064",
+      "COD-ADM2-63176286B76187105234082"
+     ],
+     "sources": [
+      {
+       "url": "https://www.africamuseum.be/sites/default/files/media/docs/research/publications/rmca/online/monographies-provinces/tanganyika.pdf",
+       "title": "Omasombo (dir.), Tanganyika — Monographies des provinces de la RDC, MRAC",
+       "says": "11 Jul 1962: Tanganyika and Haut-Lomami districts merged into Nord-Katanga, with the territories of Lubudi and Mitwaba; on 8 Jul 1963 Katanga-Oriental took Mitwaba and Moba from it.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Katanga: province of Élisabethville 1 Oct 1933; Nord-Katanga 11 Jul 1962; Lualaba 30 Jun 1963; Katanga Oriental 8 Jul 1963; Sud-Katanga 24 Apr 1966; reconstructed 28 Dec 1966; split 16 Jul 2015.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Lualaba district without Lubudi (which stayed in Nord-Katanga). Districts of 1960 = 2015 provinces: Tanganyika (Albertville/Kalemie, Kabalo, Kongolo, Manono, Moba, Nyunzu), Haut-Lomami (Bukama, Kabongo, Kamina, Kaniama, Malemba-Nkulu), Lualaba (Dilolo, Kapanga, Lubudi, Mutshatsha, Sandoa, Kolwezi), Haut-Katanga (Kambove, Kasenga, Kipushi, Mitwaba, Pweto, Sakania, Likasi, Lubumbashi)."
+    }
+   ]
+  },
+  {
+   "id": "COD:KatangaOriental@1963",
+   "names": {
+    "en": "Katanga-Oriental",
+    "ja": "東カタンガ州",
+    "local": "Katanga-Oriental"
+   },
+   "spans": [
+    {
+     "from": "1963-07-08",
+     "precision": "day",
+     "to": "1966-04-24",
+     "atoms": [
+      "COD-ADM2-63176286B50481715267247",
+      "COD-ADM2-63176286B64695958976401",
+      "COD-ADM2-63176286B84034630662614",
+      "COD-ADM2-63176286B77262619841164",
+      "COD-ADM2-63176286B75279003671986",
+      "COD-ADM2-63176286B52056185132037",
+      "COD-ADM2-63176286B59059722008658",
+      "COD-ADM2-63176286B7033307846906",
+      "COD-ADM2-63176286B25314267977171",
+      "COD-ADM2-63176286B47747519497786"
+     ],
+     "sources": [
+      {
+       "url": "https://www.africamuseum.be/sites/default/files/media/docs/research/publications/rmca/online/monographies-provinces/tanganyika.pdf",
+       "title": "Omasombo (dir.), Tanganyika — Monographies des provinces de la RDC, MRAC",
+       "says": "11 Jul 1962: Tanganyika and Haut-Lomami districts merged into Nord-Katanga, with the territories of Lubudi and Mitwaba; on 8 Jul 1963 Katanga-Oriental took Mitwaba and Moba from it.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Katanga: province of Élisabethville 1 Oct 1933; Nord-Katanga 11 Jul 1962; Lualaba 30 Jun 1963; Katanga Oriental 8 Jul 1963; Sud-Katanga 24 Apr 1966; reconstructed 28 Dec 1966; split 16 Jul 2015.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "http://www.statoids.com/ucd.html",
+       "title": "Provinces of the Democratic Republic of Congo — Statoids (Gwillim Law, last updated 2015-06-30)",
+       "says": "By 1963-06-25, when Katanga-Oriental was formed, there were 21 provinces and Léopoldville.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "rulers.org dates its formation 8 Jul 1963 (statoids: 25 Jun 1963)."
+    }
+   ]
+  },
+  {
+   "id": "COD:SudKatanga@1966",
+   "names": {
+    "en": "Sud-Katanga",
+    "ja": "南カタンガ州",
+    "local": "Sud-Katanga"
+   },
+   "spans": [
+    {
+     "from": "1966-04-24",
+     "precision": "day",
+     "to": "1966-12-28",
+     "atoms": [
+      "COD-ADM2-63176286B50481715267247",
+      "COD-ADM2-63176286B64695958976401",
+      "COD-ADM2-63176286B84034630662614",
+      "COD-ADM2-63176286B77262619841164",
+      "COD-ADM2-63176286B75279003671986",
+      "COD-ADM2-63176286B52056185132037",
+      "COD-ADM2-63176286B59059722008658",
+      "COD-ADM2-63176286B7033307846906",
+      "COD-ADM2-63176286B25314267977171",
+      "COD-ADM2-63176286B47747519497786",
+      "COD-ADM2-63176286B26674316015082",
+      "COD-ADM2-63176286B41140464701712",
+      "COD-ADM2-63176286B57018267641486",
+      "COD-ADM2-63176286B33518015273847",
+      "COD-ADM2-63176286B96753486418064",
+      "COD-ADM2-63176286B76187105234082"
+     ],
+     "sources": [
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Katanga: province of Élisabethville 1 Oct 1933; Nord-Katanga 11 Jul 1962; Lualaba 30 Jun 1963; Katanga Oriental 8 Jul 1963; Sud-Katanga 24 Apr 1966; reconstructed 28 Dec 1966; split 16 Jul 2015.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.africamuseum.be/sites/default/files/media/docs/research/publications/rmca/online/monographies-provinces/tanganyika.pdf",
+       "title": "Omasombo (dir.), Tanganyika — Monographies des provinces de la RDC, MRAC",
+       "says": "11 Jul 1962: Tanganyika and Haut-Lomami districts merged into Nord-Katanga, with the territories of Lubudi and Mitwaba; on 8 Jul 1963 Katanga-Oriental took Mitwaba and Moba from it.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Katanga-Oriental + Lualaba."
+    }
+   ]
+  },
+  {
+   "id": "COD:HautKatanga@2015",
+   "names": {
+    "en": "Haut-Katanga",
+    "ja": "上カタンガ州",
+    "local": "Haut-Katanga"
+   },
+   "spans": [
+    {
+     "from": "2015-07-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COD-ADM2-63176286B50481715267247",
+      "COD-ADM2-63176286B64695958976401",
+      "COD-ADM2-63176286B84034630662614",
+      "COD-ADM2-63176286B77262619841164",
+      "COD-ADM2-63176286B75279003671986",
+      "COD-ADM2-63176286B52056185132037",
+      "COD-ADM2-63176286B59059722008658",
+      "COD-ADM2-63176286B7033307846906"
+     ],
+     "sources": [
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Katanga: province of Élisabethville 1 Oct 1933; Nord-Katanga 11 Jul 1962; Lualaba 30 Jun 1963; Katanga Oriental 8 Jul 1963; Sud-Katanga 24 Apr 1966; reconstructed 28 Dec 1966; split 16 Jul 2015.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From the day rulers.org gives for the split along the former district limits."
+    }
+   ]
+  },
+  {
+   "id": "COD:HautLomami@2015",
+   "names": {
+    "en": "Haut-Lomami",
+    "ja": "上ロマミ州",
+    "local": "Haut-Lomami"
+   },
+   "spans": [
+    {
+     "from": "2015-07-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COD-ADM2-63176286B16885288794784",
+      "COD-ADM2-63176286B12691977822681",
+      "COD-ADM2-63176286B31000864957103",
+      "COD-ADM2-63176286B531915432051",
+      "COD-ADM2-63176286B11863220768150"
+     ],
+     "sources": [
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Katanga: province of Élisabethville 1 Oct 1933; Nord-Katanga 11 Jul 1962; Lualaba 30 Jun 1963; Katanga Oriental 8 Jul 1963; Sud-Katanga 24 Apr 1966; reconstructed 28 Dec 1966; split 16 Jul 2015.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From the day rulers.org gives for the split along the former district limits."
+    }
+   ]
+  },
+  {
+   "id": "COD:Lualaba@2015",
+   "names": {
+    "en": "Lualaba",
+    "ja": "ルアラバ州",
+    "local": "Lualaba"
+   },
+   "spans": [
+    {
+     "from": "2015-07-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COD-ADM2-63176286B52782039621830",
+      "COD-ADM2-63176286B26674316015082",
+      "COD-ADM2-63176286B41140464701712",
+      "COD-ADM2-63176286B57018267641486",
+      "COD-ADM2-63176286B33518015273847",
+      "COD-ADM2-63176286B96753486418064",
+      "COD-ADM2-63176286B76187105234082"
+     ],
+     "sources": [
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Katanga: province of Élisabethville 1 Oct 1933; Nord-Katanga 11 Jul 1962; Lualaba 30 Jun 1963; Katanga Oriental 8 Jul 1963; Sud-Katanga 24 Apr 1966; reconstructed 28 Dec 1966; split 16 Jul 2015.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From the day rulers.org gives for the split along the former district limits."
+    }
+   ]
+  },
+  {
+   "id": "COD:Tanganyika@2015",
+   "names": {
+    "en": "Tanganyika",
+    "ja": "タンガニーカ州",
+    "local": "Tanganyika"
+   },
+   "spans": [
+    {
+     "from": "2015-07-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COD-ADM2-63176286B47747519497786",
+      "COD-ADM2-63176286B25314267977171",
+      "COD-ADM2-63176286B6958016734749",
+      "COD-ADM2-63176286B74212537268608",
+      "COD-ADM2-63176286B58583497580401",
+      "COD-ADM2-63176286B90330150002289",
+      "COD-ADM2-63176286B34424841963647"
+     ],
+     "sources": [
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Katanga: province of Élisabethville 1 Oct 1933; Nord-Katanga 11 Jul 1962; Lualaba 30 Jun 1963; Katanga Oriental 8 Jul 1963; Sud-Katanga 24 Apr 1966; reconstructed 28 Dec 1966; split 16 Jul 2015.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From the day rulers.org gives for the split along the former district limits."
     }
    ]
   },
@@ -385,55 +1564,110 @@
      "precision": "day",
      "to": "1962-05-10",
      "atoms": [
-      "COD-1894",
-      "COD-1895",
-      "COD-1898"
+      "COD-ADM2-63176286B45916106821058",
+      "COD-ADM2-63176286B84996923503616",
+      "COD-ADM2-63176286B86170870415972",
+      "COD-ADM2-63176286B45383896961526",
+      "COD-ADM2-63176286B25642850349509",
+      "COD-ADM2-63176286B33968238717987",
+      "COD-ADM2-63176286B12710938610069",
+      "COD-ADM2-63176286B17770065929195",
+      "COD-ADM2-63176286B62559292775761",
+      "COD-ADM2-63176286B52252759567832",
+      "COD-ADM2-63176286B21708239892428",
+      "COD-ADM2-63176286B68411895895174",
+      "COD-ADM2-63176286B42701779698156",
+      "COD-ADM2-63176286B3160723083670",
+      "COD-ADM2-63176286B48907865482387",
+      "COD-ADM2-63176286B64827262038855",
+      "COD-ADM2-63176286B28648737127916",
+      "COD-ADM2-63176286B35677174574617",
+      "COD-ADM2-63176286B33283671139480",
+      "COD-ADM2-63176286B8564391110970",
+      "COD-ADM2-63176286B14336347527587",
+      "COD-ADM2-63176286B1925057871065",
+      "COD-ADM2-63176286B85957320837216",
+      "COD-ADM2-63176286B17504702690240",
+      "COD-ADM2-63176286B11141066261470",
+      "COD-ADM2-63176286B20601319898864",
+      "COD-ADM2-63176286B88012685356826",
+      "COD-ADM2-63176286B62585085359897",
+      "COD-ADM2-63176286B36790783393673",
+      "COD-ADM2-63176286B98681964412172"
      ],
      "sources": [
       {
        "url": "https://en.wikipedia.org/w/index.php?oldid=1353446106",
        "title": "Provinces of the Democratic Republic of the Congo — en.wikipedia, oldid 1353446106",
        "says": "Loi Fondamentale: six provinces; decree of 6 Apr 1966 cut them to 12; 24 Dec 1966 to eight; Kinshasa a province 1975; Kivu split 1988.",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://en.wikipedia.org/w/index.php?oldid=1363142404",
        "title": "Kivu Province — en.wikipedia, oldid 1363142404",
        "says": "Between 1962 and 1966 Kivu was temporarily broken into Maniema, North Kivu and South Kivu; in 1988 it was again broken into these provinces.",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://rulers.org/cngkprov.html",
        "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
-       "says": "10 May 1962: central takeover and creation of separate provinces of Maniema and Nord-Kivu (elsewhere dated 14 Aug 1962).",
-       "accessed": "2026-10-05"
+       "says": "Kivu: Costermansville 1 Oct 1933; 10 May 1962 Maniema and Nord-Kivu; Kivu Central 18 May 1963; Sud-Kivu 25 Apr 1966; reunited 28 Dec 1966; divided 20 Jul 1988.",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Province of the Loi Fondamentale; the outer line is the union of the post-1966 provinces formed only from it (no inter-provincial transfer is recorded 1960–2015). Ended at the earlier of two dates given for the 1962 split."
+     "dateNote": "The 1960 province is the union of the 2015 provinces carved from it; the 2015 provinces are the former districts (sub-regions), and the territories (gb-adm2) nest in them. Ended at the earlier of two dates given for the 1962 split."
     },
     {
      "from": "1966-12-28",
      "precision": "day",
      "to": "1988-07-20",
      "atoms": [
-      "COD-1894",
-      "COD-1895",
-      "COD-1898"
+      "COD-ADM2-63176286B45916106821058",
+      "COD-ADM2-63176286B84996923503616",
+      "COD-ADM2-63176286B86170870415972",
+      "COD-ADM2-63176286B45383896961526",
+      "COD-ADM2-63176286B25642850349509",
+      "COD-ADM2-63176286B33968238717987",
+      "COD-ADM2-63176286B12710938610069",
+      "COD-ADM2-63176286B17770065929195",
+      "COD-ADM2-63176286B62559292775761",
+      "COD-ADM2-63176286B52252759567832",
+      "COD-ADM2-63176286B21708239892428",
+      "COD-ADM2-63176286B68411895895174",
+      "COD-ADM2-63176286B42701779698156",
+      "COD-ADM2-63176286B3160723083670",
+      "COD-ADM2-63176286B48907865482387",
+      "COD-ADM2-63176286B64827262038855",
+      "COD-ADM2-63176286B28648737127916",
+      "COD-ADM2-63176286B35677174574617",
+      "COD-ADM2-63176286B33283671139480",
+      "COD-ADM2-63176286B8564391110970",
+      "COD-ADM2-63176286B14336347527587",
+      "COD-ADM2-63176286B1925057871065",
+      "COD-ADM2-63176286B85957320837216",
+      "COD-ADM2-63176286B17504702690240",
+      "COD-ADM2-63176286B11141066261470",
+      "COD-ADM2-63176286B20601319898864",
+      "COD-ADM2-63176286B88012685356826",
+      "COD-ADM2-63176286B62585085359897",
+      "COD-ADM2-63176286B36790783393673",
+      "COD-ADM2-63176286B98681964412172"
      ],
      "sources": [
       {
        "url": "https://en.wikipedia.org/w/index.php?oldid=1363142404",
        "title": "Kivu Province — en.wikipedia, oldid 1363142404",
        "says": "Between 1962 and 1966 Kivu was temporarily broken into Maniema, North Kivu and South Kivu; in 1988 it was again broken into these provinces.",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://rulers.org/cngkprov.html",
        "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
-       "says": "28 Dec 1966: Kivu province reunited; 20 Jul 1988 divided into Maniema, Nord-Kivu and Sud-Kivu.",
-       "accessed": "2026-10-05"
+       "says": "Kivu: Costermansville 1 Oct 1933; 10 May 1962 Maniema and Nord-Kivu; Kivu Central 18 May 1963; Sud-Kivu 25 Apr 1966; reunited 28 Dec 1966; divided 20 Jul 1988.",
+       "accessed": "2026-10-06"
       }
-     ]
+     ],
+     "dateNote": "Reunited 28 Dec 1966 within the 1960 limits."
     }
    ]
   },
@@ -451,26 +1685,34 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "COD-1898"
+      "COD-ADM2-63176286B45916106821058",
+      "COD-ADM2-63176286B84996923503616",
+      "COD-ADM2-63176286B86170870415972",
+      "COD-ADM2-63176286B45383896961526",
+      "COD-ADM2-63176286B25642850349509",
+      "COD-ADM2-63176286B33968238717987",
+      "COD-ADM2-63176286B12710938610069",
+      "COD-ADM2-63176286B17770065929195",
+      "COD-ADM2-63176286B62559292775761"
      ],
      "sources": [
       {
        "url": "https://en.wikipedia.org/w/index.php?oldid=1363142404",
        "title": "Kivu Province — en.wikipedia, oldid 1363142404",
        "says": "Between 1962 and 1966 Kivu was temporarily broken into Maniema, North Kivu and South Kivu; in 1988 it was again broken into these provinces.",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://rulers.org/cngkprov.html",
        "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
-       "says": "20 Jul 1988: Nord-Kivu province recreated.",
-       "accessed": "2026-10-05"
+       "says": "Kivu: Costermansville 1 Oct 1933; 10 May 1962 Maniema and Nord-Kivu; Kivu Central 18 May 1963; Sud-Kivu 25 Apr 1966; reunited 28 Dec 1966; divided 20 Jul 1988.",
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
        "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
        "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       }
      ],
      "dateNote": "Unchanged in 2015."
@@ -491,26 +1733,36 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "COD-1894"
+      "COD-ADM2-63176286B52252759567832",
+      "COD-ADM2-63176286B21708239892428",
+      "COD-ADM2-63176286B68411895895174",
+      "COD-ADM2-63176286B42701779698156",
+      "COD-ADM2-63176286B3160723083670",
+      "COD-ADM2-63176286B48907865482387",
+      "COD-ADM2-63176286B64827262038855",
+      "COD-ADM2-63176286B28648737127916",
+      "COD-ADM2-63176286B35677174574617",
+      "COD-ADM2-63176286B33283671139480",
+      "COD-ADM2-63176286B8564391110970"
      ],
      "sources": [
       {
        "url": "https://en.wikipedia.org/w/index.php?oldid=1363142404",
        "title": "Kivu Province — en.wikipedia, oldid 1363142404",
        "says": "Between 1962 and 1966 Kivu was temporarily broken into Maniema, North Kivu and South Kivu; in 1988 it was again broken into these provinces.",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://rulers.org/cngkprov.html",
        "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
-       "says": "20 Jul 1988: Sud-Kivu province recreated.",
-       "accessed": "2026-10-05"
+       "says": "Kivu: Costermansville 1 Oct 1933; 10 May 1962 Maniema and Nord-Kivu; Kivu Central 18 May 1963; Sud-Kivu 25 Apr 1966; reunited 28 Dec 1966; divided 20 Jul 1988.",
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
        "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
        "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       }
      ],
      "dateNote": "Unchanged in 2015."
@@ -531,26 +1783,35 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "COD-1895"
+      "COD-ADM2-63176286B14336347527587",
+      "COD-ADM2-63176286B1925057871065",
+      "COD-ADM2-63176286B85957320837216",
+      "COD-ADM2-63176286B17504702690240",
+      "COD-ADM2-63176286B11141066261470",
+      "COD-ADM2-63176286B20601319898864",
+      "COD-ADM2-63176286B88012685356826",
+      "COD-ADM2-63176286B62585085359897",
+      "COD-ADM2-63176286B36790783393673",
+      "COD-ADM2-63176286B98681964412172"
      ],
      "sources": [
       {
        "url": "https://en.wikipedia.org/w/index.php?oldid=1363142404",
        "title": "Kivu Province — en.wikipedia, oldid 1363142404",
        "says": "Between 1962 and 1966 Kivu was temporarily broken into Maniema, North Kivu and South Kivu; in 1988 it was again broken into these provinces.",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://rulers.org/cngkprov.html",
        "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
-       "says": "20 Jul 1988: Maniema province recreated.",
-       "accessed": "2026-10-05"
+       "says": "Kivu: Costermansville 1 Oct 1933; 10 May 1962 Maniema and Nord-Kivu; Kivu Central 18 May 1963; Sud-Kivu 25 Apr 1966; reunited 28 Dec 1966; divided 20 Jul 1988.",
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
        "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
        "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       }
      ],
      "dateNote": "Unchanged in 2015."
@@ -569,133 +1830,733 @@
     {
      "from": "1960-06-30",
      "precision": "day",
-     "to": "1962-07-27",
+     "to": "1962-08-14",
      "atoms": [
-      "COD-1559"
+      "COD-ADM2-63176286B65133649587609",
+      "COD-ADM2-63176286B15680618396169",
+      "COD-ADM2-63176286B75372177576839",
+      "COD-ADM2-63176286B5401694360976",
+      "COD-ADM2-63176286B14719092717616",
+      "COD-ADM2-63176286B55306571020797",
+      "COD-ADM2-63176286B65216379244562",
+      "COD-ADM2-63176286B90733061522477",
+      "COD-ADM2-63176286B9060730940258",
+      "COD-ADM2-63176286B77771623677962",
+      "COD-ADM2-63176286B68044599971787",
+      "COD-ADM2-63176286B24678106401017",
+      "COD-ADM2-63176286B80368275017521",
+      "COD-ADM2-63176286B69142293994365",
+      "COD-ADM2-63176286B70684258400559",
+      "COD-ADM2-63176286B70830242214620",
+      "COD-ADM2-63176286B98159467986291",
+      "COD-ADM2-63176286B94121502354965",
+      "COD-ADM2-63176286B47500153281287",
+      "COD-ADM2-63176286B79209138861399",
+      "COD-ADM2-63176286B33291186627226",
+      "COD-ADM2-63176286B6974395638231",
+      "COD-ADM2-63176286B20411552692002",
+      "COD-ADM2-63176286B55213243416233",
+      "COD-ADM2-63176286B48725841971461",
+      "COD-ADM2-63176286B43218121140485",
+      "COD-ADM2-63176286B50174012793828",
+      "COD-ADM2-63176286B77989779607321",
+      "COD-ADM2-63176286B83726148102259",
+      "COD-ADM2-63176286B83745324886444",
+      "COD-ADM2-63176286B30130216174864",
+      "COD-ADM2-63176286B93910554563220",
+      "COD-ADM2-63176286B49026377824569"
      ],
      "sources": [
       {
        "url": "https://en.wikipedia.org/w/index.php?oldid=1353446106",
        "title": "Provinces of the Democratic Republic of the Congo — en.wikipedia, oldid 1353446106",
        "says": "Loi Fondamentale: six provinces; decree of 6 Apr 1966 cut them to 12; 24 Dec 1966 to eight; Kinshasa a province 1975; Kivu split 1988.",
-       "accessed": "2026-10-05"
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://rulers.org/cngkprov.html",
        "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
-       "says": "27 Jul 1962: central takeover and separation of Kibali-Ituri and Uélé (their creation is dated 14 Aug 1962).",
-       "accessed": "2026-10-05"
+       "says": "Orientale: 1933 Stanleyville province; 27 Jul 1962 central takeover; Haut-Congo 27 Mar 1963; reunified 28 Dec 1966; 11 Jul 2015 split into Bas-Uélé, Haut-Uélé, Ituri, Tshopo.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.africamuseum.be/sites/default/files/media/docs/research/publications/rmca/online/monographies-provinces/ituri.pdf",
+       "title": "Omasombo (dir.), Ituri — Monographies des provinces de la RDC, MRAC",
+       "says": "Law of 14 Aug 1962: Kibali-Ituri = territories of Aru, Mahagi, Djugu, Mambasa and Bunia (Irumu), with Faradje and Watsa of Haut-Uele subject to a referendum; Uele = the two Uele districts.",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "Province of the Loi Fondamentale; the outer line is the union of the post-1966 provinces formed only from it (no inter-provincial transfer is recorded 1960–2015). Ended at the earlier of two dates given for the split."
+     "dateNote": "The 1960 province is the union of the 2015 provinces carved from it; the 2015 provinces are the former districts (sub-regions), and the territories (gb-adm2) nest in them. Under central administration from 27 Jul 1962; Kibali-Ituri and Uele were created by the laws of 14 Aug 1962."
+    },
+    {
+     "from": "1962-08-14",
+     "precision": "day",
+     "to": "1963-03-27",
+     "atoms": [
+      "COD-ADM2-63176286B48725841971461",
+      "COD-ADM2-63176286B43218121140485",
+      "COD-ADM2-63176286B50174012793828",
+      "COD-ADM2-63176286B77989779607321",
+      "COD-ADM2-63176286B83726148102259",
+      "COD-ADM2-63176286B83745324886444",
+      "COD-ADM2-63176286B30130216174864",
+      "COD-ADM2-63176286B93910554563220",
+      "COD-ADM2-63176286B49026377824569"
+     ],
+     "sources": [
+      {
+       "url": "https://www.africamuseum.be/sites/default/files/media/docs/research/publications/rmca/online/monographies-provinces/ituri.pdf",
+       "title": "Omasombo (dir.), Ituri — Monographies des provinces de la RDC, MRAC",
+       "says": "Law of 14 Aug 1962: Kibali-Ituri = territories of Aru, Mahagi, Djugu, Mambasa and Bunia (Irumu), with Faradje and Watsa of Haut-Uele subject to a referendum; Uele = the two Uele districts.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.africamuseum.be/sites/default/files/media/docs/research/publications/rmca/online/monographies-provinces/tshopo.pdf",
+       "title": "Omasombo (dir.), Tshopo — Monographies des provinces de la RDC, MRAC",
+       "says": "Ordinances 56 and 57 of 19 Mar 1963 ended the state of exception in the former Province-Orientale; the law of 27 Mar 1963 created Haut-Congo.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Orientale: 1933 Stanleyville province; 27 Jul 1962 central takeover; Haut-Congo 27 Mar 1963; reunified 28 Dec 1966; 11 Jul 2015 split into Bas-Uélé, Haut-Uélé, Ituri, Tshopo.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "The remaining part (Stanleyville district = the 2015 Tshopo) under central administration."
     },
     {
      "from": "1966-12-28",
      "precision": "day",
-     "to": "2015-06",
+     "to": "2015-07-11",
      "atoms": [
-      "COD-1559"
+      "COD-ADM2-63176286B65133649587609",
+      "COD-ADM2-63176286B15680618396169",
+      "COD-ADM2-63176286B75372177576839",
+      "COD-ADM2-63176286B5401694360976",
+      "COD-ADM2-63176286B14719092717616",
+      "COD-ADM2-63176286B55306571020797",
+      "COD-ADM2-63176286B65216379244562",
+      "COD-ADM2-63176286B90733061522477",
+      "COD-ADM2-63176286B9060730940258",
+      "COD-ADM2-63176286B77771623677962",
+      "COD-ADM2-63176286B68044599971787",
+      "COD-ADM2-63176286B24678106401017",
+      "COD-ADM2-63176286B80368275017521",
+      "COD-ADM2-63176286B69142293994365",
+      "COD-ADM2-63176286B70684258400559",
+      "COD-ADM2-63176286B70830242214620",
+      "COD-ADM2-63176286B98159467986291",
+      "COD-ADM2-63176286B94121502354965",
+      "COD-ADM2-63176286B47500153281287",
+      "COD-ADM2-63176286B79209138861399",
+      "COD-ADM2-63176286B33291186627226",
+      "COD-ADM2-63176286B6974395638231",
+      "COD-ADM2-63176286B20411552692002",
+      "COD-ADM2-63176286B55213243416233",
+      "COD-ADM2-63176286B48725841971461",
+      "COD-ADM2-63176286B43218121140485",
+      "COD-ADM2-63176286B50174012793828",
+      "COD-ADM2-63176286B77989779607321",
+      "COD-ADM2-63176286B83726148102259",
+      "COD-ADM2-63176286B83745324886444",
+      "COD-ADM2-63176286B30130216174864",
+      "COD-ADM2-63176286B93910554563220",
+      "COD-ADM2-63176286B49026377824569"
      ],
      "sources": [
       {
-       "url": "https://en.wikipedia.org/w/index.php?oldid=1373639413",
-       "title": "Orientale Province — en.wikipedia, oldid 1373639413",
-       "says": "Broken up in 1963 into Kibali-Ituri, Uélé and Haut-Congo; reconstituted 1966 from them; dissolved 2015 into Bas-Uélé, Haut-Uélé, Ituri, Tshopo.",
-       "accessed": "2026-10-05"
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Orientale: 1933 Stanleyville province; 27 Jul 1962 central takeover; Haut-Congo 27 Mar 1963; reunified 28 Dec 1966; 11 Jul 2015 split into Bas-Uélé, Haut-Uélé, Ituri, Tshopo.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Reunified 28 Dec 1966; split on the day rulers.org gives (11 Jul 2015)."
+    }
+   ]
+  },
+  {
+   "id": "COD:KibaliIturi@1962",
+   "names": {
+    "en": "Kibali-Ituri",
+    "ja": "キバリ＝イトゥリ州",
+    "local": "Kibali-Ituri"
+   },
+   "spans": [
+    {
+     "from": "1962-08-14",
+     "precision": "day",
+     "to": "1966-12-28",
+     "atoms": [
+      "COD-ADM2-63176286B65133649587609",
+      "COD-ADM2-63176286B15680618396169",
+      "COD-ADM2-63176286B75372177576839",
+      "COD-ADM2-63176286B5401694360976",
+      "COD-ADM2-63176286B14719092717616",
+      "COD-ADM2-63176286B55306571020797",
+      "COD-ADM2-63176286B65216379244562",
+      "COD-ADM2-63176286B90733061522477",
+      "COD-ADM2-63176286B9060730940258"
+     ],
+     "sources": [
+      {
+       "url": "https://www.africamuseum.be/sites/default/files/media/docs/research/publications/rmca/online/monographies-provinces/ituri.pdf",
+       "title": "Omasombo (dir.), Ituri — Monographies des provinces de la RDC, MRAC",
+       "says": "Law of 14 Aug 1962: Kibali-Ituri = territories of Aru, Mahagi, Djugu, Mambasa and Bunia (Irumu), with Faradje and Watsa of Haut-Uele subject to a referendum; Uele = the two Uele districts.",
+       "accessed": "2026-10-06"
       },
       {
        "url": "https://rulers.org/cngkprov.html",
        "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
-       "says": "28 Dec 1966: reunification of Orientale province; split 11 Jul 2015 into Bas-Uélé, Haut-Uélé, Ituri, Tshopo.",
-       "accessed": "2026-10-05"
+       "says": "Orientale: 1933 Stanleyville province; 27 Jul 1962 central takeover; Haut-Congo 27 Mar 1963; reunified 28 Dec 1966; 11 Jul 2015 split into Bas-Uélé, Haut-Uélé, Ituri, Tshopo.",
+       "accessed": "2026-10-06"
       }
      ],
-     "dateNote": "New provinces became operational in June–July 2015 (rulers.org gives per-province dates in mid-July); ended at the earliest possible month."
+     "dateNote": "Undisputed territories; Faradje (with Aba) and Watsa are held unresolved for the whole life of the province."
+    }
+   ]
+  },
+  {
+   "id": "COD:Uele@1962",
+   "names": {
+    "en": "Uele",
+    "ja": "ウエレ州",
+    "local": "Uélé"
+   },
+   "spans": [
+    {
+     "from": "1962-08-14",
+     "precision": "day",
+     "to": "1966-12-28",
+     "atoms": [
+      "COD-ADM2-63176286B77771623677962",
+      "COD-ADM2-63176286B68044599971787",
+      "COD-ADM2-63176286B24678106401017",
+      "COD-ADM2-63176286B80368275017521",
+      "COD-ADM2-63176286B69142293994365",
+      "COD-ADM2-63176286B70684258400559",
+      "COD-ADM2-63176286B70830242214620",
+      "COD-ADM2-63176286B98159467986291",
+      "COD-ADM2-63176286B79209138861399",
+      "COD-ADM2-63176286B33291186627226",
+      "COD-ADM2-63176286B6974395638231",
+      "COD-ADM2-63176286B55213243416233"
+     ],
+     "sources": [
+      {
+       "url": "https://www.africamuseum.be/sites/default/files/media/docs/research/publications/rmca/online/monographies-provinces/haut-uele-pdf.pdf",
+       "title": "Omasombo (dir.), Haut-Uele — Monographies des provinces de la RDC, MRAC",
+       "says": "The merger of the two Uele districts into one province was sanctioned by the law of 14 Aug 1962.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://www.africamuseum.be/sites/default/files/media/docs/research/publications/rmca/online/monographies-provinces/ituri.pdf",
+       "title": "Omasombo (dir.), Ituri — Monographies des provinces de la RDC, MRAC",
+       "says": "Law of 14 Aug 1962: Kibali-Ituri = territories of Aru, Mahagi, Djugu, Mambasa and Bunia (Irumu), with Faradje and Watsa of Haut-Uele subject to a referendum; Uele = the two Uele districts.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Orientale: 1933 Stanleyville province; 27 Jul 1962 central takeover; Haut-Congo 27 Mar 1963; reunified 28 Dec 1966; 11 Jul 2015 split into Bas-Uélé, Haut-Uélé, Ituri, Tshopo.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Bas-Uele + Haut-Uele districts; Faradje (with Aba) and Watsa unresolved."
+    }
+   ]
+  },
+  {
+   "id": "COD:HautCongo@1963",
+   "names": {
+    "en": "Haut-Congo",
+    "ja": "上コンゴ州",
+    "local": "Haut-Congo"
+   },
+   "spans": [
+    {
+     "from": "1963-03-27",
+     "precision": "day",
+     "to": "1966-12-28",
+     "atoms": [
+      "COD-ADM2-63176286B48725841971461",
+      "COD-ADM2-63176286B43218121140485",
+      "COD-ADM2-63176286B50174012793828",
+      "COD-ADM2-63176286B77989779607321",
+      "COD-ADM2-63176286B83726148102259",
+      "COD-ADM2-63176286B83745324886444",
+      "COD-ADM2-63176286B30130216174864",
+      "COD-ADM2-63176286B93910554563220",
+      "COD-ADM2-63176286B49026377824569"
+     ],
+     "sources": [
+      {
+       "url": "https://www.africamuseum.be/sites/default/files/media/docs/research/publications/rmca/online/monographies-provinces/tshopo.pdf",
+       "title": "Omasombo (dir.), Tshopo — Monographies des provinces de la RDC, MRAC",
+       "says": "The law of 27 Mar 1963 created the province of Haut-Congo.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Orientale: 1933 Stanleyville province; 27 Jul 1962 central takeover; Haut-Congo 27 Mar 1963; reunified 28 Dec 1966; 11 Jul 2015 split into Bas-Uélé, Haut-Uélé, Ituri, Tshopo.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "Stanleyville district of 1960 = the 2015 Tshopo. Central administration from 5 Nov 1966."
+    }
+   ]
+  },
+  {
+   "id": "COD:BasUele@2015",
+   "names": {
+    "en": "Bas-Uélé",
+    "ja": "低ウエレ州",
+    "local": "Bas-Uélé"
+   },
+   "spans": [
+    {
+     "from": "2015-07-11",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COD-ADM2-63176286B77771623677962",
+      "COD-ADM2-63176286B68044599971787",
+      "COD-ADM2-63176286B24678106401017",
+      "COD-ADM2-63176286B80368275017521",
+      "COD-ADM2-63176286B69142293994365",
+      "COD-ADM2-63176286B70684258400559",
+      "COD-ADM2-63176286B70830242214620"
+     ],
+     "sources": [
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Orientale: 1933 Stanleyville province; 27 Jul 1962 central takeover; Haut-Congo 27 Mar 1963; reunified 28 Dec 1966; 11 Jul 2015 split into Bas-Uélé, Haut-Uélé, Ituri, Tshopo.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From the day rulers.org gives for the split along the former district limits."
+    }
+   ]
+  },
+  {
+   "id": "COD:HautUele@2015",
+   "names": {
+    "en": "Haut-Uélé",
+    "ja": "高ウエレ州",
+    "local": "Haut-Uélé"
+   },
+   "spans": [
+    {
+     "from": "2015-07-11",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COD-ADM2-63176286B98159467986291",
+      "COD-ADM2-63176286B94121502354965",
+      "COD-ADM2-63176286B47500153281287",
+      "COD-ADM2-63176286B79209138861399",
+      "COD-ADM2-63176286B33291186627226",
+      "COD-ADM2-63176286B6974395638231",
+      "COD-ADM2-63176286B20411552692002",
+      "COD-ADM2-63176286B55213243416233"
+     ],
+     "sources": [
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Orientale: 1933 Stanleyville province; 27 Jul 1962 central takeover; Haut-Congo 27 Mar 1963; reunified 28 Dec 1966; 11 Jul 2015 split into Bas-Uélé, Haut-Uélé, Ituri, Tshopo.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From the day rulers.org gives for the split along the former district limits."
+    }
+   ]
+  },
+  {
+   "id": "COD:Ituri@2015",
+   "names": {
+    "en": "Ituri",
+    "ja": "イトゥリ州",
+    "local": "Ituri"
+   },
+   "spans": [
+    {
+     "from": "2015-07-11",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COD-ADM2-63176286B65133649587609",
+      "COD-ADM2-63176286B15680618396169",
+      "COD-ADM2-63176286B75372177576839",
+      "COD-ADM2-63176286B5401694360976",
+      "COD-ADM2-63176286B14719092717616",
+      "COD-ADM2-63176286B55306571020797",
+      "COD-ADM2-63176286B65216379244562",
+      "COD-ADM2-63176286B90733061522477",
+      "COD-ADM2-63176286B9060730940258"
+     ],
+     "sources": [
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Orientale: 1933 Stanleyville province; 27 Jul 1962 central takeover; Haut-Congo 27 Mar 1963; reunified 28 Dec 1966; 11 Jul 2015 split into Bas-Uélé, Haut-Uélé, Ituri, Tshopo.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From the day rulers.org gives for the split along the former district limits."
+    }
+   ]
+  },
+  {
+   "id": "COD:Tshopo@2015",
+   "names": {
+    "en": "Tshopo",
+    "ja": "チョポ州",
+    "local": "Tshopo"
+   },
+   "spans": [
+    {
+     "from": "2015-07-11",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COD-ADM2-63176286B48725841971461",
+      "COD-ADM2-63176286B43218121140485",
+      "COD-ADM2-63176286B50174012793828",
+      "COD-ADM2-63176286B77989779607321",
+      "COD-ADM2-63176286B83726148102259",
+      "COD-ADM2-63176286B83745324886444",
+      "COD-ADM2-63176286B30130216174864",
+      "COD-ADM2-63176286B93910554563220",
+      "COD-ADM2-63176286B49026377824569"
+     ],
+     "sources": [
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Orientale: 1933 Stanleyville province; 27 Jul 1962 central takeover; Haut-Congo 27 Mar 1963; reunified 28 Dec 1966; 11 Jul 2015 split into Bas-Uélé, Haut-Uélé, Ituri, Tshopo.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From the day rulers.org gives for the split along the former district limits."
+    }
+   ]
+  },
+  {
+   "id": "COD:Equateur@2015",
+   "names": {
+    "en": "Équateur (2015)",
+    "ja": "赤道州 (2015)",
+    "local": "Équateur"
+   },
+   "spans": [
+    {
+     "from": "2015-07-11",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COD-ADM2-63176286B36806520086654",
+      "COD-ADM2-63176286B16264123188485",
+      "COD-ADM2-63176286B3271137171664",
+      "COD-ADM2-63176286B14204108243102",
+      "COD-ADM2-63176286B53001735211155",
+      "COD-ADM2-63176286B59821830207387",
+      "COD-ADM2-63176286B68262610189121",
+      "COD-ADM2-63176286B82661241826895"
+     ],
+     "sources": [
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Équateur: 14 Aug 1962 Cuvette Centrale and Ubangi separated; 25 Apr 1966 reunited; 11 Jul 2015 split into Équateur, Mongala, Nord-Ubangi, Sud-Ubangi, Tshuapa.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From the day rulers.org gives for the split along the former district limits."
+    }
+   ]
+  },
+  {
+   "id": "COD:Mongala@2015",
+   "names": {
+    "en": "Mongala",
+    "ja": "モンガラ州",
+    "local": "Mongala"
+   },
+   "spans": [
+    {
+     "from": "2015-07-11",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COD-ADM2-63176286B86504731111535",
+      "COD-ADM2-63176286B7674321742221",
+      "COD-ADM2-63176286B55618881730154"
+     ],
+     "sources": [
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Équateur: 14 Aug 1962 Cuvette Centrale and Ubangi separated; 25 Apr 1966 reunited; 11 Jul 2015 split into Équateur, Mongala, Nord-Ubangi, Sud-Ubangi, Tshuapa.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From the day rulers.org gives for the split along the former district limits."
+    }
+   ]
+  },
+  {
+   "id": "COD:NordUbangi@2015",
+   "names": {
+    "en": "Nord-Ubangi",
+    "ja": "北ウバンギ州",
+    "local": "Nord-Ubangi"
+   },
+   "spans": [
+    {
+     "from": "2015-07-11",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COD-ADM2-63176286B10859728267394",
+      "COD-ADM2-63176286B50098701443330",
+      "COD-ADM2-63176286B72804638257173",
+      "COD-ADM2-63176286B77587123851522",
+      "COD-ADM2-63176286B98421000452360"
+     ],
+     "sources": [
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Équateur: 14 Aug 1962 Cuvette Centrale and Ubangi separated; 25 Apr 1966 reunited; 11 Jul 2015 split into Équateur, Mongala, Nord-Ubangi, Sud-Ubangi, Tshuapa.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From the day rulers.org gives for the split along the former district limits."
+    }
+   ]
+  },
+  {
+   "id": "COD:SudUbangi@2015",
+   "names": {
+    "en": "Sud-Ubangi",
+    "ja": "南ウバンギ州",
+    "local": "Sud-Ubangi"
+   },
+   "spans": [
+    {
+     "from": "2015-07-11",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COD-ADM2-63176286B30356596276779",
+      "COD-ADM2-63176286B53748739739840",
+      "COD-ADM2-63176286B16720510237815",
+      "COD-ADM2-63176286B55786633055845",
+      "COD-ADM2-63176286B43464771754704"
+     ],
+     "sources": [
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Équateur: 14 Aug 1962 Cuvette Centrale and Ubangi separated; 25 Apr 1966 reunited; 11 Jul 2015 split into Équateur, Mongala, Nord-Ubangi, Sud-Ubangi, Tshuapa.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From the day rulers.org gives for the split along the former district limits."
+    }
+   ]
+  },
+  {
+   "id": "COD:Tshuapa@2015",
+   "names": {
+    "en": "Tshuapa",
+    "ja": "チュアパ州",
+    "local": "Tshuapa"
+   },
+   "spans": [
+    {
+     "from": "2015-07-11",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COD-ADM2-63176286B77918114228452",
+      "COD-ADM2-63176286B4277783159614",
+      "COD-ADM2-63176286B4133354906354",
+      "COD-ADM2-63176286B75913983063727",
+      "COD-ADM2-63176286B56364191841329",
+      "COD-ADM2-63176286B49430673132917"
+     ],
+     "sources": [
+      {
+       "url": "https://rulers.org/cngkprov.html",
+       "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+       "says": "Équateur: 14 Aug 1962 Cuvette Centrale and Ubangi separated; 25 Apr 1966 reunited; 11 Jul 2015 split into Équateur, Mongala, Nord-Ubangi, Sud-Ubangi, Tshuapa.",
+       "accessed": "2026-10-06"
+      },
+      {
+       "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+       "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+       "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+       "accessed": "2026-10-06"
+      }
+     ],
+     "dateNote": "From the day rulers.org gives for the split along the former district limits."
     }
    ]
   }
  ],
  "events": [
   {
+   "date": "1933-10-01",
+   "precision": "day",
+   "what": "Four provinces reorganised into six named after their capitals (arrêté royal of 25 Sep 1933)",
+   "sources": [
+    {
+     "url": "http://www.statoids.com/ucd.html",
+     "title": "Provinces of the Democratic Republic of Congo — Statoids (Gwillim Law, last updated 2015-06-30)",
+     "says": "1933-10-01: four provinces reorganised into six; areas Coquilhatville 403,290 km², Costermansville 230,209, Élisabethville 496,962, Léopoldville 362,953, Lusambo 321,534, Stanleyville 528,925.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1951-07-01",
+   "precision": "day",
+   "what": "Lubutu territory moved from Orientale to Kivu (ordinance 21/279)",
+   "sources": [
+    {
+     "url": "https://www.africamuseum.be/sites/default/files/media/docs/research/publications/rmca/online/monographies-provinces/tshopo.pdf",
+     "title": "Omasombo (dir.), Tshopo — Monographies des provinces de la RDC, MRAC",
+     "says": "Ordinance 21/279 of 1 Jul 1951 incorporated Lubutu territory into the Maniema district of Costermansville province.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
    "date": "1960-06-30",
    "precision": "day",
-   "what": "Independence with six provinces (Équateur, Kasaï, Katanga, Kivu, Léopoldville, Orientale)",
+   "what": "Independence with six provinces",
    "sources": [
     {
      "url": "https://en.wikipedia.org/w/index.php?oldid=1353446106",
      "title": "Provinces of the Democratic Republic of the Congo — en.wikipedia, oldid 1353446106",
      "says": "Loi Fondamentale: six provinces; decree of 6 Apr 1966 cut them to 12; 24 Dec 1966 to eight; Kinshasa a province 1975; Kivu split 1988.",
-     "accessed": "2026-10-05"
+     "accessed": "2026-10-06"
     }
    ]
   },
   {
    "date": "1962-08-14",
    "precision": "day",
-   "what": "Most provinces split into \"provincettes\" (21 provinces + Léopoldville by 1963); Kivu (May?) and Orientale (Jul) partly earlier",
+   "what": "Laws creating most provincettes",
    "sources": [
     {
      "url": "https://rulers.org/cngkprov.html",
      "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
-     "says": "14 Aug 1962: division of Équateur, Kasaï, Léopoldville; creation of Kibali-Ituri, Uélé, Maniema, Nord-Kivu.",
-     "accessed": "2026-10-05"
+     "says": "Léopoldville province 1 Oct 1933; 14 Aug 1962 Kongo Central, Kwango, Kwilu, Mai-Ndombe; 25 Apr 1966 Bandundu; split again 19 Jul 2015.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://www.africamuseum.be/sites/default/files/media/docs/research/publications/rmca/online/monographies-provinces/ituri.pdf",
+     "title": "Omasombo (dir.), Ituri — Monographies des provinces de la RDC, MRAC",
+     "says": "Law of 14 Aug 1962: Kibali-Ituri = territories of Aru, Mahagi, Djugu, Mambasa and Bunia (Irumu), with Faradje and Watsa of Haut-Uele subject to a referendum; Uele = the two Uele districts.",
+     "accessed": "2026-10-06"
     }
    ]
   },
   {
    "date": "1966-04-25",
    "precision": "day",
-   "what": "21 provinces reduced to 12 + Kinshasa (decree of 6 Apr 1966)",
+   "what": "21 provinces reduced to 12 + Kinshasa (ordinance-law 66-205 of 6 Apr 1966)",
    "sources": [
-    {
-     "url": "https://en.wikipedia.org/w/index.php?oldid=1353446106",
-     "title": "Provinces of the Democratic Republic of the Congo — en.wikipedia, oldid 1353446106",
-     "says": "Loi Fondamentale: six provinces; decree of 6 Apr 1966 cut them to 12; 24 Dec 1966 to eight; Kinshasa a province 1975; Kivu split 1988.",
-     "accessed": "2026-10-05"
-    },
     {
      "url": "https://rulers.org/cngkprov.html",
      "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
-     "says": "25 Apr 1966: new provinces Équateur, Bandundu, Kasaï Occidental, Kasaï Oriental, Sud-Kivu; Sud-Katanga 24 Apr.",
-     "accessed": "2026-10-05"
+     "says": "Léopoldville province 1 Oct 1933; 14 Aug 1962 Kongo Central, Kwango, Kwilu, Mai-Ndombe; 25 Apr 1966 Bandundu; split again 19 Jul 2015.",
+     "accessed": "2026-10-06"
     }
    ]
   },
   {
    "date": "1966-12-28",
    "precision": "day",
-   "what": "Reduced to 8 provinces + Kinshasa (Katanga, Kivu, Orientale reunited)",
+   "what": "Orientale, Kivu and Katanga reconstituted: 8 provinces + Kinshasa",
    "sources": [
     {
-     "url": "https://en.wikipedia.org/w/index.php?oldid=1353446106",
-     "title": "Provinces of the Democratic Republic of the Congo — en.wikipedia, oldid 1353446106",
-     "says": "Loi Fondamentale: six provinces; decree of 6 Apr 1966 cut them to 12; 24 Dec 1966 to eight; Kinshasa a province 1975; Kivu split 1988.",
-     "accessed": "2026-10-05"
+     "url": "https://rulers.org/cngkprov.html",
+     "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+     "says": "Orientale: 1933 Stanleyville province; 27 Jul 1962 central takeover; Haut-Congo 27 Mar 1963; reunified 28 Dec 1966; 11 Jul 2015 split into Bas-Uélé, Haut-Uélé, Ituri, Tshopo.",
+     "accessed": "2026-10-06"
     },
     {
      "url": "https://rulers.org/cngkprov.html",
      "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
-     "says": "28 Dec 1966: Katanga reconstructed, Kivu reunited, Orientale reunified.",
-     "accessed": "2026-10-05"
-    }
-   ]
-  },
-  {
-   "date": "1968-02-20",
-   "precision": "day",
-   "what": "Maluku (from Kasa-Ngulu territory, Congo-Central) made a commune of Kinshasa; limits fixed 1969-01-25",
-   "sources": [
-    {
-     "url": "https://orbi.uliege.be/bitstream/2268/243692/1/Krossy_Th%C3%A8se_Gouvernance%20et%20services%20publics%20dans%20le%20territoire%20p%C3%A9riurbain%20de%20Maluku%20%C3%A0%20Kinshasa.pdf",
-     "title": "Krossy, Gouvernance et services publics dans le territoire périurbain de Maluku (PhD thesis, ULiège), pp. 17–20",
-     "says": "Maluku, a post of Kasa-Ngulu territory, became Kinshasa's 24th commune by ordinance 068-024 of 20 Feb 1968; its limits were fixed by arrêté 69-042 of 25 Jan 1969.",
-     "accessed": "2026-10-05"
+     "says": "Kivu: Costermansville 1 Oct 1933; 10 May 1962 Maniema and Nord-Kivu; Kivu Central 18 May 1963; Sud-Kivu 25 Apr 1966; reunited 28 Dec 1966; divided 20 Jul 1988.",
+     "accessed": "2026-10-06"
     },
     {
-     "url": "https://fr.wikipedia.org/w/index.php?oldid=232244891",
-     "title": "Maluku (Kinshasa) — fr.wikipedia, oldid 232244891",
-     "says": "Maluku covers 7,948.8 km², 79% of the city-province; created as a commune by ordonnance-loi in early 1968.",
-     "accessed": "2026-10-05"
+     "url": "https://rulers.org/cngkprov.html",
+     "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+     "says": "Katanga: province of Élisabethville 1 Oct 1933; Nord-Katanga 11 Jul 1962; Lualaba 30 Jun 1963; Katanga Oriental 8 Jul 1963; Sud-Katanga 24 Apr 1966; reconstructed 28 Dec 1966; split 16 Jul 2015.",
+     "accessed": "2026-10-06"
     }
    ]
   },
@@ -707,32 +2568,50 @@
     {
      "url": "https://rulers.org/cngkprov.html",
      "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
-     "says": "20 Jul 1988: Kivu divided into Maniema, Nord-Kivu, Sud-Kivu.",
-     "accessed": "2026-10-05"
+     "says": "Kivu: Costermansville 1 Oct 1933; 10 May 1962 Maniema and Nord-Kivu; Kivu Central 18 May 1963; Sud-Kivu 25 Apr 1966; reunited 28 Dec 1966; divided 20 Jul 1988.",
+     "accessed": "2026-10-06"
     }
    ]
   },
   {
-   "date": "2015-07",
-   "precision": "month",
-   "what": "Six provinces split into 21 new ones (total 26 incl. Kinshasa), installed June–July 2015 (Law 15/004 of 28 Feb 2015)",
+   "date": "2015-07-11",
+   "precision": "day",
+   "what": "2015 découpage effective province by province 11–19 Jul 2015 (26 provinces)",
    "sources": [
+    {
+     "url": "https://rulers.org/cngkprov.html",
+     "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+     "says": "Équateur: 14 Aug 1962 Cuvette Centrale and Ubangi separated; 25 Apr 1966 reunited; 11 Jul 2015 split into Équateur, Mongala, Nord-Ubangi, Sud-Ubangi, Tshuapa.",
+     "accessed": "2026-10-06"
+    },
     {
      "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
      "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
      "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
-     "accessed": "2026-10-05"
-    },
-    {
-     "url": "https://rulers.org/cngkprov.html",
-     "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
-     "says": "Équateur and Orientale split 11 Jul 2015; Kasaï Oriental 15 Jul; Katanga 16 Jul; Kasaï Occidental 18 Jul; Bandundu 19 Jul.",
-     "accessed": "2026-10-05"
+     "accessed": "2026-10-06"
     }
    ]
   }
  ],
  "counts": [
+  {
+   "date": "1934-01-01",
+   "n": 6,
+   "sources": [
+    {
+     "url": "http://www.statoids.com/ucd.html",
+     "title": "Provinces of the Democratic Republic of Congo — Statoids (Gwillim Law, last updated 2015-06-30)",
+     "says": "1933-10-01: four provinces reorganised into six; areas Coquilhatville 403,290 km², Costermansville 230,209, Élisabethville 496,962, Léopoldville 362,953, Lusambo 321,534, Stanleyville 528,925.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=983617775",
+     "title": "Districts of the Belgian Congo — en.wikipedia, oldid 983617775",
+     "says": "Four provinces from 1914; in 1933 six provinces named after their capitals, with boundary changes; provincial boundaries fairly stable until 1960 (Lemarchand 1964).",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
   {
    "date": "1960-07-01",
    "n": 6,
@@ -741,7 +2620,31 @@
      "url": "https://en.wikipedia.org/w/index.php?oldid=1353446106",
      "title": "Provinces of the Democratic Republic of the Congo — en.wikipedia, oldid 1353446106",
      "says": "Loi Fondamentale: six provinces; decree of 6 Apr 1966 cut them to 12; 24 Dec 1966 to eight; Kinshasa a province 1975; Kivu split 1988.",
-     "accessed": "2026-10-05"
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1963-07-15",
+   "n": 22,
+   "sources": [
+    {
+     "url": "http://www.statoids.com/ucd.html",
+     "title": "Provinces of the Democratic Republic of Congo — Statoids (Gwillim Law, last updated 2015-06-30)",
+     "says": "By 1963-06-25, when Katanga-Oriental was formed, the list was 21 provinces and Léopoldville.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "1966-06-01",
+   "n": 13,
+   "sources": [
+    {
+     "url": "https://rulers.org/cngkprov.html",
+     "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+     "says": "After the coup the number of provinces decreased to 12 in Apr 1966 and 8 in Dec 1966 (plus the city of Kinshasa respectively).",
+     "accessed": "2026-10-06"
     }
    ]
   },
@@ -753,13 +2656,13 @@
      "url": "https://en.wikipedia.org/w/index.php?oldid=1353446106",
      "title": "Provinces of the Democratic Republic of the Congo — en.wikipedia, oldid 1353446106",
      "says": "Loi Fondamentale: six provinces; decree of 6 Apr 1966 cut them to 12; 24 Dec 1966 to eight; Kinshasa a province 1975; Kivu split 1988.",
-     "accessed": "2026-10-05"
+     "accessed": "2026-10-06"
     },
     {
      "url": "http://www.statoids.com/ucd.html",
      "title": "Provinces of the Democratic Republic of Congo — Statoids (Gwillim Law, last updated 2015-06-30)",
-     "says": "Six colonial provinces 1933–60; 1966 reorganisation into eight regions plus Kinshasa; an area of 7,949 km² transferred from Bas-Zaïre to Kinshasa; Kivu split into three.",
-     "accessed": "2026-10-05"
+     "says": "1966: eight regions plus Kinshasa.",
+     "accessed": "2026-10-06"
     }
    ]
   },
@@ -770,8 +2673,26 @@
     {
      "url": "http://www.statoids.com/ucd.html",
      "title": "Provinces of the Democratic Republic of Congo — Statoids (Gwillim Law, last updated 2015-06-30)",
-     "says": "Six colonial provinces 1933–60; 1966 reorganisation into eight regions plus Kinshasa; an area of 7,949 km² transferred from Bas-Zaïre to Kinshasa; Kivu split into three.",
-     "accessed": "2026-10-05"
+     "says": "Kivu split into three: 11 provinces.",
+     "accessed": "2026-10-06"
+    }
+   ]
+  },
+  {
+   "date": "2016-01-01",
+   "n": 26,
+   "sources": [
+    {
+     "url": "https://fr.wikipedia.org/w/index.php?oldid=222682973",
+     "title": "Histoire des divisions administratives de la RDC — fr.wikipedia, oldid 222682973",
+     "says": "In 2015 Bas-Congo, Kinshasa, Maniema, Nord-Kivu, Sud-Kivu keep their limits; the other six provinces are divided along their sub-region limits.",
+     "accessed": "2026-10-06"
+    },
+    {
+     "url": "https://rulers.org/cngkprov.html",
+     "title": "Congo (Kinshasa) provinces — rulers.org (B. Schemmel)",
+     "says": "In 2015 another division increased the number of provinces from 11 to 26 (including Kinshasa).",
+     "accessed": "2026-10-06"
     }
    ]
   }
@@ -779,232 +2700,715 @@
  "atomsOutside": [],
  "unresolved": [
   {
-   "what": "Kivu provinces 1962–1966 (Nord-Kivu, Maniema, Kivu-Central/Sud-Kivu)",
+   "what": "Congo Free State and Belgian Congo before the 1933 reform (districts 1888–1914; four provinces / vice-governments 1914–1933)",
    "atoms": [
-    "COD-1894",
-    "COD-1895",
-    "COD-1898"
+    "COD-ADM2-63176286B7026545207042",
+    "COD-ADM2-63176286B88277060419996",
+    "COD-ADM2-63176286B98008703469616",
+    "COD-ADM2-63176286B83971453832478",
+    "COD-ADM2-63176286B65126745094635",
+    "COD-ADM2-63176286B47015384768636",
+    "COD-ADM2-63176286B29097498682851",
+    "COD-ADM2-63176286B8336769847246",
+    "COD-ADM2-63176286B40063645047483",
+    "COD-ADM2-63176286B538038850114",
+    "COD-ADM2-63176286B82592558575614",
+    "COD-ADM2-63176286B31425721317411",
+    "COD-ADM2-63176286B22382339186814",
+    "COD-ADM2-63176286B69853523616594",
+    "COD-ADM2-63176286B79360907689545",
+    "COD-ADM2-63176286B18264844623742",
+    "COD-ADM2-63176286B93121803325272",
+    "COD-ADM2-63176286B47421332346835",
+    "COD-ADM2-63176286B37251946319002",
+    "COD-ADM2-63176286B94968684087840",
+    "COD-ADM2-63176286B25992661497472",
+    "COD-ADM2-63176286B76945459106625",
+    "COD-ADM2-63176286B20425932648522",
+    "COD-ADM2-63176286B53815785774290",
+    "COD-ADM2-63176286B71176382547280",
+    "COD-ADM2-63176286B37254158064276",
+    "COD-ADM2-63176286B11990771214401",
+    "COD-ADM2-63176286B32367911689095",
+    "COD-ADM2-63176286B5937777491698",
+    "COD-ADM2-63176286B37259268611319",
+    "COD-ADM2-63176286B4112889633509",
+    "COD-ADM2-63176286B68796769615290",
+    "COD-ADM2-63176286B53648445078824",
+    "COD-ADM2-63176286B12311619160810",
+    "COD-ADM2-63176286B21856672762157",
+    "COD-ADM2-63176286B54443714119434",
+    "COD-ADM2-63176286B59505490488503",
+    "COD-ADM2-63176286B71096802464930",
+    "COD-ADM2-63176286B36806520086654",
+    "COD-ADM2-63176286B16264123188485",
+    "COD-ADM2-63176286B3271137171664",
+    "COD-ADM2-63176286B14204108243102",
+    "COD-ADM2-63176286B53001735211155",
+    "COD-ADM2-63176286B59821830207387",
+    "COD-ADM2-63176286B68262610189121",
+    "COD-ADM2-63176286B82661241826895",
+    "COD-ADM2-63176286B77918114228452",
+    "COD-ADM2-63176286B4277783159614",
+    "COD-ADM2-63176286B4133354906354",
+    "COD-ADM2-63176286B75913983063727",
+    "COD-ADM2-63176286B56364191841329",
+    "COD-ADM2-63176286B49430673132917",
+    "COD-ADM2-63176286B86504731111535",
+    "COD-ADM2-63176286B7674321742221",
+    "COD-ADM2-63176286B55618881730154",
+    "COD-ADM2-63176286B10859728267394",
+    "COD-ADM2-63176286B50098701443330",
+    "COD-ADM2-63176286B72804638257173",
+    "COD-ADM2-63176286B77587123851522",
+    "COD-ADM2-63176286B98421000452360",
+    "COD-ADM2-63176286B30356596276779",
+    "COD-ADM2-63176286B53748739739840",
+    "COD-ADM2-63176286B16720510237815",
+    "COD-ADM2-63176286B55786633055845",
+    "COD-ADM2-63176286B43464771754704",
+    "COD-ADM2-63176286B23528212594514",
+    "COD-ADM2-63176286B40120828568077",
+    "COD-ADM2-63176286B85649689551019",
+    "COD-ADM2-63176286B69668932062204",
+    "COD-ADM2-63176286B19501088760626",
+    "COD-ADM2-63176286B37681851712476",
+    "COD-ADM2-63176286B65160793690884",
+    "COD-ADM2-63176286B75664078742838",
+    "COD-ADM2-63176286B23998883625218",
+    "COD-ADM2-63176286B97272919542005",
+    "COD-ADM2-63176286B81146580347594",
+    "COD-ADM2-63176286B7058717383424",
+    "COD-ADM2-63176286B74390580243640",
+    "COD-ADM2-63176286B62322725812229",
+    "COD-ADM2-63176286B66669834222633",
+    "COD-ADM2-63176286B13611321695248",
+    "COD-ADM2-63176286B83227238071318",
+    "COD-ADM2-63176286B2433914913285",
+    "COD-ADM2-63176286B63969135863157",
+    "COD-ADM2-63176286B79011641071296",
+    "COD-ADM2-63176286B78021290688444",
+    "COD-ADM2-63176286B12881144084902",
+    "COD-ADM2-63176286B35852451405101",
+    "COD-ADM2-63176286B5322857834849",
+    "COD-ADM2-63176286B70348427219396",
+    "COD-ADM2-63176286B28359889537852",
+    "COD-ADM2-63176286B89784390033972",
+    "COD-ADM2-63176286B30844666641598",
+    "COD-ADM2-63176286B77592742780307",
+    "COD-ADM2-63176286B65571818133367",
+    "COD-ADM2-63176286B49230128630829",
+    "COD-ADM2-63176286B9358277012481",
+    "COD-ADM2-63176286B24830189223330",
+    "COD-ADM2-63176286B80144027802447",
+    "COD-ADM2-63176286B50481715267247",
+    "COD-ADM2-63176286B64695958976401",
+    "COD-ADM2-63176286B84034630662614",
+    "COD-ADM2-63176286B77262619841164",
+    "COD-ADM2-63176286B75279003671986",
+    "COD-ADM2-63176286B52056185132037",
+    "COD-ADM2-63176286B59059722008658",
+    "COD-ADM2-63176286B7033307846906",
+    "COD-ADM2-63176286B16885288794784",
+    "COD-ADM2-63176286B12691977822681",
+    "COD-ADM2-63176286B31000864957103",
+    "COD-ADM2-63176286B531915432051",
+    "COD-ADM2-63176286B11863220768150",
+    "COD-ADM2-63176286B52782039621830",
+    "COD-ADM2-63176286B26674316015082",
+    "COD-ADM2-63176286B41140464701712",
+    "COD-ADM2-63176286B57018267641486",
+    "COD-ADM2-63176286B33518015273847",
+    "COD-ADM2-63176286B96753486418064",
+    "COD-ADM2-63176286B76187105234082",
+    "COD-ADM2-63176286B47747519497786",
+    "COD-ADM2-63176286B25314267977171",
+    "COD-ADM2-63176286B6958016734749",
+    "COD-ADM2-63176286B74212537268608",
+    "COD-ADM2-63176286B58583497580401",
+    "COD-ADM2-63176286B90330150002289",
+    "COD-ADM2-63176286B34424841963647",
+    "COD-ADM2-63176286B45916106821058",
+    "COD-ADM2-63176286B84996923503616",
+    "COD-ADM2-63176286B86170870415972",
+    "COD-ADM2-63176286B45383896961526",
+    "COD-ADM2-63176286B25642850349509",
+    "COD-ADM2-63176286B33968238717987",
+    "COD-ADM2-63176286B12710938610069",
+    "COD-ADM2-63176286B17770065929195",
+    "COD-ADM2-63176286B62559292775761",
+    "COD-ADM2-63176286B52252759567832",
+    "COD-ADM2-63176286B21708239892428",
+    "COD-ADM2-63176286B68411895895174",
+    "COD-ADM2-63176286B42701779698156",
+    "COD-ADM2-63176286B3160723083670",
+    "COD-ADM2-63176286B48907865482387",
+    "COD-ADM2-63176286B64827262038855",
+    "COD-ADM2-63176286B28648737127916",
+    "COD-ADM2-63176286B35677174574617",
+    "COD-ADM2-63176286B33283671139480",
+    "COD-ADM2-63176286B8564391110970",
+    "COD-ADM2-63176286B14336347527587",
+    "COD-ADM2-63176286B1925057871065",
+    "COD-ADM2-63176286B85957320837216",
+    "COD-ADM2-63176286B17504702690240",
+    "COD-ADM2-63176286B11141066261470",
+    "COD-ADM2-63176286B20601319898864",
+    "COD-ADM2-63176286B88012685356826",
+    "COD-ADM2-63176286B62585085359897",
+    "COD-ADM2-63176286B36790783393673",
+    "COD-ADM2-63176286B98681964412172",
+    "COD-ADM2-63176286B65133649587609",
+    "COD-ADM2-63176286B15680618396169",
+    "COD-ADM2-63176286B75372177576839",
+    "COD-ADM2-63176286B5401694360976",
+    "COD-ADM2-63176286B14719092717616",
+    "COD-ADM2-63176286B55306571020797",
+    "COD-ADM2-63176286B65216379244562",
+    "COD-ADM2-63176286B90733061522477",
+    "COD-ADM2-63176286B9060730940258",
+    "COD-ADM2-63176286B77771623677962",
+    "COD-ADM2-63176286B68044599971787",
+    "COD-ADM2-63176286B24678106401017",
+    "COD-ADM2-63176286B80368275017521",
+    "COD-ADM2-63176286B69142293994365",
+    "COD-ADM2-63176286B70684258400559",
+    "COD-ADM2-63176286B70830242214620",
+    "COD-ADM2-63176286B98159467986291",
+    "COD-ADM2-63176286B94121502354965",
+    "COD-ADM2-63176286B47500153281287",
+    "COD-ADM2-63176286B79209138861399",
+    "COD-ADM2-63176286B33291186627226",
+    "COD-ADM2-63176286B6974395638231",
+    "COD-ADM2-63176286B20411552692002",
+    "COD-ADM2-63176286B55213243416233",
+    "COD-ADM2-63176286B48725841971461",
+    "COD-ADM2-63176286B43218121140485",
+    "COD-ADM2-63176286B50174012793828",
+    "COD-ADM2-63176286B77989779607321",
+    "COD-ADM2-63176286B83726148102259",
+    "COD-ADM2-63176286B83745324886444",
+    "COD-ADM2-63176286B30130216174864",
+    "COD-ADM2-63176286B93910554563220",
+    "COD-ADM2-63176286B49026377824569"
+   ],
+   "from": "1885-08-01",
+   "to": "1933-10-01",
+   "why": "The first-level units were districts (11 in 1888, 15 in 1895, 12 in 1910, 22 in 1912) and then four provinces whose lines were redrawn in 1912, 1926, 1932 and 1933 (e.g. Lomami district in Katanga until 1933); none is shown to follow today's territory lines.",
+   "checked": [
+    "en.wikipedia Districts of the Belgian Congo oldid 983617775 (1910/1912/1926/1933 district lists from the Atlas général du Congo)",
+    "statoids ucd change history",
+    "rulers.org",
+    "MRAC monographs: Haut-Katanga, Kasaï-Oriental, Tshopo, Mongala, Ituri, Haut-Uele (1912–1933 district changes)"
+   ],
+   "needs": "georeferenced district maps of 1888–1933 (Atlas général du Congo 1950, carte 611) or the Bulletin officiel delimitation texts mapped to sector-level atoms"
+  },
+  {
+   "what": "Léopoldville province 1933–1960",
+   "unit": "COD:Leopoldville@1960",
+   "atoms": [
+    "COD-ADM2-63176286B7026545207042",
+    "COD-ADM2-63176286B88277060419996",
+    "COD-ADM2-63176286B98008703469616",
+    "COD-ADM2-63176286B83971453832478",
+    "COD-ADM2-63176286B65126745094635",
+    "COD-ADM2-63176286B47015384768636",
+    "COD-ADM2-63176286B29097498682851",
+    "COD-ADM2-63176286B8336769847246",
+    "COD-ADM2-63176286B40063645047483",
+    "COD-ADM2-63176286B538038850114",
+    "COD-ADM2-63176286B82592558575614",
+    "COD-ADM2-63176286B31425721317411",
+    "COD-ADM2-63176286B22382339186814",
+    "COD-ADM2-63176286B69853523616594",
+    "COD-ADM2-63176286B79360907689545",
+    "COD-ADM2-63176286B18264844623742",
+    "COD-ADM2-63176286B93121803325272",
+    "COD-ADM2-63176286B47421332346835",
+    "COD-ADM2-63176286B37251946319002",
+    "COD-ADM2-63176286B94968684087840",
+    "COD-ADM2-63176286B25992661497472",
+    "COD-ADM2-63176286B76945459106625",
+    "COD-ADM2-63176286B20425932648522",
+    "COD-ADM2-63176286B53815785774290",
+    "COD-ADM2-63176286B71176382547280",
+    "COD-ADM2-63176286B37254158064276",
+    "COD-ADM2-63176286B11990771214401",
+    "COD-ADM2-63176286B32367911689095",
+    "COD-ADM2-63176286B5937777491698",
+    "COD-ADM2-63176286B37259268611319",
+    "COD-ADM2-63176286B4112889633509",
+    "COD-ADM2-63176286B68796769615290",
+    "COD-ADM2-63176286B53648445078824",
+    "COD-ADM2-63176286B12311619160810",
+    "COD-ADM2-63176286B21856672762157",
+    "COD-ADM2-63176286B54443714119434",
+    "COD-ADM2-63176286B59505490488503",
+    "COD-ADM2-63176286B71096802464930"
+   ],
+   "from": "1933-10-01",
+   "to": "1960-06-30",
+   "why": "The Léopoldville–Kasaï line moved between 1933 and 1960 (official area 362,953 → 359,701 km² while Kasaï grew 321,534 → 325,183); the transfer and its date are not found. Inside the province, Banningville passed between districts (1940, 1954).",
+   "checked": [
+    "statoids ucd (1933 areas)",
+    "fr.wikipedia Provinces de la RDC oldid 237766489 (1960 areas)",
+    "MRAC monographs Kwango and Mai-Ndombe (district history 1933–1960)",
+    "en.wikipedia Districts of the Belgian Congo oldid 983617775"
+   ],
+   "needs": "the ordinance moving the ~3,400 km² between Léopoldville and Kasaï (Bulletin administratif du Congo belge) — whole territories or sectors"
+  },
+  {
+   "what": "Kasaï (Lusambo) province 1933–1960",
+   "unit": "COD:Kasai@1960",
+   "atoms": [
+    "COD-ADM2-63176286B23528212594514",
+    "COD-ADM2-63176286B40120828568077",
+    "COD-ADM2-63176286B85649689551019",
+    "COD-ADM2-63176286B69668932062204",
+    "COD-ADM2-63176286B19501088760626",
+    "COD-ADM2-63176286B37681851712476",
+    "COD-ADM2-63176286B65160793690884",
+    "COD-ADM2-63176286B75664078742838",
+    "COD-ADM2-63176286B23998883625218",
+    "COD-ADM2-63176286B97272919542005",
+    "COD-ADM2-63176286B81146580347594",
+    "COD-ADM2-63176286B7058717383424",
+    "COD-ADM2-63176286B74390580243640",
+    "COD-ADM2-63176286B62322725812229",
+    "COD-ADM2-63176286B66669834222633",
+    "COD-ADM2-63176286B13611321695248",
+    "COD-ADM2-63176286B83227238071318",
+    "COD-ADM2-63176286B2433914913285",
+    "COD-ADM2-63176286B63969135863157",
+    "COD-ADM2-63176286B79011641071296",
+    "COD-ADM2-63176286B78021290688444",
+    "COD-ADM2-63176286B12881144084902",
+    "COD-ADM2-63176286B35852451405101",
+    "COD-ADM2-63176286B5322857834849",
+    "COD-ADM2-63176286B70348427219396",
+    "COD-ADM2-63176286B28359889537852",
+    "COD-ADM2-63176286B89784390033972",
+    "COD-ADM2-63176286B30844666641598",
+    "COD-ADM2-63176286B77592742780307",
+    "COD-ADM2-63176286B65571818133367",
+    "COD-ADM2-63176286B49230128630829",
+    "COD-ADM2-63176286B9358277012481",
+    "COD-ADM2-63176286B24830189223330",
+    "COD-ADM2-63176286B80144027802447"
+   ],
+   "from": "1933-10-01",
+   "to": "1960-06-30",
+   "why": "Same unidentified Léopoldville–Kasaï transfer (Kasaï +3,649 km² between the 1933 and 1960 official areas).",
+   "checked": [
+    "statoids ucd (1933 areas)",
+    "fr.wikipedia oldid 237766489 (1960 areas)",
+    "MRAC monograph Kasaï-Oriental (1933 transfer of the Lomami district from Katanga; 1945 Kabinda district)"
+   ],
+   "needs": "as for Léopoldville"
+  },
+  {
+   "what": "Kivu (Costermansville) province 1933–1960",
+   "unit": "COD:Kivu",
+   "atoms": [
+    "COD-ADM2-63176286B45916106821058",
+    "COD-ADM2-63176286B84996923503616",
+    "COD-ADM2-63176286B86170870415972",
+    "COD-ADM2-63176286B45383896961526",
+    "COD-ADM2-63176286B25642850349509",
+    "COD-ADM2-63176286B33968238717987",
+    "COD-ADM2-63176286B12710938610069",
+    "COD-ADM2-63176286B17770065929195",
+    "COD-ADM2-63176286B62559292775761",
+    "COD-ADM2-63176286B52252759567832",
+    "COD-ADM2-63176286B21708239892428",
+    "COD-ADM2-63176286B68411895895174",
+    "COD-ADM2-63176286B42701779698156",
+    "COD-ADM2-63176286B3160723083670",
+    "COD-ADM2-63176286B48907865482387",
+    "COD-ADM2-63176286B64827262038855",
+    "COD-ADM2-63176286B28648737127916",
+    "COD-ADM2-63176286B35677174574617",
+    "COD-ADM2-63176286B33283671139480",
+    "COD-ADM2-63176286B8564391110970",
+    "COD-ADM2-63176286B14336347527587",
+    "COD-ADM2-63176286B1925057871065",
+    "COD-ADM2-63176286B85957320837216",
+    "COD-ADM2-63176286B17504702690240",
+    "COD-ADM2-63176286B11141066261470",
+    "COD-ADM2-63176286B20601319898864",
+    "COD-ADM2-63176286B88012685356826",
+    "COD-ADM2-63176286B62585085359897",
+    "COD-ADM2-63176286B36790783393673",
+    "COD-ADM2-63176286B98681964412172"
+   ],
+   "from": "1933-10-01",
+   "to": "1960-06-30",
+   "why": "The Kivu–Orientale line moved repeatedly: Lubutu to Kivu in 1933, back to Stanleyville district by ordinance 40/AIMO of 15 Mar 1935, to Maniema by ordinance 21/279 of 1 Jul 1951; Beni and Lubero passed from Kibali-Ituri to Nord-Kivu by ordinance 42/AIMO of 15 Mar 1935; on 1 Jan 1954 Wassa went from Lubutu to Walikale and another part of Lubutu to Bafwasende (date of the latter not stated). The pre-1954 lines cut today's Walikale, Punia and Bafwasende; the date of the last move is not established.",
+   "checked": [
+    "MRAC monograph Maniema (Lubutu, Punia history)",
+    "MRAC monograph Tshopo (Lubutu ordinances 1935, 1951)",
+    "MRAC monograph Ituri (Beni–Lubero 1935)",
+    "statoids ucd / fr.wikipedia oldid 237766489 (areas 230,209 → 256,803 km²)"
+   ],
+   "needs": "date of the Lubutu → Bafwasende cession and a check that no later move followed; sector atoms for Walikale (Wassa) and Punia (Ulindi)"
+  },
+  {
+   "what": "Orientale (Stanleyville) province 1933–1960",
+   "unit": "COD:Orientale",
+   "atoms": [
+    "COD-ADM2-63176286B65133649587609",
+    "COD-ADM2-63176286B15680618396169",
+    "COD-ADM2-63176286B75372177576839",
+    "COD-ADM2-63176286B5401694360976",
+    "COD-ADM2-63176286B14719092717616",
+    "COD-ADM2-63176286B55306571020797",
+    "COD-ADM2-63176286B65216379244562",
+    "COD-ADM2-63176286B90733061522477",
+    "COD-ADM2-63176286B9060730940258",
+    "COD-ADM2-63176286B77771623677962",
+    "COD-ADM2-63176286B68044599971787",
+    "COD-ADM2-63176286B24678106401017",
+    "COD-ADM2-63176286B80368275017521",
+    "COD-ADM2-63176286B69142293994365",
+    "COD-ADM2-63176286B70684258400559",
+    "COD-ADM2-63176286B70830242214620",
+    "COD-ADM2-63176286B98159467986291",
+    "COD-ADM2-63176286B94121502354965",
+    "COD-ADM2-63176286B47500153281287",
+    "COD-ADM2-63176286B79209138861399",
+    "COD-ADM2-63176286B33291186627226",
+    "COD-ADM2-63176286B6974395638231",
+    "COD-ADM2-63176286B20411552692002",
+    "COD-ADM2-63176286B55213243416233",
+    "COD-ADM2-63176286B48725841971461",
+    "COD-ADM2-63176286B43218121140485",
+    "COD-ADM2-63176286B50174012793828",
+    "COD-ADM2-63176286B77989779607321",
+    "COD-ADM2-63176286B83726148102259",
+    "COD-ADM2-63176286B83745324886444",
+    "COD-ADM2-63176286B30130216174864",
+    "COD-ADM2-63176286B93910554563220",
+    "COD-ADM2-63176286B49026377824569"
+   ],
+   "from": "1933-10-01",
+   "to": "1960-06-30",
+   "why": "Counterpart of the Kivu–Orientale moves (Lubutu 1933/1935/1951/1954, Beni–Lubero 1935).",
+   "checked": [
+    "MRAC monographs Tshopo, Ituri, Maniema, Bas-Uele, Haut-Uele"
+   ],
+   "needs": "as for Kivu"
+  },
+  {
+   "what": "Équateur provincettes 1962–1966 (Cuvette-Centrale, Ubangi, Moyen-Congo; residual Équateur under central administration 14 Aug 1962 – 5 Feb 1963)",
+   "unit": "COD:CuvetteCentrale@1962",
+   "atoms": [
+    "COD-ADM2-63176286B36806520086654",
+    "COD-ADM2-63176286B16264123188485",
+    "COD-ADM2-63176286B3271137171664",
+    "COD-ADM2-63176286B14204108243102",
+    "COD-ADM2-63176286B53001735211155",
+    "COD-ADM2-63176286B59821830207387",
+    "COD-ADM2-63176286B68262610189121",
+    "COD-ADM2-63176286B82661241826895",
+    "COD-ADM2-63176286B77918114228452",
+    "COD-ADM2-63176286B4277783159614",
+    "COD-ADM2-63176286B4133354906354",
+    "COD-ADM2-63176286B75913983063727",
+    "COD-ADM2-63176286B56364191841329",
+    "COD-ADM2-63176286B49430673132917",
+    "COD-ADM2-63176286B86504731111535",
+    "COD-ADM2-63176286B7674321742221",
+    "COD-ADM2-63176286B55618881730154",
+    "COD-ADM2-63176286B10859728267394",
+    "COD-ADM2-63176286B50098701443330",
+    "COD-ADM2-63176286B72804638257173",
+    "COD-ADM2-63176286B77587123851522",
+    "COD-ADM2-63176286B98421000452360",
+    "COD-ADM2-63176286B30356596276779",
+    "COD-ADM2-63176286B53748739739840",
+    "COD-ADM2-63176286B16720510237815",
+    "COD-ADM2-63176286B55786633055845",
+    "COD-ADM2-63176286B43464771754704"
+   ],
+   "from": "1962-08-14",
+   "to": "1966-04-25",
+   "why": "The laws split territories by sector: Cuvette-Centrale took the Bongandanga sector of Bongandanga territory; Moyen-Congo took Lisala, Bumba, Bomongo plus Businga, Budjala and Kungu without their Ngbaka-Mbanza regions, the Bolomba and Mompoko sectors, Lukolela (Bikoro) until the ruling of 23 Mar 1965, and Banzyville subject to referendum.",
+   "checked": [
+    "en.wikipedia Cuvette Centrale Province oldid 1374300881 (law of 14 Aug 1962)",
+    "MRAC monograph Équateur (Moyen-Congo composition, Lukolela 1963–65)",
+    "MRAC monograph Mongala (law of 5 Feb 1963)",
+    "rulers.org"
+   ],
+   "needs": "sector (secteur/chefferie) atoms for Équateur — none published with a reusable licence that we found"
+  },
+  {
+   "what": "Ubangi province 1962–1966",
+   "unit": "COD:Ubangi@1962",
+   "from": "1962-08-14",
+   "to": "1966-04-25",
+   "why": "Atoms held by the Équateur provincettes entry (sector-level splits).",
+   "checked": [
+    "as for Cuvette-Centrale"
+   ],
+   "needs": "as for Cuvette-Centrale"
+  },
+  {
+   "what": "Moyen-Congo province 1963–1966",
+   "unit": "COD:MoyenCongo@1963",
+   "from": "1963-02-05",
+   "to": "1966-04-25",
+   "why": "Atoms held by the Équateur provincettes entry (sector-level splits; Bolobo-Yumbi and Lukolela regions).",
+   "checked": [
+    "as for Cuvette-Centrale",
+    "MRAC monograph Mai-Ndombe (Bolobo-Yumbi)"
+   ],
+   "needs": "as for Cuvette-Centrale"
+  },
+  {
+   "what": "Bolobo-Yumbi regions attached to Moyen-Congo",
+   "atoms": [
+    "COD-ADM2-63176286B21856672762157",
+    "COD-ADM2-63176286B53648445078824"
+   ],
+   "from": "1963-02-05",
+   "to": "1966-04-25",
+   "why": "The law of 5 Feb 1963 attached the \"regions\" of Bolobo-Yumbi (then part of Mushie territory) to Moyen-Congo; their exact extent and whether the Luluabourg Constitution art. 201 returned them before 1966 are not established.",
+   "checked": [
+    "MRAC monograph Mai-Ndombe (law of 5 Feb 1963, Senate vote of 26 Jun 1963, state of emergency 30 Jan 1965)",
+    "MRAC monograph Équateur"
+   ],
+   "needs": "the text of the law of 5 Feb 1963 and of any later return; sector atoms of Mushie"
+  },
+  {
+   "what": "Kasaï provincettes 1962–1966 (Lomami, Luluabourg, Sankuru, Sud-Kasaï, Unité Kasaïenne)",
+   "unit": "COD:Lomami@1962",
+   "atoms": [
+    "COD-ADM2-63176286B23528212594514",
+    "COD-ADM2-63176286B40120828568077",
+    "COD-ADM2-63176286B85649689551019",
+    "COD-ADM2-63176286B69668932062204",
+    "COD-ADM2-63176286B19501088760626",
+    "COD-ADM2-63176286B37681851712476",
+    "COD-ADM2-63176286B65160793690884",
+    "COD-ADM2-63176286B75664078742838",
+    "COD-ADM2-63176286B23998883625218",
+    "COD-ADM2-63176286B97272919542005",
+    "COD-ADM2-63176286B81146580347594",
+    "COD-ADM2-63176286B7058717383424",
+    "COD-ADM2-63176286B74390580243640",
+    "COD-ADM2-63176286B62322725812229",
+    "COD-ADM2-63176286B66669834222633",
+    "COD-ADM2-63176286B13611321695248",
+    "COD-ADM2-63176286B83227238071318",
+    "COD-ADM2-63176286B2433914913285",
+    "COD-ADM2-63176286B63969135863157",
+    "COD-ADM2-63176286B79011641071296",
+    "COD-ADM2-63176286B78021290688444",
+    "COD-ADM2-63176286B12881144084902",
+    "COD-ADM2-63176286B35852451405101",
+    "COD-ADM2-63176286B5322857834849",
+    "COD-ADM2-63176286B70348427219396",
+    "COD-ADM2-63176286B28359889537852",
+    "COD-ADM2-63176286B89784390033972",
+    "COD-ADM2-63176286B30844666641598",
+    "COD-ADM2-63176286B77592742780307",
+    "COD-ADM2-63176286B65571818133367",
+    "COD-ADM2-63176286B49230128630829",
+    "COD-ADM2-63176286B9358277012481",
+    "COD-ADM2-63176286B24830189223330",
+    "COD-ADM2-63176286B80144027802447"
+   ],
+   "from": "1962-08-14",
+   "to": "1966-04-25",
+   "why": "Sud-Kasaï took the Kashindji region of Lusambo territory and the Kamiji region of Dibaya territory; Mwene-Ditu was a neutralised contested territory (Dec 1962 – annexed to Sud-Kasaï 18 Feb 1966); Lomami took Kibombo and the Songye regions of Kasongo from Kivu.",
+   "checked": [
+    "MRAC monograph Kasaï-Oriental (Sud-Kasaï limits, Mwene-Ditu)",
+    "MRAC monograph Maniema (law of 14 Aug 1962)",
+    "rulers.org",
+    "en.wikipedia South Kasai oldid 1368477168"
+   ],
+   "needs": "sector atoms for Lusambo, Dibaya and Kasongo; the laws of 14 Aug 1962 for Luluabourg, Unité Kasaïenne and Sankuru"
+  },
+  {
+   "what": "Luluabourg province 1962–1966",
+   "unit": "COD:Luluabourg@1962",
+   "from": "1962-08-14",
+   "to": "1966-04-25",
+   "why": "Atoms held by the Kasaï provincettes entry.",
+   "checked": [
+    "as for the Kasaï provincettes"
+   ],
+   "needs": "as for the Kasaï provincettes"
+  },
+  {
+   "what": "Sankuru province 1962–1966",
+   "unit": "COD:Sankuru@1962",
+   "from": "1962-08-14",
+   "to": "1966-04-25",
+   "why": "Atoms held by the Kasaï provincettes entry.",
+   "checked": [
+    "as for the Kasaï provincettes"
+   ],
+   "needs": "as for the Kasaï provincettes"
+  },
+  {
+   "what": "Sud-Kasaï province 1962–1966",
+   "unit": "COD:SudKasai@1962",
+   "from": "1962-08-14",
+   "to": "1966-04-25",
+   "why": "Atoms held by the Kasaï provincettes entry.",
+   "checked": [
+    "as for the Kasaï provincettes"
+   ],
+   "needs": "as for the Kasaï provincettes"
+  },
+  {
+   "what": "Unité Kasaïenne province 1962–1966",
+   "unit": "COD:UniteKasaienne@1962",
+   "from": "1962-08-14",
+   "to": "1966-04-25",
+   "why": "Atoms held by the Kasaï provincettes entry.",
+   "checked": [
+    "as for the Kasaï provincettes"
+   ],
+   "needs": "as for the Kasaï provincettes"
+  },
+  {
+   "what": "Kivu provinces 1962–1966 (Nord-Kivu, Maniema, Kivu-Central; Sud-Kivu Apr–Dec 1966)",
+   "unit": "COD:NordKivu@1962",
+   "atoms": [
+    "COD-ADM2-63176286B45916106821058",
+    "COD-ADM2-63176286B84996923503616",
+    "COD-ADM2-63176286B86170870415972",
+    "COD-ADM2-63176286B45383896961526",
+    "COD-ADM2-63176286B25642850349509",
+    "COD-ADM2-63176286B33968238717987",
+    "COD-ADM2-63176286B12710938610069",
+    "COD-ADM2-63176286B17770065929195",
+    "COD-ADM2-63176286B62559292775761",
+    "COD-ADM2-63176286B52252759567832",
+    "COD-ADM2-63176286B21708239892428",
+    "COD-ADM2-63176286B68411895895174",
+    "COD-ADM2-63176286B42701779698156",
+    "COD-ADM2-63176286B3160723083670",
+    "COD-ADM2-63176286B48907865482387",
+    "COD-ADM2-63176286B64827262038855",
+    "COD-ADM2-63176286B28648737127916",
+    "COD-ADM2-63176286B35677174574617",
+    "COD-ADM2-63176286B33283671139480",
+    "COD-ADM2-63176286B8564391110970",
+    "COD-ADM2-63176286B14336347527587",
+    "COD-ADM2-63176286B1925057871065",
+    "COD-ADM2-63176286B85957320837216",
+    "COD-ADM2-63176286B17504702690240",
+    "COD-ADM2-63176286B11141066261470",
+    "COD-ADM2-63176286B20601319898864",
+    "COD-ADM2-63176286B88012685356826",
+    "COD-ADM2-63176286B62585085359897",
+    "COD-ADM2-63176286B36790783393673",
+    "COD-ADM2-63176286B98681964412172"
    ],
    "from": "1962-05-10",
    "to": "1966-12-28",
-   "why": "The 1962–66 lines are not shown to coincide with the 1988 lines that NE carries, and the start date of the split is given as 10 May or 14 Aug 1962.",
+   "why": "Maniema (law of 14 Aug 1962) took the Itombwe sector of Mwenga, lost Kibombo and the Songye regions of Kasongo to Lomami, and Fizi and Shabunda were left to a referendum; the date of the split is given as 10 May or 14 Aug 1962.",
    "checked": [
-    "rulers.org Congo (Kinshasa) provinces",
-    "statoids ucd (1963 list of 21 provinces + Léopoldville)",
-    "fr.wikipedia oldid 222682973 (1963 list)",
+    "MRAC monograph Maniema",
     "en.wikipedia Kivu Province oldid 1363142404",
-    "en.wikipedia North Kivu oldid 1375249497"
+    "rulers.org",
+    "MRAC monograph Sud-Kivu t.1 (downloaded, not exhausted)"
    ],
-   "needs": "district / 2015-province atoms: the 1962–66 provinces largely follow colonial district lines that the 2015 provinces reuse, e.g. OCHA COD-AB COD ADM1 (post-2015) or geoBoundaries COD ADM1 — licence to check"
+   "needs": "sector atoms for Mwenga and Kasongo; the referendum results for Fizi and Shabunda; the return date of Kibombo"
   },
   {
-   "what": "Orientale split 1962–1966 (Kibali-Ituri, Uélé, Haut-Congo)",
-   "atoms": [
-    "COD-1559"
-   ],
-   "from": "1962-07-27",
-   "to": "1966-12-28",
-   "why": "Lines of the three provinces run inside the NE Orientale atom.",
-   "checked": [
-    "rulers.org Congo (Kinshasa) provinces",
-    "statoids ucd (1963 list of 21 provinces + Léopoldville)",
-    "fr.wikipedia oldid 222682973 (1963 list)",
-    "en.wikipedia Orientale Province oldid 1373639413"
-   ],
-   "needs": "district / 2015-province atoms: the 1962–66 provinces largely follow colonial district lines that the 2015 provinces reuse, e.g. OCHA COD-AB COD ADM1 (post-2015) or geoBoundaries COD ADM1 — licence to check"
-  },
-  {
-   "what": "Katanga split 1962–1966 (Nord-Katanga, Lualaba, Katanga-Oriental, then Sud-Katanga)",
-   "atoms": [
-    "COD-1897"
-   ],
-   "from": "1962-07-11",
-   "to": "1966-12-28",
-   "why": "Lines run inside the NE Katanga atom.",
-   "checked": [
-    "rulers.org Congo (Kinshasa) provinces",
-    "statoids ucd (1963 list of 21 provinces + Léopoldville)",
-    "fr.wikipedia oldid 222682973 (1963 list)"
-   ],
-   "needs": "district / 2015-province atoms: the 1962–66 provinces largely follow colonial district lines that the 2015 provinces reuse, e.g. OCHA COD-AB COD ADM1 (post-2015) or geoBoundaries COD ADM1 — licence to check"
-  },
-  {
-   "what": "Équateur split 1962–1966 (Cuvette-Centrale, Ubangi, Moyen-Congo)",
-   "atoms": [
-    "COD-1461"
-   ],
+   "what": "Maniema province",
+   "unit": "COD:Maniema@1962",
    "from": "1962-08-14",
    "to": "1966-04-25",
-   "why": "Lines run inside the NE Équateur atom.",
+   "why": "Atoms held by the Kivu 1962–66 entry.",
    "checked": [
-    "rulers.org Congo (Kinshasa) provinces",
-    "statoids ucd (1963 list of 21 provinces + Léopoldville)",
-    "fr.wikipedia oldid 222682973 (1963 list)"
+    "as for the Kivu 1962–66 entry"
    ],
-   "needs": "district / 2015-province atoms: the 1962–66 provinces largely follow colonial district lines that the 2015 provinces reuse, e.g. OCHA COD-AB COD ADM1 (post-2015) or geoBoundaries COD ADM1 — licence to check"
+   "needs": "as for the Kivu 1962–66 entry"
   },
   {
-   "what": "Kasaï split 1962–1966 (Lomami, Luluabourg, Sankuru, Sud-Kasaï, Unité Kasaïenne; Mwene Ditu neutralised until 1966-02-18)",
-   "atoms": [
-    "COD-1872",
-    "COD-1896"
-   ],
-   "from": "1962-08-14",
+   "what": "Kivu-Central province",
+   "unit": "COD:KivuCentral@1963",
+   "from": "1963-05-18",
    "to": "1966-04-25",
-   "why": "Sankuru and others straddle the later Kasaï-Occidental/Oriental line; lines run inside the NE atoms.",
+   "why": "Atoms held by the Kivu 1962–66 entry.",
    "checked": [
-    "rulers.org Congo (Kinshasa) provinces",
-    "statoids ucd (1963 list of 21 provinces + Léopoldville)",
-    "fr.wikipedia oldid 222682973 (1963 list)"
+    "as for the Kivu 1962–66 entry"
    ],
-   "needs": "district / 2015-province atoms: the 1962–66 provinces largely follow colonial district lines that the 2015 provinces reuse, e.g. OCHA COD-AB COD ADM1 (post-2015) or geoBoundaries COD ADM1 — licence to check"
+   "needs": "as for the Kivu 1962–66 entry"
   },
   {
-   "what": "Léopoldville split 1962–1966 (Kwango, Kwilu, Mai-Ndombe)",
-   "atoms": [
-    "COD-1871"
-   ],
-   "from": "1962-08-14",
-   "to": "1966-04-25",
-   "why": "Lines run inside the NE Bandundu atom.",
-   "checked": [
-    "rulers.org Congo (Kinshasa) provinces",
-    "statoids ucd (1963 list of 21 provinces + Léopoldville)",
-    "fr.wikipedia oldid 222682973 (1963 list)"
-   ],
-   "needs": "district / 2015-province atoms: the 1962–66 provinces largely follow colonial district lines that the 2015 provinces reuse, e.g. OCHA COD-AB COD ADM1 (post-2015) or geoBoundaries COD ADM1 — licence to check"
-  },
-  {
-   "what": "Kongo Central and Léopoldville city 1962–1966",
-   "atoms": [
-    "COD-1883",
-    "COD-1884"
-   ],
-   "from": "1962-08-14",
-   "to": "1966-04-25",
-   "why": "The city's limits before the 1968–69 annexation of Maluku run inside the NE Kinshasa atom; rulers.org also says the city was separated from Kongo Central only on 25 Apr 1966.",
-   "checked": [
-    "rulers.org Congo (Kinshasa) provinces",
-    "statoids ucd (1963 list of 21 provinces + Léopoldville)",
-    "fr.wikipedia oldid 222682973 (1963 list)",
-    "Krossy thesis pp. 17–20"
-   ],
-   "needs": "Kinshasa commune limits before 1968 (pre-Maluku); none open found"
-  },
-  {
-   "what": "Kongo Central before Maluku was transferred",
-   "unit": "COD:KongoCentral",
-   "atoms": [
-    "COD-1883"
-   ],
+   "what": "Sud-Kivu (Kivu-Central + Maniema) province",
+   "unit": "COD:SudKivu@1966",
    "from": "1966-04-25",
-   "to": "1969-01-25",
-   "why": "Maluku (7,948.9 km²) belonged to Kongo-Central (Kasa-Ngulu) until 1968–69; the old line runs inside the NE Kinshasa atom.",
+   "to": "1966-12-28",
+   "why": "Atoms held by the Kivu 1962–66 entry.",
    "checked": [
-    "Krossy thesis pp. 17–20",
+    "as for the Kivu 1962–66 entry"
+   ],
+   "needs": "as for the Kivu 1962–66 entry"
+  },
+  {
+   "what": "Kongo Central and the capital 1962–1969 (Léopoldville/Kinshasa city before and after 1966; Maluku in Kongo Central until 1969)",
+   "unit": "COD:KongoCentral@1962",
+   "atoms": [
+    "COD-ADM2-63176286B7026545207042",
+    "COD-ADM2-63176286B88277060419996",
+    "COD-ADM2-63176286B98008703469616",
+    "COD-ADM2-63176286B83971453832478",
+    "COD-ADM2-63176286B65126745094635",
+    "COD-ADM2-63176286B47015384768636",
+    "COD-ADM2-63176286B29097498682851",
+    "COD-ADM2-63176286B8336769847246",
+    "COD-ADM2-63176286B40063645047483",
+    "COD-ADM2-63176286B538038850114",
+    "COD-ADM2-63176286B82592558575614",
+    "COD-ADM2-63176286B31425721317411",
+    "COD-ADM2-63176286B22382339186814",
+    "COD-ADM2-63176286B69853523616594",
+    "COD-ADM2-63176286B79360907689545"
+   ],
+   "from": "1962-08-14",
+   "to": "1969-01-25",
+   "why": "The union is the 1960 Kongo Central + Léopoldville city, but Maluku (79% of today's Kinshasa atom) belonged to Kasa-Ngulu territory of Kongo Central until arrêté 69-042 of 25 Jan 1969; the gb atom for Kinshasa includes it.",
+   "checked": [
+    "Krossy thesis (ULiège) pp. 17–20",
     "fr.wikipedia Maluku oldid 232244891",
+    "rulers.org",
     "statoids ucd"
    ],
-   "needs": "Maluku commune boundary (e.g. OSM / geoBoundaries COD ADM2-3)"
+   "needs": "a Kinshasa atom split into the 23 pre-1968 communes and Maluku"
   },
   {
-   "what": "Kinshasa before the Maluku annexation",
-   "unit": "COD:Kinshasa",
-   "atoms": [
-    "COD-1884"
-   ],
-   "from": "1966-04-25",
+   "what": "Léopoldville / Kinshasa city 1962–1969",
+   "unit": "COD:LeopoldvilleCity@1962",
+   "from": "1962-08-14",
    "to": "1969-01-25",
-   "why": "see Kongo Central entry (the annexation was enacted in stages in 1968; limits fixed 25 Jan 1969).",
+   "why": "Atoms held by the Kongo Central and capital entry.",
    "checked": [
-    "Krossy thesis pp. 17–20",
-    "fr.wikipedia Maluku oldid 232244891"
+    "as above"
    ],
    "needs": "as above"
   },
   {
-   "what": "Équateur after the 2015 split (Équateur, Mongala, Nord-Ubangi, Sud-Ubangi, Tshuapa)",
+   "what": "Faradje (with Aba) and Watsa between Kibali-Ituri and Uele",
    "atoms": [
-    "COD-1461"
+    "COD-ADM2-63176286B94121502354965",
+    "COD-ADM2-63176286B20411552692002",
+    "COD-ADM2-63176286B47500153281287"
    ],
-   "from": "2015-06",
-   "to": null,
-   "why": "New lines run inside the NE atom.",
+   "from": "1962-08-14",
+   "to": "1966-12-28",
+   "why": "Both territories were claimed by both provinces and put to a referendum (Faradje → Kibali-Ituri, Watsa → Uele); the monograph dates the vote 1962 in one place and 1964 in another.",
    "checked": [
-    "rulers.org",
-    "fr.wikipedia oldid 222682973"
+    "MRAC monograph Ituri (law of 14 Aug 1962, referendum results)",
+    "MRAC monograph Haut-Uele"
    ],
-   "needs": "post-2015 provincial atoms (26 provinces), e.g. OCHA COD-AB COD ADM1 or geoBoundaries COD ADM1 — licence to check"
-  },
-  {
-   "what": "Orientale after the 2015 split (Bas-Uélé, Haut-Uélé, Ituri, Tshopo)",
-   "atoms": [
-    "COD-1559"
-   ],
-   "from": "2015-06",
-   "to": null,
-   "why": "New lines run inside the NE atom.",
-   "checked": [
-    "rulers.org",
-    "en.wikipedia Orientale oldid 1373639413"
-   ],
-   "needs": "post-2015 provincial atoms (26 provinces), e.g. OCHA COD-AB COD ADM1 or geoBoundaries COD ADM1 — licence to check"
-  },
-  {
-   "what": "Katanga after the 2015 split (Haut-Katanga, Haut-Lomami, Lualaba, Tanganyika)",
-   "atoms": [
-    "COD-1897"
-   ],
-   "from": "2015-06",
-   "to": null,
-   "why": "New lines run inside the NE atom.",
-   "checked": [
-    "rulers.org",
-    "fr.wikipedia oldid 222682973"
-   ],
-   "needs": "post-2015 provincial atoms (26 provinces), e.g. OCHA COD-AB COD ADM1 or geoBoundaries COD ADM1 — licence to check"
-  },
-  {
-   "what": "Kasaï-Occidental after the 2015 split (Kasaï, Kasaï-Central)",
-   "atoms": [
-    "COD-1872"
-   ],
-   "from": "2015-06",
-   "to": null,
-   "why": "New lines run inside the NE atom.",
-   "checked": [
-    "rulers.org",
-    "fr.wikipedia oldid 222682973"
-   ],
-   "needs": "post-2015 provincial atoms (26 provinces), e.g. OCHA COD-AB COD ADM1 or geoBoundaries COD ADM1 — licence to check"
-  },
-  {
-   "what": "Kasaï-Oriental after the 2015 split (Kasaï-Oriental, Lomami, Sankuru)",
-   "atoms": [
-    "COD-1896"
-   ],
-   "from": "2015-06",
-   "to": null,
-   "why": "New lines run inside the NE atom.",
-   "checked": [
-    "rulers.org",
-    "fr.wikipedia oldid 222682973"
-   ],
-   "needs": "post-2015 provincial atoms (26 provinces), e.g. OCHA COD-AB COD ADM1 or geoBoundaries COD ADM1 — licence to check"
-  },
-  {
-   "what": "Bandundu after the 2015 split (Kwango, Kwilu, Mai-Ndombe)",
-   "atoms": [
-    "COD-1871"
-   ],
-   "from": "2015-06",
-   "to": null,
-   "why": "New lines run inside the NE atom.",
-   "checked": [
-    "rulers.org",
-    "fr.wikipedia oldid 222682973"
-   ],
-   "needs": "post-2015 provincial atoms (26 provinces), e.g. OCHA COD-AB COD ADM1 or geoBoundaries COD ADM1 — licence to check"
+   "needs": "the date of the referendum and of its implementation (Gérard-Libois & Verhaegen, Congo 1962/1964, CRISP)"
   }
  ]
 }

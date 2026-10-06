@@ -556,33 +556,6 @@
       ]
     },
     {
-      "id": "MWI:Likoma@1998",
-      "names": {
-        "en": "Likoma District",
-        "ja": "リコマ県",
-        "local": "Likoma"
-      },
-      "wikidata": "Q740622",
-      "spans": [
-        {
-          "from": "1998-06",
-          "precision": "month",
-          "to": null,
-          "atoms": [
-            "MWI-5509"
-          ],
-          "sources": [
-            {
-              "url": "https://www.statoids.com/umw.html",
-              "title": "Statoids: Districts of Malawi (G. Law)",
-              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
-              "accessed": "2026-10-05"
-            }
-          ]
-        }
-      ]
-    },
-    {
       "id": "MWI:Machinga@1964",
       "names": {
         "en": "Machinga District (Kasupe until renamed)",
@@ -886,25 +859,44 @@
           "dateNote": "Included Neno until the split."
         },
         {
-          "from": "2007-07",
-          "precision": "month",
+          "from": "2003",
+          "precision": "year",
           "to": null,
           "atoms": [
             "MWI-1922"
           ],
           "sources": [
             {
+              "url": "https://npc.mw/neno-2/",
+              "title": "National Planning Commission (Malawi): Neno district profile",
+              "says": "Neno was split from the neighbouring Mwanza district in 2003.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1336885284",
+              "title": "Wikipedia: Neno District, rev. 1336885284",
+              "says": "Neno District created in 2003 when Mwanza District was split into Neno and Mwanza under decentralisation.",
+              "accessed": "2026-10-05"
+            },
+            {
               "url": "https://www.statoids.com/umw.html",
               "title": "Statoids: Districts of Malawi — update note on Neno",
               "says": "Neno split from Mwanza: one source says 2007-07, Wikipedia says 2003; possibly official 2003, implemented by 2007.",
               "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://doi.org/10.7910/DVN/BM4WW0",
+              "title": "Müller-Crepon (2021), State Reach and Development in Africa since the 1960s, replication data: africa_regions_panel and adminnum_bycountry (CC0)",
+              "says": "Malawi regions: Mwanza 1972-2003 including Neno; Mwanza and Neno separate from 2004; 28 units from 2004.",
+              "accessed": "2026-10-06"
             }
-          ]
+          ],
+          "dateNote": "Neno split off in 2003 (legal creation: National Planning Commission, Wikipedia; the CC0 panel has the two districts from 2004); statoids’ 2007-07 is the date administrative structures were in place, which it itself reports as possibly implementing a 2003 creation."
         }
       ]
     },
     {
-      "id": "MWI:Neno@2007",
+      "id": "MWI:Neno@2003",
       "names": {
         "en": "Neno District",
         "ja": "ネノ県",
@@ -913,13 +905,25 @@
       "wikidata": "Q1195298",
       "spans": [
         {
-          "from": "2007-07",
-          "precision": "month",
+          "from": "2003",
+          "precision": "year",
           "to": null,
           "atoms": [
             "MWI-5510"
           ],
           "sources": [
+            {
+              "url": "https://npc.mw/neno-2/",
+              "title": "National Planning Commission (Malawi): Neno district profile",
+              "says": "Neno was split from the neighbouring Mwanza district in 2003.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1336885284",
+              "title": "Wikipedia: Neno District, rev. 1336885284",
+              "says": "Neno District created in 2003 when Mwanza District was split into Neno and Mwanza under decentralisation.",
+              "accessed": "2026-10-05"
+            },
             {
               "url": "https://www.statoids.com/umw.html",
               "title": "Statoids: Districts of Malawi — update note on Neno",
@@ -927,13 +931,13 @@
               "accessed": "2026-10-05"
             },
             {
-              "url": "https://en.wikipedia.org/w/index.php?oldid=1336885284",
-              "title": "Wikipedia: Neno District, rev. 1336885284",
-              "says": "Neno District created in 2003 when Mwanza District was split into Neno and Mwanza under decentralisation.",
-              "accessed": "2026-10-05"
+              "url": "https://doi.org/10.7910/DVN/BM4WW0",
+              "title": "Müller-Crepon (2021), State Reach and Development in Africa since the 1960s, replication data: africa_regions_panel and adminnum_bycountry (CC0)",
+              "says": "Malawi regions: Mwanza 1972-2003 including Neno; Mwanza and Neno separate from 2004; 28 units from 2004.",
+              "accessed": "2026-10-06"
             }
           ],
-          "dateNote": "Latest of the two dates reported for the split (2003 legal / 2007-07 implementation); the window between is unresolved."
+          "dateNote": "Neno split off in 2003 (legal creation: National Planning Commission, Wikipedia; the CC0 panel has the two districts from 2004); statoids’ 2007-07 is the date administrative structures were in place, which it itself reports as possibly implementing a 2003 creation."
         }
       ]
     }
@@ -994,8 +998,14 @@
     {
       "date": "2003",
       "precision": "year",
-      "what": "Neno split from Mwanza (implementation reported 2007-07)",
+      "what": "Neno split from Mwanza (administrative structures reported in place 2007-07)",
       "sources": [
+        {
+          "url": "https://npc.mw/neno-2/",
+          "title": "National Planning Commission (Malawi): Neno district profile",
+          "says": "Neno was split from the neighbouring Mwanza district in 2003.",
+          "accessed": "2026-10-06"
+        },
         {
           "url": "https://en.wikipedia.org/w/index.php?oldid=1336885284",
           "title": "Wikipedia: Neno District, rev. 1336885284",
@@ -1040,31 +1050,28 @@
   "atomsOutside": [],
   "unresolved": [
     {
-      "what": "Mwanza / Neno between the two reported split dates",
-      "unit": "MWI:Neno@2003",
+      "what": "Likoma District (the Likoma and Chizumulu islands), from its creation",
+      "unit": "MWI:Likoma@1998",
       "atoms": [
-        "MWI-1922",
-        "MWI-5510"
+        "MWI-5509"
       ],
-      "from": "2003",
-      "to": "2007-07",
-      "why": "Sources disagree: Wikipedia dates the split to 2003, statoids' source to 2007-07 (administrative structures in place only later). Which territory was a separate district in between is not settled.",
+      "from": "1998-06",
+      "to": null,
+      "why": "The Natural Earth atom MWI-5509 covers about 200 km² (0.0163 square degrees, measured 2026-10-06) where the two islands are about 18 and 3 km²: it draws Lake Malawi water around them, and 82 % of it lies inside Mozambique's Lago district as Mozambique's national statistics office (INE, geoBoundaries MOZ ADM2 2019) draws the lake line — the islands are Malawian, the water around them Mozambican. Drawing it would claim Mozambican water for Malawi.",
       "checked": [
-        "statoids umw.html update note",
-        "Wikipedia Neno District rev. 1336885284"
+        "Natural Earth 10m admin-1 MWI-5509 (pinned ca96624) area vs the islands",
+        "geoBoundaries MOZ ADM2 (INE 2019) Lago district and its separate Ilha Licom / Ilha Risunodo atoms",
+        "statoids umw (Likoma District created 1998-06)"
       ],
-      "needs": "the Malawi Government Gazette notice creating Neno district"
-    },
-    {
-      "what": "Mwanza 2003–2007",
-      "unit": "MWI:Mwanza@2003",
-      "from": "2003",
-      "to": "2007-07",
-      "why": "see previous entry",
-      "checked": [
-        "statoids umw.html"
-      ],
-      "needs": "Malawi Government Gazette"
+      "needs": "an atom set for Malawi whose Likoma District is the two islands (e.g. geoBoundaries MWI ADM2, if its Likoma is the islands), with the whole Malawi dossier moved to that set",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/umw.html",
+          "title": "Statoids: Districts of Malawi (G. Law)",
+          "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+          "accessed": "2026-10-05"
+        }
+      ]
     }
   ]
 }

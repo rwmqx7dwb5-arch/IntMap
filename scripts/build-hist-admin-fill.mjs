@@ -115,6 +115,7 @@ import { registry, shipTags, harvestTags } from './histadmin/langs.mjs';
 import { labelsFor, labelsByTag } from './histadmin/wikidata.mjs';
 import { WIKIDATA } from './lib/upstream-cadence.mjs';
 import { scan as latticeScan } from '../js/hist-knowledge.js';
+import { withheldFile } from './histrecon/withheld-file.mjs';
 import { HIST_ADMIN_GAPS } from '../js/border-coast.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -439,16 +440,21 @@ export function recordFiles() {
    point lies in Sharjah, so the fill drew Ajman 1980-2002 over the reconstruction's Ajman (Q159477) — the same
    emirate twice (a new «contested» pair in data/hist-claims.json). ⇒ a reconstructed row whose date record
    names the same Wikidata item (dates[i].wikidata, written by build-hist-admin-recon.mjs from the dossier)
-   answers for the unit on its own span. .agents/rules/historical-verification.md §4-2: bind by identifier. */
+   answers for the unit on its own span. .agents/rules/historical-verification.md §4-2: bind by identifier.
+   (hist-recon-expand) The same holds for an ISO 3166-2 code the dossier states (`iso` on a unit → dates[i].iso), keyed
+   «iso:<code>»: a fill unit whose Wikidata item states no inception carries no QID — it is dated by its country's set
+   floor — but always carries its code. MEASURED 2026-10-06: the fill drew Mandaue (PH-MDE, floored to 2001-02-22)
+   over the reconstruction's Mandaue City (Q1889017) 2001–2019 — a «duplicate» pair and two «contested» ones. */
 export function reconSpansByItem() {
   const out = new Map();
   for (const g of HIST_ADMIN_GAPS.filter((x) => x.reconstructed && fs.existsSync(path.join(ROOT, x.file)))) {
     const { data: d } = loadBundle(g.file);
     d.feats.forEach((f, i) => {
-      const q = d.dates && d.dates[i] && d.dates[i].wikidata;
-      if (!q) return;
-      if (!out.has(q)) out.set(q, []);
-      out.get(q).push([ymd(f[2], f[3], f[4]), ymd(f[5], f[6], f[7])]);
+      const q = d.dates && d.dates[i] && d.dates[i].wikidata, iso = d.dates && d.dates[i] && d.dates[i].iso;
+      for (const k of [q, iso && 'iso:' + iso].filter(Boolean)) {
+        if (!out.has(k)) out.set(k, []);
+        out.get(k).push([ymd(f[2], f[3], f[4]), ymd(f[5], f[6], f[7])]);
+      }
     });
   }
   for (const [q, v] of out) out.set(q, union(v, []));
@@ -457,6 +463,19 @@ export function reconSpansByItem() {
 export function recordUnits(files = recordFiles()) {
   const out = [];
   for (const rel of files) {
+    /* (hist-recon-expand) a reconstruction also answers where its research found the line unknown — js/border-coast.js `withheld` */
+    const gap = HIST_ADMIN_GAPS.find((g) => g.file === rel);
+    if (gap && gap.withheld) {
+      /* never silently without it: a fill built without the withheld ground would draw today's lines on ground the research found unknown */
+      if (!fs.existsSync(withheldFile())) throw new Error('the withheld ground of the reconstruction is missing (' + withheldFile() + ') — run node scripts/build-hist-admin-recon.mjs first');
+      for (const w of JSON.parse(fs.readFileSync(withheldFile(), 'utf8')).units) {
+        const polys = w.polys.map((p) => p.filter((r) => r && r.length >= 4)).filter((p) => p.length);
+        if (!polys.length) continue;
+        let [mnx, mny, mxx, mxy] = [Infinity, Infinity, -Infinity, -Infinity];
+        for (const poly of polys) { const b = bbox(poly[0]); mnx = Math.min(mnx, b[0]); mny = Math.min(mny, b[1]); mxx = Math.max(mxx, b[2]); mxy = Math.max(mxy, b[3]); }
+        out.push({ polys, bb: [mnx, mny, mxx, mxy], s: w.s, e: w.e, withheld: true });
+      }
+    }
     const { data: d } = loadBundle(rel);
     for (const f of d.feats) {
       const polys = f[8].map((poly) => poly.map((ri) => d.rings[ri]).filter((r) => r && r.length >= 4)).filter((p) => p.length);
@@ -1072,7 +1091,7 @@ async function main() {
       /* test 4 — the record's own units take the ground back for their own spans (`answeredSpans`). */
       /* (hist-reconstruction) a reconstructed row naming the SAME Wikidata item answers for this unit on its span,
          whatever the shapes' samples say — see reconSpansByItem() */
-      const byItem = (u.wd && u.wd.qid && reconSpans.get(u.wd.qid)) || [];
+      const byItem = union((u.wd && u.wd.qid && reconSpans.get(u.wd.qid)) || [], (u.code && reconSpans.get('iso:' + u.code)) || []);
       for (const iv of union(answeredSpans(pts, box, rec, ymd(-999999, 1, 1), ymd(9999, 1, 1)).spans, byItem)) {
         answeredIv.push(iv);
         const before = alive.length;

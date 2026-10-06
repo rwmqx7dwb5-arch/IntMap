@@ -1,11 +1,11 @@
 {
  "country": "PNG",
- "atomSet": "ne-admin1@ca96624",
+ "atomSet": "gb-adm1@2026-10-06",
  "scope": {
   "from": "1975-09-16",
   "to": "2019-12-31"
  },
- "polityNote": "Independent State of Papua New Guinea since 1975-09-16. Before independence the same districts belonged to the Australian-administered Territory of Papua and New Guinea (a different polity; not covered).",
+ "polityNote": "Independent State of Papua New Guinea since 1975-09-16. Before independence the same districts belonged to the Australian-administered Territory of Papua and New Guinea (a different polity; not covered). Atoms: geoBoundaries PNG ADM1 (PNG National Statistical Office, 2019), which carries Hela and Jiwaka separately, so Southern and Western Highlands before 2012-05-17 are each the union of two atoms (redrawn 2026-10-06 from Natural Earth atoms, which could not show the 2012 split).",
  "units": [
   {
    "id": "PNG:Sandaun@1975",
@@ -21,7 +21,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "PNG-1241"
+      "PNG-ADM1-602756B26590069038156"
      ],
      "sources": [
       {
@@ -55,7 +55,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "PNG-1248"
+      "PNG-ADM1-602756B48983107143165"
      ],
      "sources": [
       {
@@ -89,7 +89,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "PNG-1239"
+      "PNG-ADM1-602756B46774983793805"
      ],
      "sources": [
       {
@@ -123,7 +123,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "PNG-1240"
+      "PNG-ADM1-602756B93477627156279"
      ],
      "sources": [
       {
@@ -157,7 +157,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "PNG-1253"
+      "PNG-ADM1-602756B21024922409346"
      ],
      "sources": [
       {
@@ -191,7 +191,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "PNG-1256"
+      "PNG-ADM1-602756B63375710548767"
      ],
      "sources": [
       {
@@ -225,7 +225,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "PNG-1252"
+      "PNG-ADM1-602756B70880514631076"
      ],
      "sources": [
       {
@@ -259,7 +259,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "PNG-1249"
+      "PNG-ADM1-602756B93864696482497"
      ],
      "sources": [
       {
@@ -293,7 +293,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "PNG-1254"
+      "PNG-ADM1-602756B89852769449867"
      ],
      "sources": [
       {
@@ -333,7 +333,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "PNG-1244"
+      "PNG-ADM1-602756B85114156067179"
      ],
      "sources": [
       {
@@ -367,7 +367,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "PNG-1245"
+      "PNG-ADM1-602756B50041453479655"
      ],
      "sources": [
       {
@@ -401,7 +401,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "PNG-1257"
+      "PNG-ADM1-602756B15436761522512"
      ],
      "sources": [
       {
@@ -435,7 +435,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "PNG-1250"
+      "PNG-ADM1-602756B6474807440256"
      ],
      "sources": [
       {
@@ -469,7 +469,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "PNG-1255"
+      "PNG-ADM1-602756B43496843486474"
      ],
      "sources": [
       {
@@ -503,7 +503,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "PNG-1251"
+      "PNG-ADM1-602756B50944045415739"
      ],
      "sources": [
       {
@@ -537,7 +537,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "PNG-1242"
+      "PNG-ADM1-602756B7407698878652"
      ],
      "sources": [
       {
@@ -571,7 +571,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "PNG-1238"
+      "PNG-ADM1-602756B18903489245073"
      ],
      "sources": [
       {
@@ -605,7 +605,7 @@
      "precision": "day",
      "to": null,
      "atoms": [
-      "PNG-1243"
+      "PNG-ADM1-602756B92248307115505"
      ],
      "sources": [
       {
@@ -639,7 +639,8 @@
      "precision": "day",
      "to": "2012-05-17",
      "atoms": [
-      "PNG-1247"
+      "PNG-ADM1-602756B97103947509748",
+      "PNG-ADM1-602756B83114616808260"
      ],
      "sources": [
       {
@@ -655,7 +656,35 @@
        "accessed": "2026-10-05"
       }
      ],
-     "dateNote": "Same territory since independence: statoids lists only renamings and capital moves between 1975 and the 2012 Highlands split; no inter-provincial transfer is recorded. Until 17 May 2012 it included the area that became Jiwaka Province."
+     "dateNote": "Same territory since independence: statoids lists only renamings and capital moves between 1975 and the 2012 Highlands split; no inter-provincial transfer is recorded. Until 17 May 2012 it included the area that became Jiwaka Province. Before 2012-05-17 the province included the later Jiwaka (Jimi, North Waghi, Anglimp-South Waghi districts)."
+    },
+    {
+     "from": "2012-05-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PNG-ADM1-602756B97103947509748"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Papua_New_Guinea&oldid=1366914945",
+       "title": "Wikipedia — Provinces of Papua New Guinea (oldid 1366914945; cites The National, 17 May 2012 and RNZI 15 Jul 2009)",
+       "says": "Immediately before independence (16 Sep 1975) PNG had nineteen provinces and the National Capital District; Hela and Jiwaka came into being 17 May 2012.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upg.html",
+       "title": "Statoids — Provinces of Papua New Guinea (change history)",
+       "says": "Enga 1973, NCD 1974, independence 1975 (districts become provinces); renamings only until 2012-05-17, when Hela split from Southern Highlands and Jiwaka from Western Highlands.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/PNG/ADM1/geoBoundaries-PNG-ADM1.geojson",
+       "title": "geoBoundaries PNG ADM1 (PNG National Statistical Office, 2019)",
+       "says": "22 provinces incl. Hela and Jiwaka; their areas equal the sums of the three districts each that the 2012 split names (ADM2 of the same publisher).",
+       "accessed": "2026-10-06"
+      }
+     ]
     }
    ]
   },
@@ -673,7 +702,8 @@
      "precision": "day",
      "to": "2012-05-17",
      "atoms": [
-      "PNG-1246"
+      "PNG-ADM1-602756B57671102759024",
+      "PNG-ADM1-602756B92146969266961"
      ],
      "sources": [
       {
@@ -689,7 +719,113 @@
        "accessed": "2026-10-05"
       }
      ],
-     "dateNote": "Same territory since independence: statoids lists only renamings and capital moves between 1975 and the 2012 Highlands split; no inter-provincial transfer is recorded. Until 17 May 2012 it included the area that became Hela Province."
+     "dateNote": "Same territory since independence: statoids lists only renamings and capital moves between 1975 and the 2012 Highlands split; no inter-provincial transfer is recorded. Until 17 May 2012 it included the area that became Hela Province. Before 2012-05-17 the province included the later Hela (Komo-Margarima, Koroba-Lake Kopiago, Tari-Pori districts)."
+    },
+    {
+     "from": "2012-05-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PNG-ADM1-602756B57671102759024"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Papua_New_Guinea&oldid=1366914945",
+       "title": "Wikipedia — Provinces of Papua New Guinea (oldid 1366914945; cites The National, 17 May 2012 and RNZI 15 Jul 2009)",
+       "says": "Immediately before independence (16 Sep 1975) PNG had nineteen provinces and the National Capital District; Hela and Jiwaka came into being 17 May 2012.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upg.html",
+       "title": "Statoids — Provinces of Papua New Guinea (change history)",
+       "says": "Enga 1973, NCD 1974, independence 1975 (districts become provinces); renamings only until 2012-05-17, when Hela split from Southern Highlands and Jiwaka from Western Highlands.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/PNG/ADM1/geoBoundaries-PNG-ADM1.geojson",
+       "title": "geoBoundaries PNG ADM1 (PNG National Statistical Office, 2019)",
+       "says": "22 provinces incl. Hela and Jiwaka; their areas equal the sums of the three districts each that the 2012 split names (ADM2 of the same publisher).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PNG:Hela@2012",
+   "names": {
+    "en": "Hela Province",
+    "ja": "ヘラ州",
+    "local": "Hela Province"
+   },
+   "wikidata": "Q1382499",
+   "spans": [
+    {
+     "from": "2012-05-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PNG-ADM1-602756B92146969266961"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Papua_New_Guinea&oldid=1366914945",
+       "title": "Wikipedia — Provinces of Papua New Guinea (oldid 1366914945; cites The National, 17 May 2012 and RNZI 15 Jul 2009)",
+       "says": "Immediately before independence (16 Sep 1975) PNG had nineteen provinces and the National Capital District; Hela and Jiwaka came into being 17 May 2012.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upg.html",
+       "title": "Statoids — Provinces of Papua New Guinea (change history)",
+       "says": "Enga 1973, NCD 1974, independence 1975 (districts become provinces); renamings only until 2012-05-17, when Hela split from Southern Highlands and Jiwaka from Western Highlands.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/PNG/ADM1/geoBoundaries-PNG-ADM1.geojson",
+       "title": "geoBoundaries PNG ADM1 (PNG National Statistical Office, 2019)",
+       "says": "22 provinces incl. Hela and Jiwaka; their areas equal the sums of the three districts each that the 2012 split names (ADM2 of the same publisher).",
+       "accessed": "2026-10-06"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PNG:Jiwaka@2012",
+   "names": {
+    "en": "Jiwaka Province",
+    "ja": "ジワカ州",
+    "local": "Jiwaka Province"
+   },
+   "wikidata": "Q1400625",
+   "spans": [
+    {
+     "from": "2012-05-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PNG-ADM1-602756B83114616808260"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Papua_New_Guinea&oldid=1366914945",
+       "title": "Wikipedia — Provinces of Papua New Guinea (oldid 1366914945; cites The National, 17 May 2012 and RNZI 15 Jul 2009)",
+       "says": "Immediately before independence (16 Sep 1975) PNG had nineteen provinces and the National Capital District; Hela and Jiwaka came into being 17 May 2012.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upg.html",
+       "title": "Statoids — Provinces of Papua New Guinea (change history)",
+       "says": "Enga 1973, NCD 1974, independence 1975 (districts become provinces); renamings only until 2012-05-17, when Hela split from Southern Highlands and Jiwaka from Western Highlands.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/PNG/ADM1/geoBoundaries-PNG-ADM1.geojson",
+       "title": "geoBoundaries PNG ADM1 (PNG National Statistical Office, 2019)",
+       "says": "22 provinces incl. Hela and Jiwaka; their areas equal the sums of the three districts each that the 2012 split names (ADM2 of the same publisher).",
+       "accessed": "2026-10-06"
+      }
+     ]
     }
    ]
   }
@@ -767,56 +903,5 @@
   }
  ],
  "atomsOutside": [],
- "unresolved": [
-  {
-   "what": "Southern Highlands Province after 2012-05-17 (without Hela)",
-   "unit": "PNG:SouthernHighlands@1975",
-   "atoms": [
-    "PNG-1246",
-    "PNG-1247"
-   ],
-   "from": "2012-05-17",
-   "to": null,
-   "why": "NE depicts the pre-2012 layout: one atom for Southern Highlands incl. Hela and one for Western Highlands incl. Jiwaka. The new provinces follow district lines inside those atoms, so none of the four post-2012 provinces is a union of NE atoms.",
-   "checked": [
-    "NE atom catalogue (20 PNG atoms, no Hela/Jiwaka)",
-    "statoids upg.html",
-    "Wikipedia Provinces of Papua New Guinea oldid 1366914945"
-   ],
-   "needs": "finer atoms: PNG districts (e.g. geoBoundaries PNG ADM2 or the NSO 2011 census district boundaries; licence to be checked) — Hela = 3 districts of former Southern Highlands, Jiwaka = 3 districts of former Western Highlands"
-  },
-  {
-   "what": "Hela Province 2012-05-17 onward",
-   "unit": "PNG:Hela@2012",
-   "from": "2012-05-17",
-   "to": null,
-   "why": "Carved wholly from Southern Highlands along district lines inside atom PNG-1246 (withheld in the previous entry).",
-   "checked": [
-    "as above"
-   ],
-   "needs": "as above"
-  },
-  {
-   "what": "Western Highlands Province after 2012-05-17 (without Jiwaka)",
-   "unit": "PNG:WesternHighlands@1975",
-   "from": "2012-05-17",
-   "to": null,
-   "why": "Atom PNG-1247 still includes Jiwaka (withheld in the first entry).",
-   "checked": [
-    "as above"
-   ],
-   "needs": "as above"
-  },
-  {
-   "what": "Jiwaka Province 2012-05-17 onward",
-   "unit": "PNG:Jiwaka@2012",
-   "from": "2012-05-17",
-   "to": null,
-   "why": "Carved wholly from Western Highlands along district lines inside atom PNG-1247 (withheld in the first entry).",
-   "checked": [
-    "as above"
-   ],
-   "needs": "as above"
-  }
- ]
+ "unresolved": []
 }

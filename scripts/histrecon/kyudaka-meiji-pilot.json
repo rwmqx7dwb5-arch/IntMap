@@ -1,0 +1,473 @@
+{
+ "note": "Pilot: can 明治大学図書館『舊高舊領取調帳』 (IIIF, public domain) be transcribed into village → 石高 → holder rows of usable precision, under terms that allow commercial use? Instrument: scripts/histrecon/kyudaka-meiji-pilot.mjs (agreement + binding, computed from the transcription file). Transcription: scripts/histrecon/kyudaka-meiji-LI00001164.json. Nothing is drawn into data/; no assembler reads these files. The 国立歴史民俗博物館 旧高旧領取調帳データベース and the Kyudaka_agrivillage holder column were not used, opened or compared against.",
+ "built": "2026-10-06",
+ "verdict": {
+  "summary": "NOT usable at the required precision as done here. The terms allow commercial use (with attribution and a modification notice; one copy of any resulting work is requested). But the only image is a ≈1240×1100 px bitonal film print of each two-page spread, and two same-reader passes over 15 canvases agree on 98.8 % of village names, 89.9 % of 石高 and 81.3 % of holder strings — and 32 % of village names, 32 % of 石高 and 44 % of holder strings contain at least one character a pass could not read. Only the village column reaches 98 %, and only because unreadable characters are written □ instead of guessed.",
+  "agreementIsNotAccuracy": "Both passes were made by the same reader in one session (no sub-readers were allowed in this pilot), so pass 2 was not independent of pass 1: where both passes read every character they agree 100 %, which measures self-consistency, not correctness. Direct evidence: pass 1 wrote the most frequent holder as «安部□□守領分» in 60 rows (17 %); a 7× crop of frame 15 made between the passes shows «松平□□衛督領分» (plausibly 松平左兵衛督 = 明石藩 — NOT asserted here), and pass 2 wrote that. A confident misreading survived a whole first pass."
+ },
+ "terms": {
+  "status": "COMMERCIAL USE PERMITTED for the images (stated). Attribution and a modification notice are conditions; one copy of resulting works is requested (an outward contact — for the coordinator to decide).",
+  "observed": "2026-10-06",
+  "sources": [
+   {
+    "url": "https://m-archives.meiji.jp/guide#secondaryuse",
+    "title": "明治大学デジタルアーカイブ ご利用案内「資料画像の二次利用条件について」",
+    "says": "明治大学図書館資料はライセンス表示に従う。パブリックドメインマーク（PDM）の画像は商用・非商用を問わず無償で自由に利用可。条件: 明治大学図書館所蔵資料であることの明示／改変した場合はその旨の明示／二次利用の成果物があれば本学に1部寄贈（本学所蔵資料として公開されることがある）。メタデータは全て CC BY。",
+    "accessed": "2026-10-06"
+   },
+   {
+    "url": "https://m-archives.meiji.jp/content/detail/LI00001140",
+    "title": "資料詳細 舊高舊領取調帳 [4]: 磐城",
+    "says": "ライセンス: パブリックドメイン。所蔵 明治大学図書館、書誌ID TW10164408、請求記号 092.4/1//H。",
+    "accessed": "2026-10-06"
+   },
+   {
+    "url": "https://m-archives.meiji.jp/api/meiji-da/items/LI00001164/manifest.json",
+    "title": "IIIF Presentation 3 manifest (all 38, LI00001137–LI00001174, fetched)",
+    "says": "No `rights` property. metadata «ライセンス» = «パブリックドメイン»; requiredStatement «帰属» = «明治大学».",
+    "accessed": "2026-10-06"
+   }
+  ],
+  "correctionToBrief": "The brief said «表示義務なし». The guide states attribution («明治大学図書館所蔵資料であることを明示してください») and a modification notice as conditions, and requests a copy of any product. The licence value itself is «パブリックドメイン» (PDM).",
+  "bibliographic": "38冊, [書写地不明]: [蘆田伊人写], [大正前期] (copied before the 1923 earthquake). The record notes that [2] and [38] are prints from the microfilm «日本林政史調査資料» (徳川林政史研究所編, 雄松堂フィルム出版 1970) — the terms of that film for those two volumes were not examined; [24] carries an appended «但馬國朝来郡» (17 leaves).",
+  "attributionText": "明治大学図書館所蔵『舊高舊領取調帳』（明治大学デジタルアーカイブ、パブリックドメイン）を IntMap が翻刻・加工"
+ },
+ "corpus": {
+  "volumes": [
+   {
+    "id": "LI00001137",
+    "vol": "[1]: 陸前 陸中 陸奥",
+    "frames": 148
+   },
+   {
+    "id": "LI00001138",
+    "vol": "[2]: 羽前 羽後",
+    "frames": 126
+   },
+   {
+    "id": "LI00001139",
+    "vol": "[3]: 岩代",
+    "frames": 94
+   },
+   {
+    "id": "LI00001140",
+    "vol": "[4]: 磐城",
+    "frames": 77
+   },
+   {
+    "id": "LI00001141",
+    "vol": "[5]: 常陸",
+    "frames": 183
+   },
+   {
+    "id": "LI00001142",
+    "vol": "[6]: 下野",
+    "frames": 115
+   },
+   {
+    "id": "LI00001143",
+    "vol": "[7]: 上野",
+    "frames": 81
+   },
+   {
+    "id": "LI00001144",
+    "vol": "[8]: 武藏 下総",
+    "frames": 243
+   },
+   {
+    "id": "LI00001145",
+    "vol": "[9]: 下総",
+    "frames": 151
+   },
+   {
+    "id": "LI00001146",
+    "vol": "[10]: 安房 上総",
+    "frames": 142
+   },
+   {
+    "id": "LI00001147",
+    "vol": "[11]: 伊豆 相模",
+    "frames": 111
+   },
+   {
+    "id": "LI00001148",
+    "vol": "[12]: 越後 佐渡",
+    "frames": 239
+   },
+   {
+    "id": "LI00001149",
+    "vol": "[13]: 若狹 越前",
+    "frames": 84
+   },
+   {
+    "id": "LI00001150",
+    "vol": "[14]: 甲斐",
+    "frames": 64
+   },
+   {
+    "id": "LI00001151",
+    "vol": "[15]: 信濃",
+    "frames": 206
+   },
+   {
+    "id": "LI00001152",
+    "vol": "[16]: 美濃",
+    "frames": 104
+   },
+   {
+    "id": "LI00001153",
+    "vol": "[17]: 飛彈",
+    "frames": 34
+   },
+   {
+    "id": "LI00001154",
+    "vol": "[18]: 駿河",
+    "frames": 100
+   },
+   {
+    "id": "LI00001155",
+    "vol": "[19]: 遠江",
+    "frames": 163
+   },
+   {
+    "id": "LI00001156",
+    "vol": "[20]: 尾張 三河",
+    "frames": 148
+   },
+   {
+    "id": "LI00001157",
+    "vol": "[21]: 伊勢 伊賀 志摩 紀伊",
+    "frames": 86
+   },
+   {
+    "id": "LI00001158",
+    "vol": "[22]: 近江",
+    "frames": 135
+   },
+   {
+    "id": "LI00001159",
+    "vol": "[23]: 山城",
+    "frames": 108
+   },
+   {
+    "id": "LI00001160",
+    "vol": "[24]: 丹波 丹後",
+    "frames": 69
+   },
+   {
+    "id": "LI00001161",
+    "vol": "[25]: 摂津",
+    "frames": 60
+   },
+   {
+    "id": "LI00001162",
+    "vol": "[26]: 和泉",
+    "frames": 64
+   },
+   {
+    "id": "LI00001163",
+    "vol": "[27]: 河内",
+    "frames": 74
+   },
+   {
+    "id": "LI00001164",
+    "vol": "[28]: 播磨",
+    "frames": 101
+   },
+   {
+    "id": "LI00001165",
+    "vol": "[29]: 大和",
+    "frames": 160
+   },
+   {
+    "id": "LI00001166",
+    "vol": "[30]: 紀伊",
+    "frames": 56
+   },
+   {
+    "id": "LI00001167",
+    "vol": "[31]: 因幡 伯耆",
+    "frames": 68
+   },
+   {
+    "id": "LI00001168",
+    "vol": "[32]: 備前 備中 美作",
+    "frames": 121
+   },
+   {
+    "id": "LI00001169",
+    "vol": "[33]: 安藝 備後 周防 長門",
+    "frames": 81
+   },
+   {
+    "id": "LI00001170",
+    "vol": "[34]: 淡路 阿波",
+    "frames": 149
+   },
+   {
+    "id": "LI00001171",
+    "vol": "[35]: 讃岐 伊豫 土佐",
+    "frames": 93
+   },
+   {
+    "id": "LI00001172",
+    "vol": "[36]: 筑前 筑後",
+    "frames": 83
+   },
+   {
+    "id": "LI00001173",
+    "vol": "[37]: 肥前 壱岐 對馬 肥後 薩摩 大隈 日向",
+    "frames": 183
+   },
+   {
+    "id": "LI00001174",
+    "vol": "[38]: 豊前 豊後",
+    "frames": 125
+   }
+  ],
+  "totalFrames": 4429,
+  "image": "One canvas = one two-page spread; IIIF Image API 2 level2, info.json width ≈1239–1246 px, height 1100 px (no larger native size; sizeAboveFull only interpolates). Bitonal film-like print with a frame counter (e.g. «0378») under each spread. 13–14 rows per full page, ≈26 per spread; a page with a 郡 header carries ≈11.",
+  "layout": "Columns 旧村名 / 旧領名 / 明治二年取調旧高 / 旧縣名. 〃 = ditto. A village with several holders (相給・除地) is one row per holder with 〃 in the village column. 寺社領 rows carry «〃管下» in the 旧縣名 column. Each 郡 ends with a footer «一郡 N 村 / 一郡高 …»; faint pencil subtotals in the margins."
+ },
+ "sample": {
+  "item": "LI00001164",
+  "volume": "[28]: 播磨",
+  "frames": "3–17 (15 canvases; frame 3 = start of 美嚢郡, frame 12 = 美嚢郡 footer, frame 13 = start of 明石郡)",
+  "rows": 347,
+  "villageEntries": {
+   "美嚢郡": 157,
+   "明石郡": 91
+  },
+  "why": "播磨 is the 国 of the first 府藩県 pilot (withdrawn: it read the 歴博 database, whose terms forbid commercial use — dev-notes hist-recon-expand); the first 15 canvases cover one whole 郡, so the 郡 footer can be checked.",
+  "shortOfBrief": "The brief asked for 30–50 canvases; 15 were read twice (347 rows × 2). The second pass already showed that precision cannot be held with this image and method, so more canvases would only repeat the measurement."
+ },
+ "method": [
+  "Canvas images fetched from the IIIF Image API (User-Agent «IntMap-histrecon/1.0 (+https://github.com/rwmqx7dwb5-arch/IntMap)»), cached outside the repository.",
+  "Pass 1: colour crops of each page in two 295 px-wide vertical strips (overlap ≈1 column), upscaled ×2.95 by the server; every row typed as 郡|村|旧領名|旧高|旧縣名 as written (〃 kept).",
+  "Pass 2: the same canvases as grey crops in 340 px strips at ×2.35 with shifted boundaries; transcribed without reading the pass-1 file (but by the same reader — see verdict).",
+  "Rule: a character not read with confidence is □; nothing is completed from knowledge of the place, the 藩 or a neighbouring row. 〃 is carried downward only in `resolved`.",
+  "Agreement: field equality per row, character conflicts where both passes read a character, and length conflicts (scripts/histrecon/kyudaka-meiji-pilot.mjs).",
+  "Binding: each fully read village name (agreed reading) is matched with estat-koaza.mjs matchVillages against the e-Stat 2020 町丁・字 of the modern municipalities under every N03-1920 町村 of the same 郡 (exact / prefixed levels are used; fuzzy only reported), and compared with the N03-1920 町村 names."
+ ],
+ "measured": {
+  "agreement": {
+   "village": {
+    "rowsEqual": 343,
+    "rows": 347,
+    "pctRowsEqual": 98.8,
+    "rowsBothFullyRead": 237,
+    "pctBothFullyRead": 68.3,
+    "equalWhenBothFullyRead": 237,
+    "unreadCharShare": 15.2,
+    "charsReadByBoth": 783,
+    "charsConflicting": 0,
+    "fieldsWithDifferentLength": 0
+   },
+   "holder": {
+    "rowsEqual": 282,
+    "rows": 347,
+    "pctRowsEqual": 81.3,
+    "rowsBothFullyRead": 195,
+    "pctBothFullyRead": 56.2,
+    "equalWhenBothFullyRead": 195,
+    "unreadCharShare": 24.3,
+    "charsReadByBoth": 709,
+    "charsConflicting": 2,
+    "fieldsWithDifferentLength": 59
+   },
+   "koku": {
+    "rowsEqual": 312,
+    "rows": 347,
+    "pctRowsEqual": 89.9,
+    "rowsBothFullyRead": 237,
+    "pctBothFullyRead": 68.3,
+    "equalWhenBothFullyRead": 237,
+    "unreadCharShare": 3.5,
+    "charsReadByBoth": 3033,
+    "charsConflicting": 0,
+    "fieldsWithDifferentLength": 3
+   },
+   "ken": {
+    "rowsEqual": 347,
+    "rows": 347,
+    "pctRowsEqual": 100,
+    "rowsBothFullyRead": 347,
+    "pctBothFullyRead": 100,
+    "equalWhenBothFullyRead": 347,
+    "unreadCharShare": 0,
+    "charsReadByBoth": 471,
+    "charsConflicting": 0,
+    "fieldsWithDifferentLength": 0
+   }
+  },
+  "completeness": "美嚢郡: 157 village entries transcribed in both passes; the 郡 footer on frame 12 reads «一郡百五十七村» (footer only partly legible: 郡高 «四万四千□百九十五石…» not fully read). No village row was skipped.",
+  "binding": {
+   "美嚢郡": {
+    "villageEntries": 157,
+    "fullyRead": 83,
+    "municipalities1920": 11,
+    "estatExact": 7,
+    "estatPrefixed": 34,
+    "estatFuzzyOnly": 0,
+    "unmatched": 41,
+    "boundAtMoreThanOnePlace": 3,
+    "equalTo1920MunicipalityName": 0,
+    "unmatchedButPositionalPartOfA大字": [
+     "中石野村",
+     "上石野村",
+     "西吉田村",
+     "東吉田村",
+     "上和田村",
+     "下渡瀬村",
+     "上渡瀬村",
+     "南大沢村",
+     "西大沢村"
+    ],
+    "unmatchedNames": [
+     "中石野村",
+     "上石野村",
+     "西吉田村",
+     "東吉田村",
+     "馬町村",
+     "前田町侍屋敷",
+     "平山町",
+     "平山町侍屋敷",
+     "大塚町侍屋敷",
+     "與呂木村",
+     "上和田村",
+     "大谷山村",
+     "谷口村",
+     "大柳村",
+     "金谷村",
+     "行力村",
+     "大戸田村",
+     "小戸田村",
+     "西下村",
+     "東下村",
+     "入野村",
+     "荻谷村",
+     "中島村",
+     "西山村",
+     "下渡瀬村",
+     "上渡瀬村",
+     "中村",
+     "西畑村",
+     "淡河東畑村",
+     "沖村",
+     "沖村新田",
+     "南大沢村",
+     "西大沢村",
+     "安場村",
+     "竹原町",
+     "阿前村",
+     "宮村",
+     "山崎村",
+     "西浦村",
+     "山口新田村",
+     "武士山新田"
+    ],
+    "fuzzyNames": []
+   },
+   "明石郡": {
+    "villageEntries": 91,
+    "fullyRead": 55,
+    "municipalities1920": 11,
+    "estatExact": 8,
+    "estatPrefixed": 27,
+    "estatFuzzyOnly": 1,
+    "unmatched": 19,
+    "boundAtMoreThanOnePlace": 2,
+    "equalTo1920MunicipalityName": 0,
+    "unmatchedButPositionalPartOfA大字": [
+     "東河原村",
+     "上津橋村",
+     "下津橋村",
+     "東松江村",
+     "西松江村",
+     "東江井村",
+     "西江井村"
+    ],
+    "unmatchedNames": [
+     "滑村",
+     "山田村",
+     "大蔵谷村",
+     "大明石村",
+     "中山村",
+     "奥畑村",
+     "永井村",
+     "東河原村",
+     "如意寺",
+     "西村",
+     "中村",
+     "新村",
+     "上津橋村",
+     "下津橋村",
+     "東松江村",
+     "西松江村",
+     "東江井村",
+     "西江井村",
+     "東島村"
+    ],
+    "fuzzyNames": [
+     "押部村 ~ 押部谷村 → 神戸市西区: 押部谷町押部・押部谷町木津・押部谷町近江・押部谷町木見・押部谷町木幡・押部谷町細田・押部谷町栄・押部谷町高和・押部谷町西盛・押部谷町福住・押部谷町養田・押部谷町和田"
+    ]
+   }
+  },
+  "bindingSummary": {
+   "fullyReadVillageNames": 138,
+   "boundExactOrPrefixed": 76,
+   "share": "55.1 % of fully read names (30.6 % of all 248 village entries)",
+   "positionalPartsOfOne大字": 16,
+   "note": "16 more unmatched names are a positional prefix + a stem found in a 町丁・字 (上石野村・中石野村 → 別所町石野; 上渡瀬村・下渡瀬村 → 吉川町渡瀬; 東江井村・西江井村 → 大久保町江井島): villages merged into one 大字 after 1889. They can be drawn only as a share of that 大字 (the union), not each on its own. No 1920 町村 name equals a village name."
+  },
+  "timing": {
+   "pass1Seconds": 387,
+   "pass2Seconds": 260,
+   "frames": 15,
+   "secondsPerFramePerPass": 21.6,
+   "extrapolation": "4,429 canvases × 21.6 s ≈ 26.6 h per pass of reading alone (wall clock of this session, excluding zoom checks, file writing and reconciliation); 2 passes ≈ 53 h, 3 passes ≈ 80 h. Some canvases are covers or blank (frames 1–2 here), so this is an upper bound for the reading and a lower bound for the whole job."
+  }
+ },
+ "hardToRead": [
+  {
+   "what": "numerals 二・三・六 at the head of a 石高 (pass 1 «□百□十六石», pass 2 «六百九十六石», frame 4)",
+   "why": "cursive 六 and 三/二 differ by one stroke at ≈10 px"
+  },
+  {
+   "what": "units 斗 vs 升 and 升 vs 合, written small and stacked",
+   "why": "reduced to 3–4 px strokes; the main source of □ in 石高"
+  },
+  {
+   "what": "十六 vs 十五 (frame 9: «三百十六石» vs «三百□十五石»)",
+   "why": "a real conflict between the passes"
+  },
+  {
+   "what": "the frequent holder «松平□□衛督領分» read as «安部□□守領分» in pass 1 (60 rows)",
+   "why": "cursive 松平 vs 安部 at ≈10 px; only a 7× crop separated them"
+  },
+  {
+   "what": "屋/座 (長屋町/長座町), 平/寺 (平岡村), the first character of village names",
+   "why": "village names lose their first character most often (15 % of village characters unread)"
+  },
+  {
+   "what": "two-line small notes (割書) of 社寺 names and bracketed multi-holder blocks (frame 16, 近江寺)",
+   "why": "below the resolution of the image"
+  },
+  {
+   "what": "faint pencil notes in margins and footers (郡高)",
+   "why": "partly washed out in the bitonal print"
+  }
+ ],
+ "howToHoldPrecision": [
+  "A better image first: the IIIF service offers nothing above ≈1240 px per spread; ask whether the library holds higher-resolution scans of this copy, or find another public-domain copy with higher-resolution images (not investigated in this pilot).",
+  "Independent readers: 3 reads by separate readers that cannot see each other's output, majority per character, disagreement → □. This pilot could not do that (no sub-readers allowed), which is why its agreement is self-consistency only.",
+  "A glyph reference table built from 7× crops for numerals (一…九 十 百 千 万), units (石斗升合勺) and the recurring holder strings of each 国, read once with care and then used as the comparison set.",
+  "Arithmetic the document carries: each 郡 footer gives the number of villages and the 郡高 total; the sum of transcribed 石高 must equal the footer — a deterministic check on the numerals, independent of the reader. The village count already matched for 美嚢郡 (157).",
+  "Holders: record the string only; mapping a title (e.g. «松平左兵衛督») to a 藩 needs a separate, cited table — never inferred from the transcription."
+ ],
+ "notUsed": [
+  "国立歴史民俗博物館 旧高旧領取調帳データベース (non-commercial terms) — not opened, not compared",
+  "Kyudaka_agrivillage holder column — not used",
+  "the local cache %LOCALAPPDATA%\\intmap-histrecon-cache\\rekihaku-kyudaka — not opened"
+ ]
+}

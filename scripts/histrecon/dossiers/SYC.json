@@ -1,0 +1,941 @@
+{
+  "country": "SYC",
+  "atomSet": "gb-adm1@2026-10-06",
+  "scope": {
+    "from": "1998",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Republic of Seychelles from the 1998 redistricting (Les Mamelles and Roche Caïman created, Anse Louis renamed Au Cap) to 2019. Atoms are geoBoundaries SYC ADM1 (2018, CC BY-SA 3.0), 25 districts plus the Outer Islands. Earlier districts (1979/1991: 23, La Digue and Silhouette merged 1994) are not drawn: Plaisance lost part of its land to the two 1998 districts along a line no atom carries.",
+  "units": [
+    {
+      "id": "SYC:AnseAuxPins@1998",
+      "names": {
+        "en": "Anse aux Pins District",
+        "ja": "Anse aux Pins地区",
+        "local": "Anse aux Pins"
+      },
+      "spans": [
+        {
+          "from": "1998",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "SYC-ADM1-4304713B37030743125890"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usc.html",
+              "title": "Statoids — Districts of Seychelles (Gwillim Law, updated 2015-06-30)",
+              "says": "Seychelles divided into 25 districts plus Outer Islands (26 divisions); 1979 23 districts not covering the Inner and Outer Islands; 1998 Anse Louis renamed Au Cap and Les Mamelles and Roche Caïman created.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1359363125",
+              "title": "Wikipedia (en): Districts of Seychelles, rev. 1359363125",
+              "says": "In 1998 Roche Caiman and Les Mamelles were created mostly from reclaimed land and from parts of Plaisance; later reclamation added Eve Island and Rev Island.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "From the 1998 redistricting (year only in the sources). Land reclaimed after 1998 off Victoria and Praslin lies inside today's district outlines."
+        }
+      ]
+    },
+    {
+      "id": "SYC:AnseBoileau@1998",
+      "names": {
+        "en": "Anse Boileau District",
+        "ja": "Anse Boileau地区",
+        "local": "Anse Boileau"
+      },
+      "spans": [
+        {
+          "from": "1998",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "SYC-ADM1-4304713B33324691861484"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usc.html",
+              "title": "Statoids — Districts of Seychelles (Gwillim Law, updated 2015-06-30)",
+              "says": "Seychelles divided into 25 districts plus Outer Islands (26 divisions); 1979 23 districts not covering the Inner and Outer Islands; 1998 Anse Louis renamed Au Cap and Les Mamelles and Roche Caïman created.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1359363125",
+              "title": "Wikipedia (en): Districts of Seychelles, rev. 1359363125",
+              "says": "In 1998 Roche Caiman and Les Mamelles were created mostly from reclaimed land and from parts of Plaisance; later reclamation added Eve Island and Rev Island.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "From the 1998 redistricting (year only in the sources). Land reclaimed after 1998 off Victoria and Praslin lies inside today's district outlines."
+        }
+      ]
+    },
+    {
+      "id": "SYC:AnseEtoile@1998",
+      "names": {
+        "en": "Anse Étoile District",
+        "ja": "Anse Étoile地区",
+        "local": "Anse Étoile"
+      },
+      "spans": [
+        {
+          "from": "1998",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "SYC-ADM1-4304713B87843643892528"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usc.html",
+              "title": "Statoids — Districts of Seychelles (Gwillim Law, updated 2015-06-30)",
+              "says": "Seychelles divided into 25 districts plus Outer Islands (26 divisions); 1979 23 districts not covering the Inner and Outer Islands; 1998 Anse Louis renamed Au Cap and Les Mamelles and Roche Caïman created.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1359363125",
+              "title": "Wikipedia (en): Districts of Seychelles, rev. 1359363125",
+              "says": "In 1998 Roche Caiman and Les Mamelles were created mostly from reclaimed land and from parts of Plaisance; later reclamation added Eve Island and Rev Island.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "From the 1998 redistricting (year only in the sources). Land reclaimed after 1998 off Victoria and Praslin lies inside today's district outlines."
+        }
+      ]
+    },
+    {
+      "id": "SYC:AnseRoyale@1998",
+      "names": {
+        "en": "Anse Royale District",
+        "ja": "Anse Royale地区",
+        "local": "Anse Royale"
+      },
+      "spans": [
+        {
+          "from": "1998",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "SYC-ADM1-4304713B89376585633127"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usc.html",
+              "title": "Statoids — Districts of Seychelles (Gwillim Law, updated 2015-06-30)",
+              "says": "Seychelles divided into 25 districts plus Outer Islands (26 divisions); 1979 23 districts not covering the Inner and Outer Islands; 1998 Anse Louis renamed Au Cap and Les Mamelles and Roche Caïman created.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1359363125",
+              "title": "Wikipedia (en): Districts of Seychelles, rev. 1359363125",
+              "says": "In 1998 Roche Caiman and Les Mamelles were created mostly from reclaimed land and from parts of Plaisance; later reclamation added Eve Island and Rev Island.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "From the 1998 redistricting (year only in the sources). Land reclaimed after 1998 off Victoria and Praslin lies inside today's district outlines."
+        }
+      ]
+    },
+    {
+      "id": "SYC:AuCap@1998",
+      "names": {
+        "en": "Au Cap (Anse Louis until 1998) District",
+        "ja": "Au Cap (Anse Louis until 1998)地区",
+        "local": "Au Cap (Anse Louis until 1998)"
+      },
+      "spans": [
+        {
+          "from": "1998",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "SYC-ADM1-4304713B21107318630465"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usc.html",
+              "title": "Statoids — Districts of Seychelles (Gwillim Law, updated 2015-06-30)",
+              "says": "Seychelles divided into 25 districts plus Outer Islands (26 divisions); 1979 23 districts not covering the Inner and Outer Islands; 1998 Anse Louis renamed Au Cap and Les Mamelles and Roche Caïman created.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1359363125",
+              "title": "Wikipedia (en): Districts of Seychelles, rev. 1359363125",
+              "says": "In 1998 Roche Caiman and Les Mamelles were created mostly from reclaimed land and from parts of Plaisance; later reclamation added Eve Island and Rev Island.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "From the 1998 redistricting (year only in the sources). Land reclaimed after 1998 off Victoria and Praslin lies inside today's district outlines."
+        }
+      ]
+    },
+    {
+      "id": "SYC:BaieLazare@1998",
+      "names": {
+        "en": "Baie Lazare District",
+        "ja": "Baie Lazare地区",
+        "local": "Baie Lazare"
+      },
+      "spans": [
+        {
+          "from": "1998",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "SYC-ADM1-4304713B38530476923333"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usc.html",
+              "title": "Statoids — Districts of Seychelles (Gwillim Law, updated 2015-06-30)",
+              "says": "Seychelles divided into 25 districts plus Outer Islands (26 divisions); 1979 23 districts not covering the Inner and Outer Islands; 1998 Anse Louis renamed Au Cap and Les Mamelles and Roche Caïman created.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1359363125",
+              "title": "Wikipedia (en): Districts of Seychelles, rev. 1359363125",
+              "says": "In 1998 Roche Caiman and Les Mamelles were created mostly from reclaimed land and from parts of Plaisance; later reclamation added Eve Island and Rev Island.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "From the 1998 redistricting (year only in the sources). Land reclaimed after 1998 off Victoria and Praslin lies inside today's district outlines."
+        }
+      ]
+    },
+    {
+      "id": "SYC:BaieSainteAnne@1998",
+      "names": {
+        "en": "Baie Sainte Anne District",
+        "ja": "Baie Sainte Anne地区",
+        "local": "Baie Sainte Anne"
+      },
+      "spans": [
+        {
+          "from": "1998",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "SYC-ADM1-4304713B68430641477456"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usc.html",
+              "title": "Statoids — Districts of Seychelles (Gwillim Law, updated 2015-06-30)",
+              "says": "Seychelles divided into 25 districts plus Outer Islands (26 divisions); 1979 23 districts not covering the Inner and Outer Islands; 1998 Anse Louis renamed Au Cap and Les Mamelles and Roche Caïman created.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1359363125",
+              "title": "Wikipedia (en): Districts of Seychelles, rev. 1359363125",
+              "says": "In 1998 Roche Caiman and Les Mamelles were created mostly from reclaimed land and from parts of Plaisance; later reclamation added Eve Island and Rev Island.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "From the 1998 redistricting (year only in the sources). Land reclaimed after 1998 off Victoria and Praslin lies inside today's district outlines."
+        }
+      ]
+    },
+    {
+      "id": "SYC:BeauVallon@1998",
+      "names": {
+        "en": "Beau Vallon District",
+        "ja": "Beau Vallon地区",
+        "local": "Beau Vallon"
+      },
+      "spans": [
+        {
+          "from": "1998",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "SYC-ADM1-4304713B88598061182448"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usc.html",
+              "title": "Statoids — Districts of Seychelles (Gwillim Law, updated 2015-06-30)",
+              "says": "Seychelles divided into 25 districts plus Outer Islands (26 divisions); 1979 23 districts not covering the Inner and Outer Islands; 1998 Anse Louis renamed Au Cap and Les Mamelles and Roche Caïman created.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1359363125",
+              "title": "Wikipedia (en): Districts of Seychelles, rev. 1359363125",
+              "says": "In 1998 Roche Caiman and Les Mamelles were created mostly from reclaimed land and from parts of Plaisance; later reclamation added Eve Island and Rev Island.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "From the 1998 redistricting (year only in the sources). Land reclaimed after 1998 off Victoria and Praslin lies inside today's district outlines."
+        }
+      ]
+    },
+    {
+      "id": "SYC:BelAir@1998",
+      "names": {
+        "en": "Bel Air District",
+        "ja": "Bel Air地区",
+        "local": "Bel Air"
+      },
+      "spans": [
+        {
+          "from": "1998",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "SYC-ADM1-4304713B54769404218422"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usc.html",
+              "title": "Statoids — Districts of Seychelles (Gwillim Law, updated 2015-06-30)",
+              "says": "Seychelles divided into 25 districts plus Outer Islands (26 divisions); 1979 23 districts not covering the Inner and Outer Islands; 1998 Anse Louis renamed Au Cap and Les Mamelles and Roche Caïman created.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1359363125",
+              "title": "Wikipedia (en): Districts of Seychelles, rev. 1359363125",
+              "says": "In 1998 Roche Caiman and Les Mamelles were created mostly from reclaimed land and from parts of Plaisance; later reclamation added Eve Island and Rev Island.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "From the 1998 redistricting (year only in the sources). Land reclaimed after 1998 off Victoria and Praslin lies inside today's district outlines."
+        }
+      ]
+    },
+    {
+      "id": "SYC:BelOmbre@1998",
+      "names": {
+        "en": "Bel Ombre District",
+        "ja": "Bel Ombre地区",
+        "local": "Bel Ombre"
+      },
+      "spans": [
+        {
+          "from": "1998",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "SYC-ADM1-4304713B26716977032117"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usc.html",
+              "title": "Statoids — Districts of Seychelles (Gwillim Law, updated 2015-06-30)",
+              "says": "Seychelles divided into 25 districts plus Outer Islands (26 divisions); 1979 23 districts not covering the Inner and Outer Islands; 1998 Anse Louis renamed Au Cap and Les Mamelles and Roche Caïman created.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1359363125",
+              "title": "Wikipedia (en): Districts of Seychelles, rev. 1359363125",
+              "says": "In 1998 Roche Caiman and Les Mamelles were created mostly from reclaimed land and from parts of Plaisance; later reclamation added Eve Island and Rev Island.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "From the 1998 redistricting (year only in the sources). Land reclaimed after 1998 off Victoria and Praslin lies inside today's district outlines."
+        }
+      ]
+    },
+    {
+      "id": "SYC:Cascade@1998",
+      "names": {
+        "en": "Cascade District",
+        "ja": "Cascade地区",
+        "local": "Cascade"
+      },
+      "spans": [
+        {
+          "from": "1998",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "SYC-ADM1-4304713B24501722208733"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usc.html",
+              "title": "Statoids — Districts of Seychelles (Gwillim Law, updated 2015-06-30)",
+              "says": "Seychelles divided into 25 districts plus Outer Islands (26 divisions); 1979 23 districts not covering the Inner and Outer Islands; 1998 Anse Louis renamed Au Cap and Les Mamelles and Roche Caïman created.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1359363125",
+              "title": "Wikipedia (en): Districts of Seychelles, rev. 1359363125",
+              "says": "In 1998 Roche Caiman and Les Mamelles were created mostly from reclaimed land and from parts of Plaisance; later reclamation added Eve Island and Rev Island.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "From the 1998 redistricting (year only in the sources). Land reclaimed after 1998 off Victoria and Praslin lies inside today's district outlines."
+        }
+      ]
+    },
+    {
+      "id": "SYC:Glacis@1998",
+      "names": {
+        "en": "Glacis District",
+        "ja": "Glacis地区",
+        "local": "Glacis"
+      },
+      "spans": [
+        {
+          "from": "1998",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "SYC-ADM1-4304713B70505016322555"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usc.html",
+              "title": "Statoids — Districts of Seychelles (Gwillim Law, updated 2015-06-30)",
+              "says": "Seychelles divided into 25 districts plus Outer Islands (26 divisions); 1979 23 districts not covering the Inner and Outer Islands; 1998 Anse Louis renamed Au Cap and Les Mamelles and Roche Caïman created.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1359363125",
+              "title": "Wikipedia (en): Districts of Seychelles, rev. 1359363125",
+              "says": "In 1998 Roche Caiman and Les Mamelles were created mostly from reclaimed land and from parts of Plaisance; later reclamation added Eve Island and Rev Island.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "From the 1998 redistricting (year only in the sources). Land reclaimed after 1998 off Victoria and Praslin lies inside today's district outlines."
+        }
+      ]
+    },
+    {
+      "id": "SYC:GrandAnseMahe@1998",
+      "names": {
+        "en": "Grand' Anse (Mahé) District",
+        "ja": "Grand' Anse (Mahé)地区",
+        "local": "Grand' Anse (Mahé)"
+      },
+      "spans": [
+        {
+          "from": "1998",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "SYC-ADM1-4304713B44273626822256"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usc.html",
+              "title": "Statoids — Districts of Seychelles (Gwillim Law, updated 2015-06-30)",
+              "says": "Seychelles divided into 25 districts plus Outer Islands (26 divisions); 1979 23 districts not covering the Inner and Outer Islands; 1998 Anse Louis renamed Au Cap and Les Mamelles and Roche Caïman created.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1359363125",
+              "title": "Wikipedia (en): Districts of Seychelles, rev. 1359363125",
+              "says": "In 1998 Roche Caiman and Les Mamelles were created mostly from reclaimed land and from parts of Plaisance; later reclamation added Eve Island and Rev Island.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "From the 1998 redistricting (year only in the sources). Land reclaimed after 1998 off Victoria and Praslin lies inside today's district outlines."
+        }
+      ]
+    },
+    {
+      "id": "SYC:GrandAnsePraslin@1998",
+      "names": {
+        "en": "Grand' Anse (Praslin) District",
+        "ja": "Grand' Anse (Praslin)地区",
+        "local": "Grand' Anse (Praslin)"
+      },
+      "spans": [
+        {
+          "from": "1998",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "SYC-ADM1-4304713B30823539589951"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usc.html",
+              "title": "Statoids — Districts of Seychelles (Gwillim Law, updated 2015-06-30)",
+              "says": "Seychelles divided into 25 districts plus Outer Islands (26 divisions); 1979 23 districts not covering the Inner and Outer Islands; 1998 Anse Louis renamed Au Cap and Les Mamelles and Roche Caïman created.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1359363125",
+              "title": "Wikipedia (en): Districts of Seychelles, rev. 1359363125",
+              "says": "In 1998 Roche Caiman and Les Mamelles were created mostly from reclaimed land and from parts of Plaisance; later reclamation added Eve Island and Rev Island.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "From the 1998 redistricting (year only in the sources). Land reclaimed after 1998 off Victoria and Praslin lies inside today's district outlines."
+        }
+      ]
+    },
+    {
+      "id": "SYC:LaDigue@1998",
+      "names": {
+        "en": "La Digue and Inner Islands District",
+        "ja": "La Digue and Inner Islands地区",
+        "local": "La Digue and Inner Islands"
+      },
+      "spans": [
+        {
+          "from": "1998",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "SYC-ADM1-4304713B61373702137462"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usc.html",
+              "title": "Statoids — Districts of Seychelles (Gwillim Law, updated 2015-06-30)",
+              "says": "Seychelles divided into 25 districts plus Outer Islands (26 divisions); 1979 23 districts not covering the Inner and Outer Islands; 1998 Anse Louis renamed Au Cap and Les Mamelles and Roche Caïman created.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1364043198",
+              "title": "Wikipedia (en): La Digue and Inner Islands, rev. 1364043198",
+              "says": "The district was created in 1994 when the government united the former La Digue District and Silhouette District.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "From the 1998 redistricting (year only in the sources). Land reclaimed after 1998 off Victoria and Praslin lies inside today's district outlines."
+        }
+      ]
+    },
+    {
+      "id": "SYC:EnglishRiver@1998",
+      "names": {
+        "en": "English River (La Rivière Anglaise) District",
+        "ja": "English River (La Rivière Anglaise)地区",
+        "local": "English River (La Rivière Anglaise)"
+      },
+      "spans": [
+        {
+          "from": "1998",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "SYC-ADM1-4304713B99498664822858"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usc.html",
+              "title": "Statoids — Districts of Seychelles (Gwillim Law, updated 2015-06-30)",
+              "says": "Seychelles divided into 25 districts plus Outer Islands (26 divisions); 1979 23 districts not covering the Inner and Outer Islands; 1998 Anse Louis renamed Au Cap and Les Mamelles and Roche Caïman created.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1359363125",
+              "title": "Wikipedia (en): Districts of Seychelles, rev. 1359363125",
+              "says": "In 1998 Roche Caiman and Les Mamelles were created mostly from reclaimed land and from parts of Plaisance; later reclamation added Eve Island and Rev Island.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "From the 1998 redistricting (year only in the sources). Land reclaimed after 1998 off Victoria and Praslin lies inside today's district outlines."
+        }
+      ]
+    },
+    {
+      "id": "SYC:LesMamelles@1998",
+      "names": {
+        "en": "Les Mamelles District",
+        "ja": "Les Mamelles地区",
+        "local": "Les Mamelles"
+      },
+      "spans": [
+        {
+          "from": "1998",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "SYC-ADM1-4304713B85899211000067"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usc.html",
+              "title": "Statoids — Districts of Seychelles (Gwillim Law, updated 2015-06-30)",
+              "says": "Seychelles divided into 25 districts plus Outer Islands (26 divisions); 1979 23 districts not covering the Inner and Outer Islands; 1998 Anse Louis renamed Au Cap and Les Mamelles and Roche Caïman created.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1376604553",
+              "title": "Wikipedia (en): Les Mamelles, rev. 1376604553",
+              "says": "Les Mamelles District was created in 1998 mostly from reclaimed land and from parts of Plaisance district.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1359363125",
+              "title": "Wikipedia (en): Districts of Seychelles, rev. 1359363125",
+              "says": "In 1998 Roche Caiman and Les Mamelles were created mostly from reclaimed land and from parts of Plaisance; later reclamation added Eve Island and Rev Island.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "From the 1998 redistricting (year only in the sources). Land reclaimed after 1998 off Victoria and Praslin lies inside today's district outlines."
+        }
+      ]
+    },
+    {
+      "id": "SYC:MontBuxton@1998",
+      "names": {
+        "en": "Mont Buxton District",
+        "ja": "Mont Buxton地区",
+        "local": "Mont Buxton"
+      },
+      "spans": [
+        {
+          "from": "1998",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "SYC-ADM1-4304713B48375430986897"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usc.html",
+              "title": "Statoids — Districts of Seychelles (Gwillim Law, updated 2015-06-30)",
+              "says": "Seychelles divided into 25 districts plus Outer Islands (26 divisions); 1979 23 districts not covering the Inner and Outer Islands; 1998 Anse Louis renamed Au Cap and Les Mamelles and Roche Caïman created.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1359363125",
+              "title": "Wikipedia (en): Districts of Seychelles, rev. 1359363125",
+              "says": "In 1998 Roche Caiman and Les Mamelles were created mostly from reclaimed land and from parts of Plaisance; later reclamation added Eve Island and Rev Island.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "From the 1998 redistricting (year only in the sources). Land reclaimed after 1998 off Victoria and Praslin lies inside today's district outlines."
+        }
+      ]
+    },
+    {
+      "id": "SYC:MontFleuri@1998",
+      "names": {
+        "en": "Mont Fleuri District",
+        "ja": "Mont Fleuri地区",
+        "local": "Mont Fleuri"
+      },
+      "spans": [
+        {
+          "from": "1998",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "SYC-ADM1-4304713B90252608075096"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usc.html",
+              "title": "Statoids — Districts of Seychelles (Gwillim Law, updated 2015-06-30)",
+              "says": "Seychelles divided into 25 districts plus Outer Islands (26 divisions); 1979 23 districts not covering the Inner and Outer Islands; 1998 Anse Louis renamed Au Cap and Les Mamelles and Roche Caïman created.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1359363125",
+              "title": "Wikipedia (en): Districts of Seychelles, rev. 1359363125",
+              "says": "In 1998 Roche Caiman and Les Mamelles were created mostly from reclaimed land and from parts of Plaisance; later reclamation added Eve Island and Rev Island.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "From the 1998 redistricting (year only in the sources). Land reclaimed after 1998 off Victoria and Praslin lies inside today's district outlines."
+        }
+      ]
+    },
+    {
+      "id": "SYC:Plaisance@1998",
+      "names": {
+        "en": "Plaisance District",
+        "ja": "Plaisance地区",
+        "local": "Plaisance"
+      },
+      "spans": [
+        {
+          "from": "1998",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "SYC-ADM1-4304713B73485441343177"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usc.html",
+              "title": "Statoids — Districts of Seychelles (Gwillim Law, updated 2015-06-30)",
+              "says": "Seychelles divided into 25 districts plus Outer Islands (26 divisions); 1979 23 districts not covering the Inner and Outer Islands; 1998 Anse Louis renamed Au Cap and Les Mamelles and Roche Caïman created.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1359363125",
+              "title": "Wikipedia (en): Districts of Seychelles, rev. 1359363125",
+              "says": "In 1998 Roche Caiman and Les Mamelles were created mostly from reclaimed land and from parts of Plaisance; later reclamation added Eve Island and Rev Island.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "From the 1998 redistricting (year only in the sources). Land reclaimed after 1998 off Victoria and Praslin lies inside today's district outlines."
+        }
+      ]
+    },
+    {
+      "id": "SYC:PointeLaRue@1998",
+      "names": {
+        "en": "Pointe La Rue District",
+        "ja": "Pointe La Rue地区",
+        "local": "Pointe La Rue"
+      },
+      "spans": [
+        {
+          "from": "1998",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "SYC-ADM1-4304713B83277674209167"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usc.html",
+              "title": "Statoids — Districts of Seychelles (Gwillim Law, updated 2015-06-30)",
+              "says": "Seychelles divided into 25 districts plus Outer Islands (26 divisions); 1979 23 districts not covering the Inner and Outer Islands; 1998 Anse Louis renamed Au Cap and Les Mamelles and Roche Caïman created.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1359363125",
+              "title": "Wikipedia (en): Districts of Seychelles, rev. 1359363125",
+              "says": "In 1998 Roche Caiman and Les Mamelles were created mostly from reclaimed land and from parts of Plaisance; later reclamation added Eve Island and Rev Island.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "From the 1998 redistricting (year only in the sources). Land reclaimed after 1998 off Victoria and Praslin lies inside today's district outlines."
+        }
+      ]
+    },
+    {
+      "id": "SYC:PortGlaud@1998",
+      "names": {
+        "en": "Port Glaud District",
+        "ja": "Port Glaud地区",
+        "local": "Port Glaud"
+      },
+      "spans": [
+        {
+          "from": "1998",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "SYC-ADM1-4304713B13397871657541"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usc.html",
+              "title": "Statoids — Districts of Seychelles (Gwillim Law, updated 2015-06-30)",
+              "says": "Seychelles divided into 25 districts plus Outer Islands (26 divisions); 1979 23 districts not covering the Inner and Outer Islands; 1998 Anse Louis renamed Au Cap and Les Mamelles and Roche Caïman created.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1359363125",
+              "title": "Wikipedia (en): Districts of Seychelles, rev. 1359363125",
+              "says": "In 1998 Roche Caiman and Les Mamelles were created mostly from reclaimed land and from parts of Plaisance; later reclamation added Eve Island and Rev Island.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "From the 1998 redistricting (year only in the sources). Land reclaimed after 1998 off Victoria and Praslin lies inside today's district outlines."
+        }
+      ]
+    },
+    {
+      "id": "SYC:RocheCaiman@1998",
+      "names": {
+        "en": "Roche Caïman District",
+        "ja": "Roche Caïman地区",
+        "local": "Roche Caïman"
+      },
+      "spans": [
+        {
+          "from": "1998",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "SYC-ADM1-4304713B64732243105598"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usc.html",
+              "title": "Statoids — Districts of Seychelles (Gwillim Law, updated 2015-06-30)",
+              "says": "Seychelles divided into 25 districts plus Outer Islands (26 divisions); 1979 23 districts not covering the Inner and Outer Islands; 1998 Anse Louis renamed Au Cap and Les Mamelles and Roche Caïman created.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1376601110",
+              "title": "Wikipedia (en): Roche Caiman, rev. 1376601110",
+              "says": "Roche Caïman District was created in 1998 from reclaimed land and from parts of Plaisance District.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1359363125",
+              "title": "Wikipedia (en): Districts of Seychelles, rev. 1359363125",
+              "says": "In 1998 Roche Caiman and Les Mamelles were created mostly from reclaimed land and from parts of Plaisance; later reclamation added Eve Island and Rev Island.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "From the 1998 redistricting (year only in the sources). Land reclaimed after 1998 off Victoria and Praslin lies inside today's district outlines."
+        }
+      ]
+    },
+    {
+      "id": "SYC:SaintLouis@1998",
+      "names": {
+        "en": "Saint Louis District",
+        "ja": "Saint Louis地区",
+        "local": "Saint Louis"
+      },
+      "spans": [
+        {
+          "from": "1998",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "SYC-ADM1-4304713B99490362371976"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usc.html",
+              "title": "Statoids — Districts of Seychelles (Gwillim Law, updated 2015-06-30)",
+              "says": "Seychelles divided into 25 districts plus Outer Islands (26 divisions); 1979 23 districts not covering the Inner and Outer Islands; 1998 Anse Louis renamed Au Cap and Les Mamelles and Roche Caïman created.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1359363125",
+              "title": "Wikipedia (en): Districts of Seychelles, rev. 1359363125",
+              "says": "In 1998 Roche Caiman and Les Mamelles were created mostly from reclaimed land and from parts of Plaisance; later reclamation added Eve Island and Rev Island.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "From the 1998 redistricting (year only in the sources). Land reclaimed after 1998 off Victoria and Praslin lies inside today's district outlines."
+        }
+      ]
+    },
+    {
+      "id": "SYC:Takamaka@1998",
+      "names": {
+        "en": "Takamaka District",
+        "ja": "Takamaka地区",
+        "local": "Takamaka"
+      },
+      "spans": [
+        {
+          "from": "1998",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "SYC-ADM1-4304713B51488395510296"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usc.html",
+              "title": "Statoids — Districts of Seychelles (Gwillim Law, updated 2015-06-30)",
+              "says": "Seychelles divided into 25 districts plus Outer Islands (26 divisions); 1979 23 districts not covering the Inner and Outer Islands; 1998 Anse Louis renamed Au Cap and Les Mamelles and Roche Caïman created.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1359363125",
+              "title": "Wikipedia (en): Districts of Seychelles, rev. 1359363125",
+              "says": "In 1998 Roche Caiman and Les Mamelles were created mostly from reclaimed land and from parts of Plaisance; later reclamation added Eve Island and Rev Island.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "From the 1998 redistricting (year only in the sources). Land reclaimed after 1998 off Victoria and Praslin lies inside today's district outlines."
+        }
+      ]
+    },
+    {
+      "id": "SYC:OuterIslands@2008",
+      "names": {
+        "en": "Outer Islands",
+        "ja": "外諸島",
+        "local": "Outer Islands"
+      },
+      "spans": [
+        {
+          "from": "2008",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "SYC-ADM1-4304713B25967812410873"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1376645629",
+              "title": "Wikipedia (en): Outer Islands (Seychelles), rev. 1376645629",
+              "says": "Until 2008 the Outer Islands were outside the administrative and electoral districts of Seychelles.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/usc.html",
+              "title": "Statoids — Districts of Seychelles (Gwillim Law, updated 2015-06-30)",
+              "says": "Seychelles divided into 25 districts plus Outer Islands (26 divisions); 1979 23 districts not covering the Inner and Outer Islands; 1998 Anse Louis renamed Au Cap and Les Mamelles and Roche Caïman created.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Brought into the district system in 2008 (year only)."
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "2008",
+      "precision": "year",
+      "what": "Outer Islands brought into the district system",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/w/index.php?oldid=1376645629",
+          "title": "Wikipedia (en): Outer Islands (Seychelles), rev. 1376645629",
+          "says": "Until 2008 the Outer Islands were outside the administrative and electoral districts of Seychelles.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "2015-06-30",
+      "n": 26,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/usc.html",
+          "title": "Statoids — Districts of Seychelles (Gwillim Law, updated 2015-06-30)",
+          "says": "Seychelles divided into 25 districts plus Outer Islands (26 divisions); 1979 23 districts not covering the Inner and Outer Islands; 1998 Anse Louis renamed Au Cap and Les Mamelles and Roche Caïman created.",
+          "accessed": "2026-10-06"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Outer Islands before 2008",
+      "atoms": [
+        "SYC-ADM1-4304713B25967812410873"
+      ],
+      "from": "1998",
+      "to": "2008",
+      "why": "Part of Seychelles but outside every district until 2008: no first-level unit existed to draw.",
+      "checked": [
+        "en.wikipedia Outer Islands (Seychelles) rev. 1376645629",
+        "statoids usc.html"
+      ],
+      "needs": "nothing — no unit existed (kept unresolved rather than invented)"
+    },
+    {
+      "what": "Districts of Seychelles 1976–1998",
+      "from": "1976-06-29",
+      "to": "1998",
+      "why": "Plaisance gave land to Les Mamelles and Roche Caïman in 1998 along a line inside today's atoms; Inner and Outer Islands lay outside the 1979 districts; La Digue and Silhouette districts merged in 1994.",
+      "checked": [
+        "statoids usc.html",
+        "en.wikipedia Districts of Seychelles rev. 1359363125",
+        "Les Mamelles rev. 1376604553",
+        "Roche Caiman rev. 1376601110",
+        "La Digue and Inner Islands rev. 1364043198"
+      ],
+      "needs": "a pre-1998 district map of Mahé (e.g. the 1993 electoral districts) or finer atoms"
+    }
+  ]
+}

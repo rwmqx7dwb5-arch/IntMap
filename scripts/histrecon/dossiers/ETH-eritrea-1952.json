@@ -1,0 +1,154 @@
+{
+  "country": "ETE",
+  "atomCountries": [
+    "ETH",
+    "ERI"
+  ],
+  "atomSet": "gb-adm1@2026-10-06",
+  "scope": {
+    "from": "1952-09-15",
+    "to": "1995-08-20"
+  },
+  "polityNote": "Ethiopia (Empire, Derg, PDRE, Transitional Government) from the federation with Eritrea (1952-09-15) to the day before the 1995 federal constitution (ETH.json continues). Polity key ETE because the unit spans today's ETH and ERI. Atoms are geoBoundaries ADM1 of Ethiopia (2016, Code for Ethiopia, CC BY 4.0) and Eritrea (2017, OpenStreetMap, ODbL). Only Eritrea can be drawn: its outline is the colonial frontier, which is today's Eritrea, from 1952 until Aseb was split off in 1981. The Ethiopian provinces (taklai ghizat 1942–1987, the 30 regions of 1987, the 14 transitional regions of 1992) are not unions of any present-day atom set (see unresolved).",
+  "units": [
+    {
+      "id": "ETE:Eritrea@1952",
+      "names": {
+        "en": "Eritrea (autonomous unit 1952–62, province from 1962)",
+        "ja": "エリトリア（1952–62 年は連邦の自治単位、1962 年から州）",
+        "local": "ኤርትራ / Eritrea"
+      },
+      "wikidata": "Q14645015",
+      "spans": [
+        {
+          "from": "1952-09-15",
+          "precision": "day",
+          "to": "1981",
+          "atoms": [
+            "ERI-ADM1-12472421B21855399297122",
+            "ERI-ADM1-12472421B35314914583003",
+            "ERI-ADM1-12472421B57032757115732",
+            "ERI-ADM1-12472421B84439525883962",
+            "ERI-ADM1-12472421B94455277260743",
+            "ERI-ADM1-12472421B98039697407970"
+          ],
+          "sources": [
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Federation_of_Ethiopia_and_Eritrea&oldid=1367831268",
+              "title": "Wikipedia: Federation of Ethiopia and Eritrea (rev 1367831268)",
+              "says": "The federation took effect on 15 September 1952; on 15 November 1962 the Eritrean Assembly dissolved it and Eritrea became a province of the Ethiopian Empire.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Provinces_of_Ethiopia&oldid=1340409670",
+              "title": "Wikipedia: Provinces of Ethiopia (rev 1340409670)",
+              "says": "Twelve provinces by Decree No. 1 of 1942; Bale split from Harerghe in 1960; Eritrea made the 14th province in 1962; Aseb split off from Eritrea in 1981; 30 regions by Proclamation No. 14 of 18 September 1987.",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uet.html",
+              "title": "Statoids — Regions of Ethiopia (Gwillim Law, updated 2022-05-13)",
+              "says": "1952-09-15 Eritrea joined Ethiopia in a federation; 1962 Eritrea became a province; 1981 Aseb region split from Eritrea; 1987-09 thirty regions (Aseb and Eritrea autonomous).",
+              "accessed": "2026-10-06"
+            },
+            {
+              "url": "https://www.statoids.com/uer.html",
+              "title": "Statoids — Regions of Eritrea (Gwillim Law, updated 2015-06-30)",
+              "says": "At independence (1993) Eritrea had ten awraja totalling 117,400 km², Denkalia (Aseb) among them.",
+              "accessed": "2026-10-06"
+            }
+          ],
+          "dateNote": "Autonomous unit federated with Ethiopia from 1952-09-15; province (the 14th) from the dissolution of the federation (15 November 1962 per Wikipedia; often given as 14 November). The outline is unchanged across that step. Ends at the start of 1981 because Aseb was split off in 1981 (day not known)."
+        }
+      ]
+    }
+  ],
+  "events": [],
+  "counts": [],
+  "atomsOutside": [
+    {
+      "atom": "ERI-ADM1-12472421B21855399297122",
+      "from": "1993-05-24",
+      "to": null,
+      "why": "Eritrea independent from 1993-05-24."
+    },
+    {
+      "atom": "ERI-ADM1-12472421B35314914583003",
+      "from": "1993-05-24",
+      "to": null,
+      "why": "Eritrea independent from 1993-05-24."
+    },
+    {
+      "atom": "ERI-ADM1-12472421B57032757115732",
+      "from": "1993-05-24",
+      "to": null,
+      "why": "Eritrea independent from 1993-05-24."
+    },
+    {
+      "atom": "ERI-ADM1-12472421B84439525883962",
+      "from": "1993-05-24",
+      "to": null,
+      "why": "Eritrea independent from 1993-05-24."
+    },
+    {
+      "atom": "ERI-ADM1-12472421B94455277260743",
+      "from": "1993-05-24",
+      "to": null,
+      "why": "Eritrea independent from 1993-05-24."
+    },
+    {
+      "atom": "ERI-ADM1-12472421B98039697407970",
+      "from": "1993-05-24",
+      "to": null,
+      "why": "Eritrea independent from 1993-05-24."
+    }
+  ],
+  "unresolved": [
+    {
+      "what": "Eritrea after Aseb was split off (1981 → 1993-05-24)",
+      "atoms": [
+        "ERI-ADM1-12472421B21855399297122",
+        "ERI-ADM1-12472421B35314914583003",
+        "ERI-ADM1-12472421B57032757115732",
+        "ERI-ADM1-12472421B84439525883962",
+        "ERI-ADM1-12472421B94455277260743",
+        "ERI-ADM1-12472421B98039697407970"
+      ],
+      "from": "1981",
+      "to": "1993-05-24",
+      "why": "Aseb (1981, then the Aseb autonomous region of Proclamation 14/1987) took the south-east of Eritrea and, in 1987, Afar land of Wollo; its line runs inside the Southern Red Sea atom and outside Eritrea. Eritrea's autonomous region of 1987 and its de facto separation from 1991 cannot be drawn from these atoms.",
+      "checked": [
+        "Wikipedia Provinces of Ethiopia rev 1340409670",
+        "statoids uet.html (1981 Aseb; 1987 table lists Aseb without area)",
+        "statoids uer.html (ten awraja of 1993)"
+      ],
+      "needs": "a sub-zoba atom set with the Aseb line (Eritrean subzobas of Southern Red Sea, which are not the 1981 line)"
+    },
+    {
+      "what": "Ethiopian provinces 1952 → 1995 (12–14 taklai ghizat 1942/1962–1974, kifle hager to 1987, 30 regions 1987–1991, 14 transitional regions 1992–1995)",
+      "atoms": [
+        "ETH-ADM1-75662566B16746670119676",
+        "ETH-ADM1-75662566B22109266514860",
+        "ETH-ADM1-75662566B25357223982520",
+        "ETH-ADM1-75662566B32417772325798",
+        "ETH-ADM1-75662566B45163836206557",
+        "ETH-ADM1-75662566B51121866066295",
+        "ETH-ADM1-75662566B52684709481520",
+        "ETH-ADM1-75662566B5378229891244",
+        "ETH-ADM1-75662566B72302855928957",
+        "ETH-ADM1-75662566B92391245038365",
+        "ETH-ADM1-75662566B9273833721501"
+      ],
+      "from": "1952-09-15",
+      "to": "1995-08-21",
+      "why": "The imperial provinces were made of awrajas whose lines the 1992–1995 ethnic regions cut across (e.g. Wolkait from Begemder to Tigray, Raya and Afar areas of Wollo, Shewa and Arsi divided between Oromia and others); the 1987 regions likewise. No present-day atom set (ADM1 regions, ADM2 zones, ADM3 woredas of 2016) is shown by any source to follow those lines, and the transitional 14 regions are not documented against today's lines (Oromia–Somali referendum of 2004, SNNPR from regions 7–11).",
+      "checked": [
+        "Wikipedia Provinces of Ethiopia rev 1340409670",
+        "statoids uet.html",
+        "existing ETH.json unresolved notes",
+        "geoBoundaries ETH ADM2/ADM3 (2016) — zones and woredas drawn after 1995"
+      ],
+      "needs": "a georeferenced map of the awrajas (e.g. the 1984 census atlas) to test which woredas compose each awraja"
+    }
+  ]
+}
