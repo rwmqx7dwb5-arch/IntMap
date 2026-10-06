@@ -598,7 +598,7 @@ function write(rows, file, tol, dec) {
       ...(r.unit.iso ? { iso: r.unit.iso } : {}),
     };
   });
-  const data = { v: 1, src: 'IntMap reconstruction: first-level units as unions of finer units (Natural Earth admin-1, RISTAT 1897 uyezds, geoBoundaries, N03 and e-Stat for Meiji), one cited fact per membership (scripts/histrecon/dossiers); a record derived from a share-alike source is offered under that licence, named in its sources entry (LICENSE §5) · assembled by scripts/build-hist-admin-recon.mjs',
+  const data = { v: 1, src: 'IntMap reconstruction: first-level units as unions of finer units — Natural Earth admin-1 (public domain), RISTAT 1897 uyezds (CC0 1.0), geoBoundaries (per dataset: public domain, CC0, CC BY, CC BY IGO, ODbL 1.0, CC BY-SA), Amasyalı kazas (CC BY 4.0), N03 and e-Stat for Japan (CC BY 4.0 compatible) — one cited fact per membership (scripts/histrecon/dossiers); a record derived from a share-alike source is offered under that licence, named in its sources entry (LICENSE §5) · assembled by scripts/build-hist-admin-recon.mjs',
     built: new Date().toISOString().slice(0, 10), tolerance: tol, decimals: dec, levels: [LEVEL], dateSemantics: 'exclusive-end', reconstructed: true, sources, dates, rings, feats };
   fs.writeFileSync(file, 'window.' + G.global + '=' + JSON.stringify(data) + ';\n');
   console.error('· wrote ' + path.relative(ROOT, file) + ' ' + (fs.statSync(file).size / 1e6).toFixed(2) + ' MB | rows ' + feats.length + ' | rings ' + rings.length);
