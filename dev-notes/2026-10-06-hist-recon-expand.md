@@ -1,6 +1,7 @@
 ---
 title: 歴史地図の地方区分の自作復元を全世界へ広げる——今日の郡・市町村（geoBoundaries）を部品に 141 本の調書で 1940〜2000 年代の空白を埋め、「調べたが決まらない土地」に今日の形を当てない
 date: 2026-10-06
+pr: 1021
 newsen: Historical provinces now reach further back in many more countries — e.g. Nigeria from 1961, Turkey from 1957, Thailand from 1947, Russia 1991–2008, British India — rebuilt by IntMap from cited laws; where a line is unknown, today's line is no longer drawn instead.
 newsjp: 歴史地図の地方区分が、より多くの国でより昔まで描かれるようになりました（ナイジェリア 1961 年〜、トルコ 1957 年〜、タイ 1947 年〜、ロシア 1991〜2008 年、英領インドなど）。法令の出典から IntMap が組み立てています。線が決まらない所に今日の線を当てて描くこともやめました。
 ---
