@@ -597,13 +597,13 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      returns. This replaced the two layers fighting each other (which fast-blinked when the toggle was flipped). */
   let _imbOfmWas=null;
   window._applyBorders=function(){ try{ if(!GE().hasRenderer()||!GE().hasRenderer()) return;
-    const traveling=!!(window.IntMapTimeBorders&&window.IntMapTimeBorders.active&&window.IntMapTimeBorders.active());
+    const TB=window.IntMapTimeBorders, traveling=!!(TB&&TB.active&&TB.active());
     const bon=!!bordersOn;
     /* modern boundary line: only when NOT travelling (and the toggle is on). */
     ['borders-only-line','borders-only-casing'].forEach(id=>{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',(bon&&!traveling)?'visible':'none'); });   /* (#R210) casing follows the border */
     /* (#R94l) era borders + names show WHENEVER travelling — the whole point of moving the clock is to see them
        (not gated by the modern-border toggle, which previously left the map border-less). */
-    ((window.IntMapTimeBorders&&window.IntMapTimeBorders.layerIds)||[]).forEach(id=>{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',traveling?'visible':'none'); });
+    ((TB&&TB.layerIds)||[]).forEach(id=>{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',traveling?'visible':'none'); });
     /* modern country labels off while travelling — the era names come from imtb-lbl. */
     if(GE().layers.has('ofm-country')){ if(traveling){ if(_imbOfmWas===null){ try{ _imbOfmWas=GE().layers.getLayout('ofm-country','visibility')||'visible'; }catch(_){ _imbOfmWas='visible'; } } GE().layers.setLayout('ofm-country','visibility','none'); }
       else if(_imbOfmWas!==null){ GE().layers.setLayout('ofm-country','visibility',_imbOfmWas); _imbOfmWas=null; } }

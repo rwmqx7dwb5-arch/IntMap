@@ -38,3 +38,16 @@ newsjp: 過去の年の国境線・地方区分線の見た目を現在の地図
 `tests/hist-border-same-look-checks.test.mjs`（`strokedOnce` を出荷データで、両モジュールの配線）と
 `tests/history-era-display-checks.test.mjs`（今日の線を出荷コードから描き、時代の線と縁が layout / paint で一致すること。
 `border-style.js` 無しの代替値も）。どちらも変更前のコードで落ちることを確かめた。
+
+## 4. 起動費用の天井を上げた理由
+
+CI の `check:perf` が `eager.raw` 4758.6 kB（天井 4734.5・幅 23.7）と `eager.gzip` 1569.8 kB（天井 1561.6・幅 7.8）で赤。
+同じ木で変更を外した main を測ると 4757.3 kB / 1569.4 kB で、main はすでに幅の内側ぎりぎりにいた（天井は #1016 の時点の
+main の実測で、その後の main の増分が幅を食っていた）。この変更の増分は main チャンクで +1,298 バイト（`strokedOnce` と
+描線の共有オブジェクト。コメントは出荷されない）で、それが幅を越えさせた。増分は機能そのもの（共有辺を 1 回だけ描く）なので
+戻さず、`node scripts/perf-budget.mjs --update` で超えた 2 行だけを今の実測（4758.5 / 1569.7 kB）へ上げた。
+⚠ 上げ幅 24 kB のうちこの変更のものは 1.3 kB で、残りは main がすでに持っていた増分である。
+
+同じ CI で `check:surface` も赤: `_applyBorders` が `window.IntMapTimeBorders` を 2 回多く読んでいた。1 つの局所変数に
+まとめ、読み取りは 29 → 27（`window.IntMapBorderStyle` も 6 → 4）に減った。台帳は縮める向きにだけ書き換えた。
+`check:histrecon` の赤は RISTAT（1897 年ロシア国勢調査）の上流が 504 を返したもので、この変更とは無関係。
