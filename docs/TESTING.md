@@ -194,6 +194,17 @@ rather than depend on which is currently the default.
 | Production smoke | `PROD_URL=… npx playwright test --config playwright.prod.config.js` | Chromium | **yes** (live site) |
 | News-locator accuracy report | `node scripts/newsgeo-eval.mjs [--miss]` | no | no |
 
+**Every declared gate runs with the network refused.** Both runners — `scripts/ci-gates.mjs` (CI) and
+`scripts/test-parallel.mjs` (`npm test`) — start each `check:*` with `gateEnv()` from `scripts/gate-universe.mjs`,
+which preloads `scripts/no-network.mjs`: `fetch` and every non-loopback socket throw, in the gate and in every
+process it starts. A gate proves the committed bytes; a live read belongs to the builder. MEASURED 2026-10-06:
+`check:histrecon` fetched the RISTAT 1897 districts and an HTTP 504 from dataverse.nl turned an unrelated PR red;
+the same day every declared gate passed under the guard with no refusal. A gate that needs the network now fails on
+every run with `no-network: …` naming what it asked for — move that read into the build and commit what it produced.
+`tests/histrecon-check-no-network-checks.test.mjs` runs `check:histrecon` offline with an empty atom cache and shows a
+CI shard turning an online gate red. ⚠ `npm run check:<x>` typed by hand is not guarded; to reproduce a runner,
+`node --import ./scripts/no-network.mjs scripts/<gate>.mjs --check`.
+
 ### One boot per worker, and the three things a boot can be asked to be (suite-time-room)
 
 `tests/helpers/app.js` (#R208) gives every test in a worker the SAME booted page and resets it before each
@@ -2316,7 +2327,7 @@ span が順序どおりであること／そして**どの行も出版元が述�
 を持つ出典を持つ／期間が重ならず、日付が書かれた精度と一致し、部品が部品の集合に実在する。同じ政体の 2 本の調書が
 同じ部品を扱えば落ちる——同じ土地・同じ日を 2 本が描けば（同じ部品集合なら部品で、違う集合なら今日の国で）落ちる。部品の一覧は
 `scripts/histrecon/atoms/catalogue-lock.json` だけから読む（**門は部品を取りに行かない**——geoBoundaries は国ごとに数百 MB。一覧に無い集合・国を
-調書が名指せば「組み立て器を走らせよ」と落ちる）。そのうえで出荷した `data/hist-admin-recon.js` の**どの行も、その調書が述べる期間の内にある**
+調書が名指せば「組み立て器を走らせよ」と落ちる。門は全部ネットワークを拒まれて走る——上の「Every declared gate runs with the network refused」）。そのうえで出荷した `data/hist-admin-recon.js` の**どの行も、その調書が述べる期間の内にある**
 ことを照合する。`tests/hist-reconstruction-checks.test.mjs` は、通る調書を 1 か所ずつ壊して（隙間・二重の所属・
 史料と違う区分数・出典なし・期間の重なり・存在しない部品・精度の偽り）**全部が赤になる**ことと、穴埋め記録が復元に譲り、
 復元が自分の前回の出力に譲らないことを測る。

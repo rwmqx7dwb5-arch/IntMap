@@ -75,7 +75,7 @@ import { join } from 'node:path';
    the «reads the build» test and the packing live in scripts/gate-universe.mjs, which
    scripts/test-parallel.mjs imports too — so the gates CI runs and the gates a local run runs are
    one answer, not two lists that happen to agree today. */
-import { ROOT, BUILD, declaredGates, scriptFileOf, needsBuild, medianOf, lpt } from './gate-universe.mjs';
+import { ROOT, BUILD, declaredGates, scriptFileOf, needsBuild, medianOf, lpt, gateEnv } from './gate-universe.mjs';
 
 const LEDGER = join(ROOT, '.github', 'gate-cost.json');
 
@@ -139,9 +139,9 @@ function shardSpec(spec, flagName) {
   return [i, of];
 }
 
-function run(cmd, args) {
+function run(cmd, args, env = process.env) {
   const t0 = Date.now();
-  execFileSync(cmd, args, { cwd: ROOT, stdio: 'inherit', shell: process.platform === 'win32' });
+  execFileSync(cmd, args, { cwd: ROOT, stdio: 'inherit', shell: process.platform === 'win32', env });
   return (Date.now() - t0) / 1000;
 }
 
@@ -194,7 +194,7 @@ function cmdShard(spec, timingsOut) {
     }
     for (const g of t.gates) {
       console.log(`\n── ${g} ──`);
-      try { measured[g] = run('npm', ['run', g]); } catch { failed.push(g); }
+      try { measured[g] = run('npm', ['run', g], gateEnv()); } catch { failed.push(g); }   // the network refused (gate-universe.mjs gateEnv)
     }
   }
 
