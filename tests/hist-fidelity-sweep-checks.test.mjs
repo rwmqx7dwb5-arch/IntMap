@@ -36,7 +36,9 @@ const CS = load('data/cshapes.js');
 /* ── ① ─────────────────────────────────────────────────────────────────────────────────────────── */
 test('① 1960-06-15: Dahomey, Niger, Cote d\'Ivoire and Nigeria carry their coloniser until the record\'s own day', async () => {
   const r = await api.collectionAt(new Date(1960, 5, 15));
-  const nm = (gw) => r.fc.features.filter((f) => f.properties._gw === gw).map((f) => f.properties.NAME);
+  /* (coast-snap-gaps) a polity may be drawn as its row and the land its row's coast left out (data/hist-coast-snap.js), each
+     feature with the row's own name — the name is asked once per polity */
+  const nm = (gw) => [...new Set(r.fc.features.filter((f) => f.properties._gw === gw).map((f) => f.properties.NAME))];
   assert.deepEqual(nm(434), ['Dahomey (France)']);
   assert.deepEqual(nm(436), ['Niger (France)']);
   assert.deepEqual(nm(437), ["Cote d'Ivoire (France)"]);

@@ -451,6 +451,8 @@ export function timeBorders(HOST){
       let byEp=_lnOf.get(fc); if(!byEp){ byEp=new Map(); _lnOf.set(fc,byEp); } let v=byEp.get('*')||byEp.get(ep); if(v) return v;
       const feats=[],other=[];
       for(const f of (fc.features||[])){
+        /* (coast-snap-gaps) never stroked: every edge of a snap piece is the sea or its parent's own line */
+        if(f.properties&&f.properties._coastSnap) continue;
         const rec=f.geometry&&_lineRecordOf.get(f.geometry);
         if(rec){ const g=_lineGeom(rec[0],rec[1],_bcMarks(rec[2])); if(g) feats.push(_lineFeat(g)); }
         else other.push(f);
@@ -862,7 +864,7 @@ export function timeBorders(HOST){
       const poly=ids=>ids.map(p=>p.map(ri=>d.rings[ri]));
       const R=rec?{_rec:rec}:{};
       const feats=[];
-      for(const ft of sn.feats){ const nm=(ft[0]&&ft[0].en)||'', at=ft[1]||{}, ps=poly(ft[2]);
+      for(const [fi,ft] of sn.feats.entries()){ const nm=(ft[0]&&ft[0].en)||'', at=ft[1]||{}, ps=poly(ft[2]);
         if(!ps.length) continue;
         /* (#R686) the nine-language row for this name, when data/histnames.json has one. `en`
            is the upstream's and is put back here, so `_i18n` is the same self-describing tuple the
@@ -871,7 +873,7 @@ export function timeBorders(HOST){
         feats.push({type:'Feature',
           properties:Object.assign({NAME:nm},i18?{_i18n:i18}:{},(i18&&i18._d)?{_desc:1}:{},at.s?{SUBJECTO:at.s}:{},at.p?{PARTOF:at.p}:{},at.t?{TYPE:at.t}:{},at.bp!=null?{BORDERPRECISION:at.bp}:{},R),
           geometry:(ps.length===1)?{type:'Polygon',coordinates:ps[0]}:{type:'MultiPolygon',coordinates:ps}});
-        _rowOf.set(feats[feats.length-1].geometry,{rec:rec?'sheet-rest':'sheet',d,sheet:sn.y,key:sn.key,polys:ps}); }
+        _rowOf.set(feats[feats.length-1].geometry,{rec:rec?'sheet-rest':'sheet',d,sheet:sn.y,key:sn.key,polys:ps,fi}); }
       for(const [i,ids] of (sn.blank||[]).entries()){ const ps=poly(ids); if(!ps.length) continue;
         const bp=sn.blankPrecision&&sn.blankPrecision[i];
         feats.push({type:'Feature',properties:Object.assign({NAME:''},bp!=null?{BORDERPRECISION:bp}:{},R),
@@ -939,9 +941,12 @@ export function timeBorders(HOST){
         cl=cache.get(k); if(!cl){ cl=await clFC(cd,year,mon,day); cache.set(k,cl); }
         if(cl&&cl.features.length){ parts.push(cl); keys.push(k); } else cl=null; }
       if(!parts.length) return null;
+      /* (coast-snap-gaps) the land the records' coasts left out, under the one polity that bounds it */
+      const snk=await _snapEpoch(t); if(snk) keys.push(snk);
       const key='cp:'+csKey+'|'+keys.join('|')+'|ce'+_courseEp(t);
       let fc=cache.get(key);
-      if(!fc){ fc={type:'FeatureCollection',features:csfc.features.concat(...parts.map(p=>p.features))}; _tOf.set(fc,t);
+      if(!fc){ const base=csfc.features.concat(...parts.map(p=>p.features)), sn=snk?await _snapsFor(base,t):null;
+        fc={type:'FeatureCollection',features:base.concat(sn||[])}; _tOf.set(fc,t);
         _lnOf.set(fc,new Map([[_courseEp(t),{type:'FeatureCollection',features:_linesFor(csfc,t).features.concat(...parts.map(p=>_linesFor(p,t).features))}]]));
         _made.set(fc,{cs:csfc.features.length,ohm:ol?ol.features.length:0,late:!!ol,clio:cl?cl.features.length:0,sheet:null}); cache.set(key,fc); }
       return { key, fc, corr:false, tier:'composite', sheet:null, record:_recordFor(_made.get(fc)) }; }catch(_){ return null; } }
@@ -1009,6 +1014,39 @@ export function timeBorders(HOST){
         const H=m.hy!=null?Object.assign({_heldFrom:m.hs,_heldShape:m.hy,_heldOver:m.ho||''},m.he!=null?{_heldTo:m.he}:{}):null;
         return Object.assign(W?{NAME:'',_rec:'clio'}:{NAME:NAME,name:NAME,_i18n:hnFor('clio',NAME,f[1],f[0])||f[0],_rec:'clio'},W||{},H||{},
           f[1]?{_qid:f[1]}:{},(m.w&&!W)?{_wiki:m.w}:{},m.of?{_of:m.of,PARTOF:m.of}:{},m.r?{_realm:1}:{}); }
+    /* ══ (coast-snap-gaps) THE LAND A RECORD'S COAST LEFT OUT, DRAWN UNDER THE ONE POLITY THAT BOUNDS IT ══════════════
+       data/hist-coast-snap.js (scripts/histclio/coast-snap.mjs): at each instant, the pieces of land between a row's copy
+       of the coast and Natural Earth 1:10m's coast that touch that row and no other polity, each a row naming its parent
+       (`t` the record, `i` its row, `y` a sheet's year) and its years. Nothing is decided here either: a piece is drawn
+       only when its parent is drawn at that instant, with the parent's own properties (name, realm, withheld name, label
+       — whatever the record's reader made of it), plus `_coastSnap`, which the card reads (`typeNote`). It is never
+       stroked (`_linesFor`): every edge of it is the sea or its parent's own line.
+       ⚠ IT IS NOT A PRECONDITION. Unreadable, the composition answers without it, exactly as before. */
+    let _snD=null,_snP=null,_snH=null,_snBnd=null; const _snGeom=new Map();
+    function snLoad(){ if(_snD) return Promise.resolve(_snD); if(_snP) return _snP;
+      _snP=Promise.resolve().then(()=>HB().open({file:'data/hist-coast-snap.js',global:'__HISTCOASTSNAP'}))
+        .then(h=>h?h.edges('exclusive',_ymd(-999999,1,1),_ymd(CS_MAX+1,1,1)).then(b=>{ _snBnd=b; _snH=h; _snD=h.data; return _snD; }):null)
+        .catch(()=>null)
+        .then(d=>{ if(!d) _snP=null; return d; });
+      return _snP; }
+    /* the parent a drawn shape is, in the snap rows' own key (`t:i`, a sheet's `sheet:y:i`) — from the row that drew it */
+    const _snParentKey=r=>!r?null:(r.rec==='cshapes'||r.rec==='ohm-late'||r.rec==='ohm'||r.rec==='clio')?r.rec+':'+r.i:(r.rec==='sheet-rest'&&r.fi!=null)?'sheet:'+r.sheet+':'+r.fi:null;
+    function _snGeomOf(d,idx,parentRow){ let g=_snGeom.get(idx); if(g) return g;
+      const polys=d.feats[idx][8].map(poly=>poly.map(ri=>d.rings[ri]));
+      g=(polys.length===1)?{type:'Polygon',coordinates:polys[0]}:{type:'MultiPolygon',coordinates:polys};
+      _snGeom.set(idx,g); _rowOf.set(g,{rec:'coast-snap',d,i:idx,file:'data/hist-coast-snap.js',parent:parentRow||null}); return g; }
+    /* the snap record's epoch at `t` — a part of the composition's cache key (null when the record cannot be read) */
+    async function _snapEpoch(t){ try{ const d=await snLoad(); return (d&&_snH)?'sn'+_epochIn(_snBnd||[],t):null; }catch(_){ return null; } }
+    /* the snap pieces in force at `t` whose parents are among `features` (the shapes the composition draws then) → the
+       features ([] when nothing is in force or the record cannot be read) */
+    async function _snapsFor(features,t){ try{
+      const d=await snLoad(); if(!d||!_snH) return [];
+      const ix=await _snH.at(t,'exclusive'), feats=[];
+      if(!ix||!ix.length) return feats;
+      const by=new Map(); for(const f of features){ const r=f.geometry?_rowOf.get(f.geometry):null, pk=_snParentKey(r); if(pk&&!by.has(pk)) by.set(pk,[f,r]); }
+      for(const i of ix){ const m=d.feats[i][9]||{}, hit=by.get(m.t+':'+(m.y!=null?m.y+':':'')+m.i); if(!hit) continue;
+        feats.push({type:'Feature',geometry:_snGeomOf(d,i,hit[1]),properties:Object.assign({},hit[0].properties,{_coastSnap:1})}); }
+      return feats; }catch(_){ return []; } }
     let _rsD=null,_rsP=null,_rsH=null;
     function rsLoad(){ if(_rsD) return Promise.resolve(_rsD); if(_rsP) return _rsP;
       _rsP=Promise.resolve().then(()=>HB().open({file:'data/hist-eras-rest.js',global:'__HISTERASREST'}))
@@ -1038,9 +1076,13 @@ export function timeBorders(HOST){
       const ys=rsYears(rd), ny=ys.length?nearest(year,ys):null;
       if(ny!=null){ const raw=await rsFC(rd,ny);
         if(raw){ corr=_eraState(raw,year); const shown=_eraShow(raw,year); parts.push(shown); keys.push('rs'+ny); made.sheet=ny; } }
-      const t=_ymd(year,mon,day), key='cp:'+keys.join('|')+'|'+corr+'|ce'+_courseEp(t);
+      const t=_ymd(year,mon,day);
+      /* (coast-snap-gaps) the land the records' coasts left out, under the one polity that bounds it */
+      const snk=await _snapEpoch(t); if(snk) keys.push(snk);
+      const key='cp:'+keys.join('|')+'|'+corr+'|ce'+_courseEp(t);
       let fc=cache.get(key);
-      if(!fc){ fc={type:'FeatureCollection',features:[].concat(...parts.map(p=>p.features))}; _tOf.set(fc,t);
+      if(!fc){ const base=[].concat(...parts.map(p=>p.features)), sn=snk?await _snapsFor(base,t):null;
+        fc={type:'FeatureCollection',features:base.concat(sn||[])}; _tOf.set(fc,t);
         _lnOf.set(fc,new Map([[_courseEp(t),{type:'FeatureCollection',features:[].concat(...parts.map(p=>_linesFor(p,t).features))}]]));
         _made.set(fc,made); cache.set(key,fc); }
       return { key, fc, corr, tier:'composite', sheet:made.sheet, record:_recordFor(_made.get(fc)) }; }
@@ -1107,11 +1149,15 @@ export function timeBorders(HOST){
     const _lastYear=e=>{ const p=_kParts(e); return (p[1]===1&&p[2]===1)?p[0]-1:p[0]; };
     async function placeRecords(lng,lat){
       lng=+lng; lat=+lat; if(!isFinite(lng)||!isFinite(lat)) throw new Error('placeRecords: no point');
-      const [csd,old,hbd,cld,rsd]=await Promise.all([csLoad(),olLoad(),hbLoad(),clLoad(),rsLoad(),hnLoad(),spLoad()]);
+      const [csd,old,hbd,cld,rsd,snd]=await Promise.all([csLoad(),olLoad(),hbLoad(),clLoad(),rsLoad(),snLoad(),hnLoad(),spLoad()]);
       const L=[{tier:'cshapes',file:'data/cshapes.js',d:csd,h:()=>_csH},{tier:'ohm-late',file:'data/hist-borders-late.js',d:old,h:()=>_olH},{tier:'ohm',file:'data/hist-borders.js',d:hbd,h:()=>_hbH},
-               {tier:'clio',file:'data/hist-clio.js',d:cld,h:()=>_clH},{tier:'sheet',file:'data/hist-eras-rest.js',d:rsd,h:()=>_rsH}];
+               {tier:'clio',file:'data/hist-clio.js',d:cld,h:()=>_clH},{tier:'sheet',file:'data/hist-eras-rest.js',d:rsd,h:()=>_rsH},
+               /* (coast-snap-gaps) the land a record's coast left out — not a record of its own: each of its rows is its parent's piece */
+               {tier:'coast-snap',file:'data/hist-coast-snap.js',d:snd,h:()=>_snH}];
       const ans=await Promise.all(L.map(x=>x.d?x.h().contains(lng,lat).then(v=>({v}),e=>({e})):Promise.resolve({e:{reason:'unreadable'}})));
-      const out={ at:{lng,lat}, pieces:[], records:[], missing:[], order:L.map(x=>x.tier) };   /* `order` — highest precision first, the order the records were cut against each other */
+      const out={ at:{lng,lat}, pieces:[], records:[], missing:[], order:L.slice(0,5).map(x=>x.tier),   /* `order` — highest precision first, the order the records were cut against each other */
+        /* the first instant no record of the composition reaches (CShapes' last day + 1) — what a timeline's last gap runs to the present from */
+        top:_ymd(CS_MAX+1,1,1) };
       L.forEach((x,i)=>{ if(ans[i].e) out.missing.push({ tier:x.tier, file:x.file, reason:String((ans[i].e&&ans[i].e.reason)||'failed') });
         else out.records.push({ tier:x.tier, file:x.file, src:(x.d&&x.d.src)||null, citation:(x.d&&x.d.citation)||null }); });
       const P=out.pieces;
@@ -1121,49 +1167,77 @@ export function timeBorders(HOST){
         const sY=_kParts(s)[0], runs=props?_labelRuns(props,sY,Math.max(sY,_lastYear(e))):[{y:sY,label:''}];
         runs.forEach((r,j)=>{ const a=j?_ymd(r.y,1,1):s, b=j<runs.length-1?_ymd(runs[j+1].y,1,1):e;
           P.push(Object.assign({},base,{ label:r.label, s:a, e:b, sEdge:j?'rename':sEdge, eEdge:j<runs.length-1?'rename':eEdge })); }); };
+      /* (coast-snap-gaps) a piece of a snap row: its parent's piece over the snap row's years [s, e) — an edge that is not the
+         parent's own is where the rows around the strip change and it is judged again (`snap`) */
+      const within=(snap,lo,hi,sE,eE)=>!snap?{lo,hi,sE,eE}:{ lo:Math.max(lo,snap.s), hi:Math.min(hi,snap.e), sE:snap.s>lo?'snap':sE, eE:snap.e<hi?'snap':eE };
+      const snapBase=(base,snap,props)=>{ if(!snap) return base;
+        /* the snap's own sentence (a shape with only `_coastSnap` says nothing else), before what the parent's piece already says */
+        const tn=typeNote({properties:{_coastSnap:1}});
+        return Object.assign({},base,{ coastSnap:{ file:snap.file, i:snap.i }, notes:[tn].concat(base.notes||[]) }); };
       /* CShapes: inclusive ends; its reach is 1886-01-01 … 2019-12-31 */
-      if(ans[0].v) for(const [,f] of ans[0].v.rows){ const rs=_kRow(f,2), reI=_kRow(f,5), re=_kAfter(reI);
-        const sE=rs<=_ymd(CS_MIN,1,1)?'reach':'stated', eE=reI>=_ymd(CS_MAX,12,31)?'reach':'stated';
-        const runs=_csNameRuns(f);
-        runs.forEach((r,j)=>{ const NAME=r.name, i18=hnFor('cshapes',NAME,null,null);
-          emit({ tier:L[0].tier, file:L[0].file, id:{gw:f[1]}, name:NAME, i18n:i18||{en:NAME}, rawS:rs, rawE:re },
-            Object.assign({NAME:NAME,name:NAME,_gw:f[1]},i18?{_i18n:i18}:{}), r.k, j<runs.length-1?runs[j+1].k:re, j?'rename':sE, j<runs.length-1?'rename':eE); }); }
+      const csRow=(f,snap)=>{ const rs=_kRow(f,2), reI=_kRow(f,5), re=_kAfter(reI);
+        const w=within(snap,rs,re,rs<=_ymd(CS_MIN,1,1)?'reach':'stated',reI>=_ymd(CS_MAX,12,31)?'reach':'stated');
+        const runs=_csNameRuns(f).map((r,j,a)=>({ name:r.name, s:r.k, e:j<a.length-1?a[j+1].k:re, sE:j?'rename':w.sE, eE:j<a.length-1?'rename':w.eE }))
+          .map(r=>({ name:r.name, s:Math.max(r.s,w.lo), e:Math.min(r.e,w.hi), sE:r.s<w.lo?w.sE:r.sE, eE:r.e>w.hi?w.eE:r.eE }));
+        runs.forEach(r=>{ const NAME=r.name, i18=hnFor('cshapes',NAME,null,null), props=Object.assign({NAME:NAME,name:NAME,_gw:f[1]},i18?{_i18n:i18}:{});
+          emit(snapBase({ tier:L[0].tier, file:L[0].file, id:{gw:f[1]}, name:NAME, i18n:i18||{en:NAME}, rawS:rs, rawE:re },snap,props), props, r.s, r.e, r.sE, r.eE); }); };
+      if(ans[0].v) for(const [,f] of ans[0].v.rows) csRow(f,null);
       /* OpenHistoricalMap — exclusive ends; drawn in the band its own head states (late) or the band the era layer draws it in */
-      const ohm=(v,rec,lo,hi)=>{ if(!v) return; const tier=rec.tier, file=rec.file; for(const [,f] of v.rows){ const rs=_kRow(f,2), re=_kRow(f,5), NAME=f[0].en;
-        const s=Math.max(rs,lo), e=Math.min(re,hi); if(!(e>s)) continue;
-        const i18=hnFor('histBorders',NAME,f[1],f[0])||f[0];
-        emit({ tier, file, id:f[1]?{qid:f[1]}:{}, name:NAME, i18n:i18, rawS:rs, rawE:re },
-          Object.assign({NAME:NAME,name:NAME,_i18n:i18,_rec:'ohm'},f[1]?{_qid:f[1]}:{}), s, e, rs<=lo?'reach':'stated', re>=hi?'reach':'stated'); } };
-      { const w=(old&&old.window)||null; if(w) ohm(ans[1].v,L[1],_ymd(w[0],1,1),_ymd(w[1]+1,1,1)); }
-      ohm(ans[2].v,L[2],_ymd(HB_MIN,1,1),_ymd(HB_MAX+1,1,1));
+      const ohmRow=(f,rec,lo0,hi0,snap)=>{ const tier=rec.tier, file=rec.file, rs=_kRow(f,2), re=_kRow(f,5), NAME=f[0].en;
+        const s=Math.max(rs,lo0), e=Math.min(re,hi0); if(!(e>s)) return;
+        const w=within(snap,s,e,rs<=lo0?'reach':'stated',re>=hi0?'reach':'stated');
+        const i18=hnFor('histBorders',NAME,f[1],f[0])||f[0], props=Object.assign({NAME:NAME,name:NAME,_i18n:i18,_rec:'ohm'},f[1]?{_qid:f[1]}:{});
+        emit(snapBase({ tier, file, id:f[1]?{qid:f[1]}:{}, name:NAME, i18n:i18, rawS:rs, rawE:re },snap,props), props, w.lo, w.hi, w.sE, w.eE); };
+      const lateB=old&&old.window?[_ymd(old.window[0],1,1),_ymd(old.window[1]+1,1,1)]:null, hbB=[_ymd(HB_MIN,1,1),_ymd(HB_MAX+1,1,1)];
+      if(ans[1].v&&lateB) for(const [,f] of ans[1].v.rows) ohmRow(f,L[1],lateB[0],lateB[1],null);
+      if(ans[2].v) for(const [,f] of ans[2].v.rows) ohmRow(f,L[2],hbB[0],hbB[1],null);
       /* Cliopatria — exclusive ends, dated to the year; its reach is its head's window */
-      if(ans[3].v){ const w=(cld&&cld.window)||[-Infinity,Infinity], lo=_ymd(w[0],1,1), hi=_ymd(w[1]+1,1,1);
-        for(const [,f] of ans[3].v.rows){ const rs=_kRow(f,2), re=_kRow(f,5), p=_clProps(f,cld);
-          const s=Math.max(rs,lo), e=Math.min(re,hi); if(!(e>s)) continue;
-          const en=(f[0]&&f[0].en)||'';
-          const base={ tier:L[3].tier, file:L[3].file, id:Object.assign({},f[1]?{qid:f[1]}:{},p._wiki?{wiki:p._wiki}:{}), name:p.NAME||'', i18n:p._i18n||null, rawS:rs, rawE:re,
-            realm:!!p._realm, of:p._of||null, life:(cld.ids&&en&&cld.ids[en])||null };
-          if(p._wName) base.withheld={ name:p._wName, lines:(blankNote({properties:p})||{}).lines||[] };
-          if(p._heldShape!=null){ const tn=typeNote({properties:p}); if(tn) base.notes=[tn]; }
-          emit(base, p._wName?null:p, s, e, rs<=lo?'reach':'stated', re>=hi?'reach':'stated'); } }
-      /* the sheets — a snapshot answers the years `nearest` gives it, and its names are asked at the reader's year (`_eraShow`) */
-      if(ans[4].v&&rsd){ const ys=rsYears(rsd);
-        for(const sh of ans[4].v.sheets){ const [a,b]=_sheetReach(sh.y,ys); if(b<a) continue;
-          /* the rows of the polygons that hold the point, through the map's own sheet builder (the rings are not needed) */
-          const mini=_sheetFC({feats:sh.feats.map(h=>[h[1],h[2],[[0]]]),blank:sh.blank.map(()=>[[0]]),blankPrecision:null},{rings:[]},'sheet');
-          mini.features.forEach(ft=>{ const nm=ft.properties.NAME||'';
-            /* where the reviewed span turns the name on or off inside the sheet's years — only the cut years; whether the
-               name is drawn in each part is `_eraShow`'s answer at that part's first year */
-            const row=nm?_spRow(nm):null, cuts=[a];
-            if(row){ if(row.s!=null&&row.s>a&&row.s<=b) cuts.push(row.s); if(row.e!=null&&row.e+1>a&&row.e+1<=b) cuts.push(row.e+1); }
-            cuts.sort((x,y)=>x-y);
-            cuts.forEach((y0,j)=>{ const y1=j<cuts.length-1?cuts[j+1]-1:b;
-              const p=_eraShow({type:'FeatureCollection',features:[ft]},y0).features[0].properties;
-              const base={ tier:L[4].tier, file:L[4].file, id:{sheet:sh.y}, sheet:sh.y, name:p.NAME||'', i18n:p._i18n||null };
-              if(!nm){ base.unnamed=true; base.notes=(blankNote({properties:p})||{}).lines||[]; }
-              else if(p._wName) base.withheld={ name:p._wName, lines:(blankNote({properties:p})||{}).lines||[] };
-              else if(p.PARTOF||p.SUBJECTO){ const nl=(blankNote({properties:Object.assign({},p,{NAME:''})})||{}).lines||[]; if(nl.length) base.notes=nl; }
-              emit(base, (p.NAME&&!p._wName)?p:null, _ymd(y0,1,1), _ymd(y1+1,1,1), j?'review':'sheet', j<cuts.length-1?'review':'sheet'); }); }); } }
+      const clB=(()=>{ const w=(cld&&cld.window)||[-Infinity,Infinity]; return [_ymd(w[0],1,1),_ymd(w[1]+1,1,1)]; })();
+      const clRow=(f,snap)=>{ const rs=_kRow(f,2), re=_kRow(f,5), p=_clProps(f,cld);
+        const s=Math.max(rs,clB[0]), e=Math.min(re,clB[1]); if(!(e>s)) return;
+        const w=within(snap,s,e,rs<=clB[0]?'reach':'stated',re>=clB[1]?'reach':'stated');
+        const en=(f[0]&&f[0].en)||'';
+        const base={ tier:L[3].tier, file:L[3].file, id:Object.assign({},f[1]?{qid:f[1]}:{},p._wiki?{wiki:p._wiki}:{}), name:p.NAME||'', i18n:p._i18n||null, rawS:rs, rawE:re,
+          realm:!!p._realm, of:p._of||null, life:(cld&&cld.ids&&en&&cld.ids[en])||null };
+        if(p._wName) base.withheld={ name:p._wName, lines:(blankNote({properties:p})||{}).lines||[] };
+        if(p._heldShape!=null){ const tn=typeNote({properties:p}); if(tn) base.notes=[tn]; }
+        emit(snapBase(base,snap,p), p._wName?null:p, w.lo, w.hi, w.sE, w.eE); };
+      if(ans[3].v) for(const [,f] of ans[3].v.rows) clRow(f,null);
+      /* the sheets — a snapshot answers the years `nearest` gives it, and its names are asked at the reader's year (`_eraShow`).
+         `ft` is [index, names, facts] (the door's `contains`), or null for an unnamed shape */
+      const sheetRow=(y,ft,a0,b0,snap)=>{
+        const a=snap?Math.max(a0,_kParts(snap.s)[0]):a0, b=snap?Math.min(b0,_lastYear(snap.e)):b0; if(b<a) return;
+        /* the row of the polygon, through the map's own sheet builder (the rings are not needed) */
+        const mini=_sheetFC({feats:ft?[[ft[1],ft[2],[[0]]]]:[],blank:ft?[]:[[[0]]],blankPrecision:null},{rings:[]},'sheet');
+        mini.features.forEach(fx=>{ const nm=fx.properties.NAME||'';
+          /* where the reviewed span turns the name on or off inside the sheet's years — only the cut years; whether the
+             name is drawn in each part is `_eraShow`'s answer at that part's first year */
+          const row=nm?_spRow(nm):null, cuts=[a];
+          if(row){ if(row.s!=null&&row.s>a&&row.s<=b) cuts.push(row.s); if(row.e!=null&&row.e+1>a&&row.e+1<=b) cuts.push(row.e+1); }
+          cuts.sort((x,z)=>x-z);
+          cuts.forEach((y0,j)=>{ const y1=j<cuts.length-1?cuts[j+1]-1:b;
+            const p=_eraShow({type:'FeatureCollection',features:[fx]},y0).features[0].properties;
+            let base={ tier:L[4].tier, file:L[4].file, id:{sheet:y}, sheet:y, name:p.NAME||'', i18n:p._i18n||null };
+            if(!nm){ base.unnamed=true; base.notes=(blankNote({properties:p})||{}).lines||[]; }
+            else if(p._wName) base.withheld={ name:p._wName, lines:(blankNote({properties:p})||{}).lines||[] };
+            else if(p.PARTOF||p.SUBJECTO){ const nl=(blankNote({properties:Object.assign({},p,{NAME:''})})||{}).lines||[]; if(nl.length) base.notes=nl; }
+            base=snapBase(base,snap,p);
+            const sE=j?'review':(snap&&a>a0?'snap':'sheet'), eE=j<cuts.length-1?'review':(snap&&b<b0?'snap':'sheet');
+            emit(base, (p.NAME&&!p._wName)?p:null, _ymd(y0,1,1), _ymd(y1+1,1,1), sE, eE); }); }); };
+      const ys=rsd?rsYears(rsd):[];
+      if(ans[4].v&&rsd) for(const sh of ans[4].v.sheets){ const [a,b]=_sheetReach(sh.y,ys); if(b<a) continue;
+        for(const ft of sh.feats) sheetRow(sh.y,ft,a,b,null);
+        for(const k of sh.blank) sheetRow(sh.y,null,a,b,null); }
+      /* (coast-snap-gaps) each snap row over the point is its parent's piece over the snap's years. The row carries what its
+         parent says (its name and identifier, `d` its dates, `m` a Cliopatria row's meta, `a` a sheet polygon's facts), so
+         the parent's whole instant is not fetched to name it */
+      if(ans[5].v) for(const [i,f] of ans[5].v.rows){ const m=f[9]||{}, snap={ s:_kRow(f,2), e:_kRow(f,5), file:L[5].file, i };
+        const pf=m.d?[f[0],f[1],...m.d,null,m.m||undefined]:null;
+        if(m.t==='cshapes'&&pf) csRow(pf,snap);
+        else if(m.t==='ohm-late'&&pf&&lateB) ohmRow(pf,L[1],lateB[0],lateB[1],snap);
+        else if(m.t==='ohm'&&pf) ohmRow(pf,L[2],hbB[0],hbB[1],snap);
+        else if(m.t==='clio'&&pf) clRow(pf,snap);
+        else if(m.t==='sheet'&&m.y!=null&&rsd){ const [a,b]=_sheetReach(m.y,ys); sheetRow(m.y,[m.i,f[0],m.a||{}],a,b,snap); } }
       P.sort((x,y)=>x.s-y.s||x.e-y.e);
       return out; }
     /* ══ (#R520) 一国につき一つ — THE ERA NAMES GET THEIR OWN POINT SOURCE ══════════════════════
@@ -2839,6 +2913,12 @@ export function timeBorders(HOST){
        `geomFor` already answer — not an export made so that a test can reach it (#R175 ③). */
     function typeNote(f){ try{
       const p=(f&&f.properties)||{}, t=String(p.TYPE||p.type||'').trim();
+      /* (coast-snap-gaps) a piece of data/hist-coast-snap.js — the record's coast matched to the real coastline. It says
+         which record's line it extends and whose coast it is, and names no author for the piece itself; en + jp
+         (CONSTITUTION §7). What the parent row's own note says follows it. */
+      if(p._coastSnap){ const rest=typeNote({properties:Object.assign({},p,{_coastSnap:0})});
+        return _LTB.arr(LA('The record draws this polity only up to its own copy of the coast here. The land between that line and the real coastline (Natural Earth 1:10m) touches no other polity, so it is drawn under the same polity: the record’s coast is matched to the real coastline. No record draws this strip itself.',
+                           '記録はここでこの政体を自身の海岸線の写しまでしか描いていない。その線と本物の海岸線（Natural Earth 1:10m）のあいだの陸はほかのどの政体にも接していないため、同じ政体として描いている——記録の海岸を本物の海岸線に合わせた。この細い陸地そのものを描いた記録はない。'))+(rest?' · '+rest:''); }
       const bp=Number(p.BORDERPRECISION!=null?p.BORDERPRECISION:p.borderprecision);
       const precision=bp===1?_LTB.arr(LA('Source boundary precision: approximate','出典の境界精度分類: 概略',
         'Grenzgenauigkeit laut Quelle: ungefähr','Точность границ по источнику: приблизительная',
@@ -2975,10 +3055,14 @@ export function timeBorders(HOST){
        redraw its line, and what `typeNote` / `blankNote` already say about it. A shape with no row (re-composed
        by `_correctEra`, or from the remote fallback copy) is handed over as unattributed — never guessed. */
     function _whenYmd(){ try{ const w=_provWhen; if(w instanceof Date&&!isNaN(w.getTime())) return w.getFullYear()*10000+(w.getMonth()+1)*100+w.getDate(); if(w!=null&&isFinite(+w)) return Math.round(+w)*10000+701; }catch(_){} return null; }
-    function _provSide(f){ const p=(f&&f.properties)||{}, row=(f&&f.geometry)?_rowOf.get(f.geometry):null;
+    function _provSide(f){ const p=(f&&f.properties)||{}, own=(f&&f.geometry)?_rowOf.get(f.geometry):null;
+      /* (coast-snap-gaps) a snap piece is answered as the row it extends (its record, its row, its fingerprint), with the
+         snap row named beside it (`coastSnap`) and the note saying the coast is matched to the real coastline */
+      const row=(own&&own.rec==='coast-snap'&&own.parent)?own.parent:own;
       const side={ name:String(p.NAME||p.name||''), i18n:p._i18n||null, rec:row?row.rec:(p._rec||null), ids:[], notes:[],
         realm:!!p._realm, of:p._of||p.PARTOF||null, corrected:!!p._corrected, withheld:p._wName?String(p._wName):null };
       try{ if(p._wName||!side.name){ const bn=blankNote(f); side.notes.push(bn.title,...bn.lines); } else { const tn=typeNote(f); if(tn) side.notes.push(tn); } }catch(_){}
+      if(own&&own.rec==='coast-snap'){ const sr=own.d&&own.d.feats&&own.d.feats[own.i]; side.coastSnap={ file:own.file, i:own.i, src:(own.d&&own.d.src)||null, start:sr?[sr[2],sr[3],sr[4]]:null, end:sr?[sr[5],sr[6],sr[7]]:null }; }
       if(!row){ side.unattributed=true; return side; }
       const d=row.d; side.src=(d&&d.src)||null; side.citation=(d&&d.citation)||null; side.upstream=(d&&d.upstream)||null;
       if(row.rec==='sheet'||row.rec==='sheet-rest'){ side.sheet=row.sheet; side.geometry=Object.assign(decimalsOf(row.polys),{tolerance:null}); return side; }

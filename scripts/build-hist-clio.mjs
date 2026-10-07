@@ -68,6 +68,9 @@
  *      node scripts/build-hist-clio.mjs --identities # re-decide the shipped QIDs only (no subtraction), then
  *                                                    # node scripts/build-histnames.mjs --identifiers
  *      node scripts/build-hist-clio.mjs --check     # the committed files' invariants (offline)
+ *      node scripts/build-hist-clio.mjs --coast-snap         # data/hist-coast-snap.js from the committed records (coast-snap-gaps:
+ *                                                            # the land a record's coast left out, under the one polity bounding it)
+ *      node scripts/build-hist-clio.mjs --coast-snap-measure # the port-city table: land grid points drawn, with and without it
  * ==========================================================================*/
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -80,7 +83,8 @@ import { Worker, isMainThread, parentPort, workerData } from 'node:worker_thread
 import pc from 'polygon-clipping';
 import { water as coastWater, inlandKmFor, KM_PER_DEG } from './build-border-coast.mjs';
 import { simplifyRing, ringArea } from './histborders/geom.mjs';
-import { CLIOPATRIA, AOUREDNIK_BASEMAPS, OPENHISTORICALMAP } from './lib/upstream-cadence.mjs';
+import { CLIOPATRIA, AOUREDNIK_BASEMAPS, OPENHISTORICALMAP, NATURAL_EARTH } from './lib/upstream-cadence.mjs';
+import { buildCoastSnap, checkCoastSnap, measurePorts, SNAP_FILE } from './histclio/coast-snap.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'data', 'hist-clio.js');
@@ -122,6 +126,19 @@ export const GOVERNANCE = {
   'data/hist-borders-late.js': {
     publisher: 'OpenHistoricalMap',
     ...OPENHISTORICALMAP,
+    builtBy: 'scripts/build-hist-clio.mjs',
+  },
+  /* (coast-snap-gaps) the land between a record's coast and Natural Earth's, under the one polity that bounds it — the ONE
+     upstream it asks is the coast; each piece's landward edge is its parent row's line, drawn under that record's terms
+     beside it (scripts/histclio/coast-snap.mjs SRC names them) */
+  'data/hist-coast-snap.js': {
+    publisher: 'Natural Earth',
+    url: 'https://www.naturalearthdata.com/',
+    licence: 'public domain',
+    licenceUrl: 'https://www.naturalearthdata.com/about/terms-of-use/',
+    attribution: false,
+    schema: 'scripts/histclio/coast-snap.mjs checkCoastSnap (npm run check:histclio): every row names a parent the page draws over the same years, and no piece lies inside a record',
+    ...NATURAL_EARTH,
     builtBy: 'scripts/build-hist-clio.mjs',
   },
 };
@@ -657,6 +674,32 @@ function heldSpan(R, mine) {
   const T = Math.min(...after.map((r) => r.s));
   return { S, T, E, firsts: after.filter((r) => r.s === T) };
 }
+/* ══ ⚠⚠ (coast-snap-gaps) THE `over` ROW'S CLAIM ON THE GROUND IS GIVEN BACK WHOLE, NOT ONLY WHERE THE OUTLINE REACHES ══
+   The split above is exact: the `over` row keeps every piece outside the polity's outline. That is right where the
+   `over` row's polygon is a larger ground than the judged one (British Africa is Egypt AND the Sudan) — but wrong
+   where the polygon IS the judged ground and only the two outlines disagree about its edge.
+     observed 2026-10-08 (production, build 10d4c3b): on 1 July 1933 East Greenland kept four triangles of «Kingdom of
+     Norway» (9–93 km², 0.9–2.5 km wide) at 23.7–23.0°W by 72.05–72.29°N and 20.8–19.5°W by 75.12–75.37°N on the edge
+     of the Greenland fill: Cliopatria's 1932–1935 strip of «Eirik Raudes Land» less Greenland's 1936 outline. The
+     judgement is that Norway never governed that ground; the four triangles are the same claim, left under the wrong
+     state because two of Cliopatria's own drawings of one edge are a few km apart.
+   ⇒ per POLYGON of an `over` row: when every piece of it outside the outline is narrower (mean width, km) than the
+     record's own registration band (scripts/build-border-coast.mjs `inlandKmFor` — Cliopatria 10 km: two drawings of
+     one edge by one record differ by up to that), the polygon is the claim on the judged ground and the polity takes
+     it whole. When any piece outside is wider, the polygon is a larger ground than the judged one and the split stays
+     exact. ⚠ NOT SLIVER_W, MEASURED: the 22 km ribbon scale took the Red Sea coast north of Suakin (6,834 km², 10.7 km
+     wide) and the desert strip by the Egyptian frontier (23,184 km², 18.9 km) from «British Africa» to the Mahdist
+     State in 1886–1889 — Egypt-held ground the exact split exists to keep (sudan-mahdist-1886). At the record's band
+     those keep their polygon split exactly, as before; the Norwegian strip is taken whole.
+     The realms the `over` rows belong to lose the same ground.
+   expires: with the record's band (`inlandKmFor`); canon: here. The gate (`checkGround`) re-measures it on the shipped rows. */
+export function meanWidthKm(p) {
+  const lat = p[0].reduce((a, q) => a + q[1], 0) / p[0].length, kx = Math.cos(lat * Math.PI / 180) * KM_PER_DEG;
+  let A = 0, P = 0;
+  p.forEach((r, k) => { let a = 0; for (let i = 0, j = r.length - 1; i < r.length; j = i++) { a += (r[j][0] - r[i][0]) * kx * (r[j][1] + r[i][1]) * KM_PER_DEG; P += Math.hypot((r[i][0] - r[j][0]) * kx, (r[i][1] - r[j][1]) * KM_PER_DEG); } A += (k ? -1 : 1) * Math.abs(a / 2); });
+  return P > 0 ? 2 * A / P : 0;
+}
+export const heldWhole = (inside, outside, rec = '__HISTCLIO') => !!inside && (!outside || outside.every((q) => meanWidthKm(q) < inlandKmFor(rec)));
 function applyHeld(rows, G) {
   let out = rows;
   for (const R of (G && G.rows) || []) {
@@ -674,13 +717,36 @@ function applyHeld(rows, G) {
     const meta = { ...firsts[0].meta, hy: unymd(T)[0], hs: R.s, ho: R.over.join(', ') };
     if (R.e != null) meta.he = R.e;
     const next = [], realms = new Set(out.filter((r) => R.over.includes(r.name) && r.meta && r.meta.of).map((r) => r.meta.of)), takes = takesGround(R, realms);
+    /* (coast-snap-gaps) the `over` rows first, polygon by polygon (`heldWhole`); what a polygon taken whole had outside the
+       outline is also taken from the realms over the same years */
+    const split = new Map(), extra = [];
+    for (const r of out) {
+      if (!R.over.includes(r.name) || r.e <= S || r.s >= E) continue;
+      const keep = [], held = [];
+      for (const p of r.polys) {
+        const inside = cut('intersection', [p], polys);
+        if (!inside) { keep.push(p); continue; }
+        const outside = cut('difference', [p], polys);
+        if (heldWhole(inside, outside)) { held.push(p); if (outside) extra.push({ s: Math.max(r.s, S), e: Math.min(r.e, E), polys: outside }); }
+        else { held.push(...inside); if (outside) keep.push(...outside); }
+      }
+      split.set(r, { keep, held });
+    }
+    if (extra.length) console.error(`ground: «${R.name}» over ${R.over.join(', ')} ${R.s}–${R.e ?? ''}: ${extra.length} polygon(s) of the over rows taken whole (only pieces narrower than the record's band lay outside the outline)`);
     for (const r of out) {
       if (!takes(r) || r.e <= S || r.s >= E) { next.push(r); continue; }
       if (r.s < S) next.push({ ...r, e: S });
-      const s0 = Math.max(r.s, S), e0 = Math.min(r.e, E);
-      const g = cut('difference', r.polys, polys);
+      const s0 = Math.max(r.s, S), e0 = Math.min(r.e, E), sp = split.get(r);
+      let g, h = null;
+      if (sp) { g = sp.keep.length ? sp.keep : null; h = sp.held.length ? sp.held : null; }
+      else {
+        g = cut('difference', r.polys, polys);
+        for (const x of extra) if (g && x.s < e0 && x.e > s0) {
+          /* ⚠ a realm row longer than the over row it shares the ground with would lose it for longer — refused, not guessed */
+          if (x.s > s0 || x.e < e0) throw new Error(`ground «${R.name}»: the realm row «${r.name}» spans more than the over row whose ribbons it would lose — split it first`);
+          g = cut('difference', g, x.polys); }
+      }
       if (g) next.push({ ...r, polys: g, bb: bboxOf(g), area: areaOf(g), s: s0, e: e0 });
-      const h = R.over.includes(r.name) ? cut('intersection', r.polys, polys) : null;
       if (h) next.push({ name: R.name, qid: firsts[0].qid, meta, polys: h, bb: bboxOf(h), area: areaOf(h), s: s0, e: e0 });
       if (r.e > E) next.push({ ...r, s: E });
     }
@@ -1269,8 +1335,10 @@ export function check() {
   /* ⚠ CC BY 4.0 MAKES CREDIT A CONDITION OF REDISTRIBUTION: the reader-facing row must exist, by its exact name */
   const ref = readFileSync(join(ROOT, 'js', 'reference-data.js'), 'utf8');
   ok(ref.includes("n:'" + CREDIT_ROW + "'") && /lic:'CC BY 4.0'/.test(ref.slice(ref.indexOf(CREDIT_ROW))), 'js/reference-data.js does not credit Cliopatria as «' + CREDIT_ROW + '» with its licence');
+  /* (coast-snap-gaps) the land the records' coasts left out — made against these records, every piece on no record */
+  const sn = checkCoastSnap(ok);
   if (bad.length) return fail(bad);
-  console.log(`hist-clio ok — ${d.feats.length} rows ${d.window[0]}–${d.window[1]}, ${d.rings.length} rings; hist-eras-rest ${r.snaps.length} sheets, ${r.rings.length} rings; hist-borders-late ${evalBundle(HBL, '__HISTBLATE').feats.length} rows 1886–${LATE_TOP}; all made against the shipped neighbours`);
+  console.log(`hist-clio ok — ${d.feats.length} rows ${d.window[0]}–${d.window[1]}, ${d.rings.length} rings; hist-eras-rest ${r.snaps.length} sheets, ${r.rings.length} rings; hist-borders-late ${evalBundle(HBL, '__HISTBLATE').feats.length} rows 1886–${LATE_TOP}; ${SNAP_FILE} ${sn ? sn.rows + ' rows, ' + sn.rings + ' rings' : '—'}; all made against the shipped neighbours`);
 }
 /* (sudan-mahdist-1886) every finding of ground given to a continuing row is judged or counted; every judged `ground`
    row is drawn back on the shipped rows — between 1 January of `s` and its first outline, under its own name, saying
@@ -1321,10 +1389,18 @@ function checkGround(d, review, ok) {
     const takes = takesGround(R, realms), meta = (f) => ({ name: f[0].en, meta: f[9] || {} });
     for (const c of carried) {
       const C = new Set(cellsF(c));
+      /* (coast-snap-gaps) …and, exactly, no piece of an `over` row left on the edge of the given ground that is narrower
+         than the record's band while nothing of that row wider than it touches the ground (`heldWhole`) — the 0.25° cells
+         above cannot see a triangle a few km across */
+      const V = new Set(); for (const p of c[8]) for (const ri of p) for (const q of d.rings[ri]) V.add(q[0] + ',' + q[1]);
       for (const g of d.feats) {
         if (!takes(meta(g)) || k1(g) <= k0(c) || k0(g) >= k1(c)) continue;
         let hit = 0; for (const v of cellsF(g)) if (C.has(v)) hit++;
         ok(hit < CUT_CELLS, tag + ': «' + g[0].en + '» (' + g.slice(2, 5).join('-') + ') still holds ' + hit + ' cells of the ground review.json gives to it');
+        if (!R.over.includes(g[0].en)) continue;
+        const touching = g[8].map((p) => p.map((ri) => d.rings[ri])).filter((p) => p[0].some((q) => V.has(q[0] + ',' + q[1])));
+        const left = touching.filter((p) => meanWidthKm(p) < inlandKmFor('__HISTCLIO'));
+        ok(!left.length || left.length < touching.length, tag + ': «' + g[0].en + '» (' + g.slice(2, 5).join('-') + ') keeps ' + left.length + ' piece(s) narrower than the record\'s band on the edge of the ground review.json gives back — the same claim, two drawings of one edge (' + left.map((p) => p[0][0].join(',')).join('; ') + ')');
       }
     }
   }
@@ -1350,6 +1426,12 @@ function checkPlaces(d, review, ok) {
     ok(withheld.every((f) => k0(f) >= S && k1(f) <= E), tag + ': a withheld piece lies outside the years it names');
     const named = d.feats.filter((f) => f[0].en === R.name && k1(f) > S && k0(f) < E && f[8].some((p) => d.rings[p[0]].every(([x, y]) => inRingXY(R.within, x, y))));
     ok(named.length === 0, tag + ' is still named inside its ring: ' + named.slice(0, 3).map((f) => f.slice(2, 5).join('-')).join(', '));
+    /* (coast-snap-gaps) …and no piece of the name narrower than the record's band is left touching what it withholds (the
+       Greenland shape: the same claim, two drawings of one edge, kept under the name just outside the ring) */
+    const V = new Set(); for (const f of withheld) for (const p of f[8]) for (const ri of p) for (const q of d.rings[ri]) V.add(q[0] + ',' + q[1]);
+    const edge = d.feats.filter((f) => f[0].en === R.name && k1(f) > S && k0(f) < E).flatMap((f) => f[8].map((p) => p.map((ri) => d.rings[ri])))
+      .filter((p) => p[0].some((q) => V.has(q[0] + ',' + q[1])) && meanWidthKm(p) < inlandKmFor('__HISTCLIO'));
+    ok(edge.length === 0, tag + ' leaves ' + edge.length + ' narrow piece(s) of the name on the edge of what it withholds: ' + edge.slice(0, 3).map((p) => p[0][0].join(',')).join('; '));
   });
 }
 /* (hist-colonial-era-borders) data/hist-borders-late.js: OHM on CShapes' days. Made against the shipped CShapes, every row
@@ -1388,5 +1470,7 @@ else if (process.argv[1] && join(process.argv[1]) === join(fileURLToPath(import.
   else if (arg.includes('--fetch')) await fetchUpstream();
   else if (arg.includes('--ohm-late')) await lateOnly();
   else if (arg.includes('--identities')) identities();
+  else if (arg.includes('--coast-snap-measure')) measurePorts();
+  else if (arg.includes('--coast-snap')) await buildCoastSnap();
   else await build({ measure: arg.includes('--measure') });
 }

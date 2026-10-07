@@ -10,179 +10,179 @@
       "pctArea": 0.02,
       "polityLand": 87.78,
       "unitLand": 0.03,
-      "zero": 105,
+      "zero": 109,
       "partial": 3,
       "full": 0
     },
     {
       "year": -100,
       "pct": 0.8,
-      "pctArea": 0.84,
-      "polityLand": 83.86,
+      "pctArea": 0.85,
+      "polityLand": 83.87,
       "unitLand": 0.81,
-      "zero": 111,
-      "partial": 10,
-      "full": 1
+      "zero": 118,
+      "partial": 12,
+      "full": 2
     },
     {
       "year": 1,
       "pct": 2.77,
-      "pctArea": 3,
-      "polityLand": 63.13,
+      "pctArea": 3.01,
+      "polityLand": 63.17,
       "unitLand": 1.9,
-      "zero": 107,
-      "partial": 16,
+      "zero": 141,
+      "partial": 18,
       "full": 0
     },
     {
       "year": 500,
       "pct": 0.98,
       "pctArea": 1.18,
-      "polityLand": 68.65,
+      "polityLand": 68.69,
       "unitLand": 0.86,
-      "zero": 130,
-      "partial": 8,
-      "full": 0
+      "zero": 169,
+      "partial": 9,
+      "full": 1
     },
     {
       "year": 1000,
       "pct": 1.13,
       "pctArea": 1.15,
-      "polityLand": 70.32,
+      "polityLand": 70.38,
       "unitLand": 0.8,
-      "zero": 202,
+      "zero": 251,
       "partial": 27,
-      "full": 14
+      "full": 15
     },
     {
       "year": 1300,
-      "pct": 1.24,
+      "pct": 1.25,
       "pctArea": 1.15,
-      "polityLand": 71.24,
+      "polityLand": 71.29,
       "unitLand": 0.8,
-      "zero": 181,
-      "partial": 50,
-      "full": 9
+      "zero": 232,
+      "partial": 51,
+      "full": 12
     },
     {
       "year": 1500,
-      "pct": 5.13,
+      "pct": 5.14,
       "pctArea": 4.89,
-      "polityLand": 74.84,
+      "polityLand": 74.89,
       "unitLand": 3.72,
-      "zero": 184,
-      "partial": 58,
-      "full": 7
+      "zero": 231,
+      "partial": 60,
+      "full": 13
     },
     {
       "year": 1689,
       "pct": 13.03,
-      "pctArea": 14.75,
-      "polityLand": 73.6,
+      "pctArea": 14.74,
+      "polityLand": 73.61,
       "unitLand": 11.27,
-      "zero": 626,
+      "zero": 636,
       "partial": 64,
-      "full": 56
+      "full": 57
     },
     {
       "year": 1800,
       "pct": 27.44,
       "pctArea": 27.51,
-      "polityLand": 78.19,
+      "polityLand": 78.2,
       "unitLand": 21.65,
-      "zero": 340,
+      "zero": 350,
       "partial": 36,
-      "full": 9
+      "full": 11
     },
     {
       "year": 1850,
       "pct": 31.45,
       "pctArea": 36.88,
-      "polityLand": 86.44,
+      "polityLand": 86.45,
       "unitLand": 32.81,
-      "zero": 363,
+      "zero": 367,
       "partial": 44,
-      "full": 24
+      "full": 26
     },
     {
       "year": 1886,
       "pct": 60.35,
       "pctArea": 53.19,
-      "polityLand": 83.68,
+      "polityLand": 83.78,
       "unitLand": 45.26,
-      "zero": 133,
-      "partial": 37,
-      "full": 37
+      "zero": 162,
+      "partial": 45,
+      "full": 56
     },
     {
       "year": 1900,
       "pct": 65,
       "pctArea": 56.11,
-      "polityLand": 90.78,
+      "polityLand": 90.89,
       "unitLand": 51.69,
-      "zero": 102,
-      "partial": 38,
-      "full": 52
+      "zero": 132,
+      "partial": 47,
+      "full": 72
     },
     {
       "year": 1914,
-      "pct": 70.52,
-      "pctArea": 66.14,
-      "polityLand": 90.66,
+      "pct": 70.5,
+      "pctArea": 66.13,
+      "polityLand": 90.77,
       "unitLand": 60.81,
-      "zero": 96,
-      "partial": 44,
-      "full": 54
+      "zero": 124,
+      "partial": 54,
+      "full": 76
     },
     {
       "year": 1938,
-      "pct": 74.01,
+      "pct": 74.02,
       "pctArea": 68.46,
-      "polityLand": 91.39,
+      "polityLand": 91.51,
       "unitLand": 64.01,
-      "zero": 84,
-      "partial": 40,
-      "full": 60
+      "zero": 116,
+      "partial": 50,
+      "full": 88
     },
     {
       "year": 1950,
-      "pct": 72.59,
-      "pctArea": 67.11,
-      "polityLand": 91.39,
+      "pct": 72.61,
+      "pctArea": 67.12,
+      "polityLand": 91.51,
       "unitLand": 62.78,
-      "zero": 82,
-      "partial": 35,
-      "full": 63
+      "zero": 110,
+      "partial": 45,
+      "full": 96
     },
     {
       "year": 1975,
       "pct": 78.78,
       "pctArea": 74.43,
-      "polityLand": 91.4,
+      "polityLand": 91.52,
       "unitLand": 69.48,
-      "zero": 56,
-      "partial": 35,
-      "full": 77
+      "zero": 80,
+      "partial": 48,
+      "full": 110
     },
     {
       "year": 2000,
-      "pct": 91.96,
-      "pctArea": 90.62,
-      "polityLand": 91.4,
+      "pct": 91.95,
+      "pctArea": 90.6,
+      "polityLand": 91.52,
       "unitLand": 84.35,
-      "zero": 35,
-      "partial": 43,
-      "full": 112
+      "zero": 49,
+      "partial": 56,
+      "full": 157
     },
     {
       "year": 2019,
-      "pct": 94.62,
-      "pctArea": 93.94,
-      "polityLand": 91.4,
+      "pct": 94.61,
+      "pctArea": 93.92,
+      "polityLand": 91.52,
       "unitLand": 87.43,
-      "zero": 33,
-      "partial": 33,
-      "full": 128
+      "zero": 46,
+      "partial": 44,
+      "full": 177
     }
   ],
   "claims": {
