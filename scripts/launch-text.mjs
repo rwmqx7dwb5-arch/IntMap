@@ -18,8 +18,8 @@ export const POSTS = [
     id: 'producthunt', channel: 'Product Hunt', lang: 'en', path: '', utm: 'producthunt',
     fields: {
       Name: 'IntMap',
-      Tagline: 'Every year of the world, on one map',
-      Description: 'A free world map you can set to any date from {floorBC} to today. Borders, figures and {layers} layers follow the clock, every source is named, and one link reopens exactly what you see. No sign-up.',
+      Tagline: 'The world today, or in any year, on one map',
+      Description: 'A free space-time atlas of the Earth: live earthquakes, radar and aircraft for today, and the borders of any date from {floorBC}. {layers} layers follow the clock, every source is named, and one link reopens exactly what you see. No sign-up.',
       Link: '{url}',
     },
     body: `Hi Product Hunt —
@@ -92,7 +92,7 @@ I would value criticism of the time model and of how the three border records ar
     id: 'x-en', channel: 'X (English thread)', lang: 'en', path: '', utm: 'x',
     fields: {},
     thread: [
-      'IntMap is a free world map with one clock for everything on it. Set it to any date from {floorBC} to today and the borders, figures and layers follow. No sign-up. {url}',
+      'IntMap is a free space-time atlas of the Earth: the world today, with live earthquakes, radar and aircraft, or in any year from {floorBC}, with that day’s borders. Every source named. No sign-up. {url}',
       'Borders: {snapshots} historical snapshots before {ohmFrom}, OpenHistoricalMap {ohmFrom}–{ohmTo}, and CShapes 2.0 day by day {csFrom}–{csTo}.',
       '{layers} layers sit on the same map, each with its source named. If a source says nothing about the date on the clock, the layer is not drawn — no old labels on today\'s data.',
       'A link reopens the same place, date and layers on any device, and the same map can be embedded on another site. Signed in, Atlas — the built-in assistant — drives the map from plain words.',
@@ -102,7 +102,7 @@ I would value criticism of the time model and of how the three border records ar
     id: 'x-ja', channel: 'X（日本語スレッド）', lang: 'jp', path: '', utm: 'x',
     fields: {},
     thread: [
-      'IntMap は、地図の上のすべてに一つの時計を持つ無料の世界地図です。{floorBC}から今日までのどの日付に合わせても、国境・数字・レイヤーがついてきます。登録不要。{url}',
+      'IntMap は無料の地球の時空間アトラスです。いまの世界を地震・雨雲レーダー・航空機のライブで、{floorBC}からのどの年の世界もその日の国境で。すべての出典を明記。登録不要。{url}',
       '国境は、{ohmFrom}年より前が{snapshots}枚の歴史スナップショット、{ohmFrom}〜{ohmTo}年が OpenHistoricalMap、{csFrom}〜{csTo}年が CShapes 2.0（日単位）です。',
       '同じ地図に{layers}のレイヤー。すべて出典を明記し、選んだ日付を出典が述べていないレイヤーは描きません。古い日付の下に今日のデータを出すことはしません。',
       'リンク一つで同じ場所・日付・レイヤーをどの端末でも開けます。他のサイトへの埋め込みも可。ログインすれば AI アシスタントの Atlas が言葉どおりに地図を動かします。',
@@ -110,7 +110,7 @@ I would value criticism of the time model and of how the three border records ar
   },
   {
     id: 'note', channel: 'note', lang: 'jp', path: 'ja/history/', utm: 'note',
-    fields: { 'タイトル': '世界のどの年も、一枚の地図で——IntMap を作っている理由' },
+    fields: { 'タイトル': 'いまの世界も、どの年の世界も、一枚の地図で——IntMap を作っている理由' },
     body: `（下書き。本文は作り手の言葉で書き直すこと）
 
 地図帳の歴史地図は、誰かが選んだ一瞬しか見せてくれません。ある年のヨーロッパは載っていても、その前後の年は載っていないし、その地図の国境がどこから来たのかも書いてありません。

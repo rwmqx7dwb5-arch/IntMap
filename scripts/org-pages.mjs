@@ -381,7 +381,9 @@ function pressBody(F, L) {
     <h2>${esc(T.descH[k])}</h2>
     <p class="lp-sub">${esc(T.quote[k])}</p>
     <div class="lp-grid2">
+      ${copyBlock('category', T.categoryL, B.category)}
       ${copyBlock('tagline', T.oneH, B.tagline)}
+      ${copyBlock('trust', T.trustL, B.trust)}
       ${copyBlock('short', T.shortL, B.pitch.short)}
       ${copyBlock('medium', T.mediumL, B.pitch.medium)}
       ${copyBlock('long', T.longL, B.pitch.long)}

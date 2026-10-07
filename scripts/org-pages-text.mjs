@@ -128,6 +128,9 @@ export const TEXT = {
     lede: P('Everything for writing about IntMap in one place. The words and the numbers on this page are the same ones the app and the site use, so they stay current.',
       'IntMap について書くための材料を一か所に集めました。このページの文言と数字は、アプリとサイトが使っているものと同じで、いつも最新です。'),
     oneH: P('In one line', 'ひとことで'),
+    /* (spacetime-positioning) the brand's category and its line of trust — scripts/brand-text.mjs `category`, `trust` */
+    categoryL: P('What it is, in a few words', '何であるか（ひとこと）'),
+    trustL: P('Why it can be trusted', '信頼できる理由'),
     quote: P('Quote any of the descriptions below as written. Please keep the numbers as they appear here, and link to IntMap.',
       '以下の説明文はそのまま引用していただけます。数字はここに書かれたとおりに、IntMap へのリンクとあわせてお使いください。'),
     descH: P('Descriptions to quote', '引用できる説明文'),
