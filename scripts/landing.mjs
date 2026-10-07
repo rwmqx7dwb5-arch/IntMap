@@ -540,6 +540,7 @@ ${rows.join('\n')}
       </table>
     </div>
     <p class="lp-note">${esc(P.curriculum.source)} <a href="${MEXT_URL}" target="_blank" rel="noopener">${esc(P.curriculum.sourceLabel)} ↗</a></p>
+    <a class="lp-btn lp-btn-2" href="./curriculum.html">${esc(P.curriculum.more)}</a>
   </section>
 
   <section class="lp-sec" id="trust">
@@ -785,8 +786,13 @@ export const STRIP_SCRIPT = "(function(){var all=document.querySelectorAll('[dat
   + "r.value=String(n);r.setAttribute('aria-valuetext',go[n]?go[n].textContent:'');}"
   + "c.hidden=false;r.addEventListener('input',function(){show(r.value);});"
   + "for(var k=0;k<go.length;k++)(function(k){go[k].addEventListener('click',function(){show(k);});})(k);})(all[i]);})();";
-/* the document the curriculum headings are quoted from (read 2026-10-01) — see js/showcase.js CURRICULUM */
-const MEXT_URL = 'https://www.mext.go.jp/content/20230120-mxt_kyoiku02-100002604_03.pdf';
+/* the document the curriculum headings are quoted from (read 2026-10-01) — see js/showcase.js CURRICULUM. (curriculum-sales-kit)
+   Its address is the unit map's upstream record (data/curriculum-units.json gov.upstreams, id mext-2018), not a second copy. */
+const MEXT_URL = (() => {
+  const up = JSON.parse(readFileSync(join(ROOT, 'data/curriculum-units.json'), 'utf8')).gov.upstreams.find((u) => u.id === 'mext-2018');
+  if (!up || !up.url) throw new Error('landing: data/curriculum-units.json names no mext-2018 upstream');
+  return up.url;
+})();
 
 /* ══ THE SHARE PAGES — one per example, per language: s/<id>.html and ja/s/<id>.html ══════════════════
    「SNS 投稿の主力素材」. A link posted to a social network is unfurled by a crawler that reads the HTML

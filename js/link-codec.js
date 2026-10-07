@@ -71,10 +71,14 @@ export function inflateRaw(bytes, cap) { return pipe(bytes, new DecompressionStr
    classroom tour's `t` (js/tours.js) and the data studio's `ds` (js/data-studio.js) carry this; the tour's bytes are
    the ones it always wrote (tests/map-document-unify-checks holds an old tour against this). The reader takes the
    caller's ceiling — a link is somebody else's bytes. */
-/** a JSON text → its link form ('z…' or 'j…') @param {string} json @returns {Promise<string>} */
-export async function packText(json) {
+/* (curriculum-sales-kit) `opts.plain` writes 'j' where the platform could compress. For a link a GENERATOR writes into a page
+   that its --check holds byte for byte (scripts/curriculum-kit.mjs): DEFLATE's output is the platform zlib's choice, and
+   builds of zlib that hash with SIMD write different (equally valid) bytes for the same input, so a 'z' link would make
+   the page a function of the machine that built it. Every reader takes both letters. */
+/** a JSON text → its link form ('z…' or 'j…') @param {string} json @param {{ plain?: boolean }} [opts] @returns {Promise<string>} */
+export async function packText(json, opts) {
   const bytes = new TextEncoder().encode(String(json));
-  if (canCompress()) return 'z' + toBase64url(await deflateRaw(bytes));
+  if (canCompress() && !(opts && opts.plain)) return 'z' + toBase64url(await deflateRaw(bytes));
   return 'j' + toBase64url(bytes);
 }
 /** a link form → the JSON text it carries, or null when it is not one (or inflates past `cap` bytes).

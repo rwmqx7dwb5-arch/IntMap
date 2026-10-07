@@ -18,6 +18,11 @@
  *                         descriptions, scripts/brand.mjs the numbers, js/showcase.js the screenshots.
  *    corrections.html     (community-next) the public log of map corrections: how to report, how a report is
  *                         checked, the counts, what was published, and this browser's own reports and answers
+ *    curriculum.html      (curriculum-sales-kit) the unit map: the units of three curricula, quoted from their documents
+ *                         (data/curriculum-units.json), each with the maps, classroom tours and quests IntMap opens for it
+ *                         and «Make a tour for this unit»; a unit with none says «not covered yet» (scripts/curriculum-kit.mjs)
+ *    school-handout.html  (curriculum-sales-kit) one A4 sheet for a school's leadership and IT staff — every fact on it is
+ *                         another page's string or a number read from its owner
  *
  *  ══ WHY GENERATED (the same reasons as scripts/landing.mjs, whose facts() this file reuses) ═══════
  *    · the PROSE        → scripts/org-pages-text.mjs (en + jp, one place)
@@ -59,6 +64,8 @@ import { OTD_HUB } from './on-this-day-pages.mjs';
 import { pagePath as updatesPath, feedPath as updatesFeed } from './whats-new.mjs';
 import { readLedger } from './outbound-hosts.mjs';
 import { SENDS_WORDS } from '../js/connections-panel.js';
+import { MODEL as CURRICULUM_KIT } from './curriculum-kit.mjs';   /* (curriculum-sales-kit) the unit map's model — units, and the links the app's codecs write */
+import { kindTitle } from '../js/quest-engine.js';                 /* (curriculum-sales-kit) a quest kind's name, the panel's own */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -87,6 +94,8 @@ const MARKS = [['IntMap.Icon.png', 'logoMark'], ['icons/icon-512.png', 'logoLarg
 const ASK = {
   'for-newsrooms': { for: 'newsroom', about: 'embed' },
   'for-schools': { for: 'education', about: 'classroom' },
+  curriculum: { for: 'education', about: 'classroom' },          /* (curriculum-sales-kit) */
+  'school-handout': { for: 'education', about: 'classroom' },
   'for-research': { for: 'research', about: 'data' },
   support: { for: 'supporter', about: 'supporter_listing' },
   security: { for: 'other', about: 'security' },
@@ -196,7 +205,7 @@ function topbar(L, page) {
   <nav class="lp-top-in" aria-label="IntMap">
     <a class="lp-brand" href="./about.html" aria-label="${esc(N.brandHome[k])}"><img src="${L.up}IntMap.Icon.png" alt="" width="28" height="28"><span>IntMap</span></a>
     <div class="og-nav">
-${ORG_NAV.map(([p, key]) => '      ' + link(p, N[key])).join('\n').trimStart()}
+${ORG_NAV.filter((r) => !(r[2] && r[2].bar === false)).map(([p, key]) => '      ' + link(p, N[key])).join('\n').trimStart()}
     </div>
     <a class="lp-lang" href="${toOther}" hreflang="${other.tag}" lang="${other.tag}" data-lp-lang="${other.tag}" aria-label="${esc(N.langLabel[k])}">${esc(N.lang[k])}</a>
     <a class="lp-btn lp-btn-sm" href="${L.up}index.html">${esc(N.open[k])}</a>
@@ -206,9 +215,11 @@ ${ORG_NAV.map(([p, key]) => '      ' + link(p, N[key])).join('\n').trimStart()}
 
 function footer(L) {
   const Fo = TEXT.footer, k = L.i;
+  /* (curriculum-sales-kit) the organisation pages the top bar leaves out (ORG_NAV { bar: false }) are linked here */
+  const offBar = ORG_NAV.filter((r) => r[2] && r[2].bar === false).map(([p, key]) => ({ href: './' + p + '.html', label: TEXT.nav[key][k] }));
   return `<footer class="lp-foot">
   <nav class="lp-foot-in">
-${pageLinks(L, LANDING_TEXT[L.key], null).map((e) => '    <a href="' + esc(e.href) + '">' + esc(e.label) + '</a>').join('\n')}
+${pageLinks(L, LANDING_TEXT[L.key], null).concat(offBar).map((e) => '    <a href="' + esc(e.href) + '">' + esc(e.label) + '</a>').join('\n')}
     <a href="${L.up}sources.html">${esc(Fo.sources[k])}</a>
     <a href="${L.up}science.html">${esc(Fo.science[k])}</a>
     <a href="${L.up}privacy.html">${esc(Fo.privacy[k])}</a>
@@ -300,7 +311,11 @@ function introBody(F, L, page) {
   <section class="lp-sec" id="lessons">
     <h2>${esc(T.lessonsH[k])}</h2>
     <p class="lp-sub">${esc(T.lessons[k])}</p>
-    <a class="lp-btn lp-btn-2" href="./teachers.html">${esc(T.lessonsLink[k])}</a>
+    <div class="lp-cta">
+      <a class="lp-btn lp-btn-2" href="./teachers.html">${esc(T.lessonsLink[k])}</a>
+      <a class="lp-btn lp-btn-2" href="./curriculum.html">${esc(T.unitsLink[k])}</a>
+      <a class="lp-btn lp-btn-2" href="./school-handout.html">${esc(T.handoutLink[k])}</a>
+    </div>
   </section>`
       : `<section class="lp-sec" id="your-data">
     <h2>${esc(T.dataH[k])}</h2>
@@ -682,6 +697,154 @@ function supportBody(F, L) {
 </main>`;
 }
 
+/* ── the unit map (curriculum-sales-kit) ──────────────────────────────────────────────────────────
+   The model is scripts/curriculum-kit.mjs: units quoted from data/curriculum-units.json, every link written by the app's own
+   codecs. This only lays it out. A row's main line is in the page's language — the quoted wording where the document is in
+   it, IntMap's gloss where it is not — and the other is shown beside it, marked with its own `lang`. */
+const COLON = (L) => (L.key === 'jp' ? '：' : ': ');
+const PAREN = (L) => (L.key === 'jp' ? ['（', '）'] : [' (', ')']);
+const LISTSEP = (L) => (L.key === 'jp' ? '・' : ', ');
+const KIT_LANG = (L) => (L.key === 'jp' ? 'ja' : 'en');
+function unitRow(F, L, f, u) {
+  const T = TEXT.curriculum, k = L.i, n = (v) => v.toLocaleString(L.num);
+  const own = f.quoted === L.key;
+  const main = own ? u.label : u.gloss, other = own ? u.gloss : u.label;
+  const otherLang = own ? (L.key === 'jp' ? 'en' : 'ja') : (f.quoted === 'jp' ? 'ja' : 'en');
+  const app = (q) => esc(L.up + 'index.html' + q);
+  const items = [];
+  for (const m of u.maps) items.push(`<li><a href="${app(m.hash)}" data-unit-map="${m.kind === 'example' ? m.id : 'state'}">${esc(m.title[k])}</a> <span class="og-muted">${esc((m.kind === 'example' ? T.example : T.map)[k])}</span></li>`);
+  for (const t of u.tours) items.push(`<li><a href="${app(t.query)}" data-unit-tour="${t.id}">${esc(T.tour[k])}${COLON(L)}${esc(t.title[k])}</a> <span class="og-muted">${esc(fill(T.steps[k], { n: n(t.steps) }))}</span></li>`);
+  if (u.quest) items.push(`<li><a href="${app(u.quest.query)}" data-unit-quest="${u.quest.kind}">${esc(T.quest[k])}${COLON(L)}${esc(fill(T.questN[k], { kind: kindTitle(u.quest.kind, L.key), n: n(u.quest.n) }))}</a></li>`);
+  const make = u.make[L.key]
+    ? `<a class="lp-btn lp-btn-2 lp-btn-sm cu-make" href="${app(u.make[L.key].query)}" data-unit-make="${u.key}">${esc(T.make[k])}</a><span class="og-muted cu-make-n">${esc(fill(T.makeFrom[k], { n: n(u.make[L.key].steps) }))}</span>`
+    : '';
+  const open = u.covered
+    ? `<ul class="cu-links">${items.join('')}</ul>`
+    : `<span class="cu-none">${esc(T.notCovered[k])}</span>`;
+  return `        <tr id="u-${u.key}" data-unit="${u.key}"${u.covered ? '' : ' data-uncovered=""'}><td><span class="cu-unit"${own ? ` lang="${KIT_LANG({ key: f.quoted })}"` : ''}>${u.codes ? esc(u.codes) + ' ' : ''}${esc(main)}</span><span class="cu-other" lang="${otherLang}">${esc(other)}</span>${u.basis ? `<span class="cu-basis">${esc(T.basis[k])} <q lang="${f.quoted === 'jp' ? 'ja' : 'en'}">${esc(u.basis)}</q></span>` : ''}</td><td>${open}</td><td>${make}</td></tr>`;
+}
+function curriculumBody(F, L) {
+  const T = TEXT.curriculum, k = L.i, M = CURRICULUM_KIT;
+  if (M.problems.length) throw new Error('org-pages: data/curriculum-units.json disagrees with the registries:\n  ' + M.problems.join('\n  '));
+  const n = (v) => v.toLocaleString(L.num);
+  const W = { units: n(M.counts.units), covered: n(M.counts.covered), open: n(M.counts.open) };
+  const sourceLine = (s) => {
+    const up = s.upstream;
+    return `<p class="lp-note cu-source">${esc(T.source[k])} ${esc(up.publisher)}, <a href="${esc(up.url)}" target="_blank" rel="noopener">${esc(up.title)} ↗</a>${PAREN(L)[0]}${esc(fill(T.read[k], { date: up.retrievedAt }))}${up.via ? LISTSEP(L) + `<a href="${esc(up.via)}" target="_blank" rel="noopener">${esc(T.via[k])}</a>` : ''}${PAREN(L)[1]} · ${esc(up.licence)}</p>`;
+  };
+  const subject = (f, s) => {
+    const rows = [];
+    for (const g of s.groups) {
+      const units = s.units.filter((u) => u.group === g.key);
+      if (!units.length) continue;
+      const own = f.quoted === L.key;
+      rows.push(`        <tr class="cu-group" id="g-${g.key}"><th colspan="3"><span${own ? ` lang="${KIT_LANG({ key: f.quoted })}"` : ''}>${esc(own ? g.label : g.gloss)}</span> <span class="cu-other" lang="${own ? (L.key === 'jp' ? 'en' : 'ja') : (f.quoted === 'jp' ? 'ja' : 'en')}">${esc(own ? g.gloss : g.label)}</span></th></tr>`);
+      for (const u of units) rows.push(unitRow(F, L, f, u));
+    }
+    return `<h3 class="og-sub" id="s-${s.id}">${esc(s.name[k])}</h3>
+    <div class="lp-tablewrap cu-table">
+      <table>
+        <tr><th>${esc(T.colUnit[k])}</th><th>${esc(T.colOpen[k])}</th><th>${esc(T.colMake[k])}</th></tr>
+${rows.join('\n')}
+      </table>
+    </div>
+    ${sourceLine(s)}`;
+  };
+  const fw = M.frameworks.map((f) => `<section class="lp-sec" id="fw-${f.id}">
+    <h2>${esc(f.title[k])}</h2>
+    <p class="lp-sub">${esc(f.note[k])}</p>
+    ${f.subjects.map((s) => subject(f, s)).join('\n    ')}
+  </section>`).join('\n\n  ');
+  return `<main class="lp-main">
+  <section class="lp-hero lp-hero-t">
+    <div class="lp-hero-text">
+      <h1>${esc(T.h1[k])}</h1>
+      <p class="lp-lede">${esc(fill(T.lede[k], W))}</p>
+      <div class="lp-cta">
+        <a class="lp-btn" href="#fw-${M.frameworks[0].id}">${esc(T.ctaFind[k])}</a>
+        <a class="lp-btn lp-btn-2" href="./school-handout.html">${esc(T.ctaHandout[k])}</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="lp-sec" id="how">
+    <h2>${esc(T.howH[k])}</h2>
+    <div class="lp-grid3">
+      ${tiles(T.how, L, W)}
+    </div>
+    <p class="lp-note">${esc(T.suggestion[k])}</p>
+    <nav class="cu-jump" aria-label="${esc(T.jump[k])}">${M.frameworks.map((f) => `<a class="lp-open" href="#fw-${f.id}">${esc(f.title[k])} →</a>`).join(' ')}</nav>
+  </section>
+
+  ${fw}
+
+  <section class="lp-sec" id="not-covered">
+    <div class="lp-support">
+      <h2>${esc(T.openH[k])}</h2>
+      <p>${esc(fill(T.open[k], W))}</p>
+      <a class="lp-btn" href="${contactHref('curriculum')}">${esc(TEXT.common.ctaBtn[k])}</a>
+    </div>
+  </section>
+</main>`;
+}
+
+/* ── the one-page handout (curriculum-sales-kit) — school-handout.html ─────────────────────────────
+   For a school's leadership and IT staff, on ONE A4 sheet (css/org-pages.css `@page handout`; the print test holds it to one
+   page). Its facts are other pages' strings, chosen the way those pages choose them — the price (TEXT.common), no student
+   accounts and the devices (TEXT.schools), the analytics sentence the security page picks from index.html's own switch
+   (securityFacts) — and the numbers come from their owners. The addresses are printed as text: on paper a link is what it says. */
+function handoutBody(F, L) {
+  const T = TEXT['school-handout'], C = TEXT.common, S = TEXT.schools, SEC = TEXT.security, k = L.i;
+  const n = (v) => v.toLocaleString(L.num);
+  const W = { ...words(F, L), stated: n(F.security.stated) };
+  const tile = (h, p) => `<div class="lp-tile"><h3>${esc(fill(h[k], W))}</h3><p>${esc(fill(p[k], W))}</p></div>`;
+  const analytics = F.security.analytics ? SEC.analyticsOn : SEC.analyticsOff;
+  const abs = (rel) => F.site + L.dir + rel;
+  const contact = abs('contact.html?for=' + ASK['school-handout'].for + '&about=' + ASK['school-handout'].about);
+  return `<main class="lp-main og-handout-sheet">
+  <section class="lp-hero lp-hero-t og-handout-head">
+    <div class="lp-hero-text">
+      <p class="og-handout-brand"><img src="${L.up}IntMap.Icon.png" alt="" width="28" height="28"> IntMap</p>
+      <h1>${esc(T.h1[k])}</h1>
+      <p class="lp-lede">${esc(fill(T.lede[k], W))}</p>
+      <div class="lp-cta og-noprint">
+        <button class="lp-btn og-print" type="button" data-print hidden>${esc(T.print[k])}</button>
+        <a class="lp-btn lp-btn-2" href="./curriculum.html">${esc(T.unitMap[k])}</a>
+      </div>
+      <p class="lp-note og-noprint">${esc(T.printNote[k])}</p>
+    </div>
+  </section>
+
+  <section class="lp-sec og-handout-facts">
+    <div class="lp-grid2">
+      ${tile(C.priceH, C.price)}
+      ${tile(S.what[0], S.what[1])}
+      ${tile(S.what[2], S.what[3])}
+      ${tile(S.it[2], S.it[3])}
+      ${tile(S.it[4], S.it[5])}
+      <div class="lp-tile"><h3>${esc(T.privacyH[k])}</h3><p>${esc(analytics[1][k])}</p><p>${esc(fill(T.hostsLine[k], W))}</p></div>
+    </div>
+  </section>
+
+  <section class="lp-sec og-handout-steps">
+    <h2>${esc(T.stepsH[k])}</h2>
+    <ol class="lp-steps">
+      ${steps(T.steps, L, W)}
+    </ol>
+  </section>
+
+  <section class="lp-sec og-handout-links">
+    <h2>${esc(T.linksH[k])}</h2>
+    <dl class="og-handout-dl">
+      <dt>${esc(T.unitMap[k])}</dt><dd><a href="./curriculum.html">${esc(abs('curriculum.html'))}</a></dd>
+      <dt>${esc(T.itPage[k])}</dt><dd><a href="./for-schools.html#it">${esc(abs('for-schools.html'))}</a></dd>
+      <dt>${esc(TEXT.footer.privacy[k])}</dt><dd><a href="${L.up}privacy.html">${esc(F.site + 'privacy.html')}</a></dd>
+      <dt>${esc(T.askH[k])}</dt><dd>${esc(T.ask[k])} <a href="${contactHref('school-handout')}">${esc(contact)}</a></dd>
+    </dl>
+  </section>
+</main>`;
+}
+
 /* ── corrections (community-next) ─────────────────────────────────────────────────────────────
    The words a live value needs (kinds, statuses, the year's spelling) travel as data-* JSON on the element that shows
    it, so js/org-page.js holds no words; the vocabulary is _shared/correction-shape.js and every word must have a label. */
@@ -754,7 +917,7 @@ function correctionsBody(F, L) {
 }
 
 export function renderPage(F, page, L) {
-  const body = page === 'contact' ? contactBody(F, L) : page === 'support' ? supportBody(F, L) : page === 'security' ? securityBody(F, L) : page === 'corrections' ? correctionsBody(F, L) : page === 'press' ? pressBody(F, L) : introBody(F, L, page);
+  const body = page === 'contact' ? contactBody(F, L) : page === 'support' ? supportBody(F, L) : page === 'security' ? securityBody(F, L) : page === 'corrections' ? correctionsBody(F, L) : page === 'press' ? pressBody(F, L) : page === 'curriculum' ? curriculumBody(F, L) : page === 'school-handout' ? handoutBody(F, L) : introBody(F, L, page);
   return withInlineHashes(`${head(F, L, page)}
 <body class="lp og-page" data-org-page="${page}">
 ${topbar(L, page)}

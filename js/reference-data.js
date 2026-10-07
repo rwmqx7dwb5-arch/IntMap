@@ -640,6 +640,11 @@ export const IntMapRefData = (function(){
     /* (time-index-unify) the dated events beside the map's records — World events, the year book — are Wikidata's
        statements (item, the property that dated it, its precision), read at BUILD time by scripts/fetch-world-events.mjs */
     {n:'Dated world events — Wikidata (dates, places, names, descriptions)',u:'https://www.wikidata.org/',lic:'CC0 1.0',licUrl:'https://creativecommons.org/publicdomain/zero/1.0/',credit:false},
+    /* (curriculum-sales-kit) the curriculum documents whose unit names curriculum.html quotes, character for character
+       (data/curriculum-units.json — its gov.upstreams name these rows as the ones that pay their credit). Both licences make
+       credit a condition; the C3 Framework's own statement does not (`attribution:false` there), so it has no row. */
+    {n:'文部科学省 — 高等学校学習指導要領（平成30年告示） (Course of Study; unit names quoted on the unit map)',u:'https://www.mext.go.jp/content/20230120-mxt_kyoiku02-100002604_03.pdf',lic:'政府標準利用規約（第2.0版）',licUrl:'https://www.mext.go.jp/b_menu/1351168.htm',credit:true},
+    {n:'Department for Education — National curriculum in England, key stage 3 geography and history (unit names quoted on the unit map)',u:'https://www.gov.uk/government/collections/national-curriculum',lic:'Open Government Licence',licUrl:'https://www.nationalarchives.gov.uk/doc/open-government-licence/',credit:true},
     {n:'Maddison Project Database 2020 (Bolt & van Zanden)',u:'https://www.rug.nl/ggdc/historicaldevelopment/maddison/'},
     {n:'World Bank Open Data',u:'https://data.worldbank.org/',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},
     {n:'IMF World Economic Outlook',u:'https://www.imf.org/en/Publications/WEO'},

@@ -97,6 +97,8 @@ ja/s/*.html                              merge=intmap-generated intmap-merge=reg
 /corrections.html                        merge=intmap-generated intmap-merge=regen intmap-regen=scripts/org-pages.mjs,--write
 /admin-corrections.html                  merge=intmap-generated intmap-merge=regen intmap-regen=scripts/org-pages.mjs,--write
 /press.html                              merge=intmap-generated intmap-merge=regen intmap-regen=scripts/org-pages.mjs,--write
+/curriculum.html                         merge=intmap-generated intmap-merge=regen intmap-regen=scripts/org-pages.mjs,--write
+/school-handout.html                     merge=intmap-generated intmap-merge=regen intmap-regen=scripts/org-pages.mjs,--write
 ja/contact.html                          merge=intmap-generated intmap-merge=regen intmap-regen=scripts/org-pages.mjs,--write
 ja/press.html                            merge=intmap-generated intmap-merge=regen intmap-regen=scripts/org-pages.mjs,--write
 ja/for-newsrooms.html                    merge=intmap-generated intmap-merge=regen intmap-regen=scripts/org-pages.mjs,--write
@@ -105,6 +107,8 @@ ja/for-schools.html                      merge=intmap-generated intmap-merge=reg
 ja/support.html                          merge=intmap-generated intmap-merge=regen intmap-regen=scripts/org-pages.mjs,--write
 ja/security.html                         merge=intmap-generated intmap-merge=regen intmap-regen=scripts/org-pages.mjs,--write
 ja/corrections.html                      merge=intmap-generated intmap-merge=regen intmap-regen=scripts/org-pages.mjs,--write
+ja/curriculum.html                       merge=intmap-generated intmap-merge=regen intmap-regen=scripts/org-pages.mjs,--write
+ja/school-handout.html                   merge=intmap-generated intmap-merge=regen intmap-regen=scripts/org-pages.mjs,--write
 .claude/agents/*.md                      merge=intmap-generated intmap-merge=regen intmap-regen=scripts/agent-sync.mjs,--write
 .claude/skills/**                        merge=intmap-generated intmap-merge=regen intmap-regen=scripts/agent-sync.mjs,--write
 .codex/agents/*.toml                     merge=intmap-generated intmap-merge=regen intmap-regen=scripts/agent-sync.mjs,--write

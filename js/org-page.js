@@ -22,6 +22,7 @@
  *       empty list in place of «could not be read».
  *
  *    ⑥ THE PRESS ROOM (press-room) — the Copy buttons: they copy the text beside them (see wireCopy).
+ *    ⑦ THE SCHOOL HANDOUT (curriculum-sales-kit) — its Print button opens the browser's print dialog (see wirePrint).
  *
  *    ⑤ THE CORRECTIONS PAGE (community-next) — the counts (public.map_corrections_summary), the published log
  *       (public.public_map_corrections — only what an admin published, in the admin's words) and THIS browser's own
@@ -286,6 +287,15 @@
     });
   }
 
+  /* ⑦ THE SCHOOL HANDOUT (curriculum-sales-kit) — a button marked data-print opens the browser's own print dialog (paper, or
+     Save as PDF). Hidden in the page like the Copy buttons: without this script the reader's own Print command does the same. */
+  function wirePrint() {
+    Array.prototype.forEach.call(document.querySelectorAll('button[data-print]'), function (b) {
+      b.hidden = false;
+      b.addEventListener('click', function () { try { window.print(); } catch (_) { /* no print in this browser */ } });
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     /* ② the language choice */
     document.addEventListener('click', function (e) {
@@ -294,6 +304,7 @@
     });
     wireContact();
     wireCopy();
+    wirePrint();
     var stats = document.getElementById('og-stats');
     if (stats) wireStats(stats);
     var sup = document.getElementById('og-supporters');

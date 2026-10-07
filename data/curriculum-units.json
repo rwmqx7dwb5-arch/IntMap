@@ -1,0 +1,442 @@
+{
+  "_": "(curriculum-sales-kit) The units of four curricula, quoted from their primary documents, and what IntMap can open for each. Read by scripts/curriculum-kit.mjs (the unit map page curriculum.html and ja/curriculum.html, written by scripts/org-pages.mjs) and held by tests/curriculum-sales-kit-checks.test.mjs. `label` is the document's own wording, character for character (read from the file whose sha256 is in gov.upstreams); `gloss` is IntMap's translation into the other page language, not an official one. `basis` is the phrase of the document that a unit's maps answer to, quoted the same way. `maps` names an example of js/showcase.js (`example`) or states a map as an intent (view and data layers, no date) that scripts/curriculum-kit.mjs writes into a link with the app's own codec (js/map-state.js encode); every layer id must be a share-carried data layer of js/layer-manifest.js and every example and tour id must exist (the checks ask the registries). A unit with no maps, no tour and no quest is shown as not covered yet: that is the honest answer and the list the next product work starts from (dev-notes/2026-10-07-curriculum-sales-kit.md). Historical units are answered ONLY by examples and tours whose claims are already checked against the record (js/showcase.js drawn, js/tours.js drawn); no new dated map is stated here (.agents/rules/historical-verification.md).",
+  "gov": {
+    "publisher": "IntMap (transcription of the documents listed in upstreams)",
+    "url": "https://github.com/rwmqx7dwb5-arch/IntMap/blob/main/data/curriculum-units.json",
+    "retrievedAt": "2026-10-07",
+    "licence": "mixed — each quoted label and basis keeps its upstream’s licence (gov.upstreams); the mapping fields are IntMap’s, under the repository LICENSE",
+    "licenceUrl": "https://github.com/rwmqx7dwb5-arch/IntMap/blob/main/LICENSE",
+    "paidBy": ["文部科学省 — 高等学校学習指導要領（平成30年告示） (Course of Study; unit names quoted on the unit map)","Department for Education — National curriculum in England, key stage 3 geography and history (unit names quoted on the unit map)"],
+    "priority": { "rank": "none — no two upstreams answer the same question: each is the only source of its own subjects (subject.source)", "over": "none" },
+    "quality": { "rows": 80, "missing": 0, "outOfRange": 0, "duplicates": 0, "measuredBy": "tests/curriculum-sales-kit-checks.test.mjs — rows: units; missing: units without a label or gloss; outOfRange: scripts/curriculum-kit.mjs problems(); duplicates: repeated keys" },
+    "generatedAt": "2026-10-07",
+    "asOf": "2026-10-07",
+    "cadence": "static",
+    "schema": "tests/curriculum-sales-kit-checks.test.mjs",
+    "upstreams": [
+      {
+        "id": "mext-2018",
+        "title": "高等学校学習指導要領（平成30年告示）",
+        "publisher": "文部科学省 (Ministry of Education, Culture, Sports, Science and Technology, Japan)",
+        "url": "https://www.mext.go.jp/content/20230120-mxt_kyoiku02-100002604_03.pdf",
+        "retrievedAt": "2026-10-07",
+        "sha256": "59ef17a825bd11a4fa39ed2cc1f27033c83a95e4e93f0f8a821a65e063bb2512",
+        "licence": "政府標準利用規約（第2.0版） / CC BY 4.0",
+        "licenceUrl": "https://www.mext.go.jp/b_menu/1351168.htm",
+        "attribution": true,
+        "paidBy": "文部科学省 — 高等学校学習指導要領（平成30年告示） (Course of Study; unit names quoted on the unit map)"
+      },
+      {
+        "id": "dfe-ks3-geography",
+        "title": "Geography programmes of study: key stage 3 (National curriculum in England, DFE-00193-2013)",
+        "publisher": "Department for Education (England)",
+        "url": "https://assets.publishing.service.gov.uk/media/5a7b8699ed915d131105fd16/SECONDARY_national_curriculum_-_Geography.pdf",
+        "page": "https://www.gov.uk/government/publications/national-curriculum-in-england-geography-programmes-of-study",
+        "retrievedAt": "2026-10-07",
+        "sha256": "74bdc613703777bf57683666ebf1e37871a516bf16537ea12e70160b1dd6029d",
+        "licence": "Open Government Licence",
+        "licenceUrl": "https://www.nationalarchives.gov.uk/doc/open-government-licence/",
+        "attribution": true,
+        "paidBy": "Department for Education — National curriculum in England, key stage 3 geography and history (unit names quoted on the unit map)"
+      },
+      {
+        "id": "dfe-ks3-history",
+        "title": "History programmes of study: key stage 3 (National curriculum in England, DFE-00194-2013)",
+        "publisher": "Department for Education (England)",
+        "url": "https://assets.publishing.service.gov.uk/media/5a7c66d740f0b626628abcdd/SECONDARY_national_curriculum_-_History.pdf",
+        "page": "https://www.gov.uk/government/publications/national-curriculum-in-england-history-programmes-of-study",
+        "retrievedAt": "2026-10-07",
+        "sha256": "9048c2a7f86bac58b5794bd9f570d3507e02b076f00275846eeae6f091d04c3a",
+        "licence": "Open Government Licence",
+        "licenceUrl": "https://www.nationalarchives.gov.uk/doc/open-government-licence/",
+        "attribution": true,
+        "paidBy": "Department for Education — National curriculum in England, key stage 3 geography and history (unit names quoted on the unit map)"
+      },
+      {
+        "id": "ncss-c3",
+        "title": "The College, Career, and Civic Life (C3) Framework for Social Studies State Standards (revised 2017)",
+        "publisher": "National Council for the Social Studies (Silver Spring, MD)",
+        "url": "https://www.socialstudies.org/sites/default/files/c3/c3-framework-for-social-studies-rev0617.pdf",
+        "via": "https://web.archive.org/web/20241219120012id_/https://www.socialstudies.org/sites/default/files/c3/c3-framework-for-social-studies-rev0617.pdf",
+        "retrievedAt": "2026-10-07",
+        "sha256": "8239d89be5326998f3ad2a8592a76ce9fc3ee6a37654c7fa09a4da341c712c38",
+        "licence": "The text of the document, and/or excerpts from it, may be freely reproduced (the document's own statement)",
+        "licenceUrl": "https://www.socialstudies.org/sites/default/files/c3/c3-framework-for-social-studies-rev0617.pdf",
+        "attribution": false
+      }
+    ]
+  },
+  "frameworks": [
+    {
+      "id": "jp-hs",
+      "quoted": "jp",
+      "title": ["Japan — Course of Study for upper secondary school (2018), Geography and History", "日本 — 高等学校学習指導要領（平成30年告示）第2章第2節 地理歴史"],
+      "note": ["地理総合 and 歴史総合 are compulsory for every student; 地理探究, 日本史探究 and 世界史探究 are electives taken after them (the document's section 3 (3)).", "地理総合と歴史総合はすべての生徒が履修する科目で、地理探究・日本史探究・世界史探究はその後に履修する選択科目です（同要領 第3款 (3)）。"],
+      "subjects": [
+        {
+          "id": "chiri-sogo",
+          "source": "mext-2018",
+          "name": ["Geography — Chiri Sōgō (compulsory)", "地理総合（必履修）"],
+          "groups": [
+            { "key": "chiri-a", "label": "Ａ　地図や地理情報システムで捉える現代世界", "gloss": "A The modern world through maps and geographic information systems" },
+            { "key": "chiri-b", "label": "Ｂ　国際理解と国際協力", "gloss": "B International understanding and international cooperation" },
+            { "key": "chiri-c", "label": "Ｃ　持続可能な地域づくりと私たち", "gloss": "C Building sustainable communities, and us" }
+          ],
+          "units": [
+            { "key": "chiri-a1", "group": "chiri-a", "label": "（1）地図や地理情報システムと現代世界", "gloss": "(1) Maps, geographic information systems and the modern world",
+              "basis": "方位や時差，日本の位置と領域，国内や国家間の結び付き",
+              "maps": [
+                { "title": ["Time zones of the world", "世界の時間帯（時差）"], "view": { "lng": 140, "lat": 20, "zoom": 1.4 }, "layers": ["dl-tz"] },
+                { "title": ["Japan's exclusive economic zone", "日本の排他的経済水域"], "view": { "lng": 137, "lat": 32, "zoom": 3.6 }, "layers": ["dl-eez"] },
+                { "example": "undersea-cables" }
+              ],
+              "quest": { "kind": "where", "n": 10 } },
+            { "key": "chiri-b1", "group": "chiri-b", "label": "（1）生活文化の多様性と国際理解", "gloss": "(1) Diversity of ways of life and international understanding",
+              "basis": "人々の生活文化が地理的環境から影響を受けたり，影響を与えたりして多様性をもつ",
+              "maps": [
+                { "example": "koppen" },
+                { "example": "population-density" },
+                { "example": "night-lights" },
+                { "example": "hdi-2022" },
+                { "example": "undersea-cables" },
+                { "title": ["Religions of the world", "世界の宗教"], "view": { "lng": 40, "lat": 25, "zoom": 1.4 }, "layers": ["beta-dl-cat-religion"] },
+                { "title": ["Languages of the world", "世界の言語"], "view": { "lng": 40, "lat": 25, "zoom": 1.4 }, "layers": ["beta-dl-cat-language"] }
+              ] },
+            { "key": "chiri-b2", "group": "chiri-b", "label": "（2）地球的課題と国際協力", "gloss": "(2) Global issues and international cooperation",
+              "basis": "地球環境問題，資源・エネルギー問題，人口・食料問題及び居住・都市問題",
+              "maps": [
+                { "example": "hdi-2022" },
+                { "title": ["Energy: where power is produced", "エネルギー：発電の場所"], "view": { "lng": 15, "lat": 25, "zoom": 1.4 }, "layers": ["wp-dl-energy"] },
+                { "title": ["Fertility rate by country", "国別の合計特殊出生率"], "view": { "lng": 15, "lat": 20, "zoom": 1.4 }, "layers": ["dl-tfr"] }
+              ] },
+            { "key": "chiri-c1", "group": "chiri-c", "label": "（1）自然環境と防災", "gloss": "(1) The natural environment and disaster prevention",
+              "basis": "我が国をはじめ世界で見られる自然災害",
+              "maps": [
+                { "example": "ring-of-fire" },
+                { "example": "el-nino-2023" },
+                { "title": ["The relief of Japan", "日本の地形（起伏）"], "view": { "lng": 137.5, "lat": 36.5, "zoom": 4.6 }, "layers": ["dl-relief"] }
+              ],
+              "tours": ["plates-volcanoes"] },
+            { "key": "chiri-c2", "group": "chiri-c", "label": "（2）生活圏の調査と地域の展望", "gloss": "(2) Surveying the area students live in, and its prospects", "maps": [] }
+          ]
+        },
+        {
+          "id": "chiri-tankyu",
+          "source": "mext-2018",
+          "name": ["Geography — Chiri Tankyū (elective)", "地理探究（選択）"],
+          "groups": [
+            { "key": "chiritan-a", "label": "Ａ　現代世界の系統地理的考察", "gloss": "A Systematic geography of the modern world" },
+            { "key": "chiritan-b", "label": "Ｂ　現代世界の地誌的考察", "gloss": "B Regional geography of the modern world" },
+            { "key": "chiritan-c", "label": "Ｃ　現代世界におけるこれからの日本の国土像", "gloss": "C The future shape of Japan's land in the modern world" }
+          ],
+          "units": [
+            { "key": "chiritan-a1", "group": "chiritan-a", "label": "（1）自然環境", "gloss": "(1) The natural environment",
+              "maps": [
+                { "example": "koppen" },
+                { "example": "ring-of-fire" },
+                { "title": ["Ecoregions of the world", "世界のエコリージョン"], "view": { "lng": 15, "lat": 20, "zoom": 1.4 }, "layers": ["eco-dl-ecoregions"] }
+              ],
+              "tours": ["plates-volcanoes"] },
+            { "key": "chiritan-a2", "group": "chiritan-a", "label": "（2）資源，産業", "gloss": "(2) Resources and industry",
+              "basis": "資源・エネルギーや農業，工業などに関わる諸事象",
+              "maps": [
+                { "title": ["Energy: where power is produced", "エネルギー：発電の場所"], "view": { "lng": 15, "lat": 25, "zoom": 1.4 }, "layers": ["wp-dl-energy"] },
+                { "title": ["Industry", "工業"], "view": { "lng": 15, "lat": 25, "zoom": 1.4 }, "layers": ["wp-dl-industry"] }
+              ] },
+            { "key": "chiritan-a3", "group": "chiritan-a", "label": "（3）交通・通信，観光", "gloss": "(3) Transport, communications and tourism",
+              "basis": "交通・通信網と物流や人の移動に関する運輸，観光",
+              "maps": [
+                { "example": "undersea-cables" },
+                { "example": "rail-gauges" },
+                { "example": "world-heritage" }
+              ] },
+            { "key": "chiritan-a4", "group": "chiritan-a", "label": "（4）人口，都市・村落", "gloss": "(4) Population, cities and villages",
+              "maps": [
+                { "example": "population-density" },
+                { "example": "night-lights" },
+                { "title": ["Fertility rate by country", "国別の合計特殊出生率"], "view": { "lng": 15, "lat": 20, "zoom": 1.4 }, "layers": ["dl-tfr"] }
+              ] },
+            { "key": "chiritan-a5", "group": "chiritan-a", "label": "（5）生活文化，民族・宗教", "gloss": "(5) Ways of life, peoples and religions",
+              "maps": [
+                { "title": ["Religions of the world", "世界の宗教"], "view": { "lng": 40, "lat": 25, "zoom": 1.4 }, "layers": ["beta-dl-cat-religion"] },
+                { "title": ["Languages of the world", "世界の言語"], "view": { "lng": 40, "lat": 25, "zoom": 1.4 }, "layers": ["beta-dl-cat-language"] }
+              ] },
+            { "key": "chiritan-b1", "group": "chiritan-b", "label": "（1）現代世界の地域区分", "gloss": "(1) Dividing the modern world into regions",
+              "basis": "各種の主題図や資料を基に，世界を幾つかの地域に区分する方法",
+              "maps": [
+                { "example": "koppen" },
+                { "title": ["Ecoregions of the world", "世界のエコリージョン"], "view": { "lng": 15, "lat": 20, "zoom": 1.4 }, "layers": ["eco-dl-ecoregions"] }
+              ] },
+            { "key": "chiritan-b2", "group": "chiritan-b", "label": "（2）現代世界の諸地域", "gloss": "(2) The regions of the modern world", "maps": [] },
+            { "key": "chiritan-c1", "group": "chiritan-c", "label": "（1）持続可能な国土像の探究", "gloss": "(1) Inquiry into a sustainable future for Japan's land",
+              "basis": "我が国が抱える地理的な諸課題",
+              "maps": [
+                { "title": ["Where people live in Japan", "日本の人口分布"], "view": { "lng": 137.5, "lat": 36.5, "zoom": 4.6 }, "layers": ["dl-popgrid"] },
+                { "title": ["The relief of Japan", "日本の地形（起伏）"], "view": { "lng": 137.5, "lat": 36.5, "zoom": 4.6 }, "layers": ["dl-relief"] },
+                { "example": "night-lights" }
+              ] }
+          ]
+        },
+        {
+          "id": "rekishi-sogo",
+          "source": "mext-2018",
+          "name": ["History — Rekishi Sōgō (compulsory)", "歴史総合（必履修）"],
+          "groups": [
+            { "key": "rekishi-a", "label": "Ａ　歴史の扉", "gloss": "A The door to history" },
+            { "key": "rekishi-b", "label": "Ｂ　近代化と私たち", "gloss": "B Modernisation and us" },
+            { "key": "rekishi-c", "label": "Ｃ　国際秩序の変化や大衆化と私たち", "gloss": "C Changes in the international order, mass society and us" },
+            { "key": "rekishi-d", "label": "Ｄ　グローバル化と私たち", "gloss": "D Globalisation and us" }
+          ],
+          "units": [
+            { "key": "rekishi-a1", "group": "rekishi-a", "label": "（1）歴史と私たち", "gloss": "(1) History and us", "maps": [] },
+            { "key": "rekishi-a2", "group": "rekishi-a", "label": "（2）歴史の特質と資料", "gloss": "(2) The nature of history and its sources", "maps": [] },
+            { "key": "rekishi-b1", "group": "rekishi-b", "label": "（1）近代化への問い", "gloss": "(1) Questions about modernisation", "maps": [] },
+            { "key": "rekishi-b2", "group": "rekishi-b", "label": "（2）結び付く世界と日本の開国", "gloss": "(2) A connected world and the opening of Japan", "maps": [] },
+            { "key": "rekishi-b3", "group": "rekishi-b", "label": "（3）国民国家と明治維新", "gloss": "(3) The nation state and the Meiji Restoration",
+              "basis": "日本の明治維新や大日本帝国憲法の制定などを基に，立憲体制と国民国家の形成を理解すること",
+              "maps": [ { "example": "japan-1900" } ],
+              "tours": ["meiji-japan"] },
+            { "key": "rekishi-b4", "group": "rekishi-b", "label": "（4）近代化と現代的な諸課題", "gloss": "(4) Modernisation and present-day issues", "maps": [] },
+            { "key": "rekishi-c1", "group": "rekishi-c", "label": "（1）国際秩序の変化や大衆化への問い", "gloss": "(1) Questions about changes in the international order and mass society", "maps": [] },
+            { "key": "rekishi-c2", "group": "rekishi-c", "label": "（2）第一次世界大戦と大衆社会", "gloss": "(2) The First World War and mass society",
+              "basis": "第一次世界大戦の展開",
+              "maps": [ { "example": "europe-1914" }, { "example": "europe-1920" } ],
+              "tours": ["ww1-europe"] },
+            { "key": "rekishi-c3", "group": "rekishi-c", "label": "（3）経済危機と第二次世界大戦", "gloss": "(3) Economic crisis and the Second World War", "maps": [] },
+            { "key": "rekishi-c4", "group": "rekishi-c", "label": "（4）国際秩序の変化や大衆化と現代的な諸課題", "gloss": "(4) Changes in the international order, mass society and present-day issues", "maps": [] },
+            { "key": "rekishi-d1", "group": "rekishi-d", "label": "（1）グローバル化への問い", "gloss": "(1) Questions about globalisation", "maps": [] },
+            { "key": "rekishi-d2", "group": "rekishi-d", "label": "（2）冷戦と世界経済", "gloss": "(2) The Cold War and the world economy",
+              "basis": "冷戦下の地域紛争",
+              "maps": [ { "example": "cold-war-1985" } ] },
+            { "key": "rekishi-d3", "group": "rekishi-d", "label": "（3）世界秩序の変容と日本", "gloss": "(3) The changing world order and Japan", "maps": [] },
+            { "key": "rekishi-d4", "group": "rekishi-d", "label": "（4）現代的な諸課題の形成と展望", "gloss": "(4) How present-day issues formed, and what lies ahead", "maps": [] }
+          ]
+        },
+        {
+          "id": "nihonshi-tankyu",
+          "source": "mext-2018",
+          "name": ["Japanese history — Nihonshi Tankyū (elective)", "日本史探究（選択）"],
+          "groups": [
+            { "key": "nihonshi-a", "label": "Ａ　原始・古代の日本と東アジア", "gloss": "A Prehistoric and ancient Japan and East Asia" },
+            { "key": "nihonshi-b", "label": "Ｂ　中世の日本と世界", "gloss": "B Medieval Japan and the world" },
+            { "key": "nihonshi-c", "label": "Ｃ　近世の日本と世界", "gloss": "C Early modern Japan and the world" },
+            { "key": "nihonshi-d", "label": "Ｄ　近現代の地域・日本と世界", "gloss": "D Localities, Japan and the world in the modern and contemporary age" }
+          ],
+          "units": [
+            { "key": "nihonshi-a1", "group": "nihonshi-a", "label": "（1）黎明期の日本列島と歴史的環境", "gloss": "(1) The Japanese archipelago at the dawn of history and its environment", "maps": [] },
+            { "key": "nihonshi-a2", "group": "nihonshi-a", "label": "（2）歴史資料と原始・古代の展望", "gloss": "(2) Historical sources and an overview of prehistoric and ancient times", "maps": [] },
+            { "key": "nihonshi-a3", "group": "nihonshi-a", "label": "（3）古代の国家・社会の展開と画期（歴史の解釈，説明，論述）", "gloss": "(3) The state and society in ancient times and their turning points (interpreting, explaining and arguing history)", "maps": [] },
+            { "key": "nihonshi-b1", "group": "nihonshi-b", "label": "（1）中世への転換と歴史的環境", "gloss": "(1) The transition to the medieval age and its environment", "maps": [] },
+            { "key": "nihonshi-b2", "group": "nihonshi-b", "label": "（2）歴史資料と中世の展望", "gloss": "(2) Historical sources and an overview of the medieval age", "maps": [] },
+            { "key": "nihonshi-b3", "group": "nihonshi-b", "label": "（3）中世の国家・社会の展開と画期（歴史の解釈，説明，論述）", "gloss": "(3) The state and society in the medieval age and their turning points (interpreting, explaining and arguing history)",
+              "basis": "宋・元（モンゴル帝国）などユーラシアとの交流",
+              "maps": [ { "example": "world-1279" } ] },
+            { "key": "nihonshi-c1", "group": "nihonshi-c", "label": "（1）近世への転換と歴史的環境", "gloss": "(1) The transition to the early modern age and its environment", "maps": [] },
+            { "key": "nihonshi-c2", "group": "nihonshi-c", "label": "（2）歴史資料と近世の展望", "gloss": "(2) Historical sources and an overview of the early modern age", "maps": [] },
+            { "key": "nihonshi-c3", "group": "nihonshi-c", "label": "（3）近世の国家・社会の展開と画期（歴史の解釈，説明，論述）", "gloss": "(3) The state and society in the early modern age and their turning points (interpreting, explaining and arguing history)", "maps": [] },
+            { "key": "nihonshi-d1", "group": "nihonshi-d", "label": "（1）近代への転換と歴史的環境", "gloss": "(1) The transition to the modern age and its environment",
+              "basis": "幕藩体制の崩壊と新政権の成立",
+              "maps": [],
+              "tours": ["meiji-japan"] },
+            { "key": "nihonshi-d2", "group": "nihonshi-d", "label": "（2）歴史資料と近代の展望", "gloss": "(2) Historical sources and an overview of the modern age", "maps": [] },
+            { "key": "nihonshi-d3", "group": "nihonshi-d", "label": "（3）近現代の地域・日本と世界の画期と構造", "gloss": "(3) Turning points and structures of localities, Japan and the world in the modern and contemporary age",
+              "basis": "明治維新，自由民権運動，大日本帝国憲法の制定，条約改正，日清・日露戦争，第一次世界大戦",
+              "maps": [ { "example": "japan-1900" }, { "example": "europe-1914" } ],
+              "tours": ["meiji-japan", "ww1-europe"] },
+            { "key": "nihonshi-d4", "group": "nihonshi-d", "label": "（4）現代の日本の課題の探究", "gloss": "(4) Inquiry into the issues of present-day Japan", "maps": [] }
+          ]
+        },
+        {
+          "id": "sekaishi-tankyu",
+          "source": "mext-2018",
+          "name": ["World history — Sekaishi Tankyū (elective)", "世界史探究（選択）"],
+          "groups": [
+            { "key": "sekaishi-a", "label": "Ａ　世界史へのまなざし", "gloss": "A Ways of looking at world history" },
+            { "key": "sekaishi-b", "label": "Ｂ　諸地域の歴史的特質の形成", "gloss": "B How the historical character of the world's regions formed" },
+            { "key": "sekaishi-c", "label": "Ｃ　諸地域の交流・再編", "gloss": "C Exchange and reorganisation among the regions" },
+            { "key": "sekaishi-d", "label": "Ｄ　諸地域の結合・変容", "gloss": "D The linking and transformation of the regions" },
+            { "key": "sekaishi-e", "label": "Ｅ　地球世界の課題", "gloss": "E The issues of the global world" }
+          ],
+          "units": [
+            { "key": "sekaishi-a1", "group": "sekaishi-a", "label": "（1）地球環境から見る人類の歴史", "gloss": "(1) Human history seen from the global environment", "maps": [] },
+            { "key": "sekaishi-a2", "group": "sekaishi-a", "label": "（2）日常生活から見る世界の歴史", "gloss": "(2) World history seen from everyday life", "maps": [] },
+            { "key": "sekaishi-b1", "group": "sekaishi-b", "label": "（1）諸地域の歴史的特質への問い", "gloss": "(1) Questions about the historical character of the regions", "maps": [] },
+            { "key": "sekaishi-b2", "group": "sekaishi-b", "label": "（2）古代文明の歴史的特質", "gloss": "(2) The historical character of the ancient civilisations",
+              "basis": "オリエント文明，インダス文明，中華文明などを基に，古代文明の歴史的特質を理解すること",
+              "maps": [ { "example": "world-3000bc" } ] },
+            { "key": "sekaishi-b3", "group": "sekaishi-b", "label": "（3）諸地域の歴史的特質", "gloss": "(3) The historical character of the regions",
+              "basis": "秦・漢と遊牧国家，唐と近隣諸国の動向などを基に，東アジアと中央ユーラシアの歴史的特質を理解すること",
+              "maps": [ { "example": "world-100" } ] },
+            { "key": "sekaishi-c1", "group": "sekaishi-c", "label": "（1）諸地域の交流・再編への問い", "gloss": "(1) Questions about exchange and reorganisation among the regions", "maps": [] },
+            { "key": "sekaishi-c2", "group": "sekaishi-c", "label": "（2）結び付くユーラシアと諸地域", "gloss": "(2) A connected Eurasia and the regions",
+              "basis": "宋の社会とモンゴル帝国の拡大",
+              "maps": [ { "example": "world-1279" } ] },
+            { "key": "sekaishi-c3", "group": "sekaishi-c", "label": "（3）アジア諸地域とヨーロッパの再編", "gloss": "(3) The reorganisation of Asia's regions and of Europe", "maps": [] },
+            { "key": "sekaishi-d1", "group": "sekaishi-d", "label": "（1）諸地域の結合・変容への問い", "gloss": "(1) Questions about the linking and transformation of the regions", "maps": [] },
+            { "key": "sekaishi-d2", "group": "sekaishi-d", "label": "（2）世界市場の形成と諸地域の結合", "gloss": "(2) The formation of a world market and the linking of the regions", "maps": [] },
+            { "key": "sekaishi-d3", "group": "sekaishi-d", "label": "（3）帝国主義とナショナリズムの高揚", "gloss": "(3) Imperialism and the rise of nationalism",
+              "basis": "第一次世界大戦とロシア革命，ヴェルサイユ・ワシントン体制の形成",
+              "maps": [ { "example": "europe-1914" }, { "example": "europe-1920" } ],
+              "tours": ["ww1-europe"] },
+            { "key": "sekaishi-d4", "group": "sekaishi-d", "label": "（4）第二次世界大戦と諸地域の変容", "gloss": "(4) The Second World War and the transformation of the regions",
+              "basis": "第二次世界大戦の展開と大戦後の国際秩序，冷戦とアジア諸国の独立の始まり",
+              "maps": [ { "example": "cold-war-1985" } ] },
+            { "key": "sekaishi-e1", "group": "sekaishi-e", "label": "（1）国際機構の形成と平和への模索", "gloss": "(1) The making of international organisations and the search for peace",
+              "basis": "集団安全保障と冷戦の展開",
+              "maps": [
+                { "example": "cold-war-1985" },
+                { "title": ["NATO members", "NATO の加盟国"], "view": { "lng": 0, "lat": 45, "zoom": 1.8 }, "layers": ["dl-nato"] }
+              ] },
+            { "key": "sekaishi-e2", "group": "sekaishi-e", "label": "（2）経済のグローバル化と格差の是正", "gloss": "(2) Economic globalisation and narrowing the gaps",
+              "basis": "先進国の経済成長と南北問題",
+              "maps": [
+                { "example": "hdi-2022" },
+                { "title": ["GDP per person by country", "国別の一人あたり GDP"], "view": { "lng": 15, "lat": 20, "zoom": 1.4 }, "layers": ["dl-gdppc"] }
+              ] },
+            { "key": "sekaishi-e3", "group": "sekaishi-e", "label": "（3）科学技術の高度化と知識基盤社会", "gloss": "(3) Advanced science and technology and the knowledge-based society",
+              "basis": "情報通信技術の発達と知識の普及",
+              "maps": [ { "example": "undersea-cables" } ] },
+            { "key": "sekaishi-e4", "group": "sekaishi-e", "label": "（4）地球世界の課題の探究", "gloss": "(4) Inquiry into the issues of the global world", "maps": [] }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "england-ks3",
+      "quoted": "en",
+      "title": ["England — National Curriculum, key stage 3 (ages 11–14), geography and history", "イングランド — ナショナル・カリキュラム キーステージ3（11〜14歳）地理・歴史"],
+      "note": ["Schools are not required by law to teach the example content in [square brackets] (the documents' own words); the headings below are the statutory content.", "角括弧内の例示は法的な必修ではありません（各文書の記述）。下の見出しは必修の内容です。"],
+      "subjects": [
+        {
+          "id": "ks3-geography",
+          "source": "dfe-ks3-geography",
+          "name": ["Geography, key stage 3", "地理（キーステージ3）"],
+          "groups": [
+            { "key": "uk-geo-a", "label": "Locational knowledge", "gloss": "位置の知識" },
+            { "key": "uk-geo-b", "label": "Place Knowledge", "gloss": "場所の知識" },
+            { "key": "uk-geo-c", "label": "Human and physical geography", "gloss": "人文地理と自然地理" },
+            { "key": "uk-geo-d", "label": "Geographical skills and fieldwork", "gloss": "地理的技能と野外調査" }
+          ],
+          "units": [
+            { "key": "uk-geo-locational", "group": "uk-geo-a", "label": "extend their locational knowledge and deepen their spatial awareness of the world’s countries using maps of the world to focus on Africa, Russia, Asia (including China and India), and the Middle East, focusing on their environmental regions, including polar and hot deserts, key physical and human characteristics, countries and major cities", "gloss": "世界地図を使い、アフリカ・ロシア・アジア（中国とインドを含む）・中東を中心に、国々の位置の知識と空間的な認識を広げ深める（寒冷・高温の砂漠を含む環境区、主な自然的・人文的特徴、国と主要都市）",
+              "basis": "environmental regions, including polar and hot deserts",
+              "maps": [ { "example": "koppen" } ],
+              "quest": { "kind": "where", "n": 10 } },
+            { "key": "uk-geo-place", "group": "uk-geo-b", "label": "understand geographical similarities, differences and links between places through the study of human and physical geography of a region within Africa, and of a region within Asia", "gloss": "アフリカの一地域とアジアの一地域の人文地理・自然地理を学び、場所どうしの地理的な共通点・相違点・結び付きを理解する",
+              "basis": "a region within Asia",
+              "maps": [ { "example": "night-lights" } ] },
+            { "key": "uk-geo-physical", "group": "uk-geo-c", "label": "physical geography relating to: geological timescales and plate tectonics; rocks, weathering and soils; weather and climate, including the change in climate from the Ice Age to the present; and glaciation, hydrology and coasts", "gloss": "自然地理：地質年代とプレートテクトニクス、岩石・風化・土壌、天気と気候（氷期から現在までの気候変化を含む）、氷河作用・水文・海岸",
+              "basis": "plate tectonics; rocks, weathering and soils; weather and climate",
+              "maps": [
+                { "example": "ring-of-fire" },
+                { "example": "koppen" },
+                { "title": ["Soils of the world", "世界の土壌"], "view": { "lng": 15, "lat": 20, "zoom": 1.4 }, "layers": ["gx-gxsoil"] }
+              ],
+              "tours": ["plates-volcanoes"] },
+            { "key": "uk-geo-human", "group": "uk-geo-c", "label": "human geography relating to: population and urbanisation; international development; economic activity in the primary, secondary, tertiary and quaternary sectors; and the use of natural resources", "gloss": "人文地理：人口と都市化、国際的な開発、第一次〜第四次産業の経済活動、天然資源の利用",
+              "basis": "population and urbanisation; international development",
+              "maps": [
+                { "example": "population-density" },
+                { "example": "hdi-2022" },
+                { "title": ["Industry", "工業"], "view": { "lng": 15, "lat": 25, "zoom": 1.4 }, "layers": ["wp-dl-industry"] },
+                { "title": ["Energy: where power is produced", "エネルギー：発電の場所"], "view": { "lng": 15, "lat": 25, "zoom": 1.4 }, "layers": ["wp-dl-energy"] }
+              ] },
+            { "key": "uk-geo-interact", "group": "uk-geo-c", "label": "understand how human and physical processes interact to influence, and change landscapes, environments and the climate; and how human activity relies on effective functioning of natural systems", "gloss": "人間と自然の作用が相互に影響して景観・環境・気候を変えること、人間活動が自然のシステムに依存していることを理解する",
+              "basis": "how human activity relies on effective functioning of natural systems",
+              "maps": [
+                { "example": "el-nino-2023" },
+                { "example": "night-lights" }
+              ] },
+            { "key": "uk-geo-globes", "group": "uk-geo-d", "label": "build on their knowledge of globes, maps and atlases and apply and develop this knowledge routinely in the classroom and in the field", "gloss": "地球儀・地図・地図帳の知識を土台に、教室と野外で日常的に活用し発展させる",
+              "basis": "globes, maps and atlases",
+              "maps": [
+                { "title": ["The Earth as a globe, from satellite imagery", "衛星画像の地球儀"], "view": { "lng": 140, "lat": 30, "zoom": 1.6 }, "layers": [], "base": "sat", "proj": "globe" }
+              ] },
+            { "key": "uk-geo-os", "group": "uk-geo-d", "label": "interpret Ordnance Survey maps in the classroom and the field, including using grid references and scale, topographical and other thematic mapping, and aerial and satellite photographs", "gloss": "教室と野外で陸地測量部（Ordnance Survey）の地図を読む（グリッド参照と縮尺、地形図などの主題図、空中写真と衛星写真）", "maps": [] },
+            { "key": "uk-geo-gis", "group": "uk-geo-d", "label": "use Geographical Information Systems (GIS) to view, analyse and interpret places and data", "gloss": "地理情報システム（GIS）を使って場所とデータを見て、分析し、解釈する",
+              "basis": "view, analyse and interpret places and data",
+              "maps": [ { "example": "population-density" }, { "example": "hdi-2022" } ] },
+            { "key": "uk-geo-fieldwork", "group": "uk-geo-d", "label": "use fieldwork in contrasting locations to collect, analyse and draw conclusions from geographical data, using multiple sources of increasingly complex information", "gloss": "対照的な場所での野外調査で地理的なデータを集め、分析し、結論を導く", "maps": [] }
+          ]
+        },
+        {
+          "id": "ks3-history",
+          "source": "dfe-ks3-history",
+          "name": ["History, key stage 3", "歴史（キーステージ3）"],
+          "groups": [
+            { "key": "uk-his-a", "label": "Pupils should be taught about:", "gloss": "生徒が学ぶこと" }
+          ],
+          "units": [
+            { "key": "uk-his-1066", "group": "uk-his-a", "label": "the development of Church, state and society in Medieval Britain 1066-1509", "gloss": "中世ブリテン（1066〜1509年）の教会・国家・社会の展開", "maps": [] },
+            { "key": "uk-his-1509", "group": "uk-his-a", "label": "the development of Church, state and society in Britain 1509-1745", "gloss": "ブリテン（1509〜1745年）の教会・国家・社会の展開", "maps": [] },
+            { "key": "uk-his-1745", "group": "uk-his-a", "label": "ideas, political power, industry and empire: Britain, 1745-1901", "gloss": "思想・政治権力・産業・帝国：ブリテン（1745〜1901年）", "maps": [] },
+            { "key": "uk-his-1901", "group": "uk-his-a", "label": "challenges for Britain, Europe and the wider world 1901 to the present day", "gloss": "ブリテン・ヨーロッパ・世界の課題（1901年から現在まで）",
+              "basis": "challenges for Britain, Europe and the wider world 1901 to the present day",
+              "maps": [ { "example": "europe-1914" }, { "example": "europe-1920" }, { "example": "cold-war-1985" } ],
+              "tours": ["ww1-europe"] },
+            { "key": "uk-his-local", "group": "uk-his-a", "label": "a local history study", "gloss": "地域史の学習", "maps": [] },
+            { "key": "uk-his-pre1066", "group": "uk-his-a", "label": "the study of an aspect or theme in British history that consolidates and extends pupils’ chronological knowledge from before 1066", "gloss": "1066年以前からの年代的な知識を固め広げる、ブリテン史の一側面またはテーマの学習", "maps": [] },
+            { "key": "uk-his-world", "group": "uk-his-a", "label": "at least one study of a significant society or issue in world history and its interconnections with other world developments", "gloss": "世界史上の重要な社会または問題と、世界の他の展開との結び付きについての学習（少なくとも1つ）",
+              "basis": "its interconnections with other world developments",
+              "maps": [ { "example": "world-1279" }, { "example": "world-100" } ] }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "us-c3",
+      "quoted": "en",
+      "title": ["United States — C3 Framework for Social Studies State Standards, Dimension 2: geography and history", "米国 — C3 フレームワーク（社会科の州基準のための枠組み）次元2：地理・歴史"],
+      "note": ["The C3 Framework is guidance for states writing their standards, not a national curriculum; its Dimension 2 indicators run by grade band (K-2, 3-5, 6-8, 9-12).", "C3 フレームワークは州が基準を作るための指針で、全国共通のカリキュラムではありません。次元2の指標は学年帯（K-2・3-5・6-8・9-12）ごとに示されています。"],
+      "subjects": [
+        {
+          "id": "c3-geography",
+          "source": "ncss-c3",
+          "name": ["Geography (Dimension 2)", "地理（次元2）"],
+          "groups": [
+            { "key": "c3-geo", "label": "Dimension 2: Applying Disciplinary Concepts and Tools", "gloss": "次元2：教科の概念と道具を使う（地理）" }
+          ],
+          "units": [
+            { "key": "c3-geo-representations", "group": "c3-geo", "codes": "D2.Geo.1-3", "label": "Geographic Representations: Spatial Views of the World", "gloss": "地理的表現：世界の空間的な見方",
+              "basis": "Use maps, satellite images, photographs, and other representations",
+              "maps": [ { "example": "koppen" }, { "example": "population-density" } ],
+              "quest": { "kind": "where", "n": 10 } },
+            { "key": "c3-geo-environment", "group": "c3-geo", "codes": "D2.Geo.4-6", "label": "Human-Environment Interaction: Place, Regions, and Culture", "gloss": "人間と環境の相互作用：場所・地域・文化",
+              "basis": "relationships and interactions within and between human and physical systems",
+              "maps": [ { "example": "koppen" }, { "example": "night-lights" } ] },
+            { "key": "c3-geo-population", "group": "c3-geo", "codes": "D2.Geo.7-9", "label": "Human Population: Spatial Patterns and Movements", "gloss": "人口：空間的なパターンと移動",
+              "basis": "the distribution of human population",
+              "maps": [
+                { "example": "population-density" },
+                { "title": ["Fertility rate by country", "国別の合計特殊出生率"], "view": { "lng": 15, "lat": 20, "zoom": 1.4 }, "layers": ["dl-tfr"] }
+              ] },
+            { "key": "c3-geo-global", "group": "c3-geo", "codes": "D2.Geo.10-12", "label": "Global Interconnections: Changing Spatial Patterns", "gloss": "地球規模の結び付き：変化する空間的パターン",
+              "basis": "spatial patterns of world trade",
+              "maps": [
+                { "example": "undersea-cables" },
+                { "title": ["World trade", "世界の貿易"], "view": { "lng": 15, "lat": 25, "zoom": 1.4 }, "layers": ["wp-dl-trade"] }
+              ] }
+          ]
+        },
+        {
+          "id": "c3-history",
+          "source": "ncss-c3",
+          "name": ["History (Dimension 2)", "歴史（次元2）"],
+          "groups": [
+            { "key": "c3-his", "label": "Dimension 2: Applying Disciplinary Concepts and Tools", "gloss": "次元2：教科の概念と道具を使う（歴史）" }
+          ],
+          "units": [
+            { "key": "c3-his-change", "group": "c3-his", "codes": "D2.His.1-3", "label": "Change, Continuity, and Context", "gloss": "変化・継続・文脈",
+              "basis": "Change, Continuity, and Context",
+              "maps": [],
+              "tours": ["ww1-europe", "meiji-japan"],
+              "quest": { "kind": "when", "n": 10 } },
+            { "key": "c3-his-perspectives", "group": "c3-his", "codes": "D2.His.4-8", "label": "Perspectives", "gloss": "視点", "maps": [] },
+            { "key": "c3-his-sources", "group": "c3-his", "codes": "D2.His.9-13", "label": "Historical Sources and Evidence", "gloss": "歴史資料と証拠", "maps": [] },
+            { "key": "c3-his-causation", "group": "c3-his", "codes": "D2.His.14-17", "label": "Causation and Argumentation", "gloss": "因果と論証", "maps": [] }
+          ]
+        }
+      ]
+    }
+  ]
+}
