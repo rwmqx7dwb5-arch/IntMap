@@ -87,7 +87,7 @@ candidates ending in «Ask Atlas»).
 gates a push is **5 spec files / 0.3 min** against a ceiling of 0.3 min — that is the FIXED gate; a PR
 also runs, in core, **every spec it added or edited** (read from the diff, `scripts/tiers.mjs`
 `changedSpecs()`), which has no ceiling of its own on purpose (`scripts/test-budget.mjs`, `BUDGET_S`); the **whole** suite is
-**156 measured spec files / 87.6 min** (5,253 s) of serial browser time against a ceiling of 87.5 min (the room
+**156 measured spec files / 87.5 min** (5,250 s) of serial browser time against a ceiling of 87.5 min (the room
 `suite-time-room` made for the specs arriving after it is spent — see below); and
 `npm run test:checks` runs every `tests/**/*.test.mjs` with no browser at all, which
 `npm run test:checks` runs **296 Node test files** with no browser at all (counted from

@@ -20,13 +20,38 @@ async function boot(page) {
   await page.waitForFunction(() => !!window.__imap && window.__imap.isStyleLoaded(), null, { timeout: 60_000 });
 }
 
+/* (spacetime-train) MOTION HAS STOPPED — the condition a fixed wait stood in for. Each named element's box (and its scroll
+   offset) is read on three consecutive frames and must be the same on all three, and no finite animation or transition that
+   moves it, its ancestors or its descendants may be running. Reading the box forces the style flush, so a transition that a
+   class change has just asked for has already begun by the first read: a check made before the motion starts cannot pass.
+   Unlike a fixed wait it cannot judge a panel half-way through its move, and it does not wait past the moment it stops. */
+async function settle(page, sels, timeout = 15_000) {
+  const deadline = Date.now() + timeout;
+  for (;;) {
+    const ok = await page.evaluate((list) => new Promise((res) => {
+      const els = list.map((s) => document.querySelector(s));
+      if (els.some((e) => !e)) { res(false); return; }
+      const snap = () => els.map((e) => { const r = e.getBoundingClientRect(); return [r.left, r.top, r.width, r.height, e.scrollTop, e.scrollLeft].map((v) => Math.round(v * 2) / 2).join(','); }).join('|');
+      const moving = () => document.getAnimations().some((a) => {
+        if (a.playState !== 'running' || !a.effect || !(a.effect.target instanceof Element)) return false;
+        if (a.effect.getTiming().iterations === Infinity) return false;   /* a spinner never stops; it does not move the panel */
+        const t = a.effect.target; return els.some((e) => t === e || t.contains(e) || e.contains(t));
+      });
+      const a = snap();
+      requestAnimationFrame(() => { const b = snap(); requestAnimationFrame(() => { const c = snap(); res(a === b && b === c && !moving()); }); });
+    }), sels);
+    if (ok) return;
+    if (Date.now() > deadline) throw new Error('still moving after ' + timeout + ' ms: ' + sels.join(', '));
+  }
+}
+
 /* a real finger: drag up inside the element `sel` by `dy` px (CDP touch, not scrollTop) */
 async function swipeUpIn(page, cdp, sel, dy) {
   const r = await page.evaluate((s) => { const b = document.querySelector(s).getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height * 0.6 }; }, sel);
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: r.x, y: r.y, id: 1 }] });
   for (let i = 1; i <= 8; i++) { await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: r.x, y: r.y - (dy * i) / 8, id: 1 }] }); await page.waitForTimeout(16); }
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-  await page.waitForTimeout(500);
+  await settle(page, [sel]);
 }
 
 /* in the page: every floater, by the facts above. Returns [{ id, label }] — `label` is what a reader of the failure needs. */
@@ -95,12 +120,12 @@ test.describe('mobile-panels-reach: 375 × 812, touch', () => {
     await boot(page);
     await page.evaluate(async () => { await window.IntMapLazy.need('ashPlume'); window.IntMapAshPlume.open({ lng: 138.73, lat: 35.36 }); });
     await page.waitForSelector('#ash-panel .ash-go', { state: 'visible', timeout: 20_000 });
-    await page.waitForTimeout(800);
+    await settle(page, ['#ash-panel', '#sidebar']);
     const cdp = await page.context().newCDPSession(page);
     await expectReachable(page, cdp, '#ash-panel');
     /* the sheet moves: the panel follows its NEW top (half is a smaller map than peek, so the panel is capped and scrolls) */
     await page.evaluate(() => window.__setDetent('half', false));
-    await page.waitForTimeout(700);
+    await settle(page, ['#ash-panel', '#sidebar']);
     await expectReachable(page, cdp, '#ash-panel');
   });
 
@@ -110,7 +135,7 @@ test.describe('mobile-panels-reach: 375 × 812, touch', () => {
     const cdp = await page.context().newCDPSession(page);
     await page.evaluate(async () => { window.IntMapRadiation.openPanel({ lng: 138.73, lat: 35.36 }); });
     await page.waitForSelector('#rad-panel', { state: 'visible', timeout: 20_000 });
-    await page.waitForTimeout(600);
+    await settle(page, ['#rad-panel', '#sidebar']);
     await expectReachable(page, cdp, '#rad-panel');
   });
 
@@ -123,7 +148,7 @@ test.describe('mobile-panels-reach: 375 × 812, touch', () => {
     const r = await page.evaluate(async () => { const X = window.IntMapAtlasExec; return X ? await X.execute('panel.tourBuilder', { action: 'open' }, {}) : 'no exec'; });
     console.log('tour open ->', JSON.stringify(r).slice(0, 200));
     await page.waitForSelector('#im-tour-builder', { state: 'visible', timeout: 20_000 });
-    await page.waitForTimeout(600);
+    await settle(page, ['#im-tour-builder', '#sidebar']);
     await expectReachable(page, cdp, '#im-tour-builder');
   });
 
@@ -141,7 +166,7 @@ test.describe('mobile-panels-reach: 375 × 812, touch', () => {
     await page.evaluate(() => [...document.querySelectorAll('#ctx-menu button[data-act]')].find((x) => /About the place/.test(x.textContent)).click());
     await page.waitForSelector('#pd-popup', { state: 'visible', timeout: 20_000 });
     await page.waitForFunction(() => document.querySelectorAll('#pd-popup [data-pending]').length === 0, null, { timeout: 30_000 });
-    await page.waitForTimeout(600);
+    await settle(page, ['#pd-popup', '#sidebar']);
     await expectReachable(page, cdp, '#pd-popup');
   });
 
@@ -164,7 +189,7 @@ test.describe('mobile-panels-reach: 375 × 812, touch', () => {
     /* the layer screen at half — the state production showed */
     await page.click('#m-fab-map');
     await page.evaluate(() => window.__setDetent('half', false));
-    await page.waitForTimeout(900);
+    await settle(page, ['#iol-fab', '#sidebar']);
     await expectReachable(page, cdp, '#iol-fab');
     /* the sheet's own field is the sheet's: nothing that floats takes its taps */
     const q = await page.evaluate(() => {
@@ -178,7 +203,7 @@ test.describe('mobile-panels-reach: 375 × 812, touch', () => {
     if (q.field && q.field.y > 0 && q.field.y < 812) expect(q.field.own, 'the layer search field takes its own taps (got ' + q.field.hit + ')').toBe(true);
     /* full: no map above the sheet — the lone pill steps back and the sheet keeps every tap */
     await page.evaluate(() => window.__setDetent('full', false));
-    await page.waitForTimeout(900);
+    await settle(page, ['#iol-fab', '#sidebar']);
     const full = await page.evaluate(() => {
       const f = document.getElementById('iol-fab'), r = f.getBoundingClientRect();
       const hit = r.width ? document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) : null;
@@ -187,7 +212,7 @@ test.describe('mobile-panels-reach: 375 × 812, touch', () => {
     expect(full.took, 'over a full sheet the pill takes no finger (data-m-fit=' + full.fit + ')').toBe(false);
     /* and it comes back when the sheet comes down */
     await page.evaluate(() => window.__setDetent('half', false));
-    await page.waitForTimeout(900);
+    await settle(page, ['#iol-fab', '#sidebar']);
     await expectReachable(page, cdp, '#iol-fab');
   });
 
@@ -197,12 +222,12 @@ test.describe('mobile-panels-reach: 375 × 812, touch', () => {
     await page.click('#btn-community');
     await page.evaluate(() => window.__setDetent('half', false));
     await page.waitForFunction(() => document.querySelectorAll('#atlas-panel .atl-chip').length > 0, null, { timeout: 30_000 });
-    await page.waitForTimeout(700);
+    await settle(page, ['#atlas-panel', '#sidebar']);
     await page.evaluate(() => document.querySelector('#atlas-panel .atl-chip').click());
     await page.waitForSelector('#atlas-panel .atl-pv-login', { timeout: 10_000 });
-    await page.waitForTimeout(1200);
+    await settle(page, ['#atlas-panel .atl-ex', '#sidebar']);
     await page.evaluate(() => window.__setDetent('half', true));
-    await page.waitForTimeout(900);
+    await settle(page, ['#atlas-panel .atl-ex', '#sidebar']);
     const cdp = await page.context().newCDPSession(page);
     const box = await page.evaluate(() => { const e = document.querySelector('#atlas-panel .atl-ex'), b = e.getBoundingClientRect(); return { h: b.height, scrolls: e.scrollHeight > e.clientHeight + 2, sheetTop: document.getElementById('sidebar').getBoundingClientRect().top, detent: (document.body.className.match(/sheet-(full|min|hidden)/) || ['sheet-half'])[0] }; });
     expect(box.detent, 'the sheet is at half').toBe('sheet-half');

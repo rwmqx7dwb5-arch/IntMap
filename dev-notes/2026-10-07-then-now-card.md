@@ -109,6 +109,7 @@ Atlas `timeCompare` に `layer` を付けて閉じた窓へ投げたときも同
 > 天井は上げず、主張しない待ちを除いて払った——本 spec の `expect.poll` を 100 ms 間隔に（既定の後退で第 2 ページのスワイプ確認に約 1.9 s かかっていた）、
 > `tests/map-postcard.spec.js` の固定待ち 2 つ（1.2 s・1.5 s）を「主張が成り立つまで 100 ms ごとに訊く」に置き換え、3 本を 1 worker・各 3 回で測り直して最遅を記入
 > （then-now-card 6.1〜6.4 s → 7・map-postcard 9.3〜10.4 s → 11）。place-dossier は 10 回で 7.0〜15.6 s と幅があり（遅い 3 回は地点の行の逆ジオコーダ待ちで、この変更が足したものではない）、記入は 13 のまま。
+> 残る 3 s は携帯の 2 本の画面遷移の固定待ちから払った——`tests/mobile-panels-reach.spec.js` の 12 か所と `tests/mobile-next.spec.js` の 1 か所を「要素の箱と scroll が連続 3 フレーム同じで、それを動かす有限のアニメーションが走っていない」まで待つ条件に（遷移の途中で届くかを判定しない＝固定待ちより強い）。各 5 回で最遅を記入: mobile-panels-reach 34.7〜37.6 s → 38（43 から）、mobile-next 17.8〜21.7 s → 22（20 から。札にこの場所の歴史の節が加わった分を含む）。天井は 5,251 → 5,250（#R205 の上限の内）。
 
 > 統合列車の CI で落ちた検査 2 本は、事実ではなく綴りを固定していたので事実に向け直した——
 > `tests/seam-coupling-and-camera-checks.test.mjs` R179 は「副ビューに許す呼び出し」を手書きの一覧で持ち、契約の正式な成員 `whenCanDraw` を生の描画呼び出しと呼んだ。一覧を契約の宣言（`types/geo-engine.d.ts` の `GeoEngineFacade`）から読むようにした。
