@@ -311,7 +311,7 @@ export function ensureHist() {
 }
 /* one index per record object, of folded name → entries; built the first time a name is asked */
 const _idx = new WeakMap();
-function indexOf(records, namesOf) {
+function nameIndexFor(records, namesOf) {
   let ix = _idx.get(records);
   if (!ix) { ix = new Map(); records.forEach((r, i) => namesOf(r).forEach((nm) => { const k = fold(nm.name); if (!k) return; let a = ix.get(k); if (!a) ix.set(k, a = []); a.push({ i, nm }); })); _idx.set(records, ix); }
   return ix;
@@ -350,7 +350,7 @@ export function histCandidates(place, when, lang) {
     const H = window.IntMapHistCities, recs = H && H.records && H.records();
     if (recs && recs.length) {
       const seen = new Map();
-      for (const h of lookup(indexOf(recs, cityNames), place)) {
+      for (const h of lookup(nameIndexFor(recs, cityNames), place)) {
         const c = recs[h.i], prev = seen.get(h.i);
         if (prev && prev.level >= h.level) continue;
         const at = d != null ? spanAt(c, d) : null, today = todayName(c, lang);
@@ -369,7 +369,7 @@ export function histCandidates(place, when, lang) {
     if (recs && recs.length) {
       const seen = new Set();
       const astro = (raw) => fromEra(Math.abs(raw), raw < 0);   /* Pleiades writes 1000 BC as −1000 (js/hist-places.js) */
-      for (const h of lookup(indexOf(recs, pleiadesNames), place)) {
+      for (const h of lookup(nameIndexFor(recs, pleiadesNames), place)) {
         if (seen.has(h.i)) continue; seen.add(h.i);
         const p = recs[h.i];
         const attested = y == null || (p.names || []).some((n) => astro(n.s) <= y && astro(n.e) >= y);
