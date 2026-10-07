@@ -65,3 +65,11 @@ newsjp: 検索欄とコマンドパレットに場所と時刻を一度に打て
   `js/atlas-where-when.js` に出して遅延にした——それでも項目そのもの（planner が読む文）は Atlas のチャンクに要る。
 - `command-palette` は「場所＋時刻」の行と注記の分 2.3 kB 増えた（15.4 kB）。読み方そのものは `where-when` チャンクに置き、パレットには呼び出しだけ。
 - 両方の行を `node scripts/perf-budget.mjs --update` で上げた（越えた行だけが上がる）。
+
+## 6. Atlas の検索で time.travel を押しのけていた（CI の atlas-reach ③ 36 < 37）
+
+能力の検索（`js/atlas-capabilities.js` `search`）は、ある分類の能力が 1 つでも「名指されて」いれば、分類の示唆（`time` の hint）だけで
+当たった同じ分類の行を落とす。time.travel は日付を訊く問いに自分の証拠を持たず hint だけで残っていたので、`time.whereWhen` が
+Berlin などで名指された「On what date was the Berlin Wall opened? Show Berlin on the map.」で消えた。文書の stretch は `{"type":…}` ごとに
+互いに素なので、同じブロックに並べても証拠は共有されない。⇒ time.travel 自身に読者の言葉（「何年何月何日」「on what date」など）を
+`phrases` として持たせた。答えの鍵での到達は 36 → 38（床 37 は触っていない。「東海道新幹線が開業したのは何年何月何日？」でも time.travel が届くようになった）。

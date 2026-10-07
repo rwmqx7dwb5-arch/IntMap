@@ -254,6 +254,10 @@
             {
               "id": "time.cityPopulation",
               "tool": "time_cityPopulation"
+            },
+            {
+              "id": "time.whereWhen",
+              "tool": "time_whereWhen"
             }
           ]
         }
