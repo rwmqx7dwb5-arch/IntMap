@@ -56,7 +56,7 @@ import { OTD_SITEMAP } from './on-this-day-pages.mjs';   /* (marketing-next) the
 import { COUNTRY_HUB, COUNTRY_SITEMAP } from './country-pages.mjs';   /* (country-pages) the country pages' hub and sitemap (a cycle, read only when a page or the index is written) */
 import { TEXT as COUNTRY_TEXT } from './country-pages-text.mjs';
 import { WEEKLY_SITEMAP } from './weekly-earth-pages.mjs';   /* (weekly-earth) the weekly digest's sitemap, joined the same way (the same cycle, read only when the index is written) */
-import { YEAR_HUB, YEAR_SITEMAP } from './year-pages.mjs';   /* (history-year-pages) the year pages' hub and sitemap (the same cycle, read only when a hub or the index is written) */
+import { YEAR_HUB, YEAR_SITEMAP, chooseYears } from './year-choice.mjs';   /* (history-year-pages) the year pages' hub, sitemap and choice — a module that imports nothing from here */
 import { TEXT as YEAR_TEXT } from './year-pages-text.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -379,7 +379,6 @@ export async function collect(opt = {}) {
   const covering = (regionId, y) => (byRegion.get(regionId) || []).find((q) => y >= q.first && y <= q.last) || null;
   for (const p of pages) p.elsewhere = regions.filter((r) => r.id !== p.region).map((r) => covering(r.id, p.first)).filter(Boolean);
   /* (history-year-pages) the years scripts/year-pages.mjs writes a page for — its own rule, asked here so a world page links them */
-  const { chooseYears } = await import('./year-pages.mjs');
   const yearPages = new Set((await chooseYears(R, JSON.parse(readFileSync(join(ROOT, 'data/on-this-day.json'), 'utf8')))).years);
   return { bands: B, src, regions, pages, byRegion, yearPages };
 }
