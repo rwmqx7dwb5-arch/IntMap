@@ -323,17 +323,44 @@ export function searchGeocode(HOST){
   async function doGeocode(opt){
     const suggest=!!(opt&&opt.suggest);
     /* (search-identity) Enter: the same search, and then the first candidate is taken — see the end of this function */
-    const go=!!(opt&&opt.go)&&!suggest;
-    const inp=document.getElementById('ms-input'), q=inp.value.trim(), res=document.getElementById('ms-results');
+    let go=!!(opt&&opt.go)&&!suggest;
+    /* (where-when-search) `typed` is the line as the reader wrote it; `q` is the PLACE part the geocoders are asked for —
+       the two differ only when js/where-when.js reads an instant in the line (below) */
+    const inp=document.getElementById('ms-input'), typed=inp.value.trim(), res=document.getElementById('ms-results');
+    let q=typed;
     /* ⚠ (mobile-shell-flow) A PICK ENDS THE SEARCH. The suggestion timer (js/app-body.js, 120 ms after a keystroke)
        can fire AFTER the reader has already picked a row — MEASURED on production: 「Paris」 typed and its first row
        tapped left eight candidate rows open five seconds later, over the sheet raised for them. What the pick wrote
        into the field is the place's NAME, not a question, so a suggestion for exactly that text is not asked; any
        keystroke after the pick clears the mark (`_wirePicked` below). */
     _wirePicked(inp);
-    if(suggest && inp._imPicked!=null && inp._imPicked===q) return;
+    if(suggest && inp._imPicked!=null && inp._imPicked===typed) return;
     const gen=++_gcGen;
     if(!q){ if(suggest&&res){ res.style.display='none'; res.innerHTML=''; _galleryEmptyState(inp,res); } return; }   /* (showcase-gallery) the empty field's own state */
+    /* ══ (where-when-search) «WHERE + WHEN» — 「京都 1600」「Berlin May 1945」「ローマ 紀元前44年」「1914」 ═══════════════════
+       js/where-when.js reads the line (the one reading every door uses: this field, the phone's sheet, the palette and
+       Atlas); it is fetched the first time a line carries a digit or 「元年」, never at boot. When it reads an instant:
+         · the place part is what the card searches — local rows, the historical names and the three geocoders, as ever —
+           and every row says «place · instant»; choosing one flies there AND sets the master clock (`applyWhen`), and a
+           past instant on the clock is the historical map;
+         · an instant with no place is one row, «Go to 1914», that moves only the clock (a bare 4-digit line is also
+           searched as a place, so a postcode still finds its area);
+         · ⚠ ONE ENTER WHEN THE READING IS ONE PLACE (.agents/rules/one-pass-or-a-reason.md — the rule Atlas's
+           `time.whereWhen` keeps). An instant with no place moves the clock at once. With a place, Enter goes when ONE
+           place's whole name is the place typed (the device's rows and the historical records', a city's copies counted
+           once — js/where-when.js `samePlace`), or when the sources settle on one place at all; only when several places
+           answer does the card stay open for the reader to choose. The rows are on screen while the line is typed
+           (the phone's suggestions; the card on the button), so the reading is visible before Enter.
+         · what the reading cannot do (an era it cannot convert, a lunisolar month, an instant past the clock's reach)
+           is said in a line above the rows, never silently dropped. */
+    let when=null, rowWhen=null, WW=null, whenNote=null;
+    if(/\d|元\s*年/.test(typed)){
+      try{ WW=await import('./where-when.js'); }catch(_){ WW=null; }
+      if(gen!==_gcGen) return;
+      if(WW){ const p=WW.parse(typed); whenNote=WW.problemText(p,HOST.lang);
+        if(p.when&&!p.problem){ when=p.when; if(p.place||p.when.form!=='bare'){ q=p.place; rowWhen=when; } } }
+    }
+    if(go&&when&&!rowWhen){ if(res){ res.style.display='none'; } _picked(inp,typed); WW.applyWhen(when,{source:'search'}); return; }   /* an instant with no place: one reading, one Enter */
     /* (a11y-shared-dialog) the results are a listbox driven from the field — ArrowDown/ArrowUp move, Enter picks,
        Escape closes the list; focus stays in the field (the combobox pattern js/routing-ui.js's stop field uses).
        Wired once per field, here, because this is the file that renders the rows. */
@@ -384,8 +411,10 @@ export function searchGeocode(HOST){
         const twins=rows.filter((o)=>same(r,o)), shown=new Set(String(r.f.label).split(',').map((s)=>_nameKey(s)));
         const inOther=(w)=>twins.every((o)=>(o.f.within||[]).some((x)=>_nameKey(x)===_nameKey(w)));
         const where=twins.length?(r.f.within||[]).find((w)=>!shown.has(_nameKey(w))&&!inOther(w)):null;
-        const sub=[_kindOf(r.f.cls),where].filter(Boolean).join(' · ');
-        r.el.textContent=r.f.label;
+        /* (where-when-search) what the historical city record called this place at the instant, when it differs */
+        let era=null; if(rowWhen&&!r.f.note){ try{ const e=WW.eraNameAt(r.f.lng,r.f.lat,rowWhen,HOST.lang,r.f.name); if(e) era=IntMapLang.t(HOST.lang,'named '+e+' then','この年の名: '+e); }catch(_){} }
+        const sub=[era,r.f.note,_kindOf(r.f.cls),where].filter(Boolean).join(' · ');
+        r.el.textContent=r.f.label+(rowWhen?' · '+whenLabel:'');
         if(sub){ const s=document.createElement('span'); s.className='ms-kind'; s.textContent=sub; r.el.appendChild(s); }
       }); };
     /* (search-identity) WHERE a row goes on the card: the order localFuzzyPlaces states (`_rankCmp` — how much of the
@@ -398,20 +427,34 @@ export function searchGeocode(HOST){
       let names=[f.name]; try{ if(_rules&&_rules.featureNames){ const n=_rules.featureNames(f.raw); if(n.length) names=n; } }catch(_){}
       let scale=Infinity; try{ const PF=window.IntMapPlaceFraming, z=PF.zoomTable()[f.cls]; scale=isFinite(z)?z:PF.defaultZoom(); }catch(_){}
       return {level:_nameLevel(_rules,q,names), scale, pop:+(f.raw&&f.raw.population)||0}; };
-    const addItem=(label,lng,lat,raw,kind,given)=>{ if(gen!==_gcGen||isNaN(lng)||isNaN(lat))return;
-      const f=_rowFacts(label,lng,lat,raw,kind); f.rank=_rankFor(f,given);
+    const addItem=(label,lng,lat,raw,kind,given,note,guard)=>{ if(gen!==_gcGen||isNaN(lng)||isNaN(lat))return;
+      const f=_rowFacts(label,lng,lat,raw,kind); f.rank=_rankFor(f,given); if(note) f.note=note; if(guard) f.guard=guard;   /* (where-when-search) a historical record's own line, and its identity radius (`samePlace`) */
       const same=rows.find((r)=>_sameFeature(r.f,f,_nameKey));
       if(same){ if(f.rich>same.f.rich){ same.f=f; _paint(); } return; }   /* the row that knows more stays, rewritten in place */
       const d=document.createElement('div'); d.className='ms-item'; d.setAttribute('role','option'); const row={f,el:d};
-      d.onclick=()=>{ const g=row.f; res.style.display='none'; _picked(inp,String(g.label).split(',')[0].split(' · ')[0]); gotoPlace(g.lng,g.lat,g.label,g.raw||null,g.kind||null); };
+      d.onclick=()=>{ const g=row.f; res.style.display='none'; _picked(inp,rowWhen?typed:String(g.label).split(',')[0].split(' · ')[0]); gotoPlace(g.lng,g.lat,g.label,g.raw||null,g.kind||null); if(rowWhen) WW.applyWhen(rowWhen,{source:'search'}); };
       const at=rows.findIndex((r)=>_rankCmp(f.rank,r.f.rank)<0);
-      if(at<0){ rows.push(row); res.appendChild(d); } else { res.insertBefore(d,rows[at].el); rows.splice(at,0,row); }
+      if(at<0){ rows.push(row); const atl=res.querySelector('.ms-atlas'); if(atl) res.insertBefore(d,atl); else res.appendChild(d); } else { res.insertBefore(d,rows[at].el); rows.splice(at,0,row); }   /* (where-when-search) a row that arrives late (the historical names) still goes above «Ask Atlas» */
       _paint(); };
     /* (#R15e) Show strong LOCAL matches IMMEDIATELY — was awaiting Nominatim with no timeout, so a slow /
        unreachable geocoder left the box frozen on "Loading…" forever ("結果が出てこない"). Now local
        (countries/capitals/gazetteer) appear instantly; the external geocoder is merged in with a hard
        timeout so it can never hang the search. */
     res.innerHTML=''; try{ inp._imListbox.reset(); }catch(_){}
+    /* (where-when-search) the note, the time-only row and the historical names — see the note at the top of this function */
+    const whenLabel=when?WW.whenText(when,HOST.lang):'';
+    let noteEl=null; const _keepNote=()=>{ if(noteEl&&!noteEl.isConnected) res.insertBefore(noteEl,res.firstChild); };
+    if(whenNote){ noteEl=document.createElement('div'); noteEl.className='ms-note'; noteEl.setAttribute('role','note'); noteEl.textContent=whenNote; res.appendChild(noteEl); }
+    if(when&&!rowWhen){ const d=document.createElement('div'); d.className='ms-item ms-when'; d.setAttribute('role','option');
+      d.textContent=IntMapLang.t(HOST.lang,'Go to '+whenLabel,whenLabel+' へ移動');
+      const s2=document.createElement('span'); s2.className='ms-kind'; s2.textContent=IntMapLang.t(HOST.lang,'Time only · the map stays where it is','時刻だけ · 場所はそのまま'); d.appendChild(s2);
+      d.onclick=()=>{ res.style.display='none'; _picked(inp,typed); WW.applyWhen(when,{source:'search'}); };
+      res.appendChild(d); }
+    if(when&&!q){ _askAtlasRow(res,typed); return; }
+    let histP=null;
+    if(rowWhen) histP=WW.ensureHist().then(()=>{ if(gen!==_gcGen) return;
+      WW.histCandidates(q,rowWhen,HOST.lang).forEach(h=>addItem(h.name,h.lng,h.lat,null,h.kind,{level:h.level,scale:_classScale(h.kind),pop:0},h.note,h.guard));
+      if(res.querySelector('.ms-item')) res.style.display='block'; });
     /* (#R185) …and the extent rides along as the shape js/place-framing.js already reads — a
        Nominatim-style [S, N, W, E] box plus the point — so one ladder frames local and remote
        results alike rather than there being a second copy of the decision here. */
@@ -419,11 +462,15 @@ export function searchGeocode(HOST){
        the OUTLIER test — a guess about a provider box of unknown provenance, and the wrong question
        to ask of one js/country-extent.js has already trimmed. Without it twenty countries held their
        own measured footprint and were still flown to the flat `country` zoom of 4.4. */
-    if(suggest){ local.forEach(l=>addItem(l.name,l.lng,l.lat,_localRaw(l),l.kind,l)); _askAtlasRow(res,q); if(!res.children.length) res.style.display='none'; return; }
+    if(suggest){ local.forEach(l=>addItem(l.name,l.lng,l.lat,_localRaw(l),l.kind,l)); _askAtlasRow(res,typed); if(!res.children.length) res.style.display='none'; return; }
     local.filter(l=>l.score>=72).forEach(l=>addItem(l.name,l.lng,l.lat,_localRaw(l),l.kind,l));
     /* (search-identity) Enter with a row on the device whose WHOLE name is the query: that row is the answer and it
        is already in hand — go now, ask no network. Anything less waits for the three geocoders (below). */
-    if(go&&rows[0]&&rows[0].f.rank.level===3){ rows[0].el.click(); return; }
+    if(go&&!rowWhen&&rows[0]&&rows[0].f.rank.level===3){ rows[0].el.click(); return; }
+    /* (where-when-search) the same «already in hand» rule over the device's rows AND the historical records' (awaited:
+       「江戸」 is only in the record) — one place whose whole name is the place typed: go now, ask no network */
+    const _onePlace=(exactOnly)=>{ const out=[]; rows.forEach((r)=>{ if(exactOnly&&r.f.rank.level!==3) return; if(!out.some((o)=>WW.samePlace(o.f,r.f))) out.push(r); }); return out.length===1?out[0]:null; };
+    if(go&&rowWhen){ try{ await histP; }catch(_){} if(gen!==_gcGen) return; const one=_onePlace(true); if(one){ one.el.click(); return; } }
     if(!res.children.length) res.innerHTML=`<div class="ms-loading">${HOST.t('loading')}</div>`;
     /* (#R16) The mobile "no results" bug: under file:// / on mobile networks Nominatim is often rate-limited,
        blocked (null Origin) or just slow, and on a fresh load countryStats isn't loaded yet, so there was
@@ -460,19 +507,22 @@ export function searchGeocode(HOST){
        frames the Alps like the Alps instead of giving a mountain range the default town zoom. */
     try{ const _R=await rulesP; const _reg=(_R&&_R.regionBox)?_R.regionBox(q):null;
       if(_reg) addItem(_reg.name,_reg.lng,_reg.lat,{boundingbox:[_reg.box[0][1],_reg.box[1][1],_reg.box[0][0],_reg.box[1][0]],lat:_reg.lat,lon:_reg.lng,homeExtent:true},'region'); }catch(_){}
-    await Promise.allSettled([omP,nomP,phP]); clearTimeout(to);
+    await Promise.allSettled([omP,nomP,phP,histP]); clearTimeout(to);
     if(gen!==_gcGen) return;   /* (mobile-shell) the reader typed on — this card is no longer theirs */
     const lo=res.querySelector('.ms-loading'); if(lo) lo.remove();
     if(!res.querySelector('.ms-item')){ res.innerHTML=''; rows.length=0; local.forEach(l=>addItem(l.name,l.lng,l.lat,_localRaw(l),l.kind,l)); }   /* weak local fallback */
     if(!res.querySelector('.ms-item')){ res.innerHTML=`<div class="ms-loading">${HOST.t('noMatch')}</div>`; }
+    _keepNote();   /* (where-when-search) the two rewrites above must not take the note with them */
     /* ══ (search-identity) ENTER GOES ══════════════════════════════════════════════════════════════════════════
        Observed on production: Enter on 「Tokyo」 did nothing visible for five seconds — it re-ran this search and stopped
        at the card. Enter is the reader saying 「that one」 without pointing, so it takes the first candidate, the row
        the card ranks first, through the row's own click — the same pick, the same flight, the same card. A query
        with no candidate at all leaves the 「no match」 line, and nothing moves. (An IME's confirming Enter never gets
        here: js/app-body.js drops a keydown that is still composing.) */
-    if(go&&rows[0]){ rows[0].el.click(); return; }
-    _askAtlasRow(res,q);
+    if(go&&rows[0]){ if(!rowWhen){ rows[0].el.click(); return; }
+      /* (where-when-search) after the geocoders: one place still goes; several stay on the card to choose from */
+      const one=_onePlace(true)||_onePlace(false); if(one){ one.el.click(); return; } }
+    _askAtlasRow(res,typed);
   }
   let searchCardEl=null, searchCardData=null, searchCardOnMove=null;
   function closeSearchCard(){

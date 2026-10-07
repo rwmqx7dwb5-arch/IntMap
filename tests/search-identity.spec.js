@@ -12,6 +12,9 @@
  *  The three geocoders are answered with nothing here: what is under test is what the device itself
  *  offers, which is what produced every one of the observations above.
  *  tests/search-identity-checks.test.mjs carries the halves that need no browser.
+ *  (where-when-search) The same boots also carry «where + when» (js/where-when.js; the parse is evaluated in
+ *  tests/where-when-search-checks.test.mjs): one reading goes on ONE Enter (an instant alone; one place) and flies AND sets
+ *  the master clock; several places stay on the card to choose from; the palette reads the same line the same way.
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
 
@@ -89,6 +92,50 @@ test.describe('desktop', () => {
     const at = await landed(page);
     expect(km(at, TOKYO), `Enter landed at ${at.lat.toFixed(3)}, ${at.lng.toFixed(3)}`).toBeLessThan(30);
     expect(at.field).toBe('Tokyo');
+
+    /* (where-when-search) 「1914」: an instant alone is one reading — ONE Enter sets the clock and the map stays */
+    await page.evaluate(() => { const x = document.querySelector('.src-card-close'); if (x) x.click(); window.IntMapTime.setNow({ source: 'test' }); });
+    const c0 = await page.evaluate(() => window.__imap.getCenter());
+    await page.click('#ms-input'); await page.fill('#ms-input', '1914');
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => !window.IntMapTime.isLive(), null, { timeout: 15_000 });
+    await page.waitForTimeout(500);
+    const t1914 = await page.evaluate(() => ({ y: window.IntMapTime.year(), c: window.__imap.getCenter(), moving: window.__imap.isMoving() }));
+    expect(t1914.y).toBe(1914);
+    expect(t1914.moving || km(t1914.c, c0) > 1, 'a time-only line moved the map').toBe(false);
+    /* 「江戸 1868-01」: one place (only the historical record knows 江戸 — it is Tokyo) — ONE Enter flies and sets the month */
+    await page.evaluate(() => { window.IntMapTime.setNow({ source: 'test' }); window.__imap.jumpTo({ center: [0, 20], zoom: 2 }); });
+    await page.click('#ms-input'); await page.fill('#ms-input', '江戸 1868-01');
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => !window.IntMapTime.isLive(), null, { timeout: 30_000 });
+    const edo = await landed(page);
+    expect(await page.evaluate(() => window.IntMapTime.iso())).toBe('1868-01-15');
+    expect(km(edo, TOKYO), `江戸 1868-01 landed at ${edo.lat.toFixed(3)}, ${edo.lng.toFixed(3)}`).toBeLessThan(30);
+    /* 「Salisbury 1950」: several places answer (Salisbury, England; Salisbury — Harare — in the city record) — Enter keeps
+       the card open to choose from, and neither the clock nor the map moves */
+    await page.evaluate(() => { const x = document.querySelector('.src-card-close'); if (x) x.click(); window.IntMapTime.setNow({ source: 'test' }); window.__imap.jumpTo({ center: [0, 20], zoom: 2 }); });
+    await page.click('#ms-input'); await page.fill('#ms-input', 'Salisbury 1950');
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => document.querySelectorAll('#ms-results .ms-item:not(.ms-atlas)').length >= 2 && !document.querySelector('#ms-results .ms-loading'), null, { timeout: 30_000 });
+    await page.waitForTimeout(800);
+    const amb = await page.evaluate(() => ({ live: window.IntMapTime.isLive(), c: window.__imap.getCenter(), rows: [...document.querySelectorAll('#ms-results .ms-item:not(.ms-atlas)')].map((e) => e.textContent) }));
+    expect(amb.live, `several places moved the clock ${JSON.stringify(amb.rows)}`).toBe(true);
+    expect(km(amb.c, { lat: 20, lng: 0 }), 'several places moved the map').toBeLessThan(1);
+    expect(amb.rows.every((r) => /Salisbury · 1950/.test(r)), JSON.stringify(amb.rows)).toBe(true);
+    await page.keyboard.press('Escape');
+    /* …and the palette reads 「Berlin May 1945」 as one place at one month */
+    await page.evaluate(() => window.IntMapTime.setNow({ source: 'test' }));
+    await page.keyboard.press(process.platform === 'darwin' ? 'Meta+k' : 'Control+k');
+    await page.waitForSelector('#cp-input', { timeout: 10_000 });
+    await page.fill('#cp-input', 'Berlin May 1945');
+    await page.waitForSelector('#im-palette .cp-row[data-kind="when"]', { timeout: 20_000 });
+    const first = await page.evaluate(() => document.querySelector('#im-palette .cp-row[data-kind="when"] .cp-t').textContent);
+    expect(first).toMatch(/^Berlin · May 1945$/);
+    await page.click('#im-palette .cp-row[data-kind="when"]');
+    await page.waitForFunction(() => !window.IntMapTime.isLive(), null, { timeout: 6_000 });
+    const may = await landed(page);
+    expect(await page.evaluate(() => window.IntMapTime.iso())).toBe('1945-05-15');
+    expect(km(may, { lat: 52.52, lng: 13.405 }), `Berlin · May 1945 landed at ${may.lat.toFixed(3)}, ${may.lng.toFixed(3)}`).toBeLessThan(40);
   });
 });
 
@@ -116,5 +163,18 @@ test.describe('phone', () => {
     await page.waitForFunction(() => window.__imap.isMoving() || document.querySelector('.search-result-card'), null, { timeout: 6_000 });
     const at = await landed(page);
     expect(km(at, TOKYO), `Enter landed at ${at.lat.toFixed(3)}, ${at.lng.toFixed(3)}`).toBeLessThan(30);
+
+    /* (where-when-search) the phone's sheet: 「Constantinople 1453」 suggests the city by the name it had; a tap flies to
+       Istanbul and sets the clock to 1453 */
+    await page.evaluate(() => { window.IntMapTime.setNow({ source: 'test' }); window.__imap.jumpTo({ center: [0, 20], zoom: 2 }); });
+    await page.click('#ms-input'); await page.fill('#ms-input', '');
+    await page.keyboard.type('Constantinople 1453', { delay: 10 });
+    const row = page.locator('#ms-results .ms-item', { hasText: 'Constantinople · 1453' }).first();
+    await row.waitFor({ timeout: 30_000 });
+    expect(await row.textContent()).toMatch(/Istanbul/);
+    await row.tap();
+    const ist = await landed(page);
+    expect(km(ist, { lat: 41.0082, lng: 28.9784 }), `landed at ${ist.lat.toFixed(3)}, ${ist.lng.toFixed(3)}`).toBeLessThan(30);
+    expect(await page.evaluate(() => ({ y: window.IntMapTime.year(), live: window.IntMapTime.isLive() }))).toEqual({ y: 1453, live: false });
   });
 });

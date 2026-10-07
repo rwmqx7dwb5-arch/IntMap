@@ -335,6 +335,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["data.studio","dataStudio","tableToMap,mapMyTable,tableStudio,spreadsheetMap","data","dataStudio","map.dataStudio","map,panel","session","none","","","external"],
       ["time.cityPopulation","cityPopulation","historicalPopulation,largestCities,urbanPopulation","time","none","","explanation","read","none","",""],
       ["map.landCover","landCover","landCoverClasses,landCoverHighlight","map","layer","map.layer","map","session","none","",""],
+      ["time.whereWhen","whereWhen","placeAtTime,goWhereWhen","time","time","time,camera","map,time","session","none","text",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 

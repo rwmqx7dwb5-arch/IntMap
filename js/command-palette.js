@@ -27,6 +27,10 @@
  *              through the kernel's `company.open` — the same door Atlas and the Companies tab use.
  *    example   the example maps and classroom tours (js/showcase-gallery.js `galleryItems`, opened by its
  *              `openShowcase` / `startTour`).
+ *    when      (where-when-search) a line that names an instant — 「京都 1600」, «Berlin May 1945», «1914» — read by
+ *              js/where-when.js (the one reading the search field and Atlas use), fetched the first time a line carries a
+ *              digit; its «place · instant» rows lead the list, and choosing one flies there through the search's own
+ *              `goToLocal` and sets the master clock. What the reading cannot do is said above the rows.
  *    atlas     whatever was typed, handed to Atlas — always the last row, and what Ctrl/⌘+K does inside the field.
  *
  *  ── ORDER ─────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -228,6 +232,28 @@ function exampleEntries() {
   } catch (_) { }
   return out;
 }
+/* ══ (where-when-search) A PLACE AND AN INSTANT — js/where-when.js `interpret`, asked once per line and language ══ */
+let _ww = null, _wwP = null, _wwNote = null;
+const _wwRows = new Map();
+function wantWhen(q, rerender) {
+  if (!/\d|元\s*年/.test(q)) return;
+  if (!_ww) { if (!_wwP) _wwP = import('./where-when.js').then((m) => { _ww = m; rerender(); }, () => { _wwP = null; }); return; }
+  const key = lang() + '|' + q;
+  if (_wwRows.has(key)) return;
+  if (_wwRows.size > 40) _wwRows.clear();
+  _wwRows.set(key, null);
+  _ww.interpret(q, { local: (x) => (HOST && HOST.localFuzzyPlaces ? HOST.localFuzzyPlaces(x) : []), lang: lang() })
+    .then((r) => { _wwRows.set(key, r); rerender(); }, () => { _wwRows.delete(key); });
+}
+function whenEntries(q) {
+  const r = _wwRows.get(lang() + '|' + q);
+  _wwNote = r ? r.note : null;
+  if (!r || !r.parsed.when) return [];
+  return r.rows.map((w) => ({
+    key: w.key, kind: 'when', title: w.title, sub: w.sub,
+    run: () => { if (!w.timeOnly && HOST && HOST.goToLocalPlace) HOST.goToLocalPlace({ name: w.name, lng: w.lng, lat: w.lat, kind: w.kind, bbox: w.bbox }); return _ww.applyWhen(r.parsed.when, { source: 'palette' }); },
+  }));
+}
 function atlasEntry(q) {
   return {
     key: 'atlas', kind: 'atlas', title: q ? t('Ask Atlas: ', 'Atlas に聞く: ') + '“' + q + '”' : t('Open Atlas', 'Atlas を開く'),
@@ -253,18 +279,20 @@ function rowsFor(q) {
   const all = actionEntries().concat(layerEntries(), exampleEntries());
   const rec = recent();
   if (!fold(query)) {
+    _wwNote = null;
     /* the empty field: what the reader chose recently, then the example maps — a place to start */
     const byKey = new Map(all.map((e) => [e.key, e]));
     const top = rec.map((k) => byKey.get(k)).filter(Boolean).map((e) => Object.assign({ recent: true }, e));
     const ex = all.filter((e) => e.kind === 'example' && !top.some((x) => x.key === e.key)).slice(0, 6);
     return top.concat(ex, [atlasEntry('')]);
   }
+  const when = whenEntries(query.trim());   /* (where-when-search) the interpretation leads — the reader asked for an instant */
   const ranked = rankEntries(query, all.concat(companyEntries(query)), rec);
   /* places carry the agreement the device's own search measured; they are merged by that number */
   const places = placeEntries(query).filter((p) => !ranked.some((r) => r.kind === 'place' && r.key === p.key));
   const merged = ranked.slice();
   places.forEach((p) => { const at = merged.findIndex((e) => scoreEntry(query, e) < p.fixed); if (at < 0) merged.push(p); else merged.splice(at, 0, p); });
-  const out = merged.slice(0, 39);
+  const out = when.concat(merged.slice(0, Math.max(0, 39 - when.length)));
   out.push({ key: 'search:' + query, kind: 'search', title: t('Search places for ', '地名を検索: ') + '“' + query + '”', sub: t('Place search', '地名検索'), run: () => searchPlaces(query) });
   out.push(atlasEntry(query));
   return out;
@@ -280,7 +308,7 @@ function searchPlaces(q) {
 }
 
 /* ══ THE SURFACE ═════════════════════════════════════════════════════════════════════════════════════════════ */
-const KIND_ICON = { action: 'bolt', layer: 'layers', place: 'pin', company: 'city', example: 'image', tour: 'graduation', atlas: 'sparkle', search: 'search' };
+const KIND_ICON = { when: 'clock', action: 'bolt', layer: 'layers', place: 'pin', company: 'city', example: 'image', tour: 'graduation', atlas: 'sparkle', search: 'search' };
 let box = null, dlg = null, rows = [], active = 0;
 
 function closePalette() { if (dlg) { const d = dlg; dlg = null; try { d.close('api'); } catch (_) { } } else if (box) { try { box.remove(); } catch (_) { } } box = null; }
@@ -333,11 +361,12 @@ function render() {
   if (!box) return;
   const q = /** @type {HTMLInputElement} */ (box.querySelector('#cp-input')).value;
   if (fold(q).length >= 2) wantCompanies(() => { if (isOpen()) render(); });   /* the index arrives once; the list is drawn again with it */
+  wantWhen(q.trim(), () => { if (isOpen()) render(); });   /* (where-when-search) the reading arrives once per line; drawn again with it */
   rows = rowsFor(q);
   if (active >= rows.length) active = 0;
   const list = box.querySelector('#cp-list');
   let lastRecent = false;
-  list.innerHTML = rows.map((r, i) => {
+  list.innerHTML = (_wwNote ? '<div class="cp-note" role="note">' + H(_wwNote) + '</div>' : '') + rows.map((r, i) => {
     const head = (r.recent && !lastRecent) ? '<div class="cp-sec">' + H(t('Recent', '最近使ったもの')) + '</div>' : ((!r.recent && lastRecent) ? '<div class="cp-sec">' + H(t('Example maps', '作例')) + '</div>' : '');
     lastRecent = !!r.recent;
     return head + '<div class="cp-row' + (r.kind === 'atlas' ? ' cp-atlas' : '') + '" role="option" id="cp-o' + i + '" data-i="' + i + '" data-kind="' + H(r.kind) + '">'
@@ -388,6 +417,8 @@ const PALETTE_CSS = [
   '#im-palette .cp-sw.on{background:#34c759;}',
   '#im-palette .cp-sw.on::after{left:12px;}',
   '#im-palette .cp-atlas .cp-t{font-weight:600;}',
+  '#im-palette .cp-note{margin:4px 6px 6px;padding:8px 10px;border-radius:10px;background:var(--input-bg);font-size:12px;line-height:1.45;color:var(--text-muted);}',
+  '#im-palette .cp-row[data-kind="when"] .cp-t{font-weight:600;}',
   '#im-palette .cp-foot{display:flex;gap:16px;padding:8px 14px;border-top:1px solid rgba(128,128,128,0.16);font-size:11.5px;color:var(--text-muted);}',
   '@media (max-width:640px){#im-palette{padding-top:calc(var(--safe-top, 0px) + 8px);}#im-palette .cp-box{width:calc(100vw - 16px);max-height:calc(100dvh - 24px);}#im-palette .cp-foot{display:none;}#im-palette .cp-s{display:none;}}',
   '@media (prefers-reduced-motion:reduce){#im-palette .cp-sw::after{transition:none;}}',

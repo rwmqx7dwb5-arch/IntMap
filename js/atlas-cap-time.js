@@ -28,11 +28,33 @@ export default [
     doc: [
       { in: 'tools-panels', at: 220, text: '{"type":"timeTravel","year":int} (year uses astronomical numbering: 0 is 1 BC; supported range comes from the master clock) or {"type":"timeTravel","date":"YYYY-MM-DD"} or {"type":"timeTravel","daysAgo":int}, and {"type":"timeTravel","now":true} to return to live = CHRONOS, the MASTER SPACETIME CLOCK (window.IntMapTime; the panel bottom-right is called Chronos and 「time machine」 is its old name): it moves the WHOLE map together — the news feed, the Countries statistics (real World Bank figures for that year: GDP, population, life-expectancy…), the country choropleths, historical borders (and a country highlight drawn while a past year is shown uses that year\'s polity shapes), historical city names and Pleiades settlement-name records (approximate source periods and representative points, not exact founding dates or surveyed sites), the Köppen climate era, NATO/EU accession, the day/night terminator, the live-satellite positions and — while the chosen instant is inside the forecast window — the ECMWF weather layers. Use a YEAR for history ("1990年の世界", "show the world in 1949", "rewind to 1980"); use daysAgo/date for the recent decade of news. THE HISTORICAL BORDERS ARE DAY-EXACT, NOT YEARLY (CShapes validity dates, 1886-2019: 369 distinct border-change days). A full "date" really does draw the world as it stood on THAT DAY, so when the user asks about a treaty, a partition, an independence or a dissolution, emit the date it took effect — {"type":"timeTravel","date":"1920-10-28"} — instead of rounding to the year. A bare year lands on mid-June and shows only the world in force then, which for a dense year is a small part of the story: 1920 alone contains fourteen border-change days and five genuinely different worlds. Prefer this over Earth Replay for setting the time; ' },
     ],
+    /* (where-when-search) THE READER'S OWN WORDS FOR «THAT DAY» — the request that asks WHEN something happened is
+       answered by moving the clock to the day it took effect (the entry's own text says so). Without them time.travel
+       had no evidence of its own in such a request and was found only through the `time` category hint — which the
+       search withdraws the moment any other time capability is named (js/atlas-capabilities.js `search`), so naming a
+       place beside the date (time.whereWhen) took time.travel out of the list. Measured on the answer key: 「On what
+       date was the Berlin Wall opened? Show Berlin on the map.」 lost time.travel. */
+    phrases: () => ['何年何月何日', '何月何日', 'の日付'].concat(['on what date', 'what date', 'which day', 'rewind to', 'go back to']),
     schema: () => ({ type: 'object', properties: { year: int(), date: str(), daysAgo: int(), value: num(), now: bool(), reset: bool(), live: bool() }, anyOf: [{ required: ['year'] }, { required: ['date'] }, { required: ['daysAgo'] }, { required: ['value'] }, { required: ['now'] }, { required: ['reset'] }, { required: ['live'] }] }), /* `timeTravel` */
       /* (#R94) time-travel now drives the WHOLE spacetime OS (IntMapTime): news, the Countries statistics,
          borders, the climate era, NATO/EU accession & the day/night terminator all move together. Accepts a
          year (deep time back to `IntMapTime.min` — AD 1 since #R604), an exact date, or daysAgo; "now/reset" returns everything to live. */
     async run(a, dctx, K) { const res = await travel(a, dctx, K); return withCoverage(res, K); },
+  },
+  {
+    row: ['time.whereWhen',             'whereWhen',      'placeAtTime,goWhereWhen',                                     'time',    'time',    'time,camera',            'map,time',            'session', 'none',   'text',     ''],
+    /* (where-when-search) «WHERE + WHEN» AS ONE LINE — the reading the search field and the palette use (js/where-when.js
+       `interpret`), so 「京都 1600」 typed to Atlas is read exactly as it is in the search field: the place by any name it had
+       (the device's gazetteer, the historical city names, Pleiades) and the instant by syntax (CLDR era words and month
+       names, ICU's Japanese eras). One candidate that IS the name, or an instant with no place, is applied; several are
+       returned for the planner to `pick` — nothing is guessed. */
+    doc: [
+      { in: 'tools-panels', at: 221, text: '{"type":"whereWhen","query":str,"pick"?:int} = WHERE + WHEN IN ONE LINE / 場所と時刻を一度に — the reading the search field uses: "query" is the reader\'s own line naming a place and an instant ("Kyoto 1600", "Berlin May 1945", "ローマ 紀元前44年", "Constantinople 1453", "1900年の上海", "江戸 1868-01", "慶長5年 京都"); the place is found by its name THEN or today (the gazetteer, the historical city names — Constantinople finds Istanbul — and Pleiades\' ancient places), the instant is read as written (years, BC/AD and 紀元前, month names, ISO dates, 年月日, Japanese era years via the platform calendar; a Japanese month before 1873 is lunisolar and only its year is used; other calendars\' reign years are refused with the reason). It flies there AND sets the master clock, which draws the historical map of that instant. An instant with no place moves only the clock. When several places answer it returns them numbered and moves nothing — call again with "pick":n. Prefer it over view.flyTo + timeTravel whenever the user names a place together with a year or date. ' },
+    ],
+    phrases: () => ['の年の', '年の地図', '時代の', 'に行って'].concat(['in the year', 'at the time of', 'as it was in']),   /* the reader's own words for «that place, then» */
+    schema: () => ({ type: 'object', properties: { query: str(), pick: int() }, required: ['query'] }),
+    /* the run lives in js/atlas-where-when.js, fetched on first use, so the Atlas chunk does not carry it */
+    async run(a, dctx, K) { const { whereWhen } = await import('./atlas-where-when.js'); const res = await whereWhen(a, K); return withCoverage(res, K); },
   },
   {
     row: ['time.coverage',              'timeCoverage',   'layerTime,whatCanBeDrawn',                                    'time',    'none',    '',                       'explanation',         'read',    'none',   '',         ''],
