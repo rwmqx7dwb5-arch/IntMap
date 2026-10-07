@@ -146,8 +146,9 @@ newsjp: 歴史地図: 1933 年の東グリーンランドに残っていたノ�
 `node scripts/build-border-coast.mjs`（発見される束が 15 になり、全リング 98,388 → 132,688。文書 4 か所と `.github/workflows/ci.yml` の数を合わせた）→
 `node scripts/build-hist-courses.mjs` → `node scripts/build-border-provenance.mjs`（索引は変わらない——ノルウェーの行の指紋は同じ）→
 `node scripts/hist-fidelity.mjs --update` → `node scripts/data-governance.mjs --update`（新しい束の出自は値で述べ〈出版元・URL・ライセンスと
-その URL・帰属・更新の周期・検査〉、述べられない 7 項目〈取得日・生成日・時点・行数ほか〉を台帳に記録した——兄弟の束と同じく、片の幾何は
-ビルドの時点の記録から作るので上流の「取得日」を持たない）。
+その URL・帰属・更新の周期・検査〉、述べられない 7 項目〈取得日・生成日・時点・行数ほか〉を台帳に記録した——片の幾何はビルドの時点の
+記録から作るので上流の「取得日」を持たない。束の中身自身は兄弟の束〈hist-clio・hist-eras-rest・hist-borders-late〉と同じく出自を  の文でだけ
+述べる〈stated-only-in-prose、16 項目〉。どちらも台帳に載せた——追跡される前の束は門が束として発見しないので、最初の CI で後者が赤くなった）。
 - 起動費用の天井を 2 行上げた（`node scripts/perf-budget.mjs --update`）: `dist.data` 1,146,011.8 → 1,173,525.5 kB、`dist.total` 1,337,303.8 → 1,360,089.6 kB。
   増えた分は `data/hist-coast-snap.js`（17.58 MB）とその時刻で切ったタイル（`data/hvt/hist-coast-snap.*`、アーカイブ 4.15 MB）と、印す束が増えた
   `data/border-coast.js`（+0.17 MB）。起動経路には載らない——時計が過去に入り、その瞬間の片だけをタイルの Range で読む（`js/boot-stage.js` に
