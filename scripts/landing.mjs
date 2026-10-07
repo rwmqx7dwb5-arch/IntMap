@@ -52,7 +52,10 @@ import { dataLayers, sharedIds } from '../js/layer-manifest.js';
 import { SITE_BASE_PATH } from '../supabase/functions/_shared/site-origin.js';
 import { SITE_TOKEN } from './site-url.mjs';
 import { STRIPE_DONATE } from '../js/supporter.js';
-import { withInlineHashes } from './csp.mjs';   /* (csp-without-inline) the pages' script policy */   /* the donation links' one owner (supporter-funnel) */
+import { withInlineHashes } from './csp.mjs';
+import { BRAND } from './brand-text.mjs';   /* (spacetime-positioning) the about page's eyebrow, headline and line of trust are the brand's own words */
+import { encode as encodeMapState } from '../js/map-state.js';   /* (spacetime-positioning) the app's own address-bar encoder — the «now» entrance's link is written by it, never typed */
+import { icon } from '../js/icons.js';   /* (spacetime-positioning) the entrances' marks: the app's line icons, not emoji */   /* (csp-without-inline) the pages' script policy */   /* the donation links' one owner (supporter-funnel) */
 
 /* ══ THE SITE'S ADDRESS IS NOT WRITTEN INTO THE PAGES — A TOKEN IS ═══════════════════════════════════
    canonical, hreflang, og:url, og:image and the sitemap's <loc> need ABSOLUTE addresses, and the address
@@ -120,6 +123,52 @@ export const PAGES = ['about', 'teachers', 'news-map', 'embed-map', 'developers'
 /* (showcase-gallery) which block of scripts/landing-text.mjs holds a page's words */
 export const TEXT_KEY = { about: 'about', teachers: 'teachers', 'news-map': 'news', 'embed-map': 'embed', developers: 'developers' };
 const HERO_EXAMPLE = 'europe-1914';
+
+/* ══ (spacetime-positioning) THE HERO'S CLOCK AND THE THREE WAYS IN ═══════════════════════════════════
+   「開いた瞬間に時空間が伝わる」. The hero's picture is the same map at several dates, one shown at a time, with a
+   slider under it — the app's clock, made out of the app's own screenshots. WHICH dates is DERIVED, never listed:
+   every shown example (js/showcase.js) that has a date and no layer — the maps where the clock alone changes the
+   picture — in date order. A border-only example added to the showcase joins the strip; nobody edits this file.
+   The strip opens on HERO_EXAMPLE (the about page's picture since the page existed, and its og:image).
+   The three ways in each open the app in the state their sentence describes:
+     · now   — today's map (no `tt`, so the clock is the present) with two live layers. The link is written by
+               js/map-state.js `encode`, the codec the app itself uses for its address bar, from the intent below;
+               entranceProblems() refuses a layer a link cannot carry (js/layer-manifest.js share). There is no
+               screenshot of it on purpose: a live map photographed once is not «now».
+               ⚠ The intent is a product choice like HERO_EXAMPLE, not a fact: rain radar (RainViewer, the last two
+               hours) and aircraft (live) are shareable live layers. The earthquake layer is not shareable by link
+               (js/layer-manifest.js gives it no `share`), so the sentence sends the reader to Layers for it
+               instead of claiming the link opens it.
+     · past  — a shown example's captured link (the app wrote it: scripts/showcase-capture.mjs), and the history hub.
+     · atlas — the app itself. No link opens the Atlas panel (the app reads no such parameter), so the sentence
+               says where Atlas is, and that asking needs an account — the page does not pretend the link asks. */
+export const ENTRANCES = {
+  now: { view: { lng: 10, lat: 30, zoom: 1.6, bearing: 0, pitch: 0, proj: 'flat' }, layers: ['dl-radar', 'dl-planes'] },
+  past: { example: 'world-1279' },
+};
+const dateParts = (at) => { const m = /^(-?\d+)-(\d{2})-(\d{2})$/.exec(String(at)); return m ? [+m[1], +m[2], +m[3]] : null; };
+export function stripExamples() {
+  const cmp = (a, b) => { const x = dateParts(a.at), y = dateParts(b.at); return x[0] - y[0] || x[1] - y[1] || x[2] - y[2]; };
+  return SHOWCASE.filter((s) => s.at != null && dateParts(s.at) && !s.layers.length && CAPTURED[s.id] && CAPTURED[s.id].image).sort(cmp);
+}
+/** the year a strip frame shows, as each language writes it: astronomical year y ≤ 0 is (1 − y) BC */
+export function yearLabel(at, lang) {
+  const y = dateParts(at)[0];
+  if (y <= 0) return lang === 'jp' ? '紀元前' + (1 - y) + '年' : (1 - y) + ' BC';
+  return lang === 'jp' ? y + '年' : (y < 1000 ? 'AD ' + y : String(y));
+}
+export const nowLink = () => 'index.html' + encodeMapState({ view: ENTRANCES.now.view, layers: ENTRANCES.now.layers });
+export function entranceProblems() {
+  const bad = [];
+  const shared = new Set(sharedIds());
+  for (const id of ENTRANCES.now.layers) if (!shared.has(id)) bad.push('entrance now: ' + id + ' is not a layer a link can carry (js/layer-manifest.js share)');
+  if (!/^#v=/.test(nowLink().slice('index.html'.length))) bad.push('entrance now: js/map-state.js encode wrote no view');
+  if (!SHOWCASE.some((s) => s.id === ENTRANCES.past.example) || !linkFor(ENTRANCES.past.example)) bad.push('entrance past: ' + ENTRANCES.past.example + ' is not a shown, captured example');
+  const strip = stripExamples();
+  if (strip.length < 2) bad.push('the hero strip needs at least two dated border-only examples, has ' + strip.length);
+  if (!strip.some((s) => s.id === HERO_EXAMPLE)) bad.push('the hero strip does not contain HERO_EXAMPLE ' + HERO_EXAMPLE);
+  return bad;
+}
 export const pagePath = (page, L) => L.dir + page + '.html';
 
 function linkFor(id) { const c = CAPTURED[id]; return c && c.hash ? 'index.html' + c.hash : null; }
@@ -262,22 +311,69 @@ ${entranceLinks(L, T, page).map((e) => `    <a href="${esc(e.href)}">${esc(e.lab
 </footer>`;
 }
 
+/* (spacetime-positioning) the hero's clock: every frame is a captured example; the hero example is shown first and the
+   others are `hidden` until chosen (so their lazy pictures are not fetched until then). The slider and the year
+   buttons are `hidden` in the markup and shown by PAGE_SCRIPT: without a script the reader gets the hero picture,
+   its caption and its link — nothing that does not work. */
+function heroStrip(L, A) {
+  const k = L.i, S = A.scrub, strip = stripExamples();
+  const at = strip.findIndex((s) => s.id === HERO_EXAMPLE);
+  const frames = strip.map((s, i) => `      <a class="st-frame" href="${esc(L.up + linkFor(s.id))}" data-st-frame data-showcase-link="${s.id}"${i === at ? '' : ' hidden'}>${picture(s.id, L, s.title[k], i === at)}</a>`);
+  const caps = strip.map((s, i) => `      <p class="st-cap" data-st-cap${i === at ? '' : ' hidden'}><span class="st-cap-t">${esc(s.title[k])}</span><a class="lp-open" href="${esc(L.up + linkFor(s.id))}" data-showcase-link="${s.id}">${esc(S.open)} →</a></p>`);
+  const ticks = strip.map((s, i) => `        <li><button type="button" class="st-tick" data-st-go${i === at ? ' aria-current="true"' : ''}>${esc(yearLabel(s.at, L.key))}</button></li>`);
+  return `<figure class="st-scrub" data-st aria-label="${esc(S.label)}">
+    <div class="st-frames">
+${frames.join('\n')}
+    </div>
+    <figcaption class="st-caps">
+${caps.join('\n')}
+    </figcaption>
+    <div class="st-ctl" data-st-ctl hidden>
+      <p class="st-hint">${esc(S.hint)}</p>
+      <input class="st-range" type="range" min="0" max="${strip.length - 1}" step="1" value="${at}" aria-label="${esc(S.range)}" aria-valuetext="${esc(yearLabel(strip[at].at, L.key))}" data-st-range>
+      <ol class="st-ticks">
+${ticks.join('\n')}
+      </ol>
+    </div>
+  </figure>
+  <script>${STRIP_SCRIPT}</script>`;
+}
+
+function entrancesSection(L, A) {
+  const E = A.entrances, k = L.i;
+  const past = SHOWCASE.find((s) => s.id === ENTRANCES.past.example);
+  const mark = (name) => `<span class="lp-way-i" aria-hidden="true">${icon(name, { size: 22 })}</span>`;
+  return `  <section class="lp-sec" id="ways">
+    <h2>${esc(E.h2)}</h2>
+    <p class="lp-sub">${esc(E.sub)}</p>
+    <div class="lp-grid3 lp-ways">
+      <div class="lp-tile lp-way" data-entrance="now">${mark('signal')}<h3>${esc(E.now.h)}</h3><p>${esc(E.now.p)}</p><a class="lp-btn" href="${esc(L.up + nowLink())}">${esc(E.now.cta)}</a><a class="lp-open" href="./news-map.html">${esc(E.now.more)} →</a></div>
+      <div class="lp-tile lp-way" data-entrance="past">${mark('clock')}<h3>${esc(E.past.h)}</h3><p>${esc(E.past.p)}</p><p class="lp-way-ex">${esc(past.title[k])}</p><a class="lp-btn" href="${esc(L.up + linkFor(past.id))}" data-showcase-link="${past.id}">${esc(E.past.cta)}</a><a class="lp-open" href="${L.up}${L.dir}${HISTORY_HUB}">${esc(E.past.more)} →</a></div>
+      <div class="lp-tile lp-way" data-entrance="atlas">${mark('chat')}<h3>${esc(E.atlas.h)}</h3><p>${esc(E.atlas.p)}</p><a class="lp-btn" href="${L.up}index.html">${esc(E.atlas.cta)}</a></div>
+    </div>
+  </section>`;
+}
+
 function aboutBody(F, L, T) {
-  const A = T.about, W = factWords(F, L.key);
+  const A = T.about, W = factWords(F, L.key), B = BRAND[L.key];
   const shown = SHOWCASE.filter((s) => s.audience.includes('curious'));
   return `<main class="lp-main">
-  <section class="lp-hero">
+  <section class="lp-hero lp-hero-st">
     <div class="lp-hero-text">
-      <h1>${esc(fill(A.hero.h1, W))}</h1>
+      <p class="lp-eyebrow">${esc(fill(B.category, W))}</p>
+      <h1>${esc(fill(B.tagline, W))}</h1>
       <p class="lp-lede">${esc(fill(A.hero.sub, W))}</p>
+      <p class="lp-trust">${esc(fill(B.trust, W))}</p>
       <div class="lp-cta">
         <a class="lp-btn" href="${L.up}index.html">${esc(A.hero.ctaOpen)}</a>
         <a class="lp-btn lp-btn-2" href="#examples">${esc(A.hero.ctaExamples)}</a>
       </div>
       <p class="lp-note">${esc(A.hero.note)}</p>
     </div>
-    <a class="lp-hero-img" href="${esc(L.up + linkFor(HERO_EXAMPLE))}">${picture(HERO_EXAMPLE, L, A.hero.imgAlt, true)}</a>
+    ${heroStrip(L, A)}
   </section>
+
+${entrancesSection(L, A)}
 
   <section class="lp-sec" id="why">
     <h2>${esc(A.why.h2)}</h2>
@@ -677,6 +773,18 @@ const PAGE_SCRIPT = "(function(){var d=document.documentElement,s={};try{s=JSON.
   + "location.replace(base+(here==='ja'?'':'ja/')+leaf+location.hash);return;}catch(e){}}"
   + "document.addEventListener('click',function(e){var a=e.target&&e.target.closest?e.target.closest('a[data-lp-lang]'):null;"
   + "if(a){try{localStorage.setItem('intmap_lp_lang',a.getAttribute('data-lp-lang'));}catch(_){}}});})();";
+/* (spacetime-positioning) the about page's clock, written straight after the figure it drives (so the figure is
+   parsed when it runs) and only on that page: the slider and the year buttons show one frame and its caption.
+   Without it the controls stay `hidden` and the hero picture and its link are what the reader gets. Admitted by
+   its sha256 like PAGE_SCRIPT (withInlineHashes). ⚠ No back-ticks inside (CONSTITUTION.md §2). */
+export const STRIP_SCRIPT = "(function(){var all=document.querySelectorAll('[data-st]');for(var i=0;i<all.length;i++)(function(st){"
+  + "var r=st.querySelector('[data-st-range]'),c=st.querySelector('[data-st-ctl]');if(!r||!c)return;"
+  + "var fr=st.querySelectorAll('[data-st-frame]'),cp=st.querySelectorAll('[data-st-cap]'),go=st.querySelectorAll('[data-st-go]');"
+  + "function show(n){n=+n;for(var j=0;j<fr.length;j++)fr[j].hidden=j!==n;for(j=0;j<cp.length;j++)cp[j].hidden=j!==n;"
+  + "for(j=0;j<go.length;j++){if(j===n)go[j].setAttribute('aria-current','true');else go[j].removeAttribute('aria-current');}"
+  + "r.value=String(n);r.setAttribute('aria-valuetext',go[n]?go[n].textContent:'');}"
+  + "c.hidden=false;r.addEventListener('input',function(){show(r.value);});"
+  + "for(var k=0;k<go.length;k++)(function(k){go[k].addEventListener('click',function(){show(k);});})(k);})(all[i]);})();";
 /* the document the curriculum headings are quoted from (read 2026-10-01) — see js/showcase.js CURRICULUM */
 const MEXT_URL = 'https://www.mext.go.jp/content/20230120-mxt_kyoiku02-100002604_03.pdf';
 
@@ -939,7 +1047,7 @@ if (isMain) {
   const mode = process.argv.includes('--write') ? 'write' : process.argv.includes('--facts') ? 'facts' : 'check';
   const F = facts();
   if (mode === 'facts') { console.log(JSON.stringify(F, null, 2)); process.exit(0); }
-  const bad = [...showcaseProblems(), ...tourProblems()];
+  const bad = [...showcaseProblems(), ...tourProblems(), ...entranceProblems()];
   const out = outputs(F);
   /* the share directories are the generator's own: a page there that it no longer writes (an example
      withdrawn or withheld) is stale, and a stale share page is a card for a map nobody vouches for */

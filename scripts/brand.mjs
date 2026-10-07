@@ -10,7 +10,7 @@
  *    js/locales/ui.en.js, ui.jp.js docTitle / docDesc — js/lang-registry.js writes them over the head at run
  *                                  time (and a crawler that runs scripts reads them), so they say the same
  *    manifest.webmanifest          scripts/build-app-manifest.mjs derives it from that head; re-derived here
- *    README.md                     the tagline line between the brand markers
+ *    README.md                     the tagline, what IntMap is and its line of trust, between the brand markers
  *    docs/marketing/press-kit.md   descriptions, positioning, facts, pictures, logo — for whoever writes
  *    docs/marketing/launch-posts.md  the per-channel drafts
  *
@@ -165,9 +165,12 @@ function localeText(lang, F) {
 /* ══ README.md — the tagline line ═════════════════════════════════════════════════════════════════ */
 export const README_BEGIN = '<!-- brand:tagline (node scripts/brand.mjs --write) -->';
 export const README_END = '<!-- /brand:tagline -->';
+/* (spacetime-positioning) the tagline, then what IntMap is and why it can be believed — positioning.is and trust, the
+   same words the press room and the landing page carry. The README's hand-written line under the tagline said
+   «a browser-based geospatial platform …», a fourth answer to «what is this»; it is now written from here. */
 function readmeText(F) {
-  const t = rd('README.md');
-  return spliceBetween(t, README_BEGIN, README_END, README_BEGIN + '\n### ' + words('en', F).tagline + '\n' + README_END, 'README.md');
+  const t = rd('README.md'), E = words('en', F);
+  return spliceBetween(t, README_BEGIN, README_END, README_BEGIN + '\n### ' + E.tagline + '\n\n' + E.positioning.is + ' ' + E.trust + '\n' + README_END, 'README.md');
 }
 
 /* ══ the launch material ══════════════════════════════════════════════════════════════════════════ */
@@ -219,7 +222,9 @@ function pressKit(F) {
 | | English | 日本語 |
 |---|---|---|
 | 名前（ワードマーク・翻訳しない） | IntMap | IntMap |
+| 何であるか（カテゴリ） | ${E.category} | ${J.category} |
 | タグライン | ${E.tagline} | ${J.tagline} |
+| 信頼の一行 | ${E.trust} | ${J.trust} |
 | ページ題 | ${E.title} | ${J.title} |
 
 ## 2. 説明文

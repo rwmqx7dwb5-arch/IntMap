@@ -13,8 +13,8 @@
 
 ```text
 Name: IntMap
-Tagline: Every year of the world, on one map
-Description: A free world map you can set to any date from 123,000 BC to today. Borders, figures and 166 layers follow the clock, every source is named, and one link reopens exactly what you see. No sign-up.
+Tagline: The world today, or in any year, on one map
+Description: A free space-time atlas of the Earth: live earthquakes, radar and aircraft for today, and the borders of any date from 123,000 BC. 166 layers follow the clock, every source is named, and one link reopens exactly what you see. No sign-up.
 Link: <URL>
 
 Hi Product Hunt —
@@ -117,7 +117,7 @@ I would value criticism of the time model and of how the three border records ar
 - 言語: English · リンク先: [site:] · utm_source: `x`
 
 ```text
-[1/4] IntMap is a free world map with one clock for everything on it. Set it to any date from 123,000 BC to today and the borders, figures and layers follow. No sign-up. <URL>
+[1/4] IntMap is a free space-time atlas of the Earth: the world today, with live earthquakes, radar and aircraft, or in any year from 123,000 BC, with that day’s borders. Every source named. No sign-up. <URL>
 
 [2/4] Borders: 54 historical snapshots before 1689, OpenHistoricalMap 1689–1885, and CShapes 2.0 day by day 1886–2019.
 
@@ -131,7 +131,7 @@ I would value criticism of the time model and of how the three border records ar
 - 言語: 日本語 · リンク先: [site:] · utm_source: `x`
 
 ```text
-[1/4] IntMap は、地図の上のすべてに一つの時計を持つ無料の世界地図です。紀元前123,000年から今日までのどの日付に合わせても、国境・数字・レイヤーがついてきます。登録不要。<URL>
+[1/4] IntMap は無料の地球の時空間アトラスです。いまの世界を地震・雨雲レーダー・航空機のライブで、紀元前123,000年からのどの年の世界もその日の国境で。すべての出典を明記。登録不要。<URL>
 
 [2/4] 国境は、1689年より前が54枚の歴史スナップショット、1689〜1885年が OpenHistoricalMap、1886〜2019年が CShapes 2.0（日単位）です。
 
@@ -145,7 +145,7 @@ I would value criticism of the time model and of how the three border records ar
 - 言語: 日本語 · リンク先: [site:ja/history/] · utm_source: `note`
 
 ```text
-タイトル: 世界のどの年も、一枚の地図で——IntMap を作っている理由
+タイトル: いまの世界も、どの年の世界も、一枚の地図で——IntMap を作っている理由
 
 （下書き。本文は作り手の言葉で書き直すこと）
 

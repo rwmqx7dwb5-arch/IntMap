@@ -31,12 +31,14 @@ test('① the descriptions on the page are the brand\'s, character for character
   const BF = brand.brandFacts();
   for (const [key, rel] of LANGS) {
     const html = rd(rel), B = brand.words(key, BF);
-    for (const [id, text] of [['tagline', B.tagline], ['short', B.pitch.short], ['medium', B.pitch.medium], ['long', B.pitch.long]]) {
+    /* (spacetime-positioning) the brand's category and line of trust are offered to copy beside the descriptions */
+    const COPY = [['category', B.category], ['tagline', B.tagline], ['trust', B.trust], ['short', B.pitch.short], ['medium', B.pitch.medium], ['long', B.pitch.long]];
+    for (const [id, text] of COPY) {
       assert.ok(html.includes('id="og-copy-' + id + '" class="og-copy-text">' + esc(text) + '</p>'), rel + ' carries the brand\'s «' + id + '» as written');
     }
     for (const p of B.proof) assert.ok(html.includes(esc(p)), rel + ' carries a proof point of the brand');
     const buttons = [...html.matchAll(/<button[^>]*\bdata-copy="([^"]+)"/g)].map((m) => m[1]);
-    assert.equal(buttons.length, 4, rel + ' has a Copy button for each description');
+    assert.equal(buttons.length, COPY.length, rel + ' has a Copy button for each description');
     for (const id of buttons) assert.ok(html.includes('id="' + id + '"'), rel + ': ' + id + ' exists');
     assert.ok(/data-msg-copied="[^"]+"/.test(html) && /data-msg-failed="[^"]+"/.test(html), rel + ' says copied / not copied in its own words');
     assert.ok(!/<script(?![^>]*(?:\bsrc=|application\/ld\+json))/.test(html), rel + ' has no inline script');

@@ -2,7 +2,7 @@
   "id": "./",
   "name": "IntMap",
   "short_name": "IntMap",
-  "description": "A free world map you can set to any date from 123,000 BC to today — historical borders, climate, population and live data on one map, every source named. No sign-up.",
+  "description": "A free space-time atlas of the Earth. See today’s world live — earthquakes, rain radar, aircraft — or set the clock to any date from 123,000 BC and the borders follow. Every source named. No sign-up.",
   "lang": "en",
   "dir": "ltr",
   "start_url": "./",

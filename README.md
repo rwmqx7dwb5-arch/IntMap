@@ -3,10 +3,10 @@
 # IntMap
 
 <!-- brand:tagline (node scripts/brand.mjs --write) -->
-### Every year of the world, on one map.
-<!-- /brand:tagline -->
+### The world today, or in any year, on one map.
 
-A browser-based geospatial platform that brings geography, climate, infrastructure, history, statistics, current events, and interactive tools together on one map.
+IntMap is a free space-time atlas of the Earth: one map for the world as it is now and as it was on any date. Every border is drawn from a named record, and every layer names its source.
+<!-- /brand:tagline -->
 
 [**Open IntMap**][site:] · [**Support IntMap**](https://donate.stripe.com/5kQdR2d2m1oa1lAadk5gc01?locale=en) · [Report an issue](https://github.com/rwmqx7dwb5-arch/IntMap/issues)
 

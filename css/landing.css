@@ -171,3 +171,50 @@
 }
 .lp-code code{ font:inherit; background:none; padding:0; }
 .lp-code-pic{ max-width:720px; margin-top:6px; }
+
+/* (spacetime-positioning) about.html's hero: the brand's category over the headline, its line of trust under the lede,
+   and the clock — the same map at the dates of the border-only examples, one at a time, with a slider and the years
+   under it (scripts/landing.mjs heroStrip; the controls are `hidden` until its script shows them). Frames that are not
+   shown are display:none, so their lazy pictures are not fetched until a reader asks for that date. */
+.lp-eyebrow{ margin:0 0 10px; font-size:14px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--pg-accent); }
+.lp-trust{ margin:-10px 0 24px; padding-left:12px; border-left:3px solid var(--pg-accent); font-size:15px; line-height:1.5; color:var(--pg-ink); }
+.st-scrub{ margin:0; min-width:0; }
+.st-scrub [hidden]{ display:none !important; }
+.st-frames{
+  aspect-ratio:16/10; overflow:hidden; border-radius:var(--pg-radius); background:var(--pg-surface-2);
+  border:1px solid var(--pg-line-soft); box-shadow:var(--pg-shadow);
+}
+.st-frame{ display:block; height:100%; }
+.st-frame img{ width:100%; height:100%; object-fit:cover; animation:st-in .28s ease; }
+@keyframes st-in{ from{ opacity:.3; } to{ opacity:1; } }
+.st-caps{ margin-top:12px; }
+.st-cap{ display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 14px; margin:0; font-size:15px; }
+.st-cap-t{ font-weight:600; color:var(--pg-ink); }
+.st-ctl{ margin-top:14px; padding:14px 16px 8px; background:var(--pg-surface); border:1px solid var(--pg-line-soft); border-radius:16px; }
+.st-hint{ margin:0 0 8px; font-size:13px; color:var(--pg-mut); }
+.st-range{ display:block; width:100%; margin:0; accent-color:var(--pg-accent); cursor:pointer; }
+.st-ticks{ list-style:none; margin:4px 0 0; padding:0; display:flex; justify-content:space-between; gap:2px; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.st-tick{
+  min-height:32px; padding:6px 5px; border:0; border-radius:8px; background:none; cursor:pointer;
+  font:inherit; font-size:12px; font-variant-numeric:tabular-nums; white-space:nowrap; color:var(--pg-mut);
+}
+.st-tick:hover{ background:var(--pg-accent-soft); }
+.st-tick[aria-current="true"]{ color:var(--pg-accent); font-weight:700; }
+
+/* the three ways in (scripts/landing.mjs entrancesSection): a mark, a sentence, the button that opens that state */
+.lp-way{ display:flex; flex-direction:column; align-items:flex-start; gap:10px; }
+.lp-way h3,.lp-way p{ margin:0; }
+.lp-way p{ flex:1 1 auto; }
+.lp-way p.lp-way-ex{ flex:0 0 auto; font-size:14px; font-weight:600; color:var(--pg-ink); }
+.lp-way .lp-btn{ white-space:normal; text-align:center; min-height:44px; padding:10px 20px; }
+.lp-way-i{
+  display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:12px;
+  background:var(--pg-accent-soft); color:var(--pg-accent);
+}
+@media (prefers-reduced-motion:reduce){ .st-frame img{ animation:none; } }
+@media (max-width:640px){
+  .lp-eyebrow{ font-size:12px; }
+  .st-tick{ font-size:11px; padding:6px 3px; }
+  /* seven years do not fit one phone row without scrolling: on a phone the years wrap under the slider as buttons */
+  .st-ticks{ flex-wrap:wrap; justify-content:flex-start; gap:2px 6px; overflow-x:visible; }
+}

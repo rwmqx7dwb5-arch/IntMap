@@ -64,10 +64,14 @@ test('① every file the brand writes says what scripts/brand.mjs would write', 
 });
 
 test('② the landing page\'s headline is the brand\'s tagline, in both languages', async () => {
-  const { TEXT } = await import('../scripts/landing-text.mjs');
-  const flat = (s) => String(s).toLowerCase().replace(/[\s.。、,，]/g, '');
-  assert.equal(flat(TEXT.en.about.hero.h1), flat(BRAND.en.tagline), 'about.html promises something other than the brand');
-  assert.equal(flat(TEXT.jp.about.hero.h1), flat(BRAND.jp.tagline), 'ja/about.html promises something other than the brand');
+  /* (spacetime-positioning) the landing page no longer keeps a copy of the headline: scripts/landing.mjs reads the brand's
+     own `tagline`, so this asks the page it generates, not a second string that agreed by being retyped */
+  const L = await import('../scripts/landing.mjs');
+  const out = L.outputs();
+  const h1 = (html) => (/<h1>([^<]*)<\/h1>/.exec(html) || [])[1];
+  const unesc = (s) => String(s).replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  assert.equal(unesc(h1(out['about.html'])), BRAND.en.tagline, 'about.html promises something other than the brand');
+  assert.equal(unesc(h1(out['ja/about.html'])), BRAND.jp.tagline, 'ja/about.html promises something other than the brand');
 });
 
 test('③ og-image.jpg is a real JPEG, light enough to unfurl, and the head states its real size', () => {

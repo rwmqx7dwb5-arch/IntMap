@@ -22,20 +22,35 @@ export const TEXT = {
   en: {
     nav: { examples: 'Examples', teachers: 'For teachers', about: 'About', news: 'News on a map', embed: 'Embed a map', developers: 'Developers', history: 'Browse by year', onThisDay: 'On this day', countries: 'Countries', weekly: 'This week on Earth', open: 'Open the map', lang: '日本語', langLabel: 'Read this page in Japanese' },
     about: {
-      title: 'IntMap — every year of the world, on one map',
-      description: 'A free world map you can set to any date from {floorBC} to today, with historical borders, climate, population and live data on one map. No sign-up needed.',
+      title: 'IntMap — a space-time atlas of the Earth: the world today, or in any year',
+      description: 'A free space-time atlas of the Earth: today’s world with live feeds, and any date from {floorBC} with that day’s borders — every source named. No sign-up needed.',
+      /* (spacetime-positioning) the eyebrow, the headline and the line of trust are NOT here: they are the brand's
+         `category`, `tagline` and `trust` (scripts/brand-text.mjs), which scripts/landing.mjs reads directly */
       hero: {
-        h1: 'Every year of the world, on one map.',
-        sub: 'IntMap is a free world map you can set to any date from {floorBC} to today. Borders, figures and layers follow the clock, and the sources behind them are named.',
+        sub: 'Today’s map carries live earthquakes, rain radar and aircraft. Move the clock to any date from {floorBC} and the borders follow — and, where the records reach, that year’s city names and provinces.',
         ctaOpen: 'Open the map',
         ctaExamples: 'See the examples',
         note: 'Free. No account needed to use the map.',
-        imgAlt: 'IntMap showing Europe on 27 June 1914, with the countries panel listing that year’s economies',
+      },
+      /* the hero's picture: the same map at the dates of the border-only examples (js/showcase.js), one at a time */
+      scrub: {
+        label: 'The same map at different dates',
+        hint: 'Move the clock. Each picture is a screenshot of IntMap at that date.',
+        range: 'Date shown',
+        open: 'Open this date in the map',
+      },
+      /* the three ways in — each link opens the app in the state its sentence describes (scripts/landing.mjs ENTRANCES) */
+      entrances: {
+        h2: 'Three ways in',
+        sub: 'Each one opens the real map, in the state described.',
+        now: { h: 'The world now', p: 'Today’s map with live rain radar and aircraft. Earthquakes, weather warnings and the news placed where it happened are in Layers and News.', cta: 'Open today’s map', more: 'Read the news on a map' },
+        past: { h: 'The world in any year', p: 'Open the map at a past date and move the clock: the borders change with it, and where the records reach, so do the city names and the provinces. Each border is drawn from a named record.', cta: 'Open the map at this date', more: 'Browse the historical maps by year' },
+        atlas: { h: 'Ask Atlas', p: 'Atlas, IntMap’s AI assistant, answers on the map: it switches layers on and moves the camera and the clock. Open the map and choose Atlas in the side bar — on a phone, type into the field at the top. Its suggested questions follow the place and the date on screen. Asking needs a free account, with a daily limit.', cta: 'Open the map and ask Atlas' },
       },
       why: {
         h2: 'What makes it different',
         items: [
-          { h: 'One clock for the whole map', p: 'Move the clock and the map moves with it: country borders day by day from CShapes 2.0 from {csFrom} to {csTo} and from OpenHistoricalMap from {ohmFrom} to {ohmTo}, year by year from Cliopatria (Seshat Global History Databank, from {clioFromBC}) on the ground those leave, and from {snapshots} historical snapshots where none of them speaks — and the countries panel shows the figures for that year where its source has them.' },
+          { h: 'Now and then, on one clock', p: 'Move the clock and the map moves with it: country borders day by day from CShapes 2.0 from {csFrom} to {csTo} and from OpenHistoricalMap from {ohmFrom} to {ohmTo}, year by year from Cliopatria (Seshat Global History Databank, from {clioFromBC}) on the ground those leave, and from {snapshots} historical snapshots where none of them speaks — and the countries panel shows the figures for that year where its source has them.' },
           { h: 'Honest about what it knows', p: 'IntMap has {layers} layers, and the Data sources page names every organisation whose data they show. Set the clock to a date a source does not describe and that layer is not drawn — the map tells you so, instead of showing today’s data under an old date.' },
           { h: 'Ask the map in words', p: 'Signed in, you can ask Atlas, IntMap’s AI assistant, in plain language. It answers on the map itself — turning layers on, moving the camera and the clock.' },
         ],
@@ -263,20 +278,31 @@ export const TEXT = {
   jp: {
     nav: { examples: '見本', teachers: '先生へ', about: 'IntMap について', news: 'ニュースを地図で', embed: '地図を埋め込む', developers: '開発者向け', history: '年代から探す', onThisDay: 'この日の歴史地図', countries: '国から探す', weekly: '今週の地球', open: '地図を開く', lang: 'English', langLabel: 'このページを英語で読む' },
     about: {
-      title: 'IntMap — 世界のどの年も、一枚の地図で',
-      description: '{floorBC}から今日まで、どの日付にも合わせられる無料の世界地図。歴史上の国境・気候・人口・リアルタイムのデータを一枚に重ねます。登録不要。',
+      title: 'IntMap — 地球の時空間アトラス：いまの世界も、どの年の世界も',
+      description: '無料の地球の時空間アトラス。いまの世界をライブで、{floorBC}からのどの日付もその日の国境で。すべての出典を明記。登録不要。',
       hero: {
-        h1: '世界のどの年も、一枚の地図で。',
-        sub: 'IntMap は、{floorBC}から今日までのどの日付にも合わせられる無料の世界地図です。国境も数字もレイヤーも時計に合わせて変わり、その出典を明記しています。',
+        sub: 'いまの地図には、地震・雨雲レーダー・航空機のライブ。時計を{floorBC}からのどの日付に動かしても国境がついてきて、記録が届くところでは、その年の都市名と地方区分まで変わります。',
         ctaOpen: '地図を開く',
         ctaExamples: '見本を見る',
         note: '無料。地図を使うのにアカウントは要りません。',
-        imgAlt: '1914年6月27日のヨーロッパを表示した IntMap。国の一覧にはその年の経済規模が並ぶ',
+      },
+      scrub: {
+        label: '同じ地図を、別の日付で',
+        hint: '時計を動かしてください。どの絵も、その日付の IntMap の画面です。',
+        range: '表示する日付',
+        open: 'この日付で地図を開く',
+      },
+      entrances: {
+        h2: '三つの入口',
+        sub: 'どれも、書いてあるとおりの状態で本物の地図が開きます。',
+        now: { h: 'いまの世界', p: '雨雲レーダーと航空機のライブを載せた、今日の地図。地震・気象警報・起きた場所に置いたニュースも、レイヤーとニュースから開けます。', cta: '今日の地図を開く', more: 'ニュースを地図で読む' },
+        past: { h: 'どの年の世界も', p: '過去の日付で地図を開き、時計を動かしてください。国境がついてきて、記録が届くところでは都市名と地方区分も変わります。国境はどれも、名前のある記録から描いています。', cta: 'この日付で地図を開く', more: '歴史地図を年代から探す' },
+        atlas: { h: 'Atlas に訊く', p: 'IntMap の AI アシスタント Atlas は、地図の上で答えます——レイヤーを点け、視点と時計を動かして。地図を開き、サイドバーの Atlas を選んでください（携帯では上の欄に入力）。示される質問の候補は、画面の場所と日付に合わせて変わります。質問には無料のアカウントが要り、一日の上限があります。', cta: '地図を開いて Atlas に訊く' },
       },
       why: {
         h2: 'ほかの地図と違うところ',
         items: [
-          { h: '地図全体に、ひとつの時計', p: '時計を動かすと地図全体が動きます。国境は {csFrom}〜{csTo}年の CShapes 2.0 と {ohmFrom}〜{ohmTo}年の OpenHistoricalMap（どちらも日単位）、それらが述べない土地に Seshat Global History Databank の Cliopatria（{clioFromBC}から・年単位）、どれも述べない土地に{snapshots}枚の歴史スナップショットを重ねて描きます。国の一覧も、出典に数字がある年はその年の数字を示します。' },
+          { h: 'いまも昔も、ひとつの時計で', p: '時計を動かすと地図全体が動きます。国境は {csFrom}〜{csTo}年の CShapes 2.0 と {ohmFrom}〜{ohmTo}年の OpenHistoricalMap（どちらも日単位）、それらが述べない土地に Seshat Global History Databank の Cliopatria（{clioFromBC}から・年単位）、どれも述べない土地に{snapshots}枚の歴史スナップショットを重ねて描きます。国の一覧も、出典に数字がある年はその年の数字を示します。' },
           { h: '知っていることだけを描く', p: 'IntMap には{layers}のレイヤーがあり、そのデータを公開しているすべての組織を「データの出典」ページに載せています。出典がその日付を述べていないレイヤーは描かず、描いていないことを地図が伝えます。古い日付の下に今日のデータを見せることはしません。' },
           { h: '言葉で地図に訊く', p: 'ログインすると、IntMap の AI アシスタント Atlas にふつうの言葉で質問できます。Atlas は地図そのもので答えます——レイヤーを点け、視点と時計を動かして。' },
         ],
