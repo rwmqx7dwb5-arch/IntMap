@@ -452,7 +452,8 @@ export function yearPagesPlugin() {
 
 /* ── main ─────────────────────────────────────────────────────────────────────────────────────── */
 const isMain = !!process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
-if (isMain) {
+/* not a top-level await: scripts/history-pages.mjs collect() imports this module back (the same note as there) */
+if (isMain) (async () => {
   const arg = (k) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : null; };
   const t0 = Date.now();
   if (arg('--out')) {
@@ -466,4 +467,4 @@ if (isMain) {
     for (const y of C.years) { const w = C.why.get(y); console.log(String(y).padStart(8) + '  ' + [w.sheet ? 'sheet' : '', w.turn ? 'turn ' + w.turn : '', w.event ? 'event ' + w.event.map((e) => e.name.en).join(' / ') : ''].filter(Boolean).join(' · ')); }
     console.log('year-pages: ' + C.years.length + ' years; turning points ≥ ' + C.turn.cut + ' names (top ' + (TURN_SHARE * 100) + '% of ' + C.turn.changes + ' changes from ' + C.turn.from + '); seams ' + C.turn.seams.map((s) => s.y).join(' ') + '; ' + (Date.now() - t0) + ' ms');
   } else console.log('usage: node scripts/year-pages.mjs --out <dir> | --years');
-}
+})().catch((e) => { console.error(e); process.exit(1); });

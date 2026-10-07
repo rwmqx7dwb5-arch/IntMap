@@ -719,7 +719,10 @@ export function historyPagesPlugin() {
 
 /* ── main ─────────────────────────────────────────────────────────────────────────────────────── */
 const isMain = !!process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
-if (isMain) {
+/* (history-year-pages) not a top-level await: collect() imports scripts/year-pages.mjs, which imports this
+   module back; a top-level await here keeps this module unevaluated while that import waits for it, and the
+   two wait on each other ("unsettled top-level await"). */
+if (isMain) (async () => {
   const arg = (k) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : null; };
   const t0 = Date.now();
   if (arg('--out')) {
@@ -737,4 +740,4 @@ if (isMain) {
       console.log('history-pages: ' + M.pages.length + ' pages per language, ' + (Date.now() - t0) + ' ms');
     }
   }
-}
+})().catch((e) => { console.error(e); process.exit(1); });
