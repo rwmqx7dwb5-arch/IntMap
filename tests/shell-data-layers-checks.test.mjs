@@ -604,7 +604,11 @@ test('R207 ⑦ the bundled catalogue is the floor for every group, not only for 
   assert.ok(/groups\.json/.test(b), 'the builder writes the membership beside the elements');
   /* the honesty invariant on the build side: a key is written ONLY when ids were actually parsed,
      and a failure is recorded rather than turned into an empty list */
-  assert.ok(/if\s*\(ids\.length\)\s*groupIds\[g\]\s*=/.test(b), 'a group is written only when it has members');
+  /* (tle-carry-forward) the rule moved into the one composer the builder and its test share; a group is
+     written only when ids were parsed this run or carried from the previous bundle — evaluated in
+     tests/tle-carry-forward-checks.test.mjs */
+  assert.ok(/composeGroups\(/.test(b), 'the builder composes the membership through the shared rule');
+  assert.ok(/if\s*\(fetched\[g\]\s*&&\s*fetched\[g\]\.length\)/.test(read('scripts/lib/tle-compose.mjs')), 'a group is written only when it has members');
   assert.ok(/groupErr\.push\(/.test(b), 'and a group that could not be fetched is recorded as an error, not as an empty catalogue');
 });
 }

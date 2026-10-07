@@ -4,7 +4,8 @@
 # every connection for hours, and with one source the layer drew nothing at all — which is the one
 # outcome the brief rules out (「何も表示されないのは論外」). The app therefore ships a real element
 # set of its own (data/tle/), and this job is what stops that copy from going stale: it rebuilds it
-# from CelesTrak — or, when CelesTrak cannot be reached, from SatNOGS DB, which mirrors the same
+# from CelesTrak — or, when CelesTrak cannot be reached, it carries the previous bundle forward and
+# updates it from SatNOGS DB (scripts/lib/tle-compose.mjs), which mirrors the same
 # Space-Track / CelesTrak elements.
 #
 # Element sets are re-issued on a roughly two-hour timescale for low orbits, but a snapshot is a

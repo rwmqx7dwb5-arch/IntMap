@@ -1,11 +1,9 @@
 {
- "source": "SatNOGS DB (Space-Track / CelesTrak elements)",
- "objects": 1685,
- "newestEpoch": "2026-10-06T17:18:23.148Z",
- "medianElementAgeHours": 14.9,
- "builtAt": "2026-10-06T20:21:13.163Z",
+ "source": "CelesTrak GP (active)",
+ "objects": 15956,
+ "newestEpoch": "2026-10-07T10:41:14.682Z",
+ "medianElementAgeHours": 8.8,
+ "builtAt": "2026-10-06T10:19:32.999Z",
  "note": "Bundled fallback for the live satellite layer. Real element sets; SGP4 propagates them in real time and the app shows their age.",
- "errors": [
-  "celestrak: HTTP 500"
- ]
+ "errors": []
 }
