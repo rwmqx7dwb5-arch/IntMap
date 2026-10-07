@@ -145,7 +145,7 @@ newsjp: 歴史地図: 1933 年の東グリーンランドに残っていたノ�
 `node scripts/build-hist-clio.mjs`（`heldWhole`。引き算はキャッシュから、約 1 分）→ `node scripts/build-hist-clio.mjs --coast-snap`（約 13 分）→
 `node scripts/build-border-coast.mjs`（発見される束が 15 になり、全リング 98,388 → 132,688。文書 4 か所と `.github/workflows/ci.yml` の数を合わせた）→
 `node scripts/build-hist-courses.mjs` → `node scripts/build-border-provenance.mjs`（索引は変わらない——ノルウェーの行の指紋は同じ）→
-`node scripts/hist-fidelity.mjs --update` → `node scripts/data-governance.mjs --update`（新しい束の出自は値で述べ〈出版元・URL・ライセンスと
+`node scripts/hist-fidelity.mjs --update` → `node scripts/build-on-this-day.mjs`（出来事は 929 件のまま。片が周りの行の変化日に現れ消えるので、面積が変わる「描き直し」の候補が増え、CShapes の変化日でない 13 件が「日付のない名前」として数えられた）→ `node scripts/data-governance.mjs --update`（新しい束の出自は値で述べ〈出版元・URL・ライセンスと
 その URL・帰属・更新の周期・検査〉、述べられない 7 項目〈取得日・生成日・時点・行数ほか〉を台帳に記録した——片の幾何はビルドの時点の
 記録から作るので上流の「取得日」を持たない。束の中身自身は兄弟の束〈hist-clio・hist-eras-rest・hist-borders-late〉と同じく出自を `src` の文でだけ
 述べる〈stated-only-in-prose、16 項目〉。どちらも台帳に載せた——追跡される前の束は門が束として発見しないので、最初の CI で後者が赤くなった）。
