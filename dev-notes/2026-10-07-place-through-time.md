@@ -115,12 +115,12 @@ newsjp: 地点カードに「この場所の歴史」を追加。その地点を
   宣言と同じ場所に書く規約）、`place-dossier` +2.2 kB（節の描画・押したときの時計・端末位置でのボタン）。
   ⚠ `node scripts/perf-budget.mjs --update` は「この木は CI が測る木ではない（origin/main が先へ進んでいる）」として拒んだので、
   天井の引き上げは統合（rebase）後のビルドで行う。
-- **統合後の実測（3 本＝この場所の歴史・あの頃といま・この線の根拠を origin/main 24cb28a3 の上に積んだ木）**で
+- **統合後の実測（3 本＝この場所の歴史・あの頃といま・この線の根拠を origin/main 24cb28a3 の上に積み、#1029・#1032・#1033 を取り込んだ木）**で
   `node scripts/perf-budget.mjs --update` が上げた天井: `eager.modules` 314 → 315（`js/border-provenance.js`、理由は
   `2026-10-07-border-provenance.md`）・`eager.raw` 4758.8 → 4791.3 kB（gzip 1569.9 → 1580.7・brotli 1186.0 → 1194.9）——
   起動グラフ上のモジュールに足された分で、`main` チャンクに入る `js/time-borders.js` の `placeRecords` の部品（本稿）・
   `js/border-provenance.js` の核と `js/border-coast.js`／`js/time-admin1.js` の追記（この線の根拠）・`js/compare.js` の
-  スワイプと `ERA_BORDER_CREDIT`（あの頃といま）。遅延チャンクは `atlas-console` 1415.2 → 1430.7 kB（3 能力の項目）・
+  スワイプと `ERA_BORDER_CREDIT`（あの頃といま）。遅延チャンクは `atlas-console` 1415.2 → 1430.7 kB（3 能力の項目。#1029 の `time.whereWhen` が main で 1422.7 kB にした後の木で 1432.5 kB）・
   `map-recorder` 41.8 → 47.2 kB（あの頃といま）・`place-dossier` 52.4 → 54.7 kB（本稿と、あの頃といまの `viewPlaceName`）、
   それに伴う `async.*`・`dist.*`。新しい遅延チャンク `place-history`（16.0 kB）と `border-provenance-card`（29.3 kB）は
   main の CI が merge 後に記録する。
