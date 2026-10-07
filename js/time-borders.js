@@ -949,7 +949,11 @@ export function timeBorders(HOST){
        answer for each by its own name. */
     async function clFC(d,year,mon,day){ const feats=[];
       const ix=await _clH.at(_ymd(year,mon,day),'exclusive');
-      for(const i of ix){ const f=d.feats[i], m=f[9]||{}, NAME=f[0].en||'';
+      for(const i of ix) feats.push({type:'Feature',geometry:_clGeomOf(d,i),properties:_clProps(d.feats[i])});
+      return {type:'FeatureCollection',features:feats}; }
+    /* one Cliopatria row's properties — the map's (`clFC`) and the place timeline's (`placeRecords`), so the two cannot
+       disagree about which name a row carries, which it withholds, or which realm it belongs to */
+    function _clProps(f){ const m=f[9]||{}, NAME=f[0].en||'';
         /* (hist-coverage-expansion) a name scripts/histclio/review.json withholds — the shape is Cliopatria's,
            the name is not drawn before the year history places the polity's beginning or after its end
            (clio-lifespan-review: `ws` says which, `wc` that the year is approximate), or between two lives
@@ -962,9 +966,8 @@ export function timeBorders(HOST){
            a derivation, so the card says so (`typeNote`). (clio-year-page-findings) `he`: the ground was the polity's
            from `hs` to `he` between two of its own rows, and the outline is its row of `hy` drawn back over those years */
         const H=m.hy!=null?Object.assign({_heldFrom:m.hs,_heldShape:m.hy,_heldOver:m.ho||''},m.he!=null?{_heldTo:m.he}:{}):null;
-        feats.push({type:'Feature',geometry:_clGeomOf(d,i),properties:Object.assign(W?{NAME:'',_rec:'clio'}:{NAME:NAME,name:NAME,_i18n:hnFor('clio',NAME,f[1],f[0])||f[0],_rec:'clio'},W||{},H||{},
-          f[1]?{_qid:f[1]}:{},(m.w&&!W)?{_wiki:m.w}:{},m.of?{_of:m.of,PARTOF:m.of}:{},m.r?{_realm:1}:{})}); }
-      return {type:'FeatureCollection',features:feats}; }
+        return Object.assign(W?{NAME:'',_rec:'clio'}:{NAME:NAME,name:NAME,_i18n:hnFor('clio',NAME,f[1],f[0])||f[0],_rec:'clio'},W||{},H||{},
+          f[1]?{_qid:f[1]}:{},(m.w&&!W)?{_wiki:m.w}:{},m.of?{_of:m.of,PARTOF:m.of}:{},m.r?{_realm:1}:{}); }
     let _rsD=null,_rsP=null,_rsH=null;
     function rsLoad(){ if(_rsD) return Promise.resolve(_rsD); if(_rsP) return _rsP;
       _rsP=Promise.resolve().then(()=>HB().open({file:'data/hist-eras-rest.js',global:'__HISTERASREST'}))
@@ -1000,6 +1003,128 @@ export function timeBorders(HOST){
         _lnOf.set(fc,new Map([[_courseEp(t),{type:'FeatureCollection',features:[].concat(...parts.map(p=>_linesFor(p,t).features))}]]));
         _made.set(fc,made); cache.set(key,fc); }
       return { key, fc, corr, tier:'composite', sheet:made.sheet, record:_recordFor(_made.get(fc)) }; }
+    /* ══ (place-through-time) WHO HELD ONE POINT, AND WHEN — THE PIECES OF «この場所の歴史» ═══════════════════════════
+       js/place-history.js composes the timeline; the pieces come from HERE because every rule that decides what the map
+       SAYS at a point lives in this module: which record is drawn in which years (`collectionAt` — CShapes with
+       OpenHistoricalMap-late and Cliopatria from 1886; OpenHistoricalMap 1689–1885, Cliopatria and the nearest sheet
+       before), the name a row is drawn with (`_csName` and its table, `_clProps` and the names it withholds, `_sheetFC`
+       and `_eraShow`), and how the label reads in the reader's language (`tagSame`, the text the two label layers draw).
+       The records are disjoint by construction (scripts/build-hist-clio.mjs cut each against the ones above it), so the
+       pieces of all of them together are what the map draws over the point, instant by instant — nothing is chosen here.
+       Each record is asked ONCE, on the thread that holds it (js/hist-bundles.js `contains`: exact rings, no sampling).
+       ⚠ IT DRAWS NOTHING AND CHANGES NO «WHAT IS SHOWN» STATE; it shares the handles and the names lane with `go`.
+       ⚠ A RECORD THAT COULD NOT BE READ IS NAMED IN `missing`, never answered as «nothing here».
+       → { at:{lng,lat}, pieces:[…], records:[{tier,file,src,citation}], missing:[{tier,file,reason}], order:[tier…] }. A piece:
+         tier 'cshapes' | 'ohm' (1689–1885) | 'ohm-late' (from 1886) | 'clio' | 'sheet';  file — the record;
+         id { gw | qid | wiki | sheet };  name — the record's English after the drawing rules ('' when none is drawn);
+         i18n — the names tuple;  label — what the map writes there in the reader's language;
+         s, e — YYYYMMDD, the END EXCLUSIVE;  sEdge / eEdge — what the edge IS:
+           'stated'  the record states this day as an edge of this row here
+           'reach'   the record's own first or last day, or the band the era layer draws it in — not an end of the polity
+           'rename'  IntMap's era-name table (`_CS_ERA`, `tagSame`'s identities) changes the name drawn on this day
+           'sheet'   a snapshot record: where the clock stops showing that sheet (its year is `sheet`)
+           'review'  the reviewed span (data/hist-era-spans.json) turns a sheet's name on or off in that year
+         rawS / rawE — the record's own edges before the reach was applied;  withheld { name, lines } — the name the
+         record gives and why the map does not draw it;  unnamed — the record draws the shape without a name;
+         realm / of / life — Cliopatria's hierarchy and the polity's own span in it;  notes — the record's own words. */
+    const _kParts=k=>{ const y=Math.floor(k/10000), r=k-y*10000, m=Math.floor(r/100); return [y,m,r-m*100]; };
+    const _kAfter=k=>{ const p=_kParts(k), t=new Date(0); t.setUTCFullYear(p[0],p[1]-1,p[2]); t.setUTCDate(t.getUTCDate()+1); return _ymd(t.getUTCFullYear(),t.getUTCMonth()+1,t.getUTCDate()); };
+    const _kRow=(f,o)=>_ymd(f[o],f[o+1],f[o+2]);
+    /* the text the two label layers draw for one feature's properties — `imtb-lbl2` (an unchanged country, `_same`)
+       and `imtb-lbl` (the era name): their `text-field` expressions, read in JavaScript */
+    const _labelText=p=>(p._same===1?(p._modName||p.NAME||p.name||''):(p._locName||p.NAME||p.name||''));
+    /* the label one feature carries over the years [sY, eY], as `tagSame` writes it for each year drawn — the year
+       enters only from `_labelFloor()` on, so below it one reading answers every year. → [{y, label}] runs */
+    function _labelRuns(props,sY,eY){ const runs=[];
+      const at=y=>{ const fc=tagSame({type:'FeatureCollection',features:[{type:'Feature',geometry:null,properties:Object.assign({},props)}]},y); return _labelText(fc.features[0].properties); };
+      const push=(y,lb)=>{ const r=runs[runs.length-1]; if(!r||r.label!==lb) runs.push({y,label:lb}); };
+      push(sY,at(sY));
+      for(let y=Math.max(sY+1,_labelFloor()); y<=eY; y++) push(y,at(y));
+      return runs; }
+    /* a row's span cut where its drawn name changes (`_csName` reads the table at an instant and the drawn row; a bare
+       year in the table is that gwcode's record boundary in that year, so the candidates are the table's instants
+       clamped to the row) → [{k, name}] with k the first day of each name */
+    function _csNameRuns(f){ const rs=_kRow(f,2), re=_kRow(f,5), cuts=new Set([rs]);
+      for(const r of (_CS_ERA[f[1]]||[])){ const c=r[0]; let k=null;
+        if(Array.isArray(c)) k=_ymd(c[0],c[1],c[2]); else if(typeof c==='number'&&c<9999) k=Math.max(_ymd(c,1,1),rs);
+        if(k!=null&&k>rs&&k<=re) cuts.add(k); }
+      const runs=[];
+      for(const k of [...cuts].sort((a,b)=>a-b)){ const p=_kParts(k), nm=_csName(f[0],f[1],p[0],p[1],p[2],f);
+        if(!runs.length||runs[runs.length-1].name!==nm) runs.push({k,name:nm}); }
+      return runs; }
+    /* the years the clock shows one sheet of `years` below CShapes — `nearest`'s own answer, found by asking it */
+    function _sheetReach(y,years){ const ys=years.slice().sort((a,b)=>a-b), i=ys.indexOf(y);
+      const floor=(()=>{ try{ return window.IntMapHistScale.FLOOR; }catch(_){ return ys[0]; } })();
+      const shows=Y=>nearest(Y,ys)===y;
+      let lo=i>0?ys[i-1]:Math.min(floor,y), hi=y;   /* the smallest year in (previous sheet, y] it answers */
+      while(lo<hi){ const mid=Math.floor((lo+hi)/2); if(shows(mid)) hi=mid; else lo=mid+1; }
+      if(i===ys.length-1) return [lo,CS_MIN-1];
+      let a=y, b=ys[i+1];                            /* the largest year in [y, next sheet) it answers */
+      while(a<b){ const mid=Math.ceil((a+b)/2); if(shows(mid)) a=mid; else b=mid-1; }
+      return [lo,Math.min(a,CS_MIN-1)]; }
+    /* the last calendar year an exclusive end still covers */
+    const _lastYear=e=>{ const p=_kParts(e); return (p[1]===1&&p[2]===1)?p[0]-1:p[0]; };
+    async function placeRecords(lng,lat){
+      lng=+lng; lat=+lat; if(!isFinite(lng)||!isFinite(lat)) throw new Error('placeRecords: no point');
+      const [csd,old,hbd,cld,rsd]=await Promise.all([csLoad(),olLoad(),hbLoad(),clLoad(),rsLoad(),hnLoad(),spLoad()]);
+      const L=[{tier:'cshapes',file:'data/cshapes.js',d:csd,h:()=>_csH},{tier:'ohm-late',file:'data/hist-borders-late.js',d:old,h:()=>_olH},{tier:'ohm',file:'data/hist-borders.js',d:hbd,h:()=>_hbH},
+               {tier:'clio',file:'data/hist-clio.js',d:cld,h:()=>_clH},{tier:'sheet',file:'data/hist-eras-rest.js',d:rsd,h:()=>_rsH}];
+      const ans=await Promise.all(L.map(x=>x.d?x.h().contains(lng,lat).then(v=>({v}),e=>({e})):Promise.resolve({e:{reason:'unreadable'}})));
+      const out={ at:{lng,lat}, pieces:[], records:[], missing:[], order:L.map(x=>x.tier) };   /* `order` — highest precision first, the order the records were cut against each other */
+      L.forEach((x,i)=>{ if(ans[i].e) out.missing.push({ tier:x.tier, file:x.file, reason:String((ans[i].e&&ans[i].e.reason)||'failed') });
+        else out.records.push({ tier:x.tier, file:x.file, src:(x.d&&x.d.src)||null, citation:(x.d&&x.d.citation)||null }); });
+      const P=out.pieces;
+      /* one piece per run of one label (`props` null: the record draws no name there) */
+      const emit=(base,props,s,e,sEdge,eEdge)=>{
+        if(!(e>s)) return;
+        const sY=_kParts(s)[0], runs=props?_labelRuns(props,sY,Math.max(sY,_lastYear(e))):[{y:sY,label:''}];
+        runs.forEach((r,j)=>{ const a=j?_ymd(r.y,1,1):s, b=j<runs.length-1?_ymd(runs[j+1].y,1,1):e;
+          P.push(Object.assign({},base,{ label:r.label, s:a, e:b, sEdge:j?'rename':sEdge, eEdge:j<runs.length-1?'rename':eEdge })); }); };
+      /* CShapes: inclusive ends; its reach is 1886-01-01 … 2019-12-31 */
+      if(ans[0].v) for(const [,f] of ans[0].v.rows){ const rs=_kRow(f,2), reI=_kRow(f,5), re=_kAfter(reI);
+        const sE=rs<=_ymd(CS_MIN,1,1)?'reach':'stated', eE=reI>=_ymd(CS_MAX,12,31)?'reach':'stated';
+        const runs=_csNameRuns(f);
+        runs.forEach((r,j)=>{ const NAME=r.name, i18=hnFor('cshapes',NAME,null,null);
+          emit({ tier:L[0].tier, file:L[0].file, id:{gw:f[1]}, name:NAME, i18n:i18||{en:NAME}, rawS:rs, rawE:re },
+            Object.assign({NAME:NAME,name:NAME,_gw:f[1]},i18?{_i18n:i18}:{}), r.k, j<runs.length-1?runs[j+1].k:re, j?'rename':sE, j<runs.length-1?'rename':eE); }); }
+      /* OpenHistoricalMap — exclusive ends; drawn in the band its own head states (late) or the band the era layer draws it in */
+      const ohm=(v,rec,lo,hi)=>{ if(!v) return; const tier=rec.tier, file=rec.file; for(const [,f] of v.rows){ const rs=_kRow(f,2), re=_kRow(f,5), NAME=f[0].en;
+        const s=Math.max(rs,lo), e=Math.min(re,hi); if(!(e>s)) continue;
+        const i18=hnFor('histBorders',NAME,f[1],f[0])||f[0];
+        emit({ tier, file, id:f[1]?{qid:f[1]}:{}, name:NAME, i18n:i18, rawS:rs, rawE:re },
+          Object.assign({NAME:NAME,name:NAME,_i18n:i18,_rec:'ohm'},f[1]?{_qid:f[1]}:{}), s, e, rs<=lo?'reach':'stated', re>=hi?'reach':'stated'); } };
+      { const w=(old&&old.window)||null; if(w) ohm(ans[1].v,L[1],_ymd(w[0],1,1),_ymd(w[1]+1,1,1)); }
+      ohm(ans[2].v,L[2],_ymd(HB_MIN,1,1),_ymd(HB_MAX+1,1,1));
+      /* Cliopatria — exclusive ends, dated to the year; its reach is its head's window */
+      if(ans[3].v){ const w=(cld&&cld.window)||[-Infinity,Infinity], lo=_ymd(w[0],1,1), hi=_ymd(w[1]+1,1,1);
+        for(const [,f] of ans[3].v.rows){ const rs=_kRow(f,2), re=_kRow(f,5), p=_clProps(f);
+          const s=Math.max(rs,lo), e=Math.min(re,hi); if(!(e>s)) continue;
+          const en=(f[0]&&f[0].en)||'';
+          const base={ tier:L[3].tier, file:L[3].file, id:Object.assign({},f[1]?{qid:f[1]}:{},p._wiki?{wiki:p._wiki}:{}), name:p.NAME||'', i18n:p._i18n||null, rawS:rs, rawE:re,
+            realm:!!p._realm, of:p._of||null, life:(cld.ids&&en&&cld.ids[en])||null };
+          if(p._wName) base.withheld={ name:p._wName, lines:(blankNote({properties:p})||{}).lines||[] };
+          if(p._heldShape!=null){ const tn=typeNote({properties:p}); if(tn) base.notes=[tn]; }
+          emit(base, p._wName?null:p, s, e, rs<=lo?'reach':'stated', re>=hi?'reach':'stated'); } }
+      /* the sheets — a snapshot answers the years `nearest` gives it, and its names are asked at the reader's year (`_eraShow`) */
+      if(ans[4].v&&rsd){ const ys=rsYears(rsd);
+        for(const sh of ans[4].v.sheets){ const [a,b]=_sheetReach(sh.y,ys); if(b<a) continue;
+          /* the rows of the polygons that hold the point, through the map's own sheet builder (the rings are not needed) */
+          const mini=_sheetFC({feats:sh.feats.map(h=>[h[1],h[2],[[0]]]),blank:sh.blank.map(()=>[[0]]),blankPrecision:null},{rings:[]},'sheet');
+          mini.features.forEach(ft=>{ const nm=ft.properties.NAME||'';
+            /* where the reviewed span turns the name on or off inside the sheet's years — only the cut years; whether the
+               name is drawn in each part is `_eraShow`'s answer at that part's first year */
+            const row=nm?_spRow(nm):null, cuts=[a];
+            if(row){ if(row.s!=null&&row.s>a&&row.s<=b) cuts.push(row.s); if(row.e!=null&&row.e+1>a&&row.e+1<=b) cuts.push(row.e+1); }
+            cuts.sort((x,y)=>x-y);
+            cuts.forEach((y0,j)=>{ const y1=j<cuts.length-1?cuts[j+1]-1:b;
+              const p=_eraShow({type:'FeatureCollection',features:[ft]},y0).features[0].properties;
+              const base={ tier:L[4].tier, file:L[4].file, id:{sheet:sh.y}, sheet:sh.y, name:p.NAME||'', i18n:p._i18n||null };
+              if(!nm){ base.unnamed=true; base.notes=(blankNote({properties:p})||{}).lines||[]; }
+              else if(p._wName) base.withheld={ name:p._wName, lines:(blankNote({properties:p})||{}).lines||[] };
+              else if(p.PARTOF||p.SUBJECTO){ const nl=(blankNote({properties:Object.assign({},p,{NAME:''})})||{}).lines||[]; if(nl.length) base.notes=nl; }
+              emit(base, (p.NAME&&!p._wName)?p:null, _ymd(y0,1,1), _ymd(y1+1,1,1), j?'review':'sheet', j<cuts.length-1?'review':'sheet'); }); }); } }
+      P.sort((x,y)=>x.s-y.s||x.e-y.e);
+      return out; }
     /* ══ (#R520) 一国につき一つ — THE ERA NAMES GET THEIR OWN POINT SOURCE ══════════════════════
        「昔の国名ラベルが1国につき何十個も出る。」 `imtb-lbl` / `imtb-lbl2` took their text FROM THE
        BORDER POLYGONS — `source:'imtb-src'` with `symbol-placement:'point'` — and that is not one
@@ -1831,6 +1956,9 @@ export function timeBorders(HOST){
        ⚠ THE FLOOR IS THE LIST'S FLOOR. js/time-countries.js overlays a year only from the Maddison floor
        upward and RESTORES the modern identities below it, so an era name applied at 1750 would be a NEW
        disagreement pointing the other way. Same expression, so the two cannot part company. */
+    /* the first year whose label `tagSame` reads off the year itself (the era identities and the former states are asked
+       at a date only from here on); below it a label depends on the name alone. js/time-countries.js's own floor, verbatim. */
+    function _labelFloor(){ return (window.IntMapMaddison&&window.IntMapMaddison.minYear)||1900; }
     function tagSame(fc,year){ try{ if(!fc||!Array.isArray(fc.features)) return fc;
       const lg=(typeof HOST.lang!=='undefined')?HOST.lang:'en';
       const HID=window.IntMapHistId, HS=window.IntMapHistStates;
@@ -1849,7 +1977,7 @@ export function timeBorders(HOST){
         if(sav) for(const code in sav){ const o=sav[code]||{}; const disp=_disp(o);
           if(o.nameEn){ cur.set(_normNm(o.nameEn),disp); curRow.delete(_normNm(o.nameEn)); } if(o.nameJp) cur.set(_normNm(o.nameJp),disp); } }catch(_){}
       const _y=(year!=null&&isFinite(year))?+year:null;
-      const _mfloor=(window.IntMapMaddison&&window.IntMapMaddison.minYear)||1900;   /* js/time-countries.js's own floor, verbatim */
+      const _mfloor=_labelFloor();
       const _d=(_y!=null&&_y>=_mfloor)?(_y+'-07-01T00:00:00Z'):null;
       /* successors a former state covers this year: their own era identity must NOT be applied on top of it —
          the Countries list hides those rows for the same reason (js/history.js `histStates.apply`). */
@@ -2814,6 +2942,8 @@ export function timeBorders(HOST){
                if(tier==='composite'){ const ps=[['ohm',_hbD],['clio',_clD],['sheet',_rsD]].filter(x=>x[1]&&x[1].src).map(x=>({ tier:x[0], src:x[1].src, citation:x[1].citation||null }));
                  return ps.length?{ tier, src:ps.map(x=>x.src).join(' + '), built:null, parts:ps }:null; }
                const d=tier==='cshapes'?_csD:tier==='ohm'?_hbD:tier==='snapshot'?(_erD||window.__HISTERAS||null):null; return d?{ tier, src:d.src||null, built:d.built||null }:null; }catch(_){ return null; } },
-             changePrecision, compositeAt };   /* (#R518) the range the stepper can walk — both day-exact records, and (#R695) the era sheets below them */
+             changePrecision, compositeAt,
+             /* (place-through-time) every record the era layer draws, asked at one point across all of time — js/place-history.js */
+             placeRecords };   /* (#R518) the range the stepper can walk — both day-exact records, and (#R695) the era sheets below them */
   })();
 }

@@ -662,6 +662,7 @@ privacy.html / `js/legal-text.js` の第 2 項と同じ事実。
 | 周辺の地震 | `js/events-near.js` `readQuakes`——USGS の M2.5 以上・7 日のフィードを**丸ごと 1 回**読み、`RELATED_DEFAULTS`（300 km）で端末が絞る | 該当なし＝`none`（答え）／フィードが応答しない＝`unavailable`（理由） |
 | 近くの出来事 | `js/events-near.js` `readNewsEvents`——`news_events` の 72 時間を位置を付けずにページ送りで読み、端末が絞る。柵（`NEWS_PAGES`）で切れたら `truncated` とカードが述べる | 同上 |
 | かつての名前 | `IntMapHistCities.near`（改名都市の記録。その記録自身の判定半径）。押すとその年の地図 | 記録に無い＝`none` |
+| この場所の歴史 | `js/place-history.js`（下の段落）——時代の層が描く国境の記録と第 1 層の地方区分の記録に、その地点を全時代について訊く。押すとその時代の地図 | 記録が読めない＝その記録の名前と理由／どの記録も描かない期間＝空白の行として述べる。起点 `device`・`shared` では読まず、押されたら読む（`ask`） |
 | 国の統計 | **呼び手が渡す指標の集合と書式**（Atlas は `js/atlas-metrics.js` の集合と `fmtVal`）。カードは統計を書き写さず、既存の国カードを開くボタンを置く | 国に無い指標は 0 ではなく**行が無い** |
 
 **⚠ 読めないレイヤーは行が消えず、理由を持った行になる。** 4 種: `no-value-here`（訊いたが値が無い）・
@@ -679,6 +680,29 @@ privacy.html / `js/legal-text.js` の第 2 項と同じ事実。
 集める関数も記録の形も 1 つ）。2 つの能力は両方残り、`hereNow` だけが端末の位置を読む扉を持つ（確認の列 `explicit`）。
 カードは `.country-popup`（ドラッグ・携帯のシート）で、開くと `MAP_ANSWER_EVENT`（`card`）を出す。地震と出来事は
 カードが開いている間、地図に点で描く。
+
+**この場所の歴史（`js/place-history.js`）——その地点をどの政体がいつからいつまで治めていたか。** 時代の層が描く
+記録（CShapes 2.0・OpenHistoricalMap・OpenHistoricalMap の 1886 年以降の植民地の土地・Cliopatria・historical-basemaps
+の時代の 1 枚）を古い順の縦の年表にし、その下に第 1 層の地方区分（令制国・府県・州など。`data/hist-admin1.js` と
+`HIST_ADMIN_GAPS` の記録）を並べる。各行は名前（その時代に地図が書く名前を読者の言語で）・期間・記録と記録 ID
+（gwcode・Wikidata・Cliopatria の記事・OHM のリレーション・IntMap 復元の行）で、押すと Chronos をその行の最初の日
+（時代の 1 枚ならその年）へ動かし地図をその地点へ寄せる。
+⚠ **何も新しく決めない。** どの行がその点を含むかは扉の `contains`（§7.4 の束の項）、どの年にどの記録を描き
+どの名前で描くか・どの名前を保留するか・読者の言語でどう書くかは `js/time-borders.js` の `placeRecords`
+（`collectionAt` の合成・`_csName`・`_clProps`・`_sheetFC`＋`_eraShow`・`tagSame` をそのまま使う）、地方区分は
+`js/time-admin1.js` の `placeRecords`（`nameOf` と行の出典日付）。記録どうしは互いを差し引いて作られている
+（`scripts/build-hist-clio.mjs`）ので、全記録の行を並べたものが地図がその点に描くものと一致する。
+⚠ **端は種類つきで述べる。** `stated`（記録がその行の日として述べる）・`reach`（記録の範囲の端——CShapes の
+2019-12-31、OHM 帯の 1689-01-01 など。政体の始まり・終わりではない）・`handover`（より精密な記録がその日に
+その地点を引き継ぐ。記録どうしがその日で切られているため。Cliopatria 自身が政体の終年をその前年と述べるときは
+政体の終わりのまま）・`rename`（IntMap の時代名の表）・`sheet`（時代の 1 枚が表示される年）・`review`（査読済みの
+年代が名前を出し入れする年）。地方区分は `stated`・`derived`（記録が導出と述べる）・`unstated`（記録は日付を
+述べず、描画は誰も述べていない境界から）・`undocumented`（行に出典日付が無い）・`open`（記録上は現在も）。
+上流が述べていない日を、述べたかのようには書かない。どの記録も描かない期間は**空白の行**として出す。
+⚠ 起点 `device`・`shared` では自動で読まない——タイルは `Range` で読み、**どの範囲を読むかが地点で決まる**ので、
+節はボタンを出し、押されたときに正確な地点で読む。
+Atlas は同じ記録を `time.placeHistory`（`year` を渡すとその年に有効な行も）として受け取る。地点を名指して実際の
+年表を出すのは `node scripts/place-history.mjs --at <lng>,<lat>`（`--sites` は開発記録が史実と突き合わせた 7 地点）。
 
 **範囲 × 期間の地震・出来事の読み手は 1 つ（`js/events-near.js`）。** カード・見守る場所（`js/place-watch.js`）・
 Atlas の `research.related` / `research.impact` / 実世界オブジェクトの解決が同じ読み手を通る。USGS のフィードは
@@ -810,6 +834,16 @@ Atlas の `research.related` / `research.impact` / 実世界オブジェクト�
   `dev-notes/2026-10-01-deep-tier-after-restructure.md`）。届いたかは**ページ自身の Resource Timing**
   （状態 200・本文の大きさ）と、扉の `IntMapHistBundles.requested(global)`／`loaded(global)` で見る
   （`tests/history-prefetch-on-demand.spec.js`）。
+- **1 地点を全時代について訊く問いは `contains(lng, lat)` で、これも Worker が答える。** 「この点を含む行は
+  全時代のうちどれか」は全行に訊く問いなので、上の 4 つと同じく束を持つスレッドに訊く。答えは行が**述べること**
+  （名前・期間・身元・その行の出典日付）と、時代の 1 枚の多角形が持つ名前だけで、幾何はページへ来ない。
+  判定は 2 段——行（と時代の 1 枚の多角形）ごとの**箱**で候補を絞り、候補だけを**環の偶奇判定**（穴は穴、
+  凹形は凹形のまま。標本点は使わない）で決める。丸ごと読んだ記録は箱を環から 1 回だけ導く。タイルで読む記録は
+  ビルドが索引の隣に書く**箱ファイル** `data/hvt/<名>.box.json`（名前は扉の `boxesOf`、0.01° の整数で外側へ
+  丸めさらに 1 単位広げる。時代の 1 枚の多角形ごとにその環のチャンクも列挙）を `contains` の初回だけ読み、
+  候補の行のチャンクだけを `Range` で取る。⚠ **箱は行より大きくはなっても小さくはならない**——ビルドが毎回
+  全座標が箱の中にあることと、多角形の環が列挙したチャンクにあることを照合する（`verifyBoxes`）。旅行は箱ファイルを
+  読まない。回帰は `tests/place-through-time-checks.test.mjs`（タイルと丸ごとの答えの一致・箱が行を落とさないこと）。
 - 地名クリックの優先順位はエンジンの登録情報で判定する。`events.onLayer` の第4引数
   `{ownership:'fallback'}` は、他の地物や地名に譲る領域説明用。`clickLayers()` は全登録、
   `clickLayers({ownersOnly:true})` は優先権を持つ登録を返す。無名歴史領域の説明はfallbackで、

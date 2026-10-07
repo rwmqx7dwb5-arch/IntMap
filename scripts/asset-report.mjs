@@ -80,8 +80,10 @@ const ALLOW = {
     /* (hist-vector-tiles) the historical records cut by time. No string names them: js/hist-bundles.js
        DERIVES each index from its record's own name (`tilesOf`: data/<name>.js → data/hvt/<name>.idx.json)
        and reads the archive the index names — and scripts/build-hist-tiles.mjs asks the door for the same
-       name, so the pair cannot drift. Every one of them exists because a record under data/ does. */
-    { match: /^data\/hvt\/[^/]+\.(idx\.json|jsonl\.gz)$/, why: 'the historical records as time-cut tiles — the index name is derived from the record (js/hist-bundles.js tilesOf) and the archive is named by its index (scripts/build-hist-tiles.mjs)' },
+       name, so the pair cannot drift. Every one of them exists because a record under data/ does.
+       (place-through-time) …and the box file beside each index, named from the same record name by `boxesOf`, read only
+       when a place's history is asked (js/hist-bundles.js `contains`). */
+    { match: /^data\/hvt\/[^/]+\.(idx\.json|jsonl\.gz|box\.json)$/, why: 'the historical records as time-cut tiles — the index and box names are derived from the record (js/hist-bundles.js tilesOf / boxesOf) and the archive is named by its index (scripts/build-hist-tiles.mjs)' },
     { match: /^cesium\//, why: "the Cesium SDK's own runtime tree (workers, shaders, IAU2006 tables, widget CSS). The SDK builds these URLs from CESIUM_BASE_URL at run time, so no string in this repository names any of them — which is exactly why vite.config.js cesiumAssets() copies the directory whole rather than listing it." },
   ],
   /* a production file larger than this needs a reason of its own */

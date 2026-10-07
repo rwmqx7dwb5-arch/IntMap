@@ -199,6 +199,23 @@ window.IntMapHistBundles = (function () {
       if (q.op === 'snap') {
         var sn = B.h.snaps || [];
         for (i = 0; i < sn.length; i++) if (sn[i].y === q.y) { rr = (B.tiled[0].dir.snapChunks || [])[i] || []; for (n = 0; n < rr.length; n++) add(B.tiled[0], 0, rr[n]); break; }
+      } else if (q.op === 'contains') {
+        /* (place-through-time) the rows whose box holds the point, and each sheet polygon's: its sheet's own
+           chunk (the rows of the sheet) and only the ring chunks THAT polygon names (the box file lists them) */
+        var cand = boxCandidates(B, q.lng, q.lat), bx0 = B.boxes[0];
+        for (n = 0; n < cand.rows.length; n++) {
+          i = cand.rows[n]; p = partOfRow(B, i); lc = i - p.fOff;
+          var pj = B.tiled.indexOf(p);
+          if (B.d.feats[i] === undefined) add(p, pj, p.dir.rowChunk[lc]);
+          rr = p.dir.rowRings[lc] || [];
+          for (var r0 = 0; r0 < rr.length; r0++) add(p, pj, rr[r0]);
+        }
+        for (n = 0; n < cand.sheets.length; n++) {
+          var cs = cand.sheets[n], si0 = cs[0], sh0 = bx0.sheets[si0];
+          if (!B.sheetIn[si0]) add(B.tiled[0], 0, (B.tiled[0].dir.snapChunks || [])[si0][0]);
+          cs[1].forEach(function (k) { (sh0.fc[k] || []).forEach(function (c) { add(B.tiled[0], 0, c); }); });
+          cs[2].forEach(function (k) { (sh0.bc[k] || []).forEach(function (c) { add(B.tiled[0], 0, c); }); });
+        }
       } else if (q.op === 'at' || q.op === 'during') {
         var idx = rowsFor(B, q);
         for (n = 0; n < idx.length; n++) {
@@ -226,6 +243,98 @@ window.IntMapHistBundles = (function () {
       for (j = 0; j < (obj.s || []).length; j++) { e = obj.s[j]; var sh = d.snaps[e[0]]; sh.feats = e[1]; sh.blank = e[2]; sh.blankPrecision = e[3]; B.sheetIn[e[0]] = 1; }
       B.have[c] = 1;
     }
+    /* ══ (place-through-time) WHICH ROWS, OF ALL TIME, CONTAIN ONE POINT ═══════════════════════════════
+       «Who held this ground, and when» is a question about EVERY row of a record, so it is asked here, where
+       every row is (the page's mirror is sparse — see the header). It is answered in two steps:
+         · a BOX per row (and per era-sheet polygon), so only the rows whose box holds the point are tested.
+           A whole record derives its boxes from its rings the first time it is asked; a tiled one is handed
+           them by the box file the build writes beside its index (`boxesOf`, scripts/build-hist-tiles.mjs),
+           rounded OUTWARD — a box may be larger than the row, never smaller, so the prefilter cannot drop
+           a row that holds the point (the build proves every coordinate lies inside its box);
+         · the EXACT test on the rings: even-odd crossings over every ring of each polygon, so a hole is a
+           hole and a concave outline is judged by its own edges, not by a sample of points. Planar in
+           longitude/latitude — the predicate the click and Atlas already use (js/time-borders.js
+           `_contains`, turf.booleanPointInPolygon). A ring that has not arrived is not «outside»: the
+           question fails, as `complete` makes `at` fail. */
+    var BOX_UNSET = 1e9;
+    function boxOfRings(d, polys) {
+      var x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      for (var p = 0; p < polys.length; p++) for (var q = 0; q < polys[p].length; q++) {
+        var r = d.rings[polys[p][q]]; if (!r) return null;
+        for (var k = 0; k < r.length; k++) { var c = r[k];
+          if (c[0] < x0) x0 = c[0]; if (c[0] > x1) x1 = c[0]; if (c[1] < y0) y0 = c[1]; if (c[1] > y1) y1 = c[1]; }
+      }
+      return isFinite(x0) ? [x0, y0, x1, y1] : null;
+    }
+    function polysHold(d, polys, x, y) {
+      for (var p = 0; p < polys.length; p++) {
+        var inside = false;
+        for (var q = 0; q < polys[p].length; q++) {
+          var r = d.rings[polys[p][q]];
+          if (!r) { var e = new Error('ring ' + polys[p][q] + ' did not arrive'); e.reason = 'tiles'; throw e; }
+          for (var a = 0, b = r.length - 1; a < r.length; b = a++) {
+            var ya = r[a][1], yb = r[b][1];
+            if ((ya > y) !== (yb > y) && x < r[b][0] + (y - yb) * (r[a][0] - r[b][0]) / (ya - yb)) inside = !inside;
+          }
+        }
+        if (inside) return true;
+      }
+      return false;
+    }
+    /* does the row's box hold the point? A tiled record reads the box file (scaled integers, per part); a
+       whole one derives the box once and keeps it (NaN-free Float64Array, BOX_UNSET until derived) */
+    function rowBoxHolds(B, i, x, y) {
+      if (B.tiled) {
+        var p = partOfRow(B, i), bx = B.boxes && B.boxes[B.tiled.indexOf(p)];
+        if (!bx) { var e = new Error('no box file for ' + (p.dir && p.dir.global)); e.reason = 'tiles'; throw e; }
+        var j = 4 * (i - p.fOff), s = bx.scale;
+        return x >= bx.rows[j] / s && y >= bx.rows[j + 1] / s && x <= bx.rows[j + 2] / s && y <= bx.rows[j + 3] / s;
+      }
+      if (!B.box) { B.box = new Float64Array(4 * (B.d.feats || []).length); B.box.fill(BOX_UNSET); }
+      if (B.box[4 * i] === BOX_UNSET) {
+        var b = boxOfRings(B.d, (B.d.feats[i] && B.d.feats[i][8]) || []) || [Infinity, Infinity, -Infinity, -Infinity];
+        B.box[4 * i] = b[0]; B.box[4 * i + 1] = b[1]; B.box[4 * i + 2] = b[2]; B.box[4 * i + 3] = b[3];
+      }
+      return x >= B.box[4 * i] && y >= B.box[4 * i + 1] && x <= B.box[4 * i + 2] && y <= B.box[4 * i + 3];
+    }
+    /* the same for one polygon set of an era sheet: `kind` 'f' (a named feature) or 'b' (a blank), `k` its index */
+    function sheetBoxHolds(B, si, kind, k, x, y) {
+      if (B.tiled) {
+        var bx = B.boxes && B.boxes[0], sh = bx && bx.sheets && bx.sheets[si];
+        if (!sh) { var e = new Error('no box file for sheet ' + si); e.reason = 'tiles'; throw e; }
+        var flat = sh[kind], s = bx.scale, j = 4 * k;
+        return x >= flat[j] / s && y >= flat[j + 1] / s && x <= flat[j + 2] / s && y <= flat[j + 3] / s;
+      }
+      var key = si + kind + k; B.sbox = B.sbox || {};
+      var b = B.sbox[key];
+      if (b === undefined) {
+        var sn = B.d.snaps[si], polys = kind === 'f' ? ((sn.feats[k] && sn.feats[k][2]) || []) : (sn.blank[k] || []);
+        b = B.sbox[key] = boxOfRings(B.d, polys);
+      }
+      return !!b && x >= b[0] && y >= b[1] && x <= b[2] && y <= b[3];
+    }
+    /* the candidates — rows (and sheet polygons) whose box holds the point; the one prefilter, for both the
+       answer and the chunks a tiled record must fetch first */
+    function boxCandidates(B, x, y) {
+      var n = B.span.length / 2, rows = [], sheets = [], i, si, k;
+      for (i = 0; i < n; i++) if (rowBoxHolds(B, i, x, y)) rows.push(i);
+      var snaps = B.d.snaps || [];
+      for (si = 0; si < snaps.length; si++) {
+        var fs = [], bs = [], sn = snaps[si];
+        if (B.tiled) {
+          var sh = B.boxes && B.boxes[0] && B.boxes[0].sheets && B.boxes[0].sheets[si];
+          if (!sh) { var e = new Error('no box file for sheet ' + si); e.reason = 'tiles'; throw e; }
+          for (k = 0; k < sh.f.length / 4; k++) if (sheetBoxHolds(B, si, 'f', k, x, y)) fs.push(k);
+          for (k = 0; k < sh.b.length / 4; k++) if (sheetBoxHolds(B, si, 'b', k, x, y)) bs.push(k);
+        } else {
+          for (k = 0; k < (sn.feats || []).length; k++) if (sheetBoxHolds(B, si, 'f', k, x, y)) fs.push(k);
+          for (k = 0; k < (sn.blank || []).length; k++) if (sheetBoxHolds(B, si, 'b', k, x, y)) bs.push(k);
+        }
+        if (fs.length || bs.length) sheets.push([si, fs, bs]);
+      }
+      return { rows: rows, sheets: sheets };
+    }
+
     /* the rows a question reads — the one predicate, for both the answer and the chunks it needs */
     function rowsFor(B, q) {
       var sp = B.span, n = sp.length / 2, out = [], i, s, e;
@@ -358,6 +467,43 @@ window.IntMapHistBundles = (function () {
       set.forEach(function (k) { if (k >= m.lo && k <= m.hi) out.push(k); });
       return out.sort(function (a, b) { return a - b; });
     }
+    if (m.op === 'boxes') {
+      /* (place-through-time) the box files of a tiled record, one per part (the record, then each gap record in
+         splice order) — each must be for the part it is handed as, or the boxes would address another record's rows */
+      if (!B.tiled) return 0;
+      var bf = m.files || [];
+      for (i = 0; i < B.tiled.length; i++) {
+        var f0 = bf[i], want = B.tiled[i].dir;
+        if (!f0 || f0.hvt !== 1 || f0.global !== want.global || !Array.isArray(f0.rows) || f0.rows.length !== 4 * want.head.nFeats || !(f0.scale > 0)) {
+          var e4 = new Error('box file ' + i + ' is not for ' + want.global); e4.reason = 'tiles'; throw e4; }
+      }
+      B.boxes = bf;
+      return bf.length;
+    }
+    if (m.op === 'contains') {
+      /* (place-through-time) → { rows: [[index, row without its polygons]], dates: [[key, the record's dates]],
+         sheets: [{ si, y, feats: [[index, names, facts]], blank: [index] }] } — what each row and sheet polygon that
+         holds the point SAYS (names, span, identity), never its geometry: the page draws nothing from this answer */
+      var x = +m.lng, y = +m.lat;
+      if (!isFinite(x) || !isFinite(y)) { var e5 = new Error('no point'); e5.reason = 'input'; throw e5; }
+      var cand = boxCandidates(B, x, y), rows = [], dates = [], sheets = [];
+      complete(B, cand.rows);
+      for (i = 0; i < cand.rows.length; i++) {
+        var ri0 = cand.rows[i], row = d.feats[ri0];
+        if (!polysHold(d, row[8] || [], x, y)) continue;
+        var copy = row.slice(); copy[8] = null; rows.push([ri0, copy]);
+        if (d.dates && row[10] != null && d.dates[row[10]] !== undefined) dates.push([row[10], d.dates[row[10]]]);
+      }
+      for (i = 0; i < cand.sheets.length; i++) {
+        var c3 = cand.sheets[i], sn3 = d.snaps[c3[0]];
+        if (B.tiled && !B.sheetIn[c3[0]]) { var e6 = new Error('sheet ' + sn3.y + ' did not arrive'); e6.reason = 'tiles'; throw e6; }
+        var fh = [], bh = [];
+        c3[1].forEach(function (k) { var ft = sn3.feats[k]; if (polysHold(d, ft[2] || [], x, y)) fh.push([k, ft[0], ft[1] || {}]); });
+        c3[2].forEach(function (k) { if (polysHold(d, sn3.blank[k] || [], x, y)) bh.push(k); });
+        if (fh.length || bh.length) sheets.push({ si: c3[0], y: sn3.y, feats: fh, blank: bh });
+      }
+      return { rows: rows, dates: dates, sheets: sheets };
+    }
     if (m.op === 'at' || m.op === 'during') {
       out = rowsFor(B, m);
       complete(B, out);
@@ -477,6 +623,9 @@ window.IntMapHistBundles = (function () {
        index) and the archive that index names beside it. The builder asks THIS function for the name,
        so the two cannot disagree (scripts/build-hist-tiles.mjs). */
     function tilesOf(file) { return /\.js$/.test(String(file)) ? String(file).replace(/([^/]+)\.js$/, 'hvt/$1.idx.json') : null; }
+    /* (place-through-time) …and the box file beside it — the per-row boxes `contains` prefilters with, read only by
+       that question (a travel never reads it). Named from the same record name, by the same rule, for the builder too. */
+    function boxesOf(file) { return /\.js$/.test(String(file)) ? String(file).replace(/([^/]+)\.js$/, 'hvt/$1.box.json') : null; }
     function readText(url) {
       const FW = D.fetchWithin || W.IntMapFetchWithin;
       if (!FW || typeof FW.readWithin !== 'function') { const e = new Error('no clocked reader for ' + url); e.reason = 'unsupported'; return Promise.reject(e); }
@@ -639,6 +788,8 @@ window.IntMapHistBundles = (function () {
           return true;
         });
       };
+      /* (place-through-time) the record's box file and each gap record's, in splice order — read under the same clock */
+      const readBoxes = () => Promise.all([spec.file, ...gaps.map((g) => g.file)].map((f) => readText(abs(boxesOf(f))).then((t) => JSON.parse(t))));
       /* «nothing was observed» (the clock ran out, the caller stopped, the thread died) is not a refusal:
          it fails or re-asks as before. A refusal — no index on this server (`npm run dev` serves the
          repository, where the build has not cut any), an index for another record, bytes that are not
@@ -669,7 +820,10 @@ window.IntMapHistBundles = (function () {
         const go = () => {
           if (e.preset) return onPage(m);
           if (e.mode !== 'tiled' || m.op === 'edges') return ask(m);
-          return ask({ op: 'need', global, q: { op: m.op, t: m.t, end: m.end, t0: m.t0, t1: m.t1, y: m.y } })
+          /* (place-through-time) `contains` needs the box files before it can say which chunks it reads; they are
+             read once per opening (a thread that died is handed them again — `e.boxed` is per epoch) */
+          const boxed = (m.op === 'contains' && e.boxed !== epoch) ? readBoxes(e).then((files) => ask({ op: 'boxes', global, files })).then(() => { e.boxed = epoch; }) : Promise.resolve();
+          return boxed.then(() => ask({ op: 'need', global, q: { op: m.op, t: m.t, end: m.end, t0: m.t0, t1: m.t1, y: m.y, lng: m.lng, lat: m.lat } }))
             .then((list) => fetchNeed(e, list)).then(() => ask(m));
         };
         const retry = (err) => {
@@ -686,6 +840,9 @@ window.IntMapHistBundles = (function () {
         edges: (end, lo, hi) => call({ op: 'edges', global, end, lo, hi }),
         at: (t, end) => call({ op: 'at', global, t, end }),
         during: (t0, t1) => call({ op: 'during', global, t0, t1 }),
+        /* (place-through-time) every row of all time, and every era-sheet polygon, that holds [lng, lat] — what each
+           says, not its geometry (see the job). Asked of the thread that holds every row; nothing lands on the mirror. */
+        contains: (lng, lat) => call({ op: 'contains', global, lng, lat }),
         snap: (y) => call({ op: 'snap', global, y }).then((s) => {
           if (!s) return null;
           /* the sheet's rows are small and are not pooled, so they travel with the answer; the rings they
@@ -716,6 +873,7 @@ window.IntMapHistBundles = (function () {
       /* 'tiled' | 'whole' | 'preset' | null — how a record is being read, for a check and the console */
       mode: (global) => { const e = entries.get(global); return e ? (e.preset ? 'preset' : e.mode) : null; },
       tilesOf,
+      boxesOf,
       /* what this door has done, for a check and for the console — never a decision input. `inFlight` is
        questions on the thread, `reading` the Range reads under way or queued: between the two a tiled
        question is busy while NEITHER thread has a job, so an observer that waits for quiet reads both */

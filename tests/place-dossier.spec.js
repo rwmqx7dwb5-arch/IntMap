@@ -54,6 +54,15 @@ test('place dossier: right-click → Live info → About the place opens a card 
   expect(got.now.map((s) => s.h).join('|')).toMatch(/Weather now.*Earthquakes nearby.*News nearby.*This place in the past/i);
   for (const s of got.now) expect(s.empty, s.h + ' says a value or a reason').toBe(false);
   expect(got.inView).toBe(true);
+  /* (place-through-time) «This place through time» settled with the same rule — a timeline or a reason — and a row of
+     the timeline is a door to its era: pressing it moves the master clock off live, to the row's first day */
+  expect(got.now.map((s) => s.h).join('|')).toMatch(/This place through time/);
+  const go = card.locator('.ph-list .ph-go[data-hn^="ph:"]');
+  if (await go.count()) {
+    await go.last().click();
+    await page.waitForFunction(() => window.IntMapTime && !window.IntMapTime.isLive(), null, { timeout: 15000 });
+    await page.evaluate(() => window.IntMapTime.setNow({ source: 'test' }));
+  }
   await card.locator('#pd-close').click();
   await expect(card).toBeHidden();
 });

@@ -14,7 +14,11 @@
  *      rings live in, each era sheet's chunks, and every chunk's byte range;
  *    · an ARCHIVE (`<name>.jsonl.gz`) — independent gzip members, one JSON line each, so ONE member is
  *      readable on its own from a Range request, and the whole file is still an ordinary gzip of
- *      JSON Lines.
+ *      JSON Lines;
+ *    · (place-through-time) a BOX FILE (`<name>.box.json`) — one outward-rounded box per row and per era-sheet
+ *      polygon, and the ring chunks each sheet polygon names, so «which rows of all time hold this point»
+ *      (the door's `contains`) reads only the chunks of the rows under the point. Proven like the rest
+ *      (`verifyBoxes`: every coordinate inside its box, every ring in a listed chunk). See `boxRecord`.
  *  The door reads the index, asks its own job which chunks an instant needs, reads exactly those
  *  byte ranges and hands them to the same job — so every reader downstream receives the SAME rows
  *  and the SAME rings, by the same indices, that the whole file gave it.
@@ -251,7 +255,68 @@ export async function tileRecord(door, { file, global, bytes }, chunkBytes = CHU
     chunks,
     stats: { rows: feats.length, rings: rings.length, ringsAsDeltas: kept, ringsAsWritten: verbatim, sheets: snaps.length },
   };
-  return { index, archive, idxRel, archiveName };
+  const boxes = boxRecord(door, file, global, feats, rings, snaps, ringChunk);
+  return { index, archive, idxRel, archiveName, boxes };
+}
+
+/* ══ (place-through-time) THE BOX FILE — WHERE EACH ROW IS, SO ONE POINT NEED NOT READ THE WHOLE RECORD ═══════════
+   «Which rows of all time hold this point» (js/hist-bundles.js `contains`) asks EVERY row, and a tiled record's
+   rings are not on the thread until their chunks are read. The index orders chunks by time, so it cannot say which
+   rows lie under a point; this file can: one box per row and per era-sheet polygon, as integers at BOX_SCALE,
+   rounded OUTWARD and widened by one unit more, so floating-point rounding can only make a box larger than its row,
+   never smaller (`verifyBoxes` proves every coordinate inside). A sheet polygon also lists the ring chunks it names,
+   because the index lists a sheet's chunks only whole.
+   ⚠ BOX_SCALE = 100 (0.01°, about 1.1 km): the prefilter only has to separate rows that are far apart — the exact
+   test on the rings decides — and two decimals keep the largest file (Cliopatria's 12,868 rows) a few hundred kB.
+   MEASURED on the build in dev-notes/2026-10-07-place-through-time.md. LAPSES if a record's rows become so fine
+   that thousands of boxes overlap at 1 km (then a finer scale saves chunk reads); nothing else reads this number. */
+const BOX_SCALE = 100;
+/* the record as the door parses it: `window.<GLOBAL>=` and strict JSON */
+function recordOf(bytes) { const t = Buffer.from(bytes).toString('utf8'), i = t.indexOf('='); return JSON.parse(t.slice(i + 1).replace(/;\s*$/, '')); }
+function boxRecord(door, file, global, feats, rings, snaps, ringChunk) {
+  const boxOf = (ringIds) => {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const ri of ringIds) for (const c of rings[ri] || []) {
+      if (c[0] < x0) x0 = c[0]; if (c[0] > x1) x1 = c[0]; if (c[1] < y0) y0 = c[1]; if (c[1] > y1) y1 = c[1];
+    }
+    /* a row with no coordinate holds no point: a box no point is in */
+    if (!isFinite(x0)) return [1, 1, -1, -1];
+    return [Math.floor(x0 * BOX_SCALE) - 1, Math.floor(y0 * BOX_SCALE) - 1, Math.ceil(x1 * BOX_SCALE) + 1, Math.ceil(y1 * BOX_SCALE) + 1];
+  };
+  const chunksOf = (ringIds) => [...new Set(ringIds.map((ri) => ringChunk[ri]))].sort((a, b) => a - b);
+  const rows = [];
+  for (const f of feats) rows.push(...boxOf((f[8] || []).flat()));
+  const sheets = snaps.map((sn) => {
+    const f = [], fc = [], b = [], bc = [];
+    for (const x of sn.feats || []) { const ids = (x[2] || []).flat(); f.push(...boxOf(ids)); fc.push(chunksOf(ids)); }
+    for (const ps of sn.blank || []) { const ids = ps.flat(); b.push(...boxOf(ids)); bc.push(chunksOf(ids)); }
+    return { f, fc, b, bc };
+  });
+  const out = { hvt: 1, global, source: 'data/' + file, builder: 'scripts/build-hist-tiles.mjs', scale: BOX_SCALE, rows };
+  if (snaps.length) out.sheets = sheets;
+  return { rel: door.boxesOf('data/' + file), name: basename(door.boxesOf('data/' + file)), body: out };
+}
+/* every coordinate of every row and sheet polygon lies inside its box, and every ring a sheet polygon names is in a
+   chunk its list names — a box that misses a coordinate would drop a row that holds a point, silently */
+export function verifyBoxes(tiles, record) {
+  const { index, archive, boxes } = tiles, B = boxes.body, s = B.scale, file = index.source.file;
+  const inside = (j, flat, ring, what) => {
+    for (const c of ring || []) if (!(c[0] >= flat[j] / s && c[1] >= flat[j + 1] / s && c[0] <= flat[j + 2] / s && c[1] <= flat[j + 3] / s)) throw new Error(`${file}: ${what} has [${c}] outside its box`);
+  };
+  const feats = record.feats || [], rings = record.rings;
+  if (B.rows.length !== 4 * feats.length) throw new Error(`${file}: the box file has ${B.rows.length / 4} rows for ${feats.length}`);
+  feats.forEach((f, i) => { for (const ri of (f[8] || []).flat()) inside(4 * i, B.rows, rings[ri], `row ${i} ring ${ri}`); });
+  const where = new Map();
+  index.chunks.forEach(([o, n], c) => {
+    const obj = JSON.parse(gunzipSync(archive.subarray(o, o + n)).toString('utf8'));
+    for (const [ri] of (obj.r || []).concat(obj.j || [])) where.set(ri, c);
+  });
+  (record.snaps || []).forEach((sn, si) => {
+    const S = B.sheets[si];
+    (sn.feats || []).forEach((x, k) => { for (const ri of (x[2] || []).flat()) { inside(4 * k, S.f, rings[ri], `sheet ${sn.y} feature ${k}`); if (!S.fc[k].includes(where.get(ri))) throw new Error(`${file}: sheet ${sn.y} feature ${k} ring ${ri} is in a chunk its list does not name`); } });
+    (sn.blank || []).forEach((ps, k) => { for (const ri of ps.flat()) { inside(4 * k, S.b, rings[ri], `sheet ${sn.y} blank ${k}`); if (!S.bc[k].includes(where.get(ri))) throw new Error(`${file}: sheet ${sn.y} blank ${k} ring ${ri} is in a chunk its list does not name`); } });
+  });
+  return true;
 }
 
 /* ── read the tiles back through the door's job and compare with the record ──────────────────── */
@@ -325,29 +390,34 @@ export async function buildTiles({ dataDir = join(ROOT, 'data'), outDir, cache =
     const key = `${rec.global.replace(/^_+/, '')}-${sha256(bytes).slice(0, 16)}-${builderKey}`;
     const idxRel = door.tilesOf('data/' + rec.file);
     const idxName = basename(idxRel), arcName = idxName.replace(/\.idx\.json$/, '.jsonl.gz');
-    const hit = cacheRoot && existsSync(join(cacheRoot, key, idxName)) && existsSync(join(cacheRoot, key, arcName));
-    let index, archive;
+    const boxName = basename(door.boxesOf('data/' + rec.file));
+    const hit = cacheRoot && existsSync(join(cacheRoot, key, idxName)) && existsSync(join(cacheRoot, key, arcName)) && existsSync(join(cacheRoot, key, boxName));
+    let index, archive, boxes;
     const t0 = Date.now();
     if (hit) {
       index = JSON.parse(readFileSync(join(cacheRoot, key, idxName), 'utf8'));
       archive = readFileSync(join(cacheRoot, key, arcName));
+      boxes = readFileSync(join(cacheRoot, key, boxName), 'utf8');
     } else {
       const t = await tileRecord(door, { file: rec.file, global: rec.global, bytes });
       await verifyRecord(door, t, bytes);
-      index = t.index; archive = t.archive;
+      verifyBoxes(t, recordOf(bytes));
+      index = t.index; archive = t.archive; boxes = JSON.stringify(t.boxes.body);
       if (cacheRoot) {
         try {
           mkdirSync(join(cacheRoot, key), { recursive: true });
           writeFileSync(join(cacheRoot, key, idxName), JSON.stringify(index));
           writeFileSync(join(cacheRoot, key, arcName), archive);
+          writeFileSync(join(cacheRoot, key, boxName), boxes);
         } catch (e) { log(`  (cache not written: ${e.message})`); }
       }
     }
     if (outDir) {
       writeFileSync(join(outDir, idxName), JSON.stringify(index));
       writeFileSync(join(outDir, arcName), archive);
+      writeFileSync(join(outDir, boxName), boxes);
     }
-    out.push({ file: 'data/' + rec.file, global: rec.global, index: idxName, archive: arcName, indexBytes: JSON.stringify(index).length, archiveBytes: archive.length, chunks: index.chunks.length, cached: !!hit, ms: Date.now() - t0, stats: index.stats });
+    out.push({ file: 'data/' + rec.file, global: rec.global, index: idxName, archive: arcName, boxes: boxName, boxBytes: boxes.length, indexBytes: JSON.stringify(index).length, archiveBytes: archive.length, chunks: index.chunks.length, cached: !!hit, ms: Date.now() - t0, stats: index.stats });
     log(`  ${rec.file} → hvt/${arcName}: ${index.chunks.length} chunks, ${(archive.length / 1e6).toFixed(2)} MB (index ${(JSON.stringify(index).length / 1e3).toFixed(0)} kB)${hit ? ', cached' : ''} ${Date.now() - t0} ms`);
   }
   return out;

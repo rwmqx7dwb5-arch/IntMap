@@ -725,7 +725,8 @@ hist-bundles.js                   リングプールした歴史記録（data/cs
                                   war-layer.js・border-coast.js（docs/MAP-LAYERS.md・Architecture.md §7.4）。
                                   記録は丸ごとではなく、ビルドが年で切ったタイル（data/hvt/<名>.idx.json と
                                   <名>.jsonl.gz）から、その瞬間に要るチャンクだけを Range で読む（need → feed →
-                                  問い）。タイルの名前は tilesOf が記録の名前から導く
+                                  問い）。タイルの名前は tilesOf が記録の名前から導く。1 地点を全時代について訊く
+                                  `contains` も向こうで答える（箱ファイル `<名>.box.json` で候補を絞り、環の偶奇判定で決める。名前は boxesOf）
 border-coast.js                   歴史的な輪郭のどの辺が「国境／区分境界」で、どの辺が「その記録が持つ海岸線の
                                   写し」かの**読み手** window.IntMapBorderCoast。印そのものは data/border-coast.js
                                   （規則と定数は scripts/build-border-coast.mjs）。#R564 で time-borders.js から
@@ -934,7 +935,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  212 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  213 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -1057,7 +1058,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全212を検索・到達可能 209）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全213を検索・到達可能 210）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -1075,7 +1076,7 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
 atlas-hist-urban.js               Atlas の `time.cityPopulation` の本体——歴史上の都市人口の記録に、ある年の大都市・ある都市の人口の推移を訊き、
                                   値（`exec.cityPopulation`）と同じ事実の文で返す。規則は hist-urban.js。初回の呼び出しで動的 import（Atlas のチャンクに載せない）
-atlas-schemas.js                  **引数の schema**（#R406）— 212能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 213能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -1309,6 +1310,11 @@ place-dossier.js                  **地点カード**（地点プロファイル
                                   Atlas `research.placeProfile` と `research.hereNow` は同じ記録を返す。外から呼ばれる名前は
                                   `openPlaceDossier`（地図の地点）・`openHereNow`（端末／共有、「いま」が先頭）・`bootFromUrl`（`?here=1`）
                                   （docs/architecture/07-map.md §7.3f）
+place-history.js                  **この場所の歴史**——1 地点をどの政体がいつからいつまで治めていたかの縦の年表と、その下の第 1 層の
+                                  地方区分。行は time-borders.js / time-admin1.js の `placeRecords`（扉の `contains`）が述べるものだけで、
+                                  端は種類つき（stated・reach・handover・rename・sheet・review／derived・unstated・undocumented・open）。
+                                  地点カードの節と Atlas `time.placeHistory` が同じ記録を描く。行を押すと Chronos をその時代へ
+                                  （docs/architecture/07-map.md §7.3f）。地点カードと Atlas が最初に要るときに取りに行く
 events-near.js                    範囲 × 期間の地震と出来事の**読み手 1 つ**——USGS の M2.5 以上・7 日のフィードをセッション内で 1 回
                                   取得して共有し、`news_events` の窓をページ送りで読み、どちらも位置を送らずに端末で範囲を絞る。
                                   状態の語彙（`ok` / `none` / `unavailable`＋理由）の正本。地点カード・place-watch.js・
@@ -2075,7 +2081,12 @@ scripts/
                                   histTiles() がビルドのたびに走らせ、内容のハッシュで store に保持する）。索引は
                                   扉の job が答える head と全行の期間・チャンクの対応・バイト範囲、アーカイブは
                                   独立した gzip メンバー（JSON 1 行）の連結。並びは時間（区間木の段と桶→開始→終了）
-                                  →場所。切ったものは扉の job で読み戻して記録と照合し、違えば失敗する
+                                  →場所。切ったものは扉の job で読み戻して記録と照合し、違えば失敗する。
+                                  記録ごとに**箱ファイル**（`<名>.box.json`。行と時代の 1 枚の多角形ごとの外側へ丸めた箱）も書き、
+                                  全座標が箱の中にあることを照合する（`verifyBoxes`）——扉の `contains` が候補の行だけを読むため
+  place-history.mjs               地点を名指して「この場所の歴史」を出す（`--at <lng>,<lat>`・`--sites` は開発記録の 7 地点・`--json`）。
+                                  ページの time-borders.js / time-admin1.js / place-history.js をそのまま実体化して束を読む
+                                  （historical-verification.md §2-1 の「年と場所を名指して列挙する」の道具）
   build-border-coast.mjs          同梱の海岸線（`data/coastline.json.gz`）に照らして、歴史国境の各辺が国境か海岸線の
                                   写しかを印す → `data/border-coast.js`。⚠ **`--check` は全リングを再導出して突き合わせる**
                                   （上流不要）。`--report` が `INLAND_KM` を読み取る分布を、`--sweep <global> <年>` が記録ごとの帯

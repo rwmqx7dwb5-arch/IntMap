@@ -762,8 +762,35 @@ export function timeAdmin1(HOST) {
         cfg, load, go, clear, refreshLines, relocalize, reassert, ensure, vtProbe, vtState: () => vtState,
         setActive: v => { active = v; }, isActive: () => active, key: () => shownKey,
         fc: () => shownFC, when: () => shownWhen, data: () => _D,
-        geom: ix => { try { return _D ? geomOf(_D, ix) : null; } catch (_) { return null; } }
+        geom: ix => { try { return _D ? geomOf(_D, ix) : null; } catch (_) { return null; } },
+        contains
       };
+
+      /* (place-through-time) every row of this tier, of all time — the gap records spliced in included — whose polygon
+         holds [lng, lat], asked of the thread that holds every row (js/hist-bundles.js `contains`: exact rings). Each comes
+         back as what the row SAYS: its name as this tier writes it (`nameOf`), its span (END EXCLUSIVE), the record's own
+         dates for it (the same lookup `fcAt` puts on the feature the popup reads), and which record it is.
+         ⚠ An edge is classified, never filled: `stated` (the record gives the date), `derived` (the record says it
+         derived it, and how), `unstated` (the record states no date and the row is drawn from a bound nobody stated),
+         `undocumented` (the row carries no date entry at all), `open` (the record says it is still in force). */
+      async function contains(lng, lat) {
+        const d = await load();
+        if (!d || !_H) { const e = new Error('the ' + cfg.key + ' record could not be read'); e.reason = 'unreadable'; throw e; }
+        const v = await _H.contains(lng, lat);
+        const dated = new Map(v.dates || []);
+        const edge = (x, open) => open ? 'open' : !x ? 'undocumented' : (x.raw ? 'stated' : (x.derived ? 'derived' : 'unstated'));
+        return v.rows.map(([i, f]) => {
+          const gap = (f[10] == null && f[12] != null && cfg.gaps) ? cfg.gaps[f[12]] : null;
+          const gd = (gap && d.gapDates) ? d.gapDates[f[12]] : null;
+          const dates = (f[10] != null) ? (dated.get(f[10]) || (d.dates && d.dates[f[10]]) || null) : (gd && f[11] != null ? gd[f[11]] : null);
+          const s = _ymd(f[2], f[3], f[4]), e = _ymd(f[5], f[6], f[7]);
+          return { tier: cfg.key, file: gap ? gap.file : cfg.file, ix: i, level: f[1],
+            record: gap ? { gap: true, derived: !!gap.derived, reconstructed: !!gap.reconstructed, nonCommercial: !!gap.nonCommercial } : { gap: false, derived: false },
+            id: Object.assign(f[10] != null ? { relation: f[10] } : { row: f[11] }, dates && dates.wikidata ? { qid: dates.wikidata } : {}),
+            name: (f[9] && f[9].en) || f[0] || '', label: nameOf(f), names: f[9] || null, s, e,
+            sEdge: edge(dates && dates.start, false), eEdge: edge(dates && dates.end, f[5] >= 9999), dates };
+        });
+      }
     }
 
     const _ymd = (y, m, d) => y * 10000 + m * 100 + d;
@@ -1276,6 +1303,8 @@ export function timeAdmin1(HOST) {
       _clear: () => { active = false; lastWhen = null; for (const t of TIERS) t.clear(); _know.clear(); _applyNow(); },
       active: () => active, current: () => T1.key(),
       currentFC: () => T1.fc(), deepFC: () => T2.fc(), refresh: _applyNow, coverage, note, geomAt, idAt, geomFullAt,
+      /* (place-through-time) the first-level units of all time that held one point — js/place-history.js's lower band */
+      placeRecords: (lng, lat) => T1.contains(lng, lat),
       /* (#R604) which supply is drawing the era line: 'unknown' (tiles asked, not yet seen),
          'live' (tiles measured painting) or 'absent' (the grace period passed with nothing, so the
          bundle's coarse line stands in). Read by tests/r530.spec.js, which cannot see a closure. */

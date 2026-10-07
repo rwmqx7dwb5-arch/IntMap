@@ -26,6 +26,9 @@
  *    · now           the weather now (the SAME IntMapWx.point answer — one request gives both), the earthquakes and
  *                    the news events within RELATED_DEFAULTS (js/events-near.js: the app's one reader of each)
  *    · the past      what this place was called — window.IntMapHistCities.near (the record the Chronos labels read)
+ *    · through time  who held this point, and when, from the deepest era sheet to the last day CShapes covers, with the
+ *                    first-level divisions below — js/place-history.js (the era layer's own records and rules, asked at the
+ *                    point; fetched by the first card). For a kept position it is read only when the reader asks (see below)
  *    · layers        window.IntMapLayers.sampleAt — the reading register Atlas's `data.layerValues` reads
  *    · statistics    only when the caller hands over a metric set and its formatter (Atlas does); the card opens
  *                    the country card instead
@@ -273,6 +276,23 @@ async function newsNear(pt, reachKm, hours, HOST) {
     items: r.items.map((x) => Object.assign({}, x, { km: Math.round(x.km) })), source: r.source };
 }
 
+/* ── through time: who held this point, and when — js/place-history.js, fetched with the first card that needs it ──
+   ⚠ A KEPT POSITION IS READ ONLY WHEN THE READER ASKS. The records are IntMap's own files, but a tiled record is read by
+   Range, and WHICH ranges depends on where the point is — so for the device's own position (or a shared one) the card
+   offers the section instead of reading it (status 'ask'), and the press reads it at the exact point. */
+let PH = null;
+async function historyModule() {
+  if (PH) return PH;
+  const { placeHistory, historyMarkup, historySpeech, jumpTo, PLACE_HISTORY_CSS } = await import('./place-history.js');
+  PH = { placeHistory, historyMarkup, historySpeech, jumpTo };
+  try { if (!document.getElementById('im-place-history-css')) { const st = document.createElement('style'); st.id = 'im-place-history-css'; st.textContent = PLACE_HISTORY_CSS; document.head.appendChild(st); } } catch (_) { /* no document (a harness) */ }
+  return PH;
+}
+async function historyAt(pt) {
+  try { const m = await historyModule(); return Object.assign({ status: 'ok' }, await m.placeHistory(pt)); }
+  catch (e) { return { status: 'unavailable', reason: reasonOf(e) }; }
+}
+
 /* ── the past: what this place was called, from the renamed-city record (a file this page already has) ── */
 async function pastNames(pt, lang) {
   let HC = window.IntMapHistCities;
@@ -306,7 +326,7 @@ export async function placeProfile(pt, HOST, opts) {
   const out = recordHead({ lng, lat, name: pt.name, from, accuracyM: pt.accuracyM }, HOST, opts);
   const q = out.sent.point, exact = { lng, lat };
   const reachKm = out.reachKm, hours = out.hours;
-  const [place, country, layers, tw, quakes, news, past] = await Promise.all([
+  const [place, country, layers, tw, quakes, news, past, history] = await Promise.all([
     placeName(q, lang, kept).then((v) => tell('place', v)),
     countryAt(exact, HOST, opts).then((v) => tell('country', v)),
     /* a kept position is not read against the layer tiles: their requests would name the spot */
@@ -315,8 +335,9 @@ export async function placeProfile(pt, HOST, opts) {
     quakesNear(exact, reachKm).then((v) => tell('quakes', v)),
     newsNear(exact, reachKm, hours, HOST).then((v) => tell('news', v)),
     pastNames(exact, lang).then((v) => tell('past', v)),
+    (kept ? Promise.resolve({ status: 'ask', reason: 'position-kept-on-device' }) : historyAt(exact)).then((v) => tell('history', v)),
   ]);
-  Object.assign(out, { place, country, time: tw.time, weather: tw.weather, quakes, news, past });
+  Object.assign(out, { place, country, time: tw.time, weather: tw.weather, quakes, news, past, history });
   out.elevation = layers.elevation || { status: 'unavailable', reason: layers.reason || 'no-elevation-registration' };
   out.layers = { status: layers.status, reason: layers.reason || null, rows: layers.rows };
   return out;
@@ -511,6 +532,15 @@ export function profileHtml(p, HOST, opts) {
   else pb = ps.spans.map((x, i) => { const yr = spanYear(x), when = spanText(x, lang);
     return item('data-hn="past" data-i="' + i + '"', '<span class="hn-t">' + esc(x.name) + '</span><span class="hn-m">' + esc((when || L('dates not stated', '年代の記載なし')) + (yr != null && !opts.inert ? L(' · see the map in ' + yearOf(yr, lang, ''), ' · ' + yearOf(yr, lang, '年') + 'の地図を見る') : '')) + '</span>', yr == null); }).join('');
   h += secN(L('This place in the past', 'この場所のかつての名前'), ps && ps.status === 'ok' && ps.city.today ? L('recorded as ', '記録上の名前 ') + ps.city.today : '', pb);
+  /* ── through time (js/place-history.js draws it; this card only places it) ── */
+  const hi = p.history;
+  let hb;
+  if (!hi) hb = waitN;
+  else if (hi.status === 'ask') hb = opts.inert ? holeN(hi.reason) : '<div class="hn-line">' + esc(L('Read which polities held this point, from IntMap\'s own history files. Which parts of those files are read depends on where the point is.', 'この地点をどの政体が治めてきたかを、IntMap 自身の歴史ファイルから読みます。ファイルのどの部分を読むかは地点によって決まります。')) + '</div><div class="hn-actions"><button type="button" data-hn="ph-load">' + esc(L('Show this place through time', 'この場所の歴史を表示')) + '</button></div>';
+  else if (hi.status !== 'ok') hb = holeN(hi.reason);
+  /* the timeline is markup js/place-history.js vouches for (IntMapSafe.trusted, judged in that file); the tag places it as markup */
+  else hb = PH ? window.IntMapSafe.markup`${PH.historyMarkup(hi, lang, { inert: !!opts.inert })}` : waitN;
+  h += secN(L('This place through time', 'この場所の歴史'), hi && hi.status === 'ok' && !opts.inert ? L('press a row to set the map to it', '行を押すとその時代の地図に') : '', hb);
   /* ── the layers that are on ── */
   const ly = p.layers;
   let lb = '';
@@ -534,6 +564,7 @@ export function profileHtml(p, HOST, opts) {
   if (q && q.source) add(q.source.publisher);
   if (n && n.source) add(n.source.publisher);
   if (ps && ps.rights) ps.rights.forEach((r) => add(r.publisher + (r.licence ? ' (' + r.licence + ')' : '')));
+  /* (the history section names its records itself, in their own words, under its list) */
   if (t && t.sun) add(L('Sunrise and sunset computed by IntMap', '日の出・日の入りは IntMap の計算'));
   if (credits.length) h += '<div class="acp-src">' + esc(L('Sources: ', '出典: ') + credits.join(' · ')) + '</div>';
   if (p.at && keepsPosition(p.at.from)) h += '<div class="hn-priv">' + icon('lock', { size: 12 }) + ' ' + esc(p.at.from === 'device'
@@ -567,6 +598,8 @@ export function profileSpeech(p, HOST) {
     if (rest.length) out.push(L(rest.length + ' layer(s) on have no value at this point: ', 'オンのレイヤーのうち ' + rest.length + ' 件はこの地点に値がありません: ') + rest.map((r) => r.label).join(L(', ', '、')) + '.');
     if (!ly.rows.length) out.push(L('No data layer is on.', 'データレイヤーはオンになっていません。'));
   } else if (ly) out.push(L('Layer values: ', 'レイヤーの値: ') + why(ly.reason) + '.');
+  const hi = p.history;
+  if (hi && hi.status === 'ok' && PH) { const sp = PH.historySpeech(hi, lang); if (sp) out.push(L('Through time: ', 'この場所の歴史: ') + sp); }
   return out.join(' ');
 }
 
@@ -651,6 +684,17 @@ function ensureCard(HOST) {
       if (k === 'quake') { const it = current.quakes && current.quakes.items[i]; if (it) flyTo(it.lng, it.lat, 8); }
       else if (k === 'news') { const it = current.news && current.news.items[i]; if (it) openNews(it, H); }
       else if (k === 'past') { const it = current.past && current.past.spans[i], y = it ? spanYear(it) : null; if (y != null) { try { IntMapTime.setYear(y, { source: 'here-now' }); } catch (_) { /* the clock refuses a year it cannot reach */ } flyTo(current.at.lng, current.at.lat, 9); } }
+      else if (k.indexOf('ph:') === 0 || k.indexOf('pha:') === 0) {
+        /* (place-through-time) a row of «This place through time»: the clock goes to it and the map to the point */
+        const hi = current.history, j = +k.slice(k.indexOf(':') + 1);
+        const E = hi && hi.status === 'ok' ? (k.indexOf('pha:') === 0 ? hi.admin && hi.admin.entries[j] : hi.nation && hi.nation.entries[j]) : null;
+        if (E && PH && PH.jumpTo(E)) flyTo(current.at.lng, current.at.lat, 7);
+      }
+      else if (k === 'ph-load') {
+        const at = { lng: current.at.lng, lat: current.at.lat }, rec = current;
+        rec.history = null; paintCard(H);
+        historyAt(at).then((v) => { if (current === rec) { rec.history = v; paintCard(H); } });
+      }
       else if (k.indexOf('lead:') === 0 && lead && lead.actions) { const a = lead.actions[+k.slice(5)]; if (a && typeof a.run === 'function') { try { a.run(); } catch (_) { /* the action states its own failure */ } } }
       return;
     }
@@ -726,7 +770,7 @@ function placeCard() {
 async function run(HOST, pt, focus) {
   const my = ++seq;
   ensureCard(HOST);
-  current = Object.assign(recordHead(pt, HOST, { focus }), { place: null, country: null, elevation: null, layers: null, time: null, weather: null, quakes: null, news: null, past: null });
+  current = Object.assign(recordHead(pt, HOST, { focus }), { place: null, country: null, elevation: null, layers: null, time: null, weather: null, quakes: null, news: null, past: null, history: null });
   card.style.display = 'block';
   paintCard(HOST); placeCard();
   try { HOST.bringToFront(card); } catch (_) { /* order is cosmetic */ }

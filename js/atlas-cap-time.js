@@ -137,6 +137,37 @@ export default [
     schema: () => ({ type: 'object', properties: { from: str(), to: str(), t0: str(), t1: str(), place: str(), n: int(1, 40), maxDays: int(1, 366), news: bool() }, anyOf: [{ required: ['from', 'to'] }, { required: ['t0', 't1'] }] }),
     async run(a, dctx, K) { return changes(a, K); },
   },
+  {
+    row: ['time.placeHistory',          'placeHistory',   'placeThroughTime,whoRuledHere,sovereigntyTimeline,formerPolities', 'time',    'none',    '',                       'explanation',         'read',    'none',   'point',    ''],
+    /* (place-through-time) WHO HELD ONE POINT, AND WHEN — the SAME record the place card's «This place through time» section
+       draws (js/place-history.js): every polity the historical border records the era layer draws (CShapes 2.0, OpenHistoricalMap,
+       Cliopatria, the historical-basemaps sheets) put over the point, oldest first, each with its span, what each edge IS (a date
+       the record states, the edge of a record's reach, a handover to a more precise record, a sheet's display years) and the
+       record's own ID; and the first-level units of the subdivision record over the same point. `year` narrows the answer to the
+       entries in force that year. Read-only: the clock does not move (time.travel does). */
+    doc: [
+      { in: 'time.coverage', at: 24, text: '{"type":"placeHistory","place"?:str,"lng"?:num,"lat"?:num,"year"?:int (astronomical: 0 is 1 BC)} = THIS PLACE THROUGH TIME / この場所の歴史 — who held one point, and when: every polity IntMap\'s historical border records draw over that exact point (an exact point-in-polygon test, not a nearby guess), oldest first, from the deepest era sheet to the last day of CShapes 2.0 (2019): Cliopatria (Seshat, to the year, 3400 BC–), OpenHistoricalMap (day-exact, 1689–1885 and colonial ground from 1886), CShapes 2.0 (day-exact, 1886–2019) and the historical-basemaps sheets where nothing finer states the ground — each entry with its span, what each edge IS (`stated` by the record; `reach` = the edge of the record, NOT the polity\'s beginning or end; `handover` = a more precise record takes over the ground there; `rename` = the map\'s era-name table; `sheet` = the years a period map is shown), the records and their IDs (gwcode, Wikidata QID, Cliopatria\'s article), Cliopatria\'s own lifespan of the polity, names the map withholds and why, and the gaps no record covers — plus the FIRST-LEVEL DIVISIONS (令制国・府県・州・eyalet…) over the point with the dates their record states, derived, or does not state. With year, `atYear` lists the entries in force that year. Answer only from what it returns: quote spans with their edge kind (never call a `reach` or `handover` edge the end of a polity), name the record for each claim, and say «no record draws a polity here» for a gap. "place":"here" is the point Atlas last touched. Use for 「このあたりは昔どこの国だった？」「1600年にここを治めていたのは」「京都を支配した政権の変遷」「イスタンブールはいつからオスマン領」「who ruled this place」「what country was this in 1900」. ' },
+    ],
+    phrases: () => ['昔どこの国', 'ここを治めていた', '支配の変遷', 'この場所の歴史', '何という国だった'].concat(['who ruled here', 'place through time', 'what country was this', 'sovereignty history']),   /* the Japanese phrases, then the English words — two lists, not translations of each other */
+    schema: () => ({ type: 'object', properties: { place: str(), lng: num(), lat: num(), year: int() }, anyOf: [{ required: ['place'] }, { required: ['lat', 'lng'] }] }),
+    async run(a, dctx, K) { const R = K.R, warn = K.warn, esc = K.esc, L = K.L, HOST = K.HOST, geocode = K.geocode;
+      let pt = null;
+      if (a.lng != null && a.lat != null && isFinite(+a.lng) && isFinite(+a.lat)) pt = { lng: +a.lng, lat: +a.lat, name: String(a.place || '') };
+      else if (a.place && String(a.place).toLowerCase() === 'here' && K._herePoint) pt = { lng: +K._herePoint.lng, lat: +K._herePoint.lat, name: K._herePoint.name || '' };
+      else if (a.place) { const ll = await geocode(a.place); if (!ll) return R(false, warn(L('IntMap could not place «' + esc(String(a.place)) + '». Give coordinates, or name a place IntMap holds.', '「' + esc(String(a.place)) + '」を地図上に特定できませんでした。座標を指定するか、IntMap が持つ地名で言い直してください。'))); pt = { lng: +ll.lng, lat: +ll.lat, name: ll.name || String(a.place) }; }
+      /* ⚠ (#R302) the target is required; a call with neither is answered, not guessed */
+      if (!pt) return R(false, warn(L('Which point? Name a place or give its coordinates.', 'どの地点ですか？地名か座標を指定してください。')));
+      /* the record and its drawing live in js/place-history.js, fetched on first use (the card fetches the same module) */
+      const PH = await import('./place-history.js');
+      try { if (!document.getElementById('im-place-history-css')) { const st = document.createElement('style'); st.id = 'im-place-history-css'; st.textContent = PH.PLACE_HISTORY_CSS; document.head.appendChild(st); } } catch (_) { /* no document */ }
+      let lang = 'en'; try { lang = HOST.lang || 'en'; } catch (_) { lang = 'en'; }
+      const rec = await PH.placeHistory(pt);
+      const exec = { placeHistory: PH.forAtlas(rec) };
+      if (a.year != null && isFinite(+a.year)) { const at = PH.entriesAt(rec, +a.year); exec.placeHistory.atYear = { year: +a.year, nation: at.nation.map(PH.entryBrief), admin: at.admin.map(PH.adminBrief) }; }
+      const ttl = pt.name || (pt.lat.toFixed(4) + ', ' + pt.lng.toFixed(4));
+      return R(true, '<div><b>' + esc(L('This place through time', 'この場所の歴史') + ' — ' + ttl) + '</b>' + PH.historyHtml(rec, lang, { inert: true }) + '</div>', { exec });
+    },
+  },
 ];
 
 /* ══ (time-compare-lapse) THE TWO NEW DOORS ═════════════════════════════════════════════════════════════════
