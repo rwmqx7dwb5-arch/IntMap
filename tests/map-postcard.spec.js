@@ -41,10 +41,11 @@ test('map-postcard ① the caption a link carries, and the map as one picture', 
     await expect.poll(() => page.title()).toMatch(new RegExp('^' + TITLE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' — '));
     /* the climate legend is on the map; the caption is clear of it and of the search field */
     await page.waitForFunction(() => { const el = document.getElementById('koppen-legend'); return el && getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().height > 30; }, null, { timeout: 30_000 });
-    await page.waitForTimeout(1200);   /* the caption is re-placed after the legend stack settles */
-    const cap = await boxOf(page, '#im-caption');
-    expect(overlap(cap, await boxOf(page, '#map-search')), 'the caption covers the search field').toBe(false);
-    expect(overlap(cap, await boxOf(page, '#koppen-legend')), 'the caption covers the legend').toBe(false);
+    /* the caption is re-placed after the legend stack settles (js/map-ui.js placeSoon, up to 900 ms after the layers move):
+       asked until it holds rather than after a fixed 1.2 s — the claim is the same, the wait no longer outlasts it */
+    await expect.poll(async () => { const cap = await boxOf(page, '#im-caption');
+      return { search: overlap(cap, await boxOf(page, '#map-search')), legend: overlap(cap, await boxOf(page, '#koppen-legend')) }; },
+      { message: 'the caption covers the search field or the legend', timeout: 10_000, intervals: [100] }).toEqual({ search: false, legend: false });
     /* the Image tab: a 1200 × 630 PNG that decodes, with the caption, the legend and the credits in its pixels */
     const r = await page.evaluate(() => window.IntMapShare.open({ tab: 'image' }).then((x) => x && Object.assign({}, x, { blob: undefined })));
     expect(r && r.ok, JSON.stringify(r && r.error)).toBe(true);
@@ -129,11 +130,10 @@ test('map-postcard ② an embed keeps the caption, and a phone shows it above th
   try {
     await p2.goto('/' + HASH, { waitUntil: 'domcontentloaded', timeout: 45_000 });
     await expect(p2.locator('#im-caption')).toBeVisible({ timeout: 45_000 });
-    await p2.waitForTimeout(1500);
-    const cap = await boxOf(p2, '#im-caption'), cr = await boxOf(p2, '#map-credit');
-    expect(cap.x >= 0 && cap.x + cap.w <= 390 && cap.y >= 0, 'the caption is on the screen: ' + JSON.stringify(cap)).toBe(true);
-    expect(overlap(cap, cr), 'the caption covers the credit pill').toBe(false);
-    expect(cap.y + cap.h <= cr.y + 0.5, 'the caption is above the credit pill').toBe(true);
+    /* asked until it holds (the pill's measured height reaches the caption through placeCaption), not after a fixed 1.5 s */
+    await expect.poll(async () => { const cap = await boxOf(p2, '#im-caption'), cr = await boxOf(p2, '#map-credit');
+      return { onScreen: cap.x >= 0 && cap.x + cap.w <= 390 && cap.y >= 0, covers: overlap(cap, cr), above: cap.y + cap.h <= cr.y + 0.5, cap, cr }; },
+      { timeout: 10_000, intervals: [100] }).toMatchObject({ onScreen: true, covers: false, above: true });
   } finally { await phone.close(); }
 });
 

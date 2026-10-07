@@ -43,6 +43,9 @@ async function boot(browser, opts) {
 }
 const ready = (page) => page.waitForFunction(() => !!(window.IntMapCompare && window.IntMapCompare.thenNow && window.IntMapShare && window.IntMapBookmark), null, { timeout: 45_000 });
 const state = (page) => page.evaluate(() => window.IntMapCompare.timeState());
+/* a poll asks every 100 ms: its default backs off to 1 s between asks, and that wait claims nothing (measured: the
+   second page's swipe was there ~1.9 s after the ask began, most of it the back-off) */
+const POLL = { intervals: [100] };
 const clipOf = (page) => page.evaluate(() => { const cm = document.getElementById('compare-map'); return cm ? (cm.style.clipPath || cm.style.webkitClipPath) : null; });
 
 test('then-now-card ①–④ the swipe at one place, its link, its card and a finger', async ({ browser }) => {
@@ -74,7 +77,7 @@ test('then-now-card ①–④ the swipe at one place, its link, its card and a f
     expect(geo.now.length).toBeGreaterThan(0);
     expect(await clipOf(page)).toMatch(/inset\(0(px)? 50% 0(px)? 0(px)?\)/);
     /* the link says the swipe and the window's instant */
-    await expect.poll(() => page.evaluate(() => window.IntMapBookmark.link())).toMatch(/[#&]cmp=s(&|$)[\s\S]*ct=1914/);
+    await expect.poll(() => page.evaluate(() => window.IntMapBookmark.link()), POLL).toMatch(/[#&]cmp=s(&|$)[\s\S]*ct=1914/);
 
     /* ② the divider follows the pointer */
     const mc = await page.evaluate(() => { const r = document.getElementById('map-container').getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
@@ -90,7 +93,7 @@ test('then-now-card ①–④ the swipe at one place, its link, its card and a f
     await page.focus('#cmp-swipe .cmp-sw-hit'); await page.keyboard.press('ArrowRight');
     expect(Math.abs((await state(page)).split - 0.31)).toBeLessThan(0.002);
     await page.keyboard.press('ArrowLeft');
-    await expect.poll(() => page.evaluate(() => window.IntMapBookmark.link())).toMatch(/[#&]cmp=s30(&|$)/);
+    await expect.poll(() => page.evaluate(() => window.IntMapBookmark.link()), POLL).toMatch(/[#&]cmp=s30(&|$)/);
     const link = await page.evaluate(() => window.IntMapBookmark.link());
     /* the same link, opened while this page makes the card */
     const p2 = await ctx.newPage();
@@ -129,7 +132,7 @@ test('then-now-card ①–④ the swipe at one place, its link, its card and a f
     /* ② the same link opens on the same swipe */
     await p2open;
     await ready(p2);
-    await expect.poll(() => p2.evaluate(() => { const s = window.IntMapCompare.timeState(); return s && s.open && s.mode === 'swipe' ? Math.round(s.split * 100) + '@' + s.label : null; }), { timeout: 30_000 }).toMatch(/^30@.*1914/);
+    await expect.poll(() => p2.evaluate(() => { const s = window.IntMapCompare.timeState(); return s && s.open && s.mode === 'swipe' ? Math.round(s.split * 100) + '@' + s.label : null; }), Object.assign({ timeout: 30_000 }, POLL)).toMatch(/^30@.*1914/);
     expect(await clipOf(p2)).toMatch(/inset\(0(px)? 70% 0(px)? 0(px)?\)/);
     /* leaving the swipe puts the window's map back in the window */
     await p2.evaluate(() => window.IntMapCompare.setMode('sync'));
