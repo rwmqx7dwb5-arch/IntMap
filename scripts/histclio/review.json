@@ -1,5 +1,5 @@
 {
- "note": "Reviewed lifespans for data/hist-clio.js (Cliopatria). The machine FINDS (scripts/build-hist-clio.mjs: a row drawn more than FINDING_SLACK years outside the lifespan Wikidata states for a QID shown to be that polity) and this file JUDGES. `rows` act on the map: before `s`, from the year after `e`, and inside each `gaps` span [from, to] (astronomical; `s`, `e` and the years outside a gap are inside; `from` and `to` themselves are in the gap — two lives under one name with the years between them belonging to neither) the shape is drawn without the name, and its card says which name Cliopatria gives and the year the historical record (`history`) places the beginning or the end (`circa`: that year is approximate) — the bound is history's, `wd` is the Wikidata item for the polity that states the same or a nearby year. `refuted` are findings examined and NOT applied, with the reason (`why`: date-disputed, other-identity or name-not-claim); a `side` limits one to that side. A finding is judged by name and side; a `gaps` span judges the end side (the item ended where the gap begins, and the name after it is a second life). `pending` are findings not yet judged: they are drawn as Cliopatria states them, and the gate fails on any finding in none of the three lists — so a new one arrives counted. Gate: npm run check:histclio. `ground` judges the opposite case (scripts/build-hist-clio.mjs `heldFindingsOf`): a polity whose verified start lies years before Cliopatria's first row for it, while a row that goes on being drawn afterwards holds that first row's ground in between. `ground.rows` apply: from 1 January of `s` (history's year) until the first row, what the rows in `over` draw inside the first row's outline is drawn under the polity's name instead and says which year's outline it is; those rows keep the rest, and the realms they are members of lose the same ground. Nothing is drawn where no `over` row drew. A `ground.rows` entry that also states `e` judges the same question between two of the polity's own rows: from 1 January of `s` to 1 January of `e + 1` (the years history places the ground under the polity while the `over` rows draw it), the outline of the polity's first row from `e + 1` is drawn back under its name in the same way, and the row says which years (`he`). The line is whether the state of the `over` row governed that ground in those years (a garrison, a governor, an administration): where it did not — a tributary claim, a province lost to a rising, a claim given up — the ground is the polity's. `ground.refuted` are findings not applied (`why`: ruled — the `over` state did govern there; not-its-ground — the ground the finding measures, what is left of the first row after the records above, is not land the polity held; date-disputed; name-not-claim); `ground.pending` are not yet judged, drawn as Cliopatria states and counted.",
+ "note": "Reviewed lifespans for data/hist-clio.js (Cliopatria). The machine FINDS (scripts/build-hist-clio.mjs: a row drawn more than FINDING_SLACK years outside the lifespan Wikidata states for a QID shown to be that polity) and this file JUDGES. `rows` act on the map: before `s`, from the year after `e`, and inside each `gaps` span [from, to] (astronomical; `s`, `e` and the years outside a gap are inside; `from` and `to` themselves are in the gap — two lives under one name with the years between them belonging to neither) the shape is drawn without the name, and its card says which name Cliopatria gives and the year the historical record (`history`) places the beginning or the end (`circa`: that year is approximate) — the bound is history's, `wd` is the Wikidata item for the polity that states the same or a nearby year. `refuted` are findings examined and NOT applied, with the reason (`why`: date-disputed, other-identity or name-not-claim); a `side` limits one to that side. A finding is judged by name and side; a `gaps` span judges the end side (the item ended where the gap begins, and the name after it is a second life). `pending` are findings not yet judged: they are drawn as Cliopatria states them, and the gate fails on any finding in none of the three lists — so a new one arrives counted. Gate: npm run check:histclio. `ground` judges the opposite case (scripts/build-hist-clio.mjs `heldFindingsOf`): a polity whose verified start lies years before Cliopatria's first row for it, while a row that goes on being drawn afterwards holds that first row's ground in between. `ground.rows` apply: from 1 January of `s` (history's year) until the first row, what the rows in `over` draw inside the first row's outline is drawn under the polity's name instead and says which year's outline it is; those rows keep the rest, and the realms they are members of lose the same ground. Nothing is drawn where no `over` row drew. A `ground.rows` entry that also states `e` judges the same question between two of the polity's own rows: from 1 January of `s` to 1 January of `e + 1` (the years history places the ground under the polity while the `over` rows draw it), the outline of the polity's first row from `e + 1` is drawn back under its name in the same way, and the row says which years (`he`). The line is whether the state of the `over` row governed that ground in those years (a garrison, a governor, an administration): where it did not — a tributary claim, a province lost to a rising, a claim given up — the ground is the polity's. `ground.refuted` are findings not applied (`why`: ruled — the `over` state did govern there; not-its-ground — the ground the finding measures, what is left of the first row after the records above, is not land the polity held; date-disputed; name-not-claim); `ground.pending` are not yet judged, drawn as Cliopatria states and counted. `places` judge a name that is right on part of a row and wrong on the rest (scripts/build-hist-clio.mjs applyPlaces): over [1 January of `s`, 1 January of `e + 1`) every polygon of the named rows whose outer ring lies wholly inside `within` is drawn without the name (withheld, side `place`), and its card says what the historical record places there (`note`, en + jp, shipped in the bundle's `places`); a polygon partly inside fails the build.",
  "rows": [
   {
    "name": "Byzantine Empire",
@@ -841,6 +841,36 @@
     ],
     "wd": "Q12560",
     "history": "The Ottomans took Mamluk Syria and Palestine in 1516 (Marj Dabiq, 24 August; Jerusalem, December) and Egypt in January 1517 (Ridaniya, 22 January; Cairo); the Hejaz submitted the same year, and Egypt was governed by an Ottoman beylerbey (Khayr Bey) from 1517. Cliopatria draws the «Mamluk Sultanate» on that ground until 1518 and the Ottoman Empire from 1519."
+   },
+   {
+    "name": "Denmark",
+    "s": 1941,
+    "e": 1944,
+    "over": [
+     "Kingdom of Great Britain"
+    ],
+    "wd": "Q35",
+    "history": "The Faroe Islands were a Danish amt throughout the Second World War. British forces occupied them from 12 April 1940 (Operation Valentine) to keep them from Germany after the German occupation of Denmark, but Britain did not annex or administer them: it recognised Danish sovereignty, the Danish amtmand Carl Aage Hilbert stayed in office, and the Løgting took over legislation with British consent. The troops withdrew in September 1945. Cliopatria draws the islands as «Kingdom of Great Britain» (of the British Empire) in 1941–1944 — a name that is itself wrong in those years, the Kingdom of Great Britain having become the United Kingdom of Great Britain and Ireland on 1 January 1801 — and as «Denmark» from 1945 with the same outline."
+   },
+   {
+    "name": "Greenland",
+    "s": 1932,
+    "e": 1935,
+    "over": [
+     "Kingdom of Norway"
+    ],
+    "wd": "Q223",
+    "history": "Norway proclaimed the occupation of «Eirik Raudes Land» in East Greenland (71°30′–75°40′N) on 10 July 1931 and of part of south-east Greenland on 12 July 1932, on the strength of a few trappers' stations; Denmark held the whole island as its colony and administered the east coast from Ammassalik (1894) and Scoresbysund (1925). The Permanent Court of International Justice held on 5 April 1933 (Legal Status of Eastern Greenland, Denmark v. Norway) that the Norwegian declaration of occupation was unlawful and invalid and that Denmark possessed sovereignty over all Greenland at the critical date; Norway revoked both proclamations on 7 April 1933. Norway never governed the ground. Cliopatria draws a strip of the east coast as «Kingdom of Norway» in 1932–1935 and «Greenland» around it, with the whole island as «Greenland» from 1936."
+   },
+   {
+    "name": "Denmark",
+    "s": 1815,
+    "e": 1940,
+    "over": [
+     "Denmark-Norway"
+    ],
+    "wd": "Q35",
+    "history": "By the Treaty of Kiel (14 January 1814, Art. 4) Denmark ceded Norway to Sweden but expressly kept Greenland, Iceland and the Faroe Islands; the Faroes remained a Danish amt (from 1816) until home rule in 1948. Cliopatria draws them as «Denmark-Norway» to 1940 — a name the review withholds after 1814 (rows: Denmark-Norway, e 1814), which left the islands nameless for 126 years — and as «Denmark» from 1945 with the same outline."
    }
   ],
   "refuted": [
@@ -3368,5 +3398,127 @@
     "wd": 972
    }
   ]
- }
+ },
+ "places": [
+  {
+   "name": "French Indochina",
+   "within": [
+    [
+     40,
+     -55
+    ],
+    [
+     80,
+     -55
+    ],
+    [
+     80,
+     -15
+    ],
+    [
+     40,
+     -15
+    ],
+    [
+     40,
+     -55
+    ]
+   ],
+   "withinIs": "The south-western Indian Ocean (40–80°E, 15–55°S): the Kerguelen Islands and Réunion, 9,000 km from Indochina.",
+   "wd": "Q185682",
+   "history": "Cliopatria v0.2.1 includes the Kerguelen Islands (from 1895) and Réunion (from 1946) in its «French Indochina» rows; CShapes answers for Indochina itself from 1886, so these islands are all of «French Indochina» the composition ships. Neither was ever part of the Indochinese Union (1887-1954): France took formal possession of the Kerguelen Islands in 1893 and attached them to the colony of Madagascar by the decree of 21 November 1924 (they became part of the French Southern and Antarctic Lands in 1955); Réunion was a French colony and became an overseas department by the law of 19 March 1946. The realm rows beside them (French Third Republic, French Fourth Republic) keep the ground as France's.",
+   "note": {
+    "en": "This ground was never part of French Indochina: the Kerguelen Islands were attached to the colony of Madagascar (1924) and Réunion was a French colony, an overseas department from 1946. Cliopatria includes them in its French Indochina rows, so the name is not drawn here; the shape is drawn as the record drew it.",
+    "jp": "この土地はフランス領インドシナの一部だったことはない——ケルゲレン諸島はマダガスカル植民地に属し（1924 年）、レユニオンはフランスの植民地で 1946 年から海外県だった。Cliopatria はこれらをフランス領インドシナの行に含めているため、ここではその名前を描かない。形は記録が描いたとおりに描いている。"
+   }
+  },
+  {
+   "name": "Vichy France",
+   "s": 1943,
+   "e": 1943,
+   "within": [
+    [
+     40,
+     -55
+    ],
+    [
+     80,
+     -55
+    ],
+    [
+     80,
+     -15
+    ],
+    [
+     40,
+     -15
+    ],
+    [
+     40,
+     -55
+    ]
+   ],
+   "withinIs": "The south-western Indian Ocean (40–80°E, 15–55°S): the Kerguelen Islands, the only ground of the realm the composition ships.",
+   "wd": "Q69808",
+   "history": "The Kerguelen Islands were a dependency of the colony of Madagascar. British forces took Madagascar from the Vichy administration in May-November 1942 (armistice of 5 November 1942), and the colony with its dependencies passed to Free France, General Legentilhomme becoming High Commissioner on 8 January 1943. Cliopatria draws its «Vichy France» realm on the islands through 1943.",
+   "note": {
+    "en": "The Kerguelen Islands, a dependency of Madagascar, passed with that colony from the Vichy administration to Free France in January 1943 (High Commissioner Legentilhomme, 8 January 1943). Cliopatria draws them under Vichy France through 1943, so that name is not drawn here.",
+    "jp": "マダガスカルの属領だったケルゲレン諸島は、1943 年 1 月にマダガスカル植民地とともにヴィシー政権から自由フランスへ移った（ルジャンティオム高等弁務官、1943 年 1 月 8 日）。Cliopatria は 1943 年中もこれをヴィシー・フランスとして描くため、ここではその名前を描かない。"
+   }
+  },
+  {
+   "name": "Southern Ming",
+   "s": 1673,
+   "e": 1682,
+   "within": [
+    [
+     95,
+     15
+    ],
+    [
+     119.6,
+     15
+    ],
+    [
+     119.6,
+     23
+    ],
+    [
+     119.85,
+     24.2
+    ],
+    [
+     120.45,
+     25.4
+    ],
+    [
+     121.3,
+     26.2
+    ],
+    [
+     124,
+     30
+    ],
+    [
+     124,
+     38
+    ],
+    [
+     95,
+     38
+    ],
+    [
+     95,
+     15
+    ]
+   ],
+   "withinIs": "The Chinese mainland west of the Taiwan Strait; Taiwan and the Pescadores (the Zheng kingdom of Tungning) lie outside.",
+   "wd": "Q1198163",
+   "history": "The Southern Ming lost its last mainland ground when Kunming fell in January 1659; the Yongli Emperor was executed in 1662. What Cliopatria draws on the mainland as «Southern Ming» in 1673-1682 is the Revolt of the Three Feudatories: Wu Sangui rose in Yunnan in December 1673 (and proclaimed his own Zhou dynasty in 1678), Geng Jingzhong in Fujian in 1674 and Shang Zhixin in Guangdong in 1676, against the Qing whose feudatories they were; Geng surrendered in 1676, Shang in 1677, and the Qing took Kunming in December 1681. The Zheng kingdom of Tungning on Taiwan, which kept the Yongli era until 1683 and held parts of the Fujian coast in 1674-1680, is the Southern Ming continuation the review keeps (refuted: Southern Ming, end).",
+   "note": {
+    "en": "In 1673-1681 this ground was held by the Revolt of the Three Feudatories (Wu Sangui, who proclaimed his own Zhou dynasty in 1678, Geng Jingzhong and Shang Zhixin) against the Qing, and by 1682 the Qing had retaken it. The Ming loyalists had lost the mainland in 1659 (the Yongli Emperor was executed in 1662). Cliopatria names it Southern Ming, so that name is not drawn here.",
+    "jp": "1673〜1681 年のこの土地は、清に背いた三藩の乱（1678 年に自ら周を建てた呉三桂、耿精忠、尚之信）が握り、1682 年までに清が取り戻していた。明の遺臣は 1659 年に大陸を失っている（永暦帝は 1662 年に処刑）。Cliopatria はこれを南明と呼ぶため、ここではその名前を描かない。"
+   }
+  }
+ ]
 }

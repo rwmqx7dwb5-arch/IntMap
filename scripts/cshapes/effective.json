@@ -1,0 +1,1794 @@
+{
+ "note": "Every Wikidata item with a day-precise point in time (P585 — for a treaty, the signing day) within 3 days of a day data/cshapes.js changes a polity, and a day-precise effective date (P7588, or P580 on a treaty) later than it. CShapes codes the signing day; scripts/cshapes/review.json judges each candidate (edges with wd: the change moved to the day the ground changed hands; examined with wds: kept, with the reason). Written by node scripts/build-cshapes.mjs --effective; read offline by --check (scripts/cshapes/effective.mjs).",
+ "retrievedAt": "2026-10-07",
+ "changeDays": 375,
+ "candidates": [
+  {
+   "wd": "Q269655",
+   "label": "Treaty of Shimonoseki",
+   "signed": "1895-04-17",
+   "effective": "1895-05-08",
+   "changes": [
+    {
+     "day": "1895-04-17",
+     "rows": [
+      {
+       "gw": 710,
+       "name": "China",
+       "kind": "upstream"
+      },
+      {
+       "gw": 713,
+       "name": "Taiwan",
+       "kind": "upstream"
+      }
+     ]
+    }
+   ],
+   "days": 21
+  },
+  {
+   "wd": "Q2341456",
+   "label": "Newlands Resolution",
+   "signed": "1898-07-04",
+   "effective": "1898-08-12",
+   "changes": [
+    {
+     "day": "1898-07-06",
+     "rows": [
+      {
+       "gw": 4,
+       "name": "Hawaii",
+       "kind": "upstream"
+      }
+     ]
+    }
+   ],
+   "days": 39
+  },
+  {
+   "wd": "Q548067",
+   "label": "Treaty of Portsmouth",
+   "signed": "1905-09-05",
+   "effective": "1905-11-25",
+   "changes": [
+    {
+     "day": "1905-09-05",
+     "rows": [
+      {
+       "gw": 365,
+       "name": "Russia (Soviet Union)",
+       "kind": "change"
+      },
+      {
+       "gw": 7351,
+       "name": "Southern Sakhalin Island",
+       "kind": "new"
+      }
+     ]
+    }
+   ],
+   "days": 81
+  },
+  {
+   "wd": "Q495558",
+   "label": "Japan–Korea Treaty of 1910",
+   "signed": "1910-08-22",
+   "effective": "1910-08-29",
+   "changes": [
+    {
+     "day": "1910-08-23",
+     "rows": [
+      {
+       "gw": 730,
+       "name": "Korea",
+       "kind": "upstream"
+      }
+     ]
+    }
+   ],
+   "days": 7
+  },
+  {
+   "wd": "Q8736",
+   "label": "Treaty of Versailles",
+   "signed": "1919-06-28",
+   "effective": "1920-01-10",
+   "changes": [
+    {
+     "day": "1919-06-28",
+     "rows": [
+      {
+       "gw": 220,
+       "name": "France",
+       "kind": "change"
+      },
+      {
+       "gw": 255,
+       "name": "Germany (Prussia)",
+       "kind": "change"
+      },
+      {
+       "gw": 290,
+       "name": "Poland",
+       "kind": "change"
+      },
+      {
+       "gw": 291,
+       "name": "Danzig",
+       "kind": "new"
+      },
+      {
+       "gw": 460,
+       "name": "German Togoland",
+       "kind": "change"
+      },
+      {
+       "gw": 470,
+       "name": "Kamerun",
+       "kind": "end"
+      },
+      {
+       "gw": 471,
+       "name": "Cameroon",
+       "kind": "new"
+      },
+      {
+       "gw": 472,
+       "name": "British Cameroons",
+       "kind": "new"
+      },
+      {
+       "gw": 481,
+       "name": "Gabon",
+       "kind": "change"
+      },
+      {
+       "gw": 482,
+       "name": "Central African Republic",
+       "kind": "change"
+      },
+      {
+       "gw": 483,
+       "name": "Chad",
+       "kind": "change"
+      },
+      {
+       "gw": 484,
+       "name": "Congo",
+       "kind": "change"
+      },
+      {
+       "gw": 510,
+       "name": "Tanzania (Tanganyika)",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 196
+  },
+  {
+   "wd": "Q541191",
+   "label": "Anglo-Irish Treaty",
+   "signed": "1921-12-06",
+   "effective": "1922-12-06",
+   "changes": [
+    {
+     "day": "1921-12-06",
+     "rows": [
+      {
+       "gw": 200,
+       "name": "United Kingdom",
+       "kind": "upstream"
+      },
+      {
+       "gw": 205,
+       "name": "Ireland",
+       "kind": "upstream"
+      }
+     ]
+    }
+   ],
+   "days": 365
+  },
+  {
+   "wd": "Q20872997",
+   "label": "Preliminary surrender document in Reims",
+   "signed": "1945-05-07",
+   "effective": "1945-05-08",
+   "changes": [
+    {
+     "day": "1945-05-08",
+     "rows": [
+      {
+       "gw": 255,
+       "name": "Germany (Prussia)",
+       "kind": "end"
+      },
+      {
+       "gw": 260,
+       "name": "German Federal Republic",
+       "kind": "new"
+      },
+      {
+       "gw": 265,
+       "name": "German Democratic Republic",
+       "kind": "new"
+      },
+      {
+       "gw": 290,
+       "name": "Poland",
+       "kind": "change"
+      },
+      {
+       "gw": 315,
+       "name": "Czechoslovakia",
+       "kind": "change"
+      },
+      {
+       "gw": 365,
+       "name": "Russia (Soviet Union)",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 1
+  },
+  {
+   "wd": "Q9348145",
+   "label": "Polish–Soviet border agreement of August 1945",
+   "signed": "1945-08-16",
+   "effective": "1946-02-05",
+   "changes": [
+    {
+     "day": "1945-08-15",
+     "rows": [
+      {
+       "gw": 365,
+       "name": "Russia (Soviet Union)",
+       "kind": "change"
+      },
+      {
+       "gw": 710,
+       "name": "China",
+       "kind": "change"
+      },
+      {
+       "gw": 730,
+       "name": "Korea",
+       "kind": "end"
+      },
+      {
+       "gw": 731,
+       "name": "Korea, People's Republic of",
+       "kind": "new"
+      },
+      {
+       "gw": 732,
+       "name": "Korea, Republic of",
+       "kind": "new"
+      },
+      {
+       "gw": 740,
+       "name": "Japan",
+       "kind": "change"
+      },
+      {
+       "gw": 7351,
+       "name": "Southern Sakhalin Island",
+       "kind": "end"
+      }
+     ]
+    },
+    {
+     "day": "1945-08-17",
+     "rows": [
+      {
+       "gw": 850,
+       "name": "Indonesia",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 173
+  },
+  {
+   "wd": "Q2314717",
+   "label": "Treaty of Peace with Italy",
+   "signed": "1947-02-10",
+   "effective": "1947-09-15",
+   "changes": [
+    {
+     "day": "1947-02-10",
+     "rows": [
+      {
+       "gw": 310,
+       "name": "Hungary",
+       "kind": "change"
+      },
+      {
+       "gw": 315,
+       "name": "Czechoslovakia",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 217
+  },
+  {
+   "wd": "Q140854030",
+   "label": "Agreement on the Temporary Importation, free of duty, of Medical, Surgical and Laboratory Equipment for use on free loan in Hospitals and other Medical Institutions for purposes of Diagnosis or Treatment",
+   "signed": "1960-04-28",
+   "effective": "1960-07-29",
+   "changes": [
+    {
+     "day": "1960-04-27",
+     "rows": [
+      {
+       "gw": 461,
+       "name": "Togo",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 92
+  },
+  {
+   "wd": "Q140854027",
+   "label": "European Agreement on the Protection of Television Broadcasts",
+   "signed": "1960-06-22",
+   "effective": "1961-07-01",
+   "changes": [
+    {
+     "day": "1960-06-20",
+     "rows": [
+      {
+       "gw": 432,
+       "name": "Mali",
+       "kind": "change"
+      }
+     ]
+    },
+    {
+     "day": "1960-06-21",
+     "rows": [
+      {
+       "gw": 433,
+       "name": "Senegal",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 374
+  },
+  {
+   "wd": "Q136392178",
+   "label": "Germany-Liberia Bilateral Investment Treaty",
+   "signed": "1961-12-12",
+   "effective": "1967-10-22",
+   "changes": [
+    {
+     "day": "1961-12-09",
+     "rows": [
+      {
+       "gw": 510,
+       "name": "Tanzania (Tanganyika)",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 2140
+  },
+  {
+   "wd": "Q136392935",
+   "label": "Cameroon-Germany Bilateral Investment Treaty",
+   "signed": "1962-06-29",
+   "effective": "1963-11-21",
+   "changes": [
+    {
+     "day": "1962-07-01",
+     "rows": [
+      {
+       "gw": 515,
+       "name": "Rwanda-Urundi",
+       "kind": "end"
+      },
+      {
+       "gw": 516,
+       "name": "Burundi",
+       "kind": "new"
+      },
+      {
+       "gw": 517,
+       "name": "Rwanda",
+       "kind": "new"
+      }
+     ]
+    }
+   ],
+   "days": 510
+  },
+  {
+   "wd": "Q136391347",
+   "label": "Senegal-Switzerland Bilateral Investment Treaty",
+   "signed": "1962-08-16",
+   "effective": "1964-08-13",
+   "changes": [
+    {
+     "day": "1962-08-15",
+     "rows": [
+      {
+       "gw": 851,
+       "name": "West Irian (Dutch New Guinea)",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 728
+  },
+  {
+   "wd": "Q11140092",
+   "label": "Protocol 4 to the European Convention on Human Rights",
+   "signed": "1963-09-16",
+   "effective": "1968-05-02",
+   "changes": [
+    {
+     "day": "1963-09-16",
+     "rows": [
+      {
+       "gw": 820,
+       "name": "Malaysia",
+       "kind": "change"
+      },
+      {
+       "gw": 823,
+       "name": "Sabah (North Borneo)",
+       "kind": "end"
+      },
+      {
+       "gw": 824,
+       "name": "Sarawak",
+       "kind": "end"
+      }
+     ]
+    }
+   ],
+   "days": 1690
+  },
+  {
+   "wd": "Q136392125",
+   "label": "Germany-Tunisia Bilateral Investment Treaty",
+   "signed": "1963-12-20",
+   "effective": "1966-02-06",
+   "changes": [
+    {
+     "day": "1963-12-19",
+     "rows": [
+      {
+       "gw": 511,
+       "name": "Zanzibar",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 779
+  },
+  {
+   "wd": "Q136392139",
+   "label": "Germany-Senegal Bilateral Investment Treaty",
+   "signed": "1964-01-24",
+   "effective": "1966-01-16",
+   "changes": [
+    {
+     "day": "1964-01-22",
+     "rows": [
+      {
+       "gw": 550,
+       "name": "Federation of Rhodesia and Nyasaland",
+       "kind": "end"
+      },
+      {
+       "gw": 551,
+       "name": "Zambia",
+       "kind": "change"
+      },
+      {
+       "gw": 552,
+       "name": "Zimbabwe (Rhodesia)",
+       "kind": "change"
+      },
+      {
+       "gw": 553,
+       "name": "Malawi",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 723
+  },
+  {
+   "wd": "Q136392670",
+   "label": "Ivory Coast-Germany Bilateral Investment Treaty",
+   "signed": "1966-10-27",
+   "effective": "1968-06-10",
+   "changes": [
+    {
+     "day": "1966-10-27",
+     "rows": [
+      {
+       "gw": 565,
+       "name": "Namibia",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 592
+  },
+  {
+   "wd": "Q136392123",
+   "label": "Germany-Uganda Bilateral Investment Treaty",
+   "signed": "1966-11-29",
+   "effective": "1968-08-19",
+   "changes": [
+    {
+     "day": "1966-11-30",
+     "rows": [
+      {
+       "gw": 53,
+       "name": "Barbados",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 629
+  },
+  {
+   "wd": "Q140853976",
+   "label": "European Convention on the Transfer of Proceedings in Criminal Matters",
+   "signed": "1972-05-15",
+   "effective": "1978-03-30",
+   "changes": [
+    {
+     "day": "1972-05-15",
+     "rows": [
+      {
+       "gw": 740,
+       "name": "Japan",
+       "kind": "change"
+      },
+      {
+       "gw": 7401,
+       "name": "Ryukyu Islands",
+       "kind": "end"
+      }
+     ]
+    }
+   ],
+   "days": 2145
+  },
+  {
+   "wd": "Q136391496",
+   "label": "Kingdom of the Netherlands-Singapore Bilateral Investment Treaty",
+   "signed": "1972-05-16",
+   "effective": "1973-09-07",
+   "changes": [
+    {
+     "day": "1972-05-15",
+     "rows": [
+      {
+       "gw": 740,
+       "name": "Japan",
+       "kind": "change"
+      },
+      {
+       "gw": 7401,
+       "name": "Ryukyu Islands",
+       "kind": "end"
+      }
+     ]
+    }
+   ],
+   "days": 479
+  },
+  {
+   "wd": "Q140853962",
+   "label": "Convention on the Establishment of a Scheme of Registration of Wills",
+   "signed": "1972-05-16",
+   "effective": "1976-03-20",
+   "changes": [
+    {
+     "day": "1972-05-15",
+     "rows": [
+      {
+       "gw": 740,
+       "name": "Japan",
+       "kind": "change"
+      },
+      {
+       "gw": 7401,
+       "name": "Ryukyu Islands",
+       "kind": "end"
+      }
+     ]
+    }
+   ],
+   "days": 1404
+  },
+  {
+   "wd": "Q140853964",
+   "label": "European Convention on the Calculation of Time-Limits",
+   "signed": "1972-05-16",
+   "effective": "1983-04-28",
+   "changes": [
+    {
+     "day": "1972-05-15",
+     "rows": [
+      {
+       "gw": 740,
+       "name": "Japan",
+       "kind": "change"
+      },
+      {
+       "gw": 7401,
+       "name": "Ryukyu Islands",
+       "kind": "end"
+      }
+     ]
+    }
+   ],
+   "days": 3999
+  },
+  {
+   "wd": "Q140853974",
+   "label": "European Convention on State Immunity",
+   "signed": "1972-05-16",
+   "effective": "1976-06-11",
+   "changes": [
+    {
+     "day": "1972-05-15",
+     "rows": [
+      {
+       "gw": 740,
+       "name": "Japan",
+       "kind": "change"
+      },
+      {
+       "gw": 7401,
+       "name": "Ryukyu Islands",
+       "kind": "end"
+      }
+     ]
+    }
+   ],
+   "days": 1487
+  },
+  {
+   "wd": "Q141114999",
+   "label": "Additional Protocol to the European Convention on State Immunity",
+   "signed": "1972-05-16",
+   "effective": "1985-05-22",
+   "changes": [
+    {
+     "day": "1972-05-15",
+     "rows": [
+      {
+       "gw": 740,
+       "name": "Japan",
+       "kind": "change"
+      },
+      {
+       "gw": 7401,
+       "name": "Ryukyu Islands",
+       "kind": "end"
+      }
+     ]
+    }
+   ],
+   "days": 4754
+  },
+  {
+   "wd": "Q933745",
+   "label": "Treaty of Osimo",
+   "signed": "1975-11-10",
+   "effective": "1977-10-11",
+   "changes": [
+    {
+     "day": "1975-11-11",
+     "rows": [
+      {
+       "gw": 540,
+       "name": "Angola",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 701
+  },
+  {
+   "wd": "Q136392168",
+   "label": "Germany-Mali Bilateral Investment Treaty",
+   "signed": "1977-06-28",
+   "effective": "1980-05-16",
+   "changes": [
+    {
+     "day": "1977-06-27",
+     "rows": [
+      {
+       "gw": 522,
+       "name": "Djibouti",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 1053
+  },
+  {
+   "wd": "Q136391497",
+   "label": "Kingdom of the Netherlands-Senegal Bilateral Investment Treaty",
+   "signed": "1979-08-03",
+   "effective": "1981-05-05",
+   "changes": [
+    {
+     "day": "1979-08-05",
+     "rows": [
+      {
+       "gw": 435,
+       "name": "Mauritania",
+       "kind": "change"
+      },
+      {
+       "gw": 600,
+       "name": "Morocco",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 641
+  },
+  {
+   "wd": "Q136391306",
+   "label": "Sri Lanka-Switzerland Bilateral Investment Treaty",
+   "signed": "1981-09-23",
+   "effective": "1982-02-12",
+   "changes": [
+    {
+     "day": "1981-09-21",
+     "rows": [
+      {
+       "gw": 80,
+       "name": "Belize",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 142
+  },
+  {
+   "wd": "Q141114986",
+   "label": "Additional Protocol to the Protocol to the European Agreement on the Protection of Television Broadcasts",
+   "signed": "1983-03-21",
+   "effective": "1985-01-01",
+   "changes": [
+    {
+     "day": "1983-03-21",
+     "rows": [
+      {
+       "gw": 437,
+       "name": "Cote D'Ivoire",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 652
+  },
+  {
+   "wd": "Q5166307",
+   "label": "Convention on the Transfer of Sentenced Persons",
+   "signed": "1983-03-21",
+   "effective": "1985-07-01",
+   "changes": [
+    {
+     "day": "1983-03-21",
+     "rows": [
+      {
+       "gw": 437,
+       "name": "Cote D'Ivoire",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 833
+  },
+  {
+   "wd": "Q130243912",
+   "label": "Convention for the Protection and Development of the Marine Environment of the Wider Caribbean Region",
+   "signed": "1983-03-24",
+   "effective": "1986-10-11",
+   "changes": [
+    {
+     "day": "1983-03-21",
+     "rows": [
+      {
+       "gw": 437,
+       "name": "Cote D'Ivoire",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 1297
+  },
+  {
+   "wd": "Q136391846",
+   "label": "Italy-Uruguay Bilateral Investment Treaty",
+   "signed": "1990-02-21",
+   "effective": "1998-03-02",
+   "changes": [
+    {
+     "day": "1990-02-23",
+     "rows": [
+      {
+       "gw": 698,
+       "name": "Oman",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 2931
+  },
+  {
+   "wd": "Q136393232",
+   "label": "Bangladesh-Italy Bilateral Investment Treaty",
+   "signed": "1990-03-20",
+   "effective": "1994-09-20",
+   "changes": [
+    {
+     "day": "1990-03-21",
+     "rows": [
+      {
+       "gw": 565,
+       "name": "Namibia",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 1645
+  },
+  {
+   "wd": "Q136391405",
+   "label": "Poland-United States Bilateral Investment Treaty",
+   "signed": "1990-03-21",
+   "effective": "1994-08-06",
+   "changes": [
+    {
+     "day": "1990-03-21",
+     "rows": [
+      {
+       "gw": 565,
+       "name": "Namibia",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 1599
+  },
+  {
+   "wd": "Q136393398",
+   "label": "Argentina-Italy Bilateral Investment Treaty",
+   "signed": "1990-05-22",
+   "effective": "1993-10-14",
+   "changes": [
+    {
+     "day": "1990-05-22",
+     "rows": [
+      {
+       "gw": 678,
+       "name": "Yemen (Arab Republic of Yemen)",
+       "kind": "change"
+      },
+      {
+       "gw": 680,
+       "name": "Yemen, People's Republic of",
+       "kind": "end"
+      }
+     ]
+    }
+   ],
+   "days": 1241
+  },
+  {
+   "wd": "Q136391334",
+   "label": "Slovakia-Switzerland Bilateral Investment Treaty",
+   "signed": "1990-10-05",
+   "effective": "1991-08-07",
+   "changes": [
+    {
+     "day": "1990-10-03",
+     "rows": [
+      {
+       "gw": 260,
+       "name": "German Federal Republic",
+       "kind": "change"
+      },
+      {
+       "gw": 265,
+       "name": "German Democratic Republic",
+       "kind": "end"
+      }
+     ]
+    }
+   ],
+   "days": 306
+  },
+  {
+   "wd": "Q136392542",
+   "label": "Central African Republic-Switzerland Bilateral Investment Treaty",
+   "signed": "1990-10-05",
+   "effective": "1991-08-07",
+   "changes": [
+    {
+     "day": "1990-10-03",
+     "rows": [
+      {
+       "gw": 260,
+       "name": "German Federal Republic",
+       "kind": "change"
+      },
+      {
+       "gw": 265,
+       "name": "German Democratic Republic",
+       "kind": "end"
+      }
+     ]
+    }
+   ],
+   "days": 306
+  },
+  {
+   "wd": "Q136392773",
+   "label": "People's Republic of China-Mongolia Bilateral Investment Treaty",
+   "signed": "1991-08-26",
+   "effective": "1993-11-28",
+   "changes": [
+    {
+     "day": "1991-08-25",
+     "rows": [
+      {
+       "gw": 359,
+       "name": "Moldova",
+       "kind": "new"
+      },
+      {
+       "gw": 365,
+       "name": "Russia (Soviet Union)",
+       "kind": "change"
+      },
+      {
+       "gw": 370,
+       "name": "Belarus (Byelorussia)",
+       "kind": "new"
+      }
+     ]
+    }
+   ],
+   "days": 825
+  },
+  {
+   "wd": "Q136392229",
+   "label": "France-United Arab Emirates Bilateral Investment Treaty",
+   "signed": "1991-09-09",
+   "effective": "1995-01-10",
+   "changes": [
+    {
+     "day": "1991-09-06",
+     "rows": [
+      {
+       "gw": 365,
+       "name": "Russia (Soviet Union)",
+       "kind": "change"
+      },
+      {
+       "gw": 366,
+       "name": "Estonia",
+       "kind": "change"
+      },
+      {
+       "gw": 367,
+       "name": "Latvia",
+       "kind": "change"
+      },
+      {
+       "gw": 368,
+       "name": "Lithuania",
+       "kind": "change"
+      },
+      {
+       "gw": 372,
+       "name": "Georgia",
+       "kind": "new"
+      },
+      {
+       "gw": 702,
+       "name": "Tajikistan",
+       "kind": "new"
+      }
+     ]
+    }
+   ],
+   "days": 1219
+  },
+  {
+   "wd": "Q136392886",
+   "label": "Cape Verde-Switzerland Bilateral Investment Treaty",
+   "signed": "1991-10-28",
+   "effective": "1992-05-06",
+   "changes": [
+    {
+     "day": "1991-10-27",
+     "rows": [
+      {
+       "gw": 365,
+       "name": "Russia (Soviet Union)",
+       "kind": "change"
+      },
+      {
+       "gw": 701,
+       "name": "Turkmenistan",
+       "kind": "new"
+      }
+     ]
+    }
+   ],
+   "days": 191
+  },
+  {
+   "wd": "Q136392976",
+   "label": "Bulgaria-Switzerland Bilateral Investment Treaty",
+   "signed": "1991-10-28",
+   "effective": "1993-10-26",
+   "changes": [
+    {
+     "day": "1991-10-27",
+     "rows": [
+      {
+       "gw": 365,
+       "name": "Russia (Soviet Union)",
+       "kind": "change"
+      },
+      {
+       "gw": 701,
+       "name": "Turkmenistan",
+       "kind": "new"
+      }
+     ]
+    }
+   ],
+   "days": 729
+  },
+  {
+   "wd": "Q136391265",
+   "label": "Thailand-Vietnam Bilateral Investment Treaty",
+   "signed": "1991-10-30",
+   "effective": "1992-02-07",
+   "changes": [
+    {
+     "day": "1991-10-27",
+     "rows": [
+      {
+       "gw": 365,
+       "name": "Russia (Soviet Union)",
+       "kind": "change"
+      },
+      {
+       "gw": 701,
+       "name": "Turkmenistan",
+       "kind": "new"
+      }
+     ]
+    }
+   ],
+   "days": 100
+  },
+  {
+   "wd": "Q7939989",
+   "label": "Volatile Organic Compounds Protocol",
+   "signed": "1991-11-18",
+   "effective": "1997-09-29",
+   "changes": [
+    {
+     "day": "1991-11-20",
+     "rows": [
+      {
+       "gw": 343,
+       "name": "Macedonia (FYROM/North Macedonia)",
+       "kind": "new"
+      },
+      {
+       "gw": 345,
+       "name": "Yugoslavia",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 2142
+  },
+  {
+   "wd": "Q136393378",
+   "label": "Argentina-Sweden Bilateral Investment Treaty",
+   "signed": "1991-11-22",
+   "effective": "1992-09-28",
+   "changes": [
+    {
+     "day": "1991-11-20",
+     "rows": [
+      {
+       "gw": 343,
+       "name": "Macedonia (FYROM/North Macedonia)",
+       "kind": "new"
+      },
+      {
+       "gw": 345,
+       "name": "Yugoslavia",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 311
+  },
+  {
+   "wd": "Q136392752",
+   "label": "People's Republic of China-Slovakia Bilateral Investment Treaty",
+   "signed": "1991-12-04",
+   "effective": "1992-12-01",
+   "changes": [
+    {
+     "day": "1991-12-01",
+     "rows": [
+      {
+       "gw": 365,
+       "name": "Russia (Soviet Union)",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 363
+  },
+  {
+   "wd": "Q321945",
+   "label": "Agreement on the Conservation of Populations of European Bats",
+   "signed": "1991-12-04",
+   "effective": "1994-01-16",
+   "changes": [
+    {
+     "day": "1991-12-01",
+     "rows": [
+      {
+       "gw": 365,
+       "name": "Russia (Soviet Union)",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 774
+  },
+  {
+   "wd": "Q136392567",
+   "label": "Q136392567",
+   "signed": "1992-04-27",
+   "effective": "1995-03-16",
+   "changes": [
+    {
+     "day": "1992-04-27",
+     "rows": [
+      {
+       "gw": 344,
+       "name": "Croatia",
+       "kind": "new"
+      },
+      {
+       "gw": 345,
+       "name": "Yugoslavia",
+       "kind": "change"
+      },
+      {
+       "gw": 346,
+       "name": "Bosnia-Herzegovina",
+       "kind": "new"
+      },
+      {
+       "gw": 349,
+       "name": "Slovenia",
+       "kind": "new"
+      }
+     ]
+    }
+   ],
+   "days": 1053
+  },
+  {
+   "wd": "Q1187969",
+   "label": "START II",
+   "signed": "1993-01-03",
+   "effective": "2000-04-14",
+   "changes": [
+    {
+     "day": "1993-01-01",
+     "rows": [
+      {
+       "gw": 315,
+       "name": "Czechoslovakia",
+       "kind": "end"
+      },
+      {
+       "gw": 316,
+       "name": "Czech Republic",
+       "kind": "new"
+      },
+      {
+       "gw": 317,
+       "name": "Slovakia",
+       "kind": "new"
+      }
+     ]
+    }
+   ],
+   "days": 2658
+  },
+  {
+   "wd": "Q136393503",
+   "label": "Albania-Egypt Bilateral Investment Treaty",
+   "signed": "1993-05-22",
+   "effective": "1994-04-06",
+   "changes": [
+    {
+     "day": "1993-05-24",
+     "rows": [
+      {
+       "gw": 530,
+       "name": "Ethiopia",
+       "kind": "change"
+      },
+      {
+       "gw": 531,
+       "name": "Eritrea",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 319
+  },
+  {
+   "wd": "Q136392830",
+   "label": "Chile-Sweden Bilateral Investment Treaty",
+   "signed": "1993-05-24",
+   "effective": "1995-12-30",
+   "changes": [
+    {
+     "day": "1993-05-24",
+     "rows": [
+      {
+       "gw": 530,
+       "name": "Ethiopia",
+       "kind": "change"
+      },
+      {
+       "gw": 531,
+       "name": "Eritrea",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 950
+  },
+  {
+   "wd": "Q136392859",
+   "label": "Chile-Finland Bilateral Investment Treaty",
+   "signed": "1993-05-27",
+   "effective": "1996-05-01",
+   "changes": [
+    {
+     "day": "1993-05-24",
+     "rows": [
+      {
+       "gw": 530,
+       "name": "Ethiopia",
+       "kind": "change"
+      },
+      {
+       "gw": 531,
+       "name": "Eritrea",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 1070
+  },
+  {
+   "wd": "Q136393353",
+   "label": "Armenia-United Kingdom Bilateral Investment Treaty",
+   "signed": "1993-05-27",
+   "effective": "1996-07-11",
+   "changes": [
+    {
+     "day": "1993-05-24",
+     "rows": [
+      {
+       "gw": 530,
+       "name": "Ethiopia",
+       "kind": "change"
+      },
+      {
+       "gw": 531,
+       "name": "Eritrea",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 1141
+  },
+  {
+   "wd": "Q136391527",
+   "label": "Morocco-Spain Bilateral Investment Treaty",
+   "signed": "1997-12-11",
+   "effective": "2005-04-13",
+   "changes": [
+    {
+     "day": "1997-12-10",
+     "rows": [
+      {
+       "gw": 705,
+       "name": "Kazakhstan",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 2680
+  },
+  {
+   "wd": "Q136392394",
+   "label": "El Salvador-Germany Bilateral Investment Treaty",
+   "signed": "1997-12-11",
+   "effective": "2001-04-15",
+   "changes": [
+    {
+     "day": "1997-12-10",
+     "rows": [
+      {
+       "gw": 705,
+       "name": "Kazakhstan",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 1221
+  },
+  {
+   "wd": "Q47359",
+   "label": "Kyoto Protocol",
+   "signed": "1997-12-11",
+   "effective": "2005-02-16",
+   "changes": [
+    {
+     "day": "1997-12-10",
+     "rows": [
+      {
+       "gw": 705,
+       "name": "Kazakhstan",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 2624
+  },
+  {
+   "wd": "Q136391588",
+   "label": "Mauritius-Portugal Bilateral Investment Treaty",
+   "signed": "1997-12-12",
+   "effective": "1999-01-03",
+   "changes": [
+    {
+     "day": "1997-12-10",
+     "rows": [
+      {
+       "gw": 705,
+       "name": "Kazakhstan",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 387
+  },
+  {
+   "wd": "Q136393474",
+   "label": "Algeria-Bahrain Bilateral Investment Treaty",
+   "signed": "2000-06-11",
+   "effective": "2008-05-16",
+   "changes": [
+    {
+     "day": "2000-06-12",
+     "rows": [
+      {
+       "gw": 670,
+       "name": "Saudi Arabia",
+       "kind": "change"
+      },
+      {
+       "gw": 678,
+       "name": "Yemen (Arab Republic of Yemen)",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 2896
+  },
+  {
+   "wd": "Q136391628",
+   "label": "Central African Republic-Romania Bilateral Investment Treaty",
+   "signed": "2000-06-12",
+   "effective": "2002-02-13",
+   "changes": [
+    {
+     "day": "2000-06-12",
+     "rows": [
+      {
+       "gw": 670,
+       "name": "Saudi Arabia",
+       "kind": "change"
+      },
+      {
+       "gw": 678,
+       "name": "Yemen (Arab Republic of Yemen)",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 611
+  },
+  {
+   "wd": "Q136391594",
+   "label": "Mauritania-Morocco Bilateral Investment Treaty",
+   "signed": "2000-06-13",
+   "effective": "2003-10-20",
+   "changes": [
+    {
+     "day": "2000-06-12",
+     "rows": [
+      {
+       "gw": 670,
+       "name": "Saudi Arabia",
+       "kind": "change"
+      },
+      {
+       "gw": 678,
+       "name": "Yemen (Arab Republic of Yemen)",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 1224
+  },
+  {
+   "wd": "Q136392208",
+   "label": "The Gambia-Qatar Bilateral Investment Treaty",
+   "signed": "2002-05-17",
+   "effective": "2011-03-03",
+   "changes": [
+    {
+     "day": "2002-05-20",
+     "rows": [
+      {
+       "gw": 850,
+       "name": "Indonesia",
+       "kind": "change"
+      },
+      {
+       "gw": 860,
+       "name": "East Timor",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 3212
+  },
+  {
+   "wd": "Q136391397",
+   "label": "Portugal-Timor-Leste Bilateral Investment Treaty",
+   "signed": "2002-05-20",
+   "effective": "2004-04-07",
+   "changes": [
+    {
+     "day": "2002-05-20",
+     "rows": [
+      {
+       "gw": 850,
+       "name": "Indonesia",
+       "kind": "change"
+      },
+      {
+       "gw": 860,
+       "name": "East Timor",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 688
+  },
+  {
+   "wd": "Q136392396",
+   "label": "El Salvador-Finland Bilateral Investment Treaty",
+   "signed": "2002-05-20",
+   "effective": "2003-02-20",
+   "changes": [
+    {
+     "day": "2002-05-20",
+     "rows": [
+      {
+       "gw": 850,
+       "name": "Indonesia",
+       "kind": "change"
+      },
+      {
+       "gw": 860,
+       "name": "East Timor",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 276
+  },
+  {
+   "wd": "Q136393241",
+   "label": "Bahrain-Thailand Bilateral Investment Treaty",
+   "signed": "2002-05-21",
+   "effective": "2002-07-17",
+   "changes": [
+    {
+     "day": "2002-05-20",
+     "rows": [
+      {
+       "gw": 850,
+       "name": "Indonesia",
+       "kind": "change"
+      },
+      {
+       "gw": 860,
+       "name": "East Timor",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 57
+  },
+  {
+   "wd": "Q136392486",
+   "label": "Dominican Republic-Morocco Bilateral Investment Treaty",
+   "signed": "2002-05-23",
+   "effective": "2007-01-04",
+   "changes": [
+    {
+     "day": "2002-05-20",
+     "rows": [
+      {
+       "gw": 850,
+       "name": "Indonesia",
+       "kind": "change"
+      },
+      {
+       "gw": 860,
+       "name": "East Timor",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 1687
+  },
+  {
+   "wd": "Q136391242",
+   "label": "United States-Uruguay Bilateral Investment Treaty",
+   "signed": "2005-11-04",
+   "effective": "2006-11-01",
+   "changes": [
+    {
+     "day": "2005-11-06",
+     "rows": [
+      {
+       "gw": 775,
+       "name": "Myanmar (Burma)",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 362
+  },
+  {
+   "wd": "Q136393205",
+   "label": "Belarus-Finland Bilateral Investment Treaty",
+   "signed": "2006-06-08",
+   "effective": "2008-04-10",
+   "changes": [
+    {
+     "day": "2006-06-06",
+     "rows": [
+      {
+       "gw": 340,
+       "name": "Serbia",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 672
+  },
+  {
+   "wd": "Q136392488",
+   "label": "Dominican Republic-Italy Bilateral Investment Treaty",
+   "signed": "2006-06-12",
+   "effective": "2009-11-25",
+   "changes": [
+    {
+     "day": "2006-06-12",
+     "rows": [
+      {
+       "gw": 341,
+       "name": "Montenegro",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 1262
+  },
+  {
+   "wd": "Q136392993",
+   "label": "Bulgaria-South Korea Bilateral Investment Treaty",
+   "signed": "2006-06-12",
+   "effective": "2006-11-16",
+   "changes": [
+    {
+     "day": "2006-06-12",
+     "rows": [
+      {
+       "gw": 341,
+       "name": "Montenegro",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 157
+  },
+  {
+   "wd": "Q136391355",
+   "label": "Rwanda-United States Bilateral Investment Treaty",
+   "signed": "2008-02-19",
+   "effective": "2012-01-01",
+   "changes": [
+    {
+     "day": "2008-02-17",
+     "rows": [
+      {
+       "gw": 340,
+       "name": "Serbia",
+       "kind": "change"
+      }
+     ]
+    },
+    {
+     "day": "2008-02-20",
+     "rows": [
+      {
+       "gw": 347,
+       "name": "Kosovo",
+       "kind": "new"
+      }
+     ]
+    }
+   ],
+   "days": 1412
+  },
+  {
+   "wd": "Q136391810",
+   "label": "Jordan-Slovakia Bilateral Investment Treaty",
+   "signed": "2008-02-21",
+   "effective": "2010-06-09",
+   "changes": [
+    {
+     "day": "2008-02-20",
+     "rows": [
+      {
+       "gw": 347,
+       "name": "Kosovo",
+       "kind": "new"
+      }
+     ]
+    }
+   ],
+   "days": 839
+  },
+  {
+   "wd": "Q136392299",
+   "label": "Finland-Vietnam Bilateral Investment Treaty",
+   "signed": "2008-02-21",
+   "effective": "2009-06-04",
+   "changes": [
+    {
+     "day": "2008-02-20",
+     "rows": [
+      {
+       "gw": 347,
+       "name": "Kosovo",
+       "kind": "new"
+      }
+     ]
+    }
+   ],
+   "days": 469
+  },
+  {
+   "wd": "Q15963166",
+   "label": "Treaty on the Adoption of the Republic of Crimea to Russia",
+   "signed": "2014-03-18",
+   "effective": "2014-04-01",
+   "changes": [
+    {
+     "day": "2014-03-18",
+     "rows": [
+      {
+       "gw": 365,
+       "name": "Russia (Soviet Union)",
+       "kind": "change"
+      },
+      {
+       "gw": 369,
+       "name": "Ukraine",
+       "kind": "change"
+      }
+     ]
+    }
+   ],
+   "days": 14
+  }
+ ]
+}

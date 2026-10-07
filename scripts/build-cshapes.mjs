@@ -66,6 +66,7 @@
  *      node scripts/build-cshapes.mjs --check    # verify the COMMITTED file's invariants (offline)
  *      node scripts/build-cshapes.mjs --measure  # print the tolerance sweep and write nothing
  *      node scripts/build-cshapes.mjs --review   # apply scripts/cshapes/review.json to the committed file (idempotent)
+ *      node scripts/build-cshapes.mjs --effective # ask Wikidata which change days have a later effective date → scripts/cshapes/effective.json
  *
  *  ⚠ `--check` IS THE ONLY MODE CI CAN RUN, and it deliberately re-derives nothing: the upstream is
  *  26.3 MB from a university web server that refused three of this round's connections outright, and
@@ -79,6 +80,7 @@ import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { LIC } from './histcities/lang.mjs';
 import { geometryOf, identityOf, repoolGeometry, previousPrecision, generatedPrecision } from './histborders/precision.mjs';
+import { changeDays, askedDays, effectiveQuery, candidatesOf, effectiveProblems, NEAR } from './cshapes/effective.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'data', 'cshapes.js');
@@ -411,13 +413,29 @@ export function applyReview(data, review) {
   for (const ed of review.edges || []) {
     const lo = Math.min(ymdA(ed.upstream), ymdA(ed.at)), hi = Math.max(ymdA(ed.upstream), ymdA(ed.at));
     const rows = feats.filter((f) => f[1] === ed.gw).sort((a, b) => ymdA(rowS(a)) - ymdA(rowS(b)));
+    /* the code's ONE change between the two days: a boundary between two of its rows, or (hist-findings-sweep) the
+       first day of its first row when the code begins there (a colony CShapes starts on the signing day — Taiwan
+       1895, Hawaii 1898), or the last day of its last row when it ends there. The ground the code does not hold
+       in between is the ground of whatever records stand under CShapes there (the composition is rebuilt on it) */
     const pairs = [];
     for (let i = 0; i + 1 < rows.length; i++) { const b = ymdA(rowS(rows[i + 1]));
       if (ymdA(dayShift(rowE(rows[i]), 1)) === b && b >= lo && b <= hi) pairs.push([rows[i], rows[i + 1]]); }
-    if (pairs.length !== 1) throw new Error(`review edge ${ed.id}: ${pairs.length} boundaries of code ${ed.gw} between ${ed.upstream.join('-')} and ${ed.at.join('-')}, not one`);
-    const [A, B] = pairs[0], before = rowS(B).join('-');
-    [A[5], A[6], A[7]] = dayShift(ed.at, -1); [B[2], B[3], B[4]] = ed.at;
-    if (ymdA(rowE(A)) < ymdA(rowS(A)) || ymdA(rowE(B)) < ymdA(rowS(B))) throw new Error(`review edge ${ed.id}: moving the boundary to ${ed.at.join('-')} empties a row`);
+    const first = rows.length && ymdA(rowS(rows[0])) >= lo && ymdA(rowS(rows[0])) <= hi ? rows[0] : null;
+    const last = rows.length && ymdA(dayShift(rowE(rows[rows.length - 1]), 1)) >= lo && ymdA(dayShift(rowE(rows[rows.length - 1]), 1)) <= hi ? rows[rows.length - 1] : null;
+    const n = pairs.length + (first ? 1 : 0) + (last ? 1 : 0);
+    if (n !== 1) throw new Error(`review edge ${ed.id}: ${n} changes of code ${ed.gw} between ${ed.upstream.join('-')} and ${ed.at.join('-')}, not one`);
+    let before;
+    if (pairs.length) {
+      const [A, B] = pairs[0]; before = rowS(B).join('-');
+      [A[5], A[6], A[7]] = dayShift(ed.at, -1); [B[2], B[3], B[4]] = ed.at;
+      if (ymdA(rowE(A)) < ymdA(rowS(A)) || ymdA(rowE(B)) < ymdA(rowS(B))) throw new Error(`review edge ${ed.id}: moving the boundary to ${ed.at.join('-')} empties a row`);
+    } else if (first) {
+      before = rowS(first).join('-'); [first[2], first[3], first[4]] = ed.at;
+      if (ymdA(rowE(first)) < ymdA(rowS(first))) throw new Error(`review edge ${ed.id}: moving the start to ${ed.at.join('-')} empties a row`);
+    } else {
+      before = dayShift(rowE(last), 1).join('-'); [last[5], last[6], last[7]] = dayShift(ed.at, -1);
+      if (ymdA(rowE(last)) < ymdA(rowS(last))) throw new Error(`review edge ${ed.id}: moving the end to ${ed.at.join('-')} empties a row`);
+    }
     report.edges.push({ id: ed.id, from: before, to: ed.at.join('-') });
   }
   for (const g of review.ground || []) {
@@ -526,8 +544,9 @@ export function reviewProblems(d, review) {
   }
   for (const ed of review.edges || []) {
     const rows = rowsOf(ed.gw), at = ymdA(ed.at), before = ymdA(dayShift(ed.at, -1));
-    if (!rows.some((f) => ymdA(rowS(f)) === at) || !rows.some((f) => ymdA(rowE(f)) === before)) say(`review ${ed.id}: code ${ed.gw} does not change on ${ed.at.join('-')}`);
-    if (rows.some((f) => ymdA(rowS(f)) === ymdA(ed.upstream))) say(`review ${ed.id}: code ${ed.gw} still changes on the upstream day ${ed.upstream.join('-')}`);
+    /* a boundary: a row ends the day before and the next begins on it; a first row: it begins on it; a last row: it ends the day before */
+    if (!rows.some((f) => ymdA(rowS(f)) === at) && !rows.some((f) => ymdA(rowE(f)) === before)) say(`review ${ed.id}: code ${ed.gw} does not change on ${ed.at.join('-')}`);
+    if (rows.some((f) => ymdA(rowS(f)) === ymdA(ed.upstream)) || rows.some((f) => ymdA(rowE(f)) === ymdA(dayShift(ed.upstream, -1)))) say(`review ${ed.id}: code ${ed.gw} still changes on the upstream day ${ed.upstream.join('-')}`);
   }
   const about = new Set();
   for (const n of review.notes || []) {
@@ -550,6 +569,32 @@ function reviewMode() {
   const { data, report } = applyReview(have, readReview());
   const bytes = writeBundle(data);
   console.log(JSON.stringify({ bytes, records: data.feats.length, ...report }));
+}
+
+/* (hist-findings-sweep) THE CHANGES THAT MAY BE DRAWN ON THE SIGNING DAY — scripts/cshapes/effective.mjs finds, review.json
+   judges. Writes the photograph scripts/cshapes/effective.json (network: Wikidata Query Service); `--check` then holds
+   every candidate in it to a verdict, offline. Batches of BATCH days keep one query under the service's 60 s limit
+   (observed 2026-10-07: 368 change days × 7 asked days in 26 batches, each answered in a few seconds). */
+const EFFECTIVE = join(ROOT, 'scripts', 'cshapes', 'effective.json');
+const WDQS = 'https://query.wikidata.org/sparql';
+async function effectiveMode() {
+  const d = evaluate(OUT, '__CSHAPES'), days = changeDays(d, readReview()), ask = askedDays(days), BATCH = 100, rows = [];
+  for (let i = 0; i < ask.length; i += BATCH) {
+    const q = effectiveQuery(ask.slice(i, i + BATCH));
+    let r = null;
+    for (let t = 0; t < 4 && !(r && r.ok); t++) {
+      if (t) await new Promise((res) => setTimeout(res, 5000 * t));
+      r = await fetch(WDQS + '?query=' + encodeURIComponent(q), { headers: { Accept: 'application/sparql-results+json', 'User-Agent': 'IntMap/build-cshapes (+https://github.com/rwmqx7dwb5-arch/IntMap)' } }).catch(() => null);
+    }
+    if (!r || !r.ok) throw new Error('Wikidata Query Service did not answer batch ' + (i / BATCH + 1) + (r ? ' (HTTP ' + r.status + ')' : ''));
+    rows.push(...(await r.json()).results.bindings);
+  }
+  const candidates = candidatesOf(rows, days);
+  const photo = { note: 'Every Wikidata item with a day-precise point in time (P585 — for a treaty, the signing day) within ' + NEAR + ' days of a day data/cshapes.js changes a polity, and a day-precise effective date (P7588, or P580 on a treaty) later than it. CShapes codes the signing day; scripts/cshapes/review.json judges each candidate (edges with wd: the change moved to the day the ground changed hands; examined with wds: kept, with the reason). Written by node scripts/build-cshapes.mjs --effective; read offline by --check (scripts/cshapes/effective.mjs).',
+    retrievedAt: new Date().toISOString().slice(0, 10), changeDays: days.length, candidates };
+  writeFileSync(EFFECTIVE, JSON.stringify(photo, null, 1) + '\n');
+  console.log(JSON.stringify({ changeDays: days.length, asked: ask.length, rows: rows.length, candidates: candidates.length }));
+  for (const c of candidates) console.log(c.signed + ' → ' + c.effective + ' (+' + c.days + ' d)  ' + c.wd + ' ' + c.label + '  ·  ' + c.changes.map((x) => x.day + ' ' + x.rows.map((r) => r.kind + ' ' + r.name + '(' + r.gw + ')').join(', ')).join(' | '));
 }
 
 function precisionOnly() {
@@ -666,6 +711,8 @@ function check() {
   if (!existsSync(REVIEW)) { if (d.review) bad.push('data/cshapes.js carries reviewed verdicts (`review`) and scripts/cshapes/review.json, which states their reasons, is gone'); }
   else try { review = readReview(); } catch (e) { bad.push('scripts/cshapes/review.json does not parse: ' + e.message); }
   if (review) for (const m of reviewProblems(d, review)) bad.push(m);
+  /* (hist-findings-sweep) every change Wikidata says took effect after its signing day is judged — scripts/cshapes/effective.mjs */
+  if (review) { let photo = null; try { photo = JSON.parse(readFileSync(EFFECTIVE, 'utf8')); } catch (e) { /* reported below */ } for (const m of effectiveProblems(photo, review)) bad.push(m); }
   if (bad.length) { fail(bad); return; }
 
   /* orphans — allowed, counted, ratcheted (see ORPHAN_POINTS) */
@@ -749,4 +796,5 @@ else if (arg.includes('--fetch')) console.error('fetched ' + await fetchUpstream
 else if (arg.includes('--measure')) measure();
 else if (arg.includes('--precision-only')) precisionOnly();
 else if (arg.includes('--review')) reviewMode();
+else if (arg.includes('--effective')) await effectiveMode();
 else compare();

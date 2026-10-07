@@ -1959,9 +1959,9 @@ internal consistency is not geographic accuracy.
 
 ⚠ **こちらは再導出する。** `scripts/build-border-coast.mjs --check` は上流を必要としない——
 入力は `data/` から**発見された**束（いまは6つ——`cshapes` / `hist-borders` / `hist-admin1` / `hist-admin2` / `hist-eras` / `hist-kuni`）と
-`data/coastline.json.gz` だけなので、**全 94,256 リングを判定し直して `data/border-coast.js` と
+`data/coastline.json.gz` だけなので、**全 98,388 リングを判定し直して `data/border-coast.js` と
 バイト単位で突き合わせる**。⚠ **束の母集合そのものも門である**——印されている集合が `data/` の束の集合と一致しなければ落ちるので、束を1つ足して印を忘れることができない（`data/hist-eras.js` は、手で並べた一覧だったころ気づかれずに抜けていた）。⚠ **`npm test` の中の写しは `--sample 8`**
-（#R564。この回で印す対象が 4,830 本から 25,506 本へ一桁増え（束が育った現在は上の 94,256 リング）ので、網羅版は CI の
+（#R564。この回で印す対象が 4,830 本から 25,506 本へ一桁増え（束が育った現在は上の 98,388 リング）ので、網羅版は CI の
 `npm run check:bordercoast` に置き、suite の中は 8 本に 1 本を再導出する。形の検査は
 **全件**を歩いたままなので、抜けるのは「再導出」の母数だけ）。
 上の門が「記録が自分自身と整合するか」を問うのに対し、ここは
@@ -2000,9 +2000,9 @@ way が 1 本のリングに閉じるか／内側のリングが**穴**になり
 上流に訊くか／**粗い形を先に渡し、鋭い形が届いたら渡し直す**か／その差し替えが**同じ source の
 置き換えであって第2のレイヤーではない**か。
 
-### `npm run check:histadmin` — 83.29 MB の行政区分に、初めて門を付ける (#R680)
+### `npm run check:histadmin` — 83.28 MB の行政区分に、初めて門を付ける (#R680)
 
-`scripts/build-hist-admin1.mjs --check` は `data/hist-admin1.js`（41.46 MB・第1級 4,837 単位）と
+`scripts/build-hist-admin1.mjs --check` は `data/hist-admin1.js`（41.46 MB・第1級 4,836 単位）と
 `data/hist-admin2.js`（40.66 MB・第2級 22,691 単位）の不変条件を測る。**この 2 本は #R680 まで
 `--check` を持たず、`package.json` にも `ci.yml` にも該当ステップが無かった。** 歴史的な束は 5 本あり、
 残り 3 本（`hist-borders` / `hist-eras` / `hist-kuni`）と `border-coast` にはそれぞれ門がある——

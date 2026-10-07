@@ -6,29 +6,29 @@
     "border-detail": {
       "path": "data/border-detail",
       "kind": "dir",
-      "sha256": "d8b06d9acf6e905088028c1d61125a9433786b7dd101bbc57708617ce8666b23",
+      "sha256": "ef631052f1f014f4f9759db9ba6a056f0734d307aae014e9e3c712a78fdcb0cd",
       "builder": "scripts/build-border-detail.mjs",
-      "files": 8987,
-      "bytes": 778337782,
+      "files": 8988,
+      "bytes": 778337870,
       "release": {
-        "tag": "data-border-detail-d8b06d9acf6e",
-        "asset": "border-detail-d8b06d9acf6e.tar.gz",
-        "sha256": "6b6f71c2f1404d4b77097ca945012824e8a9e27c521d5564de75e5b72a369ba9",
-        "bytes": 200127891
+        "tag": "data-border-detail-ef631052f1f0",
+        "asset": "border-detail-ef631052f1f0.tar.gz",
+        "sha256": "dab6875fd63e32f57642dca489c9dbfd1a0dc624617b1b521668080f443fa4a3",
+        "bytes": 200128265
       }
     },
     "hist-eras": {
       "path": "data/hist-eras.js",
       "kind": "file",
-      "sha256": "17e521f62f7a668fdac6c198c998c7475ce56fa55f09edc5b967eca7ed06395a",
+      "sha256": "50d1d07745fbc6d4924d216c4dae68cdc2abd60bd0f75b980453b58b83682c88",
       "builder": "scripts/build-hist-eras.mjs",
       "files": 1,
-      "bytes": 10644502,
+      "bytes": 10644703,
       "release": {
-        "tag": "data-hist-eras-17e521f62f7a",
-        "asset": "hist-eras-17e521f62f7a.tar.gz",
-        "sha256": "70f28c48e20094bb61bbecfa08b69fef8b1f33f8f6c4f70b2a85a0f55d35b65e",
-        "bytes": 3459615
+        "tag": "data-hist-eras-50d1d07745fb",
+        "asset": "hist-eras-50d1d07745fb.tar.gz",
+        "sha256": "a966af23d1f8d6a7909ac2a24caf598cf5598aa3dcba276e1b3e80238484f6a0",
+        "bytes": 3459649
       }
     }
   }

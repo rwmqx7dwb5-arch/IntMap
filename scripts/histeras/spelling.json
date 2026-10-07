@@ -1,0 +1,9 @@
+{
+ "about": "Reviewed misspellings in the era sheets (data/hist-eras.js, aourednik/historical-basemaps). Each entry corrects a string to a spelling the same corpus uses on uncorrected features; the corrected feature keeps upstream's word as `u`. Applied by node scripts/build-hist-eras.mjs (every build) and --spelling (the committed file); held by npm run check:histeras (scripts/histeras/spelling.mjs). Found 2026-10-07 by listing the names drawn on the same or adjacent ground in neighbouring sheets that differ by a slip of one or two letters; the pairs that are real distinctions (Malay/Malays, Sinhalese kingdom/kingdoms, Austronesian/Austronesians, Ainu/Ainus, Papuan/Papuans, Maori/Maoris, Tokugawa Shogunate/shogunate, Chinese Warlords/warlords) are not corrected.",
+ "corrections": [
+  { "from": "Scottalnd", "to": "Scotland", "sheets": ["1650", "1700"], "why": "Transposed letters (and a doubled t) for Scotland, drawn on the same ground as «Scotland» on the 1279, 1300 and 1400 sheets; the Kingdom of Scotland is the polity of 1650-1707 (union with England, 1 May 1707)." },
+  { "from": "Scottland", "to": "Scotland", "sheets": ["1492", "1500"], "why": "A doubled t for Scotland, drawn on the same ground as «Scotland» on the 1279, 1300 and 1400 sheets (the Kingdom of Scotland under the Stewarts)." },
+  { "from": "Boethuk", "to": "Beothuk", "sheets": ["1000", "1100", "1200"], "why": "Transposed vowels for the Beothuk of Newfoundland, whom the same cartographer writes «Beothuk» on the 800, 900 and 1279-1600 sheets on the same ground." },
+  { "from": "Prot-Altaic pastoralists", "to": "Proto-Altaic pastoralists", "sheets": ["bc1500", "bc1000", "bc700"], "why": "A dropped o in «Proto-Altaic», the spelling the same cartographer uses on the bc500 sheet for the same pastoralists on the same steppe ground." }
+ ]
+}

@@ -10,8 +10,16 @@ import { C, E, N } from './lang.mjs';
 
 export const ROWS = [
   /* ── Turkey ─────────────────────────────────────────────────────────────────────────────── */
+  /* (hist-findings-sweep) BOTH SPANS STATE THEIR START. The name «Constantinople» begins with the city's refoundation and
+     dedication by Constantine in 330 (11 May 330); before it the Megarian colony, founded by tradition in 657 BC, was
+     Byzantion. Written open, «Constantinople» could not outrank a dated derived span over the same years (a written
+     row wins an overlap only where it states its own dates — build-hist-cities.mjs `alreadyCovered`), and Wikidata's
+     Bulgarian «official name» «Цариград» (1453-05-29 – 1923-10-23, P1448 @bg on Q16869) was what an English reader saw
+     for 1453–1923 — the Slavic name of the city, never its own, under an Ottoman state whose name for it was
+     Kostantiniyye. Reported 2026-10-07 from the search («named Цариград then») and the 1500 map label. */
   C('istanbul', 28.9784, 41.0082, 'TR', ['Istanbul', 'İstanbul'], [
-    E(0, 1929, N('Constantinople', 'コンスタンティノープル', 'Константинополь', '君士坦丁堡', '君士坦丁堡', '콘스탄티노폴리스', { de: 'Konstantinopel', es: 'Constantinopla', fr: 'Constantinople' })),
+    E(-656, 329, N('Byzantium', 'ビュザンティオン', 'Византий', '拜占庭', '拜占庭', '비잔티움', { de: 'Byzantion', es: 'Bizancio', fr: 'Byzance' })),
+    E(330, 1929, N('Constantinople', 'コンスタンティノープル', 'Константинополь', '君士坦丁堡', '君士坦丁堡', '콘스탄티노폴리스', { de: 'Konstantinopel', es: 'Constantinopla', fr: 'Constantinople' })),
   ]),
   C('izmir', 27.1428, 38.4237, 'TR', ['İzmir', 'Izmir'], [
     E(0, 1929, N('Smyrna', 'スミルナ', 'Смирна', '士麥那', '士麦那', '스미르나', { de: 'Smyrna', es: 'Esmirna', fr: 'Smyrne' })),

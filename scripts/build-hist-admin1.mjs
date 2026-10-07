@@ -84,7 +84,7 @@ import { labelsFor, labelsByTag } from './histadmin/wikidata.mjs';
 import { plainLabel } from './histeras/match.mjs';
 import { geometryOf, repoolGeometry, generatedPrecision } from './histborders/precision.mjs';
 import { OPENHISTORICALMAP } from './lib/upstream-cadence.mjs';
-import { readEdges, successions, applyEdges, LEDGER as EDGES_LEDGER, GOVERNANCE as EDGES_GOVERNANCE } from './histadmin/edges.mjs';
+import { readEdges, successions, applyEdges, applyWithdrawn, LEDGER as EDGES_LEDGER, GOVERNANCE as EDGES_GOVERNANCE } from './histadmin/edges.mjs';
 import { REGIMES as CAL_REGIMES, statements as calendarStatements, groundIndex as calendarGround, applyCalendar } from './histadmin/calendar.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -1233,7 +1233,7 @@ async function refreshEdges() {
   ledger.calendar = { ...(ledger.calendar || {}), found: await calendarFound(units) };
   fs.writeFileSync(path.join(ROOT, EDGES_LEDGER), JSON.stringify(ledger, null, 1) + '\n');
   const bundles = units.map(u => ({ file: u.tier.file, data: u.data }));
-  const touched = [...new Set([...applyEdges(bundles, ledger), ...applyCalendar(bundles, ledger)])];
+  const touched = [...new Set([...applyEdges(bundles, ledger), ...applyCalendar(bundles, ledger), ...applyWithdrawn(bundles, ledger)])];
   for (const u of units) {
     if (!touched.includes(u.tier.file)) continue;
     const body = 'window.' + u.tier.global + '=' + JSON.stringify({ ...u.data, built: new Date().toISOString().slice(0, 10) }) + ';\n';
@@ -1275,8 +1275,23 @@ async function calendarFound(units) {
   return out;
 }
 
+/* (hist-findings-sweep) `--withdrawn`: apply only the ledger's `withdrawn` verdicts to the committed tiers — offline, no
+   Overpass, no Wikidata (the `--edges` refresh applies the same function with everything else) */
+function withdrawnOnly() {
+  const ledger = readEdges(ROOT);
+  for (const t of tiers()) {
+    const p = path.join(ROOT, t.file); if (!fs.existsSync(p)) continue;
+    const w = {}; new Function('window', fs.readFileSync(p, 'utf8'))(w);
+    const d = w[t.global];
+    if (!applyWithdrawn([{ file: t.file, data: d }], ledger).length) continue;
+    fs.writeFileSync(p, 'window.' + t.global + '=' + JSON.stringify(d) + ';\n');
+    console.error('· wrote ' + t.file + ' — ' + (ledger.withdrawn || []).length + ' withdrawn relation(s) applied');
+  }
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
 if (args.includes('--check')) check();
+else if (args.includes('--withdrawn')) withdrawnOnly();
 else if (args.includes('--edges')) refreshEdges().catch(e => { console.error('FAILED', e); process.exit(1); });
 else if (args.includes('--topology-only')) topologyOnly();
 else if (args.includes('--precision-only')) precisionOnly();

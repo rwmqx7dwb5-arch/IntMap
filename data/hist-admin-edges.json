@@ -1,6 +1,6 @@
 {
  "v": 1,
- "note": "Reviewed handovers for the subdivision record (data/hist-admin{1,2,3}.js). `found` is every succession OpenHistoricalMap ties by ONE event (the last row of one unit and the first row of another carry the same end_date:event / start_date:event) whose two statements name different years — refreshed by node scripts/build-hist-admin1.mjs --edges. `reviewed` moves both edges to a day Wikidata states for one of the two units AND the historical record (`history`) agrees with; the rows keep upstream's own words and carry the correction beside them (`dates[id].<edge>.corrected`). `refuted` leaves a finding as upstream wrote it, with the reason. `facts` is what Wikidata states at day precision for the reviewed units. Gate: npm run check:histfidelity. See scripts/histadmin/edges.mjs.",
+ "note": "Reviewed handovers for the subdivision record (data/hist-admin{1,2,3}.js). `found` is every succession OpenHistoricalMap ties by ONE event (the last row of one unit and the first row of another carry the same end_date:event / start_date:event) whose two statements name different years — refreshed by node scripts/build-hist-admin1.mjs --edges. `reviewed` moves both edges to a day Wikidata states for one of the two units AND the historical record (`history`) agrees with; the rows keep upstream's own words and carry the correction beside them (`dates[id].<edge>.corrected`). `refuted` leaves a finding as upstream wrote it, with the reason. `facts` is what Wikidata states at day precision for the reviewed units. Gate: npm run check:histfidelity. See scripts/histadmin/edges.mjs. `withdrawn` (hist-findings-sweep) lists relations upstream draws as a subdivision that the historical record shows was no unit of government; each is taken out of the tier that ships it, with the history that refutes it and what the OpenHistoricalMap tiles draw for it.",
  "reviewed": [
   {
    "end": 2890077,
@@ -3251,5 +3251,23 @@
     "note": "仙台県 was renamed 宮城県 on 明治5年1月8日, 16 February 1872 (ja.wikipedia «宮城県», oldid 111213613: «明治5年1月8日（1872年2月16日）») — upstream already writes the Gregorian day."
    }
   ]
- }
+ },
+ "withdrawn": [
+  {
+   "id": 2870662,
+   "name": "US occupation of Greenland",
+   "q": "Q223",
+   "history": "There was no American administration of Greenland. The Agreement relating to the Defense of Greenland (Washington, 9 April 1941) gave the United States defence areas while «fully recognizing the sovereignty of the Kingdom of Denmark over Greenland»; the island stayed under its two Danish landsfogeder (Eske Brun held both posts from 1941), the North and South Greenland administrations OpenHistoricalMap itself holds as Nordgrønlands and Sydgrønlands Inspektorat for 1874-1951. The Danish government confirmed the agreement on 16 May 1945. The United States garrisoned bases; it governed no unit of the island.",
+   "tiles": "Measured 2026-10-07 on OpenHistoricalMap: every one of the relation's 44 member ways is also a member of Nordgrønlands Inspektorat (r2870652) or Sydgrønlands Inspektorat (r2870651), both in force 1874-1951, so the tiles draw no line for it that those relations do not draw; what it added was the bundle's label, click and count.",
+   "sources": [
+    {
+     "cite": "Agreement relating to the Defense of Greenland, Washington, 9 April 1941 (55 Stat. 1245; Danish government approval 16 May 1945)"
+    },
+    {
+     "cite": "OpenHistoricalMap relations 2870662, 2870651, 2870652 (members read 2026-10-07)",
+     "url": "https://www.openhistoricalmap.org/relation/2870662"
+    }
+   ]
+  }
+ ]
 }
