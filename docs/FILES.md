@@ -1674,7 +1674,10 @@ hdi-series.json                   HDI（UNDP）193か国 × 1990–2022
 maddison.json                     マディソン・プロジェクトの歴史 GDP・人口（1850–2018・`scripts/build-maddison.mjs`）
 data/cshapes.js                   歴史的国境（CShapes 2.0・1886-01-01〜2019・**CC BY-NC-SA 4.0**）。
                                   ⚠ 束の `src` が**自分のライセンスを名乗る**（#R717）——歴史の 6 束のうち
-                                  ここだけが名乗っておらず、**表示が再配布の条件になっている唯一の束**だった
+                                  ここだけが名乗っておらず、**表示が再配布の条件になっている唯一の束**だった。
+                                  史実で審査した所見（条約の施行日への変化日の移動・島の帰属・CShapes に無い単位）は
+                                  `scripts/cshapes/review.json` が述べ、`scripts/build-cshapes.mjs --review` が束に当てる
+                                  （冪等。読者への註は束の `review.notes`＝カードの説明行）
 data/hist-borders.js              歴史的国境の 1689–1885（OpenHistoricalMap・CC0 1.0／`scripts/build-hist-borders.mjs`）。
                                   ⚠ **窓の下限は導出**——束の `window[0]` が正本
 data/hist-eras.js                 全時代の国境スナップショット 54 枚（紀元前 123000 年〜西暦 2010 年・
@@ -1703,7 +1706,7 @@ data/histnames.json               **歴史的な政体名の、記録をまた�
                                   ⚠ **上流が書いた名前は上書きしない**。⚠ **出荷する言語の方針は
                                   `scripts/histnames/langs.mjs` の 1 か所**（いまは en / jp）
 data/border-coast.js              歴史的な輪郭の各辺が「境界」か「その記録が持つ海岸線の写し」かの印（`data/` から
-                                  **発見された**束すべて・いまは14・全 94,263 リング分／
+                                  **発見された**束すべて・いまは14・全 94,256 リング分／
                                   `scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
                                   `imta2-line` はこの印の run だけを描く。読み手は js/border-coast.js
                                   （束の索引でも**環そのものの同一性**でも引ける）。⚠ 面積 0 のリングは
