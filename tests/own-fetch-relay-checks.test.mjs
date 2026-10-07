@@ -33,6 +33,7 @@ import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parse } from 'acorn';
+import { bindProgram } from './helpers/js-bindings.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SUPA = 'https://sb.test';
@@ -98,10 +99,18 @@ function routeOf(url) {
 
 /* ══ DISCOVERY ══════════════════════════════════════════════════════════════════════════════
    Every call that hands a URL to the page's relays, from the source. The entry points are what
-   js/proxy-fetch.js exports (read from the module, not typed here); a function that passes one of
-   its own parameters to an entry point becomes one too (to a fixpoint, across files, because
-   `_fetchJSON` is made in one file and called in three). A function whose body builds
-   `/functions/v1/<fn>?` is a relay builder for <fn> (js/world-packs.js's `relay`). */
+   js/proxy-fetch.js exports (the NAMES read from the module, not typed here; each resolved to the
+   function it is bound to); a function that passes one of its own parameters to an entry point
+   becomes one too (to a fixpoint, across files, because `_fetchJSON` is made in one file and called
+   in four). A function whose body builds `/functions/v1/<fn>?` is a relay builder for <fn>
+   (js/world-packs.js's `relay`).
+
+   ⚠ (relay-entry-by-binding) An entry is a FUNCTION, and a call reaches it when its callee is BOUND to
+   it (tests/helpers/js-bindings.mjs: lexical scope, the import edge, an object literal's property, a
+   parameter's arguments) — never because the callee is SPELLED like it. Matching by the spelling made
+   one function named `indexOf` in js/where-when.js turn every `x.indexOf(…)` in js/ into a relay
+   call: ENTRIES 460 → 764 and a CI shard past an hour (PR #1029). On main the spelling had already
+   promoted `set`, `every`, `add`, `push` and `apply` (460 entries; by binding, 26). */
 function jsFilesUnder(dir) {
   const out = [];
   for (const e of readdirSync(join(ROOT, dir), { withFileTypes: true })) {
@@ -110,8 +119,7 @@ function jsFilesUnder(dir) {
   }
   return out;
 }
-const FILES = jsFilesUnder('js').map((f) => {
-  const src = readFileSync(join(ROOT, f), 'utf8');
+function parseFile(f, src) {
   let ast = null;
   for (const sourceType of ['module', 'script']) {
     try { ast = parse(src, { ecmaVersion: 'latest', sourceType, allowHashBang: true, allowReturnOutsideFunction: true, locations: true }); break; } catch (_) { /* try the other */ }
@@ -129,7 +137,8 @@ const FILES = jsFilesUnder('js').map((f) => {
     }
   })(ast, null);
   return { f, ast };
-});
+}
+const FILES = jsFilesUnder('js').map((f) => parseFile(f, readFileSync(join(ROOT, f), 'utf8')));
 function each(node, fn) {
   (function go(n) {
     if (!n || typeof n.type !== 'string') return;
@@ -148,6 +157,8 @@ function fnName(f) {
   const p = f.parent;
   if (p && p.type === 'VariableDeclarator' && p.id.type === 'Identifier') return p.id.name;
   if (p && p.type === 'AssignmentExpression' && p.left.type === 'Identifier') return p.left.name;
+  if (p && p.type === 'AssignmentExpression' && p.left.type === 'MemberExpression' && !p.left.computed) return p.left.property.name;
+  if (p && p.type === 'Property' && p.value === f && !p.computed) return p.key.name || String(p.key.value);
   return null;
 }
 const directOf = (call) => {
@@ -155,37 +166,79 @@ const directOf = (call) => {
   return !!(o && o.type === 'ObjectExpression' && o.properties.some((p) => p.key && (p.key.name === 'direct' || p.key.value === 'direct') && p.value && p.value.type === 'Literal' && p.value.value === true));
 };
 
-/* entry name → { direct }  (direct: the caller also asks the host itself, so a URL with no relay is not a defect) */
-const ENTRIES = new Map(Object.keys(proxyFetch).map((k) => [k, { direct: k !== 'fetchViaProxy' }]));
-for (let grew = true; grew;) {
-  grew = false;
-  for (const { ast } of FILES) {
+/* the discovery, as a function of the tree, so a check can run it again over a MUTATED tree */
+function discover(files) {
+  const P = bindProgram(files);
+  const fileOfProgram = new Map(files.map((x) => [x.ast, x.f]));
+  const fileOf = (n) => { while (n.parent) n = n.parent; return fileOfProgram.get(n); };
+  const where = (fn) => fileOf(fn) + ':' + fn.loc.start.line;
+  /* entry function → { name, at, direct, index }   index: which argument is the URL
+     (direct: the caller also asks the host itself, so a URL with no relay is not a defect) */
+  const ENTRIES = new Map();
+  const work = [];
+  for (const k of Object.keys(proxyFetch)) {
+    const fns = P.exportValues('js/proxy-fetch.js', k).filter(P.isFn);
+    assert.equal(fns.length, 1, 'js/proxy-fetch.js exports ' + k + ' as one function the resolver can see');
+    ENTRIES.set(fns[0], { name: k, at: where(fns[0]), direct: k !== 'fetchViaProxy', index: 0 });
+    work.push(fns[0]);
+  }
+  while (work.length) {
+    const e = work.shift(), E = ENTRIES.get(e);
+    for (const c of P.callSitesOf(e)) {
+      const a = c.arguments[E.index];
+      if (!a || a.type !== 'Identifier') continue;
+      /* the function that OWNS the name as a parameter (a Promise executor or a callback in between does not) */
+      const r = P.lookup(a);
+      if (!r || r.kind !== 'param' || r.path.length || ENTRIES.has(r.fn)) continue;
+      /* a function nobody is seen calling (a `.map` callback: `urls.map(u => fetchViaProxy(u))`) stays
+         a caller — promoting it would drop this call as a "definition" and find no call of its own */
+      if (!P.callSitesOf(r.fn).length) continue;
+      ENTRIES.set(r.fn, { name: fnName(r.fn) || '(anonymous)', at: where(r.fn), direct: E.direct || directOf(c), index: r.index });
+      work.push(r.fn);
+    }
+  }
+  /* relay builders: a function whose own body names /functions/v1/<fn>? */
+  const BUILDERS = new Map();
+  for (const { ast } of files) {
     each(ast, (n) => {
-      if (n.type !== 'CallExpression') return;
-      const name = calleeName(n.callee);
-      if (!name || !ENTRIES.has(name) || !n.arguments[0] || n.arguments[0].type !== 'Identifier') return;
-      /* the nearest enclosing function that OWNS the name as a parameter (a Promise executor or a
-         callback in between does not) */
-      let f = n.parent;
-      while (f && !(isFn(f) && f.params.some((p) => p.type === 'Identifier' && p.name === n.arguments[0].name))) f = f.parent;
-      if (!f) return;
-      const w = fnName(f);
-      if (!w || ENTRIES.has(w)) return;
-      ENTRIES.set(w, { direct: ENTRIES.get(name).direct || directOf(n) });
-      grew = true;
+      if (!isFn(n) || ENTRIES.has(n)) return;
+      let fn = null;
+      each(n.body, (m) => { if (m.type === 'Literal' && typeof m.value === 'string') { const x = /\/functions\/v1\/([a-z0-9-]+)\?$/.exec(m.value); if (x) fn = x[1]; } });
+      if (fn) BUILDERS.set(n, { name: fnName(n) || '(anonymous)', relay: fn });
     });
   }
-}
-/* relay builders: a function whose own body names /functions/v1/<fn>? */
-const BUILDERS = new Map();
-for (const { ast } of FILES) {
-  each(ast, (n) => {
-    if (!isFn(n)) return;
-    let fn = null;
-    each(n.body, (m) => { if (m.type === 'Literal' && typeof m.value === 'string') { const x = /\/functions\/v1\/([a-z0-9-]+)\?$/.exec(m.value); if (x) fn = x[1]; } });
-    const w = fnName(n);
-    if (fn && w && !ENTRIES.has(w)) BUILDERS.set(w, fn);
-  });
+  /* the discovered calls: { site, raw (with holes), relay?: fn (builder calls), entry, direct } */
+  const calls = new Set();
+  for (const fn of [...ENTRIES.keys(), ...BUILDERS.keys()]) for (const c of P.callSitesOf(fn)) calls.add(c);
+  const ordered = [...calls].sort((a, b) => (a.file < b.file ? -1 : a.file > b.file ? 1 : a.start - b.start));
+  const SITES = [];
+  for (const n of ordered) {
+    const site = n.file + ':' + n.loc.start.line;
+    const targets = P.fnsOf(n);
+    const e = targets.find((t) => ENTRIES.has(t));
+    if (e) {
+      const E = ENTRIES.get(e);
+      const arg = n.arguments[E.index];
+      if (!arg) continue;
+      /* a call INSIDE an entry's own definition that forwards its parameter is the definition, not a caller */
+      if (arg.type === 'Identifier') { const r = P.lookup(arg); if (r && r.kind === 'param' && ENTRIES.has(r.fn)) continue; }
+      const direct = E.direct || directOf(n);
+      const o2 = n.arguments[E.index + 1];
+      const asProp = o2 && o2.type === 'ObjectExpression' && o2.properties.find((p) => p.key && (p.key.name === 'as' || p.key.value === 'as'));
+      const as = asProp && asProp.value.type === 'Literal' ? asProp.value.value : null;
+      for (const v of strs(ev(arg))) SITES.push({ site, via: E.name, entry: e, raw: v, direct, as });
+      continue;
+    }
+    const b = targets.find((t) => BUILDERS.has(t));
+    if (b && n.arguments[0]) {
+      const B = BUILDERS.get(b);
+      for (const v of strs(ev(n.arguments[0]))) {
+        const m = /(?:^|&)u=([^&]*)/.exec(v);
+        if (m) SITES.push({ site, via: B.name, raw: decodeURIComponent(m[1].split(HOLE).join(HOLE)), relay: B.relay, direct: false });
+      }
+    }
+  }
+  return { P, ENTRIES, BUILDERS, SITES };
 }
 
 /* ── partial evaluation: an expression → the strings it can be, HOLE where it cannot be known ── */
@@ -207,6 +260,19 @@ function resolve(node, name, env, depth) {
     if (d) {
       if (d.type === 'FunctionDeclaration') return [{ fn: d }];
       if (d.init && isFn(d.init)) return [{ fn: d.init }];
+      /* an array this scope fills: `let base; … base = […]; … base.push(u)` (js/news-feed.js feedUrls).
+         (relay-entry-by-binding) These URLs used to be found only because `push` had been promoted to a
+         relay entry by its spelling — every `base.push(url)` was taken for a relay call. They DO reach a
+         relay, through `feedUrls().map(u => HOST.fetchViaProxy(u))`; this follows that flow instead. */
+      if (!d.init || d.init.type === 'ArrayExpression') {
+        const elements = d.init ? [...d.init.elements] : [];
+        each(p, (m) => {
+          if (m.type === 'AssignmentExpression' && m.operator === '=' && m.left.type === 'Identifier' && m.left.name === name && m.right.type === 'ArrayExpression') elements.push(...m.right.elements);
+          if (m.type === 'CallExpression' && m.callee.type === 'MemberExpression' && !m.callee.computed && m.callee.property.name === 'push'
+              && m.callee.object.type === 'Identifier' && m.callee.object.name === name) elements.push(...m.arguments);
+        });
+        if (elements.length) return [{ arr: { elements } }];
+      }
       return d.init ? ev(d.init, null, depth + 1) : [HOLE];
     }
     if (isFn(p)) {
@@ -292,34 +358,7 @@ function fillsOf(s) {
   return [...new Set(out)];
 }
 
-/* the discovered calls: { site, raw (with holes), relay?: fn (builder calls), direct } */
-const SITES = [];
-for (const { f, ast } of FILES) {
-  each(ast, (n) => {
-    if (n.type !== 'CallExpression' || !n.arguments[0]) return;
-    const name = calleeName(n.callee);
-    const site = f + ':' + n.loc.start.line;
-    if (name && ENTRIES.has(name)) {
-      /* a call INSIDE an entry's own definition that forwards its parameter is the definition, not a caller */
-      if (n.arguments[0].type === 'Identifier') {
-        let q = n.parent; while (q && !(isFn(q) && q.params.some((p) => p.type === 'Identifier' && p.name === n.arguments[0].name))) q = q.parent;
-        if (q && ENTRIES.has(fnName(q) || '')) return;
-      }
-      const direct = ENTRIES.get(name).direct || directOf(n);
-      const o2 = n.arguments[1];
-      const asProp = o2 && o2.type === 'ObjectExpression' && o2.properties.find((p) => p.key && (p.key.name === 'as' || p.key.value === 'as'));
-      const as = asProp && asProp.value.type === 'Literal' ? asProp.value.value : null;
-      for (const v of strs(ev(n.arguments[0]))) SITES.push({ site, via: name, raw: v, direct, as });
-      return;
-    }
-    if (name && BUILDERS.has(name)) {
-      for (const v of strs(ev(n.arguments[0]))) {
-        const m = /(?:^|&)u=([^&]*)/.exec(v);
-        if (m) SITES.push({ site, via: name, raw: decodeURIComponent(m[1].split(HOLE).join(HOLE)), relay: BUILDERS.get(name), direct: false });
-      }
-    }
-  });
-}
+const { ENTRIES, SITES } = discover(FILES);
 
 /* route every discovered URL; group the ones that land on a relay by relay */
 const RESOLVED = SITES.filter((s) => /^https?:\/\//.test(s.raw));
@@ -335,12 +374,12 @@ for (const s of RESOLVED) {
   }
   if (!fn) { if (!s.direct) UNROUTED.push(s); continue; }
   if (!PLAN.has(fn)) PLAN.set(fn, []);
-  PLAN.get(fn).push({ site: s.site, via: s.via, raw: s.raw.split(HOLE).join('…'), concrete: !s.raw.includes(HOLE), candidates: cands.slice(0, 24) });
+  PLAN.get(fn).push({ site: s.site, via: s.via, entry: !s.relay, raw: s.raw.split(HOLE).join('…'), concrete: !s.raw.includes(HOLE), candidates: cands.slice(0, 24) });
 }
 
 /* ══ ① the relay forwards what its client sends ══════════════════════════════════════════════ */
 test('own-fetch-relay ① discovery sees the page\'s calls into its relays (it is not vacuously green)', () => {
-  assert.ok(ENTRIES.size >= 6, 'entry points found: ' + [...ENTRIES.keys()].join(', '));
+  assert.ok(ENTRIES.size >= 6, 'entry points found: ' + [...ENTRIES.values()].map((e) => e.name).join(', '));
   /* which functions take a caller's URL in `?u=` is read from the functions directory (the one
      place this file reads source as text — it decides what must be COVERED, not what is allowed):
      each of them must have at least one caller found here, or the check below says nothing about it. */
@@ -374,6 +413,88 @@ test('own-fetch-relay ① every URL the page sends a relay of ours is one that r
     }
   }
   assert.deepEqual(problems, [], problems.join('\n'));
+});
+
+/* ══ ⓪ (relay-entry-by-binding) an entry is the function bound to the router, not a name ═══════
+   WITNESSES were read by hand (2026-10-07): each function below hands the URL it was given to the
+   router, and each is reached by a different kind of binding — that is why these five. If the
+   resolver stops seeing one of them, ① is checking less than it says; the mutation check below shows
+   this list is not satisfied by anything but the relay call itself. */
+const WITNESSES = [
+  { file: 'js/atlas-sources.js', fn: '_fetchText', how: 'calls the imported fetchViaProxy(url, …) directly' },
+  { file: 'js/atlas-deadlines.js', fn: '_fetchJSON', how: 'the function makeFetchJSON() RETURNS; its callers hold it through CTX._fetchJSON / K._fetchJSON' },
+  { file: 'js/companies.js', fn: '_fjson', how: 'HOST.fetchViaProxy(u, …) — the host js/app-body.js passes in, whose getter returns the import' },
+  { file: 'js/compare.js', fn: 'cmpRead', how: 'clockFor(u) — the router decides the clock from the URL' },
+  { file: 'js/wx-source.js', fn: 'guardedJSON', how: 'published as window.IntMapWx.guardedJSON and called through the global' },
+];
+/* calls that reach the router only through an injected host or a lazily imported module */
+const SITE_WITNESSES = [
+  { file: 'js/atlas-sources.js', via: '_fetchJSON', how: 'CTX._fetchJSON — makeAtlasSources(HOST, { _fetchJSON }) in js/atlas-console.js' },
+  { file: 'js/news-feed.js', via: 'fetchViaProxy', how: 'HOST.fetchViaProxy — newsFeed(IM_HOST) in js/app-body.js' },
+  { file: 'js/satellites-live.js', via: 'fetchViaProxy', how: "HOST.fetchViaProxy — mounted by js/lazy-modules.js after import('./satellites-live.js')" },
+];
+function missingWitnesses(d) {
+  const entries = [...d.ENTRIES.values()];
+  const out = [];
+  for (const w of WITNESSES) if (!entries.some((e) => e.name === w.fn && e.at.startsWith(w.file + ':'))) out.push(`entry ${w.fn} (${w.file}): ${w.how}`);
+  for (const w of SITE_WITNESSES) if (!d.SITES.some((s) => s.via === w.via && s.site.startsWith(w.file + ':') && /^https:\/\//.test(s.raw))) out.push(`a call in ${w.file} via ${w.via}: ${w.how}`);
+  return out;
+}
+
+test('own-fetch-relay ⓪ the hand-checked entries and injected calls are found by binding', () => {
+  assert.deepEqual(missingWitnesses({ ENTRIES, SITES }), []);
+});
+
+test('own-fetch-relay ⓪ mutation: a witness that stops calling the router stops being found, and ⓪ fails', () => {
+  const swap = (f, from, to) => {
+    const src = readFileSync(join(ROOT, f), 'utf8');
+    assert.ok(src.includes(from), f + ' still has the text this mutation edits: ' + from);
+    return FILES.map((x) => (x.f === f ? parseFile(f, src.replace(from, to)) : x));
+  };
+  /* ⑴ the relay call taken out of _fetchText */
+  const m1 = discover(swap('js/atlas-sources.js', 'return fetchViaProxy(url,', 'return fetch(url,'));
+  assert.ok(![...m1.ENTRIES.values()].some((e) => e.name === '_fetchText'), '_fetchText is no longer an entry');
+  assert.ok(missingWitnesses(m1).some((x) => x.startsWith('entry _fetchText')), 'and ⓪ names it');
+  /* ⑵ the host stops handing out the router: every HOST.fetchViaProxy call must vanish with it */
+  const m2 = discover(swap('js/app-body.js', 'get fetchViaProxy(){ return fetchViaProxy; },', ''));
+  const hostCalls = m2.SITES.filter((s) => /js\/(news-feed|satellites-live|stats-compare|companies)\.js:/.test(s.site) && s.via === 'fetchViaProxy');
+  assert.deepEqual(hostCalls.map((s) => s.site), [], 'a HOST.fetchViaProxy call is found only through the host\'s binding');
+  const named = missingWitnesses(m2);
+  assert.ok(named.some((x) => x.startsWith('entry _fjson')) && named.some((x) => x.includes('js/satellites-live.js')), named.join('\n'));
+});
+
+test('own-fetch-relay ⓪ a function SPELLED like a built-in method makes no other call of that spelling a relay call (PR #1029)', () => {
+  /* the shape that ran CI past an hour: js/where-when.js had a function named indexOf that handed its
+     first parameter on. Here it reaches the router; the array, Map and string calls of the same names
+     must not become relay calls, and the imported alias and the namespace member must. */
+  const fixture = [
+    FILES.find((x) => x.f === 'js/proxy-fetch.js'),
+    parseFile('js/__fixture-a.js', `import { fetchViaProxy } from './proxy-fetch.js';
+      export function indexOf(u) { return fetchViaProxy(u); }
+      export function set(k, u) { return indexOf(u); }`),
+    parseFile('js/__fixture-b.js', `import { indexOf as find, set as put } from './__fixture-a.js';
+      import * as A from './__fixture-a.js';
+      const list = ['https://never.example/a'];
+      list.indexOf('https://never.example/b');
+      new Map().set('k', 'https://never.example/c');
+      'x'.indexOf('https://never.example/d');
+      function indexOf(u) { return u; }
+      indexOf('https://never.example/e');
+      find('https://www.imf.org/external/datamapper/api/v1/NGDPD');
+      put('k', 'https://www.imf.org/external/datamapper/api/v1/PPPGDP');
+      A.indexOf('https://www.imf.org/external/datamapper/api/v1/LP');`),
+  ];
+  const d = discover(fixture);
+  const names = [...d.ENTRIES.values()].map((e) => e.name + '@' + e.at.split(':')[0]);
+  assert.ok(names.includes('indexOf@js/__fixture-a.js') && names.includes('set@js/__fixture-a.js'), names.join(', '));
+  const raws = d.SITES.map((s) => s.raw);
+  assert.deepEqual(raws.filter((r) => /never\.example/.test(r)), [], 'no call is a relay call because of its spelling');
+  for (const k of ['NGDPD', 'PPPGDP', 'LP']) assert.ok(raws.some((r) => r.endsWith('/' + k)), k + ' — reached through an alias / a namespace');
+  /* the fixture can tell the two methods apart: matching by the callee's spelling takes the never.example calls */
+  const spelled = new Set([...d.ENTRIES.values()].map((e) => e.name));
+  let byName = 0;
+  for (const { ast } of fixture.slice(1)) each(ast, (n) => { if (n.type === 'CallExpression' && spelled.has(calleeName(n.callee) || '') && n.arguments.some((a) => a.type === 'Literal' && /never\.example/.test(String(a.value)))) byName++; });
+  assert.ok(byName >= 4, 'the spelling would have taken ' + byName + ' of them');
 });
 
 /* ══ ② fetch-relay: one list, every caller covered, every entry has a caller ═════════════════ */
@@ -654,7 +775,7 @@ test('own-fetch-relay ⑤ scripts/probe-relay-ladder.mjs has a routed target for
   const probed = new Set(targets.map((t) => t.relay));
   /* the relays js/proxy-fetch.js routes to (a relay a module builds for itself, like alerts-relay in
      js/world-packs.js, is not on the router and is not what this monitor replaced) */
-  const routedByTheRouter = [...PLAN].filter(([, sites]) => sites.some((x) => ENTRIES.has(x.via))).map(([fn]) => fn);
+  const routedByTheRouter = [...PLAN].filter(([, sites]) => sites.some((x) => x.entry)).map(([fn]) => fn);
   assert.ok(routedByTheRouter.length >= 5, routedByTheRouter.join(', '));
   const missing = routedByTheRouter.filter((fn) => !probed.has(fn));
   assert.deepEqual(missing, [], 'relays the page routes to that the monitor never asks');

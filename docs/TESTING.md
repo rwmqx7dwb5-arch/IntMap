@@ -4109,6 +4109,7 @@ only one question; it now answers each of theirs as an option, and `npm run chec
 | HTML markup (`<!-- -->` only) | `codeOnly(html, { lang: 'html' })` |
 | SQL (`--` and block comments, stopping at `'…'`) | `codeOnly(sql, { lang: 'sql' })` |
 | An AST | `parseSource(src)` / `walkSource(src, visitors)` from `tests/helpers/ast.mjs` |
+| Which functions a call in js/ can reach — by what its callee is BOUND to (scope, `import`, an object literal's property, an injected parameter), never by its spelling | `bindProgram(files).fnsOf(call)` from `tests/helpers/js-bindings.mjs` |
 
 ⚠ **Pick the `lang` from what the input IS, not from the helper's name.** Five files handed
 `css/intmap.css` to a JS comment reader — four through a local copy, two through `codeOnly` itself;
