@@ -54,7 +54,7 @@ export function printable(rec) {
     const nm = E.unnamed ? '(unnamed shape)' : E.withheld ? '(withheld: ' + E.withheld.name + ')' : E.labels.map((x) => x.label).join(' → ') || E.name;
     lines.push(`  ${k2s(E.from.k)} [${E.from.edge}${E.from.by ? ':' + E.from.by : ''}${E.from.sheet != null ? ':' + E.from.sheet : ''}] – ${k2s(E.to.k)} [${E.to.edge}${E.to.by ? ':' + E.to.by : ''}${E.to.sheet != null ? ':' + E.to.sheet : ''}]  ${nm}  {${E.tiers.join(',')}}${E.ids.map((x) => ' ' + JSON.stringify(x.id)).join('')}${E.life ? ' life ' + E.life.join('..') : ''}${E.realm ? ' REALM' : ''}`);
   }
-  for (const g of rec.nation.gaps) lines.push(`  GAP ${k2s(g.from)} – ${k2s(g.to)}`);
+  for (const g of rec.nation.gaps) lines.push(`  GAP ${k2s(g.from)} – ${k2s(g.to)}${g.toNow ? " (today)" : ""}`);
   if (rec.nation.missing.length) lines.push('  MISSING ' + JSON.stringify(rec.nation.missing));
   lines.push('  -- first-level --');
   for (const E of rec.admin.entries || []) lines.push(`  ${k2s(E.from.k)} [${E.from.edge}${E.from.dates && E.from.dates.raw ? ' raw ' + E.from.dates.raw : ''}] – ${k2s(E.to.k)} [${E.to.edge}${E.to.dates && E.to.dates.raw ? ' raw ' + E.to.dates.raw : ''}]  ${E.label}  ${E.file} ${JSON.stringify(E.id)}`);

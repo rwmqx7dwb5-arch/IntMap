@@ -111,6 +111,13 @@ export function compose(raw) {
     if (reach != null && p.s > reach) gaps.push({ from: reach, to: p.s });
     reach = reach == null ? p.e : Math.max(reach, p.e);
   }
+  /* (coast-snap-gaps) …and after the last: when the records go on past the last piece here (`top`, the first instant none of
+     them reaches) the years from that piece to today are a span no record covers too, and are listed as one — reported:
+     Sirkeci's timeline stopped at «Ottoman Empire – 1885» and said nothing of 1886 to today. A point the records cover to
+     their own end has no such row (after it no record of the composition speaks for any ground). `now` is today, given by
+     the caller (this function has no clock). */
+  const top = raw && raw.top, now = raw && raw.now;
+  if (reach != null && top != null && reach < top) gaps.push({ from: reach, to: now != null && now > reach ? now : top, toNow: now != null && now > reach });
   return { entries, gaps, records: (raw && raw.records) || [], missing: (raw && raw.missing) || [], order };
 }
 
@@ -154,11 +161,14 @@ export async function placeHistory(pt) {
   ]);
   const out = { at: { lng, lat } };   /* no clock of its own: the card's record carries `asOf` */
   if (nat.e) out.nation = { status: 'unavailable', reason: String(nat.e.reason || 'failed'), entries: [], gaps: [], records: [], missing: [] };
-  else { const c = compose(nat.v); out.nation = Object.assign({ status: (c.entries.length ? 'ok' : (c.records.length ? 'none' : 'unavailable')), reason: c.records.length ? null : 'no-record-readable' }, c); }
+  else { const c = compose(Object.assign({}, nat.v, { now: today() })); out.nation = Object.assign({ status: (c.entries.length ? 'ok' : (c.records.length ? 'none' : 'unavailable')), reason: c.records.length ? null : 'no-record-readable' }, c); }
   if (adm.e) out.admin = { status: 'unavailable', reason: String(adm.e.reason || 'failed'), entries: [] };
   else { const a = composeAdmin(adm.v); out.admin = { status: a.length ? 'ok' : 'none', entries: a, gaps: a.gaps || [] }; }
   return out;
 }
+
+/* today, as YYYYMMDD — where the last «no record» span of a timeline runs to (the card's own instant, not the map clock's) */
+function today() { const d = new Date(); return ymd(d.getFullYear(), d.getMonth() + 1, d.getDate()); }
 
 /** the entry (national) in force at year Y (astronomical), or null — what Atlas answers «who held this in 1600» with */
 export function entriesAt(rec, y) {
@@ -185,7 +195,7 @@ export function adminBrief(E) {
 export function forAtlas(rec) {
   const N = rec.nation || {}, A = rec.admin || {};
   return { at: rec.at, datesAre: 'astronomical YYYY-MM-DD; "to" is the first day no longer in force',
-    nation: { status: N.status, reason: N.reason || null, entries: (N.entries || []).map(entryBrief), gaps: (N.gaps || []).map((g) => ({ from: isoOf(g.from), to: isoOf(g.to) })), records: N.records || [], missing: N.missing || [] },
+    nation: { status: N.status, reason: N.reason || null, entries: (N.entries || []).map(entryBrief), gaps: (N.gaps || []).map((g) => Object.assign({ from: isoOf(g.from), to: isoOf(g.to) }, g.toNow ? { toToday: true } : {})), records: N.records || [], missing: N.missing || [] },
     admin: { status: A.status, reason: A.reason || null, entries: (A.entries || []).map(adminBrief), gaps: (A.gaps || []).map((g) => ({ from: isoOf(g.from), to: isoOf(g.to) })) } };
 }
 
@@ -236,6 +246,8 @@ function edgeText(side, x, W) {
       const rn = recName(x.by);
       return side === 'from' ? L(at + ' (before this, ' + rn + ')', at + '（それ以前は ' + rn + ' の記録）') : L(at + ' (after this, ' + rn + ')', at + '（以降は ' + rn + ' の記録）');
     }
+    /* (coast-snap-gaps) the strip between the record's coast and the real coastline is judged again where the rows around it change */
+    case 'snap': return side === 'from' ? L(at + ' (from here the land up to the real coastline is drawn with it)', at + '（ここから本物の海岸線までの陸地もこの政体として描く）') : L(at + ' (until here the land up to the real coastline is drawn with it)', at + '（ここまで本物の海岸線までの陸地もこの政体として描く）');
     case 'sheet': return x.sheet != null ? L(recName('sheet') + ' map of ' + W.yearT(x.sheet), recName('sheet') + ' の ' + W.yearT(x.sheet) + ' の図') : at;
     default: return at;
   }
@@ -282,7 +294,7 @@ export function historyMarkup(rec, lang, opts) {
   opts = opts || {};
   const W = words(lang, rec && rec.nation && rec.nation.records), L = W.L;
   const row = (hn, head, tail, cls, dim) => html`<div class="${'ph-row ' + (cls || '')}"><span class="${dim ? 'ph-dot ph-dim' : 'ph-dot'}"></span><span class="ph-main">${opts.inert || !hn ? html`<span class="ph-head">${head}</span>` : html`<button type="button" class="ph-go" data-hn="${hn}">${head}</button>`}${tail}</span></div>`;
-  const gapRow = (g, what) => row(null, html`<span class="ph-n">${what}</span><span class="ph-when">${stated(g.from, 'ohm', W) + ' – ' + lastOf(g.to, 'ohm', W)}</span>`, '', 'ph-gap', true);
+  const gapRow = (g, what) => row(null, html`<span class="ph-n">${what}</span><span class="ph-when">${stated(g.from, 'ohm', W) + ' – ' + (g.toNow ? L('today', '今日') : lastOf(g.to, 'ohm', W))}</span>`, '', 'ph-gap', true);
   const N = rec && rec.nation;
   if (!N) return html`<div class="hn-why" data-pending>${L('Reading the historical records…', '歴史の記録を読み込み中…')}</div>`;
   const parts = [];

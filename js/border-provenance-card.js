@@ -72,6 +72,8 @@ export const BorderProvenanceCard = (function () {
       case 'sheet': return T('historical-basemaps sheet', 'historical-basemaps の年代図');
       case 'sheet-rest': return T('historical-basemaps sheet (where the dated records are silent)', 'historical-basemaps の年代図（日付付きの記録が述べない土地）');
       case 'ohm-admin': return T('OpenHistoricalMap subdivision relation', 'OpenHistoricalMap の地方区分リレーション');
+      /* (coast-snap-gaps) a snap piece whose parent row is not at hand (with it, the side is the parent's record) */
+      case 'coast-snap': return T('IntMap: the land between a record’s coast and the real coastline (Natural Earth 1:10m), drawn with the one polity that bounds it', 'IntMap: 記録の海岸と本物の海岸線（Natural Earth 1:10m）のあいだの陸。接する唯一の政体として描く');
       case 'gap': return side.gap && side.gap.reconstructed ? T('IntMap reconstruction from cited facts', 'IntMap による復元（出典付きの事実から）')
         : side.gap && side.gap.derived ? T('IntMap derived record', 'IntMap が組み立てた記録') : T('surveyed atlas record', '出版された地図帳の記録');
       default: return T('record not identified', '記録を特定できない');
@@ -209,6 +211,9 @@ export const BorderProvenanceCard = (function () {
     if (side.sheet != null) row(T('Dates', '日付'), T('none — this shape belongs to the sheet for ' + w.year(side.sheet) + '; the map shows the sheet nearest to the date', 'なし — この形は ' + w.year(side.sheet) + ' の年代図のもので、地図はその日付に最も近い年代図を示している'));
     else if (side.start) { row(T('From', 'から'), edgeText(side, 'start', ixr, w)); row(T('Until', 'まで'), edgeText(side, 'end', ixr, w)); }
     const geo = geometryLines(side, set, w); if (geo.length) row(T('Geometry', '幾何'), br(geo));
+    /* (coast-snap-gaps) the press fell on the land between this row's copy of the coast and the real coastline */
+    if (side.coastSnap) row(T('Coast', '海岸'), T('matched to the real coastline (Natural Earth 1:10m) — ' + side.coastSnap.file + ' row ' + side.coastSnap.i + (side.coastSnap.start ? ', ' + w.day(side.coastSnap.start) + ' – ' + w.day(side.coastSnap.end) + ' (exclusive)' : ''),
+      '本物の海岸線（Natural Earth 1:10m）に合わせた — ' + side.coastSnap.file + ' の行 ' + side.coastSnap.i + (side.coastSnap.start ? '、' + w.day(side.coastSnap.start) + ' – ' + w.day(side.coastSnap.end) + '（終わりの日は含まない）' : '')));
     const cs = courseHtml(side, w); if (cs.length) row(T('Reviewed', '査読'), br(cs));
     if (side.notes && side.notes.length) row(T('Notes', '註'), br(side.notes.filter(Boolean)));
     if ((side.rec === 'ohm' || side.rec === 'ohm-late') && ixr && ixr.row && ixr.row[8]) {

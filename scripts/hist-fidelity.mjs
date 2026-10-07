@@ -272,10 +272,20 @@ function records() {
   const opt = (rel) => (fs.existsSync(path.join(ROOT, rel)) ? load(rel) : null);
   _rec = { cs, hb, er, csLo, csHi, hbLo: hb.window[0], hbHi: hb.window[1], cl: opt('data/hist-clio.js'), rs: opt('data/hist-eras-rest.js'),
     /* (hist-colonial-era-borders) OpenHistoricalMap on the ground CShapes leaves, from 1886 */
-    ol: opt('data/hist-borders-late.js') };
+    ol: opt('data/hist-borders-late.js'),
+    /* (coast-snap-gaps) the land a record's coast left out, drawn under the one polity that bounds it (js/time-borders.js `_snapsFor`) */
+    sn: opt('data/hist-coast-snap.js') };
   return _rec;
 }
 const resolve = (polys, rings) => polys.map((poly) => poly.map((r) => rings[r]));
+/* (coast-snap-gaps) the snap pieces in force on 1 July of `y` — a piece is in force only while its parent is drawn, and a
+   sheet's piece only with its own sheet (`sheetY`, the sheet this measure draws that year) */
+function snapsAt(R, y, sheetY) {
+  const out = []; if (!R.sn) return out;
+  for (const f of R.sn.feats) { if (!inForce(f, y, 7, 1)) continue; const m = f[9] || {}; if (m.t === 'sheet' && m.y !== sheetY) continue;
+    out.push({ nm: typeof f[0] === 'string' ? f[0] : ((f[0] && f[0].en) || '?'), polys: resolve(f[8], R.sn.rings), rec: 'coast-snap' }); }
+  return out;
+}
 export function politiesAt(y, opt = {}) {
   /* `opt.band` asks for the chain as it was before the composition (one record per band) — the comparison the
      checks make, never what the gate records. `opt.late === false` leaves out OpenHistoricalMap on CShapes' days
@@ -289,6 +299,7 @@ export function politiesAt(y, opt = {}) {
     if (ol) for (const f of ol.feats) if (inForce(f, y, 7, 1)) out.push({ nm: f[0].en, polys: resolve(f[8], ol.rings), rec: 'ohm-late' });
     /* (hist-coverage-expansion) …and Cliopatria on the ground CShapes leaves (js/time-borders.js csComposite) */
     if (cl) for (const f of cl.feats) if (!(f[9] && f[9].r) && inForce(f, y, 7, 1)) out.push({ nm: f[0].en, polys: resolve(f[8], cl.rings), rec: 'clio' });
+    if (cl && !opt.band && opt.late !== false) out.push(...snapsAt(R, y, null));
     return out;
   }
   /* (hist-coverage-expansion) below CShapes the page draws a COMPOSITION — OHM in its band, Cliopatria, and
@@ -301,6 +312,7 @@ export function politiesAt(y, opt = {}) {
     let sb = null;
     for (const s of rs.snaps) if (s.y <= y && (!sb || s.y > sb.y)) sb = s;
     if (sb) for (const f of sb.feats) out.push({ nm: (f[0] && f[0].en) || '?', polys: resolve(f[2], rs.rings), rec: 'sheet ' + sb.y });
+    out.push(...snapsAt(R, y, sb ? sb.y : null));
     return out;
   }
   if (y >= hbLo && y <= hbHi) {
