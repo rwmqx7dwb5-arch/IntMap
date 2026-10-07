@@ -1431,6 +1431,10 @@ Atlas の語（「平均寿命」）は組の**両方の行**に届く: 点け�
   `onLayer` に `ownership:'fallback'` を宣言して登録する。地名の所有権判定は
   `clickLayers({ownersOnly:true})` を使い、説明用の面と地名が互いに譲って両方無反応になることを防ぐ。
   面のクリック自体は保持し、他の対象が取らなかったときに出典の形を説明する。
+- **線（`imtb-line`・`imta*-vt-line`・`imta*-line`・`imta-gap-line`・今日の `borders-only-line`）を押すと
+  「この線の根拠」**（`js/border-provenance.js`）。線は地図全体の 1 本のリスナがパディング付きで当て、独占の持ち主
+  （地名・昔の国名）が同じ点にあれば譲る。押した点に線があれば無名形状の説明は線に譲る。線は登録されても
+  独占の持ち主にはならないので、地名の側は線に譲らない。正本は `Architecture.md` §7.4。
 - **独立した歴史地名は `imhp-lbl` / `imhp-src`。** `js/hist-places.js` が Pleiades の代表点を
   GeoJSON のシンボルとして描く。データの条件と精度の契約は `Architecture.md` §7.4 が正本。
   `ofm-city` の表示状態・minzoom/maxzoom・配色を読み、文字の大きさは共通の都市用スケールを使う。

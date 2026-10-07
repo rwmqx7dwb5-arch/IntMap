@@ -849,6 +849,26 @@ Atlas の `research.related` / `research.impact` / 実世界オブジェクト�
   `clickLayers({ownersOnly:true})` は優先権を持つ登録を返す。無名歴史領域の説明はfallbackで、
   都市・地方区分・地理名のクリックを遮らない。同一レイヤーの別ハンドラの優先権は維持する。
   登録台帳はレンダラに依存しない `js/click-ownership.js` が持ち、adapterとcallbackを弱参照する。
+- **境界線を押すと「この線の根拠」が開く**（`js/border-provenance.js`・`js/border-provenance-card.js`）。
+  線を描く記録は自分を**読み手**として登録する（`registerReader`）——国境は `js/time-borders.js` の
+  `era-borders`（`imtb-line`）と `today-borders`（今日の `borders-only-line`）、地方区分は
+  `js/time-admin1.js` の `era-subdivisions`（ベクタタイル・束・継ぎ足しの記録の 3 本の線）。地図のクリックは
+  1 本のリスナが受け、**押した点と周囲 8 点**を覆う形を両側の記録として集める（環への距離ではない——
+  線は印・拡大時の精密な輪郭・査読済みの川や壁の経路で描き直されるので、環は線から離れうる）。
+  ⚠ **線はタップの最後の持ち主**：独占の持ち主（地名・歴史の国名・マーカー）が同じ点にあれば譲り、
+  地図全体で聞く持ち主は 1 マイクロタスク後に `clickClaimed` で聞く。測定などの道具・描画・比較の国選び・
+  孤立表示の最中は開かない。名前の無い形の説明（`imtb-fill`）は、押した点に線があれば線に譲る。
+  カードは形ごとに、記録・行・識別子（CShapes の gwcode、OHM のリレーション、Wikidata、Seshat ID）・
+  **各日付を誰が述べたか**（上流がそのまま／年だけ／ビルドが導いた理由／述べていない）・頂点の桁数と
+  簡略化の許容誤差・拡大時の輪郭の有無・査読済みの経路・上流自身の言葉（`typeNote`／`blankNote`）・
+  ライセンスを述べ、IntMap の復元なら**調書**を同じページで読む（`dossiers/` の `units` 形式と、
+  変更一覧の形式の両方）。最後に既存の「地図の誤り報告」を、記録の識別子を下書きして開く。
+  束が落としていた 3 つの事実——OHM のリレーション id とタグ原文、Cliopatria の上流行の年と Seshat ID、
+  継ぎ足しの記録の列 10〜12——は `scripts/build-border-provenance.mjs` が
+  `data/border-provenance-{ohm,clio,gaps}.json` に書き、**各行に束の行の指紋**（`rowKey`）を持たせる。
+  カードは指紋が一致する行だけを使い、作り直された束には「索引はこの行を記述していない」と述べる
+  （`--check` が出荷中の束との一致を測る）。索引は押したときに読む（起動では読まない）。Atlas からは
+  `time.borderSource`（地点・座標、または最後に押した線）。
 - 都市ポップアップの見出しは `IntMapHistCities.forFeature` で実地物の座標と名称を照合し、
   地図の年代・表示言語と同じ歴史名を併記する。現代名での境界照会とは分離し、
   位置を持たない地物や非有限座標をクリック位置で代用して歴史都市へ結び付けない。

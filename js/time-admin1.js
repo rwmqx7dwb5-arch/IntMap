@@ -119,6 +119,8 @@ import { IntMapBorderCoast, HIST_ADMIN_GAPS } from './border-coast.js';
 import { ADMIN1_COLOR } from './border-style.js';
 import { jsonWithin } from './fetch-deadline.js';
 import { clockFor } from './proxy-fetch.js';
+/* (border-provenance) a press on a subdivision line names the records on either side of it */
+import { registerReader, decimalsOf, rowKey, shapesAt } from './border-provenance.js';
 
 export function timeAdmin1(HOST) {
   const GE = () => IntMapGeoEngine;   /* the renderer, through the contract — never the raw handle */
@@ -1289,6 +1291,68 @@ export function timeAdmin1(HOST) {
       while (_fullGeom.size > 24) { const k = _fullGeom.keys().next().value; if (k === id) break; _fullGeom.delete(k); }
       return p;
     }
+
+    /* ══ (border-provenance) THE SUBDIVISION SIDE OF «WHERE THIS LINE COMES FROM» ═══════════════════════════
+       Three supplies draw a subdivision line — OpenHistoricalMap's own vector tiles (`vtLine`), the bundle's
+       outline when the tiles are measured absent (`line`), and the gap records' outline for units OHM holds no
+       relation for (`gapLine`). The tile feature states its own way id and date tags verbatim; the units on
+       either side state theirs through the row (column 10 is the relation id; a gap row's own keys come from
+       data/border-provenance-gaps.json, keyed by the row's fingerprint). The card owns the words. */
+    function _provSide(t, f) {
+      const p = (f && f.properties) || {}, d = t.data();
+      const side = { name: String(p.NAME || p.name || ''), rec: null, ids: [], notes: [], level: p._lvl == null ? null : p._lvl };
+      const r = d && d.feats && d.feats[p._ix];
+      if (!r) { side.unattributed = true; return side; }
+      side.recordName = r[0]; side.start = [r[2], r[3], r[4]]; side.end = [r[5], r[6], r[7]];
+      let dates = p.dates; if (typeof dates === 'string') { try { dates = JSON.parse(dates); } catch (_) { dates = null; } }
+      side.dates = dates || null; side.dateSemantics = p.dateSemantics || d.dateSemantics || null;
+      if (dates && dates.wikidata) side.ids.push({ kind: 'wikidata', value: dates.wikidata });
+      side.geometry = decimalsOf(r[8].map(poly => poly.map(ri => d.rings[ri])));
+      if (r[10] != null) {
+        side.rec = 'ohm-admin'; side.src = d.src || null;
+        side.ids.unshift({ kind: 'ohm-relation', value: r[10] });
+        side.geometry.tolerance = (d.precision && d.precision.targetTolerance != null) ? d.precision.targetTolerance : (d.tolerance != null ? d.tolerance : null);
+        try { side.detail = BC().detailState(d, p._ix); } catch (_) {}
+        side.tiles = t.vtState();
+      } else {
+        const gi = r[12], e = (t.cfg.gaps && t.cfg.gaps[gi]) || null;
+        side.rec = 'gap'; side.geometry.tolerance = null;
+        side.gap = e ? { file: e.file, derived: !!e.derived, reconstructed: !!e.reconstructed, nonCommercial: !!e.nonCommercial } : null;
+        if (e) side.index = { name: 'gaps', file: e.file, i: r[11], key: rowKey(r) };
+      }
+      return side;
+    }
+    /* what the pressed line feature itself states — only the tiles state anything; the other two are outlines */
+    function _provLine(t, features) {
+      const ways = [], seen = new Set(); let supply = null;
+      const d = t.data(), reviewed = (d && Array.isArray(d.lines)) ? d.lines : [];
+      for (const f of features || []) {
+        const id = f && f.layer && f.layer.id;
+        if (id === t.cfg.vtLine) {
+          supply = 'tiles'; const p = f.properties || {}; const w = Number(p.osm_id);
+          if (!isFinite(w) || seen.has(w)) continue; seen.add(w);
+          const rv = reviewed.filter(x => Array.isArray(x.ways) && x.ways.indexOf(w) >= 0).map(x => ({ relation: x.id, edge: x.edge, raw: x.raw, at: x.at, wareki: x.wareki || null }));
+          ways.push({ way: w, level: p.admin_level == null ? null : p.admin_level, start_date: p.start_date == null ? null : String(p.start_date), end_date: p.end_date == null ? null : String(p.end_date), reviewed: rv });
+        } else if (id === t.cfg.line && !supply) supply = 'bundle';
+        else if (id === t.cfg.gapLine && !supply) supply = 'gap';
+      }
+      return { supply, ways };
+    }
+    registerReader({ id: 'era-subdivisions', family: 'subdivision',
+      layers: () => active ? TIERS.filter(t => t.isActive() && t.fc()).flatMap(t => [t.cfg.vtLine, t.cfg.line, t.cfg.gapLine].filter(Boolean)) : [],
+      sidesAt: (lngLat, rDeg) => {
+        if (!active) return [];
+        const out = [];
+        for (const t of TIERS) { const fc = t.fc(); if (!t.isActive() || !fc || !fc.features) continue;
+          for (const f of shapesAt(fc.features, lngLat, rDeg)) out.push(_provSide(t, f)); }
+        return out;
+      },
+      lineFacts: (features) => {
+        const ids = new Set((features || []).map(f => f && f.layer && f.layer.id));
+        const t = TIERS.find(x => ids.has(x.cfg.vtLine) || ids.has(x.cfg.line) || ids.has(x.cfg.gapLine));
+        return t ? _provLine(t, features) : null;
+      },
+      date: () => { try { const w = lastWhen; if (w instanceof Date && !isNaN(w.getTime())) return { y: w.getFullYear(), m: w.getMonth() + 1, d: w.getDate(), exact: true }; if (w != null && isFinite(+w)) return { y: Math.round(+w), m: 7, d: 1, exact: false }; } catch (_) {} return null; } });
 
     /* ⚠ THERE IS DELIBERATELY NO `changeAfter` / `featureAt` HERE, AND THE OMISSION IS THE POINT.
        js/time-borders.js exposes four "step to the next date the world changed" helpers because the

@@ -16,7 +16,7 @@
  *  `policy`, `goal`, `chips` and `catalogueSilent`. js/atlas-caps.js says what each one is; nothing outside the
  *  entry names them.
  * ==========================================================================*/
-import { str, bool, num, int } from './atlas-caps.js';
+import { str, bool, num, int, lng, lat } from './atlas-caps.js';
 import { IntMapTime } from './chronos.js';
 import { changesPeriod, diffPolities, diffEconomy, diffLayers, rankChanges, boxesMeet, bboxOfGeometry } from './atlas-reasoning.js';   /* (atlas-reasoning) time.changes: what is decided is in that module, as values */
 
@@ -58,6 +58,21 @@ export default [
     schema: () => ({ type: 'object', properties: { year: int(), era: str(), city: str(), limit: int() } }),
     /* the answer lives in js/atlas-hist-urban.js, fetched on first use, so the Atlas chunk does not carry it */
     async run(a, dctx, K) { const { cityPopulation } = await import('./atlas-hist-urban.js'); return cityPopulation(a, K); },
+  },
+  {
+    row: ['time.borderSource',          'borderSource',   'borderProvenance,lineSource,whyThisBorder,boundarySource',       'time',    'none',    '',                       'explanation',         'read',    'none',   'place?',   ''],
+    /* (border-provenance) WHERE A DRAWN BORDER COMES FROM — the same facts the card on a pressed line shows
+       (js/border-provenance-card.js): for every record drawing a shape at the point (or on either side within
+       radiusKm), which record and row, its identifiers, who stated each date, how its outline was made, the
+       reviews and the licence. With no place it answers for the line the reader last pressed. It never takes
+       the map centre (CONSTITUTION.md §5). */
+    doc: [
+      { in: 'time.coverage', at: 24, text: '{"type":"borderSource","place"?:str,"lng"?:num,"lat"?:num,"radiusKm"?:num,"open"?:bool} = WHERE A BORDER ON THE MAP COMES FROM / この国境・区分線の根拠 — for the current map date, every record that draws a country or subdivision shape at the place (radiusKm > 0: the shapes on either side of the lines within that distance): the record (CShapes, OpenHistoricalMap relation, Cliopatria, historical-basemaps sheet, IntMap reconstruction), its identifiers (OHM relation id, Wikidata, Seshat ID, CShapes gwcode), WHO STATED EACH DATE (upstream verbatim, year-only, derived and how, or not stated), the precision and simplification of the outline, reviewed courses and notes, the licence, and for a reconstruction the dossier it was built from; also opens the same card on the map (open:false to only answer). With no place or coordinates it answers for the line the reader last pressed. Use for 「この国境の出典は？」「この線は誰が引いた？」「この県境の根拠」「この年代の国境はどこから来ている？」, "where does this border come from?", "what is the source of this line?"; quote only what it returns — a field it says is not stated is not stated; ' },
+    ],
+    phrases: () => ['国境の出典', '国境の根拠', 'この線の根拠', '境界線の出典', '区分の根拠', '誰が引いた'].concat(['border source', 'boundary source', 'where does this border come from', 'line provenance']),   /* the Japanese phrases, then the English words — two lists, not translations of each other */
+    schema: () => ({ type: 'object', properties: { place: str(), lng: lng(), lat: lat(), radiusKm: num(0, 500), open: bool() } }),
+    /* the card module answers it, fetched on first use, so the Atlas chunk does not carry it */
+    async run(a, dctx, K) { const { BorderProvenanceCard } = await import('./border-provenance-card.js'); return BorderProvenanceCard.atlas(a, K); },
   },
   {
     row: ['time.yearbook',              'yearbook',       'readYear,worldInYear,yearBook',                               'time',    'none',    'time',                   'explanation',         'session', 'none',   '',         ''],

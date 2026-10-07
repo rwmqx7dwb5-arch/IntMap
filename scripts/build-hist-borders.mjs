@@ -136,7 +136,7 @@ const T_HI = 18860101;                           /* [.., hi) as sortable YYYYMMD
 
 /* the app's own language codes (js/lang-registry.js), paired with the OHM tag that carries them.
    'zh-hans' has no row: it is derived from 'zh' below, the #R224 rule. */
-const LANGS = [
+export const LANGS = [   /* (border-provenance) the English name is read the way this build reads it */
   ['en', 'name:en'], ['jp', 'name:ja'], ['de', 'name:de'], ['ru', 'name:ru'],
   ['es', 'name:es'], ['zh', 'name:zh'], ['fr', 'name:fr'], ['ko', 'name:ko'],
 ];
@@ -186,7 +186,7 @@ function nextDay([y, m, d]) {
    ⚠ The year is read as written — see the header on OHM's inconsistent BC numbering. Measured over
    the whole index: no date has five digits of year and none names year zero, so `\d{1,4}` is the
    source's real alphabet rather than a guess. */
-function parseDate(s, isEnd) {
+export function parseDate(s, isEnd) {   /* (border-provenance) read by scripts/build-border-provenance.mjs: one parse of OHM's dates */
   const t = String(s || '').trim();
   let m = /^(-?\d{1,4})-(\d{1,2})-(\d{1,2})/.exec(t);
   if (m) return [+m[1], +m[2], +m[3]];

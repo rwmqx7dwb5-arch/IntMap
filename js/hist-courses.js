@@ -80,5 +80,7 @@ function reader(win, C) {
     for (const run of mark) { const seg = splice(V, run[0], run[1], subs); if (seg.length > 1) out.push(seg); }
     return out;
   }
-  return { at, of, epoch, splice, runs };
+  /* (border-provenance) the reviewed course record a substitution names (its `[2]`): name, kind, span, sides, sources */
+  const course = (i) => (C.courses && C.courses[i]) || null;
+  return { at, of, epoch, splice, runs, course };
 }

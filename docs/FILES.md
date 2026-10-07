@@ -717,6 +717,12 @@ volcano-layers.js                 火山の3レイヤー window.IntMapVolcanoLay
 hist-courses.js                   粗い記録の国境線を、史料が述べる川・城壁の区間で引き直す**読み手**（data/hist-courses.js・
                                   scripts/build-hist-courses.mjs）。起動経路に載らない——js/border-coast.js が Cliopatria の線を初めて
                                   描くとき import する。差し替えは事実の期間（`days`）の間だけ効き、`epoch(t)` が線のメモの鍵
+border-provenance.js              「この線の根拠」の核（常時読む・小さい）——束の行の指紋 `rowKey`、頂点の桁数 `decimalsOf`、
+                                  押した点と周囲 8 点を覆う形 `shapesAt`、線を描く記録の登録 `registerReader`、全ての線を 1 本で受ける
+                                  クリック `wireLineClick`（他の持ち主に譲る）。ビルドとテストも同じ `rowKey` を import する
+border-provenance-card.js         「この線の根拠」のカード（押したときに読む）——両側の記録・識別子・日付を誰が述べたか・輪郭の精度・
+                                  査読・ライセンス・調書、誤り報告への引き継ぎ。索引 `data/border-provenance-*.json` を読み、Atlas の
+                                  `time.borderSource` もここが答える
 hist-bundles.js                   リングプールした歴史記録（data/cshapes.js・hist-borders.js・hist-eras.js・
                                   hist-admin1〜3.js と、border-coast.js の HIST_ADMIN_GAPS が列挙する継ぎ足しの記録）を読む**唯一の扉**
                                   window.IntMapHistBundles。束は Blob Worker で取得・JSON.parse・保持し、
@@ -1704,6 +1710,13 @@ data/hist-borders-late.js         **1886〜1923 年、CShapes が述べない土
                                   `window.__HISTBLATE`・`scripts/build-hist-clio.mjs --ohm-late`／`npm run check:histclio`）。
                                   OHM の `admin_level=2` 関係（`scripts/build-hist-borders.mjs` `buildLate` が読む）から、
                                   CShapes の土地をその変化日ごとに除いた残り。行は hist-borders と同じ形（終わりは排他）
+data/border-provenance-ohm.json   束が落とした OHM の事実（リレーション id・`start_date`/`end_date` の原文・どの日付を誰が決めたか・
+                                  `source*`/`fixme*`/`note*`/`*_event*` のタグ原文）を hist-borders と hist-borders-late の行ごとに（**CC0 1.0**・
+                                  `scripts/build-border-provenance.mjs`）。各行が束の行の指紋を持ち、合わない行は使わない
+data/border-provenance-clio.json  hist-clio の各行の Cliopatria 上流行（FromYear/ToYear・Seshat ID・Wikidata・MemberOf）と、描く端が
+                                  Cliopatria の年か切った位置か（**CC BY 4.0**・同じビルダー）
+data/border-provenance-gaps.json  HIST_ADMIN_GAPS の各記録の列 10〜12（出版元の鍵・単位・国）と記録自身の `sources`・`src`——ページへの
+                                  継ぎ足しで落ちる列。復元の単位から調書へ辿るのはこれ（同じビルダー）
 data/hist-eras-rest.js            年別の枚から、その枚の年に OHM と Cliopatria が述べる土地を除いた残り
                                   （**GPL-3.0**・`window.__HISTERASREST`・1886 年より前のすべての枚・同じビルダー）
 data/histnames.json               **歴史的な政体名の、記録をまたぐ 1 つの表**（Wikidata・**CC0 1.0**
@@ -1992,6 +2005,9 @@ scripts/
   histcities/harvest.mjs          上流の収穫（Wikidata の SPARQL・Pleiades の JSON-LD・OHM の Overpass）。生成物は
   histcities/upstream.mjs         `histcities/derived-{wikidata,pleiades,ohm}.mjs` として
                                   記録ファイルの形で commit する（`--check` は無ネットワークで再現する）
+  build-border-provenance.mjs     束が落とした出自の事実を `data/border-provenance-{ohm,clio,gaps}.json` に書く（ビルドの
+                                  キャッシュを読むだけ・ネットワークに出ない）。`--check` は各索引の行が出荷中の束の行の指紋と
+                                  一致するかを測る
   build-hist-clio.mjs             Cliopatria（固定したリリースと sha256）→ `data/hist-clio.js`、年別の枚 → `data/hist-eras-rest.js`、
                                   `--ohm-late` で 1886〜1923 年の OHM − CShapes → `data/hist-borders-late.js`。
                                   国境を精度の順に合成する引き算をここで 1 回だけ行う（Worker スレッドで並列・結果は入力の
