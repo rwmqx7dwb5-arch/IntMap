@@ -21,6 +21,11 @@ import { jsonWithin, isUnobserved } from './fetch-deadline.js';   /* (hist-era-s
 import { clockFor } from './proxy-fetch.js';
 import * as bus from './bus.js';
 
+/* (then-now-card) THE CREDIT OF THE ERA BORDER RECORDS — the chain collectionAt() reads (CShapes 2.0 → OpenHistoricalMap →
+   Cliopatria → historical-basemaps, with OSM under OHM). Written once: the main map's two sources below carry it, and so does
+   the comparison window's own copy of the borders (js/compare.js `histb`), so a picture of either map credits the same records. */
+export const ERA_BORDER_CREDIT='CShapes 2.0 (Schvitz et al.) · OpenHistoricalMap (CC0) · Cliopatria (Seshat Global History Databank, CC BY 4.0) · historical-basemaps (aourednik, GPL-3.0) · © OpenStreetMap contributors (ODbL)';
+
 /* ══ (#R700) `Base (Gloss)` — ONE DECOMPOSITION, READ BY THE PAGE AND BY THE BUILD ═════════════
    ⚠⚠⚠ THE BRACKET IS NOT DROPPED HERE, AND THAT IS THE WHOLE POINT. Two records write a trailing
    "(…)" and they mean OPPOSITE things. data/cshapes.js writes a gloss the reader never sees —
@@ -1380,7 +1385,7 @@ export function timeBorders(HOST){
        year re-localized) makes that statement describe something that is no longer drawn. */
     function _pushLbl(fc){ _blankClose(); try{ if(GE().layers.hasSource('imtb-lbl-src')) GE().layers.setSourceData('imtb-lbl-src',_labelFC(fc)); }catch(_){} }
     function ensure(){ try{ if(!_imCanDraw()) return false;
-      if(!GE().layers.hasSource('imtb-src')) GE().layers.addSource('imtb-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'CShapes 2.0 (Schvitz et al.) · OpenHistoricalMap (CC0) · Cliopatria (Seshat Global History Databank, CC BY 4.0) · historical-basemaps (aourednik, GPL-3.0) · © OpenStreetMap contributors (ODbL)'});
+      if(!GE().layers.hasSource('imtb-src')) GE().layers.addSource('imtb-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:ERA_BORDER_CREDIT});
       /* ══ (#R531) THE STROKED OUTLINE IS NOT THE POLYGON ═══════════════════════════════════════
          「昔の国境は海岸より先まであるのが気持ち悪い。」 A political record's ring is two kinds of edge in
          one loop: the boundaries between polities, which only that record knows, and the polity's own
@@ -1396,7 +1401,7 @@ export function timeBorders(HOST){
          ⚠ AND THE CREDIT MOVES WITH THE LINE. `imtb-src` kept the attribution because it was what
          drew; after this it only holds the click target, and the visible line would have come from a
          source that credits nobody. Both carry it — MapLibre folds identical strings into one. */
-      if(!GE().layers.hasSource('imtb-ln-src')) GE().layers.addSource('imtb-ln-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'CShapes 2.0 (Schvitz et al.) · OpenHistoricalMap (CC0) · Cliopatria (Seshat Global History Databank, CC BY 4.0) · historical-basemaps (aourednik, GPL-3.0) · © OpenStreetMap contributors (ODbL)'});
+      if(!GE().layers.hasSource('imtb-ln-src')) GE().layers.addSource('imtb-ln-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:ERA_BORDER_CREDIT});
       /* (#R520) the era NAMES — one Point per country, derived from `imtb-src` (see `_labelFC`). No `attribution`
          of its own: it is the same datasets, already credited by the source it is derived from, whose
          `imtb-line` is on screen in exactly the moments these labels are. */

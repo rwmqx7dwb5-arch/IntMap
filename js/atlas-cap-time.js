@@ -110,6 +110,19 @@ export default [
     async run(a, dctx, K) { return compareAt(a, K); },
   },
   {
+    row: ['time.thenNow',               'thenNow',        'thenAndNow,swipeCompare,compareThenNow',                      'time',    'timeView', 'panel.compare,time.compare,time', 'panel,time',         'session', 'none',   '',         ''],
+    /* (then-now-card) 「あの頃といま」 — ONE PLACE AT TWO INSTANTS, A DIVIDER BETWEEN THEM (js/compare.js `thenNow`): the
+       comparison window's map is laid over the whole map at the main camera and cut at a divider the reader drags; THEN is
+       the window's clock (left), NOW the main map's (right). With no `then`, a main map in the past is the THEN and goes to
+       the present. While the swipe is on, the map postcard (panel.postcard) is the two-instant card. */
+    doc: [
+      { in: 'time-compare', at: 15, text: '{"type":"thenNow","then"?:YEAR|"YYYY-MM-DD"|"now","now"?:YEAR|"YYYY-MM-DD"|"now","split"?:0..1,"layer"?:str} = THEN AND NOW / あの頃といま — the SAME PLACE at two instants, compared with a SWIPE: the comparison window\'s map is laid over the whole map at exactly the main camera and cut at a vertical divider the reader drags (by finger on a phone); LEFT of the divider is "then" (the window\'s own clock), RIGHT is "now" (the main map\'s clock). "then"/"now" are a year (astronomical: 0 is 1 BC), a date or "now"; "now" defaults to leaving the main map where it is — give "now":"now" for today. With no "then" and the main map in the past, that instant becomes "then" and the main map goes to today. "split" is where the divider stands (0 = left edge, 1 = right edge; default the middle). "layer" picks what the then side draws (as in timeCompare); when none is picked and "then" is an instant a border record answers, it draws the borders of that instant. Frame the place first (move the camera), then call this. The state travels in the share link (it opens on the swipe), and while the swipe is on {"type":"postcard"} makes the THEN-AND-NOW CARD (both instants side by side, the place\'s name, every credit of both maps, the IntMap name and the link; "size":"card" 1200×630 for link previews, "square" 1080×1080). Use for 「1914年と今を比べて」 = {"type":"thenNow","then":"1914","now":"now"}, 「1600年と1900年の日本を比べて」 = the camera on Japan, then {"type":"thenNow","then":"1600","now":"1900"}, 「昔と今をスワイプで比べたい」, "compare 1914 with today", "then and now", "swipe between 1945 and today"; and 「比較画像をSNS用に作って」 after it = {"type":"postcard"}. ' },
+    ],
+    phrases: () => ['あの頃といま', '昔と今', 'と今を比べ', 'スワイプで比べ'].concat(['then and now', 'compare with today', 'swipe compare']),   /* the Japanese phrases, then the English words — two lists, not translations of each other */
+    schema: () => ({ type: 'object', properties: { then: str(), now: str(), split: num(), layer: str() } }),
+    async run(a, dctx, K) { return thenNowAt(a, K); },
+  },
+  {
     row: ['time.lapse',                 'timeLapse',      'playTime,playYears',                                          'time',    'timeView', 'time,time.lapse',        'time',                'session', 'none',   '',         ''],
     /* (time-compare-lapse) THE CLOCK PLAYED FORWARD — js/time-lapse.js: from a start to an end (default: the present) by
        a step in years, days or hours, one DRAWN frame at a time (a frame waits for the map to draw it). `play:false`
@@ -174,12 +187,32 @@ export default [
    Each result carries `meta.want` — the state the call set out to reach, in the shape the observer reads
    (js/atlas-capabilities.js `timeView`): the verdict compares it with what the app reports AFTER, so a window
    that did not move or a lapse that did not start is not called done. */
+/* the window's published controller — one reading for both doors (the note in compareAt says why it is not imported) */
+const cmpController = () => /** @type {any} */ (window).IntMapCompare;
+/* (then-now-card) 「あの頃といま」 — the swipe at one place (js/compare.js thenNow). The result says both instants, what the
+   then side draws, and when no THEN could be taken (no instant given, the main map on the present, the window following
+   it) that the window's year field is waiting — no year is chosen for the reader. */
+async function thenNowAt(a, K) {
+  const R = K.R, L = K.L, warn = K.warn, note = K.note, esc = K.esc;
+  const C = cmpController();
+  if (!C || typeof C.thenNow !== 'function') return R(false, warn('' + L('The comparison window is not available', '比較ウィンドウが使えません')));
+  const val = (v) => (v == null || v === '' ? undefined : String(v).trim());
+  const then = val(a.then), now = val(a.now);
+  for (const v of [then, now]) if (v != null && /^[+-]?\d{1,6}$/.test(v) && +v < IntMapTime.min) return R(false, warn('' + L('Chronos reaches back to ' + IntMapTime.min, 'Chronos は ' + IntMapTime.min + ' 年まで遡れます')));
+  const r = C.thenNow({ then, now, split: a.split != null && isFinite(+a.split) ? +a.split : undefined, layer: val(a.layer) });
+  const st = await C.judged();
+  const want = { compare: { open: true, mode: 'swipe', follow: !!st.follow, live: st.live, iso: st.iso } };
+  let h = '<div>' + esc(L('Then and now (swipe)', 'あの頃といま（スワイプ）')) + ': <b>' + esc(st.label) + '</b> | ' + esc(st.main.label) + '</div>';
+  if (r && r.needsThen) h += '<div>' + esc(L('No earlier time was given: the comparison window’s year field is waiting for one.', '過去の時刻が指定されていません——比較ウィンドウの年の欄に入力を待っています。')) + '</div>';
+  if (st.layer && st.verdict) h += '<div>' + esc(st.layerName || st.layer) + ' — ' + esc(st.held ? L('not drawn at this time', 'この時刻では描いていません') : L('drawn at this time', 'この時刻で描いています')) + (st.note || st.verdict.why ? ': ' + esc(st.note || st.verdict.why) : '') + '</div>';
+  return R(true, note('✓ ') + h, { want, compare: st, needsThen: !!(r && r.needsThen) });
+}
 async function compareAt(a, K) {
   const R = K.R, L = K.L, warn = K.warn, note = K.note, esc = K.esc;
   /* ⚠ READ OFF THE WINDOW'S PUBLISHED CONTROLLER, NOT IMPORTED FROM js/compare.js: this module is in Atlas's lazy chunk,
      and a lazy chunk importing js/compare.js (eager, and itself importing modules other lazy chunks share) split three
      shared modules out of the boot chunk — eager.requests 9 → 12, measured with scripts/perf-budget.mjs. */
-  const C = window.IntMapCompare;
+  const C = cmpController();
   if (!C || typeof C.setTime !== 'function') return R(false, warn('' + L('The comparison window is not available', '比較ウィンドウが使えません')));
   C.open();
   if (a.layer) {

@@ -97,8 +97,8 @@ const ZOOM_POINT = 14, ZOOM_KEPT = 10;
 /* The `address` object Nominatim returns is ordered from the most specific unit to the country, which IS the chain —
    no table of which key is which level. ISO 3166-2 keys and the two-letter country code are identifiers rather than
    names, so they travel as fields. `licence` is the upstream's own sentence, carried. */
-async function placeName(q, lang, kept) {
-  const zoom = kept ? ZOOM_KEPT : ZOOM_POINT, dp = kept ? 4 : 6;
+async function placeName(q, lang, kept, at) {
+  const zoom = at != null ? at : kept ? ZOOM_KEPT : ZOOM_POINT, dp = kept ? 4 : 6;
   const url = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=' + zoom + '&addressdetails=1&accept-language='
     + encodeURIComponent(IntMapLang.locale(lang, 'en')) + '&lat=' + (+q.lat).toFixed(dp) + '&lon=' + (+q.lng).toFixed(dp);
   const source = { publisher: 'OpenStreetMap contributors (Nominatim)' };
@@ -121,6 +121,17 @@ async function placeName(q, lang, kept) {
   } catch (e) {
     return { status: 'unavailable', reason: reasonOf(e), source };
   }
+}
+
+/* (then-now-card) THE NAME OF THE PLACE A VIEW SHOWS — the same reverse geocode (and the same queue), asked at the scale
+   the map is looked at: Nominatim's `zoom` and the map's are the same slippy-map levels, so a continent-wide view is named
+   by its country (Nominatim's 3) and a city view by its district, never finer than the card's own picked point
+   (ZOOM_POINT). A map centre is a point the reader framed on the map — sent as framed, like a picked point.
+   → placeName()'s record ({ status:'ok', name, chain, … } | { status:'none'|'unavailable', reason }). */
+const ZOOM_COUNTRY = 3;
+export function viewPlaceName(pt, lang, mapZoom) {
+  const z = Math.max(ZOOM_COUNTRY, Math.min(ZOOM_POINT, Math.round(+mapZoom || 0)));
+  return placeName(pt, lang, false, z);
 }
 
 /* ── the country ───────────────────────────────────────────────────────────────────────────────── */

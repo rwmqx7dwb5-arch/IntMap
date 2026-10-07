@@ -335,7 +335,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["data.studio","dataStudio","tableToMap,mapMyTable,tableStudio,spreadsheetMap","data","dataStudio","map.dataStudio","map,panel","session","none","","","external"],
       ["time.cityPopulation","cityPopulation","historicalPopulation,largestCities,urbanPopulation","time","none","","explanation","read","none","",""],
       ["map.landCover","landCover","landCoverClasses,landCoverHighlight","map","layer","map.layer","map","session","none","",""],
-      ["time.placeHistory","placeHistory","placeThroughTime,whoRuledHere,sovereigntyTimeline,formerPolities","time","none","","explanation","read","none","point",""],
+      ["time.thenNow","thenNow","thenAndNow,swipeCompare,compareThenNow","time","timeView","panel.compare,time.compare,time","panel,time","session","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 
@@ -1187,7 +1187,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
         observe: async function () {
           var out = { compare: null, lapse: null };
           /* the window's published controller (js/compare.js) — this eager registry imports the clock and the engine only */
-          try { var C = window.IntMapCompare; if (C && typeof C.timeState === 'function') { var s = C.timeState(); out.compare = { open: s.open, follow: s.follow, live: s.live, iso: s.iso }; } } catch (_) { }
+          try { var C = window.IntMapCompare; if (C && typeof C.timeState === 'function') { var s = C.timeState(); out.compare = { open: s.open, follow: s.follow, live: s.live, iso: s.iso }; if (s.mode) out.compare.mode = s.mode; }   /* (then-now-card) and the mode: a swipe asked for is a swipe shown */ } catch (_) { }
           try { var TL = await import('./time-lapse.js'); var l = TL.lapseState(); out.lapse = { playing: l.playing, at: l.at }; } catch (_) { }
           return out;
         },

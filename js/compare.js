@@ -2,7 +2,9 @@
  *  IntMap · Side-by-side / swipe map comparison — IntMapCompare  (#R163)
  * ----------------------------------------------------------------------------
  *  A second synchronised MapLibre instance for comparing base maps and raster layers,
- *  with sync / swipe / x-ray modes and four-corner resizing.
+ *  with sync / free / x-ray / swipe modes and four-corner resizing.
+ *  (then-now-card) The swipe is 「あの頃といま」: this window's map over the whole map at the main camera, cut at a
+ *  divider the reader drags — this window's instant left of it, the main map's right (`thenNow`, below).
  *
  *  Moved verbatim out of index.html's DOMContentLoaded closure (#R163). The values it used
  *  to inherit from that closure are now passed in explicitly — see Architecture.md §3.1.
@@ -31,6 +33,7 @@ import { IntMapTime, makeClock } from './chronos.js';
 import { MapState } from './map-state.js';   /* (map-state-store) this file owns the map state's `compare` field — see below */
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import * as bus from './bus.js';
+import { ERA_BORDER_CREDIT } from './time-borders.js';   /* (then-now-card) the era border records' one credit */
 
 /* ══ (time-compare-lapse) THE WINDOW'S TIME, BY IMPORT ═════════════════════════════════════════════════════
    The comparison window holds a clock of its own (below). The readers of that fact — the share link (through
@@ -49,6 +52,8 @@ export const compareTime={
   /** resolves with `state()` once the picked layer has been judged at the window's instant */
   judged:()=>(_cmpApi&&_cmpApi.judged?_cmpApi.judged():Promise.resolve(null)),
   open:()=>{ if(_cmpApi) _cmpApi.open(); },
+  /** (then-now-card) 「あの頃といま」 thenNow({ then?, now?, split?, layer? }) → { state, needsThen } | null — see js/compare.js thenNow */
+  thenNow:(o)=>(_cmpApi&&_cmpApi.thenNow?_cmpApi.thenNow(o):null),
   /** fn() whenever the window's instant or its follow choice changes; returns the unsubscribe */
   on:(fn)=>{ if(typeof fn!=='function') return ()=>{}; _cmpSubs.add(fn); return ()=>{ _cmpSubs.delete(fn); }; },
 };
@@ -57,14 +62,18 @@ export const compareTime={
    js/map-state.js spells it in the address bar as `cmp=1|x` and `ct=<the window's instant>` (absent `ct`: the
    window follows the main map's clock — a statement, as an absent `tt` is). The value is read off the window
    itself, and a restore opens the window through the same door the reader's button and Atlas use; the X-ray
-   mode is pressed 700 ms later (its button exists once the window has built), under the same restore generation. */
+   mode is pressed 700 ms later (its button exists once the window has built), under the same restore generation.
+   (then-now-card) The swipe is spelled `cmp=s` (the divider in the middle) or `cmp=s<percent>`, and is restored through the
+   controller's own door (`setMode` / `setSplit`) at the same moment the X-ray is. */
 MapState.own('compare', {
   read: () => { try { const cw = document.getElementById('compare-window');
     if (!cw || getComputedStyle(cw).display === 'none') return null;
-    return { xray: cw.classList.contains('cmp-xray'), at: compareTime.param() }; } catch (_) { return null; } },
+    const st = compareTime.state();
+    return { xray: cw.classList.contains('cmp-xray'), swipe: st && st.mode === 'swipe' && st.split != null ? Math.round(st.split * 100) : null, at: compareTime.param() }; } catch (_) { return null; } },
   apply: (v, ctx) => { if (!v) return; try {
     compareTime.open(); compareTime.set(v.at ? { param: v.at } : { follow: true });
-    if (v.xray) ctx.later(() => { const xb = Array.from(document.querySelectorAll('#compare-window .cmp-btn')).find((b) => /x-ray/i.test(b.textContent)); if (xb) xb.click(); }, 700);
+    if (v.swipe != null) ctx.later(() => { if (_cmpApi) { _cmpApi.setMode('swipe'); _cmpApi.setSplit(v.swipe / 100); } }, 700);
+    else if (v.xray) ctx.later(() => { const xb = Array.from(document.querySelectorAll('#compare-window .cmp-btn')).find((b) => /x-ray/i.test(b.textContent)); if (xb) xb.click(); }, 700);
   } catch (_) { } },
 });
 compareTime.on(() => MapState.changed('compare'));   /* the window's instant is part of the link */
@@ -108,6 +117,13 @@ export function compare(HOST){
        contract has nowhere to put them. */
     let _wantGlobe=null, _basePoll=0, _baseRetryT=0, _copiesApplied=null;
     const xrayOn=()=>mode==='xray';
+    /* (then-now-card) the two modes in which this window's map is REGISTERED to the main camera pixel for pixel: the
+       X-ray lens, and the swipe — the same registered camera, clipped at a divider the reader drags (below) */
+    const swipeOn=()=>mode==='swipe';
+    const lensOn=()=>mode==='xray'||mode==='swipe';
+    const MODES=['sync','free','xray','swipe'];
+    /* the mode buttons' door and the picker's, bound once the window is built (build below); the last mode the share link was told */
+    let _setMode=(/** @type {string} */ m)=>{ void m; }, _pickLayer=(/** @type {string} */ k)=>{ void k; return false; }, prevAnnounced='sync';
     /* ══ (time-compare-lapse) THIS WINDOW IS A MAP AT ITS OWN INSTANT ═════════════════════════════
        「1914 年 | 今日」. The window had no clock: every layer in it drew what it fetched, and the
        historical borders drew whatever year the MAIN map's historical layer last loaded (or 1914,
@@ -250,6 +266,24 @@ export function compare(HOST){
          alignment but its header is a tall, opaque bar so Close/X-ray are always reachable. */
       /* (#R16) MOBILE compare: smaller default (44vh, was "大きすぎる") + a touch resize grip (.cmp-resize)
          so the height IS adjustable ("大きさ調節できない" fixed). Native CSS resize ignores touch, hence the grip. */
+      /* (then-now-card) THE SWIPE: the window keeps its controls (the layer, the year) and gives its map to the divider;
+         the map sits beside #map under every overlay; the divider is a white line with an iOS-style grip, and the two
+         instants ride on either side of it, just above the grip (the top and the bottom of the map belong to the window,
+         the controls and the phone's sheet). The grip is a rounded rectangle like every other control here (#R35). */
+      '#compare-window.cmp-swipe{height:auto !important;min-height:0 !important;}'+
+      '#compare-window.cmp-swipe .cmp-body{display:none;}'+
+      '#compare-map.cmp-swiping{position:absolute;inset:0;z-index:calc(var(--z-inset) + 1);pointer-events:none;}'+
+      '#compare-map.cmp-swiping *{pointer-events:none !important;}'+
+      '#cmp-swipe{--cmp-split:50%;position:absolute;inset:0;pointer-events:none;z-index:calc(var(--z-map-overlay) - 1);}'+
+      '#cmp-swipe[hidden]{display:none;}'+
+      '#cmp-swipe .cmp-sw-hit{position:absolute;top:0;bottom:0;left:var(--cmp-split);width:32px;margin-left:-16px;pointer-events:auto;touch-action:none;cursor:ew-resize;-webkit-tap-highlight-color:transparent;}'+
+      '#cmp-swipe .cmp-sw-line{position:absolute;top:0;bottom:0;left:50%;width:2px;margin-left:-1px;background:#fff;box-shadow:0 0 0 0.5px rgba(0,0,0,0.28),0 0 10px rgba(0,0,0,0.28);}'+
+      '#cmp-swipe .cmp-sw-grip{position:absolute;left:50%;top:50%;width:28px;height:52px;margin:-26px 0 0 -14px;border-radius:14px;background:rgba(255,255,255,0.96);box-shadow:0 2px 10px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;gap:4px;}'+
+      '#cmp-swipe .cmp-sw-grip::before,#cmp-swipe .cmp-sw-grip::after{content:"";width:2px;height:18px;border-radius:1px;background:rgba(60,60,67,0.55);}'+
+      '#cmp-swipe .cmp-sw-hit:focus-visible .cmp-sw-grip{box-shadow:0 0 0 3px var(--primary-color),0 2px 10px rgba(0,0,0,0.3);}'+
+      '#cmp-swipe .cmp-sw-lab{position:absolute;top:calc(50% - 30px);transform:translateY(-100%);padding:5px 11px;border-radius:999px;background:rgba(20,22,28,0.72);color:#fff;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;backdrop-filter:saturate(180%) blur(10px);-webkit-backdrop-filter:saturate(180%) blur(10px);}'+
+      '#cmp-swipe .cmp-sw-then{right:calc(100% - var(--cmp-split) + 14px);}'+
+      '#cmp-swipe .cmp-sw-now{left:calc(var(--cmp-split) + 14px);}'+
       '.cmp-resize{display:none;}'+
       '@media'+window.IntMapDevice.COMPACT+'{'+
       '#compare-window{left:6px !important;right:6px !important;top:max(8px,var(--safe-top)) !important;bottom:auto !important;width:auto !important;height:46vh !important;min-width:0 !important;resize:none !important;border-radius:16px;padding-bottom:20px;z-index:calc(var(--z-toast) + 1200);overflow:hidden;}'+
@@ -354,7 +388,7 @@ export function compare(HOST){
       const mcEl=document.getElementById('map-container')||document.body;
       const mr=mcEl.getBoundingClientRect();
       let cx=mr.width/2, cy=mr.height/2;
-      try{ if(win&&win.style.display!=='none'&&!xrayOn()){
+      try{ if(win&&win.style.display!=='none'&&!lensOn()){
         const wr=win.getBoundingClientRect();
         const ix0=Math.max(mr.left,wr.left), iy0=Math.max(mr.top,wr.top), ix1=Math.min(mr.right,wr.right), iy1=Math.min(mr.bottom,wr.bottom);
         const iw=Math.max(0,ix1-ix0), ih=Math.max(0,iy1-iy0);
@@ -386,13 +420,13 @@ export function compare(HOST){
     function syncFromMain(){ if(mode==='free'||!cmap||syncing) return; syncing=true; const _copies=_syncCopies();
       try{
         followProjection();
-        if(xrayOn() && win){
+        if(lensOn() && win){
           /* (#R18) TRUE LENS — compare covers the whole container at the EXACT main camera and is
              clipped to the window rect → pixel-perfect register on globe AND flat.
              (#R21) Drift fix ("一定以上メインマップを動かすとずれる"): the main camera carries PADDING
              (frosted sidebar / sheet detents shift its optical center) — the lens must carry the SAME
              padding or every padded pixel is offset. Mirror it on every sync. */
-          layoutXrayLens();
+          if(xrayOn()) layoutXrayLens();
           let pad; try{ pad=GE().camera.getPadding?GE().camera.getPadding():undefined; }catch(_){}
           cmap.camera.jumpTo({center:_copies?_rawCenter():_normCenter(),zoom:GE().camera.getZoom(),bearing:GE().camera.getBearing(),pitch:GE().camera.getPitch(),padding:pad});
         } else {
@@ -430,6 +464,62 @@ export function compare(HOST){
       ['position','inset','left','top','width','height','zIndex','clipPath','webkitClipPath','boxShadow'].forEach(p=>cm.style[p]='');
       const r=()=>{ try{ cmap.render.resize(); }catch(_){} };
       r(); requestAnimationFrame(r); setTimeout(r,80); setTimeout(r,300); }
+    /* ══ (then-now-card) THE SWIPE — 「あの頃といま」: THIS WINDOW'S MAP AND THE MAIN MAP, ONE PLACE, A DIVIDER BETWEEN ═══════
+       The same registered camera as the X-ray lens (syncFromMain's lens branch), but the window's map covers the WHOLE
+       map area and is clipped at a vertical divider: left of it, this window's instant; right of it, the main map's.
+       Nothing is drawn twice and no renderer is added — the window's own map (its clock, its era base, its layer judged
+       by the main map's rule) is moved under the divider, and back into the window when the swipe ends.
+       ⚠ IT IS MOVED, NOT LEFT IN THE WINDOW: the window is a fixed box with its own z-index (the card band), so a map
+       inside it would sit over the legends and the map's controls on the left half. Beside #map, inside #map-container,
+       it is under every overlay the main map has, exactly where the main map's own picture is.
+       The divider is a pointer-captured handle (touch-action:none, so a finger moves it on a phone, not the page) and
+       a keyboard slider. Its position is part of the share link (js/map-state.js `cmp=s<percent>`). */
+    let split=0.5, _swEl=null;
+    const swipeLabels=()=>({ then:clockLabel(CT), now:clockLabel(IntMapTime) });
+    function paintSwipe(){ if(!_swEl) return;
+      const p=Math.round(split*1000)/10, L=swipeLabels();
+      _swEl.style.setProperty('--cmp-split',p+'%');
+      const h=_swEl.querySelector('.cmp-sw-hit'); if(h){ h.setAttribute('aria-valuenow',String(Math.round(split*100))); h.setAttribute('aria-valuetext',L.then+' | '+L.now); }
+      const a=_swEl.querySelector('.cmp-sw-then'), b=_swEl.querySelector('.cmp-sw-now');
+      if(a) a.textContent=L.then; if(b) b.textContent=L.now;
+      const cm=document.getElementById('compare-map');
+      if(cm&&swipeOn()){ const clip='inset(0 '+(100-p)+'% 0 0)'; cm.style.clipPath=clip; cm.style.webkitClipPath=clip; } }
+    /** setSplit(0…1) — where the divider stands, as a fraction of the map's width from its left edge */
+    function setSplit(v){ const n=+v; if(!isFinite(n)) return split; const c=Math.max(0,Math.min(1,n));
+      if(c!==split){ split=c; paintSwipe(); announce(); } return split; }
+    function buildSwipe(){ if(_swEl) return _swEl;
+      const host=document.getElementById('map-container')||document.body;
+      const el=document.createElement('div'); el.id='cmp-swipe';
+      el.innerHTML='<span class="cmp-sw-lab cmp-sw-then"></span><span class="cmp-sw-lab cmp-sw-now"></span>'+
+        '<div class="cmp-sw-hit" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="100"><span class="cmp-sw-line"></span><span class="cmp-sw-grip"></span></div>';
+      host.appendChild(el); _swEl=el;
+      const hit=/** @type {HTMLElement} */ (el.querySelector('.cmp-sw-hit'));
+      const label=()=>IntMapLang.t(HOST.lang,"Drag to compare the two times","ドラッグして 2 つの時刻を比べる");
+      hit.setAttribute('aria-label',label()); hit.title=label();
+      /* the fraction under the pointer, measured against the map area itself (the sidebar beside it is not the map) */
+      const at=(x)=>{ const r=host.getBoundingClientRect(); return r.width>0?(x-r.left)/r.width:split; };
+      let drag=false;
+      hit.addEventListener('pointerdown',e=>{ drag=true; try{ hit.setPointerCapture(e.pointerId); }catch(_){} e.preventDefault(); e.stopPropagation(); setSplit(at(e.clientX)); });
+      hit.addEventListener('pointermove',e=>{ if(!drag) return; e.preventDefault(); setSplit(at(e.clientX)); });
+      const end=()=>{ drag=false; }; hit.addEventListener('pointerup',end); hit.addEventListener('pointercancel',end); hit.addEventListener('lostpointercapture',end);
+      /* the keyboard: the slider pattern's own steps (WAI-ARIA APG «Slider»: arrows by one step, Page keys by a larger one, Home/End) */
+      hit.addEventListener('keydown',e=>{ const k=e.key; let d=null;
+        if(k==='ArrowLeft'||k==='ArrowDown') d=-0.01; else if(k==='ArrowRight'||k==='ArrowUp') d=0.01;
+        else if(k==='PageDown') d=-0.1; else if(k==='PageUp') d=0.1;
+        if(d!=null){ e.preventDefault(); setSplit(split+d); } else if(k==='Home'){ e.preventDefault(); setSplit(0); } else if(k==='End'){ e.preventDefault(); setSplit(1); } });
+      try{ window.addEventListener('intmap-lang',()=>{ hit.setAttribute('aria-label',label()); hit.title=label(); paintSwipe(); }); }catch(_){}
+      return el; }
+    function layoutSwipe(){ const cm=document.getElementById('compare-map'), mapEl=document.getElementById('map'); if(!cm) return;
+      const host=document.getElementById('map-container')||document.body;
+      if(cm.parentNode!==host){ if(mapEl&&mapEl.parentNode===host) host.insertBefore(cm,mapEl.nextSibling); else host.appendChild(cm); }
+      cm.classList.add('cmp-swiping');
+      buildSwipe().hidden=false; paintSwipe();
+      try{ cmap.render.resize(); }catch(_){} }
+    function clearSwipe(){ const cm=document.getElementById('compare-map');
+      if(cm){ cm.classList.remove('cmp-swiping'); ['clipPath','webkitClipPath'].forEach(p=>{ cm.style[p]=''; });
+        const body=win&&win.querySelector('.cmp-body'); if(body&&cm.parentNode!==body) body.insertBefore(cm,body.firstChild); }
+      if(_swEl) _swEl.hidden=true;
+      const r=()=>{ try{ cmap.render.resize(); }catch(_){} }; r(); requestAnimationFrame(r); setTimeout(r,80); }
     /* ---------- (#R20) portable layer registry for the compare "Layers ▾" pulldown ---------- */
     const CMP_DATE=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
     const cmpGibs=(layer,lvl,ext,time)=>['https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/'+layer+'/default/'+time+'/GoogleMapsCompatible_Level'+lvl+'/{z}/{y}/{x}.'+ext];
@@ -589,7 +679,7 @@ export function compare(HOST){
          leave to the present-day base map is said, not filled. */
       {k:'histb', lid:'cb-borders', drawnBy:{self:'js/compare.js histb.at'}, shown:()=>_hbShown, n:()=>IntMapLang.t(HOST.lang,"Historical borders","過去の国境","Historische Grenzen","Исторические границы","Fronteras históricas"), ids:['cmp-hb-f','cmp-hb-l'], add(done){
         if(!cmap.layers.hasSource('cmp-hb')){ try{
-          cmap.layers.addSource('cmp-hb',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+          cmap.layers.addSource('cmp-hb',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:ERA_BORDER_CREDIT});   /* (then-now-card) the records it draws are credited, as on the main map */
           cmap.layers.add({id:'cmp-hb-f',type:'fill',source:'cmp-hb',layout:{visibility:'none'},paint:{'fill-color':['coalesce',['get','__col'],'#c9b18a'],'fill-opacity':0.3}});
           cmap.layers.add({id:'cmp-hb-l',type:'line',source:'cmp-hb',layout:{visibility:'none'},paint:{'line-color':'#5e4a33','line-width':0.9,'line-opacity':0.85}}); }catch(_){} }
         done&&done(); },
@@ -675,7 +765,7 @@ export function compare(HOST){
       try{ byYear=HSc().utcAt(y,5,15,12,0,0).getTime()===d.getTime(); }catch(_){ byYear=false; }
       if(!byYear) return clock.iso();
       try{ return HSc().yearText(y,IntMapLang.htmlTag(HOST.lang)||'en',HOST.lang==='jp'?'年':null); }catch(_){ return String(y); } }
-    function paintTime(){ if(!win) return;
+    function paintTime(){ if(!win) return; paintSwipe();
       const w=win.querySelector('#cmp-when');
       /* (compare-window-bounds) «謎のToday/Today表示»: the pill compares the window's instant with the main map's, and while
          the two read the same (following, or an own clock at the same instant) it printed the one word twice. One
@@ -696,10 +786,7 @@ export function compare(HOST){
     /* whoever keeps a record of the window's instant is told it moved (js/map-ui.js writes the share link) */
     function announce(){ _cmpSubs.forEach(f=>{ try{ f(); }catch(_){} }); }
     /** '' while following the main map; 'now'; a year ('1914', '-500') when the clock is at the year convention; else the ISO day */
-    function timeParam(){ if(follow) return ''; if(CT.isLive()) return 'now';
-      const d=CT.when(), y=d.getUTCFullYear();
-      try{ if(HSc().utcAt(y,5,15,12,0,0).getTime()===d.getTime()) return String(y); }catch(_){}
-      return CT.iso(); }
+    function timeParam(){ return follow?'':paramOfClock(CT); }
     /** setTime({ year | date | now | follow | param }) — the one door the time row, Atlas and the share link use.
         Anything but `follow:true` holds this window's own clock. → timeState() */
     function setTime(o){ o=o||{};
@@ -712,11 +799,45 @@ export function compare(HOST){
       else if(o.date!=null){ const t0=Date.parse(String(o.date)); if(isFinite(t0)) CT.set(new Date(t0),{source:'compare'}); }
       paintTime(); announce();
       return timeState(); }
+    /** the parameter spelling ('now', a year, a date) → the spec setTime takes; null for anything else */
+    function specOf(p){ if(p==null) return null; if(typeof p==='number') return isFinite(p)?{year:Math.round(p)}:null;
+      const t=String(p).trim(); if(!t) return null; if(/^(now|today|live|現在|今|今日|いま)$/i.test(t)) return {now:true};
+      if(/^[+-]?\d{1,6}$/.test(t)) return {year:+t}; return isFinite(Date.parse(t))?{date:t}:null; }
+    /** the instant a clock stands at, in the same spelling as timeParam (a year at the year convention, else the day) */
+    function paramOfClock(clock){ if(clock.isLive()) return 'now'; const d=clock.when(), y=d.getUTCFullYear();
+      try{ if(HSc().utcAt(y,5,15,12,0,0).getTime()===d.getTime()) return String(y); }catch(_){}
+      return clock.iso(); }
+    /**
+     * (then-now-card) 「あの頃といま」 — thenNow({ then?, now?, split?, layer? }) → { state, needsThen }
+     * The swipe at one place: this window holds THEN (left of the divider), the main map shows NOW (right of it).
+     * `then` / `now` are a year, a date or 'now'. With no `then`, the main map's own instant is the one compared when it is
+     * in the past (and the main map goes to the present, unless `now` says otherwise); with no past instant anywhere, the
+     * window's own clock is kept, and if it has none the year field is focused — no year is chosen for the reader.
+     * The window's layer is the reader's; when none is picked and THEN is an instant a border record answers, it shows the
+     * borders of that instant (`histb`) — the left half would otherwise be the era base alone (physical geography).
+     */
+    function thenNow(o){ o=o||{};
+      open(); _setMode('swipe');
+      if(o.split!=null) setSplit(o.split);
+      let thenSpec=specOf(o.then), nowSpec=specOf(o.now), needsThen=false;
+      if(!thenSpec&&!IntMapTime.isLive()){ thenSpec=specOf(paramOfClock(IntMapTime)); if(!nowSpec) nowSpec={now:true}; }
+      if(thenSpec) setTime(thenSpec);
+      else if(follow){ needsThen=true; }
+      if(nowSpec){ if(nowSpec.now) IntMapTime.setNow({source:'compare'});
+        else if(nowSpec.year!=null) IntMapTime.setYear(nowSpec.year,{source:'compare'});
+        else if(nowSpec.date!=null){ const t0=Date.parse(nowSpec.date); if(isFinite(t0)) IntMapTime.set(new Date(t0),{source:'compare'}); } }
+      if(o.layer) _pickLayer(String(o.layer));
+      else if(!curCmpLayer&&!CT.isLive()&&eraAt(CT)) _pickLayer('histb');
+      paintTime();
+      if(needsThen){ try{ const y=win&&win.querySelector('#cmp-year'); if(y) y.focus(); }catch(_){} }
+      return { state:timeState(), needsThen }; }
     /** what the window shows and why — Atlas's state, the observers, the share link and the specs read this */
     function timeState(){ const L=CMP_LAYERS.find(x=>x.k===curCmpLayer)||null;
       return { open:!!(win&&win.style.display!=='none'), follow, live:CT.isLive(), at:CT.isLive()?null:CT.when().toISOString(),
         iso:CT.isLive()?null:CT.iso(), label:clockLabel(CT), main:{ live:IntMapTime.isLive(), iso:IntMapTime.isLive()?null:IntMapTime.iso(), label:clockLabel(IntMapTime) },
-        layer:L?L.k:null, held:!!(L&&_held.has(L.k)),
+        layer:L?L.k:null, layerName:L?L.n():null, held:!!(L&&_held.has(L.k)),
+        /* (then-now-card) how the window is shown: 'sync' | 'free' | 'xray' | 'swipe', and where the swipe's divider stands */
+        mode, split:swipeOn()?split:null,
         verdict:_tv?{ status:_tv.status, reason:_tv.reason, why:say(_tv.message)||null }:null,
         note:_tNote?say(_tNote):null,
         drawn:(L&&typeof L.shown==='function')?L.shown():null }; }
@@ -731,6 +852,8 @@ export function compare(HOST){
           '<button class="cmp-btn on" data-m="sync" title="'+(IntMapLang.t(HOST.lang,"Two-way view sync","両方向に視点同期","Ansicht beidseitig synchronisieren","Двусторонняя синхронизация вида","Sincronización de vista bidireccional"))+'">'+(IntMapLang.t(HOST.lang,"Sync","同期","Sync","Синхр.","Sinc."))+'</button>'+
           '<button class="cmp-btn" data-m="free" title="'+(IntMapLang.t(HOST.lang,"Independent of the main map","メイン地図と独立","Unabhängig von der Hauptkarte","Независимо от основной карты","Independiente del mapa principal"))+'">'+(IntMapLang.t(HOST.lang,"Free","独立","Frei","Свободно","Libre"))+'</button>'+
           '<button class="cmp-btn" data-m="xray" title="'+(IntMapLang.t(HOST.lang,"Pixel-registered lens over the main map","メイン地図に重ねる透視レンズ","Pixelgenaue Lupe über der Hauptkarte","Пиксельно совмещённая линза поверх основной карты","Lente superpuesta al mapa principal, registrada píxel a píxel"))+'">'+(IntMapLang.t(HOST.lang,"X-ray","X線","Röntgen","Рентген","Rayos X"))+'</button>'+
+          /* (then-now-card) the swipe: this window's instant left of a divider, the main map's right of it, one place */
+          '<button class="cmp-btn" data-m="swipe" title="'+IntMapLang.t(HOST.lang,"Swipe between this window’s time and the main map’s, over the whole map","地図全体で、このウィンドウの時刻とメイン地図の時刻をスワイプで比べる")+'">'+IntMapLang.t(HOST.lang,"Swipe","スワイプ")+'</button>'+
         '</span>'+
         /* (#R31) Minimise = single clean line; Close = centred ×; both SQUARE like the other controls
            ("ふちをまるではなく…四角に", "×は中心からずれている"). */
@@ -775,7 +898,11 @@ export function compare(HOST){
       function setMode(m){ const prev=mode; mode=m;
         win.querySelectorAll('[data-m]').forEach(x=>x.classList.toggle('on',x.getAttribute('data-m')===m));
         win.classList.toggle('cmp-xray',m==='xray');
+        win.classList.toggle('cmp-swipe',m==='swipe');
         if(prev==='xray'&&m!=='xray'){ try{ clearXrayLens(); }catch(_){} }
+        /* (then-now-card) the map goes under the divider, and comes back into the window when the swipe ends */
+        if(prev==='swipe'&&m!=='swipe'){ try{ clearSwipe(); }catch(_){} }
+        if(m==='swipe'){ try{ layoutSwipe(); }catch(_){} }
         applyBase(); _reshowCmpLayer();
         try{ cmap.render.resize(); }catch(_){}
         if(m!=='free') syncFromMain();   /* immediate (rAF never fires in a hidden tab) */
@@ -784,7 +911,10 @@ export function compare(HOST){
            registers + the base/layer paint ("x-rayだけバグが多発"). Re-layout + re-assert base/layer/sync. */
         if(m==='xray'){ [60,200,500].forEach(ms=>setTimeout(()=>{ try{ layoutXrayLens(); applyBase(); _reshowCmpLayer(); syncFromMain(); cmap.render.resize(); }catch(_){} },ms)); }
       }
-      win.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>setMode(b.getAttribute('data-m')));
+      win.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>_setMode(b.getAttribute('data-m')));
+      _setMode=(m)=>{ if(mode!==m) setMode(m); if(prevAnnounced!==mode){ prevAnnounced=mode; announce(); } };
+      /* (then-now-card) a layer picked by key — the picker's own change path, so it is judged at the window's instant like a reader's pick */
+      _pickLayer=(k)=>{ if(!sel||!CMP_LAYERS.some(x=>x.k===k)) return false; if(sel.value!==k){ sel.value=k; sel.onchange&&sel.onchange(new Event('change')); } return true; };
       /* layers pulldown */
       /* (#R23) compare layer picker = native <select> (one layer at a time). buildLayerDD repopulates it;
          picking a layer hides the previous one and lazily adds + shows the new one. */
@@ -800,8 +930,16 @@ export function compare(HOST){
         /* (time-compare-lapse) shown through `showLayer`, which keeps a layer held for this window's instant hidden —
            and judged at that instant before anything is drawn off the present (applyTime) */
         if(!CT.isLive()){ _held.add(L.k); }
-        const show=()=>showLayer(L,true); try{ L.add(()=>{ show(); applyTime(); }); }catch(_){} show(); setTimeout(show,400); setTimeout(show,1500);
-        applyTime();
+        /* (then-now-card) …and added only once this window's style can take a source. A pick made in the same breath as
+           the window's first open (Atlas `timeCompare` with a layer, «あの頃といま», a restore) used to reach `addSource`
+           before the style had loaded: it threw inside the entry's own try, so the layer never existed while the verdict
+           said «drawn» (measured: histb at 1914, 203 features answered, no `cmp-hb` source on the map). The view's own
+           wait (js/geo-engine.js whenCanDraw — answers only when it is true) is the one gate, for every caller; the
+           judgement waits on the same promise, so `judged()` resolves after the layer is on the map. */
+        const show=()=>showLayer(L,true);
+        _judging=Promise.resolve(cmap.whenCanDraw?cmap.whenCanDraw():null).then(()=>{ if(curCmpLayer!==L.k) return;
+          try{ L.add(()=>{ show(); applyTime(); }); }catch(_){} show(); setTimeout(show,400); setTimeout(show,1500);
+          return judgeAndShow(); });
         if(xrayOn()) setTimeout(()=>{ try{ layoutXrayLens(); }catch(_){} },120);   /* (#R32b) re-fit the lens so a newly-picked layer paints inside x-ray */
       };
       /* (time-compare-lapse) the time row: follow the main map's clock, hold one of this window's own, or the present */
@@ -879,7 +1017,7 @@ export function compare(HOST){
       window._cmpFollowProj=()=>{ try{ followProjection(); if(mode!=='free') syncFromMain(); }catch(_){} };
       /* (#R21) belt-and-braces: a final re-register once the main map settles (kills any residual
          lens drift from camera clamping mid-gesture). */
-      GE().events.on('idle',()=>{ if(xrayOn()) syncFromMain(); });
+      GE().events.on('idle',()=>{ if(lensOn()) syncFromMain(); });
       cmap.events.on('move',(ev)=>{ if(syncing||!ev||!ev.originalEvent) return;   /* user-driven compare drags only */
         if(mode==='sync'){ syncToMain(); }
         else if(mode==='xray'){
@@ -909,7 +1047,7 @@ export function compare(HOST){
       const fit=()=>{ try{cmap.render.resize();}catch(_){} followProjection(); if(mode!=='free') syncFromMain(); };
       requestAnimationFrame(fit); setTimeout(fit,80); setTimeout(fit,300); try{ cmap.events.once('idle',fit); }catch(_){} }
     function close(){ try{ document.body.classList.remove('cmp-open'); }catch(_){}   /* (#R28) restore the main-map FABs */
-      if(win){ if(xrayOn()){ try{ clearXrayLens(); }catch(_){} } win.style.display='none'; win.classList.remove('cmp-xray'); mode='sync';
+      if(win){ if(xrayOn()){ try{ clearXrayLens(); }catch(_){} } if(swipeOn()){ try{ clearSwipe(); }catch(_){} } win.style.display='none'; win.classList.remove('cmp-xray','cmp-swipe'); mode='sync'; prevAnnounced=mode;
       try{ win.querySelectorAll('[data-m]').forEach(x=>x.classList.toggle('on',x.getAttribute('data-m')==='sync')); }catch(_){} applyBase(); } }
     /* (#R27) Re-clamp the window OFF the sidebar whenever the sidebar WIDTH changes — the open/drag clamps
        didn't cover a LIVE sidebar resize, so widening the sidebar slid it under the window ("サイドバーを
@@ -946,7 +1084,8 @@ export function compare(HOST){
       const _sbEl=document.getElementById('sidebar'); if(_sbEl) _sbEl.addEventListener('transitionend',(e)=>{ if(e.propertyName==='margin-left'||e.propertyName==='width') _reclampSoon(); });
     }catch(_){}
     mirror();   /* (time-compare-lapse) a window opened on a travelling map starts at its instant */
-    const api={ open, close, _map:()=>cmap, setTime, timeState, timeParam, judged, clock:()=>CT };
+    const api={ open, close, _map:()=>cmap, setTime, timeState, timeParam, judged, clock:()=>CT,
+      /* (then-now-card) */ setMode:(m)=>{ if(!MODES.includes(m)) return timeState(); open(); _setMode(m); return timeState(); }, setSplit, thenNow };
     _cmpApi=api;
     return api;
   })();
