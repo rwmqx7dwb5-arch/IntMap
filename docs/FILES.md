@@ -74,6 +74,9 @@ og-image.jpg                    リンクのカードの絵（本物の JPEG。�
                                 ビルドが scripts/on-this-day-pages.mjs で書く（§8.6.3）
 （dist だけ）countries/ ja/countries/ sitemap-countries.xml
                                 国別の入口ページ（国ごと・一覧）とその sitemap。ビルドが scripts/country-pages.mjs で書く（§8.6.4）
+（dist だけ）history/years/ ja/history/years/ sitemap-years.xml
+                                年ごとの世界地図（年ごとのページと絵 world-map.svg・世紀ごとの一覧）とその sitemap。
+                                ビルドが scripts/year-pages.mjs で書く（§8.6.4）
 （dist だけ）weekly/ ja/weekly/ sitemap-weekly.xml
                                 今週の地球（ISO 週ごとのページ・一覧・Atom フィード feed.xml）とその sitemap。
                                 ビルドが scripts/weekly-earth-pages.mjs で書く（§8.6.4）
@@ -1882,6 +1885,10 @@ scripts/
   country-pages.mjs               国別の入口ページと sitemap の生成器（countryPagesPlugin）——国の集合と行は public-api.mjs、
                                   枠は js/country-extent.js、地域は history-pages.mjs REGIONS、出来事は data/on-this-day.json（§8.6.4）
   country-pages-text.mjs          そのページの文の唯一の写し（en + jp）
+  year-pages.mjs                  年ごとの世界地図の生成器（yearPagesPlugin）——年は記録から規則で選び（chooseYears）、名前と絵は
+                                  history-pages.mjs mapReader、出来事は data/on-this-day.json（§8.6.4）
+  year-pages-text.mjs             そのページの文の唯一の写し（en + jp）
+  lib/world-svg.mjs               世界の絵（Equal Earth・SVG）を記録の輪郭から描く——表示のための簡略化と日付変更線の処理
   build-weekly-earth.mjs          data/weekly-earth.json を書く——USGS FDSN と NASA EONET に 1 回ずつ訊き、終わった週を足す（無人の定期更新の名簿）（§8.6.4）
   weekly-earth-pages.mjs          今週の地球の静的ページ・Atom フィード・sitemap の生成器（weeklyEarthPagesPlugin）と、`--queue` の投稿の下書き
   weekly-earth-text.mjs           そのページ・フィード・下書きの文の唯一の写し（en + jp）

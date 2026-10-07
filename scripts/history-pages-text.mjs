@@ -65,6 +65,8 @@ export const TEXT = {
     none: 'none',
     yearsH2: 'Open the map on 1 July of',
     elsewhereH2: 'The same date elsewhere',
+    /* (history-year-pages) a world page links the year pages its years have (scripts/year-pages.mjs) — the list, not the map */
+    yearPage: 'The world in {when}: states, borders and changes',
     earlier: 'Earlier',
     later: 'Later',
     sourceH2: 'Source and method',
@@ -137,6 +139,7 @@ export const TEXT = {
     none: 'なし',
     yearsH2: '各年の7月1日で地図を開く',
     elsewhereH2: '同じ日付の他の地域',
+    yearPage: '{when}の世界——国と国境、前の年からの変化',
     earlier: '前',
     later: '次',
     sourceH2: '出典と方法',
