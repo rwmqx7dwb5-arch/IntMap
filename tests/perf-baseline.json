@@ -1,16 +1,16 @@
 {
   "eager": {
-    "raw": 4872970,
-    "gzip": 1607588,
-    "brotli": 1214452,
+    "raw": 4906298,
+    "gzip": 1618593,
+    "brotli": 1223565,
     "requests": 9,
-    "modules": 314,
+    "modules": 315,
     "cssRaw": 384505,
     "cssGzip": 63308
   },
   "async": {
-    "raw": 12585521,
-    "gzip": 4165215,
+    "raw": 12661240,
+    "gzip": 4193579,
     "chunks": {
       "account-data": 7357,
       "aircraft-detail": 17009,
@@ -23,7 +23,7 @@
       "atlas-attach": 23189,
       "atlas-caps-modules": 80,
       "atlas-chart": 10493,
-      "atlas-console": 1456853,
+      "atlas-console": 1466837,
       "atlas-executor": 59145,
       "atlas-geo-resolve": 49361,
       "atlas-hist-urban": 7748,
@@ -83,7 +83,7 @@
       "map-corrections": 19904,
       "map-doc": 3707,
       "map-reader": 2251,
-      "map-recorder": 42776,
+      "map-recorder": 48364,
       "my-map": 38557,
       "my-map-doc": 5379,
       "my-places": 29150,
@@ -101,7 +101,7 @@
       "pandemic-world": 32027,
       "photo-geo": 77742,
       "photo-geo-exif": 4683,
-      "place-dossier": 53669,
+      "place-dossier": 56059,
       "place-watch": 24862,
       "plane-glyph": 867,
       "playground": 99012,
@@ -155,9 +155,9 @@
     }
   },
   "dist": {
-    "total": 1361121576,
+    "total": 1369399048,
     "data": 1173516038,
-    "assets": 20055623
+    "assets": 20187556
   },
   "phone": {
     "bytes": 342631,

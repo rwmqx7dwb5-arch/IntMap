@@ -83,6 +83,9 @@ async function harness({ mount = true, backgroundFirst = false } = {}) {
   const { IntMapGeoEngine: GE } = await importModule('js/geo-engine.js');
   win.IntMapGeoEngine = GE; GE.use(adapter);
   win.GE = () => GE;
+  /* (border-provenance) the fill reader asks the line registry first (a press ON a drawn line is the line's question);
+     it imports `lineNear`, so the context holds the shipped one — a fresh instance, no line registered unless a test does */
+  win.lineNear = (await importModule('js/border-provenance.js')).lineNear;
   vm.runInContext(labelDeclarations + '\nthis.labelIds = ALL_LBL;', ctx);
   const labelIds = Array.from(win.labelIds);
   for (const id of [...labelIds, 'imtb-fill']) layers.set(id, { id, type: id === 'imtb-fill' ? 'fill' : 'symbol' });

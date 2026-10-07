@@ -73,7 +73,7 @@
 | 全時代の国境 | `npm run check:histeras` `npm run check:histclio` |
 | 歴史的な政体名 | `npm run check:histnames` |
 | 歴史的な行政区分 | `npm run check:histadmin` `npm run check:kuni` `npm run check:histfill` `npm run check:histsurveys` `npm run check:histrecon` |
-| 歴史地図が述べていること | `npm run check:histfidelity` |
+| 歴史地図が述べていること・線の根拠 | `npm run check:histfidelity` `npm run check:borderprov` |
 | 国境のどの辺を描くか | `npm run check:bordercoast` |
 | 拡大時の精密な輪郭 | `npm run check:borderdetail` |
 | 歴史地点（Pleiades） | `npm run check:histplaces` |

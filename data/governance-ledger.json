@@ -1,7 +1,7 @@
 {
   "gov": {
     "note": "これは「まだ果たしていない義務」の台帳であって、免責ではない。 Every entry is a bundle or a builder that does not yet state its own provenance as a value. The gate fails on anything NOT in here, and fails again when the counts are larger than reality — so a repair always shrinks this file, and nothing may be added to it except by a round that says in DEV-NOTES.md why the structure could not state it instead (.agents/rules/no-ad-hoc-hardcoding.md §6).",
-    "generatedAt": "2026-10-05T14:08:37.406Z",
+    "generatedAt": "2026-10-07T05:54:56.057Z",
     "declaredBy": "scripts/data-governance.mjs",
     "cadence": "static"
   },
@@ -131,6 +131,41 @@
         "freshness.asOf",
         "freshness.cadence",
         "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "data/border-provenance-clio",
+      "facets": [
+        "origin.retrievedAt",
+        "freshness.asOf",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "data/border-provenance-gaps",
+      "facets": [
+        "origin.retrievedAt",
+        "freshness.asOf",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "data/border-provenance-ohm",
+      "facets": [
+        "freshness.asOf",
         "integrity.rows",
         "integrity.missing",
         "integrity.outOfRange",
@@ -1938,6 +1973,45 @@
       "why": "facet-undeclared"
     },
     {
+      "subject": "scripts/build-border-provenance.mjs → data/border-provenance-clio.json",
+      "facets": [
+        "origin.retrievedAt",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/build-border-provenance.mjs → data/border-provenance-gaps.json",
+      "facets": [
+        "origin.retrievedAt",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/build-border-provenance.mjs → data/border-provenance-ohm.json",
+      "facets": [
+        "origin.retrievedAt",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
       "subject": "scripts/build-coastline.mjs → data/coastline.json.gz",
       "facets": [
         "origin.retrievedAt",
@@ -3635,8 +3709,8 @@
   ],
   "unreadableDeclaration": [],
   "counts": {
-    "undeclared": 187,
-    "undeclaredFacets": 2474,
+    "undeclared": 193,
+    "undeclaredFacets": 2512,
     "updateFailureExposed": 0,
     "shardsWithoutIndex": 1,
     "unreadableDeclaration": 0

@@ -41,7 +41,7 @@
 
 /** @typedef {{ lng:number, lat:number, zoom:number, bearing:number, pitch:number, proj:('globe'|'flat'|null) }} ViewValue */
 /** @typedef {null | { at:string, instant?:(string|null), year?:(number|null) } | { daysAgo:number }} TimeValue */
-/** @typedef {null | { xray:boolean, at:string }} CompareValue */
+/** @typedef {null | { xray:boolean, at:string, swipe?:(number|null) }} CompareValue */
 /** @typedef {{ gen:number, full:boolean, cause:string, later:(fn:()=>void, ms:number)=>void, current:()=>boolean, state:Object<string,any> }} RestoreCtx */
 /** @typedef {{ read?:()=>any, apply?:(value:any, ctx:RestoreCtx, prepared?:any)=>void, prepare?:(value:any, ctx:RestoreCtx)=>any }} Owner */
 /** @typedef {{ key:string, cause:string, gen:number, restoring:boolean }} ChangeEvent */
@@ -79,7 +79,7 @@ export const SCHEMA = Object.freeze([
   { key: 'time',    params: ['tt', 'ts'],  restore: 'full',   at: [900],              session: 'year',   owner: 'js/map-ui.js',
     doc: 'the master clock: null is «now»; `ts` is the day-based form links used before #R101' },
   { key: 'compare', params: ['cmp', 'ct'], restore: 'full',   at: [1300],             session: null,     owner: 'js/compare.js',
-    doc: 'the comparison window: open or not, X-ray or side by side, and its own instant (\'\' follows the main map)' },
+    doc: 'the comparison window: open or not, X-ray, swipe (`cmp=s`, or `cmp=s<percent>` for where the divider stands) or side by side, and its own instant (\'\' follows the main map)' },
   { key: 'base',    params: ['sat'],       restore: 'always', at: [300],              session: 'base',   owner: 'js/map-ui.js',
     doc: 'the base map: \'map\' or \'sat\'' },
   { key: 'terrain', params: ['t3'],        restore: 'full',   at: [1200],             session: 'terr3d', owner: 'js/map-ui.js',
@@ -207,7 +207,9 @@ export function decode(hash) {
   const cmp = param(H, 'cmp');
   if (cmp != null) { const ct = param(H, 'ct'); let at = '';
     try { at = ct != null ? decodeURIComponent(ct) : ''; } catch (_) { at = ''; }
-    compare = { xray: cmp === 'x', at }; }
+    /* (then-now-card) `s` is the swipe, with the divider at 50 % of the map's width, or at `s<0–100>` */
+    const sw = /^s(\d{1,3})?$/.exec(cmp);
+    compare = sw ? { xray: false, at, swipe: Math.max(0, Math.min(100, sw[1] != null ? +sw[1] : 50)) } : { xray: cmp === 'x', at }; }
   const s = param(H, 's');
   /* (map-postcard) a caption is text the link's author typed: decoded, then cleaned and cut by the same rule the writer
      applies (captionText) — a malformed escape is «no caption», never an exception */
@@ -240,7 +242,8 @@ export function encode(st) {
     if (t && 'at' in t && t.at) h += '&tt=' + encodeURIComponent(t.at);
     else if (t && 'daysAgo' in t && isFinite(t.daysAgo)) h += '&ts=' + Math.round(3650 - t.daysAgo);
     const c = st.compare;
-    if (c) { h += '&cmp=' + (c.xray ? 'x' : '1'); if (c.at) h += '&ct=' + encodeURIComponent(c.at); }
+    if (c) { const sw = c.swipe != null && isFinite(+c.swipe) ? Math.max(0, Math.min(100, Math.round(+c.swipe))) : null;
+      h += '&cmp=' + (sw != null ? 's' + (sw === 50 ? '' : sw) : c.xray ? 'x' : '1'); if (c.at) h += '&ct=' + encodeURIComponent(c.at); }
     if (st.base === 'sat') h += '&sat=1';
     if (st.terrain) h += '&t3=1';
     const s = st.sims ? packObject(st.sims) : ''; if (s) h += '&s=' + s;

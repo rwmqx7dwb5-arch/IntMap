@@ -16,7 +16,7 @@
  *  `policy`, `goal`, `chips` and `catalogueSilent`. js/atlas-caps.js says what each one is; nothing outside the
  *  entry names them.
  * ==========================================================================*/
-import { str, bool, num, int } from './atlas-caps.js';
+import { str, bool, num, int, lng, lat } from './atlas-caps.js';
 import { IntMapTime } from './chronos.js';
 import { changesPeriod, diffPolities, diffEconomy, diffLayers, rankChanges, boxesMeet, bboxOfGeometry } from './atlas-reasoning.js';   /* (atlas-reasoning) time.changes: what is decided is in that module, as values */
 
@@ -82,6 +82,21 @@ export default [
     async run(a, dctx, K) { const { cityPopulation } = await import('./atlas-hist-urban.js'); return cityPopulation(a, K); },
   },
   {
+    row: ['time.borderSource',          'borderSource',   'borderProvenance,lineSource,whyThisBorder,boundarySource',       'time',    'none',    '',                       'explanation',         'read',    'none',   'place?',   ''],
+    /* (border-provenance) WHERE A DRAWN BORDER COMES FROM — the same facts the card on a pressed line shows
+       (js/border-provenance-card.js): for every record drawing a shape at the point (or on either side within
+       radiusKm), which record and row, its identifiers, who stated each date, how its outline was made, the
+       reviews and the licence. With no place it answers for the line the reader last pressed. It never takes
+       the map centre (CONSTITUTION.md §5). */
+    doc: [
+      { in: 'time.coverage', at: 26, text: '{"type":"borderSource","place"?:str,"lng"?:num,"lat"?:num,"radiusKm"?:num,"open"?:bool} = WHERE A BORDER ON THE MAP COMES FROM / この国境・区分線の根拠 — for the current map date, every record that draws a country or subdivision shape at the place (radiusKm > 0: the shapes on either side of the lines within that distance): the record (CShapes, OpenHistoricalMap relation, Cliopatria, historical-basemaps sheet, IntMap reconstruction), its identifiers (OHM relation id, Wikidata, Seshat ID, CShapes gwcode), WHO STATED EACH DATE (upstream verbatim, year-only, derived and how, or not stated), the precision and simplification of the outline, reviewed courses and notes, the licence, and for a reconstruction the dossier it was built from; also opens the same card on the map (open:false to only answer). With no place or coordinates it answers for the line the reader last pressed. Use for 「この国境の出典は？」「この線は誰が引いた？」「この県境の根拠」「この年代の国境はどこから来ている？」, "where does this border come from?", "what is the source of this line?"; quote only what it returns — a field it says is not stated is not stated; ' },
+    ],
+    phrases: () => ['国境の出典', '国境の根拠', 'この線の根拠', '境界線の出典', '区分の根拠', '誰が引いた'].concat(['border source', 'boundary source', 'where does this border come from', 'line provenance']),   /* the Japanese phrases, then the English words — two lists, not translations of each other */
+    schema: () => ({ type: 'object', properties: { place: str(), lng: lng(), lat: lat(), radiusKm: num(0, 500), open: bool() } }),
+    /* the card module answers it, fetched on first use, so the Atlas chunk does not carry it */
+    async run(a, dctx, K) { const { BorderProvenanceCard } = await import('./border-provenance-card.js'); return BorderProvenanceCard.atlas(a, K); },
+  },
+  {
     row: ['time.yearbook',              'yearbook',       'readYear,worldInYear,yearBook',                               'time',    'none',    'time',                   'explanation',         'session', 'none',   '',         ''],
     /* (map-layer-system) THE YEAR BOOK — the instant read off the records the map draws (js/year-book.js): the polities
        the border record draws (largest by the area of the drawn shape), the days inside the year on which it changes and
@@ -132,6 +147,19 @@ export default [
     async run(a, dctx, K) { return compareAt(a, K); },
   },
   {
+    row: ['time.thenNow',               'thenNow',        'thenAndNow,swipeCompare,compareThenNow',                      'time',    'timeView', 'panel.compare,time.compare,time', 'panel,time',         'session', 'none',   '',         ''],
+    /* (then-now-card) 「あの頃といま」 — ONE PLACE AT TWO INSTANTS, A DIVIDER BETWEEN THEM (js/compare.js `thenNow`): the
+       comparison window's map is laid over the whole map at the main camera and cut at a divider the reader drags; THEN is
+       the window's clock (left), NOW the main map's (right). With no `then`, a main map in the past is the THEN and goes to
+       the present. While the swipe is on, the map postcard (panel.postcard) is the two-instant card. */
+    doc: [
+      { in: 'time-compare', at: 15, text: '{"type":"thenNow","then"?:YEAR|"YYYY-MM-DD"|"now","now"?:YEAR|"YYYY-MM-DD"|"now","split"?:0..1,"layer"?:str} = THEN AND NOW / あの頃といま — the SAME PLACE at two instants, compared with a SWIPE: the comparison window\'s map is laid over the whole map at exactly the main camera and cut at a vertical divider the reader drags (by finger on a phone); LEFT of the divider is "then" (the window\'s own clock), RIGHT is "now" (the main map\'s clock). "then"/"now" are a year (astronomical: 0 is 1 BC), a date or "now"; "now" defaults to leaving the main map where it is — give "now":"now" for today. With no "then" and the main map in the past, that instant becomes "then" and the main map goes to today. "split" is where the divider stands (0 = left edge, 1 = right edge; default the middle). "layer" picks what the then side draws (as in timeCompare); when none is picked and "then" is an instant a border record answers, it draws the borders of that instant. Frame the place first (move the camera), then call this. The state travels in the share link (it opens on the swipe), and while the swipe is on {"type":"postcard"} makes the THEN-AND-NOW CARD (both instants side by side, the place\'s name, every credit of both maps, the IntMap name and the link; "size":"card" 1200×630 for link previews, "square" 1080×1080). Use for 「1914年と今を比べて」 = {"type":"thenNow","then":"1914","now":"now"}, 「1600年と1900年の日本を比べて」 = the camera on Japan, then {"type":"thenNow","then":"1600","now":"1900"}, 「昔と今をスワイプで比べたい」, "compare 1914 with today", "then and now", "swipe between 1945 and today"; and 「比較画像をSNS用に作って」 after it = {"type":"postcard"}. ' },
+    ],
+    phrases: () => ['あの頃といま', '昔と今', 'と今を比べ', 'スワイプで比べ'].concat(['then and now', 'compare with today', 'swipe compare']),   /* the Japanese phrases, then the English words — two lists, not translations of each other */
+    schema: () => ({ type: 'object', properties: { then: str(), now: str(), split: num(), layer: str() } }),
+    async run(a, dctx, K) { return thenNowAt(a, K); },
+  },
+  {
     row: ['time.lapse',                 'timeLapse',      'playTime,playYears',                                          'time',    'timeView', 'time,time.lapse',        'time',                'session', 'none',   '',         ''],
     /* (time-compare-lapse) THE CLOCK PLAYED FORWARD — js/time-lapse.js: from a start to an end (default: the present) by
        a step in years, days or hours, one DRAWN frame at a time (a frame waits for the map to draw it). `play:false`
@@ -159,18 +187,69 @@ export default [
     schema: () => ({ type: 'object', properties: { from: str(), to: str(), t0: str(), t1: str(), place: str(), n: int(1, 40), maxDays: int(1, 366), news: bool() }, anyOf: [{ required: ['from', 'to'] }, { required: ['t0', 't1'] }] }),
     async run(a, dctx, K) { return changes(a, K); },
   },
+  {
+    row: ['time.placeHistory',          'placeHistory',   'placeThroughTime,whoRuledHere,sovereigntyTimeline,formerPolities', 'time',    'none',    '',                       'explanation',         'read',    'none',   'point',    ''],
+    /* (place-through-time) WHO HELD ONE POINT, AND WHEN — the SAME record the place card's «This place through time» section
+       draws (js/place-history.js): every polity the historical border records the era layer draws (CShapes 2.0, OpenHistoricalMap,
+       Cliopatria, the historical-basemaps sheets) put over the point, oldest first, each with its span, what each edge IS (a date
+       the record states, the edge of a record's reach, a handover to a more precise record, a sheet's display years) and the
+       record's own ID; and the first-level units of the subdivision record over the same point. `year` narrows the answer to the
+       entries in force that year. Read-only: the clock does not move (time.travel does). */
+    doc: [
+      { in: 'time.coverage', at: 24, text: '{"type":"placeHistory","place"?:str,"lng"?:num,"lat"?:num,"year"?:int (astronomical: 0 is 1 BC)} = THIS PLACE THROUGH TIME / この場所の歴史 — who held one point, and when: every polity IntMap\'s historical border records draw over that exact point (an exact point-in-polygon test, not a nearby guess), oldest first, from the deepest era sheet to the last day of CShapes 2.0 (2019): Cliopatria (Seshat, to the year, 3400 BC–), OpenHistoricalMap (day-exact, 1689–1885 and colonial ground from 1886), CShapes 2.0 (day-exact, 1886–2019) and the historical-basemaps sheets where nothing finer states the ground — each entry with its span, what each edge IS (`stated` by the record; `reach` = the edge of the record, NOT the polity\'s beginning or end; `handover` = a more precise record takes over the ground there; `rename` = the map\'s era-name table; `sheet` = the years a period map is shown), the records and their IDs (gwcode, Wikidata QID, Cliopatria\'s article), Cliopatria\'s own lifespan of the polity, names the map withholds and why, and the gaps no record covers — plus the FIRST-LEVEL DIVISIONS (令制国・府県・州・eyalet…) over the point with the dates their record states, derived, or does not state. With year, `atYear` lists the entries in force that year. Answer only from what it returns: quote spans with their edge kind (never call a `reach` or `handover` edge the end of a polity), name the record for each claim, and say «no record draws a polity here» for a gap. "place":"here" is the point Atlas last touched. Use for 「このあたりは昔どこの国だった？」「1600年にここを治めていたのは」「京都を支配した政権の変遷」「イスタンブールはいつからオスマン領」「who ruled this place」「what country was this in 1900」. ' },
+    ],
+    phrases: () => ['昔どこの国', 'ここを治めていた', '支配の変遷', 'この場所の歴史', '何という国だった'].concat(['who ruled here', 'place through time', 'what country was this', 'sovereignty history']),   /* the Japanese phrases, then the English words — two lists, not translations of each other */
+    schema: () => ({ type: 'object', properties: { place: str(), lng: num(), lat: num(), year: int() }, anyOf: [{ required: ['place'] }, { required: ['lat', 'lng'] }] }),
+    async run(a, dctx, K) { const R = K.R, warn = K.warn, esc = K.esc, L = K.L, HOST = K.HOST, geocode = K.geocode;
+      let pt = null;
+      if (a.lng != null && a.lat != null && isFinite(+a.lng) && isFinite(+a.lat)) pt = { lng: +a.lng, lat: +a.lat, name: String(a.place || '') };
+      else if (a.place && String(a.place).toLowerCase() === 'here' && K._herePoint) pt = { lng: +K._herePoint.lng, lat: +K._herePoint.lat, name: K._herePoint.name || '' };
+      else if (a.place) { const ll = await geocode(a.place); if (!ll) return R(false, warn(L('IntMap could not place «' + esc(String(a.place)) + '». Give coordinates, or name a place IntMap holds.', '「' + esc(String(a.place)) + '」を地図上に特定できませんでした。座標を指定するか、IntMap が持つ地名で言い直してください。'))); pt = { lng: +ll.lng, lat: +ll.lat, name: ll.name || String(a.place) }; }
+      /* ⚠ (#R302) the target is required; a call with neither is answered, not guessed */
+      if (!pt) return R(false, warn(L('Which point? Name a place or give its coordinates.', 'どの地点ですか？地名か座標を指定してください。')));
+      /* the record and its drawing live in js/place-history.js, fetched on first use (the card fetches the same module) */
+      const PH = await import('./place-history.js');
+      try { if (!document.getElementById('im-place-history-css')) { const st = document.createElement('style'); st.id = 'im-place-history-css'; st.textContent = PH.PLACE_HISTORY_CSS; document.head.appendChild(st); } } catch (_) { /* no document */ }
+      let lang = 'en'; try { lang = HOST.lang || 'en'; } catch (_) { lang = 'en'; }
+      const rec = await PH.placeHistory(pt);
+      const exec = { placeHistory: PH.forAtlas(rec) };
+      if (a.year != null && isFinite(+a.year)) { const at = PH.entriesAt(rec, +a.year); exec.placeHistory.atYear = { year: +a.year, nation: at.nation.map(PH.entryBrief), admin: at.admin.map(PH.adminBrief) }; }
+      const ttl = pt.name || (pt.lat.toFixed(4) + ', ' + pt.lng.toFixed(4));
+      return R(true, '<div><b>' + esc(L('This place through time', 'この場所の歴史') + ' — ' + ttl) + '</b>' + PH.historyHtml(rec, lang, { inert: true }) + '</div>', { exec });
+    },
+  },
 ];
 
 /* ══ (time-compare-lapse) THE TWO NEW DOORS ═════════════════════════════════════════════════════════════════
    Each result carries `meta.want` — the state the call set out to reach, in the shape the observer reads
    (js/atlas-capabilities.js `timeView`): the verdict compares it with what the app reports AFTER, so a window
    that did not move or a lapse that did not start is not called done. */
+/* the window's published controller — one reading for both doors (the note in compareAt says why it is not imported) */
+const cmpController = () => /** @type {any} */ (window).IntMapCompare;
+/* (then-now-card) 「あの頃といま」 — the swipe at one place (js/compare.js thenNow). The result says both instants, what the
+   then side draws, and when no THEN could be taken (no instant given, the main map on the present, the window following
+   it) that the window's year field is waiting — no year is chosen for the reader. */
+async function thenNowAt(a, K) {
+  const R = K.R, L = K.L, warn = K.warn, note = K.note, esc = K.esc;
+  const C = cmpController();
+  if (!C || typeof C.thenNow !== 'function') return R(false, warn('' + L('The comparison window is not available', '比較ウィンドウが使えません')));
+  const val = (v) => (v == null || v === '' ? undefined : String(v).trim());
+  const then = val(a.then), now = val(a.now);
+  for (const v of [then, now]) if (v != null && /^[+-]?\d{1,6}$/.test(v) && +v < IntMapTime.min) return R(false, warn('' + L('Chronos reaches back to ' + IntMapTime.min, 'Chronos は ' + IntMapTime.min + ' 年まで遡れます')));
+  const r = C.thenNow({ then, now, split: a.split != null && isFinite(+a.split) ? +a.split : undefined, layer: val(a.layer) });
+  const st = await C.judged();
+  const want = { compare: { open: true, mode: 'swipe', follow: !!st.follow, live: st.live, iso: st.iso } };
+  let h = '<div>' + esc(L('Then and now (swipe)', 'あの頃といま（スワイプ）')) + ': <b>' + esc(st.label) + '</b> | ' + esc(st.main.label) + '</div>';
+  if (r && r.needsThen) h += '<div>' + esc(L('No earlier time was given: the comparison window’s year field is waiting for one.', '過去の時刻が指定されていません——比較ウィンドウの年の欄に入力を待っています。')) + '</div>';
+  if (st.layer && st.verdict) h += '<div>' + esc(st.layerName || st.layer) + ' — ' + esc(st.held ? L('not drawn at this time', 'この時刻では描いていません') : L('drawn at this time', 'この時刻で描いています')) + (st.note || st.verdict.why ? ': ' + esc(st.note || st.verdict.why) : '') + '</div>';
+  return R(true, note('✓ ') + h, { want, compare: st, needsThen: !!(r && r.needsThen) });
+}
 async function compareAt(a, K) {
   const R = K.R, L = K.L, warn = K.warn, note = K.note, esc = K.esc;
   /* ⚠ READ OFF THE WINDOW'S PUBLISHED CONTROLLER, NOT IMPORTED FROM js/compare.js: this module is in Atlas's lazy chunk,
      and a lazy chunk importing js/compare.js (eager, and itself importing modules other lazy chunks share) split three
      shared modules out of the boot chunk — eager.requests 9 → 12, measured with scripts/perf-budget.mjs. */
-  const C = window.IntMapCompare;
+  const C = cmpController();
   if (!C || typeof C.setTime !== 'function') return R(false, warn('' + L('The comparison window is not available', '比較ウィンドウが使えません')));
   C.open();
   if (a.layer) {

@@ -258,6 +258,18 @@
             {
               "id": "time.whereWhen",
               "tool": "time_whereWhen"
+            },
+            {
+              "id": "time.borderSource",
+              "tool": "time_borderSource"
+            },
+            {
+              "id": "time.thenNow",
+              "tool": "time_thenNow"
+            },
+            {
+              "id": "time.placeHistory",
+              "tool": "time_placeHistory"
             }
           ]
         }

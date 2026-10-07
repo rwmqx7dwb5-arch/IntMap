@@ -736,7 +736,7 @@ async function fetchUpstream() {
   const wsorted = Object.fromEntries(Object.keys(wiki).sort().map((k) => [k, wiki[k]]));
   writeFileSync(FACTS, JSON.stringify({ ...rec, fetched: new Date().toISOString().slice(0, 10), internal: WIKIMEDIA_INTERNAL, facts: sorted, wiki: wsorted }));
 }
-function readUpstream() {
+export function readUpstream() {   /* (border-provenance) the upstream rows, read once by the provenance index too */
   const f = join(CACHE, UPSTREAM.member);
   if (!existsSync(f)) throw new Error(f + ' is not there — run node scripts/build-hist-clio.mjs --fetch');
   return JSON.parse(readFileSync(f, 'utf8')).features;

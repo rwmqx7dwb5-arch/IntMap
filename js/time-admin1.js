@@ -119,6 +119,8 @@ import { IntMapBorderCoast, HIST_ADMIN_GAPS } from './border-coast.js';
 import { ADMIN1_COLOR } from './border-style.js';
 import { jsonWithin } from './fetch-deadline.js';
 import { clockFor } from './proxy-fetch.js';
+/* (border-provenance) a press on a subdivision line names the records on either side of it */
+import { registerReader, decimalsOf, rowKey, shapesAt } from './border-provenance.js';
 
 export function timeAdmin1(HOST) {
   const GE = () => IntMapGeoEngine;   /* the renderer, through the contract — never the raw handle */
@@ -762,8 +764,35 @@ export function timeAdmin1(HOST) {
         cfg, load, go, clear, refreshLines, relocalize, reassert, ensure, vtProbe, vtState: () => vtState,
         setActive: v => { active = v; }, isActive: () => active, key: () => shownKey,
         fc: () => shownFC, when: () => shownWhen, data: () => _D,
-        geom: ix => { try { return _D ? geomOf(_D, ix) : null; } catch (_) { return null; } }
+        geom: ix => { try { return _D ? geomOf(_D, ix) : null; } catch (_) { return null; } },
+        contains
       };
+
+      /* (place-through-time) every row of this tier, of all time — the gap records spliced in included — whose polygon
+         holds [lng, lat], asked of the thread that holds every row (js/hist-bundles.js `contains`: exact rings). Each comes
+         back as what the row SAYS: its name as this tier writes it (`nameOf`), its span (END EXCLUSIVE), the record's own
+         dates for it (the same lookup `fcAt` puts on the feature the popup reads), and which record it is.
+         ⚠ An edge is classified, never filled: `stated` (the record gives the date), `derived` (the record says it
+         derived it, and how), `unstated` (the record states no date and the row is drawn from a bound nobody stated),
+         `undocumented` (the row carries no date entry at all), `open` (the record says it is still in force). */
+      async function contains(lng, lat) {
+        const d = await load();
+        if (!d || !_H) { const e = new Error('the ' + cfg.key + ' record could not be read'); e.reason = 'unreadable'; throw e; }
+        const v = await _H.contains(lng, lat);
+        const dated = new Map(v.dates || []);
+        const edge = (x, open) => open ? 'open' : !x ? 'undocumented' : (x.raw ? 'stated' : (x.derived ? 'derived' : 'unstated'));
+        return v.rows.map(([i, f]) => {
+          const gap = (f[10] == null && f[12] != null && cfg.gaps) ? cfg.gaps[f[12]] : null;
+          const gd = (gap && d.gapDates) ? d.gapDates[f[12]] : null;
+          const dates = (f[10] != null) ? (dated.get(f[10]) || (d.dates && d.dates[f[10]]) || null) : (gd && f[11] != null ? gd[f[11]] : null);
+          const s = _ymd(f[2], f[3], f[4]), e = _ymd(f[5], f[6], f[7]);
+          return { tier: cfg.key, file: gap ? gap.file : cfg.file, ix: i, level: f[1],
+            record: gap ? { gap: true, derived: !!gap.derived, reconstructed: !!gap.reconstructed, nonCommercial: !!gap.nonCommercial } : { gap: false, derived: false },
+            id: Object.assign(f[10] != null ? { relation: f[10] } : { row: f[11] }, dates && dates.wikidata ? { qid: dates.wikidata } : {}),
+            name: (f[9] && f[9].en) || f[0] || '', label: nameOf(f), names: f[9] || null, s, e,
+            sEdge: edge(dates && dates.start, false), eEdge: edge(dates && dates.end, f[5] >= 9999), dates };
+        });
+      }
     }
 
     const _ymd = (y, m, d) => y * 10000 + m * 100 + d;
@@ -1263,6 +1292,68 @@ export function timeAdmin1(HOST) {
       return p;
     }
 
+    /* ══ (border-provenance) THE SUBDIVISION SIDE OF «WHERE THIS LINE COMES FROM» ═══════════════════════════
+       Three supplies draw a subdivision line — OpenHistoricalMap's own vector tiles (`vtLine`), the bundle's
+       outline when the tiles are measured absent (`line`), and the gap records' outline for units OHM holds no
+       relation for (`gapLine`). The tile feature states its own way id and date tags verbatim; the units on
+       either side state theirs through the row (column 10 is the relation id; a gap row's own keys come from
+       data/border-provenance-gaps.json, keyed by the row's fingerprint). The card owns the words. */
+    function _provSide(t, f) {
+      const p = (f && f.properties) || {}, d = t.data();
+      const side = { name: String(p.NAME || p.name || ''), rec: null, ids: [], notes: [], level: p._lvl == null ? null : p._lvl };
+      const r = d && d.feats && d.feats[p._ix];
+      if (!r) { side.unattributed = true; return side; }
+      side.recordName = r[0]; side.start = [r[2], r[3], r[4]]; side.end = [r[5], r[6], r[7]];
+      let dates = p.dates; if (typeof dates === 'string') { try { dates = JSON.parse(dates); } catch (_) { dates = null; } }
+      side.dates = dates || null; side.dateSemantics = p.dateSemantics || d.dateSemantics || null;
+      if (dates && dates.wikidata) side.ids.push({ kind: 'wikidata', value: dates.wikidata });
+      side.geometry = decimalsOf(r[8].map(poly => poly.map(ri => d.rings[ri])));
+      if (r[10] != null) {
+        side.rec = 'ohm-admin'; side.src = d.src || null;
+        side.ids.unshift({ kind: 'ohm-relation', value: r[10] });
+        side.geometry.tolerance = (d.precision && d.precision.targetTolerance != null) ? d.precision.targetTolerance : (d.tolerance != null ? d.tolerance : null);
+        try { side.detail = BC().detailState(d, p._ix); } catch (_) {}
+        side.tiles = t.vtState();
+      } else {
+        const gi = r[12], e = (t.cfg.gaps && t.cfg.gaps[gi]) || null;
+        side.rec = 'gap'; side.geometry.tolerance = null;
+        side.gap = e ? { file: e.file, derived: !!e.derived, reconstructed: !!e.reconstructed, nonCommercial: !!e.nonCommercial } : null;
+        if (e) side.index = { name: 'gaps', file: e.file, i: r[11], key: rowKey(r) };
+      }
+      return side;
+    }
+    /* what the pressed line feature itself states — only the tiles state anything; the other two are outlines */
+    function _provLine(t, features) {
+      const ways = [], seen = new Set(); let supply = null;
+      const d = t.data(), reviewed = (d && Array.isArray(d.lines)) ? d.lines : [];
+      for (const f of features || []) {
+        const id = f && f.layer && f.layer.id;
+        if (id === t.cfg.vtLine) {
+          supply = 'tiles'; const p = f.properties || {}; const w = Number(p.osm_id);
+          if (!isFinite(w) || seen.has(w)) continue; seen.add(w);
+          const rv = reviewed.filter(x => Array.isArray(x.ways) && x.ways.indexOf(w) >= 0).map(x => ({ relation: x.id, edge: x.edge, raw: x.raw, at: x.at, wareki: x.wareki || null }));
+          ways.push({ way: w, level: p.admin_level == null ? null : p.admin_level, start_date: p.start_date == null ? null : String(p.start_date), end_date: p.end_date == null ? null : String(p.end_date), reviewed: rv });
+        } else if (id === t.cfg.line && !supply) supply = 'bundle';
+        else if (id === t.cfg.gapLine && !supply) supply = 'gap';
+      }
+      return { supply, ways };
+    }
+    registerReader({ id: 'era-subdivisions', family: 'subdivision',
+      layers: () => active ? TIERS.filter(t => t.isActive() && t.fc()).flatMap(t => [t.cfg.vtLine, t.cfg.line, t.cfg.gapLine].filter(Boolean)) : [],
+      sidesAt: (lngLat, rDeg) => {
+        if (!active) return [];
+        const out = [];
+        for (const t of TIERS) { const fc = t.fc(); if (!t.isActive() || !fc || !fc.features) continue;
+          for (const f of shapesAt(fc.features, lngLat, rDeg)) out.push(_provSide(t, f)); }
+        return out;
+      },
+      lineFacts: (features) => {
+        const ids = new Set((features || []).map(f => f && f.layer && f.layer.id));
+        const t = TIERS.find(x => ids.has(x.cfg.vtLine) || ids.has(x.cfg.line) || ids.has(x.cfg.gapLine));
+        return t ? _provLine(t, features) : null;
+      },
+      date: () => { try { const w = lastWhen; if (w instanceof Date && !isNaN(w.getTime())) return { y: w.getFullYear(), m: w.getMonth() + 1, d: w.getDate(), exact: true }; if (w != null && isFinite(+w)) return { y: Math.round(+w), m: 7, d: 1, exact: false }; } catch (_) {} return null; } });
+
     /* ⚠ THERE IS DELIBERATELY NO `changeAfter` / `featureAt` HERE, AND THE OMISSION IS THE POINT.
        js/time-borders.js exposes four "step to the next date the world changed" helpers because the
        Chronos panel has a row that calls them — and that row is NAMED «Borders / 国境 / Grenzen /
@@ -1276,6 +1367,8 @@ export function timeAdmin1(HOST) {
       _clear: () => { active = false; lastWhen = null; for (const t of TIERS) t.clear(); _know.clear(); _applyNow(); },
       active: () => active, current: () => T1.key(),
       currentFC: () => T1.fc(), deepFC: () => T2.fc(), refresh: _applyNow, coverage, note, geomAt, idAt, geomFullAt,
+      /* (place-through-time) the first-level units of all time that held one point — js/place-history.js's lower band */
+      placeRecords: (lng, lat) => T1.contains(lng, lat),
       /* (#R604) which supply is drawing the era line: 'unknown' (tiles asked, not yet seen),
          'live' (tiles measured painting) or 'absent' (the grace period passed with nothing, so the
          bundle's coarse line stands in). Read by tests/r530.spec.js, which cannot see a closure. */

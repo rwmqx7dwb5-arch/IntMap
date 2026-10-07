@@ -2190,6 +2190,11 @@
       }
     },
     {
+      "host": "www.openhistoricalmap.org",
+      "what": "OpenHistoricalMap relation and way pages",
+      "link": "links on the «where this line comes from» card to the relation or way a drawn boundary comes from; the data itself comes from vtiles.openhistoricalmap.org and the bundles"
+    },
+    {
       "host": "www.wikidata.org",
       "what": "Wikidata entity pages",
       "link": "entity links in Atlas answers and the industry web's stated source; the queries go to query.wikidata.org"

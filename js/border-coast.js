@@ -319,6 +319,49 @@ export const IntMapBorderCoast = (function () {
     return Promise.resolve().then(() => fetch('data/border-detail/' + path, controller ? { signal: controller.signal } : undefined))
       .then(r => r.ok ? r.json() : null).finally(() => { if (timeout !== null) clearTimeout(timeout); });
   }
+  /* the bundle's name: a mirror handed out by js/hist-bundles.js says it through the door, a bundle a
+     harness published on `window` by being that property */
+  function globalOfBundle(d) {
+    let named = null;
+    try { named = _HB() ? _HB().globalOf(d) : null; } catch (_) { named = null; }
+    for (const s of Object.values((_D && _D.sets) || {})) if (window[s.global] === d || (named && named === s.global)) return s.global;
+    return null;
+  }
+  /* (border-provenance) WHAT THE ZOOMED LINE OF ONE ROW IS DRAWN FROM — the same index, entry and fingerprint
+     `detailLine` reads, asked without drawing anything and without fetching: the 5 MB index is read only by a
+     zoomed view (`detailLine`), so a card opened before that says so instead of paying for it.
+       'source'    the record keeps every source bend already (target tolerance 0 — CShapes)
+       'unread'    the index (or this set's own index) has not been read this session
+       'none'      the index has no detail for this row
+       'mismatch'  it has, for a different outline than the one drawn — so it is not used
+       'available' it has, for this outline */
+  function detailState(d, idx) {
+    try {
+      if (!d || !d.feats || !d.feats[idx]) return { state: 'unknown' };
+      if (d.precision && d.precision.targetTolerance === 0) return { state: 'source' };
+      if (!detailIndex) return { state: 'unread' };
+      const global = globalOfBundle(d);
+      const at = { tolerance: detailIndex.targetTolerance, decimals: detailIndex.decimals, source: detailIndex.source };
+      if (!global || !detailIndex.sets[global]) return Object.assign({ state: (global && detailIndex.external && detailIndex.external[global]) ? 'unread' : 'none' }, at);
+      const entry = detailIndex.sets[global][idx];
+      if (!entry) return Object.assign({ state: 'none' }, at);
+      const key = geometryKey(d.feats[idx][8].map(p => p.map(ri => d.rings[ri])));
+      return Object.assign({ state: entry[0] === key ? 'available' : 'mismatch' }, at);
+    } catch (_) { return { state: 'unknown' }; }
+  }
+  /* (border-provenance) the reviewed river and wall courses (js/hist-courses.js) that redraw a stretch of one row's
+     line at the sortable day `t` — the course records themselves, or null when the course file is not read yet */
+  function coursesAt(d, idx, t) {
+    try {
+      if (!_HC || !d || !d.feats || !d.feats[idx] || t == null) return _HC ? [] : null;
+      const seen = new Set(), out = [];
+      for (const p of d.feats[idx][8]) for (const ri of p) {
+        const subs = _HC.of(d.rings[ri], t) || [];
+        for (const x of subs) { if (seen.has(x[2])) continue; seen.add(x[2]); const c = _HC.course(x[2]); if (c) out.push(c); }
+      }
+      return out;
+    } catch (_) { return null; }
+  }
   function detailLine(d, idx) {
     // A zero-tolerance source already retains every bend (CShapes). Fetching
     // the OHM detail index for it would add 5 MB without improving any line.
@@ -350,11 +393,7 @@ export const IntMapBorderCoast = (function () {
         .finally(() => { indexPromise = null; });
       return undefined;
     }
-    /* the bundle's name: a mirror handed out by js/hist-bundles.js says it through the door, a bundle a
-       harness published on `window` by being that property */
-    let global = null, named = null;
-    try { named = _HB() ? _HB().globalOf(d) : null; } catch (_) { named = null; }
-    for (const s of Object.values((_D && _D.sets) || {})) if (window[s.global] === d || (named && named === s.global)) { global = s.global; break; }
+    const global = globalOfBundle(d);
     /* (hist-coverage-depth) a surveyed record's entries are an index of their own, which index.json only
        points to (scripts/build-border-detail.mjs writeIndex) — fetched the first time a row of THAT set
        needs detail, so a zoomed view with no surveyed row in it pays nothing for them. A failed fetch is
@@ -391,6 +430,6 @@ export const IntMapBorderCoast = (function () {
     return lines.length ? { type: 'MultiLineString', coordinates: lines } : null;
   }
 
-  return { load, loadCourses, courseEpoch: (t) => (_HC ? _HC.epoch(t) : -1), onArrive, marks, closedRing, ringLines, lineGeom, wholeLines, strokedOnce, geometryKey, loaded: () => !!_D };
+  return { load, loadCourses, courseEpoch: (t) => (_HC ? _HC.epoch(t) : -1), onArrive, marks, closedRing, ringLines, lineGeom, wholeLines, strokedOnce, geometryKey, loaded: () => !!_D, detailState, coursesAt };
 })();
 globalThis.IntMapBorderCoast = IntMapBorderCoast;   /* (module-graph) the compat window: importers get the binding above */

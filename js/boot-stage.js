@@ -62,6 +62,9 @@
     { id: 'border-coast', path: 'data/border-coast.js', phone: 'need', who: 'js/border-coast.js', why: 'which border edges are coast — read when borders are drawn at a zoom that needs it' },
     { id: 'border-detail', path: 'data/border-detail/', phone: 'need', who: 'js/border-coast.js', why: 'the zoomed-in outline shards, by viewport' },
     { id: 'hist-courses', path: 'data/hist-courses.js', phone: 'need', who: 'js/hist-courses.js', why: 'the time machine' },
+    { id: 'border-provenance-ohm', path: 'data/border-provenance-ohm.json', phone: 'need', who: 'js/border-provenance-card.js', why: 'a press on a border line drawn from OpenHistoricalMap — «where this line comes from»' },
+    { id: 'border-provenance-clio', path: 'data/border-provenance-clio.json', phone: 'need', who: 'js/border-provenance-card.js', why: 'a press on a border line drawn from Cliopatria — «where this line comes from»' },
+    { id: 'border-provenance-gaps', path: 'data/border-provenance-gaps.json', phone: 'need', who: 'js/border-provenance-card.js', why: 'a press on a subdivision line of an IntMap-assembled record — «where this line comes from»' },
 
     /* ── behind the moment a phone can be touched ── */
     { id: 'stars', path: 'data/stars.bin', phone: 'settled', who: 'js/star-catalogue.js (the night sky behind the globe, js/space-sky.js)', why: '773 kB and a 98,887-row decode for the background of the dark globe; the globe is usable without it' },

@@ -639,6 +639,8 @@ map-recorder.js                   **タイムラプスの動画書き出しと�
                                   出典は描いている層の典拠と #map-credit から（`drawnCredits`）、切らずに折り返す（`layoutFrame`）。
                                   絵葉書（`postcard`・共有パネルの画像タブ `createPostcardTab`）は題と一言のカードと、地図上の凡例を
                                   ページの DOM から読んだ絵（`rasterLegend`・`parseGradient`）を足す。形は `POSTCARD_SIZES`。
+                                  比較窓がスワイプのときの絵葉書は**あの頃といまのカード**（`thenNowCard`：2 つの瞬間を左右に、
+                                  見ている場所の名前は place-dossier.js `viewPlaceName`・`placeText`、2 つの地図の出典は `comparePanes`）。
                                   遅延チャンク（Chronos の書き出し欄・共有パネルの画像タブ・Atlas `time.lapse` record:true／`postcard` が読む）
 video-mux.js                      **符号化済みのコマを WebM／MP4 のファイルにする**（`muxWebM` / `muxMP4`）。符号化も DOM も時計も持たない。
                                   map-recorder.js がタイムラプスの書き出しで読む。順序の崩れたコマと鍵コマで始まらない列は拒む
@@ -715,6 +717,12 @@ volcano-layers.js                 火山の3レイヤー window.IntMapVolcanoLay
 hist-courses.js                   粗い記録の国境線を、史料が述べる川・城壁の区間で引き直す**読み手**（data/hist-courses.js・
                                   scripts/build-hist-courses.mjs）。起動経路に載らない——js/border-coast.js が Cliopatria の線を初めて
                                   描くとき import する。差し替えは事実の期間（`days`）の間だけ効き、`epoch(t)` が線のメモの鍵
+border-provenance.js              「この線の根拠」の核（常時読む・小さい）——束の行の指紋 `rowKey`、頂点の桁数 `decimalsOf`、
+                                  押した点と周囲 8 点を覆う形 `shapesAt`、線を描く記録の登録 `registerReader`、全ての線を 1 本で受ける
+                                  クリック `wireLineClick`（他の持ち主に譲る）。ビルドとテストも同じ `rowKey` を import する
+border-provenance-card.js         「この線の根拠」のカード（押したときに読む）——両側の記録・識別子・日付を誰が述べたか・輪郭の精度・
+                                  査読・ライセンス・調書、誤り報告への引き継ぎ。索引 `data/border-provenance-*.json` を読み、Atlas の
+                                  `time.borderSource` もここが答える
 hist-bundles.js                   リングプールした歴史記録（data/cshapes.js・hist-borders.js・hist-eras.js・
                                   hist-admin1〜3.js と、border-coast.js の HIST_ADMIN_GAPS が列挙する継ぎ足しの記録）を読む**唯一の扉**
                                   window.IntMapHistBundles。束は Blob Worker で取得・JSON.parse・保持し、
@@ -725,7 +733,8 @@ hist-bundles.js                   リングプールした歴史記録（data/cs
                                   war-layer.js・border-coast.js（docs/MAP-LAYERS.md・Architecture.md §7.4）。
                                   記録は丸ごとではなく、ビルドが年で切ったタイル（data/hvt/<名>.idx.json と
                                   <名>.jsonl.gz）から、その瞬間に要るチャンクだけを Range で読む（need → feed →
-                                  問い）。タイルの名前は tilesOf が記録の名前から導く
+                                  問い）。タイルの名前は tilesOf が記録の名前から導く。1 地点を全時代について訊く
+                                  `contains` も向こうで答える（箱ファイル `<名>.box.json` で候補を絞り、環の偶奇判定で決める。名前は boxesOf）
 border-coast.js                   歴史的な輪郭のどの辺が「国境／区分境界」で、どの辺が「その記録が持つ海岸線の
                                   写し」かの**読み手** window.IntMapBorderCoast。印そのものは data/border-coast.js
                                   （規則と定数は scripts/build-border-coast.mjs）。#R564 で time-borders.js から
@@ -934,7 +943,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  213 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  216 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -1057,7 +1066,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全213を検索・到達可能 210）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全216を検索・到達可能 213）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -1075,7 +1084,7 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
 atlas-hist-urban.js               Atlas の `time.cityPopulation` の本体——歴史上の都市人口の記録に、ある年の大都市・ある都市の人口の推移を訊き、
                                   値（`exec.cityPopulation`）と同じ事実の文で返す。規則は hist-urban.js。初回の呼び出しで動的 import（Atlas のチャンクに載せない）
-atlas-schemas.js                  **引数の schema**（#R406）— 213能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 216能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -1312,8 +1321,14 @@ place-dossier.js                  **地点カード**（地点プロファイル
                                   地震と出来事・かつての名前）を 1 つの記録にし、1 枚のカードと地図の点に描く。起点（地図の地点／
                                   端末の現在地／共有された地点）が何を端末の外へ送るかを決める——端末と共有は 0.1° に丸めた地点だけ。
                                   Atlas `research.placeProfile` と `research.hereNow` は同じ記録を返す。外から呼ばれる名前は
-                                  `openPlaceDossier`（地図の地点）・`openHereNow`（端末／共有、「いま」が先頭）・`bootFromUrl`（`?here=1`）
+                                  `openPlaceDossier`（地図の地点）・`openHereNow`（端末／共有、「いま」が先頭）・`bootFromUrl`（`?here=1`）・
+                                  `viewPlaceName`（地図の中心を地図の縮尺で名指す。あの頃といまのカードが読む）
                                   （docs/architecture/07-map.md §7.3f）
+place-history.js                  **この場所の歴史**——1 地点をどの政体がいつからいつまで治めていたかの縦の年表と、その下の第 1 層の
+                                  地方区分。行は time-borders.js / time-admin1.js の `placeRecords`（扉の `contains`）が述べるものだけで、
+                                  端は種類つき（stated・reach・handover・rename・sheet・review／derived・unstated・undocumented・open）。
+                                  地点カードの節と Atlas `time.placeHistory` が同じ記録を描く。行を押すと Chronos をその時代へ
+                                  （docs/architecture/07-map.md §7.3f）。地点カードと Atlas が最初に要るときに取りに行く
 events-near.js                    範囲 × 期間の地震と出来事の**読み手 1 つ**——USGS の M2.5 以上・7 日のフィードをセッション内で 1 回
                                   取得して共有し、`news_events` の窓をページ送りで読み、どちらも位置を送らずに端末で範囲を絞る。
                                   状態の語彙（`ok` / `none` / `unavailable`＋理由）の正本。地点カード・place-watch.js・
@@ -1329,7 +1344,9 @@ host-door.js                      app-body.js の IM_HOST を、URL や委譲さ
 compare.js                        並べて／スワイプで比べる地図 IntMapCompare。**独自の時計**（`makeClock('compare')`）を持ち、
                                   「メイン地図の時刻に従う／独自の時刻」を切り替える。選んだ層はその時計で時間カーネルの規則に
                                   判定され、歴史国境はその瞬間の記録（time-borders.js `collectionAt`）。読み手には
-                                  `compareTime`（import）で状態・設定・共有リンク値を渡す（Atlas `time.compare`・#v= の `ct=`）
+                                  `compareTime`（import）で状態・設定・共有リンク値を渡す（Atlas `time.compare`・#v= の `ct=`）。
+                                  **スワイプ**（あの頃といま・`thenNow`）はウィンドウの地図を #map の隣へ移し、分割線で切る
+                                  （#v= の `cmp=s<位置>`・Atlas `time.thenNow`・Chronos の「あの頃といま」は news-timeline.js）
 playground.js                     Playground (beta)（export playground・遅延）
 pandemic-model.js                 パンデミック・シミュレーターの**数理**——種を取る確率的 SEIR メタ個体群エンジン
                                   （DOM も window も Math.random も持たないので node が直に回せる。
@@ -1701,6 +1718,13 @@ data/hist-borders-late.js         **1886〜1923 年、CShapes が述べない土
                                   `window.__HISTBLATE`・`scripts/build-hist-clio.mjs --ohm-late`／`npm run check:histclio`）。
                                   OHM の `admin_level=2` 関係（`scripts/build-hist-borders.mjs` `buildLate` が読む）から、
                                   CShapes の土地をその変化日ごとに除いた残り。行は hist-borders と同じ形（終わりは排他）
+data/border-provenance-ohm.json   束が落とした OHM の事実（リレーション id・`start_date`/`end_date` の原文・どの日付を誰が決めたか・
+                                  `source*`/`fixme*`/`note*`/`*_event*` のタグ原文）を hist-borders と hist-borders-late の行ごとに（**CC0 1.0**・
+                                  `scripts/build-border-provenance.mjs`）。各行が束の行の指紋を持ち、合わない行は使わない
+data/border-provenance-clio.json  hist-clio の各行の Cliopatria 上流行（FromYear/ToYear・Seshat ID・Wikidata・MemberOf）と、描く端が
+                                  Cliopatria の年か切った位置か（**CC BY 4.0**・同じビルダー）
+data/border-provenance-gaps.json  HIST_ADMIN_GAPS の各記録の列 10〜12（出版元の鍵・単位・国）と記録自身の `sources`・`src`——ページへの
+                                  継ぎ足しで落ちる列。復元の単位から調書へ辿るのはこれ（同じビルダー）
 data/hist-eras-rest.js            年別の枚から、その枚の年に OHM と Cliopatria が述べる土地を除いた残り
                                   （**GPL-3.0**・`window.__HISTERASREST`・1886 年より前のすべての枚・同じビルダー）
 data/histnames.json               **歴史的な政体名の、記録をまたぐ 1 つの表**（Wikidata・**CC0 1.0**
@@ -1989,6 +2013,9 @@ scripts/
   histcities/harvest.mjs          上流の収穫（Wikidata の SPARQL・Pleiades の JSON-LD・OHM の Overpass）。生成物は
   histcities/upstream.mjs         `histcities/derived-{wikidata,pleiades,ohm}.mjs` として
                                   記録ファイルの形で commit する（`--check` は無ネットワークで再現する）
+  build-border-provenance.mjs     束が落とした出自の事実を `data/border-provenance-{ohm,clio,gaps}.json` に書く（ビルドの
+                                  キャッシュを読むだけ・ネットワークに出ない）。`--check` は各索引の行が出荷中の束の行の指紋と
+                                  一致するかを測る
   build-hist-clio.mjs             Cliopatria（固定したリリースと sha256）→ `data/hist-clio.js`、年別の枚 → `data/hist-eras-rest.js`、
                                   `--ohm-late` で 1886〜1923 年の OHM − CShapes → `data/hist-borders-late.js`。
                                   国境を精度の順に合成する引き算をここで 1 回だけ行う（Worker スレッドで並列・結果は入力の
@@ -2083,7 +2110,12 @@ scripts/
                                   histTiles() がビルドのたびに走らせ、内容のハッシュで store に保持する）。索引は
                                   扉の job が答える head と全行の期間・チャンクの対応・バイト範囲、アーカイブは
                                   独立した gzip メンバー（JSON 1 行）の連結。並びは時間（区間木の段と桶→開始→終了）
-                                  →場所。切ったものは扉の job で読み戻して記録と照合し、違えば失敗する
+                                  →場所。切ったものは扉の job で読み戻して記録と照合し、違えば失敗する。
+                                  記録ごとに**箱ファイル**（`<名>.box.json`。行と時代の 1 枚の多角形ごとの外側へ丸めた箱）も書き、
+                                  全座標が箱の中にあることを照合する（`verifyBoxes`）——扉の `contains` が候補の行だけを読むため
+  place-history.mjs               地点を名指して「この場所の歴史」を出す（`--at <lng>,<lat>`・`--sites` は開発記録の 7 地点・`--json`）。
+                                  ページの time-borders.js / time-admin1.js / place-history.js をそのまま実体化して束を読む
+                                  （historical-verification.md §2-1 の「年と場所を名指して列挙する」の道具）
   build-border-coast.mjs          同梱の海岸線（`data/coastline.json.gz`）に照らして、歴史国境の各辺が国境か海岸線の
                                   写しかを印す → `data/border-coast.js`。⚠ **`--check` は全リングを再導出して突き合わせる**
                                   （上流不要）。`--report` が `INLAND_KM` を読み取る分布を、`--sweep <global> <年>` が記録ごとの帯
@@ -2379,7 +2411,7 @@ scripts/
                                   index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
                                   マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
                                   なるなら 1 ファイルで両方を名乗る
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 150 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 151 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の

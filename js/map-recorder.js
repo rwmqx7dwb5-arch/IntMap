@@ -31,6 +31,8 @@
  *
  *  (map-postcard) …and THE MAP AS ONE PICTURE TO POST (`postcard`, the share panel's Image tab `createPostcardTab`): the
  *  same compositor with the link's title and note and the legends on the map read off the page (`rasterLegend`).
+ *  (then-now-card) …and while the comparison window shows its swipe (js/compare.js `thenNow`), THE POSTCARD IS THE PAIR
+ *  (`thenNowCard`): the window's instant and the main map's side by side, the place the view shows, both maps' credits.
  *
  *  Loaded only when the reader opens the export row of the time-lapse (js/time-lapse.js `openRecorder`), the share
  *  panel's Image tab (js/map-ui.js `share`), or Atlas asks for a recording (js/atlas-cap-time.js) or a postcard
@@ -201,6 +203,9 @@ function wrap(text, font, max, measure) {
  * (map-postcard) Optional, one pane only: `caption:{title, note}` turns the instant label into a card that also carries
  * the title and the note (`card`); `legends:[{w,h}]` (CSS px) places the legend pictures down the right edge
  * (`legends`, `legendsOmitted`, `legendScale` frame px per CSS px); `brand.full` is the share link, used when it fits.
+ * (then-now-card) Optional, any pane: `panes[i].sub` — a second, smaller line under that pane's instant (what the pane
+ * draws: its layer). Two panes only: `headline:{title, place}` — the card's title and the place it shows, in one card
+ * centred above the band (`headline`), across the divider, so it belongs to neither side.
  */
 export function layoutFrame(o, measure) {
   const W = o.w, H = o.h, fam = o.family || 'sans-serif';
@@ -240,8 +245,17 @@ export function layoutFrame(o, measure) {
     const room = r.w - 2 * pad - Math.round(56 * u);
     while (px > Math.round(28 * u) && measure(t, font(px)) > room) px--;
     const tw = measure(t, font(px)), bx = Math.round(28 * u), by = Math.round(16 * u);
-    return { rect: r, label: { text: t, font: font(px), px, x: r.x + pad + bx, y: r.y + pad + by, w: tw, h: px,
-      box: { x: r.x + pad, y: r.y + pad, w: tw + 2 * bx, h: Math.round(px * 1.12) + 2 * by, r: Math.round(22 * u) } } };
+    /* (then-now-card) the pane's second line — as large as fits beside the instant's box, never larger than half of it */
+    const st = String((o.panes[i] && o.panes[i].sub) || '');
+    let sub = null;
+    if (st && t) {
+      const sf = fitBlock(st, '600', Math.max(Math.round(20 * u), Math.round(px * 0.42)), Math.round(18 * u), 1, room, fam, measure);
+      if (sf.lines.length) sub = { text: sf.lines[0], font: sf.font, px: sf.px, x: r.x + pad + bx, y: r.y + pad + by + Math.round(px * 1.12) + Math.round(6 * u), w: measure(sf.lines[0], sf.font), h: sf.px };
+    }
+    const bw = Math.max(tw, sub ? sub.w : 0) + 2 * bx;
+    const bh = Math.round(px * 1.12) + 2 * by + (sub ? Math.round(6 * u) + Math.round(sub.px * 1.2) : 0);
+    return { rect: r, label: { text: t, font: font(px), px, x: r.x + pad + bx, y: r.y + pad + by, w: tw, h: px, sub,
+      box: { x: r.x + pad, y: r.y + pad, w: bw, h: bh, r: Math.round(22 * u) } } };
   });
   /* (map-postcard) the legends and the caption — a single pane only (the postcard is the main map) */
   const legends = n === 1 ? layoutLegends(o.legends || [], { W, top: pad, bottom: band.y - pad, right: W - pad, u }) : { boxes: [], omitted: (o.legends || []).length, k: 0 };
@@ -253,8 +267,32 @@ export function layoutFrame(o, measure) {
       maxW: Math.min(colX - 2 * pad + (legends.boxes.length ? 0 : pad), Math.round(W * 0.72)), maxH: band.y - 2 * pad, u, fam }, measure);
     panes[0].label = Object.assign({}, panes[0].label, { text: '' });   /* the instant is the card's first line now */
   }
+  /* (then-now-card) the two-pane card's title and place, centred above the band */
+  const hl = o.headline || {};
+  const headline = n === 2 && (hl.title || hl.place) ? layoutHeadline({ title: hl.title || '', place: hl.place || '', W, bottom: band.y - pad, maxW: Math.round(W * 0.8), u, fam }, measure) : null;
   return { w: W, h: H, u, pad, panes, band, brand, credit, divider: n === 2 ? Math.max(2, Math.round(4 * u)) : 0, tall,
-    legends: legends.boxes, legendsOmitted: legends.omitted, legendScale: legends.k, card };
+    legends: legends.boxes, legendsOmitted: legends.omitted, legendScale: legends.k, card, headline };
+}
+/**
+ * (then-now-card) layoutHeadline({ title, place, W, bottom, maxW, u, fam }, measure) → { box, lines } — a card centred on
+ * the frame's width whose bottom edge is `bottom`: the title (≤ 2 lines) over the place (1 line), each as large as fits,
+ * each line centred.
+ */
+function layoutHeadline(c, measure) {
+  const u = c.u, bx = Math.round(28 * u), by = Math.round(16 * u), gap = Math.round(6 * u);
+  const inner = Math.max(40, c.maxW - 2 * bx);
+  const ttl = fitBlock(String(c.title || ''), '700', Math.round(46 * u), Math.round(30 * u), 2, inner, c.fam, measure);
+  const plc = fitBlock(String(c.place || ''), '600', Math.round((c.title ? 28 : 40) * u), Math.round(22 * u), 1, inner, c.fam, measure);
+  const rows = [];
+  ttl.lines.forEach((t) => rows.push({ kind: 'title', text: t, font: ttl.font, px: ttl.px, lh: 1.18 }));
+  plc.lines.forEach((t) => rows.push({ kind: 'place', text: t, font: plc.font, px: plc.px, lh: 1.25 }));
+  let h = 2 * by, widest = 0;
+  rows.forEach((r, i) => { h += Math.round(r.px * r.lh) + (i && rows[i - 1].kind !== r.kind ? gap : 0); widest = Math.max(widest, measure(r.text, r.font)); });
+  const w = Math.round(widest + 2 * bx), x = Math.round((c.W - w) / 2), y = c.bottom - h;
+  let yy = y + by;
+  const lines = rows.map((r, i) => { if (i && rows[i - 1].kind !== r.kind) yy += gap; const lw = measure(r.text, r.font);
+    const L = { kind: r.kind, text: r.text, font: r.font, x: Math.round((c.W - lw) / 2), y: yy, w: lw, h: r.px }; yy += Math.round(r.px * r.lh); return L; });
+  return { box: { x, y, w, h, r: Math.round(22 * u) }, lines };
 }
 
 /* ══ (map-postcard) THE LEGEND COLUMN AND THE CAPTION CARD — pure, like the rest of the layout ═══════════════════════
@@ -353,7 +391,13 @@ function paint(ctx, o, images, legendImages) {
     if (!p.label.text) return;
     ctx.fillStyle = 'rgba(0,0,0,0.58)'; box(ctx, p.label.box);
     ctx.fillStyle = '#ffffff'; ctx.font = p.label.font; ctx.fillText(p.label.text, p.label.x, p.label.y);
+    if (p.label.sub) { ctx.fillStyle = 'rgba(255,255,255,0.84)'; ctx.font = p.label.sub.font; ctx.fillText(p.label.sub.text, p.label.sub.x, p.label.sub.y); }
   });
+  /* (then-now-card) the two-pane card's title and place */
+  if (L.headline) {
+    ctx.fillStyle = 'rgba(0,0,0,0.62)'; box(ctx, L.headline.box);
+    L.headline.lines.forEach((l) => { ctx.fillStyle = l.kind === 'title' ? '#ffffff' : 'rgba(255,255,255,0.86)'; ctx.font = l.font; ctx.fillText(l.text, l.x, l.y); });
+  }
   /* (map-postcard) the legends, as the reader sees them, and the caption card */
   (L.legends || []).forEach((b) => { const im = legendImages && legendImages[b.i]; if (im && im.width && im.height) ctx.drawImage(im, b.x, b.y, b.w, b.h); });
   if (L.card) {
@@ -686,21 +730,15 @@ function cancelRecording() { if (rs.phase === 'recording' && lapseState().playin
 export async function compareImage(o) {
   o = o || {};
   if (busy()) return Object.assign(recorderState(), { error: 'busy' });
-  const C = compareApi();
-  const st = C && typeof C.timeState === 'function' ? C.timeState() : null;
-  const view = C && typeof C._map === 'function' ? C._map() : null;
-  if (!st || !st.open || !view) return Object.assign(recorderState(), { error: 'no-compare' });
+  if (!compareShown()) return Object.assign(recorderState(), { error: 'no-compare' });
   reset('image');
   const key = sizeKey(o.size), S = SIZES[key];
   Object.assign(rs, { size: key, w: S.w, h: S.h, ext: 'png', mime: 'image/png', phase: 'finishing' });
   emit();
-  const [a, b] = await Promise.all([grabView(view), grabMain()]);
+  const P = await comparePanes();
+  if (!P) { rs.phase = 'failed'; rs.error = 'no-compare'; emit(); return Object.assign(recorderState(), { error: 'no-compare' }); }
+  const { st, a, b, credits } = P;
   if (!a.live || !b.live) { rs.phase = 'failed'; rs.error = 'not-drawn'; emit(); return Object.assign(recorderState(), { error: 'not-drawn' }); }
-  /* the window's credit is the one its view paints (js/geo-engine.js, the drawn sources of that view) */
-  let wc = [];
-  try { const el = document.querySelector('#compare-map .map-credit-view'); const t = el && el.textContent && el.textContent.trim(); if (t) wc = [t]; } catch (_) { wc = []; }
-  if (!wc.length) { try { wc = drawnCredits(view.scene.getStyle(), view.camera.getZoom(), []); } catch (_) { wc = []; } }
-  const credits = drawnCredits(null, 0, wc.concat(mainCredits()));
   const out = document.createElement('canvas'); out.width = S.w; out.height = S.h;
   noteBand(paint(/** @type {CanvasRenderingContext2D} */ (out.getContext('2d')), { w: S.w, h: S.h, panes: [{ label: st.label }, { label: st.main.label }], credits, brand: brand() }, [a.canvas, b.canvas]));
   addCredits(credits);
@@ -712,6 +750,51 @@ export async function compareImage(o) {
   rs.name = 'intmap-compare-' + slug(st.iso || st.label) + '-' + slug(st.main.iso || st.main.label) + '-' + S.w + 'x' + S.h + '.png';
   rs.phase = 'done'; emit();
   return recorderState();
+}
+
+/* (then-now-card) THE COMPARISON'S TWO PICTURES AND ITS ONE CREDIT — the window (js/compare.js, through its published
+   controller) and the main map, each read inside a render tick, and the credit of both: what `compareImage` and the paired
+   postcard compose, one reading for both. The window's state comes with them (its instant, the main map's, its mode). */
+function compareShown() {
+  const C = compareApi();
+  const st = C && typeof C.timeState === 'function' ? C.timeState() : null;
+  return st && st.open && C && typeof C._map === 'function' && C._map() ? st : null;
+}
+async function comparePanes() {
+  const st = compareShown(); if (!st) return null;
+  const view = /** @type {any} */ (compareApi())._map();
+  const [a, b] = await Promise.all([grabView(view), grabMain()]);
+  /* the window's credit is the one its view paints (js/geo-engine.js, the drawn sources of that view) */
+  let wc = [];
+  try { const el = document.querySelector('#compare-map .map-credit-view'); const t = el && el.textContent && el.textContent.trim(); if (t) wc = [t]; } catch (_) { wc = []; }
+  if (!wc.length) { try { wc = drawnCredits(view.scene.getStyle(), view.camera.getZoom(), []); } catch (_) { wc = []; } }
+  return { st, a, b, credits: drawnCredits(null, 0, wc.concat(mainCredits())) };
+}
+/* (then-now-card) THE PLACE THE VIEW SHOWS, by name — js/place-dossier.js `viewPlaceName` (OpenStreetMap through Nominatim,
+   the app's one reverse geocode and its one queue), asked at the map's own scale. The module is fetched only for a paired
+   card, and one answer is kept per place, scale and language, so remaking the card (a caption edit, a new shape) asks once.
+   '' when the record names nothing there (the open sea) or could not be asked — the card is made without it, and says
+   nothing it was not told. */
+const placeMemo = { key: '', v: '' };
+/** a reverse-geocode record → «name, country» (the country alone when that is the name) */
+export function placeText(r) {
+  if (!r || r.status !== 'ok') return '';
+  const chain = Array.isArray(r.chain) ? r.chain : [];
+  const country = chain.length ? String(chain[chain.length - 1].name || '') : '';
+  const name = String(r.name || (chain[0] && chain[0].name) || '');
+  return name && country && name !== country ? name + ', ' + country : (name || country);
+}
+async function viewPlace(lg) {
+  let c = null, z = 0;
+  try { c = IntMapGeoEngine.camera.getCenter(); z = IntMapGeoEngine.camera.getZoom(); } catch (_) { return ''; }
+  if (!c || !isFinite(+c.lng) || !isFinite(+c.lat)) return '';
+  const lng = ((+c.lng + 180) % 360 + 360) % 360 - 180, lat = +c.lat;
+  const key = lng.toFixed(3) + ',' + lat.toFixed(3) + ',' + Math.round(z) + ',' + lg;
+  if (placeMemo.key === key) return placeMemo.v;
+  let v = '';
+  try { const m = await import('./place-dossier.js'); v = placeText(await m.viewPlaceName({ lng, lat }, lg, z)); } catch (_) { v = ''; }
+  placeMemo.key = key; placeMemo.v = v;
+  return v;
 }
 
 /* ══ (map-postcard) THE LEGENDS AS PICTURES ════════════════════════════════════════════════════════════════
@@ -995,6 +1078,10 @@ async function postcard(o) {
   const title = String(o.title || ''), note = String(o.note || ''), link = String(o.link || '');
   const base = { ok: false, size: key, w: S.w, h: S.h, title, note, link };
   if (busy()) return Object.assign(base, { error: 'busy' });
+  /* (then-now-card) the comparison window in its swipe IS what the reader is looking at — two instants of one place — so
+     the picture is that pair (`thenNowCard`), unless the caller asks for the main map alone (`pair:false`) */
+  const cst = o.pair === false ? null : compareShown();
+  if (cst && cst.mode === 'swipe') return thenNowCard(o, S, base);
   const g = await grabMain();
   if (!g.live || !g.canvas) return Object.assign(base, { error: 'not-drawn' });
   const credits = mainCredits(), instant = instantLabel('auto', o.lang || lang), els = shownLegends();
@@ -1017,6 +1104,36 @@ async function postcard(o) {
     legends: L.legends.length, legendsOmitted: L.legendsOmitted, linkFull: !!L.brand.link.full, linkShown: L.brand.link.text,
     band: { y: L.band.y, h: L.band.h, lines: L.credit.lines.map((l) => ({ x: l.x, y: l.y, w: Math.round(l.w), h: l.h })) },
     card: L.card ? L.card.box : null, legendBoxes: L.legends.map((b) => ({ x: b.x, y: b.y, w: b.w, h: b.h })) });
+}
+
+/**
+ * (then-now-card) 「あの頃といま」 AS ONE PICTURE — the window's instant on the left and the main map's on the right (the
+ * order the swipe shows them), the same view in both; each pane's instant and, under the window's, the layer it draws;
+ * the title and the place the view shows; the credit of both maps, the wordmark and the link — the postcard's compositor
+ * and its shapes. → the postcard's result, with `paired:true`, `then`, `now`, `place`.
+ */
+async function thenNowCard(o, S, base) {
+  const P = await comparePanes();
+  if (!P) return Object.assign(base, { error: 'no-compare' });
+  if (!P.a.live || !P.a.canvas || !P.b.live || !P.b.canvas) return Object.assign(base, { error: 'not-drawn' });
+  const lg = o.lang || lang, st = P.st;
+  const place = o.place != null ? String(o.place) : await viewPlace(lg);
+  const out = document.createElement('canvas'); out.width = S.w; out.height = S.h;
+  const ctx = /** @type {CanvasRenderingContext2D} */ (out.getContext('2d'));
+  const sub = st.layer && !st.held && st.layerName ? String(st.layerName) : '';
+  const L = paint(ctx, { w: S.w, h: S.h, panes: [{ label: st.label, sub }, { label: st.main.label }], credits: P.credits,
+    brand: Object.assign(brand(), { full: base.link }), headline: { title: base.title, place } }, [P.a.canvas, P.b.canvas], []);
+  /** @type {Blob|null} */ let blob = null;
+  try { blob = await new Promise((r) => out.toBlob(r, 'image/png')); } catch (_) { blob = null; }
+  if (!blob) return Object.assign(base, { error: 'encoder' });
+  if (lastCardUrl) { try { URL.revokeObjectURL(lastCardUrl); } catch (_) { /* gone */ } }
+  const url = lastCardUrl = URL.createObjectURL(blob);
+  const name = 'intmap-then-now-' + slug(st.iso || st.label) + '-' + slug(st.main.iso || st.main.label) + '-' + S.w + 'x' + S.h + '.png';
+  return Object.assign(base, { ok: true, paired: true, blob, url, name, credits: P.credits, instant: st.label + ' | ' + st.main.label,
+    then: st.label, now: st.main.label, place, layer: sub || null,
+    legends: 0, legendsOmitted: 0, linkFull: !!L.brand.link.full, linkShown: L.brand.link.text,
+    band: { y: L.band.y, h: L.band.h, lines: L.credit.lines.map((l) => ({ x: l.x, y: l.y, w: Math.round(l.w), h: l.h })) },
+    card: L.headline ? L.headline.box : null, legendBoxes: [], divider: L.panes[1].rect.x });
 }
 
 /* (sales-next) the classroom worksheet (js/tour-worksheet.js) puts one postcard of each step's map on paper — the same
@@ -1043,6 +1160,10 @@ const PC_CSS = [
   '#share-panel a.sh-btn{text-decoration:none;}',
   '#share-panel .sh-btn[aria-disabled="true"]{opacity:0.5;pointer-events:none;}',
   '#share-panel .sh-pc-status{margin-top:8px;font-size:11.5px;color:var(--text-muted);min-height:1.2em;}',
+  /* (then-now-card) which picture this is, and the door to the swipe */
+  '#share-panel .sh-pc-pair{display:flex;align-items:center;gap:10px;margin-top:10px;}',
+  '#share-panel .sh-pc-pair-d{flex:1;min-width:0;font-size:11.5px;line-height:1.4;color:var(--text-muted);}',
+  '#share-panel .sh-pc-pair .sh-btn{height:34px;padding:0 12px;font-size:12px;}',
 ].join('\n');
 let pcStyled = false;
 /**
@@ -1084,8 +1205,29 @@ export function createPostcardTab(ctx) {
     const share = canShareFile(file);
     go.dataset.mode = share ? 'share' : 'save-copy';
     go.replaceChildren(iconNode(share ? 'share' : 'clipboard'), ' ' + (share ? t('postcardShare') : t('postcardSaveCopy')));
-    status(last.w + ' × ' + last.h + ' · PNG' + (last.legendsOmitted ? ' · ' + t('postcardLegendsOmitted').replace('{n}', String(last.legendsOmitted)) : ''));
+    status(last.w + ' × ' + last.h + ' · PNG' + (last.paired ? ' · ' + last.then + ' | ' + last.now + (last.place ? ' · ' + last.place : '') : '')
+      + (last.legendsOmitted ? ' · ' + t('postcardLegendsOmitted').replace('{n}', String(last.legendsOmitted)) : ''));
     if (cr) cr.textContent = t('postcardCredits') + last.credits.join(' · ');
+    paintPair();
+  }
+  /* (then-now-card) THEN & NOW FROM THE SHARE PANEL — the picture is the swipe whenever the comparison window shows it
+     (`postcard` pairs by itself); this row says which picture it is, and opens the swipe when it is not on. */
+  const tt = (en, jp) => IntMapLang.t(ctx.lang(), en, jp);
+  function paintPair() {
+    const row = host && host.querySelector('.sh-pc-pair'); if (!row) return;
+    const b = /** @type {HTMLButtonElement} */ (row.querySelector('button')), d = row.querySelector('.sh-pc-pair-d');
+    const on = !!(last && last.ok && last.paired);
+    b.hidden = on;
+    if (d) d.textContent = on ? tt('Then & now: the comparison window’s time on the left, the main map’s on the right.', 'あの頃といま: 左が比較ウィンドウの時刻、右がメイン地図の時刻です。')
+      : tt('Compare two times of this place side by side.', 'この場所の 2 つの時刻を並べて比べます。');
+  }
+  async function openPair() {
+    const C = compareApi();
+    if (!C || typeof C.thenNow !== 'function') { status(tt('The comparison window is not available', '比較ウィンドウが使えません')); return; }
+    const r = C.thenNow({});
+    if (r && r.needsThen) { status(tt('Type the year to compare in the comparison window, then come back here.', '比較ウィンドウに比べる年を入力してから、ここに戻ってください。')); return; }
+    try { await C.judged(); } catch (_) { /* the picture is still made */ }
+    await make();
   }
   function render(h) {
     if (!pcStyled) { pcStyled = true; const st = document.createElement('style'); st.textContent = PC_CSS; document.head.appendChild(st); }
@@ -1107,7 +1249,11 @@ export function createPostcardTab(ctx) {
     row.append(go, save);
     const st = node('div', 'sh-pc-status'); st.setAttribute('aria-live', 'polite');
     const inc = node('div', 'sh-inc sh-pc-credits');
-    h.append(desc, seg, pv, row, st, inc);
+    const pair = node('div', 'sh-pc-pair');
+    const pb = /** @type {HTMLButtonElement} */ (node('button', 'sh-btn sec', tt('Then & now (swipe)', 'あの頃といま（スワイプ）'))); pb.type = 'button';
+    pb.onclick = () => { openPair(); };
+    pair.append(node('div', 'sh-pc-pair-d'), pb);
+    h.append(desc, seg, pair, pv, row, st, inc);
     go.onclick = async () => {
       if (!last || !last.ok) return;
       if (go.dataset.mode === 'share' && file) {
@@ -1122,7 +1268,7 @@ export function createPostcardTab(ctx) {
       let ok = false; try { await navigator.clipboard.writeText(last.link); ok = true; } catch (_) { ok = false; }
       status(ok ? t('postcardSavedCopied') : t('postcardSavedNoCopy'));
     };
-    if (last && last.ok) paint();
+    if (last && last.ok) paint(); else paintPair();
     return { refresh: () => make() };
   }
   return { render, make, refresh: () => make(), state: () => (last ? Object.assign({}, last, { blob: undefined }) : null), size: () => size };

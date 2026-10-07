@@ -12,6 +12,7 @@ import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import * as bus from './bus.js';
+import { compareTime } from './compare.js';   /* (then-now-card) the comparison window's face — its swipe is this panel's «Then & now» */
 
 
 
@@ -807,7 +808,18 @@ export function newsTimeline(HOST){
       const lbl=()=>{ ybBtn.textContent=IntMapLang.t(HOST.lang,'Read this year','この年を読む'); };
       lbl(); bus.on('intmap-lang',lbl);
       ybBtn.onclick=()=>{ import('./year-book.js').then(m=>m.openFromPage({ lang:()=>HOST.lang, countryStats:()=>HOST.countryStats, escape:(s)=>IntMapSafe.html(s) })).catch(()=>{}); };
-      lapseEl.parentNode.insertBefore(ybBtn,lapseEl); }
+      lapseEl.parentNode.insertBefore(ybBtn,lapseEl); tnMount(); }
+    /* (then-now-card) THEN & NOW — 「あの頃といま」: the place on the map at two instants, a divider between them (js/compare.js
+       thenNow). From here the instant on this clock is the THEN when it is in the past, and the map goes to the present; on
+       the present the comparison window's year field is focused for the reader's own year. Beside the year book, built here
+       for the same reason (the shell's markup is unchanged). */
+    let tnBtn=null;
+    function tnMount(){ if(tnBtn||!ybBtn||!ybBtn.parentNode) return;
+      tnBtn=document.createElement('button'); tnBtn.type='button'; tnBtn.id='ntl-thennow'; tnBtn.className='ntl-yb';
+      const lbl=()=>{ tnBtn.textContent=IntMapLang.t(HOST.lang,'Then & now — swipe to compare','あの頃といま — スワイプで比べる'); };
+      lbl(); bus.on('intmap-lang',lbl);
+      tnBtn.onclick=()=>{ try{ compareTime.thenNow({}); }catch(_){} };
+      ybBtn.parentNode.insertBefore(tnBtn,ybBtn.nextSibling); }
     /* WRITE side: inputs → kernel */
     tg.onclick=()=>{ tl.classList.toggle('collapsed'); if(!tl.classList.contains('collapsed')){ localizeChrome(); try{ refreshUI(IntMapTime.state()); }catch(_){} lapseMount(); ybMount(); } _tmSyncTerminator(); };
     if(closeX) closeX.onclick=()=>{ tl.classList.add('collapsed'); _tmSyncTerminator(); };

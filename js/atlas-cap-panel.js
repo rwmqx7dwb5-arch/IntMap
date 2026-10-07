@@ -156,7 +156,7 @@ export default [
        Save and Share (a file can be handed to the share sheet only by the reader's own press, so Atlas makes it and the
        reader sends it). */
     doc: [
-      { in: 'tools-panels', at: 172, text: '{"type":"postcard","size"?:"card"|"square"|"portrait","title"?:str,"note"?:str} = MAKE A MAP POSTCARD (地図の絵葉書) — the current map as ONE PNG image to post on social media: the map as it is now, the date it shows, the title and note (the same caption the share link carries — given here, they are set on the link too), the legends on the map, every data credit (always burned in), the IntMap name and the share link. "size": "card" 1200×630 (the link-preview card of X / Facebook — the default), "square" 1080×1080, "portrait" 1080×1350 (Instagram 4:5). It opens the share panel on its Image tab with the picture, where the user presses Save or Share (Atlas cannot press Share for them); the result states the file, its size and what is in it. Frame the map first (camera, date, layers), then make it. Use for 「この地図を画像にして」「SNS用の画像を作って」「絵葉書にして」「インスタ用に正方形で」「縦長の画像で」「『関ヶ原 1600』という題で画像に」, "make an image of this map to post", "save this map as a picture", "a square image for Instagram"; ' },
+      { in: 'tools-panels', at: 172, text: '{"type":"postcard","size"?:"card"|"square"|"portrait","title"?:str,"note"?:str} = MAKE A MAP POSTCARD (地図の絵葉書) — the current map as ONE PNG image to post on social media: the map as it is now, the date it shows, the title and note (the same caption the share link carries — given here, they are set on the link too), the legends on the map, every data credit (always burned in), the IntMap name and the share link. "size": "card" 1200×630 (the link-preview card of X / Facebook — the default), "square" 1080×1080, "portrait" 1080×1350 (Instagram 4:5). It opens the share panel on its Image tab with the picture, where the user presses Save or Share (Atlas cannot press Share for them); the result states the file, its size and what is in it. While the comparison window shows its SWIPE (thenNow), the picture is the THEN-AND-NOW CARD instead: the two instants side by side over the same view, the name of the place, the title, every credit of both maps (the result says paired:true and both instants). Frame the map first (camera, date, layers), then make it. Use for 「この地図を画像にして」「SNS用の画像を作って」「絵葉書にして」「インスタ用に正方形で」「縦長の画像で」「『関ヶ原 1600』という題で画像に」, "make an image of this map to post", "save this map as a picture", "a square image for Instagram"; ' },
     ],
     schema: () => ({ type: 'object', properties: { size: str(), title: str(), note: str() } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L, warn = K.warn, esc = K.esc;
@@ -174,6 +174,8 @@ export default [
         const facts={ ok:true, size:r.size, width:r.w, height:r.h, file:r.name, captioned:!!(r.title||r.note), instant:r.instant,
           legends:r.legends, legendsOmitted:r.legendsOmitted, credits:r.credits.slice() };
         if(own){ facts.title=r.title; facts.note=r.note; facts.link=r.link; }
+        /* (then-now-card) the swipe's card: both instants and the place it names */
+        if(r.paired){ facts.paired=true; facts.then=r.then; facts.now=r.now; facts.place=r.place||null; }
         let h=note('✓ '+L('Map postcard','地図の絵葉書')+' ('+r.w+' × '+r.h+', PNG): '+esc(r.name));
         h+='<div>'+esc(L('In the image: ','画像に入っているもの: '))+esc(r.instant)
           +(own?((r.title?' · <b>'+esc(r.title)+'</b>':'')+(r.note?' · '+esc(r.note):'')):((r.title||r.note)?' · '+esc(L('the link\'s title and note','リンクの題と一言')):''))
