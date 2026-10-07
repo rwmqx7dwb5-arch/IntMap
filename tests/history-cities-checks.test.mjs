@@ -433,12 +433,15 @@ test('#R427 ⑧ a live clock changes nothing at all, and the three named cities 
   assert.equal(evalAt(edo, { name: '東京' }, where('tokyo'), 'jp'), '江戸');
   /* Pleiades explicitly bridges Constantinople / Istanbul. That source-supported
      identity keeps the dated Wikidata history reachable without donating unrelated
-     GeoNames anchor names to neighborhoods. */
-  assert.equal(evalAt(edo, { 'name:en': 'Istanbul' }, where('istanbul')), 'Цариград');
+     GeoNames anchor names to neighborhoods.
+     ⚠ (hist-findings-sweep) 1867 read «Цариград» — Wikidata's Bulgarian «official name» (1453–1923) outranked the
+     written «Constantinople», whose start was left open. The written row now states both its spans (Byzantium from
+     657 BC, Constantinople from 330), and a written dated span wins an overlap (build-hist-cities.mjs alreadyCovered). */
+  assert.equal(evalAt(edo, { 'name:en': 'Istanbul' }, where('istanbul')), 'Constantinople');
   /* ⚠ AND THE HALF THAT RULE BOUGHT — the years no open-start span may answer any more. */
   const bc300 = boot('-000299-06-15');
   await bc300.window.IntMapHistCities.ensure();
-  assert.equal(evalAt(bc300, { 'name:en': 'Istanbul' }, where('istanbul')), 'Βυζάντιον',
+  assert.equal(evalAt(bc300, { 'name:en': 'Istanbul' }, where('istanbul')), 'Byzantium',
     '300 BC read «Constantinople» until #R679 — an open start was being read as a claim on all of time');
   assert.equal(evalAt(edo, { 'name:en': 'Kaliningrad' }, where('kaliningrad')), 'Königsberg');
   /* ⚠ Korolyov was ALSO called Kaliningrad, 1 200 km away — the second Kaliningrad on a Soviet

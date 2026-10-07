@@ -407,6 +407,62 @@ export function check(root = ROOT) {
   return index.stats;
 }
 
+/* ══ (hist-findings-sweep) ROWS A SET LOST AFTER ITS DETAIL WAS BUILT: `--reindex <set> --was <old bundle>` ══════════
+   The index is keyed by ROW POSITION, so a reviewed verdict that takes a row out of a tier (data/hist-admin-edges.json
+   `withdrawn`) shifts every later row, and a fragment may name the withdrawn relation as the source of a geometry other
+   shipped rows still share. Rebuilding the set needs every relation's full geometry again (the OHM cache; the builder
+   never downloads), while nothing about the detail itself changed. So, offline and exactly:
+     · each row of the new bundle takes the entry of the row of the old bundle with the same relation, span and geometry
+       key — a row with no such twin, or one whose geometry changed, fails (that is a rebuild, not a reindex);
+     · a fragment whose source relation for a geometry is no longer shipped names, instead, a shipped relation with that
+       exact geometry key (the detail is the same lines — it was accepted because the geometry reproduces), and the
+       fragment is renamed by its new content hash; with no such relation the geometry's lines leave the fragment.
+   The stats are recounted from the files, as retainUnsafe does. */
+function reindexRemoved(file, wasFile) {
+  const set = SETS.find((s) => s[0] === file);
+  if (!set || set[3]) throw new Error('--reindex takes an OpenHistoricalMap set: ' + SETS.filter((s) => !s[3]).map((s) => s[0]).join(','));
+  const global = set[1], index = loadIndex(OUT), now = read(join(ROOT, 'data', file + '.js')), was = read(wasFile);
+  const old = index.sets[global] || {};
+  const idOf = (f) => f[10] + '|' + f.slice(2, 8).join('.');
+  const wasAt = new Map(was.feats.map((f, i) => [idOf(f), i]));
+  const fresh = {}, shippedByKey = new Map();
+  now.feats.forEach((f, i) => {
+    const key = fp(geometryOf(now, f));
+    if (!shippedByKey.has(key)) shippedByKey.set(key, new Set());
+    shippedByKey.get(key).add(f[10]);
+    const j = wasAt.get(idOf(f));
+    if (j === undefined) throw new Error('--reindex: row ' + i + ' (' + idOf(f) + ') has no twin in ' + wasFile + ' — rebuild the set');
+    const e = old[j]; if (!e) return;
+    if (e[0] !== key) throw new Error('--reindex: row ' + i + ' changed geometry — rebuild the set');
+    fresh[i] = [e[0], e[1].map((p) => p.slice())];
+  });
+  const renamed = new Map(), paths = new Set(Object.values(fresh).flatMap((e) => e[1].map((p) => p[0])));
+  for (const path of paths) {
+    const d = JSON.parse(readLF(join(OUT, path)));
+    let changed = false;
+    for (const key of Object.keys(d.relations)) {
+      const ids = shippedByKey.get(key);
+      if (ids && ids.has(d.relations[key])) continue;
+      changed = true;
+      if (ids && ids.size) d.relations[key] = Math.min(...ids);
+      else { delete d.relations[key]; delete d.lines[key]; }
+    }
+    if (!changed) continue;
+    const body = JSON.stringify(d), name = file + '-' + createHash('sha256').update(body).digest('hex').slice(0, 16) + '.json';
+    writeFileSync(join(OUT, name), body + '\n'); renamed.set(path, name);
+  }
+  for (const e of Object.values(fresh)) for (const p of e[1]) if (renamed.has(p[0])) p[0] = renamed.get(p[0]);
+  index.sets[global] = fresh;
+  const stats = index.stats[global]; stats.records = now.feats.length; stats.refined = Object.keys(fresh).length; stats.retained = stats.records - stats.refined;
+  const used = new Set(Object.values(fresh).flatMap((e) => e[1].map((p) => p[0])));
+  stats.bytes = 0; stats.vertices = 0; stats.chunks = used.size;
+  for (const path of used) { const body = readFileSync(join(OUT, path), 'utf8'), d = JSON.parse(body); stats.bytes += Buffer.byteLength(body); for (const lines of Object.values(d.lines)) for (const line of lines) stats.vertices += line.length; }
+  writeIndex(OUT, index);
+  const all = detailAssets(index);
+  for (const name of readdirSync(OUT)) if (ownAsset(name) && !all.has(name)) unlinkSync(join(OUT, name));
+  console.log(global + ': reindexed ' + was.feats.length + ' → ' + now.feats.length + ' rows; ' + renamed.size + ' fragment(s) renamed for a source relation no longer shipped');
+}
+
 function retainUnsafe(index, rejected) {
   const changed=new Map();
   for(const [global,keys]of rejected) {
@@ -491,7 +547,7 @@ const outsideGit = () => {
   if (set && placed(ROOT, set).state === 'link') throw new Error('data/border-detail is a link into the shared data store. Run `node scripts/data-assets.mjs materialize border-detail` first, then `npm run data:publish border-detail` after the build.');
 };
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  if(process.argv.includes('--repair-source')){outsideGit();await checkSource(true);}else if(process.argv.includes('--check-source'))await checkSource();else if(process.argv.includes('--check')){requireData(ROOT,'data/border-detail');check();}else {
+  if(process.argv.includes('--reindex')){outsideGit();const a=process.argv.indexOf('--reindex'),w=process.argv.indexOf('--was');reindexRemoved(process.argv[a+1],process.argv[w+1]);}else if(process.argv.includes('--repair-source')){outsideGit();await checkSource(true);}else if(process.argv.includes('--check-source'))await checkSource();else if(process.argv.includes('--check')){requireData(ROOT,'data/border-detail');check();}else {
     outsideGit();
     const at = process.argv.indexOf('--sets');
     await build(at < 0 ? null : String(process.argv[at + 1] || '').split(',').map(s => s.trim()));

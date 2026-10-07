@@ -250,7 +250,7 @@ export function timeBorders(HOST){
        A year with TWO boundaries cannot say which it means, so it is written [y,m,d], and that day must be
        one of the record's own — the gate evaluates `_csName` on both sides of every boundary.
        ⚠ The reason for a rule is the curated fact's, not this function's: Hawaii's republic ended with the
-       1898 annexation, which is where the record's first row begins (1898-07-06) — the old «1899» drew a
+       1898 annexation, which is where the record's first row begins (1898-08-12, the transfer of sovereignty — scripts/cshapes/review.json hawaii-annexation-1898) — the old «1899» drew a
        republic over ground the record itself had already annexed. */
     /* ══ ⚠⚠ (marketing-engine) A STATE'S NAME IS NOT WRITTEN BEFORE THE STATE ══════════════════════════════
        260, 265, 731 and 732 were named «West Germany», «East Germany», «North Korea», «South Korea» from the
@@ -987,11 +987,11 @@ export function timeBorders(HOST){
        answer for each by its own name. */
     async function clFC(d,year,mon,day){ const feats=[];
       const ix=await _clH.at(_ymd(year,mon,day),'exclusive');
-      for(const i of ix) feats.push({type:'Feature',geometry:_clGeomOf(d,i),properties:_clProps(d.feats[i])});
+      for(const i of ix) feats.push({type:'Feature',geometry:_clGeomOf(d,i),properties:_clProps(d.feats[i],d)});
       return {type:'FeatureCollection',features:feats}; }
     /* one Cliopatria row's properties — the map's (`clFC`) and the place timeline's (`placeRecords`), so the two cannot
        disagree about which name a row carries, which it withholds, or which realm it belongs to */
-    function _clProps(f){ const m=f[9]||{}, NAME=f[0].en||'';
+    function _clProps(f,head){ const m=f[9]||{}, NAME=f[0].en||'';   /* `head`: the bundle's head (its `places` sentences) */
         /* (hist-coverage-expansion) a name scripts/histclio/review.json withholds — the shape is Cliopatria's,
            the name is not drawn before the year history places the polity's beginning or after its end
            (clio-lifespan-review: `ws` says which, `wc` that the year is approximate), or between two lives
@@ -999,6 +999,9 @@ export function timeBorders(HOST){
            first of the second), and the card says so (`blankNote`, the same lane the sheets' withheld names use) */
         const W=m.wn?{_wName:m.wn,_wSide:m.ws||'end',_wYear:m.wy,_wQ:m.wq||'',_wBy:'history',_wCirca:m.wc?1:0}:null;
         if(W&&m.ws==='gap') W._wYear2=m.wz;
+        /* (hist-findings-sweep) a name review.json `places` withholds on ground that was not that polity's — the card's
+           sentence is the reviewed one, shipped in the bundle's `places` (`wp` indexes it) */
+        if(W&&m.ws==='place'){ const P=((head&&head.places)||[])[m.wp]; if(P){ W._wNoteEn=P.en; W._wNoteJp=P.jp||P.en; } }
         /* (sudan-mahdist-1886) a polity review.json `ground` draws back to the year history gives: the outline is
            Cliopatria's first one for it (`hy`), carried back to `hs`, in place of the rows Cliopatria draws there (`ho`) —
            a derivation, so the card says so (`typeNote`). (clio-year-page-findings) `he`: the ground was the polity's
@@ -1135,7 +1138,7 @@ export function timeBorders(HOST){
       ohm(ans[2].v,L[2],_ymd(HB_MIN,1,1),_ymd(HB_MAX+1,1,1));
       /* Cliopatria — exclusive ends, dated to the year; its reach is its head's window */
       if(ans[3].v){ const w=(cld&&cld.window)||[-Infinity,Infinity], lo=_ymd(w[0],1,1), hi=_ymd(w[1]+1,1,1);
-        for(const [,f] of ans[3].v.rows){ const rs=_kRow(f,2), re=_kRow(f,5), p=_clProps(f);
+        for(const [,f] of ans[3].v.rows){ const rs=_kRow(f,2), re=_kRow(f,5), p=_clProps(f,cld);
           const s=Math.max(rs,lo), e=Math.min(re,hi); if(!(e>s)) continue;
           const en=(f[0]&&f[0].en)||'';
           const base={ tier:L[3].tier, file:L[3].file, id:Object.assign({},f[1]?{qid:f[1]}:{},p._wiki?{wiki:p._wiki}:{}), name:p.NAME||'', i18n:p._i18n||null, rawS:rs, rawE:re,
@@ -2916,6 +2919,15 @@ export function timeBorders(HOST){
           const tn=typeNote(f); if(tn) lines.push(tn);
           return { title:_LTB.arr(LA('The record names this shape «'+wn+'», but no polity of that name existed in '+Y,
                                      '記録はこの形を「'+wn+'」と呼ぶが、その名の政体は '+Y+' には存在しなかった')),
+                   lines:lines }; }
+        /* (hist-findings-sweep) a Cliopatria name withheld on ground the historical record places outside that polity
+           (review.json `places`) — the reviewed sentence says whose it was; en + jp (CONSTITUTION §7) */
+        if(p._wSide==='place'){
+          const ne=String(p._wNoteEn||'').trim();
+          if(ne) lines.push(_LTB.arr(LA(ne,String(p._wNoteJp||'').trim()||ne)));
+          const tn=typeNote(f); if(tn) lines.push(tn);
+          return { title:_LTB.arr(LA('The record names this shape «'+wn+'», but this ground was not that polity’s in '+Y,
+                                     '記録はこの形を「'+wn+'」と呼ぶが、'+Y+' のこの土地はその政体のものではなかった')),
                    lines:lines }; }
         /* (hist-coverage-expansion) a Cliopatria name withheld after the end the historical record places */
         if(p._wSide==='end'&&p._wBy==='history'){

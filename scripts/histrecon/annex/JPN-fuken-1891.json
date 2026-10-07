@@ -1,0 +1,63 @@
+{
+ "note": "Ground of a 1891-1943 prefecture that the 1920 町村 of N03-1920 do not hold, added to it from another atom set (scripts/histrecon/annex.mjs, applied by scripts/build-hist-admin-recon.mjs to the record whose KEY names this file). N03-1920 was compiled on the 1950 municipalities, so it carries no 町村 north-east of Etorofu: the Kuril Islands from Urup to Shumshu, Japanese from the Treaty of Saint Petersburg (1875) to the Soviet occupation of 1945, were part of 北海道庁 and are drawn by data/cshapes.js in Japan (scripts/cshapes/review.json kuril-1875) while no first-level unit covered them. An atom is taken only when its whole outer ring lies inside `within`, the treaty's ground; a polygon partly inside fails the build. Applied to the assembler's finished spans, so it does not re-key the assembler's cached unions.",
+ "annex": [
+  {
+   "id": "chishima-north-1876",
+   "unit": "北海道庁",
+   "from": "1891-01-01",
+   "to": "1943-06-30",
+   "atoms": {
+    "file": "gb-RUS-ADM2-9469f09.geojson",
+    "dataset": "geoBoundaries RUS ADM2 (release 9469f09)",
+    "names": [
+     "Severo-Kurilsky District",
+     "Kurilsky District"
+    ]
+   },
+   "within": [
+    [
+     148.9,
+     45.9
+    ],
+    [
+     149.6,
+     44.9
+    ],
+    [
+     157.5,
+     50.2
+    ],
+    [
+     156.57,
+     50.6
+    ],
+    [
+     156.57,
+     51.05
+    ],
+    [
+     154.6,
+     51.2
+    ],
+    [
+     148.9,
+     45.9
+    ]
+   ],
+   "withinIs": "The Kuril group north-east of the Friza (Vries) Strait up to the strait between Cape Lopatka and Shumshu — the same ring as scripts/cshapes/review.json kuril-1875; Etorofu (Iturup, already a 町村 of N03-1920) and Kamchatka lie outside.",
+   "fact": "By the Treaty of Saint Petersburg (7 May 1875, in force 22 August 1875) the eighteen islands from Shumshu to Urup became Japanese; the Kaitakushi placed them in 千島国 as 占守郡, 新知郡 and 得撫郡 (1876), and from 1886-01-26 they were part of 北海道庁, administered through 根室支庁 from 1897. They remained so until the Soviet occupation of August-September 1945. In 1891-1943 the first-level unit of this ground is therefore 北海道庁; 千島国 and 根室国 were geographic provinces inside it, not first-level units.",
+   "cite": [
+    {
+     "cite": "Treaty of Saint Petersburg (Treaty for the Exchange of Sakhalin for the Kuril Islands), 7 May 1875, Article 2"
+    },
+    {
+     "cite": "開拓使布達 明治9年（1876）千島国に占守・新知・得撫の三郡を置く; 北海道庁設置 明治19年1月26日（meiji-prefectures.json 北海道庁）"
+    },
+    {
+     "cite": "geoBoundaries RUS ADM2, Severo-Kurilsky and Kurilsky districts (the islands' outlines)",
+     "url": "https://www.geoboundaries.org/"
+    }
+   ]
+  }
+ ]
+}

@@ -78,7 +78,7 @@ import { execFileSync } from 'node:child_process';
 import os from 'node:os';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
 import pc from 'polygon-clipping';
-import { water as coastWater, inlandKmFor } from './build-border-coast.mjs';
+import { water as coastWater, inlandKmFor, KM_PER_DEG } from './build-border-coast.mjs';
 import { simplifyRing, ringArea } from './histborders/geom.mjs';
 import { CLIOPATRIA, AOUREDNIK_BASEMAPS, OPENHISTORICALMAP } from './lib/upstream-cadence.mjs';
 
@@ -331,6 +331,14 @@ export function landShare(poly, onLand = water().onLand) {
 /* a piece is ground when it is wide, or — cut by records with coarser shores — when it is land and wider than the gaps
    this builder makes */
 export const isGround = (poly, shoreFiner, onLand) => { const w = meanWidth(poly); return w >= SLIVER_W || (!!shoreFiner && w >= LAND_W && landShare(poly, onLand) >= LAND_SHARE); };
+/* ⚠⚠ (hist-findings-sweep) AND «WHERE IT LIES» IS THE RECORD'S OWN SHORE PRECISION, NOT THE RIBBON SCALE. The strip was
+   first cut on the SLIVER_W grid (0.2°, 22 km). MEASURED 2026-10-07 on the 1650 sheet: the 0.2° cell south of 41°N holds
+   the Marmara shore from Zeytinburnu to the old city AND the sea in front of it, so the cell's part of the strip read
+   under half land and was dropped, and the fill ended in a straight line along 41°N — 22 land points of 519 on a
+   0.005° grid that the sheet itself covers were blank (production report: «a straight cut across the old city»).
+   A cell wider than the record's shore registration judges more sea than the record ever claimed. ⇒ the strip is cut
+   at the registration band of the record it belongs to (scripts/build-border-coast.mjs inlandKmFor — the sheets 6 km,
+   0.054°), the scale at which that record's shore is known; `shoreFiner` carries that band in km (true = the default band). */
 /* ⚠ A NARROW PIECE IS JUDGED WHERE IT LIES, NOT AS ONE THING. A strip between two coastlines runs along the shore for a
    hundred kilometres, land in one place and sea in the next — measured: the strip holding the old city of Istanbul on the
    1600 and 1650 sheets runs west along the Sea of Marmara and is under half land as a whole, so judged whole it was
@@ -343,10 +351,10 @@ export function groundOf(poly, shoreFiner, onLand) {
   /* whole first: a piece that is ground as one thing stays one thing (Venice in its lagoon — measured, the 0.2° cell
      holding the city is mostly lagoon, the piece as a whole is mostly land) */
   if (isGround(poly, true, onLand)) return [poly];
-  const bb = bboxOf([poly]), out = [];
-  for (let x = Math.floor(bb[0] / SLIVER_W) * SLIVER_W; x < bb[2]; x += SLIVER_W)
-    for (let y = Math.floor(bb[1] / SLIVER_W) * SLIVER_W; y < bb[3]; y += SLIVER_W) {
-      const box = [x, y, x + SLIVER_W, y + SLIVER_W];
+  const bb = bboxOf([poly]), out = [], C = (typeof shoreFiner === 'number' ? shoreFiner : inlandKmFor()) / KM_PER_DEG;
+  for (let x = Math.floor(bb[0] / C) * C; x < bb[2]; x += C)
+    for (let y = Math.floor(bb[1] / C) * C; y < bb[3]; y += C) {
+      const box = [x, y, x + C, y + C];
       const sh = clipRing(poly[0], box); if (!sh) continue;
       const tile = [sh]; for (const h of poly.slice(1)) { const c = clipRing(h, box); if (c) tile.push(c); }
       for (const t of cleanPolys([tile])) if (isGround(t, true, onLand)) out.push(t);
@@ -494,6 +502,49 @@ function applyReview(rows, review) {
   return out;
 }
 
+/* ══ (hist-findings-sweep) A NAME ON GROUND THAT WAS NOT THAT POLITY'S: review.json `places` ══════════════════════════
+   `rows` withhold a name in TIME (before its beginning, after its end); `ground` gives a polity back what another row
+   drew over it. Neither can say «this row's name is right here and wrong there». Cliopatria v0.2.1 draws such rows:
+     observed 2026-10-07: every «French Indochina» piece the composition ships from 1886 — CShapes answers for Indochina
+     itself — is the Kerguelen Islands (from 1895) and Réunion (from 1946), with «Vichy France» as its realm to the end
+     of 1945; «Southern Ming» 1673–1682 carries, beside the Zheng realm on Taiwan, the south-west and south-east of the
+     mainland, which in those years was the Revolt of the Three Feudatories against the Qing (Wu Sangui's Zhou), not the
+     Ming loyalists, whose last emperor was executed in 1662.
+   ⇒ a `places` entry names the polity, the years (`s`, `e`: astronomical, inclusive; absent = open) and `within`, a ring
+     the misnamed ground lies inside. Over [1 January s, 1 January e + 1) every polygon of the named rows whose outer ring
+     lies wholly inside `within` is drawn WITHOUT the name — the shape stays, as a withheld piece (`ws` 'place', `wp` the
+     entry's index) — and its card says what the historical record places there (`note`, en + jp, shipped in the bundle's
+     `places`). A polygon PARTLY inside fails the build (nothing is cut: the ring is a selector, not a border), and an
+     entry that withholds nothing fails the gate. ⚠ It withholds, it does not name: who held the ground is the card's
+     sentence, not a polygon IntMap would have to draw. */
+export function applyPlaces(rows, review) {
+  const P = review.places || [];
+  let out = rows;
+  P.forEach((R, idx) => {
+    const S = R.s != null ? ymd(R.s, 1, 1) : -Infinity, E = R.e != null ? ymd(R.e + 1, 1, 1) : Infinity, next = [];
+    for (const r of out) {
+      if (r.name !== R.name || r.e <= S || r.s >= E) { next.push(r); continue; }
+      const take = [], keep = [];
+      for (const p of r.polys) {
+        let inn = 0, outn = 0;
+        for (const [x, y] of p[0]) { if (inRingXY(R.within, x, y)) inn++; else outn++; }
+        if (inn && outn) throw new Error(`review place «${R.name}» ${R.s ?? ''}–${R.e ?? ''}: a polygon of the row ${unymd(r.s).join('-')} lies partly inside \`within\` — the selector would cut land`);
+        (inn ? take : keep).push(p);
+      }
+      if (!take.length) { next.push(r); continue; }
+      const s0 = Math.max(r.s, S), e0 = Math.min(r.e, E);
+      if (r.s < s0) next.push({ ...r, e: s0 });
+      if (keep.length) next.push({ ...r, polys: keep, bb: bboxOf(keep), area: areaOf(keep), s: s0, e: e0 });
+      const wm = { ...r.meta, wn: R.name, ws: 'place', wp: idx }; if (R.wd) wm.wq = R.wd;
+      next.push({ ...r, name: '', qid: null, meta: wm, polys: take, bb: bboxOf(take), area: areaOf(take), s: s0, e: e0 });
+      if (r.e > e0) next.push({ ...r, s: e0 });
+    }
+    out = next;
+  });
+  return out;
+}
+const inRingXY = (ring, x, y) => { let c = false; for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) { const [xi, yi] = ring[i], [xj, yj] = ring[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; };
+
 /* ══ WHEN CLIOPATRIA GIVES A POLITY'S GROUND TO ANOTHER, CONTINUING ROW BEFORE ITS FIRST ROW (sudan-mahdist-1886) ══
    The finding above asks whether a NAME is drawn outside its polity's life. It cannot see the opposite: a polity
    whose life history places years before Cliopatria's first row for it, while those years' ground is drawn under a
@@ -609,7 +660,10 @@ function heldSpan(R, mine) {
 function applyHeld(rows, G) {
   let out = rows;
   for (const R of (G && G.rows) || []) {
-    const mine = out.filter((r) => r.name === R.name);
+    /* the polity's OWN rows — not rows another judgement already carried back under its name (hist-findings-sweep:
+       Denmark is judged twice, Greenland 1941–1945 and the Faroe Islands 1941–1944, and the second must take the outline
+       of Cliopatria's own 1945 row, not the first judgement's derived one) */
+    const mine = out.filter((r) => r.name === R.name && !(r.meta && r.meta.hy != null));
     if (!mine.length) continue;
     const span = heldSpan(R, mine);
     if (!span) continue;
@@ -758,7 +812,7 @@ function splitRow(row, ohmRows) {
     const inForce = near.filter((o) => o.s <= t0 && o.e > t0);
     const key = inForce.map((o) => o.g).sort().join('|');
     let g = memo.get(key);
-    if (g === undefined) { g = subtract(row.polys, inForce.map((o) => o.polys), row.area, finerShore(row.rec || '__HISTCLIO', inForce)); memo.set(key, g); }
+    if (g === undefined) { g = subtract(row.polys, inForce.map((o) => o.polys), row.area, finerShore(row.rec || '__HISTCLIO', inForce) && inlandKmFor(row.rec || '__HISTCLIO')); memo.set(key, g); }
     if (prev && prev.g === g && prev.e === t0) { prev.e = t1; continue; }
     if (g) { prev = { s: t0, e: t1, polys: g, g }; pieces.push(prev); } else prev = null;
   }
@@ -841,7 +895,7 @@ function cutSheet(polysList, above) {
   return polysList.map((polys) => {
     if (!polys.length) return null;
     const bb = bboxOf(polys), hitR = cuttersOf(cellsOf(polys), above.filter((a) => meets(a.bb, bb))), hit = hitR.map((a) => a.polys);
-    const g = subtract(polys, hit, areaOf(polys), finerShore(SHEETS, hitR));
+    const g = subtract(polys, hit, areaOf(polys), finerShore(SHEETS, hitR) && inlandKmFor(SHEETS));
     return g ? { polys: g, whole: g === polys } : null;
   });
 }
@@ -949,10 +1003,14 @@ async function ohmLate(ohm, clip, topYear) {
    different hash; nothing is reused across inputs. The cache is outside the repository (CACHE). */
 const JOBS = join(CACHE, 'jobs');
 /* only what the geometry depends on — a row's name or QID changing must not miss the cache */
+/* (hist-findings-sweep) ⚠ THE KEY NAMES THE GROUND RULE TOO. It hashed the inputs only, so a change to what `subtract` keeps
+   (SLIVER_W, LAND_W, LAND_SHARE, the cell a narrow strip is judged in) was answered from the old rule's results by any
+   build that found them on disk — and the disk cache is shared by every worktree on the machine. */
+const GROUND_RULE = JSON.stringify({ sliver: SLIVER_W, landW: LAND_W, landShare: LAND_SHARE, cell: 'record-shore-band' });
 function jobKey(job, ohmSha) {
   const g = job.kind === 'row' || job.kind === 'late' ? { k: job.kind, s: job.row.s, e: job.row.e, area: job.row.area, polys: job.row.polys }
     : { k: 'sheet', t: job.t, band: job.band, list: job.polysList, above: job.above.map((a) => a.polys) };
-  return createHash('sha256').update(ohmSha).update(JSON.stringify(g)).digest('hex'); }
+  return createHash('sha256').update(ohmSha).update(GROUND_RULE).update(JSON.stringify(g)).digest('hex'); }
 function pool(ohm) {
   const N = Math.max(1, Math.min(16, (os.availableParallelism ? os.availableParallelism() : os.cpus().length) - 2));
   const workers = [];
@@ -1069,7 +1127,7 @@ async function build({ measure } = {}) {
   console.error(`subtracting on ${P.N} threads`);
   try {
     const review = JSON.parse(readFileSync(REVIEW, 'utf8'));
-    const raw = await clioRows(readUpstream(), ohm, P.run, review.ground), clio = applyReview(raw, review);
+    const raw = await clioRows(readUpstream(), ohm, P.run, review.ground), clio = applyPlaces(applyReview(raw, review), review);
     const rings = [], pool2 = new Map();
     const put = (r) => { const k = r.join(';'); let i = pool2.get(k); if (i == null) { i = rings.length; rings.push(r); pool2.set(k, i); } return i; };
     clio.sort((a, b) => a.s - b.s || a.e - b.e || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
@@ -1084,7 +1142,9 @@ async function build({ measure } = {}) {
       /* end EXCLUSIVE, like data/hist-borders.js: a row is in force on [start, end) */
       end: 'exclusive', window: [lo, Math.floor(ohm.top / 10000) - (ohm.top % 10000 === 101 ? 1 : 0)], basis: { 'data/hist-borders.js': sha(HB), 'data/cshapes.js': sha(CSF), ...(existsSync(HBL) ? { 'data/hist-borders-late.js': sha(HBL) } : {}) },
       /* name → [first, last] astronomical year Cliopatria draws it over before 1886: the span its QID was verified on */
-      ids: Object.fromEntries(Object.keys(raw.ids).sort().map((k) => [k, raw.ids[k]])) };
+      ids: Object.fromEntries(Object.keys(raw.ids).sort().map((k) => [k, raw.ids[k]])),
+      /* (hist-findings-sweep) what the card says on a piece review.json `places` withholds (`wp` indexes this) */
+      places: (review.places || []).map((R) => ({ en: R.note.en, jp: R.note.jp })) };
     const body = 'window.__HISTCLIO=' + JSON.stringify({ ...head, rings, feats }) + ';\n';
     writeFileSync(OUT, body);
     /* the findings nobody has judged yet are listed as pending — counted, drawn as Cliopatria states them */
@@ -1197,12 +1257,15 @@ export function check() {
     /* …and the other way: every withheld shipped row names a side a reviewed row states, with that row's
        years — a gap's bounds are the last year of the first life and the first of the second */
     const byName = new Map(review.rows.map((R) => [R.name, R]));
-    const stray = d.feats.filter((f) => { const m = f[9] || {}; if (!m.wn || m.ws == null) return false; const R = byName.get(m.wn); if (!R) return false;
+    const stray = d.feats.filter((f) => { const m = f[9] || {}; if (!m.wn || m.ws == null) return false;
+      if (m.ws === 'place') { const P = (review.places || [])[m.wp]; return !(P && P.name === m.wn); }
+      const R = byName.get(m.wn); if (!R) return false;
       if (m.ws === 'start') return m.wy !== R.s; if (m.ws === 'end') return m.wy !== R.e;
       if (m.ws === 'gap') return !(R.gaps || []).some(([a, b]) => m.wy === a - 1 && m.wz === b + 1);
       return true; });
     ok(stray.length === 0, stray.length + ' withheld Cliopatria row(s) carry a side or year no reviewed row states: ' + stray.slice(0, 3).map((f) => f[9].wn + ' ' + f[9].ws + ' ' + f[9].wy).join(', '));
-    checkGround(d, review, ok); }
+    checkGround(d, review, ok);
+    checkPlaces(d, review, ok); }
   /* ⚠ CC BY 4.0 MAKES CREDIT A CONDITION OF REDISTRIBUTION: the reader-facing row must exist, by its exact name */
   const ref = readFileSync(join(ROOT, 'js', 'reference-data.js'), 'utf8');
   ok(ref.includes("n:'" + CREDIT_ROW + "'") && /lic:'CC BY 4.0'/.test(ref.slice(ref.indexOf(CREDIT_ROW))), 'js/reference-data.js does not credit Cliopatria as «' + CREDIT_ROW + '» with its licence');
@@ -1236,7 +1299,9 @@ function checkGround(d, review, ok) {
     ok(/^Q\d+$/.test(String(R.wd || '')), tag + ' must name the Wikidata item (wd) of the polity');
     ok(typeof R.history === 'string' && R.history.length > 20, tag + ' must say what history states');
     if (!Number.isInteger(R.s) || !Array.isArray(R.over)) continue;
-    const carried = d.feats.filter((f) => f[0].en === R.name && f[9] && f[9].hy != null);
+    /* (hist-findings-sweep) one polity may be judged more than once (Denmark: Greenland and the Faroes) — each judgement
+       answers for the rows that say ITS years */
+    const carried = d.feats.filter((f) => f[0].en === R.name && f[9] && f[9].hy != null && f[9].hs === R.s && (f[9].he == null ? null : f[9].he) === (R.e == null ? null : R.e));
     ok(carried.length > 0, tag + ' is not drawn back to ' + R.s + ' — the record changed; re-judge or remove the row');
     if (!carried.length) continue;
     const hy = carried[0][9].hy, S = ymd(R.s, 1, 1), T = ymd(hy, 1, 1);
@@ -1263,9 +1328,29 @@ function checkGround(d, review, ok) {
       }
     }
   }
-  const byName = new Map(G.rows.map((R) => [R.name, R]));
-  const stray = d.feats.filter((f) => f[9] && f[9].hy != null && !(byName.get(f[0].en) && byName.get(f[0].en).s === f[9].hs && (byName.get(f[0].en).e == null ? null : byName.get(f[0].en).e) === (f[9].he == null ? null : f[9].he)));
+  const stray = d.feats.filter((f) => f[9] && f[9].hy != null && !G.rows.some((R) => R.name === f[0].en && R.s === f[9].hs && (R.e == null ? null : R.e) === (f[9].he == null ? null : f[9].he)));
   ok(stray.length === 0, stray.length + ' Cliopatria row(s) carry an outline back to a year no ground row states: ' + stray.slice(0, 3).map((f) => f[0].en + ' ' + f[9].hs).join(', '));
+}
+/* (hist-findings-sweep) review.json `places`: each entry stated whole, withholding something, and nothing named inside its
+   ring over its years; the bundle carries the card's sentence for each */
+function checkPlaces(d, review, ok) {
+  const P = review.places || [];
+  ok(Array.isArray(d.places) && d.places.length === P.length && P.every((R, i) => d.places[i] && d.places[i].en === (R.note && R.note.en) && d.places[i].jp === (R.note && R.note.jp)), 'data/hist-clio.js does not carry the card sentences of review.json places — rebuild it');
+  const k0 = (f) => ymd(f[2], f[3], f[4]), k1 = (f) => ymd(f[5], f[6], f[7]);
+  P.forEach((R, i) => {
+    const tag = 'place: «' + R.name + '» ' + (R.s ?? '…') + '–' + (R.e ?? '…');
+    ok(Array.isArray(R.within) && R.within.length >= 4 && R.within.every((p) => Array.isArray(p) && p.length === 2 && p.every(Number.isFinite)), tag + ' must state `within` as a ring of [lng, lat]');
+    ok(R.s == null || Number.isInteger(R.s), tag + ': s must be a whole year'); ok(R.e == null || (Number.isInteger(R.e) && (R.s == null || R.e >= R.s)), tag + ': e must be a whole year, not before s');
+    ok(typeof R.history === 'string' && R.history.length > 40, tag + ' must say what history states');
+    ok(R.note && typeof R.note.en === 'string' && R.note.en.length > 40 && typeof R.note.jp === 'string' && R.note.jp.length > 20, tag + ' must carry the card sentence in en and jp (CONSTITUTION §7)');
+    if (!Array.isArray(R.within)) return;
+    const S = R.s != null ? ymd(R.s, 1, 1) : -Infinity, E = R.e != null ? ymd(R.e + 1, 1, 1) : Infinity;
+    const withheld = d.feats.filter((f) => f[9] && f[9].ws === 'place' && f[9].wp === i);
+    ok(withheld.length > 0, tag + ' withholds nothing — the record changed; re-judge or remove it');
+    ok(withheld.every((f) => k0(f) >= S && k1(f) <= E), tag + ': a withheld piece lies outside the years it names');
+    const named = d.feats.filter((f) => f[0].en === R.name && k1(f) > S && k0(f) < E && f[8].some((p) => d.rings[p[0]].every(([x, y]) => inRingXY(R.within, x, y))));
+    ok(named.length === 0, tag + ' is still named inside its ring: ' + named.slice(0, 3).map((f) => f.slice(2, 5).join('-')).join(', '));
+  });
 }
 /* (hist-colonial-era-borders) data/hist-borders-late.js: OHM on CShapes' days. Made against the shipped CShapes, every row
    inside its window and ending by its top, every ring resolvable and used — and Cliopatria cut against THIS file. */

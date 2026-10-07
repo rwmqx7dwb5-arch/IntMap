@@ -1090,7 +1090,7 @@ Atlas の `research.related` / `research.impact` / 実世界オブジェクト�
   14の束（`cshapes` / `hist-borders` / `hist-borders-late` / `hist-clio` / `hist-eras-rest` /
   `hist-admin1` / `hist-admin2` / `hist-admin3` / `hist-eras` / `hist-kuni` / `hist-admin-fill` /
   `hist-admin-surveys` / `hist-admin-surveys-nc` / `hist-admin-recon`）の
-  全リング **94,256 本**に
+  全リング **98,388 本**に
   ついて「描く run」を印す。⚠ **どの束を印すかは書き並べていない**——`data/` を走査し、
   「1つのグローバルに `rings`（[経度,緯度] の配列の配列）を持つ束」であるものを**発見する**
   （`discoverBundles()`）。手で並べた一覧は短くなっても誰も気づかないので、
@@ -1222,9 +1222,9 @@ Atlas の `research.related` / `research.impact` / 実世界オブジェクト�
     1 つなので、**順位づけられた候補列そのものが存在しない**——綴りだけで 1 件を選ぶ経路が無い。
     見つかった項目は上の尺度をそのまま通る。⚠ **曖昧さ回避ページは記事ではない**ので落とす。
   実測 2026-09-14: 地図が名前を引く 2 記録で **958 名前**を尺度で決め（era 773・cshapes 185）、
-  識別子で 283 QID、**101 の説明文**、合わせて訳語 6,459（当時）。
+  識別子で 283 QID、**100 の説明文**、合わせて訳語 6,459（当時）。
   ⚠ 2026-10-04 から識別子の欄は Cliopatria（`data/hist-clio.js`）の検証済み QID にも答え（`--identifiers`）、
-  合わせて 13,466 の訳語。
+  合わせて 13,456 の訳語。
   ⚠ **`lanes` はこれより広い母集合を数える**——era・cshapes に加えて base lane の 32 行も含む
   表全体で、label/alias が 812・en.wikipedia のリダイレクトが 178・識別子が 1,246、訳語 13,618 件。
   2 つの数は別の母集合についてのもので、どちらも文書とゲートが同じ定義で照合している。
@@ -1564,7 +1564,7 @@ Atlas の `research.related` / `research.impact` / 実世界オブジェクト�
   `clickLayers({ownersOnly:true})` が排他的な所有者を返すので、背景の説明用の面が地名を塞がない。
   同じ層に排他的なハンドラが併存する場合は、その所有権を保持する。
 - **都市名ラベルも時計に従う**（`js/hist-cities.js` の `window.IntMapHistCities`・記録は
-  `scripts/histcities/` → `data/hist-cities.json`・**6474都市／9246の歴史名**・125か国）。
+  `scripts/histcities/` → `data/hist-cities.json`・**6474都市／9241の歴史名**・125か国）。
   開始時期が出典にない歴史名には `[?]` を付け、Chronos に意味を表示する。日付を推定して埋めず、元の名称を記録に保持する。
   歴史名を現代ラベルへ対応付ける名前は、同じ地物について出典が述べる名前から導く。
   近隣のGeoNames地点を見つけたことだけでは、その地点の都市名を対応先へ追加しない。

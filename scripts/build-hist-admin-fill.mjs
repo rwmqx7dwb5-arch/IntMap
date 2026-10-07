@@ -354,7 +354,8 @@ export function eraIndex() {
     return { id: nameOf(f, i), polys, bb: [mnx, mny, mxx, mxy], s: ymd(f[2], f[3], f[4]), e: ymd(f[5], f[6], f[7]) };
   }).filter((u) => u.polys.length);
 
-  const csU = pack(cs, cs.feats, (f, i) => 'cs' + i).map((u) => ({ ...u, rec: 'cs' }));
+  /* (hist-findings-sweep) `gw` from the row the id names — `pack` drops rows with no polygon, so a position in its output is not a row */
+  const csU = pack(cs, cs.feats, (f, i) => 'cs' + i).map((u) => ({ ...u, rec: 'cs', gw: cs.feats[+u.id.slice(2)][1] }));
   const hbU = pack(hb, hb.feats, (f, i) => 'hb' + i).map((u) => ({ ...u, rec: 'hb' }));
   /* a realm (`r`) is the union of member rows drawn beside it — its ground is answered through them,
      exactly as `politiesAt` counts it */
@@ -411,10 +412,22 @@ export function eraIndex() {
     for (const u of olU) if (meets(u.bb, box)) out.push(u);
     for (const u of clU) if (meets(u.bb, box)) out.push(u);
     for (const u of heU) if (meets(u.bb, box)) out.push(u);
-    return out.map((u) => { const b = bandOf(u); return { id: u.id, rec: u.rec, polys: u.polys, bb: u.bb, s: Math.max(u.s, b[0]), e: Math.min(u.e, b[1]) }; })
+    return out.map((u) => { const b = bandOf(u); return { id: u.id, rec: u.rec, gw: u.gw, polys: u.polys, bb: u.bb, s: Math.max(u.s, b[0]), e: Math.min(u.e, b[1]) }; })
       .filter((u) => u.e > u.s);
   }
-  return { meeting, floor: he.snaps[0].y, ceiling: ymd(csMax, 12, 31), present: ceil };
+  /* (hist-findings-sweep) the CShapes code that holds a country's present-day units on the record's last day — the
+     country's own outline in the record, found from the units' ground and not from a table of codes */
+  function homeCode(ptsList) {
+    const last = csU.filter((u) => u.e >= ymd(csMax, 12, 31)), n = new Map();
+    for (const { pts, box } of ptsList) for (const u of last) { if (!meets(u.bb, box)) continue;
+      const m = hitMask(u.polys, pts); let k = 0; for (let i = 0; i < m.length; i++) k += m[i]; if (k) n.set(u.gw, (n.get(u.gw) || 0) + k); }
+    let best = null, bn = 0; for (const [g, k] of n) if (k > bn) { best = g; bn = k; }
+    return best;
+  }
+  /* is a row of code `gw` in force at `t` ANYWHERE — not only near the unit: the home country's outline need not meet an
+     island unit's box (MEASURED: Japan's 1946–1952 outline ends at 30°N, Okinawa's box at 28.5°N) */
+  const codeAt = (gw, t) => csU.some((u) => u.gw === gw && u.s <= t && u.e > t);
+  return { meeting, homeCode, codeAt, floor: he.snaps[0].y, ceiling: ymd(csMax, 12, 31), present: ceil };
 }
 const meets = (a, b) => !(a[2] < b[0] || a[0] > b[2] || a[3] < b[1] || a[1] > b[3]);
 
@@ -937,7 +950,7 @@ async function main() {
     ix = rings.push(r) - 1; ringKey.set(k, ix); return ix;
   };
 
-  const stats = { units: 0, rows: 0, droppedStraddle: 0, droppedUnlocated: 0, droppedOverlap: 0, droppedEmpty: 0, droppedWhole: 0 };
+  const stats = { units: 0, rows: 0, droppedAbroad: 0, droppedStraddle: 0, droppedUnlocated: 0, droppedOverlap: 0, droppedEmpty: 0, droppedWhole: 0 };
   const qids = [];
   const pending = [];
 
@@ -971,6 +984,21 @@ async function main() {
          does — so the expensive half is hoisted out of the interval loop and the loop reads a
          precomputed column. The first build of this file did it the other way and did not finish. */
       const near = era.meeting(box);
+      /* ══ ⚠⚠⚠ (hist-findings-sweep) A SUBDIVISION IS DRAWN INSIDE ITS OWN COUNTRY, WHERE THE RECORD DRAWS THAT COUNTRY ══
+         Test 3 asked only that the ground lie inside ONE polity, not WHICH, so a unit lying wholly inside a foreign polity
+         passed — measured 2026-10-07: «Okinawa» (JP-47) was drawn from 1945-11-26 to today, through 1946-01-29 to
+         1972-05-14, when data/cshapes.js draws the Nansei Islands as «Ryukyu Islands» (7401, under United States
+         administration; scripts/cshapes/review.json) beside Japan (740). Okinawa Prefecture did not exist then.
+         ⇒ the unit's own code is the CShapes code holding ITS ground on the record's last day (`homeCode` — from the
+         ground, not from a table of codes). On an interval where a row of that code is in force anywhere (`codeAt`), a unit
+         whose ground lies mostly in a CShapes row of ANOTHER code is not drawn there, and — like ground no polity is drawn
+         on — it is not a hole in the country (the reader sees another country there), so it joins the unit's cover.
+         ⚠ PER UNIT, NOT PER COUNTRY: CShapes codes dependencies apart from their sovereign to the end (Martinique 66,
+         Réunion 585 beside France 220) — measured on the first version, which took the country's majority code and
+         withheld Martinique and Réunion 1976–2019 as «abroad», and Kinmen (which CShapes draws inside China) 2014–2019.
+         ⚠ ONLY A CShapes ROW IS «ANOTHER COUNTRY»: a row of another record has no code to compare, and the rule is test 3
+         as it was there (and wherever the record does not draw the unit's own code at all). */
+      const home = era.homeCode([{ pts, box }]);
       const hitsOf = near.map((eu) => {
         const mask = hitMask(eu.polys, pts);
         let n = 0; for (let i = 0; i < mask.length; i++) n += mask[i];
@@ -980,6 +1008,8 @@ async function main() {
       let alive = [];
       /* (hist-coverage-depth) the intervals on which the era record places NONE of this ground */
       const silent = [];
+      /* (hist-findings-sweep) …and the ones on which it places the ground in another country than this unit's */
+      const abroad = [];
       /* ⚠ the first interval has nothing behind it, so «no record answers» means «not drawn» there
          — the fill never starts on a date the era record is silent about. */
       for (const { start, end } of lives) {
@@ -1022,7 +1052,11 @@ async function main() {
             }
             if (nk >= 0) { claimed[i] = 1; located++; own.set(nk, own.get(nk) + 1); }
           }
-          for (const n of own.values()) if (n > best) best = n;
+          let bestK = -1;
+          for (const [k, n] of own) if (n > best) { best = n; bestK = k; }
+          /* (hist-findings-sweep) the record draws this unit's country now, and the unit's ground mostly lies elsewhere */
+          const foreign = cur < era.present && home != null && bestK >= 0 && near[bestK].rec === 'cs' && near[bestK].gw !== home
+            && era.codeAt(home, cur);
           /* ══ ⚠⚠⚠ A SEAM IN THE RECORD IS NOT A STATEMENT ABOUT THE LAND ════════════════════════
              MEASURED on Sweden (`--only SWE --diagnose`): the intervals this test was throwing away
              were `1719..1719`, `1814..1814`, `1905..1905` and `2019..9999` — a day at the Treaty of
@@ -1052,13 +1086,15 @@ async function main() {
              Australia. LOCATED_MIN is a share of an INTERIOR lattice; on a boundary sample the era record
              answers as soon as it places any of it, and the straddle test below still decides. */
           const answered = present || (located > 0 && (pts.vertex || located / pts.length >= LOCATED_MIN));
-          const ok = present ? true : answered ? (located - best) / located <= STRADDLE_MAX : lastVerdict;
+          const ok = foreign ? false : present ? true : answered ? (located - best) / located <= STRADDLE_MAX : lastVerdict;
           if (!ok && !present && located === 0) silent.push([cur, stop]);
+          if (foreign) { abroad.push([cur, stop]); stats.droppedAbroad++; }
           if (DIAG) console.error('    ' + u.code + ' ' + splitYmd(cur)[0] + '..' + splitYmd(stop)[0]
             + ' located ' + (located / pts.length * 100).toFixed(0) + '% straddle '
             + (located ? ((located - best) / located * 100).toFixed(0) : '—') + '% ' + (ok ? 'KEEP' : 'drop'));
           if (answered) lastVerdict = ok;
           if (ok) alive.push([cur, stop]);
+          else if (foreign) { /* counted above */ }
           else if (!answered) stats.droppedUnlocated++;
           else stats.droppedStraddle++;
           cur = stop;
@@ -1076,7 +1112,7 @@ async function main() {
          Russia: 46,453 cells, the largest single hole in the 2019 first-level record.
          ⚠ ONLY `located === 0` QUALIFIES. A unit the era record places partly (Jervis Bay at 50%) is
          ground the reader sees under a country, and the rule stands for it. */
-      if (!alive.length && !silent.length) continue;
+      if (!alive.length && !silent.length && !abroad.length) continue;
 
       /* ⚠⚠⚠ (#R730) WHAT THE RECORD ANSWERS IS COVERAGE, NOT A GAP. Test 4 below hands ground back
          to data/hist-admin{1,2,3}.js so nothing is drawn twice — but #R719 then intersected the
@@ -1101,7 +1137,7 @@ async function main() {
       /* ⚠ A UNIT WHOSE WHOLE SPAN THE RECORD ANSWERS STAYS IN `live`. Dropping it here is what
          made `live.length === all.length` false and took the country with it. */
       const shown = union(alive3, answeredIv);
-      const cover = union(shown, silent);
+      const cover = union(union(shown, silent), abroad);
       if (!cover.length) continue;
 
       live.push({ u, polys, lives, alive, shown, cover, answeredIv });
@@ -1196,7 +1232,8 @@ async function main() {
     + ' | rows ' + stats.rows + ' | rings ' + rings.length);
   console.error('  withheld: ' + stats.droppedStraddle + ' interval(s) for straddling, ' + stats.droppedUnlocated
     + ' for ground the era record does not place, ' + stats.droppedOverlap + ' for ground the record already answers for, '
-    + stats.droppedWhole + ' unit(s) because their country could not be answered whole on any date');
+    + stats.droppedWhole + ' unit(s) because their country could not be answered whole on any date, '
+    + stats.droppedAbroad + ' interval(s) for ground the era record places outside the unit’s own country');
   for (const y of [1700, 1800, 1900, 1950, 2000]) {
     const st = ymd(y, 6, 15);
     console.error('  in force ' + y + ': ' + feats.filter((f) => ymd(f[2], f[3], f[4]) <= st && ymd(f[5], f[6], f[7]) > st).length);

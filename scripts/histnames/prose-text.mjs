@@ -79,7 +79,6 @@ export const PROSE = {
     'Laotian states': 'ラオスの諸国家',
     'Maya states': 'マヤ諸国家',
     'Mon state': 'モン族の国家',
-    'Prot-Altaic pastoralists': '原アルタイ系の牧畜民',
     'Pyu state': 'ピュー国家',
     'Sinhalese kingdom': 'シンハラ王国',
     'Sinhalese kingdoms': 'シンハラ諸王国',

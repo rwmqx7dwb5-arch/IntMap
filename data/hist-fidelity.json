@@ -18,7 +18,7 @@
       "year": -100,
       "pct": 0.8,
       "pctArea": 0.84,
-      "polityLand": 83.85,
+      "polityLand": 83.86,
       "unitLand": 0.81,
       "zero": 111,
       "partial": 10,
@@ -30,17 +30,17 @@
       "pctArea": 3,
       "polityLand": 63.13,
       "unitLand": 1.9,
-      "zero": 108,
-      "partial": 15,
+      "zero": 107,
+      "partial": 16,
       "full": 0
     },
     {
       "year": 500,
       "pct": 0.98,
       "pctArea": 1.18,
-      "polityLand": 68.64,
+      "polityLand": 68.65,
       "unitLand": 0.86,
-      "zero": 128,
+      "zero": 130,
       "partial": 8,
       "full": 0
     },
@@ -50,7 +50,7 @@
       "pctArea": 1.15,
       "polityLand": 70.32,
       "unitLand": 0.8,
-      "zero": 199,
+      "zero": 202,
       "partial": 27,
       "full": 14
     },
@@ -67,11 +67,11 @@
     {
       "year": 1500,
       "pct": 5.13,
-      "pctArea": 4.88,
-      "polityLand": 74.83,
+      "pctArea": 4.89,
+      "polityLand": 74.84,
       "unitLand": 3.72,
-      "zero": 183,
-      "partial": 57,
+      "zero": 184,
+      "partial": 58,
       "full": 7
     },
     {
@@ -81,7 +81,7 @@
       "polityLand": 73.6,
       "unitLand": 11.27,
       "zero": 626,
-      "partial": 63,
+      "partial": 64,
       "full": 56
     },
     {
@@ -126,8 +126,8 @@
     },
     {
       "year": 1914,
-      "pct": 70.51,
-      "pctArea": 66.13,
+      "pct": 70.52,
+      "pctArea": 66.14,
       "polityLand": 90.66,
       "unitLand": 60.81,
       "zero": 96,
@@ -150,8 +150,8 @@
       "pctArea": 67.11,
       "polityLand": 91.39,
       "unitLand": 62.78,
-      "zero": 81,
-      "partial": 36,
+      "zero": 82,
+      "partial": 35,
       "full": 63
     },
     {
@@ -188,6 +188,6 @@
   "claims": {
     "seam": 1989,
     "duplicate": 149,
-    "contested": 1738
+    "contested": 1737
   }
 }

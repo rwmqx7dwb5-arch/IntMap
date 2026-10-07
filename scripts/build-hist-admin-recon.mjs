@@ -51,6 +51,7 @@ import { HIST_ADMIN_GAPS } from '../js/border-coast.js';
 import { checkDossier, norm, atomCountriesOf, catalogueView } from './histrecon/dossier-check.mjs';
 import { datasetOf } from './histrecon/atoms/geoboundaries.mjs';
 import { hitMask, answeredSpans, eraIndex, recordUnits, recordFiles, LOCATED_MIN, STRADDLE_MAX, OVERLAP_MIN } from './build-hist-admin-fill.mjs';
+import { applyAnnex, annexProblems } from './histrecon/annex.mjs';   /* (hist-findings-sweep) ground an assembler's atoms do not hold — scripts/histrecon/annex/<KEY>.json */
 import { samplePointsFast as samplePoints } from './histrecon/sample-points.mjs';   /* the fill's samplePoints, by scanline — identical points (scripts/histrecon/sample-points.mjs) */
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -382,7 +383,8 @@ async function build() {
   for (const m of await assemblers()) {
     if (ONLY && m.COUNTRY !== ONLY) continue;
     const g = await m.candidates({ log: (x) => console.error('    ' + x) });
-    groups.push({ key: m.KEY, country: m.COUNTRY, file: g.file, units: g.units, unresolved: g.unresolved, list: g.list.map((c) => ({ ...c, polys: () => c.polys })) });
+    const list = applyAnnex(m.KEY, g.list, (x) => console.error('    ' + x));
+    groups.push({ key: m.KEY, country: m.COUNTRY, file: g.file, units: g.units, unresolved: g.unresolved, list: list.map((c) => ({ ...c, polys: () => c.polys })) });
   }
 
   const rows = [], report = { built: new Date().toISOString().slice(0, 10), records: {} };
@@ -544,7 +546,7 @@ export async function fineUnits(recordKey) {
   }
   for (const m of await assemblers()) {
     if (m.KEY !== recordKey) continue;
-    for (const c of (await m.candidates()).list) out.push({ id: c.unit.id, coords: c.polys });
+    for (const c of applyAnnex(m.KEY, (await m.candidates()).list)) out.push({ id: c.unit.id, coords: c.polys });
   }
   return out;
 }
@@ -621,6 +623,10 @@ async function check() {
     const byKey = new Map(dossiers.map(({ file, D }) => [path.basename(file, '.json'), D]));
     const asm = new Map();
     for (const m of await assemblers()) if (typeof m.statedSpans === 'function') asm.set(m.KEY, m.statedSpans());
+    /* (hist-findings-sweep) the annex ledgers — scripts/histrecon/annex/<KEY>.json, offline */
+    for (const m of await assemblers()) for (const p of annexProblems(m.KEY, asm.get(m.KEY))) F(p);
+    for (const n of (fs.existsSync(path.join(ROOT, 'scripts', 'histrecon', 'annex')) ? fs.readdirSync(path.join(ROOT, 'scripts', 'histrecon', 'annex')) : []))
+      if (!asm.has(n.replace(/\.json$/, ''))) F('scripts/histrecon/annex/' + n + ' names no assembler KEY');
     d.feats.forEach((f, i) => {
       const key = String(f[10] || '').replace(/^recon:/, '');
       const a = f[2] * 10000 + f[3] * 100 + f[4], b = f[5] * 10000 + f[6] * 100 + f[7];

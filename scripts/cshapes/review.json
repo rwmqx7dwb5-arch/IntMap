@@ -67,6 +67,7 @@
  "edges": [
   {
    "id": "korea-annexation-1910",
+   "wd": "Q495558",
    "gw": 730,
    "upstream": [1910, 8, 23],
    "at": [1910, 8, 29],
@@ -74,6 +75,140 @@
    "sources": [
     { "cite": "韓国併合ニ関スル条約, signed 22 August 1910, Article 8; promulgated 29 August 1910, 官報号外 条約第4号" },
     { "cite": "G. Schvitz, Cshapes 2.0: Documentation, 21 December 2018, §3", "url": "https://icr.ethz.ch/data/cshapes/CShapes-2.0_Codebook.pdf" }
+   ]
+  },
+  {
+   "id": "taiwan-cession-1895-china",
+   "gw": 710,
+   "upstream": [
+    1895,
+    4,
+    17
+   ],
+   "at": [
+    1895,
+    6,
+    2
+   ],
+   "wd": "Q269655",
+   "history": "By the Treaty of Shimonoseki (signed 17 April 1895, ratifications exchanged at Chefoo on 8 May 1895) the Qing ceded Taiwan and the Pescadores to Japan (Art. 2). Nothing changed hands on the signing day: the Qing governor still administered the island, and its officials proclaimed the Republic of Formosa on 25 May 1895. Taiwan was handed over to Japan on 2 June 1895, when Li Jingfang and Governor-General Kabayama Sukenori signed the instrument of transfer off Keelung; Japanese troops had landed at Aodi on 29 May and took Taipei on 7 June. CShapes codes the signing day (codebook §3) and starts the Japanese colony on 17 April. Following the line of southern-sakhalin-1905 (the signing day stands where the new power already governed), the change is drawn on the day Japan received the island.",
+   "sources": [
+    {
+     "cite": "Treaty of Shimonoseki (馬關條約 / 下関条約), signed 17 April 1895, Article 2; ratifications exchanged at Chefoo 8 May 1895"
+    },
+    {
+     "cite": "Instrument of transfer of Taiwan (臺灣受渡ニ関スル公文), signed off Keelung by Li Jingfang and Kabayama Sukenori, 2 June 1895"
+    },
+    {
+     "cite": "G. Schvitz, Cshapes 2.0: Documentation, 21 December 2018, §3",
+     "url": "https://icr.ethz.ch/data/cshapes/CShapes-2.0_Codebook.pdf"
+    }
+   ]
+  },
+  {
+   "id": "taiwan-cession-1895",
+   "gw": 713,
+   "upstream": [
+    1895,
+    4,
+    17
+   ],
+   "at": [
+    1895,
+    6,
+    2
+   ],
+   "wd": "Q269655",
+   "history": "By the Treaty of Shimonoseki (signed 17 April 1895, ratifications exchanged at Chefoo on 8 May 1895) the Qing ceded Taiwan and the Pescadores to Japan (Art. 2). Nothing changed hands on the signing day: the Qing governor still administered the island, and its officials proclaimed the Republic of Formosa on 25 May 1895. Taiwan was handed over to Japan on 2 June 1895, when Li Jingfang and Governor-General Kabayama Sukenori signed the instrument of transfer off Keelung; Japanese troops had landed at Aodi on 29 May and took Taipei on 7 June. CShapes codes the signing day (codebook §3) and starts the Japanese colony on 17 April. Following the line of southern-sakhalin-1905 (the signing day stands where the new power already governed), the change is drawn on the day Japan received the island.",
+   "sources": [
+    {
+     "cite": "Instrument of transfer of Taiwan (臺灣受渡ニ関スル公文), signed off Keelung by Li Jingfang and Kabayama Sukenori, 2 June 1895"
+    },
+    {
+     "cite": "G. Schvitz, Cshapes 2.0: Documentation, 21 December 2018, §3",
+     "url": "https://icr.ethz.ch/data/cshapes/CShapes-2.0_Codebook.pdf"
+    }
+   ]
+  },
+  {
+   "id": "hawaii-annexation-1898",
+   "gw": 4,
+   "upstream": [
+    1898,
+    7,
+    6
+   ],
+   "at": [
+    1898,
+    8,
+    12
+   ],
+   "wd": "Q2341456",
+   "history": "The Newlands Resolution annexing Hawaii passed the Senate on 6 July 1898 and was signed by President McKinley on 7 July; sovereignty was transferred at ʻIolani Palace on 12 August 1898, the day Wikidata gives as its effective date (P7588). Until then the Republic of Hawaii governed the islands. CShapes starts the United States territory on 6 July.",
+   "sources": [
+    {
+     "cite": "Joint Resolution to provide for annexing the Hawaiian Islands to the United States (Newlands Resolution), 30 Stat. 750, approved 7 July 1898"
+    },
+    {
+     "cite": "Transfer of sovereignty, ʻIolani Palace, Honolulu, 12 August 1898"
+    },
+    {
+     "cite": "G. Schvitz, Cshapes 2.0: Documentation, 21 December 2018, §3",
+     "url": "https://icr.ethz.ch/data/cshapes/CShapes-2.0_Codebook.pdf"
+    }
+   ]
+  },
+  {
+   "id": "irish-free-state-1922-uk",
+   "gw": 200,
+   "upstream": [
+    1921,
+    12,
+    6
+   ],
+   "at": [
+    1922,
+    12,
+    6
+   ],
+   "wd": "Q541191",
+   "history": "The Anglo-Irish Treaty was signed on 6 December 1921; the Dáil approved it on 7 January 1922, and the Irish Free State came into being on 6 December 1922, when its constitution took effect — the day Wikidata gives as the treaty's effective date (P7588). Throughout 1922 Southern Ireland remained part of the United Kingdom, administered from 16 January by the Provisional Government constituted under the treaty and the Irish Free State (Agreement) Act 1922. CShapes starts the separate state on the signing day.",
+   "sources": [
+    {
+     "cite": "Articles of Agreement for a Treaty between Great Britain and Ireland, signed 6 December 1921"
+    },
+    {
+     "cite": "Irish Free State Constitution Act 1922 (13 Geo. 5 c. 1); Constitution of the Irish Free State, in force 6 December 1922"
+    },
+    {
+     "cite": "G. Schvitz, Cshapes 2.0: Documentation, 21 December 2018, §3",
+     "url": "https://icr.ethz.ch/data/cshapes/CShapes-2.0_Codebook.pdf"
+    }
+   ]
+  },
+  {
+   "id": "irish-free-state-1922",
+   "gw": 205,
+   "upstream": [
+    1921,
+    12,
+    6
+   ],
+   "at": [
+    1922,
+    12,
+    6
+   ],
+   "wd": "Q541191",
+   "history": "The Anglo-Irish Treaty was signed on 6 December 1921; the Dáil approved it on 7 January 1922, and the Irish Free State came into being on 6 December 1922, when its constitution took effect — the day Wikidata gives as the treaty's effective date (P7588). Throughout 1922 Southern Ireland remained part of the United Kingdom, administered from 16 January by the Provisional Government constituted under the treaty and the Irish Free State (Agreement) Act 1922. CShapes starts the separate state on the signing day.",
+   "sources": [
+    {
+     "cite": "Constitution of the Irish Free State (Saorstát Éireann) Act 1922, in force 6 December 1922"
+    },
+    {
+     "cite": "G. Schvitz, Cshapes 2.0: Documentation, 21 December 2018, §3",
+     "url": "https://icr.ethz.ch/data/cshapes/CShapes-2.0_Codebook.pdf"
+    }
    ]
   }
  ],
@@ -117,6 +252,100 @@
    "e": [1972, 5, 14],
    "en": "From 29 January 1946 to 15 May 1972 the Nansei Islands south of 30°N (south of 29°N from 1952, and only the Ryukyu and Daito Islands from 1953) were under United States administration and are drawn as a separate outline; Japan kept residual sovereignty over them (Treaty of San Francisco, Art. 3).",
    "jp": "1946 年 1 月 29 日から 1972 年 5 月 15 日まで、北緯 30 度以南の南西諸島（1952 年からは北緯 29 度以南、1953 年からは琉球諸島と大東諸島だけ）は米国の施政権下にあり、別の輪郭として描いている。日本はそれらの島に潜在主権を保った（サンフランシスコ平和条約第 3 条）。"
+  },
+  {
+   "about": [
+    "taiwan-cession-1895-china",
+    "taiwan-cession-1895"
+   ],
+   "gw": 710,
+   "s": [
+    1895,
+    4,
+    17
+   ],
+   "e": [
+    1895,
+    6,
+    1
+   ],
+   "en": "Taiwan is drawn here until 1 June 1895: the Treaty of Shimonoseki was signed on 17 April and ratified on 8 May, but the island was handed over to Japan only on 2 June (its Qing officials had proclaimed the Republic of Formosa on 25 May). CShapes 2.0, the source of this outline, records the signing day.",
+   "jp": "台湾をここでは 1895 年 6 月 1 日までこの輪郭に含めて描いている。下関条約は 4 月 17 日に調印され 5 月 8 日に批准されたが、島が日本に引き渡されたのは 6 月 2 日である（清の官吏は 5 月 25 日に台湾民主国を宣言していた）。この輪郭の出典 CShapes 2.0 は調印日を記録している。"
+  },
+  {
+   "about": [
+    "taiwan-cession-1895-china",
+    "taiwan-cession-1895"
+   ],
+   "gw": 713,
+   "s": [
+    1895,
+    6,
+    2
+   ],
+   "e": [
+    1945,
+    8,
+    14
+   ],
+   "en": "Drawn as Japanese from 2 June 1895, the day Taiwan was handed over under the Treaty of Shimonoseki. The treaty was signed on 17 April; CShapes 2.0, the source of this outline, records the signing day and starts the colony then.",
+   "jp": "1895 年 6 月 2 日——下関条約にもとづき台湾が引き渡された日——から日本の統治下として描いている。条約の調印は 4 月 17 日で、この輪郭の出典 CShapes 2.0 は調印日を記録し、その日から植民地を始めている。"
+  },
+  {
+   "about": [
+    "hawaii-annexation-1898"
+   ],
+   "gw": 4,
+   "s": [
+    1898,
+    8,
+    12
+   ],
+   "e": [
+    1959,
+    8,
+    20
+   ],
+   "en": "Drawn as a United States territory from 12 August 1898, the day sovereignty was transferred at ʻIolani Palace; the Republic of Hawaii governed until then. The Newlands Resolution was passed in July; CShapes 2.0, the source of this outline, starts the territory on 6 July.",
+   "jp": "1898 年 8 月 12 日——イオラニ宮殿で主権が移された日——から米国の領土として描いている。それまではハワイ共和国が統治していた。ニューランズ決議の成立は 7 月で、この輪郭の出典 CShapes 2.0 は 7 月 6 日から領土を始めている。"
+  },
+  {
+   "about": [
+    "irish-free-state-1922-uk",
+    "irish-free-state-1922"
+   ],
+   "gw": 200,
+   "s": [
+    1921,
+    12,
+    6
+   ],
+   "e": [
+    1922,
+    12,
+    5
+   ],
+   "en": "Southern Ireland is drawn in the United Kingdom until 5 December 1922: the Anglo-Irish Treaty was signed on 6 December 1921, and the Irish Free State came into being on 6 December 1922 (from January 1922 the Provisional Government administered it inside the United Kingdom). CShapes 2.0, the source of this outline, records the signing day.",
+   "jp": "南アイルランドをここでは 1922 年 12 月 5 日まで英国に含めて描いている。英愛条約の調印は 1921 年 12 月 6 日で、アイルランド自由国が成立したのは 1922 年 12 月 6 日である（1922 年 1 月からは暫定政府が英国の中で行政を担った）。この輪郭の出典 CShapes 2.0 は調印日を記録している。"
+  },
+  {
+   "about": [
+    "irish-free-state-1922-uk",
+    "irish-free-state-1922"
+   ],
+   "gw": 205,
+   "s": [
+    1922,
+    12,
+    6
+   ],
+   "e": [
+    1937,
+    12,
+    28
+   ],
+   "en": "Drawn as a separate state from 6 December 1922, the day the Irish Free State came into being. The Anglo-Irish Treaty was signed on 6 December 1921; CShapes 2.0, the source of this outline, records the signing day.",
+   "jp": "1922 年 12 月 6 日——アイルランド自由国が成立した日——から別の国として描いている。英愛条約の調印は 1921 年 12 月 6 日で、この輪郭の出典 CShapes 2.0 は調印日を記録している。"
   }
  ],
  "examined": [
@@ -134,6 +363,7 @@
   },
   {
    "id": "southern-sakhalin-1905",
+   "wds": ["Q548067"],
    "finding": "CShapes starts Southern Sakhalin (7351) on 5 September 1905, the day the Treaty of Portsmouth was signed; ratifications were exchanged on 25 November 1905.",
    "verdict": "kept",
    "why": "Japan occupied Sakhalin in July 1905 and governed the southern half from then on, so on the signing day the ground was already Japan's to govern; the signing day is not later than the day of rule, unlike Korea, where the Korean Empire governed until the treaty took effect. The outline (the 50th parallel) is the treaty's."
@@ -143,6 +373,122 @@
    "finding": "CShapes draws Taiwan inside China from 15 August 1945 to 7 December 1949, although Japan renounced it only by the Treaty of San Francisco (in force 28 April 1952).",
    "verdict": "kept",
    "why": "The Republic of China took over the administration of Taiwan on 25 October 1945 and governed it from then on, so for 1945-1952 the record already draws who governed the ground — the convention IntMap applies to the Ryukyu Islands. The 71 days from 15 August to 24 October 1945 are CShapes' end-of-empire day, the same day it uses for Korea and Southern Sakhalin; no source states another single day on which the Japanese government's authority over Taiwan ceased before the hand-over."
+  },
+  {
+   "id": "versailles-1919",
+   "wds": [
+    "Q8736"
+   ],
+   "finding": "CShapes draws the territorial clauses of the Treaty of Versailles on 28 June 1919, the signing day (France, Germany, Poland, Danzig, the Cameroons, Togoland, Tanganyika and others); the treaty took effect on 10 January 1920.",
+   "verdict": "kept",
+   "why": "No single day is right for all the ground one row boundary carries. Alsace-Lorraine was governed by France from the armistice of November 1918, most of Posen by the Polish insurgents from early 1919, and the German colonies by the occupying powers from 1914-1916 — all before the signing day — while West Prussia was handed to Poland only in January-February 1920 and Danzig passed from Germany to Allied administration on 10 January 1920 and became a Free City on 15 November 1920. Moving Germany's one boundary to 10 January 1920 would draw Alsace-Lorraine and Posen German for months they were not; the Danzig and West Prussia days need the rows split by region, which this ledger cannot express as one change of a code."
+  },
+  {
+   "id": "reims-surrender-1945",
+   "wds": [
+    "Q20872997"
+   ],
+   "finding": "The preliminary surrender at Reims was signed on 7 May 1945 and took effect on 8 May.",
+   "verdict": "kept",
+   "why": "CShapes already draws the end of the German Reich and the occupation zones on 8 May 1945, the day the surrender took effect; the record is on the effective day."
+  },
+  {
+   "id": "polish-soviet-border-1945",
+   "wds": [
+    "Q9348145"
+   ],
+   "finding": "The Polish-Soviet border agreement was signed on 16 August 1945 and took effect on 5 February 1946; the changes CShapes makes within three days are the end of the Japanese empire (15 August) and Indonesia (17 August).",
+   "verdict": "kept",
+   "why": "The agreement concerns neither of the changes it meets. Poland's eastern border is drawn by CShapes from 8 May 1945; the Soviet Union governed that ground from its reoccupation in 1944, so the agreement's later effective day is not the day the ground changed hands."
+  },
+  {
+   "id": "paris-treaty-hungary-1947",
+   "wds": [
+    "Q2314717"
+   ],
+   "finding": "CShapes moves the Hungarian-Czechoslovak border on 10 February 1947 (the three villages of the Bratislava bridgehead, Rusovce, Jarovce and Čunovo) — the signing day of the Paris peace treaties. The item raised is the Treaty of Peace with Italy, signed the same day and in force on 15 September 1947.",
+   "verdict": "kept",
+   "why": "The treaty with Italy is not the instrument of this change: the villages were transferred by the Treaty of Peace with Hungary (Art. 1(4)), signed the same day and also in force on 15 September 1947. The day Czechoslovakia took over their administration is not established by any source read for this review, so the record is left on the signing day and the question stays open (dev-notes/2026-10-07-hist-findings-sweep.md)."
+  },
+  {
+   "id": "crimea-2014",
+   "wds": [
+    "Q15963166"
+   ],
+   "finding": "CShapes moves Crimea from Ukraine to Russia on 18 March 2014, the day the treaty of accession was signed; Russia ratified it and it took effect on 1 April 2014 (Wikidata P7588).",
+   "verdict": "kept",
+   "why": "Russian forces had taken control of the peninsula from 27 February 2014, before the signing day, so the later effective day is not the day the ground changed hands. The annexation is not recognised (UN General Assembly resolution 68/262, 27 March 2014); the record draws who governed, which is the convention of this ledger."
+  },
+  {
+   "id": "unrelated-instruments",
+   "wds": [
+    "Q140854030",
+    "Q140854027",
+    "Q136392178",
+    "Q136392935",
+    "Q136391347",
+    "Q11140092",
+    "Q136392125",
+    "Q136392139",
+    "Q136392670",
+    "Q136392123",
+    "Q140853976",
+    "Q136391496",
+    "Q140853962",
+    "Q140853964",
+    "Q140853974",
+    "Q141114999",
+    "Q933745",
+    "Q136392168",
+    "Q136391497",
+    "Q136391306",
+    "Q141114986",
+    "Q5166307",
+    "Q130243912",
+    "Q136391846",
+    "Q136393232",
+    "Q136391405",
+    "Q136393398",
+    "Q136391334",
+    "Q136392542",
+    "Q136392773",
+    "Q136392229",
+    "Q136392886",
+    "Q136392976",
+    "Q136391265",
+    "Q7939989",
+    "Q136393378",
+    "Q136392752",
+    "Q321945",
+    "Q136392567",
+    "Q1187969",
+    "Q136393503",
+    "Q136392830",
+    "Q136392859",
+    "Q136393353",
+    "Q136391527",
+    "Q136392394",
+    "Q47359",
+    "Q136391588",
+    "Q136393474",
+    "Q136391628",
+    "Q136391594",
+    "Q136392208",
+    "Q136391397",
+    "Q136392396",
+    "Q136393241",
+    "Q136392486",
+    "Q136391242",
+    "Q136393205",
+    "Q136392488",
+    "Q136392993",
+    "Q136391355",
+    "Q136391810",
+    "Q136392299"
+   ],
+   "finding": "Instruments signed within three days of a CShapes change, with a later effective date, that are about something else: bilateral investment treaties, Council of Europe conventions and protocols, environmental protocols (Kyoto, Volatile Organic Compounds), START II, and the Treaty of Osimo (Italy-Yugoslavia, 10 November 1975, met on the day of Angola's independence).",
+   "verdict": "kept",
+   "why": "None of them is the instrument of a change CShapes draws on the day it meets: an investment treaty, a convention or an arms-control treaty moves no border, and the Treaty of Osimo concerns two states CShapes does not change within three days of it. They are listed so that the finder's photograph is judged whole and a new candidate arrives counted."
   }
  ]
 }

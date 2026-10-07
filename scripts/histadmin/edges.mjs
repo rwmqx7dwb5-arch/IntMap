@@ -139,6 +139,34 @@ export function applyEdges(bundles, ledger) {
   return [...touched];
 }
 
+/* ══ (hist-findings-sweep) A RELATION UPSTREAM DRAWS AS A SUBDIVISION THAT WAS NO UNIT OF GOVERNMENT: `withdrawn` ══════
+   OpenHistoricalMap holds «US occupation of Greenland» (r2870662, admin_level 4, 1941-04-08 to 1945, wikidata=Q223)
+   as a first-level unit of Denmark. The historical record says there was no such unit: the 1941 defence agreement
+   recognised Danish sovereignty and the island stayed under its two Danish landsfogeder (the Inspectorates OHM itself
+   holds, 1874-1951). Drawn, it is a label, a click and a counted unit that state an American administration.
+   ⇒ `withdrawn` lists such relations with the `history` that refutes them; the row is taken out of the tier that
+   ships it (its rings stay pooled when another row uses them — the gate counts orphans). The tiles' line is a
+   separate reader (historical-verification.md §2b): an entry says what it found there (`tiles`), and an entry whose
+   relation draws a line no other relation in force draws is refused here, because removing the bundle row would not
+   remove that line. */
+export function applyWithdrawn(bundles, ledger) {
+  const ids = new Set((ledger.withdrawn || []).map((x) => x.id)), touched = new Set();
+  for (const b of bundles) {
+    const D = b.data, keep = D.feats.filter((f) => !ids.has(f[10]));
+    if (keep.length === D.feats.length) continue;
+    /* the accounting scripts/build-hist-admin1.mjs `--dates` keeps for a removed row: the topology ledger states the
+       removal (`removedAfterRun`, never a guessed bucket) and the precision ledger gives the row back */
+    const gone = D.feats.length - keep.length;
+    if (D.topology) D.topology.removedAfterRun = (D.topology.removedAfterRun || 0) + gone;
+    if (D.precision) { let owed = gone; for (const k of ['refined', 'retained']) { if (!owed) break; const t = Math.min(D.precision[k] || 0, owed); D.precision[k] -= t; owed -= t; }
+      if (owed) throw new Error(b.file + ': precision accounting cannot absorb ' + gone + ' withdrawn row(s)'); }
+    D.feats = keep; if (b.unit) b.unit.feats = keep;
+    for (const id of ids) if (D.dates && D.dates[id]) delete D.dates[id];
+    touched.add(b.file);
+  }
+  return [...touched];
+}
+
 /**
  * The gate, offline: every finding judged, every verdict stated by Wikidata, reviewed by history and
  * applied to the shipped rows.
@@ -166,5 +194,11 @@ export function edgeProblems(bundles, ledger, historyNames) {
     if (!(s.d.start && s.d.start.corrected && s.d.start.corrected.at === r.at && s.d.start.raw)) out.push(['edge-unmarked', tag + ': the start row does not carry the correction beside upstream\'s own date']);
   }
   for (const x of ledger.refuted || []) if (!(x.why && x.note)) out.push(['edge-refuted-unexplained', x.end + ' → ' + x.start + ' is refuted without a reason']);
+  for (const x of ledger.withdrawn || []) {
+    const tag = 'r' + x.id + ' «' + x.name + '»';
+    if (!(Number.isInteger(x.id) && x.name && typeof x.history === 'string' && x.history.length > 60)) out.push(['unit-withdrawn-unexplained', tag + ' is withdrawn without the history that refutes it']);
+    if (!(typeof x.tiles === 'string' && x.tiles.length > 30)) out.push(['unit-withdrawn-tiles', tag + ': say what the OpenHistoricalMap tiles draw for it (historical-verification.md §2b)']);
+    if (rowOf(x.id)) out.push(['unit-withdrawn-shipped', tag + ' is withdrawn and still shipped — node scripts/build-hist-admin1.mjs --withdrawn']);
+  }
   return out;
 }

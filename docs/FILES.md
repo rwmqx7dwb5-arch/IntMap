@@ -1603,7 +1603,7 @@ hist-urban.json                   歴史上の都市人口（Reba・Reitsma・Se
                                   各数値を出典の表・記載年・位置の確からしさ（1〜3）とともに保持し、補間しない。表示窓（記録自身の
                                   再記載の間隔から導出）・表をまたぐ同一性・hist-places / hist-cities への結び付きを含む。
                                   生成は scripts/build-hist-urban.mjs
-hist-cities.json                  時計の年の都市名の記録（6474 都市・9246 の歴史名・125 か国）。
+hist-cities.json                  時計の年の都市名の記録（6474 都市・9241 の歴史名・125 か国）。
                                   手書き＋Wikidata（CC0）＋OpenHistoricalMap（CC0）＋Pleiades
                                   （CC BY 3.0）の和集合で、行ごとに
                                   **出典**と**日付精度**（日／月／年／世紀／不明）を持つ。時計が「今」を
@@ -1699,7 +1699,9 @@ data/cshapes.js                   歴史的国境（CShapes 2.0・1886-01-01〜2
                                   ここだけが名乗っておらず、**表示が再配布の条件になっている唯一の束**だった。
                                   史実で審査した所見（条約の施行日への変化日の移動・島の帰属・CShapes に無い単位）は
                                   `scripts/cshapes/review.json` が述べ、`scripts/build-cshapes.mjs --review` が束に当てる
-                                  （冪等。読者への註は束の `review.notes`＝カードの説明行）
+                                  （冪等。読者への註は束の `review.notes`＝カードの説明行）。調印日で記録された変化の
+                                  候補は `--effective` が Wikidata に訊いて `scripts/cshapes/effective.json` に撮り
+                                  （`scripts/cshapes/effective.mjs`）、`--check` が全候補の判定を求める
 data/hist-borders.js              歴史的国境の 1689–1885（OpenHistoricalMap・CC0 1.0／`scripts/build-hist-borders.mjs`）。
                                   ⚠ **窓の下限は導出**——束の `window[0]` が正本
 data/hist-eras.js                 全時代の国境スナップショット 54 枚（紀元前 123000 年〜西暦 2010 年・
@@ -1735,7 +1737,7 @@ data/histnames.json               **歴史的な政体名の、記録をまた�
                                   ⚠ **上流が書いた名前は上書きしない**。⚠ **出荷する言語の方針は
                                   `scripts/histnames/langs.mjs` の 1 か所**（いまは en / jp）
 data/border-coast.js              歴史的な輪郭の各辺が「境界」か「その記録が持つ海岸線の写し」かの印（`data/` から
-                                  **発見された**束すべて・いまは14・全 94,256 リング分／
+                                  **発見された**束すべて・いまは14・全 98,388 リング分／
                                   `scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
                                   `imta2-line` はこの印の run だけを描く。読み手は js/border-coast.js
                                   （束の索引でも**環そのものの同一性**でも引ける）。⚠ 面積 0 のリングは
@@ -1755,7 +1757,7 @@ data/border-detail/               拡大表示用の境界線。OHM の 3 層は
                                   ⚠ **git の外**（`data-assets.json`）。`npm run data:pull` が共有ストアへの
                                   リンクを置く。再生成の前に `node scripts/data-assets.mjs materialize border-detail`
 data/hist-admin1.js               歴史的な第1級行政区分（OpenHistoricalMap・CC0 1.0・`window.__HISTADM1`・
-                                  4,837件／rings 8,269・41.46 MB）。上と**同じリングプール形式の
+                                  4,836件／rings 8,269・41.46 MB）。上と**同じリングプール形式の
                                   JS リテラル**で、既知の日付は日単位・開始日を含み終了日を含まない。
                                   生成は scripts/build-hist-admin1.mjs。
                                   ⚠ **各行の列 10 は OHM の relation id**——クリックしたとき、その 1 件だけを
@@ -1803,6 +1805,7 @@ data/hist-admin-surveys-nc.js     同じ形で、**CC BY-NC-SA 4.0** の出版�
                                   開いた記録から分け、ファイル自身が `licence` を述べる
 data/hist-admin-recon.js          **IntMap 自身が史実から復元した**第1級区分（`window.__HISTADMRECON`）。区分＝部品の和集合、
                                   所属＝出典つきの事実（調書 scripts/histrecon/dossiers/*.json と明治の府県 scripts/histrecon/meiji-*.json）。
+                                  部品の集合が当時の土地を持たない所は scripts/histrecon/annex/<KEY>.json が別の集合から足す（scripts/histrecon/annex.mjs）。
                                   部品は Natural Earth admin-1（全精度）・RISTAT 1897 年の郡・国土数値情報 N03 1920 と e-Stat 2020 小地域。
                                   生成は scripts/build-hist-admin-recon.mjs、門は `npm run check:histrecon`（正本 docs/HIST-RECONSTRUCTION.md）
 data/hist-coverage-holes.json     歴史地図の**穴**の観測（目標値ではない）。測った 18 年それぞれで、第1級区分が
@@ -2007,7 +2010,7 @@ scripts/
   histurban/reba-record.json      都市人口の固定した出典証拠。3 表の空でないセルを文字列のまま・取得日・URL・md5・sha256。
                                   手書きの都市一覧ではない
   build-hist-cities.mjs           手書きの記録（`scripts/histcities/*.mjs`）と、上流から導出した記録の
-                                  **和集合** → `data/hist-cities.json`（6474 都市／9246 の歴史名／125 か国）。
+                                  **和集合** → `data/hist-cities.json`（6474 都市／9241 の歴史名／125 か国）。
                                   ⚠ **手書きの 611 行は 1 件も落とさない**（`--check` が測る）——実測で、
                                   上流に同じ都市・同じ名前・同じ期間があるのは 4 割
   histcities/harvest.mjs          上流の収穫（Wikidata の SPARQL・Pleiades の JSON-LD・OHM の Overpass）。生成物は
@@ -2023,6 +2026,8 @@ scripts/
                                   QID の同一性は `scripts/histclio/wikidata.json`、史実による名前の差し止めと
                                   土地の審査（最初の行より前の土地を政体へ戻す `ground`）は `scripts/histclio/review.json`。`--fetch`（ネットワーク）／既定（ビルド）／`--check`（オフライン）
   build-hist-eras.mjs             aourednik/historical-basemaps の `world_*.geojson` 54 枚 → `data/hist-eras.js`。
+                                  上流の綴り誤りは審査台帳 `scripts/histeras/spelling.json` が訂正する（訂正先はコーパス自身が
+                                  使う綴りに限る・上流の綴りは属性 `u`・`--spelling` で出荷物に当てる・`scripts/histeras/spelling.mjs`）。
                                   一覧は上流のディレクトリから発見し、年の規約（`bc323` → 天文年 −322）は
                                   1 関数だけが持つ。`--check` はそれを評価して照合する。
                                   ⚠ **`--check-upstream` はディレクトリを取り直し、出荷していない枚があれば
@@ -2129,6 +2134,7 @@ scripts/
                                   data/border-detail/へ分割生成する。既存の補正形状・年代・身元は保持する。
                                   出版元の調査記録（HIST_ADMIN_GAPS の derived:false）は harvester を読み直し、
                                   同じ単純化で同梱の形が再現できた単位だけ、出版元の座標をそのまま詳細にする。
+                                  審査で行が外れた層は `--reindex <set> --was <旧い束>` で索引だけを行の身元で付け替える（原典の再取得なし）。
   bordercoast/                    その部品（`water.mjs` 海岸線の記録から陸／海の判定と最寄りの水際までの距離）
   histborders/                    その部品（`fetch.mjs` Overpass の取得とキャッシュ／`geom.mjs` リングの縫合と簡略化。
                                   ⚠ 縫合は**前後両方向へ伸ばす**——片方向だと穴の開いた輪郭が種を置いた場所で刻まれ、

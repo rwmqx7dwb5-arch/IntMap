@@ -57,6 +57,7 @@
  *      node scripts/build-hist-eras.mjs --check-upstream   # is the shipped set still the WHOLE upstream set? (network; nightly)
  *      node scripts/build-hist-eras.mjs --sweep    # re-measure the tolerance table below
  * ==========================================================================*/
+import { applySpelling, spellingProblems } from './histeras/spelling.mjs';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'node:fs';
 import { requireData } from './data-assets.mjs';
 import { join, dirname } from 'node:path';
@@ -407,6 +408,8 @@ function build({ report, tol = TOL, minArea = MIN_AREA, write = true } = {}) {
     snaps.push({ key, y: astroYear(key), feats, blank, blankPrecision });
   }
   snaps.sort((a, b) => a.y - b.y);
+  /* (hist-findings-sweep) the reviewed misspellings, corrected to the corpus's own spelling — scripts/histeras/spelling.mjs */
+  stat.spelled = applySpelling(snaps, readSpelling());
 
   const body = JSON.stringify({ v: V, src: SRC, built: new Date().toISOString().slice(0, 10), rings, snaps });
   const text = 'window.__HISTERAS=' + body + ';\n';
@@ -444,6 +447,17 @@ function sweep() {
     console.log(t.toFixed(3) + '°  minArea ' + a + '  ' + (text.length / 1e6).toFixed(1) + ' MB  ' +
       rings.reduce((x, r) => x + r.length, 0) + ' points  ' + rings.length + ' rings');
   }
+}
+
+/* (hist-findings-sweep) scripts/histeras/spelling.json — read by the build, by --spelling and by --check */
+const SPELLING = join(ROOT, 'scripts', 'histeras', 'spelling.json');
+function readSpelling() { return JSON.parse(readFileSync(SPELLING, 'utf8')); }
+/* --spelling: apply the ledger to the COMMITTED file (no upstream cache needed; idempotent) */
+function spellingMode() {
+  const w = {}; new Function('window', readFileSync(OUT, 'utf8'))(w);
+  const d = w.__HISTERAS, n = applySpelling(d.snaps, readSpelling());
+  writeFileSync(OUT, 'window.__HISTERAS=' + JSON.stringify(d) + ';\n');
+  console.log('hist-eras: ' + n + ' feature(s) newly corrected by scripts/histeras/spelling.json');
 }
 
 /* ── check (offline) ────────────────────────────────────────────────────────
@@ -508,6 +522,7 @@ function check() {
      + 'is measured to carry — identity is being lost, not gained (see BLANK_MAX)');
   ok(bc > 0, 'no BC snapshot — the deep past is the point of this bundle');
   ok(ad > 0, 'no AD snapshot');
+  for (const m of spellingProblems(d.snaps, readSpelling())) bad.push(m);
   ok(astroYear('bc1') === 0 && astroYear('bc323') === -322 && astroYear('100') === 100,
      'astroYear() no longer maps bc1→0, bc323→-322, 100→100');
   if (bad.length) return fail(bad);
@@ -600,6 +615,7 @@ if (process.argv[1] && join(process.argv[1]) === join(fileURLToPath(import.meta.
   if (arg.includes('--check-upstream')) { requireData(ROOT, 'data/hist-eras.js'); await checkUpstream(); }
   else if (arg.includes('--check')) { requireData(ROOT, 'data/hist-eras.js'); check(); }
   else if (arg.includes('--fetch')) await fetchAll();
+  else if (arg.includes('--spelling')) spellingMode();
   else if (arg.includes('--sweep')) sweep();
   else build({ report: true });
 }

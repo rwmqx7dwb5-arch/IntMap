@@ -132,7 +132,7 @@ export const inlandKmFor = (global) => RECORD_INLAND_KM[global] || INLAND_KM;
 /* Walk edges at 1 km intervals within the 6 km classification band, rather than
    judging a long segment only at its endpoints. This samples classification, not new geometry. */
 const SAMPLE_KM = 1;
-const KM_PER_DEG = 110.574;
+export const KM_PER_DEG = 110.574;
 
 function loadBundle(file, global) {
   const src = readFileSync(join(ROOT, 'data', file), 'utf8');
