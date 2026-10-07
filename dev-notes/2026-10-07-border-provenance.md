@@ -40,7 +40,7 @@ newsjp: 歴史地図でも今日の地図でも、国境線や地方区分の線
 | 索引 | 行 | 一致 | 一致しない／複数 |
 |---|---:|---:|---|
 | `border-provenance-ohm.json` hist-borders | 1,411 | 1,391 | **20 行は一致なし**・1 行は 2 リレーション |
-| 同 hist-borders-late | 306 | 306 | 0 |
+| 同 hist-borders-late | 299 | 299 | 0（main の CShapes 審査（#1032）で hist-borders-late.js が 299 行になった後に作り直した値） |
 | `border-provenance-clio.json` | 12,878 | 12,878 | 16 行は同名同期間の上流行が複数（最初を示し、件数を述べる）。行数は main の歴史地図訂正（#1031）で hist-clio.js が 12,878 行になった後に作り直した値 |
 | `border-provenance-gaps.json` | 5,079（5 記録） | 全行 | — |
 

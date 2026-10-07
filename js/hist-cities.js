@@ -346,7 +346,10 @@ window.IntMapHistCities = (function () {
   }
   /** what the record says about itself: its sources and their licences (the credit a reader of near() must carry) */
   function rights() { return data && Array.isArray(data.rights) ? data.rights.slice() : []; }
+  /** (where-when-search) the loaded record's cities, READ-ONLY — js/where-when.js looks a place up by any name it ever
+      had; [] before ensure() has loaded it */
+  function records() { return data ? data.cities : []; }
 
-  return { textField: textField, built: built, at: at, forFeature: forFeature, ensure: ensure, near: near, rights: rights, ready: function () { return !!data; },
+  return { textField: textField, built: built, at: at, forFeature: forFeature, ensure: ensure, near: near, rights: rights, records: records, ready: function () { return !!data; },
     count: function () { return data ? data.cities.length : 0; } };
 })();

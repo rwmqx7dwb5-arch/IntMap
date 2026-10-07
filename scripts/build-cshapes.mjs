@@ -65,6 +65,7 @@
  *      node scripts/build-cshapes.mjs            # rebuild from the cache and compare — writes nothing
  *      node scripts/build-cshapes.mjs --check    # verify the COMMITTED file's invariants (offline)
  *      node scripts/build-cshapes.mjs --measure  # print the tolerance sweep and write nothing
+ *      node scripts/build-cshapes.mjs --review   # apply scripts/cshapes/review.json to the committed file (idempotent)
  *
  *  ⚠ `--check` IS THE ONLY MODE CI CAN RUN, and it deliberately re-derives nothing: the upstream is
  *  26.3 MB from a university web server that refused three of this round's connections outright, and
@@ -311,7 +312,8 @@ function build(tol = TOL, minArea = MIN_AREA, decimals = 5) {
 
 /* ── default mode: rebuild and hold it against the shipped bytes ────────────*/
 function compare() {
-  const made = build();
+  /* (cshapes-review-findings) the upstream WITH the reviewed findings applied — the ledger the committed file carries */
+  const made = applyReview(build(), readReview()).data;
   const have = evaluate(OUT, '__CSHAPES');
   const pts = a => a.reduce((n, r) => n + r.length, 0);
   console.log(`rebuilt  ${made.feats.length} records  ${made.rings.length} rings  ${pts(made.rings)} points`);
@@ -363,6 +365,193 @@ export function refineCShapes(have, baseline, finer) {
   });
 }
 
+/* ══ (cshapes-review-findings) THE REVIEWED FINDINGS, APPLIED TO THE COMMITTED BUNDLE ═════════════════════
+   scripts/cshapes/review.json judges findings against the treaty or instrument that made a change, and this
+   applies the verdicts that act on the map. Three kinds, each a FACT with its span — never a branch in a reader:
+     · `edges`  — the day a change is drawn on moves to the day it took effect (consecutive rows of one code,
+                  the boundary between them moved; the outline of each row is kept);
+     · `ground` — whole polygons move from one record to another for a span. A polygon moves only when every
+                  vertex of its outer ring is inside `within`; a polygon of the source record that is PARTLY
+                  inside throws, so a selector that would cut land fails the build instead of drawing a cut;
+                  a record that does not exist must be declared in `units`;
+     · `notes`  — what the reader is told on the outline's card, copied whole into the bundle (`review.notes`),
+                  which travels in the head js/hist-bundles.js hands to the page, tiled or whole.
+   ⚠ IT IS IDEMPOTENT, AND check() HOLDS IT TO THAT: applied to its own output it changes nothing (a polygon
+   already moved is no longer in the source record; a boundary already moved is already at its day). So the
+   committed bundle can be checked offline by re-applying the ledger to it. Rows are split where a span begins
+   or ends and never merged — a split that already exists is not made twice. */
+const REVIEW = join(ROOT, 'scripts', 'cshapes', 'review.json');
+export const readReview = (file = REVIEW) => JSON.parse(readFileSync(file, 'utf8'));
+const ymdA = (a) => ymd(a[0], a[1], a[2]);
+const dayShift = (a, n) => { const t = new Date(Date.UTC(a[0], a[1] - 1, a[2] + n)); return [t.getUTCFullYear(), t.getUTCMonth() + 1, t.getUTCDate()]; };
+const rowS = (f) => [f[2], f[3], f[4]], rowE = (f) => [f[5], f[6], f[7]];
+const withSpan = (f, s, e) => { const g = f.slice(); [g[2], g[3], g[4]] = s; [g[5], g[6], g[7]] = e; g[8] = f[8].map((p) => p.slice()); return g; };
+/* even-odd point in one ring (closed or not) */
+const inRing = (ring, x, y) => { let c = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) { const [xi, yi] = ring[i], [xj, yj] = ring[j];
+    if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; }
+  return c; };
+/** how much of a polygon's outer ring lies inside `within`: 'all', 'none' or 'part' */
+export function polyInside(rings, poly, within) {
+  let inn = 0, out = 0;
+  for (const [x, y] of rings[poly[0]]) { if (inRing(within, x, y)) inn++; else out++; if (inn && out) return 'part'; }
+  return inn ? 'all' : 'none';
+}
+/* split every row of `gw` that strictly contains the day `at` into [.., at-1] and [at, ..] (in place, in order) */
+function splitAt(feats, gw, at) {
+  const t = ymdA(at);
+  for (let i = 0; i < feats.length; i++) { const f = feats[i];
+    if (f[1] !== gw || !(ymdA(rowS(f)) < t && t <= ymdA(rowE(f)))) continue;
+    feats.splice(i, 1, withSpan(f, rowS(f), dayShift(at, -1)), withSpan(f, at, rowE(f))); i++; }
+}
+const polyKey = (p) => p.join(',');
+export function applyReview(data, review) {
+  const feats = data.feats.map((f) => withSpan(f, rowS(f), rowE(f)));
+  const units = review.units || {}, report = { edges: [], ground: [] };
+  for (const ed of review.edges || []) {
+    const lo = Math.min(ymdA(ed.upstream), ymdA(ed.at)), hi = Math.max(ymdA(ed.upstream), ymdA(ed.at));
+    const rows = feats.filter((f) => f[1] === ed.gw).sort((a, b) => ymdA(rowS(a)) - ymdA(rowS(b)));
+    const pairs = [];
+    for (let i = 0; i + 1 < rows.length; i++) { const b = ymdA(rowS(rows[i + 1]));
+      if (ymdA(dayShift(rowE(rows[i]), 1)) === b && b >= lo && b <= hi) pairs.push([rows[i], rows[i + 1]]); }
+    if (pairs.length !== 1) throw new Error(`review edge ${ed.id}: ${pairs.length} boundaries of code ${ed.gw} between ${ed.upstream.join('-')} and ${ed.at.join('-')}, not one`);
+    const [A, B] = pairs[0], before = rowS(B).join('-');
+    [A[5], A[6], A[7]] = dayShift(ed.at, -1); [B[2], B[3], B[4]] = ed.at;
+    if (ymdA(rowE(A)) < ymdA(rowS(A)) || ymdA(rowE(B)) < ymdA(rowS(B))) throw new Error(`review edge ${ed.id}: moving the boundary to ${ed.at.join('-')} empties a row`);
+    report.edges.push({ id: ed.id, from: before, to: ed.at.join('-') });
+  }
+  for (const g of review.ground || []) {
+    const S = ymdA(g.s), E = ymdA(g.e), after = dayShift(g.e, 1);
+    for (const gw of [g.from, g.to]) { splitAt(feats, gw, g.s); splitAt(feats, gw, after); }
+    /* what each source row inside the span gives up, by its own ring indices (rows of one record can carry
+       different copies of the same island — the retained coarse 1920 Soviet row does) */
+    const moved = []; let inside = 0;
+    for (const f of feats) {
+      if (f[1] !== g.from || ymdA(rowS(f)) < S || ymdA(rowE(f)) > E) continue;
+      inside++;
+      const keep = [], take = [];
+      for (const p of f[8]) { const w = polyInside(data.rings, p, g.within);
+        if (w === 'part') throw new Error(`review ground ${g.id}: a polygon of «${f[0]}» ${rowS(f).join('-')} lies partly inside \`within\` — the selector would cut land`);
+        (w === 'all' ? take : keep).push(p); }
+      if (!take.length) continue;
+      if (!keep.length) throw new Error(`review ground ${g.id}: every polygon of «${f[0]}» ${rowS(f).join('-')} would move`);
+      f[8] = keep; moved.push({ s: rowS(f), e: rowE(f), polys: take });
+    }
+    moved.sort((a, b) => ymdA(a.s) - ymdA(b.s));
+    /* ⚠ THE GROUND IS ONE GROUND FOR THE WHOLE SPAN. A verdict states that this land belonged to `to` from `s` to
+       `e`; the source record splits its rows there for its OTHER borders, and some of its rows carry a coarser copy
+       of the same islands (the retained 1920 Soviet row: 10-19 vertices an island against 11-52). Handing each
+       row's own copy over would redraw the receiving record twice in 1920 for no event — and data/on-this-day.json
+       would publish «Empire of Japan redrawn» on 2 February and 2 September 1920. So the receiving record takes
+       ONE copy — the one with the most vertices — for the whole span, and a source whose rows inside the span do
+       not all give up the same number of polygons is not one ground: the ledger has to be split, and this throws. */
+    const sizes = new Set(moved.map((m) => m.polys.length));
+    if (moved.length && moved.length !== inside) throw new Error(`review ground ${g.id}: ${inside - moved.length} of the ${inside} source rows inside the span hold nothing inside \`within\` — not one ground; split the verdict`);
+    if (sizes.size > 1) throw new Error(`review ground ${g.id}: the source rows inside the span give up ${[...sizes].join(' / ')} polygons — not one ground; split the verdict`);
+    const verts = (m) => m.polys.reduce((n, p) => n + data.rings[p[0]].length, 0);
+    const rep = moved.reduce((a, m) => (!a || verts(m) > verts(a) ? m : a), null);
+    const runs = [];
+    for (const m of moved) { const r = runs[runs.length - 1];
+      if (r && ymdA(dayShift(r.e, 1)) === ymdA(m.s)) r.e = m.e; else runs.push({ s: m.s, e: m.e, polys: rep.polys }); }
+    let n = 0;
+    for (const r of runs) {
+      splitAt(feats, g.to, r.s); splitAt(feats, g.to, dayShift(r.e, 1));
+      const into = feats.filter((f) => f[1] === g.to && ymdA(rowS(f)) >= ymdA(r.s) && ymdA(rowE(f)) <= ymdA(r.e));
+      let covered = 0;
+      for (const f of into) { const have = new Set(f[8].map(polyKey));
+        for (const p of r.polys) if (!have.has(polyKey(p))) f[8].push(p.slice());
+        covered++; }
+      if (!covered) {
+        const u = units[String(g.to)];
+        if (!u) throw new Error(`review ground ${g.id}: code ${g.to} has no row from ${r.s.join('-')} and is not declared in \`units\``);
+        feats.push([u.name, g.to, ...r.s, ...r.e, r.polys.map((p) => p.slice())]);
+      }
+      n += r.polys.length;
+    }
+    report.ground.push({ id: g.id, polygons: n, rows: moved.length });
+  }
+  /* a ring no row references any more (the coarse copy a source row gave up while the receiving record took the
+     finer one) is dropped and the pool renumbered in its own order — ORPHAN_POINTS is 0, and a ring nobody draws is
+     weight shipped for nothing. ⚠ data/border-coast.js marks rings BY POOL INDEX: a renumbering is a rebuild of it
+     (node scripts/build-border-coast.mjs), which `npm run check:bordercoast` demands */
+  const used = new Set(); for (const f of feats) for (const p of f[8]) for (const ri of p) used.add(ri);
+  let rings = data.rings;
+  if (used.size !== data.rings.length) {
+    const map = new Map(); rings = [];
+    data.rings.forEach((r, i) => { if (used.has(i)) { map.set(i, rings.length); rings.push(r); } });
+    for (const f of feats) f[8] = f[8].map((p) => p.map((ri) => map.get(ri)));
+    report.droppedRings = data.rings.length - rings.length;
+  }
+  const notes = (review.notes || []).map((x) => ({ about: x.about, gw: x.gw, s: x.s, e: x.e, en: x.en, jp: x.jp }));
+  /* the precision record counts rows (refined + retained = rows). A row the review adds — a split piece, or a unit
+     CShapes does not have — has no identity in the upstream, so a precision re-cut retains it: it is counted as
+     retained (0 on a re-application, which adds no row) */
+  const added = feats.length - data.feats.length;
+  const precision = data.precision && added ? { ...data.precision, retained: data.precision.retained + added } : data.precision;
+  return { data: { ...data, rings, feats, ...(precision ? { precision } : {}), review: { src: 'scripts/cshapes/review.json', notes } }, report };
+}
+/* what the committed bundle must show for every verdict — measured on the bundle, not on the ledger's word.
+   Exported so tests/cshapes-review-findings-checks.test.mjs evaluates the same judgement the gate makes. */
+export function reviewProblems(d, review) {
+  const out = [], say = (m) => out.push(m);
+  const ids = new Set();
+  for (const x of [...(review.ground || []), ...(review.edges || [])]) {
+    if (!x.id || ids.has(x.id)) say('review entry without a unique id: ' + JSON.stringify(x.id)); ids.add(x.id);
+    if (!(typeof x.history === 'string' && x.history.length > 40)) say(`review ${x.id} states no history — a verdict without the event it rests on is not a verdict`);
+    if (!(Array.isArray(x.sources) && x.sources.length && x.sources.every((s) => s && typeof s.cite === 'string' && s.cite.length > 10))) say(`review ${x.id} cites no source`);
+  }
+  for (const x of review.examined || []) if (!(x.id && x.finding && x.verdict && typeof x.why === 'string' && x.why.length > 40)) say(`examined finding ${x.id} has no verdict with a reason`);
+  /* the bundle IS the ledger applied: re-applying changes nothing */
+  let again = null;
+  try { again = applyReview(d, review).data; } catch (e) { say('scripts/cshapes/review.json cannot be applied to the committed bundle: ' + e.message); }
+  if (again && JSON.stringify(again) !== JSON.stringify(d)) say('data/cshapes.js does not carry scripts/cshapes/review.json — node scripts/build-cshapes.mjs --review');
+  const rowsOf = (gw) => d.feats.filter((f) => f[1] === gw).sort((a, b) => ymdA(rowS(a)) - ymdA(rowS(b)));
+  for (const g of review.ground || []) {
+    const S = ymdA(g.s), E = ymdA(g.e);
+    for (const f of rowsOf(g.from)) {
+      if (ymdA(rowE(f)) < S || ymdA(rowS(f)) > E) continue;
+      const hit = f[8].map((p) => polyInside(d.rings, p, g.within)).filter((w) => w !== 'none');
+      if (hit.length) say(`review ${g.id}: «${f[0]}» ${rowS(f).join('-')} still draws ${hit.length} polygon(s) inside the ground it gave up`);
+    }
+    const into = rowsOf(g.to).filter((f) => !(ymdA(rowE(f)) < S || ymdA(rowS(f)) > E));
+    let cur = S;
+    for (const f of into) {
+      if (ymdA(rowS(f)) > cur) break;
+      if (!f[8].some((p) => polyInside(d.rings, p, g.within) === 'all')) say(`review ${g.id}: code ${g.to} ${rowS(f).join('-')} draws nothing inside the ground it received`);
+      cur = Math.max(cur, ymdA(dayShift(rowE(f), 1)));
+    }
+    if (cur <= E) say(`review ${g.id}: code ${g.to} does not hold the ground from ${String(cur)} to ${g.e.join('-')}`);
+    const u = review.units && review.units[String(g.to)];
+    if (u && into.some((f) => f[0] !== u.name)) say(`review ${g.id}: code ${g.to} is declared as «${u.name}» and drawn under another name`);
+  }
+  for (const ed of review.edges || []) {
+    const rows = rowsOf(ed.gw), at = ymdA(ed.at), before = ymdA(dayShift(ed.at, -1));
+    if (!rows.some((f) => ymdA(rowS(f)) === at) || !rows.some((f) => ymdA(rowE(f)) === before)) say(`review ${ed.id}: code ${ed.gw} does not change on ${ed.at.join('-')}`);
+    if (rows.some((f) => ymdA(rowS(f)) === ymdA(ed.upstream))) say(`review ${ed.id}: code ${ed.gw} still changes on the upstream day ${ed.upstream.join('-')}`);
+  }
+  const about = new Set();
+  for (const n of review.notes || []) {
+    const ab = Array.isArray(n.about) ? n.about : [];
+    if (!ab.length) say('a note says nothing about which review entry it discloses (`about`)');
+    for (const id of ab) { about.add(id); if (!ids.has(id)) say(`a note names «${id}», which is no review entry`); }
+    if (!(typeof n.en === 'string' && n.en.length > 40 && typeof n.jp === 'string' && n.jp.length > 20)) say(`the note on ${ab.join('+')} / ${n.gw} is not written in both en and jp`);
+    if (!rowsOf(n.gw).some((f) => !(ymdA(rowE(f)) < ymdA(n.s) || ymdA(rowS(f)) > ymdA(n.e)))) say(`the note on ${ab.join('+')} names code ${n.gw}, which draws nothing from ${n.s.join('-')} to ${n.e.join('-')}`);
+  }
+  for (const id of ids) if (!about.has(id)) say(`review ${id} changes the map and tells the reader nothing — every derivation carries a note the card shows`);
+  return out;
+}
+function writeBundle(data) {
+  const body = 'window.__CSHAPES=' + JSON.stringify(data) + ';\n';
+  writeFileSync(OUT, body);
+  return Buffer.byteLength(body);
+}
+function reviewMode() {
+  const have = evaluate(OUT, '__CSHAPES');
+  const { data, report } = applyReview(have, readReview());
+  const bytes = writeBundle(data);
+  console.log(JSON.stringify({ bytes, records: data.feats.length, ...report }));
+}
+
 function precisionOnly() {
   /* R711: 0.002 degrees removed bends up to 211.4 m from the cached Swiss outline.
      Keeping every source bend and five decimal digits reduces that deviation to 0.63 m.
@@ -375,9 +564,11 @@ function precisionOnly() {
   const result = refineCShapes(have, build(prior.tolerance, MIN_AREA, prior.decimals), finer);
   result.data.precision = { targetTolerance: TOL, decimals: 5, refined: result.refined, retained: result.retained,
     semantics: 'build target; retained corrected or unreproducible shapes keep their existing precision' };
-  const body = 'window.__CSHAPES=' + JSON.stringify(result.data) + ';\n';
-  writeFileSync(OUT, body);
-  console.log(JSON.stringify({ bytes: Buffer.byteLength(body), points: result.data.rings.reduce((n,r)=>n+r.length,0), refined: result.refined, retained: result.retained }));
+  /* (cshapes-review-findings) a reviewed row has no identity in the upstream, so it is retained above; the ledger
+     is re-applied all the same (it is idempotent), so a re-cut can never drop a verdict */
+  const reviewed = applyReview(result.data, readReview()).data;
+  const bytes = writeBundle(reviewed);
+  console.log(JSON.stringify({ bytes, points: reviewed.rings.reduce((n,r)=>n+r.length,0), refined: result.refined, retained: result.retained }));
 }
 
 /* ── check (offline) ────────────────────────────────────────────────────────
@@ -468,6 +659,15 @@ function check() {
   }
   if (bad.length) { fail(bad); return; }
 
+  /* (cshapes-review-findings) the reviewed findings are in the bundle, and each is visible on it */
+  /* A root with no ledger has reviewed nothing — and then the bundle must not claim it has (a deleted ledger
+     beside a bundle that still carries its verdicts is a record whose reasons are gone). */
+  let review = null;
+  if (!existsSync(REVIEW)) { if (d.review) bad.push('data/cshapes.js carries reviewed verdicts (`review`) and scripts/cshapes/review.json, which states their reasons, is gone'); }
+  else try { review = readReview(); } catch (e) { bad.push('scripts/cshapes/review.json does not parse: ' + e.message); }
+  if (review) for (const m of reviewProblems(d, review)) bad.push(m);
+  if (bad.length) { fail(bad); return; }
+
   /* orphans — allowed, counted, ratcheted (see ORPHAN_POINTS) */
   let orphanRings = 0, orphanPts = 0;
   for (let i = 0; i < d.rings.length; i++) if (!used.has(i)) { orphanRings++; orphanPts += d.rings[i].length; }
@@ -528,7 +728,8 @@ function check() {
 
   if (bad.length) { fail(bad); return; }
   console.log(`cshapes ok — ${d.feats.length} records, ${codeOf.size} polities, ${d.rings.length} rings `
-    + `(${orphanRings} unreferenced, ${orphanPts} points), ${Y_MIN}-${Y_MAX}, ${LICENCE.licence}`);
+    + `(${orphanRings} unreferenced, ${orphanPts} points), ${Y_MIN}-${Y_MAX}, ${LICENCE.licence}`
+    + (review ? `, ${(review.ground || []).length + (review.edges || []).length} reviewed finding(s) applied, ${(review.examined || []).length} examined and kept` : ''));
 }
 
 function fail(bad) {
@@ -547,4 +748,5 @@ else if (arg.includes('--check')) check();
 else if (arg.includes('--fetch')) console.error('fetched ' + await fetchUpstream() + ' bytes into ' + CACHE);
 else if (arg.includes('--measure')) measure();
 else if (arg.includes('--precision-only')) precisionOnly();
+else if (arg.includes('--review')) reviewMode();
 else compare();

@@ -193,7 +193,8 @@ export function histPlaces(HOST) {
       positionCaveat: 'Source representative points, not exact site positions.' };
   }
   refresh();
-  return { ensure, refresh, dispose, open, state, lookup: id => byId.get(id) || null,
+  /* (where-when-search) the loaded places, READ-ONLY — js/where-when.js looks a place up by its attested names */
+  return { ensure, refresh, dispose, open, state, lookup: id => byId.get(id) || null, records: () => (data ? data.places : []),
     currentFC: () => when() ? fc : empty(),
     coverage: () => ({ active: !!when(), places: when() ? fc.features.length : 0,
       source: data ? data.source.publisher : null, asOf: data ? data.asOf : null,

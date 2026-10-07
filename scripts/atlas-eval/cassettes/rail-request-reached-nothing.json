@@ -256,6 +256,10 @@
               "tool": "time_cityPopulation"
             },
             {
+              "id": "time.whereWhen",
+              "tool": "time_whereWhen"
+            },
+            {
               "id": "time.borderSource",
               "tool": "time_borderSource"
             },

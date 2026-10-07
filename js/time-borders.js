@@ -335,7 +335,10 @@ export function timeBorders(HOST){
       5518:[[9999,'North-Eastern Rhodesia (UK)']], 5519:[[9999,'North-Western Rhodesia (UK)']],
       6511:[[9999,'Gaza (Egypt)']], 6631:[[9999,'West Bank (Jordan)']],
       7020:[[9999,'Emirate of Bukhara']], 7030:[[9999,'Khanate of Khiva']],
-      7351:[[9999,'Karafuto (Japan)']], 9401:[[9999,'German Solomon Islands']]
+      7351:[[9999,'Karafuto (Japan)']], 9401:[[9999,'German Solomon Islands']],
+      /* (cshapes-review-findings) not a CShapes unit: scripts/cshapes/review.json `units` — the Nansei Islands under United
+         States administration, 1946-01-29 to 1972-05-14, drawn apart from Japan by the reviewed `ground` verdicts */
+      7401:[[9999,'Ryukyu Islands (USA)']]
     };
     /* is the reader's instant `t` (YYYYMMDD) still before a rule's `before`, given the record `row` drawn at
        `t`? [y,m,d] is an instant as written. A bare year is the record's boundary in that year (see the
@@ -365,7 +368,29 @@ export function timeBorders(HOST){
        they share both the record's epoch and the rules' year. The list is DERIVED from _CS_ERA (a rule added there is
        in it), and an [y,m,d] rule needs nothing — the gate holds it to a record edge. */
     const _csNameCuts=(()=>{ const s=new Set(); for(const g in _CS_ERA) for(const r of _CS_ERA[g]) if(typeof r[0]==='number'&&r[0]<9999) s.add(_ymd(r[0],1,1)); return [...s].sort((a,b)=>a-b); })();
-    function _csNameKey(t){ let ans=0; for(const k of _csNameCuts){ if(k<=t) ans=k; else break; } return ans; }
+    /* ══ (cshapes-review-findings) …AND SO CAN A REVIEWED NOTE ══════════════════════════════════════════════════════════
+       data/cshapes.js carries the reviewed findings' notes (`review.notes`, written by scripts/build-cshapes.mjs --review
+       from scripts/cshapes/review.json) with the span each one speaks for, and `_csNotesOn` hangs a note on the outline it
+       names while the instant is inside that span. A span need not start on a record edge — the Korean Empire is drawn
+       for the six days CShapes already calls a colony (1910-08-23..28), and 08-23 is no longer an edge of the record —
+       so the note's first day and the day after its last are cuts of the same axis as the name rules'. Read from the
+       bundle when it arrives; nothing here lists a date. */
+    let _csCutsOf=null,_csCuts=null;
+    function _csCutList(){ if(!_csD) return _csNameCuts; if(_csCutsOf===_csD&&_csCuts) return _csCuts;
+      const s=new Set(_csNameCuts);
+      try{ for(const n of ((_csD.review&&_csD.review.notes)||[])){ if(!Array.isArray(n.s)||!Array.isArray(n.e)) continue;
+        s.add(_ymd(n.s[0],n.s[1],n.s[2])); const a=new Date(Date.UTC(n.e[0],n.e[1]-1,n.e[2]+1)); s.add(_ymd(a.getUTCFullYear(),a.getUTCMonth()+1,a.getUTCDate())); } }catch(_){}
+      _csCutsOf=_csD; _csCuts=[...s].sort((a,b)=>a-b); return _csCuts; }
+    function _csNameKey(t){ let ans=0; for(const k of _csCutList()){ if(k<=t) ans=k; else break; } return ans; }
+    /* the reviewed note that speaks for this code at this instant, as two plain strings (a rendered feature's
+       properties are flattened to scalars, so an object would reach the card as text) */
+    function _csNoteOf(gw,t){ try{ for(const n of ((_csD&&_csD.review&&_csD.review.notes)||[])){
+        if(n.gw!==gw) continue; const a=_ymd(n.s[0],n.s[1],n.s[2]), b=_ymd(n.e[0],n.e[1],n.e[2]);
+        if(a<=t&&t<=b) return { _csNoteEn:String(n.en||''), _csNoteJp:String(n.jp||'') }; }
+      }catch(_){} return null; }
+    /* hung on the collection `csFC` built for the instant `t` (its properties are its own, made in that call) —
+       `csFC` decides which records are in force and stays that one question */
+    function _csNotesOn(fc,t){ try{ for(const f of ((fc&&fc.features)||[])){ const n=_csNoteOf(f.properties&&f.properties._gw,t); if(n) Object.assign(f.properties,n); } }catch(_){} return fc; }
     /* ══ (#R531) WHICH EDGES OF AN OUTLINE ARE BORDER ═════════════════════════════════════════════
        data/border-coast.js marks, for every pooled ring of BOTH bundles, the runs that are a
        boundary between polities rather than the record's own copy of the coastline. The measurement,
@@ -1863,6 +1888,7 @@ export function timeBorders(HOST){
       [/^\s*emirate of bukhara\s*$/i,LA('Emirate of Bukhara','ブハラ・アミール国','Emirat Buchara','Бухарский эмират','Emirato de Bujará')],
       [/^\s*khanate of khiva\s*$/i,LA('Khanate of Khiva','ヒヴァ・ハン国','Khanat Chiwa','Хивинское ханство','Kanato de Jiva')],
       [/^\s*karafuto\s*$/i,LA('Karafuto','樺太','Karafuto','Карафуто','Karafuto')],
+      [/^\s*ryukyu islands\s*$/i,LA('Ryukyu Islands','琉球諸島')],   /* (cshapes-review-findings) new text is en + jp (CONSTITUTION §7) */
       [/^\s*straits settlements\s*$/i,LA('Straits Settlements','海峡植民地','Straits Settlements','Стрейтс-Сетлментс','Colonias del Estrecho')],
       [/^\s*federated malay states\s*$/i,LA('Federated Malay States','マレー連合州','Föderierte Malaiische Staaten','Федерированные малайские государства','Estados Malayos Federados')],
       [/^\s*unfederated malay states\s*$/i,LA('Unfederated Malay States','マレー非連合州','Unföderierte Malaiische Staaten','Нефедерированные малайские государства','Estados Malayos No Federados')],
@@ -2104,7 +2130,7 @@ export function timeBorders(HOST){
          CShapes bundle can't be loaded. */
       if(year>=CS_MIN&&year<=CS_MAX){ const d=(await Promise.all([csLoad(),bcLoad(),hnLoad()]))[0];   /* (#R531) the marks settle before the first collection is built, so nothing is cached unmarked */
         if(d){ let key; try{ key='cs'+csEpoch(d,year,mon,day)+String(_csNameKey(_ymd(year,mon,day))).padStart(8,'0'); }catch(_){ key='cs'+year; }   /* the EPOCH, not the date: a quiet decade keeps one cache entry and re-renders nothing — (marketing-next) and the year of the name rules, which can turn inside an epoch: eight more digits, so the key stays «record + digits» (the tier is what is left when the digits are taken off) */
-          let fc=cache.get(key); if(!fc){ try{ fc=await csFC(d,year,mon,day); cache.set(key,fc); }catch(_){ fc=null; } }
+          let fc=cache.get(key); if(!fc){ try{ fc=_csNotesOn(await csFC(d,year,mon,day),_ymd(year,mon,day)); cache.set(key,fc); }catch(_){ fc=null; } }
           if(fc){
             /* (hist-coverage-expansion) …and from 1886 the composition goes on: CShapes is the record above, and
                Cliopatria draws only the ground CShapes leaves (the builder subtracted it on CShapes' own dates).
@@ -2823,6 +2849,10 @@ export function timeBorders(HOST){
           'Grenzgenauigkeit laut Quelle: völkerrechtlich festgelegt','Точность границ по источнику: определены международным правом',
           'Precisión de los límites según la fuente: determinados por el derecho internacional','來源的邊界精度分類：由國際法界定','来源的边界精度分类：由国际法界定',
           'Précision des frontières selon la source : définies par le droit international','출처의 경계 정밀도 분류: 국제법으로 정해진 경계')):'';
+      /* (cshapes-review-findings) a reviewed finding changed what this outline draws (scripts/cshapes/review.json) — the
+         card says what was changed and on which treaty, beside anything else it says */
+      const rn=String(p._csNoteEn||'').trim();
+      if(rn) return _LTB.arr(LA(rn,String(p._csNoteJp||'').trim()||rn))+(precision?' · '+precision:'');
       /* (sudan-mahdist-1886) the outline is carried back: review.json `ground` (scripts/build-hist-clio.mjs) */
       if(p._heldShape!=null&&isFinite(+p._heldShape)&&isFinite(+p._heldFrom)){
         const hs=_yTxt(+p._heldFrom), hy=_yTxt(+p._heldShape), ov=String(p._heldOver||'').trim();

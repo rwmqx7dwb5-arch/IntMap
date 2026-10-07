@@ -1790,6 +1790,10 @@
     /* (ui-a11y-polish) what the row IS (and, for two rows that read alike, where) — js/search-geocode.js `_paint` */
     .ms-kind{ display:block; margin-top:1px; font-size:11px; line-height:1.3; color:var(--text-muted); }
     .ms-loading{ padding:12px; font-size:12px; color:var(--text-muted); text-align:center; }
+    /* (where-when-search) what the «where + when» reading could not do, above the rows (js/search-geocode.js) — and the time-only row */
+    .ms-note{ padding:9px 12px; font-size:11.5px; line-height:1.4; color:var(--text-muted); background:var(--input-bg); border-bottom:1px solid rgba(128,128,128,0.1); }
+    .ms-item.ms-when{ color:var(--primary-color); font-weight:600; }
+    .ms-item.ms-when .ms-kind{ font-weight:400; }
     .unit-sub{ font-size:0.82em; color:var(--text-muted); }
     .tp-header{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; cursor:move; user-select:none; touch-action:none; }
     /* (#R36) ROOT CAUSE of "Radiusの文字と□/×記号の上下位置がおかしい上に被っている": .tp-title carries
@@ -2372,6 +2376,7 @@
       #m-search-slot .map-search-results .ms-item.ms-atlas{ color:var(--primary-color); font-weight:600; }
       #m-search-slot .map-search-results .ms-item.ms-atlas b{ font-weight:600; }
       #m-search-slot .map-search-results .ms-loading{ padding:14px 4px; }
+      #m-search-slot .map-search-results .ms-note{ padding:10px 4px; font-size:13px; border-radius:10px; }
 
       /* ---------- Hide the cramped desktop control cluster ---------- */
       .map-controls-top{ display:none !important; }
