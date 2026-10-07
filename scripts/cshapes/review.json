@@ -1,0 +1,148 @@
+{
+ "about": "Reviewed findings against data/cshapes.js (CShapes 2.0). CShapes codes de jure changes on the day a treaty was SIGNED, leaves out territorial changes under 10,000 km² and carries present-day borders back where it codes no change (CShapes 2.0 Documentation, G. Schvitz, 2018-12-21, §3). Each finding is judged against the treaty or instrument that made the change, and IntMap draws who governed the ground on that day. Read by scripts/build-cshapes.mjs: `--review` applies `edges` (a change moved to the day it took effect) and `ground` (whole island polygons moved from one record to another for a span; a polygon is moved only when every vertex of its outer ring lies inside `within`, and a polygon partly inside fails the build — nothing is cut) to the committed bundle, and copies `notes` into it as `review.notes`, which js/time-borders.js shows on the card of the outline they name. `units` declares an outline CShapes does not have (its code is IntMap's, not a Gleditsch-Ward code). `examined` are findings looked at and NOT changed, with the reason. Gate: npm run check:cshapes (re-applying this file to the committed bundle must change nothing, and every entry is measured on the bundle).",
+ "reviewedOn": "2026-10-07",
+ "units": {
+  "7401": {
+   "name": "Ryukyu Islands",
+   "basis": "IntMap's own code for the Nansei Islands under United States administration (1946-01-29 to 1972-05-14). CShapes 2.0 has no such unit and assigns no code; 7401 is chosen beside Japan's 740 because Japan kept residual sovereignty. It is not a Gleditsch-Ward code."
+  }
+ },
+ "ground": [
+  {
+   "id": "kuril-1875",
+   "from": 365,
+   "to": 740,
+   "s": [1886, 1, 1],
+   "e": [1945, 8, 14],
+   "within": [[148.9, 45.9], [149.6, 44.9], [157.5, 50.2], [156.57, 50.6], [156.57, 51.05], [154.6, 51.2], [148.9, 45.9]],
+   "withinIs": "The Kuril group north-east of the Friza (Vries) Strait up to the strait between Cape Lopatka and Shumshu, which Article 2 of the 1875 treaty makes the boundary. Kamchatka (its southern tip at 156.655 E 50.885 N in this bundle) lies outside.",
+   "history": "By the Treaty of Saint Petersburg (signed 7 May 1875, in force 22 August 1875) Russia ceded to Japan the eighteen Kuril islands from Shumshu to Urup, the boundary between the two empires being the strait between Cape Lopatka and Shumshu (Art. 2). Japan held them until the Soviet occupation of August-September 1945. CShapes 2.0 draws Shumshu, Atlasov, Paramushir, Onekotan, Kharimkotan, Shiashkotan and Simushir inside Russia for 1886-1945 because its coding rules leave out changes under 10,000 km² and carry present-day borders back where no change is coded (the islands are the same polygons in every Russian row, 1886-2019). The span ends on 14 August 1945, the day CShapes itself ends Japanese rule over Southern Sakhalin, Korea and Taiwan.",
+   "sources": [
+    { "cite": "Treaty of Saint Petersburg (Treaty for the Exchange of Sakhalin for the Kuril Islands), 7 May 1875, French authentic text, Article 2; Japanese translation 第二款 (太政官布告)" },
+    { "cite": "G. Schvitz, Cshapes 2.0: Documentation, 21 December 2018, §3 Coding Decisions", "url": "https://icr.ethz.ch/data/cshapes/CShapes-2.0_Codebook.pdf" }
+   ]
+  },
+  {
+   "id": "nansei-scapin-677",
+   "from": 740,
+   "to": 7401,
+   "s": [1946, 1, 29],
+   "e": [1952, 2, 9],
+   "within": [[122, 23.5], [132.5, 23.5], [132.5, 30], [122, 30], [122, 23.5]],
+   "withinIs": "The Nansei Islands south of 30°N (SCAPIN-677 (b), including Kuchinoshima).",
+   "history": "SCAPIN-677 of 29 January 1946 separated from Japan, governmentally and administratively, the Ryukyu (Nansei) Islands south of 30°N including Kuchinoshima; the Japanese government's authority there was suspended and the islands were placed under United States military government (the United States Civil Administration of the Ryukyu Islands from December 1950).",
+   "sources": [
+    { "cite": "SCAPIN-677, Governmental and Administrative Separation of Certain Outlying Areas from Japan, 29 January 1946, §3 (b)", "url": "https://www.hoppou.go.jp/gakushu/data/document/doc19460129/" }
+   ]
+  },
+  {
+   "id": "nansei-tokara-1952",
+   "from": 740,
+   "to": 7401,
+   "s": [1952, 2, 10],
+   "e": [1953, 12, 24],
+   "within": [[122, 23.5], [132.5, 23.5], [132.5, 29], [122, 29], [122, 23.5]],
+   "withinIs": "The Nansei Islands south of 29°N (Treaty of San Francisco, Art. 3).",
+   "history": "The Tokara Islands (between 29°N and 30°N) returned to Japanese administration on 10 February 1952 (SCAPIN-677/1 of 5 December 1951). Article 3 of the Treaty of San Francisco (in force 28 April 1952) left the Nansei Shoto south of 29°N under United States administration. CShapes 2.0 has no polygon for the Tokara Islands, so the line this draws does not move on that day; the row edge records the change.",
+   "sources": [
+    { "cite": "SCAPIN-677/1, 5 December 1951; return of the Tokara Islands, 10 February 1952 (Kagoshima Prefecture, トカラ列島の日本復帰)" },
+    { "cite": "Treaty of Peace with Japan (San Francisco), signed 8 September 1951, in force 28 April 1952, Article 3" }
+   ]
+  },
+  {
+   "id": "nansei-amami-1953",
+   "from": 740,
+   "to": 7401,
+   "s": [1953, 12, 25],
+   "e": [1972, 5, 14],
+   "within": [[124.6667, 28], [122, 24], [133, 24], [131.8333, 27], [128.3, 27], [128.3, 28], [124.6667, 28]],
+   "withinIs": "The Ryukyu Islands as USCAR Civil Administration Proclamation No. 27 (25 December 1953) bounds them: 28°N 124°40'E, 24°N 122°E, 24°N 133°E, 27°N 131°50'E, 27°N 128°18'E, 28°N 128°18'E.",
+   "history": "The Amami Islands returned to Japanese administration on 25 December 1953. USCAR Proclamation No. 27 of the same day fixed the geographical boundaries of the Ryukyu Islands as the area inside 28°N 124°40'E - 24°N 122°E - 24°N 133°E - 27°N 131°50'E - 27°N 128°18'E - 28°N 128°18'E (which keeps Iheya inside and Yoron outside). Administration of the Ryukyu and Daito Islands returned to Japan on 15 May 1972 under the Okinawa Reversion Agreement.",
+   "sources": [
+    { "cite": "USCAR Civil Administration Proclamation No. 27, Geographical Boundaries of the Ryukyu Islands, 25 December 1953 (as quoted in the 琉球政府章典)" },
+    { "cite": "Agreement between Japan and the United States of America concerning the Ryukyu Islands and the Daito Islands, signed 17 June 1971, in force 15 May 1972" }
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "id": "korea-annexation-1910",
+   "gw": 730,
+   "upstream": [1910, 8, 23],
+   "at": [1910, 8, 29],
+   "history": "The Treaty of Annexation was signed at Seoul on 22 August 1910 and, by its Article 8, took effect on the day of its promulgation; it was promulgated on 29 August 1910 (官報号外, 条約第4号). The Korean Empire's government ruled until then. CShapes codes the signing day for every change (codebook §3: 'we code the day on which for example a treaty was signed as the day a territorial change occurred') and starts colonial Korea on 23 August. The two CShapes rows have the same outline, so only the name changes day.",
+   "sources": [
+    { "cite": "韓国併合ニ関スル条約, signed 22 August 1910, Article 8; promulgated 29 August 1910, 官報号外 条約第4号" },
+    { "cite": "G. Schvitz, Cshapes 2.0: Documentation, 21 December 2018, §3", "url": "https://icr.ethz.ch/data/cshapes/CShapes-2.0_Codebook.pdf" }
+   ]
+  }
+ ],
+ "notes": [
+  {
+   "about": ["kuril-1875"],
+   "gw": 740,
+   "s": [1886, 1, 1],
+   "e": [1945, 8, 14],
+   "en": "IntMap draws the northern Kuril Islands (Shumshu to Simushir) in Japan until 14 August 1945: Russia ceded the Kurils from Shumshu to Urup to Japan by the Treaty of Saint Petersburg (1875). CShapes 2.0, the source of this outline, places them in Russia because it carries present-day borders back for changes under 10,000 km².",
+   "jp": "この輪郭では、北千島（占守島〜新知島）を 1945 年 8 月 14 日まで日本に含めて描いている。1875 年の樺太・千島交換条約で、ロシアは占守島から得撫島までの千島列島を日本に譲った。この輪郭の出典 CShapes 2.0 は、1 万 km² 未満の領土変更を記録せず今日の国境を遡らせるため、これらの島をロシアに置いている。"
+  },
+  {
+   "about": ["korea-annexation-1910"],
+   "gw": 730,
+   "s": [1910, 8, 23],
+   "e": [1910, 8, 28],
+   "en": "The Treaty of Annexation, signed on 22 August 1910, took effect only when it was promulgated on 29 August (Art. 8); until then the Korean Empire's government ruled, so it is drawn here although CShapes 2.0, the source of this outline, starts the Japanese colony on 23 August.",
+   "jp": "8 月 22 日に調印された韓国併合条約は、8 月 29 日の公布で初めて施行された（第 8 条）。それまでは大韓帝国の政府が統治していたため、この輪郭の出典 CShapes 2.0 が日本の植民地を 8 月 23 日から始めているのに対し、ここでは大韓帝国として描いている。"
+  },
+  {
+   "about": ["korea-annexation-1910"],
+   "gw": 730,
+   "s": [1910, 8, 29],
+   "e": [1945, 8, 14],
+   "en": "Drawn as Japanese from 29 August 1910, the day the Treaty of Annexation was promulgated and took effect (Art. 8). It was signed on 22 August; CShapes 2.0, the source of this outline, records the signing day and starts the colony on 23 August.",
+   "jp": "1910 年 8 月 29 日——韓国併合条約が公布され施行された日（第 8 条）——から日本の統治下として描いている。調印は 8 月 22 日で、この輪郭の出典 CShapes 2.0 は調印日を記録し、植民地を 8 月 23 日から始めている。"
+  },
+  {
+   "about": ["nansei-scapin-677", "nansei-tokara-1952", "nansei-amami-1953"],
+   "gw": 7401,
+   "s": [1946, 1, 29],
+   "e": [1972, 5, 14],
+   "en": "Under United States administration from 29 January 1946 (SCAPIN-677) until 15 May 1972; the Tokara Islands returned in 1952 and the Amami Islands in 1953. Japan kept residual sovereignty: the Treaty of San Francisco (Art. 3) placed the islands under US administration without transferring them. IntMap draws who governed the ground; CShapes 2.0, the source of these outlines, records sovereignty only and keeps them in Japan.",
+   "jp": "1946 年 1 月 29 日（SCAPIN-677）から 1972 年 5 月 15 日まで米国の施政権下にあった（トカラ列島は 1952 年、奄美群島は 1953 年に復帰）。日本は潜在主権を保った——サンフランシスコ平和条約第 3 条は施政権を米国に置いただけで、領土を移していない。IntMap はその土地を誰が治めていたかを描く。この輪郭の出典 CShapes 2.0 は主権だけを記録し、これらの島を日本に含めている。"
+  },
+  {
+   "about": ["nansei-scapin-677", "nansei-tokara-1952", "nansei-amami-1953"],
+   "gw": 740,
+   "s": [1946, 1, 29],
+   "e": [1972, 5, 14],
+   "en": "From 29 January 1946 to 15 May 1972 the Nansei Islands south of 30°N (south of 29°N from 1952, and only the Ryukyu and Daito Islands from 1953) were under United States administration and are drawn as a separate outline; Japan kept residual sovereignty over them (Treaty of San Francisco, Art. 3).",
+   "jp": "1946 年 1 月 29 日から 1972 年 5 月 15 日まで、北緯 30 度以南の南西諸島（1952 年からは北緯 29 度以南、1953 年からは琉球諸島と大東諸島だけ）は米国の施政権下にあり、別の輪郭として描いている。日本はそれらの島に潜在主権を保った（サンフランシスコ平和条約第 3 条）。"
+  }
+ ],
+ "examined": [
+  {
+   "id": "southern-kurils-absent",
+   "finding": "Iturup, Kunashir, Shikotan and the Habomai islands (and Urup) have no polygon in CShapes 2.0 in any year, in Japan or in Russia/the Soviet Union.",
+   "verdict": "kept",
+   "why": "Nothing is claimed there, so nothing is wrong to correct: data/hist-borders-late.js (OpenHistoricalMap on CShapes' days) draws them in the Empire of Japan to 1923, and from 1924 the ground is drawn by no record. Filling it needs a source for the shape, not a move between two CShapes records."
+  },
+  {
+   "id": "bonin-volcano-daito-tokara-absent",
+   "finding": "The Bonin (Ogasawara) and Volcano Islands, the Daito Islands and the Tokara Islands have no polygon in CShapes 2.0. The Bonin and Volcano Islands were under United States administration from 29 January 1946 (SCAPIN-677) to 26 June 1968.",
+   "verdict": "kept",
+   "why": "No record draws these islands from 1886, so there is no polygon to move; the US administration of the Bonin Islands has nothing on the map to attach to."
+  },
+  {
+   "id": "southern-sakhalin-1905",
+   "finding": "CShapes starts Southern Sakhalin (7351) on 5 September 1905, the day the Treaty of Portsmouth was signed; ratifications were exchanged on 25 November 1905.",
+   "verdict": "kept",
+   "why": "Japan occupied Sakhalin in July 1905 and governed the southern half from then on, so on the signing day the ground was already Japan's to govern; the signing day is not later than the day of rule, unlike Korea, where the Korean Empire governed until the treaty took effect. The outline (the 50th parallel) is the treaty's."
+  },
+  {
+   "id": "taiwan-1945-1949",
+   "finding": "CShapes draws Taiwan inside China from 15 August 1945 to 7 December 1949, although Japan renounced it only by the Treaty of San Francisco (in force 28 April 1952).",
+   "verdict": "kept",
+   "why": "The Republic of China took over the administration of Taiwan on 25 October 1945 and governed it from then on, so for 1945-1952 the record already draws who governed the ground — the convention IntMap applies to the Ryukyu Islands. The 71 days from 15 August to 24 October 1945 are CShapes' end-of-empire day, the same day it uses for Korea and Southern Sakhalin; no source states another single day on which the Japanese government's authority over Taiwan ceased before the hand-over."
+  }
+ ]
+}
