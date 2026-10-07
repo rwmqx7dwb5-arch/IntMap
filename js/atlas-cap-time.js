@@ -35,6 +35,21 @@ export default [
     async run(a, dctx, K) { const res = await travel(a, dctx, K); return withCoverage(res, K); },
   },
   {
+    row: ['time.whereWhen',             'whereWhen',      'placeAtTime,goWhereWhen',                                     'time',    'time',    'time,camera',            'map,time',            'session', 'none',   'text',     ''],
+    /* (where-when-search) «WHERE + WHEN» AS ONE LINE — the reading the search field and the palette use (js/where-when.js
+       `interpret`), so 「京都 1600」 typed to Atlas is read exactly as it is in the search field: the place by any name it had
+       (the device's gazetteer, the historical city names, Pleiades) and the instant by syntax (CLDR era words and month
+       names, ICU's Japanese eras). One candidate that IS the name, or an instant with no place, is applied; several are
+       returned for the planner to `pick` — nothing is guessed. */
+    doc: [
+      { in: 'tools-panels', at: 221, text: '{"type":"whereWhen","query":str,"pick"?:int} = WHERE + WHEN IN ONE LINE / 場所と時刻を一度に — the reading the search field uses: "query" is the reader\'s own line naming a place and an instant ("Kyoto 1600", "Berlin May 1945", "ローマ 紀元前44年", "Constantinople 1453", "1900年の上海", "江戸 1868-01", "慶長5年 京都"); the place is found by its name THEN or today (the gazetteer, the historical city names — Constantinople finds Istanbul — and Pleiades\' ancient places), the instant is read as written (years, BC/AD and 紀元前, month names, ISO dates, 年月日, Japanese era years via the platform calendar; a Japanese month before 1873 is lunisolar and only its year is used; other calendars\' reign years are refused with the reason). It flies there AND sets the master clock, which draws the historical map of that instant. An instant with no place moves only the clock. When several places answer it returns them numbered and moves nothing — call again with "pick":n. Prefer it over view.flyTo + timeTravel whenever the user names a place together with a year or date. ' },
+    ],
+    phrases: () => ['の年の', '年の地図', '時代の', 'に行って'].concat(['in the year', 'at the time of', 'as it was in']),   /* the reader's own words for «that place, then» */
+    schema: () => ({ type: 'object', properties: { query: str(), pick: int() }, required: ['query'] }),
+    /* the run lives in js/atlas-where-when.js, fetched on first use, so the Atlas chunk does not carry it */
+    async run(a, dctx, K) { const { whereWhen } = await import('./atlas-where-when.js'); const res = await whereWhen(a, K); return withCoverage(res, K); },
+  },
+  {
     row: ['time.coverage',              'timeCoverage',   'layerTime,whatCanBeDrawn',                                    'time',    'none',    '',                       'explanation',         'read',    'none',   '',         ''],
     /* (world-at-time) WHAT A MAP AT ONE INSTANT CAN DRAW — for every layer, from what its source states
        (js/layer-time-decl.js through js/layer-time-kernel.js), without switching anything on or moving
