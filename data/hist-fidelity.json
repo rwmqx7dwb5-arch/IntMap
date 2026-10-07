@@ -1,6 +1,6 @@
 {
   "note": "Observations, not targets. scripts/hist-fidelity.mjs re-measures the shipped bundles and fails when they do worse. --update re-records them; a round that lowers a number on purpose says why in DEV-NOTES.md.",
-  "measured": "2026-10-06",
+  "measured": "2026-10-07",
   "res": 0.25,
   "unsourcedSpans": 0,
   "years": [
@@ -8,7 +8,7 @@
       "year": -500,
       "pct": 0.02,
       "pctArea": 0.02,
-      "polityLand": 87.77,
+      "polityLand": 87.78,
       "unitLand": 0.03,
       "zero": 105,
       "partial": 3,
@@ -16,73 +16,73 @@
     },
     {
       "year": -100,
-      "pct": 0.79,
+      "pct": 0.8,
       "pctArea": 0.84,
-      "polityLand": 83.81,
+      "polityLand": 83.85,
       "unitLand": 0.81,
-      "zero": 109,
+      "zero": 111,
       "partial": 10,
       "full": 1
     },
     {
       "year": 1,
-      "pct": 2.74,
-      "pctArea": 2.97,
-      "polityLand": 63.07,
+      "pct": 2.77,
+      "pctArea": 3,
+      "polityLand": 63.13,
       "unitLand": 1.9,
-      "zero": 104,
+      "zero": 108,
       "partial": 15,
       "full": 0
     },
     {
       "year": 500,
-      "pct": 0.97,
-      "pctArea": 1.17,
-      "polityLand": 68.58,
+      "pct": 0.98,
+      "pctArea": 1.18,
+      "polityLand": 68.64,
       "unitLand": 0.86,
-      "zero": 123,
-      "partial": 7,
+      "zero": 128,
+      "partial": 8,
       "full": 0
     },
     {
       "year": 1000,
-      "pct": 1.12,
-      "pctArea": 1.14,
-      "polityLand": 70.23,
+      "pct": 1.13,
+      "pctArea": 1.15,
+      "polityLand": 70.32,
       "unitLand": 0.8,
-      "zero": 193,
-      "partial": 23,
-      "full": 10
+      "zero": 199,
+      "partial": 27,
+      "full": 14
     },
     {
       "year": 1300,
-      "pct": 1.23,
-      "pctArea": 1.13,
-      "polityLand": 71.16,
+      "pct": 1.24,
+      "pctArea": 1.15,
+      "polityLand": 71.24,
       "unitLand": 0.8,
-      "zero": 171,
-      "partial": 43,
-      "full": 7
+      "zero": 181,
+      "partial": 50,
+      "full": 9
     },
     {
       "year": 1500,
-      "pct": 5.11,
-      "pctArea": 4.86,
-      "polityLand": 74.74,
+      "pct": 5.13,
+      "pctArea": 4.88,
+      "polityLand": 74.83,
       "unitLand": 3.72,
-      "zero": 180,
-      "partial": 49,
+      "zero": 183,
+      "partial": 57,
       "full": 7
     },
     {
       "year": 1689,
-      "pct": 13.02,
-      "pctArea": 14.74,
-      "polityLand": 73.57,
+      "pct": 13.03,
+      "pctArea": 14.75,
+      "polityLand": 73.6,
       "unitLand": 11.27,
-      "zero": 618,
-      "partial": 55,
-      "full": 50
+      "zero": 626,
+      "partial": 63,
+      "full": 56
     },
     {
       "year": 1800,
@@ -90,7 +90,7 @@
       "pctArea": 27.51,
       "polityLand": 78.19,
       "unitLand": 21.65,
-      "zero": 339,
+      "zero": 340,
       "partial": 36,
       "full": 9
     },
@@ -100,9 +100,9 @@
       "pctArea": 36.88,
       "polityLand": 86.44,
       "unitLand": 32.81,
-      "zero": 360,
-      "partial": 43,
-      "full": 23
+      "zero": 363,
+      "partial": 44,
+      "full": 24
     },
     {
       "year": 1886,

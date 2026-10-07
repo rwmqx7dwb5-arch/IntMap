@@ -253,6 +253,12 @@ export function timeBorders(HOST){
        that way, in the «Land (Occupier)» form the 1945 sheet already uses for the zones («Germany (USA)»).
        ⚠ The record's day governs (the gate holds every dated rule to it): the Federal Republic's Basic Law
        is of 1949-05-23 and the GDR of 1949-10-07; CShapes dates them 09-21 and 10-05, and no day is invented. */
+    /* (clio-year-page-findings) «Land (Power)» names the power that governed the ground, whatever the legal form —
+       colony, protectorate under a native ruler (Tunisia (France) from 1881), mandate (Iraq (UK)), occupation (Korea (USA)).
+       Reviewed 2026-10-07 for 651 «Egypt (UK)» from 1886: Britain governed Egypt from the occupation of 1882 (Tel el-Kebir,
+       13 September 1882; the army of occupation and the Consul-General, Cromer 1883–1907); the protectorate of
+       1914-12-18 changed the legal form (it ended Ottoman suzerainty), not who governed — so the rule stands, and the
+       record's own row of 1914-12-18 is not a change of this name. */
     const _CS_ERA={
       2:[[9999,'United States']], 3:[[9999,'Alaska (USA)']], 4:[[1894,'Kingdom of Hawaii'],[1898,'Republic of Hawaii'],[9999,'Hawaii (USA)']],
       6:[[1899,'Puerto Rico (Spain)'],[9999,'Puerto Rico (USA)']], 31:[[1973,'Bahamas (UK)']], 51:[[1962,'Jamaica (UK)']],
@@ -953,8 +959,9 @@ export function timeBorders(HOST){
         if(W&&m.ws==='gap') W._wYear2=m.wz;
         /* (sudan-mahdist-1886) a polity review.json `ground` draws back to the year history gives: the outline is
            Cliopatria's first one for it (`hy`), carried back to `hs`, in place of the rows Cliopatria draws there (`ho`) —
-           a derivation, so the card says so (`typeNote`) */
-        const H=m.hy!=null?{_heldFrom:m.hs,_heldShape:m.hy,_heldOver:m.ho||''}:null;
+           a derivation, so the card says so (`typeNote`). (clio-year-page-findings) `he`: the ground was the polity's
+           from `hs` to `he` between two of its own rows, and the outline is its row of `hy` drawn back over those years */
+        const H=m.hy!=null?Object.assign({_heldFrom:m.hs,_heldShape:m.hy,_heldOver:m.ho||''},m.he!=null?{_heldTo:m.he}:{}):null;
         feats.push({type:'Feature',geometry:_clGeomOf(d,i),properties:Object.assign(W?{NAME:'',_rec:'clio'}:{NAME:NAME,name:NAME,_i18n:hnFor('clio',NAME,f[1],f[0])||f[0],_rec:'clio'},W||{},H||{},
           f[1]?{_qid:f[1]}:{},(m.w&&!W)?{_wiki:m.w}:{},m.of?{_of:m.of,PARTOF:m.of}:{},m.r?{_realm:1}:{})}); }
       return {type:'FeatureCollection',features:feats}; }
@@ -2669,6 +2676,10 @@ export function timeBorders(HOST){
       /* (sudan-mahdist-1886) the outline is carried back: review.json `ground` (scripts/build-hist-clio.mjs) */
       if(p._heldShape!=null&&isFinite(+p._heldShape)&&isFinite(+p._heldFrom)){
         const hs=_yTxt(+p._heldFrom), hy=_yTxt(+p._heldShape), ov=String(p._heldOver||'').trim();
+        /* (clio-year-page-findings) between two of the polity's own rows (review.json `ground` with `e`) — en + jp (CONSTITUTION §7) */
+        if(p._heldTo!=null&&isFinite(+p._heldTo)){ const he=_yTxt(+p._heldTo);
+          return _LTB.arr(LA('The historical record places this ground under this polity from '+hs+' to '+he+(ov?', the years Cliopatria draws «'+ov+'» on it':'')+'; Cliopatria’s outline of the polity of '+hy+' is drawn here for those years. The boundary in those years is not stated by any record.',
+                             '史実は '+hs+' から '+he+' までこの土地をこの政体のものとする'+(ov?'（Cliopatria はその間この土地に「'+ov+'」を描いている）':'')+'。そのため Cliopatria の '+hy+' のこの政体の輪郭を、その間に描いている。その間の境界はどの記録も述べていない。'))+(precision?' · '+precision:'')+(t?' · '+t:''); }
         return _LTB.arr(LA('The historical record places this polity here from '+hs+'. Cliopatria’s first outline of it is of '+hy+(ov?' and draws «'+ov+'» on this ground until then':'')+', so that outline is drawn back to '+hs+'; the boundary before '+hy+' is not stated by any record.',
                            '史実はこの政体がここを '+hs+' から治めていたとする。Cliopatria の最初の輪郭は '+hy+' のもので'+(ov?'、それまでこの土地には「'+ov+'」を描いている':'')+'。そのためその輪郭を '+hs+' まで遡らせて描いている。'+hy+' より前の境界はどの記録も述べていない。'))+(precision?' · '+precision:'')+(t?' · '+t:''); }
       if(!t) return precision;
