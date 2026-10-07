@@ -1,5 +1,5 @@
 {
- "note": "Reviewed lifespans for data/hist-clio.js (Cliopatria). The machine FINDS (scripts/build-hist-clio.mjs: a row drawn more than FINDING_SLACK years outside the lifespan Wikidata states for a QID shown to be that polity) and this file JUDGES. `rows` act on the map: before `s`, from the year after `e`, and inside each `gaps` span [from, to] (astronomical; `s`, `e` and the years outside a gap are inside; `from` and `to` themselves are in the gap — two lives under one name with the years between them belonging to neither) the shape is drawn without the name, and its card says which name Cliopatria gives and the year the historical record (`history`) places the beginning or the end (`circa`: that year is approximate) — the bound is history's, `wd` is the Wikidata item for the polity that states the same or a nearby year. `refuted` are findings examined and NOT applied, with the reason (`why`: date-disputed, other-identity or name-not-claim); a `side` limits one to that side. A finding is judged by name and side; a `gaps` span judges the end side (the item ended where the gap begins, and the name after it is a second life). `pending` are findings not yet judged: they are drawn as Cliopatria states them, and the gate fails on any finding in none of the three lists — so a new one arrives counted. Gate: npm run check:histclio. `ground` judges the opposite case (scripts/build-hist-clio.mjs `heldFindingsOf`): a polity whose verified start lies years before Cliopatria's first row for it, while a row that goes on being drawn afterwards holds that first row's ground in between. `ground.rows` apply: from 1 January of `s` (history's year) until the first row, what the rows in `over` draw inside the first row's outline is drawn under the polity's name instead and says which year's outline it is; those rows keep the rest, and the realms they are members of lose the same ground. Nothing is drawn where no `over` row drew. The line is whether the state of the `over` row governed that ground in those years (a garrison, a governor, an administration): where it did not — a tributary claim, a province lost to a rising, a claim given up — the ground is the polity's. `ground.refuted` are findings not applied (`why`: ruled — the `over` state did govern there; not-its-ground — the ground the finding measures, what is left of the first row after the records above, is not land the polity held; date-disputed; name-not-claim); `ground.pending` are not yet judged, drawn as Cliopatria states and counted.",
+ "note": "Reviewed lifespans for data/hist-clio.js (Cliopatria). The machine FINDS (scripts/build-hist-clio.mjs: a row drawn more than FINDING_SLACK years outside the lifespan Wikidata states for a QID shown to be that polity) and this file JUDGES. `rows` act on the map: before `s`, from the year after `e`, and inside each `gaps` span [from, to] (astronomical; `s`, `e` and the years outside a gap are inside; `from` and `to` themselves are in the gap — two lives under one name with the years between them belonging to neither) the shape is drawn without the name, and its card says which name Cliopatria gives and the year the historical record (`history`) places the beginning or the end (`circa`: that year is approximate) — the bound is history's, `wd` is the Wikidata item for the polity that states the same or a nearby year. `refuted` are findings examined and NOT applied, with the reason (`why`: date-disputed, other-identity or name-not-claim); a `side` limits one to that side. A finding is judged by name and side; a `gaps` span judges the end side (the item ended where the gap begins, and the name after it is a second life). `pending` are findings not yet judged: they are drawn as Cliopatria states them, and the gate fails on any finding in none of the three lists — so a new one arrives counted. Gate: npm run check:histclio. `ground` judges the opposite case (scripts/build-hist-clio.mjs `heldFindingsOf`): a polity whose verified start lies years before Cliopatria's first row for it, while a row that goes on being drawn afterwards holds that first row's ground in between. `ground.rows` apply: from 1 January of `s` (history's year) until the first row, what the rows in `over` draw inside the first row's outline is drawn under the polity's name instead and says which year's outline it is; those rows keep the rest, and the realms they are members of lose the same ground. Nothing is drawn where no `over` row drew. A `ground.rows` entry that also states `e` judges the same question between two of the polity's own rows: from 1 January of `s` to 1 January of `e + 1` (the years history places the ground under the polity while the `over` rows draw it), the outline of the polity's first row from `e + 1` is drawn back under its name in the same way, and the row says which years (`he`). The line is whether the state of the `over` row governed that ground in those years (a garrison, a governor, an administration): where it did not — a tributary claim, a province lost to a rising, a claim given up — the ground is the polity's. `ground.refuted` are findings not applied (`why`: ruled — the `over` state did govern there; not-its-ground — the ground the finding measures, what is left of the first row after the records above, is not land the polity held; date-disputed; name-not-claim); `ground.pending` are not yet judged, drawn as Cliopatria states and counted.",
  "rows": [
   {
    "name": "Byzantine Empire",
@@ -381,6 +381,38 @@
    ],
    "wd": "Q2006756",
    "history": "The First Empire of Haiti (the QID) began when Dessalines was proclaimed emperor in 1804 and ended with his assassination on 17 October 1806; the State and Kingdom of Haiti in the north and the Republic in the south followed, unified as a republic in 1820. Soulouque proclaimed the Second Empire on 26 August 1849 and abdicated on 15 January 1859; Haiti was a republic thereafter. Cliopatria draws «Empire of Haiti» from 1805 to 1915 without a break."
+  },
+  {
+   "name": "Commonwealth of England",
+   "s": 1649,
+   "e": 1660,
+   "wd": "Q330362",
+   "history": "The Rump Parliament abolished the office of king (17 March 1649) and the House of Lords (19 March), and declared England a Commonwealth and Free State by the Act of 19 May 1649, after the execution of Charles I on 30 January 1649. Between 1645 and 1648 England was still a kingdom at civil war (the New Model Army, Naseby 1645, the Second Civil War 1648). The Commonwealth and Protectorate ended with the Restoration: the Convention Parliament proclaimed Charles II on 8 May 1660 and he entered London on 29 May 1660."
+  },
+  {
+   "name": "French Fourth Republic",
+   "s": 1946,
+   "wd": "Q69829",
+   "history": "The constitution of the Fourth Republic was approved by referendum on 13 October 1946 and promulgated on 27 October 1946. From the liberation of 1944 until then France was governed by the Provisional Government of the French Republic (GPRF, from 3 June 1944), under de Gaulle until January 1946; the Fourth Republic is a regime name, not a title of the same regime. At this ledger's resolution (whole years) the name is drawn from 1 January 1946, ten months before the constitution."
+  },
+  {
+   "name": "Kenmu Restoration",
+   "e": 1336,
+   "wd": "Q826021",
+   "history": "Emperor Go-Daigo's restoration began with the fall of the Kamakura shogunate in 1333. Ashikaga Takauji turned against it in 1335, took Kyoto after Minatogawa in 1336 (Engen 1, 5th month), set Emperor Kōmyō on the throne and issued the Kenmu Shikimoku that year; Go-Daigo fled to Yoshino at its end (12th month) and the Northern and Southern Courts began. From 1337 the ground was the Ashikaga shogunate's and the Southern Court's, not the restoration's."
+  },
+  {
+   "name": "Xin Dynasty",
+   "s": 9,
+   "e": 23,
+   "wd": "Q504769",
+   "history": "Wang Mang was regent of the Han for the child Ruzi Ying from 6 AD and proclaimed his own Xin dynasty in January 9 AD; he was killed when Chang'an fell in October 23 AD. The years 6–8 were still the Western Han (Ruzi Ying), and 24–29 were the Gengshi Emperor's Han (23–25) and the civil war in which Liu Xiu proclaimed the Eastern Han in 25 and reunified the empire by 36."
+  },
+  {
+   "name": "Mamluk Sultanate",
+   "e": 1517,
+   "wd": "Q282428",
+   "history": "Selim I defeated the Mamluks at Marj Dabiq (24 August 1516) and took Syria — Damascus in September, Jerusalem in December 1516 — then won at Ridaniya (22 January 1517), entered Cairo and hanged the last sultan, Tuman Bay II, in April 1517. The sultanate ended in 1517."
   }
  ],
  "refuted": [
@@ -755,6 +787,18 @@
    "name": "Đại Việt",
    "why": "other-identity",
    "history": "Đại Việt was the name of the Vietnamese state until 1804; the QID is the Mạc dynasty (1527–1677), one of its ruling houses."
+  },
+  {
+   "name": "Kingdom of Hungary",
+   "side": "start",
+   "why": "date-disputed",
+   "history": "Stephen I was crowned king either on 25 December 1000 or on 1 January 1001 (the sources disagree, partly because the year was reckoned from Christmas); Cliopatria draws the «Principality of Hungary» to 999 and the «Kingdom of Hungary» from 1000. The year 1000 is the year history gives at this ledger's resolution (whole years), so 1 January–24 December 1000 is drawn as the kingdom by the year's precision, not by a wrong year; and the principality and the kingdom are one Árpád state under two titles, the line on which the start of the Kingdom of Poland is refuted too."
+  },
+  {
+   "name": "Southern Ming",
+   "side": "end",
+   "why": "date-disputed",
+   "history": "The Southern Ming held the south-west until Kunming fell in January 1659 (Cliopatria draws its mainland to 1658); the Yongli Emperor then lived in Burma without ground, was handed over in 1661 and executed in Kunming in 1662. Cliopatria draws Taiwan 1662–1682 as «Southern Ming»: the Zheng kingdom of Tungning kept the Yongli era and Ming princes until it surrendered to the Qing in 1683, and many historians end the Ming loyalist regime there. A single place losing the name earlier (Guangzhou fell to the Qing in 1650) is that place changing hands, not the polity ending."
   }
  ],
  "pending": [],
@@ -768,6 +812,35 @@
     ],
     "wd": "Q3125368",
     "history": "Muhammad Ahmad declared himself the Mahdi in 1881; El Obeid fell in January 1883 and Darfur in December 1883, and in 1884 Britain had Egypt give the Sudan up. Khartoum fell on 26 January 1885 and the Mahdist state ruled the Sudan until the Anglo-Egyptian reconquest of 1896-1898 (Omdurman, 2 September 1898). Britain held no claim of any kind on that ground in 1885-1889; Egypt kept only Suakin and Wadi Halfa, and Emin Pasha's Equatoria until 1889."
+   },
+   {
+    "name": "Denmark",
+    "s": 1941,
+    "e": 1945,
+    "over": [
+     "United States of America"
+    ],
+    "wd": "Q35",
+    "history": "Greenland was a Danish colony throughout the Second World War. With Denmark under German occupation, the Danish minister in Washington, Henrik Kauffmann, signed the Agreement relating to the Defense of Greenland on 9 April 1941: it gave the United States defence areas and bases (Bluie West One and others) while «fully recognizing the sovereignty of the Kingdom of Denmark over Greenland», and the island stayed under Danish administration — its governor (landsfoged) Eske Brun held both provinces from 1941. The Danish government confirmed the agreement on 16 May 1945. The United States garrisoned bases there; it did not govern Greenland and claimed no sovereignty over it. Cliopatria draws «Greenland» 1924–1940 and «Denmark» from 1946 with the same outline."
+   },
+   {
+    "name": "Ming Dynasty",
+    "s": 1368,
+    "over": [
+     "Yuan Dynasty"
+    ],
+    "wd": "Q9903",
+    "history": "Zhu Yuanzhang proclaimed the Ming dynasty in Nanjing on 23 January 1368; his armies took the Yuan capital Dadu (Beijing) in September 1368, and the Yuan court withdrew to Mongolia (the Northern Yuan). The Ming then held North and South China; Sichuan (the Xia) fell in 1371 and Yunnan in 1381-1382. Cliopatria draws «Yuan Dynasty» over all of China until 1374 and begins «Ming Dynasty» in 1375."
+   },
+   {
+    "name": "Ottoman Empire",
+    "s": 1517,
+    "e": 1518,
+    "over": [
+     "Mamluk Sultanate"
+    ],
+    "wd": "Q12560",
+    "history": "The Ottomans took Mamluk Syria and Palestine in 1516 (Marj Dabiq, 24 August; Jerusalem, December) and Egypt in January 1517 (Ridaniya, 22 January; Cairo); the Hejaz submitted the same year, and Egypt was governed by an Ottoman beylerbey (Khayr Bey) from 1517. Cliopatria draws the «Mamluk Sultanate» on that ground until 1518 and the Ottoman Empire from 1519."
    }
   ],
   "refuted": [

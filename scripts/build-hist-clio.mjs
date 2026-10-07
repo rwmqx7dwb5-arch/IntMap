@@ -78,6 +78,7 @@ import { execFileSync } from 'node:child_process';
 import os from 'node:os';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
 import pc from 'polygon-clipping';
+import { water as coastWater, inlandKmFor } from './build-border-coast.mjs';
 import { simplifyRing, ringArea } from './histborders/geom.mjs';
 import { CLIOPATRIA, AOUREDNIK_BASEMAPS, OPENHISTORICALMAP } from './lib/upstream-cadence.mjs';
 
@@ -270,9 +271,92 @@ function clipPolys(polys, bb) {
   return out;
 }
 
-const STATS = { clipped: 0, failed: 0, widths: [] };
+/* ══ ⚠⚠⚠ (clio-year-page-findings) AT A SHORE, THE FINER RECORD IS BELIEVED ═══════════════════════════════════════════
+   SLIVER_W reads a narrow piece as two hands drawing one line. Where that line is a SHORE, the two hands are not
+   equally good, and a narrow piece of the record below that is LAND — inside the true coast — is ground the record
+   above left out by drawing its coast too coarsely.
+     observed 2026-10-07 (the sovereignty timelines): the old city of Istanbul — inside every aourednik sheet from
+     400 BC to 1700 (the Achaemenid, Roman, Eastern Roman, Byzantine and Ottoman Empires) — was drawn by NOTHING from
+     600 BC to 1689: Cliopatria v0.2.1's coastline stops short of the peninsula, the sheet less Cliopatria left the
+     peninsula as a piece narrower than SLIVER_W, and it was dropped as a ribbon. Venice, Copenhagen, Gibraltar and
+     Carthage were blank the same way.
+   ⇒ WHO IS BELIEVED IS A MEASURED PROPERTY OF EACH RECORD, AND IT IS ALREADY MEASURED: the coastal registration error
+     scripts/build-border-coast.mjs swept for the border marks (`inlandKmFor`: Cliopatria 10 km; CShapes, OpenHistoricalMap
+     and the sheets 6 km). A narrow piece is kept as ground when (1) the record it belongs to registers the shore MORE
+     precisely than every record it was cut against, and (2) no more of it is sea than land (LAND_SHARE) — asked of the
+     same water authority (data/coastline.json.gz, Natural Earth 1:10m at 2 km; a lake reads as land). Otherwise it stays
+     a ribbon. Why «no more sea than land» and not «more land»: the two errors are not alike. Every coarse record already
+     draws the sea within its registration band all along its coast, so keeping a half-sea piece adds more of what the map
+     already does; dropping it blanks the land, which is the defect. Measured: the Istanbul piece on the 1600 and 1650
+     sheets is exactly half land (0.50 of its samples) and was dropped under «more land».
+   ⚠ (1) IS NOT OPTIONAL — MEASURED. The first version kept every narrow land piece whatever cut it: 199,250 pieces,
+     data/hist-clio.js 19.2 → 23.7 MB, and Cliopatria's coarse coasts came back as fringes round the finer shores of
+     OpenHistoricalMap and CShapes — 19 new names drawn outside their polity's life («Slovakia», «Lebanon», «Estado
+     Novo» to 2019). There the record below is the coarser one: the strip is the record above's own coast under-drawn,
+     not a statement of the record below.
+   ⚠ AND NOT BELOW THE PRECISION THIS BUILDER ITSELF IMPOSES. Every ring here is simplified at TOL and rounded to DEC
+     decimals, so two neighbours that share a border can part by up to 2·(TOL + 10^−DEC/2) — a gap made by this file,
+     on land, stated by no record. LAND_W is that bound. expires: with DEC/TOL or the swept bands; canon: here (the
+     bands: scripts/build-border-coast.mjs). */
+/* the global the sheets' rows are drawn under (data/hist-eras-rest.js is marked as the sheets are) */
+const SHEETS = '__HISTERASREST';
+const LAND_SHARE = 0.5;
+const LAND_W = 2 * (TOL + Math.pow(10, -DEC) / 2);
+let WATER = null;
+const water = () => WATER || (WATER = coastWater());
+/* does the record `below` register the shore more precisely than every cutter (each tagged with its record's global in
+   `rec`; untagged = OpenHistoricalMap or CShapes, whose band is the default)? */
+export const finerShore = (below, cutters) => cutters.length > 0 && cutters.every((c) => inlandKmFor(below) < inlandKmFor(c.rec));
+/* the share of a piece that is land, sampled on scanlines at about half its mean width (at most ~400 points) — every
+   interval a scanline crosses contributes its midpoint at least, so a narrow piece is never sampled at zero points */
+export function landShare(poly, onLand = water().onLand) {
+  const bb = bboxOf([poly]), area = Math.abs(polyAreaOf(poly)), w = meanWidth(poly);
+  const step = Math.max(w / 2, Math.sqrt(area / 400), 1e-4);
+  let land = 0, n = 0;
+  for (let y = bb[1] + step / 2; y < bb[3]; y += step) {
+    const xs = [];
+    for (const ring of poly) for (let k = 0, m = ring.length, l = m - 1; k < m; l = k++) {
+      const a = ring[k], b = ring[l];
+      if ((a[1] > y) !== (b[1] > y)) xs.push(a[0] + (y - a[1]) * (b[0] - a[0]) / (b[1] - a[1]));
+    }
+    xs.sort((u, v) => u - v);
+    for (let q = 0; q + 1 < xs.length; q += 2) {
+      const x0 = xs[q], x1 = xs[q + 1], k = Math.max(1, Math.round((x1 - x0) / step));
+      for (let i = 0; i < k; i++) { n++; if (onLand(x0 + (i + 0.5) * (x1 - x0) / k, y)) land++; }
+    }
+  }
+  if (!n) for (const p of poly[0]) { n++; if (onLand(p[0], p[1])) land++; }
+  return n ? land / n : 0;
+}
+/* a piece is ground when it is wide, or — cut by records with coarser shores — when it is land and wider than the gaps
+   this builder makes */
+export const isGround = (poly, shoreFiner, onLand) => { const w = meanWidth(poly); return w >= SLIVER_W || (!!shoreFiner && w >= LAND_W && landShare(poly, onLand) >= LAND_SHARE); };
+/* ⚠ A NARROW PIECE IS JUDGED WHERE IT LIES, NOT AS ONE THING. A strip between two coastlines runs along the shore for a
+   hundred kilometres, land in one place and sea in the next — measured: the strip holding the old city of Istanbul on the
+   1600 and 1650 sheets runs west along the Sea of Marmara and is under half land as a whole, so judged whole it was
+   dropped with the city in it. So the strip is cut on the SLIVER_W grid — the scale at which this file already calls a
+   piece a ribbon — and each part is judged by `isGround`, when the piece as a whole is not ground. → the parts that are ground ([] when none). */
+export function groundOf(poly, shoreFiner, onLand) {
+  const w = meanWidth(poly);
+  if (w >= SLIVER_W) return [poly];
+  if (!shoreFiner || w < LAND_W) return [];
+  /* whole first: a piece that is ground as one thing stays one thing (Venice in its lagoon — measured, the 0.2° cell
+     holding the city is mostly lagoon, the piece as a whole is mostly land) */
+  if (isGround(poly, true, onLand)) return [poly];
+  const bb = bboxOf([poly]), out = [];
+  for (let x = Math.floor(bb[0] / SLIVER_W) * SLIVER_W; x < bb[2]; x += SLIVER_W)
+    for (let y = Math.floor(bb[1] / SLIVER_W) * SLIVER_W; y < bb[3]; y += SLIVER_W) {
+      const box = [x, y, x + SLIVER_W, y + SLIVER_W];
+      const sh = clipRing(poly[0], box); if (!sh) continue;
+      const tile = [sh]; for (const h of poly.slice(1)) { const c = clipRing(h, box); if (c) tile.push(c); }
+      for (const t of cleanPolys([tile])) if (isGround(t, true, onLand)) out.push(t);
+    }
+  return out;
+}
+
+const STATS = { clipped: 0, failed: 0, widths: [], landKept: 0 };
 /* polys − cutters → what is ground, or null when nothing is left worth drawing */
-function subtract(polys, cutters0, area0) {
+function subtract(polys, cutters0, area0, shoreFiner = false) {
   const bb = bboxOf(polys), cutters = cutters0.map((c) => clipPolys(c, bb)).filter((c) => c.length);
   if (!cutters.length) return polys;
   let res;
@@ -283,6 +367,7 @@ function subtract(polys, cutters0, area0) {
     const c = cleanPolys([p]); if (!c.length) continue;
     const w = meanWidth(c[0]); STATS.widths.push(w);
     if (w >= SLIVER_W) kept.push(c[0]);
+    else { const g = groundOf(c[0], shoreFiner); for (const t of g) kept.push(t); STATS.landKept += g.length; }
   }
   if (!kept.length) return null;
   return kept;
@@ -499,27 +584,51 @@ function cut(op, polys, other) {
   return kept.length ? kept : null;
 }
 export const takesGround = (R, realms) => (r) => R.over.includes(r.name) || (!!(r.meta && r.meta.r) && realms.has(r.name));
+/* ══ (clio-year-page-findings) THE SAME QUESTION BETWEEN TWO OF THE POLITY'S OWN ROWS: `e` ══════════════════════════
+   The finding above is about the years BEFORE a polity's first row. The same misreading also happens in the
+   middle of a life: Cliopatria draws another state over a polity's ground for some years, and the polity's own
+   row comes back afterwards with the same outline.
+     observed 2026-10-07 (the year pages): on 1 July 1945 Greenland — 10,902 cells, about 2.19 million km² — was
+     drawn as «United States of America». Upstream: «Greenland» 1924–1940, «United States of America» 1941–1945 with
+     the very rings «Denmark» carries from 1946. History: the Agreement relating to the Defense of Greenland
+     (Washington, 9 April 1941) opened defence areas to the United States while «fully recognizing the sovereignty of
+     the Kingdom of Denmark over Greenland»; the island stayed under Danish administration (its landsfoged Eske Brun).
+   ⇒ a `ground.rows` entry that also states `e` (the last year history places the ground under the polity while the
+     `over` rows draw it) carries the outline of the polity's first row FROM 1 January of `e + 1` BACK to 1 January of
+     `s`, and reassigns exactly as above — the `over` rows keep everything outside that outline. The row says so
+     (`he`, beside `hy`/`hs`/`ho`) and the card says so. The line is the same: did the `over` state govern that ground in
+     those years? A force present by the sovereign's agreement is not a government of the ground. */
+function heldSpan(R, mine) {
+  const S = ymd(R.s, 1, 1);
+  if (R.e == null) { const T = Math.min(...mine.map((r) => r.s)); return { S, T, E: T, firsts: mine.filter((r) => r.s === T) }; }
+  const E = ymd(R.e + 1, 1, 1), after = mine.filter((r) => r.s >= E);
+  if (!after.length) return null;
+  const T = Math.min(...after.map((r) => r.s));
+  return { S, T, E, firsts: after.filter((r) => r.s === T) };
+}
 function applyHeld(rows, G) {
   let out = rows;
   for (const R of (G && G.rows) || []) {
     const mine = out.filter((r) => r.name === R.name);
     if (!mine.length) continue;
-    const T = Math.min(...mine.map((r) => r.s)), S = ymd(R.s, 1, 1);
-    if (!(S < T)) continue;
-    const firsts = mine.filter((r) => r.s === T);
+    const span = heldSpan(R, mine);
+    if (!span) continue;
+    const { S, T, E, firsts } = span;
+    if (!(S < E)) continue;
     let polys = firsts[0].polys;
     if (firsts.length > 1) { try { polys = cleanPolys(fromPC(pc.union(...firsts.map((r) => toPC(r.polys))))); } catch (e) { polys = firsts.flatMap((r) => r.polys); } }
     const meta = { ...firsts[0].meta, hy: unymd(T)[0], hs: R.s, ho: R.over.join(', ') };
+    if (R.e != null) meta.he = R.e;
     const next = [], realms = new Set(out.filter((r) => R.over.includes(r.name) && r.meta && r.meta.of).map((r) => r.meta.of)), takes = takesGround(R, realms);
     for (const r of out) {
-      if (!takes(r) || r.e <= S || r.s >= T) { next.push(r); continue; }
+      if (!takes(r) || r.e <= S || r.s >= E) { next.push(r); continue; }
       if (r.s < S) next.push({ ...r, e: S });
-      const s0 = Math.max(r.s, S), e0 = Math.min(r.e, T);
+      const s0 = Math.max(r.s, S), e0 = Math.min(r.e, E);
       const g = cut('difference', r.polys, polys);
       if (g) next.push({ ...r, polys: g, bb: bboxOf(g), area: areaOf(g), s: s0, e: e0 });
       const h = R.over.includes(r.name) ? cut('intersection', r.polys, polys) : null;
       if (h) next.push({ name: R.name, qid: firsts[0].qid, meta, polys: h, bb: bboxOf(h), area: areaOf(h), s: s0, e: e0 });
-      if (r.e > T) next.push({ ...r, s: T });
+      if (r.e > E) next.push({ ...r, s: E });
     }
     out = next;
   }
@@ -649,7 +758,7 @@ function splitRow(row, ohmRows) {
     const inForce = near.filter((o) => o.s <= t0 && o.e > t0);
     const key = inForce.map((o) => o.g).sort().join('|');
     let g = memo.get(key);
-    if (g === undefined) { g = subtract(row.polys, inForce.map((o) => o.polys), row.area); memo.set(key, g); }
+    if (g === undefined) { g = subtract(row.polys, inForce.map((o) => o.polys), row.area, finerShore(row.rec || '__HISTCLIO', inForce)); memo.set(key, g); }
     if (prev && prev.g === g && prev.e === t0) { prev.e = t1; continue; }
     if (g) { prev = { s: t0, e: t1, polys: g, g }; pieces.push(prev); } else prev = null;
   }
@@ -731,8 +840,8 @@ export function identityOf(features, lastY, facts, wikiQ, ground) {
 function cutSheet(polysList, above) {
   return polysList.map((polys) => {
     if (!polys.length) return null;
-    const bb = bboxOf(polys), hit = cuttersOf(cellsOf(polys), above.filter((a) => meets(a.bb, bb))).map((a) => a.polys);
-    const g = subtract(polys, hit, areaOf(polys));
+    const bb = bboxOf(polys), hitR = cuttersOf(cellsOf(polys), above.filter((a) => meets(a.bb, bb))), hit = hitR.map((a) => a.polys);
+    const g = subtract(polys, hit, areaOf(polys), finerShore(SHEETS, hitR));
     return g ? { polys: g, whole: g === polys } : null;
   });
 }
@@ -745,7 +854,7 @@ async function restSheets(clio, ohm, clip) {
   for (const sn of er.snaps) {
     if (sn.y >= 1886) continue;
     const t = ymd(sn.y, 6, 15);
-    const above = clio.filter((c) => c.s <= t && c.e > t).map((c) => ({ polys: c.polys, bb: c.bb, cells: c.cells || (c.cells = cellsOf(c.polys)) }));
+    const above = clio.filter((c) => c.s <= t && c.e > t).map((c) => ({ polys: c.polys, bb: c.bb, cells: c.cells || (c.cells = cellsOf(c.polys)), rec: '__HISTCLIO' }));
     const res = (ids) => cleanPolys(ids.map((p) => p.map((ri) => er.rings[ri])));
     const list = sn.feats.map((f) => res(f[2])).concat((sn.blank || []).map(res));
     jobs.push({ kind: 'sheet', polysList: list, above, t, band: sn.y >= hbLo && sn.y <= hbHi });
@@ -811,7 +920,7 @@ async function ohmLate(ohm, clip, topYear) {
     const s = Math.max(ymd(...r.sArr), T0), e = Math.min(ymd(...r.eArr), T1);
     if (!(s < e)) continue;
     const polys = cleanPolys(r.polys); if (!polys.length) continue;
-    rows.push({ r, row: { s, e, polys, bb: bboxOf(polys), area: areaOf(polys) } });
+    rows.push({ r, row: { s, e, polys, bb: bboxOf(polys), area: areaOf(polys), rec: '__HISTBLATE' } });
   }
   const done = await clip(rows.map((x) => ({ kind: 'late', row: x.row })));
   const rings = [], pool2 = new Map(), feats = [];
@@ -849,9 +958,10 @@ function pool(ohm) {
   const workers = [];
   for (let i = 0; i < N; i++) workers.push(new Worker(fileURLToPath(import.meta.url), { workerData: { role: 'clip', ohm }, resourceLimits: { maxOldGenerationSizeMb: 4096 } }));
   mkdirSync(JOBS, { recursive: true });
-  const ohmSha = sha(HB) + ':' + sha(CSF) + ':' + SLIVER_W + ':ground:' + DEC + ':' + CUT_CELLS + (existsSync(HBL) ? ':late:' + sha(HBL) : '');
+  const LAND = ':land:' + LAND_W + ':' + LAND_SHARE + ':tiled2:shore:' + inlandKmFor('__HISTCLIO') + '/' + inlandKmFor(SHEETS) + '/' + inlandKmFor() + ':' + sha(join(ROOT, 'data', 'coastline.json.gz'));
+  const ohmSha = sha(HB) + ':' + sha(CSF) + ':' + SLIVER_W + LAND + ':ground:' + DEC + ':' + CUT_CELLS + (existsSync(HBL) ? ':late:' + sha(HBL) : '');
   /* (hist-colonial-era-borders) a 'late' job is cut against CShapes alone — its key must not hold the file it writes */
-  const csSha = sha(CSF) + ':' + SLIVER_W + ':ground:' + DEC + ':' + CUT_CELLS;
+  const csSha = sha(CSF) + ':' + SLIVER_W + LAND + ':ground:' + DEC + ':' + CUT_CELLS;
   const run = (jobs) => new Promise((resolve, reject) => {
     const out = new Array(jobs.length); let left = jobs.length; const t0 = Date.now();
     const keys = jobs.map((j) => jobKey(j, j.kind === 'late' ? csSha : ohmSha)), todo = [];
@@ -864,7 +974,7 @@ function pool(ohm) {
       w.removeAllListeners('message'); w.removeAllListeners('error');
       w.on('message', (m) => {
         out[m.id] = m.out; try { writeFileSync(join(JOBS, keys[m.id] + '.json'), JSON.stringify(m.out)); } catch (_) { /* a cache that cannot be written is only slower */ }
-        STATS.clipped += m.stats.clipped; STATS.failed += m.stats.failed; for (const x of m.stats.widths) STATS.widths.push(x);
+        STATS.clipped += m.stats.clipped; STATS.failed += m.stats.failed; STATS.landKept += m.stats.landKept || 0; for (const x of m.stats.widths) STATS.widths.push(x);
         CUTSTAT.kept += m.stats.kept; CUTSTAT.ignored += m.stats.ignored;
         if (--left % 100 === 0) console.error(`  … ${jobs.length - left} / ${jobs.length} (${((Date.now() - t0) / 1000).toFixed(0)} s)`);
         if (!left) resolve(out); else feed(w);
@@ -878,7 +988,7 @@ function pool(ohm) {
 function workerMain() {
   const ohmRowsW = workerData.ohm.rows, csRowsW = ohmRowsW.filter((o) => o.cs);
   parentPort.on('message', ({ id, job }) => {
-    STATS.clipped = 0; STATS.failed = 0; STATS.widths = []; CUTSTAT.kept = 0; CUTSTAT.ignored = 0;
+    STATS.clipped = 0; STATS.failed = 0; STATS.widths = []; STATS.landKept = 0; CUTSTAT.kept = 0; CUTSTAT.ignored = 0;
     let out;
     if (job.kind === 'row') out = splitRow(job.row, ohmRowsW);
     else if (job.kind === 'late') out = splitRow(job.row, csRowsW);
@@ -887,7 +997,7 @@ function workerMain() {
       if (job.band) for (const o of ohmRowsW) if (o.s <= job.t && o.e > job.t) above.push(o);
       out = cutSheet(job.polysList, above);
     }
-    parentPort.postMessage({ id, out, stats: { clipped: STATS.clipped, failed: STATS.failed, widths: STATS.widths, kept: CUTSTAT.kept, ignored: CUTSTAT.ignored } });
+    parentPort.postMessage({ id, out, stats: { clipped: STATS.clipped, failed: STATS.failed, landKept: STATS.landKept, widths: STATS.widths, kept: CUTSTAT.kept, ignored: CUTSTAT.ignored } });
   });
 }
 
@@ -988,7 +1098,7 @@ async function build({ measure } = {}) {
       rings: rest.rings, snaps: rest.snaps }) + ';\n';
     writeFileSync(REST, rbody);
     console.error(`data/hist-eras-rest.js: ${rest.snaps.length} sheets, ${rest.rings.length} rings, ${(rbody.length / 1e6).toFixed(2)} MB`);
-    console.error(`subtractions ${STATS.clipped}, failed (kept whole) ${STATS.failed}; cutters kept ${CUTSTAT.kept} / ignored as border ribbons ${CUTSTAT.ignored}`);
+    console.error(`subtractions ${STATS.clipped}, failed (kept whole) ${STATS.failed}; narrow pieces kept as land ${STATS.landKept}; cutters kept ${CUTSTAT.kept} / ignored as border ribbons ${CUTSTAT.ignored}`);
     if (measure) {
       const h = new Map(); for (const w of STATS.widths) { const b = Math.min(20, Math.floor(w / 0.025)); h.set(b, (h.get(b) || 0) + 1); }
       console.error('residual pieces by mean width (0.025° bins):');
@@ -1122,6 +1232,7 @@ function checkGround(d, review, ok) {
   for (const R of G.rows) {
     const tag = 'ground: «' + R.name + '»';
     ok(Number.isInteger(R.s) && Array.isArray(R.over) && R.over.length > 0, tag + ' must state the year history gives (s) and the rows the ground is taken from (over)');
+    ok(R.e == null || (Number.isInteger(R.e) && R.e >= R.s), tag + ': e (the last year the ground is the polity\'s while `over` draws it) must be a whole year, not before s');
     ok(/^Q\d+$/.test(String(R.wd || '')), tag + ' must name the Wikidata item (wd) of the polity');
     ok(typeof R.history === 'string' && R.history.length > 20, tag + ' must say what history states');
     if (!Number.isInteger(R.s) || !Array.isArray(R.over)) continue;
@@ -1129,9 +1240,18 @@ function checkGround(d, review, ok) {
     ok(carried.length > 0, tag + ' is not drawn back to ' + R.s + ' — the record changed; re-judge or remove the row');
     if (!carried.length) continue;
     const hy = carried[0][9].hy, S = ymd(R.s, 1, 1), T = ymd(hy, 1, 1);
-    ok(carried.every((f) => k0(f) >= S && k1(f) <= T && f[9].hs === R.s && f[9].hy === hy), tag + ' must be drawn back only between 1 January ' + R.s + ' and its first outline (' + hy + '), and say so on every row');
-    const early = d.feats.filter((f) => f[0].en === R.name && !(f[9] && f[9].hy != null) && k0(f) < T);
-    ok(early.length === 0, tag + ' has a row of its own before ' + hy + ', the year review.json says its first outline is');
+    const own = d.feats.filter((f) => f[0].en === R.name && !(f[9] && f[9].hy != null));
+    if (R.e == null) {
+      ok(carried.every((f) => k0(f) >= S && k1(f) <= T && f[9].hs === R.s && f[9].hy === hy && f[9].he == null), tag + ' must be drawn back only between 1 January ' + R.s + ' and its first outline (' + hy + '), and say so on every row');
+      const early = own.filter((f) => k0(f) < T);
+      ok(early.length === 0, tag + ' has a row of its own before ' + hy + ', the year review.json says its first outline is');
+    } else {
+      /* (clio-year-page-findings) between two of its own rows: carried only over [1 January s, 1 January e + 1), from
+         the outline of its first own row on or after that end — and the row says which years and which outline */
+      const E = ymd(R.e + 1, 1, 1), after = own.filter((f) => k0(f) >= E), T2 = after.length ? Math.min(...after.map(k0)) : null;
+      ok(T2 != null && unymd(T2)[0] === hy, tag + ' must carry the outline of its first own row from ' + (R.e + 1) + ' (found ' + (T2 == null ? 'none' : unymd(T2)[0]) + ', rows say ' + hy + ')');
+      ok(carried.every((f) => k0(f) >= S && k1(f) <= E && f[9].hs === R.s && f[9].he === R.e && f[9].hy === hy), tag + ' must be drawn only between 1 January ' + R.s + ' and 1 January ' + (R.e + 1) + ', and say so on every row (hs, he, hy)');
+    }
     const realms = new Set(d.feats.filter((f) => R.over.includes(f[0].en) && f[9] && f[9].of).map((f) => f[9].of));
     const takes = takesGround(R, realms), meta = (f) => ({ name: f[0].en, meta: f[9] || {} });
     for (const c of carried) {
@@ -1144,7 +1264,7 @@ function checkGround(d, review, ok) {
     }
   }
   const byName = new Map(G.rows.map((R) => [R.name, R]));
-  const stray = d.feats.filter((f) => f[9] && f[9].hy != null && !(byName.get(f[0].en) && byName.get(f[0].en).s === f[9].hs));
+  const stray = d.feats.filter((f) => f[9] && f[9].hy != null && !(byName.get(f[0].en) && byName.get(f[0].en).s === f[9].hs && (byName.get(f[0].en).e == null ? null : byName.get(f[0].en).e) === (f[9].he == null ? null : f[9].he)));
   ok(stray.length === 0, stray.length + ' Cliopatria row(s) carry an outline back to a year no ground row states: ' + stray.slice(0, 3).map((f) => f[0].en + ' ' + f[9].hs).join(', '));
 }
 /* (hist-colonial-era-borders) data/hist-borders-late.js: OHM on CShapes' days. Made against the shipped CShapes, every row
