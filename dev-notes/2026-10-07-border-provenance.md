@@ -41,7 +41,7 @@ newsjp: 歴史地図でも今日の地図でも、国境線や地方区分の線
 |---|---:|---:|---|
 | `border-provenance-ohm.json` hist-borders | 1,411 | 1,391 | **20 行は一致なし**・1 行は 2 リレーション |
 | 同 hist-borders-late | 306 | 306 | 0 |
-| `border-provenance-clio.json` | 12,868 | 12,868 | 9 行は同名同期間の上流行が複数（最初を示し、件数を述べる） |
+| `border-provenance-clio.json` | 12,878 | 12,878 | 16 行は同名同期間の上流行が複数（最初を示し、件数を述べる）。行数は main の歴史地図訂正（#1031）で hist-clio.js が 12,878 行になった後に作り直した値 |
 | `border-provenance-gaps.json` | 5,079（5 記録） | 全行 | — |
 
 - **20 行の一致なしは誤りではなく時間差。** 例: 束の «Empire of Japan (1869-1879)» は 1880-01-01 で終わるが、
@@ -134,3 +134,11 @@ newsjp: 歴史地図でも今日の地図でも、国境線や地方区分の線
   ツール自身が拒んだ——rebase してから build し直して実行する。
   ⚠ **spec は出荷していない。** 一度書いて 2 回測ると本体 53〜59 s（並行 7 本で飽和した機械・1 起動）で、
   全体の天井（#R205 の 5,250 s）の余白は 29 s しかない。天井を上げず、クリックの裁定は Node で評価する ⑥ に移した。
+
+> 統合列車（3 本を 1 本の PR に）での起動費用の天井の引き上げと、その内訳は `2026-10-07-place-through-time.md` §4b に記録した。
+
+> 共有窓口（`check:surface`）: 本稿が足した window 越しの読み取りを統合列車で `node scripts/global-surface.mjs --update` に記録した——
+> `js/border-provenance.js` の `_gestureOwned` が「線の押下を取ってよいか」を決めるために、地図の身振りを持ちうる他の持ち主に訊く
+> `__scpPick`（比較の国選び）・`DrawTool.active()`・`IntMapIsolate.active()` と、押す範囲の幅を決める `_imTouchPrimary()`、
+> `js/border-provenance-card.js` の `IntMapHistScale`（時代地図の範囲）と `IntMapSafe`（エスケープ）、`js/map-ui.js` の `IntMapSafe`。
+> どれも既に同じ名前に複数の読み手がある窓口で、持ち主のモジュールはそれを export していない（`node scripts/module-graph.mjs --plan`）。

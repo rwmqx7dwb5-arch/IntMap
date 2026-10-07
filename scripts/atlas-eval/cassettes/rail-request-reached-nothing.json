@@ -256,6 +256,14 @@
               "tool": "time_cityPopulation"
             },
             {
+              "id": "time.borderSource",
+              "tool": "time_borderSource"
+            },
+            {
+              "id": "time.thenNow",
+              "tool": "time_thenNow"
+            },
+            {
               "id": "time.placeHistory",
               "tool": "time_placeHistory"
             }

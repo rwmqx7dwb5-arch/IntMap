@@ -115,6 +115,15 @@ newsjp: 地点カードに「この場所の歴史」を追加。その地点を
   宣言と同じ場所に書く規約）、`place-dossier` +2.2 kB（節の描画・押したときの時計・端末位置でのボタン）。
   ⚠ `node scripts/perf-budget.mjs --update` は「この木は CI が測る木ではない（origin/main が先へ進んでいる）」として拒んだので、
   天井の引き上げは統合（rebase）後のビルドで行う。
+- **統合後の実測（3 本＝この場所の歴史・あの頃といま・この線の根拠を origin/main 24cb28a3 の上に積んだ木）**で
+  `node scripts/perf-budget.mjs --update` が上げた天井: `eager.modules` 314 → 315（`js/border-provenance.js`、理由は
+  `2026-10-07-border-provenance.md`）・`eager.raw` 4758.8 → 4791.3 kB（gzip 1569.9 → 1580.7・brotli 1186.0 → 1194.9）——
+  起動グラフ上のモジュールに足された分で、`main` チャンクに入る `js/time-borders.js` の `placeRecords` の部品（本稿）・
+  `js/border-provenance.js` の核と `js/border-coast.js`／`js/time-admin1.js` の追記（この線の根拠）・`js/compare.js` の
+  スワイプと `ERA_BORDER_CREDIT`（あの頃といま）。遅延チャンクは `atlas-console` 1415.2 → 1430.7 kB（3 能力の項目）・
+  `map-recorder` 41.8 → 47.2 kB（あの頃といま）・`place-dossier` 52.4 → 54.7 kB（本稿と、あの頃といまの `viewPlaceName`）、
+  それに伴う `async.*`・`dist.*`。新しい遅延チャンク `place-history`（16.0 kB）と `border-provenance-card`（29.3 kB）は
+  main の CI が merge 後に記録する。
 - Atlas の再生用カセット `rail-request-reached-nothing` を `node scripts/atlas-eval/scripted-cassettes.mjs --write` で書き直した
   （「所要時間 距離」の語彙検索の結果に `time.placeHistory` が 1 件加わったため。ターンの判定は変わらない）。
 
@@ -123,3 +132,8 @@ newsjp: 地点カードに「この場所の歴史」を追加。その地点を
 - `node --test tests/place-through-time-checks.test.mjs`（13 件: タイル＋箱と丸ごとの一致・箱が行を落とさない・凹形と穴・箱の照合・
   合成の規則・7 地点の端の種類と空白・Atlas の登録・カードの構造）。
 - `npx playwright test tests/place-dossier.spec.js`（`dist/`。節が理由か年表で埋まり、行を押すと時計がライブを離れる）。
+
+> 共有窓口（`check:surface`）: 本稿が足した window 越しの読み取りを統合列車で `node scripts/global-surface.mjs --update` に記録した——
+> `IntMapHistScale`（`js/place-history.js` の `HS()`・`js/time-borders.js` の `_sheetReach` が時代地図の床 `FLOOR` を読む。`js/hist-scale.js` はまだ export しない）、
+> `IntMapTimeBorders`／`IntMapTimeAdmin1`（`js/place-history.js` が `placeRecords` を両モジュールの公開窓口から呼ぶ——地図と同じ実体に訊くため）、
+> `IntMapSafe`（`js/place-dossier.js` の節のエスケープ。同じファイルの既存の読み方）。
