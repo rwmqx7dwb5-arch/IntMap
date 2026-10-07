@@ -44,7 +44,9 @@ const OUT = GEN.outputs();
 const PAGES = { en: OUT['curriculum.html'], jp: OUT['ja/curriculum.html'] };
 const HANDOUT = { en: OUT['school-handout.html'], jp: OUT['ja/school-handout.html'] };
 const units = () => KIT.MODEL.frameworks.flatMap((f) => f.subjects.flatMap((s) => s.units.map((u) => ({ f, s, u }))));
-const unhtml = (s) => s.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+/* &amp; last, so an escaped entity (&amp;lt;) is not decoded twice */
+const unhtml = (s) => s.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+const reEsc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 /* the <tr> of one unit in a page */
 const rowOf = (html, key) => { const m = new RegExp('<tr id="u-' + key + '"[\\s\\S]*?</tr>').exec(html); return m ? m[0] : null; };
 const hrefs = (html, attr) => [...html.matchAll(new RegExp('<a [^>]*href="([^"]+)"[^>]*' + attr + '="([^"]*)"', 'g'))].map((m) => ({ href: unhtml(m[1]), val: m[2] }));
@@ -220,7 +222,7 @@ test('⑦ the ways in, the merge driver and the build', async () => {
   }
   const attrs = src('.gitattributes');
   for (const p of ['/curriculum.html', '/school-handout.html', 'ja/curriculum.html', 'ja/school-handout.html']) {
-    assert.match(attrs, new RegExp('^' + p.replace(/[.]/g, '\\.') + '\\s+merge=intmap-generated intmap-merge=regen intmap-regen=scripts/org-pages\\.mjs,--write$', 'm'), p + ' is declared generated');
+    assert.match(attrs, new RegExp('^' + reEsc(p) + '\\s+merge=intmap-generated intmap-merge=regen intmap-regen=scripts/org-pages\\.mjs,--write$', 'm'), p + ' is declared generated');
   }
   const { STATIC_ASSETS } = await import('../vite.config.js');
   for (const p of ['curriculum.html', 'school-handout.html']) assert.ok(STATIC_ASSETS.includes(p), p + ' is shipped');
