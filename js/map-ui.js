@@ -2476,7 +2476,7 @@ export function labelPopup(HOST){
          is upstream's own free text and must not be read as a name IntMap chose. The caller hands
          over FINISHED text in the reader's language: this function owns the placement, not the
          wording, so no ninth string is created here, and a caller that omits it is unchanged. */
-      /* (border-provenance) one optional button a caller supplies with its FINISHED label and its action — today
+      /* (border-provenance) one optional button a caller supplies with its FINISHED label and its action (handed the popup's point) — today
          «where this border comes from» on the era cards. Placement only: no string is created here. */
       const moreBtn=(opts&&opts.more&&opts.more.label&&typeof opts.more.run==='function')?('<button class="plc-more" style="background:var(--input-bg);'+btnBase+'">'+window.IntMapSafe.html(String(opts.more.label))+'</button>'):'';
       const subHtml=(opts&&opts.sub)?('<div class="plc-sub" style="font-size:10.5px;color:var(--text-muted);line-height:1.45;margin:-4px 0 8px;padding-right:30px;">'+window.IntMapSafe.html(opts.sub)+'</div>'):'';
@@ -2552,7 +2552,7 @@ export function labelPopup(HOST){
                modern country — via enterGeom; only fall back to the point-based country path when no polygon exists. */
             try{ if(g&&window.IntMapIsolate&&window.IntMapIsolate.enterGeom){ window.IntMapIsolate.enterGeom(g,name); }
               else if(window.IntMapIsolate&&window.IntMapIsolate.enterAt){ window.IntMapIsolate.enterAt(lngLat.lng,lngLat.lat,name); } }catch(_){} }); };
-          const mo=document.querySelector('.plc-more'); if(mo&&opts.more) mo.onclick=()=>{ try{ opts.more.run(); }catch(_){} };
+          const mo=document.querySelector('.plc-more'); if(mo&&opts.more) mo.onclick=()=>{ try{ opts.more.run(lngLat); }catch(_){} };
           const mv=document.querySelector('.plc-move');
           if(mv) mv.onclick=()=>{ _withGeo(g=>{ if(!g){ try{ if(typeof imToast==='function') imToast(IntMapLang.t(HOST.lang,'No boundary available for this place','この場所の範囲が取得できませんでした','Für diesen Ort ist keine Grenze verfügbar','Для этого места нет границы','No hay límite disponible para este lugar')); }catch(_){} return; }
             try{ popup&&popup.remove(); }catch(_){} try{ window.IntMapOutline&&window.IntMapOutline.clear&&window.IntMapOutline.clear(); }catch(_){}
@@ -2705,13 +2705,13 @@ export function labelPopup(HOST){
       const geo=TA.geomAt(props); if(!geo) return null;
       return { geo, refine:(TA.geomFullAt?TA.geomFullAt(props):null), sub:_eraSourceDates(props),
         /* (border-provenance) the records drawing this unit and its country, in js/border-provenance-card.js */
-        more:(ll)=>({ label:IntMapLang.t(HOST.lang,'Where this boundary comes from','この区分の根拠'), run:()=>{ import('./border-provenance-card.js').then(m=>m.BorderProvenanceCard.openArea({GE,HOST,lngLat:{lng:ll.lng,lat:ll.lat}})).catch(()=>{}); } }) };
+        more:{ label:IntMapLang.t(HOST.lang,'Where this boundary comes from','この区分の根拠'), run:(ll)=>{ import('./border-provenance-card.js').then(m=>m.BorderProvenanceCard.openArea({GE,HOST,lngLat:{lng:ll.lng,lat:ll.lat}})).catch(()=>{}); } } };
     }catch(_){ return null; } }
     function onLabel(isCountry){ return (e)=>{ if(!e.features||!e.features.length) return; if(_ownedByOther(e.point)) return; const p=e.features[0].properties||{}; const name=p.name||p['name:en']||p['name_en']||p.name_en||''; if(!name) return;
       /* (#R9/#12) The red area/dot highlight was unwanted — only the copyable popup remains. */
       const f=e.features[0];
       const eg=_eraGeom(f);
-      _deferLabel(e,()=>{ if(readPlace(f,e)) return; const at=labelAnchor(f,e); showPopup(at,name,isCountry,eg?{title:_bothNames(p,name,f),geojson:eg.geo,refine:eg.refine,sub:eg.sub,props:p,more:eg.more(at)}:{title:_bothNames(p,name,f),props:p}); }); }; }
+      _deferLabel(e,()=>{ if(readPlace(f,e)) return; showPopup(labelAnchor(f,e),name,isCountry,eg?{title:_bothNames(p,name,f),geojson:eg.geo,refine:eg.refine,sub:eg.sub,props:p,more:eg.more}:{title:_bothNames(p,name,f),props:p}); }); }; }
     /* (#R62) water / terrain labels are now clickable too (popup with Copy/Wikipedia/AI brief; NO highlight). */
     function onGeoLabel(){ return (e)=>{ if(!e.features||!e.features.length) return; if(_ownedByOther(e.point)) return; const f=e.features[0]; const p=f.properties||{};
       const gl=(({jp:'jp',de:'de',ru:'ru',es:'es'})[HOST.lang])||'en';

@@ -330,7 +330,11 @@ test('#R518 ④ the change-date API asks BOTH records', async () => {
    The claim is unchanged: the source is credited on the map and on the Sources page, in all nine.
    ⚠ SPELLING, ON PURPOSE, FOR THE MAP CREDIT: it is the `attribution` of a renderer source. */
 test('#R518 ⑤ OpenHistoricalMap and its licence are credited on the map and on the Sources page', () => {
-  assert.match(TB, /attribution:'[^']*OpenHistoricalMap \(CC0\)[^']*'/, 'the map source no longer credits OHM');
+  /* (spacetime-train) a source's `attribution` is written in place or is the module's ONE credit constant
+     (ERA_BORDER_CREDIT, which the comparison window's copy of the borders carries too) — the claim is what the string says */
+  const credit = (/export const ERA_BORDER_CREDIT='([^']*)'/.exec(TB) || [])[1] || '';
+  const credits = [...TB.matchAll(/attribution:(?:'([^']*)'|ERA_BORDER_CREDIT\b)/g)].map(m => m[1] != null ? m[1] : credit);
+  assert.ok(credits.some(c => /OpenHistoricalMap \(CC0\)/.test(c)), 'the map source no longer credits OHM');
   assert.match(rd('js/reference-data.js'), /OpenHistoricalMap \(CC0 1\.0\)/, 'the Sources registry has no OHM row');
   const missing = [];
   for (const c of ['en', 'ja', 'de', 'ru', 'es', 'fr', 'ko', 'zh-hant', 'zh-hans']) {

@@ -177,8 +177,11 @@ for (const [file, handle] of [['js/compare.js', 'cmap'], ['js/playground.js', 'g
       'the view is created as a scoped engine');
     /* every remaining `handle.x` must be one of the contract's sections. Before this round these
        were raw renderer calls — 106 of them in compare.js — and no count could see them. */
-    const OK = new Set(['camera', 'coords', 'layers', 'scene', 'ui', 'render', 'input', 'events',
-                        'ready', 'canDraw', 'hasRenderer', 'destroy', 'raw', 'id', 'capabilities', 'can']);
+    /* (spacetime-train) the contract's members are READ FROM ITS DECLARATION (types/geo-engine.d.ts GeoEngineFacade),
+       not spelled here: a hand list missed whenCanDraw, a contract member, and called it a raw renderer call */
+    const decl = read('types/geo-engine.d.ts'), body = decl.slice(decl.indexOf('export interface GeoEngineFacade {'));
+    const OK = new Set([...body.slice(0, body.indexOf('\n}')).matchAll(/^\s{2}([A-Za-z_$][\w$]*)\??\s*[:(]/mg)].map(m => m[1]));
+    assert.ok(OK.has('camera') && OK.has('raw'), 'the facade declaration was read');
     const bad = [...codeOnly(src).matchAll(new RegExp(`\\b${handle}\\.([A-Za-z_$][\\w$]*)`, 'g'))]
       .map(m => m[1]).filter(p => !OK.has(p));
     assert.deepEqual([...new Set(bad)], [], `raw renderer calls left on ${handle}`);

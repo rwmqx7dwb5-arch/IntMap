@@ -38,7 +38,7 @@ test('map-postcard ① the caption a link carries, and the map as one picture', 
     await expect(page.locator('#im-caption')).toBeVisible({ timeout: 20_000 });
     await expect(page.locator('#im-caption .imc-t')).toHaveText(TITLE);
     await expect(page.locator('#im-caption .imc-n')).toHaveText(NOTE);
-    await expect.poll(() => page.title()).toMatch(new RegExp('^' + TITLE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' — '));
+    await expect.poll(() => page.title(), { intervals: [100] }).toMatch(new RegExp('^' + TITLE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' — '));
     /* the climate legend is on the map; the caption is clear of it and of the search field */
     await page.waitForFunction(() => { const el = document.getElementById('koppen-legend'); return el && getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().height > 30; }, null, { timeout: 30_000 });
     /* the caption is re-placed after the legend stack settles (js/map-ui.js placeSoon, up to 900 ms after the layers move):
@@ -87,12 +87,12 @@ test('map-postcard ① the caption a link carries, and the map as one picture', 
     expect(r.name).toMatch(/^intmap-.+-1200x630\.png$/);
     /* another shape */
     await page.click('#share-panel .sh-seg [data-size="square"]');
-    await expect.poll(async () => (await page.locator('#share-panel .sh-pc-pv img').getAttribute('src')) !== r.url, { timeout: 30_000 }).toBe(true);
+    await expect.poll(async () => (await page.locator('#share-panel .sh-pc-pv img').getAttribute('src')) !== r.url, { timeout: 30_000, intervals: [100] }).toBe(true);
     const sq = await page.evaluate(async () => { const im = document.querySelector('#share-panel .sh-pc-pv img'); await im.decode(); return [im.naturalWidth, im.naturalHeight]; });
     expect(sq).toEqual([1080, 1080]);
     /* a caption edit in the panel reaches the address bar and the map */
     await page.fill('#share-panel .sh-cap-t', 'Edited title');
-    await expect.poll(() => page.evaluate(() => location.hash), { timeout: 10_000 }).toContain('&title=Edited%20title');
+    await expect.poll(() => page.evaluate(() => location.hash), { timeout: 10_000, intervals: [100] }).toContain('&title=Edited%20title');
     await expect(page.locator('#im-caption .imc-t')).toHaveText('Edited title');
     await expect(page.locator('#share-panel .sh-url')).toHaveValue(/&title=Edited%20title/);
     /* Atlas makes one, and the caption it gives is the link's */

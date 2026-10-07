@@ -250,7 +250,7 @@ function gapsIndex() {
       rows: d.feats.map((r) => [rowKey(r), r[10] == null ? null : r[10], r[11] == null ? null : r[11], r[12] == null ? null : r[12]]) };
   }
   console.error('gaps: ' + Object.entries(sets).map(([k, v]) => k + ' ' + v.rows.length).join(' · '));
-  return { v: 1, ...headOf('data/border-provenance-gaps.json'), src: 'IntMap · the keys and source lists of its subdivision gap records (js/border-coast.js HIST_ADMIN_GAPS), copied from each record', built: new Date().toISOString().slice(0, 10),
+  return { v: 1, ...headOf('data/border-provenance-gaps.json'), src: 'IntMap · the keys and source lists of its subdivision gap records (js/border-coast.js HIST_ADMIN_GAPS), derived by copying them from each record — each set below keeps the src of its record, which states its terms; the compilation is under the IntMap LICENSE', built: new Date().toISOString().slice(0, 10),
     columns: ['key', 'publisherKey', 'unit', 'country'], sets };
 }
 

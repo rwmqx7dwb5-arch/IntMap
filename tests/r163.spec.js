@@ -157,8 +157,10 @@ test('R163 #7 LIVE getters: modules built in English follow a runtime language s
   }));
   const setLang = async (code) => {
     await page.evaluate((c) => document.getElementById('lang-' + c)?.click(), code);
-    await page.waitForTimeout(700);
   };
+  /* (spacetime-train) asked every 100 ms until the probe has moved, instead of reading it once after a fixed 700 ms: the
+     claim (and the failure when a module holds a copy of the language) is the same, the wait no longer outlasts it */
+  const settled = (want) => expect.poll(async () => want(await probe()), { intervals: [100], timeout: 10_000 }).toBe(true);
 
   const en = await probe();
   expect(typeof en.ind).toBe('string');
@@ -166,12 +168,14 @@ test('R163 #7 LIVE getters: modules built in English follow a runtime language s
   expect(en.turn.length, 'routing produced guidance text to compare').toBeGreaterThan(0);
 
   await setLang('jp');
+  await settled((p) => p.ind !== en.ind && p.turn !== en.turn);
   const jp = await probe();
   expect(jp.ind, 'stats-compare built at boot reads the NEW language — HOST.lang is a live getter, not a copy')
     .not.toBe(en.ind);
   expect(jp.turn, 'routing guidance follows the language switch too').not.toBe(en.turn);
 
   await setLang('en');
+  await settled((p) => p.ind === en.ind && p.turn === en.turn);
   const back = await probe();
   expect(back.ind, 'and it follows the language back').toBe(en.ind);
   expect(back.turn).toBe(en.turn);

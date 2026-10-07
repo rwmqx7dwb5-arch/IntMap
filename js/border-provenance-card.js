@@ -231,10 +231,17 @@ export const BorderProvenanceCard = (function () {
     return html`<details open style="margin-top:8px;border-top:0.5px solid var(--border-color,rgba(128,128,128,.3));padding-top:6px;"><summary style="cursor:pointer;font-weight:600;font-size:12px;color:var(--text-main);">${head}</summary><div style="font-size:10.5px;line-height:1.45;color:var(--text-main);">${rows}${dossierHtml}</div></details>`;
   }
 
+  /* a source's attribution is markup (links); the card wants its words. Read by the browser's own parser as an inert document
+     (no script runs, nothing is fetched) — not by a tag-stripping pattern, which cannot be complete. The text is then escaped
+     by the `html` tag like every other value. */
+  function _textOf(markup) {
+    try { return new DOMParser().parseFromString(String(markup), 'text/html').body.textContent || ''; } catch (_) { return ''; }
+  }
+
   function lineHtml(sec, w, GE) {
     const T = w.T, lf = sec.line;
     if (!lf) return '';
-    const attr = (src) => { try { const st = GE().scene.getStyle(); const a = st && st.sources && st.sources[src] && st.sources[src].attribution; return a ? String(a).replace(/<[^>]*>/g, '') : null; } catch (_) { return null; } };
+    const attr = (src) => { try { const st = GE().scene.getStyle(); const a = st && st.sources && st.sources[src] && st.sources[src].attribution; return a ? _textOf(a) : null; } catch (_) { return null; } };
     if (lf.supply === 'modern') {
       const p = lf.props || {}, a = attr(lf.source), bits = [];
       if (p.adm0_l || p.adm0_r) bits.push(T('the tile names the two sides: ', 'タイルは両側を次のように名指している: ') + [p.adm0_l, p.adm0_r].filter(Boolean).join(' / '));

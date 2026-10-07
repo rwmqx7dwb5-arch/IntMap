@@ -61,7 +61,10 @@ test.describe('mobile-next: 375 × 812, touch', () => {
       sheet: (document.body.className.match(/sheet-(full|half|min|hidden)/) || [''])[0],
     }));
     expect(card.title).toContain('Here, now');
-    expect(card.secs.length, 'weather, earthquakes, news, the past').toBe(4);
+    /* (place-through-time) and «This place through time» — for the device's own position it offers the reading instead of
+       doing it (status 'ask'), so it still says something: the empty check below covers it */
+    expect(card.secs.map((x) => x.h).join('|'), 'weather, earthquakes, news, the past, through time').toMatch(/Weather now.*Earthquakes nearby.*News nearby.*This place in the past.*This place through time/i);
+    expect(card.secs.length).toBe(5);
     for (const s of card.secs) expect(s.empty, s.h + ' says a value or a reason').toBe(false);
     expect(card.priv).toContain('stays on this device');
     expect(Math.abs(card.center.lat - TOKYO_TOWER.latitude) < 0.2 && Math.abs(card.center.lng - TOKYO_TOWER.longitude) < 0.2, 'the map went to the reader').toBe(true);

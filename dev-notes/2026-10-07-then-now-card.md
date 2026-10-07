@@ -108,4 +108,8 @@ Atlas `timeCompare` に `layer` を付けて閉じた窓へ投げたときも同
 > 試験時間（統合列車）: 本稿が残した 8 s の余白は先に着地した #1030 の `tests/curriculum-sales-kit.spec.js`（7 s）が使っていて、全体は 5,258 s（天井 5,251 s）になった。
 > 天井は上げず、主張しない待ちを除いて払った——本 spec の `expect.poll` を 100 ms 間隔に（既定の後退で第 2 ページのスワイプ確認に約 1.9 s かかっていた）、
 > `tests/map-postcard.spec.js` の固定待ち 2 つ（1.2 s・1.5 s）を「主張が成り立つまで 100 ms ごとに訊く」に置き換え、3 本を 1 worker・各 3 回で測り直して最遅を記入
-> （then-now-card 6.3〜6.4 s → 7・map-postcard 9.3〜10.3 s → 11・place-dossier 7.1〜10.3 s → 11）。合計 5,251 s。天井を 5,249 へ戻すにはあと 2 s 要る。
+> （then-now-card 6.1〜6.4 s → 7・map-postcard 9.3〜10.4 s → 11）。place-dossier は 10 回で 7.0〜15.6 s と幅があり（遅い 3 回は地点の行の逆ジオコーダ待ちで、この変更が足したものではない）、記入は 13 のまま。
+
+> 統合列車の CI で落ちた検査 2 本は、事実ではなく綴りを固定していたので事実に向け直した——
+> `tests/seam-coupling-and-camera-checks.test.mjs` R179 は「副ビューに許す呼び出し」を手書きの一覧で持ち、契約の正式な成員 `whenCanDraw` を生の描画呼び出しと呼んだ。一覧を契約の宣言（`types/geo-engine.d.ts` の `GeoEngineFacade`）から読むようにした。
+> `tests/history-era-borders-checks.test.mjs` #R518 ⑤ は描画ソースの `attribution:'…OpenHistoricalMap (CC0)…'` を文字列として探していた。クレジットは `ERA_BORDER_CREDIT` 1 か所に移ったので、ソースの `attribution` が述べる文字列（直書きでも定数でも）に OHM (CC0) があるかを訊くようにした。

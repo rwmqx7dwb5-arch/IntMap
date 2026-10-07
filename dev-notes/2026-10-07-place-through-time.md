@@ -137,3 +137,5 @@ newsjp: 地点カードに「この場所の歴史」を追加。その地点を
 > `IntMapHistScale`（`js/place-history.js` の `HS()`・`js/time-borders.js` の `_sheetReach` が時代地図の床 `FLOOR` を読む。`js/hist-scale.js` はまだ export しない）、
 > `IntMapTimeBorders`／`IntMapTimeAdmin1`（`js/place-history.js` が `placeRecords` を両モジュールの公開窓口から呼ぶ——地図と同じ実体に訊くため）、
 > `IntMapSafe`（`js/place-dossier.js` の節のエスケープ。同じファイルの既存の読み方）。
+
+> 統合列車: 年表の点の色を `--primary-fill`（面の強調色）に（`--primary-color` は文字の強調色）。`tests/mobile-next.spec.js` ①（deep）は「いま、ここ」の札の節を 4 つと数えていたので、この節を含めた 5 つに直した。

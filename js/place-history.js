@@ -367,7 +367,7 @@ export const PLACE_HISTORY_CSS = [
   '.ph-go,.ph-head{display:flex;flex-direction:column;gap:1px;width:100%;text-align:left;background:none;border:none;border-radius:8px;padding:2px 6px;margin:-2px -6px;color:inherit;font:inherit;}',
   '.ph-go{cursor:pointer;} .ph-go:hover{background:var(--input-bg);} .ph-go:active{transform:scale(0.99);}',
   '.ph-row.ph-gap,.ph-row.ph-quiet{color:var(--text-muted);}',
-  '.ph-dot{flex:0 0 auto;width:12px;height:12px;margin-top:3px;border-radius:50%;background:var(--primary-color);box-shadow:0 0 0 3px var(--panel-bg,rgba(255,255,255,0.9));position:relative;}',
+  '.ph-dot{flex:0 0 auto;width:12px;height:12px;margin-top:3px;border-radius:50%;background:var(--primary-fill);box-shadow:0 0 0 3px var(--panel-bg,rgba(255,255,255,0.9));position:relative;}',
   '.ph-dot.ph-dim,.ph-gap .ph-dot{background:rgba(128,128,128,0.45);}',
   '.ph-main{display:flex;flex-direction:column;min-width:0;gap:1px;}',
   '.ph-n{font-weight:650;overflow-wrap:anywhere;}',

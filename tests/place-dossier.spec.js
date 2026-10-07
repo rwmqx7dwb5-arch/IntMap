@@ -36,7 +36,9 @@ test('place dossier: right-click → Live info → About the place opens a card 
   const card = page.locator('#pd-popup');
   await expect(card).toBeVisible({ timeout: 15000 });
   /* every section settles to a value or a reason — the «Reading…» placeholder is gone */
-  await expect(card.locator('[data-pending]')).toHaveCount(0, { timeout: 30000 });
+  /* (spacetime-train) asked every frame: a locator assertion backs off to 1 s between asks, and with the history section the
+     card takes seconds to settle — the overshoot claimed nothing */
+  await page.waitForFunction(() => { const c = document.getElementById('pd-popup'); return !!c && c.querySelectorAll('[data-pending]').length === 0; }, null, { timeout: 30000 });
   const got = await page.evaluate(() => {
     const c = document.getElementById('pd-popup');
     const rows = [...c.querySelectorAll('.acp-row')].map((r) => ({ k: (r.querySelector('.acp-k') || {}).textContent || '', v: (r.querySelector('.acp-v') || r).textContent.trim() }));

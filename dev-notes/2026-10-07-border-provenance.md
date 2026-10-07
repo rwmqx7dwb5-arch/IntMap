@@ -142,3 +142,8 @@ newsjp: 歴史地図でも今日の地図でも、国境線や地方区分の線
 > `__scpPick`（比較の国選び）・`DrawTool.active()`・`IntMapIsolate.active()` と、押す範囲の幅を決める `_imTouchPrimary()`、
 > `js/border-provenance-card.js` の `IntMapHistScale`（時代地図の範囲）と `IntMapSafe`（エスケープ）、`js/map-ui.js` の `IntMapSafe`。
 > どれも既に同じ名前に複数の読み手がある窓口で、持ち主のモジュールはそれを export していない（`node scripts/module-graph.mjs --plan`）。
+
+> 統合列車の CI で見つかった欠けを実装・宣言の側で直した: 索引の `--check` を宣言された門 `npm run check:borderprov` にした（`execution-strategy.md` §4 と verifier の表にも）／
+> `data/border-provenance-gaps.json` の `src` が条件を述べていなかった（各集合が自分の記録の `src` を持ち、編纂は IntMap の LICENSE の下）／
+> 時代の塗りの読み手が `lineNear` を import したのに、クリック所有の検査の実行環境がそれを持たず空の土地の読み手が黙っていた（検査の環境に本物を渡した）／
+> 区分の札の「この区分の根拠」ボタンは、押されたときに札の地点を受け取る形にした（ラベルの 3 つの呼び出し元が同じ `showPopup(labelAnchor(…), …)` の形に戻る）。
