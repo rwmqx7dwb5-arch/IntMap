@@ -1,4 +1,5 @@
 {
+ "tests/curriculum-sales-kit.spec.js": 7,
  "tests/hist-urban-population.spec.js": 22,
  "tests/map-motion.spec.js": 40,
  "tests/collection-workspace.spec.js": 22,

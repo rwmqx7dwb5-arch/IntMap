@@ -21,14 +21,20 @@ const P = (en, jp) => [en, jp];
 
 /* the organisation pages, in the order their navigation shows them, each with the key of its name in TEXT.nav —
    the one list: scripts/org-pages.mjs writes exactly these pages and its navigation is built from it, and
-   scripts/landing.mjs reads it to link to them from every page it writes. */
-export const ORG_NAV = [['for-newsrooms', 'newsrooms'], ['press', 'press'], ['for-schools', 'schools'], ['for-research', 'research'], ['support', 'support'], ['corrections', 'corrections'], ['security', 'security'], ['contact', 'contact']];
+   scripts/landing.mjs reads it to link to them from every page it writes.
+   (curriculum-sales-kit) A third element { bar: false } keeps a page out of the top bar — MEASURED 2026-10-07: the bar's eight
+   links fill it (at 1280–1680 px the English bar had 68 px to spare, and the two new pages need 264), and an overflowing bar
+   clips its FIRST links behind the brand. Such a page is linked from every organisation page's footer instead (and from every
+   landing page's, which lists all of ORG_NAV), so it is still one click from every page. */
+export const ORG_NAV = [['for-newsrooms', 'newsrooms'], ['press', 'press'], ['for-schools', 'schools'], ['curriculum', 'curriculum', { bar: false }], ['school-handout', 'handout', { bar: false }], ['for-research', 'research'], ['support', 'support'], ['corrections', 'corrections'], ['security', 'security'], ['contact', 'contact']];
 
 export const TEXT = {
   nav: {
     newsrooms: P('Newsrooms', '報道機関'),
     press: P('Press', 'プレス'),
     schools: P('Schools', '学校'),
+    curriculum: P('Curriculum units', '単元対応表'),
+    handout: P('School handout', '学校向け案内'),
     research: P('Research & NGOs', '研究・NGO'),
     support: P('Support', '支援'),
     security: P('Security', 'セキュリティ'),
@@ -216,6 +222,9 @@ export const TEXT = {
     lessons: P('A 50-minute lesson plan, classroom tours, how to make a tour of your own and example maps with questions for class are on the page for teachers.',
       '50 分の授業案、授業用ツアー、自分のツアーの作り方、問いのついた見本の地図は先生向けのページにあります。'),
     lessonsLink: P('Open the page for teachers', '先生向けのページを開く'),
+    /* (curriculum-sales-kit) the two pages a school is handed from here: the units of its course, and the one sheet for its staff */
+    unitsLink: P('Find your unit in the unit map', '単元対応表から選ぶ'),
+    handoutLink: P('Print the one-page handout', '1 枚の案内を印刷する'),
     examplesH: P('Example maps for class', '授業向けの見本の地図'),
     faqH: P('Questions schools ask', 'よくある質問'),
     faq: [
@@ -229,6 +238,89 @@ export const TEXT = {
       P('Tell us through the feedback button in the map or this form. Historical maps are checked against the record, and a reported error is investigated at its source.',
         '地図の中のフィードバックボタンか、このフォームでお知らせください。歴史地図は史実と照らして確認しており、報告された誤りは出典にさかのぼって調べます。'),
     ],
+  },
+
+  /* ── (curriculum-sales-kit) the unit map — curriculum.html ─────────────────────────────────────
+     The units are quoted from their documents (data/curriculum-units.json); every map, tour and quest beside them is a link
+     scripts/curriculum-kit.mjs writes with the app's own codecs. {units} {covered} {open} are counted from that file. */
+  curriculum: {
+    title: P('Curriculum units — what to open in IntMap for each unit you teach', '単元対応表 — 教える単元ごとに IntMap で開ける地図'),
+    description: P('The units of Japan\'s high-school geography and history, England\'s key stage 3 and the US C3 Framework, each with the IntMap maps, classroom tours and quests that fit it. Free, no accounts.',
+      '高等学校の地理歴史（学習指導要領）、イングランドのキーステージ3、米国の C3 フレームワークの単元ごとに、使える IntMap の地図・授業ツアー・クエストをまとめました。無料・アカウント不要。'),
+    h1: P('Start from the unit you teach.', '教える単元から選ぶ。'),
+    lede: P('{units} units from three curricula, quoted from the official documents. For {covered} of them IntMap has a map to open, a classroom tour or a quest today; the other {open} are marked as not covered yet.',
+      '3 つのカリキュラムの {units} 単元を、公式の文書から引用して並べました。そのうち {covered} 単元には、いま開ける地図・授業ツアー・クエストがあります。残りの {open} 単元は「現在は未対応」と示しています。'),
+    ctaFind: P('Find your unit', '単元を探す'),
+    ctaHandout: P('A one-page handout for your school', '学校に回す 1 枚の案内'),
+    howH: P('What each row gives you', '各行でできること'),
+    how: [
+      P('Open the map', '地図を開く'),
+      P('Each link opens IntMap at the place, date and layers named — the same kind of link the Share button makes. Send it to students or put it on the projector.',
+        'リンクは IntMap を、示した場所・日付・レイヤーのまま開きます。共有ボタンが作るのと同じリンクです。生徒に配っても、プロジェクターに映してもかまいません。'),
+      P('Run a classroom tour, print a worksheet', '授業ツアーとワークシート'),
+      P('A classroom tour steps through maps full screen with words to read out and a question for the class. While it plays, its printer button makes a worksheet for students or for you.',
+        '授業ツアーは、読み上げる文と生徒への問いを添えて地図を全画面で順にたどります。再生中のプリンタのボタンで、生徒用・教員用のワークシートを印刷できます。'),
+      P('Make a tour for the unit', 'この単元のツアーを作る'),
+      P('Opens the tour builder with the unit\'s maps already in it as the first steps. Add your own maps, write what to say and the questions, then share it as one link — no account needed.',
+        'ツアー作成を、その単元の地図が最初のステップに入った状態で開きます。地図を足し、話すことと問いを書いて、リンクひとつで配れます。アカウントは要りません。'),
+    ],
+    suggestion: P('Which map fits which unit is IntMap\'s own suggestion, not an official one. The unit names are quoted from the documents named under each table; translations into English or Japanese are IntMap\'s and are not official translations.',
+      'どの地図がどの単元に合うかは IntMap による提案で、公式のものではありません。単元名は各表の下に示した文書からの引用です。英語・日本語への訳は IntMap によるもので、公式の訳ではありません。'),
+    jump: P('Curricula on this page', 'このページのカリキュラム'),
+    colUnit: P('Unit', '単元'),
+    colOpen: P('Maps, tours and quests', '地図・授業ツアー・クエスト'),
+    colMake: P('Your own tour', '自分のツアー'),
+    basis: P('In the document:', '文書の記述：'),
+    original: P('Original wording:', '原文：'),
+    example: P('example', '見本'),
+    map: P('map', '地図'),
+    tour: P('Classroom tour', '授業ツアー'),
+    steps: P('{n} steps', '{n} ステップ'),
+    quest: P('Challenge link', '挑戦リンク'),
+    questN: P('{kind}, {n} questions — everyone who opens it gets the same ones', '{kind}を {n} 問。開いた人は全員が同じ問題を解きます'),
+    make: P('Make a tour for this unit', 'この単元のツアーを作る'),
+    makeFrom: P('starts with {n} maps', '地図 {n} 枚から始まります'),
+    notCovered: P('Not covered yet', '現在は未対応'),
+    source: P('Source:', '出典：'),
+    read: P('read on {date}', '{date} 閲覧'),
+    via: P('copy read through the Internet Archive', 'Internet Archive の保存版で閲覧'),
+    openH: P('Units IntMap does not cover yet', 'IntMap がまだ対応していない単元'),
+    open: P('{open} of the {units} units have no map, tour or quest in IntMap yet. They are listed as they are, rather than matched to a map that does not fit. If you teach one of them, tell us what you would want to show — it decides what we build next.',
+      '{units} 単元のうち {open} 単元には、まだ IntMap の地図・授業ツアー・クエストがありません。合わない地図を無理に当てはめず、そのまま示しています。これらの単元を教えている方は、何を見せたいかをお知らせください。次に作るものを決める材料になります。'),
+  },
+
+  /* ── (curriculum-sales-kit) the one-page handout — school-handout.html, printed on one A4 sheet ─────────
+     Every fact on it is a string another page already owns (TEXT.common.price, TEXT.schools, TEXT.security) or a number
+     the generator reads from its owner ({stated}, {layers}, {floorBC}); this block holds only the handout's own frame. */
+  'school-handout': {
+    title: P('IntMap for schools — a one-page handout', 'IntMap 導入のご案内（学校向け・1 枚）'),
+    description: P('One A4 page for a school\'s leadership and IT staff: free, no registration, which devices, privacy, three steps to use it in class, and where to ask.',
+      '管理職・情報担当の方に回せる A4 1 枚の案内。無料・登録不要・使える端末・プライバシー・授業で使う 3 ステップ・問い合わせ先。'),
+    h1: P('IntMap in class: free, in the browser, no student accounts', '授業で使う IntMap：無料・ブラウザだけ・生徒のアカウント不要'),
+    lede: P('A history and geography map for the classroom: borders from {floorBC} to today and {layers} data layers, each with its source named.',
+      '歴史と地理の授業のための地図です。{floorBC}から現在までの国境と、出典を明示した {layers} のデータレイヤーを使えます。'),
+    print: P('Print this page', 'このページを印刷する'),
+    printNote: P('Made to fit one A4 sheet. In the print dialog you can also save it as a PDF.', 'A4 1 枚に収まるように作っています。印刷画面で PDF として保存することもできます。'),
+    privacyH: P('Privacy', 'プライバシー'),
+    hostsLine: P('Every outside site the page can contact — {stated} of them — is listed with what it is sent, on the security page and in the privacy policy.',
+      'ページが通信しうる外部の接続先（{stated} 件）は、送る内容とともにセキュリティのページとプライバシーポリシーに記載しています。'),
+    stepsH: P('Using it in class, in three steps', '授業で使う 3 ステップ'),
+    steps: [
+      P('Choose your unit', '単元を選ぶ'),
+      P('The unit map lists the units of the course you teach, each with the maps, tours and quests that fit it.',
+        '単元対応表から、教えている科目の単元を選びます。単元ごとに使える地図・授業ツアー・クエストが並んでいます。'),
+      P('Open it for the class', '授業で開く'),
+      P('Put a map or a classroom tour on the projector, or send students the link. Nothing to install and no student sign-in.',
+        '地図や授業ツアーをプロジェクターに映すか、生徒にリンクを配ります。インストールも生徒のログインも要りません。'),
+      P('Print, quiz or make your own', '印刷・クエスト・自作'),
+      P('Print a worksheet from a tour, give the class a challenge link with the same questions for everyone, or start your own tour from the unit\'s maps.',
+        'ツアーからワークシートを印刷し、全員が同じ問題を解く挑戦リンクを配り、単元の地図から自分のツアーを作れます。'),
+    ],
+    linksH: P('Addresses', 'アドレス'),
+    unitMap: P('Unit map', '単元対応表'),
+    itPage: P('Checklist for IT', '情報担当の方へのチェックリスト'),
+    askH: P('Questions', 'お問い合わせ'),
+    ask: P('Write to us through the enquiry form. We answer by e-mail.', '相談フォームからお送りください。メールでお返事します。'),
   },
 
   /* ── research & NGOs ─────────────────────────────────────────────────────────────────────── */

@@ -56,6 +56,9 @@ developers.html                 開発者向け——埋め込みをページか
                                 文は scripts/landing-text.mjs、見本は js/showcase.js）。Architecture.md §8.6
 for-newsrooms.html / press.html / for-schools.html / for-research.html / contact.html / support.html
                                 組織向けの紹介 3 ページ・相談フォーム・支援のページ（英語。ja/ が日本語版）。
+curriculum.html / school-handout.html
+                                単元対応表（3 つのカリキュラムの単元と、開ける地図・授業ツアー・クエスト・「この単元のツアーを作る」）と
+                                学校向けの A4 1 枚の案内（ja/ が日本語版）。同じく scripts/org-pages.mjs が生成する。Architecture.md §8.6.5
                                 scripts/org-pages.mjs が生成する（手で編集しない。文は scripts/org-pages-text.mjs）。Architecture.md §11
 admin-inquiries.html            相談のコンソール（org_inquiries の閲覧・状態とメモ・削除、supporters の掲載）。英語・noindex。
 admin-corrections.html          地図の誤り報告のコンソール（map_corrections を世界地図の上に並べ、回答・公開する）。英語・noindex。
@@ -1541,6 +1544,9 @@ inline-actions.js                 **マークアップがコードを動かす�
 ### 3.11 `data/`
 
 ```
+curriculum-units.json             単元対応表の正本——学習指導要領（平成30年告示）地理歴史・イングランド KS3・C3 次元2 の単元を
+                                  一次資料から文字どおり引用し、典拠（URL・閲覧日・sha256・ライセンス）と、単元ごとに開ける見本・
+                                  状態（視点＋データレイヤー）・ツアー・クエストを持つ。手で書く。読むのは scripts/curriculum-kit.mjs
 admin1-world.json.gz              世界の第1級行政区画（Natural Earth 10m 由来・247か国 4,515区分・2.38 MB）。
                                   気象警報レイヤーが「発令なし」を区分単位で塗るための索引で、警報の
                                   形を引く最後の段でもある。生成は scripts/build-admin1.mjs
@@ -1889,6 +1895,8 @@ scripts/
   org-pages.mjs                   組織向けページ・相談フォーム・支援のページ（en と ja/）と admin-inquiries.html の**生成器と門**
                                   （`--check`）。数字はその持ち主から読む（facts()・plans.js・EMBED_SIZES・purge の既定値）
   org-pages-text.mjs              そのページの文の唯一の写し（en + jp）。導入事例・料金・応答時間を書かない
+  curriculum-kit.mjs              単元対応表の模型——data/curriculum-units.json をレジストリ（レイヤー・見本・ツアー・クエスト）に
+                                  照らし（problems()）、リンクをアプリの codec で書き、「この単元のツアーを作る」の自作ツアーを作る（§8.6.5）
   brand.mjs                       **ブランドの書き出しと門**——index.html の head・docTitle/docDesc・manifest・README の
                                   タグライン・docs/marketing/ の 2 本を brand-text.mjs から書く。`--print <id>` で投稿の完成形（§8.6.2）
   brand-text.mjs                  タグライン・説明・ポジショニングの唯一の写し（en + jp）
@@ -2356,7 +2364,7 @@ scripts/
                                   index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
                                   マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
                                   なるなら 1 ファイルで両方を名乗る
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 149 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 150 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の

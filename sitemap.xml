@@ -82,6 +82,26 @@
     <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/for-schools.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="__INTMAP_SITE_URL__for-schools.html"/>
   </url>
+  <url><loc>__INTMAP_SITE_URL__curriculum.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__curriculum.html"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/curriculum.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="__INTMAP_SITE_URL__curriculum.html"/>
+  </url>
+  <url><loc>__INTMAP_SITE_URL__ja/curriculum.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__curriculum.html"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/curriculum.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="__INTMAP_SITE_URL__curriculum.html"/>
+  </url>
+  <url><loc>__INTMAP_SITE_URL__school-handout.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__school-handout.html"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/school-handout.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="__INTMAP_SITE_URL__school-handout.html"/>
+  </url>
+  <url><loc>__INTMAP_SITE_URL__ja/school-handout.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__school-handout.html"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/school-handout.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="__INTMAP_SITE_URL__school-handout.html"/>
+  </url>
   <url><loc>__INTMAP_SITE_URL__for-research.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__for-research.html"/>
     <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/for-research.html"/>

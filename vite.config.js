@@ -148,6 +148,8 @@ export const STATIC_ASSETS = [
   'for-newsrooms.html',
   'press.html',                         // (press-room) the press room — descriptions to copy, the facts, the marks and screenshots to download
   'for-schools.html',
+  'curriculum.html',                    // (curriculum-sales-kit) the unit map — curriculum units and what IntMap opens for each
+  'school-handout.html',                // (curriculum-sales-kit) the one A4 sheet for a school's leadership and IT staff
   'for-research.html',
   'contact.html',
   'support.html',

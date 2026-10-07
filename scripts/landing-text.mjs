@@ -141,6 +141,7 @@ export const TEXT = {
         colExamples: 'Examples',
         source: 'Source: Ministry of Education, Culture, Sports, Science and Technology, “高等学校学習指導要領（平成30年告示）”, read on 1 October 2026.',
         sourceLabel: 'The Course of Study (PDF, mext.go.jp)',
+        more: 'Every unit, three curricula: the unit map',
       },
       trust: {
         h2: 'Sources and reliability',
@@ -392,6 +393,7 @@ export const TEXT = {
         colExamples: '見本',
         source: '出典：文部科学省「高等学校学習指導要領（平成30年告示）」（2026年10月1日閲覧）',
         sourceLabel: '高等学校学習指導要領（PDF・文部科学省）',
+        more: 'すべての単元と 3 つのカリキュラム：単元対応表',
       },
       trust: {
         h2: '出典と信頼性',

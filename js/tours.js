@@ -279,6 +279,7 @@ export function tourFromSearch(search) {
   const n = parseInt(q.get('step') || '1', 10);
   const out = { id: String(id).trim().toLowerCase(), step: Number.isFinite(n) && n > 0 ? n : 1 };
   const t = q.get('t'); if (t) out.t = t;   /* only a written tour has one */
+  if (q.get(TOUR_EDIT_PARAM) === '1') out.edit = true;   /* (curriculum-sales-kit) open it in the builder, not the player */
   return out;
 }
 
@@ -316,11 +317,12 @@ export const TOUR_REQUEST_LIMIT = 8192;
    between the two spellings. Expire when that ceiling moves. */
 export const TOUR_INFLATED_MAX = 2 * 1048576;
 
-/** a written tour → the text of its `t` parameter. `tour` is { title, steps: [{ hash, title, say, ask }] } */
-export async function encodeCustomTour(tour) {
+/** a written tour → the text of its `t` parameter. `tour` is { title, steps: [{ hash, title, say, ask }] }.
+    `opts.plain` — the uncompressed letter (js/link-codec.js packText: for a link a generator writes into a page) */
+export async function encodeCustomTour(tour, opts) {
   const steps = ((tour && tour.steps) || []).map((s) => [String((s && s.hash) || '').replace(/^#/, ''), String((s && s.title) || ''), String((s && s.say) || ''), String((s && s.ask) || '')]);
   const json = JSON.stringify({ v: 1, n: String((tour && tour.title) || ''), s: steps });
-  return packText(json);
+  return packText(json, opts);
 }
 
 /** the text of a `t` parameter → { title, steps: [{ key, title, say, ask, hash }] }, or null when it is not a tour.
@@ -341,10 +343,17 @@ export async function decodeCustomTour(t, canon) {
   return { title: String(o.n == null ? '' : o.n), steps };
 }
 
+/* (curriculum-sales-kit) THE SAME ADDRESS, OPENED IN THE BUILDER. `&edit=1` asks js/tour-player.js bootFromUrl to hand the
+   tour to js/tour-builder.js openBuilder({ load }) — the path «Edit this tour» takes — instead of playing it, so a page can
+   give a teacher a draft to start from (curriculum.html: the maps of one curriculum unit as the first steps) with no
+   second editor. The builder asks before the draft replaces one the teacher is writing. */
+const TOUR_EDIT_PARAM = 'edit';
+
 /** the share link of a written tour, opening at step 1: the query carries the tour, the fragment the first step's
-    map (so the page opens on it through the ordinary boot restore, as a declared tour's link does) */
-export function customTourLink(base, t, firstHash) {
-  return String(base || './index.html') + tourQuery(CUSTOM_TOUR_ID, 1, t) + (firstHash || '');
+    map (so the page opens on it through the ordinary boot restore, as a declared tour's link does).
+    `opts.edit` — open it in the tour builder rather than the classroom mode (TOUR_EDIT_PARAM) */
+export function customTourLink(base, t, firstHash, opts) {
+  return String(base || './index.html') + tourQuery(CUSTOM_TOUR_ID, 1, t) + (opts && opts.edit ? '&' + TOUR_EDIT_PARAM + '=1' : '') + (firstHash || '');
 }
 
 /* ⚠ GENERATED TOUR STEPS — BEGIN (node scripts/showcase-capture.mjs; DO NOT EDIT) */

@@ -35,6 +35,8 @@
   破壊的操作の前に再認証を求める。ログインゲートは利便のためのもので、非 admin が開いても
   **RLS が 0 行しか返さない**。
 - **バグ報告**：`bug_reports`（診断情報 JSON 付き。`reader-reports` 経由で誰でも送れる・表へ直接は書けない・admin が閲覧）。
+- **教育向けの導入パック**：単元対応表（`curriculum.html`）と学校向けの 1 枚（`school-handout.html`）、いずれも `ja/` あり。
+  仕様は §8.6.5。どちらも相談フォーム（`about=classroom`）へ結ぶ。
 - **組織からの相談**：報道機関・学校・研究機関/NGO 向けの紹介ページ（`for-newsrooms.html`・`for-schools.html`・
   `for-research.html` と `ja/`）から `contact.html` のフォームへ。`reader-reports`（kind `inquiry`）経由で `org_inquiries`
   に入り、**表へ直接は書けない**。読むのは**相談のコンソール `admin-inquiries.html`**（`admin.html` とは別のページ・

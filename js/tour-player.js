@@ -36,6 +36,8 @@
  *  the same panel, keys and read-back as a declared tour, nothing copied. Each step's fragment is written
  *  again by the map's codec before it reaches the address bar. The list of tours offers «Make your own
  *  tour», and a written (or Atlas-assembled) tour that is playing offers «Edit this tour».
+ *  (curriculum-sales-kit) The same address with `&edit=1` skips the playing: the tour goes straight to the builder
+ *  as its draft — how curriculum.html's «Make a tour for this unit» starts a teacher on a unit's maps.
  *
  *  ── THE WORKSHEET (sales-next) ───────────────────────────────────────────────────────────────
  *  The panel's printer button (and Atlas's `panel.tourWorksheet`) hands the tour that is playing to
@@ -258,9 +260,14 @@ function onPanelClick(e) {
    (its links and words exactly as they were played) — the builder asks before it replaces a draft */
 function editInBuilder() {
   if (!playing) return;
-  const tour = { title: txt(playing.title), steps: playing.steps.map((s) => ({ title: txt(s.title), say: txt(s.say), ask: txt(s.ask), hash: s.hash || null })) };
+  const tour = builderLoad(playing);
   exit();
   import('./tour-builder.js').then((m) => m.openBuilder({ load: tour })).catch(() => { });
+}
+/** a tour in the player's shape → what js/tour-builder.js openBuilder({ load }) takes: its words in the reader's language,
+    its links exactly as they would be played */
+function builderLoad(tour) {
+  return { title: txt(tour.title), steps: tour.steps.map((s) => ({ title: txt(s.title), say: txt(s.say), ask: txt(s.ask), hash: s.hash || null })) };
 }
 function fold() { if (!panel) return; panel.classList.toggle('imt-folded'); paint(false); }
 function fullscreen() {
@@ -414,6 +421,20 @@ export function openPicker() {
 /* ══ `?tour=<id>&step=<n>` ═══════════════════════════════════════════════════════════════════════ */
 export function bootFromUrl() {
   const q = tourFromSearch(location.search); if (!q) return Promise.resolve(null);
+  /* (curriculum-sales-kit) a written tour asked for with `&edit=1` (js/tours.js TOUR_EDIT_PARAM) opens in the builder as its
+     draft — the «Edit this tour» path, without playing it first. The page has already opened on step 1's map (the fragment,
+     through the boot restore); the query is cleared so a reload does not hand the same draft over again. */
+  if (q.edit && q.id === CUSTOM_TOUR_ID) {
+    const ed = async () => {
+      const tour = await tourFor(q.id, { t: q.t });
+      if (!tour) { openPicker(); return { ok: false, reason: 'unreadable-tour' }; }
+      try { MapState.address('', null); } catch (_) { }
+      const m = await import('./tour-builder.js');
+      return m.openBuilder({ load: builderLoad(tour) });
+    };
+    if (document.readyState === 'loading') return new Promise((r) => document.addEventListener('DOMContentLoaded', () => r(ed()), { once: true }));
+    return ed();
+  }
   /* a tour this build does not have is not a silent nothing: the reader is shown the tours there are */
   /* a written tour (`?tour=custom&t=…`) whose text cannot be read is the same: the list, not a blank screen */
   const go2 = async () => ((await tourFor(q.id, { t: q.t })) ? startTour(q.id, q.step, { fromBoot: true, t: q.t }) : (openPicker(), { ok: false, reason: 'unknown-tour' }));

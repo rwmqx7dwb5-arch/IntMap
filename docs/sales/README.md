@@ -25,7 +25,7 @@
 | 区分 | 何を求めているか | 入口（公開ページ） | 問い合わせの `audience` / 既定の `purpose` |
 |---|---|---|---|
 | 報道機関 | 記事に出典つきの地図を埋め込む | `for-newsrooms.html`・`ja/for-newsrooms.html` | `newsroom` / `embed` |
-| 学校・教育委員会 | 授業での利用、端末・ネットワークの確認 | `for-schools.html`（授業そのものは `teachers.html`） | `education` / `classroom` |
+| 学校・教育委員会 | 授業での利用、端末・ネットワークの確認 | `for-schools.html`（授業そのものは `teachers.html`、単元から選ぶのは `curriculum.html`、管理職・情報担当に回す 1 枚は `school-handout.html`） | `education` / `classroom` |
 | 研究機関・NGO | 報告書・サイトでの地図、データの追加・引用 | `for-research.html` | `research` / `data` |
 | 支援者 | 支援の理由を知る、名前の掲載 | `support.html` | `supporter` / `supporter_listing` |
 | 商用利用 | ソフトウェアの商用ライセンス（`LICENSE` §6） | どのページからも `contact.html` | 任意 / `licence` |

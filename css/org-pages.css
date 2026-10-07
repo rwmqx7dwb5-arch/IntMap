@@ -88,3 +88,56 @@
 .og-sub{ font-size:17px; margin:28px 0 8px; color:var(--pg-ink); }
 .og-files{ list-style:none; padding:0; margin:0; display:grid; gap:10px; }
 .og-files .og-muted{ color:var(--pg-mut); font-size:13px; margin-left:8px; }
+
+/* (curriculum-sales-kit) curriculum.html — the unit map. A unit row: its wording (with the other language and the
+   document's own phrase under it), the links, and «Make a tour for this unit»; a group heading spans the row. */
+.cu-table table{ font-size:15px; }
+.cu-table td:first-child{ width:38%; }
+.cu-table td:last-child{ width:200px; }
+.cu-group th{ background:var(--pg-accent-soft); color:var(--pg-ink); font-size:14px; font-weight:600; }
+.cu-group .cu-other{ display:inline; margin-left:6px; }
+.cu-unit{ display:block; font-weight:600; color:var(--pg-ink); }
+.cu-other{ display:block; font-size:13px; color:var(--pg-mut); margin-top:2px; }
+.cu-basis{ display:block; font-size:13px; color:var(--pg-ink-2); margin-top:6px; }
+.cu-links{ list-style:none; padding:0; margin:0; display:grid; gap:6px; }
+.cu-links .og-muted{ color:var(--pg-mut); font-size:12px; margin-left:4px; }
+.cu-none{ display:inline-block; font-size:13px; font-weight:600; color:var(--pg-mut); padding:2px 10px; border-radius:980px; border:1px solid var(--pg-line); }
+.cu-make{ margin-left:0; display:inline-flex; text-align:center; }
+.cu-make-n{ display:block; font-size:12px; color:var(--pg-mut); margin-top:4px; }
+.cu-jump{ display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:16px; }
+.cu-source{ margin-bottom:8px; }
+@media (max-width:640px){
+  .cu-table td:first-child,.cu-table td:last-child{ width:auto; }
+}
+
+/* (curriculum-sales-kit) school-handout.html — one sheet for a school's staff. On screen it is a page of the family; printed,
+   it is ONE A4 sheet: the named page `handout` sets the paper, the bar, the footer and the print button go, and the type
+   and spacing tighten (tests/curriculum-sales-kit.spec.js prints it to PDF and counts the pages). */
+.og-handout-brand{ display:flex; align-items:center; gap:8px; font-weight:700; font-size:17px; margin:0 0 6px; color:var(--pg-ink); }
+.og-handout-dl{ display:grid; grid-template-columns:max-content minmax(0,1fr); gap:6px 16px; margin:0; }
+.og-handout-dl dt{ font-weight:600; color:var(--pg-ink); }
+.og-handout-dl dd{ margin:0; color:var(--pg-ink-2); overflow-wrap:anywhere; }
+.og-print{ border:none; font-family:inherit; cursor:pointer; }
+@page handout{ size:A4; margin:12mm; }
+@media print{
+  body[data-org-page="school-handout"]{ page:handout; background:#fff !important; color:#000; }
+  body[data-org-page="school-handout"] .lp-top,
+  body[data-org-page="school-handout"] .lp-foot,
+  body[data-org-page="school-handout"] .og-noprint{ display:none !important; }
+  body[data-org-page="school-handout"] .lp-main{ padding:0 !important; max-width:none !important; }
+  body[data-org-page="school-handout"] .lp-hero{ padding:0 0 6px !important; min-height:0 !important; }
+  body[data-org-page="school-handout"] .lp-sec{ padding:6px 0 !important; margin:0 !important; }
+  body[data-org-page="school-handout"] h1{ font-size:20px !important; margin:0 0 4px !important; }
+  body[data-org-page="school-handout"] h2{ font-size:14px !important; margin:0 0 4px !important; }
+  body[data-org-page="school-handout"] .lp-lede{ font-size:12px !important; margin:0 !important; }
+  body[data-org-page="school-handout"] .lp-grid2{ gap:6px !important; }
+  body[data-org-page="school-handout"] .lp-tile{ padding:7px 10px !important; box-shadow:none !important; border-radius:8px !important; break-inside:avoid; }
+  body[data-org-page="school-handout"] .lp-tile h3{ font-size:12px !important; margin:0 0 2px !important; }
+  body[data-org-page="school-handout"] .lp-tile p{ font-size:10px !important; line-height:1.4 !important; margin:0 0 2px !important; }
+  body[data-org-page="school-handout"] .lp-steps{ margin:0 !important; gap:6px !important; }
+  body[data-org-page="school-handout"] .lp-steps li{ padding:6px 10px !important; box-shadow:none !important; }
+  body[data-org-page="school-handout"] .lp-steps h3{ font-size:12px !important; margin:0 0 2px !important; }
+  body[data-org-page="school-handout"] .lp-steps p{ font-size:10px !important; line-height:1.4 !important; margin:0 !important; }
+  body[data-org-page="school-handout"] .og-handout-dl{ font-size:10px; gap:2px 10px; }
+  body[data-org-page="school-handout"] a{ color:#000 !important; text-decoration:none; }
+}
