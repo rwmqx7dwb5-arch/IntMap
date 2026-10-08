@@ -827,7 +827,7 @@ export function newsTimeline(HOST){
       paBtn=document.createElement('button'); paBtn.type='button'; paBtn.id='ntl-polityarc'; paBtn.className='ntl-yb';
       const lbl=()=>{ paBtn.textContent=IntMapLang.t(HOST.lang,'Rise and fall of a polity','政体の盛衰'); };
       lbl(); bus.on('intmap-lang',lbl);
-      paBtn.onclick=()=>{ import('./polity-arc.js').then(m=>m.openArc({})).catch(()=>{}); };
+      paBtn.onclick=()=>{ import('./polity-arc.js').then(m=>m.openArc({ lang:()=>HOST.lang })).catch(()=>{}); };
       tnBtn.parentNode.insertBefore(paBtn,tnBtn.nextSibling); }
     /* WRITE side: inputs → kernel */
     tg.onclick=()=>{ tl.classList.toggle('collapsed'); if(!tl.classList.contains('collapsed')){ localizeChrome(); try{ refreshUI(IntMapTime.state()); }catch(_){} lapseMount(); ybMount(); } _tmSyncTerminator(); };

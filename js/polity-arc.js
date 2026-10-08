@@ -31,10 +31,13 @@ import { jsonWithin } from './fetch-deadline.js';
 import { clockFor } from './proxy-fetch.js';
 import './safe-html.js';   /* publishes globalThis.IntMapSafe — the escaper below */
 
-export const ARCS_PATH = 'data/polity-arcs.json';
+/** the app's one escaper (js/safe-html.js) — read once, here */
+const esc = (s) => globalThis.IntMapSafe.html(String(s == null ? '' : s));
+
+const ARCS_PATH = 'data/polity-arcs.json';
 let _idx = null;
 /** the index, read once (a failed read is forgotten so the next door asks again) */
-export function loadArcs() {
+function loadArcs() {
   if (!_idx) _idx = jsonWithin(ARCS_PATH, clockFor(ARCS_PATH)).catch((e) => { _idx = null; throw e; });
   return _idx;
 }
@@ -42,7 +45,7 @@ export function loadArcs() {
 /* ══ READING THE INDEX — pure: no map, no clock, no DOM (tests/hist-product-checks.test.mjs evaluates them) ══════════ */
 const norm = (s) => String(s == null ? '' : s).normalize('NFKC').toLowerCase().replace(/\s+/g, ' ').trim();
 /** the name the map writes on the polity in the reader's language */
-export const nameOf = (arc, lang) => (lang === 'jp' && arc.j ? arc.j : arc.n);
+const nameOf = (arc, lang) => (lang === 'jp' && arc.j ? arc.j : arc.n);
 
 /** the polities whose name (as the map writes it, in English or in Japanese) or Wikidata item matches `q`:
  *  the exact name first, then names that begin with it, then names that contain it; within each, the larger drawn first */
@@ -61,9 +64,9 @@ export function search(idx, q, limit) {
 }
 /** the polities the DATED records draw (Cliopatria, OpenHistoricalMap, CShapes), by their largest drawn extent — the
  *  sheets' cultural areas are searchable but not ranked beside them: a sheet states a period, not a polity's year */
-export function largest(idx, limit) { return idx.arcs.filter((a) => a.d && a.d.length).slice(0, limit || 20); }
+function largest(idx, limit) { return idx.arcs.filter((a) => a.d && a.d.length).slice(0, limit || 20); }
 /** one polity by its Wikidata item, else its name; when several share the item, the one the map draws in `year` */
-export function find(idx, want) {
+function find(idx, want) {
   const w = want || {};
   const covers = (a, y) => { const D = describe(idx, a); return y != null && D.first != null && y >= D.first.y && (D.last.y == null || y <= D.last.y); };
   const qids = [].concat(w.qid || []).filter(Boolean);
@@ -125,7 +128,7 @@ export function describe(idx, arc) {
   return out;
 }
 /** the drawn area in year `y` (the step the index holds), and the records that drew it — null where it is not drawn */
-export function valueAt(idx, arc, y) {
+function valueAt(idx, arc, y) {
   const d = arc.d || [];
   let hit = null;
   for (const p of d) { if (p[0] <= y) hit = p; else break; }
@@ -134,7 +137,7 @@ export function valueAt(idx, arc, y) {
   return sh ? { y, km: sh[1], recs: ['sheet'] } : null;
 }
 /** the other names: linked to the same Wikidata item, or written identically by the map in the reader's language */
-export function related(idx, arc, lang) {
+function related(idx, arc, lang) {
   const out = [], seen = new Set([arc]);
   const qs = arc.q || [];
   for (const a of idx.arcs) if (!seen.has(a) && (a.q || []).some((q) => qs.includes(q))) { seen.add(a); out.push({ arc: a, why: 'qid', qid: (a.q || []).find((q) => qs.includes(q)) }); }
@@ -144,7 +147,9 @@ export function related(idx, arc, lang) {
 }
 
 /* ══ WORDS ══════════════════════════════════════════════════════════════════════════════════════════════════ */
-const lang = () => { try { return window.IntMapI18N.lang(); } catch (_) { return 'en'; } };
+/* the reader's language — handed in by the door that opens the sheet (`want.lang`), as js/year-book.js receives it */
+let langOf = () => 'en';
+const lang = () => { try { return langOf() || 'en'; } catch (_) { return 'en'; } };
 /** a year as the reader reads it (astronomical: 0 is 1 BC) */
 export function yearWords(y, lg) {
   if (y == null) return '';
@@ -154,7 +159,7 @@ export function yearWords(y, lg) {
 const kmWords = (km) => Math.round(km).toLocaleString() + ' km²';
 /* a record in its own words: the head of the `src` it states («CShapes 2.0 (Schvitz…) · CC BY-NC-SA 4.0» → «CShapes 2.0») */
 const shortSrc = (src) => String(src || '').split(' · ')[0].replace(/\s*\(.*$/, '').replace(/^.*\//, '').trim();
-export const recordName = (idx, rec) => shortSrc(idx.src && idx.src[rec]) || rec;
+const recordName = (idx, rec) => shortSrc(idx.src && idx.src[rec]) || rec;
 function edgeWords(idx, side, x, lg) {
   const t = (en, jp) => IntMapLang.t(lg, en, jp);
   if (!x || x.y == null) return '';
@@ -179,7 +184,7 @@ export function spanOf(D) {
   return [a, Math.max(b, a + 1)];
 }
 function chartSvg(idx, arc, D, lg, nowY) {
-  const t = (en, jp) => IntMapLang.t(lg, en, jp), esc = (s) => globalThis.IntMapSafe.html(String(s));
+  const t = (en, jp) => IntMapLang.t(lg, en, jp);
   const sp = spanOf(D); if (!sp) return '';
   const [a, b] = sp, top = Math.max(1, D.peak.km) * 1.1;
   const X = (y) => ML + (CW - ML - MR) * (y - a) / (b - a), Y = (km) => MT + (CH - MT - MB) * (1 - km / top);
@@ -249,20 +254,19 @@ const CSS = `.pa-panel{ position:fixed; z-index:var(--z-sheet); top:72px; right:
 function ensureStyle() { if (typeof document === 'undefined' || document.getElementById('polity-arc-css')) return; const st = document.createElement('style'); st.id = 'polity-arc-css'; st.textContent = CSS; document.head.appendChild(st); }
 
 let sheet = null, state = { arc: null, q: '' }, unsubClock = null, unsubLapse = null, paintTimer = 0;
-const esc = (s) => globalThis.IntMapSafe.html(String(s == null ? '' : s));
 const nowYear = () => { try { return IntMapTime.isLive() ? null : IntMapTime.when().getUTCFullYear(); } catch (_) { return null; } };
 /* the instant a year stands for in the index: 1 July (noon UTC) — the instant every point was read at */
 const july1 = (y) => { const t = new Date(0); t.setUTCFullYear(y, 6, 1); t.setUTCHours(12, 0, 0, 0); return t; };
 
 /** move the clock to year `y` (1 July, the instant the index was read at); → true when the clock took it */
-export function goYear(y) {
+function goYear(y) {
   try { if (y < IntMapTime.min) return false; IntMapTime.set(july1(y), { source: 'polity-arc' }); return true; } catch (_) { return false; }
 }
 function fit(bb) {
   try { if (Array.isArray(bb) && bb.length === 4) IntMapGeoEngine.camera.fitBounds([[bb[0], bb[1]], [bb[2], bb[3]]], { padding: 48, duration: 900, maxZoom: 6 }); } catch (_) { /* no renderer */ }
 }
 /** the instants its life is played through: every year its drawn shape changes, and the year it stops being drawn */
-export function lifeInstants(idx, arc) {
+function lifeInstants(idx, arc) {
   const D = describe(idx, arc);
   const ys = D.points.length ? D.points.map((p) => p.y) : D.sheets.map((s) => s.y);
   return [...new Set(ys)].filter((y) => y >= IntMapTime.min).map((y) => july1(y).getTime());
@@ -288,6 +292,7 @@ export async function openArc(want) {
   sheet.hidden = false;
   if (!unsubClock) unsubClock = IntMapTime.on(() => { clearTimeout(paintTimer); paintTimer = setTimeout(() => { if (state.arc) paintArc(); }, 200); });
   const w = want || {};
+  if (typeof w.lang === 'function') langOf = w.lang;
   state.q = w.query || '';
   sheet.innerHTML = head(null) + '<div class="pa-body"><div class="pa-wait">' + esc(IntMapLang.t(lang(), 'Reading the index of polities…', '政体の索引を読み込み中…')) + '</div></div>';
   let idx;
@@ -301,7 +306,7 @@ export async function openArc(want) {
   if (state.arc) paintArc(); else paintList();
   return { ok: true, arc: state.arc ? state.arc.n : null };
 }
-export function closeArc() {
+function closeArc() {
   if (sheet) sheet.hidden = true;
   if (unsubClock) { try { unsubClock(); } catch (_) { /* gone */ } unsubClock = null; }
   if (unsubLapse) { try { unsubLapse(); } catch (_) { /* gone */ } unsubLapse = null; }
@@ -416,7 +421,7 @@ export async function atlas(a, K) {
   /* nothing named: the ranking */
   if (!a.name && !a.qid) {
     const top = largest(idx, 15).map((x) => ({ name: nameOf(x, lg), en: x.n, largestKm2: x.pk[1], largestYear: x.pk[0] }));
-    if (a.show) await openArc({});
+    if (a.show) await openArc({ lang: () => lg });
     return R(true, note('✓ ' + esc(L('Largest drawn extents', '描かれた面積が最大の政体'))) + '<ol style="margin:4px 0 4px 18px;padding:0;">' + top.map((x) => '<li>' + esc(x.name + ' — ' + kmWords(x.largestKm2) + ' (' + yearWords(x.largestYear, lg) + ')') + '</li>').join('') + '</ol><div>' + esc(caveat) + '</div>' + src, { meta: { polityArc: { ranking: top } } });
   }
   let arc = find(idx, { name: a.name, qid: a.qid, year: a.year });
@@ -445,7 +450,7 @@ export async function atlas(a, K) {
   else if (a.go === 'last' && D.last && D.last.y != null) { if (goYear(D.last.y)) did.push(L('clock at its last year', '時計を最後の年へ')); fit(arc.bb); }
   let lapse = null;
   if (a.play) { try { lapse = await play(idx, arc); if (lapse && lapse.playing) did.push(L('playing its life (' + lapse.total + ' frames)', '一生を再生中（' + lapse.total + ' コマ）')); } catch (_) { /* below: not playing */ } }
-  if (a.show) { await openArc({ name: arc.n, qid: (arc.q || [])[0] }); did.push(L('opened the Rise and fall sheet', '「政体の盛衰」を表示')); }
+  if (a.show) { await openArc({ name: arc.n, qid: (arc.q || [])[0], lang: () => lg }); did.push(L('opened the Rise and fall sheet', '「政体の盛衰」を表示')); }
   const lines = [
     L('First drawn: ', '描かれ始め: ') + edgeWords(idx, 'first', D.first, lg),
     L('Last drawn: ', '描かれ終わり: ') + edgeWords(idx, 'last', D.last, lg),

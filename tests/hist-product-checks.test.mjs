@@ -10,7 +10,7 @@
  *    ④ HISTORY, NAMED (.agents/rules/historical-verification.md §2-1): for polities whose founding, fall and greatest extent
  *       are well attested, the map's statement agrees with the history — and the ones that do not are written down in
  *       dev-notes/2026-10-08-hist-product.md rather than asserted here;
- *    ⑤ the search, the ranking (dated records only), `find` by Wikidata item and year, `related` with its reasons;
+ *    ⑤ the search, the ranking (dated records only), a Wikidata item chosen by year, the other names with their reasons;
  *    ⑥ Atlas `time.polityArc` returns the same facts the page shows, numbered candidates when several match, NOT_FOUND
  *       when none does — and moves nothing in either case;
  *    ⑦ the doors: the Chronos panel builds the button, a named row of «this place through time» carries one (never inside
@@ -80,27 +80,27 @@ test('④ history, named: founding, fall and greatest extent as the map states t
   assert.equal(D('Russian Empire').last.y, 1917, 'last drawn on 1 July 1917');
 });
 
-test('⑤ search, ranking, find, related', () => {
+test('⑤ search, ranking, the Wikidata item and the year, the other names (through the doors of the page and of Atlas)', async () => {
   assert.equal(P.search(IDX, 'モンゴル帝国')[0].n, 'Mongol Empire', 'Japanese name, exact');
   assert.equal(P.search(IDX, 'mongol empire')[0].n, 'Mongol Empire', 'case-insensitive');
   assert.equal(P.search(IDX, 'Q12557')[0].n, 'Mongol Empire', 'by Wikidata item');
-  const top = P.largest(IDX, 25);
-  assert.ok(top.every((a) => a.d && a.d.length), 'the ranking is the dated records\' polities');
-  for (let i = 1; i < top.length; i++) assert.ok(top[i - 1].pk[1] >= top[i].pk[1], 'largest first');
+  const K = (lang) => ({ R: (ok, html, extra) => Object.assign({ ok, html }, extra || {}), L: (en, jp) => (lang === 'jp' ? jp : en), warn: (s) => s, note: (s) => s, esc: (s) => String(s), HOST: { lang } });
+  const rank = (await P.atlas({}, K('en'))).meta.polityArc.ranking;
+  const dated = IDX.arcs.filter((a) => a.d && a.d.length);
+  assert.deepEqual(rank.map((r) => r.en), dated.slice(0, rank.length).map((a) => a.n), 'the ranking is the polities of the dated records, largest first');
+  for (let i = 1; i < rank.length; i++) assert.ok(rank[i - 1].largestKm2 >= rank[i].largestKm2);
   /* two names share Q12544: the year chooses */
-  assert.equal(P.find(IDX, { qid: 'Q12544', year: 500 }).n, 'Eastern Roman Empire');
-  assert.equal(P.find(IDX, { qid: 'Q12544', year: 1000 }).n, 'Byzantine Empire');
-  const rel = P.related(IDX, arc('Byzantine Empire'), 'en');
-  assert.ok(rel.some((r) => r.arc.n === 'Eastern Roman Empire' && r.why === 'qid' && r.qid === 'Q12544'));
+  const at = async (year) => (await P.atlas({ qid: 'Q12544', year }, K('en'))).meta.polityArc.en;
+  assert.equal(await at(500), 'Eastern Roman Empire');
+  assert.equal(await at(1000), 'Byzantine Empire');
+  const byz = (await P.atlas({ name: 'Byzantine Empire' }, K('en'))).meta.polityArc;
+  assert.ok(byz.alsoAs.some((r) => r.en === 'Eastern Roman Empire' && r.why === 'qid' && r.qid === 'Q12544'));
   /* the same-name reason is the reader's language's, and only Japanese has one to give */
-  assert.ok(P.related(IDX, arc('Empire of Japan'), 'jp').some((r) => r.why === 'name'));
-  assert.ok(!P.related(IDX, arc('Empire of Japan'), 'en').some((r) => r.why === 'name'));
-  /* the value at a year is the step the index holds */
-  const mg = arc('Mongol Empire');
-  assert.equal(P.valueAt(IDX, mg, 1279).km, mg.pk[1]);
-  assert.equal(P.valueAt(IDX, mg, 1300), null, 'not drawn after its last year');
-  /* the life is played through exactly its change years */
-  assert.equal(P.lifeInstants(IDX, mg).length, new Set(mg.d.map((p) => p[0])).size);
+  assert.ok((await P.atlas({ name: 'Empire of Japan' }, K('jp'))).meta.polityArc.alsoAs.some((r) => r.why === 'name'));
+  assert.ok(!(await P.atlas({ name: 'Empire of Japan' }, K('en'))).meta.polityArc.alsoAs.some((r) => r.why === 'name'));
+  /* the years its drawing changes are the index's points */
+  const mg = IDX.arcs.find((a) => a.n === 'Mongol Empire');
+  assert.deepEqual((await P.atlas({ name: 'Mongol Empire' }, K('en'))).meta.polityArc.changeYears, mg.d.map((p) => p[0]));
 });
 
 test('⑥ Atlas time.polityArc: the page\'s facts; candidates or NOT_FOUND move nothing', async () => {
@@ -118,11 +118,11 @@ test('⑥ Atlas time.polityArc: the page\'s facts; candidates or NOT_FOUND move 
   const go = await P.atlas({ name: 'Roman Empire', go: 'peak' }, K);
   assert.equal(go.ok, true); assert.equal(moved, 1, 'go:"peak" moves the clock once');
   const rank = await P.atlas({}, K);
-  assert.equal(rank.meta.polityArc.ranking[0].en, P.largest(IDX, 1)[0].n);
+  assert.equal(rank.meta.polityArc.ranking[0].en, IDX.arcs.find((a) => a.d && a.d.length).n);
 });
 
 test('⑦ the doors: Chronos, the place card\'s rows (not in a button, not in Atlas\'s bubble), the capability row', async () => {
-  assert.match(rd('js/news-timeline.js'), /id='ntl-polityarc'[\s\S]{0,400}import\('\.\/polity-arc\.js'\)\.then\(m=>m\.openArc\(\{\}\)\)/);
+  assert.match(rd('js/news-timeline.js'), /id='ntl-polityarc'[\s\S]{0,400}import\('\.\/polity-arc\.js'\)\.then\(m=>m\.openArc\(\{ lang:\(\)=>HOST\.lang \}\)\)/);
   assert.match(rd('js/place-dossier.js'), /k\.indexOf\('pharc:'\) === 0[\s\S]{0,700}import\('\.\/polity-arc\.js'\)\.then\(\(m\) => m\.openArc\(/);
   const PH = await importModule('js/place-history.js', { mocks: { 'js/chronos.js': { IntMapTime: clock } } });
   const E = { key: 'q:Q12557', name: 'Mongol Empire', labels: [{ k: 12060101, label: 'Mongol Empire' }], from: { k: 12060101, edge: 'stated', tier: 'clio' }, to: { k: 12940101, edge: 'stated', tier: 'clio' },

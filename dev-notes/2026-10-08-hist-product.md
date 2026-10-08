@@ -74,3 +74,15 @@ newsjp: 政体の盛衰——歴史地図が描く 4,448 の政体（モンゴ�
   **緑**（共有ページ上で本体 5.3〜7.3 秒）。⚠ **追跡には入れていない**: 全 spec の合計が天井 5,250 秒ちょうどで、
   この spec を足すと 5,256 秒になり `check:testbudget` が赤になる。天井は上げず、別の spec を速くして払う作業は
   この依頼の範囲外なので、spec は残りの問題として報告した（どこかで 6 秒払えば、そのまま足せる）。
+
+## 6. 門が求めた 2 つの記録（CI の指摘への対応）
+
+- **`window.IntMapSafe` の読み 1 件増（150 → 151、`js/polity-arc.js` の `esc`）**: 輸入の口が無い。`js/safe-html.js` は
+  `admin.html` が classic script としても読む IIFE で、`export` を足すと classic 側が壊れる。ファイルの冒頭で 1 回だけ読み、
+  他の箇所はその `esc` を使う（2 件あったのを 1 件に）。言語は `window.IntMapI18N` を読まず、扉（Chronos・地点カード・Atlas）から
+  `lang` を渡す。`node scripts/global-surface.mjs --update` で記録した。
+- **出自の台帳に 2 件（`data/polity-arcs`・`scripts/build-polity-arcs.mjs → data/polity-arcs.json`）**: 出自は値で宣言している
+  （`GOVERNANCE` の `upstreams` 4 件・`cadence: static` と根拠・`builtBy`・`schema`。同じ値を束の先頭にも書く）。残る 14 の facet が
+  埋まらない理由は構造にある: 束は 4 つの上流から導出した 1 つの索引で、単一の publisher・licence・paidBy は無く（上流ごとに
+  `upstreams` に書いた）、取得日は無い（上流を読まず、同梱の束から作る）。integrity と precedence の数は測っていない（重なりの
+  優先は地図の合成の順で、`js/time-borders.js` が決める）。`node scripts/data-governance.mjs --update` で記録した。

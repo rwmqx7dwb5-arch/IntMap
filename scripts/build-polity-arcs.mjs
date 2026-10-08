@@ -199,7 +199,11 @@ export async function build(opt = {}) {
   }
   /* largest drawn extent first, then by name — the order the sheet lists them in when nothing is asked */
   arcs.sort((a, b) => b.pk[1] - a.pk[1] || (a.n < b.n ? -1 : a.n > b.n ? 1 : 0));
+  /* the file states its own provenance first (the facets js/data-governance.js read() looks for in a bundle's head), from the
+     one declaration above — no second spelling of it */
+  const G = GOVERNANCE[OUT];
   return {
+    upstreams: G.upstreams, cadence: G.cadence, builtBy: G.builtBy, schema: G.schema,
     v: V, recs: DATED, src,
     instants: { sheets: [...sheetYears].filter((y) => y <= B.csTo).sort((a, b) => a - b), clioFrom: clio.window[0], dayFrom: B.ohmFrom, csFrom: B.csFrom, to: B.csTo, at: 'July 1' },
     skipped, arcs,

@@ -702,7 +702,7 @@ function ensureCard(HOST) {
         if (E) {
           const qid = (E.ids || []).map((x) => x.id && x.id.qid).filter(Boolean);
           const y = Math.floor(E.from.k / 10000);
-          import('./polity-arc.js').then((m) => m.openArc({ name: E.name, qid, year: y })).catch(() => { /* the sheet could not be loaded */ });
+          import('./polity-arc.js').then((m) => m.openArc({ name: E.name, qid, year: y, lang: () => { try { return H.lang || 'en'; } catch (_) { return 'en'; } } })).catch(() => { /* the sheet could not be loaded */ });
         }
       }
       else if (k.indexOf('ph:') === 0 || k.indexOf('pha:') === 0) {
