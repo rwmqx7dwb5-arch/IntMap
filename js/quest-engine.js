@@ -15,6 +15,8 @@
  *  questions on every device, which is what a challenge link (`?quest=<kind>.<seed>.<n>`) promises a class —
  *  everybody answers the same questions. The data is part of the input: a rebuilt gazetteer or day index can
  *  give an old seed a different list (the link still opens; it is the build's list).
+ *  A seed may MEAN something: `d<YYYY>-<MM>-<DD>` is that calendar day's set (THE DAY'S SET below — today's quest,
+ *  kept with its streak by js/quest-daily.js).
  *
  *  THE KINDS (a registry — one entry per kind, every list below derived from it):
  *    where  «tap this city on the map» — GeoNames settlements from data/gazetteer-phone.json.gz (CC BY 4.0),
@@ -193,11 +195,22 @@ const when = {
   id: 'when',
   title: LA('Guess the year', '年代当て'),
   needs: ['onThisDay'],
-  generate(rng, data, n) {
+  /* `ctx.day` (a DAY'S SET — see «THE DAY'S SET» below): the events the record dates on that calendar day are asked
+     first, in the generator's order, and the rest of the pool fills the set. A set without a day is the original draw,
+     untouched — so every challenge link made before the day's set existed still gives the questions it gave. */
+  generate(rng, data, n, ctx) {
     const idx = data && data.onThisDay, pool = whenEvents(idx);
     const span = (idx && idx.span) || null;
     if (!pool.length || !span) return [];
-    return pickIndices(rng, pool.length, n).map((j, i) => {
+    const md = ctx && ctx.day ? ctx.day.md : null;
+    let order;
+    if (md) {
+      const first = [], rest = [];
+      pool.forEach((e, j) => (e.md === md ? first : rest).push(j));
+      order = pickIndices(rng, first.length, first.length).map((k) => first[k])
+        .concat(pickIndices(rng, rest.length, rest.length).map((k) => rest[k])).slice(0, n);
+    } else order = pickIndices(rng, pool.length, n);
+    return order.map((j, i) => {
       const e = pool[j];
       return { kind: 'when', i, md: e.md, k: e.k, d: e.ev.d, src: e.ev.src, year: yearOfIso(e.ev.d), span: { from: +span.from, to: +span.to },
         text: e.words.text, record: e.words.record, war: e.words.war, view: viewOf(e.ev), layer: warLayerOf(e.ev) };
@@ -234,10 +247,71 @@ export function makeQuestEngine(deps) {
       const K = kinds[kind];
       if (!K) return [];
       const count = Math.max(0, Math.floor(+n) || 0);
-      return K.generate(rngFor(kind, seed), data || {}, count);
+      /* the seed's own meaning travels with it: a day's seed tells the kind which calendar day it is for */
+      return K.generate(rngFor(kind, seed), data || {}, count, { day: dailyOf(seed) });
     },
     score(q, a) { const K = q && kinds[q.kind]; return K ? K.score(q, a) : { points: 0, max: QUEST_MAX, detail: { unknownKind: true } }; },
   };
+}
+
+/* ══ THE DAY'S SET — one set per kind per calendar day, the same for everyone on that day   (watch-account-product) ══
+   A reason to come back tomorrow that IntMap can only make because it has a clock: every calendar day has its own
+   set of each kind, and the `when` set asks first about what the record dates on THAT day of the year (so 8 October's
+   set opens on 8 October of some year — js/on-this-day.js's index, cut by the day).
+   · THE SEED SAYS THE DAY. A day's set is the ordinary deterministic set of the seed `d<YYYY>-<MM>-<DD>` — the
+     READER'S calendar day, as on a wall calendar — and DAILY_N questions. So it needs no server and no list of puzzles:
+     everyone whose calendar shows that day gets the same questions, and its challenge link is an ordinary challenge link
+     (`?quest=when.d2026-10-08.5`). A friend's link opened on another day is a challenge, not that day's set.
+   · ⚠ §4 of .agents/rules/no-ad-hoc-hardcoding.md, for DAILY_N:
+       1. observation — 5 is the panel's own default length (js/quest-panel.js `menuN`), the shorter of the two lengths
+          it offers: one day's set is a few minutes, not a lesson. A CHOICE, not a measurement.
+       2. expiry      — changing it changes every later day's set and makes their scores incomparable with the old
+                        days'; the account's table (supabase/migrations/20261008090000_quest_daily.sql) holds exactly
+                        this many scores per row, so the two change together (tests/watch-account-product-checks.test.mjs).
+       3. source      — this line. */
+export const DAILY_N = 5;
+const DAILY_RE = /^d(\d{4})-(\d{2})-(\d{2})$/;
+const pad2 = (v) => String(v).padStart(2, '0');
+/** 'YYYY-MM-DD' of a Date on the READER'S calendar (local fields), or null */
+export function dayOf(date) {
+  const d = date instanceof Date ? date : new Date(date);
+  return isNaN(d.getTime()) ? null : d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+}
+/** a real calendar day 'YYYY-MM-DD' → { day, md }, or null (30 February is not a day) */
+export function parseDay(day) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(day || ''));
+  if (!m) return null;
+  const t = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+  if (t.getUTCFullYear() !== +m[1] || t.getUTCMonth() !== +m[2] - 1 || t.getUTCDate() !== +m[3]) return null;
+  return { day: m[1] + '-' + m[2] + '-' + m[3], md: m[2] + '-' + m[3] };
+}
+/** the seed of a day's set */
+export function dailySeed(day) { const p = parseDay(day); return p ? 'd' + p.day : null; }
+/** a seed read back → { day, md } when it is a day's seed, else null */
+export function dailyOf(seed) { const m = DAILY_RE.exec(String(seed || '')); return m ? parseDay(m[1] + '-' + m[2] + '-' + m[3]) : null; }
+/** is (kind, seed, n) the day's set of `today` ('YYYY-MM-DD')? — the one test of «this result counts for today» */
+export function isDailySet(kind, seed, n, today) {
+  const d = dailyOf(seed);
+  return !!d && QUEST_KIND_IDS.indexOf(kind) >= 0 && Math.floor(+n) === DAILY_N && d.day === today;
+}
+/** 'YYYY-MM-DD' moved by k calendar days (calendar arithmetic on UTC noon — no time zone, no daylight saving) */
+export function addDays(day, k) {
+  const p = parseDay(day); if (!p) return null;
+  const [y, m, d] = p.day.split('-').map(Number), t = new Date(Date.UTC(y, m - 1, d + Math.trunc(+k || 0), 12));
+  return t.getUTCFullYear() + '-' + pad2(t.getUTCMonth() + 1) + '-' + pad2(t.getUTCDate());
+}
+/** The streak over the days a day's set was finished (any kind), seen from `today`:
+ *  { current, best, playedToday }. `current` runs back from today — or from yesterday while today's set is still open,
+ *  so a streak is not called broken in the morning of the day that would continue it. */
+export function dailyStreak(days, today) {
+  const set = new Set((days || []).map((d) => (parseDay(d) || {}).day).filter(Boolean));
+  const sorted = Array.from(set).sort();
+  let best = 0, run = 0, prev = null;
+  sorted.forEach((d) => { run = prev && addDays(prev, 1) === d ? run + 1 : 1; best = Math.max(best, run); prev = d; });
+  const playedToday = set.has(today);
+  let current = 0, at = playedToday ? today : addDays(today, -1);
+  while (at && set.has(at)) { current++; at = addDays(at, -1); }
+  return { current, best, playedToday };
 }
 
 /* ══ THE CHALLENGE LINK — `?quest=<kind>.<seed>.<n>` (the page's mode, beside `?tour=` — js/map-state.js address) ══ */

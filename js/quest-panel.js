@@ -10,6 +10,10 @@
  *              the page that says it prints the map's year or date ([data-prints-map-time]) is hidden by ONE class on <body>
  *              while the question is open. The answer is a year; the reveal takes the class off, so the clock
  *              itself then shows the day the record states.
+ *  TODAY'S QUEST (watch-account-product): the menu opens on today's set of each kind (js/quest-engine.js «THE DAY'S SET»),
+ *  the streak and the last week (js/quest-daily.js); the first finish of a day's set is recorded — in this browser,
+ *  and in the account when signed in — and a replay is practice. The account sheet's «Today's quest» row
+ *  (js/auth-ui.js) and Atlas (`learn.daily`) open the same menu and sets.
  *  Doors: the quiz menu (js/analysis-edu.js), Layers ▸ Tools (js/map-ui.js SIM_TOOLS), a challenge link
  *  (`?quest=<kind>.<seed>.<n>` — src/main.js, beside `?tour=`), and Atlas (`learn.quest`, js/atlas-cap-learn.js),
  *  which reads `questState()` after it acts (.agents/rules/one-pass-or-a-reason.md — the observer asks the module).
@@ -29,7 +33,8 @@ import * as bus from './bus.js';
 import './safe-html.js';
 import * as OTD from './on-this-day.js';
 import { nameItems } from './layer-manifest.js';   /* the display rows that write names — their own declaration (`names`) */
-import { makeQuestEngine, QUEST_KIND_IDS, QUEST_DATA, kindTitle, kindNeeds, questQuery, questFromSearch, newSeed, SEED_RE } from './quest-engine.js';
+import { makeQuestEngine, QUEST_KIND_IDS, QUEST_DATA, kindTitle, kindNeeds, questQuery, questFromSearch, newSeed, SEED_RE, DAILY_N, dailySeed, isDailySet, parseDay } from './quest-engine.js';
+import * as DAILY from './quest-daily.js';   /* (watch-account-product) today's quest — the day's results, the streak, where they are kept */
 
 const GE = () => IntMapGeoEngine;
 const H = (s) => globalThis.IntMapSafe.html(String(s == null ? '' : s));
@@ -69,7 +74,8 @@ const engine = makeQuestEngine({
 });
 
 /* ══ STATE — one quest at a time ═════════════════════════════════════════════════════════════════ */
-/** @type {null|{ kind:string, seed:string, n:number, qs:any[], i:number, phase:'ask'|'shown'|'done', results:any[], answer:any }} */
+/** @type {null|{ kind:string, seed:string, n:number, qs:any[], i:number, phase:'ask'|'shown'|'done', results:any[], answer:any, newBest?:boolean,
+ *   daily:null|{ day:string, practice:boolean, record?:any } }} */
 let Q = null;
 let panel = null, saved = null, clickOn = false, langOff = null, menuN = 5;
 const SRC = 'quest-answer-src', L_LINE = 'quest-answer-line', L_PT = 'quest-answer-pt';
@@ -80,7 +86,8 @@ export function questState() {
   if (!Q) return { open, kind: null, seed: null, n: 0, index: 0, of: 0, phase: open ? 'menu' : 'closed', points: 0, max: 0, link: '' };
   const pts = Q.results.reduce((s, r) => s + (r ? r.points : 0), 0), max = Q.results.reduce((s, r) => s + (r ? r.max : 0), 0);
   return { open, kind: Q.kind, seed: Q.seed, n: Q.n, index: Math.min(Q.i + 1, Q.qs.length), of: Q.qs.length, phase: Q.phase,
-    points: pts, max, link: questLink(Q.kind, Q.seed, Q.n), blind: document.body.classList.contains(BLIND_CLASS) };
+    points: pts, max, link: questLink(Q.kind, Q.seed, Q.n), blind: document.body.classList.contains(BLIND_CLASS),
+    daily: Q.daily ? { day: Q.daily.day, practice: !!Q.daily.practice, record: Q.daily.record || null } : null };
 }
 /** the challenge link of (kind, seed, n): this page's address with the quest as its query */
 export function questLink(kind, seed, n) {
@@ -230,12 +237,78 @@ function paintMenu() {
       + (b != null ? ' · ' + H(t('best ', '自己ベスト ')) + H(b) : '') + '</small></span></button>';
   }).join('');
   p.innerHTML = header(H(t('Questions made from the map’s own data. Every answer is shown on the map.', '地図自身のデータから作る問題です。答えはどれも地図で示します。')))
+    + '<div class="qst-today" id="qst-today">' + todayHTML(summary) + '</div>'
+    + '<div class="qst-sec">' + H(t('Any time', 'いつでも')) + '</div>'
     + '<div class="qst-kinds">' + kinds + '</div>'
     + '<label class="qst-n">' + H(t('Questions per set', '1 回の問題数')) + ' <select id="qst-n"><option value="5">5</option><option value="10">10</option></select></label>';
   wire();
+  wireToday();
   const sel = /** @type {HTMLSelectElement} */ (p.querySelector('#qst-n')); sel.value = String(menuN);
   sel.addEventListener('change', () => { menuN = +sel.value || 5; paintMenu(); });
   p.querySelectorAll('.qst-kind').forEach((b) => b.addEventListener('click', () => { startQuest({ kind: b.getAttribute('data-kind'), n: menuN }); }));
+  refreshToday();
+}
+
+/* ══ TODAY'S QUEST — the menu's first block (watch-account-product) ════════════════════════════════════
+   Drawn at once from what is known (the last summary, or nothing yet), then again when js/quest-daily.js has read
+   this browser and the account. A summary is never invented: until it arrives the block names today and offers the
+   two sets, and it says nothing about a streak. */
+/** @type {any} the last js/quest-daily.js dailySummary() — null until one arrives */
+let summary = null, summaryAsk = 0;
+function refreshToday() {
+  const ask = ++summaryAsk;
+  DAILY.dailySummary(HOST).then((s) => {
+    if (ask !== summaryAsk) return;   /* a newer read is on its way */
+    summary = s;
+    const slot = panel && panel.querySelector('#qst-today');
+    if (slot && !Q) { slot.innerHTML = todayHTML(s); wireToday(); }
+  }).catch(() => { /* the block keeps what it showed — the sets can still be played */ });
+}
+const fmt = (v) => Number(v).toLocaleString(lang() === 'jp' ? 'ja-JP' : 'en-GB');
+function dayLong(day) {
+  const p = parseDay(day); if (!p) return day;
+  const [y] = p.day.split('-');
+  return lang() === 'jp' ? y + '年' + OTD.dayWords(p.md, 'jp') : OTD.dayWords(p.md, 'en') + ' ' + y;
+}
+function streakWords(st) {
+  if (!st) return '';
+  if (st.current > 0 && st.playedToday) return t(st.current + '-day streak', '連続 ' + st.current + ' 日') + (st.best > st.current ? ' · ' + t('best ' + st.best, '最長 ' + st.best + ' 日') : '');
+  if (st.current > 0) return t(st.current + '-day streak — play today for day ' + (st.current + 1), '連続 ' + st.current + ' 日 · 今日解くと ' + (st.current + 1) + ' 日目');
+  return st.best > 0 ? t('Best streak ' + st.best + ' days — play today to start a new one', '最長 ' + st.best + ' 日 · 今日解くと新しい連続記録が始まります')
+    : t('Play today to start a streak', '今日解くと連続記録が始まります');
+}
+function todayHTML(s) {
+  const day = s ? s.today : DAILY.today();
+  const kinds = QUEST_KIND_IDS.map((k) => {
+    const done = s && s.todayKinds[k];
+    const sub = done ? t('Today’s result ', '今日の記録 ') + fmt(done.points) + ' / ' + fmt(done.max) + ' · ' + t('playing again is practice', 'もう一度は練習')
+      : k === 'when' ? t(DAILY_N + ' questions — first, what the record dates on this day of the year', DAILY_N + ' 問。記録に今日の日付の出来事があれば、それから')
+      : t(DAILY_N + ' cities, the same for everyone today', DAILY_N + ' 都市。今日は全員が同じ問題');
+    return '<button type="button" class="ai-test-btn qst-kind qst-daily' + (done ? ' done' : '') + '" data-daily="' + H(k) + '">' + icon(done ? 'check' : (k === 'when' ? 'clock' : 'pin')) + ' <span><b>'
+      + H(t('Today’s ', '今日の') + kindTitle(k, lang())) + '</b><small>' + H(sub) + '</small></span></button>';
+  }).join('');
+  const strip = s ? '<div class="qst-week" aria-label="' + H(t('The last ' + s.recent.length + ' days: played on ' + s.recent.filter((r) => r.played).length, '最近 ' + s.recent.length + ' 日のうち ' + s.recent.filter((r) => r.played).length + ' 日')) + '">'
+    + s.recent.map((r) => '<span class="qst-wd' + (r.played ? ' on' : '') + (r.day === s.today ? ' now' : '') + '" title="' + H(r.day + (r.played ? ' · ' + fmt(r.points) : '')) + '"><i></i>' + H(+r.day.slice(8)) + '</span>').join('')
+    + '</div>' : '';
+  const where = !s ? '' : s.account === 'ok'
+    ? t('Kept in your account — the same streak on every device.', 'アカウントに記録しています。どの端末でも同じ連続記録です。') + (s.synced ? ' ' + t(s.synced + ' result(s) from this browser were added to your account.', 'このブラウザの記録 ' + s.synced + ' 件をアカウントに追加しました。') : '')
+    : DAILY.dailyFailureText(s.account, lang());
+  return '<div class="qst-today-h"><span>' + H(t('Today’s quest', '今日のクエスト')) + '</span><span class="qst-today-d">' + H(dayLong(day)) + '</span></div>'
+    + (s ? '<div class="qst-streak">' + H(streakWords(s.streak)) + '</div>' : '')
+    + strip + '<div class="qst-kinds">' + kinds + '</div>'
+    + (where ? '<div class="qst-store">' + H(where) + '</div>' : '');
+}
+function wireToday() {
+  if (!panel) return;
+  panel.querySelectorAll('.qst-daily').forEach((b) => b.addEventListener('click', () => { openToday({ kind: b.getAttribute('data-daily') }); }));
+}
+/** the line the reader can paste anywhere: the day, the kind, the total, the streak, each question's score and the link */
+function dailyShareText(st) {
+  const scores = Q.results.map((r) => (r ? r.points : 0));
+  const streak = summary && summary.today === Q.daily.day ? summary.streak.current : 0;
+  return 'IntMap · ' + t('Today’s quest', '今日のクエスト') + ' · ' + kindTitle(Q.kind, lang()) + ' · ' + dayLong(Q.daily.day) + '\n'
+    + fmt(st.points) + ' / ' + fmt(st.max) + (streak > 0 && !Q.daily.practice ? ' · ' + t(streak + '-day streak', '連続 ' + streak + ' 日') : '') + '\n'
+    + scores.join(' · ') + '\n' + st.link;
 }
 function progress() {
   const r = Q.results, pts = r.reduce((s, x) => s + (x ? x.points : 0), 0);
@@ -295,12 +368,14 @@ function paintDone() {
       + (q.kind === 'when' ? '<button type="button" class="qst-open" data-i="' + H(i) + '">' + H(t('Open this day', 'この日の地図')) + '</button>' : '') + '</li>';
   }).join('');
   const share = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
-  p.innerHTML = header(H(kindTitle(Q.kind, lang())))
+  p.innerHTML = header(H(Q.daily ? t('Today’s ', '今日の') + kindTitle(Q.kind, lang()) + ' · ' + dayLong(Q.daily.day) : kindTitle(Q.kind, lang())))
     + '<div class="qst-total"><b>' + H(st.points) + '</b> / ' + H(st.max) + (Q.newBest ? '<span>' + H(t('New personal best', '自己ベスト更新')) + '</span>' : (best != null ? '<span>' + H(t('Best ', '自己ベスト ')) + H(best) + '</span>' : '')) + '</div>'
+    + (Q.daily ? dailyDoneHTML() : '')
     + '<ol class="qst-list">' + rows + '</ol>'
     + '<div class="qst-share"><div class="qst-share-h">' + icon('link') + ' ' + H(t('Challenge link — everyone who opens it gets these same questions', '挑戦リンク——開いた人は全員この同じ問題を解きます')) + '</div>'
     + '<input type="text" readonly id="qst-link" value="' + H(st.link) + '" aria-label="' + H(t('Challenge link', '挑戦リンク')) + '">'
     + '<div class="qst-acts"><button type="button" class="ai-test-btn" id="qst-copy">' + icon('clipboard') + ' ' + H(t('Copy', 'コピー')) + '</button>'
+    + (Q.daily ? '<button type="button" class="ai-test-btn" id="qst-copyres">' + icon('clipboard') + ' ' + H(t('Copy the result', '結果をコピー')) + '</button>' : '')
     + (share ? '<button type="button" class="ai-test-btn" id="qst-sharebtn">' + icon('share') + ' ' + H(t('Share…', '共有…')) + '</button>' : '') + '</div></div>'
     + '<div class="qst-acts"><button type="button" class="ai-test-btn qst-go" id="qst-again">' + H(t('New set', '新しい問題で')) + '</button>'
     + '<button type="button" class="ai-test-btn" id="qst-menu">' + H(t('Other quests', 'ほかのクエスト')) + '</button></div>';
@@ -314,7 +389,16 @@ function paintDone() {
     copy.innerHTML = done ? icon('check') + ' ' + H(t('Copied', 'コピーしました')) : H(t('Selected — copy it', '選択しました。コピーしてください'));
   });
   const sh = p.querySelector('#qst-sharebtn');
-  if (sh) sh.addEventListener('click', async () => { try { await navigator.share({ title: t('IntMap learn quest', 'IntMap 学ぶクエスト') + ' · ' + kindTitle(Q.kind, lang()), url: st.link }); } catch (_) { /* the reader closed the sheet */ } });
+  if (sh) sh.addEventListener('click', async () => { try { await navigator.share(Q && Q.daily ? { title: t('IntMap today’s quest', 'IntMap 今日のクエスト'), text: dailyShareText(st).replace(/\n[^\n]*$/, ''), url: st.link }
+    : { title: t('IntMap learn quest', 'IntMap 学ぶクエスト') + ' · ' + kindTitle(Q.kind, lang()), url: st.link }); } catch (_) { /* the reader closed the sheet */ } });
+  /* (watch-account-product) a day's set: its result as one paste — the day, the total, the streak, every score, the link */
+  const res = p.querySelector('#qst-copyres');
+  if (res) res.addEventListener('click', async () => {
+    const text = dailyShareText(st);
+    let done = false;
+    try { if (navigator.clipboard && navigator.clipboard.writeText) { await navigator.clipboard.writeText(text); done = true; } } catch (_) { done = false; }
+    res.innerHTML = done ? icon('check') + ' ' + H(t('Copied', 'コピーしました')) : H(t('Could not copy — the link above can be copied', 'コピーできませんでした。上のリンクはコピーできます'));
+  });
   const again = p.querySelector('#qst-again'); if (again) again.addEventListener('click', () => startQuest({ kind: Q.kind, n: Q.n }));
   const menu = p.querySelector('#qst-menu'); if (menu) menu.addEventListener('click', () => { endSet(); paintMenu(); });
   p.querySelectorAll('.qst-open').forEach((b) => b.addEventListener('click', async () => {
@@ -352,6 +436,37 @@ function next() {
   Q.phase = 'done'; blind(false);
   Q.newBest = keepBest(Q.kind, Q.n, questState().points);
   paint();
+  if (Q.daily && !Q.daily.practice) recordToday(Q);
+}
+/* (watch-account-product) THE FIRST FINISH OF A DAY'S SET IS RECORDED — in this browser, and in the account when signed
+   in (js/quest-daily.js recordDay). What the record said is shown where the result is (dailyDoneHTML), then the
+   summary is read again so the streak on screen is the one the stores now hold. */
+async function recordToday(set) {
+  set.daily.record = { pending: true };
+  const scores = set.results.map((r) => (r ? r.points : 0));
+  let rec;
+  try { rec = await DAILY.recordDay(HOST, { day: set.daily.day, kind: set.kind, scores }); }
+  catch (_) { rec = { ok: false, local: 'invalid', account: 'failed' }; }
+  set.daily.record = rec;
+  /* recorded nowhere new: this day and kind already had its result (another tab, another device) — this was practice */
+  if (rec.local === 'already' && rec.account !== 'saved') set.daily.practice = true;
+  try { summary = await DAILY.dailySummary(HOST, { sync: false }); } catch (_) { /* the streak line waits for the next read */ }
+  if (Q === set && Q.phase === 'done') paint();
+}
+function dailyDoneHTML() {
+  const d = Q.daily, rec = d.record;
+  let line;
+  if (!rec || rec.pending) line = d.practice ? t('Practice — today’s result was already recorded.', '練習です（今日の記録はすでにあります）。') : t('Recording today’s result…', '今日の記録を保存しています…');
+  else if (d.practice) line = t('Practice — today’s result was already recorded, so this one is not.', '練習です。今日の記録はすでにあるので、この回は記録しません。');
+  else if (rec.local === 'invalid') line = t('This set could not be recorded (it did not have ' + DAILY_N + ' questions).', 'このセットは記録できませんでした（' + DAILY_N + ' 問ありませんでした）。');
+  else {
+    const st = summary && summary.today === d.day ? summary.streak : null;
+    line = t('Recorded as today’s result.', '今日の記録に入りました。') + (st && st.current ? ' ' + t(st.current + '-day streak.', '連続 ' + st.current + ' 日。') : '');
+  }
+  const where = !rec || rec.pending || d.practice ? '' : rec.account === 'saved' || rec.account === 'already' ? t('Kept in your account.', 'アカウントに保存しました。')
+    : rec.local === 'no_storage' && rec.account === 'signed_out' ? t('This browser would not keep it, and you are not signed in — it is shown here only.', 'このブラウザに保存できず、ログインもしていないため、ここに表示するだけです。')
+    : DAILY.dailyFailureText(rec.account, lang());
+  return '<div class="qst-dres' + (d.practice ? ' practice' : '') + '">' + H(line) + (where ? '<small>' + H(where) + '</small>' : '') + '</div>';
 }
 function endSet() { Q = null; blind(false); unnamed(false); holdTaps(false); clearDrawing(); }
 
@@ -372,10 +487,27 @@ export async function startQuest(o) {
     return { ok: false, reason: 'data', detail: String((e && e.message) || e) }; }
   if (!qs.length) { Q = null; paintMenu(); return { ok: false, reason: 'no-questions' }; }
   remember();
-  Q = { kind, seed, n, qs, i: 0, phase: 'ask', results: [], answer: null };
+  /* (watch-account-product) is this today's set? — the one test (js/quest-engine.js isDailySet), whatever door opened it:
+     the menu, Atlas, or a friend's link to today's set. A day and kind that already has its result is practice from the start. */
+  const day = DAILY.today();
+  const daily = isDailySet(kind, seed, n, day) && qs.length === DAILY_N ? { day, practice: playedToday(kind, day) } : null;
+  Q = { kind, seed, n, qs, i: 0, phase: 'ask', results: [], answer: null, daily };
   ask();
   return Object.assign({ ok: true }, questState());
 }
+/** has `kind`'s set of `day` already got its result — in this browser, or in the account as last read? */
+function playedToday(kind, day) {
+  if (DAILY.localRows().some((r) => r.day === day && r.kind === kind)) return true;
+  return !!(summary && summary.today === day && summary.todayKinds[kind]);
+}
+/** (watch-account-product) Start today's set of `o.kind` (default: the year quest) — the menu's «Today's …» buttons,
+ *  the account sheet and Atlas (`learn.daily`). Resolves like startQuest(). */
+export async function openToday(o) {
+  const kind = String((o && o.kind) || 'when');
+  return startQuest({ kind, seed: dailySeed(DAILY.today()), n: DAILY_N });
+}
+/** today's set's challenge link for `kind` — what a reader sends a friend so they play the same day's questions */
+export function todayLink(kind) { return questLink(kind || 'when', dailySeed(DAILY.today()), DAILY_N); }
 /** Open the panel: the kinds to choose from, or — given `o.kind` — a set straight away */
 export async function openQuest(o) {
   if (o && o.kind) return startQuest(o);
@@ -455,5 +587,22 @@ const CSS = [
   '.qst .qst-share-h{font-size:12px;font-weight:600;margin-bottom:6px;line-height:1.4;}',
   '.qst #qst-link{width:100%;box-sizing:border-box;padding:6px 8px;border-radius:8px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font:inherit;font-size:11.5px;}',
   '.qst .qst-acts{display:flex;gap:8px;}',
+  /* (watch-account-product) today's quest — the menu's first block and the line under a day's result */
+  '.qst .qst-today{padding:10px 12px 12px;margin:0 0 10px;border-radius:14px;background:var(--input-bg);border:1px solid rgba(128,128,128,0.18);}',
+  '.qst .qst-today-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px;font-size:13px;font-weight:700;}',
+  '.qst .qst-today-d{font-size:11.5px;font-weight:600;color:var(--text-muted);font-variant-numeric:tabular-nums;}',
+  '.qst .qst-streak{font-size:12.5px;font-weight:600;color:var(--primary-color);margin:4px 0 6px;line-height:1.4;}',
+  '.qst .qst-week{display:flex;justify-content:space-between;gap:4px;margin:0 0 8px;}',
+  '.qst .qst-wd{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:var(--text-muted);font-variant-numeric:tabular-nums;}',
+  '.qst .qst-wd i{display:block;width:14px;height:14px;border-radius:50%;border:1.5px solid rgba(128,128,128,0.45);box-sizing:border-box;}',
+  '.qst .qst-wd.on i{background:var(--primary-fill);border-color:var(--primary-fill);}',
+  '.qst .qst-wd.now{color:var(--text-main);font-weight:700;}',
+  '.qst .qst-today .qst-kind{background:var(--card-bg);}',
+  '.qst .qst-daily.done small{color:var(--primary-color);}',
+  '.qst .qst-store{font-size:11px;color:var(--text-muted);line-height:1.45;margin-top:6px;}',
+  '.qst .qst-sec{font-size:11.5px;font-weight:600;color:var(--text-muted);margin:2px 2px 6px;}',
+  '.qst .qst-dres{font-size:12.5px;font-weight:600;line-height:1.45;padding:8px 10px;margin:0 0 8px;border-radius:10px;background:rgba(52,199,89,0.12);}',
+  '.qst .qst-dres.practice{background:var(--input-bg);}',
+  '.qst .qst-dres small{display:block;font-size:11.5px;font-weight:400;color:var(--text-muted);margin-top:2px;}',
   '@media (max-width:640px){#quest-panel.qst{top:auto;bottom:calc(12px + var(--safe-bottom));max-height:58dvh;}}',
 ].join('\n');

@@ -339,6 +339,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["time.borderSource","borderSource","borderProvenance,lineSource,whyThisBorder,boundarySource","time","none","","explanation","read","none","place?",""],
       ["time.thenNow","thenNow","thenAndNow,swipeCompare,compareThenNow","time","timeView","panel.compare,time.compare,time","panel,time","session","none","",""],
       ["time.placeHistory","placeHistory","placeThroughTime,whoRuledHere,sovereigntyTimeline,formerPolities","time","none","","explanation","read","none","point",""],
+      ["learn.daily","dailyQuest","todayQuest,dailyChallenge,questStreak,dailyStreak","panel","none","panel.quest,map.quest,camera,time","panel","session","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 

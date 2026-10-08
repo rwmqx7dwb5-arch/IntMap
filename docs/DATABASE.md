@@ -44,6 +44,7 @@ is the human explanation.
 | `user_prefs` | Per-user synced settings blob (`data` jsonb). | Owner. | Owner. |
 | `saved_places` *(my-places)* | An account's **saved places** — `name` (1-120), `note` (≤2000), `collection` (≤60), `lng`/`lat` (CHECK on the globe), `zoom`, `source` (`reader`/`pin`/`search`/`atlas`), `created_at`/`updated_at` (the database's: no client grant on `created_at`, a trigger stamps `updated_at`). **One row per position per account**: `lng5`/`lat5` are generated `round(…, 5)` (~1 m — the session pins' identity) under `unique (user_id, lng5, lat5)`. | Owner. | **INSERT only through `save_place()`** (no INSERT grant); the owner UPDATEs `name`/`note`/`collection`/`lng`/`lat`/`zoom` (column grant — not `user_id`, not `created_at`) and DELETEs own rows. |
 | `place_watches` *(watch-places)* | **Watched places** — one row per saved place (`place_id` PK → `saved_places`, cascade): `radius_km` (≤1000, default 300), a threshold per kind — `quake_min_mag` (≥2.5, default 4.5), `alert_min_level` (1–4, default 2), `volcano_min_rank` (1–4, default 2), `news_min_sources` (1–50, default 2); **NULL = that kind is not watched** — `enabled`, and what the reader has seen (`seen_at`, `seen_keys` ≤ 2,000). The numbers are `supabase/functions/_shared/place-watch.js`'s (held together by `tests/watch-places-checks.test.mjs`). | Owner. | The owner INSERTs (only for a place they own — RLS) and UPDATEs the settings and seen columns (column grants — not `user_id`, not `created_at`, not `place_id`) and DELETEs own rows. `tg_place_watches_own` (SECURITY DEFINER) sets `user_id` to the place's owner and refuses a caller who is not it (42501). |
+| `quest_daily_results` *(watch-account-product)* | **Today's quest** — one row per (`user_id`, `day`, `kind`) (the primary key): `scores` smallint[] (exactly 5, each 0–1000 — `DAILY_N` and `QUEST_MAX` of `js/quest-engine.js`), `kind` (`where`/`when`), `day` (≥ 2026-10-08, the first day of the day's sets; a trigger refuses a day after tomorrow in UTC), `created_at` (the trigger's). The first finish of a day's set; there is no UPDATE grant, so a second insert of the same day and kind is refused by the key (23505, the page says «already recorded»). | Owner. | Owner INSERT of `day`, `kind`, `scores` only (`user_id` is `auth.uid()`, pinned by trigger `tg_quest_daily_results_own`). No UPDATE, no DELETE (account deletion removes them). |
 | `saved_views` *(collection-workspace)* | An account's **saved maps** — `name` (1-120), `note` (≤2000), `collection` (≤60), `state` (the share link's fragment without `#`, as `js/map-state.js` writes it; CHECK it begins with `v=` and is ≤32,768 characters), `created_at`/`updated_at` (the database's). **One row per document per account** *(map-document-unify)*: `kind` (`view` | `map` | `tour` | `brief` — a name for the Library and Atlas, nothing branches on it), `steps` (NULL for one map with no words of its own — every row saved before documents — else `[{state, title, say, ask}]`, at most `saved_view_steps_limit()` steps and 1 MiB; `state` is the first step that names a map), `doc_md5` generated `md5(state ‖ steps)` with UNIQUE `(user_id, doc_md5)` — equal to `state_md5` (generated `md5(state)`) on every row whose `steps` is NULL, so «the same map is one row» is unchanged and a tour that starts on a saved map is a second row. | Owner (RLS `user_id = auth.uid()`). | **No INSERT grant** — `save_view()` only. Owner: UPDATE of `name`/`note`/`collection` (column grant; the map itself is not rewritten in place), DELETE. |
 | `collection_shares` *(collection-workspace)* | The collections an account chose to **publish read-only** — `collection` (NULL = everything, `''` = unfiled), `title` (1-120), `token` (32 hex of `gen_random_uuid()`, UNIQUE — the link's whole access control), `created_at`/`updated_at`. UNIQUE NULLS NOT DISTINCT `(user_id, collection)`: one share per collection. | Owner. **The public reads a share only through `shared_collection(token)`** — anon holds no privilege on the table (tokens are not listable). | **No INSERT grant** — `publish_collection()` only. Owner: UPDATE of `title` (column grant), DELETE (= unpublish: the link answers `not_found` at once). |
 | `favorites` | Saved (★) article links. | Owner. | Owner. |
@@ -151,6 +152,7 @@ itself; `grant execute` means "may call", never "may do".
   and the account export all reach it with no list naming it (they walk the same `_owned_by_user_cols()`).
 - `place_watches.place_id` → **`saved_places(id)`** (cascade: deleting a place deletes its watch) and
   `place_watches.user_id` → **`auth.users(id)`** (cascade) — discovered by `_owned_by_user_cols()` like the rest.
+- `quest_daily_results.user_id` → **`auth.users(id)`** (cascade) — discovered by `_owned_by_user_cols()`: the export and account deletion reach it.
 - `saved_views.user_id` and `collection_shares.user_id` → **`auth.users(id)`** (cascade) — the same: deleting the
   account removes the maps and every link it published, and the export carries both.
 
@@ -291,7 +293,7 @@ update public.profiles set is_admin = true where email = 'you@example.com';
 ## Data classification (drives backup + retention)
 
 - **A — critical, irreplaceable:** `profiles`, `ai_usage`, `ai_gloss_usage`, `user_prefs`, `favorites`, `saved_places`, `place_watches`,
-  `saved_views`, `collection_shares`,
+  `saved_views`, `collection_shares`, `quest_daily_results`,
   `donations`, `feedback`, `bug_reports`, all `community_*`. User-generated / account data.
   ⚠ **`news_events`, `news_event_articles`, `news_cluster_decisions` and `saved_news_events`
   belong here too.** Re-fetching the feeds returns the articles; it does not return which articles
@@ -336,7 +338,7 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
 
 ### What is tested (files)
 
-- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **44**, key
+- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **45**, key
   PKs/FKs exist, and `profiles_public` does not leak `email`/`is_admin` (and is not a view).
 - **`01_rls_matrix_test.sql`** — the isolation matrix (§7.3): anon can't read PII tables; A
   can't read/update/delete B's rows; A can't self-escalate `is_admin`/`plan`; A can't
