@@ -2,13 +2,20 @@
 //   ① a briefing link opens the Atlas panel on the briefing with no account: the answer beside its evidence, the
 //     recorded layers and clock put back AFTER the link's own restore settles, the recorded rows drawn on the map with
 //     their credit, the briefing kept in the address bar while the map moves; Atlas reads it (briefing.open); the
-//     second answer puts its own clock back; the recipient keeps it in their notebook; closing takes it out of the bar;
-//   ② the sender's side: from the notebook entry, 「ブリーフィングで共有」 makes a link that decodes to that entry;
+//     second answer puts its own clock back; the recipient keeps it in their notebook (while the notebook is hidden —
+//     NOTEBOOK_SHOWN — that door is not drawn); closing takes it out of the bar;
+//   ② the sender's side: from the notebook entry, 「ブリーフィングで共有」 makes a link that decodes to that entry (hidden:
+//     no notebook to share from, and briefing.share does not read it);
 //   ③ a damaged link is refused by name, and the map still opens on its view.
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting } from './helpers/network.js';
 import { seededStorageState } from './helpers/session-seed.js';
 import { buildBriefing, packBriefing, unpackBriefing, briefingLink } from '../js/atlas-briefing-codec.js';
+/* (deep-tier-reds) the product's one switch for the investigation notebook (#980, 2026-10-04). While it is false the
+   briefing draws no notebook door — no 「ノートに保存」, no 「今と比べる」, no notebook strip to share from — so the steps
+   that press those doors ask the switch, not a copy of it. MEASURED before this: from 2026-10-04 ① spent its whole
+   240 s on `.atl-br-act[data-act="keep"]` (the trace: every step before it passed; the click never found the button). */
+import { NOTEBOOK_SHOWN } from '../js/atlas-notebook-store.js';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -83,24 +90,41 @@ test('atlas-briefing ① a briefing link opens on the answer, its evidence and i
     await expect(sheet.locator('.atl-br-q')).toHaveText(S2.question);
     await expect.poll(() => page.evaluate(() => { const t = window.IntMapBookmark.state().time; return t && t.year; }), { timeout: 15_000 }).toBe(1990);
     expect(await page.evaluate(() => window.IntMapGeoEngine.layers.hasSource('atl-brief-ev'))).toBe(false);
-    /* the recipient keeps it in their notebook (IndexedDB — what survives a reload) */
-    await sheet.locator('.atl-br-act[data-act="keep"]').click();
-    await expect.poll(() => page.evaluate(() => new Promise((res) => { const rq = indexedDB.open('intmap-atlas-notebook', 1);
-      rq.onsuccess = () => { const g = rq.result.transaction('entries').objectStore('entries').get('nb-briefspec-bbbbbbbbbbbb'); g.onsuccess = () => res(g.result ? g.result.question : null); g.onerror = () => res(null); };
-      rq.onerror = () => res(null); })), { timeout: 10_000 }).toBe(S2.question);
+    if (NOTEBOOK_SHOWN) {
+      /* the recipient keeps it in their notebook (IndexedDB — what survives a reload) */
+      await sheet.locator('.atl-br-act[data-act="keep"]').click();
+      await expect.poll(() => page.evaluate(() => new Promise((res) => { const rq = indexedDB.open('intmap-atlas-notebook', 1);
+        rq.onsuccess = () => { const g = rq.result.transaction('entries').objectStore('entries').get('nb-briefspec-bbbbbbbbbbbb'); g.onsuccess = () => res(g.result ? g.result.question : null); g.onerror = () => res(null); };
+        rq.onerror = () => res(null); })), { timeout: 10_000 }).toBe(S2.question);
+    } else {
+      /* hidden: the briefing's notebook doors are not drawn; its own doors are */
+      await expect(sheet.locator('.atl-br-act[data-act="keep"], .atl-br-act[data-act="compare"]')).toHaveCount(0);
+      await expect(sheet.locator('.atl-br-act[data-act="rebuild"]')).toHaveCount(1);
+      await expect(sheet.locator('.atl-br-act[data-act="savemap"]')).toHaveCount(1);
+    }
     /* closing takes the briefing out of the address bar */
     await sheet.locator('.atl-br-back').click();
     await expect.poll(() => page.evaluate(() => location.hash), { timeout: 10_000 }).not.toContain('&b=');
     expect(await page.evaluate(() => window.IntMapGeoEngine.layers.hasSource('atl-brief-ev'))).toBe(false);
 
-    /* ② the sender's side: the kept entry, shared again from the notebook */
-    await page.locator('#atlas-panel .atl-nb-strip').click();
-    await page.locator('#atlas-panel .atl-nb-item[data-id="nb-briefspec-bbbbbbbbbbbb"]').click();
-    await page.locator('#atlas-panel .atl-nb-act[data-act="brief"]').click();
-    await expect(sheet.locator('.atl-br-url')).toHaveValue(/#v=139\.7000,35\.6800,6\.00,0,0,f&b=z/, { timeout: 15_000 });
-    const link = await sheet.locator('.atl-br-url').inputValue();
-    const back = await unpackBriefing(link.split('&b=')[1]);
-    expect(back.sections.map((s) => s.question)).toEqual([S2.question]);
+    if (NOTEBOOK_SHOWN) {
+      /* ② the sender's side: the kept entry, shared again from the notebook */
+      await page.locator('#atlas-panel .atl-nb-strip').click();
+      await page.locator('#atlas-panel .atl-nb-item[data-id="nb-briefspec-bbbbbbbbbbbb"]').click();
+      await page.locator('#atlas-panel .atl-nb-act[data-act="brief"]').click();
+      await expect(sheet.locator('.atl-br-url')).toHaveValue(/#v=139\.7000,35\.6800,6\.00,0,0,f&b=z/, { timeout: 15_000 });
+      const link = await sheet.locator('.atl-br-url').inputValue();
+      const back = await unpackBriefing(link.split('&b=')[1]);
+      expect(back.sections.map((s) => s.question)).toEqual([S2.question]);
+    } else {
+      /* ② hidden: there is no notebook to share from — no strip in the panel — and Atlas's briefing.share, asked for
+         notebook entries, does not read the notebook: it asks what to share. Its remaining door, thisTurn, hands the
+         answer being written straight to the composer (tests/notebook-hidden-checks.test.mjs). */
+      await expect(page.locator('#atlas-panel .atl-nb-strip')).toHaveCount(0);
+      const sh = await page.evaluate(() => window.IntMapOS.execute('briefing.share', { recent: 1 }).then((x) => ({ status: x.status, ok: x.ok, meta: x.meta || null })));
+      expect(sh.ok, JSON.stringify(sh)).toBe(false);
+      expect((sh.meta || {}).code, JSON.stringify(sh)).toBe('needs_input');
+    }
     expect(errors, errors.join('\n')).toEqual([]);
   } finally { await ctx.close(); }
 });

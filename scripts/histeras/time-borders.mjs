@@ -36,7 +36,7 @@ const el = () => ({
  *   `countryStats` (marketing-engine): the app's country table, which js/time-borders.js captures from its host
  *   when it is instantiated — a caller that wants the labels the page writes hands the table here; absent, the
  *   module runs as before (no table).
- * @returns {Promise<{api:object, window:object, host:object}>}
+ * @returns {Promise<{api:object, window:object, host:object, clock:(e:object)=>void}>}
  */
 export async function timeBorders(opts = {}) {
   const sandbox = {
@@ -71,7 +71,10 @@ export async function timeBorders(opts = {}) {
   /* (hist-bundles-off-main) the door reads a record's bytes through the app's clocked reader
      (window.IntMapFetchWithin); a caller that serves files hands the same reader over the same fetch */
   if (opts.fetch) w.IntMapFetchWithin = { clockFor: () => 60000, readWithin: async (u) => { const r = await opts.fetch(u); return { ok: r.ok, status: r.status, bytes: await r.arrayBuffer() }; } };
-  const IntMapTime = { year: () => (opts.year != null ? opts.year : 1500), isLive: () => false, on: noop, when: () => null };
+  /* (deep-tier-reds) the module's clock listeners are kept, so a caller can move the clock (`clock(e)` below); nothing
+     here calls them on its own */
+  const listeners = [];
+  const IntMapTime = { year: () => (opts.year != null ? opts.year : 1500), isLive: () => false, on: (fn) => { listeners.push(fn); }, when: () => null };
   const globals = { ...sandbox, window: w };
   langRegistry();   /* the real registry, with the shipped language list declared */
   const history = await importModule('js/history.js', { globals });
@@ -94,5 +97,5 @@ export async function timeBorders(opts = {}) {
   if (!api || typeof api.eraLocName !== 'function') {
     throw new Error('js/time-borders.js published no eraLocName — the era-name tables are unmeasurable again');
   }
-  return { api, window: w, host };
+  return { api, window: w, host, clock: (e) => { for (const fn of listeners) fn(e); } };
 }

@@ -283,8 +283,17 @@ async function preview(page, opts) {
   await expect(el).toHaveCount(1);
   const frame = await (await el.elementHandle()).contentFrame();
   await stateRestored(frame);
+  /* (deep-tier-reds) the reader scrolls the panel to the frame before touching it — the test has to as well. Since
+     share-simple (#1003) the caption, the tabs and the code sit above the preview inside the panel's own scroll box
+     (max-height calc(100vh - 96px)), and at 1280×800 the frame's top edge was at y≈683: MEASURED, every pointer
+     position below was off the viewport, so the drag reached nothing (lng moved 0) and the read-only clicks counted
+     0 for the same reason — a pass that asked nothing. */
+  await el.scrollIntoViewIfNeeded();
   return { el, frame, src: await el.getAttribute('src') };
 }
+/* the parent page's own answer to «what does a pointer at (x, y) land on»: the frame, or the test is not asking the frame */
+const landsOnFrame = (page, x, y) => page.evaluate(([x, y]) => { const e = document.elementFromPoint(x, y);
+  return e && e.matches('#share-panel .sh-pv iframe') ? 'iframe' : (e ? e.tagName + '#' + e.id + '.' + String(e.className).slice(0, 40) : 'nothing (outside the viewport)'); }, [x, y]);
 
 test('share-embed-distribution: the share link in a frame shows only the map, read-only, exactly as linked — and the restorer applies a link completely', async ({ browser }) => {
   test.setTimeout(300000);
@@ -365,6 +374,7 @@ test('share-embed-distribution: the share link in a frame shows only the map, re
     return null; });
   expect(pt, 'some of the frame is bare map').not.toBeNull();
   const px = box.x + pt.x * k, py = box.y + pt.y * k;
+  for (const [x, y] of [[px, py], [px - 90, py]]) expect(await landsOnFrame(page, x, y), 'the pointer is over the frame at ' + Math.round(x) + ',' + Math.round(y)).toBe('iframe');
   await frame.evaluate(() => { window.__embClicks = 0; window.IntMapGeoEngine.events.on('click', () => { window.__embClicks++; }); });
   await page.mouse.click(px, py);
   await page.mouse.click(px, py, { button: 'right' });
@@ -380,6 +390,7 @@ test('share-embed-distribution: the share link in a frame shows only the map, re
   expect(await still.frame.evaluate(() => document.documentElement.dataset.embed)).toBe('static');
   const s0 = await camOf(still.frame);
   const sb = await still.el.boundingBox();
+  for (const fx of [0.7, 0.3]) expect(await landsOnFrame(page, sb.x + sb.width * fx, sb.y + sb.height * 0.6), 'the pointer is over the still frame').toBe('iframe');
   await page.mouse.move(sb.x + sb.width * 0.7, sb.y + sb.height * 0.6); await page.mouse.down();
   await page.mouse.move(sb.x + sb.width * 0.3, sb.y + sb.height * 0.6, { steps: 8 }); await page.mouse.up();
   await page.mouse.wheel(0, -600);

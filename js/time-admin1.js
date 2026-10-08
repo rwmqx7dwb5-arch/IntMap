@@ -726,6 +726,13 @@ export function timeAdmin1(HOST) {
            A `setFilter` on a source the map already has costs nothing and needs nothing, so the era
            boundary is on screen while the label half is still downloading. */
         vtAim(y, m, dd);
+        /* (deep-tier-reds) …and THEN this instant's country borders go first: the subdivisions are loaded and built
+           once js/time-borders.js has handed its collection to the map (or has nothing to draw). Started together, the
+           subdivisions' records, their collection and MapLibre's copy of it held the borders back by 10–20 s under a
+           3× CPU throttle (measured; the note above `settled` in js/time-borders.js has the numbers). The tile
+           line aimed above is not held — it is the map's own tiles, filtered, and it costs nothing here. */
+        try { const TB = eraBorders(); if (TB && typeof TB.settled === 'function') await TB.settled(); } catch (_) {}
+        if (my !== seq || !active) return;
         const d = (await Promise.all([load(), BC() ? BC().load() : null]))[0];   /* (#R564) the marks settle before the first collection is built, so nothing is cached unmarked */
         if (my !== seq || !active) return;
         if (!d) { setTimeout(() => { try { if (active && my === seq) go(when); } catch (_) {} }, 4000); return; }

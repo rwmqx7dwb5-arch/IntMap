@@ -218,28 +218,51 @@ export const IntMapBorderCoast = (function () {
     if (!fc || !fc.features) return fc;
     const hit = _once.get(fc); if (hit) return hit;
     /* a vertex is named by its position on a 1e-5° grid (~1 m — every bundle is written at 5 decimals or
-       coarser, so this is the exact coordinate as stored) packed into one number, then by a small integer;
-       an edge is the pair of integers as one number, so no string is built per edge. Measured on the
-       shipped data/cshapes.js + data/border-coast.js at 1950-07-01 (Node 24, this machine): the 172
-       countries' border runs are 52,322 segments, 24,728 of them (47 %) a neighbour's second copy, and
-       the walk takes 8–26 ms (the string-per-edge version of the same walk on whole rings: ~380 ms). */
-    const seen = new Set(), feats = [], ids = new Map();
-    const id = (p) => { const k = Math.round((p[0] + 360) * 1e5) * 67108864 + Math.round((p[1] + 90) * 1e5); let v = ids.get(k); if (v === undefined) { v = ids.size; ids.set(k, v); } return v; };
-    const key = (a, b) => { const p = id(a), q = id(b); return p < q ? p * 67108864 + q : q * 67108864 + p; };
+       coarser, so this is the exact coordinate as stored), packed into one integer: x·2^25 + y, exact in a
+       double (x < 72,000,000 < 2^27, y < 18,000,000 < 2^25, so the key is below 2^52). An undirected edge is the
+       ordered pair of its two vertex keys, held in an open-addressed table of two Float64Arrays sized to
+       twice the segment count — no Map, no Set, no string per vertex or edge.
+       ⚠ (deep-tier-reds) MEASURED 2026-10-08 (Node 24, this machine) on the first-level subdivisions in force at
+       1916-07-01 (data/hist-admin1.js with its gap records, 3,857 rings, 387,993 segments — the reconstruction
+       data/hist-admin-recon.js had grown from 6.8 MB to 17.9 MB): the previous walk (a Map from vertex to a
+       small integer, looked up twice per vertex, and a Set of edges) took 490–534 ms, one long task on the
+       thread that paints, per tier per instant; this walk takes 50 ms and returns the identical collection
+       (tests/deep-tier-reds-checks.test.mjs ④). Under a 3× CPU throttle the old walk alone was ~1.6 s of the
+       window in which the 1916 era country borders were waiting to be drawn (tests/r410-late.spec.js).
+       LAPSES if a bundle is written finer than 1e-5° (two distinct stored points would share a key). */
+    let nSeg = 0;
+    const linesOf = (g) => (g.type === 'LineString' ? [g.coordinates] : g.type === 'MultiLineString' ? g.coordinates : null);
+    for (const f of fc.features) { const g = f && f.geometry; const L = g ? linesOf(g) : null; if (L) for (const c of L) nSeg += (c && c.length > 1) ? c.length - 1 : 0; }
+    let cap = 16; while (cap < 2 * nSeg) cap *= 2;
+    const mask = cap - 1, KA = new Float64Array(cap).fill(-1), KB = new Float64Array(cap), Y = 33554432;
+    const vk = (p) => Math.round((p[0] + 360) * 1e5) * Y + Math.round((p[1] + 90) * 1e5);
+    /* true when the undirected edge {a, b} had not been struck yet (and marks it struck) */
+    const fresh = (a, b) => {
+      if (b < a) { const t = a; a = b; b = t; }
+      let h = (Math.imul(a >>> 0, 0x9E3779B1) ^ Math.imul((a / 4294967296) | 0, 0x85EBCA77)
+             ^ Math.imul(b >>> 0, 0xC2B2AE3D) ^ Math.imul((b / 4294967296) | 0, 0x27D4EB2F)) & mask;
+      for (;;) {
+        const k = KA[h];
+        if (k === -1) { KA[h] = a; KB[h] = b; return true; }
+        if (k === a && KB[h] === b) return false;
+        h = (h + 1) & mask;
+      }
+    };
+    const feats = [];
     for (const f of fc.features) {
       const g = f && f.geometry; if (!g) continue;
-      const lines = g.type === 'LineString' ? [g.coordinates] : g.type === 'MultiLineString' ? g.coordinates : null;
+      const lines = linesOf(g);
       if (!lines) { feats.push(f); continue; }
       const out = [];
       for (const c of lines) {
-        let run = null;
-        for (let i = 0; i + 1 < (c ? c.length : 0); i++) {
-          const k = key(c[i], c[i + 1]);
-          if (c[i][0] === c[i + 1][0] && c[i][1] === c[i + 1][1]) continue;
-          if (seen.has(k)) { if (run) { out.push(run); run = null; } continue; }
-          seen.add(k);
-          if (!run) run = [c[i]];
-          run.push(c[i + 1]);
+        const m = c ? c.length : 0; if (m < 2) continue;
+        let run = null, pk = vk(c[0]);
+        for (let i = 0; i + 1 < m; i++) {
+          const p = c[i], q = c[i + 1], qk = vk(q);
+          if (p[0] === q[0] && p[1] === q[1]) { pk = qk; continue; }
+          if (!fresh(pk, qk)) { if (run) { out.push(run); run = null; } pk = qk; continue; }
+          if (!run) run = [p];
+          run.push(q); pk = qk;
         }
         if (run) out.push(run);
       }
