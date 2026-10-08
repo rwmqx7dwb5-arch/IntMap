@@ -46,6 +46,11 @@ newsjp: スマホでは、シートの時計が「いま見ている年」を表
   簡約・端の種類つき）・その後に描かれるもの・**その地点の変化の時点の全部**を返す——さらに先へは `time.travel` の日付で 1 回で
   行ける（`.agents/rules/one-pass-or-a-reason.md`）。点の読み方は `time.placeHistory` と 1 つの関数（`pointOf`）にした。
 
+- **新しい窓口を作らない**: `js/hist-scale.js` は classic script として評価される（node の検査が `vm` で走らせる）ので export を
+  持てない。時計がすでに依存しているので `js/chronos.js` の `histScale()` 1 か所が全域の値を読み、携帯の時計と親指はそこから import する
+  （`window.IntMapHistScale` の読みは 26 → 25）。検査用の window グローバルは作らず、親指は取り付いた時計に `data-rail-screens` を書く。
+  遅延モジュールの名前は分割代入で受け取り、どの export に読み手がいるかが依存グラフから見える。
+
 ## 2. 史実と突き合わせた（`.agents/rules/historical-verification.md` §2）
 
 親指が止まる時点は記録の端そのもので、この回は記録を 1 つも変えていない。それでも「止まる＝ここで何かが変わった」と読者に

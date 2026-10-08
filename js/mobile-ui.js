@@ -10,7 +10,7 @@
  * ==========================================================================*/
 
 import { IntMapGeoEngine } from './geo-engine.js';
-import { IntMapTime } from './chronos.js';
+import { IntMapTime, histScale } from './chronos.js';
 import { IntMapLang } from './lang-registry.js';
 import { detentHeights, settleDetent, spring, detentFor, MAP_ANSWER_EVENT, makeScreens, makeLegendTray, makeFloatFit } from './mobile-sheet.js';
 import { BootStage } from './boot-stage.js';
@@ -157,20 +157,20 @@ export function mobileUI(HOST){
          a press that lifts before it arrives was a tap, and the tap still opens Chronos). */
       const yLbl=document.createElement('span'); yLbl.className='m-clock-y'; yLbl.setAttribute('aria-hidden','true'); clock.appendChild(yLbl);
       const sayYear=()=>{ let e=null; try{ e=IntMapTime.state(); }catch(_){ return; }
-        let t=''; if(e&&!e.isLive){ try{ t=window.IntMapHistScale.yearText(e.year, IntMapLang.htmlTag(HOST.lang)||'en', HOST.lang==='jp'?'年':null); }catch(_){ t=String(e.year); } }
+        let t=''; if(e&&!e.isLive){ try{ t=histScale().yearText(e.year, IntMapLang.htmlTag(HOST.lang)||'en', HOST.lang==='jp'?'年':null); }catch(_){ t=String(e.year); } }
         if(yLbl.textContent!==t) yLbl.textContent=t; clock.classList.toggle('has-y',!!t); };
       const sayHow=()=>clock.setAttribute('aria-description',IntMapLang.t(HOST.lang,'Drag sideways to move through time; the arrow keys step to where the map changes at its centre','横になぞると年が動きます。矢印キーで地図の中心が変わる時点へ移ります'));
       try{ IntMapTime.on(sayYear); bus.on('intmap-lang',()=>{ sayYear(); sayHow(); }); }catch(_){}
       sayYear(); sayHow();
-      let thumb=null; const viaThumb=fn=>{ (thumb||(thumb=import('./time-thumb.js'))).then(fn).catch(()=>{ thumb=null; }); };
+      let thumb=null; const thumbMod=()=>thumb||(thumb=import('./time-thumb.js'));
       clock.addEventListener('pointerdown',e=>{ if(!mq.matches||(e.button||0)>0) return;
         const first={id:e.pointerId,x:e.clientX,y:e.clientY,up:false};
         const up=ev=>{ if(ev.pointerId!==first.id) return; first.up=true; clock.removeEventListener('pointerup',up); clock.removeEventListener('pointercancel',up); };
         clock.addEventListener('pointerup',up); clock.addEventListener('pointercancel',up);
-        viaThumb(m=>m.press(clock,first,HOST)); });
+        thumbMod().then(({ press })=>press(clock,first,HOST)).catch(()=>{ thumb=null; }); });
       clock.setAttribute('aria-keyshortcuts','ArrowLeft ArrowRight');
       clock.addEventListener('keydown',e=>{ if(!mq.matches||(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')) return; e.preventDefault();
-        viaThumb(m=>m.step(clock,e.key==='ArrowLeft'?-1:1,HOST)); });
+        thumbMod().then(({ step })=>step(clock,e.key==='ArrowLeft'?-1:1,HOST)).catch(()=>{ thumb=null; }); });
     }
 
     /* ══ (mobile-heavy-work) THE LAYER GRID, BUILT WHEN IT IS NEEDED ═══════════════════════════════════

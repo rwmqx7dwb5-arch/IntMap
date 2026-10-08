@@ -71,7 +71,7 @@ function clock(name){
      (js/hist-scale.js `ymd`) and both read it; the local body is the same four lines, for a
      page on which hist-scale has not evaluated. */
   function ymdISO(d){
-    try{ const HS=window.IntMapHistScale; if(HS&&HS.ymd) return HS.ymd(d); }catch(_){}
+    try{ const HS=histScale(); if(HS&&HS.ymd) return HS.ymd(d); }catch(_){}
     const y=d.getUTCFullYear(), p=n=>String(n).padStart(2,'0');
     const ys=(y>=0&&y<=9999)?String(y).padStart(4,'0'):(y<0?'-':'+')+String(Math.abs(y)).padStart(6,'0');
     return ys+'-'+p(d.getUTCMonth()+1)+'-'+p(d.getUTCDate()); }
@@ -100,7 +100,7 @@ function clock(name){
      copy here is exactly what made that invisible. The local body is the fallback for a page on
      which js/hist-scale.js has not evaluated, and it is the same four lines. */
   function atUTC(y,mo,d,h,mi,s){
-    try{ const HS=window.IntMapHistScale; if(HS&&HS.utcAt) return HS.utcAt(y,mo,d,h,mi,s); }catch(_){}
+    try{ const HS=histScale(); if(HS&&HS.utcAt) return HS.utcAt(y,mo,d,h,mi,s); }catch(_){}
     const t=new Date(0); t.setUTCFullYear(y,mo,d); t.setUTCHours(h||0,mi||0,s||0,0); return t; }
   /* ⚠ (#R349, lowered again #R604) THE FLOOR IS THE CLOCK'S, NOT ANY ONE SUBSYSTEM'S.
      「1850年までさかのぼれるように。（1900までと完全に同様に。単に対応年を延長するだけです。）」(#R349)
@@ -177,6 +177,12 @@ return clock('main');
 /** a clock for another map (js/compare.js) — the same body as the master clock's, a separate instant
     @param {string} [name] the map it belongs to @returns {import('../types/chronos').Chronos} */
 export function makeClock(name){ return /** @type {(name?: string) => import('../types/chronos').Chronos} */ (_make)(name); }
+/* (mobile-product) js/hist-scale.js's object — the clock's arithmetic. It is a classic script that publishes itself on
+   the page's window (node checks evaluate it as one: tests/helpers/hist-scale.mjs), so it cannot export; the clock,
+   which depends on it already, is where its readers import it from — ONE read of the global for the clock, the
+   phone's clock and its thumb, instead of one each. A hoisted declaration: the master clock's IIFE above calls it. */
+/** @returns {any} */
+export function histScale(){ return /** @type {any} */ (globalThis).IntMapHistScale; }
 /* ══ (mobile-product) A POSITION ON THE YEAR RAIL → A WRITE ON THE CLOCK — ONE RULE, EVERY RAIL ══════════════════
    The Chronos Year slider and its desktop peek (js/news-timeline.js) and the thumb on the phone's clock
    (js/time-thumb.js) all turn a rail position into a year the same way: js/hist-scale.js `rail.toYear` between the
@@ -185,7 +191,7 @@ export function makeClock(name){ return /** @type {(name?: string) => import('..
    the clock it writes. → the year the position stands for (a year ≥ this one is returned as this one). */
 /** @param {number} p a rail position, 0 … rail.POS @param {import('../types/chronos').Chronos} [clock] @returns {number} */
 export function writeRailPos(p, clock){
-  const C=clock||IntMapTime, cur=new Date().getFullYear(), HS=/** @type {any} */ (globalThis).IntMapHistScale;
+  const C=clock||IntMapTime, cur=new Date().getFullYear(), HS=histScale();
   let y=cur; try{ y=HS.rail.toYear(p, C.min, cur); }catch(_){ y=cur; }
   if(y>=cur){ C.setNow({source:'ui'}); return cur; }
   if(y>=C.min) C.setYear(y,{source:'ui'});

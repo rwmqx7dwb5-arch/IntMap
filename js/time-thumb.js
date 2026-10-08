@@ -22,24 +22,24 @@
  *  Fetched at the first touch of the clock (js/mobile-ui.js); nothing here runs at start-up. Strings IntMap writes here
  *  are en + jp (CONSTITUTION.md §7). No emoji.
  * ==========================================================================*/
-import { IntMapTime, writeRailPos } from './chronos.js';
+import { IntMapTime, writeRailPos, histScale } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 
-const HS = () => /** @type {any} */ (window).IntMapHistScale;
+const HS = () => histScale();
 
 /* ⚠ RAIL_SCREENS — how many screen widths the whole rail spans under the thumb. ESTIMATE, not measured on a device:
    at 3 a 390 px phone gives the recent band (1850–now, 45 % of the rail) about 530 px, ~3 px a year, and the whole
    of AD 1–1500 about 260 px; the Chronos slider fits the same rail into ~340 px. EXPIRES IF the rail's shares
    (js/hist-scale.js `breaks`) change or a device test finds one year too hard to hold — retune on a phone. */
-const RAIL_SCREENS = 3;
+export const RAIL_SCREENS = 3;
 /* ⚠ SNAP_PX — where years are narrower than a pixel (`stopAt` below), how close (in thumb pixels) the thumb must come to
    an instant where the map changes for the thumb to stop on it. ESTIMATE: about a quarter of a 44 px finger, so a slow
    stroke stops and a fast one passes. Same expiry. */
-const SNAP_PX = 12;
+export const SNAP_PX = 12;
 /* ⚠ START_PX — the sideways travel that makes a press a scrub. The sheet's head starts its own drag at 7 px of mostly
    VERTICAL travel (js/mobile-ui.js `grabbable`); a scrub is mostly horizontal, so the two never claim one stroke. */
-const START_PX = 8;
+export const START_PX = 8;
 /* how long the bubble stays after the thumb lifts (or after a key step) — long enough to read two short lines */
 const LINGER_MS = 1600;
 
@@ -60,7 +60,9 @@ const perPx = () => POS() / (RAIL_SCREENS * Math.max(1, window.innerWidth || 390
 
 /* ── the record at the map's centre (js/place-history.js, fetched with the first stroke that needs it) ── */
 let PH = null;
-const ph = () => (PH ? Promise.resolve(PH) : import('./place-history.js').then((m) => (PH = m)));
+/* the names are taken by name, so each one this file reads is a reader the module graph sees (scripts/export-readers.mjs) */
+const ph = () => (PH ? Promise.resolve(PH) : import('./place-history.js').then(({ placeHistory, changesOf, nowAt, changeText, instantText, stepFrom, goToInstant, kOf }) =>
+  (PH = { placeHistory, changesOf, nowAt, changeText, instantText, stepFrom, goToInstant, kOf })));
 function centre() {
   try { const c = IntMapGeoEngine.camera.getCenter(); if (c && isFinite(c.lng) && isFinite(c.lat)) return { lng: +c.lng, lat: +c.lat }; } catch (_) { /* no renderer */ }
   return null;
@@ -156,7 +158,7 @@ function tick() { try { if (navigator.vibrate) navigator.vibrate(8); } catch (_)
 /* the instants where the map changes over the centre, as rail positions — the thumb's stops. `yearPx` is how wide one
    year is under the thumb there: the rail is not linear (js/hist-scale.js `rail`), so the same 12 px is a few years
    in the 20th century and millennia below year 1. */
-function stopsOf(changes, pxPerPos) {
+export function stopsOf(changes, pxPerPos) {
   const per = pxPerPos || (1 / perPx());
   return changes.map((c) => {
     const y = Math.floor(c.k / 10000);
@@ -170,7 +172,7 @@ function stopsOf(changes, pxPerPos) {
    where years are narrower than a pixel the thumb cannot name one year anyway, and it stops within SNAP_PX of a change.
    Computed for the first version (one 12 px radius everywhere, a 375 px phone): 12 px is ±4 years in 1850–now, and at
    Kyoto the nine changes from 1868 to 1886 would have left no year from 1864 to 1890 reachable by the thumb. */
-function stopAt(stops, pos, per) {
+export function stopAt(stops, pos, per) {
   if (!stops || !stops.length) return null;
   let y = null; try { y = HS().rail.toYear(pos, IntMapTime.min, curY()); } catch (_) { y = null; }
   const own = stops.find((s) => s.yearPx >= 1 && s.y === y);
@@ -230,8 +232,9 @@ function onUp(ev) {
 function install(clock) {
   if (bound === clock) return;
   bound = clock;
-  /* for the browser checks: how far the rail moves per thumb pixel on this screen (the real-finger spec reads it) */
-  try { /** @type {any} */ (window).__imTimeThumb = { perPx }; } catch (_) { /* no window */ }
+  /* for the browser checks: the rail's span under the thumb, on the element itself (no window global) — with js/hist-scale.js
+     `rail.POS` and the screen width it gives how far the rail moves per thumb pixel; it also says the thumb is installed */
+  clock.dataset.railScreens = String(RAIL_SCREENS);
   clock.addEventListener('pointermove', onMove);
   clock.addEventListener('pointerup', onUp);
   clock.addEventListener('pointercancel', onUp);
@@ -281,5 +284,4 @@ export async function step(clock, dir, host) {
   return c;
 }
 
-/** for the checks: the module's constants and its pure helpers */
-export const _test = { RAIL_SCREENS, SNAP_PX, START_PX, stopsOf, stopAt };
+

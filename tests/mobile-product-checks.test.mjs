@@ -24,6 +24,7 @@ import { fileURLToPath } from 'node:url';
 import { harness, historyAt } from '../scripts/place-history.mjs';
 import { importModule } from '../scripts/lib/import-module.mjs';
 import { histScale as evaluatedHistScale } from './helpers/hist-scale.mjs';
+import { stopsOf, stopAt, RAIL_SCREENS, SNAP_PX, START_PX } from '../js/time-thumb.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -111,8 +112,7 @@ test('mobile-product ④: the thumb — stops in order on the rail, stated const
   const { H, rec } = await kyoto();
   const ch = H.PH.changesOf(rec);
   await histScale();
-  const TT = await importModule('js/time-thumb.js', { mocks: { 'js/geo-engine.js': { IntMapGeoEngine: {} } } });
-  const stops = TT._test.stopsOf(ch);
+  const stops = stopsOf(ch);
   assert.equal(stops.length, ch.length);
   for (let i = 1; i < stops.length; i++) assert.ok(stops[i].p >= stops[i - 1].p, 'a later instant is never left of an earlier one on the rail');
   assert.ok(stops.every((s) => s.p >= 0 && s.p <= globalThis.IntMapHistScale.rail.POS));
@@ -120,7 +120,7 @@ test('mobile-product ④: the thumb — stops in order on the rail, stated const
   const src = rd('js/time-thumb.js');
   for (const k of ['RAIL_SCREENS', 'SNAP_PX', 'START_PX']) assert.match(src, new RegExp('⚠ ' + k + ' —[^]*?(ESTIMATE|vertical|VERTICAL)'), k + ' says what it is');
   assert.match(src, /EXPIRES IF/, 'the estimates say when they lapse');
-  assert.ok(TT._test.START_PX > 7, 'a scrub needs more sideways travel than the sheet head needs vertical travel to start its drag');
+  assert.ok(START_PX > 7, 'a scrub needs more sideways travel than the sheet head needs vertical travel to start its drag');
   const mu = rd('js/mobile-ui.js');
   assert.match(mu, /import\('\.\/time-thumb\.js'\)/, 'mobile-ui fetches the thumb on demand');
   assert.ok(!/^import[^\n]*time-thumb/m.test(mu), 'the thumb is not in the start-up graph');
