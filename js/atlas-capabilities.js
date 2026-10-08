@@ -340,6 +340,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["time.thenNow","thenNow","thenAndNow,swipeCompare,compareThenNow","time","timeView","panel.compare,time.compare,time","panel,time","session","none","",""],
       ["time.placeHistory","placeHistory","placeThroughTime,whoRuledHere,sovereigntyTimeline,formerPolities","time","none","","explanation","read","none","point",""],
       ["learn.daily","dailyQuest","todayQuest,dailyChallenge,questStreak,dailyStreak","panel","none","panel.quest,map.quest,camera,time","panel","session","none","",""],
+      ["panel.cite","cite","citeMap,citation,mapCitation,bordersData","panel","panel","panel.share","panel","session","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 
