@@ -1,6 +1,6 @@
 {
  "source": "NASA EOSDIS GIBS — temporal extent measured by tile probe (404 outside the archive, 200 inside)",
- "probed": "2026-10-07",
+ "probed": "2026-10-08",
  "layers": {
   "gxndvi": {
    "gibs": "MODIS_Terra_NDVI_8Day",
@@ -12,14 +12,14 @@
   "gxseaice": {
    "gibs": "GHRSST_L4_MUR_Sea_Ice_Concentration",
    "from": "2002-06-01",
-   "to": "2026-10-06",
+   "to": "2026-10-07",
    "period": 1,
    "periodChecked": true
   },
   "gxsstanom": {
    "gibs": "GHRSST_L4_MUR_Sea_Surface_Temperature_Anomalies",
    "from": "2019-07-23",
-   "to": "2026-10-06",
+   "to": "2026-10-07",
    "period": 1,
    "periodChecked": true
   },
