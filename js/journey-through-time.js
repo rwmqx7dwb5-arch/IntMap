@@ -32,6 +32,7 @@
  *  Strings IntMap writes here are en + jp (CONSTITUTION.md §7). No emoji.
  * ==========================================================================*/
 import { IntMapLang } from './lang-registry.js';
+import { IntMapTime } from './chronos.js';   /* static: a dynamic import of a start-up module splits it into a chunk of its own (check:perf, eager requests) */
 import { nameIn, esc, bordersNow } from './year-book.js';
 import { borderSamples, greatCircleLine, featureAt, featuresAt, wrapLng, countryOutlines } from './routing-ops.js';
 
@@ -294,7 +295,7 @@ export async function atlasRun(a, K) {
   const instants = [];
   for (const s of specs) { const I = instantOf(s); if (!I) return R(false, warn(esc(L('«' + (s.date != null ? s.date : s.year) + '» is not a year or a YYYY-MM-DD date.', '「' + (s.date != null ? s.date : s.year) + '」は年でも YYYY-MM-DD 形式の日付でもありません。')))); instants.push(I); }
   if (!instants.length) {
-    const { IntMapTime: T } = await import('./chronos.js');
+    const T = IntMapTime;
     if (T.isLive()) instants.push(instantOf({ now: true }));
     else { const w = T.when(), y = w.getFullYear(); instants.push({ now: false, when: w, year: y, iso: (y < 0 ? '-' + String(-y).padStart(6, '0') : String(y).padStart(4, '0')) + '-' + String(w.getMonth() + 1).padStart(2, '0') + '-' + String(w.getDate()).padStart(2, '0') }); }
   }
