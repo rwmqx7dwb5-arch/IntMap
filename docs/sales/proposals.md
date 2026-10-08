@@ -53,6 +53,40 @@
   提案書の「具体的な形」には、相手の単元のツアーのリンクと、そこから作った**実際のワークシートの PDF**（印刷画面の
   「PDF に保存」）を添える——作ったものを目で確かめてから（描けなかった段は紙に「撮れませんでした」と出る）
 
+**必履修科目の単元から入る（2026-10-08）**
+- 歴史総合（全国の高校生が履修する）の中項目のうち、Ｂ（2）「結び付く世界と日本の開国」とＤ（3）「世界秩序の変容と日本」に
+  授業ツアーを足した（`opening-of-japan`・`cold-war-end`）。歴史総合で地図・ツアーのある中項目は 3 → 5（単元対応表 `curriculum.html`）。
+  同じ 2 本はイングランド KS3 歴史（«challenges for Britain, Europe and the wider world 1901 to the present day»・
+  «a significant society or issue in world history»）と世界史探究 Ｄ（2）・Ｅ（1）にも載る。
+- 相手が日本の高校なら、最初に見せるのは**相手の今学期の単元**のツアー 1 本と、そこから作ったワークシートの PDF。
+  どの単元をいつ扱うかは学校ごとの年間計画で決まるので、相手に訊いてから選ぶ（決めつけない）。
+
+**承認待ちの文案（送らない・載せない。運営者の確認が済むまで外に出さない）**
+
+教員宛て（日本語・メールまたは相談フォームへの返信の本文。宛先・送信は運営者が決める）:
+
+> 件名: 歴史総合「開国」「冷戦の終結」の授業でそのまま使える地図ツアーのご案内（無料・生徒の登録不要）
+>
+> IntMap は、紀元前から現在までの国境と各種データを 1 枚の地図で見られる無料の Web 地図です。
+> 歴史総合のＢ（2）「結び付く世界と日本の開国」とＤ（3）「世界秩序の変容と日本」向けに、授業ツアーを用意しました。
+> プロジェクターに映して「次へ」で進めると、ペリー来航の日（1853 年 7 月 8 日）、アイグン条約・北京条約のあと（1861 年）、
+> 日朝修好条規の年（1876 年）、1900 年の東アジアを順にたどり、各場面に読み上げる文と生徒への問いがあります。
+> 同じツアーは A4 のワークシート（地図・問い・解答欄、出典つき）として印刷できます。
+> 単元ごとの対応は単元対応表（curriculum.html）にあり、インストールも生徒のアカウントも要りません。
+> 地図の国境はその日付の記録（OpenHistoricalMap・CShapes 2.0）に照らして確かめ、記録が述べていないことは語っていません。
+
+Teacher (England, KS3 history — same conditions):
+
+> Subject: Free map tours for KS3 history — the end of the Cold War, and China and Japan opened to the world
+>
+> IntMap is a free web map of borders from antiquity to today. Two classroom tours step through dated maps with words to
+> read out and a question for the class: Europe from divided Germany in 1985 to the map of 1993 after the Soviet Union,
+> Yugoslavia and Czechoslovakia broke apart; and East Asia from Perry's arrival in 1853 to 1900. Each prints as a worksheet
+> with the maps, questions and source credits. Nothing to install, and pupils do not sign in. The unit map
+> (curriculum.html) lists what fits each strand of the key stage 3 programme of study.
+
+⚠ 文案の事実はすべてツアーの宣言（`js/tours.js`）と公開ページから。「〇〇校で使われています」「研修します」は書かない（下の × と同じ）。
+
 **情報担当向けの確認事項（`for-schools.html` の一覧と同じ）**
 1. サイト本体と読み込み先の許可——読み込み先は**プライバシーポリシー §4 に全部ある**（`scripts/outbound-hosts.json` が正本）
 2. WebGL が有効であること
