@@ -70,7 +70,7 @@
  *      node scripts/build-hist-clio.mjs --check     # the committed files' invariants (offline)
  *      node scripts/build-hist-clio.mjs --coast-snap         # data/hist-coast-snap.js from the committed records (coast-snap-gaps:
  *                                                            # the land a record's coast left out, under the one polity bounding it)
- *      node scripts/build-hist-clio.mjs --coast-snap-measure # the port-city table: land grid points drawn, with and without it
+ *      node scripts/build-hist-clio.mjs --coast-snap-measure [--before <file>] [--coast ne|osm] # the port-city table: base-map land grid points drawn, with and without it
  * ==========================================================================*/
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -165,16 +165,22 @@ export const GOVERNANCE = (() => {
     ...OPENHISTORICALMAP,
     builtBy: 'scripts/build-hist-clio.mjs',
   },
-  /* (coast-snap-gaps) the land between a record's coast and Natural Earth's, under the one polity that bounds it — the ONE
+  /* (coast-snap-gaps) the land between a record's coast and the real coast, under the one polity that bounds it — the ONE
      upstream it asks is the coast; each piece's landward edge is its parent row's line, drawn under that record's terms
-     beside it (scripts/histclio/coast-snap.mjs SRC names them) */
+     beside it (scripts/histclio/coast-snap.mjs SRC names them).
+     (coast-snap-detail) two coasts: OpenStreetMap's land polygons for the records whose terms allow it (ODbL 1.0 — credit is
+     a condition, paid by the row named in `paidBy`), Natural Earth's for the share-alike records. The OpenStreetMap input is
+     one pinned npm package (its integrity in package-lock.json, its sha256 in coast-snap.mjs OSM_LAND), so the cadence that
+     can bring a new coast is Natural Earth's. */
   'data/hist-coast-snap.js': {
-    publisher: 'Natural Earth',
-    url: 'https://www.naturalearthdata.com/',
-    licence: 'public domain',
-    licenceUrl: 'https://www.naturalearthdata.com/about/terms-of-use/',
-    attribution: false,
-    schema: 'scripts/histclio/coast-snap.mjs checkCoastSnap (npm run check:histclio): every row names a parent the page draws over the same years, and no piece lies inside a record',
+    upstreams: [
+      { publisher: 'Natural Earth', url: 'https://www.naturalearthdata.com/', licence: 'public domain',
+        licenceUrl: 'https://www.naturalearthdata.com/about/terms-of-use/', attribution: false, creditRequired: false },
+      { publisher: 'OpenStreetMap contributors (land polygons: osmdata.openstreetmap.de, via @geo-maps/earth-lands-10m 0.6.0)', url: 'https://www.openstreetmap.org/copyright',
+        licence: 'ODbL 1.0', licenceUrl: 'https://opendatacommons.org/licenses/odbl/1-0/', attribution: true, creditRequired: true,
+        paidBy: 'Historical map coastline — OpenStreetMap land polygons, OpenStreetMap contributors (ODbL 1.0)' },
+    ],
+    schema: 'scripts/histclio/coast-snap.mjs checkCoastSnap (npm run check:histclio): every row names a parent the page draws over the same years, no piece lies inside a record, and each record reaches the coast its terms allow',
     ...NATURAL_EARTH,
     builtBy: 'scripts/build-hist-clio.mjs',
   },
@@ -1508,7 +1514,7 @@ else if (process.argv[1] && join(process.argv[1]) === join(fileURLToPath(import.
   else if (arg.includes('--fetch')) await fetchUpstream();
   else if (arg.includes('--ohm-late')) await lateOnly();
   else if (arg.includes('--identities')) identities();
-  else if (arg.includes('--coast-snap-measure')) measurePorts();
+  else if (arg.includes('--coast-snap-measure')) { const i = arg.indexOf('--before'), j = arg.indexOf('--coast'); measurePorts({ before: i >= 0 ? arg[i + 1] : null, coast: j >= 0 ? arg[j + 1] : 'osm' }); }
   else if (arg.includes('--coast-snap')) await buildCoastSnap();
   else await build({ measure: arg.includes('--measure') });
 }

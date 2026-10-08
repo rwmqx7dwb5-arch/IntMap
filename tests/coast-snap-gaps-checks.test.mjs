@@ -68,7 +68,10 @@ test('③ the snap bundle as shipped: its parents, its years, on land, inside no
   assert.deepEqual(bad.filter(Boolean).slice(0, 5), []);
   assert.ok(r && r.rows > 0 && r.rings > 0);
   const snap = bundle(CS.SNAP_FILE, CS.SNAP_GLOBAL);
-  assert.equal(snap.agreementKm, CS.COAST_AGREEMENT_KM);
+  /* (coast-snap-detail) each record reaches the coast its terms allow, judged with that coast's agreement width */
+  for (const c of Object.values(CS.COASTS)) assert.equal(snap.lands[c.id].agreementKm, c.agreementKm);
+  assert.deepEqual(snap.coasts, { cshapes: 'ne', 'ohm-late': 'osm', ohm: 'osm', clio: 'osm', sheet: 'ne' });
+  assert.equal(snap.basis[CS.OSM_LAND.file], CS.OSM_LAND.sha256);
   for (const T of CS.TIERS) assert.equal(snap.bands[T.t], inlandKmFor(T.global));
   /* every given piece is wider than the two coasts' agreement, and every judged verdict is counted */
   for (const k of ['given', 'two-polities', 'beyond-band', 'no-sea', 'too-far', 'within-the-coasts-agreement']) assert.ok(Number.isInteger(snap.judged[k]), 'no count for ' + k);
@@ -91,7 +94,9 @@ test('④ the build dates a sheet\'s pieces by the sheet the page shows (`neares
 
 /* ⑤ the land, a grid point at a time */
 let _G = null;
-const G = () => _G || (_G = { rows: CS.loadRows().rows, snap: bundle(CS.SNAP_FILE, CS.SNAP_GLOBAL), land: new CS.Land() });
+/* (coast-snap-detail) ⚠ the land is the BASE MAP'S (OpenStreetMap's): counted on Natural Earth's land — the coast the pieces
+   were cut to — this test found Üsküdar complete while production showed 240 of 919 base-map land points blank there */
+const G = () => _G || (_G = { rows: CS.loadRows().rows, snap: bundle(CS.SNAP_FILE, CS.SNAP_GLOBAL), land: new CS.Land('osm') });
 test('⑤ the tip of the old city of Istanbul and Üsküdar are drawn in 1000, 1500 and 1650 — every land point', () => {
   const { rows, snap, land } = G();
   /* Hagia Sophia, Topkapı, Sultanahmet to Sarayburnu, the ground production showed outside the fill */
@@ -147,13 +152,19 @@ test('⑦ the place timeline: Sirkeci is drawn after 1885, and the years to toda
   assert.ok(N.entries.some((E) => E.from.k <= k1900 && k1900 < E.to.k), 'Sirkeci has no entry in 1900');
   assert.ok(N.entries.some((E) => E.from.k <= k1950 && k1950 < E.to.k), 'Sirkeci has no entry in 1950');
   assert.ok(!N.gaps.some((g) => g.from <= k1900 && k1900 < g.to), 'Sirkeci 1900 is still a gap');
+  /* (coast-snap-detail) its «Turkey» row ends where CShapes ends, and 2020 to today is said, not left out */
+  assert.ok(N.gaps.some((g) => g.beyond && g.toNow && g.from === ymd(2020, 1, 1)), 'Sirkeci says nothing of 2020 to today: ' + JSON.stringify(N.gaps));
   /* the composer: a last piece ending before the records do leaves a span to today; one ending with them does not */
   const P = H.PH, piece = (s, e) => ({ tier: 'clio', file: 'data/hist-clio.js', name: 'X', s, e, sEdge: 'stated', eEdge: 'stated' });
   const top = ymd(2020, 1, 1), now = ymd(2026, 10, 8);
   const a = P.compose({ pieces: [piece(ymd(1500, 1, 1), ymd(1886, 1, 1))], records: [], order: ['clio'], top, now });
   assert.deepEqual(a.gaps, [{ from: ymd(1886, 1, 1), to: now, toNow: true }]);
+  /* (coast-snap-detail) one ending with them leaves the years from the records' end to today, said as «no record» */
   const b = P.compose({ pieces: [piece(ymd(1500, 1, 1), top)], records: [], order: ['clio'], top, now });
-  assert.deepEqual(b.gaps, []);
+  assert.deepEqual(b.gaps, [{ from: top, to: now, toNow: true, beyond: true }]);
+  assert.match(String(P.historyMarkup({ nation: Object.assign({ status: 'ok' }, b), admin: null }, 'en')), /No historical record covers these years[\s\S]*today/);
+  assert.match(String(P.historyMarkup({ nation: Object.assign({ status: 'ok' }, b), admin: null }, 'jp')), /この期間を述べる歴史の記録はない[\s\S]*今日/);
+  assert.equal(P.forAtlas({ at: {}, nation: Object.assign({ status: 'ok' }, b), admin: {} }).nation.gaps[0].afterTheRecords, true);
   const html = String(P.historyMarkup({ nation: Object.assign({ status: 'ok' }, a), admin: null }, 'en'));
   assert.match(html, /No record draws a polity here[\s\S]*today/);
   const jp = String(P.historyMarkup({ nation: Object.assign({ status: 'ok' }, a), admin: null }, 'jp'));

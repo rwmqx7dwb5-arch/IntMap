@@ -67,16 +67,50 @@ const CACHE = process.env.INTMAP_CLIO_CACHE || join(tmpdir(), 'intmap-clio-cache
 export const SNAP_GLOBAL = '__HISTCOASTSNAP';
 /* the land: Natural Earth 1:10m admin-0, as scripts/build-ne-countries.mjs ships it (nothing simplified or dropped) */
 export const NE_LAND = 'data/ne-countries/ne_10m_admin_0_countries.json.gz';
+/* ══ (coast-snap-detail) THE COASTLINE THE BASE MAP DRAWS ═══════════════════════════════════════════════════════
+   REPORTED (production, build 38fd028): the Asian shore of the Bosporus at Üsküdar (Salacak, Harem, Selimiye to Kadıköy)
+   was drawn under nothing in 1000, 1500 and 1650 — 240 of 919 land points of the base map. The pieces reached Natural
+   Earth 1:10m's coast, which along the Bosporus is a coarse straight line; the base map (CARTO, from OpenStreetMap) draws
+   the shore beyond it. MEASURED (0.001° grid, 28.995–29.040E × 41.000–41.035N): 1,034 points are land in OpenStreetMap's
+   coast; 863 of them are land in Natural Earth's, 171 are not, and 73 of Natural Earth's land points are OpenStreetMap's
+   sea. So the land a piece reaches is now the base map's own: OpenStreetMap's land polygons (osmdata.openstreetmap.de),
+   as `@geo-maps/earth-lands-10m` 0.6.0 publishes them on npm (simplified to 10 m, five decimals, ODbL 1.0) — pinned in
+   package-lock.json by its integrity and here by the sha256 of the file. It is a build-time input only; it is never
+   shipped whole (what ships is the pieces).
+   ⚠⚠ NOT FOR EVERY ROW — THE TERMS DECIDE (the user's decision, 2026-10-08). A piece is drawn from its parent's line and the
+   coast, so it is a derivative of both. OpenStreetMap's ODbL 1.0 asks that a derivative be offered under ODbL; a record
+   whose own terms ask the same of a derivative (share-alike: CShapes' CC BY-NC-SA 4.0, historical-basemaps' GPL-3.0)
+   cannot be met at once with it. So a row of a share-alike record keeps Natural Earth's public-domain coast, and a row of
+   a record whose terms allow it (OpenHistoricalMap CC0 1.0, Cliopatria CC BY 4.0) reaches OpenStreetMap's. The licence is
+   each tier's own value below, and the gate holds it to the words its bundle's `src` states (`checkCoastSnap`), so a
+   record whose terms change is refused rather than silently mixed. */
+export const OSM_LAND = Object.freeze({
+  file: 'node_modules/@geo-maps/earth-lands-10m/map.geo.json', pkg: '@geo-maps/earth-lands-10m', version: '0.6.0',
+  sha256: '76ef0da9333e5e5c0366708ebdfc9d3a5a9e4caaec3493a0139f759fcf26fdd2',
+});
+/* each coast the pieces may reach, with the width two fine coastlines disagree by against it (rule ⑥, `agreementKm`):
+   MEASURED 2026-10-08, every vertex of data/cshapes.js (the finest record: five decimals, no simplification) within 7 km of
+   the coast, its distance to it — Natural Earth 1:10m admin-0 (594,603 vertices): p25 0.185 km, median 0.415, p75 0.868,
+   p90 1.676 (the 0.413 measured when this file was written, on an earlier data/cshapes.js); OpenStreetMap's land polygons
+   (510,507): p25 0.262, median 0.626, p75 1.286, p90 2.407. expires: when either coast or data/cshapes.js is rebuilt at
+   another scale or precision — re-measure; canon: here. */
+export const COASTS = Object.freeze({
+  ne: Object.freeze({ id: 'ne', file: NE_LAND, name: 'Natural Earth 1:10m admin-0', licence: 'public domain', agreementKm: 0.413 }),
+  osm: Object.freeze({ id: 'osm', file: OSM_LAND.file, name: 'OpenStreetMap land polygons (osmdata.openstreetmap.de, via ' + OSM_LAND.pkg + ' ' + OSM_LAND.version + ', 10 m)', licence: 'ODbL 1.0', agreementKm: 0.626 }),
+});
 /* the records the page composes, highest precision first — the order the builders cut them against each other, and the
-   order a piece is given to when two rows of one name bound it (the first of them draws it) */
+   order a piece is given to when two rows of one name bound it (the first of them draws it). `licence` is the record's own
+   terms as its bundle states them; `shareAlike` whether those terms ask a derivative to carry them (see above) */
 export const TIERS = Object.freeze([
-  { t: 'cshapes', file: 'data/cshapes.js', global: '__CSHAPES' },
-  { t: 'ohm-late', file: 'data/hist-borders-late.js', global: '__HISTBLATE' },
-  { t: 'ohm', file: 'data/hist-borders.js', global: '__HISTB' },
-  { t: 'clio', file: 'data/hist-clio.js', global: '__HISTCLIO' },
-  { t: 'sheet', file: 'data/hist-eras-rest.js', global: '__HISTERASREST' },
+  { t: 'cshapes', file: 'data/cshapes.js', global: '__CSHAPES', licence: 'CC BY-NC-SA 4.0', shareAlike: true },
+  { t: 'ohm-late', file: 'data/hist-borders-late.js', global: '__HISTBLATE', licence: 'CC0 1.0', shareAlike: false },
+  { t: 'ohm', file: 'data/hist-borders.js', global: '__HISTB', licence: 'CC0 1.0', shareAlike: false },
+  { t: 'clio', file: 'data/hist-clio.js', global: '__HISTCLIO', licence: 'CC BY 4.0', shareAlike: false },
+  { t: 'sheet', file: 'data/hist-eras-rest.js', global: '__HISTERASREST', licence: 'GPL-3.0', shareAlike: true },
 ]);
-export const SRC = 'IntMap, derived (coast-snap-gaps): the land between a record\'s copy of the coast and the coast of Natural Earth 1:10m admin-0 (public domain, unsimplified), drawn under the one polity whose row bounds it — each row names the row it extends; its landward edge is that row\'s own line, under that record\'s terms (data/hist-clio.js CC BY 4.0, data/hist-eras-rest.js GPL-3.0, data/cshapes.js CC BY-NC-SA 4.0, OpenHistoricalMap CC0 1.0)';
+/* the coast a row of tier `t` reaches: a share-alike record keeps the public-domain coast */
+export const coastOf = (t) => { const T = TIERS.find((x) => x.t === t); return T && !T.shareAlike ? 'osm' : 'ne'; };
+export const SRC = 'IntMap, derived (coast-snap-gaps): the land between a record\'s copy of the coast and the real coast, drawn under the one polity whose row bounds it — each row names the row it extends; its landward edge is that row\'s own line, under that record\'s terms (data/hist-clio.js CC BY 4.0, data/hist-eras-rest.js GPL-3.0, data/cshapes.js CC BY-NC-SA 4.0, OpenHistoricalMap CC0 1.0). The coast (`coasts` names it for each record): for OpenHistoricalMap and Cliopatria rows, OpenStreetMap\'s land polygons © OpenStreetMap contributors (ODbL 1.0, openstreetmap.org/copyright; osmdata.openstreetmap.de via @geo-maps/earth-lands-10m 0.6.0), and those rows are offered under ODbL 1.0; for the share-alike records (CShapes, historical-basemaps), Natural Earth 1:10m admin-0 (public domain, unsimplified)';
 
 /* ── dates: sortable YYYYMMDD (negative years sort correctly: month·100+day < 10000) ── */
 const ymd = (y, m, d) => y * 10000 + m * 100 + d;
@@ -237,15 +271,29 @@ class SegIndex {
    Natural Earth's polygons are whole countries (Russia's mainland ring has tens of thousands of points), so they are cut
    once into 1° tiles (Sutherland–Hodgman, then polygon-clipping's union — a tile's land is one clean multipolygon with
    the borders between countries dissolved), and a band cell asks its tile. The coast segments themselves are indexed
-   whole, for «is this edge the coast». */
+   whole, for «is this edge the coast».
+   (coast-snap-detail) `new Land('osm')` is OpenStreetMap's land instead (COASTS.osm — already one polygon set with no
+   borders inside it). Its `agreementKm` is that coast's (rule ⑥); the land borders between today's countries (rule ⑦)
+   are always Natural Earth's, the only source here that draws them. */
+const readNE = () => { const g = decodeNECountries(JSON.parse(gunzipSync(readFileSync(join(ROOT, NE_LAND))))), out = [];
+  for (const f of g.features) { const c = f.geometry.coordinates; for (const p of f.geometry.type === 'Polygon' ? [c] : c) out.push({ p, b: bbox([p]) }); }
+  return out; };
+export function readOSMLand() {
+  const file = join(ROOT, OSM_LAND.file);
+  if (!existsSync(file)) throw new Error(OSM_LAND.file + ' is missing — npm ci installs ' + OSM_LAND.pkg + ' (a devDependency)');
+  const buf = readFileSync(file), h = createHash('sha256').update(buf).digest('hex');
+  if (h !== OSM_LAND.sha256) throw new Error(OSM_LAND.file + ' is not the file this rule was measured against (sha256 ' + h + ')');
+  const g = JSON.parse(buf.toString('utf8')), out = [];
+  for (const geom of g.geometries || [g]) for (const p of geom.type === 'Polygon' ? [geom.coordinates] : geom.coordinates) out.push({ p, b: bbox([p]) });
+  return out;
+}
 export class Land {
-  constructor() {
-    const g = decodeNECountries(JSON.parse(gunzipSync(readFileSync(join(ROOT, NE_LAND)))));
-    this.polys = [];
-    for (const f of g.features) { const c = f.geometry.coordinates; for (const p of f.geometry.type === 'Polygon' ? [c] : c) this.polys.push({ p, b: bbox([p]) }); }
+  constructor(coast = 'ne') {
+    this.id = coast; this.agreementKm = COASTS[coast].agreementKm;
+    this.polys = coast === 'osm' ? readOSMLand() : readNE();
     this.byTile = new Map();
     for (const q of this.polys) for (let x = Math.floor(q.b[0]); x <= Math.floor(q.b[2]); x++) for (let y = Math.floor(q.b[1]); y <= Math.floor(q.b[3]); y++) { const k = x * 1000 + y; const L = this.byTile.get(k); if (L) L.push(q); else this.byTile.set(k, [q]); }
-    this.tiles = new Map(); this.cells = new Map();
+    this.tiles = new Map(); this.cells = new Map(); this.tileBoxes = new WeakMap();
     /* the latitudes the coast reaches (a vertex at a pole closes Antarctica's ring round the pole and is not a coast) — no
        piece can lie further poleward than these plus a band, and near a pole a degree of longitude is metres wide, so the
        band's cells there would be millions (MEASURED: the sheets' «Antarctica», whose ring runs along 90°S, did not finish) */
@@ -260,7 +308,7 @@ export class Land {
   get borders() {
     if (this._borders) return this._borders;
     const seen = new Map(), segs = [];
-    this.polys.forEach((q, qi) => { for (const r of q.p) for (let i = 0; i + 1 < r.length; i++) {
+    (this.id === 'ne' ? this.polys : readNE()).forEach((q, qi) => { for (const r of q.p) for (let i = 0; i + 1 < r.length; i++) {
       const a = r[i], b = r[i + 1], k = a[0] < b[0] || (a[0] === b[0] && a[1] < b[1]) ? a.join(',') + '|' + b.join(',') : b.join(',') + '|' + a.join(',');
       const o = seen.get(k); if (o == null) seen.set(k, qi); else if (o !== qi && o >= 0) { segs.push([a, b]); seen.set(k, -1); } } });
     return (this._borders = new SegIndex(segs, 0.05));
@@ -271,6 +319,9 @@ export class Land {
     for (const q of this.byTile.get(k) || []) { const c = clipPolys([q.p], box); for (const p of c) pieces.push(p); }
     let u = null;
     if (pieces.length) { try { u = pc.union(...pieces.map((p) => [p])); } catch (_) { u = pieces; } if (!u.length) u = null; }
+    /* (coast-snap-detail) bounded: a worker visits the coast of the whole world over its rows, and OpenStreetMap's tiles are
+       an order of magnitude heavier than Natural Earth's */
+    if (this.tiles.size > 3000) this.tiles.clear();
     this.tiles.set(k, u); return u;
   }
   /* the land of one band cell: n cells per degree, so cells align with the tiles and two neighbours share exact edges */
@@ -278,7 +329,17 @@ export class Land {
     const key = n + ':' + cx + ':' + cy; if (this.cells.has(key)) return this.cells.get(key);
     const box = [cx / n, cy / n, (cx + 1) / n, (cy + 1) / n], T = this.tile(Math.floor(cx / n), Math.floor(cy / n));
     let u = null;
-    if (T) { try { u = pc.intersection(T, [[[box[0], box[1]], [box[2], box[1]], [box[2], box[3]], [box[0], box[3]], [box[0], box[1]]]]); } catch (_) { u = null; } if (u && !u.length) u = null; }
+    /* (coast-snap-detail) ⚠ CUT TO THE BOX FIRST, MEASURED: polygon-clipping's sweep over the whole 1° tile for each of its
+       n² cells was the cost — OpenStreetMap's Arctic coast has tens of thousands of vertices a tile, and OpenHistoricalMap's
+       «Russian Empire» did not finish one row in ten minutes. Sutherland–Hodgman against the cell (linear, and only the tile's
+       polygons whose box meets it) leaves the same region with possible zero-width runs on the box edge, which the
+       intersection with the box then resolves exactly as before, on a few hundred vertices instead of the tile's. */
+    if (T) {
+      const bb = this.tileBoxes.get(T) || (this.tileBoxes.set(T, T.map((p) => bbox([p]))), this.tileBoxes.get(T));
+      const pre = clipPolys(T.filter((_, i) => meets(bb[i], box)), box);
+      if (pre.length) { try { u = pc.intersection(pre, [[[box[0], box[1]], [box[2], box[1]], [box[2], box[3]], [box[0], box[3]], [box[0], box[1]]]]); } catch (_) { u = null; } }
+      if (u && !u.length) u = null;
+    }
     if (this.cells.size > 40000) this.cells.clear();
     this.cells.set(key, u); return u;
   }
@@ -312,7 +373,7 @@ const EPS_ON = 1e-8, EPS_SIDE = 1e-12, EPS_IV = 1e-9;
    slivers between two fine coasts, kilometres long and tens of metres wide; the old city of Istanbul is not one of them.
    expires: when data/ne-countries/ or data/cshapes.js is rebuilt at another scale or precision — re-measure the distances;
    canon: here. */
-export const COAST_AGREEMENT_KM = 0.413;
+export const COAST_AGREEMENT_KM = COASTS.ne.agreementKm;   /* (coast-snap-detail) Natural Earth's; OpenStreetMap's is COASTS.osm */
 /* polygon-clipping, retried on coordinates snapped finer than any record's precision when it cannot close a ring */
 const snapTo = (q) => (g) => g.map((p) => p.map((r) => r.map(([x, y]) => [Math.round(x * q) / q, Math.round(y * q) / q])));
 function safe(op, ...args) {
@@ -351,7 +412,7 @@ export function cellsOfSegment(ax, ay, bx, by, n, add) {
   add(x1, y1);
 }
 /* one band cell at one set of rows in force: its pieces of uncovered land, each with what its edges touch */
-function cellPieces(R, c, inF, Rseg, coast, B, borders) {
+function cellPieces(R, c, inF, Rseg, coast, B, borders, agree) {
   const cut = c.rc.slice(); for (const o of inF) for (const p of partsIn(o, c.box)) cut.push(p);
   let res;
   try { res = cut.length ? safe('difference', c.L, ...cut.map((p) => [p])) : c.L; } catch (_) { return { failed: true, pieces: [] }; }
@@ -379,7 +440,7 @@ function cellPieces(R, c, inF, Rseg, coast, B, borders) {
     }
     for (const r of poly) { for (const [x, y] of r) if (!Rseg.near(x, y, B)) { P.far = true; break; } if (P.far) break; }
     P.km2 = polyKm2(poly); P.edgeKm = edgeKm(poly, c.box);
-    for (const r of poly) { for (const [x, y] of r) if (borders.near(x, y, COAST_AGREEMENT_KM)) { P.border = true; break; } if (P.border) break; }
+    for (const r of poly) { for (const [x, y] of r) if (borders.near(x, y, agree)) { P.border = true; break; } if (P.border) break; }
     pieces.push(P);
   }
   return { failed: false, pieces };
@@ -395,9 +456,11 @@ function sigOf(G) { const u = G.map((P) => P.uid).sort((a, b) => a - b); let h =
 const overlaps = (A, Bs) => A.some(([a, b]) => Bs.some(([c, d]) => Math.min(b, d) - Math.max(a, c) > EPS_IV));
 const round6 = (p) => p.map((r) => { const o = []; for (const q of r.slice(0, -1)) { const x = +q[0].toFixed(6), y = +q[1].toFixed(6); const l = o[o.length - 1]; if (!l || l[0] !== x || l[1] !== y) o.push([x, y]); } if (o.length > 1 && o[0][0] === o[o.length - 1][0] && o[0][1] === o[o.length - 1][1]) o.pop(); return o; })
   .filter((r) => r.length >= 3 && Math.abs(ringArea(r)) > 1e-12);
-export function snapRow(R, rows, grid, land, water, debug = null) {
+/* `lands` is one Land, or { ne, osm } (each a Land or a function returning one) from which the row's coast is taken (`coastOf`) */
+export function snapRow(R, rows, grid, lands, water, debug = null) {
   const why = {}; const no = (k) => { why[k] = (why[k] || 0) + 1; };
   if (!R.name) return { out: [], why };
+  const land = lands instanceof Land ? lands : (typeof lands[coastOf(R.t)] === 'function' ? lands[coastOf(R.t)]() : lands[coastOf(R.t)]);
   const B = R.band, n = Math.ceil(KM_PER_DEG / B), coast = land.coast;
   const latLo = land.coastLat[0] - B / KM_PER_DEG - 1 / n, latHi = land.coastLat[1] + B / KM_PER_DEG + 1 / n, inLat = (y) => y >= latLo && y <= latHi;
   /* 1. the cells R's line passes through, widened by the band */
@@ -453,7 +516,7 @@ export function snapRow(R, rows, grid, land, water, debug = null) {
   const geomKey = (C) => C.gk || (C.gk = JSON.stringify(C.polys));
   const judgeCell = (c, t0) => {
     const inF = c.N.filter((o) => o.s <= t0 && o.e > t0), mk = c.key + '|' + inF.map((o) => o.k).join(',');
-    let r = memo.get(mk); if (!r) { if (memo.size > 60000) memo.clear(); r = cellPieces(R, c, inF, Rseg, coast, B, land.borders); memo.set(mk, r); if (r.failed) no('clip-failed-cell'); }
+    let r = memo.get(mk); if (!r) { if (memo.size > 60000) memo.clear(); r = cellPieces(R, c, inF, Rseg, coast, B, land.borders, land.agreementKm); memo.set(mk, r); if (r.failed) no('clip-failed-cell'); }
     cur.set(c.key, r);
   };
   for (let j = 0; j + 1 < dates.length; j++) {
@@ -485,7 +548,7 @@ export function snapRow(R, rows, grid, land, water, debug = null) {
       if (!C) {
         const verdict = !G.some((P) => P.tS) ? 'no-sea' : G.some((P) => P.odd || beyond.has(P.uid)) ? 'beyond-band' : G.some((P) => P.other) ? 'two-polities' : G.some((P) => P.border) ? 'present-day-border'
           : G.some((P) => P.later) ? 'drawn-by-another-row' : G.some((P) => P.far) ? 'too-far'
-          : !G.some((P) => 2 * P.km2 / Math.max(1e-9, P.edgeKm) >= COAST_AGREEMENT_KM) ? 'within-the-coasts-agreement' : 'given';
+          : !G.some((P) => 2 * P.km2 / Math.max(1e-9, P.edgeKm) >= land.agreementKm) ? 'within-the-coasts-agreement' : 'given';
         no(verdict);
         C = { sig, verdict, polys: null };
         if (verdict === 'given') {
@@ -517,9 +580,13 @@ export class RowGrid {
 
 /* ══ THE BUILD — rows spread over worker threads (each loads the records and the land itself) ══════ */
 function workerMain() {
-  const { rows } = loadRows(), grid = new RowGrid(rows), land = new Land(), water = coastWater();
+  const { rows } = loadRows(), grid = new RowGrid(rows), water = coastWater();
+  /* (coast-snap-detail) OpenStreetMap's land is read only by a worker that is given a row reaching it; both share Natural
+     Earth's land borders (rule ⑦) */
+  const ne = new Land('ne'); let osm = null;
+  const lands = { ne, osm: () => { if (!osm) { osm = new Land('osm'); osm._borders = ne.borders; } return osm; } };
   parentPort.on('message', ({ id, k }) => {
-    let res; try { res = snapRow(rows[k], rows, grid, land, water); } catch (e) { res = { out: [], why: { error: 1 }, err: String(e && e.stack || e) }; }
+    let res; try { res = snapRow(rows[k], rows, grid, lands, water); } catch (e) { res = { out: [], why: { error: 1 }, err: String(e && e.stack || e) }; }
     parentPort.postMessage({ id, k, res });
   });
   parentPort.postMessage({ ready: true });
@@ -535,15 +602,16 @@ export async function buildCoastSnap({ log = console.error, only = null } = {}) 
   if (only) todo = todo.filter((o) => meets(o.bb, only));
   todo.sort((a, b) => (b.polys.reduce((s, p) => s + p[0].length, 0)) - (a.polys.reduce((s, p) => s + p[0].length, 0)));
   log(`coast-snap: ${rows.length} rows in the composition, ${todo.length} named rows near a coast to judge`);
-  const N = Math.max(1, Math.min(8, (os.availableParallelism ? os.availableParallelism() : os.cpus().length) - 2));
+  /* INTMAP_SNAP_WORKERS overrides the count (a machine with few cores and room in memory) */
+  const N = Math.max(1, +process.env.INTMAP_SNAP_WORKERS || Math.min(8, (os.availableParallelism ? os.availableParallelism() : os.cpus().length) - 2));
   const self = fileURLToPath(import.meta.url), results = new Map(), why = {};
   const t0 = Date.now();
   /* ⚠ EACH ROW'S ANSWER IS KEPT ON DISK, keyed by everything it depends on: the records and the land it was judged against
      (their sha256) and the rule itself (the source of the functions that decide it, and the constants). A build that stops —
      a worker that ran out of memory 16 minutes in did — resumes where it was; a changed record or rule is a new key, and
      nothing is reused across keys. The cache is outside the repository, beside the subtraction jobs' (build-hist-clio.mjs). */
-  const rule = [snapRow, cellsOfSegment, cellPieces, sigOf, Land, clipRing, clipPolys, partsIn, SegIndex].map(String).join('\n') + JSON.stringify([COAST_AGREEMENT_KM, EPS_ON, EPS_SIDE, EPS_IV, KM_PER_DEG, TIERS.map((T) => inlandKmFor(T.global))]);
-  const dir = join(CACHE, 'coast-snap', createHash('sha256').update(JSON.stringify(Object.values(heads).filter(Boolean).map((h) => h.sha)) + sha(NE_LAND) + rule).digest('hex').slice(0, 24));
+  const rule = [snapRow, cellsOfSegment, cellPieces, sigOf, Land, readNE, readOSMLand, coastOf, clipRing, clipPolys, partsIn, SegIndex].map(String).join('\n') + JSON.stringify([COASTS, OSM_LAND, TIERS, EPS_ON, EPS_SIDE, EPS_IV, KM_PER_DEG, TIERS.map((T) => inlandKmFor(T.global))]);
+  const dir = join(CACHE, 'coast-snap', createHash('sha256').update(JSON.stringify(Object.values(heads).filter(Boolean).map((h) => h.sha)) + sha(NE_LAND) + OSM_LAND.sha256 + rule).digest('hex').slice(0, 24));
   mkdirSync(dir, { recursive: true });
   const fileOf = (o) => join(dir, o.t + '_' + (o.sy == null ? '' : o.sy + '_') + o.i + '.json');
   const keep = (o, res) => { results.set(o.k, res.out); for (const [r, c] of Object.entries(res.why)) why[r] = (why[r] || 0) + c; };
@@ -556,7 +624,7 @@ export async function buildCoastSnap({ log = console.error, only = null } = {}) 
     if (!left) return resolve();
     const feed = (w) => { if (next < todo.length) { const o = todo[next++]; w.postMessage({ id: next - 1, k: o.k }); } };
     for (let i = 0; i < N; i++) {
-      const w = new Worker(self, { workerData: { role: 'coast-snap' }, resourceLimits: { maxOldGenerationSizeMb: 4096 } });
+      const w = new Worker(self, { workerData: { role: 'coast-snap' }, resourceLimits: { maxOldGenerationSizeMb: +process.env.INTMAP_SNAP_HEAP_MB || 6144 } });   /* (coast-snap-detail) OpenStreetMap's land is ~1.5 GB in a worker */
       ws.push(w);
       w.on('message', (m) => {
         if (m.ready) { feed(w); return; }
@@ -589,8 +657,12 @@ export function writeSnap(rows, heads, results, why, { log = console.error, writ
     feats.push([o.t === 'cshapes' ? String(f[0] || o.name) : (f[0] || { en: o.name }), o.t === 'sheet' ? null : (f[1] == null ? null : f[1]), ...unymd(x.s), ...unymd(x.e), x.polys.map((p) => p.map(put)), meta]);
   }
   feats.sort((a, b) => ymd(a[2], a[3], a[4]) - ymd(b[2], b[3], b[4]) || ymd(a[5], a[6], a[7]) - ymd(b[5], b[6], b[7]) || (a[9].t < b[9].t ? -1 : a[9].t > b[9].t ? 1 : a[9].i - b[9].i) || (a[9].y || 0) - (b[9].y || 0));
-  const head = { v: 1, src: SRC, end: 'exclusive', land: NE_LAND, basis: Object.fromEntries(Object.values(heads).filter(Boolean).map((h) => [h.file, h.sha]).concat([[NE_LAND, sha(NE_LAND)]])),
-    bands: Object.fromEntries(TIERS.map((T) => [T.t, inlandKmFor(T.global)])), agreementKm: COAST_AGREEMENT_KM, judged: Object.fromEntries(Object.keys(why).sort().map((k) => [k, why[k]])) };
+  /* (coast-snap-detail) `coasts` — the coast each record's rows reach (by the record's terms, `coastOf`), and `lands` what each
+     coast is: its file, its name, its terms and the agreement width it was judged with (rule ⑥) */
+  const head = { v: 1, src: SRC, end: 'exclusive', coasts: Object.fromEntries(TIERS.map((T) => [T.t, coastOf(T.t)])),
+    lands: Object.fromEntries(Object.values(COASTS).map((c) => [c.id, { file: c.file, name: c.name, licence: c.licence, agreementKm: c.agreementKm }])),
+    basis: Object.fromEntries(Object.values(heads).filter(Boolean).map((h) => [h.file, h.sha]).concat([[NE_LAND, sha(NE_LAND)], [OSM_LAND.file, OSM_LAND.sha256]])),
+    bands: Object.fromEntries(TIERS.map((T) => [T.t, inlandKmFor(T.global)])), judged: Object.fromEntries(Object.keys(why).sort().map((k) => [k, why[k]])) };
   const body = 'window.' + SNAP_GLOBAL + '=' + JSON.stringify({ ...head, rings, feats }) + ';\n';
   if (write) writeFileSync(join(ROOT, SNAP_FILE), body);
   log(`${SNAP_FILE}: ${feats.length} rows, ${rings.length} rings, ${rings.reduce((a, r) => a + r.length, 0)} points, ${(body.length / 1e6).toFixed(2)} MB — pieces judged: ${Object.entries(head.judged).map(([k, v]) => k + ' ' + v).join(', ')} (${((Date.now() - t0) / 1000).toFixed(0)} s)`);
@@ -619,12 +691,19 @@ export const rowKeyOf = (o) => o.t + ':' + (o.sy != null ? o.sy + ':' : '') + o.
 export function checkCoastSnap(ok) {
   if (!existsSync(join(ROOT, SNAP_FILE))) { ok(false, SNAP_FILE + ' is missing — node scripts/build-hist-clio.mjs --coast-snap'); return null; }
   const snap = evalBundle(SNAP_FILE, SNAP_GLOBAL);
-  ok(snap && snap.v === 1 && /Natural Earth/.test(snap.src) && /CC BY 4\.0/.test(snap.src), SNAP_FILE + ' must name Natural Earth and the terms of the records it extends');
+  ok(snap && snap.v === 1 && /Natural Earth/.test(snap.src) && /OpenStreetMap contributors/.test(snap.src) && /ODbL 1\.0/.test(snap.src) && /CC BY 4\.0/.test(snap.src), SNAP_FILE + ' must name both coasts (Natural Earth; © OpenStreetMap contributors, ODbL 1.0) and the terms of the records it extends');
   if (!snap) return null;
   for (const T of TIERS) if (existsSync(join(ROOT, T.file))) ok(snap.basis[T.file] === sha(T.file), SNAP_FILE + ' was made against another ' + T.file + ' — rebuild it (node scripts/build-hist-clio.mjs --coast-snap)');
   ok(snap.basis[NE_LAND] === sha(NE_LAND), SNAP_FILE + ' was made against another ' + NE_LAND);
+  /* (coast-snap-detail) the coast each record reaches is the one its terms allow, and each record still states those terms */
+  ok(snap.basis[OSM_LAND.file] === OSM_LAND.sha256, SNAP_FILE + ' was made against another ' + OSM_LAND.file);
+  for (const T of TIERS) {
+    ok(snap.coasts && snap.coasts[T.t] === coastOf(T.t), SNAP_FILE + ': the rows of ' + T.t + ' reach the ' + (snap.coasts && snap.coasts[T.t]) + ' coast, not ' + coastOf(T.t) + ' — rebuild it');
+  }
+  for (const c of Object.values(COASTS)) ok(snap.lands && snap.lands[c.id] && snap.lands[c.id].agreementKm === c.agreementKm && snap.lands[c.id].licence === c.licence, SNAP_FILE + ': the ' + c.id + ' coast was judged with another agreement width or terms — rebuild it');
   for (const T of TIERS) ok(snap.bands && snap.bands[T.t] === inlandKmFor(T.global), SNAP_FILE + ': the band of ' + T.t + ' is no longer ' + (snap.bands && snap.bands[T.t]) + ' km — rebuild it');
-  const { rows } = loadRows(), byKey = new Map(rows.map((o) => [rowKeyOf(o), o])), grid = new RowGrid(rows);
+  const { rows, bundles } = loadRows(), byKey = new Map(rows.map((o) => [rowKeyOf(o), o])), grid = new RowGrid(rows);
+  for (const T of TIERS) if (bundles[T.t]) ok(String(bundles[T.t].src || '').includes(T.licence), T.file + ' no longer states «' + T.licence + '» — which coast its rows may reach (`coastOf`) is decided by its terms; review TIERS before rebuilding');
   const used = new Uint8Array(snap.rings.length);
   let bad = 0; const say = (c, m) => { if (!c && bad++ < 12) ok(false, m); };   /* the first twelve said; the rest counted below */
   for (const f of snap.feats) {
@@ -681,14 +760,21 @@ export function portCoverage({ rows, snap, land, box, y, step = 0.0025 }) {
 }
 
 /* the port-city table (`--coast-snap-measure`): per city and year, land grid points drawn by the records, and by the records and
-   the snap — the before and after of this file, from the shipped bundles */
-export function measurePorts({ log = console.log, step = 0.0025 } = {}) {
-  const { rows } = loadRows(), land = new Land(), snap = evalBundle(SNAP_FILE, SNAP_GLOBAL), out = [];
-  log('city            year    land   records   + snap    (points every ' + step + '°, 1 July)');
+   the snap — the before and after of this file, from the shipped bundles.
+   (coast-snap-detail) ⚠ LAND IS THE BASE MAP'S (`coast`, default OpenStreetMap's). This table first counted Natural Earth's
+   land points, the coast the pieces were cut to — so it could only ever find them complete: it reported Üsküdar at 100% in
+   1000, 1500 and 1650 while production showed 240 of 919 base-map land points blank there. An observer that measures with
+   the instrument under test reports success (.agents/rules/one-pass-or-a-reason.md §2). `before` is another snap bundle
+   (a file path) to count beside the shipped one. */
+export function measurePorts({ log = console.log, step = 0.0025, coast = 'osm', before = null } = {}) {
+  const { rows } = loadRows(), land = new Land(coast), snap = evalBundle(SNAP_FILE, SNAP_GLOBAL), out = [];
+  let prev = null; if (before) { const w = {}; new Function('window', readFileSync(before, 'utf8'))(w); prev = w[SNAP_GLOBAL]; }
+  log('city            year    land   records' + (prev ? '   + snap before' : '') + '   + snap    (' + COASTS[coast].name + ' land, points every ' + step + '°, 1 July)');
   for (const [nm, box] of PORTS) for (const y of PORT_YEARS) {
     const c = portCoverage({ rows, snap, land, box, y, step }), pct = (v) => (100 * v / Math.max(1, c.land)).toFixed(1).padStart(5) + '%';
-    out.push({ city: nm, year: y, ...c });
-    log(nm.padEnd(16) + String(y).padStart(5) + String(c.land).padStart(8) + '   ' + pct(c.drawn) + '   ' + pct(c.drawn + c.snapped));
+    const b = prev ? portCoverage({ rows, snap: prev, land, box, y, step }) : null;
+    out.push({ city: nm, year: y, ...c, ...(b ? { snappedBefore: b.snapped } : {}) });
+    log(nm.padEnd(16) + String(y).padStart(5) + String(c.land).padStart(8) + '   ' + pct(c.drawn) + (b ? '   ' + pct(b.drawn + b.snapped).padStart(13) : '') + '   ' + pct(c.drawn + c.snapped));
   }
   return out;
 }

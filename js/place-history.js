@@ -113,11 +113,16 @@ export function compose(raw) {
   }
   /* (coast-snap-gaps) …and after the last: when the records go on past the last piece here (`top`, the first instant none of
      them reaches) the years from that piece to today are a span no record covers too, and are listed as one — reported:
-     Sirkeci's timeline stopped at «Ottoman Empire – 1885» and said nothing of 1886 to today. A point the records cover to
-     their own end has no such row (after it no record of the composition speaks for any ground). `now` is today, given by
-     the caller (this function has no clock). */
+     Sirkeci's timeline stopped at «Ottoman Empire – 1885» and said nothing of 1886 to today. `now` is today, given by
+     the caller (this function has no clock).
+     (coast-snap-detail) …and a point the records cover to their own end lists the years from that end to today as well,
+     marked `beyond` (no record of the composition speaks for ANY ground then) — reported: Sirkeci's «Turkey» row stopped at
+     CShapes' last day (2019) and the timeline said nothing of 2020 to today, which read as if the record were complete.
+     The row is not continued into those years under today's map: the present-day outlines state no date a polity held
+     the ground from, and a span no record covers is listed, never closed over (see the header). */
   const top = raw && raw.top, now = raw && raw.now;
   if (reach != null && top != null && reach < top) gaps.push({ from: reach, to: now != null && now > reach ? now : top, toNow: now != null && now > reach });
+  else if (reach != null && top != null && now != null && now > top && reach >= top) gaps.push({ from: top, to: now, toNow: true, beyond: true });
   return { entries, gaps, records: (raw && raw.records) || [], missing: (raw && raw.missing) || [], order };
 }
 
@@ -286,7 +291,7 @@ export function adminBrief(E) {
 export function forAtlas(rec) {
   const N = rec.nation || {}, A = rec.admin || {};
   return { at: rec.at, datesAre: 'astronomical YYYY-MM-DD; "to" is the first day no longer in force',
-    nation: { status: N.status, reason: N.reason || null, entries: (N.entries || []).map(entryBrief), gaps: (N.gaps || []).map((g) => Object.assign({ from: isoOf(g.from), to: isoOf(g.to) }, g.toNow ? { toToday: true } : {})), records: N.records || [], missing: N.missing || [] },
+    nation: { status: N.status, reason: N.reason || null, entries: (N.entries || []).map(entryBrief), gaps: (N.gaps || []).map((g) => Object.assign({ from: isoOf(g.from), to: isoOf(g.to) }, g.toNow ? { toToday: true } : {}, g.beyond ? { afterTheRecords: true } : {})), records: N.records || [], missing: N.missing || [] },
     admin: { status: A.status, reason: A.reason || null, entries: (A.entries || []).map(adminBrief), gaps: (A.gaps || []).map((g) => ({ from: isoOf(g.from), to: isoOf(g.to) })) } };
 }
 
@@ -393,7 +398,9 @@ export function historyMarkup(rec, lang, opts) {
   else if (N.status === 'none') parts.push(html`<div class="hn-why">${L('No historical record draws a polity over this point.', 'この地点に政体を描く歴史の記録はありません。')}</div>`);
   else {
     const noPolity = L('No record draws a polity here', 'この期間、ここに政体を描く記録はない');
-    const rows = N.entries.map((E, i) => ({ k: E.from.k, m: entryMarkup(E, i, W, row, opts.inert) })).concat((N.gaps || []).map((g) => ({ k: g.from, m: gapRow(g, noPolity) })));
+    /* (coast-snap-detail) the years after the records' own end: no record speaks for any ground, which is not «no polity here» */
+    const noRecord = L('No historical record covers these years (the records end here)', 'この期間を述べる歴史の記録はない（記録はここまで）');
+    const rows = N.entries.map((E, i) => ({ k: E.from.k, m: entryMarkup(E, i, W, row, opts.inert) })).concat((N.gaps || []).map((g) => ({ k: g.from, m: gapRow(g, g.beyond ? noRecord : noPolity) })));
     rows.sort((x, y) => x.k - y.k);
     parts.push(html`<div class="ph-list">${rows.map((r) => r.m)}</div>`);
   }

@@ -1766,7 +1766,9 @@ data/hist-eras-rest.js            年別の枚から、その枚の年に OHM �
 data/hist-coast-snap.js           **記録の海岸が残した陸**——ある瞬間にどの行も描かない陸のうち、海に接し、1 つの政体の行だけに
                                   接し、その記録の帯（`inlandKmFor`）の内にある片を、その行の行として持つ（`window.__HISTCOASTSNAP`・
                                   同じビルダーの `--coast-snap`・`scripts/histclio/coast-snap.mjs`／`npm run check:histclio`）。
-                                  海岸は Natural Earth 1:10m admin-0（**public domain**・間引かない）、陸側の辺は親の行の線。
+                                  海岸は記録の条件で決まる: OHM・Cliopatria の行は OpenStreetMap の陸地ポリゴン（**ODbL 1.0**・
+                                  `@geo-maps/earth-lands-10m` 0.6.0・devDependency・ビルド時だけ読む）、継承条項のある記録
+                                  （CShapes・historical-basemaps）の行は Natural Earth 1:10m admin-0（**public domain**・間引かない）。陸側の辺は親の行の線。
                                   行は親（`t`/`i`/`y`）と親が述べること（名前・識別子・日付 `d`・Cliopatria の meta `m`・枚の属性 `a`）を持つ
 data/histnames.json               **歴史的な政体名の、記録をまたぐ 1 つの表**（Wikidata・**CC0 1.0**
                                   ＋ 上流の説明文の訳・`scripts/build-histnames.mjs`／
