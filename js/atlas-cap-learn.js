@@ -60,4 +60,60 @@ export default [
       return R(ok, (ok ? note('✓ ' + esc(L('The set is on screen — the reader answers on the map', 'セットを表示しました。読者が地図で答えます'))) : warn(esc(L('The set did not open', 'セットが開きませんでした')))) + said(s), { meta: meta(s) });
     },
   },
+  /* (watch-account-product) learn.daily — TODAY'S QUEST: the day's set of each kind (js/quest-engine.js «THE DAY'S SET»), the
+     reader's streak of days and the last week, kept in this browser and the account (js/quest-daily.js). `state` reads
+     the summary the panel and the account sheet read (one count of the streak); `start` opens today's set and is judged by
+     the panel's own state afterwards, like learn.quest. Atlas does not answer the questions, and does not record a result —
+     only the reader finishing the set does. */
+  {
+    row: ['learn.daily',                'dailyQuest',     'todayQuest,dailyChallenge,questStreak,dailyStreak',         'panel',   'none',    'panel.quest,map.quest,camera,time', 'panel',        'session', 'none',   '',         ''],
+    doc: [
+      { in: 'learn.quest', at: 1, text: '{"type":"dailyQuest","action"?:"state"|"start"|"link","kind"?:"when"|"where"} = TODAY\'S QUEST (今日のクエスト — one set of each learn quest per calendar day, the same for everyone that day; the year quest opens on events the map\'s record dates on this day of the year, where it has any). state (default) returns whether today\'s sets are done and their scores, the reader\'s STREAK (連続日数: current and best) and the last 7 days — for 「今日のクエストは？」「連続何日？」「今週何日やった？」, "what\'s my streak?", "did I do today\'s quest?". start opens today\'s set of kind (default "when"); link returns today\'s set\'s challenge link so a friend gets the same questions today. The first finish of a day is the result (kept in the browser, and in the account when signed in); playing again is practice. Use this, not quest, whenever the reader says today / daily / streak. Do not answer the questions for the reader. ' },
+    ],
+    schema: () => ({ type: 'object', properties: { action: one('state', 'start', 'link'), kind: str() } }),
+    async run(a, dctx, K) { const R = K.R, L = K.L, esc = K.esc, note = K.note, warn = K.warn, HOST = K.HOST;
+      const P = await import('./quest-panel.js');
+      const E = await import('./quest-engine.js');
+      const D = await import('./quest-daily.js');
+      const act = String(a.action || 'state').trim();
+      const kind = a.kind ? String(a.kind) : 'when';
+      if ((act === 'start' || act === 'link') && E.QUEST_KIND_IDS.indexOf(kind) < 0) {
+        return R(false, warn(esc(L('No quest is called', 'この名前のクエストはありません') + ' «' + kind + '» — ' + E.QUEST_KIND_IDS.join(', '))), { meta: { code: 'needs_input' } });
+      }
+      if (act === 'link') {
+        const link = P.todayLink(kind);
+        return R(true, '<div style="font-weight:600;margin:2px 0;">' + esc(L('Today\'s ', '今日の') + E.kindTitle(kind, L('en', 'jp')) + ' · ' + L('challenge link', '挑戦リンク')) + '</div><div style="font-size:12px;word-break:break-all;">' + esc(link) + '</div>'
+          + note(esc(L('Everyone who opens it today gets the same ' + E.DAILY_N + ' questions.', '今日開いた人は全員、同じ ' + E.DAILY_N + ' 問を解きます。'))), { meta: { daily: { kind, day: D.today(), link } } });
+      }
+      if (act === 'start') {
+        const r = await P.openToday({ kind });
+        const s = P.questState();
+        if (!r || r.ok === false) {
+          const why = r && r.reason === 'data' ? L('The quest\'s data could not be read', 'クエストのデータを読み込めませんでした') + (r.detail ? ' (' + r.detail + ')' : '') : L('No questions could be made from the data', 'データから問題を作れませんでした');
+          return R(false, warn(esc(why)), { meta: { code: 'unavailable' } });
+        }
+        /* the verdict is what the panel says now: open, on question 1 of today's set of this kind */
+        const ok = !!(s.open && s.kind === kind && s.index === 1 && s.daily && s.daily.day === D.today());
+        return R(ok, ok ? note('✓ ' + esc(s.daily.practice ? L('Today\'s set is on screen — already recorded today, so this round is practice', '今日のセットを表示しました。今日の記録はすでにあるので、この回は練習です')
+          : L('Today\'s set is on screen — the reader answers on the map; the first finish is today\'s result', '今日のセットを表示しました。読者が地図で答え、最初に解き終えた結果が今日の記録になります')))
+          : warn(esc(L('Today\'s set did not open', '今日のセットが開きませんでした'))), { meta: { quest: { open: !!s.open, kind: s.kind, seed: s.seed, n: s.n, index: s.index, daily: s.daily } } });
+      }
+      /* state — the one summary (this browser and the account, merged). A read: it does not add this browser's days to the
+         account (sync:false) — the panel and the account sheet do that, so this row's effects stay what its row declares */
+      const s = await D.dailySummary(HOST, { sync: false });
+      const lang = L('en', 'jp');
+      const kinds = E.QUEST_KIND_IDS.map((k) => {
+        const d = s.todayKinds[k];
+        return '<div style="font-size:12.5px;margin:2px 0;">' + esc(L('Today\'s ', '今日の') + E.kindTitle(k, lang)) + ': ' + esc(d ? d.points + ' / ' + d.max + ' (' + d.scores.join(' · ') + ')' : L('not played yet', 'まだ解いていません')) + '</div>';
+      }).join('');
+      const st = s.streak;
+      const streak = st.current > 0 ? L(st.current + '-day streak', '連続 ' + st.current + ' 日') + (st.playedToday ? '' : L(' (play today to continue it)', '（今日解くと続きます）')) : L('No streak running', '連続記録はありません');
+      const week = s.recent.map((r) => r.day.slice(5) + (r.played ? ' ' + r.points : ' —')).join(' · ');
+      const where = s.account === 'ok' ? L('Kept in the account (every device)', 'アカウントに記録（どの端末でも同じ）') : D.dailyFailureText(s.account, lang);
+      return R(true, '<div style="font-weight:600;margin:2px 0;">' + esc(L('Today\'s quest', '今日のクエスト') + ' · ' + s.today) + '</div>' + kinds
+        + '<div style="font-size:12.5px;margin:2px 0;">' + esc(streak + ' · ' + L('best streak ' + st.best + ' days', '最長 ' + st.best + ' 日')) + '</div>'
+        + note(esc(L('Last 7 days: ', '最近 7 日: ') + week)) + note(esc(where)),
+      { meta: { daily: { today: s.today, account: s.account, todayKinds: s.todayKinds, streak: st, recent: s.recent, days: s.days } } });
+    },
+  },
 ];

@@ -12,7 +12,7 @@
 ### 6.1 テーブル
 
 **表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](../DATABASE.md)**（pgTAP による
-実証手順も同じファイル）。現在 **44 表**（`map_corrections`（地図の誤り報告・§11） / `place_watches`（見守る場所） / `saved_views` / `collection_shares` / `news_event_entities` / `ai_turn_answers` / `atlas_notebook_entries`（Atlas の調査ノート・同期をオンにした読者のみ） / `usage_counts` / `saved_places` / `account_data_catalog` / `profiles` / `profiles_public` / `current_news` / `geo_pins` / `favorites` /
+実証手順も同じファイル）。現在 **45 表**（`quest_daily_results`（今日のクエストの記録・§8.6.4） / `map_corrections`（地図の誤り報告・§11） / `place_watches`（見守る場所） / `saved_views` / `collection_shares` / `news_event_entities` / `ai_turn_answers` / `atlas_notebook_entries`（Atlas の調査ノート・同期をオンにした読者のみ） / `usage_counts` / `saved_places` / `account_data_catalog` / `profiles` / `profiles_public` / `current_news` / `geo_pins` / `favorites` /
 `user_prefs` / `dashboard_cards` / `ai_usage` / `ai_turns` / `ai_gloss_usage` / `relay_rate_buckets` /
 `atlas_capability_vectors` / `usage_counts`（匿名の利用統計） /
 `community_*` 5 表 / `feedback` /
@@ -63,6 +63,11 @@ id・アカウント・メールを含まずに返す。`anon` は 2 表のど�
 （NULL＝見守らない）・オン/オフ・既読（`seen_at`・`seen_keys` ≤ 2,000）。読む・書く・消すは所有者の RLS で、挿入は場所が
 呼び手のものであるときだけ、`user_id` はトリガー `tg_place_watches_own` が場所の持ち主に固定する。Edge Function も cron も無い
 （判定はページ・§18.1）。
+
+**今日のクエストの記録（`quest_daily_results`）** は読者・暦の日・クエストの種類ごとに 1 行（主キー）で、5 問の得点だけを持つ
+（数と範囲は `js/quest-engine.js` の `DAILY_N`・`QUEST_MAX`）。その日の最初の結果だけ——UPDATE の権限が無く、同じ日・種類の 2 回目は
+主キーで拒まれる（ページは「記録済み」と言う）。読む・挿入は所有者の RLS、`user_id` はトリガー `tg_quest_daily_results_own` が呼び手に固定し、
+UTC で明日より後の日は拒む。Edge Function も cron も無い（集計はページの `js/quest-daily.js`・§8.6.4）。pgTAP は `30_quest_daily_test.sql`。
 
 **DB の設計図は `supabase/migrations/` だけ**（全テーブル・制約・index・RLS・grants・トリガ・RPC）。
 本番へ手で SQL を流さない。手順は [`docs/MIGRATIONS.md`](../MIGRATIONS.md)。

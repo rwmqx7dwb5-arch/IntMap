@@ -4,7 +4,7 @@
 --  Executed by `supabase test db` (see docs/DATABASE.md).
 -- ============================================================================
 begin;
-select plan(104);  -- (monitors-retire) −16: the five area-monitor tables leave both lists (−10) and their six key/function assertions go (−6)   -- (community-next) +2: map_corrections joins both lists   -- (watch-places) +2: place_watches joins both lists   -- (collection-workspace) +4: saved_views and collection_shares join both lists   -- (sales-channels) +4: org_inquiries and supporters join both lists   -- (atlas-os) +2: atlas_notebook_entries joins both lists   -- (news-intelligence) +2: news_event_entities joins both lists   -- (account-data-center / my-places) +4: account_data_catalog and saved_places join both lists
+select plan(106);  -- (watch-account-product) +2: quest_daily_results joins both lists   -- (monitors-retire) −16: the five area-monitor tables leave both lists (−10) and their six key/function assertions go (−6)   -- (community-next) +2: map_corrections joins both lists   -- (watch-places) +2: place_watches joins both lists   -- (collection-workspace) +4: saved_views and collection_shares join both lists   -- (sales-channels) +4: org_inquiries and supporters join both lists   -- (atlas-os) +2: atlas_notebook_entries joins both lists   -- (news-intelligence) +2: news_event_entities joins both lists   -- (account-data-center / my-places) +4: account_data_catalog and saved_places join both lists
                    -- (anonymous-usage-counts) +2: usage_counts joins both lists   -- (atlas-stream-replay) +2: ai_turn_answers joins both lists
                    -- (atlas-semantic-search) +2: atlas_capability_vectors joins both lists   -- (client-error-log) +2: client_errors joins both lists
                    -- (#R801) +2 tables in both lists, +2 has_function   -- (#R334) +16: the eight Event tables join the has_table list and the RLS list
@@ -90,8 +90,11 @@ from unnest(array[
   -- to publish read-only (inserted only through publish_collection(); read by the public only through
   -- shared_collection(token)) (supabase/tests/24_collection_workspace_test.sql).
   'saved_views',
-  'collection_shares'
-]) as t;                                                    -- 44 assertions
+  'collection_shares',
+  -- (watch-account-product) the reader's result on each day's learn quest, so the streak follows them.
+  -- Owner-only through RLS; insert-only (supabase/tests/30_quest_daily_test.sql).
+  'quest_daily_results'
+]) as t;                                                    -- 45 assertions
 
 -- 2) RLS is ENABLED on every one of them (fail-closed: a table with RLS off fails).
 select ok(
@@ -121,8 +124,9 @@ from unnest(array[
   'saved_places',                                           -- (my-places) see the note above
   'map_corrections',                                         -- (community-next) see the note above
   'place_watches',                                           -- (watch-places) see the note above
-  'saved_views','collection_shares'                         -- (collection-workspace) see the note above
-]) as t;                                                    -- 44 assertions
+  'saved_views','collection_shares',                        -- (collection-workspace) see the note above
+  'quest_daily_results'                                      -- (watch-account-product) see the note above
+]) as t;                                                    -- 45 assertions
 
 -- (#R386) 2b) The operator RPCs exist. The admin console has buttons wired to these four names;
 --   a button that calls a function which is not there fails at the moment an operator needs it.

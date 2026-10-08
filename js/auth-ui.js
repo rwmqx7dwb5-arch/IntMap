@@ -481,6 +481,7 @@ export function authUi(HOST){
         <div class="acct-card acct-rows">
           <button class="acct-row" id="acct-my-places">${_authL('Library · My places','ライブラリ（マイプレイス）')}</button>
           <button class="acct-row" id="acct-watch">${_authL('Watched places','見守る場所')}</button>
+          <button class="acct-row" id="acct-daily">${_authL('Today’s quest','今日のクエスト')}</button>
           <button class="acct-row" id="acct-your-data">${_authL('What IntMap holds about you','IntMap が保持しているあなたのデータ')}</button>
           <button class="acct-row" id="acct-export" data-effect="private">${_authL('Download a copy of your data (JSON)','データのコピーをダウンロード（JSON）')}</button>
         </div>
@@ -587,6 +588,11 @@ export function authUi(HOST){
       document.getElementById('acct-watch').onclick=()=>{ _acctClose(); import('./place-watch.js').then(M=>M.openWatchDigest(HOST)).catch(()=>{}); };
       try{ const n=+(document.getElementById('btn-account')||{getAttribute:()=>0}).getAttribute('data-watch-new')||0;
         if(n>0) document.getElementById('acct-watch').textContent=_authL('Watched places','見守る場所')+' · '+_authL(n+' new','新着 '+n); }catch(_){}
+      /* (watch-account-product) today's quest — the day's sets and the streak, kept in the account (js/quest-daily.js). The row
+         says the streak once the summary is read (which also adds the days this browser played before signing in) */
+      document.getElementById('acct-daily').onclick=()=>{ _acctClose(); import('./quest-panel.js').then(M=>M.openQuest()).catch(()=>{}); };
+      import('./quest-daily.js').then(M=>M.dailySummary(HOST)).then(s=>{ const el=document.getElementById('acct-daily'); if(!el||!s) return; const st=s.streak;
+        if(st.current>0) el.textContent=_authL('Today’s quest','今日のクエスト')+' · '+_authL(st.current+'-day streak','連続 '+st.current+' 日')+(st.playedToday?'':' · '+_authL('not played yet today','今日はまだ')); }).catch(()=>{});
       document.getElementById('acct-your-data').onclick=()=>{ _acctClose(); import('./account-data.js').then(M=>M.openYourData(HOST)).catch(()=>{}); };
       document.getElementById('acct-export').onclick=async()=>{ const msg=document.getElementById('acct-msg');
         msg.textContent=_authL('Preparing your copy…','コピーを用意しています…');
