@@ -167,6 +167,34 @@ Codex は `project_doc_max_bytes`（既定 **32,768**）まで読んで**止ま�
   「reparse point か」でリンクを判定すると全部がリンクに見える——見るのは `LinkType` / `isSymbolicLink()`。
 - 消した後は、原本で lock の全パッケージの**中身**が揃っているかを確かめる（`npm ci` が最も確実）。
 
+### 5.2 ⚠⚠ 共有される場所と、そこへ書くもの（build-isolation 実測 2026-10-08）
+
+worktree は分かれていても、**次の場所は全セッションで 1 つ**である。
+
+- **subagent の scratchpad**（Claude Code）: 1 つのセッションが起動した subagent は**全員が親と同じ
+  scratchpad**（`…\Temp\claude\<cwd>\<session-id>\scratchpad`）を受け取る。worktree が別でも同じ。
+  実測: 9 体の 2 体が `npm run build > scratchpad/build2.log` を同じ名前に向け、読んだ側は**他の worktree の
+  ビルドログ**（先頭が NUL バイト＝後から `>` で切り詰めた書き手と、元の位置に書き続ける書き手）を
+  「自分のビルドが他の worktree の `dist/` に書いた」と読んだ。ビルドは交差していなかった。
+  ⇒ **scratchpad に置くファイル名には slug を入れる**（`build-<slug>.log`）。
+- **`node_modules`**（原本への junction）: `vite build` は設定を束ねた一時ファイルを
+  `node_modules/.vite-temp/` に書くが、名前は毎回一意で、束の中の `import.meta.dirname` は
+  **その木の設定ファイルの位置が文字列として焼き込まれる**——別の木の設定を取り違える経路は無い
+  （`tests/build-isolation-checks.test.mjs` が 2 つの木から同時に読ませて確かめる）。強制終了された
+  ビルドの一時ファイル（約 5 MB）は消えずに残り、そこは OneDrive の中である。
+  `vite`（dev）の依存キャッシュ `node_modules/.vite/` も共有になる（プレビューは `scripts/serve.mjs` で
+  dev サーバを使わない）。データ更新用スクリプトの上流キャッシュ（`node_modules/.cache/intmap-*`・
+  `%TEMP%\intmap-*-cache`）も共有。
+- **時代タイルのキャッシュ**（`%LOCALAPPDATA%\intmap-data\hvt-cache`）: 全 worktree のビルドが読む。
+  内容のハッシュで名づけ、書きかけが「在る」と見えないよう、書いてから名前へ rename する。
+- **同じ木の `dist/`**: 1 つの worktree で 2 つのビルド（手で走らせたものと Playwright の webServer の
+  `npm run build` など）が重なると、互いの `dist/` を空にしてコピーし合った（実測: `EPIPE … being used
+  by another process`・CSS の無いページ）。ビルドは出力先を**1 本ずつ**握り（出力先から名づけた
+  named pipe。持ち主のプロセスが終われば OS が閉じる）、2 本目は待ってから作る（`vite.config.js` の
+  `acquireOutDirLock`）。別の出力先（`--outDir`）は待たない——同じ木で並ぶなら、片方を `--outDir` で
+  自分の場所へ出す。
+  ⚠ 錠が守るのは書き手どうしで、**そのビルドを配っているサーバ**は守らない。
+
 ---
 
 ## 6. subagent・ツール・MCP
