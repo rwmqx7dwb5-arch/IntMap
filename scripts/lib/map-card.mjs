@@ -92,8 +92,10 @@ export function frameFor(box) {
 /* ── the raster: RGB, supersampled ─────────────────────────────────────────────────────────── */
 function canvas(w, h, bg) { const px = new Uint8Array(w * h * 3); for (let i = 0; i < w * h; i++) { px[i * 3] = bg[0]; px[i * 3 + 1] = bg[1]; px[i * 3 + 2] = bg[2]; } return { w, h, px }; }
 function blend(cv, i, col, a) { const p = cv.px, k = i * 3; p[k] += (col[0] - p[k]) * a; p[k + 1] += (col[1] - p[k + 1]) * a; p[k + 2] += (col[2] - p[k + 2]) * a; }
-/** fill rings (pixel coordinates) by the non-zero winding rule — the rule both TrueType outlines and polygon-with-holes need */
-function fill(cv, rings, col, alpha) {
+/** fill rings (pixel coordinates) by the non-zero winding rule — the rule both TrueType outlines and polygon-with-holes need —
+ *  or, with `evenOdd`, by the even-odd rule the year pages' SVG uses (scripts/lib/world-svg.mjs `fill-rule:evenodd`), so a card
+ *  fills exactly what the page's picture fills whatever the orientation of a record's rings */
+function fill(cv, rings, col, alpha, evenOdd) {
   const a = alpha == null ? 1 : alpha;
   const edges = [];
   let y0 = Infinity, y1 = -Infinity;
@@ -125,7 +127,7 @@ function fill(cv, rings, col, alpha) {
     xs.sort((p, q) => p[0] - q[0]);
     let wind = 0;
     for (let i = 0; i < xs.length - 1; i++) {
-      wind += xs[i][1];
+      wind = evenOdd ? wind ^ 1 : wind + xs[i][1];
       if (!wind) continue;
       const xa = Math.max(0, Math.ceil(xs[i][0] - 0.5)), xb = Math.min(cv.w, Math.ceil(xs[i + 1][0] - 0.5));
       const base = row * cv.w;
@@ -227,27 +229,14 @@ export async function drawCard(o) {
   const W = CARD.width * SS, Hh = CARD.height * SS;
   const cv = canvas(W, Hh, C.sea);
   const F = frameFor(o.box || null);
-  const sx = W / (F.e - F.w), sy = Hh / (F.yN - F.yS);
-  /* a shape is drawn once per copy of the world the frame crosses, so a frame across 180° is whole */
-  const shifts = [0]; if (F.w < -180) shifts.push(-360); if (F.e > 180) shifts.push(360);
-  const minStep = SS * 0.6;   /* drop a vertex closer than ~0.6 output pixels to the last one kept: invisible, and the bulk of the work */
-  const project = (ring, dx) => {
-    const out = []; let lx = Infinity, ly = Infinity;
-    for (const [lon, lat] of ring) {
-      const x = (lon + dx - F.w) * sx, y = (F.yN - mercY(lat)) * sy;
-      if (Math.abs(x - lx) + Math.abs(y - ly) < minStep) continue;
-      out.push([x, y]); lx = x; ly = y;
-    }
-    return out;
-  };
-  /* a part whose box misses the frame is not drawn at all */
-  const fillRows = (rows, col, alpha) => { for (const f of rows) for (const dx of shifts) { const polys = polysOf(f); if (!bboxMeets(polys, dx)) continue; for (const poly of polys) fill(cv, poly.map((r) => project(r, dx)), col, alpha); } };
-  const bboxMeets = (polys, dx) => { for (const poly of polys) { let a = 180, b = 90, c = -180, d = -90; for (const [lon, lat] of poly[0]) { if (lon < a) a = lon; if (lon > c) c = lon; if (lat < b) b = lat; if (lat > d) d = lat; } if (c + dx >= F.w && a + dx <= F.e && mercY(d) >= F.yS && mercY(b) <= F.yN) return true; } return false; };
-  const strokeRows = (rows, col, width) => { for (const f of rows) for (const dx of shifts) { const polys = polysOf(f); if (!bboxMeets(polys, dx)) continue; for (const poly of polys) for (const r of poly) { const pr = project(r, dx); if (pr.length > 1) stroke(cv, pr.concat([pr[0]]), col, width); } } };
+  const P = mercatorPainter(cv, F);
+  const { sx, sy, shifts } = P;
+  const fillRows = (rows, col, alpha) => P.fillPolys(rows.map(polysOf), col, alpha);
+  const strokeRows = (rows, col, width) => P.strokePolys(rows.map(polysOf), col, width);
 
   const rows = rowsOn(o.date);
   const has = (list, f) => (list || []).includes(f[1]);
-  for (const dx of shifts) for (const poly of await land()) if (bboxMeets([poly], dx)) fill(cv, poly.map((r) => project(r, dx)), C.ground);
+  for (const dx of shifts) for (const poly of await land()) if (P.meets([poly], dx)) fill(cv, poly.map((r) => P.project(r, dx)), C.ground);
   fillRows(rows, C.land);
   fillRows(rows.filter((f) => has(o.redrawn, f)), C.redrawn, 0.85);
   fillRows(rows.filter((f) => has(o.appeared, f)), C.appeared, 0.9);
@@ -265,13 +254,54 @@ export async function drawCard(o) {
     fill(cv, [circle(9 * SS)], C.text);
     fill(cv, [circle(6.5 * SS)], C.war);
   }
-  /* the figures, on a shade so they read over any map */
+  await stamp(cv, o.label);
+  return png(downsample(cv, SS));
+}
+
+/* ══ (marketing-growth) THE PIECES, SHARED — the year and country pages draw their cards with the same raster ═══════════
+   scripts/lib/page-card.mjs draws the cards of the year pages and the country pages. It does not copy the filler, the
+   projection of a Mercator frame, the figures or the PNG writer: it takes them from here, so a fix to one is a fix to all. */
+
+/** a Mercator painter over a supersampled canvas and a frame (frameFor): project a ring, cull a polygon set by its box,
+ *  fill and stroke lists of polygon sets — each drawn once per copy of the world the frame crosses */
+export function mercatorPainter(cv, F) {
+  const sx = cv.w / (F.e - F.w), sy = cv.h / (F.yN - F.yS);
+  /* a shape is drawn once per copy of the world the frame crosses, so a frame across 180° is whole */
+  const shifts = [0]; if (F.w < -180) shifts.push(-360); if (F.e > 180) shifts.push(360);
+  const minStep = SS * 0.6;   /* drop a vertex closer than ~0.6 output pixels to the last one kept: invisible, and the bulk of the work */
+  const project = (ring, dx) => {
+    const out = []; let lx = Infinity, ly = Infinity;
+    for (const [lon, lat] of ring) {
+      const x = (lon + dx - F.w) * sx, y = (F.yN - mercY(lat)) * sy;
+      if (Math.abs(x - lx) + Math.abs(y - ly) < minStep) continue;
+      out.push([x, y]); lx = x; ly = y;
+    }
+    return out;
+  };
+  /* a part whose box misses the frame is not drawn at all */
+  const meets = (polys, dx) => { for (const poly of polys) { let a = 180, b = 90, c = -180, d = -90; for (const [lon, lat] of poly[0]) { if (lon < a) a = lon; if (lon > c) c = lon; if (lat < b) b = lat; if (lat > d) d = lat; } if (c + dx >= F.w && a + dx <= F.e && mercY(d) >= F.yS && mercY(b) <= F.yN) return true; } return false; };
+  const fillPolys = (list, col, alpha) => { for (const polys of list) for (const dx of shifts) { if (!meets(polys, dx)) continue; for (const poly of polys) fill(cv, poly.map((r) => project(r, dx)), col, alpha); } };
+  const strokePolys = (list, col, width) => { for (const polys of list) for (const dx of shifts) { if (!meets(polys, dx)) continue; for (const poly of polys) for (const r of poly) { const pr = project(r, dx); if (pr.length > 1) stroke(cv, pr.concat([pr[0]]), col, width); } } };
+  return { sx, sy, shifts, project, meets, fillPolys, strokePolys };
+}
+
+/** the figures (on a shade, so they read over any map) and the wordmark — every card carries the same two;
+ *  a card with no figures (`label` empty) carries the wordmark alone. The shade runs the card's width (`band: 'full'`, the
+ *  «on this day» cards) or sits behind the figures only (`band: 'box'`, a whole-world card whose north is part of the picture) */
+export async function stamp(cv, label, opt = {}) {
   const ft = await font();
-  const big = textRings(ft, o.label, 56 * SS, 120 * SS, 76 * SS);
-  fill(cv, [[[0, 0], [W, 0], [W, 170 * SS], [0, 170 * SS]]], C.shade, 0.35);
-  fill(cv, big.rings, C.text);
+  const W = cv.w, Hh = cv.h;
+  if (label) {
+    const big = textRings(ft, label, 56 * SS, 120 * SS, 76 * SS);
+    if (opt.band === 'box') {
+      const x1 = 56 * SS + big.width + 28 * SS;
+      fill(cv, [[[28 * SS, 34 * SS], [x1, 34 * SS], [x1, 148 * SS], [28 * SS, 148 * SS]]], C.shade, 0.55);
+    } else fill(cv, [[[0, 0], [W, 0], [W, 170 * SS], [0, 170 * SS]]], C.shade, 0.35);
+    fill(cv, big.rings, C.text);
+  }
   const mark = textRings(ft, 'IntMap', 0, 0, 34 * SS);
   const mx = W - mark.width - 48 * SS, my = Hh - 44 * SS;
   fill(cv, textRings(ft, 'IntMap', mx, my, 34 * SS).rings, C.text, 0.92);
-  return png(downsample(cv, SS));
 }
+
+export { canvas, fill as fillRings, stroke as strokeRing, downsample, mercY, C as CARD_COLOURS, SS as CARD_SUPERSAMPLE, land as todayLand };

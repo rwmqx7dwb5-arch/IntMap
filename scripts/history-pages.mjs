@@ -58,6 +58,7 @@ import { TEXT as COUNTRY_TEXT } from './country-pages-text.mjs';
 import { WEEKLY_SITEMAP } from './weekly-earth-pages.mjs';   /* (weekly-earth) the weekly digest's sitemap, joined the same way (the same cycle, read only when the index is written) */
 import { YEAR_HUB, YEAR_SITEMAP, chooseYears } from './year-choice.mjs';   /* (history-year-pages) the year pages' hub, sitemap and choice — a module that imports nothing from here */
 import { TEXT as YEAR_TEXT } from './year-pages-text.mjs';
+import { shareLinks } from './lib/share-targets.mjs';   /* (marketing-growth) the reader's share links at the foot of every page */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -429,6 +430,9 @@ function cspMeta(webFonts) {
 }
 const ldJson = (o) => '<script type="application/ld+json">' + JSON.stringify(o).replace(/</g, '\\u003c') + '</script>';
 
+/* (marketing-growth) every page of the family ends with the reader's share links (scripts/lib/share-targets.mjs) — plain
+   links that open a service's own compose screen; nothing is sent from the page. An image with `alt` also states it to
+   Open Graph and X (the year and country pages' own cards, scripts/lib/page-card.mjs). */
 /* (marketing-next) exported: the «on this day» pages (scripts/on-this-day-pages.mjs) are the same family — one head, one nav, one footer */
 export function shell(M, L, o) {
   const T = TEXT[L.key];
@@ -458,7 +462,9 @@ ${LANGS.map((l) => `<link rel="alternate" hreflang="${l.tag}" href="${esc(url(l)
 <meta property="og:image" content="${esc(SITE_TOKEN + M.image.path)}">
 <meta property="og:image:width" content="${M.image.width}">
 <meta property="og:image:height" content="${M.image.height}">
-<meta property="og:locale" content="${L.locale}">
+${M.image.alt ? `<meta property="og:image:alt" content="${esc(M.image.alt)}">
+<meta name="twitter:image:alt" content="${esc(M.image.alt)}">
+` : ''}<meta property="og:locale" content="${L.locale}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
@@ -482,6 +488,11 @@ ${o.ld.map(ldJson).join('\n')}
 <main class="lp-main">
 ${o.crumbs ? `<nav class="hp-crumbs" aria-label="breadcrumb">${o.crumbs.map((c, i) => (i < o.crumbs.length - 1 ? `<a href="${up}${c.path}">${esc(c.name)}</a>` : `<span aria-current="page">${esc(c.name)}</span>`)).join(' <span class="hp-sep">/</span> ')}</nav>` : ''}
 ${o.body(up)}
+  <section class="lp-sec hp-share" id="share">
+    <h2>${esc(T.share.h2)}</h2>
+    <p class="hp-chips">${shareLinks(SITE_TOKEN, o.pathFor(L)).map((s) => `<a href="${esc(s.href)}" data-share="${esc(s.id)}" target="_blank" rel="noopener noreferrer">${esc(s.name)}</a>`).join(' ')}</p>
+    <p class="lp-note">${esc(T.share.note)}</p>
+  </section>
 </main>
 <footer class="lp-foot">
   <nav class="lp-foot-in">

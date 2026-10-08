@@ -22,6 +22,9 @@
 | 国別の入口ページ（国ごと、en / ja） | `scripts/country-pages.mjs`（文は `scripts/country-pages-text.mjs`。国の集合と行・条件は `scripts/public-api.mjs`、枠は `js/country-extent.js`） | ビルド時に `dist/countries/<code>/`・`dist/ja/countries/…`・`dist/sitemap-countries.xml`（`sitemap-index.xml` が束ねる） | `tests/country-pages-checks.test.mjs` |
 | 年ごとの世界地図（年ごと、en / ja）・年の世界の絵 | `scripts/year-pages.mjs`（年の選び方 `chooseYears`、文は `scripts/year-pages-text.mjs`、絵は `scripts/lib/world-svg.mjs`） | ビルド時に `dist/history/years/<年>/`（`world-map.svg` を含む）・`dist/ja/history/years/…`・`dist/sitemap-years.xml`（`sitemap-index.xml` が束ねる） | `tests/history-year-pages-checks.test.mjs` |
 | 今週の地球（ISO 週ごと、en / ja）・一覧・Atom フィード | 記録 `data/weekly-earth.json`（`scripts/build-weekly-earth.mjs`、無人の定期更新が週ごとに足す）、文言は `js/weekly-earth.js`、ページは `scripts/weekly-earth-pages.mjs`（文は `scripts/weekly-earth-text.mjs`） | ビルド時に `dist/weekly/<YYYY>-W<ww>/`・`dist/ja/weekly/…`・`dist/weekly/feed.xml`・`dist/ja/weekly/feed.xml`・`dist/sitemap-weekly.xml`（`sitemap-index.xml` が束ねる） | `tests/weekly-earth-checks.test.mjs` |
+| 年ごと・国ごとのリンクのカードの絵（1 ページ 1 枚、両言語で共有） | `scripts/lib/page-card.mjs`（年は `scripts/year-pages.mjs`、国は `scripts/country-pages.mjs` の `drawCards`） | ビルド時に `dist/history/years/<年>/card.png`・`dist/countries/<code>/card.png`（そのページの `og:image`） | `tests/marketing-growth-checks.test.mjs` |
+| 入口ページの共有リンク（読者が押す。X・Bluesky・Threads・Facebook・LINE・Reddit） | 宛先 `scripts/lib/share-targets.mjs`、置き場 `scripts/history-pages.mjs` `shell`（文は `scripts/history-pages-text.mjs` `share`） | 歴史地図・この日・国・今週の地球・年のすべてのページの終わり（`#share`） | 同上 |
+| 年ごとの世界地図の投稿の下書き（X・Bluesky・Threads、en / ja） | `scripts/year-pages.mjs --queue [--only 1914,500-bc]` | 標準出力（承認欄つきの Markdown。**投稿・予約・送信はしない**） | 同上 |
 | 毎週の投稿の下書き（X・Bluesky・Threads、en / ja） | `scripts/weekly-earth-pages.mjs --queue [--week YYYY-Www]` | 標準出力（承認欄つきの Markdown。**投稿・予約・送信はしない**） | 同上 |
 | 毎日の投稿の下書き（X・Bluesky・Threads、en / ja） | `scripts/on-this-day-pages.mjs --queue [--from YYYY-MM-DD] [--days N]` | 標準出力（承認欄つきの Markdown。**投稿・予約・送信はしない**） | 同上（tag が計数器の規則を通ること・X の文字数） |
 | プレスルーム（`press.html`・`ja/press.html`。説明文のコピー・数字・ロゴとスクリーンショットのダウンロード・フィードへの導線） | 文言は `scripts/brand-text.mjs`、数は `scripts/brand.mjs` の事実、画像は `js/showcase.js`、ページ専用の文は `scripts/org-pages-text.mjs`、生成は `scripts/org-pages.mjs` | `press.html`・`ja/press.html`（追跡対象。`node scripts/org-pages.mjs --write`）。`sitemap.xml` に載る | `tests/press-room-checks.test.mjs`・`node scripts/org-pages.mjs --check` |
@@ -36,11 +39,12 @@
 | A1 | Google Search Console に `sitemap-index.xml` を送る（`sitemap.xml` と `sitemap-history.xml` を束ねたもの） | 所有者のアカウントでの操作。`robots.txt` はサブパス配信（`/IntMap/`）では読まれないので、送らない限り検索エンジンは入口ページを地図からのリンク以外で知らない |
 | A2 | 各チャネルへの投稿（Product Hunt・Hacker News・Reddit・X・note・Zenn） | 外部への発信。名義（誰のアカウントで出すか）と時期を決めるのは所有者 |
 | A3 | プレスキットに作り手の名前・連絡先を載せるか | 個人情報。今は「アプリの Feedback」と「GitHub Issues」だけを載せている |
-| A4 | リンクのカードの絵を撮り直す | 今の `og-image.jpg` は**以前の画面**（右下に「See the past world — 1900 to present」）。今の時計は紀元前まで届くので、絵が今の主張と食い違う。撮り直しには開発サーバでの撮影が要る（`scripts/showcase-capture.mjs` と同じ手順） |
+| A4 | リンクのカードの絵を撮り直す | 今の `og-image.jpg` は**以前の画面**（右下に「See the past world — 1900 to present」）。今の時計は紀元前まで届くので、絵が今の主張と食い違う。撮り直しには開発サーバでの撮影が要る（`scripts/showcase-capture.mjs` と同じ手順）。⚠ 年ごとの世界地図・国別の入口ページ・この日の歴史地図の日のページは、もうこの絵を使わない（各ページ自身のカード）。残る読み手はトップ・紹介ページ・地域ページ・一覧・今週の地球 |
 | A5 | 紹介ページ（`about.html`）・授業ページから歴史地図の入口（`history/`）へのリンクと、`robots.txt` の `Sitemap:` 行を `sitemap-index.xml` に向けること | `scripts/landing.mjs` が持ち主の別の主題。その作業で行う |
 | A8 | プレスルームに作り手の名前・連絡先を載せるか（A3 と同じ個人情報の話） | 今は問い合わせページ（`contact.html`）への導線だけで、メールアドレスも名前も載せていない |
 | A7 | この日の歴史地図の毎日の投稿（`--queue` の下書き） | 外部への発信。どのアカウントで・どのチャネルに・毎日か週に何回かを決めるのは所有者。下書きは 1 件ずつ承認欄を持ち、承認したものだけを人が投稿する |
 | A8 | 今週の地球の毎週の投稿（`--queue` の下書き）と、フィード（`weekly/feed.xml`）をどこで告知するか | 外部への発信。どのアカウントで・どのチャネルに出すかを決めるのは所有者。下書きは 1 件ずつ承認欄を持つ |
+| A9 | 年ごとの世界地図の投稿（`year-pages.mjs --queue` の下書き。1 年 1 投稿、114 年分） | 外部への発信。どのアカウントで・どのチャネルに・どの頻度で出すかを決めるのは所有者。下書きは 1 件ずつ承認欄を持ち、画像は各年のページのカード |
 | A6 | 独自ドメイン | 料金が発生する。`supabase/functions/_shared/site-origin.js` の 1 値で全ページが追従する作りは既にある |
 
 ## 3. ローンチの段取り（案）
@@ -67,6 +71,8 @@
   入口 `on-this-day`／`history` として数えられ、**そのページのアドレスの utm が読まれる**。だから毎日の投稿の下書きは
   日のページに utm（`utm_source=<チャネル>&utm_medium=social&utm_campaign=on-this-day`）を付ける。ページを見ただけで
   地図へ進まなかった人は数えない（静的ページは計数器を走らせない）。
+- **入口ページの共有リンク**は `utm_source=<サービス>&utm_medium=social&utm_campaign=share-page` を付けたページのアドレスを渡す。読者が共有したページから
+  別の読者が地図へ進むと、その入口（`history`・`on-this-day`・`countries`・`weekly`）とサービスの名で数えられる。年ごとの世界地図の下書きは `utm_campaign=world-by-year`。
 - **今週の地球の週のページ（`weekly/<YYYY>-W<ww>/`）と一覧（`weekly/`）も入口**（`SITE_PAGES` の `weekly`）。毎週の投稿の下書きは
   週のページに `utm_campaign=weekly-earth` を付ける。フィード（`feed.xml`）は入口ではない——購読者が記事から週のページへ来て、
   そこから地図へ進んだときに `weekly` として数えられる。

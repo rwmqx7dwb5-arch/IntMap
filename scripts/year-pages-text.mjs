@@ -78,6 +78,8 @@ export const TEXT = {
     centuryAD: '{n} century',
     centuryBC: '{n} century BC',
     millenniumBC: '{n} millennium BC',
+    /* (marketing-growth) the post drafts (`--queue`) — a person approves and posts each one; nothing is sent from here */
+    post: { x: 'The world in {when}: {n} names on IntMap’s historical map ({top}), each with the record that draws it. {link}' },
   },
   jp: {
     crumb: '年ごとの世界',
@@ -136,5 +138,6 @@ export const TEXT = {
     centuryAD: '{n}世紀',
     centuryBC: '紀元前{n}世紀',
     millenniumBC: '紀元前{n}千年紀',
+    post: { x: '{when}の世界: IntMap の歴史地図が描く{n}の名前（{top}）。どれも描いた記録つき。{link}' },
   },
 };

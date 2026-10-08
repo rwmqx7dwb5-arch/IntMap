@@ -12,6 +12,8 @@
  *      record links one; what changed since the previous chosen year; the events the one dated-events index places in
  *      that year (js/time-index.js yearOf — the year its date names, not a span that runs through it), each with its source; and the link that opens the map on that date;
  *    · history/years/ and ja/history/years/ — the years, by century;
+ *    · (marketing-growth) history/years/<year>/card.png — the page's link card (its og:image), the same features as its picture, drawn by
+ *      scripts/lib/page-card.mjs; `--queue` prints the drafts of a «world in <year>» post per page (nothing is posted from here);
  *    · sitemap-years.xml, joined by sitemap-index.xml (scripts/history-pages.mjs writes the index).
  *  They live under history/ because they are the same family — the counter already counts history/ as the entry
  *  `history` (supabase/functions/usage-count/shape.js SITE_PAGES), and Privacy §1 already names those pages.
@@ -48,12 +50,15 @@ import { SITE_TOKEN } from './site-url.mjs';
 import { LANGS, HUB as HISTORY_HUB, REGIONS, mapReader, collect, shell, esc, fill, breadcrumbLd, siteImage, partKm2In, pagePath as historyPagePath,
   regionView, isoDay, yearWords, slugOf, tierWords, sitemap } from './history-pages.mjs';
 import { COUNTRY_HUB } from './country-pages.mjs';
-import { OTD_HUB, dayPath, model as otdModel } from './on-this-day-pages.mjs';
+import { OTD_HUB, dayPath, model as otdModel, CHANNELS, xWeight } from './on-this-day-pages.mjs';
+import { siteUrl } from '../supabase/functions/_shared/site-origin.js';
+import { campaignOf } from '../supabase/functions/usage-count/shape.js';
 import { encode } from '../js/map-state.js';
 import * as OTD from '../js/on-this-day.js';
 import { records, yearOf, eventName, eventDesc, dateWords, sourceOf } from '../js/time-index.js';
 import { decodeNECountries, neCountriesPath } from '../js/ne-countries.js';
 import { draw as drawWorld } from './lib/world-svg.mjs';
+import { CARD, CARD_FILE } from './lib/page-card.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const MAP_FILE = 'world-map.svg';
@@ -61,6 +66,8 @@ const MAP_FILE = 'world-map.svg';
 export const yearPath = (y, L) => L.dir + YEAR_HUB + slugOf(y) + '/';
 export const hubPath = (L) => L.dir + YEAR_HUB;
 export const mapPath = (y) => YEAR_HUB + slugOf(y) + '/' + MAP_FILE;
+/** (marketing-growth) the year's link card — the page's og:image, drawn by scripts/lib/page-card.mjs from the page's own features */
+export const cardPath = (y) => YEAR_HUB + slugOf(y) + '/' + CARD_FILE;
 
 /* ══ THE MODEL ═════════════════════════════════════════════════════════════════════════════════════ */
 /* the whole-world region of the history pages (read when used — see YEAR_HUB on the import cycle) */
@@ -269,7 +276,8 @@ ${T.method.map((m) => `    <p class="lp-note">${esc(fill(m, { quantile: (TURN_SH
     <p class="hp-chips">${p.run ? `<a href="${up}${historyPagePath(p.run, L)}" data-history-run="${esc(slugOf(p.run.first))}">${esc(fill(T.nav.worldRun, { when }))}</a> ` : ''}<a href="${up}${L.dir}${HISTORY_HUB}">${esc(T.nav.history)}</a> <a href="${up}${L.dir}${COUNTRY_HUB}">${esc(T.nav.countries)}</a> <a href="${up}${L.dir}${OTD_HUB}">${esc(T.nav.onThisDay)}</a></p>
     <p><a class="lp-open" href="${up}sources.html">${esc(T.sourcesLink)} →</a></p>
   </section>`;
-  return shell(M, L, { path: yearPath(p.y, L), pathFor: (l) => yearPath(p.y, l), title, description, crumbs, ld, body });
+  const image = { path: cardPath(p.y), width: CARD.width, height: CARD.height, alt: fill(T.mapAlt, W) };
+  return shell({ ...M, image }, L, { path: yearPath(p.y, L), pathFor: (l) => yearPath(p.y, l), title, description, crumbs, ld, body });
 }
 /** the sheet the composition borrows for a year (js/time-borders.js compositeAt: the nearest sheet year) */
 function nearestSheet(M, y) {
@@ -329,7 +337,50 @@ export async function writeTo(dir, opt) {
   const M = await model(opt);
   const out = outputs(M);
   for (const [rel, body] of Object.entries(out)) { const p = join(dir, rel); mkdirSync(dirname(p), { recursive: true }); writeFileSync(p, body); }
-  return { model: M, files: Object.keys(out) };
+  const cards = await drawCards(M, dir);
+  return { model: M, files: Object.keys(out).concat(cards) };
+}
+/** (marketing-growth) the link cards, one per year, after the pages that name them: the page's own features, the year in figures */
+export async function drawCards(M, dir) {
+  const { drawCards: draw } = await import('./lib/page-card.mjs');
+  const jobs = M.pages.map((p) => ({ kind: 'world', file: cardPath(p.y), features: p.drawn, label: yearWords(p.y, 'en') }));
+  return draw(jobs, dir, { land: M.land });
+}
+
+/* ══ THE DRAFTS (marketing-growth) — «the world in <year>», one post per year page; a person approves and posts each ═══════
+   Nothing leaves this machine from here (docs/marketing/README.md «承認が要ること»). The channels and X's weighting are the
+   «on this day» drafts' (scripts/on-this-day-pages.mjs CHANNELS, xWeight — one list of where IntMap's owner posts). A year
+   page is an entry the app counts (shape.js SITE_PAGES 'history'), so the link carries utm tags; the picture is the page's
+   own card. Every fact in a draft is the page's: the year, the number of names and the largest of them. */
+export const POST_CAMPAIGN = 'world-by-year';
+const X_MAX = 280;
+export function draftsFor(M, p, site) {
+  const out = [];
+  for (const L of LANGS) {
+    const T = TEXT[L.key], lang = L.key;
+    for (const ch of CHANNELS) {
+      const link = site + yearPath(p.y, L) + '?utm_source=' + ch + '&utm_medium=social&utm_campaign=' + POST_CAMPAIGN;
+      /* the largest names, as many as the post holds (X counts a CJK character as 2) — at least one */
+      let k = Math.min(4, p.names.length), text;
+      for (;;) {
+        const top = joinL(p.names.slice(0, k).map((x) => nameFor(x, lang)), lang) + (p.names.length > k ? (lang === 'jp' ? 'など' : '…') : '');
+        text = fill(T.post.x, { when: yearWords(p.y, lang), n: fmt(p.names.length, L), top, link });
+        if (ch !== 'x' || xWeight(text) <= X_MAX || k <= 1) break;
+        k--;
+      }
+      out.push({ y: p.y, lang, channel: ch, text, link, image: site + cardPath(p.y) });
+    }
+  }
+  return out;
+}
+function queueMarkdown(M, site) {
+  const lines = ['# IntMap — 年ごとの世界地図: 投稿の下書き（承認待ち）', '',
+    '> `node scripts/year-pages.mjs --queue` が書いた。**投稿・予約・送信はしていない。** 1 行ずつ人が読み、承認したものだけを人が投稿する（docs/marketing/README.md）。', ''];
+  for (const p of M.pages) {
+    lines.push('## ' + yearWords(p.y, 'jp') + '（' + yearWords(p.y, 'en') + '）', '');
+    for (const x of draftsFor(M, p, site)) lines.push('- [ ] 承認 · ' + x.channel + ' · ' + x.lang + (x.channel === 'x' ? ' · X 換算 ' + xWeight(x.text) + '/' + X_MAX : ''), '', '  ```', ...x.text.split('\n').map((s) => '  ' + s), '  ```', '  画像: ' + x.image, '');
+  }
+  return lines.join('\n');
 }
 
 /** Vite plugin: write the pages into dist/ after the history pages (whose world pages these link), before the site URL is
@@ -363,11 +414,19 @@ if (isMain) (async () => {
     const { model: M, files } = await writeTo(resolve(arg('--out')));
     const bytes = M.pages.reduce((s, p) => s + p.picture.bytes, 0);
     console.log('year-pages: wrote ' + files.length + ' files (' + M.pages.length + ' years × ' + LANGS.length + ' languages, pictures ' + Math.round(bytes / 1024) + ' kB) into ' + arg('--out') + ' in ' + (Date.now() - t0) + ' ms');
+  } else if (process.argv.includes('--queue')) {
+    /* --queue [--only 1914,500-bc]: the drafts for every year page, or for the years named by their page's slug */
+    const only = arg('--only') ? arg('--only').split(',') : null;
+    /* a page's slug back to its year (history-pages.mjs slugOf: «500-bc» is 1 − 500, astronomical) */
+    const yearOfSlug = (s) => (/^\d+-bc$/.test(s) ? 1 - parseInt(s, 10) : parseInt(s, 10));
+    const M = await model(only ? { years: only.map(yearOfSlug) } : {});
+    for (const ch of CHANNELS) if (campaignOf('?utm_source=' + ch + '&utm_medium=social&utm_campaign=' + POST_CAMPAIGN).length !== 3) throw new Error('year-pages: the tags for ' + ch + ' do not pass the counter\'s rule');
+    process.stdout.write(queueMarkdown(M, siteUrl('')) + '\n');
   } else if (process.argv.includes('--years')) {
     const R = await mapReader();
     const idx = JSON.parse(readFileSync(join(ROOT, OTD.INDEX_PATH), 'utf8'));
     const C = await chooseYears(R, idx);
     for (const y of C.years) { const w = C.why.get(y); console.log(String(y).padStart(8) + '  ' + [w.sheet ? 'sheet' : '', w.turn ? 'turn ' + w.turn : '', w.event ? 'event ' + w.event.map((e) => e.name.en).join(' / ') : ''].filter(Boolean).join(' · ')); }
     console.log('year-pages: ' + C.years.length + ' years; turning points ≥ ' + C.turn.cut + ' names (top ' + (TURN_SHARE * 100) + '% of ' + C.turn.changes + ' changes from ' + C.turn.from + '); seams ' + C.turn.seams.map((s) => s.y).join(' ') + '; ' + (Date.now() - t0) + ' ms');
-  } else console.log('usage: node scripts/year-pages.mjs --out <dir> | --years');
+  } else console.log('usage: node scripts/year-pages.mjs --out <dir> | --years | --queue [--only <slug>,…]');
 })().catch((e) => { console.error(e); process.exit(1); });

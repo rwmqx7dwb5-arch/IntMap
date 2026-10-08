@@ -25,6 +25,8 @@ export const TEXT = {
     hubLede: '{n} countries and territories, as Natural Earth draws them. Each page opens the map on that country, with its population density, the historical maps of its region and the open data IntMap may share about it.',
     /* the title names only what the page has: the parts present, in this order */
     title: 'Map of {name} — {parts}',
+    /* (marketing-growth) the link card's description, for a reader who cannot see it */
+    cardAlt: 'Map of {name}, highlighted among the countries around it',
     titleParts: { pop: 'population density', history: 'historical maps', facts: 'facts' },
     description: 'Open {name} on IntMap’s interactive map: the population-density grid, the historical maps of {regions}, and {facts} — each with its source.',
     descriptionNoRegion: 'Open {name} on IntMap’s interactive map: the population-density grid and {facts} — each with its source.',
@@ -62,6 +64,7 @@ export const TEXT = {
     hubDescription: '{n} の国と地域。各ページから IntMap の地図をその国で開けます——人口密度のグリッド、その地域の歴史地図、そして条件つきで再利用できるオープンデータ。',
     hubLede: 'Natural Earth が描く {n} の国と地域。各ページは地図をその国で開き、人口密度・その地域の歴史地図・IntMap が共有できるオープンデータへつなぎます。',
     title: '{name}の地図——{parts}',
+    cardAlt: '{name}を強調した周辺の地図',
     titleParts: { pop: '人口密度', history: '歴史地図', facts: '基本データ' },
     description: '{name}を IntMap の地図で開く: 人口密度のグリッド、{regions}の歴史地図、{facts}——それぞれ出典つき。',
     descriptionNoRegion: '{name}を IntMap の地図で開く: 人口密度のグリッドと{facts}——それぞれ出典つき。',
