@@ -1227,7 +1227,8 @@ photo-geo-match.js                カメラモデルと稜線の一致度・方�
 photo-geo-search.js               矩形の走査（粗→細）・候補の抑制・見積り
 photo-geo-exif.js                 EXIF の向き・焦点距離・GPS（GPS は結果に使わず表示のみ）
 routing-ui.js                     経路パネル（Layers ▸ Tools ▸ Directions・遅延取得）window.IntMapRouteUI
-routing-ops.js                    経路の分析 window.IntMapRoutingOps
+routing-ops.js                    経路の分析 window.IntMapRoutingOps。線に沿った標本と点包含・今日の国境の読みは
+                                  モジュール直下で export し、journey-through-time.js が同じ 1 つを使う
 routing-errors.js                 経路の失敗の分類（15コード・再試行可否・fallback可否）window.IntMapRouteErrors
 routing-time.js                   計画の時刻（Chronos）と案内の時刻（壁時計）の区別 window.IntMapRouteClock
 routing-traffic.js                交通情報つき provider のアダプタ（routing-relay 経由）window.IntMapRouteTraffic
@@ -1333,8 +1334,6 @@ journey-through-time.js           **時をまたぐ道のり**——1 本の線�
                                   time-borders.js `collectionAt` が描く政体を線に沿って順に、区間ごとの km・越境点・海と記録の無い陸地と、
                                   一部の時点でだけ通る政体。Atlas `time.journey`（1 時点を政体ごとの色で地図に描く）と経路パネルの
                                   「その年の国境」が読む。最初に要るときに取りに行く
-geo-along.js                      線に沿った標本（約 500 点・200 m 以上・700 点まで）と点包含——経路パネルの「国境」と
-                                  journey-through-time.js が同じ 1 つを使う（routing-ops.js から移した）
 events-near.js                    範囲 × 期間の地震と出来事の**読み手 1 つ**——USGS の M2.5 以上・7 日のフィードをセッション内で 1 回
                                   取得して共有し、`news_events` の窓をページ送りで読み、どちらも位置を送らずに端末で範囲を絞る。
                                   状態の語彙（`ok` / `none` / `unavailable`＋理由）の正本。地点カード・place-watch.js・

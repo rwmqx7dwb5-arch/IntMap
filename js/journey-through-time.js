@@ -7,7 +7,7 @@
  *  day from 1886, OpenHistoricalMap and Cliopatria before it, the era sheets below — and nothing could ask them
  *  about a LINE: the year book asks about a year, «This place through time» about a point.
  *
- *  This asks a line. For each instant it walks the same samples the route panel walks (js/geo-along.js — the one
+ *  This asks a line. For each instant it walks the same samples the route panel walks (js/routing-ops.js — the one
  *  sampler and the one point-in-polygon test) over the collection the map draws at that instant
  *  (js/time-borders.js `collectionAt`, the call the era layer and the year book draw from), and returns, in order,
  *  the polities the line runs through, how far, and where it crosses from one to the next. Then it puts the
@@ -32,16 +32,13 @@
  *  Strings IntMap writes here are en + jp (CONSTITUTION.md §7). No emoji.
  * ==========================================================================*/
 import { IntMapLang } from './lang-registry.js';
-import { nameIn } from './year-book.js';
-import { borderSamples, greatCircleLine, featureAt, featuresAt, wrapLng } from './geo-along.js';
-import './safe-html.js';
-
-const esc = (s) => globalThis.IntMapSafe.html(String(s == null ? '' : s));
+import { nameIn, esc, bordersNow } from './year-book.js';
+import { borderSamples, greatCircleLine, featureAt, featuresAt, wrapLng, countryOutlines } from './routing-ops.js';
 
 /* the longest straight piece of a great-circle leg before it is sampled. Measured: at 25 km the chord of a
    great circle departs from the arc by under 15 m at any latitude (sagitta = L²/8R), far inside the sampler's own
    step (≥ 200 m) — finer adds vertices and no accuracy; coarser starts to bend a long leg off its course. Invalid
-   if the sampler's floor (js/geo-along.js BORDER_SAMPLE.minStepM) drops below ~15 m. */
+   if the sampler's floor (js/routing-ops.js BORDER_SAMPLE.minStepM) drops below ~15 m. */
 const GREAT_CIRCLE_STEP_M = 25000;
 
 /* ══ INSTANTS ═════════════════════════════════════════════════════════════════════════════════════
@@ -305,7 +302,7 @@ export async function atlasRun(a, K) {
   try { if (K.ensureData) await K.ensureData(); } catch (_) { /* answered per instant below */ }
   const asRoute = !!a.asRoute;
   const line = lineOf(wps.map((p) => [p.lng, p.lat]), { asRoute });
-  const res = await journeys(line, instants, { borders: window.IntMapTimeBorders, land: () => window.countryGeo || null, lang });
+  const res = await journeys(line, instants, { borders: bordersNow(), land: countryOutlines, lang });
   const title = '<b>' + esc(L('Journey through time', '時をまたぐ道のり')) + ' — ' + esc(wps.map((p) => p.name || (p.lat.toFixed(3) + ', ' + p.lng.toFixed(3))).join(' → ')) + '</b>';
   const exec = { journey: forAtlas(res, lang) };
   if (!res.okCount) return R(false, title + answerHtml(res, lang, { asRoute }), { exec });
@@ -329,7 +326,7 @@ export async function atlasRun(a, K) {
 /* ══ THE ROUTE PANEL — «Borders that year» in «Historical network» (js/routing-ui.js): the computed route, at the
    year in the panel's field and today, in the panel's own words. ══ */
 export async function renderRoutePanel(target, coords, year, lang) {
-  const res = await journeys(lineOf(coords, { asRoute: true }), [instantOf({ year }), instantOf({ now: true })], { borders: window.IntMapTimeBorders, land: () => window.countryGeo || null, lang });
+  const res = await journeys(lineOf(coords, { asRoute: true }), [instantOf({ year }), instantOf({ now: true })], { borders: bordersNow(), land: countryOutlines, lang });
   if (target) target.innerHTML = '<h4>' + esc(IntMapLang.t(lang, 'Borders along this route — ' + year + ' and today', 'この経路の国境 — ' + year + ' 年と今日')) + '</h4>' + answerHtml(res, lang, { asRoute: true });
   return res;
 }

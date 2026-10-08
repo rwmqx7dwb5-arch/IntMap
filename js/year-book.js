@@ -68,7 +68,9 @@ const bboxOf = (g) => {
   return a <= c ? [a, b, c, d] : null;
 };
 /** the app's one escaper (js/safe-html.js) */
-const esc = (s) => globalThis.IntMapSafe.html(String(s == null ? '' : s));
+export const esc = (s) => globalThis.IntMapSafe.html(String(s == null ? '' : s));   /* (atlas-product) js/journey-through-time.js escapes with this one too */
+/** the border records the era layer draws (js/time-borders.js, published by js/app-body.js) — the one place this file reads them */
+export const bordersNow = () => window.IntMapTimeBorders;
 
 /* the stylesheet, injected the first time the module draws — not on the start-up path (css/intmap.css is) */
 const CSS = `.yb-sheet{ position:fixed; z-index:var(--z-sheet); top:72px; right:12px; width:min(380px, calc(100vw - 24px)); max-height:calc(100vh - 160px); display:flex; flex-direction:column; border-radius:16px; background:var(--popup-bg); -webkit-backdrop-filter:blur(22px) saturate(1.6); backdrop-filter:blur(22px) saturate(1.6); border:1px solid var(--glass-border,rgba(128,128,128,0.2)); box-shadow:var(--shadow); color:var(--text-main); overflow:hidden; }
@@ -401,7 +403,7 @@ function warsFor(year) {
 /** the deps readYear takes, from the page */
 export function pageDeps(h) {
   return {
-    borders: window.IntMapTimeBorders, maddison: window.IntMapMaddison, layerTime: window.IntMapLayerTime, lang: h.lang, wars: warsFor, index: loadIndex,
+    borders: bordersNow(), maddison: window.IntMapMaddison, layerTime: window.IntMapLayerTime, lang: h.lang, wars: warsFor, index: loadIndex,
     countryName: (code) => { try { const s = h.countryStats && h.countryStats()[code]; if (s) return (h.lang() === 'jp' ? (s.nameJp || s.nameEn) : s.nameEn) || code; } catch (_) { /* below */ } return code; },
   };
 }

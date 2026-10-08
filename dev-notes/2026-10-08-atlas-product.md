@@ -25,8 +25,12 @@ newsjp: Atlas が 1 本の道のりを時代ごとにたどれるように——
 ## 構造（場当たりにしない）
 
 - **測り方は 1 つ。** 経路パネルの「国境」が #R184 から持っていた標本（約 500 点・200 m 以上・700 点まで）と点包含を
-  `js/geo-along.js` へ**そのまま**移し、`js/routing-ops.js` と新しい `js/journey-through-time.js` が同じ関数を import する
-  （`_math` が公開する関数が import したものと同一であることを試験①が評価で確かめる）。写しを 2 つ持たない。
+  `js/routing-ops.js` のモジュール直下へ**そのまま**出して export し、新しい `js/journey-through-time.js` が同じ関数を import する
+  （`_math` が公開する関数と同一であることを試験①が評価で確かめる）。写しを 2 つ持たない。別ファイルにしなかったのは、
+  routing-ops が起動経路にあり、新しいモジュールは起動時の要求を 1 本増やすため（PR #1047 の最初の CI で check:perf が
+  eager の requests 9→10・modules 315→316 を落とした）。同じ CI の check:surface（`window.IntMapSafe`・`IntMapTimeBorders`・
+  `countryGeo` の読みが増えた）も、読みを持ち主の 1 か所（`year-book.js` の `esc`・`bordersNow`、`routing-ops.js` の
+  `countryOutlines`）にまとめ、そこから import する形で直した。
 - **多角形は地図が描くものと同じ呼び出し**——`js/time-borders.js` `collectionAt`（年鑑と時代の層が描く呼び出し）、
   今日は `window.countryGeo`。名前は年鑑の `nameIn` を export して使う（同じ地物に 2 つの読み方を作らない）。
 - **Atlas が決める。** どの時点を何個、どれを描くかは Atlas。時点が無ければ時計の瞬間（`time.coverage` と同じ）。

@@ -1,8 +1,8 @@
 /* ============================================================================
  *  atlas-product — «時をまたぐ道のり»: one journey, asked at several instants
- *  (js/journey-through-time.js, js/geo-along.js, Atlas `time.journey`, the route panel's «Borders that year»)
+ *  (js/journey-through-time.js, js/routing-ops.js (module scope), Atlas `time.journey`, the route panel's «Borders that year»)
  * ----------------------------------------------------------------------------
- *    ① ONE SAMPLER: the route panel's «Borders» and the journey use the same functions (js/geo-along.js), evaluated —
+ *    ① ONE SAMPLER: the route panel's «Borders» and the journey use the same functions (js/routing-ops.js (module scope)), evaluated —
  *       routing-ops publishes the very objects it imports, and keeps no copy of its own;
  *    ② the great circle is a great circle: the midpoint of an equatorial leg is on the equator, a leg across the
  *       antimeridian stays continuous, and its length is the haversine distance;
@@ -23,7 +23,7 @@ import assert from 'node:assert/strict';
 import { importModule } from '../scripts/lib/import-module.mjs';
 import { journeyHarness, run } from '../scripts/journey-through-time.mjs';
 
-import * as GA from '../js/geo-along.js';
+import * as GA from '../js/routing-ops.js';
 import * as J from '../js/journey-through-time.js';
 
 const sq = (w, s, e, n) => ({ type: 'Polygon', coordinates: [[[w, s], [e, s], [e, n], [w, n], [w, s]]] });
@@ -33,9 +33,9 @@ test('① the route panel and the journey share one sampler and one point-in-pol
   const stub = new Proxy(function () {}, { get: (_, k) => (k === 'then' || typeof k === 'symbol' ? undefined : stub), apply: () => stub });
   const RO = await importModule('js/routing-ops.js', { mocks: { 'js/geo-engine.js': { IntMapGeoEngine: stub } } });
   const ops = RO.routingOps({ lang: 'en' });
-  assert.equal(ops._math.distM, GA.distM);
-  assert.equal(ops._math.resample, GA.resample);
-  assert.equal(ops._math.ptInPoly, GA.ptInPoly);
+  assert.equal(ops._math.distM, RO.distM);
+  assert.equal(ops._math.resample, RO.resample);
+  assert.equal(ops._math.ptInPoly, RO.ptInPoly);
   /* and its «Borders» still answers in the countries' order, with the sampler's step */
   globalThis.window = globalThis.window || globalThis;
   window.countryGeo = { features: [F(sq(0, -1, 1, 1), { NAME: 'A' }), F(sq(1, -1, 2, 1), { NAME: 'B' })] };
@@ -75,6 +75,9 @@ const borders = (fc) => ({ collectionAt: async () => ({ tier: 'cshapes', fc: { t
 
 test('③ the record’s polities in order, the realm aside, two claims named, sea and unrecorded land apart', async () => {
   const line = J.lineOf([[0.05, 0], [9.95, 0]]);
+  /* the exact test underneath: inside, in a hole, outside the polygon but inside another ring's box */
+  const holed = { type: 'MultiPolygon', coordinates: [[[[0, 0], [4, 0], [4, 4], [0, 4], [0, 0]], [[1, 1], [3, 1], [3, 3], [1, 3], [1, 1]]], [[[10, 0], [11, 0], [11, 1], [10, 1], [10, 0]]]] };
+  assert.equal(GA.ptInPoly([0.5, 0.5], holed), true); assert.equal(GA.ptInPoly([2, 2], holed), false); assert.equal(GA.ptInPoly([10.5, 0.5], holed), true); assert.equal(GA.ptInPoly([7, 0.5], holed), false);
   const R = await J.journeys(line, [J.instantOf({ year: 1900 }), J.instantOf({ now: true })], { borders: borders(world.past), land: () => ({ features: world.land }), lang: 'jp' });
   const [past, now] = R.journeys;
   assert.equal(past.record.src, 'TEST RECORD');
