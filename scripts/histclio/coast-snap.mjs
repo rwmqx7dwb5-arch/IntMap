@@ -218,7 +218,7 @@ function clipRing(ring, [x0, y0, x1, y1]) {
   }
   return pts;
 }
-function clipPolys(polys, box) {
+export function clipPolys(polys, box) {
   const out = [];
   for (const p of polys) {
     const sh = clipRing(p[0], box); if (!sh) continue;
@@ -287,6 +287,25 @@ export function readOSMLand() {
   for (const geom of g.geometries || [g]) for (const p of geom.type === 'Polygon' ? [geom.coordinates] : geom.coordinates) out.push({ p, b: bbox([p]) });
   return out;
 }
+/* (coast-snap-detail) OpenStreetMap's land cut into 1° tiles ONCE: each polygon is halved along an integer meridian or
+   parallel (Sutherland–Hodgman, holes with it) until each part lies in one tile — every vertex is walked once per level,
+   not once per tile. Its polygons are already one set with nothing overlapping, so a tile is its parts as they are (no
+   union; a zero-width run on a cut is resolved where a cell is cut, `cell`). ⚠ MEASURED: clipping the whole polygon for
+   each tile it was asked for took 0.3 s a tile on the Arctic coast (rings of 250,000 vertices), and a bounded cache of
+   tiles re-made them so often that one OpenHistoricalMap row took minutes instead of seconds. → Map(tile key → polygons) */
+export function splitTiles(polys) {
+  const out = new Map(), put = (k, p) => { const L = out.get(k); if (L) L.push(p); else out.set(k, [p]); };
+  const go = (p, b) => {
+    const x0 = Math.floor(b[0]), x1 = Math.ceil(b[2]) - 1, y0 = Math.floor(b[1]), y1 = Math.ceil(b[3]) - 1;
+    if (x1 <= x0 && y1 <= y0) { put(x0 * 1000 + y0, p); return; }
+    const halves = x1 - x0 >= y1 - y0
+      ? (() => { const m = Math.floor((x0 + x1 + 1) / 2); return [[b[0], b[1], m, b[3]], [m, b[1], b[2], b[3]]]; })()
+      : (() => { const m = Math.floor((y0 + y1 + 1) / 2); return [[b[0], b[1], b[2], m], [b[0], m, b[2], b[3]]]; })();
+    for (const h of halves) for (const q of clipPolys([p], h)) go(q, bbox([q]));
+  };
+  for (const q of polys) go(q.p, q.b);
+  return out;
+}
 export class Land {
   constructor(coast = 'ne') {
     this.id = coast; this.agreementKm = COASTS[coast].agreementKm;
@@ -301,6 +320,7 @@ export class Land {
     for (const q of this.polys) for (const r of q.p) for (const [, y] of r) if (Math.abs(y) < 89.9) { if (y < lo) lo = y; if (y > hi) hi = y; }
     this.coastLat = [lo, hi];
     this._coast = null;
+    this.split = coast === 'osm' ? splitTiles(this.polys) : null;
   }
   get coast() { return this._coast || (this._coast = new SegIndex(this.polys.flatMap((q) => q.p), 0.05)); }
   /* the land borders between today's countries: the edges two of Natural Earth's admin-0 polygons share (its polygons are cut
@@ -314,14 +334,17 @@ export class Land {
     return (this._borders = new SegIndex(segs, 0.05));
   }
   tile(x, y) {
-    const k = x * 1000 + y; if (this.tiles.has(k)) return this.tiles.get(k);
+    const k = x * 1000 + y;
+    if (this.split) return this.split.get(k) || null;   /* (coast-snap-detail) OpenStreetMap's land, cut into tiles once (`splitTiles`) */
+    if (this.tiles.has(k)) { const t = this.tiles.get(k); this.tiles.delete(k); this.tiles.set(k, t); return t; }   /* least recently used last out */
     const box = [x, y, x + 1, y + 1], pieces = [];
     for (const q of this.byTile.get(k) || []) { const c = clipPolys([q.p], box); for (const p of c) pieces.push(p); }
     let u = null;
     if (pieces.length) { try { u = pc.union(...pieces.map((p) => [p])); } catch (_) { u = pieces; } if (!u.length) u = null; }
     /* (coast-snap-detail) bounded: a worker visits the coast of the whole world over its rows, and OpenStreetMap's tiles are
-       an order of magnitude heavier than Natural Earth's */
-    if (this.tiles.size > 3000) this.tiles.clear();
+       an order of magnitude heavier than Natural Earth's. MEASURED: at 3,000 tiles a worker reached a 5 GB heap and was
+       killed (the Arctic coast is tens of thousands of vertices a tile); 500, the least recently used leaving first */
+    if (this.tiles.size >= 500) this.tiles.delete(this.tiles.keys().next().value);
     this.tiles.set(k, u); return u;
   }
   /* the land of one band cell: n cells per degree, so cells align with the tiles and two neighbours share exact edges */
@@ -340,7 +363,7 @@ export class Land {
       if (pre.length) { try { u = pc.intersection(pre, [[[box[0], box[1]], [box[2], box[1]], [box[2], box[3]], [box[0], box[3]], [box[0], box[1]]]]); } catch (_) { u = null; } }
       if (u && !u.length) u = null;
     }
-    if (this.cells.size > 40000) this.cells.clear();
+    if (this.cells.size > 20000) this.cells.clear();   /* (coast-snap-detail) halved with the tiles: OpenStreetMap's cells are heavier */
     this.cells.set(key, u); return u;
   }
   onLand(x, y) { const T = this.tile(Math.floor(x), Math.floor(y)); return !!T && inPolys(T, x, y); }
@@ -382,15 +405,17 @@ function safe(op, ...args) {
     throw e;
   }
 }
+/* (coast-snap-detail) the neighbours' indexes and tile parts, kept across rows — bounded at 150 rows each: MEASURED, a worker
+   holding OpenStreetMap's land and coast index starts at 3.0 GB of heap, and at 600 rows each these grew past 6.5 GB */
 const segIx = new Map();
-function segOf(o) { let s = segIx.get(o.k); if (!s) { if (segIx.size > 600) segIx.clear(); s = new SegIndex(o.polys.flatMap((p) => p), 0.05); segIx.set(o.k, s); } return s; }
+function segOf(o) { let s = segIx.get(o.k); if (!s) { if (segIx.size > 150) segIx.clear(); s = new SegIndex(o.polys.flatMap((p) => p), 0.05); segIx.set(o.k, s); } return s; }
 let UID = 0;
 /* a row's polygons inside a cell: clipped first to the cell's 1° tile (once per row and tile — a frontier row has thousands of
    points and is asked for by hundreds of cells) and then to the cell. Cells align with the tiles (n cells per degree). */
 const tileIx = new Map();
 function partsIn(o, box) {
   let T = tileIx.get(o.k);
-  if (!T) { if (tileIx.size > 600) tileIx.clear(); T = { pb: o.polys.map((p) => bbox([p])), t: new Map() }; tileIx.set(o.k, T); }
+  if (!T) { if (tileIx.size > 150) tileIx.clear(); T = { pb: o.polys.map((p) => bbox([p])), t: new Map() }; tileIx.set(o.k, T); }
   const tx = Math.floor(box[0] + 1e-9), ty = Math.floor(box[1] + 1e-9), key = tx * 1000 + ty;
   let L = T.t.get(key);
   if (!L) { const tb = [tx, ty, tx + 1, ty + 1]; L = []; o.polys.forEach((p, i) => { if (meets(T.pb[i], tb)) for (const q of clipPolys([p], tb)) L.push(q); }); T.t.set(key, L); }
@@ -434,7 +459,13 @@ function cellPieces(R, c, inF, Rseg, coast, B, borders, agree) {
         if (!segOf(o).on(mx, my, EPS_ON)) continue;
         hit = true;
         if (o.name !== R.name || !o.name) { P.other = true; P.with.add(o.t + ':' + (o.name || '(unnamed)')); }
-        else if (o.rank < R.rank || (o.rank === R.rank && o.k < R.k)) P.later = true;   /* a row of the same name ahead of R draws it */
+        /* a row of the same name ahead of R draws it — (coast-snap-detail) ⚠ ONLY A ROW THAT REACHES THE SAME COAST: a row of
+           another coast cuts its pieces from other land, so its piece is not this piece. MEASURED: in 1650 the sheet's «Ottoman
+           Empire» (Natural Earth, whose coarse land fills part of the Golden Horn) joined the old city's tip to the north shore,
+           where Cliopatria's «Ottoman Empire» runs, and yielded it; Cliopatria (OpenStreetMap, where the Golden Horn is water)
+           never met the tip — and the tip went blank. Two rows of one name and two coasts each draw their own; where the two
+           pieces overlap it is one polity over itself (the era fill is all but transparent, and a piece is never stroked) */
+        else if ((o.rank < R.rank || (o.rank === R.rank && o.k < R.k)) && coastOf(o.t) === coastOf(R.t)) P.later = true;
       }
       if (!hit) P.odd = true;
     }
@@ -619,7 +650,13 @@ export async function buildCoastSnap({ log = console.error, only = null } = {}) 
   for (const o of todo) { const f = fileOf(o); if (existsSync(f)) { try { keep(o, JSON.parse(readFileSync(f, 'utf8'))); continue; } catch (_) { /* rewritten below */ } } fresh.push(o); }
   if (fresh.length < todo.length) log(`  … ${todo.length - fresh.length} of ${todo.length} rows read from the cache (${dir})`);
   todo = fresh;
-  await new Promise((resolve, reject) => {
+  /* (coast-snap-detail) ⚠ TWO PASSES, ONE PER COAST — MEASURED: a worker holding OpenStreetMap's land and coast index starts at
+     3.0 GB of heap, and CShapes' largest rows (Russia, Canada) need more than 3.5 GB on top of it, so a mixed queue ran workers
+     out of memory at 4.3 and at 6.5 GB. Natural Earth's rows go first to workers that never read OpenStreetMap (it is read on
+     a worker's first row that reaches it), then the rest to fresh workers. */
+  const all = todo;
+  for (const coast of Object.keys(COASTS)) { todo = all.filter((o) => coastOf(o.t) === coast); await pool(); }
+  async function pool() { await new Promise((resolve, reject) => {
     let next = 0, left = todo.length, ws = [];
     if (!left) return resolve();
     const feed = (w) => { if (next < todo.length) { const o = todo[next++]; w.postMessage({ id: next - 1, k: o.k }); } };
@@ -630,12 +667,12 @@ export async function buildCoastSnap({ log = console.error, only = null } = {}) 
         if (m.ready) { feed(w); return; }
         if (m.res.err) log('  ✖ row ' + m.k + ': ' + m.res.err.split('\n')[0]);
         keep(rows[m.k], m.res); if (!m.res.err) { try { writeFileSync(fileOf(rows[m.k]), JSON.stringify({ out: m.res.out, why: m.res.why })); } catch (_) { /* only slower next time */ } }
-        if (--left % 500 === 0) log(`  … ${todo.length - left} / ${todo.length} (${((Date.now() - t0) / 1000).toFixed(0)} s)`);
+        if (--left % 500 === 0) log(`  … ${todo.length - left} / ${todo.length} ${coastOf(rows[m.k].t)} (${((Date.now() - t0) / 1000).toFixed(0)} s)`);
         if (!left) { Promise.all(ws.map((x) => x.terminate())).then(resolve); } else feed(w);
       });
       w.on('error', reject);
     }
-  });
+  }); }
   if (why.error) throw new Error(why.error + ' row(s) failed in the coast snap');
   return writeSnap(rows, heads, results, why, { log, write: !only, t0 });
 }
