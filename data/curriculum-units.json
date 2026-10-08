@@ -191,7 +191,10 @@
             { "key": "rekishi-a1", "group": "rekishi-a", "label": "（1）歴史と私たち", "gloss": "(1) History and us", "maps": [] },
             { "key": "rekishi-a2", "group": "rekishi-a", "label": "（2）歴史の特質と資料", "gloss": "(2) The nature of history and its sources", "maps": [] },
             { "key": "rekishi-b1", "group": "rekishi-b", "label": "（1）近代化への問い", "gloss": "(1) Questions about modernisation", "maps": [] },
-            { "key": "rekishi-b2", "group": "rekishi-b", "label": "（2）結び付く世界と日本の開国", "gloss": "(2) A connected world and the opening of Japan", "maps": [] },
+            { "key": "rekishi-b2", "group": "rekishi-b", "label": "（2）結び付く世界と日本の開国", "gloss": "(2) A connected world and the opening of Japan",
+              "basis": "中国の開港と日本の開国",
+              "maps": [],
+              "tours": ["opening-of-japan"] },
             { "key": "rekishi-b3", "group": "rekishi-b", "label": "（3）国民国家と明治維新", "gloss": "(3) The nation state and the Meiji Restoration",
               "basis": "日本の明治維新や大日本帝国憲法の制定などを基に，立憲体制と国民国家の形成を理解すること",
               "maps": [ { "example": "japan-1900" } ],
@@ -208,7 +211,10 @@
             { "key": "rekishi-d2", "group": "rekishi-d", "label": "（2）冷戦と世界経済", "gloss": "(2) The Cold War and the world economy",
               "basis": "冷戦下の地域紛争",
               "maps": [ { "example": "cold-war-1985" } ] },
-            { "key": "rekishi-d3", "group": "rekishi-d", "label": "（3）世界秩序の変容と日本", "gloss": "(3) The changing world order and Japan", "maps": [] },
+            { "key": "rekishi-d3", "group": "rekishi-d", "label": "（3）世界秩序の変容と日本", "gloss": "(3) The changing world order and Japan",
+              "basis": "冷戦の終結",
+              "maps": [ { "example": "cold-war-1985" } ],
+              "tours": ["cold-war-end"] },
             { "key": "rekishi-d4", "group": "rekishi-d", "label": "（4）現代的な諸課題の形成と展望", "gloss": "(4) How present-day issues formed, and what lies ahead", "maps": [] }
           ]
         },
@@ -273,7 +279,10 @@
               "maps": [ { "example": "world-1279" } ] },
             { "key": "sekaishi-c3", "group": "sekaishi-c", "label": "（3）アジア諸地域とヨーロッパの再編", "gloss": "(3) The reorganisation of Asia's regions and of Europe", "maps": [] },
             { "key": "sekaishi-d1", "group": "sekaishi-d", "label": "（1）諸地域の結合・変容への問い", "gloss": "(1) Questions about the linking and transformation of the regions", "maps": [] },
-            { "key": "sekaishi-d2", "group": "sekaishi-d", "label": "（2）世界市場の形成と諸地域の結合", "gloss": "(2) The formation of a world market and the linking of the regions", "maps": [] },
+            { "key": "sekaishi-d2", "group": "sekaishi-d", "label": "（2）世界市場の形成と諸地域の結合", "gloss": "(2) The formation of a world market and the linking of the regions",
+              "basis": "世界市場の形成とアジア諸国の変容",
+              "maps": [],
+              "tours": ["opening-of-japan"] },
             { "key": "sekaishi-d3", "group": "sekaishi-d", "label": "（3）帝国主義とナショナリズムの高揚", "gloss": "(3) Imperialism and the rise of nationalism",
               "basis": "第一次世界大戦とロシア革命，ヴェルサイユ・ワシントン体制の形成",
               "maps": [ { "example": "europe-1914" }, { "example": "europe-1920" } ],
@@ -286,7 +295,8 @@
               "maps": [
                 { "example": "cold-war-1985" },
                 { "title": ["NATO members", "NATO の加盟国"], "view": { "lng": 0, "lat": 45, "zoom": 1.8 }, "layers": ["dl-nato"] }
-              ] },
+              ],
+              "tours": ["cold-war-end"] },
             { "key": "sekaishi-e2", "group": "sekaishi-e", "label": "（2）経済のグローバル化と格差の是正", "gloss": "(2) Economic globalisation and narrowing the gaps",
               "basis": "先進国の経済成長と南北問題",
               "maps": [
@@ -373,12 +383,13 @@
             { "key": "uk-his-1901", "group": "uk-his-a", "label": "challenges for Britain, Europe and the wider world 1901 to the present day", "gloss": "ブリテン・ヨーロッパ・世界の課題（1901年から現在まで）",
               "basis": "challenges for Britain, Europe and the wider world 1901 to the present day",
               "maps": [ { "example": "europe-1914" }, { "example": "europe-1920" }, { "example": "cold-war-1985" } ],
-              "tours": ["ww1-europe"] },
+              "tours": ["ww1-europe", "cold-war-end"] },
             { "key": "uk-his-local", "group": "uk-his-a", "label": "a local history study", "gloss": "地域史の学習", "maps": [] },
             { "key": "uk-his-pre1066", "group": "uk-his-a", "label": "the study of an aspect or theme in British history that consolidates and extends pupils’ chronological knowledge from before 1066", "gloss": "1066年以前からの年代的な知識を固め広げる、ブリテン史の一側面またはテーマの学習", "maps": [] },
             { "key": "uk-his-world", "group": "uk-his-a", "label": "at least one study of a significant society or issue in world history and its interconnections with other world developments", "gloss": "世界史上の重要な社会または問題と、世界の他の展開との結び付きについての学習（少なくとも1つ）",
               "basis": "its interconnections with other world developments",
-              "maps": [ { "example": "world-1279" }, { "example": "world-100" } ] }
+              "maps": [ { "example": "world-1279" }, { "example": "world-100" } ],
+              "tours": ["opening-of-japan"] }
           ]
         }
       ]

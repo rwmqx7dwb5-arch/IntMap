@@ -90,6 +90,78 @@ export const TOURS = [
     ],
   },
   {
+    /* (sales-schools) 歴史総合 Ｂ（2）「結び付く世界と日本の開国」 — the unit the course of study words as 「中国の開港と
+       日本の開国」. Every date below is a row edge of the record the map draws from (data/hist-borders.js, OpenHistoricalMap):
+       Qing's outline changes on 1858-05-28 (the Treaty of Aigun) and 1860-11-14 (the Convention of Peking with Russia),
+       and 130.7 E 42.6 N — the land just north of the Tumen — passes from Qing to the Russian Empire on 1860-11-14
+       (node scripts/place-history.mjs --at 130.75,42.55). The sentences name no date for Hong Kong's growth (the record's
+       Kowloon row begins 1860-10-18, not the convention's 10-24) and nothing about Sakhalin (the record draws it Russian
+       from 1856, before the 1875 treaty) — measured, and left out. dev-notes/2026-10-08-sales-schools.md. */
+    id: 'opening-of-japan',
+    topic: 'history',
+    curriculum: ['rekishi-b'],
+    title: LA('The opening of China and Japan, 1853–1900', '中国の開港と日本の開国　1853→1900'),
+    blurb: LA(
+      'East Asia on the day Perry arrived, after the treaties of 1858–1860, when Japan opened Korea in 1876, and in 1900.',
+      'ペリーが来航した日、1858〜1860年の条約のあと、日本が朝鮮を開国させた1876年、そして1900年の東アジアをたどります。'),
+    steps: [
+      {
+        id: 'east-asia-1853',
+        title: LA('East Asia on 8 July 1853', '1853年7月8日の東アジア'),
+        view: { lng: 125, lat: 38, zoom: 3.4, proj: 'f' },
+        base: 'map',
+        at: '1853-07-08',
+        layers: [],
+        say: LA(
+          '8 July 1853: four American warships under Commodore Matthew Perry anchor off Uraga, at the mouth of Edo Bay, with a letter asking Japan to open its ports. On this map Japan is the Tokugawa shogunate and Korea is Joseon. Ryukyu is drawn as a kingdom of its own: it sent tribute to Qing, while since 1609 it had also been under the control of Japan’s Satsuma domain. Qing China has already lost the Opium War to Britain: by the Treaty of Nanking (1842) it opened five ports to British trade and ceded Hong Kong Island, the small British territory at the mouth of the Pearl River.',
+          '1853年7月8日、ペリーの率いるアメリカの軍艦4隻が江戸湾の入口の浦賀沖に停泊し、開港を求める国書を届けます。この地図で日本は徳川幕府、朝鮮半島は朝鮮王朝です。琉球は独自の王国として描かれています。琉球は清に朝貢する一方、1609年からは薩摩藩の支配も受けていました。中国の清はすでにアヘン戦争でイギリスに敗れ、南京条約（1842年）で5つの港をイギリスとの貿易に開き、香港島を割譲しています。珠江の河口にある小さなイギリス領がそれです。'),
+        ask: LA(
+          'Find Hong Kong and Uraga. Why did Britain and the United States want ports in East Asia in the 1840s and 1850s?',
+          '香港と浦賀を探してみましょう。1840〜50年代に、イギリスやアメリカはなぜ東アジアに港を求めたのでしょう。'),
+        drawn: { labels: ['Tokugawa Shogunate', 'Qing', 'Joseon', 'Ryukyu Kingdom', 'Russian Empire', 'British Hong Kong'] },
+      },
+      {
+        id: 'east-asia-1861',
+        title: LA('East Asia on 1 January 1861', '1861年1月1日の東アジア'),
+        view: { lng: 125, lat: 38, zoom: 3.4, proj: 'f' },
+        base: 'map',
+        at: '1861-01-01',
+        layers: [],
+        say: LA(
+          'Seven years later. In 1858 Japan signed treaties of commerce with the United States, the Netherlands, Russia, Britain and France, and in 1859 Yokohama, Nagasaki and Hakodate opened to foreign trade. Qing, defeated again by Britain and France, has given land to Russia: the north bank of the Amur by the Treaty of Aigun (1858), and the land east of the Ussuri River, down to the border of Korea, by the Convention of Peking (1860).',
+          '7年後です。1858年に日本はアメリカ・オランダ・ロシア・イギリス・フランスと通商条約を結び、1859年に横浜・長崎・箱館が外国との貿易に開かれました。清は再びイギリスとフランスに敗れ、ロシアに領土を譲っています。アイグン条約（1858年）でアムール川の北岸を、北京条約（1860年）でウスリー川の東、朝鮮との境までの土地を。'),
+        ask: LA(
+          'Compare with 1853. Which state gained land, from whom — and which new neighbour does Joseon now have?',
+          '1853年と比べてみましょう。どの国が、どの国から土地を得たでしょう。朝鮮にはどんな新しい隣国ができたでしょう。'),
+        drawn: { labels: ['Tokugawa Shogunate', 'Qing', 'Joseon', 'Russian Empire'] },
+      },
+      {
+        id: 'east-asia-1876',
+        title: LA('East Asia on 1 March 1876', '1876年3月1日の東アジア'),
+        view: { lng: 125, lat: 38, zoom: 3.4, proj: 'f' },
+        base: 'map',
+        at: '1876-03-01',
+        layers: [],
+        say: LA(
+          'Japan has a new government since the Meiji Restoration of 1868, and now does to Korea what was done to Japan. In February 1876, after a clash off Ganghwa Island, Japan made Joseon sign the Treaty of Ganghwa: Korean ports were opened to Japanese trade, and Japanese in Korea were to be judged by Japanese consuls — terms like those of Japan’s own treaties of 1858.',
+          '1868年の明治維新で日本は新しい政府となり、今度は日本がされたことを朝鮮に対して行います。江華島付近での衝突のあと、1876年2月、日本は朝鮮に日朝修好条規を結ばせました。朝鮮の港が日本との貿易に開かれ、朝鮮にいる日本人は日本の領事が裁くことになりました。1858年に日本が結んだ条約と似た内容です。'),
+        ask: LA(
+          'The treaty of 1876 moved no border. What changed that a map of borders cannot show — and what kind of map or source would show it?',
+          '1876年の条約は国境を1つも動かしていません。国境の地図には描けない、何が変わったのでしょう。それを示すには、どんな地図や資料が要るでしょう。'),
+        drawn: { labels: ['Empire of Japan (1869-1879)', 'Qing', 'Joseon', 'Russian Empire'] },
+      },
+      {
+        example: 'japan-1900',
+        say: LA(
+          'Japan in 1900, forty-seven years after Perry. Japan has a constitution (1889), has won a war with Qing (1894–95) and rules Taiwan, and Korea is now the Korean Empire. In 1899 the treaties that had let foreign consuls judge their own people in Japan came to an end.',
+          'ペリー来航から47年後、1900年の日本です。日本は憲法を持ち（1889年）、清との戦争に勝って（1894〜95年）台湾を統治し、朝鮮は大韓帝国となっています。1899年には、外国の領事が日本国内で自国民を裁く条約の取り決めが終わりました。'),
+        ask: LA(
+          'Look back over the four maps. In 1853 Japan was asked to open; by 1900 Japan rules land outside its islands. What changed in between, and what did not show on these maps?',
+          '4枚の地図を振り返ってみましょう。1853年に日本は開国を求められる側でした。1900年には島々の外の土地を統治しています。その間に何が変わり、何はこれらの地図に表れなかったでしょう。'),
+      },
+    ],
+  },
+  {
     id: 'meiji-japan',
     topic: 'history',
     curriculum: ['rekishi-b'],
@@ -136,6 +208,70 @@ export const TOURS = [
         ask: LA(
           'Compare with 1868. Which provinces became a single prefecture, and which provinces were divided among several?',
           '1868年と比べてみましょう。そのまま1つの県になった令制国と、いくつかの府県に分かれた令制国はどれでしょう。'),
+      },
+    ],
+  },
+  {
+    /* (sales-schools) 歴史総合 Ｄ（3）「世界秩序の変容と日本」 — 「冷戦の終結」 in the course of study's words; KS3 history
+       «challenges for Britain, Europe and the wider world 1901 to the present day». The dates are CShapes 2.0's rows
+       (data/cshapes.js): the German Democratic Republic ends 1990-10-02; Czechoslovakia ends 1992-12-31 and the Czech
+       Republic and Slovakia begin 1993-01-01; the fifteen successor states of the Soviet Union are all in force on
+       1993-01-01. ⚠ No sentence dates a single successor state: CShapes starts them on different days (the Baltic
+       states 1991-09-06, the Soviet recognition; Belarus 1991-08-25; Ukraine 1991-12-26) and Slovenia and Croatia on
+       1992-04-27, which are not their declarations. ⚠ The second step is 1991-07-01 (the Warsaw Pact's formal end), not
+       the reunification day: on 1990-10-03 the map LABELS the Federal Republic «West Germany» — js/history.js's era name
+       for DEU runs `from:1949,to:1990` by whole years, though the record itself says «Germany» from that day (seen in
+       the captured picture). ⚠ The last step is in 1993, not in the last days of 1991: the map's name
+       rule (js/time-borders.js _CS_ERA 365) calls the record «Soviet Union» through 1991-12-31. Macedonia is not named:
+       the same table labels it «North Macedonia» in every year. Both reported in dev-notes/2026-10-08-sales-schools.md. */
+    id: 'cold-war-end',
+    topic: 'history',
+    curriculum: ['rekishi-d'],
+    title: LA('The end of the Cold War in Europe, 1985–1993', '冷戦の終結とヨーロッパの地図　1985→1993'),
+    blurb: LA(
+      'Divided Germany in 1985, Germany reunited in 1990, and the map of 1993 after the Soviet Union, Yugoslavia and Czechoslovakia had broken apart.',
+      '分断されたドイツ（1985年）、統一したドイツ（1990年）、そしてソ連・ユーゴスラビア・チェコスロバキアが解体したあとの1993年の地図をたどります。'),
+    steps: [
+      {
+        example: 'cold-war-1985',
+        say: LA(
+          'Europe in July 1985, a few months after Mikhail Gorbachev became the leader of the Soviet Union. Germany is divided into West Germany and East Germany, and three large states — Czechoslovakia, Yugoslavia and the Soviet Union — each hold many peoples inside one border.',
+          '1985年7月のヨーロッパです。ゴルバチョフがソ連の指導者となって数か月後です。ドイツは西ドイツと東ドイツに分かれ、チェコスロバキア、ユーゴスラビア、ソ連という3つの大きな国が、それぞれ1つの国境の中に多くの民族を抱えています。'),
+        ask: LA(
+          'Which states on this map were allies of the Soviet Union in the Warsaw Pact, and which were members of NATO?',
+          'この地図の国のうち、ワルシャワ条約機構でソ連の同盟国だったのはどの国でしょう。NATO の加盟国はどの国でしょう。'),
+      },
+      {
+        id: 'europe-1991',
+        title: LA('Europe on 1 July 1991', '1991年7月1日のヨーロッパ'),
+        view: { lng: 16, lat: 52, zoom: 3.2, proj: 'f' },
+        base: 'map',
+        at: '1991-07-01',
+        layers: [],
+        say: LA(
+          '1 July 1991. Germany has been one state again since 3 October 1990, when East Germany joined the Federal Republic — eleven months after the Berlin Wall was opened in November 1989. On this day the Warsaw Pact, the Soviet Union’s military alliance with the states of eastern Europe, is formally dissolved. Czechoslovakia, Yugoslavia and the Soviet Union are still on the map.',
+          '1991年7月1日です。1990年10月3日に東ドイツが西ドイツに加わり、ドイツは再び1つの国になっています。1989年11月にベルリンの壁が開かれてから11か月後のことでした。この日、ソ連と東ヨーロッパの国々の軍事同盟であるワルシャワ条約機構が正式に解散します。チェコスロバキア、ユーゴスラビア、ソ連はまだ地図の上にあります。'),
+        ask: LA(
+          'Compare with 1985. Which border has disappeared? Why might it have been the first to go?',
+          '1985年と比べてみましょう。消えた国境はどれでしょう。なぜそれが最初に消えたのでしょう。'),
+        drawn: { labels: ['German Federal Republic', 'Czechoslovakia', 'Yugoslavia', 'Russia (Soviet Union)'] },
+      },
+      {
+        id: 'europe-1993',
+        title: LA('Europe and the former Soviet Union on 1 January 1993', '1993年1月1日のヨーロッパと旧ソ連'),
+        view: { lng: 38, lat: 50, zoom: 2.6, proj: 'f' },
+        base: 'map',
+        at: '1993-01-01',
+        layers: [],
+        say: LA(
+          '1 January 1993, the day Czechoslovakia divided peacefully into the Czech Republic and Slovakia. The Soviet Union was dissolved in December 1991: where it was, the map now draws Russia and fourteen other states, among them Estonia, Latvia, Lithuania, Belarus, Ukraine, Moldova, Georgia and Kazakhstan. Yugoslavia has broken apart too, in war: Slovenia, Croatia and Bosnia and Herzegovina are drawn as separate states, and the name Yugoslavia stays with Serbia and Montenegro.',
+          '1993年1月1日、チェコスロバキアが平和的にチェコとスロバキアに分かれた日です。ソ連は1991年12月に解体し、その場所に地図はロシアと14の国を描いています。エストニア、ラトビア、リトアニア、ベラルーシ、ウクライナ、モルドバ、ジョージア、カザフスタンなどです。ユーゴスラビアも戦争の中で解体し、スロベニア、クロアチア、ボスニア・ヘルツェゴビナが別々の国として描かれ、ユーゴスラビアの名はセルビアとモンテネグロに残っています。'),
+        ask: LA(
+          'Count the states drawn where the Soviet Union was. Which three of them had been independent once before, between the two world wars? (The tour on the First World War shows them in 1920.)',
+          'ソ連があった場所に描かれている国を数えてみましょう。そのうち、2つの世界大戦の間にも一度独立していた3つの国はどれでしょう（第一次世界大戦のツアーの1920年の地図にあります）。'),
+        drawn: { labels: ['Russia (Soviet Union)', 'Estonia', 'Latvia', 'Lithuania', 'Belarus (Byelorussia)', 'Ukraine', 'Moldova',
+          'Georgia', 'Armenia', 'Azerbaijan', 'Kazakhstan', 'Uzbekistan', 'Turkmenistan', 'Kyrgyz Republic', 'Tajikistan',
+          'Czech Republic', 'Slovakia', 'Slovenia', 'Croatia', 'Bosnia-Herzegovina', 'Yugoslavia', 'German Federal Republic'] },
       },
     ],
   },
@@ -361,11 +497,26 @@ export const CAPTURED_STEPS = {
   "europe-1918-armistice": {
     "hash": "#v=22.0000,48.5000,3.30,0,0,f&tt=1918-11-11"
   },
+  "east-asia-1853": {
+    "hash": "#v=125.0000,38.0000,3.40,0,0,f&tt=1853-07-08"
+  },
+  "east-asia-1861": {
+    "hash": "#v=125.0000,38.0000,3.40,0,0,f&tt=1861-01-01"
+  },
+  "east-asia-1876": {
+    "hash": "#v=125.0000,38.0000,3.40,0,0,f&tt=1876-03-01"
+  },
   "japan-1868": {
     "hash": "#v=136.5000,36.0000,5.00,0,0,f&tt=1868-11-01"
   },
   "japan-1872": {
     "hash": "#v=136.5000,36.0000,5.00,0,0,f&tt=1872-07-01"
+  },
+  "europe-1991": {
+    "hash": "#v=16.0000,52.0000,3.20,0,0,f&tt=1991-07-01"
+  },
+  "europe-1993": {
+    "hash": "#v=38.0000,50.0000,2.60,0,0,f&tt=1993-01-01"
   },
   "plates-pacific": {
     "hash": "#v=-175.0000,8.0000,1.50,0,0,f&l=eco-dl-plates"
