@@ -595,7 +595,7 @@ const CSS = [
   '.qst .qst-week{display:flex;justify-content:space-between;gap:4px;margin:0 0 8px;}',
   '.qst .qst-wd{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:var(--text-muted);font-variant-numeric:tabular-nums;}',
   '.qst .qst-wd i{display:block;width:14px;height:14px;border-radius:50%;border:1.5px solid rgba(128,128,128,0.45);box-sizing:border-box;}',
-  '.qst .qst-wd.on i{background:var(--primary-color);border-color:var(--primary-color);}',
+  '.qst .qst-wd.on i{background:var(--primary-fill);border-color:var(--primary-fill);}',
   '.qst .qst-wd.now{color:var(--text-main);font-weight:700;}',
   '.qst .qst-today .qst-kind{background:var(--card-bg);}',
   '.qst .qst-daily.done small{color:var(--primary-color);}',

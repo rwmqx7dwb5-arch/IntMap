@@ -49,13 +49,14 @@ select _run('a_upd',    'update public.quest_daily_results set scores = ''{1000,
 select _run('a_del',    'delete from public.quest_daily_results');
 select _run('a_steal',  'insert into public.quest_daily_results (user_id, day, kind, scores) values (''22222222-2222-2222-2222-222222222222'', date ''2026-10-09'', ''when'', ''{1,1,1,1,1}'')');
 select _run('a_stamp',  'insert into public.quest_daily_results (day, kind, scores, created_at) values (date ''2026-10-09'', ''where'', ''{1,1,1,1,1}'', now() - interval ''1 year'')');
--- ④ the numbers
-select _run('c_four',   'insert into public.quest_daily_results (day, kind, scores) values (date ''2026-10-10'', ''when'', ''{1,2,3,4}'')');
-select _run('c_six',    'insert into public.quest_daily_results (day, kind, scores) values (date ''2026-10-10'', ''when'', ''{1,2,3,4,5,6}'')');
-select _run('c_high',   'insert into public.quest_daily_results (day, kind, scores) values (date ''2026-10-10'', ''when'', ''{1001,0,0,0,0}'')');
-select _run('c_neg',    'insert into public.quest_daily_results (day, kind, scores) values (date ''2026-10-10'', ''when'', ''{-1,0,0,0,0}'')');
-select _run('c_null',   'insert into public.quest_daily_results (day, kind, scores) values (date ''2026-10-10'', ''when'', array[1,2,null,4,5]::smallint[])');
-select _run('c_kind',   'insert into public.quest_daily_results (day, kind, scores) values (date ''2026-10-10'', ''flags'', ''{1,2,3,4,5}'')');
+-- ④ the numbers — on a day that has begun (today in UTC), so the row's SHAPE is what is judged: a day after
+--   tomorrow is the trigger's refusal (22023, c_future), a malformed row is the table's CHECK (23514)
+select _run('c_four',   'insert into public.quest_daily_results (day, kind, scores) values ((now() at time zone ''utc'')::date, ''when'', ''{1,2,3,4}'')');
+select _run('c_six',    'insert into public.quest_daily_results (day, kind, scores) values ((now() at time zone ''utc'')::date, ''when'', ''{1,2,3,4,5,6}'')');
+select _run('c_high',   'insert into public.quest_daily_results (day, kind, scores) values ((now() at time zone ''utc'')::date, ''when'', ''{1001,0,0,0,0}'')');
+select _run('c_neg',    'insert into public.quest_daily_results (day, kind, scores) values ((now() at time zone ''utc'')::date, ''when'', ''{-1,0,0,0,0}'')');
+select _run('c_null',   'insert into public.quest_daily_results (day, kind, scores) values ((now() at time zone ''utc'')::date, ''when'', array[1,2,null,4,5]::smallint[])');
+select _run('c_kind',   'insert into public.quest_daily_results (day, kind, scores) values ((now() at time zone ''utc'')::date, ''flags'', ''{1,2,3,4,5}'')');
 select _run('c_early',  'insert into public.quest_daily_results (day, kind, scores) values (date ''2026-10-07'', ''when'', ''{1,2,3,4,5}'')');
 select _run('c_future', 'insert into public.quest_daily_results (day, kind, scores) values ((now() at time zone ''utc'')::date + 2, ''when'', ''{1,2,3,4,5}'')');
 select _run('c_tomorrow','insert into public.quest_daily_results (day, kind, scores) values ((now() at time zone ''utc'')::date + 1, ''when'', ''{0,0,0,0,1000}'')');

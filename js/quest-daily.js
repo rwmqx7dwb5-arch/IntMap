@@ -65,7 +65,7 @@ export function localRows() {
   return out;
 }
 /** keep a day's result in this browser — the first one stands. → 'kept' | 'already' | 'invalid' | 'no_storage' */
-export function keepLocal(day, kind, scores) {
+function keepLocal(day, kind, scores) {
   if (!parseDay(day) || !validKind(kind) || !validScores(scores)) return 'invalid';
   const o = readLocal();
   const d = o.days[day] || (o.days[day] = {});
@@ -99,7 +99,7 @@ export async function accountRows(DB) {
 }
 /** add results to the account; a day and kind it already holds is «already», not a failure.
  *  → { ok, saved, already, error? } */
-export async function saveToAccount(DB, list) {
+async function saveToAccount(DB, list) {
   if (!DB) return { ok: false, saved: 0, already: 0, error: 'unavailable' };
   const rows = (list || []).filter((r) => r && parseDay(r.day) && validKind(r.kind) && validScores(r.scores)).map((r) => ({ day: r.day, kind: r.kind, scores: r.scores.slice() }));
   let saved = 0, already = 0;
