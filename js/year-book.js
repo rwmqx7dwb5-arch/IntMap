@@ -68,7 +68,12 @@ const bboxOf = (g) => {
   return a <= c ? [a, b, c, d] : null;
 };
 /** the app's one escaper (js/safe-html.js) */
-const esc = (s) => globalThis.IntMapSafe.html(String(s == null ? '' : s));
+/** the app's one escaper (js/safe-html.js), as text for markup — exported under a name no other file defines, so the
+    output-taint gate can judge an importer's call by this definition alone (js/journey-through-time.js) */
+export function htmlText(s) { return globalThis.IntMapSafe.html(String(s == null ? '' : s)); }
+const esc = htmlText;
+/** the border records the era layer draws (js/time-borders.js, published by js/app-body.js) — the one place this file reads them */
+export const bordersNow = () => window.IntMapTimeBorders;
 
 /* the stylesheet, injected the first time the module draws — not on the start-up path (css/intmap.css is) */
 const CSS = `.yb-sheet{ position:fixed; z-index:var(--z-sheet); top:72px; right:12px; width:min(380px, calc(100vw - 24px)); max-height:calc(100vh - 160px); display:flex; flex-direction:column; border-radius:16px; background:var(--popup-bg); -webkit-backdrop-filter:blur(22px) saturate(1.6); backdrop-filter:blur(22px) saturate(1.6); border:1px solid var(--glass-border,rgba(128,128,128,0.2)); box-shadow:var(--shadow); color:var(--text-main); overflow:hidden; }
@@ -102,7 +107,7 @@ function ensureStyle() { if (typeof document === 'undefined' || !document.head |
 const isoDay = (d) => { const y = d.getFullYear(); return (y < 0 ? '-' + String(-y).padStart(6, '0') : String(y).padStart(4, '0')) + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 
 /** the name a feature of the record carries, in the reader's language when the record's names table has it */
-const nameIn = (p, lang) => { if (!p) return ''; const i = p._i18n; return String((i && (i[lang] || (lang === 'jp' && i.ja))) || p.NAME || p.name || '').trim(); };
+export const nameIn = (p, lang) => { if (!p) return ''; const i = p._i18n; return String((i && (i[lang] || (lang === 'jp' && i.ja))) || p.NAME || p.name || '').trim(); };
 
 /**
  * Read one instant. `deps` are the readers the page already has (each optional — a missing one is a section
@@ -401,7 +406,7 @@ function warsFor(year) {
 /** the deps readYear takes, from the page */
 export function pageDeps(h) {
   return {
-    borders: window.IntMapTimeBorders, maddison: window.IntMapMaddison, layerTime: window.IntMapLayerTime, lang: h.lang, wars: warsFor, index: loadIndex,
+    borders: bordersNow(), maddison: window.IntMapMaddison, layerTime: window.IntMapLayerTime, lang: h.lang, wars: warsFor, index: loadIndex,
     countryName: (code) => { try { const s = h.countryStats && h.countryStats()[code]; if (s) return (h.lang() === 'jp' ? (s.nameJp || s.nameEn) : s.nameEn) || code; } catch (_) { /* below */ } return code; },
   };
 }

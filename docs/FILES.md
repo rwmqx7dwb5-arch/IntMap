@@ -943,7 +943,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  217 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  218 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -1066,7 +1066,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全217を検索・到達可能 214）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全218を検索・到達可能 215）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -1084,7 +1084,7 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
 atlas-hist-urban.js               Atlas の `time.cityPopulation` の本体——歴史上の都市人口の記録に、ある年の大都市・ある都市の人口の推移を訊き、
                                   値（`exec.cityPopulation`）と同じ事実の文で返す。規則は hist-urban.js。初回の呼び出しで動的 import（Atlas のチャンクに載せない）
-atlas-schemas.js                  **引数の schema**（#R406）— 217能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 218能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -1227,7 +1227,8 @@ photo-geo-match.js                カメラモデルと稜線の一致度・方�
 photo-geo-search.js               矩形の走査（粗→細）・候補の抑制・見積り
 photo-geo-exif.js                 EXIF の向き・焦点距離・GPS（GPS は結果に使わず表示のみ）
 routing-ui.js                     経路パネル（Layers ▸ Tools ▸ Directions・遅延取得）window.IntMapRouteUI
-routing-ops.js                    経路の分析 window.IntMapRoutingOps
+routing-ops.js                    経路の分析 window.IntMapRoutingOps。線に沿った標本と点包含・今日の国境の読みは
+                                  モジュール直下で export し、journey-through-time.js が同じ 1 つを使う
 routing-errors.js                 経路の失敗の分類（15コード・再試行可否・fallback可否）window.IntMapRouteErrors
 routing-time.js                   計画の時刻（Chronos）と案内の時刻（壁時計）の区別 window.IntMapRouteClock
 routing-traffic.js                交通情報つき provider のアダプタ（routing-relay 経由）window.IntMapRouteTraffic
@@ -1329,6 +1330,10 @@ place-history.js                  **この場所の歴史**——1 地点をど�
                                   端は種類つき（stated・reach・handover・rename・sheet・review／derived・unstated・undocumented・open）。
                                   地点カードの節と Atlas `time.placeHistory` が同じ記録を描く。行を押すと Chronos をその時代へ
                                   （docs/architecture/07-map.md §7.3f）。地点カードと Atlas が最初に要るときに取りに行く
+journey-through-time.js           **時をまたぐ道のり**——1 本の線（地点間の大圏、または計算した経路）を複数の時点で訊く。各時点で
+                                  time-borders.js `collectionAt` が描く政体を線に沿って順に、区間ごとの km・越境点・海と記録の無い陸地と、
+                                  一部の時点でだけ通る政体。Atlas `time.journey`（1 時点を政体ごとの色で地図に描く）と経路パネルの
+                                  「その年の国境」が読む。最初に要るときに取りに行く
 events-near.js                    範囲 × 期間の地震と出来事の**読み手 1 つ**——USGS の M2.5 以上・7 日のフィードをセッション内で 1 回
                                   取得して共有し、`news_events` の窓をページ送りで読み、どちらも位置を送らずに端末で範囲を絞る。
                                   状態の語彙（`ok` / `none` / `unavailable`＋理由）の正本。地点カード・place-watch.js・
@@ -2427,7 +2432,7 @@ scripts/
                                   index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
                                   マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
                                   なるなら 1 ファイルで両方を名乗る
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 151 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 152 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の

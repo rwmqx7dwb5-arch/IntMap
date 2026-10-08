@@ -16,7 +16,7 @@
  *  `policy`, `goal`, `chips` and `catalogueSilent`. js/atlas-caps.js says what each one is; nothing outside the
  *  entry names them.
  * ==========================================================================*/
-import { str, bool, num, int, lng, lat } from './atlas-caps.js';
+import { str, bool, num, int, lng, lat, list, loose } from './atlas-caps.js';
 import { IntMapTime } from './chronos.js';
 import { changesPeriod, diffPolities, diffEconomy, diffLayers, rankChanges, boxesMeet, bboxOfGeometry } from './atlas-reasoning.js';   /* (atlas-reasoning) time.changes: what is decided is in that module, as values */
 
@@ -217,6 +217,23 @@ export default [
       const ttl = pt.name || (pt.lat.toFixed(4) + ', ' + pt.lng.toFixed(4));
       return R(true, '<div><b>' + esc(L('This place through time', 'この場所の歴史') + ' — ' + ttl) + '</b>' + PH.historyHtml(rec, lang, { inert: true }) + '</div>', { exec });
     },
+  },
+  {
+    row: ['time.journey',               'journey',        'journeyThroughTime,bordersThen,crossingsThroughTime,routeThroughTime,historicalCrossings', 'time', 'paint', 'map.line', 'map,explanation', 'session', 'none', 'points', ''],
+    /* (atlas-product) ONE JOURNEY, ASKED AT SEVERAL INSTANTS — the polities a line runs through at each instant Atlas names, in
+       order, how far in each, where it crosses, and which polities it meets at some instants and not at others; one instant
+       drawn on the map, coloured by polity. The line is great circles between the places (or a route's coordinates as
+       given); the polities are the ones the border record the map draws at that instant (js/time-borders.js collectionAt),
+       measured with the route panel's own sampler (js/routing-ops.js, at module scope). The run lives in js/journey-through-time.js, fetched on
+       first use. Atlas picks the instants: nothing here picks them for it. */
+    doc: [
+      { in: 'time.coverage', at: 28, text: '{"type":"journey","places"?:[str,…] (2 or more, in travel order) | "points"?:[[lng,lat],…] | "from"?:str,"to"?:str,"via"?:[str],"years"?:[int] (astronomical: 0 is 1 BC),"dates"?:["YYYY-MM-DD"],"now"?:bool,"draw"?:int (1-based, which instant to draw; default the first),"asRoute"?:bool} = A JOURNEY THROUGH TIME / 時をまたぐ道のり — for EACH instant you list (years, dates, and now:true for today’s borders; none = the instant on the clock), the polities the line between the places runs through IN ORDER, the km in each stretch, the crossings with where they fall, and the stretches that are sea or land the record does not cover; then which polities the line meets at some instants and not at others. The polities are the ones IntMap’s historical border record draws at that instant (CShapes 2.0 by the day from 1886; OpenHistoricalMap, Cliopatria and the era sheets before it — the record names itself in the result), under that record’s names, compared across instants by those names; two shapes the record draws at one place are both named (overlap), never one chosen. The line is the great circle between consecutive places (asRoute:true = the points ARE a route, joined straight) — it is not the road a traveller of that year took; say so. It also DRAWS one instant’s line on the map coloured by polity (sea and unrecorded land grey); the clock does not move — add timeTravel to the same instant if the borders under the line should match. Give a DATE when the question is about a treaty or a war (a bare year is mid-June). Use for 「1913年と今日で、ウィーンからイスタンブールまでにいくつの国を通る？」「パリからモスクワへの道は1925年と1990年でどう違う」「シルクロードを700年と1400年で」「which countries would the Orient Express have crossed in 1900」「how many borders between Berlin and Warsaw in 1925 vs today」. Quote the record, the km and the crossings as returned. ' },
+    ],
+    phrases: () => ['国境越え', '国境をいくつ', 'いくつの国を通', '道のり', '経由する国'].concat(['countries would', 'borders between', 'cross through', 'journey from', 'pass through in']),   /* the Japanese phrases, then the English words — two lists, not translations of each other */
+    chips: 'lines',   /* the map's on/off chip a completed run switches (js/atlas-console.js _ovlOf) — the same line layer drawLine paints */
+    schema: () => ({ type: 'object', properties: { places: list(str(), 2), points: list(list(), 2), from: str(), to: str(), via: list(str()), years: list(int()), dates: list(str()), year: int(), date: str(), now: bool(), draw: int(1), asRoute: bool(), extra: loose() },
+      anyOf: [{ required: ['places'] }, { required: ['points'] }, { required: ['from', 'to'] }] }),
+    async run(a, dctx, K) { const { atlasRun } = await import('./journey-through-time.js'); return atlasRun(a, K); },
   },
 ];
 
