@@ -3,7 +3,7 @@
  * ----------------------------------------------------------------------------
  *  ① the reader's share links: one per declared service, each a plain https link whose page address, once the build fills
  *    the site's address in, is the page itself with utm tags the app's counter accepts (no «&» of the page's query leaks
- *    into the service's query), and the title where the service takes one
+ *    into the service's query), and nothing else (the service reads the page's own card)
  *  ② the shell every entry page is written through ends with those links and states an image's alt to Open Graph and X
  *    only when the page has one; the links carry no script (static pages run nothing)
  *  ③ a year page names its own card (not the site's card), with the year's picture alt, and the card is drawn from the
@@ -58,8 +58,8 @@ const near = (a, b, tol) => a.every((v, k) => Math.abs(v - b[k]) <= tol);
 test('① a share link opens the service with the page itself, tagged as the counter reads tags', () => {
   const site = siteUrl('');
   for (const L of LANGS) {
-    const path = L.dir + 'history/years/1914/', title = 'The world in 1914 & after';
-    const links = S.shareLinks(SITE_TOKEN, path, title);
+    const path = L.dir + 'history/years/1914/';
+    const links = S.shareLinks(SITE_TOKEN, path);
     assert.deepEqual(links.map((l) => l.id), S.SHARE_TARGETS.map((t) => t.id));
     assert.equal(new Set(links.map((l) => l.id)).size, links.length, 'one link per service');
     for (const l of links) {
@@ -73,7 +73,8 @@ test('① a share link opens the service with the page itself, tagged as the cou
       assert.equal(page.searchParams.get('utm_source'), l.id);
       assert.equal(campaignOf(page.search).length, 3, l.id + ': the counter accepts the three tags');
       assert.ok(!u.searchParams.has('utm_source'), l.id + ': the page\'s tags did not leak into the service\'s query');
-      if (['x', 'bluesky', 'threads', 'reddit'].includes(l.id)) assert.ok([...u.searchParams.values()].some((v) => v.includes(title)), l.id + ': the title is offered');
+      /* the address alone: the service draws the page's own card (og:title, og:image) — no title repeated per link */
+      assert.equal([...u.searchParams.keys()].length, 1, l.id + ': one parameter, the address');
     }
   }
 });

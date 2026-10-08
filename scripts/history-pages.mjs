@@ -490,7 +490,7 @@ ${o.crumbs ? `<nav class="hp-crumbs" aria-label="breadcrumb">${o.crumbs.map((c, 
 ${o.body(up)}
   <section class="lp-sec hp-share" id="share">
     <h2>${esc(T.share.h2)}</h2>
-    <p class="hp-chips">${shareLinks(SITE_TOKEN, o.pathFor(L), o.title).map((s) => `<a href="${esc(s.href)}" data-share="${esc(s.id)}" target="_blank" rel="noopener noreferrer">${esc(s.name)}</a>`).join(' ')}</p>
+    <p class="hp-chips">${shareLinks(SITE_TOKEN, o.pathFor(L)).map((s) => `<a href="${esc(s.href)}" data-share="${esc(s.id)}" target="_blank" rel="noopener noreferrer">${esc(s.name)}</a>`).join(' ')}</p>
     <p class="lp-note">${esc(T.share.note)}</p>
   </section>
 </main>
