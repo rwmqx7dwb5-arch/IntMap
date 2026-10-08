@@ -187,6 +187,7 @@ const MEMBER = {
   shakeMap: ['IntMapShakeMap', 'open'],
   netHealthLive: ['__imNetHealth', 'report'],   /* (#R546) */
   shakeMap: ['IntMapShakeMap', 'open'],   /* (#R546) */
+  quakeHistory: ['IntMapQuakeHistory', 'open'],   /* (live-news-product) */
   /* (#R577) the sea state. Its member is `toggle` — the door the layer row calls; a module that
      arrived and published only its state getters would light the checkbox and draw nothing. */
   waves: ['IntMapWaves', 'toggle'],

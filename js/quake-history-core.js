@@ -193,7 +193,7 @@ export function buildRecord(events, o) {
 /** rankOf(record, e) — where one event stands: how many in the record are larger, how many the same size, the last
     event at least as large BEFORE it (and how long before) and the first one after it. Complete only because the
     record is complete at its floor and `e` is at or above it. */
-export function rankOf(rec, e) {
+function rankOf(rec, e) {
   const m = e.mag;
   if (m == null) return { event: e, inRecord: true, rank: null };
   let larger = 0, same = 0, prev = null, next = null;

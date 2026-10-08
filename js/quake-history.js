@@ -60,7 +60,7 @@ const QH_CSS = [
   '.qh-cap{ font-size:11.5px; color:var(--text-muted); line-height:1.45; margin:2px 0 8px; }',
 ].join(' ');
 /* the credit the map source carries, so the map postcard and the attribution control name the catalogue that drew it */
-export const QUAKE_RECORD_CREDIT = 'Earthquakes: USGS ANSS ComCat (public domain); ISC-GEM catalogue (ISC/GEM, CC BY-SA 3.0)';
+const QUAKE_RECORD_CREDIT = 'Earthquakes: USGS ANSS ComCat (public domain); ISC-GEM catalogue (ISC/GEM, CC BY-SA 3.0)';
 
 export function quakeHistory(HOST) {
   const GE = () => IntMapGeoEngine;
