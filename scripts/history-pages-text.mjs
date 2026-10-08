@@ -90,6 +90,7 @@ export const TEXT = {
     nav: { open: 'Open the map', about: 'About IntMap', lang: '日本語', langLabel: 'Read this page in Japanese' },
     footer: { sources: 'Data sources', science: 'Science & logic', privacy: 'Privacy', terms: 'Terms' },
     breadcrumbHistory: 'Historical maps',
+    share: { h2: 'Share this page', note: 'Each link opens that service in a new tab with the address of this page filled in. Nothing is sent until you post it there yourself.' },
   },
   jp: {
     regions: {
@@ -162,5 +163,6 @@ export const TEXT = {
     nav: { open: '地図を開く', about: 'IntMap について', lang: 'English', langLabel: 'このページを英語で読む' },
     footer: { sources: 'データの出典', science: '科学とロジック', privacy: 'プライバシー', terms: '利用規約' },
     breadcrumbHistory: '歴史地図',
+    share: { h2: 'このページを共有', note: '押すと、このページのアドレスを入れた投稿画面がそのサービスで新しいタブに開きます。そこで自分で投稿するまで、何も送られません。' },
   },
 };

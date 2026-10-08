@@ -20,6 +20,7 @@
  *        – every offered dataset's terms for the country, and the link to api/v1/countries/<CODE>.json;
  *    · countries/ and ja/countries/ — the list, by name in each language's own order;
  *    · sitemap-countries.xml, joined by sitemap-index.xml (scripts/history-pages.mjs writes the index).
+ *    · (marketing-growth) countries/<code>/card.png — the page's link card (its og:image): the country among its neighbours, on its frame;
  *
  *  ⚠ NOTHING HERE DECIDES A LICENCE. A section is on the page only when public-api's `countryFile` carries it — that
  *  is, when its dataset is offered (scripts/public-api.mjs termsOf); a withheld dataset has no section to show. Values
@@ -44,6 +45,7 @@ import * as OTD from '../js/on-this-day.js';
 import { OTD_HUB, dayPath } from './on-this-day-pages.mjs';
 import { decodeNECountries, neCountriesPath } from '../js/ne-countries.js';
 import { layerFor } from '../js/layer-manifest.js';
+import { CARD, CARD_FILE } from './lib/page-card.mjs';
 import { IntMapLang } from '../js/lang-registry.js';
 import '../js/locales/ui.en.js';
 import '../js/locales/ui.jp.js';
@@ -54,6 +56,8 @@ export const COUNTRY_SITEMAP = 'sitemap-countries.xml';
 
 export const countryPath = (code, L) => L.dir + COUNTRY_HUB + String(code).toLowerCase() + '/';
 export const hubPath = (L) => L.dir + COUNTRY_HUB;
+/** (marketing-growth) a country's link card — its page's og:image, drawn by scripts/lib/page-card.mjs, one for both languages */
+export const cardPath = (code) => COUNTRY_HUB + String(code).toLowerCase() + '/' + CARD_FILE;
 
 /* ══ WHAT THE PAGE SHOWS, DECLARED — each pairing is one the app already makes ════════════════════════════
    FACTS: the four fields of the country card (js/countries-ui.js renderCountryDetailBody: statCapital ← capital,
@@ -138,9 +142,11 @@ export function model({ root = ROOT, served, hasRegion = () => true } = {}) {
     const events = placed.filter(({ ev }) => ev.at[0] >= full[0] && ev.at[0] <= full[2] && ev.at[1] >= full[1] && ev.at[1] <= full[3] && pointIn(f.geometry, ev.at))
       .sort((a, b) => (a.ev.d < b.ev.d ? -1 : a.ev.d > b.ev.d ? 1 : 0));
     const file = api.countryFile(row);
-    countries.push({ code: row.code, name: row.name, ext, view: viewOf(ext), regions: inRegions, events, file });
+    countries.push({ code: row.code, name: row.name, ext, view: viewOf(ext), regions: inRegions, events, file, polys: parts });
   }
-  return { api, byId, otd, countries, hasRegion };
+  /* (marketing-growth) the land around a country on its card: every outline of the same Natural Earth file */
+  const context = ne.features.map((f) => polysOf(f.geometry)).filter((x) => x.length);
+  return { api, byId, otd, countries, hasRegion, context };
 }
 
 /* ══ RENDER ══════════════════════════════════════════════════════════════════════════════════════ */
@@ -230,7 +236,8 @@ ${T.method.map((m) => `    <p class="lp-note">${esc(m)}</p>`).join('\n')}
     <p class="hp-chips"><a href="${up}${hubPath(L)}">${esc(T.nav.hub)}</a> <a href="${up}${L.dir}${HISTORY_HUB}">${esc(T.nav.history)}</a> <a href="${up}${L.dir}${OTD_HUB}">${esc(T.nav.onThisDay)}</a> <a href="${up}${L.dir}developers.html">${esc(T.nav.developers)}</a></p>
     <p><a class="lp-open" href="${up}sources.html">${esc(T.sourcesLink)} →</a></p>
   </section>`;
-  return shell(M, L, { path: countryPath(c.code, L), pathFor: (l) => countryPath(c.code, l), title, description, crumbs, ld, body });
+  const image = { path: cardPath(c.code), width: CARD.width, height: CARD.height, alt: fill(T.cardAlt, W) };
+  return shell({ ...M, image }, L, { path: countryPath(c.code, L), pathFor: (l) => countryPath(c.code, l), title, description, crumbs, ld, body });
 }
 
 /** the countries in a language's own order */
@@ -278,6 +285,13 @@ export function writeTo(dir) {
   return { model: M, files: Object.keys(out) };
 }
 
+/** (marketing-growth) the link cards, one per country, framed on the page's own frame (scripts/lib/page-card.mjs) */
+export async function drawCards(M, dir) {
+  const { drawCards: draw } = await import('./lib/page-card.mjs');
+  const jobs = M.countries.map((c) => ({ kind: 'country', file: cardPath(c.code), box: c.ext, country: c.polys }));
+  return draw(jobs, dir, { context: M.context });
+}
+
 /** Vite plugin: after the history pages and the public API (their region pages and api/v1/ are what these link to),
  *  write the pages into dist/, before the site URL is filled in — in a child process like the other two generators
  *  (the app's locale modules and window-defining scripts are loaded here, not in Vite's process). */
@@ -306,7 +320,8 @@ if (isMain) {
   const t0 = Date.now();
   if (arg('--out')) {
     const { model: M, files } = writeTo(resolve(arg('--out')));
-    console.log('country-pages: wrote ' + files.length + ' files (' + M.countries.length + ' countries × ' + LANGS.length + ' languages) into ' + arg('--out') + ' in ' + (Date.now() - t0) + ' ms');
+    const cards = await drawCards(M, resolve(arg('--out')));
+    console.log('country-pages: wrote ' + files.length + ' files (' + M.countries.length + ' countries × ' + LANGS.length + ' languages) and ' + cards.length + ' cards into ' + arg('--out') + ' in ' + (Date.now() - t0) + ' ms');
   } else {
     const M = model();
     const n = (f) => M.countries.filter(f).length;

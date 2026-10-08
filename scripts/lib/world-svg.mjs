@@ -37,8 +37,11 @@ function ee(lon, lat) {
 }
 const XMAX = ee(180, 0)[0], YMAX = ee(0, 90)[1];
 export const HEIGHT = Math.ceil(WIDTH * YMAX / XMAX);
-const K = WIDTH / (2 * XMAX);
-const px = (lon, lat) => { const [x, y] = ee(lon, lat); return [(x + XMAX) * K, (YMAX - y) * K]; };
+/** the projection at a picture `w` pixels across (the page's picture is WIDTH; a link card draws the same world at its own width) */
+const projector = (w) => { const k = w / (2 * XMAX); return (lon, lat) => { const [x, y] = ee(lon, lat); return [(x + XMAX) * k, (YMAX - y) * k]; }; };
+const px = projector(WIDTH);
+/** the height of the whole world drawn `w` pixels across */
+export const heightAt = (w) => Math.ceil(w * YMAX / XMAX);
 
 /* ── simplification (Douglas–Peucker, iterative) in pixels ─────────────────────────────────────── */
 function simplify(pts, tol) {
@@ -63,8 +66,8 @@ function simplify(pts, tol) {
   return pts.filter((_, i) => keep[i]);
 }
 
-/** one ring ([[lon,lat],…]) → the pixel rings that draw it (one, or one per side of 180°) */
-function ringPaths(ring) {
+/** one ring ([[lon,lat],…]) → the pixel rings that draw it (one, or one per side of 180°), at a picture `w` pixels across */
+function ringPaths(ring, w = WIDTH, P = px) {
   const n = ring.length;
   if (n < 3) return [];
   let cross = 0;
@@ -79,10 +82,10 @@ function ringPaths(ring) {
   }
   const out = [];
   for (const v of variants) {
-    const p = v.map(([lon, lat]) => px(lon, lat));
+    const p = v.map(([lon, lat]) => P(lon, lat));
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
     for (const [x, y] of p) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
-    if (x1 < 0 || x0 > WIDTH) continue;                     /* a copy wholly off the picture */
+    if (x1 < 0 || x0 > w) continue;                     /* a copy wholly off the picture */
     if (x1 - x0 < 1 && y1 - y0 < 1) continue;               /* under one pixel: not drawn in the picture */
     const s = simplify(p.concat([p[0]]), TOLERANCE_PX);
     if (s.length >= 4) out.push(s);
@@ -113,18 +116,30 @@ export function geometryPath(g) {
   for (const part of partsOf(g)) for (const ring of part) rings.push(...ringPaths(ring));
   return pathData(rings);
 }
+/** (marketing-growth) a geometry → its pixel rings at a picture `w` pixels across, simplified to TOLERANCE_PX of that picture —
+ *  what scripts/lib/page-card.mjs fills for a year page's link card, the same rings the page's SVG writes at its own width */
+export function pixelRings(g, w) {
+  const P = projector(w), rings = [];
+  for (const part of partsOf(g)) for (const ring of part) rings.push(...ringPaths(ring, w, P));
+  return rings;
+}
+/** the projection's outline (the edge of the world) as one pixel ring, at a picture `w` pixels across */
+export function outlineRing(w = WIDTH) {
+  const P = w === WIDTH ? px : projector(w), pts = [];
+  for (let lat = -90; lat <= 90; lat += 1) pts.push(P(180, lat));
+  for (let lat = 90; lat >= -90; lat -= 1) pts.push(P(-180, lat));
+  return pts;
+}
 /** the projection's outline (the edge of the world), as path data */
 function outlinePath() {
-  const pts = [];
-  for (let lat = -90; lat <= 90; lat += 1) pts.push(px(180, lat));
-  for (let lat = 90; lat >= -90; lat -= 1) pts.push(px(-180, lat));
+  const pts = outlineRing();
   return 'M' + pts.map(([x, y]) => Math.round(x * GRID) + ' ' + Math.round(y * GRID)).join('L') + 'z';
 }
 
 /* the palette: soft tints of iOS system colours (the picture carries no labels — the page lists the names), one per
    name and stable across years (a polity keeps its colour from page to page); the sea and the land in light and dark */
-const FILLS = ['#a7c7e7', '#f6c28b', '#b5dfa8', '#f3a6a6', '#cdb4e6', '#f7dc8a', '#9fd8d3', '#e8b4cf', '#c9d39b', '#b8c4d6'];
-function hue(name) { let h = 2166136261; for (const ch of String(name)) { h ^= ch.codePointAt(0); h = Math.imul(h, 16777619); } return (h >>> 0) % FILLS.length; }
+export const FILLS = ['#a7c7e7', '#f6c28b', '#b5dfa8', '#f3a6a6', '#cdb4e6', '#f7dc8a', '#9fd8d3', '#e8b4cf', '#c9d39b', '#b8c4d6'];
+export function hue(name) { let h = 2166136261; for (const ch of String(name)) { h ^= ch.codePointAt(0); h = Math.imul(h, 16777619); } return (h >>> 0) % FILLS.length; }
 
 /**
  * Draw the world.
