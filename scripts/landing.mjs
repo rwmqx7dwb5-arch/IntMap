@@ -674,13 +674,19 @@ function clientCode() {
     '</script>',
   ].join('\n');
 }
+/* (security-hardening) The sample is code people copy. Its listener used to accept a message from ANY window —
+   another frame on the embedder's page, or a page that had opened it — that merely spelled the protocol's
+   name, so a page that copied it and used `e.data.hash` / `e.data.link` would act on a forged reply.
+   js/embed-client.js checks `e.source` and `e.origin`; the sample now does what the client does. */
 function rawCode() {
   return [
     "const frame = document.querySelector('iframe');",
+    'const origin = new URL(frame.src).origin;',
     'frame.contentWindow.postMessage(',
     "  { protocol: '" + PROTOCOL.name + "', v: " + PROTOCOL.v + ", type: 'view', id: '1', lng: 139.69, lat: 35.69, zoom: 9 },",
-    '  new URL(frame.src).origin);',
+    '  origin);',
     "window.addEventListener('message', (e) => {",
+    '  if (e.source !== frame.contentWindow || e.origin !== origin) return;   // only the map you framed',
     "  if (e.data && e.data.protocol === '" + PROTOCOL.name + "' && e.data.type === 'reply') console.log(e.data.ok, e.data.hash);",
     '});',
   ].join('\n');

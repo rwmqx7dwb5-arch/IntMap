@@ -91,10 +91,12 @@
     </table></div>
     <p class="lp-sub">クライアントは便利のためのものです。中身は素の postMessage なので、ページから直接話すこともできます。</p>
     <pre class="lp-code"><code>const frame = document.querySelector('iframe');
+const origin = new URL(frame.src).origin;
 frame.contentWindow.postMessage(
   { protocol: 'intmap-embed', v: 1, type: 'view', id: '1', lng: 139.69, lat: 35.69, zoom: 9 },
-  new URL(frame.src).origin);
+  origin);
 window.addEventListener('message', (e) =&gt; {
+  if (e.source !== frame.contentWindow || e.origin !== origin) return;   // only the map you framed
   if (e.data &amp;&amp; e.data.protocol === 'intmap-embed' &amp;&amp; e.data.type === 'reply') console.log(e.data.ok, e.data.hash);
 });</code></pre>
     <p class="lp-note">命令が変えられるのは枠の中に何を映すかだけで、共有リンクにできることと同じです。枠が伝えるのは地図の状態（枠自身の「IntMap で開く」と同じリンク）だけで、読者についての情報は含まず、送り先は枠を置いたページだけです。</p>

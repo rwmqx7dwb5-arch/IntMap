@@ -4961,6 +4961,14 @@ spec 4 本は共有ページで、DB の 2 つの口を同じ fixture で答え�
 `index.html` から、報告ボタンは用件 `security` の相談フォームへ、関数・最後の migration・フォームが同じ語を持つ。
 spec 1 本（実ブラウザ）: 経路で満たした要求・WebSocket・CSP が拒否したスクリプトが一覧のそれぞれの節に出る、
 Playwright 自身の記録した main frame の完了した要求が一覧に全部ある、開いている間に増えた接続先が出る、Escape で閉じる。
+### `tests/security-hardening-checks.test.mjs` (security-hardening)
+10 本・ネットワーク無し。どれも規則を**実データで評価**する。① ロックの全依存辺が範囲を満たす（読めない指定と欠けも 0）・
+実ロックの全 caret 下限を 1 patch 下げるとその辺がその位置で赤・範囲の読みが node-semver の答えと一致 ② JWT は
+ファイル中の全部を見る（公開キーの後ろの service_role も）・運用の資格情報の形を実行時に組み立てたトークンで拒む・
+追跡された text ファイルが全部秘密の検査の母集合に入る ③ `developers.html`・`ja/developers.html` の見本を vm で動かし、
+枠の地図以外の窓・他の origin からの返事を無視する ④ `publicAddress` が IANA の特殊用途の IPv6 と、IPv4 を運ぶ全表記
+（mapped・NAT64・6to4）を中の IPv4 で判定し、`resolvesPublic` が私的な答えを 1 つでも含む名前を拒む ⑤ ロックを
+勧告データベースに照会する workflow の job が在り、配る依存を全深刻度で、毎週と PR で、読むだけの権限で走る。
 ### `tests/watch-places-checks.test.mjs` (watch-places)
 7 本・データベース無し・ネットワーク無し（DB の半分は `supabase/tests/26_place_watches_test.sql`）。① 判定
 （`supabase/functions/_shared/place-watch.js`）を**評価**する——種類ごとに自分の尺度で近さと強さ、変化なら新しい鍵・
