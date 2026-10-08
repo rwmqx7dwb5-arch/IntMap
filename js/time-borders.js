@@ -158,6 +158,7 @@ export function timeBorders(HOST){
        years), and the collection currently on the source — the two things a re-tag of the labels needs. */
     let shownYear=null, shownFC=null;
     let _provWhen=null;   /* (border-provenance) the instant go() was last asked for — the date the card reads the shapes at */
+    let _drawnWhen=null;   /* (sales-pro-audiences) the instant the collection ON SCREEN answers — set only when it is applied, so a reader of the shapes (js/border-extract.js) is never handed the next instant while its collection is still loading */
     /* (hist-coverage-expansion) the sheet a COMPOSED collection draws its last layer from — `shownY` is
        the composition's key then, a string, and the sentence still has to name the sheet's year */
     let shownSheet=null;
@@ -463,7 +464,7 @@ export function timeBorders(HOST){
     function _csGeomOf(d,idx){ let g=_csGeom.get(idx); if(g) return g;
       const polys=d.feats[idx][8].map(poly=>poly.map(ri=>d.rings[ri]));
       g=(polys.length===1)?{type:'Polygon',coordinates:polys[0]}:{type:'MultiPolygon',coordinates:polys};
-      _csGeom.set(idx,g); _lineRecordOf.set(g,[d,idx,'cs']); _rowOf.set(g,{rec:'cshapes',d,i:idx}); return g; }
+      _csGeom.set(idx,g); _lineRecordOf.set(g,[d,idx,'cs']); _rowOf.set(g,{rec:'cshapes',d,i:idx,bundle:'data/cshapes.js'}); return g; }
     function _csLineOf(d,idx){ if(_csLn.has(idx)) return _csLn.get(idx);
       const g=_lineGeom(d,idx,_bcMarks('cs')); _csLn.set(idx,g); return g; }
     async function csFC(d,year,mon,day){ const feats=[],lines=[];
@@ -873,12 +874,12 @@ export function timeBorders(HOST){
         feats.push({type:'Feature',
           properties:Object.assign({NAME:nm},i18?{_i18n:i18}:{},(i18&&i18._d)?{_desc:1}:{},at.s?{SUBJECTO:at.s}:{},at.p?{PARTOF:at.p}:{},at.t?{TYPE:at.t}:{},at.bp!=null?{BORDERPRECISION:at.bp}:{},R),
           geometry:(ps.length===1)?{type:'Polygon',coordinates:ps[0]}:{type:'MultiPolygon',coordinates:ps}});
-        _rowOf.set(feats[feats.length-1].geometry,{rec:rec?'sheet-rest':'sheet',d,sheet:sn.y,key:sn.key,polys:ps,fi}); }
+        _rowOf.set(feats[feats.length-1].geometry,{rec:rec?'sheet-rest':'sheet',d,sheet:sn.y,key:sn.key,polys:ps,fi,bundle:rec?'data/hist-eras-rest.js':'data/hist-eras.js'}); }
       for(const [i,ids] of (sn.blank||[]).entries()){ const ps=poly(ids); if(!ps.length) continue;
         const bp=sn.blankPrecision&&sn.blankPrecision[i];
         feats.push({type:'Feature',properties:Object.assign({NAME:''},bp!=null?{BORDERPRECISION:bp}:{},R),
           geometry:(ps.length===1)?{type:'Polygon',coordinates:ps[0]}:{type:'MultiPolygon',coordinates:ps}});
-        _rowOf.set(feats[feats.length-1].geometry,{rec:rec?'sheet-rest':'sheet',d,sheet:sn.y,key:sn.key,polys:ps,blank:true}); }
+        _rowOf.set(feats[feats.length-1].geometry,{rec:rec?'sheet-rest':'sheet',d,sheet:sn.y,key:sn.key,polys:ps,blank:true,bundle:rec?'data/hist-eras-rest.js':'data/hist-eras.js'}); }
       return {type:'FeatureCollection',features:feats}; }
     async function fetchFC(year){ if(cache.has(year)) return cache.get(year);
       /* ⚠ (Turf 7) `turf.union` is on its own chunk (src/vendor.js ensureUnion) and every path below
@@ -2173,7 +2174,7 @@ export function timeBorders(HOST){
          map cannot strand it — R41's lesson; it no longer hard-resolves, see its note above), and guard on the travel seq so a stale deferred apply
          from an earlier year can't clobber a newer one ("タイムマシンで変更しても国境線が変化しない"). */
       else whenStyleReady().then(()=>{ if(active&&seq===mySeq) apply(fc); }); }
-    function clear(){ const was=active; active=false; shownY=null; shownCorr=false; shownYear=null; shownFC=null; shownSheet=null;
+    function clear(){ const was=active; active=false; _drawnWhen=null; shownY=null; shownCorr=false; shownYear=null; shownFC=null; shownSheet=null;
       _writeNote();   /* (#R682) the row must never state a date the map has left */
       _blankClose();  /* (#R707) …and no popup may keep describing a shape the map has stopped drawing */
       /* (#R101) empty the era polygons + hide the near-invisible imtb-fill click-target so a returned-to-Now map has
@@ -2264,8 +2265,8 @@ export function timeBorders(HOST){
       if(r.modern){ clear(); return; }
       /* (#R140) the same collection already on screen: don't re-push it — and don't silently give up when the style is
          mid-load, retry once ready instead of latching absent borders */
-      if(shownY===r.key&&shownCorr===r.corr){ try{ if(ensure()) window._applyBorders(); else whenStyleReady().then(()=>{ if(active&&shownY===r.key&&shownCorr===r.corr&&ensure()) window._applyBorders(); }); }catch(_){} return; }
-      shownY=r.key; shownCorr=r.corr; shownSheet=(r.sheet!=null)?r.sheet:null; apply(r.fc); }
+      if(shownY===r.key&&shownCorr===r.corr){ _drawnWhen=when; try{ if(ensure()) window._applyBorders(); else whenStyleReady().then(()=>{ if(active&&shownY===r.key&&shownCorr===r.corr&&ensure()) window._applyBorders(); }); }catch(_){} return; }
+      shownY=r.key; shownCorr=r.corr; shownSheet=(r.sheet!=null)?r.sheet:null; _drawnWhen=when; apply(r.fc); }
     IntMapTime.on(e=>{ clearTimeout(go._t);   /* cancel any pending apply first, so Now after a fast travel really clears */
       /* (#R94i) recent years (after the last aourednik snapshot, 2010) → keep the MODERN borders: they are the
          accurate present-day borders (incl. South Sudan 2011, etc.), which the stale 2010 snapshot lacks. */
@@ -3054,7 +3055,10 @@ export function timeBorders(HOST){
        name, identifiers and dates, its vertices as written, the zoomed detail and reviewed courses that may
        redraw its line, and what `typeNote` / `blankNote` already say about it. A shape with no row (re-composed
        by `_correctEra`, or from the remote fallback copy) is handed over as unattributed — never guessed. */
-    function _whenYmd(){ try{ const w=_provWhen; if(w instanceof Date&&!isNaN(w.getTime())) return w.getFullYear()*10000+(w.getMonth()+1)*100+w.getDate(); if(w!=null&&isFinite(+w)) return Math.round(+w)*10000+701; }catch(_){} return null; }
+    function _whenYmd(at){ try{ const w=at===undefined?_provWhen:at; if(w instanceof Date&&!isNaN(w.getTime())) return w.getFullYear()*10000+(w.getMonth()+1)*100+w.getDate(); if(w!=null&&isFinite(+w)) return Math.round(+w)*10000+701; }catch(_){} return null; }
+    /* the instant the era layer is drawing, {y, m, d, exact} — the card's date and the extract's (js/border-extract.js) */
+    function _provDate(at){ const t=_whenYmd(at); if(t==null) return null; const y=Math.floor(t/10000), r=t-y*10000;   /* a negative year's month and day are what is left above its floor */
+      return { y, m:Math.floor(r/100), d:r%100, exact:((at===undefined?_provWhen:at) instanceof Date) }; }
     function _provSide(f){ const p=(f&&f.properties)||{}, own=(f&&f.geometry)?_rowOf.get(f.geometry):null;
       /* (coast-snap-gaps) a snap piece is answered as the row it extends (its record, its row, its fingerprint), with the
          snap row named beside it (`coastSnap`) and the note saying the coast is matched to the real coastline */
@@ -3065,6 +3069,8 @@ export function timeBorders(HOST){
       if(own&&own.rec==='coast-snap'){ const sr=own.d&&own.d.feats&&own.d.feats[own.i]; side.coastSnap={ file:own.file, i:own.i, src:(own.d&&own.d.src)||null, start:sr?[sr[2],sr[3],sr[4]]:null, end:sr?[sr[5],sr[6],sr[7]]:null }; }
       if(!row){ side.unattributed=true; return side; }
       const d=row.d; side.src=(d&&d.src)||null; side.citation=(d&&d.citation)||null; side.upstream=(d&&d.upstream)||null;
+      /* (sales-pro-audiences) the shipped file the row is in — the key the open-data catalogue states the file's terms under (js/border-extract.js) */
+      side.bundle=row.file||row.bundle||null;
       if(row.rec==='sheet'||row.rec==='sheet-rest'){ side.sheet=row.sheet; side.geometry=Object.assign(decimalsOf(row.polys),{tolerance:null}); return side; }
       const r=d&&d.feats&&d.feats[row.i]; if(!r){ side.unattributed=true; return side; }
       side.recordName=(typeof r[0]==='string')?r[0]:((r[0]&&r[0].en)||'');
@@ -3080,8 +3086,7 @@ export function timeBorders(HOST){
     registerReader({ id:'era-borders', family:'country',
       layers:()=>active?['imtb-line']:[],
       sidesAt:(lngLat,rDeg)=>{ const fc=active?_drawnFC():null; if(!fc||!fc.features) return []; return shapesAt(fc.features,lngLat,rDeg).map(_provSide); },
-      date:()=>{ const t=_whenYmd(); if(t==null) return null; const y=Math.floor(t/10000), r=t-y*10000;   /* a negative year's month and day are what is left above its floor */
-        return { y, m:Math.floor(r/100), d:r%100, exact:(_provWhen instanceof Date) }; } });
+      date:()=>_provDate() });
     /* …and TODAY'S line, the one this file hands the map back to at Now (`borders-only-line`, js/app-body.js). It has no
        record row behind it — it is the base map's vector tile — so it answers only with what the tile itself states
        (the two sides it names, whether it is marked disputed) and the source's own credit; no date is claimed. */
@@ -3131,6 +3136,10 @@ export function timeBorders(HOST){
                const d=tier==='cshapes'?_csD:tier==='ohm'?_hbD:tier==='snapshot'?(_erD||window.__HISTERAS||null):null; return d?{ tier, src:d.src||null, built:d.built||null }:null; }catch(_){ return null; } },
              changePrecision, compositeAt,
              /* (place-through-time) every record the era layer draws, asked at one point across all of time — js/place-history.js */
-             placeRecords };   /* (#R518) the range the stepper can walk — both day-exact records, and (#R695) the era sheets below them */
+             placeRecords,
+             /* (sales-pro-audiences) the drawn shapes as a reader can take them away: each shape's own record, row, dates,
+                identifiers and outline facts — the same answer the line card gets (`_provSide`) — and the instant drawn.
+                js/border-extract.js asks these; it draws nothing and changes nothing. */
+             provenanceOf:(f)=>_provSide(f), drawnAt:()=>(active&&_drawnWhen!=null?_provDate(_drawnWhen):null) };   /* (#R518) the range the stepper can walk — both day-exact records, and (#R695) the era sheets below them */
   })();
 }

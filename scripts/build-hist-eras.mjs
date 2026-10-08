@@ -82,6 +82,12 @@ export const GOVERNANCE = {
   'data/hist-eras.js': {
     publisher: 'aourednik/historical-basemaps',
     url: API,
+    /* (sales-pro-audiences) the licence as a value — it lived only in SRC below, so the catalogue withheld the file as
+       «stated-only-in-prose» (measured 2026-10-08). The terms are the repository's LICENSE, read 2026-09-10 (SRC). */
+    licence: 'GPL-3.0',
+    licenceUrl: 'https://www.gnu.org/licenses/gpl-3.0.html',
+    attribution: true,
+    paidBy: 'historical-basemaps (aourednik) — GPL-3.0',
     ...AOUREDNIK_BASEMAPS,
     builtBy: 'scripts/build-hist-eras.mjs',
   },

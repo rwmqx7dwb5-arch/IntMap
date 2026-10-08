@@ -642,6 +642,9 @@ map-recorder.js                   **タイムラプスの動画書き出しと�
                                   比較窓がスワイプのときの絵葉書は**あの頃といまのカード**（`thenNowCard`：2 つの瞬間を左右に、
                                   見ている場所の名前は place-dossier.js `viewPlaceName`・`placeText`、2 つの地図の出典は `comparePanes`）。
                                   遅延チャンク（Chronos の書き出し欄・共有パネルの画像タブ・Atlas `time.lapse` record:true／`postcard` が読む）
+map-cite.js                       **この地図を引用する**——共有パネルの「引用」タブ（`createCiteTab`・遅延チャンク）と Atlas `cite`（`citeNow`）。図の下の
+                                  出典表記・参考文献 5 形式（`references`：APA 7・Chicago・SIST 02・BibTeX・RIS）・引用するデータ、歴史の国境が描かれていれば
+                                  その GeoJSON（border-extract.js）。出典と日付は map-recorder.js の `mapCredits`・`clockLabel`・`clockReading` を読む
 video-mux.js                      **符号化済みのコマを WebM／MP4 のファイルにする**（`muxWebM` / `muxMP4`）。符号化も DOM も時計も持たない。
                                   map-recorder.js がタイムラプスの書き出しで読む。順序の崩れたコマと鍵コマで始まらない列は拒む
 notify.js                         **通知の唯一の実装** `notify`（window.IntMapNotify）。1 つの要素 #ai-toast・1 つの時計・
@@ -723,6 +726,9 @@ border-provenance.js              「この線の根拠」の核（常時読む�
 border-provenance-card.js         「この線の根拠」のカード（押したときに読む）——両側の記録・識別子・日付を誰が述べたか・輪郭の精度・
                                   査読・ライセンス・調書、誤り報告への引き継ぎ。索引 `data/border-provenance-*.json` を読み、Atlas の
                                   `time.borderSource` もここが答える
+border-extract.js                 **ある日の国境を持ち出す GeoJSON**（純関数・DOM なし）——描いている形ごとに記録・行・日付と誰が述べたか・識別子・
+                                  ライセンス（`buildExtract`）。条件は形の行のファイルで api/v1/catalog.json の項目に結び、上流ごとに行へ当てる（`termsForSide`：
+                                  `rowsFrom`・`contributes:'outline'`）。営利利用を許さない上流の形は輪郭を出さない／件数だけ。map-cite.js が呼ぶ
 hist-bundles.js                   リングプールした歴史記録（data/cshapes.js・hist-borders.js・hist-eras.js・
                                   hist-admin1〜3.js と、border-coast.js の HIST_ADMIN_GAPS が列挙する継ぎ足しの記録）を読む**唯一の扉**
                                   window.IntMapHistBundles。束は Blob Worker で取得・JSON.parse・保持し、

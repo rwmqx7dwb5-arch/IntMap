@@ -186,7 +186,44 @@ export default [
     },
   },
   {
-    row: ['panel.search',               'search',         '',                                                            'panel',   'panel',   'panel.search',           'panel',               'session', 'none',   'text',     ''],
+    row: ['panel.cite',                 'cite',           'citeMap,citation,mapCitation,bordersData',                    'panel',   'panel',   'panel.share',            'panel',               'session', 'none',   '',         ''],
+    /* (sales-pro-audiences) CITE THIS MAP. The share panel's Cite tab (js/map-cite.js) makes, from the map as it is now, the
+       credit line to put under a figure, a reference in five styles (the view as a map: the date it shows, the day it was
+       read, the link that reopens it) and — while the era borders are drawn — what a GeoJSON of those borders holds:
+       how many shapes go in with their outline, how many with their record only, how many are left out and under whose
+       non-commercial terms, and the citation each record's publisher asks for. The result carries all of it; the file
+       itself is saved by the reader's press. */
+    doc: [
+      { in: 'tools-panels', at: 173, text: '{"type":"cite","format"?:"apa"|"chicago"|"sist02"|"bibtex"|"ris"} = CITE THIS MAP (この地図を引用する) — opens the share panel on its Cite tab and the RESULT carries the credit line to put under a figure (the map, the date it shows, its link and every drawn source\'s credit — give it verbatim), the reference in the asked style (APA 7 by default; SIST 02 is the Japanese standard; BibTeX and RIS for reference managers) and, while the historical borders are drawn, what the borders of that date as GeoJSON would hold (shapes with their outline, shapes with their record only, shapes left out because their terms are non-commercial, and by whom) with the citation each record asks for; the reader presses Save for the file. Frame the map first (place, date, layers). Use for 「この地図の出典の書き方を教えて」「論文に引用したい」「参考文献の形で」「BibTeX で」「記事の図のクレジットは？」「1850 年の国境をデータで欲しい」「この国境を GeoJSON で」, "how do I cite this map", "give me a citation for this view", "credit line for this map", "export these borders as GeoJSON"; ' },
+    ],
+    schema: () => ({ type: 'object', properties: { format: one('apa', 'chicago', 'sist02', 'bibtex', 'ris') } }),
+    async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L, warn = K.warn, esc = K.esc;
+      { const S=shareApi();
+        if(!(S&&S.cite)) return R(false, warn(L('The share panel is not available','共有パネルが使えません')));
+        let r=null; try{ r=await S.cite(); }catch(_){ r=null; }
+        if(!r) return R(false, warn(L('Could not make the citation','引用を作れませんでした')), { cite:{ ok:false } });
+        const fmt=['apa','chicago','sist02','bibtex','ris'].indexOf(a.format)>=0?a.format:'apa';
+        const credit=L(r.refs.credit.en, r.refs.credit.jp);
+        const facts={ ok:true, instant:r.facts.instant.iso, link:r.facts.link, accessed:r.facts.accessed, credits:r.facts.credits.slice(),
+          creditLine:credit, format:fmt, reference:r.refs[fmt] };
+        let h=note('✓ '+L('Citation','引用')+' ('+esc(fmt.toUpperCase())+')');
+        h+='<div>'+esc(L('Credit line: ','出典表記: '))+esc(credit)+'</div>';
+        h+='<div style="white-space:pre-wrap;">'+esc(r.refs[fmt])+'</div>';
+        if(r.borders&&r.borders.summary){ const s=r.borders.summary;
+          facts.borders={ at:s.at, shapes:s.shapes, released:s.released, attributesOnly:s.attributes, withheld:s.withheld,
+            withheldBy:s.blockedBy.map(b=>({ record:b.credit||b.publisher, licence:b.licence, url:b.url, shapes:b.shapes })),
+            credits:s.credits.slice(), cite:(r.borders.data||[]).map(d=>d.cite||d.credit) };
+          h+='<div>'+esc(L('Borders of '+s.at+' as GeoJSON: '+s.released+' shapes with their outline, '+s.attributes+' with their record only, '+s.withheld+' left out.',
+            s.at+' の国境を GeoJSON で: 輪郭つき '+s.released+' 件、記録だけ '+s.attributes+' 件、含めないもの '+s.withheld+' 件。'))+'</div>';
+          if(facts.borders.withheldBy.length) h+='<div>'+esc(L('Left out (non-commercial terms): ','含めない理由（非営利の条件）: '))+esc(facts.borders.withheldBy.map(b=>b.record+' — '+b.licence).join('; '))+'</div>';
+          if(facts.borders.cite.length) h+='<div>'+esc(L('Data to cite: ','引用するデータ: '))+esc(facts.borders.cite.join(' / '))+'</div>'; }
+        else if(r.borders&&r.borders.error) facts.borders={ error:r.borders.error };
+        h+='<div>'+esc(L('It is in the share panel’s Cite tab — copy it there, or save the file.','共有パネルの「引用」タブに表示しました。そこでコピーやファイルの保存ができます。'))+'</div>';
+        return R(true, h, { cite:facts }); }
+    },
+  },
+  {
+    row: ['panel.search',              'search',         '',                                                            'panel',   'panel',   'panel.search',           'panel',               'session', 'none',   'text',     ''],
     doc: [
       { in: 'navigation-view', at: 100, text: '{"type":"search","query":str} (place-search box). For a REGION (continent, "Central Europe", "Southern Italy", "Middle East", "the Caribbean") just pass its name to flyTo — the engine knows region extents and slices directional names from the real country; never substitute a tiny sub-place. ' },
     ],

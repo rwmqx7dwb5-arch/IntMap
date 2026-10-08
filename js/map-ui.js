@@ -4111,8 +4111,11 @@ export function share(HOST){
        preview all at once — for a reader who wanted a link. Now it opens on the link and its Copy button; the caption,
        the embed and the picture are all still here, under «More options», and open by themselves when a caller asks
        for one of them (Atlas, a size, a caption). Nothing was removed. The Link is no longer a tab: it is always shown. */
-    let tab='link', embedTab=null, embedLoad=null, pcTab=null, pcLoad=null, pcHost=null, capT=0, pcT=0;
-    const TABS=['link','embed','image'];
+    /* (sales-pro-audiences) …AND A FOURTH: THE SAME MAP AS A CITATION (js/map-cite.js `createCiteTab`, fetched the first time the
+       Cite tab is shown) — the credit line for a figure, a reference in five styles, the data to cite and, while the era
+       borders are drawn, those borders as GeoJSON. It reads the same link() and caption, so the reference opens this view. */
+    let tab='link', embedTab=null, embedLoad=null, pcTab=null, pcLoad=null, pcHost=null, capT=0, pcT=0, ciTab=null, ciLoad=null;
+    const TABS=['link','embed','image','cite'];
     function link(){ return (window.IntMapBookmark&&window.IntMapBookmark.link)?window.IntMapBookmark.link():location.href; }
     function copyText(btn,text,field,label){ return async()=>{ let ok=false;
       try{ await navigator.clipboard.writeText(text()); ok=true; }catch(_){ try{ field.select(); ok=document.execCommand('copy'); }catch(__){} }
@@ -4126,6 +4129,14 @@ export function share(HOST){
       if(!pcLoad) pcLoad=import('./map-recorder.js').then(m=>(pcTab=m.createPostcardTab({ link, t, caption:()=>({ title:cap.title, note:cap.note }), lang:()=>HOST.lang })))
         .catch(e=>{ pcLoad=null; throw e; });
       return pcLoad; }
+    function loadCiteTab(){
+      if(!ciLoad) ciLoad=import('./map-cite.js').then(m=>(ciTab={ m, tab:m.createCiteTab({ link, lang:()=>HOST.lang, caption:()=>({ title:cap.title, note:cap.note }), copy:copyText }) }))
+        .catch(e=>{ ciLoad=null; throw e; });
+      return ciLoad; }
+    /* the Cite pane built for the map as it is now */
+    function showCite(){ const pane=panel&&panel.querySelector('.sh-pane[data-pane="cite"]'); if(!pane) return Promise.resolve(false);
+      return loadCiteTab().then(c=>{ c.tab.render(pane); return true; })
+        .catch(()=>{ pane.replaceChildren(iconNode('warning'),' '+L('The citation could not be made','引用を作れませんでした')); return false; }); }
     /* → the picture tab built into the panel's Image pane and a fresh picture made (with `o.size`); the result of make() */
     function showPostcard(o){ const pane=panel&&panel.querySelector('.sh-pane[data-pane="image"]'); if(!pane) return Promise.resolve(null);
       return loadPostcardTab().then(c=>{ if(pcHost!==pane){ pcHost=pane; c.render(pane); } return c.make(o||{}); })
@@ -4133,7 +4144,7 @@ export function share(HOST){
     /* → { url, size, interactive, code } for the current map, or null while the tab's module has not arrived */
     function embed(o){ return embedTab?embedTab.embed(o):null; }
     function close(){ try{ embedTab&&embedTab.stopPreview(); }catch(_){} if(panel) panel.style.display='none'; }
-    /* open({ tab:'link'|'embed'|'image', size, width, height, interactive, title, note }) — every field optional; the
+    /* open({ tab:'link'|'embed'|'image'|'cite', size, width, height, interactive, title, note }) — every field optional; the
        callers that pass nothing (the Share menu, the tool sheet, the routing card) get the link tab
        exactly as before. A DOM event handed in by an `onclick=open` is not an options object.
        `title` / `note` (map-postcard) set the caption first, so the link the panel shows already carries them.
@@ -4165,9 +4176,11 @@ export function share(HOST){
           +'<div class="sh-cap"></div>'
           +'<div class="sh-tabs" role="tablist">'
             +'<button class="sh-tab" type="button" role="tab" data-tab="embed">'+t('shareTabEmbed')+'</button>'
-            +'<button class="sh-tab" type="button" role="tab" data-tab="image">'+t('shareTabImage')+'</button></div>'
+            +'<button class="sh-tab" type="button" role="tab" data-tab="image">'+t('shareTabImage')+'</button>'
+            +'<button class="sh-tab" type="button" role="tab" data-tab="cite">'+L('Cite','引用')+'</button></div>'
           +'<div class="sh-pane" data-pane="embed" role="tabpanel"></div>'
-          +'<div class="sh-pane" data-pane="image" role="tabpanel"></div></details>';
+          +'<div class="sh-pane" data-pane="image" role="tabpanel"></div>'
+          +'<div class="sh-pane" data-pane="cite" role="tabpanel"></div></details>';
       const urlEl=panel.querySelector('.sh-url'), embedPane=panel.querySelector('.sh-pane[data-pane="embed"]');
       const capTi=document.createElement('input'); capTi.type='text'; capTi.className='sh-cap-t'; capTi.maxLength=MapState.TITLE_MAX; capTi.enterKeyHint='done';
       capTi.setAttribute('aria-label',t('captionTitle')); capTi.placeholder=t('captionTitlePh'); capTi.value=cap.title;
@@ -4197,12 +4210,18 @@ export function share(HOST){
       capTi.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); onCap(); } });
       panel.querySelectorAll('.sh-tab').forEach(b=>{ b.onclick=()=>{ try{ embedTab&&embedTab.stopPreview(); }catch(_){}
         show(b.dataset.tab); if(b.dataset.tab==='embed'&&built) built.refresh();   /* the map may have moved since the panel opened */
-        if(b.dataset.tab==='image') showPostcard(); }; });
+        if(b.dataset.tab==='image') showPostcard();
+        if(b.dataset.tab==='cite') showCite(); }; });
       const embedReady=loadEmbedTab().then(c=>{ if(o.tab==='embed') c.embed(o); built=c.render(embedPane); return true; })
         .catch(()=>{ embedPane.replaceChildren(iconNode('warning'),' '+t('embedUnavailable')); return false; });
       if(tab==='image') return showPostcard({ size:o.size });
+      if(tab==='cite') return showCite();
       return embedReady;
     }
+    /* (sales-pro-audiences) the citation's face for Atlas: open the Cite tab and hand back what it shows — the credit line,
+       the references, and (while the era borders are drawn) what a GeoJSON of them holds and what it leaves out, and why.
+       It makes no file: the reader presses Save. → { facts, refs, borders } or null */
+    function cite(){ return Promise.resolve(open({ tab:'cite' })).then(()=>loadCiteTab()).then(c=>c.m.citeNow(link(),{ title:cap.title, note:cap.note })).catch(()=>null); }
     /* (map-postcard) the picture's face for Atlas: open the Image tab (caption and shape as asked) and hand back what was
        made — the file name, its size, what it credits, how many legends it carries — or null when it could not be made */
     function postcard(o){ o=o||{}; return Promise.resolve(open({ tab:'image', size:o.size, title:o.title, note:o.note })).then(r=>r||null); }
@@ -4220,6 +4239,6 @@ export function share(HOST){
         try{ HOST.imToast(t('screenshotSaved')); }catch(_){} }
       else { try{ HOST.imToast(r&&r.error==='busy'?t('postcardBusy'):r&&r.error==='not-drawn'?t('postcardNotDrawn'):t('postcardFailed')); }catch(_){} }
       return r?Object.assign({},r,{ blob:undefined }):null; }
-    return { open, close, link, embed, caption:(o)=>(o?setCaption(o):{ title:cap.title, note:cap.note }), postcard, screenshot };
+    return { open, close, link, embed, caption:(o)=>(o?setCaption(o):{ title:cap.title, note:cap.note }), postcard, screenshot, cite };
   })();
 }

@@ -117,6 +117,16 @@ export const GOVERNANCE = {
   'data/hist-borders.js': {
     /* the relations are fetched by scripts/histborders/fetch.mjs, which names the endpoint */
     publisher: 'OpenHistoricalMap',
+    /* (sales-pro-audiences) THE LICENCE AS A VALUE, NOT ONLY IN THE BUNDLE'S `src` SENTENCE. Measured 2026-10-08 with
+       `node scripts/public-api.mjs --stats`: this file was withheld from the open-data catalogue as
+       «licence-not-stated — stated-only-in-prose», so the one record the map draws 1689–1885 from could not be
+       offered for reuse, nor cut out by date (js/border-extract.js). Every row is an OpenHistoricalMap relation
+       (CC0 1.0, as data/border-provenance-ohm.json states it); the window stops the day before CShapes begins, so
+       nothing in this file was cut against another record. */
+    url: 'https://www.openhistoricalmap.org/',
+    licence: 'CC0 1.0',
+    licenceUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
+    attribution: false,
     ...OPENHISTORICALMAP,
     builtBy: 'scripts/build-hist-borders.mjs',
   },
