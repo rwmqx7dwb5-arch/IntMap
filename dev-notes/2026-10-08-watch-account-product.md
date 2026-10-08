@@ -58,6 +58,11 @@ newsjp: 「今日のクエスト」を追加。学ぶクエストに毎日 5 問
 - ⚠ `supabase db reset` / `supabase test db` は**走らせていない**——このマシンの Docker デーモンが止まっている（`docker ps` が
   `dockerDesktopLinuxEngine` に接続できない）。pgTAP は PR の CI の DB ジョブが走らせる。
 
+## 3b. 起動費用（`check:perf`）
+
+- 遅延チャンク `quest-panel` の天井を **19.4 → 27.5 kB** に上げた（+8.1 kB）。中身はメニューの「今日のクエスト」の塊（日付・連続日数・最近 7 日・2 つのボタン・置き場所の文）、その日のセットの結果の行と「結果をコピー」、それらの CSS 17 行と en+jp の文。どれも学ぶクエストのパネルを開いたときだけ読まれ、**起動の経路（eager）は 1 バイトも増えていない**。
+- 新しい遅延チャンク `quest-daily`（4.4 kB）は記録と集計で、パネル・アカウントのシート・Atlas が開いたときだけ読む。天井は main の CI が merge 後に記録する。
+
 ## 4. 残り
 
 - 本番の DB に migration を流すのは merge 後の配備（Edge Function は変えていない）。
