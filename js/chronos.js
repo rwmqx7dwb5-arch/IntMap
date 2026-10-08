@@ -182,7 +182,9 @@ export function makeClock(name){ return /** @type {(name?: string) => import('..
    which depends on it already, is where its readers import it from — ONE read of the global for the clock, the
    phone's clock and its thumb, instead of one each. A hoisted declaration: the master clock's IIFE above calls it. */
 /** @returns {any} */
-export function histScale(){ return /** @type {any} */ (globalThis).IntMapHistScale; }
+/* ⚠ `window`, as the clock's own reads always were — a check that hands the clock a window of its own
+   (tests/history-chronos-clock-checks.test.mjs) must be the window this answers from, not globalThis */
+export function histScale(){ return typeof window!=='undefined'?window.IntMapHistScale:undefined; }
 /* ══ (mobile-product) A POSITION ON THE YEAR RAIL → A WRITE ON THE CLOCK — ONE RULE, EVERY RAIL ══════════════════
    The Chronos Year slider and its desktop peek (js/news-timeline.js) and the thumb on the phone's clock
    (js/time-thumb.js) all turn a rail position into a year the same way: js/hist-scale.js `rail.toYear` between the
