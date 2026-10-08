@@ -270,6 +270,10 @@
             {
               "id": "time.placeHistory",
               "tool": "time_placeHistory"
+            },
+            {
+              "id": "time.quakeHistory",
+              "tool": "time_quakeHistory"
             }
           ]
         }
