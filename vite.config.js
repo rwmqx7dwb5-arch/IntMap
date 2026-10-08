@@ -371,6 +371,8 @@ function buildLock() {
   return {
     name: 'intmap-build-lock',
     apply: 'build',
+    /* it writes nothing into the output — tests/csp-without-inline-checks ⑧ reads this to let it stand after cspHashesPlugin */
+    writesNothing: true,
     configResolved(c) { out = outDirOf(c); },
     async buildStart() { if (!release) release = await acquireOutDirLock(out); },
     /* LAST in the plugin list and `post`: every other closeBundle that writes the output has finished */
