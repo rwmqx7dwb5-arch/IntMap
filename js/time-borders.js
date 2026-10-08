@@ -2173,7 +2173,7 @@ export function timeBorders(HOST){
          map cannot strand it — R41's lesson; it no longer hard-resolves, see its note above), and guard on the travel seq so a stale deferred apply
          from an earlier year can't clobber a newer one ("タイムマシンで変更しても国境線が変化しない"). */
       else whenStyleReady().then(()=>{ if(active&&seq===mySeq) apply(fc); }); }
-    function clear(){ const was=active; active=false; shownY=null; shownCorr=false; shownYear=null; shownFC=null; shownSheet=null;
+    function clear(){ const was=active; active=false; shownY=null; shownCorr=false; shownYear=null; shownFC=null; shownSheet=null; _turnClose();
       _writeNote();   /* (#R682) the row must never state a date the map has left */
       _blankClose();  /* (#R707) …and no popup may keep describing a shape the map has stopped drawing */
       /* (#R101) empty the era polygons + hide the near-invisible imtb-fill click-target so a returned-to-Now map has
@@ -2252,7 +2252,25 @@ export function timeBorders(HOST){
     /* (#R421) `go` takes the INSTANT now, not the year. Callers that still hand it a number keep the old
        meaning (that year's July 1) so nothing that predates this round has to change.
        (time-compare-lapse) It draws what `collectionAt` answers; the choice of record is no longer here. */
-    async function go(when){ active=true; const my=++seq;
+    /* ══ (deep-tier-reds) THE COUNTRY BORDERS OF AN INSTANT ARE DRAWN BEFORE ITS SUBDIVISIONS START ══════════════════
+       js/time-admin1.js asks `settled()` before it loads and builds the subdivisions of the instant the clock moved to.
+       MEASURED 2026-10-08 (Playwright Chromium on the built site, clock to 1916-07-01 over Europe, CPU throttled 3×,
+       three runs each, interleaved): with both started at once the borders reached `imtb-src` after 23.6 / 31.5 /
+       34.8 s; with the subdivision records held back 40 s at the network, after 12.1 / 13.1 s (one run 27.7 s). The
+       CPU profile of the same window puts the subdivisions' own script at ~1.5 s; the rest of what they cost the
+       borders is MapLibre taking ~11 MB of their GeoJSON (`_dispatchWorkerUpdate` clones it on the page thread) and
+       rendering it — work no slicing of ours reaches, which is why this is an ORDER and not a time slice. On the
+       nightly deep tier the borders' stage had read 13.3 s and 17.7 s against tests/r410-late.spec.js's 20 s and then
+       passed it once #1020/#1021 made the subdivisions heavier. Nothing is withheld: the subdivisions follow as soon
+       as the borders have been handed to the map, or the moment the borders have nothing to draw (Now, a modern
+       year, an answer that did not come — retried on its own clock, never waited for).
+       The turn is OPENED by the clock event itself (synchronously, before either module's 45 ms debounce runs), so
+       a subdivision tier that reaches `settled()` first still waits for this instant's borders; it is CLOSED by the
+       `go` that answers it, by `clear()`, or by the next turn (the subdivisions check their own sequence anyway). */
+    let _turnRes=null, _turnP=Promise.resolve();
+    function _turnOpen(){ if(!_turnRes) _turnP=new Promise(r=>{ _turnRes=r; }); }
+    function _turnClose(){ const r=_turnRes; _turnRes=null; if(r) r(); }
+    async function go(when){ active=true; const my=++seq; try{
       const isD=(when instanceof Date)&&!isNaN(when.getTime());
       const year=isD?when.getFullYear():Math.round(+when);
       _provWhen=when; shownYear=year;   /* (#R410) the reader's year, set BEFORE any early return — `shownY` is a snapshot key and one snapshot answers many years. ⚠ (#R421) it is derived from the INSTANT now, so it still answers "which year is on screen" while the borders under it moved to day precision. */
@@ -2265,8 +2283,10 @@ export function timeBorders(HOST){
       /* (#R140) the same collection already on screen: don't re-push it — and don't silently give up when the style is
          mid-load, retry once ready instead of latching absent borders */
       if(shownY===r.key&&shownCorr===r.corr){ try{ if(ensure()) window._applyBorders(); else whenStyleReady().then(()=>{ if(active&&shownY===r.key&&shownCorr===r.corr&&ensure()) window._applyBorders(); }); }catch(_){} return; }
-      shownY=r.key; shownCorr=r.corr; shownSheet=(r.sheet!=null)?r.sheet:null; apply(r.fc); }
+      shownY=r.key; shownCorr=r.corr; shownSheet=(r.sheet!=null)?r.sheet:null; apply(r.fc);
+      } finally { if(my===seq||!active) _turnClose(); } }   /* (deep-tier-reds) the turn this instant's subdivisions wait on */
     IntMapTime.on(e=>{ clearTimeout(go._t);   /* cancel any pending apply first, so Now after a fast travel really clears */
+      _turnOpen();   /* (deep-tier-reds) this instant's borders are now owed — see `settled` above `go` */
       /* (#R94i) recent years (after the last aourednik snapshot, 2010) → keep the MODERN borders: they are the
          accurate present-day borders (incl. South Sudan 2011, etc.), which the stale 2010 snapshot lacks. */
       if(modernAt(e.when,e.isLive)){ clear(); return; }   /* (#R117) CShapes carries accurate borders through 2019 (incl. South Sudan 2011) — only 2020+ keeps the modern base (the rule is `modernAt`, shared with every map that asks) */
@@ -3107,7 +3127,7 @@ export function timeBorders(HOST){
        already answer?» had no answer — the shape #R575 and #R673 each paid for. It is published
        here so tests/history-era-names-checks.test.mjs (#R686) can hold the bundled table and this one
        apart: a name answered by both would be one judgement in two places (#R536). */
-    return { layerIds:_DRAWN_LAYERS.slice(), _go:go, _clear:clear, collectionAt, modernAt, current:()=>shownY, active:()=>active, coverage, note, typeNote, blankNote, refresh:()=>{ try{ window._applyBorders(); }catch(_){} }, currentFC:()=>_drawnFC(), geomFor, geomForCode, resolveHist, featureAt, _nearest:nearest, eraLocName:_eraLocName, histNames:histNames, histNameFor:hnFor, histNameForGloss:hnEraGloss, loadHistNames:hnLoad,
+    return { layerIds:_DRAWN_LAYERS.slice(), settled:()=>_turnP, _go:go, _clear:clear, collectionAt, modernAt, current:()=>shownY, active:()=>active, coverage, note, typeNote, blankNote, refresh:()=>{ try{ window._applyBorders(); }catch(_){} }, currentFC:()=>_drawnFC(), geomFor, geomForCode, resolveHist, featureAt, _nearest:nearest, eraLocName:_eraLocName, histNames:histNames, histNameFor:hnFor, histNameForGloss:hnEraGloss, loadHistNames:hnLoad,
              /* (hist-era-span-fidelity) a sheet as the reader's year draws it, and the reviewed spans it is
                 drawn under — a real question about the record («which names does 1600 withhold?»), the same
                 kind `histNameFor` answers; scripts/hist-fidelity.mjs gates the map through it */

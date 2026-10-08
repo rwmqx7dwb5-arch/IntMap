@@ -153,7 +153,17 @@ test('layer-manifest ⑤ each lazy link is real: switching the row on loads the 
    and digits inside legend text are masked — they are the day and the timezone the run happens in, not the drawing —
    and so are the names js/atlas-controls.js writes onto every control when it runs.
    ⚠ A fresh context, not the shared page: «where in the stack did the row's layer land» is only comparable on a map
-   nothing else has drawn on. */
+   nothing else has drawn on.
+   ⚠⚠ (deep-tier-reds) THE LEGEND IS COMPARED AS WHAT IT SAYS, NOT AS A COPY OF ITS MARKUP. The re-take above was the
+   first time the byte copy went stale; the second was #978 (quest-blind-everything), which gave the shared clock row
+   js/data-layers.js builds an attribute that declares «this prints the map's year» to js/quest-panel.js — dl-milSpend,
+   three phases, one attribute, and the nightly deep tier was red from 2026-10-02 on a change nobody had made to the
+   package. Every owner that annotates a legend for its own reader would have repeated that, and each re-take moves the
+   fixture off the tree before the move, which is the only thing it is for. So the map half stays byte-for-byte (every
+   layer, source, paint, layout, tile and stack position), and the legend — fixture and page alike, through ONE reader,
+   lpLegendRead — is read as: shown or hidden; its words; each control by the name its tooltip gives it (so a glyph
+   becoming an SVG icon, #902, is not a difference); every slider's range; every colour ramp; every pressed state; and
+   the class names other code finds the parts by. The fixture is still the capture of the tree before the move. */
 import { readFileSync as _lpRead, writeFileSync as _lpWrite, existsSync as _lpExists } from 'node:fs';
 import { installHermeticRouting } from './helpers/network.js';
 const LP_FIXTURE = new URL('./fixtures/layer-packages-before.json', import.meta.url);
@@ -198,6 +208,30 @@ function lpSnapshot({ base, key, cbId }) {
     /* `aria-label` / `data-imname` are js/atlas-controls.js naming every control whenever it runs — another owner, on its own clock */
     legend: lg ? { display: lg.style.display, html: mask(lg.innerHTML).replace(/ (?:aria-label|data-imname)="[^"]*"/g, '').replace(/\d/g, '#') } : null };
 }
+/* what a legend SAYS (see the note above ⑥): one reader for the fixture's markup and the page's, so the two are read
+   the same way. Runs in the page — it parses the markup the way the browser does. */
+function lpLegendRead(html) {
+  const t = document.createElement('template'); t.innerHTML = html;
+  const out = [];
+  const css = (el) => (el.getAttribute('class') || '').trim().split(/\s+/).filter(Boolean).sort().join('.');
+  const walk = (n) => {
+    for (const c of n.childNodes) {
+      if (c.nodeType === 3) { const s = c.textContent.replace(/\s+/g, ' ').trim(); if (s) out.push('text ' + s); continue; }
+      if (c.nodeType !== 1 || c.namespaceURI === 'http://www.w3.org/2000/svg') continue;   /* an icon draws; its control is named below */
+      const cls = css(c); if (cls) out.push('class ' + cls);
+      const bg = (c.getAttribute('style') || '').match(/(?:linear|radial|conic)-gradient\([^;]*\)/);
+      if (bg) out.push('ramp ' + bg[0].replace(/\s+/g, ''));
+      if (c.hasAttribute('aria-pressed')) out.push('pressed ' + c.getAttribute('aria-pressed'));
+      if (c.tagName === 'INPUT') out.push('input ' + ['type', 'min', 'max', 'step'].map((a) => c.getAttribute(a)).join(' '));
+      if (c.hasAttribute('title')) { out.push('control ' + c.getAttribute('title')); continue; }   /* named by its tooltip, not by its glyph */
+      walk(c);
+    }
+  };
+  walk(t.content);
+  return out;
+}
+/* the evaluation as compared: the map half as captured, the legend as lpLegendRead reads it */
+const lpCompared = (snap) => (snap && snap.legend ? Object.assign({}, snap, { legend: { display: snap.legend.display, read: window.__lpRead(snap.legend.html) } }) : snap);
 
 test('layer-packages ⑥ each packaged row draws, fades and clears exactly what js/data-layers.js drew before the move', async ({ browser }) => {
   test.setTimeout(LP_CAPTURE ? 300000 : 120000);
@@ -212,6 +246,11 @@ test('layer-packages ⑥ each packaged row draws, fades and clears exactly what 
     await page.goto(ORIGIN + '/index.html', { waitUntil: 'domcontentloaded' });
     await page.waitForFunction((ids) => window.__imap && window.__imap.isStyleLoaded() && ids.every((id) => document.getElementById(id)), LP_ROWS.map((r) => r[0]), { timeout: 60000 });
     await page.evaluate('window.__lpSnap = ' + lpSnapshot.toString());
+    await page.evaluate('window.__lpRead = ' + lpLegendRead.toString() + '; window.__lpCmp = ' + lpCompared.toString());
+    /* the fixture read through the same reader as the page (it is markup; the reader is the browser's parser) */
+    const wantCmp = want ? await page.evaluate((w) => { const o = {}; for (const id of Object.keys(w)) { o[id] = {}; for (const p of Object.keys(w[id])) o[id][p] = window.__lpCmp(w[id][p]); } return o; }, want) : null;
+    /* the reader reads something: each row's legend, as the fixture holds it, has a title and its words */
+    if (wantCmp) for (const [cbId] of LP_ROWS) expect((wantCmp[cbId].on.legend || { read: [] }).read.filter((s) => s.startsWith('text ')).length, cbId + ' legend read as words').toBeGreaterThan(1);
     for (const [cbId, key] of LP_ROWS) {
       await lpSettled(page, 'map', null, 3000);
       const base = await page.evaluate(() => { const st = window.__imap.getStyle(); return { layers: st.layers.map((l) => l.id), sources: Object.keys(st.sources) }; });
@@ -225,7 +264,7 @@ test('layer-packages ⑥ each packaged row draws, fades and clears exactly what 
       for (const [phase, act] of steps) {
         await act();
         if (want) {
-          await expect.poll(() => page.evaluate(lpSnapshot, arg), { timeout: 30000, message: cbId + ' ' + phase }).toEqual(want[cbId][phase]);
+          await expect.poll(() => page.evaluate((a) => window.__lpCmp(window.__lpSnap(a)), arg), { timeout: 30000, message: cbId + ' ' + phase }).toEqual(wantCmp[cbId][phase]);
         } else {
           await lpSettled(page, 'row', arg, 2000);
           got[cbId][phase] = await page.evaluate(lpSnapshot, arg);

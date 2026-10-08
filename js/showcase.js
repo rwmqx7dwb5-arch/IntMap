@@ -158,7 +158,10 @@ const DECLARED = [
     base: 'map',
     at: '1900-07-01',
     layers: [],
-    drawn: { labels: ['Japan', 'Taiwan (Japan)', 'Korean Empire'], admin: ['Kagawa', 'Nara', 'Hokkaidō'] },
+    /* (deep-tier-reds) the units as the record that draws 1900 names them: since #1021 Japan's 1891–1943 prefectures are
+       the reconstruction's (data/hist-admin-recon.js «Kagawa Prefecture», 北海道庁 «Hokkaido Government»), and the
+       fill's «Kagawa»/«Hokkaidō» begin 1943-07-01 — tests/deep-tier-reds-checks.test.mjs ③ asks the records for these */
+    drawn: { labels: ['Japan', 'Taiwan (Japan)', 'Korean Empire'], admin: ['Kagawa Prefecture', 'Nara Prefecture', 'Hokkaido Government'] },
   },
   {
     id: 'world-100',
