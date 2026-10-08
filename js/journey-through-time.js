@@ -33,7 +33,7 @@
  * ==========================================================================*/
 import { IntMapLang } from './lang-registry.js';
 import { IntMapTime } from './chronos.js';   /* static: a dynamic import of a start-up module splits it into a chunk of its own (check:perf, eager requests) */
-import { nameIn, esc, bordersNow } from './year-book.js';
+import { nameIn, htmlText, bordersNow } from './year-book.js';
 import { borderSamples, greatCircleLine, featureAt, featuresAt, wrapLng, countryOutlines } from './routing-ops.js';
 
 /* the longest straight piece of a great-circle leg before it is sampled. Measured: at 25 km the chord of a
@@ -218,30 +218,30 @@ function failText(code, t) {
 export function answerHtml(R, lang, opts) {
   const o = opts || {}, t = (en, jp) => IntMapLang.t(lang, en, jp);
   const km = (x) => Math.round(x).toLocaleString(lang === 'jp' ? 'ja-JP' : 'en-US') + ' km';
-  const sw = (c) => c ? '<span style="display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px;background:' + esc(c) + ';"></span>' : '';
+  const sw = (c) => c ? '<span style="display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px;background:' + htmlText(c) + ';"></span>' : '';
   const nmOf = (P) => P.names.map((n) => n.local || n.en).join(' / ');
   let h = '';
   R.journeys.forEach((j, n) => {
-    const head = esc(instantLabel(j.instant, lang)) + (o.drawn === n ? ' <span style="color:var(--text-muted);font-weight:400;">' + esc(t('(drawn on the map)', '（地図に描画）')) + '</span>' : '');
-    if (j.failed) { h += '<div style="margin-top:6px;"><b>' + head + '</b> — ' + esc(failText(j.failed, t)) + '</div>'; return; }
+    const head = htmlText(instantLabel(j.instant, lang)) + (o.drawn === n ? ' <span style="color:var(--text-muted);font-weight:400;">' + htmlText(t('(drawn on the map)', '（地図に描画）')) + '</span>' : '');
+    if (j.failed) { h += '<div style="margin-top:6px;"><b>' + head + '</b> — ' + htmlText(failText(j.failed, t)) + '</div>'; return; }
     const cols = o.drawn === n ? (o.colors || {}) : {};
-    const seq = j.legs.map((g) => { const k = g.key, P = j.polities.find((x) => x.key === k); return P ? sw(cols[k]) + '<b>' + esc(nmOf(P)) + '</b> <span style="color:var(--text-muted);">' + esc(km(g.km)) + '</span>' + (P.kind === 'overlap' ? ' <span style="color:var(--text-muted);">' + esc(t('(drawn by two claims at once)', '（2 つの主張が重なる）')) + '</span>' : '') + (P.kind === 'unnamed' ? ' <span style="color:var(--text-muted);">' + esc(t('(drawn without a name)', '（名前の無い形）')) + '</span>' : '') + (P.under ? ' <span style="color:var(--text-muted);">' + esc(t('under ', '従属先 ') + P.under) + '</span>' : '') : esc(k); }).join(' → ');
+    const seq = j.legs.map((g) => { const k = g.key, P = j.polities.find((x) => x.key === k); return P ? sw(cols[k]) + '<b>' + htmlText(nmOf(P)) + '</b> <span style="color:var(--text-muted);">' + htmlText(km(g.km)) + '</span>' + (P.kind === 'overlap' ? ' <span style="color:var(--text-muted);">' + htmlText(t('(drawn by two claims at once)', '（2 つの主張が重なる）')) + '</span>' : '') + (P.kind === 'unnamed' ? ' <span style="color:var(--text-muted);">' + htmlText(t('(drawn without a name)', '（名前の無い形）')) + '</span>' : '') + (P.under ? ' <span style="color:var(--text-muted);">' + htmlText(t('under ', '従属先 ') + P.under) + '</span>' : '') : htmlText(k); }).join(' → ');
     const gap = [];
     if (j.gapKm.sea >= 1) gap.push(t('sea ', '海 ') + km(j.gapKm.sea));
     if (j.gapKm.norecord >= 1) gap.push(t('land the record does not cover ', '記録の無い陸地 ') + km(j.gapKm.norecord));
     if (j.gapKm.outside >= 1) gap.push(t('not drawn by the record ', '記録が描いていない区間 ') + km(j.gapKm.outside));
-    h += '<div style="margin-top:6px;"><b>' + head + '</b> — ' + esc(t(j.crossings.length + (j.crossings.length === 1 ? ' crossing' : ' crossings'), '国境越え ' + j.crossings.length + ' 回'))
-      + '<div style="line-height:1.6;">' + (seq || esc(t('The line meets no polity the record draws.', 'この線は記録が描く政体のどれにも入りません。'))) + '</div>'
-      + (gap.length ? '<div style="font-size:11px;color:var(--text-muted);">' + esc(gap.join(' · ')) + '</div>' : '')
-      + '<div style="font-size:11px;color:var(--text-muted);">' + esc(t('Record: ', '記録: ') + ((j.record && j.record.src) || (j.record && j.record.tier) || '')) + '</div></div>';
+    h += '<div style="margin-top:6px;"><b>' + head + '</b> — ' + htmlText(t(j.crossings.length + (j.crossings.length === 1 ? ' crossing' : ' crossings'), '国境越え ' + j.crossings.length + ' 回'))
+      + '<div style="line-height:1.6;">' + (seq || htmlText(t('The line meets no polity the record draws.', 'この線は記録が描く政体のどれにも入りません。'))) + '</div>'
+      + (gap.length ? '<div style="font-size:11px;color:var(--text-muted);">' + htmlText(gap.join(' · ')) + '</div>' : '')
+      + '<div style="font-size:11px;color:var(--text-muted);">' + htmlText(t('Record: ', '記録: ') + ((j.record && j.record.src) || (j.record && j.record.tier) || '')) + '</div></div>';
   });
   if (R.differs.length) {
     const ok = R.journeys.filter((j) => !j.failed);
-    h += '<div style="margin-top:8px;"><b>' + esc(t('Met at some instants only', '一部の時点でだけ通る政体')) + '</b><div style="line-height:1.6;">'
-      + R.differs.map((e) => esc(e.names.map((x) => x.local || x.en).join(' / ')) + ' <span style="color:var(--text-muted);">(' + esc(e.at.map((i) => instantLabel(ok[i].instant, lang)).join(', ')) + ')</span>').join(' · ') + '</div></div>';
+    h += '<div style="margin-top:8px;"><b>' + htmlText(t('Met at some instants only', '一部の時点でだけ通る政体')) + '</b><div style="line-height:1.6;">'
+      + R.differs.map((e) => htmlText(e.names.map((x) => x.local || x.en).join(' / ')) + ' <span style="color:var(--text-muted);">(' + htmlText(e.at.map((i) => instantLabel(ok[i].instant, lang)).join(', ')) + ')</span>').join(' · ') + '</div></div>';
   }
   const st = R.journeys.find((j) => !j.failed);
-  h += '<div style="margin-top:6px;font-size:10.5px;color:var(--text-muted);line-height:1.45;">' + esc(t(
+  h += '<div style="margin-top:6px;font-size:10.5px;color:var(--text-muted);line-height:1.45;">' + htmlText(t(
     'Lengths are along the line asked' + (o.asRoute ? ' (the computed route)' : ' (great circles between the places)') + ', sampled every ' + (st ? st.stepM : '—') + ' m — not the road a traveller of the time took. Polities are the ones each border record draws, under its names, and are compared across instants by those names. Sea and land the record does not cover are told apart with today’s land outlines (Natural Earth).',
     '長さは問われた線に沿った値です' + (o.asRoute ? '（計算した経路）' : '（地点間の大圏）') + '。' + (st ? st.stepM : '—') + ' m ごとに判定。当時の旅人が通った道ではありません。政体は各時点の国境の記録が描くものをその名で示し、時点間の比較もその名で行います。海と記録の無い陸地は現在の陸地の輪郭（Natural Earth）で区別しています。')) + '</div>';
   return h;
@@ -282,18 +282,18 @@ export async function atlasRun(a, K) {
     if (!names.length && a.from != null && a.to != null) names.push(a.from, ...(Array.isArray(a.via) ? a.via : []), a.to);
     for (const n of names) {
       const g = await K.geocode(String(n));
-      if (!g) return R(false, warn(esc(L('IntMap could not place «' + n + '». Give coordinates, or name a place IntMap holds.', '「' + n + '」を地図上に特定できませんでした。座標を指定するか、IntMap が持つ地名で言い直してください。'))));
+      if (!g) return R(false, warn(htmlText(L('IntMap could not place «' + n + '». Give coordinates, or name a place IntMap holds.', '「' + n + '」を地図上に特定できませんでした。座標を指定するか、IntMap が持つ地名で言い直してください。'))));
       wps.push({ lng: +g.lng, lat: +g.lat, name: g.name || String(n) });
     }
   }
-  if (wps.length < 2) return R(false, warn(esc(L('A journey needs at least two places (names or coordinates).', '道のりには 2 つ以上の地点（地名か座標）が必要です。'))));
+  if (wps.length < 2) return R(false, warn(htmlText(L('A journey needs at least two places (names or coordinates).', '道のりには 2 つ以上の地点（地名か座標）が必要です。'))));
   /* the instants, in the order Atlas gave them */
   const specs = [];
   for (const y of (Array.isArray(a.years) ? a.years : a.year != null ? [a.year] : [])) specs.push({ year: y });
   for (const d of (Array.isArray(a.dates) ? a.dates : a.date != null ? [a.date] : [])) specs.push({ date: d });
   if (a.now) specs.push({ now: true });
   const instants = [];
-  for (const s of specs) { const I = instantOf(s); if (!I) return R(false, warn(esc(L('«' + (s.date != null ? s.date : s.year) + '» is not a year or a YYYY-MM-DD date.', '「' + (s.date != null ? s.date : s.year) + '」は年でも YYYY-MM-DD 形式の日付でもありません。')))); instants.push(I); }
+  for (const s of specs) { const I = instantOf(s); if (!I) return R(false, warn(htmlText(L('«' + (s.date != null ? s.date : s.year) + '» is not a year or a YYYY-MM-DD date.', '「' + (s.date != null ? s.date : s.year) + '」は年でも YYYY-MM-DD 形式の日付でもありません。')))); instants.push(I); }
   if (!instants.length) {
     const T = IntMapTime;
     if (T.isLive()) instants.push(instantOf({ now: true }));
@@ -304,7 +304,7 @@ export async function atlasRun(a, K) {
   const asRoute = !!a.asRoute;
   const line = lineOf(wps.map((p) => [p.lng, p.lat]), { asRoute });
   const res = await journeys(line, instants, { borders: bordersNow(), land: countryOutlines, lang });
-  const title = '<b>' + esc(L('Journey through time', '時をまたぐ道のり')) + ' — ' + esc(wps.map((p) => p.name || (p.lat.toFixed(3) + ', ' + p.lng.toFixed(3))).join(' → ')) + '</b>';
+  const title = '<b>' + htmlText(L('Journey through time', '時をまたぐ道のり')) + ' — ' + htmlText(wps.map((p) => p.name || (p.lat.toFixed(3) + ', ' + p.lng.toFixed(3))).join(' → ')) + '</b>';
   const exec = { journey: forAtlas(res, lang) };
   if (!res.okCount) return R(false, title + answerHtml(res, lang, { asRoute }), { exec });
   /* one instant on the map: the one Atlas names (1-based, in the order given), else the first that was read */
@@ -320,7 +320,7 @@ export async function atlasRun(a, K) {
   try { let w = 180, s = 90, e = -180, n = -90; for (const p of line) { w = Math.min(w, p[0]); s = Math.min(s, p[1]); e = Math.max(e, p[0]); n = Math.max(n, p[1]); } if (e - w < 340) K.GE().camera.fitBounds([[w, s], [e, n]], { padding: 80, maxZoom: 8, duration: 900 }); } catch (_) { /* no renderer */ }
   exec.journey.drawnOnMap = okL ? instantLabel(res.journeys[drawn].instant, 'en') : null;
   const html = title + answerHtml(res, lang, { drawn: okL ? drawn : -1, colors: F.colors, asRoute })
-    + note(esc(L('To see that instant’s borders under the line, move the clock to it.', '線の下にその時点の国境を出すには、時計をその時点へ動かしてください。')));
+    + note(htmlText(L('To see that instant’s borders under the line, move the clock to it.', '線の下にその時点の国境を出すには、時計をその時点へ動かしてください。')));
   return R(true, html, { exec, meta: Object.assign({ painted: { lines: okL ? F.lines.map((l) => l.name) : [] }, resultKey: 'time.journey:' + course + '@' + res.journeys.map((j) => instantLabel(j.instant, 'en')).join(',') + '#' + drawn }, okL ? {} : { partial: true }) });
 }
 
@@ -328,6 +328,6 @@ export async function atlasRun(a, K) {
    year in the panel's field and today, in the panel's own words. ══ */
 export async function renderRoutePanel(target, coords, year, lang) {
   const res = await journeys(lineOf(coords, { asRoute: true }), [instantOf({ year }), instantOf({ now: true })], { borders: bordersNow(), land: countryOutlines, lang });
-  if (target) target.innerHTML = '<h4>' + esc(IntMapLang.t(lang, 'Borders along this route — ' + year + ' and today', 'この経路の国境 — ' + year + ' 年と今日')) + '</h4>' + answerHtml(res, lang, { asRoute: true });
+  if (target) target.innerHTML = '<h4>' + htmlText(IntMapLang.t(lang, 'Borders along this route — ' + year + ' and today', 'この経路の国境 — ' + year + ' 年と今日')) + '</h4>' + answerHtml(res, lang, { asRoute: true });
   return res;
 }

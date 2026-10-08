@@ -72,3 +72,16 @@ newsjp: Atlas が 1 本の道のりを時代ごとにたどれるように——
 
 `supabase/functions/` は変えていない（Edge Function のデプロイは不要）。経路パネルの「国境」の結果は変わらない
 （関数を移しただけで、数値は同じ）。
+
+## 起動費用と遅延チャンクの天井（PR #1047 の CI）
+
+- **起動経路は 1 バイトも増やしていない**（eager の requests 9・modules 315 のまま）。最初の CI の赤は 2 つ:
+  ① 線の幾何を別ファイル（`js/geo-along.js`）にして起動経路の `routing-ops.js` から静的 import したので module が 1 つ増えた
+  → `routing-ops.js` のモジュール直下へ戻して export した。② `journey-through-time.js` が `chronos.js` を**動的** import して
+  いたので、ビルドが起動経路の chronos を別チャンクに割り、起動時の要求が 1 本増えた → 静的 import にした。
+- **遅延チャンクの天井は実測どおり 3 行上げた**（`node scripts/perf-budget.mjs --update`）: async.raw 12,364.5 → 12,432.3 kB・
+  async.gzip 4,095.3 → 4,122.8 kB・`atlas-console` 1,432.5 → 1,439.8 kB。買ったもの: 新しい遅延チャンク
+  `journey-through-time`（14.2 kB、Atlas が最初に呼んだとき／経路パネルの「その年の国境」を押したときだけ取りに行く）と、
+  計画者が読む `time.journey` の目録の説明（`atlas-console` に入る）。同じ rebase で main の #1042・#1043（今日のクエスト・授業ツアー）
+  と #1041（dompurify）の増分も載っているが、main 単独では帯の内側で、帯を越えさせたのはこの回の増分なので、この回が理由を書く。
+  ⚠ 説明文を削って天井の内に収めることはしなかった——目録に書かれていない能力は計画者にとって存在しない（PRODUCT.md §3.4）。

@@ -68,7 +68,10 @@ const bboxOf = (g) => {
   return a <= c ? [a, b, c, d] : null;
 };
 /** the app's one escaper (js/safe-html.js) */
-export const esc = (s) => globalThis.IntMapSafe.html(String(s == null ? '' : s));   /* (atlas-product) js/journey-through-time.js escapes with this one too */
+/** the app's one escaper (js/safe-html.js), as text for markup — exported under a name no other file defines, so the
+    output-taint gate can judge an importer's call by this definition alone (js/journey-through-time.js) */
+export function htmlText(s) { return globalThis.IntMapSafe.html(String(s == null ? '' : s)); }
+const esc = htmlText;
 /** the border records the era layer draws (js/time-borders.js, published by js/app-body.js) — the one place this file reads them */
 export const bordersNow = () => window.IntMapTimeBorders;
 
