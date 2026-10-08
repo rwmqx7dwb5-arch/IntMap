@@ -1328,7 +1328,13 @@ place-history.js                  **この場所の歴史**——1 地点をど�
                                   地方区分。行は time-borders.js / time-admin1.js の `placeRecords`（扉の `contains`）が述べるものだけで、
                                   端は種類つき（stated・reach・handover・rename・sheet・review／derived・unstated・undocumented・open）。
                                   地点カードの節と Atlas `time.placeHistory` が同じ記録を描く。行を押すと Chronos をその時代へ
-                                  （docs/architecture/07-map.md §7.3f）。地点カードと Atlas が最初に要るときに取りに行く
+                                  （docs/architecture/07-map.md §7.3f）。地点カードと Atlas が最初に要るときに取りに行く。
+                                  中心で地図が変わる時点（`changesOf`・`stepFrom`・`nowAt`・`changeText`）も持ち、time-thumb.js と
+                                  Atlas `time.stepHere` が読む
+time-thumb.js                     **親指の時計**——携帯のシートの頭の時計（`#m-clock`）を横になぞるとレールになり、地図を全面に出したまま
+                                  年が動く（chronos.js `writeRailPos`）。吹き出しが時刻と地図の中心を治める政体・区分を述べ、中心で地図が
+                                  変わる時点で止まる。矢印キーで前後の変化へ。mobile-ui.js が最初のタッチで取りに行く
+                                  （docs/architecture/09-mobile.md §9.5）
 events-near.js                    範囲 × 期間の地震と出来事の**読み手 1 つ**——USGS の M2.5 以上・7 日のフィードをセッション内で 1 回
                                   取得して共有し、`news_events` の窓をページ送りで読み、どちらも位置を送らずに端末で範囲を絞る。
                                   状態の語彙（`ok` / `none` / `unavailable`＋理由）の正本。地点カード・place-watch.js・

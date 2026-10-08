@@ -177,6 +177,19 @@ return clock('main');
 /** a clock for another map (js/compare.js) — the same body as the master clock's, a separate instant
     @param {string} [name] the map it belongs to @returns {import('../types/chronos').Chronos} */
 export function makeClock(name){ return /** @type {(name?: string) => import('../types/chronos').Chronos} */ (_make)(name); }
+/* ══ (mobile-product) A POSITION ON THE YEAR RAIL → A WRITE ON THE CLOCK — ONE RULE, EVERY RAIL ══════════════════
+   The Chronos Year slider and its desktop peek (js/news-timeline.js) and the thumb on the phone's clock
+   (js/time-thumb.js) all turn a rail position into a year the same way: js/hist-scale.js `rail.toYear` between the
+   clock's floor and this year; the current year or later is the live clock, anything at or above the floor is that
+   year. It lived inside the panel's factory; a second rail would have been a second copy of it, so it is here, beside
+   the clock it writes. → the year the position stands for (a year ≥ this one is returned as this one). */
+/** @param {number} p a rail position, 0 … rail.POS @param {import('../types/chronos').Chronos} [clock] @returns {number} */
+export function writeRailPos(p, clock){
+  const C=clock||IntMapTime, cur=new Date().getFullYear(), HS=/** @type {any} */ (globalThis).IntMapHistScale;
+  let y=cur; try{ y=HS.rail.toYear(p, C.min, cur); }catch(_){ y=cur; }
+  if(y>=cur){ C.setNow({source:'ui'}); return cur; }
+  if(y>=C.min) C.setYear(y,{source:'ui'});
+  return y; }
 
 /* ══ THE READER'S INTENT TO LEAVE THE PRESENT — one signal, fired once ══════════════════════════
    「歴史機能に触れなくても起動直後に約 55 MB の歴史データを先読みして main thread で parse する」のを

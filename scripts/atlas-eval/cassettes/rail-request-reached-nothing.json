@@ -270,6 +270,10 @@
             {
               "id": "time.placeHistory",
               "tool": "time_placeHistory"
+            },
+            {
+              "id": "time.stepHere",
+              "tool": "time_stepHere"
             }
           ]
         }
