@@ -89,3 +89,14 @@ newsjp: 授業ツアーを 2 本追加しました。ペリー来航の 1853 年
 ビルドの設定と混ざったと見ている（機構は未確定）。`--configLoader native` では書き先がこの worktree の `dist` だけになった
 （6 行すべて）。`--configLoader runner` は「Vite module runner has been closed」で失敗。並行セッションのビルドが互いの
 `dist/` を上書きしうるので、`scripts/worktree.mjs` か `package.json` の `build` で読み込み方を固定するかを判断してほしい。
+
+## 6. 起動費用（check:perf）——遅延チャンク `tours` の天井を 33.2 → 44.7 kB に上げた
+
+PR の CI で `async chunk "tours" grew: 44.7 kB > ceiling 33.2 kB`。`origin/main`（f93f23f1）に載せ直し、`dist` を消して
+`npx vite build --configLoader native` で作り直して測った: `tours` は 34,019 → 45,803 B（+11,784 B）。
+- 増分の内訳: この PR が `js/` で変えたのは `js/tours.js` だけ（`git diff origin/main --stat -- js/`）で、チャンクの構成は変わっていない。
+  足した 2 本の宣言そのものの大きさは `JSON.stringify` で `opening-of-japan` 6,213 B・`cold-war-end` 4,951 B、
+  生成領域の 3 段のリンクが約 0.25 kB——計 約 11.4 kB で増分とほぼ一致する。2 本にしては大きく見えるのは、語りと問いが
+  en＋jp の全文で、日本語は UTF-8 で 1 字 3 バイトだから（既存 3 本は 2.8〜4.2 kB）。要らないものは入っていない。
+- 遅延チャンク（授業ツアーを開いたとき・Atlas がツアーを扱うときだけ取得）で、通常の起動には載らない。
+- `node scripts/perf-budget.mjs --update` が上げたのはこの 1 行だけ。
