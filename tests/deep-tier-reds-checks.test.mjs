@@ -61,7 +61,7 @@ test('deep-tier-reds ① (when built) those chunks export every name their modul
   if (!existsSync(dir)) { t.skip('no dist/ — the clause is read only from a build'); return; }
   const files = readdirSync(dir);
   for (const { spec, name } of chunkLookups()) {
-    const re = new RegExp('^' + name.replace(/[-]/g, '\\-') + '-[^.]+\\.js$');
+    const re = new RegExp('^' + name.replace(/[.*+?^${}()|[\]\\-]/g, '\\$&') + '-[^.]+\\.js$');
     const chunk = files.find((f) => re.test(f));
     assert.ok(chunk, `${spec}: no ${name}-*.js in dist/assets`);
     const src = readFileSync(join(dir, chunk), 'utf8');
