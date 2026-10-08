@@ -88,10 +88,12 @@
     </table></div>
     <p class="lp-sub">The client is a convenience. The protocol is plain postMessage, so a page can also speak it directly:</p>
     <pre class="lp-code"><code>const frame = document.querySelector('iframe');
+const origin = new URL(frame.src).origin;
 frame.contentWindow.postMessage(
   { protocol: 'intmap-embed', v: 1, type: 'view', id: '1', lng: 139.69, lat: 35.69, zoom: 9 },
-  new URL(frame.src).origin);
+  origin);
 window.addEventListener('message', (e) =&gt; {
+  if (e.source !== frame.contentWindow || e.origin !== origin) return;   // only the map you framed
   if (e.data &amp;&amp; e.data.protocol === 'intmap-embed' &amp;&amp; e.data.type === 'reply') console.log(e.data.ok, e.data.hash);
 });</code></pre>
     <p class="lp-note">A command can only change what the frame shows, exactly as a share link can. The frame reports the map’s state — the same link its own “Open in IntMap” button carries — and nothing about the reader, and only to the page that framed it.</p>

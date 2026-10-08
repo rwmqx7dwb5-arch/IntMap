@@ -89,6 +89,7 @@
       <div class="lp-tile"><h3>No script runs unless it is listed</h3><p>The page's security policy runs only scripts from IntMap's own site, a short list of named sources, and inline code whose exact bytes are listed. A script injected into the page is refused by your browser.</p></div>
       <div class="lp-tile"><h3>Said plainly: the 3-D globe needs eval</h3><p>The policy still allows code to be compiled from text (unsafe-eval) because the 3-D engine IntMap uses requires it. It is recorded as an accepted risk, and a test turns red on the day the engine no longer needs it.</p></div>
       <div class="lp-tile"><h3>Passwords are checked without being sent</h3><p>When you choose a password, it is checked against known leaks by sending only the first 5 characters of its hash; the comparison happens in your browser.</p></div>
+      <div class="lp-tile"><h3>Libraries are checked against known vulnerabilities</h3><p>Every week and on every change, the libraries sent to your browser are checked against the public database of security advisories, and a change whose package list contradicts the libraries it installs is refused.</p></div>
       <div class="lp-tile"><h3>Your data is yours to see and take</h3><p>Signed in, Account then Your data lists everything the account holds and downloads a complete copy. Deleting the account deletes all of it.</p></div>
     </div>
   </section>

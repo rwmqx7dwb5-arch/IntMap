@@ -46,7 +46,8 @@
  *    node scripts/org-pages.mjs --check    exit 1 if any differs from what --write would produce
  *                                          (tests/sales-channels-checks.test.mjs runs this)
  * ==========================================================================*/
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
+import { load as yamlLoad } from 'js-yaml';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { TEXT, ORG_NAV } from './org-pages-text.mjs';
@@ -550,7 +551,9 @@ function contactBody(F, L) {
        against the code and against Privacy §4 (only rows the browser requests: `disclosure`);
      · whether third-party analytics loads — index.html's own switch (window.INTMAP_ANALYTICS);
      · what the security policy allows — index.html's own Content-Security-Policy script-src;
-     · the leaked-secret check — the ledger row that sends a `credential-prefix`.
+     · the leaked-secret check — the ledger row that sends a `credential-prefix`;
+     · (security-hardening) whether the libraries the browser is shipped are checked against published advisories —
+       a workflow job in .github/workflows/ that runs `npm audit --omit=dev` on a schedule and on pull requests.
    The words for each «what is sent» are js/connections-panel.js SENDS_WORDS — the same sentences the in-map list
    uses, so the page and the list cannot describe one code two ways. */
 export function securityFacts() {
@@ -570,7 +573,21 @@ export function securityFacts() {
     inline: /'unsafe-inline'/.test(scriptSrc),
     unsafeEval: /'unsafe-eval'/.test(scriptSrc),
     leakCheckByPrefix: stated.some((r) => r.sends && r.sends.code === 'credential-prefix'),
+    advisoryWatch: advisoryWatch(),
   };
+}
+/* (security-hardening) a job that audits the shipped (non-dev) dependencies from the lock, weekly and on every PR */
+function advisoryWatch() {
+  const dir = '.github/workflows';
+  for (const f of readdirSync(join(ROOT, dir)).filter((n) => /\.ya?ml$/.test(n))) {
+    const wf = yamlLoad(rd(dir + '/' + f)) || {};
+    const on = wf.on || wf[true] || {};
+    if (!on.schedule || !('pull_request' in on)) continue;
+    for (const job of Object.values(wf.jobs || {})) {
+      if ((job.steps || []).some((st) => /\bnpm audit\b/.test(st.run || '') && /--omit=dev/.test(st.run))) return true;
+    }
+  }
+  return false;
 }
 function securityBody(F, L) {
   const T = TEXT.security, k = L.i, S = F.security;
@@ -581,6 +598,7 @@ function securityBody(F, L) {
   const guards = [S.analytics ? T.analyticsOn : T.analyticsOff, S.inline ? T.withInline : T.noInline];
   if (S.unsafeEval) guards.push(T.evalNote);
   if (S.leakCheckByPrefix) guards.push(T.leakCheck);
+  if (S.advisoryWatch) guards.push(T.advisoryWatch);
   guards.push(T.yourData);
   const li = (list) => list.map((p) => `<li>${esc(p[k])}</li>`).join('\n        ');
   return `<main class="lp-main">

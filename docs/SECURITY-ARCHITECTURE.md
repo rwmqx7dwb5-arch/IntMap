@@ -526,7 +526,12 @@ the caller parses an article (`as:'html'`); https on the default port, no userin
 `publicHostname()` accepts, **and every A/AAAA answer a public unicast address** (`resolvesPublic()` /
 `publicAddress()` in `relay-guard.js`: loopback, private, CGN, link-local, documentation,
 benchmarking, multicast, reserved and their IPv4-mapped/NAT64 forms are refused; no resolver in the
-runtime → refused, fail-closed); each redirect hop re-resolved; the answer must declare `text/html`,
+runtime → refused, fail-closed). The IPv6 half reads the address into its eight groups and refuses every
+block of the IANA IPv6 special-purpose registry whose «Globally Reachable» is False or N/A (all of
+`2001::/23` including Teredo, `100::/64`, `3fff::/20`, `5f00::/16`, the deprecated `fec0::/10`); an
+address that carries an IPv4 one (IPv4-mapped in either spelling, NAT64 `64:ff9b::/96`, 6to4 `2002::/16`)
+is judged as that IPv4 (security-hardening — until then those were answered by the spelling of the first group,
+and 6to4 and the rest of `2001::/23` passed as public); each redirect hop re-resolved; the answer must declare `text/html`,
 be under 3 MB and pass `looksLikeArticle()` — the same predicate the page applies — so the relay
 hands back article pages, not arbitrary bytes; its own smaller bucket (`fetch-relay-article:ip`,
 10 per reader per minute). What stays open: an address checked at resolution may not be the one
@@ -1001,8 +1006,11 @@ put a real secret value in the repo, a PR, or a log.**
 ### GitHub (repo → Settings)
 - **Code security**: enable **Secret scanning** + **Push protection**; enable **Private
   vulnerability reporting** (⚠ MEASURED 2026-10-03: `GET /repos/…/private-vulnerability-reporting` →
-  `{"enabled":false}` — not done; until it is, the private channel is the security page's form, §10); confirm **Dependabot alerts** (config already in
-  `.github/dependabot.yml`); **CodeQL** runs from `security.yml` (free for this public repo).
+  `{"enabled":false}` — not done; until it is, the private channel is the security page's form, §10); enable **Dependabot alerts** and **Dependabot security updates** (⚠ MEASURED 2026-10-08:
+  `GET /repos/…/vulnerability-alerts` → **404, disabled**; `automated-security-fixes` → `{"enabled":false}`.
+  `.github/dependabot.yml` configures VERSION updates of direct dependencies only, which is why a vulnerable
+  transitive DOMPurify sat in the lock unreported — security-hardening. Until they are on, the only watcher is
+  the `Dependency advisories (npm audit)` job in `security.yml`); **CodeQL** runs from `security.yml` (free for this public repo).
 - **Branch protection / ruleset on `main`** — applied (ruleset «Protect main», re-read 2026-09-18):
   PRs required, force-push and deletion blocked, no bypass actors, and the required checks are the
   three CI jobs (**Static checks**, **Browser smoke + internal QA**, **Regression suite**) plus, since

@@ -156,7 +156,7 @@
   行に通信した）・拒否したものに分け、**見えないもの**（枠の中・`sw.js` が制御していないときのバックグラウンド処理）
   を毎回述べる。台帳を読めないときは「照合できなかった」と言い、何も「名前が無い」と言わない。
   公開のページ `security.html`（`ja/`）は、送るものと接続先の数・アクセス解析の有無・`script-src` の中身を台帳と
-  `index.html` から読んで書き、**非公開の報告窓口**（相談フォームの用件 `security`）へ渡す。GitHub の非公開の
+  `index.html` から、依存を既知の脆弱性と照合しているかを `.github/workflows/` から読んで書き、**非公開の報告窓口**（相談フォームの用件 `security`）へ渡す。GitHub の非公開の
   脆弱性報告は有効になっていない（`docs/SECURITY-ARCHITECTURE.md` §9）。
 - ⚠ **`index.html` の `script-src` には現在 `'unsafe-eval'` と 7 つの CDN の source が入っている**
   （インラインの `<script>` のハッシュはこの数に入らない）
@@ -205,6 +205,16 @@
 ### 17.4 CI
 
 **CodeQL**（`security.yml`）＋ `check:static` の **Action SHA 固定検査（全リモート Action・error・除外なし）**
+＋ **依存の既知脆弱性**: `security.yml` の `Dependency advisories (npm audit)` がロックファイルを公開の勧告
+データベースに照会する（ブラウザに配る依存は全深刻度、ビルド／テストの道具は high 以上。毎週と全 PR。必須チェックでは
+ない）。⚠ リポジトリの Dependabot alerts は**無効**（`docs/SECURITY-ARCHITECTURE.md` §9）なので、これが唯一の見張り
+＋ **ロックファイルの整合**: `check:static`（規則 `lock-ranges`・`scripts/lock-ranges.mjs`）が、ロックの記録する
+全依存辺について「解決される版が依存元の宣言する範囲を満たすか」を node-semver と同じ読みで判定し、読めない指定は
+通さず拒む（`npm ci` は入れ子の範囲を照合しない）
+＋ **秘密の混入**: `check:static`（規則 `secret-scan`・形と判定は `scripts/secret-scan.mjs`）が、**git が commit
+しうる全ファイルのうちバイトが text のもの**（拡張子を問わない）を読み、ファイル中の**全 JWT** の role を見て、
+この製品の運用が使う資格情報（Supabase の個人アクセストークン・Stripe の制限キーと webhook 署名秘密・Google OAuth の
+クライアント秘密・npm トークンほか）の形を拒む
 ＋ `tests/security-logic.test.mjs`（Edge Function／SW／admin／CSP の不変条件とパーサのユニットテスト）
 ＋ pgTAP。`npm test` で全部走る。
 

@@ -64,3 +64,29 @@ jobs:
         uses: github/codeql-action/analyze@1c5b675653bb5c22dbe9b12b556ec555138e09fd  # v4.38.1
         with:
           category: "/language:javascript-typescript"
+
+  # (security-hardening) KNOWN-VULNERABLE DEPENDENCIES — NOTHING ELSE WATCHES FOR THEM.
+  # MEASURED 2026-10-08: Dependabot alerts are DISABLED on this repository (`GET /repos/…/vulnerability-alerts`
+  # → 404, automated security fixes `enabled: false`), and dependabot.yml's version updates only move the
+  # DIRECT dependencies. The lock shipped DOMPurify 3.4.13 to the browser (through Cesium) for twelve days
+  # inside two published advisories, and source-map-js 1.2.1 (build tool) inside a high one; no run said so.
+  # This asks the registry's advisory database about the LOCK (no install, no node_modules): any advisory in
+  # what the browser is shipped (`--omit=dev`) fails, and a high or critical one in the build/test tooling.
+  # Weekly as well as on every PR, because an advisory is published against code that has not changed.
+  # Advisory like CodeQL above (not a required check); the lock's internal consistency — the defect that let
+  # 3.4.13 stay below Cesium's own floor — is a required rule in check:static (scripts/lock-ranges.mjs).
+  dependency-advisories:
+    name: Dependency advisories (npm audit)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      - name: Shipped to the browser — any advisory
+        run: npm audit --package-lock-only --omit=dev --audit-level=low
+      - name: Build and test tooling — high or critical
+        if: ${{ always() }}
+        run: npm audit --package-lock-only --audit-level=high

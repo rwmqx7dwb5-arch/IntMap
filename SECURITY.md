@@ -72,8 +72,10 @@ IntMap ships continuously from `main` (there is no release train). Security fixe
 
 ## How security is verified
 Every PR runs, in CI:
-- `npm run check:static` — syntax, committed-secret scan, SQL-PII guard, workflow least-
-  privilege, and **action SHA-pinning**. The pinning rule is an **error**, and it covers
+- `npm run check:static` — syntax, committed-secret scan (every file git would commit that is
+  text, every JWT in it, and the token shapes of the services IntMap operates with —
+  `scripts/secret-scan.mjs`), SQL-PII guard, workflow least-privilege, the lockfile's agreement with
+  the ranges its own packages declare (`scripts/lock-ranges.mjs`), and **action SHA-pinning**. The pinning rule is an **error**, and it covers
   `actions/*` and `github/*` too: it used to exempt them, which is where every remote action
   in this repo lives, so it had nothing to check.
 - `node --test tests/security-logic.test.mjs` — the Edge-Function, service-worker, admin-console
@@ -81,7 +83,9 @@ Every PR runs, in CI:
   console's data-literal parser (the one that replaced `eval`).
 - `tests/security.spec.js` (Playwright) — XSS payloads are neutralised in a **real browser**
   and i18n text still renders.
-- `.github/workflows/security.yml` — **CodeQL** (JavaScript/TypeScript) SAST.
+- `.github/workflows/security.yml` — **CodeQL** (JavaScript/TypeScript) SAST, and **npm audit** of the
+  lock (any advisory in what the browser is shipped; high or critical in the build tooling), weekly
+  and on every PR.
 - `.github/workflows/db.yml` — **pgTAP** RLS / privilege / constraint tests against a
   throwaway Postgres (`supabase/tests/*_test.sql`).
 

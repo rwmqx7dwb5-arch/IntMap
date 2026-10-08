@@ -22,6 +22,7 @@ import { COUNTRY_HUB } from './country-pages.mjs';
 import { pagePath as UPDATES_PAGE, feedPath as UPDATES_FEED } from './whats-new.mjs';
 import { WEEKLY_HUB } from './weekly-earth-pages.mjs';   /* (weekly-earth) the weekly digest's hub, written by the build */
 import { outOfOrder } from './migration-order.mjs';
+import { findSecrets, SECRET_SCAN_SELF, secretScanUniverse } from './secret-scan.mjs';   /* (security-hardening) rule 2's shapes and judgement */
 
 const ROOT = resolve(join(dirname(fileURLToPath(import.meta.url)), '..'));
 const rel = (p) => relative(ROOT, p).replace(/\\/g, '/');
@@ -139,38 +140,17 @@ for (const f of textFiles) {
 }
 
 // ── 2. Committed secrets ─────────────────────────────────────────────────────
-const SECRET_PATTERNS = [
-  { name: 'private key block', re: /-----BEGIN (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----/ },
-  { name: 'Supabase secret key', re: /\bsb_secret_[A-Za-z0-9_-]{12,}/ },
-  { name: 'Stripe live secret', re: /\bsk_live_[A-Za-z0-9]{16,}/ },
-  { name: 'AWS access key id', re: /\bAKIA[0-9A-Z]{16}\b/ },
-  { name: 'Google API key', re: /\bAIza[0-9A-Za-z_-]{35}\b/ },
-  { name: 'GitHub token', re: /\bgh[pousr]_[A-Za-z0-9]{36,}\b/ },
-  { name: 'Slack token', re: /\bxox[baprs]-[A-Za-z0-9-]{10,}/ },
-  { name: 'OpenAI key', re: /\bsk-(?:proj-)?[A-Za-z0-9]{32,}/ },
-  { name: 'Anthropic key', re: /\bsk-ant-[A-Za-z0-9_-]{20,}/ },   // (#R138) ai-proxy provider key
-];
-function jwtIsServiceRole(tok) {
-  try {
-    const payload = tok.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    const json = Buffer.from(payload, 'base64').toString('utf8');
-    return /"role"\s*:\s*"service_role"/.test(json);
-  } catch { return false; }
-}
-for (const f of textFiles) {
-  if (f.rel === 'scripts/static-checks.mjs') continue; // this file holds the patterns themselves
+/* the shapes and the judgement live in scripts/secret-scan.mjs (tests evaluate them there) */
+const secretScanFiles = secretScanUniverse(ROOT, textFiles, BINARY_EXT);   /* every file git would commit that is text (scripts/secret-scan.mjs) */
+for (const f of secretScanFiles) {
+  if (SECRET_SCAN_SELF.has(f.rel)) continue; // these files hold the patterns themselves
   let t = read(f);
   for (const a of PUBLIC_ALLOW) t = t.split(a).join('');
-  for (const p of SECRET_PATTERNS) {
-    const m = t.match(p.re);
-    if (m) err('secret-scan', `${f.rel}: looks like a committed ${p.name} (${m[0].slice(0, 12)}…)`);
-  }
+  const found = findSecrets(t);
+  for (const s of found.secrets) err('secret-scan', `${f.rel}: looks like a committed ${s.name} (${s.match.slice(0, 12)}…)`);
   // JWTs: only a service_role token is a hard failure; other JWTs (fixtures/comments) warn.
-  const jwt = t.match(/\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/);
-  if (jwt) {
-    if (jwtIsServiceRole(jwt[0])) err('secret-scan', `${f.rel}: committed Supabase SERVICE_ROLE JWT`);
-    else warn('secret-scan', `${f.rel}: contains a JWT-shaped string (verify it is not a secret)`);
-  }
+  if (found.serviceRoleJwt) err('secret-scan', `${f.rel}: committed Supabase SERVICE_ROLE JWT`);
+  else if (found.jwts) warn('secret-scan', `${f.rel}: contains a JWT-shaped string (verify it is not a secret)`);
 }
 
 // ── 2b. SQL migrations/seed must be synthetic (no real PII, no dev email) ─────
@@ -854,6 +834,23 @@ try {
   for (const p of iconGlyphProblems(ROOT)) err('icon-glyphs', p);
 } catch (e) {
   err('icon-glyphs', 'could not run the icon-glyph rule: ' + (e && e.message));
+}
+
+// ── 26. (security-hardening) the lock does not contradict the packages it locks ──
+// MEASURED 2026-10-08: the lock held dompurify 3.4.13 while @cesium/engine — which ships it to the browser —
+// declares ^3.4.14; 3.4.13 is inside two published advisories. npm ci installs the lock without re-checking a
+// nested range, and Dependabot alerts are off on the repository, so nothing read it. Every dependency edge the
+// lock records is checked against the version it resolves; a spec the rule cannot read is refused, not passed.
+// scripts/lock-ranges.mjs. A rule here and not a check:* of its own for the reason given at 15.
+try {
+  const { lockEdges } = await import('./lock-ranges.mjs');
+  const r = lockEdges(JSON.parse(readFileSync(join(ROOT, 'package-lock.json'), 'utf8')));
+  for (const u of r.unmet) err('lock-ranges', `package-lock.json: ${u.from} declares ${u.name}@${u.range}, but the lock resolves ${u.locked} (${u.at}) — run npm install so the lock meets it`);
+  for (const u of r.unjudged) err('lock-ranges', `package-lock.json: ${u.from} → ${u.name} «${u.spec}» cannot be judged: ${u.why}`);
+  for (const u of r.missing) err('lock-ranges', `package-lock.json: ${u.from} needs ${u.name}@${u.spec} and the lock holds no such package`);
+  if (!r.edges) err('lock-ranges', 'package-lock.json: no dependency edges were read — the rule would pass an empty lock');
+} catch (e) {
+  err('lock-ranges', 'could not run the lock-ranges rule: ' + (e && e.message));
 }
 
 // ── Report ───────────────────────────────────────────────────────────────────

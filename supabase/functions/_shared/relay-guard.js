@@ -302,23 +302,69 @@ function publicV4(p) {
   if (a === 203 && b === 0 && c === 113) return false;
   return true;
 }
+/* an IPv6 address (any spelling: `::`, leading zeros, a dotted IPv4 tail) → its eight 16-bit groups, or null */
+function v6Groups(s) {
+  let head = s, tailV4 = null;
+  const dot = /^(.*:)(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/.exec(s);
+  if (dot) { tailV4 = v4Parts(dot[2]); if (!tailV4) return null; head = dot[1] + "0:0"; }
+  const halves = head.split("::");
+  if (halves.length > 2) return null;
+  const part = (x) => (x === "" ? [] : x.split(":"));
+  const a = part(halves[0]), b = halves.length === 2 ? part(halves[1]) : [];
+  if (halves.length === 2 && a.length + b.length > 7) return null;
+  if (halves.length === 1 && a.length !== 8) return null;
+  const groups = [...a, ...Array(8 - a.length - b.length).fill("0"), ...b];
+  if (!groups.every((g) => /^[0-9a-f]{1,4}$/.test(g))) return null;
+  const n = groups.map((g) => parseInt(g, 16));
+  if (tailV4) { n[6] = (tailV4[0] << 8) | tailV4[1]; n[7] = (tailV4[2] << 8) | tailV4[3]; }
+  return n;
+}
+const v4Of = (hi, lo) => [hi >> 8, hi & 255, lo >> 8, lo & 255];
+/* the first `bits` bits of `g` equal those of the prefix `p` (both as eight groups) */
+function inPrefix(g, p, bits) {
+  for (let i = 0; i < 8 && bits > 0; i++, bits -= 16) {
+    const mask = bits >= 16 ? 0xffff : (0xffff << (16 - bits)) & 0xffff;
+    if ((g[i] & mask) !== (p[i] & mask)) return false;
+  }
+  return true;
+}
+/* ══ (security-hardening) THE IPv6 HALF, AS THE REGISTRY WRITES IT ══════════════════════════════
+   The comment above says «the special-purpose registries»; the code tested five prefixes by their spelling
+   (the FIRST group and two string prefixes). Measured 2026-10-08 against the IANA IPv6 Special-Purpose
+   Address Registry, these were answered PUBLIC: 6to4 `2002::/16` (which carries an IPv4 address — `2002:a00:1::`
+   is 10.0.0.1), Teredo and the rest of `2001::/23`, the discard prefix `100::/64`, the documentation prefix
+   `3fff::/20` (RFC 9637, 2024), SRv6 SIDs `5f00::/16`, the deprecated site-local `fec0::/10`, and an IPv4-mapped
+   address in hex (`::ffff:a00:1` only fell to the «first group is 0» line by luck). An address is now read
+   into its eight groups and judged by prefix; an address that embeds an IPv4 is judged as that IPv4.
+   ⚠ The table is the registry (https://www.iana.org/assignments/iana-ipv6-special-registry/, retrieved
+   2026-10-08) — every block whose «Globally Reachable» is False or N/A. Inside 2001::/23 the registry marks
+   a few sub-blocks reachable (AS112, AMT, ORCHIDv2 anycast); they are protocol services, never a publisher's
+   web server, so the article rule refuses the whole /23. Expires when IANA adds a block — re-read the table. */
+const V6_NOT_PUBLIC = [
+  ["::", 8],          /* ::/8 — unspecified, loopback, the deprecated IPv4-compatible form */
+  ["64:ff9b:1::", 48], /* local-use IPv4/IPv6 translation */
+  ["100::", 64],      /* discard-only */
+  ["2001::", 23],     /* IETF protocol assignments, incl. Teredo 2001::/32 and benchmarking 2001:2::/48 */
+  ["2001:db8::", 32], /* documentation */
+  ["3fff::", 20],     /* documentation (RFC 9637) */
+  ["5f00::", 16],     /* SRv6 SIDs */
+  ["fc00::", 7],      /* unique local */
+  ["fe80::", 10],     /* link-local */
+  ["fec0::", 10],     /* site-local (deprecated, still routed by old stacks) */
+  ["ff00::", 8],      /* multicast */
+].map(([p, bits]) => [v6Groups(p), bits]);
 export function publicAddress(ip) {
-  const s = String(ip || "").trim().toLowerCase().replace(/^\[|\]$/g, "");
+  const s = String(ip || "").trim().toLowerCase().replace(/^\[|\]$/g, "").replace(/%.*$/, "");
   const v4 = v4Parts(s);
   if (v4) return publicV4(v4);
   if (!s.includes(":")) return false;
-  /* an embedded IPv4 (::ffff:a.b.c.d, 64:ff9b::a.b.c.d) is judged as that IPv4 */
-  const tail = /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/.exec(s);
-  if (tail) { const p = v4Parts(tail[1]); return !!p && publicV4(p); }
-  if (s === "::" || s === "::1") return false;
-  const first = parseInt(s.split(":")[0] || "0", 16);
-  if (!Number.isFinite(first)) return false;
-  if ((first & 0xfe00) === 0xfc00) return false;          /* fc00::/7 unique local */
-  if ((first & 0xffc0) === 0xfe80) return false;          /* fe80::/10 link-local */
-  if ((first & 0xff00) === 0xff00) return false;          /* ff00::/8 multicast */
-  if (s.startsWith("2001:db8:") || s.startsWith("2001:0db8:")) return false;   /* documentation */
-  if (s.startsWith("64:ff9b:")) return false;             /* NAT64 without a readable tail */
-  if (first === 0) return false;                          /* ::/8 reserved (incl. v4-compatible) */
+  const g = v6Groups(s);
+  if (!g) return false;
+  /* an address that carries an IPv4 one is judged as that IPv4 */
+  if (g.slice(0, 5).every((x) => x === 0) && g[5] === 0xffff) return publicV4(v4Of(g[6], g[7]));   /* ::ffff:0:0/96 */
+  if (g[0] === 0x64 && g[1] === 0xff9b && g.slice(2, 6).every((x) => x === 0)) return publicV4(v4Of(g[6], g[7]));   /* 64:ff9b::/96 NAT64 */
+  if (g[0] === 0x2002) return publicV4(v4Of(g[1], g[2]));   /* 2002::/16 6to4 */
+  for (const [p, bits] of V6_NOT_PUBLIC) if (inPrefix(g, p, bits)) return false;
   return true;
 }
 
