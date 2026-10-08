@@ -59,7 +59,7 @@
  *  usage:  node scripts/build-hist-tiles.mjs [--out <dir>] [--check] [--no-cache]
  *          (the build runs it into dist/data/hvt — vite.config.js `histTiles()`)
  * ==========================================================================*/
-import { readFileSync, writeFileSync, mkdirSync, existsSync, copyFileSync, rmSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, copyFileSync, rmSync, readdirSync, renameSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { join, dirname, basename } from 'node:path';
@@ -405,10 +405,17 @@ export async function buildTiles({ dataDir = join(ROOT, 'data'), outDir, cache =
       index = t.index; archive = t.archive; boxes = JSON.stringify(t.boxes.body);
       if (cacheRoot) {
         try {
+          /* ⚠ (build-isolation) the store is ONE per machine and every worktree's build reads it, and a hit is
+             «the three files exist». Written in place, a second build that looked while this one was writing
+             could take a half-written archive for a hit and ship it, since a hit is read back unverified (not
+             observed; the shape allows it). Each file is written beside its name and renamed onto it, so a
+             name that exists is a complete file. */
           mkdirSync(join(cacheRoot, key), { recursive: true });
-          writeFileSync(join(cacheRoot, key, idxName), JSON.stringify(index));
-          writeFileSync(join(cacheRoot, key, arcName), archive);
-          writeFileSync(join(cacheRoot, key, boxName), boxes);
+          for (const [name, body] of [[idxName, JSON.stringify(index)], [arcName, archive], [boxName, boxes]]) {
+            const final = join(cacheRoot, key, name), part = `${final}.${process.pid}-${Date.now()}.part`;
+            writeFileSync(part, body);
+            try { renameSync(part, final); } catch (e) { rmSync(part, { force: true }); if (!existsSync(final)) throw e; /* another build put the same bytes there first */ }
+          }
         } catch (e) { log(`  (cache not written: ${e.message})`); }
       }
     }

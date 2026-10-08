@@ -80,6 +80,9 @@ IntMap では**環境要因の赤が繰り返し出ている**。判定を必ず
    その場合でも**勝手に緩めない**——事実として報告し、判断は呼び出し元に返す。
 5. **未測定の spec は budget に p75 で課金される。** `npm run check:testbudget` の赤はこれが多い。
 
+⚠ **scratchpad は同じセッションの全 subagent で 1 つ**——ログやスクリプトの名前に slug か
+対象の PR 番号を入れる（同名の `build.log` を取り違えた実測。`docs/AGENT-SETUP.md` §5.2）。
+
 ## 返し方
 
 ```

@@ -99,10 +99,12 @@ test('⑧ index.html: the hashes the build writes are of the text after the stam
   const plugin = cspHashesPlugin();
   assert.equal(plugin.transformIndexHtml.order, 'post');
   assert.deepEqual(pagePolicyProblems('index.html', plugin.transformIndexHtml.handler(stamped)), []);
-  /* it is LAST in the build's plugin list, so nothing after it changes the text it hashed */
-  const vite = rd('vite.config.js');
-  const list = /plugins:\s*\[([^\]]*)\]/.exec(vite)[1].split(',').map((s) => s.trim()).filter(Boolean);
-  assert.equal(list[list.length - 1], 'cspHashesPlugin()');
+  /* nothing after it in the build's plugin list changes the text it hashed: every later plugin declares on itself that
+     it writes nothing into the output (the build lock — build-isolation — whose closeBundle must run after every other) */
+  const plugins = (await import('../vite.config.js')).default.plugins.flat().filter(Boolean);
+  const at = plugins.findIndex((p) => p.name === plugin.name);
+  assert.ok(at >= 0, 'cspHashesPlugin is in the build');
+  assert.deepEqual(plugins.slice(at + 1).filter((p) => p.writesNothing !== true).map((p) => p.name), []);
 });
 
 test('⑨ the listener: a declared action runs for a click inside its element; an undeclared name calls nothing', () => {

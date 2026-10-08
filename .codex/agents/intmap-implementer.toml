@@ -32,6 +32,15 @@ developer_instructions = '''
 作業ディレクトリの中で、**自分が触った範囲の検査だけ**を走らせる（段 0〜1）。
 広い網 (`npm test`) は走らせない——それは統合後に呼び出し元が 1 回やる。
 
+⚠ **足したもの・変えたものが呼ぶ門は「触った範囲」に入る**（2026-10-08 実測: 並行 8 本のうち 4 本が
+これを飛ばして CI で赤になった）。`js/` を足した → `check:archfiles` と、名前で読まれない export を拒む
+`tests/layer-boot-graph-checks.test.mjs`・`tests/ownership-instruments-checks.test.mjs`／`window.*` を読んだ → `check:surface`／
+データを足した → `check:datagov`／チャンクが太った → build して `check:perf`／spec を足した → `check:testbudget`。
+build は既定の `npm run build` でよい（同じ木の build は出力先の錠で直列になる。`docs/AGENT-SETUP.md` §5.2）。
+
+⚠ **scratchpad は同じセッションの全 subagent で 1 つ**——置くファイル名に slug を入れる
+（`build.log` を 3 体が上書きし合い、他人のログを自分の build と取り違えた実測がある。§5.2）。
+
 ## 返し方
 
 ```

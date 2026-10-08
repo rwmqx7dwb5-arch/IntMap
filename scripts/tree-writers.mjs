@@ -47,7 +47,7 @@ const DIRS = ['tests'];
 const SKIP = new Set(['node_modules', 'fixtures', '.cache']);
 
 /* fs functions that change the filesystem → which argument(s) name what is changed */
-const WRITES = {
+export const WRITES = {
   writeFileSync: [0], writeFile: [0], appendFileSync: [0], appendFile: [0],
   rmSync: [0], rm: [0], unlinkSync: [0], unlink: [0], rmdirSync: [0], rmdir: [0],
   renameSync: [0, 1], rename: [0, 1],

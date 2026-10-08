@@ -29,8 +29,11 @@
  *  this arrangement could otherwise have.
  * ==========================================================================*/
 import { defineConfig } from 'vite';
-import { cpSync, createReadStream, existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { cpSync, createReadStream, existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, statSync, unlinkSync } from 'node:fs';
+import { connect as netConnect, createServer as netCreateServer } from 'node:net';
+import { basename, dirname, join, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
+import { createHash } from 'node:crypto';
 import { buildReportPlugin, REPORT_PATH } from './scripts/build-report.mjs';
 import { injectAppShell } from './scripts/app-shell.mjs';
 /* the build stamp in index.html is DERIVED from the commit being built (scripts/build-stamp.mjs) —
@@ -259,12 +262,131 @@ export const STATIC_EXCLUDE = [
 /* …plus every root-level PNG (the four Köppen periods × two resolutions, and the layer previews). */
 const ROOT_PNG = () => readdirSync(ROOT).filter((f) => f.endsWith('.png'));
 
+/* ══ (build-isolation) WHERE THIS BUILD WRITES IS WHAT VITE RESOLVED, NOT A SECOND SPELLING OF IT ════
+   Every plugin below that writes the output takes the directory from the resolved config — `root` plus
+   `build.outDir`, which is where `--outDir` lands — the way scripts/history-pages.mjs and the other page
+   writers always have. MEASURED 2026-10-08: six of them (the static copy, the app shell, the time-cut
+   tiles, KaTeX, the admin SDK and Cesium) wrote `join(ROOT, 'dist')` instead, so the
+   `npx vite build --outDir dist-dev` that scripts/map-motion.mjs and scripts/phase-profile.mjs document
+   put the bundle in dist-dev/ and half the site — data/, sw.js, cesium/ — into dist/, on top of
+   whatever build was there. tests/build-isolation-checks.test.mjs runs every build plugin's
+   closeBundle against an outDir of its own and refuses a write anywhere else. */
+const outDirOf = (c) => resolve(c.root, c.build.outDir);
+
+/* ══ (build-isolation) ONE BUILD AT A TIME PER OUTPUT DIRECTORY ═════════════════════════════════════
+   Two builds of the same tree write the same dist/: Vite empties it, the static copy and the page
+   writers fill it, and the second build's empty-and-copy lands in the middle of the first's.
+   MEASURED 2026-10-08 in one worktree shared by three agents (a Playwright webServer runs
+   `npm run build` too): «EPIPE, The process cannot access the file because it is being used by another
+   process … dist\data\admin1-world.json» from intmap-copy-static, and a served page with no CSS.
+   So a build HOLDS its output directory from buildStart to its last closeBundle, and a second build of
+   the same directory WAITS for it and then builds — both finish, each with a complete tree; neither is
+   refused and nothing is retried. Different directories (another worktree, `--outDir dist-dev`)
+   never wait on each other: the lock is keyed by the resolved directory, not by the repository.
+   ⚠ THE LOCK IS A LISTENING SOCKET, NOT A FILE WITH A PID IN IT. The holder listens on a name derived
+   from the directory (a named pipe on Windows, a Unix socket under os.tmpdir() elsewhere); the OS
+   refuses a second listener and closes the first when its process ends, however it ends. A file lock
+   needs a rule for «the holder is dead» — pid liveness (wrong when the pid is reused) or a heartbeat,
+   and a heartbeat is a timer: MEASURED in the first version of this lock, the site-URL fill and the
+   CSP pass are synchronous walks over ~5,400 pages that took 357 s and 287 s with other builds on the
+   machine, and the heartbeat was silent for all of it. A socket answers a connect from the kernel
+   while the holder's JavaScript is busy, so a busy holder is never taken for a dead one. The one
+   leftover is a Unix socket FILE after a crash: a connect to it is refused, and the next build
+   removes it and listens. */
+export const BUILD_LOCKS = join(tmpdir(), 'intmap-build-locks');
+/* How often a waiting build looks again. Not measured — a build takes minutes, so a second is only
+   the delay between the first build letting go and the second starting. */
+const POLL_MS = 1000;
+
+const lockKey = (outDir) => {
+  /* the same directory spelled two ways (case on Windows, a short 8.3 name) must be ONE lock */
+  let dir = resolve(outDir);
+  try { dir = join(realpathSync.native(dirname(dir)), basename(dir)); } catch { /* parent not there yet: as resolved */ }
+  if (process.platform === 'win32') dir = dir.toLowerCase();
+  return createHash('sha256').update(dir).digest('hex').slice(0, 32);
+};
+const lockAddress = (outDir, locks) => (process.platform === 'win32'
+  ? `\\\\.\\pipe\\intmap-build-${lockKey(outDir)}`   // named pipes have their own namespace; `locks` is not used
+  : join(locks, lockKey(outDir) + '.sock'));
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/* Who holds `address`: { alive, info } — alive when something accepts the connection. The holder sends
+   who it is when its event loop gets to it; a holder in a long synchronous step is alive without saying so. */
+function probe(address) {
+  return new Promise((res) => {
+    let said = '', done = false;
+    const finish = (alive) => { if (done) return; done = true; sock.destroy(); let info = null; try { info = JSON.parse(said); } catch { /* not said yet */ } res({ alive, info }); };
+    const sock = netConnect(address);
+    sock.on('connect', () => setTimeout(() => finish(true), 500).unref());
+    sock.on('data', (b) => { said += b; });
+    sock.on('end', () => finish(true));
+    sock.on('error', (e) => finish(!(e.code === 'ECONNREFUSED' || e.code === 'ENOENT')));
+  });
+}
+
+/** Hold `outDir` for this process until the returned release() is called (or the process ends). Waits
+ *  while another build holds it. One holder per call (the plugin asks once per build). */
+export async function acquireOutDirLock(outDir, { locks = BUILD_LOCKS, poll = POLL_MS, log = (m) => console.log(m) } = {}) {
+  const address = lockAddress(outDir, locks);
+  if (process.platform !== 'win32') mkdirSync(locks, { recursive: true });
+  const me = { pid: process.pid, outDir: resolve(outDir), since: new Date().toISOString() };
+  const t0 = Date.now();
+  let told = false;
+  for (;;) {
+    const server = netCreateServer((sock) => { sock.on('error', () => {}); sock.end(JSON.stringify(me)); });
+    const err = await new Promise((res) => { server.once('error', res); server.listen(address, () => res(null)); });
+    if (!err) {
+      server.unref();   // the lock never keeps a finished build alive
+      if (told) log(`build-lock: waited ${((Date.now() - t0) / 1000).toFixed(0)} s for ${me.outDir}`);
+      let released = false;
+      const release = () => {
+        if (released) return;
+        released = true;
+        process.removeListener('exit', release);
+        server.close();
+        if (process.platform !== 'win32') { try { unlinkSync(address); } catch { /* gone */ } }
+      };
+      process.on('exit', release);
+      return release;
+    }
+    if (err.code !== 'EADDRINUSE') throw err;
+    const held = await probe(address);
+    if (!held.alive) {
+      /* only a Unix socket file outlives its process: nothing accepts on it */
+      try { unlinkSync(address); } catch { /* another waiter removed it first */ }
+      log(`build-lock: ${me.outDir} was left locked by a build that is gone — taking it over`);
+      continue;
+    }
+    if (!told) {
+      told = true;
+      const who = held.info ? `pid ${held.info.pid}, since ${held.info.since}` : 'busy';
+      log(`build-lock: another build (${who}) is writing ${me.outDir} — waiting for it`);
+    }
+    await sleep(poll);
+  }
+}
+
+function buildLock() {
+  let out = null, release = null;
+  return {
+    name: 'intmap-build-lock',
+    apply: 'build',
+    /* it writes nothing into the output — tests/csp-without-inline-checks ⑧ reads this to let it stand after cspHashesPlugin */
+    writesNothing: true,
+    configResolved(c) { out = outDirOf(c); },
+    async buildStart() { if (!release) release = await acquireOutDirLock(out); },
+    /* LAST in the plugin list and `post`: every other closeBundle that writes the output has finished */
+    closeBundle: { order: 'post', sequential: true, handler() { if (release) { release(); release = null; } } },
+  };
+}
+
 function copyStatic() {
+  let out = null;
   return {
     name: 'intmap-copy-static',
     apply: 'build',
+    configResolved(c) { out = outDirOf(c); },
     closeBundle() {
-      const out = join(ROOT, 'dist');
       for (const rel of [...STATIC_ASSETS, ...ROOT_PNG()]) {
         const from = join(ROOT, rel);
         if (!existsSync(from)) { this.warn(`static asset missing, not copied: ${rel}`); continue; }
@@ -288,13 +410,15 @@ function copyStatic() {
    if the token is gone or a named file is missing, so a worker can never ship with a shell that is not
    this build's. */
 function appShell() {
+  let out = null;
   return {
     name: 'intmap-app-shell',
     apply: 'build',
+    configResolved(c) { out = outDirOf(c); },
     closeBundle: {
       sequential: true,
       handler() {
-        const shell = injectAppShell(join(ROOT, 'dist'), JSON.parse(readFileSync(REPORT_PATH, 'utf8')));
+        const shell = injectAppShell(out, JSON.parse(readFileSync(REPORT_PATH, 'utf8')));
         this.info?.(`app shell: ${shell.immutable.length + shell.mutable.length} files, ${(shell.bytes / 1024).toFixed(0)} kB, build ${shell.build}`);
       },
     },
@@ -309,12 +433,14 @@ function appShell() {
    are not the record. Cut once per content (a store outside the checkout keeps them by hash), so the
    build pays the ~30 s only when a record or the cutter changes. */
 function histTiles() {
+  let out = null;
   return {
     name: 'intmap-hist-tiles',
     apply: 'build',
+    configResolved(c) { out = outDirOf(c); },
     async closeBundle() {
       const { buildTiles } = await import('./scripts/build-hist-tiles.mjs');
-      await buildTiles({ dataDir: join(ROOT, 'data'), outDir: join(ROOT, 'dist', 'data', 'hvt'), log: () => {} });
+      await buildTiles({ dataDir: join(ROOT, 'data'), outDir: join(out, 'data', 'hvt'), log: () => {} });
     },
   };
 }
@@ -331,12 +457,14 @@ function histTiles() {
 const KATEX_SRC = join(ROOT, 'node_modules', 'katex', 'dist');
 const KATEX_FILES = ['katex.min.css', 'katex.min.js'];
 function katexAssets() {
+  let dist = null;
   return {
     name: 'intmap-katex-assets',
     apply: 'build',
+    configResolved(c) { dist = outDirOf(c); },
     closeBundle() {
       if (!existsSync(KATEX_SRC)) { this.warn('katex/dist not found — the science page will show plain-text equations'); return; }
-      const out = join(ROOT, 'dist', 'katex');
+      const out = join(dist, 'katex');
       for (const f of KATEX_FILES) {
         const from = join(KATEX_SRC, f);
         if (existsSync(from)) cpSync(from, join(out, f));
@@ -363,12 +491,14 @@ function katexAssets() {
 const SB_UMD = join(ROOT, 'node_modules', '@supabase', 'supabase-js', 'dist', 'umd', 'supabase.js');
 const SB_VENDOR_URL = '/vendor/supabase-js.js';
 function supabaseAdminSdk() {
+  let out = null;
   return {
     name: 'intmap-supabase-admin-sdk',
     apply: 'build',
+    configResolved(c) { out = outDirOf(c); },
     closeBundle() {
       if (!existsSync(SB_UMD)) { this.error('@supabase/supabase-js UMD build not found — admin.html would have no SDK'); return; }
-      cpSync(SB_UMD, join(ROOT, 'dist', 'vendor', 'supabase-js.js'));
+      cpSync(SB_UMD, join(out, 'vendor', 'supabase-js.js'));
     },
   };
 }
@@ -402,14 +532,16 @@ function supabaseAdminSdkDev() {
 const CESIUM_SRC = join(ROOT, 'node_modules', 'cesium', 'Build', 'Cesium');
 const CESIUM_DIRS = ['Workers', 'Assets', 'ThirdParty', 'Widgets'];
 function cesiumAssets() {
+  let out = null;
   return {
     name: 'intmap-cesium-assets',
     apply: 'build',
+    configResolved(c) { out = outDirOf(c); },
     closeBundle() {
       if (!existsSync(CESIUM_SRC)) { this.warn('cesium runtime assets not found — the Cesium engine will not start'); return; }
       for (const d of CESIUM_DIRS) {
         const from = join(CESIUM_SRC, d);
-        if (existsSync(from)) cpSync(from, join(ROOT, 'dist', 'cesium', d), { recursive: true });
+        if (existsSync(from)) cpSync(from, join(out, 'cesium', d), { recursive: true });
       }
     },
   };
@@ -759,5 +891,5 @@ export default defineConfig({
      than read off filenames. scripts/perf-budget.mjs is the gate that reads it; it runs on
      every build because the report is what stops "the biggest chunk is big" from being
      mistaken for "startup is slow". */
-  plugins: [buildStampPlugin(ROOT), siteUrlPlugin(), maplibreSharedWorker(), buildReportPlugin(), copyStatic(), historyPagesPlugin(), publicApiPlugin(), countryPagesPlugin(), yearPagesPlugin(), whatsNewPlugin(), onThisDayPagesPlugin(), weeklyEarthPagesPlugin(), appShell(), histTiles(), katexAssets(), supabaseAdminSdk(), supabaseAdminSdkDev(), cesiumAssets(), cesiumDevAssets(), cspHashesPlugin()],
+  plugins: [buildStampPlugin(ROOT), siteUrlPlugin(), maplibreSharedWorker(), buildReportPlugin(), copyStatic(), historyPagesPlugin(), publicApiPlugin(), countryPagesPlugin(), yearPagesPlugin(), whatsNewPlugin(), onThisDayPagesPlugin(), weeklyEarthPagesPlugin(), appShell(), histTiles(), katexAssets(), supabaseAdminSdk(), supabaseAdminSdkDev(), cesiumAssets(), cesiumDevAssets(), cspHashesPlugin(), buildLock()],
 });
