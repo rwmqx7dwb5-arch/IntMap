@@ -47,36 +47,13 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { distM, resample, ptInPoly, featureAt, BORDER_SAMPLE } from './geo-along.js';   /* (atlas-product) the line-and-polygon geometry, shared with js/journey-through-time.js */
 
 export function routingOps(HOST){
   const GE=()=>IntMapGeoEngine;
   const L=IntMapLang.pick(()=>HOST.lang);
-  const D2R=Math.PI/180, R_EARTH=6371008.8;
-  function distM(a,b){ const la1=a[1]*D2R, la2=b[1]*D2R, dla=(b[1]-a[1])*D2R, dlo=(b[0]-a[0])*D2R;
-    const h=Math.sin(dla/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dlo/2)**2;
-    return 2*R_EARTH*Math.asin(Math.min(1,Math.sqrt(h))); }
-
-  /* Resample a polyline to points ~stepM apart, keeping the along-track distance of each — every
-     analysis below wants "every N metres along the route", never "every vertex" (a motorway has one
-     vertex per kilometre and a roundabout has forty). */
-  function resample(coords,stepM,maxN){
-    if(!coords||coords.length<2) return [];
-    const out=[]; let acc=0, carry=0;
-    out.push({ lng:coords[0][0], lat:coords[0][1], d:0 });
-    for(let i=1;i<coords.length;i++){
-      const a=coords[i-1], b=coords[i], seg=distM(a,b);
-      if(!(seg>0)) continue;
-      let t=stepM-carry;
-      while(t<=seg){ const f=t/seg;
-        out.push({ lng:a[0]+(b[0]-a[0])*f, lat:a[1]+(b[1]-a[1])*f, d:acc+t });
-        t+=stepM; }
-      carry=(carry+seg)%stepM; acc+=seg;
-    }
-    out.push({ lng:coords[coords.length-1][0], lat:coords[coords.length-1][1], d:acc });
-    if(maxN&&out.length>maxN){ const k=Math.ceil(out.length/maxN);
-      return out.filter((_,i)=>i%k===0||i===out.length-1); }
-    return out;
-  }
+  /* (atlas-product) distM and resample live in js/geo-along.js now — the same functions, so the borders below can be
+     asked of the historical records too (js/journey-through-time.js) */
 
   /* ══ ELEVATION ══════════════════════════════════════════════════════════════════════════════ */
   /* Below this, a change is DEM noise rather than a hill. Terrarium's vertical quantum is 0.1 m and
@@ -123,26 +100,7 @@ export function routingOps(HOST){
   }
 
   /* ══ BORDER CROSSINGS ═══════════════════════════════════════════════════════════════════════ */
-  function ptInRing(p,ring){ let inside=false;
-    for(let i=0,j=ring.length-1;i<ring.length;j=i++){
-      const xi=ring[i][0], yi=ring[i][1], xj=ring[j][0], yj=ring[j][1];
-      if(((yi>p[1])!==(yj>p[1]))&&(p[0]<(xj-xi)*(p[1]-yi)/((yj-yi)||1e-12)+xi)) inside=!inside; }
-    return inside; }
-  function ptInPoly(p,geom){
-    if(!geom) return false;
-    const polys=(geom.type==='Polygon')?[geom.coordinates]:(geom.type==='MultiPolygon'?geom.coordinates:[]);
-    for(const poly of polys){
-      if(!poly.length||!ptInRing(p,poly[0])) continue;
-      let hole=false; for(let k=1;k<poly.length;k++) if(ptInRing(p,poly[k])){ hole=true; break; }
-      if(!hole) return true; }
-    return false; }
-  function countryAt(lng,lat,feats){
-    for(let i=0;i<feats.length;i++){
-      const f=feats[i], b=f.bbox||f._bb;
-      if(b&&(lng<b[0]||lng>b[2]||lat<b[1]||lat>b[3])) continue;
-      if(ptInPoly([lng,lat],f.geometry)) return f;
-    }
-    return null; }
+  /* ptInRing / ptInPoly / countryAt: js/geo-along.js (countryAt is `featureAt` there) */
   let lastBorders=null;
   function borders(coords){
     const geo=window.countryGeo;
@@ -155,12 +113,12 @@ export function routingOps(HOST){
       try{ walk(f.geometry.coordinates); f._bb=[w,s,e,n]; }catch(_){}
     });
     let total=0; for(let i=1;i<coords.length;i++) total+=distM(coords[i-1],coords[i]);
-    const pts=resample(coords,Math.max(200,total/500),700);
+    const pts=resample(coords,Math.max(BORDER_SAMPLE.minStepM,total/BORDER_SAMPLE.perLine),BORDER_SAMPLE.max);
     const nameOf=(f)=>{ const p=f&&f.properties||{};
       return String(p.NAME||p.name||p.ADMIN||p.NAME_EN||p.iso_a3||p.ISO_A3||'').trim(); };
     const seq=[]; let prev=null, prevKey=null;
     pts.forEach(p=>{
-      const f=countryAt(p.lng,p.lat,geo.features);
+      const f=featureAt(p.lng,p.lat,geo.features);
       const key=f?nameOf(f):'';
       if(key!==prevKey){ seq.push({ name:key, atM:p.d, lng:p.lng, lat:p.lat }); prevKey=key; prev=f; }
     });

@@ -102,7 +102,7 @@ function ensureStyle() { if (typeof document === 'undefined' || !document.head |
 const isoDay = (d) => { const y = d.getFullYear(); return (y < 0 ? '-' + String(-y).padStart(6, '0') : String(y).padStart(4, '0')) + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 
 /** the name a feature of the record carries, in the reader's language when the record's names table has it */
-const nameIn = (p, lang) => { if (!p) return ''; const i = p._i18n; return String((i && (i[lang] || (lang === 'jp' && i.ja))) || p.NAME || p.name || '').trim(); };
+export const nameIn = (p, lang) => { if (!p) return ''; const i = p._i18n; return String((i && (i[lang] || (lang === 'jp' && i.ja))) || p.NAME || p.name || '').trim(); };
 
 /**
  * Read one instant. `deps` are the readers the page already has (each optional — a missing one is a section

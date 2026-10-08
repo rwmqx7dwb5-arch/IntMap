@@ -573,6 +573,19 @@ const TOTAL_BUDGET_S = 5250;            /* — 4859 (main) + 21 (#R736: tests/r7
    recorded as 10 s, so 5 s is that ratio. ⚠ The corpus is not this machine's wall clock — it must
    be calibrated, not copied, and a future round re-measuring on CI should correct it. */
 const HISTORY = [
+  ['2026-10-08 atlas-product', 5250, "THE TOTAL CEILING DID NOT MOVE (5,250, #R205's line, which three node checks hold) AND 74 s WERE PAID BACK OUT OF TWO ENTRIES MEASURED HIGH. "
+    + "tests/atlas-product.spec.js (+6) asks only what a browser can say — the journey's stretches are in the line layer's tiles, and the same call "
+    + "again replaces them — at ONE instant; which polities a journey crosses is held over the shipped records in node (tests/atlas-product-checks ⑦). "
+    + "Measured one worker, server up, IM_TIER=all, the reporter's test-body sum: 3.84 / 5.05 / 4.78 s, slowest entered as 6. "
+    + "WHERE IT WAS NOT PAID FROM, AND WHY: the fixed waits of first-impression, marketing-next and hist-urban-population ARE their claims (a panel that "
+    + "must not open, a card that must not appear, the audit's 4 s deferral); then-now-card and map-layer-system were red on this machine for other "
+    + "reasons (a missing CShapes credit on the card; an overlay intercepting the year-book step) and were not measured for payment. "
+    + "WHAT PAID: seven deep specs were screened once (body / wall, s, all passing): r530 123.4/130.5 vs 160, r175 26.2/56.1 vs 110, r196 81.5/83.4 vs 90, "
+    + "r192 57.0/65.1 vs 87, form-control-names 113.7/116.0 vs 80 (understated), r170 63.5/68.4 vs 77, r186 86.4/105.7 vs 92 (understated). "
+    + "The two furthest below their entries were run twice more: r175 wall 56.1 / 34.3 / 36.1 (body 26.2 / 25.0 / 26.6), r192 wall 65.1 / 47.3 / 57.8 "
+    + "(body 57.0 / 41.3 / 50.0). Entered at the SLOWEST WALL reading, the conservative one #R355 used, not the body: r175 110 -> 57 (-53), "
+    + "r192 87 -> 66 (-21). ⚠ ROOM: the suite now stands at 5,182 s under the unchanged 5,250 — 68 s of room, held for the product specs waiting on "
+    + "this ceiling in their own PRs (hist-product 8, mobile-product 26, live-news-product 8, the press-research spec 15 = 57 s), not claimed here."],
   ['2026-10-03 suite-time-room', 5249, "THE SUITE FELL BY 538 s (87.5 -> 78.5 min) AND THE TOTAL CEILING WAS LEFT WHERE IT IS, on purpose: the room is for "
     + "the product specs arriving in parallel (about 5 min), and 538 s is inside this file's stale-ceiling slack (12 %). NOTHING WAS DELETED OR "
     + "LOOSENED: twelve deep spec files stopped booting the application once per test and share the worker's page (tests/helpers/app.js), "

@@ -1329,6 +1329,12 @@ place-history.js                  **この場所の歴史**——1 地点をど�
                                   端は種類つき（stated・reach・handover・rename・sheet・review／derived・unstated・undocumented・open）。
                                   地点カードの節と Atlas `time.placeHistory` が同じ記録を描く。行を押すと Chronos をその時代へ
                                   （docs/architecture/07-map.md §7.3f）。地点カードと Atlas が最初に要るときに取りに行く
+journey-through-time.js           **時をまたぐ道のり**——1 本の線（地点間の大圏、または計算した経路）を複数の時点で訊く。各時点で
+                                  time-borders.js `collectionAt` が描く政体を線に沿って順に、区間ごとの km・越境点・海と記録の無い陸地と、
+                                  一部の時点でだけ通る政体。Atlas `time.journey`（1 時点を政体ごとの色で地図に描く）と経路パネルの
+                                  「その年の国境」が読む。最初に要るときに取りに行く
+geo-along.js                      線に沿った標本（約 500 点・200 m 以上・700 点まで）と点包含——経路パネルの「国境」と
+                                  journey-through-time.js が同じ 1 つを使う（routing-ops.js から移した）
 events-near.js                    範囲 × 期間の地震と出来事の**読み手 1 つ**——USGS の M2.5 以上・7 日のフィードをセッション内で 1 回
                                   取得して共有し、`news_events` の窓をページ送りで読み、どちらも位置を送らずに端末で範囲を絞る。
                                   状態の語彙（`ok` / `none` / `unavailable`＋理由）の正本。地点カード・place-watch.js・
@@ -2427,7 +2433,7 @@ scripts/
                                   index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
                                   マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
                                   なるなら 1 ファイルで両方を名乗る
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 151 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 152 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の

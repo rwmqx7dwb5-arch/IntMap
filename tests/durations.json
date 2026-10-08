@@ -1,4 +1,5 @@
 {
+ "tests/atlas-product.spec.js": 6,
  "tests/curriculum-sales-kit.spec.js": 7,
  "tests/then-now-card.spec.js": 7,
  "tests/hist-urban-population.spec.js": 22,
@@ -65,7 +66,7 @@
  "tests/r172.spec.js": 52,
  "tests/r173.spec.js": 61,
  "tests/r174.spec.js": 330,
- "tests/r175.spec.js": 110,
+ "tests/r175.spec.js": 57,
  "tests/r176.spec.js": 36,
  "tests/r177.spec.js": 14,
  "tests/r178-imagery.spec.js": 41,
@@ -85,7 +86,7 @@
  "tests/r185.spec.js": 57,
  "tests/r186.spec.js": 92,
  "tests/r191.spec.js": 47,
- "tests/r192.spec.js": 87,
+ "tests/r192.spec.js": 66,
  "tests/r193.spec.js": 46,
  "tests/r195.spec.js": 51,
  "tests/r196.spec.js": 90,

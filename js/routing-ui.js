@@ -728,6 +728,8 @@ export function routeUi(HOST) {
         + '<option value="rail">' + esc(L('Railways', '鉄道', 'Bahn', 'Ж/д', 'Ferrocarril')) + '</option>'
         + '<option value="road">' + esc(L('Roads', '道路', 'Straßen', 'Дороги', 'Carreteras')) + '</option></select>'
         + '<button type="button" class="rtp-chip rtp-op" data-op="hist">' + esc(L('Route on it', 'この年で計算', 'Berechnen', 'Проложить', 'Calcular')) + '</button>'
+        /* (atlas-product) the same route at the same year, asked of the historical border records — js/journey-through-time.js */
+        + '<button type="button" class="rtp-chip rtp-op" data-op="histBorders">' + esc(L('Borders that year', 'その年の国境')) + '</button>'
         + '</div>'
         + '<p class="rtp-help">' + esc(L('OpenStreetMap’s own record of when lines existed — not a historical atlas. Its date coverage is uneven, and the answer says how much of the route ran on dated line.', 'OpenStreetMap に記録された「いつ存在したか」に基づきます（歴史地図ではありません）。年代の記録には偏りがあり、経路のどれだけが年代付き路線を通るかを結果に表示します。', 'OSMs eigene Datierung, kein historischer Atlas.', 'Собственные даты OSM, не исторический атлас.', 'El registro de fechas de OSM, no un atlas histórico.')) + '</p></div>'
         + '<div class="rtp-opout" aria-live="polite"></div>';
@@ -1028,6 +1030,14 @@ export function routeUi(HOST) {
                 + esc((alts[p.i].label || ('#' + (p.i + 1))) + ' — ' + mfmt(p.uniqueM) + ' ' + L('not shared', 'が非共通', 'abweichend', 'не общий', 'no compartido') + ' (' + p.segments + ')') + '</li>').join('') + '</ul>'
               + '<p class="rtp-help">' + esc(L('Lines closer than ' + d.sameThresholdM + ' m count as the same road.', '距離 ' + d.sameThresholdM + ' m 以内は同一の道とみなします。', 'Linien unter ' + d.sameThresholdM + ' m gelten als dieselbe Straße.', 'Линии ближе ' + d.sameThresholdM + ' м — одна дорога.', 'Líneas a menos de ' + d.sameThresholdM + ' m son la misma vía.')) + '</p>');
           }
+        } else if (k === 'histBorders') {
+          /* (atlas-product) the computed route, at the year in the field and today: the polities it runs through in each,
+             from the border records the era layer draws — the same reading Atlas's time.journey gives */
+          const nowY = new Date().getUTCFullYear();
+          let y = parseInt((el.querySelector('.rtp-hyear') || {}).value, 10) || 1900;
+          y = Math.max(1800, Math.min(nowY, y));
+          const J = await import('./journey-through-time.js');
+          await J.renderRoutePanel(el.querySelector('.rtp-opout'), coords, y, HOST.lang);
         } else if (k === 'hist') {
           const s = ST().get();
           if (!s.from.place || !s.to.place) { opOut('<div class="rtp-empty">' + esc(L('Choose a start and a destination.', '出発地と目的地を選んでください。', 'Start und Ziel wählen.', 'Выберите начало и цель.', 'Elige origen y destino.')) + '</div>'); }
