@@ -86,3 +86,5 @@ newsjp: 政体の盛衰——歴史地図が描く 4,448 の政体（モンゴ�
   埋まらない理由は構造にある: 束は 4 つの上流から導出した 1 つの索引で、単一の publisher・licence・paidBy は無く（上流ごとに
   `upstreams` に書いた）、取得日は無い（上流を読まず、同梱の束から作る）。integrity と precedence の数は測っていない（重なりの
   優先は地図の合成の順で、`js/time-borders.js` が決める）。`node scripts/data-governance.mjs --update` で記録した。
+
+- （統合時）#1047 の後に rebase して build し直し、`dist.assets` の天井だけ 19,714.4 → 19,824.3 kB（+109.9 kB）。この変更の遅延チャンク `polity-arc` と、能力 `time.polityArc` の説明が載る `atlas-console` の増分。起動経路の行は動いていない。能力数の手書きの数は main の 218 に 1 を足して 219（到達可能 216）。
