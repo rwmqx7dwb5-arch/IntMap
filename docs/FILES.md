@@ -1334,6 +1334,11 @@ journey-through-time.js           **時をまたぐ道のり**——1 本の線�
                                   time-borders.js `collectionAt` が描く政体を線に沿って順に、区間ごとの km・越境点・海と記録の無い陸地と、
                                   一部の時点でだけ通る政体。Atlas `time.journey`（1 時点を政体ごとの色で地図に描く）と経路パネルの
                                   「その年の国境」が読む。最初に要るときに取りに行く
+polity-arc.js                     **政体の盛衰**——1 つの政体を全時代にわたって読む。地図がその名前で描き始めた年・描き終えた年（端が政体のものか
+                                  記録の切り替わりかを区別）、描かれた面積の推移のグラフ（区間ごとに描いた記録の色・記録の継ぎ目の破線）、最大の
+                                  描画面積の年、記録上の別の名前（同じ Wikidata 項目・地図上の同じ名前）。グラフを押すと時計がその年へ、「一生を再生」は
+                                  形が変わる年だけをタイムラプスで。索引は data/polity-arcs.json。入口は Chronos パネル・この場所の歴史の各行・
+                                  Atlas `time.polityArc`（docs/architecture/07-map.md §7.4c）
 events-near.js                    範囲 × 期間の地震と出来事の**読み手 1 つ**——USGS の M2.5 以上・7 日のフィードをセッション内で 1 回
                                   取得して共有し、`news_events` の窓をページ送りで読み、どちらも位置を送らずに端末で範囲を絞る。
                                   状態の語彙（`ok` / `none` / `unavailable`＋理由）の正本。地点カード・place-watch.js・
@@ -1840,6 +1845,8 @@ us-elections.json / us-states.json  米大統領選挙（60回・州別2,342行�
 elections/                        各国の**国政選挙**（index.json＝polity・選挙・政党／`<版>.geo.json`＝選挙区の境界を**版ごとに**1つ／`<選挙>.res.json`＝結果）。scripts/elections/ の各パックが書き、scripts/build-elections.mjs が統合し、`--check` が形式と結合を毎回検証する。契約は scripts/lib/elections-schema.mjs
 on-this-day.json                  **日付つき出来事の索引**——暦の日（MM-DD）ごとの、記録が日付をつけた出来事（CShapes の変化日・戦争の記録＝`days`）と、
                                   その横に Wikidata が述べる出来事（`events`：項目・日付を述べた属性・精度つき）。scripts/build-on-this-day.mjs が書き、--check が照合する（§8.6.3）
+polity-arcs.json                  **政体の盛衰の索引**——地図が描く名前ごとの、記録が変える瞬間ごとの描画面積（km²・描いた記録）、最大の描画面積の年と枠、
+                                  Wikidata 項目。scripts/build-polity-arcs.mjs が地図のコード（history-pages.mjs mapReader）で書く（§7.4c）
 weekly-earth.json                 ISO 週ごとの記録（USGS の M5.5 以上の地震・NASA EONET の自然現象）。scripts/build-weekly-earth.mjs が週を足し、既にある週は保つ。--check が形式を照合する（§8.6.4）
 wars.json                         6つの戦争の記録（支配・戦線・作戦・種別・兵力と死傷／`scripts/build-wars.mjs` が書き、検証する）
 religion.json / language.json     宗教の分布／言語の分布（国ごとの記録＋言語名・ISO 639-3・訳）
@@ -1931,6 +1938,8 @@ scripts/
   history-pages-text.mjs          入口ページの文の唯一の写し（en + jp）
   build-on-this-day.mjs           data/on-this-day.json（日付つき出来事の索引）を書く——地図のコード（history-pages.mjs mapReader）で CShapes の変化日と
                                   その前日を比べ、戦争の記録の出来事と合わせて暦の日ごとに。Wikidata の出来事は下の写しから。`--check` で記録と照合（§8.6.3）
+  build-polity-arcs.mjs           data/polity-arcs.json（政体の盛衰の索引）を書く——地図のコード（history-pages.mjs mapReader）で Cliopatria が変わる年と
+                                  1689〜2019 年の毎年 7 月 1 日を読み、名前ごとに描かれた面積を記録つきで。`--check` で束と照合、`--show <名前>` で 1 件（§7.4c）
   fetch-world-events.mjs          索引が運ぶ Wikidata の出来事を取る（選んだ記事 → 項目 → 日付・精度・場所・名前・説明）。日付を述べない項目は
                                   落とし、史実と矛盾する値は理由つきで拒む。写しは scripts/time-index/wikidata-events.json（生成器はネットに出ない）
   on-this-day-pages.mjs           この日の歴史地図の静的ページ・カードの絵・sitemap の生成器（onThisDayPagesPlugin）と、
@@ -1961,6 +1970,8 @@ scripts/
   history-pages-text.mjs          入口ページの文の唯一の写し（en + jp）
   build-on-this-day.mjs           data/on-this-day.json（日付つき出来事の索引）を書く——地図のコード（history-pages.mjs mapReader）で CShapes の変化日と
                                   その前日を比べ、戦争の記録の出来事と合わせて暦の日ごとに。Wikidata の出来事は下の写しから。`--check` で記録と照合（§8.6.3）
+  build-polity-arcs.mjs           data/polity-arcs.json（政体の盛衰の索引）を書く——地図のコード（history-pages.mjs mapReader）で Cliopatria が変わる年と
+                                  1689〜2019 年の毎年 7 月 1 日を読み、名前ごとに描かれた面積を記録つきで。`--check` で束と照合、`--show <名前>` で 1 件（§7.4c）
   fetch-world-events.mjs          索引が運ぶ Wikidata の出来事を取る（選んだ記事 → 項目 → 日付・精度・場所・名前・説明）。日付を述べない項目は
                                   落とし、史実と矛盾する値は理由つきで拒む。写しは scripts/time-index/wikidata-events.json（生成器はネットに出ない）
   on-this-day-pages.mjs           この日の歴史地図の静的ページ・カードの絵・sitemap の生成器（onThisDayPagesPlugin）と、

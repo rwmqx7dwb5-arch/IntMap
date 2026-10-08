@@ -819,7 +819,16 @@ export function newsTimeline(HOST){
       const lbl=()=>{ tnBtn.textContent=IntMapLang.t(HOST.lang,'Then & now — swipe to compare','あの頃といま — スワイプで比べる'); };
       lbl(); bus.on('intmap-lang',lbl);
       tnBtn.onclick=()=>{ try{ compareTime.thenNow({}); }catch(_){} };
-      ybBtn.parentNode.insertBefore(tnBtn,ybBtn.nextSibling); }
+      ybBtn.parentNode.insertBefore(tnBtn,ybBtn.nextSibling); paMount(); }
+    /* (hist-product) RISE AND FALL — one polity read across the whole of time: when the map draws it, how large, and the
+       year of its largest drawn extent (js/polity-arc.js, fetched when it is pressed). Beside the two above, for the same reason. */
+    let paBtn=null;
+    function paMount(){ if(paBtn||!tnBtn||!tnBtn.parentNode) return;
+      paBtn=document.createElement('button'); paBtn.type='button'; paBtn.id='ntl-polityarc'; paBtn.className='ntl-yb';
+      const lbl=()=>{ paBtn.textContent=IntMapLang.t(HOST.lang,'Rise and fall of a polity','政体の盛衰'); };
+      lbl(); bus.on('intmap-lang',lbl);
+      paBtn.onclick=()=>{ import('./polity-arc.js').then(m=>m.openArc({})).catch(()=>{}); };
+      tnBtn.parentNode.insertBefore(paBtn,tnBtn.nextSibling); }
     /* WRITE side: inputs → kernel */
     tg.onclick=()=>{ tl.classList.toggle('collapsed'); if(!tl.classList.contains('collapsed')){ localizeChrome(); try{ refreshUI(IntMapTime.state()); }catch(_){} lapseMount(); ybMount(); } _tmSyncTerminator(); };
     if(closeX) closeX.onclick=()=>{ tl.classList.add('collapsed'); _tmSyncTerminator(); };
