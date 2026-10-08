@@ -25,7 +25,7 @@ import { jsonWithin } from './fetch-deadline.js';
 import { clockFor } from './proxy-fetch.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { PROVENANCE_INDEX } from './border-provenance.js';
-import { buildExtract, CATALOG_PATH } from './border-extract.js';
+import { buildExtract, isoDay, CATALOG_PATH } from './border-extract.js';
 import { mapCredits, clockLabel, clockReading } from './map-recorder.js';
 import { iconNode } from './icons.js';
 
@@ -34,14 +34,22 @@ export const CITE_FORMATS = Object.freeze(['apa', 'chicago', 'sist02', 'bibtex',
 const FORMAT_LABEL = { apa: 'APA 7', chicago: 'Chicago', sist02: 'SIST 02', bibtex: 'BibTeX', ris: 'RIS' };
 
 const pad = (n, w) => String(Math.abs(n)).padStart(w, '0');
-/** 'YYYY-MM-DD' of a calendar date (astronomical year, signed below 1) */
-export function isoOf(y, m, d) { return (y < 0 ? '-' : '') + pad(y, 4) + '-' + pad(m, 2) + '-' + pad(d, 2); }
+/* 'YYYY-MM-DD' of a calendar date — the extract's own spelling of a day (js/border-extract.js isoDay), so the reference and
+   the file it describes write one date one way */
+const isoOf = (y, m, d) => isoDay([y, m, d]);
 /* «October 8, 2026» — the access date as APA and Chicago write it */
 function longDate(iso) {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || '')); if (!m) return String(iso || '');
   try { return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }); } catch (_) { return iso; }
 }
-const bibEsc = (s) => String(s == null ? '' : s).replace(/\\/g, '\\textbackslash{}').replace(/([&%$#_{}])/g, '\\$1').replace(/~/g, '\\textasciitilde{}').replace(/\^/g, '\\textasciicircum{}');
+/* ⚠ EACH OUTPUT IS ESCAPED FOR WHERE IT LANDS, IN ONE PASS. BibTeX text: every LaTeX special character by one table in a
+   single replace — the chained form escaped the braces of its own `\textbackslash{}` a second time. BibTeX url: the field is
+   verbatim, so only what would end it ({, } and the backslash) is percent-encoded. RIS: one tag per line, so a value never
+   carries a line break. The tab shows every result as text (a textarea's value, textContent), never as markup. */
+const BIB = { '\\': '\\textbackslash{}', '~': '\\textasciitilde{}', '^': '\\textasciicircum{}', '&': '\\&', '%': '\\%', '$': '\\$', '#': '\\#', '_': '\\_', '{': '\\{', '}': '\\}' };
+const bibEsc = (s) => String(s == null ? '' : s).replace(/[\\~^&%$#_{}]/g, (c) => BIB[c]);
+const bibUrl = (s) => String(s == null ? '' : s).replace(/[{}\\]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase());
+const risLine = (s) => String(s == null ? '' : s).replace(/[\r\n]+/g, ' ');
 
 /**
  * references({ link, title?, accessed:'YYYY-MM-DD', instant:{ iso, label:{en, jp} }, credits:[string] })
@@ -71,22 +79,22 @@ export function references(f) {
     + '  author       = {{IntMap}},\n'
     + '  title        = {{' + bibEsc(title.en) + '}},\n'
     + '  howpublished = {Interactive map},\n'
-    + '  url          = {' + link + '},\n'
+    + '  url          = {' + bibUrl(link) + '},\n'
     + '  urldate      = {' + acc + '},\n'
     + (note ? '  note         = {' + bibEsc(note) + '},\n' : '')
     + '}';
-  const ris = ['TY  - MAP', 'AU  - IntMap', 'TI  - ' + title.en, 'UR  - ' + link, 'Y2  - ' + acc.replace(/-/g, '/'),
-    'DB  - IntMap', note ? 'N1  - ' + note : null, 'ER  - '].filter((x) => x != null).join('\n');
+  const ris = ['TY  - MAP', 'AU  - IntMap', 'TI  - ' + risLine(title.en), 'UR  - ' + risLine(link), 'Y2  - ' + risLine(acc).replace(/-/g, '/'),
+    'DB  - IntMap', note ? 'N1  - ' + risLine(note) : null, 'ER  - '].filter((x) => x != null).join('\n');
   return { credit, apa, chicago, sist02, bibtex, ris, title };
 }
 
 /* ── the map as it is now ───────────────────────────────────────────────────── */
 const TB = () => { try { return /** @type {any} */ (globalThis).IntMapTimeBorders || null; } catch (_) { return null; } };
 /** is the era layer drawing (so there are borders of a date to take away)? */
-export function bordersDrawn() { const t = TB(); try { return !!(t && t.active && t.active() && t.currentFC && t.currentFC()); } catch (_) { return false; } }
+function bordersDrawn() { const t = TB(); try { return !!(t && t.active && t.active() && t.currentFC && t.currentFC()); } catch (_) { return false; } }
 
 /** the facts a citation is made of: { link, title, accessed, instant:{ iso, unit, live, label:{en, jp} }, credits } */
-export function mapFacts(link, caption) {
+function mapFacts(link, caption) {
   const c = clockReading();
   const now = new Date();
   return {
@@ -112,7 +120,7 @@ const catalogUrl = () => { try { return new URL(CATALOG_PATH, document.baseURI).
  * The borders drawn now, as a file: { ok, error?, geojson, summary, name }. `view` keeps the shapes that reach into
  * the current view (whole); otherwise the world. Fails closed: with no catalogue, nothing is released.
  */
-export async function extractBorders(o) {
+async function extractBorders(o) {
   o = o || {};
   const t = TB();
   if (!bordersDrawn()) return { ok: false, error: 'not-drawn' };
@@ -130,7 +138,7 @@ export async function extractBorders(o) {
 }
 
 /** the data a drawn record's publisher asks to be cited for, from the catalogue: [{ credit, cite, url, licence }] */
-export async function dataCitations(summary) {
+async function dataCitations(summary) {
   const catalog = await once('catalog', catalogUrl());
   /* one entry per credit line; a credit several datasets share (Cliopatria is the record of data/hist-clio.js and of its
      provenance index) takes the citation from whichever states one, never the first one met */

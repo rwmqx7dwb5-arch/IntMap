@@ -464,7 +464,7 @@ export function timeBorders(HOST){
     function _csGeomOf(d,idx){ let g=_csGeom.get(idx); if(g) return g;
       const polys=d.feats[idx][8].map(poly=>poly.map(ri=>d.rings[ri]));
       g=(polys.length===1)?{type:'Polygon',coordinates:polys[0]}:{type:'MultiPolygon',coordinates:polys};
-      _csGeom.set(idx,g); _lineRecordOf.set(g,[d,idx,'cs']); _rowOf.set(g,{rec:'cshapes',d,i:idx,bundle:'data/cshapes.js'}); return g; }
+      _csGeom.set(idx,g); _lineRecordOf.set(g,[d,idx,'cs']); _rowOf.set(g,{rec:'cshapes',d,i:idx,bundle:_csH&&_csH.file}); return g; }
     function _csLineOf(d,idx){ if(_csLn.has(idx)) return _csLn.get(idx);
       const g=_lineGeom(d,idx,_bcMarks('cs')); _csLn.set(idx,g); return g; }
     async function csFC(d,year,mon,day){ const feats=[],lines=[];
@@ -874,12 +874,12 @@ export function timeBorders(HOST){
         feats.push({type:'Feature',
           properties:Object.assign({NAME:nm},i18?{_i18n:i18}:{},(i18&&i18._d)?{_desc:1}:{},at.s?{SUBJECTO:at.s}:{},at.p?{PARTOF:at.p}:{},at.t?{TYPE:at.t}:{},at.bp!=null?{BORDERPRECISION:at.bp}:{},R),
           geometry:(ps.length===1)?{type:'Polygon',coordinates:ps[0]}:{type:'MultiPolygon',coordinates:ps}});
-        _rowOf.set(feats[feats.length-1].geometry,{rec:rec?'sheet-rest':'sheet',d,sheet:sn.y,key:sn.key,polys:ps,fi,bundle:rec?'data/hist-eras-rest.js':'data/hist-eras.js'}); }
+        _rowOf.set(feats[feats.length-1].geometry,{rec:rec?'sheet-rest':'sheet',d,sheet:sn.y,key:sn.key,polys:ps,fi,bundle:rec?(_rsH&&_rsH.file):(_erH&&_erH.file)}); }
       for(const [i,ids] of (sn.blank||[]).entries()){ const ps=poly(ids); if(!ps.length) continue;
         const bp=sn.blankPrecision&&sn.blankPrecision[i];
         feats.push({type:'Feature',properties:Object.assign({NAME:''},bp!=null?{BORDERPRECISION:bp}:{},R),
           geometry:(ps.length===1)?{type:'Polygon',coordinates:ps[0]}:{type:'MultiPolygon',coordinates:ps}});
-        _rowOf.set(feats[feats.length-1].geometry,{rec:rec?'sheet-rest':'sheet',d,sheet:sn.y,key:sn.key,polys:ps,blank:true,bundle:rec?'data/hist-eras-rest.js':'data/hist-eras.js'}); }
+        _rowOf.set(feats[feats.length-1].geometry,{rec:rec?'sheet-rest':'sheet',d,sheet:sn.y,key:sn.key,polys:ps,blank:true,bundle:rec?(_rsH&&_rsH.file):(_erH&&_erH.file)}); }
       return {type:'FeatureCollection',features:feats}; }
     async function fetchFC(year){ if(cache.has(year)) return cache.get(year);
       /* ⚠ (Turf 7) `turf.union` is on its own chunk (src/vendor.js ensureUnion) and every path below

@@ -4130,7 +4130,7 @@ export function share(HOST){
         .catch(e=>{ pcLoad=null; throw e; });
       return pcLoad; }
     function loadCiteTab(){
-      if(!ciLoad) ciLoad=import('./map-cite.js').then(m=>(ciTab={ m, tab:m.createCiteTab({ link, lang:()=>HOST.lang, caption:()=>({ title:cap.title, note:cap.note }), copy:copyText }) }))
+      if(!ciLoad) ciLoad=import('./map-cite.js').then(m=>(ciTab={ citeNow:m.citeNow, tab:m.createCiteTab({ link, lang:()=>HOST.lang, caption:()=>({ title:cap.title, note:cap.note }), copy:copyText }) }))
         .catch(e=>{ ciLoad=null; throw e; });
       return ciLoad; }
     /* the Cite pane built for the map as it is now */
@@ -4221,7 +4221,7 @@ export function share(HOST){
     /* (sales-pro-audiences) the citation's face for Atlas: open the Cite tab and hand back what it shows — the credit line,
        the references, and (while the era borders are drawn) what a GeoJSON of them holds and what it leaves out, and why.
        It makes no file: the reader presses Save. → { facts, refs, borders } or null */
-    function cite(){ return Promise.resolve(open({ tab:'cite' })).then(()=>loadCiteTab()).then(c=>c.m.citeNow(link(),{ title:cap.title, note:cap.note })).catch(()=>null); }
+    function cite(){ return Promise.resolve(open({ tab:'cite' })).then(()=>loadCiteTab()).then(c=>c.citeNow(link(),{ title:cap.title, note:cap.note })).catch(()=>null); }
     /* (map-postcard) the picture's face for Atlas: open the Image tab (caption and shape as asked) and hand back what was
        made — the file name, its size, what it credits, how many legends it carries — or null when it could not be made */
     function postcard(o){ o=o||{}; return Promise.resolve(open({ tab:'image', size:o.size, title:o.title, note:o.note })).then(r=>r||null); }

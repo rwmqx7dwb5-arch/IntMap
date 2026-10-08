@@ -23,7 +23,7 @@ import { GOVERNANCE as CSHAPES_GOV } from '../scripts/build-cshapes.mjs';
 import { Y_MAX } from '../scripts/build-hist-borders.mjs';
 import { termsForSide, buildExtract, isoDay, EXTRACT_SCHEMA } from '../js/border-extract.js';
 import { rowKey } from '../js/border-provenance.js';
-import { references, isoOf, CITE_FORMATS } from '../js/map-cite.js';
+import { references, CITE_FORMATS } from '../js/map-cite.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -140,6 +140,11 @@ test('⑤ the references say the map, its date, the day it was read and its link
   assert.match(bc.bibtex, /^@misc\{intmap_m04990101,/);
   assert.equal(bc.title.en, 'IntMap map view, 500 BC');
   assert.ok(!/Data:/.test(bc.credit.en), 'no data drawn, no data named');
-  assert.equal(isoOf(-499, 1, 1), '-0499-01-01');
+  /* each output escaped for where it lands, once: a backslash is \textbackslash{} with its braces intact, a url cannot end
+     its verbatim field, and an RIS value cannot start a new tag */
+  const tricky = references({ link: 'https://example.invalid/#t={x}\\y', title: 'a\\b {c} ~d^ \n TY  - JOUR', accessed: '2026-10-08', instant: { iso: '1850', label: { en: '1850', jp: '1850年' } }, credits: [] });
+  assert.match(tricky.bibtex, /title {8}= \{\{a\\textbackslash\{\}b \\\{c\\\} \\textasciitilde\{\}d\\textasciicircum\{\} /);
+  assert.match(tricky.bibtex, /url {10}= \{https:\/\/example\.invalid\/#t=%7Bx%7D%5Cy\}/);
+  assert.equal(tricky.ris.split('\n').filter((l) => /^TY {2}- /.test(l)).length, 1, 'a line break in a title does not start a second record');
   assert.deepEqual([...CITE_FORMATS], ['apa', 'chicago', 'sist02', 'bibtex', 'ris']);
 });

@@ -836,6 +836,9 @@ window.IntMapHistBundles = (function () {
       };
       e.handle = {
         global,
+        /* (sales-pro-audiences) the file this record was opened from — so a reader that hands a row on (js/border-extract.js joins
+           it to the open-data catalogue by file) names the file the door read, never a second spelling of it */
+        file: spec.file,
         get data() { return e.mirror; },
         edges: (end, lo, hi) => call({ op: 'edges', global, end, lo, hi }),
         at: (t, end) => call({ op: 'at', global, t, end }),
