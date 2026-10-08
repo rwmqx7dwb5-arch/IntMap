@@ -15,7 +15,7 @@ import vm from 'node:vm';
 import { execFileSync } from 'node:child_process';
 import { join, extname, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { lockEdges, satisfies, parseRange } from '../scripts/lock-ranges.mjs';
+import { lockEdges, overrideEdges, satisfies, parseRange } from '../scripts/lock-ranges.mjs';
 import { findSecrets, secretScanUniverse, SECRET_PATTERNS, SECRET_SCAN_SELF } from '../scripts/secret-scan.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -200,4 +200,16 @@ test('⑤ a workflow asks the advisory database about the lock — shipped code 
     assert.ok(h.on.schedule && h.on.pull_request !== undefined, `${h.f}:${h.id} runs on a schedule and on pull requests`);
     assert.deepEqual(h.job.permissions, { contents: 'read' }, `${h.f}:${h.id} needs to read the repository and nothing else`);
   }
+});
+
+test('①b every root override is met by the lock — an exact pin that was a floor must not become a ceiling npm ci refuses', () => {
+  const ROOTDIR = join(dirname(fileURLToPath(import.meta.url)), '..');
+  const pkg = JSON.parse(fs.readFileSync(join(ROOTDIR, 'package.json'), 'utf8'));
+  const lock = JSON.parse(fs.readFileSync(join(ROOTDIR, 'package-lock.json'), 'utf8'));
+  assert.ok(Object.keys(pkg.overrides || {}).length, 'the shipped package.json carries overrides — the rule must have something to read');
+  assert.deepEqual(overrideEdges(pkg, lock), []);
+  /* the measured failure (PR #1041 first CI run): the pin left at 3.4.13 after the lock moved to 3.4.16 */
+  const stale = overrideEdges({ overrides: { ...pkg.overrides, dompurify: '3.4.13' } }, lock);
+  assert.ok(stale.some((o) => o.name === 'dompurify' && o.locked !== '3.4.13'), 'a stale exact pin is reported');
+  assert.ok(overrideEdges({ overrides: { dompurify: { '.': '1' } } }, lock).some((o) => o.why), 'a form it cannot read is refused, not passed');
 });

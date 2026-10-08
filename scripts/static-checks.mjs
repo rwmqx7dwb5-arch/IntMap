@@ -849,6 +849,9 @@ try {
   for (const u of r.unjudged) err('lock-ranges', `package-lock.json: ${u.from} → ${u.name} «${u.spec}» cannot be judged: ${u.why}`);
   for (const u of r.missing) err('lock-ranges', `package-lock.json: ${u.from} needs ${u.name}@${u.spec} and the lock holds no such package`);
   if (!r.edges) err('lock-ranges', 'package-lock.json: no dependency edges were read — the rule would pass an empty lock');
+  const { overrideEdges } = await import('./lock-ranges.mjs');
+  for (const o of overrideEdges(JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')), JSON.parse(readFileSync(join(ROOT, 'package-lock.json'), 'utf8'))))
+    err('lock-ranges', `package.json: overrides pins ${o.name}@${o.spec}, but the lock holds ${o.locked} (${o.at})${o.why ? ' — ' + o.why : ''} — npm ci refuses this tree; move the pin to the locked version`);
 } catch (e) {
   err('lock-ranges', 'could not run the lock-ranges rule: ' + (e && e.message));
 }

@@ -215,12 +215,40 @@ export function lockEdges(lock) {
   return out;
 }
 
+/**
+ * overrideEdges(pkg, lock) → [{ name, spec, locked, at }] — every locked copy of a package that the root
+ * package.json's `overrides` pins, where the copy does not meet the pin.
+ *   MEASURED 2026-10-08 (PR #1041's first CI run): package.json carried `"overrides": { "dompurify": "3.4.13" }`
+ *   from R272, where it was a security FLOOR (3.4.12 → 3.4.13). Raising the lock to 3.4.16 left the override
+ *   naming 3.4.13, and `npm ci` refused the tree («Missing: dompurify@3.4.13 from lock file») on all ten jobs —
+ *   while lockEdges was green, because an override is not a dependency edge. An exact override is a floor the
+ *   day it is written and a CEILING the day the next advisory lands, so this reads the pin as npm ci does.
+ *   Only the flat form (`name: spec`) is read; a nested override object, or a `$ref`, is returned with
+ *   why so the caller refuses it rather than passing what it cannot read.
+ */
+export function overrideEdges(pkg, lock) {
+  const packages = (lock && lock.packages) || {};
+  const out = [];
+  for (const [name, spec] of Object.entries((pkg && pkg.overrides) || {})) {
+    if (typeof spec !== 'string' || spec.startsWith('$')) { out.push({ name, spec: JSON.stringify(spec), locked: null, at: null, why: 'a nested or referenced override this does not read' }); continue; }
+    for (const [key, e] of Object.entries(packages)) {
+      if (!key.endsWith('node_modules/' + name) || e.link) continue;
+      const ok = satisfies(e.version, spec);
+      if (ok !== true) out.push({ name, spec, locked: e.version, at: key, why: ok === null ? 'not a version range this reads' : null });
+    }
+  }
+  return out;
+}
+
 if (process.argv[1] && /lock-ranges\.mjs$/.test(process.argv[1].replace(/\\/g, '/'))) {
   const { readFileSync } = await import('node:fs');
   const r = lockEdges(JSON.parse(readFileSync(process.argv[2] || 'package-lock.json', 'utf8')));
+  r.overrides = overrideEdges(JSON.parse(readFileSync('package.json', 'utf8')), JSON.parse(readFileSync(process.argv[2] || 'package-lock.json', 'utf8')));
+  for (const o of r.overrides) console.log(`✗ package.json overrides ${o.name}@${o.spec}, the lock holds ${o.locked} (${o.at})${o.why ? ' — ' + o.why : ''}`);
+  if (r.overrides.length) process.exitCode = 1;
   for (const u of r.unmet) console.log(`✗ ${u.from} wants ${u.name}@${u.range}, the lock holds ${u.locked} (${u.at})`);
   for (const u of r.unjudged) console.log(`? ${u.from} → ${u.name} «${u.spec}»: ${u.why}`);
   for (const u of r.missing) console.log(`∅ ${u.from} needs ${u.name}@${u.spec}, the lock has no such package`);
   console.log(`lock-ranges: ${r.edges} edges · ${r.unmet.length} unmet · ${r.unjudged.length} unjudged · ${r.missing.length} missing`);
-  process.exit(r.unmet.length || r.unjudged.length || r.missing.length ? 1 : 0);
+  process.exit(r.unmet.length || r.unjudged.length || r.missing.length || r.overrides.length ? 1 : 0);
 }
