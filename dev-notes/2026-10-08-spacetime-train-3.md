@@ -25,3 +25,9 @@ main（#1044 の squash）と、#1044 の枝から切った統合を merge す�
 
 #1047 が古い記入値 2 本の実測で空けた 68 s の中に、4 本を記入: hist-product 8・mobile-product 26・live-news-product 8・sales-pro-audiences 15
 （どれも各担当が 1 worker で実測した値）。全体 87.3 min / 天井 87.5 min。
+
+## 4. CI で 1 件: 能力検索の精度
+
+`tests/atlas-capabilities-checks.test.mjs` R728 ①「ISSは今どこ？次に東京の上空を通るのはいつ？」が 13 件（上限 12）を返し、`time.stepHere` が 2 位にいた。
+説明書の例文「次にここの支配者が変わったのはいつ？そこへ」の「次に…いつ」が、時刻を訊く無関係な問いにも当たっていた（例文を外すと 12 件・圏外、外さず語を替えるかを実測）。
+例文を「ここの支配者が交代した次の時点へ」に替えた: ISS の問いは 12 件で stepHere は圏外、「次にここの支配者が変わったのはいつ？そこへ」「この場所の一つ前の時代へ」「step to the next change here」はどれも stepHere が 1 位のまま。
