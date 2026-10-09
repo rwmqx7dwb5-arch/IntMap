@@ -208,7 +208,11 @@ export function capabilitySchemas(modules) {
 export function capabilityRows(modules, previousIds) {
   const entries = capabilityEntries(modules);
   const byId = new Map(entries.map(function (e) { return [e.id, e]; }));
-  const prev = (previousIds || []).filter(function (id) { return byId.has(id); });
+  /* the previous order is read back from the generated table, and a merge of two branches that both carry
+     the same new entry leaves that id in the table TWICE (measured 2026-10-08: the integration of #1044
+     with the branch it was cut from wrote «time.polityArc» twice and the registry counted 223 for 222
+     entries) — so an id is taken once, at its first place: the rows are the entries, never the table */
+  const prev = (previousIds || []).filter(function (id, i, all) { return byId.has(id) && all.indexOf(id) === i; });
   const had = new Set(prev);
   return prev.concat(entries.map(function (e) { return e.id; }).filter(function (id) { return !had.has(id); }))
     .map(function (id) { return byId.get(id).row; });
