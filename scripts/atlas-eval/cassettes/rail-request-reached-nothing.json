@@ -272,6 +272,18 @@
               "tool": "time_placeHistory"
             },
             {
+              "id": "time.polityArc",
+              "tool": "time_polityArc"
+            },
+            {
+              "id": "time.journey",
+              "tool": "time_journey"
+            },
+            {
+              "id": "time.stepHere",
+              "tool": "time_stepHere"
+            },
+            {
               "id": "time.quakeHistory",
               "tool": "time_quakeHistory"
             }
