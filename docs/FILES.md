@@ -1766,7 +1766,9 @@ data/hist-eras-rest.js            年別の枚から、その枚の年に OHM �
 data/hist-coast-snap.js           **記録の海岸が残した陸**——ある瞬間にどの行も描かない陸のうち、海に接し、1 つの政体の行だけに
                                   接し、その記録の帯（`inlandKmFor`）の内にある片を、その行の行として持つ（`window.__HISTCOASTSNAP`・
                                   同じビルダーの `--coast-snap`・`scripts/histclio/coast-snap.mjs`／`npm run check:histclio`）。
-                                  海岸は Natural Earth 1:10m admin-0（**public domain**・間引かない）、陸側の辺は親の行の線。
+                                  海岸は記録の条件で決まる: OHM・Cliopatria の行は OpenStreetMap の陸地ポリゴン（**ODbL 1.0**・
+                                  `@geo-maps/earth-lands-10m` 0.6.0・devDependency・ビルド時だけ読む）、継承条項のある記録
+                                  （CShapes・historical-basemaps）の行は Natural Earth 1:10m admin-0（**public domain**・間引かない）。陸側の辺は親の行の線。
                                   行は親（`t`/`i`/`y`）と親が述べること（名前・識別子・日付 `d`・Cliopatria の meta `m`・枚の属性 `a`）を持つ
 data/histnames.json               **歴史的な政体名の、記録をまたぐ 1 つの表**（Wikidata・**CC0 1.0**
                                   ＋ 上流の説明文の訳・`scripts/build-histnames.mjs`／
@@ -1776,7 +1778,7 @@ data/histnames.json               **歴史的な政体名の、記録をまた�
                                   ⚠ **上流が書いた名前は上書きしない**。⚠ **出荷する言語の方針は
                                   `scripts/histnames/langs.mjs` の 1 か所**（いまは en / jp）
 data/border-coast.js              歴史的な輪郭の各辺が「境界」か「その記録が持つ海岸線の写し」かの印（`data/` から
-                                  **発見された**束すべて・いまは15・全 132,688 リング分／
+                                  **発見された**束すべて・いまは15・全 136,414 リング分／
                                   `scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
                                   `imta2-line` はこの印の run だけを描く。読み手は js/border-coast.js
                                   （束の索引でも**環そのものの同一性**でも引ける）。⚠ 面積 0 のリングは

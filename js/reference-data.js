@@ -515,6 +515,11 @@ export const IntMapRefData = (function(){
     /* (hist-border-refine) where a reviewed fact says a historical boundary followed a river or wall, the coarse
        line is redrawn along that feature's OpenStreetMap geometry (data/hist-courses.js) — ODbL 1.0, so credit
        is a condition of redistribution, paid by this row (scripts/build-hist-courses.mjs GOVERNANCE paidBy). */
+    /* (coast-snap-detail) where a historical record stops short of the shore, the land left out is drawn under the one
+       polity bounding it up to OpenStreetMap's coastline (data/hist-coast-snap.js, the rows of records whose terms allow
+       it) — ODbL 1.0, so credit is a condition of redistribution, paid by this row (scripts/build-hist-clio.mjs GOVERNANCE
+       paidBy). The land polygons are osmdata.openstreetmap.de's, as @geo-maps/earth-lands-10m 0.6.0 publishes them. */
+    {n:'Historical map coastline — OpenStreetMap land polygons, OpenStreetMap contributors (ODbL 1.0)',u:'https://www.openstreetmap.org/copyright',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
     {n:'Historical boundary courses — OpenStreetMap contributors (ODbL 1.0), reviewed by IntMap',u:'https://www.openstreetmap.org/copyright',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
     {n:'Cliopatria — Seshat Global History Databank (CC BY 4.0)',u:'https://github.com/Seshat-Global-History-Databank/cliopatria',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},
     /* ⚠⚠⚠ (#R689) THE CREDIT #R679 WROTE DOWN AS AN INSTRUCTION AND THEN DID NOT PAY. The

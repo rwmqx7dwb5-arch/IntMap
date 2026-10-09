@@ -36,6 +36,7 @@
  *  reader does not re-propose them and so the map's silence about them is a decision, not an omission.
  *
  *      node scripts/build-hist-courses.mjs --fetch     # OpenStreetMap geometry of every reviewed feature (network)
+ *      node scripts/build-hist-courses.mjs --rebasis   # offline: re-derive the substitutions from the shipped course lines (a rebuilt bundle or border-coast.js)
  *      node scripts/build-hist-courses.mjs             # write data/hist-courses.js from the cache
  *      node scripts/build-hist-courses.mjs --check     # re-derive from the shipped files and verify (offline)
  *      node scripts/build-hist-courses.mjs --report    # the coarse share by year, before and after
@@ -628,6 +629,22 @@ export function check() {
   return bad;
 }
 
+/* ── --rebasis (offline): the substitutions re-derived from the SHIPPED course lines against today's bundles and marks ──
+   (coast-snap-detail) The course lines are OpenStreetMap's geometry as `build` took it from the cache; what depends on the
+   other files is only `sets` and `basis`. When a bundle or data/border-coast.js is rebuilt and the OpenStreetMap cache is
+   not at hand (it lives in the temp directory of the machine that fetched it), this re-derives `sets` exactly as `check`
+   does and records the new basis — the lines, their versions and their retrieval dates are carried unchanged. */
+function rebasis() {
+  const d = evalBundle('data/hist-courses.js', '__IMBCOURSE'), facts = readFacts(), bad = factProblems(facts);
+  if (bad.length) { for (const b of bad) console.error('✖ ' + b); process.exit(1); }
+  if (d.courses.length !== facts.reviewed.length || d.courses.some((c, i) => c.id !== facts.reviewed[i].id)) { console.error('✖ the reviewed courses changed — a full build is needed (node scripts/build-hist-courses.mjs --fetch, then without flags)'); process.exit(1); }
+  const courses = d.courses.map((c, i) => ({ ...facts.reviewed[i], line: c.line, ix: courseIndex(c.line) }));
+  const re = derive(courses, { ...inputs(), onAboveOf: (tol) => aboveIndex(courses, tol) });
+  const same = JSON.stringify(re.sets) === JSON.stringify(d.sets);
+  writeFileSync(OUT, 'window.__IMBCOURSE=' + JSON.stringify({ ...d, generatedAt: new Date().toISOString().slice(0, 10), basis: basisOf(), sets: re.sets }) + ';\n');
+  console.error('data/hist-courses.js: basis re-recorded from the shipped course lines — substitutions ' + (same ? 'unchanged' : 'RE-DERIVED (they changed)'));
+}
+
 /* ── --report: the instrument ─────────────────────────────────────────────── */
 function report() {
   const d = evalBundle('data/hist-courses.js', '__IMBCOURSE'), { bundles, marks } = inputs();
@@ -674,6 +691,7 @@ const arg = process.argv.slice(2);
 const main = async () => {
   if (arg.includes('--check')) { const bad = check(); if (bad.length) { for (const b of bad) console.error('✖ ' + b); process.exit(1); } const d = evalBundle('data/hist-courses.js', '__IMBCOURSE'); console.log(`hist-courses ok — ${d.courses.length} reviewed course(s), ${Object.values(d.sets).reduce((a, s) => a + Object.keys(s.sub).length, 0)} ring(s) redrawn, all re-derived from the shipped files`); return; }
   if (arg.includes('--fetch')) { await fetchAll(readFacts()); return; }
+  if (arg.includes('--rebasis')) { rebasis(); return; }
   if (arg.includes('--report')) { report(); return; }
   if (arg.includes('--measure')) { await measure(); return; }
   await build();

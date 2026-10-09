@@ -1017,7 +1017,8 @@ export function timeBorders(HOST){
           f[1]?{_qid:f[1]}:{},(m.w&&!W)?{_wiki:m.w}:{},m.of?{_of:m.of,PARTOF:m.of}:{},m.r?{_realm:1}:{}); }
     /* ══ (coast-snap-gaps) THE LAND A RECORD'S COAST LEFT OUT, DRAWN UNDER THE ONE POLITY THAT BOUNDS IT ══════════════
        data/hist-coast-snap.js (scripts/histclio/coast-snap.mjs): at each instant, the pieces of land between a row's copy
-       of the coast and Natural Earth 1:10m's coast that touch that row and no other polity, each a row naming its parent
+       of the coast and the real coast (OpenStreetMap's, the base map's own, for a record whose terms allow it; Natural Earth
+       1:10m's for a share-alike record — the bundle's `coasts`) that touch that row and no other polity, each a row naming its parent
        (`t` the record, `i` its row, `y` a sheet's year) and its years. Nothing is decided here either: a piece is drawn
        only when its parent is drawn at that instant, with the parent's own properties (name, realm, withheld name, label
        — whatever the record's reader made of it), plus `_coastSnap`, which the card reads (`typeNote`). It is never
@@ -1032,6 +1033,9 @@ export function timeBorders(HOST){
       return _snP; }
     /* the parent a drawn shape is, in the snap rows' own key (`t:i`, a sheet's `sheet:y:i`) — from the row that drew it */
     const _snParentKey=r=>!r?null:(r.rec==='cshapes'||r.rec==='ohm-late'||r.rec==='ohm'||r.rec==='clio')?r.rec+':'+r.i:(r.rec==='sheet-rest'&&r.fi!=null)?'sheet:'+r.sheet+':'+r.fi:null;
+    /* (coast-snap-detail) which coast a snap row reaches — the bundle's own statement for its record (`coasts`): OpenStreetMap's
+       for a record whose terms allow it, Natural Earth's for a share-alike record (scripts/histclio/coast-snap.mjs `coastOf`) */
+    const _snCoast=(d,m)=>(d&&d.coasts&&m&&d.coasts[m.t])||'ne';
     function _snGeomOf(d,idx,parentRow){ let g=_snGeom.get(idx); if(g) return g;
       const polys=d.feats[idx][8].map(poly=>poly.map(ri=>d.rings[ri]));
       g=(polys.length===1)?{type:'Polygon',coordinates:polys[0]}:{type:'MultiPolygon',coordinates:polys};
@@ -1046,7 +1050,7 @@ export function timeBorders(HOST){
       if(!ix||!ix.length) return feats;
       const by=new Map(); for(const f of features){ const r=f.geometry?_rowOf.get(f.geometry):null, pk=_snParentKey(r); if(pk&&!by.has(pk)) by.set(pk,[f,r]); }
       for(const i of ix){ const m=d.feats[i][9]||{}, hit=by.get(m.t+':'+(m.y!=null?m.y+':':'')+m.i); if(!hit) continue;
-        feats.push({type:'Feature',geometry:_snGeomOf(d,i,hit[1]),properties:Object.assign({},hit[0].properties,{_coastSnap:1})}); }
+        feats.push({type:'Feature',geometry:_snGeomOf(d,i,hit[1]),properties:Object.assign({},hit[0].properties,{_coastSnap:1,_coastSrc:_snCoast(d,m)})}); }
       return feats; }catch(_){ return []; } }
     let _rsD=null,_rsP=null,_rsH=null;
     function rsLoad(){ if(_rsD) return Promise.resolve(_rsD); if(_rsP) return _rsP;
@@ -1173,7 +1177,7 @@ export function timeBorders(HOST){
       const within=(snap,lo,hi,sE,eE)=>!snap?{lo,hi,sE,eE}:{ lo:Math.max(lo,snap.s), hi:Math.min(hi,snap.e), sE:snap.s>lo?'snap':sE, eE:snap.e<hi?'snap':eE };
       const snapBase=(base,snap,props)=>{ if(!snap) return base;
         /* the snap's own sentence (a shape with only `_coastSnap` says nothing else), before what the parent's piece already says */
-        const tn=typeNote({properties:{_coastSnap:1}});
+        const tn=typeNote({properties:{_coastSnap:1,_coastSrc:snap.coast}});
         return Object.assign({},base,{ coastSnap:{ file:snap.file, i:snap.i }, notes:[tn].concat(base.notes||[]) }); };
       /* CShapes: inclusive ends; its reach is 1886-01-01 … 2019-12-31 */
       const csRow=(f,snap)=>{ const rs=_kRow(f,2), reI=_kRow(f,5), re=_kAfter(reI);
@@ -1232,7 +1236,7 @@ export function timeBorders(HOST){
       /* (coast-snap-gaps) each snap row over the point is its parent's piece over the snap's years. The row carries what its
          parent says (its name and identifier, `d` its dates, `m` a Cliopatria row's meta, `a` a sheet polygon's facts), so
          the parent's whole instant is not fetched to name it */
-      if(ans[5].v) for(const [i,f] of ans[5].v.rows){ const m=f[9]||{}, snap={ s:_kRow(f,2), e:_kRow(f,5), file:L[5].file, i };
+      if(ans[5].v) for(const [i,f] of ans[5].v.rows){ const m=f[9]||{}, snap={ s:_kRow(f,2), e:_kRow(f,5), file:L[5].file, i, coast:_snCoast(snd,m) };
         const pf=m.d?[f[0],f[1],...m.d,null,m.m||undefined]:null;
         if(m.t==='cshapes'&&pf) csRow(pf,snap);
         else if(m.t==='ohm-late'&&pf&&lateB) ohmRow(pf,L[1],lateB[0],lateB[1],snap);
@@ -2938,8 +2942,10 @@ export function timeBorders(HOST){
          which record's line it extends and whose coast it is, and names no author for the piece itself; en + jp
          (CONSTITUTION §7). What the parent row's own note says follows it. */
       if(p._coastSnap){ const rest=typeNote({properties:Object.assign({},p,{_coastSnap:0})});
-        return _LTB.arr(LA('The record draws this polity only up to its own copy of the coast here. The land between that line and the real coastline (Natural Earth 1:10m) touches no other polity, so it is drawn under the same polity: the record’s coast is matched to the real coastline. No record draws this strip itself.',
-                           '記録はここでこの政体を自身の海岸線の写しまでしか描いていない。その線と本物の海岸線（Natural Earth 1:10m）のあいだの陸はほかのどの政体にも接していないため、同じ政体として描いている——記録の海岸を本物の海岸線に合わせた。この細い陸地そのものを描いた記録はない。'))+(rest?' · '+rest:''); }
+        /* (coast-snap-detail) whose coast it is, as the bundle states it for the parent's record */
+        const osm=p._coastSrc==='osm', cEn=osm?'OpenStreetMap, © OpenStreetMap contributors, ODbL':'Natural Earth 1:10m', cJp=osm?'OpenStreetMap、© OpenStreetMap contributors、ODbL':'Natural Earth 1:10m';
+        return _LTB.arr(LA('The record draws this polity only up to its own copy of the coast here. The land between that line and the real coastline ('+cEn+') touches no other polity, so it is drawn under the same polity: the record’s coast is matched to the real coastline. No record draws this strip itself.',
+                           '記録はここでこの政体を自身の海岸線の写しまでしか描いていない。その線と本物の海岸線（'+cJp+'）のあいだの陸はほかのどの政体にも接していないため、同じ政体として描いている——記録の海岸を本物の海岸線に合わせた。この細い陸地そのものを描いた記録はない。'))+(rest?' · '+rest:''); }
       const bp=Number(p.BORDERPRECISION!=null?p.BORDERPRECISION:p.borderprecision);
       const precision=bp===1?_LTB.arr(LA('Source boundary precision: approximate','出典の境界精度分類: 概略',
         'Grenzgenauigkeit laut Quelle: ungefähr','Точность границ по источнику: приблизительная',
@@ -3086,7 +3092,7 @@ export function timeBorders(HOST){
       const side={ name:String(p.NAME||p.name||''), i18n:p._i18n||null, rec:row?row.rec:(p._rec||null), ids:[], notes:[],
         realm:!!p._realm, of:p._of||p.PARTOF||null, corrected:!!p._corrected, withheld:p._wName?String(p._wName):null };
       try{ if(p._wName||!side.name){ const bn=blankNote(f); side.notes.push(bn.title,...bn.lines); } else { const tn=typeNote(f); if(tn) side.notes.push(tn); } }catch(_){}
-      if(own&&own.rec==='coast-snap'){ const sr=own.d&&own.d.feats&&own.d.feats[own.i]; side.coastSnap={ file:own.file, i:own.i, src:(own.d&&own.d.src)||null, start:sr?[sr[2],sr[3],sr[4]]:null, end:sr?[sr[5],sr[6],sr[7]]:null }; }
+      if(own&&own.rec==='coast-snap'){ const sr=own.d&&own.d.feats&&own.d.feats[own.i]; side.coastSnap={ file:own.file, i:own.i, src:(own.d&&own.d.src)||null, start:sr?[sr[2],sr[3],sr[4]]:null, end:sr?[sr[5],sr[6],sr[7]]:null, coast:_snCoast(own.d,sr&&sr[9]) }; }
       if(!row){ side.unattributed=true; return side; }
       const d=row.d; side.src=(d&&d.src)||null; side.citation=(d&&d.citation)||null; side.upstream=(d&&d.upstream)||null;
       /* (sales-pro-audiences) the shipped file the row is in — the key the open-data catalogue states the file's terms under (js/border-extract.js) */

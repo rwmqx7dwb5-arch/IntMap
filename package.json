@@ -122,6 +122,7 @@
     "prebuild": "node scripts/i18n-langs.mjs && node scripts/layer-descriptors.mjs --write"
   },
   "devDependencies": {
+    "@geo-maps/earth-lands-10m": "0.6.0",
     "@playwright/test": "^1.63.0",
     "acorn": "^8.18.0",
     "acorn-walk": "^8.3.5",
