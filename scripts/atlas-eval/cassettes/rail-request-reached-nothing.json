@@ -274,6 +274,10 @@
             {
               "id": "time.journey",
               "tool": "time_journey"
+            },
+            {
+              "id": "time.polityArc",
+              "tool": "time_polityArc"
             }
           ]
         }
