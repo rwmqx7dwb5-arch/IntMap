@@ -1,6 +1,6 @@
 {
   "note": "Observations, not targets. scripts/hist-fidelity.mjs re-measures the shipped bundles and fails when they do worse. --update re-records them; a round that lowers a number on purpose says why in DEV-NOTES.md.",
-  "measured": "2026-10-07",
+  "measured": "2026-10-09",
   "res": 0.25,
   "unsourcedSpans": 0,
   "years": [
@@ -10,7 +10,7 @@
       "pctArea": 0.02,
       "polityLand": 87.78,
       "unitLand": 0.03,
-      "zero": 109,
+      "zero": 111,
       "partial": 3,
       "full": 0
     },
@@ -30,9 +30,9 @@
       "pctArea": 3.01,
       "polityLand": 63.17,
       "unitLand": 1.9,
-      "zero": 141,
+      "zero": 142,
       "partial": 18,
-      "full": 0
+      "full": 1
     },
     {
       "year": 500,
@@ -40,8 +40,8 @@
       "pctArea": 1.18,
       "polityLand": 68.69,
       "unitLand": 0.86,
-      "zero": 169,
-      "partial": 9,
+      "zero": 172,
+      "partial": 10,
       "full": 1
     },
     {
@@ -50,7 +50,7 @@
       "pctArea": 1.15,
       "polityLand": 70.38,
       "unitLand": 0.8,
-      "zero": 251,
+      "zero": 255,
       "partial": 27,
       "full": 15
     },
@@ -60,8 +60,8 @@
       "pctArea": 1.15,
       "polityLand": 71.29,
       "unitLand": 0.8,
-      "zero": 232,
-      "partial": 51,
+      "zero": 238,
+      "partial": 50,
       "full": 12
     },
     {
@@ -70,9 +70,9 @@
       "pctArea": 4.89,
       "polityLand": 74.89,
       "unitLand": 3.72,
-      "zero": 231,
-      "partial": 60,
-      "full": 13
+      "zero": 235,
+      "partial": 61,
+      "full": 14
     },
     {
       "year": 1689,
@@ -80,9 +80,9 @@
       "pctArea": 14.74,
       "polityLand": 73.61,
       "unitLand": 11.27,
-      "zero": 636,
+      "zero": 640,
       "partial": 64,
-      "full": 57
+      "full": 58
     },
     {
       "year": 1800,
@@ -90,9 +90,9 @@
       "pctArea": 27.51,
       "polityLand": 78.2,
       "unitLand": 21.65,
-      "zero": 350,
+      "zero": 352,
       "partial": 36,
-      "full": 11
+      "full": 10
     },
     {
       "year": 1850,
@@ -100,7 +100,7 @@
       "pctArea": 36.88,
       "polityLand": 86.45,
       "unitLand": 32.81,
-      "zero": 367,
+      "zero": 369,
       "partial": 44,
       "full": 26
     },
@@ -120,7 +120,7 @@
       "pctArea": 56.11,
       "polityLand": 90.89,
       "unitLand": 51.69,
-      "zero": 132,
+      "zero": 133,
       "partial": 47,
       "full": 72
     },
@@ -130,7 +130,7 @@
       "pctArea": 66.13,
       "polityLand": 90.77,
       "unitLand": 60.81,
-      "zero": 124,
+      "zero": 125,
       "partial": 54,
       "full": 76
     },
@@ -158,9 +158,9 @@
       "year": 1975,
       "pct": 78.78,
       "pctArea": 74.43,
-      "polityLand": 91.52,
+      "polityLand": 91.51,
       "unitLand": 69.48,
-      "zero": 80,
+      "zero": 81,
       "partial": 48,
       "full": 110
     },
@@ -168,21 +168,21 @@
       "year": 2000,
       "pct": 91.95,
       "pctArea": 90.6,
-      "polityLand": 91.52,
+      "polityLand": 91.51,
       "unitLand": 84.35,
-      "zero": 49,
-      "partial": 56,
-      "full": 157
+      "zero": 50,
+      "partial": 55,
+      "full": 158
     },
     {
       "year": 2019,
-      "pct": 94.61,
+      "pct": 94.6,
       "pctArea": 93.92,
-      "polityLand": 91.52,
+      "polityLand": 91.51,
       "unitLand": 87.43,
-      "zero": 46,
-      "partial": 44,
-      "full": 177
+      "zero": 47,
+      "partial": 45,
+      "full": 176
     }
   ],
   "claims": {

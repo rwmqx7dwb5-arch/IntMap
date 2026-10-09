@@ -1122,7 +1122,7 @@ Atlas の `research.related` / `research.impact` / 実世界オブジェクト�
   15の束（`cshapes` / `hist-borders` / `hist-borders-late` / `hist-clio` / `hist-coast-snap` / `hist-eras-rest` /
   `hist-admin1` / `hist-admin2` / `hist-admin3` / `hist-eras` / `hist-kuni` / `hist-admin-fill` /
   `hist-admin-surveys` / `hist-admin-surveys-nc` / `hist-admin-recon`）の
-  全リング **132,688 本**に
+  全リング **136,414 本**に
   ついて「描く run」を印す。⚠ **どの束を印すかは書き並べていない**——`data/` を走査し、
   「1つのグローバルに `rings`（[経度,緯度] の配列の配列）を持つ束」であるものを**発見する**
   （`discoverBundles()`）。手で並べた一覧は短くなっても誰も気づかないので、

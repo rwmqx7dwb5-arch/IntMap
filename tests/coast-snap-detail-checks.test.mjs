@@ -15,7 +15,8 @@
  *       Cliopatria row at Harem ends ON OpenStreetMap's coastline
  *    ③ the page draws the Harem piece in 1650 under the Ottoman Empire, and its note names OpenStreetMap (en + jp); a
  *       share-alike row's note names Natural Earth
- *    ④ the place timeline at Harem says the coast was matched, and after CShapes' last day says no record covers the years
+ *    ④ the place timeline at Harem says the coast was matched, and lists 1886 to today (CShapes' coast, Natural Earth's,
+ *       stops short of this shore) as a span no record covers
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -58,8 +59,10 @@ test('② each record reaches the coast its terms allow, and a Cliopatria piece 
   const here = snap.feats.filter((f) => f[9].t === 'clio' && ymd(f[2], f[3], f[4]) <= t && t < ymd(f[5], f[6], f[7]))
     .map((f) => f[8].map((p) => p.map((ri) => snap.rings[ri]))).filter((P) => CS.inPolys(P, 29.0105, 41.011));
   assert.equal(here.length, 1, 'Harem is not inside exactly one Cliopatria piece in 1650');
-  const onCoast = here[0].flat().flat().filter(([x, y]) => x > 29.0 && x < 29.03 && y > 41.0 && y < 41.03 && osm.coast.on(x, y, 1e-7)).length;
-  assert.ok(onCoast > 20, 'the piece at Harem has ' + onCoast + ' vertices on OpenStreetMap\'s coastline');
+  /* its shore there is OpenStreetMap's, and none of it is Natural Earth's (which lies inland of it on this shore) */
+  const ne = new CS.Land('ne'), V = here[0].flat(2).filter(([x, y]) => x > 29.0 && x < 29.03 && y > 41.0 && y < 41.03);
+  const onOSM = V.filter(([x, y]) => osm.coast.on(x, y, 1e-7)).length, onNE = V.filter(([x, y]) => ne.coast.on(x, y, 1e-7) && !osm.coast.on(x, y, 1e-7)).length;
+  assert.ok(onOSM >= 5 && onNE === 0, 'the piece at Harem has ' + onOSM + ' vertices on OpenStreetMap\'s coastline and ' + onNE + ' on Natural Earth\'s');
 });
 
 test('③ the page draws Harem in 1650 under the Ottoman Empire, and the note names whose coast it is', async () => {
@@ -84,5 +87,7 @@ test('④ the place timeline at Harem: the matched coast is said, and the years 
   const k = ymd(1650, 7, 1), E = N.entries.find((x) => x.from.k <= k && k < x.to.k);
   assert.ok(E && /Ottoman/.test(E.name), 'Harem has no Ottoman entry in 1650');
   assert.ok(E.notes.some((n) => /OpenStreetMap/.test(n)), 'the 1650 entry does not say whose coast it was matched to');
-  assert.ok(N.gaps.some((g) => g.beyond && g.toNow), 'the years after CShapes\' last day are not listed');
+  /* from 1886 the ground is CShapes', a share-alike record that keeps Natural Earth's coast, which stops short of this shore:
+     the years to today are listed as a span no record covers, never closed over (dev-notes 2026-10-08-coast-snap-detail §5) */
+  assert.ok(N.gaps.some((g) => g.from === ymd(1886, 1, 1) && g.toNow), 'the years from 1886 to today are not listed: ' + JSON.stringify(N.gaps.slice(-2)));
 });
