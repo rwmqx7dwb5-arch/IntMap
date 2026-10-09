@@ -55,8 +55,27 @@ async function collection(iso, level) {
   if (!d) { fcMemo.set(key, null); return null; }
   const file = path.join(cacheDir(), 'gb-' + key + '-' + d.commit + '.geojson');
   if (!fs.existsSync(file)) {
-    const r = await fetch(d.url, { redirect: 'follow' });
-    if (!r.ok) throw new Error('geoBoundaries ' + r.status + ' ' + d.url);
+    /* (coast-snap-detail) ⚠ ONE PASS, OR A REASON (.agents/rules/one-pass-or-a-reason.md §5) — the same rule as
+       scripts/data-assets.mjs `download`: fetched again ONLY after an OBSERVED failure (a thrown network error or a 5xx),
+       at most 3 times, and every attempt is printed; a 4xx is final. MEASURED 2026-10-09: GitHub raw answered 504 for
+       geoBoundaries-BGD-ADM3 and then geoBoundaries-IND-ADM3 on two CI runs of the same commit, and the one fetch failed
+       tests/hist-recon-expand-checks.test.mjs (dossier-check) — a check of nothing that had changed. */
+    let r = null;
+    for (let attempt = 1; ; attempt++) {
+      let why;
+      try {
+        r = await fetch(d.url, { redirect: 'follow' });
+        if (r.ok) break;
+        if (r.status < 500) throw Object.assign(new Error('geoBoundaries ' + r.status + ' ' + d.url), { final: true });
+        why = 'HTTP ' + r.status;
+      } catch (e) {
+        if (e.final) throw e;
+        why = (e.cause && e.cause.code) || e.code || e.message;
+      }
+      console.error('  geoBoundaries ' + key + ': attempt ' + attempt + ' failed (' + why + ')');
+      if (attempt >= 3) throw new Error('geoBoundaries ' + why + ' ' + d.url + ' after ' + attempt + ' attempts');
+      await new Promise((res) => setTimeout(res, 2000 * attempt));
+    }
     const buf = Buffer.from(await r.arrayBuffer());
     /* a Git LFS pointer instead of the file would parse as nothing — refuse it rather than cache it */
     if (buf.length < 2000 && /git-lfs/.test(buf.toString('utf8'))) throw new Error('geoBoundaries returned an LFS pointer for ' + d.url);

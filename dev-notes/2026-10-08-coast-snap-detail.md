@@ -137,3 +137,7 @@ OSM の入力は 2017 年の陸地ポリゴンで、それ以後の埋め立て�
   «Ottoman Empire 1351–1885» に「本物の海岸線（OpenStreetMap, © OpenStreetMap contributors, ODbL）」の註を付け、
   «No record draws a polity here 1886 – today» を出す。`tests/coast-snap-gaps-checks.test.mjs` は
   ③ を 2 つの海岸の値に、⑤ の陸を基図（OSM）に、⑦ に記録の終わりの後の行（英日・Atlas）を足した。
+- CI: `tests/hist-recon-expand-checks.test.mjs`（dossier-check）が、GitHub raw の geoBoundaries（BGD-ADM3・IND-ADM3）の 504 で
+  同じ commit の 2 回の run で落ちた（この変更とは無関係）。利用者の判断でこの PR に入れた: `scripts/histrecon/atoms/geoboundaries.mjs`
+  は、観測された失敗（ネットワーク例外・5xx）の後だけ最大 3 回取り直し、各試行を記録する（`scripts/data-assets.mjs` と同じ規則、
+  4xx は最終）。
