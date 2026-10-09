@@ -7,8 +7,8 @@
  "cadence": "P1D",
  "builtBy": "scripts/build-service-status.mjs",
  "schema": "intmap-service-status/1",
- "generatedAt": "2026-10-08T20:42:26.333Z",
- "retrievedAt": "2026-10-08T20:42:26.333Z",
+ "generatedAt": "2026-10-09T10:36:24.596Z",
+ "retrievedAt": "2026-10-09T10:36:24.596Z",
  "asOf": "2026-10-08T12:12:31Z",
  "quality": {
   "rows": 138,
@@ -20,7 +20,7 @@
   "duplicates": 0
  },
  "v": 1,
- "builtAt": "2026-10-08T20:42:26.333Z",
+ "builtAt": "2026-10-09T10:36:24.596Z",
  "upstream": {
   "measuredAt": "2026-10-08T11:36:39.628Z",
   "comparedWith": "2026-10-07T11:20:51.619Z",
@@ -419,8 +419,8 @@
     "verdict": "alive",
     "why": "HTTP 200",
     "status": 200,
-    "what": "USGS earthquake feeds (and ShakeMap)",
-    "whatJp": "USGS の地震フィード（と ShakeMap）",
+    "what": "USGS earthquake feeds, ShakeMap and the catalogue query behind a place's earthquake record",
+    "whatJp": "USGS の地震フィード・ShakeMap・場所の地震の記録のカタログ検索",
     "lastAlive": "2026-10-08T11:36:39.628Z"
    },
    {
