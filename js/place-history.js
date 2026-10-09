@@ -177,10 +177,101 @@ export function entriesAt(rec, y) {
   return { nation: pick(rec && rec.nation && rec.nation.entries), admin: pick(rec && rec.admin && rec.admin.entries) };
 }
 
+/* ══ (mobile-product) WHERE THE MAP CHANGES OVER THE POINT ══════════════════════════════════════════════════════════
+   The thumb on the phone's clock (js/time-thumb.js) stops at these instants while it moves the clock, and Atlas's
+   `time.stepHere` steps between them. They are read off the timeline above and nothing is added to it: an instant is
+   one where an entry begins, ends (the first day it no longer holds — what follows may be a gap), is drawn under a
+   later name, or where a first-level unit begins or ends. Each change carries the entries and their edges as composed,
+   so a `reach` or a `handover` is still said as the edge of a record, never as the end of a polity
+   (.agents/rules/historical-verification.md §2-3). An end the records place after today (a unit «still in force»
+   is written 9999-01-01) is not a change anyone can step to, and is left out. */
+/** the instant a Date stands for, as YYYYMMDD (its UTC day — the day the clock's readers draw) */
+export function kOf(d) { const t = d instanceof Date ? d : new Date(d); return ymd(t.getUTCFullYear(), t.getUTCMonth() + 1, t.getUTCDate()); }
+/** the label an entry is drawn with at instant k (its renames are dated) */
+function labelAt(E, k) { let lb = E.labels.length ? E.labels[0].label : E.name; for (const x of E.labels) if (x.k <= k) lb = x.label; return lb; }
+/**
+ * changesOf(rec[, until]) → [{ k, begins:[E], ends:[E], renames:[{E,label}], admin:[{E, side}] }], oldest first — the
+ * instants at which what the map states over the point changes. `until` (YYYYMMDD, default today) bounds the ends.
+ */
+export function changesOf(rec, until) {
+  const top = until != null ? until : today();
+  const by = new Map();
+  const at = (k) => { let c = by.get(k); if (!c) { c = { k, begins: [], ends: [], renames: [], admin: [] }; by.set(k, c); } return c; };
+  const N = rec && rec.nation, A = rec && rec.admin;
+  for (const E of (N && N.status === 'ok' && N.entries) || []) {
+    if (E.from.k <= top) at(E.from.k).begins.push(E);
+    if (E.to.k <= top) at(E.to.k).ends.push(E);
+    for (const x of E.labels.slice(1)) if (x.k > E.from.k && x.k <= top) at(x.k).renames.push({ E, label: x.label });
+  }
+  for (const E of (A && A.status === 'ok' && A.entries) || []) {
+    if (E.from.k <= top) at(E.from.k).admin.push({ E, side: 'from' });
+    if (E.to.k <= top) at(E.to.k).admin.push({ E, side: 'to' });
+  }
+  return [...by.values()].sort((a, b) => a.k - b.k);
+}
+/** the change after (dir > 0) or before (dir < 0) instant k — strictly, so a clock standing on a change steps past it; or null */
+export function stepFrom(changes, k, dir) {
+  const list = changes || [];
+  if (dir < 0) { for (let i = list.length - 1; i >= 0; i--) if (list[i].k < k) return list[i]; return null; }
+  for (const c of list) if (c.k > k) return c;
+  return null;
+}
+/**
+ * nowAt(rec, k, lang) → what the map states over the point at instant k, in words:
+ *   { status, polities:[{ text, quiet, sheet, realm }], units:[text], gap } — `status` is the nation record's own
+ *   (`unavailable` / `none` / `ok`); `gap` is true when the records speak for this ground at other times but not at k.
+ */
+export function nowAt(rec, k, lang) {
+  const N = rec && rec.nation, A = rec && rec.admin, W = words(lang, N && N.records), L = W.L;
+  const out = { status: (N && N.status) || 'unavailable', polities: [], units: [], gap: false };
+  if (!N || N.status !== 'ok') return out;
+  const held = N.entries.filter((E) => E.from.k <= k && k < E.to.k);
+  /* the finer record first: a period sheet drawn under a polity is the coarser statement about the same ground */
+  held.sort((a, b) => (a.from.edge === 'sheet') - (b.from.edge === 'sheet') || (a.realm - b.realm));
+  for (const E of held) {
+    const text = E.unnamed ? L('A shape the record draws without a name', '記録が名前を与えずに描いている形')
+      : E.withheld ? L('Name withheld: «' + E.withheld.name + '»', '名前を描いていない: 「' + E.withheld.name + '」') : labelAt(E, k);
+    out.polities.push({ text, quiet: !!(E.unnamed || E.withheld), sheet: E.from.edge === 'sheet', realm: !!E.realm });
+  }
+  out.gap = !held.length;
+  if (A && A.status === 'ok') for (const E of A.entries) if (E.from.k <= k && k < E.to.k) out.units.push(E.label || E.name);
+  return out;
+}
+/** an instant in the words the timeline uses for it: the day where the record states a day, the year where it states a year */
+export function instantText(k, tier, lang) { return stated(k, tier, words(lang, null)); }
+/** a change's own line: what began there, with the edge said as the timeline says it (a record's reach is a record's) */
+export function changeText(c, lang, records) {
+  const W = words(lang, records), L = W.L, parts = [];
+  const nm = (E) => (E.unnamed ? L('an unnamed shape', '名前の無い形') : E.withheld ? '«' + E.withheld.name + '»' : labelAt(E, c.k));
+  /* who says so: an edge the record states is followed by the record's name (a reach, a handover and a sheet already name theirs) */
+  const by = (x) => (x.edge === 'stated' || x.edge === 'review' ? L(' (' + W.recordName(x.tier) + ')', '（' + W.recordName(x.tier) + '）') : '');
+  for (const E of c.begins) { const at = edgeText('from', E.from, W); parts.push(L('from ' + at + ': ' + nm(E) + by(E.from), at + ' から: ' + nm(E) + by(E.from))); }
+  for (const r of c.renames) parts.push(L('drawn as «' + r.label + '»', '「' + r.label + '」と描く'));
+  if (!c.begins.length) for (const E of c.ends) { const at = edgeText('to', E.to, W); parts.push(L('until ' + at + ': ' + nm(E) + by(E.to), at + ' まで: ' + nm(E) + by(E.to))); }
+  /* a unit that ends on the day a unit of the same name begins is one unit carried on in another row of the record — said
+     once, as that (Kyoto-fu 1876-08-21: two rows of the reconstruction meet; the prefecture did not end) */
+  const lbl = (E) => E.label || E.name;
+  const goesOn = (x) => x.side === 'to' && c.admin.some((y) => y.side === 'from' && lbl(y.E) === lbl(x.E));
+  for (const a of c.admin) {
+    if (goesOn(a)) continue;
+    const at = adminEdgeText(a.side, a.side === 'from' ? a.E.from : a.E.to, W), u = lbl(a.E);
+    if (a.side === 'from' && c.admin.some((x) => goesOn(x) && lbl(x.E) === u)) { parts.push(L(at + ': «' + u + '» goes on in another row of the record', at + ': 「' + u + '」は記録の別の行へ続く')); continue; }
+    parts.push(a.side === 'from' ? L('from ' + at + ': ' + u, at + ' から: ' + u) : L('until ' + at + ': ' + u, at + ' まで: ' + u));
+  }
+  return parts.join(' · ');
+}
+/** move the clock to instant k (noon UTC of that day, as a row's button does) → true when the clock accepted it */
+export function goToInstant(k, source) {
+  const p = kParts(k);
+  try { IntMapTime.set(HS().utcAt(p[0], p[1] - 1, p[2], 12), { source: source || 'place-history' }); return true; } catch (_) { return false; }
+}
+
 /* ══ WHAT ATLAS RECEIVES — the same record, JSON-safe and dated as text (astronomical years; `to` is the first day no
    longer in force) so the model quotes the record's days, never a day it computed ══════════════════════════════════ */
 const pad2 = (n) => String(n).padStart(2, '0');
 const isoOf = (k) => { const p = kParts(k); return (p[0] < 0 ? '-' + String(-p[0]).padStart(6, '0') : String(p[0]).padStart(4, '0')) + '-' + pad2(p[1]) + '-' + pad2(p[2]); };
+/** (mobile-product) an instant as the astronomical ISO day Atlas receives (the same text as every `date` below) */
+export const isoOfK = (k) => isoOf(k);
 const edgeOf = (x) => Object.assign({ date: isoOf(x.k), edge: x.edge }, x.by ? { handedTo: x.by } : {}, x.sheet != null ? { sheet: x.sheet } : {});
 export function entryBrief(E) {
   return Object.assign({ name: (E.unnamed || E.withheld) ? null : (E.name || null), names: E.labels.map((x) => ({ from: isoOf(x.k), label: x.label })),

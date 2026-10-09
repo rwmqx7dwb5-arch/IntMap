@@ -1329,7 +1329,13 @@ place-history.js                  **この場所の歴史**——1 地点をど�
                                   地方区分。行は time-borders.js / time-admin1.js の `placeRecords`（扉の `contains`）が述べるものだけで、
                                   端は種類つき（stated・reach・handover・rename・sheet・review／derived・unstated・undocumented・open）。
                                   地点カードの節と Atlas `time.placeHistory` が同じ記録を描く。行を押すと Chronos をその時代へ
-                                  （docs/architecture/07-map.md §7.3f）。地点カードと Atlas が最初に要るときに取りに行く
+                                  （docs/architecture/07-map.md §7.3f）。地点カードと Atlas が最初に要るときに取りに行く。
+                                  中心で地図が変わる時点（`changesOf`・`stepFrom`・`nowAt`・`changeText`）も持ち、time-thumb.js と
+                                  Atlas `time.stepHere` が読む
+time-thumb.js                     **親指の時計**——携帯のシートの頭の時計（`#m-clock`）を横になぞるとレールになり、地図を全面に出したまま
+                                  年が動く（chronos.js `writeRailPos`）。吹き出しが時刻と地図の中心を治める政体・区分を述べ、中心で地図が
+                                  変わる時点で止まる。矢印キーで前後の変化へ。mobile-ui.js が最初のタッチで取りに行く
+                                  （docs/architecture/09-mobile.md §9.5）
 journey-through-time.js           **時をまたぐ道のり**——1 本の線（地点間の大圏、または計算した経路）を複数の時点で訊く。各時点で
                                   time-borders.js `collectionAt` が描く政体を線に沿って順に、区間ごとの km・越境点・海と記録の無い陸地と、
                                   一部の時点でだけ通る政体。Atlas `time.journey`（1 時点を政体ごとの色で地図に描く）と経路パネルの
