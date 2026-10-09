@@ -272,8 +272,8 @@
               "tool": "time_placeHistory"
             },
             {
-              "id": "time.stepHere",
-              "tool": "time_stepHere"
+              "id": "time.quakeHistory",
+              "tool": "time_quakeHistory"
             }
           ]
         }

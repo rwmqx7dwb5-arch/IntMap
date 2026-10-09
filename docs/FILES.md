@@ -1191,6 +1191,15 @@ sim-datasets.js                   シミュレーションの出力を分析用�
                                   （出自は sim 名・版・引数・乱数の種）。import して使う
 shakemap.js                       USGS ShakeMap——1つの地震の地震動そのもの（等値線・震度の面・
                                   範囲内の都市と人口・遅延取得）window.IntMapShakeMap
+quake-history.js                  **この場所の地震の記録**のカードと地図——USGS ComCat が持つ半径内・下限以上の全地震を
+                                  記録の始まりから（件数・最大・年 × 規模の図・年代ごとの最小規模・大きい順 10 件・開いた地震の
+                                  順位と前回）。地図の円は**マスタークロックの瞬間までの記録**で、色はその瞬間から何年前か。
+                                  「この瞬間の地図にする」で時計をその地震の瞬間へ。扉は js/wb-layers.js（地震のポップアップ・
+                                  命令 `quakehistory.open`・`?qh=`）と地点カード。遅延取得（IntMapLazy の quakeHistory）
+                                  window.IntMapQuakeHistory
+quake-history-core.js             その事実の全部（純粋なモジュール）——FDSN の要求（地点は整数度に丸め、半径をその分広げる）・
+                                  件数を先に訊いて下限を上げる規則（一度に 3,000 件）・端末での正確な円・最大・順位・年代・
+                                  時刻 T までの記録・`?qh=`。node が実際の ComCat の答えで同じ関数を評価する
 seismic.js                        地震波シミュレータ（477 KB）
 seismic-events.js                 過去の地震——公表された震源パラメータ
 seismic-site.js                   場址項は周波数の関数である window.IntMapSiteAmp

@@ -117,6 +117,7 @@ export const LAZY_REGISTRY = Object.freeze({
   photoGeo: { publishes: 'IntMapPhotoGeo', load: () => import('./photo-geo.js'), mount: (IM_HOST, m) => { window.IntMapPhotoGeo=m.photoGeo(IM_HOST); } },
   myMap: { publishes: 'IntMapMyMap', load: () => import('./my-map.js'), mount: (IM_HOST, m) => { window.IntMapMyMap=m.myMap(IM_HOST); } },
   shakeMap: { publishes: 'IntMapShakeMap', load: () => import('./shakemap.js'), mount: (IM_HOST, m) => { window.IntMapShakeMap=m.shakeMap(IM_HOST); } },
+  quakeHistory: { publishes: 'IntMapQuakeHistory', load: () => import('./quake-history.js'), mount: (IM_HOST, m) => { m.quakeHistory(IM_HOST); } },
   radiationLayer: { publishes: 'IntMapRadiationObs', load: () => import('./radiation-layer.js'), mount: (IM_HOST, m) => { window.IntMapRadiationObs=m.radiationLayer(IM_HOST); } },
   newsIntel: { publishes: '__imNewsIntel', load: () => import('./news-intel.js'), mount: (IM_HOST, m) => { m.newsIntel(IM_HOST); }, also: ['newsEvents'] },
   newsStory: { publishes: '__imNewsStory', load: () => import('./news-story.js'), mount: (IM_HOST, m) => { m.newsStory(IM_HOST); }, also: ['newsEvents'] },

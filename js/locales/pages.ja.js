@@ -569,6 +569,7 @@ window.IntMapPageI18N.define('ja', {
     "GRDC / World Bank — Major River Basins of the World": "Atlasの河川流域ハイライト用の主要流域ポリゴン（236流域・自己ホスト。CC BY 4.0、HydroSHEDSデータを含む）",
     "OpenTopoMap": "等高線レイヤーのプレビュー画像として例示タイル1枚を使用（CC-BY-SA）",
     "USGS Earthquake Hazards Program": "地震データ（リアルタイム・過去）— レイヤー・ウィジェット・比較・Atlas統合分析、および地震波シミュレーターが読み込む実際の震源",
+    "ISC-GEM Global Instrumental Earthquake Catalogue (International Seismological Centre / GEM Foundation) — through USGS ComCat": "20 世紀前半の計器観測による地震記録（1904 年からの規模と震源を再決定したもの）。「この場所の地震の記録」が USGS ComCat を通して読み、1970 年代より前の記録の多くの最大・順位・年代を支える",
     "OpenStreetMap Overpass API": "Atlasの施設マッピング — 指定範囲の施設（石油・発電所・空港・軍事など）のライブ検索。加えて、河川名ラベルのクリック時にNominatimが応答できない場合の、周辺範囲の同名の河川・運河ウェイの取得（ODbL）",
     "Dated world events — Wikidata (dates, places, names, descriptions)": "「世界の出来事」と年表の元になる日付つきの出来事——項目、その日付を与えた性質（時点・開始・終了・設立など）、日付の精度——をWikidata（CC0）が述べたとおりにビルド時に読み込む。年や世紀までしか述べられていない日付はそのままの粗さで示し、Wikidataが述べていない部分を補うことはしない。",
     "文部科学省 — 高等学校学習指導要領（平成30年告示） (Course of Study; unit names quoted on the unit map)": "高等学校学習指導要領（平成30年告示）。単元対応表（curriculum.html）は、地理総合・歴史総合・地理探究・日本史探究・世界史探究の項目名をこの文書から一字一句そのまま引用し、各単元に IntMap で開ける地図を対応させている。出典の記載を条件とする政府標準利用規約（第2.0版）に従って利用。",

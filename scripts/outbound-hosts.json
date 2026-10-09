@@ -730,15 +730,15 @@
     },
     {
       "host": "earthquake.usgs.gov",
-      "what": "USGS earthquake feeds (and ShakeMap)",
-      "whatJp": "USGS の地震フィード（と ShakeMap）",
+      "what": "USGS earthquake feeds, ShakeMap and the catalogue query behind a place's earthquake record",
+      "whatJp": "USGS の地震フィード・ShakeMap・場所の地震の記録のカタログ検索",
       "sends": {
-        "code": "nothing",
-        "detail": "the request itself"
+        "code": "coordinates",
+        "detail": "the request itself for the feeds; for a place's earthquake record, the place rounded to whole degrees and a radius"
       },
       "disclosure": {
-        "en": "USGS (earthquake feeds)",
-        "jp": "USGS（地震データの取得）"
+        "en": "USGS (earthquake feeds — and when you open the earthquake record of a place, that place rounded to whole degrees and the radius you chose",
+        "jp": "USGS（地震データの取得。場所の「地震の記録」を開いたときは、その場所を整数度に丸めた地点と選んだ半径"
       },
       "probe": {
         "url": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_month.geojson"
