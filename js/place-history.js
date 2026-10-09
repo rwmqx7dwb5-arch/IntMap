@@ -302,7 +302,7 @@ export function historyMarkup(rec, lang, opts) {
   else if (N.status === 'none') parts.push(html`<div class="hn-why">${L('No historical record draws a polity over this point.', 'この地点に政体を描く歴史の記録はありません。')}</div>`);
   else {
     const noPolity = L('No record draws a polity here', 'この期間、ここに政体を描く記録はない');
-    const rows = N.entries.map((E, i) => ({ k: E.from.k, m: entryMarkup(E, i, W, row) })).concat((N.gaps || []).map((g) => ({ k: g.from, m: gapRow(g, noPolity) })));
+    const rows = N.entries.map((E, i) => ({ k: E.from.k, m: entryMarkup(E, i, W, row, opts.inert) })).concat((N.gaps || []).map((g) => ({ k: g.from, m: gapRow(g, noPolity) })));
     rows.sort((x, y) => x.k - y.k);
     parts.push(html`<div class="ph-list">${rows.map((r) => r.m)}</div>`);
   }
@@ -325,7 +325,7 @@ export function historyMarkup(rec, lang, opts) {
 export function historyHtml(rec, lang, opts) { return String(historyMarkup(rec, lang, opts)); }
 /* how many of an entry's later names the card lists before counting the rest (Atlas receives all of them) */
 const RENAMES_SHOWN = 3;
-function entryMarkup(E, i, W, row) {
+function entryMarkup(E, i, W, row, inert) {
   const L = W.L;
   const name = E.unnamed ? L('A shape the record draws without a name', '記録が名前を与えずに描いている形')
     : E.withheld ? L('Name withheld: «' + E.withheld.name + '»', '名前を描いていない: 「' + E.withheld.name + '」')
@@ -346,8 +346,10 @@ function entryMarkup(E, i, W, row) {
   if (E.life && E.tiers.indexOf('clio') >= 0) extra.push(L('Cliopatria dates the polity ' + W.yearT(E.life[0]) + '–' + W.yearT(E.life[1]), 'Cliopatria による政体の年代 ' + W.yearT(E.life[0]) + '–' + W.yearT(E.life[1])));
   const notes = (E.withheld ? E.withheld.lines : []).concat(E.notes || []);
   const quiet = E.unnamed || !!E.withheld;
+  /* (hist-product) a named polity opens its rise and fall (js/polity-arc.js) — not inside the row's button, which sets the clock */
+  const arc = quiet || inert ? '' : html`<span class="ph-src"><button type="button" class="ph-arc" data-hn="${'pharc:' + i}">${L('Rise and fall of ' + name, name + ' の盛衰')}</button></span>`;
   return row('ph:' + i, html`<span class="ph-n">${name}</span><span class="ph-when">${when}</span>`,
-    html`${renames.length ? html`<span class="ph-src">${renames.join(' · ')}</span>` : ''}${extra.length ? html`<span class="ph-src">${extra.join(' · ')}</span>` : ''}${notes.length ? html`<span class="ph-src">${notes.join(' ')}</span>` : ''}${sheetOnly ? '' : html`<span class="ph-src">${idsMarkup(E.ids, W)}</span>`}`,
+    html`${arc}${renames.length ? html`<span class="ph-src">${renames.join(' · ')}</span>` : ''}${extra.length ? html`<span class="ph-src">${extra.join(' · ')}</span>` : ''}${notes.length ? html`<span class="ph-src">${notes.join(' ')}</span>` : ''}${sheetOnly ? '' : html`<span class="ph-src">${idsMarkup(E.ids, W)}</span>`}`,
     quiet ? 'ph-quiet' : '', quiet);
 }
 
@@ -386,5 +388,7 @@ export const PLACE_HISTORY_CSS = [
   '.ph-when{font-size:11.5px;color:var(--text-main);font-variant-numeric:tabular-nums;}',
   '.ph-src{font-size:10.5px;color:var(--text-muted);overflow-wrap:anywhere;}',
   '.ph-src a{color:var(--primary-color);text-decoration:none;}',
+  '.ph-arc{background:none;border:none;padding:2px 0;margin:0;color:var(--primary-color);font:inherit;font-size:11px;font-weight:600;cursor:pointer;text-align:left;}',
+  '@media (pointer:coarse){.ph-arc{min-height:44px;}}',
   '.ph-sub{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);margin:10px 0 3px;}',
 ].join('\n');

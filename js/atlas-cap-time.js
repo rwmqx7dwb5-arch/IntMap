@@ -16,7 +16,7 @@
  *  `policy`, `goal`, `chips` and `catalogueSilent`. js/atlas-caps.js says what each one is; nothing outside the
  *  entry names them.
  * ==========================================================================*/
-import { str, bool, num, int, lng, lat, list, loose } from './atlas-caps.js';
+import { str, bool, num, int, lng, lat, list, loose, one } from './atlas-caps.js';
 import { IntMapTime } from './chronos.js';
 import { changesPeriod, diffPolities, diffEconomy, diffLayers, rankChanges, boxesMeet, bboxOfGeometry } from './atlas-reasoning.js';   /* (atlas-reasoning) time.changes: what is decided is in that module, as values */
 
@@ -108,6 +108,21 @@ export default [
     ],
     schema: () => ({ type: 'object', properties: { year: int(), date: str(), show: bool() } }),
     async run(a, dctx, K) { return yearbook(a, K); },
+  },
+  {
+    row: ['time.polityArc',             'polityArc',      'riseAndFall,polityLife,greatestExtent,polityExtent',          'time',    'time',    'camera,time',            'map,time,explanation', 'session', 'none',   '',         ''],
+    /* (hist-product) RISE AND FALL — one polity read across the whole of time (js/polity-arc.js over data/polity-arcs.json,
+       written by the map's own js/time-borders.js): the first and last year the map draws it and whether each edge is the
+       polity's or a record's, the year and size of its largest DRAWN extent and the record that drew it, how many drawn
+       states it has, and the other names the records give it. Read-only unless `go` (the clock to that year and the map
+       fitted), `play` (the time-lapse through exactly the years its shape changes) or `show` (the sheet). */
+    doc: [
+      { in: 'time.coverage', at: 21, text: '{"type":"polityArc","name"?:str (the polity as the map names it, in English or Japanese: "Mongol Empire", "モンゴル帝国", "Roman Empire"),"qid"?:str (its Wikidata item),"year"?:int (when several names share the item, the one drawn that year),"pick"?:int,"go"?:"peak"|"first"|"last","play"?:bool,"show"?:bool} = RISE AND FALL / 政体の盛衰 — ONE POLITY ACROSS THE WHOLE OF TIME, read off the border records the map draws (Cliopatria to 1689, OpenHistoricalMap 1689–1885, CShapes 1886–2019, and the historical-basemaps sheets at their own years): the first and last year the map draws it (an edge that is only where a record begins or hands over is said to be so — it is not a founding or a fall), the year and area of its LARGEST DRAWN EXTENT and which record drew it, how many drawn states it has, the years its drawn shape changes, and the other names the records give it (same Wikidata item, or the same name the map writes). With no name it returns the polities with the largest drawn extents. go:"peak" moves the clock to the year of the largest extent and fits the map to it; go:"first"/"last" likewise; play:true plays the time-lapse through exactly the years its shape changes; show:true opens the sheet with its chart. Several matches return numbered candidates and move nothing — call again with "pick":n. AREAS ARE OF THE DRAWN SHAPE, NOT OF REAL CONTROL — say so, and say which record drew it. Use for 「モンゴル帝国の最大版図を見せて」「ローマ帝国はいつ一番大きかった？」「オスマン帝国の盛衰」「show the rise and fall of the Ottoman Empire」「when was the Roman Empire at its greatest extent」「the largest empires in history on the map」. ' },
+    ],
+    phrases: () => ['最大版図', '盛衰', '興亡', '一番大きかった', '最も広かった', '領土の推移'].concat(['greatest extent', 'rise and fall', 'at its height', 'at its peak', 'largest empire', 'largest empires']),
+    schema: () => ({ type: 'object', properties: { name: str(), qid: str(), year: int(), pick: int(1, 99), go: one('peak', 'first', 'last'), play: bool(), show: bool() } }),
+    /* the run lives beside the sheet (js/polity-arc.js), fetched on first use, so the Atlas chunk does not carry it */
+    async run(a, dctx, K) { const P = await import('./polity-arc.js'); return P.atlas(a, K); },
   },
   {
     row: ['time.onThisDay',             'onThisDay',      'thisDayInHistory,todayInHistory,onThisDate',                  'time',    'time',    'camera,map.layer,time',  'map,time,explanation', 'session', 'none',   '',         ''],
