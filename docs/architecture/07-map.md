@@ -886,6 +886,9 @@ Atlas の `research.related` / `research.impact` / 実世界オブジェクト�
   カードは指紋が一致する行だけを使い、作り直された束には「索引はこの行を記述していない」と述べる
   （`--check` が出荷中の束との一致を測る）。索引は押したときに読む（起動では読まない）。Atlas からは
   `time.borderSource`（地点・座標、または最後に押した線）。
+  同じ答えは形ごとにファイルにもなる——`IntMapTimeBorders.provenanceOf(f)`（`_provSide`）と `drawnAt()` を
+  共有パネルの引用タブが読み、描いている瞬間の国境を GeoJSON にする（`docs/architecture/08-ui.md` の引用タブ）。
+  そのために各行は自分の入っているファイルを持つ（`file`、CShapes と年代図は `bundle`）。
 - 都市ポップアップの見出しは `IntMapHistCities.forFeature` で実地物の座標と名称を照合し、
   地図の年代・表示言語と同じ歴史名を併記する。現代名での境界照会とは分離し、
   位置を持たない地物や非有限座標をクリック位置で代用して歴史都市へ結び付けない。

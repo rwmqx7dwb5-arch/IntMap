@@ -96,6 +96,11 @@ export const LICENCES = Object.freeze([
   { id: 'CC-BY-NC-SA-3.0-IGO', match: /^cc by nc sa 3\.0 igo$/, url: 'https://creativecommons.org/licenses/by-nc-sa/3.0/igo/',
     credit: true, shareAlike: true, commercial: false },
   { id: 'CC-BY-NC-SA-4.0', match: /^cc by nc sa 4\.0$/, url: 'https://creativecommons.org/licenses/by-nc-sa/4.0/', credit: true, shareAlike: true, commercial: false },
+  /* (sales-pro-audiences) the GNU GPL v3, which aourednik/historical-basemaps states for its sheets (data/hist-eras.js —
+     the repository's LICENSE, read 2026-09-10). Observed 2026-10-08: the first record under data/ to state it as a value.
+     It permits copying, adapting and commercial use (§2, §4–§6), requires the notices and the licence to travel with a
+     copy (§4 — credit) and an adapted copy to be under the same licence (§5c — share-alike). */
+  { id: 'GPL-3.0', match: /^gpl 3\.0( only| or later)?$/, url: 'https://www.gnu.org/licenses/gpl-3.0.html', credit: true, shareAlike: true, commercial: true },
   /* IntMap's own files (the status page's record, the offline-sources table): LICENSE §2 grants use and copying for
      personal and research/educational use, §3 forbids commercial use, §4 requires the notice to be kept */
   { id: 'IntMap-Personal-Research', match: /^intmap personal & research use license( \(license\))?$/, url: 'LICENSE',
@@ -122,7 +127,15 @@ function upstreamsOf(b) {
   const pick = decl.length ? decl : (states(b.inBand) ? [b.inBand] : []);
   if (!pick.length) return { from: null, ups: [] };
   const ups = [];
-  for (const r of pick) for (const u of (r.upstreams && r.upstreams.length ? r.upstreams : [r])) ups.push(u);
+  for (const r of pick) {
+    /* (sales-pro-audiences) read() normalises each upstream to the shared vocabulary; what a record states about its PART
+       in the file (`cite`, `contributes`, `rowsFrom` — see termsOf) is outside it, so it is taken from the same upstream's
+       verbatim record, matched by position — only when the verbatim list is the one read() normalised */
+    const list = r.upstreams && r.upstreams.length ? r.upstreams : [r];
+    const raws = (r.upstreams && r.raw && Array.isArray(r.raw.upstreams) && r.raw.upstreams.length === list.length) ? r.raw.upstreams : null;
+    const own = !(r.upstreams && r.upstreams.length) && r.raw ? r.raw : null;   /* a record that is its own one upstream */
+    list.forEach((u, i) => ups.push(raws ? Object.assign({ part: raws[i] || {} }, u) : own ? Object.assign({ part: own }, u) : u));
+  }
   return { from: decl.length ? 'builder' : 'bundle', rec: pick[0], ups };
 }
 export function termsOf(b) {
@@ -148,6 +161,13 @@ export function termsOf(b) {
       /* the line to show: the DATA_SOURCES row the record names, else its own credit text, else its publisher; a record
          that names none of them is cited by what it does state — its address and its licence */
       credit: k.u.paidBy || k.u.credit || k.u.publisher || (k.u.url ? k.u.url + ' (' + k.u.licence + ')' : null),
+      /* (sales-pro-audiences) what a record states about ITS PART in a composed file, passed on only when stated:
+         `cite` the reference its publisher asks for (in the publisher's words); `contributes: 'outline'` it shaped the edges
+         only (its ground was cut away), not the names, dates or identifiers; `rowsFrom` the first day it can have shaped a
+         row. js/border-extract.js reads them row by row, so a row a record never touched is not held to its terms. */
+      ...(k.u.part && k.u.part.cite ? { cite: String(k.u.part.cite) } : {}),
+      ...(k.u.part && k.u.part.contributes ? { contributes: String(k.u.part.contributes) } : {}),
+      ...(k.u.part && k.u.part.rowsFrom ? { rowsFrom: String(k.u.part.rowsFrom) } : {}),
     })),
     asOf: (rec && rec.asOf) || null, generatedAt: (rec && (rec.generatedAt || rec.retrievedAt)) || null, cadence: (rec && rec.cadence) || null,
   };
@@ -222,9 +242,11 @@ export function model({ root = ROOT, served = (rel) => existsSync(join(root, rel
   for (const b of table.bundles) {
     const id = idOf(b.subject);
     const t = termsOf(b);
-    if (!t.offered) { withheld.push({ id, reason: t.why, detail: t.detail }); continue; }
+    /* (sales-pro-audiences) a withheld entry names its files too, so a reader holding a path (js/border-extract.js) can say
+       which entry withheld it and why, by the same join an offered entry is found by */
+    if (!t.offered) { withheld.push({ id, reason: t.why, detail: t.detail, paths: (b.members || []).slice() }); continue; }
     const files = (b.members || []).filter((m) => served(m));
-    if (!files.length) { withheld.push({ id, reason: 'not-served', detail: 'none of its files is in the built site' }); continue; }
+    if (!files.length) { withheld.push({ id, reason: 'not-served', detail: 'none of its files is in the built site', paths: (b.members || []).slice() }); continue; }
     const shard = b.kind === 'shard';
     /* a shard directory is listed by its index when it has one that is served; one without (data/planets/) lists its files */
     const idx = shard && b.index && served(b.index) ? b.index : null;

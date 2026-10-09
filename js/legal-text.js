@@ -166,6 +166,11 @@ window.IntMapLegalText = (function () {
      (js/quake-history.js) sends USGS's FDSN catalogue query a point — the place rounded to whole degrees, never the exact one
      (js/quake-history-core.js roundedCentre / SLACK_KM) — and a radius. Until now USGS was only asked for whole feeds. Same
      recipient; a new thing sent to it, so it is stated in both languages. */
+  /* (sales-pro-audiences) Terms §12: DATA SAVED FROM THE CITE TAB. The share panel's Cite tab saves the borders the map draws
+     on a date as GeoJSON (js/border-extract.js). Each shape carries the licence of the record it came from, and a shape
+     whose terms are non-commercial is not included. §12 says the terms travel with each shape and that IntMap grants
+     nothing over a source's data — the rule §12 already states for embeds and pictures, extended to a file. What is fetched
+     to make it (the catalogue and the provenance indexes) is served by this site itself: no new recipient, no Privacy change. */
   var LEGAL_DATE = '2026-10-08';
 
   var TERMS_JA = `
@@ -181,7 +186,7 @@ window.IntMapLegalText = (function () {
     <p><b>9. 責任の制限</b> — 法律で認められる範囲で、本サービス利用に起因する損害について当方は責任を負いません。</p>
     <p><b>10. 変更・終了</b> — 本規約は変更される場合があり、継続利用をもって同意とみなします。違反時はアカウントを停止・終了することがあります。</p>
     <p><b>11. 地図表記の中立性</b> — 本サービスで使用する国境線・地名・国／地域の区分や帰属の表示は、第三者の公開データ（地理データ、地図タイル、各種API等）に基づく技術的な表示にすぎず、いかなる国・地域の主権・領有権・政治的立場を主張・支持・否定するものではありません。係争地域の表記は出典データに依存しており、特定の政治的見解を表すものではありません。誤りや不一致がある場合があります。</p>
-    <p><b>12. 埋め込み・組織での利用</b> — 本サービスの地図は、共有メニューの「埋め込み」で得られるコードにより他のウェブページに埋め込むことができ、当方は埋め込みに料金を請求しません。埋め込みや画像として地図を使う場合は、地図に表示される出典の表示（クレジット行）を削除・隠蔽せず、各データの出典が定める条件に従ってください。本サービスのソフトウェアの利用条件は LICENSE に従い、ソフトウェアの商用利用には別途のライセンスが必要です。判断に迷う場合はお問い合わせページからご相談ください。</p>
+    <p><b>12. 埋め込み・組織での利用</b> — 本サービスの地図は、共有メニューの「埋め込み」で得られるコードにより他のウェブページに埋め込むことができ、当方は埋め込みに料金を請求しません。埋め込みや画像として地図を使う場合は、地図に表示される出典の表示（クレジット行）を削除・隠蔽せず、各データの出典が定める条件に従ってください。本サービスのソフトウェアの利用条件は LICENSE に従い、ソフトウェアの商用利用には別途のライセンスが必要です。共有メニューの「引用」タブから保存したデータ（ある日の国境の GeoJSON など）には、形ごとに元の出典のライセンスと出典表示が入っています。利用の際はその条件に従ってください。当方は出典のデータについて権利を許諾するものではなく、出典が非営利の利用に限っている形はそのファイルに含めません。判断に迷う場合はお問い合わせページからご相談ください。</p>
     <p><b>13. お問い合わせ・寄付・支援者の掲載</b> — お問い合わせページからの相談は、当方との契約を成立させるものではなく、当方は回答の時期や内容を保証しません。寄付は対価のない任意の支援であり、寄付の有無によって利用できる機能は変わりません。支援者ページには、掲載を申し込まれ、当方が寄付を確認した方のお名前のみを掲載し、お申し出によりいつでも削除します。</p>`;
 
   var TERMS_EN = `
@@ -197,7 +202,7 @@ window.IntMapLegalText = (function () {
     <p><b>9. Limitation of liability.</b> To the maximum extent permitted by law, we are not liable for damages arising from your use of the Service.</p>
     <p><b>10. Changes & termination.</b> We may update these Terms; continued use means acceptance. We may suspend or terminate accounts for violations.</p>
     <p><b>11. Neutrality of map depictions.</b> The borders, place names, and the way countries and territories are distinguished, attributed or labeled in the Service are technical depictions derived from third-party open data (geographic datasets, map tiles and APIs). They do not assert, endorse or deny any state's or territory's sovereignty, territorial claims or political status. Depictions of disputed areas follow the underlying source data, may contain errors or inconsistencies, and do not represent any political position of IntMap.</p>
-    <p><b>12. Embedding and use by organisations.</b> The map can be embedded in other web pages with the code given by the Share menu's Embed tab, and IntMap charges no fee for embedding. When you embed the map or use it as an image, do not remove or hide the credit line shown on the map, and follow the conditions each data source sets. Use of IntMap's software is governed by its LICENSE; commercial use of the software requires a separate licence. If you are unsure, ask us through the contact page.</p>
+    <p><b>12. Embedding and use by organisations.</b> The map can be embedded in other web pages with the code given by the Share menu's Embed tab, and IntMap charges no fee for embedding. When you embed the map or use it as an image, do not remove or hide the credit line shown on the map, and follow the conditions each data source sets. Use of IntMap's software is governed by its LICENSE; commercial use of the software requires a separate licence. Data saved from the Share menu's Cite tab (such as the borders of a date as GeoJSON) carries, shape by shape, the licence and credit of the source it came from: follow those terms when you use it. IntMap grants no rights over a source's data, and does not include in that file shapes whose source limits them to non-commercial use. If you are unsure, ask us through the contact page.</p>
     <p><b>13. Enquiries, donations and supporters.</b> An enquiry sent through the contact page does not create a contract, and we do not guarantee when or how we will answer. A donation is a voluntary gift with nothing in return; giving or not giving changes nothing you can use. The supporters page names only people who asked to be named and whose gift we have confirmed, and a name is removed at any time on request.</p>`;
 
   var PRIVACY_JA = `

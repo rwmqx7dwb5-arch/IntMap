@@ -3,7 +3,7 @@
 > **誰に・何を・どの経路で・何と答えるか**の正本。公開ページの文は `scripts/org-pages-text.mjs`
 > （en + jp）が正本で、ここはそれを**使う人のための**手引き。製品の方針は `PRODUCT.md` §2、
 > 料金の答えは [`pricing.md`](pricing.md)、よくある質問は [`faq.md`](faq.md)、
-> 顧客区分ごとの提案書の骨子は [`proposals.md`](proposals.md)、導入事例の型は [`case-study-template.md`](case-study-template.md)。
+> 顧客区分ごとの提案書の骨子は [`proposals.md`](proposals.md)、外へ出す文の下書き（承認待ち）は [`outreach-drafts.md`](outreach-drafts.md)、導入事例の型は [`case-study-template.md`](case-study-template.md)。
 
 ---
 
@@ -28,6 +28,7 @@
 | 学校・教育委員会 | 授業での利用、端末・ネットワークの確認 | `for-schools.html`（授業そのものは `teachers.html`、単元から選ぶのは `curriculum.html`、管理職・情報担当に回す 1 枚は `school-handout.html`） | `education` / `classroom` |
 | 研究機関・NGO | 報告書・サイトでの地図、データの追加・引用 | `for-research.html` | `research` / `data` |
 | 支援者 | 支援の理由を知る、名前の掲載 | `support.html` | `supporter` / `supporter_listing` |
+| 開発者 | 埋め込んだ地図を動かす・オープンデータ・ある日の国境の GeoJSON | `developers.html`（地図の中では共有 ▸ 引用） | `other` / `data` |
 | 商用利用 | ソフトウェアの商用ライセンス（`LICENSE` §6） | どのページからも `contact.html` | 任意 / `licence` |
 
 語彙（`audience`・`purpose`）の正本は `supabase/functions/_shared/inquiry-shape.js`。

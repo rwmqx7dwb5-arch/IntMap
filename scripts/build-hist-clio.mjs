@@ -109,22 +109,59 @@ export const CITATION = 'Bennett, J. S. et al. Cliopatria — A geospatial datab
 export const SRC = `Cliopatria ${UPSTREAM.release} (Seshat Global History Databank, github.com/${UPSTREAM.repo}) · CC BY 4.0 · adapted by IntMap: simplified, BC years made astronomical, and the ground OpenHistoricalMap (1689–1885, and from 1886 where CShapes is silent) and CShapes (1886–2019) state removed on their own dates`;
 export const REST_SRC = 'aourednik/historical-basemaps (github.com/aourednik/historical-basemaps) · GPL-3.0 · adapted by IntMap: each sheet before 1886 less the ground OpenHistoricalMap and Cliopatria state at that sheet\'s year';
 
-export const GOVERNANCE = {
+/* ⚠⚠ (sales-pro-audiences) EACH FILE NAMES EVERY RECORD ITS OUTLINES ARE MADE OF, WITH THAT RECORD'S LICENCE AS A VALUE.
+   Measured 2026-10-08 (`node scripts/public-api.mjs --stats`): all three files were withheld from the open-data catalogue
+   as «licence-not-stated — stated-only-in-prose» — the licence lived only in each bundle's `src` sentence. Stating it
+   here is not one licence per file: a Cliopatria row is Cliopatria's (CC BY 4.0), but its OUTLINE is what is left after
+   the ground OpenHistoricalMap and CShapes state was removed (`src` says so), so those two records are named too, as
+   `contributes: 'outline'` — they shaped the edge, not the name, the dates or the identifiers.
+   `rowsFrom` is the first day a record can have shaped a row: CShapes begins 1886-01-01 (js/time-borders.js CS_MIN,
+   scripts/build-hist-borders.mjs Y_MAX + 1, and the earliest start in data/cshapes.js —
+   tests/sales-pro-audiences-checks.test.mjs holds the three equal), and every row of this file is cut at that day,
+   so a row that ends on or before it was never cut against CShapes. js/border-extract.js reads both fields per row.
+   ⚠ THE CShapes VALUES ARE scripts/build-cshapes.mjs's GOVERNANCE, spelled again because a declaration is read apart
+   from its builder (scripts/data-governance.mjs governanceOf binds only literal constants); the same test compares
+   them, so the two spellings cannot part. */
+export const GOVERNANCE = (() => {
+  const CLIO = { publisher: 'Seshat Global History Databank (Cliopatria)', url: `https://github.com/${UPSTREAM.repo}`,
+    licence: 'CC BY 4.0', licenceUrl: 'https://creativecommons.org/licenses/by/4.0/', attribution: true, creditRequired: true,
+    paidBy: CREDIT_ROW, cite: CITATION };
+  const OHM = { publisher: 'OpenHistoricalMap', url: 'https://www.openhistoricalmap.org/', licence: 'CC0 1.0',
+    licenceUrl: 'https://creativecommons.org/publicdomain/zero/1.0/', attribution: false };
+  const CSHAPES = { publisher: 'Schvitz, Rüegger, Girardin, Cederman, Weidmann, Gleditsch (ICR, ETH Zürich)', url: 'https://icr.ethz.ch/data/cshapes/',
+    licence: 'CC BY-NC-SA 4.0', licenceUrl: 'https://creativecommons.org/licenses/by-nc-sa/4.0/', attribution: true,
+    paidBy: 'CShapes 2.0 (Schvitz et al., ETH Zürich)',
+    cite: 'Schvitz, Guy, Seraina Rüegger, Luc Girardin, Lars-Erik Cederman, Nils Weidmann, and Kristian Skrede Gleditsch. 2022. "Mapping The International System, 1886-2017: The CShapes 2.0 Dataset." Journal of Conflict Resolution 66(1): 144–61.' };
+  const SHEETS = { publisher: 'aourednik/historical-basemaps', url: 'https://github.com/aourednik/historical-basemaps',
+    licence: 'GPL-3.0', licenceUrl: 'https://www.gnu.org/licenses/gpl-3.0.html', attribution: true,
+    paidBy: 'historical-basemaps (aourednik) — GPL-3.0' };
+  const outline = (r, from) => Object.assign({}, r, { contributes: 'outline' }, from ? { rowsFrom: from } : {});
+  return {
   'data/hist-clio.js': {
-    publisher: 'Seshat Global History Databank (Cliopatria)',
-    url: `https://github.com/${UPSTREAM.repo}`,
+    publisher: CLIO.publisher,
+    url: CLIO.url,
+    upstreams: [CLIO, outline(OHM), outline(CSHAPES, '1886-01-01')],
+    /* which record draws a piece of ground when two state it on the same day — the composition this file is cut for */
+    priority: { rank: ['CShapes 2.0', 'OpenHistoricalMap', 'Cliopatria'],
+      over: 'where CShapes (from 1886) or OpenHistoricalMap states ground on a day, that record draws it; this file keeps only the ground they leave, on their own dates' },
     ...CLIOPATRIA,
     builtBy: 'scripts/build-hist-clio.mjs',
   },
   'data/hist-eras-rest.js': {
-    publisher: 'aourednik/historical-basemaps',
-    url: 'https://github.com/aourednik/historical-basemaps',
+    publisher: SHEETS.publisher,
+    url: SHEETS.url,
+    upstreams: [SHEETS, outline(OHM), outline(CLIO)],
+    priority: { rank: ['OpenHistoricalMap', 'Cliopatria', 'historical-basemaps'],
+      over: 'each sheet before 1886 keeps only the ground OpenHistoricalMap and Cliopatria leave at the year of that sheet' },
     ...AOUREDNIK_BASEMAPS,
     builtBy: 'scripts/build-hist-clio.mjs',
   },
   /* (hist-colonial-era-borders) OpenHistoricalMap's relations on CShapes' days, less CShapes' ground — see `ohmLate` */
   'data/hist-borders-late.js': {
     publisher: 'OpenHistoricalMap',
+    upstreams: [OHM, outline(CSHAPES)],
+    priority: { rank: ['CShapes 2.0', 'OpenHistoricalMap'],
+      over: 'from 1886 CShapes states the sovereign states on its own dates; this file is the OpenHistoricalMap relations on the ground CShapes leaves' },
     ...OPENHISTORICALMAP,
     builtBy: 'scripts/build-hist-clio.mjs',
   },
@@ -141,7 +178,8 @@ export const GOVERNANCE = {
     ...NATURAL_EARTH,
     builtBy: 'scripts/build-hist-clio.mjs',
   },
-};
+  };
+})();
 
 /* ⚠ FACTS ABOUT THE NEIGHBOURS, NOT CHOICES. CShapes begins 1886-01-01 (js/time-borders.js CS_MIN,
    scripts/build-hist-borders.mjs Y_MAX + 1), so nothing here is drawn from that day. The OHM band is

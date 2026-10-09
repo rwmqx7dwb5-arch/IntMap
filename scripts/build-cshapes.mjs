@@ -112,6 +112,9 @@ export const GOVERNANCE = {
     licence: 'CC BY-NC-SA 4.0',
     attribution: true,
     paidBy: 'CShapes 2.0 (Schvitz et al., ETH Zürich)',
+    /* (sales-pro-audiences) the citation the publisher asks for, as a value the open-data catalogue passes on (CITATION
+       below is built from it, not spelled a second time) */
+    cite: 'Schvitz, Guy, Seraina Rüegger, Luc Girardin, Lars-Erik Cederman, Nils Weidmann, and Kristian Skrede Gleditsch. 2022. "Mapping The International System, 1886-2017: The CShapes 2.0 Dataset." Journal of Conflict Resolution 66(1): 144–61.',
     retrievedAt: '2026-09-11',
     /* ⚠ `static` IS A FRESHNESS ANSWER, NOT THE ABSENCE OF ONE. CShapes 2.0 is a published,
        finished dataset covering 1886-2019; there is no next edition for this copy to be behind.
@@ -144,9 +147,7 @@ export const SRC = 'CShapes 2.0 (Schvitz et al. 2022, icr.ethz.ch/data/cshapes) 
 
 /* the citation the publisher asks for, in the publisher's own words and spelling — NOT translated,
    because a bibliographic reference and a licence name are the source's, not the reader's */
-export const CITATION = 'Schvitz, Guy, Seraina Rüegger, Luc Girardin, Lars-Erik Cederman, '
-  + 'Nils Weidmann, and Kristian Skrede Gleditsch. 2022. "Mapping The International System, '
-  + '1886-2017: The CShapes 2.0 Dataset." Journal of Conflict Resolution 66(1): 144–61.';
+export const CITATION = GOVERNANCE['data/cshapes.js'].cite;
 
 /* ── the simplification, measured above ─────────────────────────────────────*/
 const LEGACY_TOL = 0.008;   /* Old reconstruction, only for detecting corrections. */

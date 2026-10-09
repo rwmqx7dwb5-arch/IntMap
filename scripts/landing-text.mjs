@@ -261,6 +261,8 @@ export const TEXT = {
           { path: 'embed.json', p: 'The embed address and the message protocol above, as data.' },
         ],
         rule: 'A dataset is offered only when every source it comes from states a licence that permits redistribution. One that states none, or states terms that are not known to, is listed as not offered rather than offered quietly. Where a dataset combines sources, the strictest condition applies to the whole file.',
+        /* (sales-pro-audiences) the borders of a date, cut out by the page (js/border-extract.js) */
+        borders: { h: 'The borders of a date, shape by shape', p: 'In the map, set the clock to a date and open Share, then Cite: it saves the borders drawn on that date as GeoJSON, the whole world or the view. Each feature names its record and row, its dates and who stated them, its identifiers and its licence, read from the catalogue above row by row — a shape whose terms are non-commercial is left out and the file names it, and a shape cut against one keeps its record without its outline.' },
         table: 'The datasets, as this build of the site offers them',
       },
       terms: {
@@ -504,6 +506,7 @@ export const TEXT = {
           { path: 'embed.json', p: '埋め込みのアドレスと、上のメッセージの約束事を、データとして。' },
         ],
         rule: 'データセットを出すのは、元になっている出典のすべてが再配布を許すライセンスを述べているときだけです。何も述べていないもの、再配布を許すと確認できない条件を述べているものは、黙って出さずに「出していないもの」として理由とともに載せます。複数の出典を合わせたデータセットには、いちばん厳しい条件がファイル全体にかかります。',
+        borders: { h: 'ある日の国境を、形ごとに', p: '地図で時計を日付に合わせ、「共有」の「引用」タブを開くと、その日に描かれている国境を GeoJSON で保存できます（全世界か、表示範囲）。形ごとに、記録と行・日付とそれを誰が述べたか・識別子・ライセンスが入り、ライセンスは上のカタログから行ごとに読みます。非営利に限られた条件の形は含めずにファイルに名前を書き、そうした記録で輪郭を切られた形は、輪郭なしで記録だけを入れます。' },
         table: 'このビルドのサイトが出しているデータセット',
       },
       terms: {
