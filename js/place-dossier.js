@@ -491,6 +491,9 @@ export function profileHtml(p, HOST, opts) {
   else if (q.status === 'none') qb = '<div class="hn-line">' + esc(L('No earthquake of M' + qm + ' or more within ' + q.reachKm + ' km in the last ' + qd + ' days.', '過去' + qd + '日、' + q.reachKm + ' km 以内に M' + qm + ' 以上の地震はありません。')) + '</div>';
   else qb = q.items.slice(0, SHOWN).map((x, i) => item('data-hn="quake" data-i="' + i + '"', '<b class="hn-mag">M' + (finite(x.mag) ? x.mag.toFixed(1) : '?') + '</b><span class="hn-t">' + esc(x.place || '') + '</span><span class="hn-m">' + esc(x.km + ' km · ' + ago(x.time, L) + (finite(x.depthKm) ? L(' · depth ', ' · 深さ ') + x.depthKm + ' km' : '')) + '</span>')).join('')
     + (q.items.length > SHOWN ? '<div class="hn-more">+' + (q.items.length - SHOWN) + '</div>' : '');
+  /* (live-news-product) the same place's record since the catalogue began (js/quake-history.js, through the boot door in
+     js/lazy-modules.js `quakeHistory`). Only on the reader's tap: that read names a whole-degree point to USGS, which the card's own reads never do. */
+  if (q && !opts.inert) qb += item('data-hn="qrecord"', '<span class="hn-t">' + esc(L('Earthquake record here, since the record began', 'この場所の地震の記録（記録の始まりから）')) + '</span><span class="hn-m">' + esc(L('USGS catalogue · rank, decades, the largest — on the map and the clock', 'USGS のカタログ・順位・年代・最大——地図と時計の上で')) + '</span>');
   now += secN(L('Earthquakes nearby', '周辺の地震'), q && q.reachKm ? L('within ' + q.reachKm + ' km · ' + qd + ' days · M' + qm + '+', q.reachKm + ' km 以内 · ' + qd + '日 · M' + qm + '以上') : '', qb);
   const n = p.news;
   let nb;
@@ -693,6 +696,7 @@ function ensureCard(HOST) {
     if (n && current) {
       const k = n.dataset.hn, i = +n.dataset.i;
       if (k === 'quake') { const it = current.quakes && current.quakes.items[i]; if (it) flyTo(it.lng, it.lat, 8); }
+      else if (k === 'qrecord') { try { const t = card.querySelector('#pd-title'); const o = { lng: current.at.lng, lat: current.at.lat, name: t ? t.textContent : '' }; window.IntMapLazy.need('quakeHistory').then(() => window.IntMapQuakeHistory.open(o)).catch(() => { try { H.imToast(words(H).L('Could not load the earthquake record', '地震の記録を読み込めませんでした')); } catch (_) { /* no toast host */ } }); } catch (_) { /* the lazy door is boot's; without it the row does nothing */ } }
       else if (k === 'news') { const it = current.news && current.news.items[i]; if (it) openNews(it, H); }
       else if (k === 'past') { const it = current.past && current.past.spans[i], y = it ? spanYear(it) : null; if (y != null) { try { IntMapTime.setYear(y, { source: 'here-now' }); } catch (_) { /* the clock refuses a year it cannot reach */ } flyTo(current.at.lng, current.at.lat, 9); } }
       else if (k.indexOf('pharc:') === 0) {

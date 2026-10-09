@@ -2275,6 +2275,18 @@
       .m-clock:active{ transform:scale(0.94); }
       /* while the map shows another time, the clock is the accent — the collapsed Chronos button's own signal */
       .m-clock.on{ background:var(--primary-fill); color:#fff; }
+      /* (mobile-product) while the map shows another time the clock carries that year (js/mobile-ui.js), and it is a rail:
+         drag it sideways (js/time-thumb.js). The two hairline chevrons say it slides — drawn, not glyphs. */
+      .m-clock-y{ display:none; }
+      .m-clock.has-y{ width:auto; max-width:46vw; padding:0 14px 0 10px; gap:6px; }
+      .m-clock.has-y svg{ flex:0 0 auto; width:20px; height:20px; }
+      .m-clock.has-y .m-clock-y{ display:block; position:relative; padding:0 10px; font-size:15px; font-weight:650; letter-spacing:-.01em;
+        font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+      .m-clock.has-y .m-clock-y::before, .m-clock.has-y .m-clock-y::after{ content:''; position:absolute; top:50%; width:5px; height:5px;
+        border:solid currentColor; border-width:0 0 1.5px 1.5px; opacity:.6; }
+      .m-clock.has-y .m-clock-y::before{ left:1px; transform:translateY(-50%) rotate(45deg); }
+      .m-clock.has-y .m-clock-y::after{ right:1px; transform:translateY(-50%) rotate(-135deg); }
+      .m-clock.scrub{ transform:none; }
       .m-readout-slot{ min-width:0; }
       body:not(.m-xhair) #m-readout-slot .coord-readout{ display:none !important; }
       #m-readout-slot .coord-readout{ position:static !important; inset:auto !important; margin:6px 2px 0; padding:0 !important; border:none !important; border-radius:0 !important;

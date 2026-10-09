@@ -765,6 +765,21 @@ Atlas の `research.related` / `research.impact` / 実世界オブジェクト�
 ⚠ **プライバシー**: 公開リンクは表の中身をリンクそのものに入れる——サーバに保存しない代わりに、リンクを渡した相手には
 中身が見える。`js/legal-text.js` のプライバシーポリシー §1 が en / jp でそう述べる。
 
+### 7.3i この場所の地震の記録 (Earthquake record of a place) — `js/quake-history.js` / `js/quake-history-core.js`
+
+1 地点のまわりで USGS ANSS ComCat が持つ全地震を、記録の始まりから今日までカードと地図で読む。正本の説明（出典・送るもの・
+下限の規則）は [`docs/MAP-LAYERS.md`](../MAP-LAYERS.md) の「この場所の地震の記録」。
+
+| 部品 | 中身 |
+|---|---|
+| 事実 | `js/quake-history-core.js`（純粋）——FDSN の要求（`queryUrl`。地点は `roundedCentre` で整数度、半径は `SLACK_KM` だけ広げる）・件数から下限を決める `floorFor`（`QH.CAP`＝3,000）・端末での正確な円 `within`・`buildRecord`（最大・年代と各年代の最小規模・開いた地震の `rankOf`）・時刻 T までの `at`・色の帯 `AGE_BANDS`・`?qh=` の `encodeLink` / `decodeLink`・Atlas に渡す `forAtlas` |
+| カードと地図 | `js/quake-history.js`（IntMapLazy の `quakeHistory`）。ソース `qh-src`（`attribution` に ComCat と ISC-GEM）と層 `qh-ring` / `qh-pt` / `qh-sel`。`IntMapTime.on` で時計の変化ごとに 1 フレーム 1 回描き直す。「この瞬間の地図にする」は `IntMapTime.set(地震の瞬間)` |
+| 扉 | `js/wb-layers.js`（起動時）——地震ポップアップのボタン（押した地震の feature をそのまま渡す）・命令 `quakehistory.open`・`?qh=` の検出。`js/place-dossier.js` の「周辺の地震」の行は遅延の扉を直に開く |
+| Atlas | `time.quakeHistory`（`js/atlas-cap-time.js`。observer `panel`、要約は `forAtlas`） |
+
+⚠ 読めなかったとき（時間切れ・拒否・到達不能）は理由を言い、「地震が無かった」とは言わない。答えが 0 件のときは
+「カタログの答え」と言う。
+
 ### 7.4 Chronos（統一時間）と「年」
 
 - **歴史データは起動時に読まない。読むのは「過去へ行こうとしている」ときだけ。** 国境の束
@@ -871,6 +886,9 @@ Atlas の `research.related` / `research.impact` / 実世界オブジェクト�
   カードは指紋が一致する行だけを使い、作り直された束には「索引はこの行を記述していない」と述べる
   （`--check` が出荷中の束との一致を測る）。索引は押したときに読む（起動では読まない）。Atlas からは
   `time.borderSource`（地点・座標、または最後に押した線）。
+  同じ答えは形ごとにファイルにもなる——`IntMapTimeBorders.provenanceOf(f)`（`_provSide`）と `drawnAt()` を
+  共有パネルの引用タブが読み、描いている瞬間の国境を GeoJSON にする（`docs/architecture/08-ui.md` の引用タブ）。
+  そのために各行は自分の入っているファイルを持つ（`file`、CShapes と年代図は `bundle`）。
 - 都市ポップアップの見出しは `IntMapHistCities.forFeature` で実地物の座標と名称を照合し、
   地図の年代・表示言語と同じ歴史名を併記する。現代名での境界照会とは分離し、
   位置を持たない地物や非有限座標をクリック位置で代用して歴史都市へ結び付けない。

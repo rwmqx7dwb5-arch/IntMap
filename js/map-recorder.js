@@ -448,6 +448,10 @@ function mainCredits() {
   try { style = IntMapGeoEngine.scene.getStyle(); z = IntMapGeoEngine.camera.getZoom(); } catch (_) { style = null; }
   return drawnCredits(style, z, extra);
 }
+/** (sales-pro-audiences) the main map's credits and its instant as words, for the citation (js/map-cite.js) — the same
+ *  credits the postcard burns in and the same label it prints, so a figure and its reference say one thing */
+export function mapCredits() { return mainCredits(); }
+export function clockLabel(lang) { return instantLabel('auto', lang); }
 /* the comparison window — its published controller (js/compare.js `api`): reading it does not import js/compare.js
    into this lazy chunk, for the reason js/atlas-cap-time.js gives (a lazy chunk importing it split shared modules out
    of the boot chunk). Its view is a scoped engine with the same `render` face as the main one. */
@@ -463,18 +467,27 @@ function grabView(view) {
     try { view.render.onNextFrame(1200, grab); } catch (_) { grab(false); }
   });
 }
+/** (sales-pro-audiences) the main clock as a reader of the map states it: { y, m, d, unit:'year'|'day', live, date } —
+ *  the year alone when the clock was SET to a year, else the day; a live map is today's date. The postcard's label
+ *  and the citation (js/map-cite.js) both read it here, so a picture and its reference never name two precisions. */
+export function clockReading() {
+  const H = W_().IntMapHistScale, live = IntMapTime.isLive();
+  const d = live ? new Date() : IntMapTime.when();
+  const y = d.getUTCFullYear(), m = d.getUTCMonth() + 1, day = d.getUTCDate();
+  /* (map-postcard) 'auto' — the picture's instant at the precision the clock was SET to: a year set as a year is the
+     clock's mid-June noon (js/chronos.js setYear — the reading js/compare.js `clockLabel` makes of the same instant),
+     and is labelled as the year; anything else as its day. A live map is labelled with today's date, not «now»: a
+     picture is read long after it was made. */
+  let byYear = false; try { byYear = !live && H.utcAt(y, 5, 15, 12, 0, 0).getTime() === d.getTime(); } catch (_) { byYear = false; }
+  return { y, m, d: day, unit: byYear ? 'year' : 'day', live, date: d };
+}
 /** a label for the instant on the main clock, in the reader's language: the year alone for a lapse in years */
 function instantLabel(unit, lang) {
   const H = W_().IntMapHistScale, tag = IntMapLang.locale(lang);
-  const d = IntMapTime.isLive() ? new Date() : IntMapTime.when();
-  const y = d.getUTCFullYear(), mo = d.getUTCMonth() + 1, day = d.getUTCDate();
+  const c = clockReading(), d = c.date;
+  const y = c.y, mo = c.m, day = c.d;
   try {
-    /* (map-postcard) 'auto' — the picture's instant at the precision the clock was SET to: a year set as a year is the
-       clock's mid-June noon (js/chronos.js setYear — the reading js/compare.js `clockLabel` makes of the same instant),
-       and is labelled as the year; anything else as its day. A live map is labelled with today's date, not «now»: a
-       picture is read long after it was made. */
-    if (unit === 'auto') { let byYear = false; try { byYear = !IntMapTime.isLive() && H.utcAt(y, 5, 15, 12, 0, 0).getTime() === d.getTime(); } catch (_) { byYear = false; }
-      unit = byYear ? 'year' : 'day'; }
+    if (unit === 'auto') unit = c.unit;
     if (unit === 'year') return H.yearText(y, tag, lang === 'jp' ? '年' : undefined);
     const ds = H.dateText(y, mo, day, tag);
     if (unit === 'day') return ds;

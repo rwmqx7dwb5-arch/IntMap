@@ -113,6 +113,8 @@ window.addEventListener('message', (e) =&gt; {
 const japan = await fetch('__INTMAP_SITE_URL__api/v1/countries/JPN.json').then((r) =&gt; r.json());
 for (const d of catalog.datasets) if (d.terms.credit) console.log(d.id, d.credit.join(' · '));</code></pre>
     <p class="lp-sub">A dataset is offered only when every source it comes from states a licence that permits redistribution. One that states none, or states terms that are not known to, is listed as not offered rather than offered quietly. Where a dataset combines sources, the strictest condition applies to the whole file.</p>
+    <h3>The borders of a date, shape by shape</h3>
+    <p class="lp-sub">In the map, set the clock to a date and open Share, then Cite: it saves the borders drawn on that date as GeoJSON, the whole world or the view. Each feature names its record and row, its dates and who stated them, its identifiers and its licence, read from the catalogue above row by row — a shape whose terms are non-commercial is left out and the file names it, and a shape cut against one keeps its record without its outline.</p>
     <h3>The datasets, as this build of the site offers them</h3>
     <!-- intmap:public-api-catalog -->
   </section>

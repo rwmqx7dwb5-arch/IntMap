@@ -744,6 +744,8 @@ ${D.data.endpoints.map((e) => `      <li><h3><a href="${esc(SITE + API_DIR + e.p
     </ul>
     <pre class="lp-code"><code>${esc(dataCode())}</code></pre>
     <p class="lp-sub">${esc(D.data.rule)}</p>
+    <h3>${esc(D.data.borders.h)}</h3>
+    <p class="lp-sub">${esc(D.data.borders.p)}</p>
     <h3>${esc(D.data.table)}</h3>
     ${CATALOG_MARK}
   </section>

@@ -245,6 +245,12 @@ export const IntMapRefData = (function(){
     {n:'GRDC / World Bank — Major River Basins of the World',u:'https://datacatalog.worldbank.org/search/dataset/0041426'},
     {n:'OpenTopoMap',u:'https://opentopomap.org/'},
     {n:'USGS Earthquake Hazards Program',u:'https://earthquake.usgs.gov/',lic:'Public domain',licUrl:'https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits',credit:false},
+    /* (live-news-product) «Earthquake record here» (js/quake-history.js) reads the USGS ANSS Comprehensive Earthquake Catalog (ComCat), whose
+       entries before the global networks are mostly the ISC-GEM relocations — ComCat serves them with their own network code (iscgem /
+       iscgemsup), and ISC-GEM's own terms (CC BY-SA 3.0, isc.ac.uk/iscgem/download.php) ask for the credit; the card's footer and the map
+       source's attribution name it. Read live by the reader's browser; IntMap ships no copy. */
+    {n:'ISC-GEM Global Instrumental Earthquake Catalogue (International Seismological Centre / GEM Foundation) — through USGS ComCat',u:'https://www.isc.ac.uk/iscgem/',lic:'CC BY-SA 3.0',licUrl:'https://creativecommons.org/licenses/by-sa/3.0/',credit:true,
+     cite:'Storchak, D.A. et al. ISC-GEM Global Instrumental Earthquake Catalogue (1904–), International Seismological Centre / GEM Foundation, doi:10.31905/D808B825'},
     /* (weekly-earth) «This week on Earth» (weekly/ and Atlas time.weeklyEarth): the natural events NASA's EONET tracks, read at
        BUILD time by scripts/build-weekly-earth.mjs into data/weekly-earth.json — the reader's browser never asks EONET anything.
        A U.S. Government work; NASA asks to be acknowledged, and every page and answer built from it names EONET and the

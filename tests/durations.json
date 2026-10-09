@@ -1,4 +1,8 @@
 {
+ "tests/hist-product.spec.js": 8,
+ "tests/mobile-product.spec.js": 26,
+ "tests/live-news-product.spec.js": 8,
+ "tests/sales-pro-audiences.spec.js": 15,
  "tests/atlas-product.spec.js": 6,
  "tests/curriculum-sales-kit.spec.js": 7,
  "tests/then-now-card.spec.js": 7,

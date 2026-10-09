@@ -9,8 +9,8 @@
     "cssGzip": 63308
   },
   "async": {
-    "raw": 12730651,
-    "gzip": 4221744,
+    "raw": 12837219,
+    "gzip": 4263438,
     "chunks": {
       "account-data": 7357,
       "aircraft-detail": 17009,
@@ -23,7 +23,7 @@
       "atlas-attach": 23189,
       "atlas-caps-modules": 80,
       "atlas-chart": 10493,
-      "atlas-console": 1474347,
+      "atlas-console": 1491322,
       "atlas-executor": 59145,
       "atlas-geo-resolve": 49361,
       "atlas-hist-urban": 7748,
@@ -105,7 +105,7 @@
       "photo-geo": 77742,
       "photo-geo-exif": 4683,
       "place-dossier": 56059,
-      "place-history": 16382,
+      "place-history": 20092,
       "place-watch": 24862,
       "plane-glyph": 867,
       "playground": 99012,

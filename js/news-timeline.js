@@ -8,7 +8,7 @@
  * ==========================================================================*/
 
 /* (time-index-unify) no timer of its own any more: the forecast transport plays through js/time-lapse.js (see fcPlay). */
-import { IntMapTime } from './chronos.js';
+import { IntMapTime, writeRailPos } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import * as bus from './bus.js';
@@ -605,7 +605,8 @@ export function newsTimeline(HOST){
     let _peekHere=null;
     /* the ONE rule that turns a rail position into a write on the master clock — the Year slider's 'input' handler
        and the peek rail both go through it (one judgment, one place) */
-    function writeYearAtPos(p){ const y=p2y(p); if(y>=curY) IntMapTime.setNow({source:'ui'}); else if(y>=YMIN()) IntMapTime.setYear(y,{source:'ui'}); return y; }
+    /* (mobile-product) the rule itself is js/chronos.js `writeRailPos` — the phone's clock thumb (js/time-thumb.js) is a third rail */
+    function writeYearAtPos(p){ return writeRailPos(p); }
     /* one write per animation frame: a pointer or wheel burst keeps only its latest position */
     let _pkScrubbed=false, _pkPos=null, _pkRaf=0, _pkLast=null, _pkFloat=null;
     function peekWrite(p){ _pkPos=p; if(_pkRaf) return; _pkRaf=requestAnimationFrame(()=>{ _pkRaf=0; const q=_pkPos; _pkPos=null; if(q==null) return;

@@ -215,13 +215,9 @@ export default [
     ],
     phrases: () => ['昔どこの国', 'ここを治めていた', '支配の変遷', 'この場所の歴史', '何という国だった'].concat(['who ruled here', 'place through time', 'what country was this', 'sovereignty history']),   /* the Japanese phrases, then the English words — two lists, not translations of each other */
     schema: () => ({ type: 'object', properties: { place: str(), lng: num(), lat: num(), year: int() }, anyOf: [{ required: ['place'] }, { required: ['lat', 'lng'] }] }),
-    async run(a, dctx, K) { const R = K.R, warn = K.warn, esc = K.esc, L = K.L, HOST = K.HOST, geocode = K.geocode;
-      let pt = null;
-      if (a.lng != null && a.lat != null && isFinite(+a.lng) && isFinite(+a.lat)) pt = { lng: +a.lng, lat: +a.lat, name: String(a.place || '') };
-      else if (a.place && String(a.place).toLowerCase() === 'here' && K._herePoint) pt = { lng: +K._herePoint.lng, lat: +K._herePoint.lat, name: K._herePoint.name || '' };
-      else if (a.place) { const ll = await geocode(a.place); if (!ll) return R(false, warn(L('IntMap could not place «' + esc(String(a.place)) + '». Give coordinates, or name a place IntMap holds.', '「' + esc(String(a.place)) + '」を地図上に特定できませんでした。座標を指定するか、IntMap が持つ地名で言い直してください。'))); pt = { lng: +ll.lng, lat: +ll.lat, name: ll.name || String(a.place) }; }
-      /* ⚠ (#R302) the target is required; a call with neither is answered, not guessed */
-      if (!pt) return R(false, warn(L('Which point? Name a place or give its coordinates.', 'どの地点ですか？地名か座標を指定してください。')));
+    async run(a, dctx, K) { const R = K.R, esc = K.esc, L = K.L, HOST = K.HOST;
+      const got = await pointOf(a, K); if (got.fail) return got.fail;
+      const pt = got.pt;
       /* the record and its drawing live in js/place-history.js, fetched on first use (the card fetches the same module) */
       const PH = await import('./place-history.js');
       try { if (!document.getElementById('im-place-history-css')) { const st = document.createElement('style'); st.id = 'im-place-history-css'; st.textContent = PH.PLACE_HISTORY_CSS; document.head.appendChild(st); } } catch (_) { /* no document */ }
@@ -250,7 +246,123 @@ export default [
       anyOf: [{ required: ['places'] }, { required: ['points'] }, { required: ['from', 'to'] }] }),
     async run(a, dctx, K) { const { atlasRun } = await import('./journey-through-time.js'); return atlasRun(a, K); },
   },
+  {
+    row: ['time.stepHere',              'stepHere',       'nextChangeHere,previousChangeHere,stepPlaceHistory',          'time',    'time',    'time',                   'map,time',            'session', 'none',   'point',    ''],
+    /* (mobile-product) STEP THE CLOCK TO THE NEXT (OR PREVIOUS) INSTANT THE MAP CHANGES OVER ONE POINT — the instants the
+       thumb on the phone's clock stops at (js/time-thumb.js) and its arrow keys step between, read off the same record as
+       time.placeHistory (js/place-history.js `changesOf` / `stepFrom`): where an entry begins, ends, is drawn under a new
+       name, or a first-level unit begins or ends. The clock moves to that day; the answer says what changed there with
+       the edge as the record states it (a record's reach is a record's), what the map states over the point after it, and
+       every change instant at the point — so a further hop is a time.travel to a listed date, not a second search. */
+    doc: [
+      { in: 'time.coverage', at: 24.5, text: '{"type":"stepHere","dir"?:"next"|"prev" (default next),"place"?:str,"lng"?:num,"lat"?:num,"from"?:"YYYY-MM-DD"|int (astronomical year; default the clock)} = STEP THROUGH THIS PLACE\'S HISTORY / この場所の歴史を一歩ずつ — moves the MASTER CLOCK to the next (or previous) instant at which what IntMap\'s historical records draw over that exact point changes: a polity begins or ends there, is drawn under a new name, or a first-level division (令制国・府県・州…) begins or ends — the same record as placeHistory. "place":"here" is the point Atlas last touched; "place":"center" is the map centre (only when the user means the map centre — the phone\'s clock thumb steps there). Returns the instant it moved to, what changed there with each edge kind (stated / reach = the edge of a record, NOT a polity\'s beginning or end / handover / sheet), what the map states over the point after the step, and ALL change instants at the point (changes[]) — to jump further, call timeTravel with one of those dates rather than stepping again. Nothing further recorded → the clock does not move and the answer says so. Use for 「ここの支配者が交代した次の時点へ」「この場所の一つ前の時代へ」「step to the next change here」「go back to when this border last changed」. ' },
+    ],
+    phrases: () => ['次に変わった', '一つ前の時代', '次の時代へ', '支配者が変わった'].concat(['next change here', 'previous change here', 'when did this change', 'step through history']),   /* the Japanese phrases, then the English words — two lists, not translations of each other */
+    schema: () => ({ type: 'object', properties: { dir: str(), place: str(), lng: num(), lat: num(), from: str() }, anyOf: [{ required: ['place'] }, { required: ['lat', 'lng'] }] }),
+    async run(a, dctx, K) { return stepHere(a, K); },
+  },
+  {
+    row: ['time.quakeHistory',          'quakeHistory',   'earthquakeHistory,seismicHistory,quakeRecord,earthquakeRecord,pastEarthquakes', 'time', 'panel',  'panel.quakeHistory,camera', 'panel,explanation', 'session', 'none',   'place?',   'quakeHistory'],
+    /* (live-news-product) THE EARTHQUAKE RECORD OF A PLACE — js/quake-history.js (the card and the map) over
+       js/quake-history-core.js (the facts): every earthquake the USGS ANSS ComCat holds within a radius at or above a
+       floor, from the oldest entry to the latest; when opened from a quake, that quake's rank and the last one at least as
+       large; the decades with the smallest magnitude each recorded; and the record UP TO THE MASTER CLOCK'S INSTANT on the
+       map. `select` + `moment` put the clock on one quake's instant (the map becomes that day's world). The floor rises to
+       the next step when the record is larger than one read, and the answer says so. Nothing is estimated. */
+    doc: [
+      { in: 'time.coverage', at: 29, text: '{"type":"quakeHistory","place"?:str,"lng"?:num,"lat"?:num,"eventId"?:str (a USGS ComCat id, e.g. from the earthquakes layer or table),"radiusKm"?:100|300|500,"minMagnitude"?:4.5|5|5.5|6|7,"select"?:"largest"|eventId,"moment"?:bool} = EARTHQUAKE RECORD OF A PLACE / この場所の地震の記録 — answers «is this earthquake unusual here?», «what is the largest quake ever recorded near X?», «when did Tokyo last have one this big?»: every earthquake the USGS ANSS Comprehensive Catalog (ComCat) holds within the radius (default 300 km) at or above the floor (default M5), from the oldest entry it holds (instrumental ISC-GEM relocations from 1904; a few historical entries earlier) to minutes ago — opened as a card (count, first record, the ten largest, a year × magnitude chart, the decades with the smallest magnitude each recorded) and drawn on the map as the record UP TO THE MASTER CLOCK\'S INSTANT, coloured by how long before it. Given "eventId", that quake is ranked: its rank on the record, how many larger, the last one at least as large and how many years before, the next one after. "select" rings one quake ("largest" or an id) and "moment":true puts the master clock on its instant so the whole map is that day\'s world (borders, names) — combine with timeLapse to replay the record. When the floor holds more records than one read brings (3000) the floor is raised to the next step and the result says so (floorRaised). It states only what the catalogue holds: older decades miss smaller quakes (decades[].smallestRecorded) and NO rate, probability or return period is computed — never present one. The point sent to USGS is rounded to whole degrees. ' },
+    ],
+    phrases: () => ['地震の記録', '過去の地震', '過去最大', '観測史上', '以来の規模', 'ぶりの規模', 'この地震は珍しい'].concat(['earthquake history', 'past earthquakes', 'largest earthquake ever', 'earthquake record', 'since records began', 'biggest quake since']),   /* the Japanese phrases, then the English words — two lists, not translations of each other */
+    schema: () => ({ type: 'object', properties: { place: str(), lng: num(), lat: num(), eventId: str(), radiusKm: num(50, 1000), minMagnitude: num(0, 10), select: str(), moment: bool() } }),
+    async run(a, dctx, K) { const R = K.R, warn = K.warn, esc = K.esc, L = K.L, geocode = K.geocode;
+      let pt = null, name = '';
+      if (a.lng != null && a.lat != null && isFinite(+a.lng) && isFinite(+a.lat)) { pt = { lng: +a.lng, lat: +a.lat }; name = String(a.place || ''); }
+      else if (a.place && /^(here|there)$/i.test(String(a.place).trim()) && K._herePoint) { pt = { lng: +K._herePoint.lng, lat: +K._herePoint.lat }; name = K._herePoint.name || ''; }
+      else if (a.place) { const ll = await geocode(a.place); if (!ll) return R(false, warn(L('IntMap could not place «' + esc(String(a.place)) + '». Give coordinates, or name a place IntMap holds.', '「' + esc(String(a.place)) + '」を地図上に特定できませんでした。座標を指定するか、IntMap が持つ地名で言い直してください。'))); pt = { lng: +ll.lng, lat: +ll.lat }; name = ll.name || String(a.place); }
+      const eventId = a.eventId ? String(a.eventId).trim() : '';
+      /* ⚠ (#R302) the target is required; a call with neither a place nor a quake is answered, not guessed */
+      if (!pt && !eventId) return R(false, warn(L('Which place or which earthquake? Name a place, give coordinates or a USGS event id.', 'どの場所、またはどの地震ですか？地名・座標・USGS の地震 ID のどれかを指定してください。')), { meta: { code: 'NEEDS_INPUT', category: 'input', retryable: true, produced: [], userGoalSatisfied: false } });
+      try { await window.IntMapLazy.need('quakeHistory'); } catch (_) { /* answered below */ }
+      const Q = window.IntMapQuakeHistory;
+      if (!Q || typeof Q.open !== 'function') return R(false, warn(L('The earthquake record is not available', '地震の記録を利用できません')), { meta: { code: 'MODULE_UNAVAILABLE', category: 'capability', retryable: false, produced: [], userGoalSatisfied: false } });
+      let r = await Q.open({ lng: pt ? pt.lng : undefined, lat: pt ? pt.lat : undefined, name, radiusKm: a.radiusKm, minMag: a.minMagnitude, eventId: eventId || undefined });
+      if (!r || r.ok === false) return R(false, warn(L('The USGS catalogue could not be read', 'USGS のカタログを読めませんでした') + (r && r.errorKind ? ' (' + esc(r.errorKind) + ')' : '') + L(' — this does not mean there were no earthquakes', '（地震が無かったという意味ではありません）')), { meta: { code: r && r.errorKind === 'not-found' ? 'NOT_FOUND' : 'UPSTREAM_UNAVAILABLE', category: 'evidence', retryable: !(r && r.errorKind === 'not-found'), produced: [], userGoalSatisfied: false } });
+      if (a.select) Q.select(String(a.select) === 'largest' ? 'largest' : String(a.select));
+      if (a.moment) Q.toMoment();
+      r = Q.summary();
+      const day = (b) => (b ? String(b.time).slice(0, 10) : '');
+      const M = (b) => (b && b.mag != null ? 'M' + Number(b.mag).toFixed(1) : 'M?');
+      let html = '<div style="font-weight:600;margin:2px 0 4px;">' + esc(L('Earthquake record here', 'この場所の地震の記録') + ' — ' + (r.place || '')) + '</div>';
+      html += '<div style="font-size:12px;line-height:1.55;">' + esc(L('{n} earthquakes of M{m}+ within {r} km since {y} (USGS ComCat).', '{y} 年以降、{r} km 以内の M{m} 以上は {n} 件（USGS ComCat）。').replace('{n}', String(r.events)).replace('{m}', String(r.minMagnitude)).replace('{r}', String(r.radiusKm)).replace('{y}', String(r.recordStarts || '').slice(0, 4))) + '</div>';
+      if (r.floorRaised) html += '<div style="font-size:11.5px;color:var(--text-muted);">' + esc(L('The floor was raised from M{a}: the record there is larger than one read.', 'M{a} 以上は一度に読める件数を超えるため、下限を上げました。').replace('{a}', String(r.floorRaised.asked))) + '</div>';
+      if (r.largest && r.largest[0]) html += '<div style="font-size:12px;">' + esc(L('Largest: ', '最大: ') + M(r.largest[0]) + ' · ' + day(r.largest[0]) + ' · ' + (r.largest[0].place || '')) + '</div>';
+      const A = r.anchor;
+      if (A && A.rank != null) html += '<div style="font-size:12px;">' + esc(L('This one ({m}) is number {k} on the record; the last at least as large: {p}.', 'この地震（{m}）は記録上 {k} 番目の大きさ。同じかそれ以上の前回: {p}。').replace('{m}', M(A.event)).replace('{k}', String(A.rank)).replace('{p}', A.previousAtLeastAsLarge ? day(A.previousAtLeastAsLarge) + ' ' + M(A.previousAtLeastAsLarge) : L('none on record', '記録になし'))) + '</div>';
+      html += '<div style="font-size:11px;color:var(--text-muted);line-height:1.5;">' + esc(L('Older decades miss smaller quakes; no rate or probability is implied.', '古い年代ほど小さい地震は記録されていません。頻度や確率を示すものではありません。')) + '</div>';
+      return R(true, html, { meta: { code: r.events ? 'OK' : 'NO_RESULTS', category: r.events ? 'ok' : 'evidence', retryable: false, produced: ['panel', 'explanation'], userGoalSatisfied: true }, exec: { quakeHistory: r } });
+    },
+  },
 ];
+
+/* ══ (mobile-product) THE POINT A PLACE QUESTION IS ASKED ABOUT — one reading for time.placeHistory and time.stepHere ══
+   coordinates; "here" (the point Atlas last touched); a name, geocoded; and, where the caller allows it, "center" — the
+   map centre, said by the reader (⚠ #R302: a call naming no point is answered with a question, never given the centre). */
+async function pointOf(a, K, opts) {
+  const R = K.R, warn = K.warn, esc = K.esc, L = K.L, geocode = K.geocode;
+  const place = a.place != null ? String(a.place) : '';
+  if (a.lng != null && a.lat != null && isFinite(+a.lng) && isFinite(+a.lat)) return { pt: { lng: +a.lng, lat: +a.lat, name: place } };
+  if (place && place.toLowerCase() === 'here' && K._herePoint) return { pt: { lng: +K._herePoint.lng, lat: +K._herePoint.lat, name: K._herePoint.name || '' } };
+  if (opts && opts.center && /^(center|centre|map center|map centre|地図の中心|中心)$/i.test(place.trim())) {
+    let c = null; try { c = K.GE().camera.getCenter(); } catch (_) { c = null; }
+    if (c && isFinite(c.lng) && isFinite(c.lat)) return { pt: { lng: +c.lng, lat: +c.lat, name: L('map centre', '地図の中心') } };
+    return { fail: R(false, warn(L('The map is not drawn yet, so it has no centre to ask about.', '地図がまだ描かれていないため、中心を特定できません。'))) };
+  }
+  if (place) {
+    const ll = await geocode(place);
+    if (!ll) return { fail: R(false, warn(L('IntMap could not place «' + esc(place) + '». Give coordinates, or name a place IntMap holds.', '「' + esc(place) + '」を地図上に特定できませんでした。座標を指定するか、IntMap が持つ地名で言い直してください。'))) };
+    return { pt: { lng: +ll.lng, lat: +ll.lat, name: ll.name || place } };
+  }
+  /* ⚠ (#R302) the target is required; a call with neither is answered, not guessed */
+  return { fail: R(false, warn(L('Which point? Name a place or give its coordinates.', 'どの地点ですか？地名か座標を指定してください。'))) };
+}
+
+/* (mobile-product) time.stepHere — the record of the point, its change instants, one step from the clock (or `from`) */
+async function stepHere(a, K) {
+  const R = K.R, warn = K.warn, note = K.note, esc = K.esc, L = K.L, HOST = K.HOST;
+  const got = await pointOf(a, K, { center: true }); if (got.fail) return got.fail;
+  const pt = got.pt;
+  const dir = /^(prev|previous|back|before|earlier|-1)$/i.test(String(a.dir || '').trim()) ? -1 : 1;
+  const PH = await import('./place-history.js');
+  let lang = 'en'; try { lang = HOST.lang || 'en'; } catch (_) { lang = 'en'; }
+  let k0 = PH.kOf(IntMapTime.when());
+  if (a.from != null && String(a.from).trim() !== '') {
+    const m = /^([+-]?\d{1,6})(?:-(\d{2})-(\d{2}))?$/.exec(String(a.from).trim());
+    if (!m) return R(false, warn(L('"from" is a date (YYYY-MM-DD) or a year.', '「from」は日付（YYYY-MM-DD）か年で指定してください。')));
+    /* a bare year is the clock's own reading of a year — its mid-June (js/chronos.js setYear) */
+    k0 = (+m[1]) * 10000 + (m[2] ? +m[2] : 6) * 100 + (m[3] ? +m[3] : 15);
+  }
+  const rec = await PH.placeHistory(pt);
+  const N = rec.nation || {};
+  if (N.status === 'unavailable') return R(false, warn(L('The historical border records could not be read (' + esc(String(N.reason || 'failed')) + ').', '歴史国境の記録を読み込めませんでした（' + esc(String(N.reason || 'failed')) + '）。')));
+  const changes = PH.changesOf(rec);
+  const c = PH.stepFrom(changes, k0, dir);
+  const ttl = pt.name || (pt.lat.toFixed(4) + ', ' + pt.lng.toFixed(4));
+  const all = changes.map((x) => PH.isoOfK(x.k));
+  if (!c) {
+    const said = dir < 0 ? L('No earlier change is recorded at ' + ttl + '.', ttl + ' でこれより前の変化は記録されていません。') : L('No later change is recorded at ' + ttl + '.', ttl + ' でこれより後の変化は記録されていません。');
+    return R(true, note(esc(said)), { exec: { stepHere: { at: pt, dir: dir < 0 ? 'prev' : 'next', from: PH.isoOfK(k0), moved: false, changes: all } } });
+  }
+  if (!PH.goToInstant(c.k, 'atlas')) return R(false, warn(L('Chronos could not reach ' + PH.isoOfK(c.k) + '.', 'Chronos は ' + PH.isoOfK(c.k) + ' に移動できませんでした。')));
+  const after = PH.nowAt(rec, c.k, lang);
+  const brief = {
+    at: pt, dir: dir < 0 ? 'prev' : 'next', from: PH.isoOfK(k0), to: PH.isoOfK(c.k), moved: true, datesAre: 'astronomical YYYY-MM-DD',
+    begins: c.begins.map(PH.entryBrief), ends: c.ends.map(PH.entryBrief), renamed: c.renames.map((r) => ({ label: r.label, of: r.E.name || null })),
+    subdivisions: c.admin.map((x) => Object.assign({ side: x.side === 'from' ? 'begins' : 'ends' }, PH.adminBrief(x.E))),
+    after: { polities: after.polities.map((p) => p.text), subdivisions: after.units, noRecord: after.gap },
+    changes: all,
+  };
+  return R(true, '<div><b>' + esc(L('This place through time', 'この場所の歴史') + ' — ' + ttl) + '</b><div>' + esc(PH.changeText(c, lang, N.records)) + '</div></div>', { exec: { stepHere: brief } });
+}
 
 /* ══ (time-compare-lapse) THE TWO NEW DOORS ═════════════════════════════════════════════════════════════════
    Each result carries `meta.want` — the state the call set out to reach, in the shape the observer reads
