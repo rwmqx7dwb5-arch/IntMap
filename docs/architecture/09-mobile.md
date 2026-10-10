@@ -8,343 +8,157 @@
 
 ### 9.0 ページの拡大は読者のもの（viewport）
 
-`index.html` の viewport は `width=device-width, initial-scale=1.0, viewport-fit=cover` で、
-**`user-scalable=no` も `maximum-scale` も持たない**——読者はパネルや文字をピンチで拡大できる（WCAG 1.4.4）。
+`index.html` の viewport は `width=device-width, initial-scale=1.0, viewport-fit=cover` で、**`user-scalable=no` も `maximum-scale` も持たない**（読者はパネルや文字を
+ピンチで拡大できる。WCAG 1.4.4）。
 
-- **地図のピンチは地図のもの。** MapLibre のキャンバス（`.maplibregl-touch-zoom-rotate.maplibregl-touch-drag-pan`）と
-  Cesium のキャンバス（`css/intmap.css` の `.cesium-widget canvas`）が `touch-action:none` を宣言するので、
-  地図の上で始まったピンチはページではなく地図を拡大する。パネルの上のピンチがページを拡大する。
-- ⚠ **iOS/iPadOS の WebKit だけは `maximum-scale=1.0` を足す**（meta 直後の inline script）。その
-  エンジンは 2 つの鍵を読者のピンチには効かせず（iOS 10 以降）、`maximum-scale` を**文字が 16px 未満の
-  入力欄にフォーカスしたときの自動拡大の上限**にだけ使う。携帯の起動直後で入力欄 60 個のうち 39 個が
-  10.5〜14px なので、上限が無いと検索欄や日付欄をタップするたびにページが拡大される。
-  iPadOS 13 以降の iPad は UA が "Macintosh" なので、`maxTouchPoints` で Mac と分ける。
-- 検査は `tests/pinch-zoom-allowed-checks.test.mjs`（inline script をエンジンごとの UA で実行して結果の
-  viewport を確かめる）。
-
+- **地図のピンチは地図のもの**（MapLibre のキャンバス `.maplibregl-touch-zoom-rotate.maplibregl-touch-drag-pan` と Cesium のキャンバス `.cesium-widget canvas` が
+  `touch-action:none`）。パネルの上のピンチがページを拡大する。
+- **iOS/iPadOS の WebKit だけは `maximum-scale=1.0` を足す**（meta 直後の inline script。そのエンジンは `maximum-scale` を 16px 未満の入力欄にフォーカスしたときの自動拡大の
+  上限にだけ使う）。iPadOS 13 以降の iPad は UA が "Macintosh" なので `maxTouchPoints` で分ける。検査は `tests/pinch-zoom-allowed-checks.test.mjs`。
 
 ### 8.6 分析の帯 (`#layer-tools`) は Tools パネルへ、プリセットは Layers パネルへ運ばれる
 
-`#layer-tools`（比較ビュー・相関分析・地図データの読み込み・データと分析・プレイグラウンド）は**実体が
-1 つのノード**で、`js/data-layers.js` の `reorganizeLayerPanel()` が毎回組み直し、`js/map-ui.js` の
-`_placeLayerTools()` が**読者が実際に見ている Tools パネル**（デスクトップの Tools ▾ か携帯の Map tools
-シート、§8.1）の「分析」節（`.tlp-sec[data-sec="analysis"] > .tlp-body`）へ**移す**。同じ関数が、レイヤー状態である
-`#lyr-presets` を**読者が見ている Layers パネル**のプリセット節（`.lst-presets-body`）へ移す。
-`#layer-active-section` が `_placeActiveSection()` で運ばれるのと同じ形で、**写しは作らない**。
-帯もプリセットも持たない側の節は隠れる（空の見出しを描かない）。
+`#layer-tools`（比較ビュー・相関分析・地図データの読み込み・データと分析・プレイグラウンド）は実体が 1 つのノードで、`js/data-layers.js` の `reorganizeLayerPanel()` が
+組み直し、`js/map-ui.js` の `_placeLayerTools()` が**読者が実際に見ている Tools パネル**（Tools ▾ か Map tools シート、§8.1）の「分析」節
+（`.tlp-sec[data-sec="analysis"] > .tlp-body`）へ移す。同じ関数が `#lyr-presets` を見ている Layers パネルのプリセット節（`.lst-presets-body`）へ移す（`#layer-active-section`
+の `_placeActiveSection()` と同じ形。写しは作らない）。持たない側の節は隠れる。
 
-- **運ぶ瞬間**——Tools パネルの組み立てと開き（`mountTools()`。デスクトップはトリガを押すたび、携帯は
-  シートを開くたび）・言語の切り替え・タイル盤の再構築（`buildTiles`）・Layers パネルの開きと閉じ・
-  `reorganizeLayerPanel()` の末尾。⚠ **起動直後、まだ帯が `#layer-dropdown` にいる窓がある**
-  （Tools パネルが組まれる前）。到達可能性を測る側は、**読者と同じようにパネルを開いてから**測ること。
-- **ホストは幅から導かず、ブラウザに訊く。** 携帯でもデスクトップ側のパネルは `isConnected` の
-  ままなので、`getClientRects().length`（＝組版されているか）で選び、`_hostShown` で「実際に
-  引き上げられているシート」を優先し、トリガが押されたパネルがあればそれを先にする。運べるホストが無ければ
-  **ノードはそのまま**（fail safe）。
-- ⚠ **運んだ先が捨てられる瞬間がある。** `buildTiles()` は `.lst-root` を `replaceWith` で丸ごと
-  差し替え、`unmountFrom()` はホストごと `remove()` し、Tools パネルは言語が変わると節を組み直す。
-  運んだノードは**その前に `#layer-dropdown` へ退避**させる——外れたノードは `getElementById` から消え、
-  id で救い出す `reorganizeLayerPanel()` が空の帯を作り直してしまう（実測: 携帯 375px で `#btn-correlate` /
-  `#edu-mount` / `#lyr-presets` がセッションの残り全部で行方不明になった）。**`document.body` へは退避させない**
-  ——パネルの外に出たノードは地図の上に描かれる。
-- **節の見出しは 1 つ。** 帯は自分の「ツール」見出しを持つが、運ばれた先では入れ子の 2 つ目になるので
-  CSS が隠す（規則は**配置**に付いていて、ボタンの id には付いていない）。帯の扉（帯の直下のボタン、または
-  直下の包みのボタン）を押すと、行と同じく Tools パネルが引っ込む。
+- **運ぶ瞬間**——`mountTools()`（デスクトップはトリガを押すたび、携帯はシートを開くたび）・言語の切り替え・`buildTiles`・Layers パネルの開閉・`reorganizeLayerPanel()` の末尾。
+  起動直後は帯がまだ `#layer-dropdown` にいるので、到達可能性は読者と同じようにパネルを開いてから測る。
+- **ホストはブラウザに訊く**（`getClientRects().length` で組版されているかを選び、`_hostShown` で引き上げられているシートを優先、トリガが押されたパネルを先に。無ければ
+  ノードはそのまま）。
+- **運んだ先が捨てられる瞬間がある**（`buildTiles()` は `.lst-root` を `replaceWith`、`unmountFrom()` はホストごと `remove()`、Tools パネルは言語で節を組み直す）ので、その前に
+  `#layer-dropdown` へ退避させる（`document.body` へは退避させない）。
+- **節の見出しは 1 つ**（帯の「ツール」見出しは運ばれた先では CSS が隠す。規則は配置に付く）。帯の扉を押すと Tools パネルが引っ込む。
 
-⚠⚠⚠ **なぜこの経路が要るのか——帯そのものは、読者のどの画面にも属していない。**
-`imLayerPanel` は**定数 `right`** なので `body.lsr-avail` は全幅で常時付き、クラシックの
-`#layer-dropdown` を表示する規則は**デスクトップ側に 1 つも無い**。768px 以下では
-`body.m-lyr-tiles …> #layer-tools{display:none}` が帯を名指しで消す。
-⇒ **帯に直接置いたボタンは、どの幅でも読者に届かない**（祖先が消えているだけで、ボタン自身は
-`display:block`・`visibility:visible` のまま `0×0` になる）。
-
-⚠⚠ **だから扉を 1 つずつ `SIM_TOOLS` へ写してはならない。** それは報告された 1 個を直して
-**次の 1 個を暗いまま残す**（`.agents/rules/no-ad-hoc-hardcoding.md` §1）。直すのは経路のほうで、
-経路を直せば**明日 `#layer-tools` に足されたボタンも、一覧を 1 つも編集せずに**運ばれる。
-
-到達可能性は `tests/smoke.spec.js` の**ツール帯の 3 本**が**ブラウザで**測る——帯が差し出す扉を
-**列挙せず DOM から数え上げ**、`elementFromPoint` で 1 つずつ確かめる。
-⚠ **「あのボタンが在る」を測ってはならない**——在ることと届くことは別で、綴りを書いた検査は
-帯が丸ごと隠れていても緑になる。下限は「1 つ以上」で**今日の個数ではない**（携帯では
-`#btn-correlate` / `#edu-mount` / `#lyr-presets` が作られないので、個数を固定するとその差が
-不合格になる）。
+帯そのものは読者のどの画面にも属していない（`imLayerPanel` は定数 `right` で `body.lsr-avail` は常時付き、`#layer-dropdown` を表示する規則はデスクトップ側に無く、768px 以下では
+`body.m-lyr-tiles …> #layer-tools{display:none}`）——だから帯に置いたボタンは運ばれない限り届かない。扉を 1 つずつ `SIM_TOOLS` へ写さず、経路で運ぶ。到達可能性は
+`tests/smoke.spec.js` のツール帯の 3 本が測る（扉を DOM から数え上げ `elementFromPoint` で確かめる。下限は「1 つ以上」）。
 
 ### 9.1 IntMap Runtime — 1つのフレーム・1つの camera 購読・1つのタイマー
 
-`js/runtime.js` / `window.IntMapRuntime`。**カメラを追う仕事は全部ここを通る。**
-`js/app-body.js` が `js/lazy-modules.js` の隣で `makeRuntime(IM_HOST)` を作る——
-**何かが登録するより前に存在していなければならない。**
+`js/runtime.js` / `window.IntMapRuntime`。**カメラを追う仕事は全部ここを通る。** `js/app-body.js` が `js/lazy-modules.js` の隣で `makeRuntime(IM_HOST)` を作る（何かが登録する
+より前に存在する）。
 
 | 登録簿 | 呼び方 | 何をするか |
 |---|---|---|
-| camera | `onCamera(key, fn, {phase, capability})` | カメラが動いた。**エンジンへの購読は全体で1本**。`phase:'read'` は**すべての** `phase:'write'` より前に走る |
+| camera | `onCamera(key, fn, {phase, capability})` | カメラが動いた。エンジンへの購読は全体で1本。`phase:'read'` はすべての `phase:'write'` より前に走る |
 | frame | `frame(key, fn)` | 次のフレームで1回。key で合流 |
-| timer | `every(key, ms, fn, {whenHidden})` | **1本の timeout** が全周期を回す。`document.hidden` の間は動かさない（戻ったとき取り戻しはしない） |
-
+| timer | `every(key, ms, fn, {whenHidden})` | 1本の timeout が全周期を回す。`document.hidden` の間は動かさない（取り戻しはしない） |
 | idle | `idle(key, fn, {timeout})` | フレームのあと、暇なとき |
-| box | `box(el)` / `remeasure(el)` | **要素がどこにあるか**。ResizeObserver で持ち、`resize` / `orientationchange` / `scroll` / visualViewport、そして**あらゆる `pointerdown` / `touchstart`** で無効化する。測るのは無効化のあと**最初に訊かれたとき 1 回** |
+| box | `box(el)` / `remeasure(el)` | 要素がどこにあるか。ResizeObserver で持ち、`resize` / `orientationchange` / `scroll` / visualViewport と、あらゆる `pointerdown` / `touchstart` で無効化する。測るのは無効化のあと最初に訊かれたとき 1 回（1 ストロークは 1 回の実測から始まる）。`remeasure(el)` は自分でレイアウトを変えた呼び出し側が言う |
 
-⚠ **`box(el)` が pointerdown / touchstart でも無効化されるのが、この登録簿の要点である。**
-ジェスチャは down 無しには始まらないので、**1 ストロークは必ず 1 回の実測から始まり、その間ずっと
-使い回される**——`js/mobile-map-input.js` の長押しが手で書いていた規則を、全員に対して機械が守る。
-`remeasure(el)` は、**自分でレイアウトを変えた**呼び出し側（開いたメニュー、広げた節）が
-observer の次の配達を待てないときに言う。
+- **周期処理は全部 timer 登録簿を通る**（`js/` に生の `setInterval` は無く——例外は `js/runtime.js` 自身のフォールバック——**30 ファイル・43 本**が `everyTick(key, ms, fn, opts)` /
+  `stopTick(stop)` を import する。`tests/shell-runtime-checks.test.mjs` ②が両方向で測る）。
+- **鍵は登録簿ぜんぶで1つの名前空間**（`'data-layers:sat-legend'` のように所有者を名乗る。2回目は置き換えるので、同時に複数走るものは `tickKey(prefix)` で連番）。
+- **既定は「hidden なタブでは動かない」**（`{whenHidden:true}` は現在 2 本——`label-occlusion` のメモリ監視と `atlas-console` の疎通確認）。
+- **登録簿より先に鳴く時計は引き取られる**（`js/theme-sky.js` と `js/perf-hud.js` では `everyTick` が実際の interval を張り、`makeRuntime` が公開した直後に止めて同じ鍵・周期・
+  関数でホイールへ載せ直す）。
 
-**周期処理は全部この timer 登録簿を通る。** `js/` に生の `setInterval` は無く（唯一の例外は
-`js/runtime.js` 自身のフォールバック）、**30 ファイル・43 本**が `everyTick(key, ms, fn, opts)` /
-`stopTick(stop)` を import して登録する。`tests/shell-runtime-checks.test.mjs` ②が両方向で測る——生の
-`setInterval` が1つでもあれば落ち、**この登録簿の利用者が減っても落ちる**（「使われていない機構」に
-戻せない）。
-
-- **鍵は登録簿ぜんぶで1つの名前空間**。`'data-layers:sat-legend'` のように所有者を名乗る。
-  同じ鍵の2回目は1回目を**置き換える**ので、同時に複数走りうるもの（ポップアップごとの監視など）は
-  `tickKey(prefix)` で連番を付ける。
-- **既定は「hidden なタブでは動かない」。** `{whenHidden:true}` は、1 tick 飛ばすと読者が戻ったときに
-  失われるものがある場合だけ（現在 2 本——`label-occlusion` のメモリ監視と `atlas-console` の疎通確認）。
-- ⚠ **登録簿より先に鳴く時計は引き取られる。** `window.IntMapRuntime` は `js/app-body.js` が作るので、
-  それより前に走るファクトリ本体（`js/theme-sky.js`）と import 時に走る計器（`js/perf-hud.js`）では
-  `everyTick` が**実際の interval を張る**——黙って何もしないのは、呼び出し元から見て「動いている」と
-  区別が付かないから。`makeRuntime` は登録簿を公開した直後に、そうして張られた時計を**止めて同じ鍵・
-  周期・関数でホイールへ載せ直す**。載せ直さないと、綴りの上では登録簿を使っているのに hidden なタブで
-  回り続ける時計が残る。
-
-**ライフサイクル**: `define(name,{load,activate,suspend,dispose})`。上の登録は capability 名でタグ付け
-されるので、`suspend(name)` はその機能の毎フレーム仕事を一括で外し、`dispose(name)` は
-**camera / frame / timer / idle の4つの登録簿すべてから**その capability の仕事を消す。
-
-**世代と scope。** 各 capability は**世代番号**を持ち、`dispose` だけがそれを進める。`load` と
-`activate` は着手時の世代を覚え、完了時に照合する——**開く → 読み込み中 → 閉じる → 古い読み込みが
-完了**、の順で「閉じたのに active に戻る」ことは起きない（`generationOf(name)` が読める）。
-失敗した `load` はメモされず、次の `activate` がやり直す。
-そして動詞は **scope** を受け取る: `load(host, loaded)`・`activate(arg, value, active)`。
-- **loaded scope** は `load` から `dispose` まで生きる——カタログ・worker・トグルをまたいで
-  持ち続ける GL オブジェクト。
-- **active scope** は `activate` から `suspend` まで生きる——地図のリスナー・tick・パネルの
-  DOM ハンドラ・飛んでいる fetch。
-scope は `on(target, ev, fn)`（DOM でも emitter でも）・`every`・`frame`・`onCamera`・`idle`・
-`timeout`・`fetch`（AbortSignal は scope のもの）・`own(x)`（dispose／abort／terminate／
-disconnect／close を持つもの、または関数）で**登録したものを所有**し、`release()` で逆順に一括で
-返す。`alive()` はその scope が今の世代のものか、`guard(fn)` は release 後に届いた結果を捨てる
-継続。scope 経由の登録は所有者名のタグと `name:` 接頭辞の鍵を自動で持つ（実測: `capability:` を
-手で渡していた登録は js/ に 0 件——手で付ける札は付いていない札）。`RT.scope(name)` /
-`RT.scope(name,'active')` で動詞の外からも取れる。`stats().unowned` は**いま生きている所有者の無い登録の数**で、
-0 に向けて減らす計器（累積は `unownedEver`。本番実測で累積しか無かった版は衛星のトグルごとに 1 増え続けた）。⚠ **DEM／Köppen／凡例／Playground が各自で手書きしている「古い完了を拒む」は、
-この機構の 4 つの写しである**——新しく書くときはこちらを使う。
-
-状態は `defined` → `loading` → `loaded` / `failed` → `active`、そして `disposed`。
-⚠ **`disposed` は「もう開けない」ではない。** 定義は登録簿に残り、消えるのは `load` のメモだけなので、
-次の `activate` は `def.load` からやり直して**同じ機能をもう一度開く**。資源を返す動詞が
-「二度と使えない」を意味する設計は、閉じたら開けない機能を作る。
-
-**今この登録簿を使っている機能**（3つとも `activate` / `suspend` / `dispose` の3動詞を持ち、
-自分の API にも `dispose` を出しているので、Atlas からも UI からも同じ口に届く）:
+**ライフサイクル**: `define(name,{load,activate,suspend,dispose})`。登録は capability 名でタグ付けされ、`suspend(name)` は毎フレーム仕事を一括で外し、`dispose(name)` は camera /
+frame / timer / idle の4つの登録簿すべてからその capability の仕事を消す。各 capability は世代番号を持ち `dispose` だけが進める。`load` と `activate` は着手時の世代を完了時に照合する
+（閉じたのに active に戻らない。`generationOf(name)`）。失敗した `load` はメモされない。動詞は scope を受け取る: `load(host, loaded)`・`activate(arg, value, active)`——**loaded scope**
+は `load` から `dispose` まで（カタログ・worker・GL オブジェクト）、**active scope** は `activate` から `suspend` まで（地図のリスナー・tick・パネルの DOM ハンドラ・fetch）。scope は
+`on(target, ev, fn)`・`every`・`frame`・`onCamera`・`idle`・`timeout`・`fetch`（AbortSignal は scope のもの）・`own(x)` で登録したものを所有し、`release()` で逆順に返す。`alive()`・
+`guard(fn)`。scope 経由の登録は所有者名のタグと `name:` 接頭辞の鍵を持つ。`RT.scope(name)` / `RT.scope(name,'active')`。`stats().unowned` はいま生きている所有者の無い登録の数
+（累積は `unownedEver`）。DEM／Köppen／凡例／Playground の手書きの「古い完了を拒む」はこの機構の写しで、新しく書くときはこちらを使う。状態は `defined` → `loading` →
+`loaded` / `failed` → `active`、そして `disposed`（定義は残り、次の `activate` は `def.load` からやり直す）。
 
 | capability | activate | suspend（速い再開のために残すもの） | dispose（返すもの） |
 |---|---|---|---|
-| `wx.wind` | 風レイヤー ON | OFF。**WebGL のレンダラは残す**（テクスチャ2・FBO2・VBO2・プログラム2の作り直しを毎トグル払わないため） | `js/wx-wind.js` の `dispose()` ＝ GL オブジェクトを削除し、キャンバスのバッキングストアも解放 |
+| `wx.wind` | 風レイヤー ON | OFF。WebGL のレンダラは残す | `js/wx-wind.js` の `dispose()` ＝ GL オブジェクトを削除し、キャンバスのバッキングストアも解放 |
 | `sim.tsunami` | 津波パネルを開く | 閉じる（走っているジョブは abort、ソルバのスレッドは残す） | worker を terminate（`IntMapTsunamiWorker.dispose()`）、モデルとパネル DOM を破棄 |
-| `sat.live` | 実時間衛星 ON。**3 つの地図リスナーと tick は active scope が所有**し、閉じた後に届いたカタログは `guard` が捨てる | OFF（scope が interval・3 リスナーを返す。詳細パネルを閉じる。**カタログは残す**） | カタログと導出位置を捨て、レイヤーと軌道を地図から削除 |
+| `sat.live` | 実時間衛星 ON。3 つの地図リスナーと tick は active scope が所有し、閉じた後に届いたカタログは `guard` が捨てる | OFF（scope が interval・3 リスナーを返す。詳細パネルを閉じる。カタログは残す） | カタログと導出位置を捨て、レイヤーと軌道を地図から削除 |
 
-⚠ **worker を返す動詞と、worker が死んだ経路は別物。** `src/tsunami-worker-client.js` と
-`src/sat-worker-client.js` の `dispose()` は、**在庫のジョブを必ず決着させてから** terminate する
-（terminate されたスレッドを待っている promise は永久に解決しない）。津波側は `null` で解決
-（`abort` と同じ答え＝呼び出し側に既存の分岐がある）、衛星タイル側は **reject**
-（タイルの promise は `{data,mode}` を約束しており、`null` は「絵が無い」を絵の位置に置くことになる）。
-`onerror` の側は `tried` を戻さない——**墜ちた worker を輪で作り直さない**のはそちらの仕事。
-
-⚠ **なぜ「読みを全部終えてから書く」なのか**：private な rAF を各自が持つと、どれも `project()` /
-`getBoundingClientRect()` で幾何を**読み**、同じコールバックで style を**書く**ので、
-**1つの書き込みが次の読み取りのレイアウトを無効化する**＝強制同期レイアウトが毎フレームN回、
-指が触れている経路の上で起きる。
-
-⚠ **誰の仕事も間引かない。** 全員が今までと同じフレームで同じ入力で走り、動いている最中の絵も変わらない。
-消してよいのは**重複だけ**。`gesturing()` / `window.__imGesture` は公開されているが、このファイル自身は
-使わない——「これは止まってからでいい」は、その判断が見える呼び出し側で書く。
-
-⚠ **ローダーではない。**「取ってきて・factory を回して・publish を検証する」は `js/lazy-modules.js` の
-仕事で、`load` はそこを**呼ぶ**場所。
+- worker を返す動詞と worker が死んだ経路は別物: `src/tsunami-worker-client.js` と `src/sat-worker-client.js` の `dispose()` は在庫のジョブを必ず決着させてから terminate する
+  （津波側は `null`、衛星タイル側は reject）。`onerror` の側は `tried` を戻さない（墜ちた worker を輪で作り直さない）。
+- 読みを全部終えてから書く（各自の rAF が読みと書きを混ぜると強制同期レイアウトが毎フレーム N 回起きる）。誰の仕事も間引かず、消すのは重複だけ。`gesturing()` /
+  `window.__imGesture` は呼び出し側が使う。ローダーではない（取得・factory・publish の検証は `js/lazy-modules.js`）。
 
 ### 9.2 レイアウト——シート 1 枚と操作グループ 1 つ
 
-携帯（`(max-width:768px)`）の画面は**地図が主役**で、地図を覆う常設物は 2 つだけ——**下のシート**（最小の段では
-検索欄の 1 行）と**右上の操作グループ**。凡例は地図の上に自動では開かず、左上の**凡例チップ**（有効な凡例が
-あるときだけ・数を出す）から開く。390×844 の初回訪問で、覆う割合は 45.2 % → 13.9 %、44 px 未満のタップ目標は
-14/21 → 1/9（残る 1 つはライセンス上必須の出典表記のリンク）。実測と定義は開発記録（`dev-notes/`）。
+携帯（`(max-width:768px)`）は**地図が主役**で、地図を覆う常設物は**下のシート**（最小の段では検索欄の 1 行）と**右上の操作グループ**だけ。凡例は左上の**凡例チップ**（有効な
+凡例があるときだけ・数を出す）から開く。390×844 の初回訪問で覆う割合は 13.9 %、44 px 未満のタップ目標は 1/9（ライセンス上必須の出典表記のリンク）。
 
-- **シートの段は 4 つ**（`js/mobile-sheet.js`）——`hidden`（グリップだけ）・`min`（検索欄の行・home indicator 込み）・
-  `half`（画面の 45 %）・`full`（`--sheet-h`）。旧名 `peek` / `mini` は `min` / `hidden` の別名として
-  `window.__setDetent` が受ける。離すと**指の速度を初速にしたばね**で止まる（UIKit のシートの動き。
-  `spring()` が同じ曲線を CSS `linear()` と JS easing の両方で返すので、シートと地図の padding は同じ曲線で
-  同時に止まる）。フリックは**その向きに 1 段だけ**進み、ゆっくり離せば最寄りの段。`prefers-reduced-motion`
-  ではばねを使わない。
-- **シートがどの段に止まるかは、読者がいま何をしているかで決まる——規則は 1 か所**（`js/mobile-sheet.js` の
-  `detentFor`）。`js/mobile-ui.js` の信号は全部ここに訊く。
+- **シートの段は 4 つ**（`js/mobile-sheet.js`）——`hidden`（グリップだけ）・`min`（検索欄の行・home indicator 込み）・`half`（画面の 45 %）・`full`（`--sheet-h`）。旧名 `peek` /
+  `mini` は `window.__setDetent` が別名として受ける。離すと指の速度を初速にしたばねで止まる（`spring()` が同じ曲線を CSS `linear()` と JS easing の両方で返す）。フリックは
+  その向きに 1 段だけ、ゆっくり離せば最寄りの段。`prefers-reduced-motion` ではばねを使わない。
+- **シートがどの段に止まるかの規則は 1 か所**（`js/mobile-sheet.js` の `detentFor`。`js/mobile-ui.js` の信号は全部ここに訊く）:
+
   | 読者がしていること | 段 |
   |---|---|
-  | 検索欄にカーソルがある（候補が場所を要る） | `full` |
+  | 検索欄にカーソルがある | `full` |
   | 何も選ばずに欄を離れた | 欄が上げる前の段（今より上げない） |
-  | **答えが地図の上のカード**（候補から場所を選んだ）——シートは答えを持っていない | `min`（今より上げない） |
-  | **指ではなくアプリが地図を動かした**（Atlas の fit、選んだ場所への飛行、フィードの項目の場所） | `half`（今より上げない） |
-  | タブを選んだ（Atlas は答えをシートに書き、同時に地図に描く） | `half`。読者自身が上げていればそのまま。欄が上げた `full` は読者のものではない |
-  | **シートの中に、最後まで読むカードがある**（ログイン前の Atlas の見本カード——最後の行が無料枠とログインのボタン） | `full`。`half` では Atlas の窓が約 170 px でカードは約 460 px、ボタンが画面の 234 px 下にあった |
+  | 答えが地図の上のカード（候補から場所を選んだ） | `min`（今より上げない） |
+  | 指ではなくアプリが地図を動かした（Atlas の fit、選んだ場所への飛行、フィードの項目） | `half`（今より上げない） |
+  | タブを選んだ | `half`。読者自身が上げていればそのまま |
+  | シートの中に最後まで読むカードがある（ログイン前の Atlas の見本カード） | `full` |
 
-  答えは段を**下げるだけで、上げない**。「カードを地図に置いた」はカードの持ち主が 1 つの名前の
-  イベント（`MAP_ANSWER_EVENT`——`js/mobile-sheet.js` が持つ名前を import する）で述べるだけで、段は選ばない。
-  「アプリが動かした」は movestart で読み、**指の動き**（MapLibre はジェスチャの movestart に `originalEvent` を付ける。
-  3-D エンジンは付けないので、シートの外に置かれている指も数える）と**シート自身の padding の動き**（発行中は印を付ける）は答えではない。
-  ⚠ **飛行中は padding を動かさない**——`easeTo` は進行中の飛行を止めるので、シートは今動き、カメラの padding は
-  飛行が着いてから追う（場所はシートが残した地図の真ん中へ滑る）。
-  ⚠ 候補を選ぶとその検索は終わる: 同じ検索の遅れて届く結果は何も書かず、欄は場所の**名前**を持つ（質問ではないので、
-  打鍵 120 ms 後の候補タイマーが選択の後に発火しても候補は開かない）。携帯ではキーボードが閉じる。
-- **シートの頭全体が取っ手**——グリップ・検索欄の行・タイトル行・タブ行のどこを縦に 7 px 以上動かしても
-  シートが動き、動かさなければ普通のタップ（ドラッグの後の click は飲み込む）。グリップのタップは 1 段上下する。
-  中身を一番上までスクロールしてさらに引くと、シートが下がる（要素の id を名指さない委譲リスナー）。
-- **シートの中身は画面の下端で終わる。** 段に止まるたびに、見えていない分を `--sheet-hide` として
-  シートの `padding-bottom` に書く（毎フレームではなく 1 回）。だからどのフィードも最後の行までスクロールでき、
-  **Atlas は `half` で開いても入力欄が画面内にある**——答えが地図に描かれるのを見ながら書け、読むときは `full` へ。
-- **画面はシートの中で遷移する**（`makeScreens()`）。Layers（`#mo-sheet`）・Tools（`#tools-sheet`）・地図
-  （`#bm-pop`）・Chronos（`#news-timeline`）・設定（`#settings-modal`）は、**持ち主が「開いている」と言っている
-  間だけ**既存の要素を `#m-screens` に貸し、閉じたら元の位置に返す。開閉の判定は持ち主が既に書いている
-  クラスやインラインの `display` で、2 つ目の「開いているか」は持たない——作り直さないので id・ハンドラ・
-  `[data-proxy]`・ダイアログ登録はそのまま。全画面の別オーバーレイ（スクリム）は使わない。
-  ⚠ Chronos はシートの中にいる間、地図の操作で閉じない（`js/news-timeline.js` の autoClose が判定する）。
-  画面が出ている間、ホームの中身（タブ・フィード・企業／国の比較バー）は `visibility:hidden`（配置は保つ）。
-  **検索の候補の一覧も同じ扱い**——頭の下からシートの下端までを埋めるので、行がある間（空でなく、インラインの
-  `display:none` でない）はホームの中身を隠す。これが無いと、最後に開いたタブの比較バー（`#co-compare-fixed`・
-  シートの足に絶対配置）が候補の一覧の上に乗っていた。`tests/map-next.spec.js` の携帯の項が指の当たる先で測る。
-- **入口は 1 つ。** シートの頭の欄が「場所の検索」と「Atlas に訊く」を兼ねる。打つたびに、端末にある
-  候補（国・首都・地名辞書——`localFuzzyPlaces`）を通常の検索と同じ行・同じ `gotoPlace` で出し
-  （`doGeocode({suggest:true})`・ネットワークは使わない）、最後の行が「Atlas に訊く」。Enter は全検索をして
-  先頭の候補へ飛ぶ。古い検索の応答は世代で捨てる。欄にフォーカスすると `full` に上がり、空で離れると元の段へ戻る。
-- **右上の操作グループ**（`.m-ctl-group`）——Layers・地図・Tools・現在地を縦につないだガラス 1 本。
-  「地図」画面は、ベースマップ（地図／衛星の **2 面の絵**——同梱のデータからカメラの場所を描く・ネットワーク
-  なし・開いている間だけ描く）・投影（地球儀／平面／3D）・**基本表示**（レイヤーとは呼ばない。`js/data-layers.js`
-  `IntMapBaseDisplay.items()`——宣言の `kind:'display'`——を、その行がいま名乗る名前のまま iOS のスイッチで。
-  本物のチェックボックスを `change` で切り替えるので 2 つ目の実装ではない）・**中心点の読み取り**。コンパスは地図が回転か傾斜しているときだけ、グループの下に出る。
-- **座標の読み取りは常設しない。** 十字線と読み取り（座標・標高・中心のレイヤー値）は、計測ツールが
-  動いている間と、読者が「中心点の読み取り」を入れている間だけ出る（`body.m-xhair`・設定は
-  `localStorage`）。読み取りは地図の上のバーではなく、シートの頭の検索欄の下の 1 行。出ていない間は
-  DEM の参照もレンダラへの問い合わせもしない。
-- **重なり順は 1 つの表の 4 行**——`css/intmap.css` 先頭の `:root` の `--z-m-legend`（1040）＜ `--z-m-card`（1100：
-  地図が答えるカード——選んだ場所のカード）＜ `--z-m-chrome`（1150：操作グループ・凡例チップ・コンパス）＜
-  `--z-m-sheet`（1200：検索・Chronos・全画面）。凡例は操作部品を覆えない（覆える番号が存在しない）。
-  ⚠ `#map-container` は `position:fixed` なので**それ自身が重なりの文脈**で、中にあるもの（凡例・場所のカード・
-  レンダラのポップアップ）は番号にかかわらず操作グループとシートの下に描かれる。表の行は、その中の順を事実に合わせて書いたもの。
-  ニュースの点のカード（`.m-news-pop-back`——自分の暗幕を持ち、読む／閉じるを待つ）は**地図から開いたポップアップ**の行
-  （`--z-popup`）で、シートの上に出る。
-- **地図が持つカードは、第 2 のシートではなく、浮くカード。** `#map-container` の直下に載る `.country-popup`（火山・航空機・
-  衛星・企業・ニュースの点・地点プロファイル）は、下端が**シートの今の上端**（`--sheet-cover`）＋**出典の帯の実測高**
-  （`--m-credit-h`——`js/mobile-ui.js` が ResizeObserver で測り、帯が 2 行になれば追う）＋ 20 px、上端は凡例チップの行の下
-  （`--m-legend-top`）、右端は操作グループの手前（`--m-legend-right`）。収まらない分はカードの中で指でスクロールする
-  （`overflow-y:auto`・`overscroll-behavior:contain`）。選ぶのは**どこに載っているか**という事実なので、明日足されるカードも
-  同じに扱われる。`<body>` に載るカード（z 2200）は従来どおりシートの上の下端シート。⚠ 計測（375×812・本番 5453fa7）:
-  旧規則はこれらも `bottom:0` の下端シートにしたので、カードの下端 812 がシートの上端 734・出典の帯の下に入り、
-  「いま噴火したら」と熱異常のボタンを #sidebar が受け取った。さらに、地図に載るカードが開いたこと自体を
-  `js/mobile-ui.js` が読み（直下の子だけを見る——地図の子孫はマーカーの style 書き込みで埋まる）、`card` の行（シートは `min` へ）に訊く。
-- **地図の上に浮かぶものは全部、シートと出典の帯の上に収まる——名前ではなく性質で見つける。** 上の規則は `.country-popup` という
-  名前を書いていた。火山灰パネル（`#ash-panel`）は `#map-container` の子で、そこは**シートより下の積層文脈**なので `z-index` が
-  2212 でも**シートの下**に描かれ、下端が y 812 まで伸びて「上空の風で実行」がシートのつまみ（y 740）の下に隠れた。次のパネルを
-  名指しで足すのは同じ直しの繰り返しなので、`js/mobile-sheet.js` の `makeFloatFit` が <body>・`#map-container`・その列の**直下の子**
-  から、**位置が fixed / absolute・描かれている・指を受ける・操作部品を持つ**もの（シート自身の画面・出典の帯・画面を覆う箱・
-  **シートと同じ形でシートの上に描かれるモーダルの下端シート**＝`<body>` の国カードは除く。読者が動かしたもの＝`data-dragged` も除く）
-  を全数見つける。下端の限界は `floatBound`（画面高 − `--sheet-cover` − `--m-credit-h` − 20 px）、上の限界は凡例チップの行の下
-  （`--m-legend-top`）。**収まっているパネルには何も書かない**。はみ出すパネルにだけ属性 `data-m-fit` を付け、`cap`（背丈をその範囲に）・
-  `dy`（`translate` でシートの下から出す）・`scroll`（自前のスクロール箱が無いときの `overflow-y`）を css/intmap.css が読む。
-  シートの段が変われば（`setCover`）・出典の帯の高さが変われば・パネルの大きさが変われば測り直す。火山灰パネルは操作グループの
-  手前で止まる（`right:var(--m-legend-right)`——端から端までだと × が操作グループの下に入った）。
-  ⚠ **操作部品そのものも浮くもの**——「操作部品を持つ」は「中に持つ」だけを訊いていたので、**単体で浮くボタン**（地図上の
-  オブジェクトの一覧を開く丸ボタン `#iol-fab`。`bottom:104px` をインラインで書く）は数えられず、`half` でレイヤー画面の検索欄の
-  上に重なって、重なった範囲のタップをボタンが取った。要素が**それ自身操作部品である**ことも同じ性質として数え、同じ限界に収める。
-  シートが `full` で地図の余地が無いとき、パネルは描いたまま（読むもの）だが、**単体の操作部品は退く**（`out`——見えず、指を受けない。
-  操作グループが `full` で退くのと同じ）。シートが下がれば次の測り直しで戻る。
-- **Atlas の「例の置き場」（`.atl-ex`）はスクロールできる箱。** `half` では Atlas の窓が約 170 px しかなく、置き場の中身は 735 px
-  あったのに、箱が縮まず指で動かせなかった——見本カードを開いてからシートを `half` に戻すとログインのボタンが y 1088 に出た。
-  `min-height:0`＋`overflow-y:auto` で窓の中を指で動かせ、カードが開いている間は導入文（`.atl-sub`）が退く。カードを開いたときに
-  窓へ入れるのは**カードの操作の行**（`full` でも窓は約 360 px でカードは 461 px）。
-- **ログイン前の Atlas の見本カード**（`.atl-pv`）は、`MAP_ANSWER_EVENT` の `kind:'read'` で上の表の `read` の行に訊く。
-  ⚠ チップの再描画（`renderExamples`）は行ごと置き換えるので、シートを上げるとカメラの padding が動いて視点の鍵が変わり、
-  読んでいるカードが消えた（本番の「引き上げるとカードが消える」）。未ログインでカードを開いている間は再描画を**待つ**
-  （`_exKey` を進めない。カードの閉じるが引き直す。ログインはカードを終わらせるので待たない）。
-- **場所のカード**（`.search-result-card`）は、携帯では左右の端が CSS のもの——画面の端から `--m-legend-right`
-  （凡例トレイと同じ、操作グループの幅から導いた値）まで——で、ピンに合わせて動くのは尾だけ（`--src-x`、
-  `js/search-geocode.js` が書く）。どこにピンがあっても操作グループに届かない。× と「座標をコピー」「ピンを刺す」は 44 px。
-- **凡例トレイ**（`makeLegendTray()`）——地図の上に浮く凡例（`#map-container` の直下で class か id が
-  `legend` を含むもの。`js/window-manager.js` の `DOCK_SEL` と同じ事実）は、従来どおり
-  `js/data-layers.js` の tiler が並べ、**トレイが開くまで `visibility:hidden`**。`display` は持ち主の
-  スイッチのままなので、計測も配置も止まらず、開くのは class 1 つ。凡例の – と × は指には 44 px・目には
-  従来の箱。
-- **全部の当たり判定が 44 px 以上**——タブ・ログイン・設定・グループ・時計・検索の虫眼鏡・凡例の –／×・
-  Chronos のタブと速度・年のスライダー（指には 44 px の行・目には 6 px の溝と 28 px のつまみ）・ウィジェット盤の
-  編集／追加と歯車・レイヤー画面の検索欄（16 px の文字）と節の見出し・有効レイヤー行の List と「すべて解除」。
-  測るのは**当たり判定**（`elementFromPoint`）で、描く大きさではない——小さく描いて `::after` で指の 44 px を持つ部品
-  （ウィジェット盤・凡例・有効レイヤー行）がある。⚠ スクロール箱が `::after` を切ると当たり判定も切れる。
-- **Chronos はシートの中で、指で動かすものが先**——`half` で開き（年を動かしながら地図を見るため）、値・スライダー・
-  目盛り・再生がタブの直後に来る。時計の選択・日時へ移動・Date／Time の入力欄（一度打つもの）は後ろへ回る
-  （CSS の `order`。マークアップは 1 つで、デスクトップの浮くパネルの順は変わらない）。
-- レイヤーパネルはシートの画面の中に移動する。**携帯のレイヤー欄はデスクトップと同じもの**
-  （`js/map-ui.js` の `mountInto()` が同じ DOM を移す。2つ目の実装を作らない）。
-- **最大（`sheet-full`）のとき、地図のタップは無効**で、タップすると中段（`half`）へ下りる。操作グループと
-  凡例チップは `full` の間だけ退く。
-- **チェックボックスのタップ**：`input{pointer-events:none}` ＋ `touch-action:manipulation` ＋
-  行そのものの `pointerdown` でトグルする。
-- **compare を開いている間**：メインの操作グループを**下に移動**する（消さない）。
-- **地図の上に浮く部品の寸法は1か所にある。** `css/intmap.css` の携帯ブロックの `:root` が
-  `--m-edge`・`--m-fab`（44 px）・`--m-group-w`・`--m-chrome-top`（安全領域を含む上端）を持ち、凡例の置き場
-  `--m-legend-top`（チップの下＋8 px）と `--m-legend-right`（グループの幅＋8 px）は**ここから導出**され、
-  計測ツールのパネルも `--m-legend-top` から始まる。`--sheet-cover` は `#map-container` と `.map-column` の
-  両方に書く（出典表記は `#map-container` の外にある）。門は `tests/mobile-panels-reach.spec.js`（375×812・同じ測り方で、**見つけた浮くものの全部**——火山灰・シミュレータ・ツアー作成・地点プロファイル、`half` に戻した Atlas の見本カード——を測る。シートの段を変えたあとも）・`tests/mobile-card-reach.spec.js`（375×812・本物の指で、火山カードの全ボタンと Atlas の見本カードのログインボタンが `elementFromPoint` で自分に当たり、シートと出典の帯の上にあること）・`tests/form-control-names.spec.js` ②
-  （375×812 で凡例を3枚開き、トレイを開いてから、各カードの四隅——角丸の半径だけ内側——と中心で
-  `elementFromPoint` がそのカード自身を返すこと）と `tests/ui-a11y-polish.spec.js` ③（390×844 で覆う割合・
-  44 px 未満・凡例の重なり順・Chronos・候補）。
-- **Radius パネル**：携帯では左下のコンパクトなカード（地図と FAB を塞がない）。
-- **`.m-scrim` は、閉じている間 `visibility:hidden`。**
-- **画面配置と端末の持ち主は1つ**——`js/ui-device.js`（`window.IntMapDevice`）。電話レイアウトの境界
-  `(max-width:768px)`（反対側は `(min-width:769px)`）を `js/` で書くのはここだけで、`isMobile()` は
-  `IntMapDevice.compact()`、注入 CSS は `IntMapDevice.media(css)` か `'@media'+IntMapDevice.COMPACT`。
-  スタイルシートも同じ 1 本の線で引く（`max-width:767px`／`min-width:768px` は無い——幅ちょうど 768 px で
-  スクリプトと 6 つの規則が食い違っていた）。形の問いは `kind()`（`phone` / `phone-landscape` /
-  `tablet` / `desktop`：主ポインタが coarse か、画面の短辺が 500 px 以下か、向き）で、`<body>` に
-  `im-compact`・`im-dev-<kind>`・`im-portrait`/`im-landscape` として常に出ている（スタイルシートの
-  「電話レイアウトで縦向き」の規則はこのクラスを読む）。門は `check:static` の `ui-owners` 規則——
-  767/768 の分裂は即失敗、`js/` に残る境界の数値はファイルごとに両方向で数え、残すなら理由を書く。
-  ⚠ **横向きの携帯（844 px）はデスクトップ配置のまま**（レイアウトは幅の問いのまま——横向きを電話の配置にすると読み出しが 1 つも出なくなる。
-  CONSTITUTION §4——地図のボタンを消さない）。変わったのは、その端末が `phone-landscape` と名指される
-  ようになったこと。`tests/r668.spec.js` が同じ iPhone で予算と配置の両方を測る。
-- ⚠ **「携帯」の問いは2種類あり、答える述語も2つある。** 幅（`isMobile()` ＝
-  `IntMapDevice.compact()`）は**レイアウト**の問い——シート・クロスヘア・携帯用読み出し・
-  タップの文言。`_imPhoneClass()`（＝`IntMapDevice.phoneBudget()`）は**端末**の
-  問い——MSAA・DPR 上限・常駐タイル予算・@2x タイル・canvas の RAM 上限・DEM キャッシュ上限・
-  DEM 先読み・毎フレームのマーカー遮蔽。**横向きの iPhone は 844 px なので、幅で端末を訊くと
-  全部デスクトップの設定になる**（同じ GPU のまま）。
-  ⚠⚠⚠ **そして端末の問いは上の 8 つでは終わらない。** 実測（全追跡ファイル 1,016 本の掃引）で、
-  **18 ファイル・39 か所**が費用の問いを幅で訊いていた。横向きの iPhone が同時に取っていたもの:
-  **メモリ圧の見張りが1つも設置されない**（`js/label-occlusion.js` ——助けるはずの当の弁）・
-  ケッペンの作業キャンバス 16 MB→67 MB・地震の遠方ラスタ 6.6 MB→48 MB・地震の pinned DEM
-  123 MB→410 MB・津波の格子 ×2.8・風の粒子 2,200→6,000・水の解法 9,000→120,000 ステップ
-  （メインスレッド 2.5 s→6 s）・タップの許容半径 15 px→6 px（＝指で押しにくい）。
-  ⇒ **述語は `window.IntMapMemBudget.deviceIsPhone(旧テスト)` 1 本に集約**（`js/mem-budget.js`）。
-  ⚠ **手で写してはならない**——写した 3 本（`dem-source`・`precip-annual`・`vs30-mask`）は
-  3 本とも下の第 3 項を落としており、スタイラスやマウスを繋いだ携帯がデスクトップ扱いになっていた。
-  ⚠ **規則は検査ではなく事実に付いている**: `tests/r668-checks ③` が**全追跡ファイル**を歩いて
-  「幅で選ばれた数」を数え、既定は**失敗**（幅が正しい問いである場所だけを理由付きで許可リストに置く）。
-  ⚠ **別名を解決してから数える**——ほとんどの現場は `isMobile()?110:420` ではなく
-  `const _mob=…isMobile(); … _mob?110:420` と書くので、綴りだけを探す検査では 1 件も見つからない。
-  述語は3項で、**上から順に答える**:
-  1. `(pointer:coarse)` でなければ **false**（主ポインタがマウス＝タッチ対応のノート PC もここで落ちる）
-  2. `(any-pointer:fine)` が無ければ **true**（ふつうの携帯・タブレット）
-  3. どちらもある場合だけ、**端末の画面**（`Math.min(screen.width, screen.height)` ≤ 500）を見る
-  ⚠ **3 番目が無いと「細いポインタも持っている携帯」がデスクトップ扱いになる**——S Pen を抜いた
-  Galaxy、Bluetooth マウスを繋いだ端末。2 番目が守るはずだったのは 1 番目が既に落とす機械なので、
-  実際に除かれていたのはその携帯だけだった。3 項目は**追加しかしない**（既に true の端末を false に
-  することはできない）し、幅ではなく**画面の短いほう**を見るので向きで答えが変わらない。
-  ⚠ **`maxZoom`（携帯 18／それ以外 19）は幅のまま**で、これは意図的な例外である。ここで区別して
-  いるのは費用ではなく**到達できる能力**で、横向きの端末から 1 段取り上げるかどうかは性能の話では
-  ないから。
+  答えは段を下げるだけで上げない。カードの持ち主は `MAP_ANSWER_EVENT`（`js/mobile-sheet.js` が持つ名前）で述べるだけ。「アプリが動かした」は movestart で読み、指の動き
+  （MapLibre はジェスチャの movestart に `originalEvent` を付ける。3-D エンジンはシートの外の指も数える）とシート自身の padding の動きは答えではない。飛行中は padding を
+  動かさない（`easeTo` は飛行を止めるので、カメラの padding は着いてから追う）。候補を選ぶとその検索は終わる（遅れた結果は書かず、欄は場所の名前を持ち、キーボードが閉じる）。
+- **シートの頭全体が取っ手**（グリップ・検索欄の行・タイトル行・タブ行のどこを縦に 7 px 以上動かしても動き、動かさなければタップ。グリップのタップは 1 段上下。中身を一番上
+  までスクロールしてさらに引くと下がる）。
+- **シートの中身は画面の下端で終わる**（段に止まるたびに見えない分を `--sheet-hide` として `padding-bottom` に書く。Atlas は `half` でも入力欄が画面内にある）。
+- **画面はシートの中で遷移する**（`makeScreens()`）。Layers（`#mo-sheet`）・Tools（`#tools-sheet`）・地図（`#bm-pop`）・Chronos（`#news-timeline`）・設定（`#settings-modal`）は、
+  持ち主が開いていると言っている間だけ既存の要素を `#m-screens` に貸し、閉じたら返す（id・ハンドラ・`[data-proxy]`・ダイアログ登録はそのまま。スクリムは使わない）。
+  Chronos はシートの中にいる間、地図の操作で閉じない（`js/news-timeline.js` の autoClose）。画面が出ている間と検索の候補の一覧がある間、ホームの中身（タブ・フィード・比較バー
+  `#co-compare-fixed`）は `visibility:hidden`（`tests/map-next.spec.js`）。
+- **入口は 1 つ**（シートの頭の欄が「場所の検索」と「Atlas に訊く」を兼ねる。`localFuzzyPlaces` の候補を `gotoPlace` で、`doGeocode({suggest:true})`・ネットワークなし、最後の行が
+  「Atlas に訊く」。Enter は全検索して先頭の候補へ。古い応答は世代で捨てる。フォーカスで `full`、空で離れると元の段）。
+- **右上の操作グループ**（`.m-ctl-group`）——Layers・地図・Tools・現在地を縦につないだガラス 1 本。「地図」画面はベースマップ（地図／衛星の 2 面の絵——同梱のデータから
+  カメラの場所を描く・開いている間だけ）・投影（地球儀／平面／3D）・**基本表示**（`js/data-layers.js` `IntMapBaseDisplay.items()`＝宣言の `kind:'display'` を iOS のスイッチで。
+  本物のチェックボックスを `change` で切り替える）・中心点の読み取り。コンパスは回転か傾斜しているときだけグループの下に出る。
+- **座標の読み取りは常設しない**（十字線と読み取りは計測ツールが動いている間と「中心点の読み取り」を入れている間だけ。`body.m-xhair`・設定は `localStorage`。読み取りは検索欄の
+  下の 1 行。出ていない間は DEM の参照もレンダラへの問い合わせもしない）。
+- **重なり順は 1 つの表の 4 行**——`css/intmap.css` 先頭の `:root` の `--z-m-legend`（1040）＜ `--z-m-card`（1100）＜ `--z-m-chrome`（1150：操作グループ・凡例チップ・コンパス）＜
+  `--z-m-sheet`（1200：検索・Chronos・全画面）。`#map-container` は `position:fixed` なので重なりの文脈で、中のもの（凡例・場所のカード・ポップアップ）は操作グループとシートの
+  下に描かれる。ニュースの点のカード（`.m-news-pop-back`）は `--z-popup` でシートの上に出る。
+- **地図が持つカードは浮くカード**（`#map-container` の直下の `.country-popup`——火山・航空機・衛星・企業・ニュースの点・地点プロファイル——は、下端がシートの上端
+  （`--sheet-cover`）＋出典の帯の実測高（`--m-credit-h`。`js/mobile-ui.js` が ResizeObserver で測る）＋ 20 px、上端は `--m-legend-top`、右端は `--m-legend-right`。収まらない
+  分はカードの中でスクロールする——`overflow-y:auto`・`overscroll-behavior:contain`）。`<body>` に載るカード（z 2200）はシートの上の下端シート。地図に載るカードが開いたことを
+  `js/mobile-ui.js` が直下の子で読み `card` の行に訊く。
+- **地図の上に浮かぶものは全部シートと出典の帯の上に収まる——性質で見つける**（`js/mobile-sheet.js` の `makeFloatFit` が <body>・`#map-container`・その列の直下の子から、
+  位置が fixed / absolute・描かれている・指を受ける・操作部品を持つかそれ自身が操作部品であるもの——シート自身の画面・出典の帯・画面を覆う箱・`<body>` の国カード・
+  `data-dragged` を除く——を全数見つける）。下端の限界は `floatBound`（画面高 − `--sheet-cover` − `--m-credit-h` − 20 px）、上の限界は `--m-legend-top`。収まっているパネルには
+  何も書かず、はみ出すパネルにだけ `data-m-fit` を付け、`cap`・`dy`・`scroll` を css/intmap.css が読む。シートの段・出典の帯の高さ・パネルの大きさが変われば測り直す。火山灰
+  パネル（`#ash-panel`）は操作グループの手前で止まる（`right:var(--m-legend-right)`）。シートが `full` のとき単体の操作部品（`#iol-fab` など）は退く（`out`）。
+- **Atlas の「例の置き場」（`.atl-ex`）はスクロールできる箱**（`min-height:0`＋`overflow-y:auto`。カードが開いている間は `.atl-sub` が退き、窓へ入れるのはカードの操作の行）。
+  ログイン前の見本カード（`.atl-pv`）は `MAP_ANSWER_EVENT` の `kind:'read'` で `read` の行に訊く。未ログインでカードを開いている間はチップの再描画（`renderExamples`）を待つ
+  （`_exKey` を進めない）。
+- **場所のカード**（`.search-result-card`）は携帯では左右の端が CSS のもの（画面の端から `--m-legend-right`）で、ピンに合わせて動くのは尾だけ（`--src-x`、`js/search-geocode.js`）。
+  × と「座標をコピー」「ピンを刺す」は 44 px。
+- **凡例トレイ**（`makeLegendTray()`）——地図の上に浮く凡例（`#map-container` の直下で class か id が `legend` を含むもの。`js/window-manager.js` の `DOCK_SEL` と同じ事実）は
+  `js/data-layers.js` の tiler が並べ、トレイが開くまで `visibility:hidden`（`display` は持ち主のまま）。凡例の – と × は指には 44 px。
+- **全部の当たり判定が 44 px 以上**（タブ・ログイン・設定・グループ・時計・検索の虫眼鏡・凡例の –／×・Chronos のタブと速度・年のスライダー〔指には 44 px の行・目には 6 px の
+  溝と 28 px のつまみ〕・ウィジェット盤の編集／追加と歯車・レイヤー画面の検索欄〔16 px の文字〕と節の見出し・有効レイヤー行の List と「すべて解除」）。測るのは当たり判定
+  （`elementFromPoint`）。スクロール箱が `::after` を切ると当たり判定も切れる。
+- **Chronos はシートの中で、指で動かすものが先**（`half` で開き、値・スライダー・目盛り・再生がタブの直後。時計の選択・日時へ移動・Date／Time の入力欄は後ろ——CSS の `order`）。
+- レイヤーパネルはシートの画面の中に移動する（`js/map-ui.js` の `mountInto()` が同じ DOM を移す）。
+- **最大（`sheet-full`）のとき地図のタップは無効**で、タップすると `half` へ下りる。操作グループと凡例チップは `full` の間だけ退く。
+- **チェックボックスのタップ**：`input{pointer-events:none}` ＋ `touch-action:manipulation` ＋ 行の `pointerdown` でトグルする。
+- **compare を開いている間**は操作グループを下に移動する（消さない）。
+- **浮く部品の寸法は1か所**（`css/intmap.css` の携帯ブロックの `:root` が `--m-edge`・`--m-fab`（44 px）・`--m-group-w`・`--m-chrome-top` を持ち、`--m-legend-top`（チップの下＋8 px）と
+  `--m-legend-right`（グループの幅＋8 px）はここから導出。計測ツールのパネルも `--m-legend-top` から始まる。`--sheet-cover` は `#map-container` と `.map-column` の両方に書く）。
+  門は `tests/mobile-panels-reach.spec.js`（375×812・見つけた浮くものの全部）・`tests/mobile-card-reach.spec.js`（本物の指で火山カードと Atlas の見本カード）・
+  `tests/form-control-names.spec.js` ②（凡例のカードの四隅と中心）・`tests/ui-a11y-polish.spec.js` ③（390×844 で覆う割合・44 px 未満・凡例の重なり順・Chronos・候補）。
+- **Radius パネル**：携帯では左下のコンパクトなカード。**`.m-scrim` は閉じている間 `visibility:hidden`。**
+- **画面配置と端末の持ち主は1つ**——`js/ui-device.js`（`window.IntMapDevice`）。境界 `(max-width:768px)`（反対側は `(min-width:769px)`）を `js/` で書くのはここだけで、
+  `isMobile()` は `IntMapDevice.compact()`、注入 CSS は `IntMapDevice.media(css)` か `'@media'+IntMapDevice.COMPACT`。スタイルシートも同じ 1 本の線（`max-width:767px`／
+  `min-width:768px` は無い）。形の問いは `kind()`（`phone` / `phone-landscape` / `tablet` / `desktop`）で、`<body>` に `im-compact`・`im-dev-<kind>`・`im-portrait`/`im-landscape`。
+  門は `check:static` の `ui-owners` 規則（767/768 の分裂は即失敗、境界の数値はファイルごとに両方向で数える）。横向きの携帯（844 px）はデスクトップ配置のまま（CONSTITUTION §4。
+  `tests/r668.spec.js`）。
+- **「携帯」の問いは2種類**——幅（`isMobile()`）はレイアウトの問い（シート・クロスヘア・読み出し・タップの文言）、端末（`_imPhoneClass()`＝`IntMapDevice.phoneBudget()`）は費用の
+  問い（MSAA・DPR 上限・常駐タイル予算・@2x タイル・canvas の RAM 上限・DEM キャッシュ上限・DEM 先読み・毎フレームのマーカー遮蔽）。費用の述語は
+  **`window.IntMapMemBudget.deviceIsPhone(旧テスト)` 1 本**（`js/mem-budget.js`。メモリ圧の見張り・ケッペンの作業キャンバス・地震のラスタと DEM・津波の格子・風の粒子・水の
+  解法・タップの許容半径もこれを訊く）。手で写さない。`tests/r668-checks ③` が全追跡ファイルを歩いて幅で選ばれた数を数え（別名を解決してから）、既定は失敗（幅が正しい問いの
+  場所だけ理由付きで許可）。述語は3項で上から答える: ① `(pointer:coarse)` でなければ false ② `(any-pointer:fine)` が無ければ true ③ どちらもある場合だけ
+  `Math.min(screen.width, screen.height)` ≤ 500。`maxZoom`（携帯 18／それ以外 19）は到達できる能力の区別なので幅のまま。
+
 ### DEM タイルの保持と、常駐タイルの予算
 
-標高・水深の読み出し、地形彫刻、可視領域、日射、津波の細分、そして震度分布は、すべて
-**同じ terrarium DEM タイル置き場**（`js/map-readout.js`）を共有する。1 枚は復号後
-**262,144 バイト**（256×256 の Float32）で、置き場はこれを 4 つの状態で持つ:
+標高・水深の読み出し、地形彫刻、可視領域、日射、津波の細分、震度分布は同じ terrarium DEM タイル置き場（`js/map-readout.js`）を共有する。1 枚は復号後 **262,144 バイト**
+（256×256 の Float32）で、状態は 4 つ:
 
 | 状態 | 意味 |
 |---|---|
@@ -353,355 +167,146 @@ disconnect／close を持つもの、または関数）で**登録したもの�
 | ready | 復号済みの `Float32Array` |
 | failed | 訊いて答えが無かった（4 秒で失効し、次のビルドは訊き直す） |
 
-- **上限は 2 つある。** 常駐の `_DEM_CACHE_MAX`（`js/app-body.js`・携帯 140／それ以外 560）と、
-  ビルドが**留めてよい**上限 `_DEM_LEASE_MAX`（携帯 608／それ以外 2,112）。後者は震度分布 1 枚が
-  留める作業集合（`js/seismic.js` の `TILE_BUDGET` ＋ `TILE_BUDGET_FAR`）と同じ数で、
-  `tests/hazard-dem-tile-store-checks.test.mjs` が両者を突き合わせる。
-- **上限は状態が変わるたびに適用される**——**挿入したあとに**（前ではない）、そして**完了したあとにも**。
-  追い出しは **ready から**行い、in flight のものは他に出せるものが無いときだけ落とす
-  （落としても即座には何も解放されず、取り直しの往復だけが増えるから）。
-- **同時に出せる要求は `_DEM_HOSTS.length × 6`＝24 本**。同じバケットの 4 つのホスト名に対して
-  ブラウザが実際に開ける本数なので、**通す量は変わらず、峰だけが変わる**（Image・応答・復号を
-  同時に何個持つか）。⚠ これはレンダラの画像キュー（`_imgConcurrency`）とは別の経路である。
-  ⚠ **load も error も発火しない要求は 45 秒で枠を返す**（どの呼び出し元が渡す締切よりも長い）。
-  要求は取り消さず**手放す**だけで、届いたら下の規則が捨てる。枠を握ったままにできると、24 本
-  揃った時点で DEM が止まる——**同時要求に上限を付けたからこそ生じる止まり方**である。
-- **留め置きはリース。** `warmDEMTiles()` は必ず 1 本開き、`hold` を渡さない呼び出しでは
-  **その呼び出しが終わると自分で閉じる**。震度分布のように呼び出しより長く読むものは
-  自分で決めた名前（token）を渡し、`releaseDEMHold(token)` で**その 1 本だけ**閉じる。
-  鍵は参照数で数えるので、**あるビルドの解放が別のビルドの留め置きを外すことはない**。
-- **リースを離れたあとに届いた応答は捨てる。** 取り消した仕事が、あとからデータを戻す経路にならない。
-- 保持量は `demStoreStats()` が答える（常駐・queued・loading・ready のバイト数・留め置き数・
-  出ている要求数）。⚠ `bytes` は**復号済みのタイルだけ**を数える。
+- **上限は 2 つ**: 常駐の `_DEM_CACHE_MAX`（`js/app-body.js`・携帯 140／それ以外 560）と、ビルドが留めてよい `_DEM_LEASE_MAX`（携帯 608／それ以外 2,112。震度分布 1 枚の作業集合
+  ＝`js/seismic.js` の `TILE_BUDGET` ＋ `TILE_BUDGET_FAR` と同じ数。`tests/hazard-dem-tile-store-checks.test.mjs` が突き合わせる）。
+- 上限は挿入したあとと完了したあとに適用し、追い出しは ready から（in flight は他に出せるものが無いときだけ）。
+- **同時に出せる要求は `_DEM_HOSTS.length × 6`＝24 本**（レンダラの画像キュー `_imgConcurrency` とは別）。load も error も発火しない要求は 45 秒で枠を返す（取り消さず手放す）。
+- **留め置きはリース**（`warmDEMTiles()` は 1 本開き、`hold` を渡さなければ終わると閉じる。長く読むものは token を渡し `releaseDEMHold(token)` でその 1 本だけ閉じる。鍵は参照数）。
+  リースを離れたあとに届いた応答は捨てる。
+- 保持量は `demStoreStats()`（`bytes` は復号済みのタイルだけ）。
 
-**常駐タイル予算（`maxTileCacheSize`）は、分からないメモリ量を余裕とみなさない。**
-`navigator.deviceMemory` は WebKit が実装していないので iPhone では常に `undefined` であり、
-**「答えなかった端末」は「4 GB より多いと答えた端末」ではなく「小さい端末」と同じ扱いにする**
-（携帯 640／自称 4 GB 超の携帯 1024／デスクトップ 2048 (@2x) か 8192）。
-⚠ この値は端末の RAM の概算であって、このタブが使ってよい量ではない。
-⚠ `maxTileCacheSize` は **source ごと**の設定であって、アプリ全体のバイト予算ではない。
+**常駐タイル予算（`maxTileCacheSize`）は、分からないメモリ量を余裕とみなさない**（`navigator.deviceMemory` は iPhone で常に `undefined` なので小さい端末と同じ扱い。携帯 640／
+自称 4 GB 超の携帯 1024／デスクトップ 2048 (@2x) か 8192。source ごとの設定で、アプリ全体のバイト予算ではない）。
 
-**地点値の点-多角形判定は、外接矩形で先に断る。** `window._imPipGeo(x,y,geometry)`（`js/map-ui.js`）は
-共有の判定器で、数値レイヤーの地点値（画面外・レンダラのミス）・World Bank 面・タイムゾーン・
-データセンターの 5 経路が通る。外接矩形は geometry の座標配列をキーにした `WeakMap` に憶える
-（`countryGeo` が 110m→10m に差し替わると配列ごと新しくなるので、**無効化の手続きが要らない**）。
-MultiPolygon は全体で断り、通ったらパートごとに断る。⚠ **矩形は「断る」ためだけに使う**——中に
-あれば今までどおり全リングを走るので、**答えは1つも変わらない**。⚠ 座標に使えない値（NaN・null）が
-1つでもある形には矩形を作らない（辺が交差数から抜けると「閉じた環の交差数は偶数」が壊れ、
-素朴な走査自身が矩形の外に true を返しうる）。
+**地点値の点-多角形判定は外接矩形で先に断る**（`window._imPipGeo(x,y,geometry)`・`js/map-ui.js`。数値レイヤーの地点値・World Bank 面・タイムゾーン・データセンターが通る）。
+外接矩形は座標配列をキーにした `WeakMap`、MultiPolygon は全体で断ってからパートごと。矩形は断るためだけ（答えは変わらない）。NaN・null を含む形には矩形を作らない。
 
-- **Atlas は携帯ではサイドバー（ボトムシート）の中で開く**（`#sidebar` にマウントする）。
-- **フライトシムの携帯レイアウト**：`@media(hover:none)` で6連メータ・PFD・ブーストバー・
-  キーボード早見表を消し、テープ・パネル2枚・ラダー・ADI を1つずつ残す。
-  ⚠ **シミュレータからは何も削っていない**（デスクトップ／タブレットでは従来どおり全部出る）。
-- **宇宙を探索の携帯レイアウト**：時刻まわりを `.sp-timeb` 1つに畳み、**そのボタンが時刻そのものを
-  表示する**（畳んでも答えは隠れない）。デスクトップではそのボタンは `display:none`。
+- **Atlas は携帯ではボトムシートの中で開く**（`#sidebar` にマウント）。
+- **フライトシムの携帯レイアウト**：`@media(hover:none)` で6連メータ・PFD・ブーストバー・キーボード早見表を消し、テープ・パネル2枚・ラダー・ADI を1つずつ残す（デスクトップ／
+  タブレットでは全部出る）。
+- **宇宙を探索の携帯レイアウト**：時刻まわりを `.sp-timeb` 1つに畳み、そのボタンが時刻そのものを表示する（デスクトップでは `display:none`）。
 
 ### 9.3 指の経路——DOM に訊くのは 1 ジェスチャに 1 回
 
-**指が動くたびに DOM を測ってはならない。** これは §9.1 の Runtime が守っている
-「READ は全部 WRITE より先」の、入力側の言い換えである。
+**指が動くたびに DOM を測らない**（§9.1 の「READ は全部 WRITE より先」の入力側）。長押し・クロスヘア・中心の読み出し・「地点を追加」ピルは `js/mobile-map-input.js` 1 本の面
+（`js/app-body.js` は 2 か所から `longPress()` / `crosshair()` を呼ぶ）。
 
-⚠ **この面は `js/mobile-map-input.js` に 1 本でまとまっている**——長押し・クロスヘア・中心の読み出し・
-「地点を追加」ピルは、携帯の述語・コンテナの箱・「覆われていない領域の中心」規則を共有する 1 つの面で、
-分けると 3 つとも二重になる。`js/app-body.js` は 2 か所から `longPress()` / `crosshair()` を呼ぶだけ
-（リスナーの登録順が観測可能なので、マウント点は 1 つにまとめない）。
+- **長押し判定**は `touchstart` で canvas の矩形を1回だけ測り、以降はクライアント座標で比較する。12 px を越えたら `cancel()` が武装を解く。
+- **クロスヘア**は Runtime の READ 相（中心の経緯度）と WRITE 相（`display` と読み出し文字列）に分かれる。
+- 地図コンテナの矩形は ResizeObserver で持つ。`--sheet-cover` は `js/mobile-ui.js` がインライン宣言として書くので、その文字列（＋`document.body.className`）が変わったときだけ
+  `getComputedStyle` を引き直す。値が同じ書き込みもレイアウトを無効化するので変わったときだけ書く。
 
-- **長押し判定**は `touchstart` で canvas の矩形を**1回だけ**測り、以降は
-  **クライアント座標どうしで比較する**。しきい値（12 px）を越えたら `cancel()` が
-  **武装を解く**ので、そのジェスチャの残りの `touchmove` は最初の行で戻る。
-- **クロスヘア**（携帯の中央十字と座標読み出し）は **Runtime の READ 相と WRITE 相に分かれている**。
-  READ 相が中心の経緯度を採り、WRITE 相が `display` と読み出し文字列を書く。
-  同じコールバックの中で「書く→測る→書く」をやると、位相を分けた意味が無くなる。
-- 地図コンテナの矩形は **ResizeObserver** で持つ。`--sheet-cover` は `js/mobile-ui.js` が
-  **インライン宣言**として（`#map-container` にも）書くので、**その文字列（＋ `document.body.className`）が変わったときだけ**
-  `getComputedStyle` を引き直す——シートが止まっていれば 1 フレームあたり 0 回。
-- `style.display` のような**値が同じ書き込みもレイアウトを無効化する**ので、変わったときだけ書く。
+**指のクライアント座標を地図の座標に直す場所は 5 つあり、全部 §9.1 の `box(el)` を通る**: `js/wheel-zoom.js` のピンチ（感度を既定から変えている読者の 2 本指）・`js/map-tools.js`
+の `touchLL`（作図）・`js/volume3d.js` の `_ll` / `onMove`（3-D 体積）・`js/tool-panel.js` の `place()`（コンテキストメニュー）・`js/map-tooltip.js` の `positionTooltip`（ホバー）。
 
-**指のクライアント座標を地図の座標に直す場所は 5 つあり、全部 §9.1 の `box(el)` を通る。**
-どれも「`rect = canvas.getBoundingClientRect()` → `clientX − rect.left`」という同じ形で、
-それぞれが自分で測っていた:
-
-| 場所 | 何のとき | 以前 |
-|---|---|---|
-| `js/wheel-zoom.js` のピンチ | ズーム感度を既定から変えている読者の 2 本指 | touchmove ごとに矩形＋`easeTo` |
-| `js/map-tools.js` の `touchLL` | 作図ツールのストローク | touch イベントごとに矩形 |
-| `js/volume3d.js` の `_ll` / `onMove` | 3-D 体積ツールのストローク | 1 移動につき矩形 **2 回** |
-| `js/tool-panel.js` の `place()` | コンテキストメニューを開いている間 | **カメラのフレームごと**に「読む→書く→読む→書く」 |
-| `js/map-tooltip.js` の `positionTooltip` | ホバー中 | mousemove ごとに `offsetWidth/Height`（直前の `display` 書き込みで強制同期化） |
-
-- **ピンチはフレームに合流する。** `touchmove` は目標のズームと中点を控えるだけで、`easeTo` は
-  `RT.frame()` が 1 フレームに 1 回呼ぶ。**`touchend` で控えが残っていれば必ず流す**ので、
-  ジェスチャが描かれなかったフレームの値で終わることはない。
-  ⚠ この経路は**感度が 1 でないときだけ**動く（既定ではレンダラ自身のピンチが引き受ける）。
-- **地図のツールチップの表示は 1 か所が決める**（`window.showMapTooltip` / `hideMapTooltip`）。
-  8 ファイル・37 か所が `el.style.display='block'` を毎 mousemove で書いていた。
-  大きさは**markup が変わったときだけ**測り直す（`setMapTooltipHTML` が知っている）。
-
-⚠ **この経路を測れる計器は `scripts/mobile-trace.mjs` の `pan-touch` / `pinch-touch` /
-`pan-alerts-city` だけ**（他の相は camera 命令で動かすので touch イベントが 1 つも出ない）。
-その3相は **touchmove 1回あたりの `getBoundingClientRect` / `getComputedStyle` 回数**と
-**touchmove →次フレームの遅延**を出す。詳細は `docs/TESTING.md`。
-同じ指を**全レイヤーに 1 つずつ**当てて限界費用と静止中の試行回数を並べるのが
-`scripts/layer-sweep.mjs`、**{ベクタ, 衛星}×{平面, globe}＋日付変更線**に当てるのが
-`scripts/view-matrix.mjs`、その間に**どの関数が走っているか**を名指しするのが
-`scripts/phase-profile.mjs`（3 本とも mobile-trace の指・起動・スナップショットを import する）。
+- **ピンチはフレームに合流する**（`touchmove` は目標を控え、`easeTo` は `RT.frame()` が 1 フレーム 1 回。`touchend` で残りを流す。感度が 1 でないときだけの経路）。
+- **地図のツールチップの表示は 1 か所が決める**（`window.showMapTooltip` / `hideMapTooltip`。大きさは markup が変わったときだけ `setMapTooltipHTML` が測り直す）。
+- この経路を測れる計器は `scripts/mobile-trace.mjs` の `pan-touch` / `pinch-touch` / `pan-alerts-city` だけ（touchmove 1回あたりの `getBoundingClientRect` / `getComputedStyle`
+  回数と touchmove →次フレームの遅延。`docs/TESTING.md`）。同じ指を全レイヤーに当てるのが `scripts/layer-sweep.mjs`、{ベクタ, 衛星}×{平面, globe}＋日付変更線が
+  `scripts/view-matrix.mjs`、どの関数が走っているかが `scripts/phase-profile.mjs`。
 
 ### 地図の動き——ホイール・慣性・ラベル（デスクトップと携帯の両方）
 
-**操作の割り当ては MapLibre のまま**（ホイール＝カーソル位置へのズーム、ドラッグ＝パン＋慣性、ピンチ、
-ダブルクリック／ダブルタップ）。変えてあるのは**動きの軌跡**だけで、どれも `js/geo-engine.js`（レンダラの
-私的な欄に触れてよい唯一のファイル）か、地図の作成オプションにある。
+**操作の割り当ては MapLibre のまま**（ホイール＝カーソル位置へのズーム、ドラッグ＝パン＋慣性、ピンチ、ダブルクリック／ダブルタップ）。変えてあるのは動きの軌跡だけで、
+`js/geo-engine.js` か地図の作成オプションにある。
 
 | 何が | どこ | 規則 |
 |---|---|---|
-| **ホイールのズーム** | `_smoothWheel` | 1 ノッチが動かすのは**ズームの目標**（`_targetZoom`：ホイールの率・シグモイド・制約・スナップはレンダラのまま）。表示中のズームは**臨界減衰のばね**（ω = 0.02 /ms、レンダラの時計 `maplibregl.now()` で毎フレーム厳密に積分）で目標を追い、**速度がノッチをまたいで続く**。静止からの 1 ノッチは指数（すぐ動き出し 150 ms で 95%）。レンダラの 200 ms の終了時計は、ばねが着くまで延ばす。トラックパッドの経路は変えない |
-| **ドラッグを離した後の滑りの設定** | `_glideOptions` / `setGlide` | 滑りは**離した速度のまま始まる**。条件は `linearity × f′(0) = 2`（レンダラの慣性の算術から）で、緩和は正規化した減衰指数（k = 4）。持続時間の法則（減速度 2500 px/s²）と、全速で運ぶ最大の離し速度（≈4,667 px/s）はレンダラの既定のまま |
+| **ホイールのズーム** | `_smoothWheel` | 1 ノッチが動かすのはズームの目標（`_targetZoom`。率・シグモイド・制約・スナップはレンダラのまま）。表示中のズームは臨界減衰のばね（ω = 0.02 /ms、`maplibregl.now()` で毎フレーム積分）で追い、速度がノッチをまたいで続く。静止からの 1 ノッチは 150 ms で 95%。レンダラの 200 ms の終了時計はばねが着くまで延ばす。トラックパッドの経路は変えない |
+| **ドラッグを離した後の滑りの設定** | `_glideOptions` / `setGlide` | 滑りは離した速度のまま始まる（`linearity × f′(0) = 2`、緩和は正規化した減衰指数 k = 4）。持続時間の法則（減速度 2500 px/s²）と全速で運ぶ最大の離し速度（≈4,667 px/s）はレンダラの既定 |
 | **設定の「パン」「慣性」** | `js/wheel-zoom.js` → `input.setGlide({speed, length})` | パンは運ぶ速度、慣性は滑りの長さ（0＝離すと止まる）を掛ける |
-| **滑りの保持** | `setGesture('dragPan',true)` / `setDragPan(true)` | MapLibre の `dragPan.enable()` は**引数なしだと慣性を既定へ戻す**。だから滑りの設定は**ビュー**が持ち、このファイルの全ての enable がそれを渡す（作図ツールがパンを止めて戻しても失われない） |
-| **離したときの滑り（パンとズームを 1 つの法則で）** | `js/geo-engine.js` `_glideRelease` | レンダラの慣性処理（`_onMoveEnd`）を包む。速さは慣性バッファの**最初と最後の記録の間**で測り（離すまでの間隙を分母に入れない）、窓は最低 3 フレーム。パンもズームも「持続 = 速さ / 減速度」——ズームの速さは**ピンチ中心から画面幅の半分の点の速さ**（ln2·w/2 px）に直して同じ減速度を使う（375 px の携帯で 19.3 zoom/s²＝レンダラ既定の 20 とほぼ同じ、1280 px で 5.6）。どちらも離した速さで始まる。さらに滑りは**最後に指が動いたフレームに錨を置く**（緩和を最大 1 フレーム分ずらす）ので、離した瞬間に止まって見えるフレームが無い。慣性 0 ならパンもズームも止まる |
-| **カメラの行き先** | `js/geo-engine.js` `camera.destination()` / `camera.onDestination(fn)` | 動いているカメラが止まる場所が分かっているとき——ホイールのばねの目標、`easeTo`/`flyTo` に渡された終点（離した後の滑り・ダブルクリック・Atlas）、ドラッグ中なら「いま離したら滑って着く所」——を `{zoom, center, size}` で答え、新しく分かるたびに `onDestination` の購読者へ知らせる（描画イベント名にしないのは、`events.on` の名前は両エンジンが守る約束だから）。ピンチ中は答えない（通過中の段を名指すことになる） |
-| **衛星タイルの行き先優先** | `js/sat-proto.js` `_satWantedThere` / `_satWarmDestination`、`src/sat-worker.js` `warm` | ズーム中に衛星の要求を保留する仕組み（通過するだけの段を取らない）はそのまま。**行き先が描くタイル**（行き先のズームでレンダラが要求する段 `round(zoom+1)` か 2 段浅い段で、行き先の画面＋1 タイルの内側）だけは保留せず即座に取る。さらに行き先が分かった時点で、その段のタイル（@2x なら子 4 枚）を**中心に近い順に**ワーカーのバイトキャッシュへ先に取りに行く（4 本まで並行・新しい行き先が古い列を置き換える） |
-| **夜側の描画** | `js/night-side.js` `paint()` | 1024² 画素の夜側の画像は**1 回 5 ms までの普通のタスク**（MessageChannel）に区切って計算し、出来上がった絵だけをキャンバスに渡す（以前は 1 つの処理で 35〜58 ms）。**アイドル時間は待たない**——忙しいページにはアイドルが来ず、時計を動かしても昼夜の境界が古いまま残った。先に 1/4 辺の粗い絵、続けて全解像度の絵。時計がまた動けば走っている計算は捨てて新しい時刻から始め、同じ時刻の再要求ではやり直さない。`state().paint`（`at`＝キャンバスが持つ時刻・`full`＝全解像度か・`pending`＝描いている時刻）が「どの時刻の絵が載っているか」を述べ、`state().built` は「全解像度の絵を一度描き終えた」を意味する |
-| **ラベルの出入り** | `js/app-body.js` `ARRIVAL_FADE_MS`（180 ms） | 地図の `fadeDuration` は**記号（ラベル）の**クロスフェード。0 だとレンダラは**毎フレーム全ラベルの衝突配置をやり直し**、ラベルは瞬時に出入りする（点滅）。衛星タイルの `raster-fade-duration` と同じ数 |
+| **滑りの保持** | `setGesture('dragPan',true)` / `setDragPan(true)` | MapLibre の `dragPan.enable()` は引数なしだと慣性を既定へ戻すので、滑りの設定はビューが持ち全ての enable がそれを渡す |
+| **離したときの滑り** | `js/geo-engine.js` `_glideRelease` | `_onMoveEnd` を包む。速さは慣性バッファの最初と最後の記録の間で測り（窓は最低 3 フレーム）、パンもズームも「持続 = 速さ / 減速度」（ズームの速さはピンチ中心から画面幅の半分の点の速さ ln2·w/2 px に直す。375 px で 19.3 zoom/s²、1280 px で 5.6）。最後に指が動いたフレームに錨を置く。慣性 0 なら止まる |
+| **カメラの行き先** | `js/geo-engine.js` `camera.destination()` / `camera.onDestination(fn)` | ホイールのばねの目標、`easeTo`/`flyTo` の終点、ドラッグ中なら「いま離したら着く所」を `{zoom, center, size}` で答え、新しく分かるたびに知らせる。ピンチ中は答えない |
+| **衛星タイルの行き先優先** | `js/sat-proto.js` `_satWantedThere` / `_satWarmDestination`、`src/sat-worker.js` `warm` | ズーム中の保留はそのまま、行き先が描くタイル（`round(zoom+1)` か 2 段浅い段で、行き先の画面＋1 タイルの内側）だけは即座に取り、行き先の段のタイル（@2x なら子 4 枚）を中心に近い順にワーカーのバイトキャッシュへ先に取る（4 本まで並行・新しい行き先が置き換える） |
+| **夜側の描画** | `js/night-side.js` `paint()` | 1024² の夜側の画像は 1 回 5 ms までのタスク（MessageChannel）に区切って計算し、出来上がった絵だけをキャンバスに渡す（アイドル時間は待たない）。先に 1/4 辺の粗い絵、続けて全解像度。時計が動けば捨てて新しい時刻から、同じ時刻ではやり直さない。`state().paint`（`at`・`full`・`pending`）と `state().built` |
+| **ラベルの出入り** | `js/app-body.js` `ARRIVAL_FADE_MS`（180 ms） | 地図の `fadeDuration` は記号のクロスフェード（0 だと毎フレーム全ラベルの衝突配置をやり直して点滅する）。衛星タイルの `raster-fade-duration` と同じ数 |
 
-**動いている間に `<html>` / `<body>` の class・style を書かない。** 値が同じでも書けば
-MutationObserver に記録が届く（DOM の update steps）。カメラのフレームごとに走る描き手は、**状態が
-変わったときだけ**書く（`js/space-sky.js` の `shown()`）。ページ全体を見張る観測者は、**値の変わらない
-記録を捨てる**（`js/news-timeline.js` は `attributeOldValue` と現在値を比べる）。
-
-**測り方。** 計器は `scripts/map-motion.mjs`（`docs/TESTING.md`）、門は `tests/map-motion.spec.js`
-（軌跡は**レンダラの時刻**で 1/60 秒ずつ進めて測るので、GPU の無い runner でも 60 Hz の軌跡になる）と、
-レンダラの私的な形を読み直す `tests/map-motion-checks.test.mjs`。
+**動いている間に `<html>` / `<body>` の class・style を書かない**（値が同じでも MutationObserver に記録が届く。カメラのフレームごとの描き手は状態が変わったときだけ書く——
+`js/space-sky.js` の `shown()`。ページ全体の観測者は値の変わらない記録を捨てる——`js/news-timeline.js` は `attributeOldValue` と現在値を比べる）。計器は `scripts/map-motion.mjs`
+（`docs/TESTING.md`）、門は `tests/map-motion.spec.js`（レンダラの時刻で 1/60 秒ずつ進めて測る）と `tests/map-motion-checks.test.mjs`。
 
 ### 9.4 携帯が余分に持たない／待たないもの
 
-- **起動は段で読む**（`js/boot-stage.js`・`window.__imBootStage`）。資源ごとに「誰が・いつ・なぜ」の行があり、
-  携帯の段は `boot`（起動画面の間）／`settled`（起動画面が上がった後の idle。**1 つの idle につき 1 件**、
-  頼まれた順）／`need`（読み手が頼んだとき）。読み手は**自分の発意の**読みの前に `at(行)` を待つ——
-  星空（`data/stars.bin`）・地名辞書（`data/gazetteer-phone.json.gz`）・国の表（`data/ne-countries/`）・
-  世界銀行の最新値は `settled`。段は**読む時刻を動かすだけ**で、同じバイトを同じ形で読む。携帯以外は全行
-  `boot`（従来どおり）。「起動画面が上がった」は `__imBoot.done` の呼び出しと起動画面の `boot-gone` の
-  どちらか早い方を観測する（index.html の 20 秒の非常口は `done` を通らない）。
-  ⚠ **表は発見で完全に保たれる**: `npm run check:perf` が起動グラフのモジュールが名指す `data/…` を全部拾い、
-  行の無いものと何も指さない行を赤にし、`boot` 行の合計を `phone.bytes`／`phone.requests` の天井にする
-  （`docs/TESTING.md`）。
-- **Natural Earth の国（110m／50m／10m）は自サイトから読む**（`data/ne-countries/`、固定コミット、
-  `js/ne-countries.js` が復号）。10m は 2.81 MB（以前は第三者 CDN の `@master` から 4.34 MB）。展開と parse は
-  データの扉の Worker、座標の復号は区切って行う。携帯は 10m を、カメラが z ≥ 4 で止まった時点か、
-  国の表を読んでから 15 秒後の早い方で読む（国境の線そのものはベクタ基図のもの）。
-- **CJK の書体が届いたとき作り直すのは、ブラウザが描いたグリフだけ**（`js/geo-engine.js`
-  `_redrawLocalGlyphs`）。ダウンロード済みのグリフ範囲（`fonts/Inter Regular/*.pbf`・Noto の範囲）は持ち続け、
-  同じ範囲を二度頼まない。Google Fonts の Noto の rule sheet は可変ウェイトの範囲 `wght@400..700` で頼む
-  （1 サブセット 1 宣言）。
-  ⚠ **作り直すのは、届いた書体の `unicode-range` に入るグリフだけ**——Noto はサブセットの面が 1 つずつ届くので、
-  `js/map-typography.js` が届いた面の範囲を集めて `refreshCjkGlyphs(範囲)` に渡し、範囲外（ハングル・タイ・
-  デーヴァナーガリーのクラスタや他のサブセットの漢字）は持ち続ける。何も落ちなければスタイルに変更を告げない
-  （再レイアウトしない）。範囲を述べない面・全域の面は従来どおり全部。
-- **ブラウザが描くグリフは 1 字 1 回**（`js/geo-engine.js` `_dedupeGlyphDraws`）。MapLibre 6 は描き終えてから
-  キャッシュに書くので、同じ字を同時に頼んだタイルの数だけ TinySDF が走っていた。進行中の（スタック・変種・字）は
-  1 つの約束で、後から頼んだタイルはそれを待つ。地図を作る 1 か所（`_newMap`）がクラスに 1 度だけ入れる。
-- **地名照合器（ニュースの非 AI フォールバックと媒体名の地名）は、項目ごとに最初の照合で作る**
-  （`js/place-terms.js`）。地名辞書が届いても正規表現は 1 つも作らない。照合の前に、取りこぼしの無い前置
-  フィルタ——語の**先頭 3 単位**と**末尾 3 単位**が、正規表現 `/i` 自身の大文字化規則（非 unicode の
-  Canonicalize）で本文の部分文字列か——で届きうる項目だけを選び、その項目だけを作って同じ順で調べる。
-- **携帯のレイヤー格子は起動時に組まない**（`js/mobile-ui.js` `prebuildGrid`）。シートを開いたときに組み
-  （`openSheet`、待たない）、まだ開かれていなければ起動画面が上がってから 3 秒後の `settled` の番で、
-  idle の中で 1 度だけ先に組む。
-- **起動画面の明るい側のマーク**は 1254 px の原本ではなく、箱の大きさ（CSS の 156 px × DPR 3）へ縮めた写し
-  `IntMap.Icon_BW-inverted.boot.png`（43 kB。原本 206 kB）。`scripts/boot-icon-flatten.mjs` が原本から作り、
-  `--check` が一致を確かめる。
-
-- レイヤー凡例の年指定は、年代範囲をすべて列挙せず、範囲付き数値入力と「現在」ボタンで
-  同じマスター時計を操作する。紀元前からの全期間を直接入力でき、上下キーは1年刻み。
-  時計への購読は共有1本で、現在のDOMにある欄だけを同期するため、言語切り替えで
-  作り直された古い凡例を保持しない。入力範囲外・小数は時計へ渡さない。
-
-- **復号済み DEM タイルの上限は 1 か所が決める**（`js/mem-budget.js`）。1 枚は
-  `Float32Array(65536)` ＝ **262,144 B** で、これを溜める置き場が 5 つある——写真の撮影地点探索
-  （worker とページ側フォールバックの 2 つ）・標高の読み出し・Cesium・地形編集。
-  ⚠ **以前は 5 つが別々の枚数上限を持ち、うち 4 つは端末を見ていなかった**（1400／400／360／
-  **上限なし**）。合計で**約 600 MB を携帯に許可**していた計算になる。
-  いまは**1 つの予算**（携帯 48 MB／それ以外 192 MB）を取り分（`SHARE`）で分ける。
-  ⚠ **worker は `matchMedia` を持たない**ので、ページが `adopt()` で端末を教える。
-  **教えられていない置き場は小さい方**を取る（不明を「潤沢」と読まない——`navigator.deviceMemory`
-  は全 iPhone で常に `undefined` を返すので、これを「潤沢」と読むと携帯だけが最大の予算を取る）。
-  ⚠ **走っている仕事のタイルはリース**して上限から除外する——`buildField()` は取得済みの全域を
-  読むので、途中で捨てるとキャッシュミスではなく**答えに穴が開く**。リースは `finally` で必ず返す。
-  ⚠ **圧迫時の解放は「登録」で届く**（`register()`／`relieve()`）。以前は
-  `addEventListener('intmap-mem-pressure')` を手で書いた **2 つ**にしか届かず、上の 5 つは
-  1 つも含まれていなかった。
-- **ガゼッティア**は `data/gazetteer-phone.json.gz`（551 kB・12,000行）を取る。全量は取らない。取る時刻は `settled`（上の段）。
-- **ケッペン**は軽量版 `*_4k.png` を使い、**作業キャンバスは 2048² へ直接デコードする**
-  （4096² の PNG を復号するとモバイルで RAM を超える）。復号済み画像は作業キャンバスを作った直後に解放する。
-- ケッペンの期間切り替えと携帯でのレイヤー終了は、作業キャンバスの寸法をゼロにして
-  描画領域を即座に返す。読み込みは世代に属し、古い画像・bitmap の完了や失敗が
-  解放済みデータを復活させたり、新しい期間の読み込みを重複して始めたりしない。
-  bitmap と一時的な強調表示キャンバスは処理完了時に解放し、既存の解像度と再着色は維持する。
-- **押されてから取りに行くもの**（`js/lazy-modules.js`・**44 本**。主なもの）：フライトシム／Playground／
-  地震／**ShakeMap**／津波／地形と水／見通し線／ストリートビュー／夜空／**Atlas カーネル**／経路パネル／
-  データセンター／機体カード／3D 体積ツール／国の比較／衛星（ライブ）／衛星パネル／写真の撮影地点探索／
-  **世界データ層の 5 層**（行は起動時）／**宇宙エクスプローラ**（床のジェスチャーは起動時）。
-  KaTeX と html2canvas も動的 import。
-  ⚠ **「起動時に何も作らない」は静的解析では決まらない。** `js/analysis-panels.js` は候補に見えたが、
-  当時の 5 ファクトリのうち 2 つが**起動時に Layers パネルのボタンを作る**（`#btn-correlate`／`#btn-edu`）。
-  ファイルごと遅延化するとボタンが 2 つ消える——**ファクトリ本体の実行文を数えてから**決める。
-  ⇒ **だから機能ではなく「起動時に走るもの」で切ってある。** `js/analysis-panels.js` は
-  3 ファクトリの登録・起動時の DOM とリスナー・2 つの公開グローバルの**非同期ファサード**だけを持つ
-  eager shell で、本体は `js/analysis-{correlate,world-events,edu}.js` の 3 本に分かれて `IntMapLazy` から取られる
-  （国の時系列チャートと調査パネルは、多国比較の時系列表示と Atlas の brief に畳んだ）。
-  ⚠ **ファサードはスタブではない。** 呼ばれたらローダーを await して本物を呼ぶ。**取りに行っては
-  ならない 2 つの入口**——`IntMapEdu.close()` と地図クリックの転送——だけが `IntMapLazy.ready()` を
-  見て、まだ無ければ何もしない（＝クイズを開く前と同じ挙動）。
-  ⚠ **遅延側のグローバルは `__imAnalysis*`**。`js/atlas-controls.js` の `moduleCatalog()` は
-  `window.IntMap*` を自動発見するので、`IntMap` で始まる名前を足すと Atlas のカタログが勝手に増える。
-  ⚠ **受動的な読み手は `&&` ガードのまま**にする（「まだ読んでいない」の答え方は「持っていない」と同じ）。
-  取りに行くのは**入口だけ**——閉じる／状態を読むだけの経路が実装を取得してはならない。
-- **Cache Storage の所有者は名前が述べる。** `sw.js` の activate は自分の現行キャッシュ（`CACHE`）と
-  **`intmap-page-` で始まる名前**（ページが自分で書いて自分で期限を切るオフラインの写し——海底ケーブル・
-  NWS の予報区・SWIC の警報区・geoBoundaries）だけを残し、それ以外（自分の旧版・見知らぬ名前）を消す
-  （古い `index.html` を生き残らせない）。ページがキャッシュを足すときは `intmap-page-` で名づける。
-  `tests/sw-cache-names-owned-checks.test.mjs` がページの `caches.open` を全部発見し、`sw.js` を
-  評価して activate を走らせて確かめる。
-- **衛星タイルの先読みは「レーン」で流す**（`sw.js` の `PREFETCH_LANES` ／ `js/tile-warm.js`）。
-  ⚠ **先読みが出してよいのは、ブラウザ自身が読み込める URL だけ**。スタイルのタイル雛形は
-  `imapsat://{z}/{y}/{x}` のような**登録済みプロトコルの URL**であることがあり、それを `<img>` に
-  渡してもハンドラは呼ばれず、`img-src` に拒否されるだけで 1 枚も温まらない。
-  `js/dash-extended.js` のカメラ先読みは **scheme を見て http(s) 以外を出さない**。
-  プロトコル配信のタイル（衛星）の先読みは `js/tile-warm.js` の担当で、
-  **プロトコル自身が公開する実 URL**（`IntMapSatProto.tileUrl`）を使う。
-- **追い越された先読みは止まる。** 世代カウンタ（`js/tile-warm.js` の `_pfGen`）を持ち、URL を1件
-  発行するごとに確認して、追い越されていればそこで発行をやめる。既に積んだ分は、ページ側のポンプが
-  fetch の直前で落とし、Service Worker 側は**同じ client の未処理分**を捨てて
-  `prefetch-dropped` でページへ返す。
-  ⚠ **世代の鍵は「呼び出し」ではなくタイル矩形**。リングは上限（携帯 60・傾斜/飛行 110・
-  デスクトップ 150/280）で切られるので、**同じ視野からの次の呼び出しは追い越しではなく残り**である。
-  呼び出しごとに番号を進めると、いま見ている視野のために積んだ分を自分で捨てることになる。
-  ⚠ **落とした URL は「もう頼んだ」に数えない。** `_pfSeen`（一度頼んだ URL は二度と頼まない記憶）へ
-  入れるのは**実際に発行した1件だけ**で、Service Worker が落とした分は報告を受けて取り消す。
-  取り消さないと、中止機構そのものが先読みの被覆に静かな穴を空ける。
-  ⚠ 利用者が止まれば番号は動かないので、**最後の1バッチは完走する**。
-- **携帯の画像同時取得数は MapLibre 自身の既定**（デスクトップ用に上げた値を携帯に持ち込まない）。
-- **ラスタレイヤーはタイルソースにする**（1枚の画像を視野ごとに取り直すと、移動中は必ず縮尺が違う）。
-  ⚠ タイルは `scene.addProtocol` 契約で供給し、レンダラが今いるズームのタイルを要求する。
-  子が届くまでだけ親を出す（z0 のタイルを z14 に広げない）。
-- **同じ正規表現を二度コンパイルしない。** ニュースの地名索引（`js/news-context.js` の
-  `rebuildGeoIndex`）は1起動で **5 回**呼ばれ、そのたびに `HOST.geoDB` を新しいオブジェクトで
-  作り直すので、**毎回すべての `_terms` を作り直していた**（実測 193,014 本のうち 145,701 本＝
-  75.5% が焼き直し）。`terms` 配列の同一性で覚えておき、**中身を全要素照合してから**再利用する。
-  ⚠ 「同じ配列オブジェクトだった」は「同じ語だった」ではない——照合しない再利用は、古い matcher が
-  黙って別の場所に当たる**沈黙する誤配置**になる。⚠ `RegExp` を共有してよいのは `g`/`y` フラグが
-  無いからで（`lastIndex` を持たない）、フラグを足すならこの共有は成立しなくなる。
-- **レイヤーのサムネイルは、パネルが見られるまで描かない。** 画像の取得だけでなく、
-  **canvas に描く経路も同じ門を通る**（`js/layer-previews.js` の `_paintJob` / `_openQueue`）。
-  門が開くのは**「パネルが表示された（`kick()`）」ときだけ**で、どの端末でも同じ。
-  絵も枚数も順序も変わらない——変わるのは**いつ描くか**だけ。デスクトップには「最初の idle」と
-  「6 秒」の自動開放が残っていたが、開いていないパネルのために初回訪問で **33 枚 / 4,251,201 B** を
-  取っていた（1024×768・ストレージ空の実測）ので外した。`kick()` を呼ぶのは格子が表示されている所だけ
-  （側柱の `open()`——ワークスペースの窓もこれで開く——、シートの mount、表示中の格子の ★ 行）。
-  ⚠⚠⚠ **そして `kick()` は「そのパネルが表示されている」を意味する——呼ぶ側がそれを確かめる。**
-  携帯のタイル格子は**2回** mount される: 読者がシートを引き上げたとき（`js/mobile-ui.js` の
-  `openSheet()`。`.show` を付けた**あと**に mount するので、格子は表示されている）と、**起動時**
-  （`applyLayout()`。行を用意するだけで、何も表示されていない）。`mountInto` が無条件に `kick` すると
-  後者が門を素通りするので、`mountInto` の側で**格子を載せているシートが表示されているか**を見る。
-  ⚠ 問いは `display` でも視界との交差でもない——閉じたシートは非表示ではなく折り返しの下に駐車して
-  おり、開いたシートの中の長い一覧は上端が折り返しの下にありうる。**シートの `show` だけが2つの
-  mount を分ける。** シートの中に無いもの（デスクトップの側柱）は対象外で、判定できなければ開く。
-  ⚠ **門は必ず開く**——`openSheet()` は毎回 mount するので、最初の引き上げで開く。
-  ⚠ **携帯で先に外した理由**（いまは全端末で `kick()` だけ）——
-  レイヤー一覧は引き上げるシートの中にあり、開いていないパネルのために
-  **28 枚 / 4,051,978 B の PNG・上流タイル 16 要求・canvas ペインタ 33 件**を、いちばん払えない
-  端末が払うことになるから。**開けば同じキューが同じ順で全部出る**（減らしてはいない）。
-  ⚠ **門が開いたあとも、一気には流さない。** canvas ペインタは `requestIdleCallback` の
-  `deadline.timeRemaining()` と 6 ms の時計の**両方**で区切られ、残りは次の idle へ回る。
-  `pointerdown` / `touchstart` / `wheel` / `keydown` が来たら次のスライスを止め、最後の入力から
-  400 ms で再開する——**中断は取り消しではない**（予約だけを畳み、キューには触らない）。
-  ⚠ **1スライスで必ず1件は走る。** 予算を毎回見ると、予算より長いペインタ（実測 85 ms）で
-  1件も進まないまま再予約を繰り返す。最初の1件を無条件に走らせることが停止性の根拠でもある。
-  ⚠ **IntersectionObserver で代替しないこと。** 一度そうして、パネルが画面外で組み立てられた行が
-  二度と見直されず、グラデーションのまま残った（実測「一切変化なし」）。門は必ず開く。
-- **ホバーは、既に知っていることに二度払わない。** `positionTooltip`（`js/map-tooltip.js`）は
-  地図コンテナの大きさを **ResizeObserver でキャッシュ**する（毎 pointermove の
-  `getBoundingClientRect` は強制同期レイアウト）。`setMapTooltipHTML` は**前回と同じ markup なら
-  書かない**——⚠ **地図ツールチップの markup を書く経路は全部これを通る**。素の
-  `el.innerHTML=` は同じ文字列でも部分木を作り直すので、直後の `offsetWidth` が強制リフローになり、
-  「書かない」最適化がその呼び出し元にだけ効かない。
-  ⚠ **問い合わせるレイヤーの一覧も、ポインタの性質ではない。** `_hoverHub`（`js/geo-engine.js`）は
-  登録された全レイヤーを**1回の `queryRenderedFeatures` で**訊くが、その「いま見えているレイヤー」の
-  一覧は登録数ぶんの `getLayer` ＋ `getLayoutProperty` で組み立てる。一覧が変わるのは**スタイルが
-  変わったとき**と**登録が変わったとき**だけなので、その2つで無効化するキャッシュを持つ。
-  ⚠ **1フレームに2件目以降の pointermove だけを合流させる。** フレーム最初の1件は**同期のまま**
-  配る（ツールチップは、それを起こしたイベントで出る）。120/240 Hz のポインタで初めて差が出る。ウィンドウの縁の当たり判定（`js/window-manager.js` / `js/workspace.js`）も同じで、
-  **押下は必ず生の矩形で測り**、hover だけが世代付きキャッシュを読む——だから「掴めない縁」は
-  原理的に作れない。キャッシュの無効化は「窓が動いた／大きさが変わった／他モジュールが style や
-  class を書いた／ビューポートが変わった／スクロールした」を観測して行う。
-- **`?perf=1`** — 実機で測るための計器（`js/perf-hud.js`）。フレーム時間の中央値/p90、
-  ビューポートと交差する要素数、レイヤーごとの費用を出す。
-  ⚠ `visibility:hidden` は数えない（描かれない＝費用が無い）。
-  ⚠ **計器は、取得できない量を 0 と書かない。** `navigator.deviceMemory` は WebKit に無いので
-  `n/a` と出す（0 ではない）。表示は「端末の RAM の概算であって、このページの使用量ではない」と
-  名乗る。タイル数は「表示中」と「待機」を分けて出し、**どちらの保持先も見つからなければ `null`**。
-  シーンの統計はスタイル全体の複製ではなく公開 API から取り、**どちらの経路で答えたかを名乗る**。
-  ⚠ **`app layers` の A/B は描画を止める試験であって、資源を解放する試験ではない**（HUD 自身が
-  そう書く）。切るときは id ごとに**元の可視状態**を控え、戻すときは元から非表示だったものを
-  点けない。
+- **起動は段で読む**（`js/boot-stage.js`・`window.__imBootStage`）。資源ごとに「誰が・いつ・なぜ」の行があり、携帯の段は `boot`（起動画面の間）／`settled`（起動画面が上がった後の
+  idle。1 つの idle につき 1 件、頼まれた順）／`need`（読み手が頼んだとき）。読み手は自分の発意の読みの前に `at(行)` を待つ（星空 `data/stars.bin`・地名辞書
+  `data/gazetteer-phone.json.gz`・国の表 `data/ne-countries/`・世界銀行の最新値は `settled`）。段は読む時刻を動かすだけ。携帯以外は全行 `boot`。「起動画面が上がった」は
+  `__imBoot.done` と起動画面の `boot-gone` の早い方（index.html の 20 秒の非常口は `done` を通らない）。表は発見で完全に保たれる（`npm run check:perf` が起動グラフの名指す
+  `data/…` を全部拾い、行の無いものと何も指さない行を赤にし、`boot` 行の合計を `phone.bytes`／`phone.requests` の天井にする——`docs/TESTING.md`）。
+- **Natural Earth の国（110m／50m／10m）は自サイトから読む**（`data/ne-countries/`、固定コミット、`js/ne-countries.js` が復号。10m は 2.81 MB）。展開と parse はデータの扉の
+  Worker、座標の復号は区切って行う。携帯は 10m を、カメラが z ≥ 4 で止まった時点か国の表を読んでから 15 秒後の早い方で読む。
+- **CJK の書体が届いたとき作り直すのは、ブラウザが描いたグリフだけ**（`js/geo-engine.js` `_redrawLocalGlyphs`。ダウンロード済みのグリフ範囲——`fonts/Inter Regular/*.pbf`・Noto の
+  範囲——は持ち続ける）。Noto の rule sheet は `wght@400..700` で頼む。作り直すのは届いた書体の `unicode-range` に入るグリフだけ（`js/map-typography.js` が届いた面の範囲を
+  `refreshCjkGlyphs(範囲)` に渡す。何も落ちなければスタイルに変更を告げない）。
+- **ブラウザが描くグリフは 1 字 1 回**（`js/geo-engine.js` `_dedupeGlyphDraws`。進行中の〔スタック・変種・字〕は 1 つの約束。`_newMap` がクラスに 1 度だけ入れる）。
+- **地名照合器は項目ごとに最初の照合で作る**（`js/place-terms.js`。語の先頭 3 単位と末尾 3 単位が `/i` の大文字化規則で本文の部分文字列かという取りこぼしの無い前置フィルタで
+  届きうる項目だけを作る）。
+- **携帯のレイヤー格子は起動時に組まない**（`js/mobile-ui.js` `prebuildGrid`。シートを開いたときか、起動画面が上がってから 3 秒後の `settled` の番で 1 度だけ）。
+- **起動画面の明るい側のマーク**は縮めた写し `IntMap.Icon_BW-inverted.boot.png`（43 kB。CSS の 156 px × DPR 3）。`scripts/boot-icon-flatten.mjs` が作り `--check` が確かめる。
+- レイヤー凡例の年指定は範囲付き数値入力と「現在」ボタンで同じマスター時計を操作する（紀元前からの全期間を直接入力でき、上下キーは1年刻み。時計への購読は共有1本で、
+  現在の DOM にある欄だけを同期する。範囲外・小数は渡さない）。
+- **復号済み DEM タイルの上限は 1 か所が決める**（`js/mem-budget.js`）。1 枚は `Float32Array(65536)` ＝ 262,144 B で、置き場が 5 つ（写真の撮影地点探索の worker とページ側・標高の
+  読み出し・Cesium・地形編集）。1 つの予算（携帯 48 MB／それ以外 192 MB）を取り分（`SHARE`）で分ける。worker は `matchMedia` を持たないのでページが `adopt()` で教え、教えられて
+  いない置き場は小さい方を取る。走っている仕事のタイルはリースして上限から除外する（`buildField()`。`finally` で返す）。圧迫時の解放は `register()`／`relieve()` で届く。
+- **ガゼッティア**は `data/gazetteer-phone.json.gz`（551 kB・12,000行）。全量は取らない。取る時刻は `settled`。
+- **ケッペン**は軽量版 `*_4k.png` を使い、作業キャンバスは 2048² へ直接デコードする（復号済み画像は直後に解放）。期間切り替えと携帯でのレイヤー終了は作業キャンバスの寸法を
+  ゼロにして描画領域を返す。読み込みは世代に属し、古い完了や失敗が解放済みデータを復活させたり重複して読み込んだりしない。bitmap と一時的な強調表示キャンバスは完了時に解放する。
+- **押されてから取りに行くもの**（`js/lazy-modules.js`・**44 本**。主なもの）：フライトシム／Playground／地震／ShakeMap／津波／地形と水／見通し線／ストリートビュー／夜空／
+  Atlas カーネル／経路パネル／データセンター／機体カード／3D 体積ツール／国の比較／衛星（ライブ）／衛星パネル／写真の撮影地点探索／世界データ層の 5 層（行は起動時）／宇宙
+  エクスプローラ（床のジェスチャーは起動時）。KaTeX と html2canvas も動的 import。遅延化は機能ではなく「起動時に走るもの」で切る: `js/analysis-panels.js` は 3 ファクトリの登録・
+  起動時の DOM とリスナー（`#btn-correlate`／`#btn-edu`）・2 つの公開グローバルの非同期ファサードだけを持つ eager shell で、本体は `js/analysis-{correlate,world-events,edu}.js`。
+  ファサードは呼ばれたらローダーを await して本物を呼ぶ。取りに行ってはならない入口（`IntMapEdu.close()` と地図クリックの転送）は `IntMapLazy.ready()` を見る。遅延側のグローバルは
+  `__imAnalysis*`（`js/atlas-controls.js` の `moduleCatalog()` は `window.IntMap*` を自動発見する）。受動的な読み手は `&&` ガードのまま。
+- **Cache Storage の所有者は名前が述べる**（`sw.js` の activate は現行キャッシュ `CACHE` と `intmap-page-` で始まる名前——海底ケーブル・NWS の予報区・SWIC の警報区・
+  geoBoundaries——だけを残す。`tests/sw-cache-names-owned-checks.test.mjs` がページの `caches.open` を全部発見して確かめる）。
+- **衛星タイルの先読みは「レーン」で流す**（`sw.js` の `PREFETCH_LANES` ／ `js/tile-warm.js`）。先読みが出してよいのはブラウザ自身が読み込める URL だけ（`js/dash-extended.js` の
+  カメラ先読みは http(s) 以外を出さない。プロトコル配信のタイルは `IntMapSatProto.tileUrl` を使う）。追い越された先読みは止まる（世代 `_pfGen`。ページ側のポンプが fetch 直前で
+  落とし、Service Worker は同じ client の未処理分を捨てて `prefetch-dropped` で返す）。世代の鍵はタイル矩形（リングの上限は携帯 60・傾斜/飛行 110・デスクトップ 150/280）。
+  落とした URL は `_pfSeen` に数えない。止まれば最後の1バッチは完走する。
+- **携帯の画像同時取得数は MapLibre 自身の既定**。
+- **ラスタレイヤーはタイルソースにする**（`scene.addProtocol` 契約。子が届くまでだけ親を出す）。
+- **同じ正規表現を二度コンパイルしない**（`js/news-context.js` の `rebuildGeoIndex` は `terms` 配列の同一性で覚え、中身を全要素照合してから再利用する。`g`/`y` フラグが無いので
+  共有できる）。
+- **レイヤーのサムネイルは、パネルが見られるまで描かない**（画像の取得も canvas に描く経路も同じ門——`js/layer-previews.js` の `_paintJob` / `_openQueue`——を通る。門が開くのは
+  `kick()` のときだけで、呼ぶのは格子が表示されている所——側柱の `open()`、シートの mount、表示中の格子の ★ 行）。携帯のタイル格子は 2 回 mount される（`openSheet()` と起動時の
+  `applyLayout()`）ので、`mountInto` の側でシートの `show` を見る（判定できなければ開く）。門が開いたあとも canvas ペインタは `requestIdleCallback` の `deadline.timeRemaining()` と
+  6 ms の時計の両方で区切り、`pointerdown` / `touchstart` / `wheel` / `keydown` で次のスライスを止めて最後の入力から 400 ms で再開する（予約だけを畳む）。1スライスで必ず1件は走る。
+  IntersectionObserver で代替しない。
+- **ホバーは、既に知っていることに二度払わない**（`positionTooltip` は地図コンテナの大きさを ResizeObserver でキャッシュ、`setMapTooltipHTML` は同じ markup なら書かず、地図
+  ツールチップの markup を書く経路は全部これを通る）。`_hoverHub`（`js/geo-engine.js`）は全レイヤーを1回の `queryRenderedFeatures` で訊き、見えているレイヤーの一覧はスタイルと
+  登録が変わったときに無効化するキャッシュで持つ。1フレームに2件目以降の pointermove だけを合流させる（最初の1件は同期）。ウィンドウの縁の当たり判定（`js/window-manager.js` /
+  `js/workspace.js`）は押下は必ず生の矩形で測り、hover だけが世代付きキャッシュを読む。
+- **`?perf=1`** — 実機で測る計器（`js/perf-hud.js`。フレーム時間の中央値/p90・ビューポートと交差する要素数・レイヤーごとの費用。`visibility:hidden` は数えない）。取得できない量を
+  0 と書かない（`navigator.deviceMemory` は `n/a`。タイル数は「表示中」と「待機」を分け、保持先が無ければ `null`。シーンの統計は公開 API から取り経路を名乗る）。`app layers` の A/B は
+  描画を止める試験で、切るときは元の可視状態を控える。
 
 ### 9.5 スマホだからできること——いま、ここ・共有で開く・写真の場所
 
-携帯は**読者がどこにいるかを知っている唯一の画面**で、**アプリ間で物を渡す共有シート**を持つ。その 2 つを製品の入口にした。
-どれも地球儀の起動を重くしない（起動時に読むものは無い——押されたとき・クエリが付いたときに読む）。
+携帯は読者がどこにいるかを知っている唯一の画面で、共有シートを持つ。その 2 つを製品の入口にした（起動時に読むものは無い）。
 
-- **いま、ここ**——地点カード（`js/place-dossier.js`、§7.3f）を**端末の現在地**で開き、「いま」の節（いまの天気と今日・
-  **300 km 以内の地震**（USGS の M2.5 以上・7 日）・**300 km 以内の出来事**（ニュース・72 時間））を先頭に置く。続いて
-  この地点（座標・地名・国）・時刻と太陽・**その場所のかつての名前**（改名都市の記録 `data/hist-cities.json` を
-  `IntMapHistCities.near` が**その記録自身の判定半径**で引く——東京なら江戸。押すとその年の地図になる）。地震と出来事は地図に
-  点で描く。「近く」の定義は 1 つ（`js/atlas-world-objects.js` `RELATED_DEFAULTS`）。各節は値か理由（`ok` / `none` / `unavailable`）。
-  ⚠ **正確な現在地は端末から出ない。** 外へ送るのは `PRIVACY_GRID_DEG`（0.1°・約 11 km）に丸めた地点だけで、送り先は
-  それが無いと答えられない 2 つ（地名の Nominatim は zoom 10、天気）。標高と表示中レイヤーの値は読まない（タイルの要求が位置を
-  述べるため。節は理由を述べる）。地震のフィードと出来事は**位置を付けずに読んで端末で絞る**（`js/events-near.js`）。
-  何も保存しない（privacy.html §5）。
-  入口: 検索欄の空の状態の先頭の行（`js/here-entry.js`・作例の上）・**ホーム画面のアイコンの長押し**（manifest の
-  `shortcuts` → `?here=1`）・Atlas `research.hereNow`（地点が無ければ端末の位置。確認の列は `explicit`——Atlas が自分から
-  提案して黙って位置を読むことはない）。地図上の任意の地点は長押しメニュー「現地の情報 ▸ 地点について」で同じカードが開く。
-- **共有で開く**（`js/share-inbox.js`）——インストールした IntMap は**共有シートの宛先**になる（manifest の `share_target`。
-  ファイルを受けるので POST・multipart）。静的ホストは POST を受けられない（GitHub Pages は 405）ので、`sw.js` が受けて
-  中身をページの cache（`intmap-page-share-inbox`。activate は消さない）に置き、`?share=<id>` へ 303 で送る。ページは 1 度だけ読み、
-  1 時間より古い項目を捨てる。写真は 1 枚・40 MB まで、文は 4,000 字まで。
-  - **写真**: カメラの記録（EXIF の位置と撮影時刻——`js/photo-geo-exif.js` が JPEG と、HEIC/AVIF・WebP の中の同じ塊を読む）→
-    ピン・その地点の地点カード（「いま」が先頭・起点 `shared` なので位置は丸めて送る）・**「撮影日の地図にする」**（時計を撮影時刻へ。ファイルがオフセットを書いていなければその日の正午 UTC）。
-    カードは「カメラの記録」と名乗る。**位置の無い写真は推測しない**——稜線照合（`js/photo-geo.js`）にその写真を渡し、推定であると言う。
-  - **地図のリンク**: Google（場所の `!3d…!4d…` をカメラの `@` より先に）・Apple（`ll`）・OSM（印 `mlat/mlon` を表示範囲より先に）・
-    `geo:`・座標 → その地点。名前しか持たないリンクと文は検索欄へ。**短縮リンクはページから行き先を読めない**のでそう言い、
-    一緒に送られた題で検索する。IntMap のリンクはそれ自身として開く。
-  - iOS は共有の宛先になれない（Web Share Target が無い）ので、同じ処理を**検索欄の「写真の場所」**（写真ライブラリ）からも開ける。
-    ⚠ ファイル選択は**押した瞬間に開く**（Safari は await をまたぐとユーザー操作と数えない）。
-  - Atlas `view.openShared` が貼られたリンクや文を同じ関数で開く。
-- **親指の時計**（`js/time-thumb.js`）——シートの頭の時計（`#m-clock`）は、地図が現在以外にあるあいだ**その年を表示する**
-  （`js/mobile-ui.js` が `IntMapTime.on` で書く。生のときは顔だけ）。横に `START_PX`（8 px）以上、縦より大きく動かすと
-  **それ自体がレールになる**: 位置→年→時計の書き込みは Chronos の年のスライダーと同じ 1 つの規則
-  （`js/chronos.js` `writeRailPos`——`js/news-timeline.js` の `writeYearAtPos` もこれを呼ぶ）で、レール全体は画面幅の
-  `RAIL_SCREENS`（3）倍。書き込みは 1 フレームに 1 回。シートの頭の取っ手は縦に 7 px で始まるので、1 本の指を 2 者が取らない。
-  シートの上に**吹き出し**（時刻・「地図の中心」・その時刻に中心の点を描く政体と第 1 級区分）と、中心に**輪**が出る。
-  中身は地点カードの「この場所の歴史」と同じ記録（`js/place-history.js` `placeHistory`。中心ごとに 1 回読む）で、
-  `changesOf` が**中心で地図が述べることが変わる時点**（項目の始まり・終わり＝もう効かない最初の日・名前の変わり目・
-  第 1 級区分の始まりと終わり。今日より後の終わりは除く）を並べ、`nowAt` がその時刻の言葉を、`changeText` が変化の行を
-  （記録の端は記録の端として）返す。**親指はその時点で止まる**——1 年が 1 px 以上の幅を持つところでは**その年の中だけ**で
-  （どの年にも行ける。止まると年の真ん中ではなく記録の日へ）、それより細いところでは `SNAP_PX`（12 px）以内で。止まった瞬間に
-  `navigator.vibrate`（ある端末だけ）。記録が届いたときに親指が近くで静止していれば、そこで判定し直す。指を離すと吹き出しは
-  1.6 秒残り、落ち着いた時刻を `role=status` の領域が 1 回だけ読み上げる。指を離したあとの click は飲み込む（Chronos は
-  開かない）。動かさないタップは従来どおり Chronos を開く。矢印キーは中心の前後の変化へ 1 つずつ（`step`）。
-  モジュールは**最初のタッチで取りに行く**（起動の graph に入らない）——取得前に指が離れた押下はタップとして扱う。
-  `#m-clock` は `data-time-intent` を宣言する（触れることが過去へ向かう意図）。
-  Atlas `time.stepHere`（地点・`here`・読者が言ったときだけ `center`・`from`・`dir`）が同じ `changesOf`/`stepFrom` で
-  時計を動かし、そこで始まった・終わったもの・その後に描かれるもの・その地点の変化の時点の全部を返す。
+- **いま、ここ**——地点カード（`js/place-dossier.js`、§7.3f）を端末の現在地で開き、「いま」の節（いまの天気と今日・300 km 以内の地震——USGS の M2.5 以上・7 日・300 km 以内の
+  出来事——ニュース・72 時間）を先頭に置く。続いてこの地点・時刻と太陽・その場所のかつての名前（`data/hist-cities.json` を `IntMapHistCities.near` が記録自身の判定半径で
+  引く——東京なら江戸）。「近く」の定義は `js/atlas-world-objects.js` `RELATED_DEFAULTS` の 1 つ。各節は値か理由（`ok` / `none` / `unavailable`）。正確な現在地は端末から出ない
+  （送るのは `PRIVACY_GRID_DEG`＝0.1°・約 11 km に丸めた地点だけで、地名の Nominatim は zoom 10 と天気。地震のフィードと出来事は位置を付けずに読んで端末で絞る——
+  `js/events-near.js`。何も保存しない——privacy.html §5）。入口: 検索欄の空の状態の先頭の行（`js/here-entry.js`）・ホーム画面のアイコンの長押し（manifest の `shortcuts` →
+  `?here=1`）・Atlas `research.hereNow`（確認の列は `explicit`）。地図上の任意の地点は長押しメニュー「現地の情報 ▸ 地点について」で同じカード。
+- **共有で開く**（`js/share-inbox.js`）——インストールした IntMap は共有シートの宛先になる（manifest の `share_target`。POST・multipart）。静的ホストは POST を受けられないので
+  `sw.js` が受けて中身を `intmap-page-share-inbox` に置き `?share=<id>` へ 303 で送る。ページは 1 度だけ読み、1 時間より古い項目を捨てる。写真は 1 枚・40 MB まで、文は 4,000 字まで。
+  - **写真**: EXIF の位置と撮影時刻（`js/photo-geo-exif.js` が JPEG と HEIC/AVIF・WebP の中の同じ塊を読む）→ ピン・その地点の地点カード（起点 `shared`）・「撮影日の地図にする」
+    （オフセットが無ければその日の正午 UTC）。カードは「カメラの記録」と名乗る。位置の無い写真は推測せず稜線照合（`js/photo-geo.js`）に渡し推定と言う。
+  - **地図のリンク**: Google（`!3d…!4d…` を `@` より先に）・Apple（`ll`）・OSM（`mlat/mlon` を表示範囲より先に）・`geo:`・座標 → その地点。名前しか持たないリンクと文は検索欄へ。
+    短縮リンクは行き先を読めないとそう言い、題で検索する。IntMap のリンクはそれ自身として開く。
+  - iOS は共有の宛先になれないので、検索欄の「写真の場所」からも開ける（ファイル選択は押した瞬間に開く）。Atlas `view.openShared` が同じ関数で開く。
+- **親指の時計**（`js/time-thumb.js`）——シートの頭の時計（`#m-clock`）は地図が現在以外にあるあいだその年を表示する（`js/mobile-ui.js` が `IntMapTime.on` で書く）。横に `START_PX`
+  （8 px）以上、縦より大きく動かすとそれ自体がレールになる（位置→年→時計は `js/chronos.js` `writeRailPos`——`writeYearAtPos` もこれを呼ぶ。レール全体は画面幅の `RAIL_SCREENS`
+  ＝3 倍。1 フレーム 1 回）。シートの上に吹き出し（時刻・「地図の中心」・中心の点を描く政体と第 1 級区分）と中心の輪。中身は `js/place-history.js` `placeHistory`（中心ごとに
+  1 回読む）で、`changesOf` が中心で地図が述べることが変わる時点を並べ、`nowAt` がその時刻の言葉、`changeText` が変化の行を返す。親指はその時点で止まる（1 年が 1 px 以上の
+  幅ならその年の中だけ、細いところでは `SNAP_PX`＝12 px 以内）。止まった瞬間に `navigator.vibrate`（ある端末だけ）。離すと吹き出しは 1.6 秒残り、`role=status` が 1 回読み上げる。
+  離したあとの click は飲み込み、動かさないタップは Chronos を開く。矢印キーは前後の変化へ（`step`）。モジュールは最初のタッチで取りに行く。`#m-clock` は `data-time-intent` を
+  宣言する。Atlas `time.stepHere`（地点・`here`・`center`・`from`・`dir`）が同じ `changesOf`/`stepFrom` で動かす。
 - 遅延モジュールが `IM_HOST` を受け取る戸口は `js/host-door.js`（葉。`app-body.js` が作った瞬間に入れる）。
-- 門: `tests/mobile-next-checks.test.mjs`（リンクの読み・3 形式の EXIF・worker の POST と inbox・丸めた地点だけが出ること・
-  改名都市の判定・入口）と `tests/mobile-next.spec.js`（375×812・本物の指。空の検索欄 → いま、ここ → 全節が値か理由・
-  全ボタンがシートの上で指に当たる／inbox の写真 → ピン・カード・撮影日の時計）。親指の時計は
-  `tests/mobile-product-checks.test.mjs`（京都の変化の時点が記録の端そのものであること・前後に歩くと全部を順に通ること・
-  1864〜1890 年のどの年も親指が取れること・記録の端の言い方・同じ書き込みの規則・Atlas `time.stepHere` を本物の記録で実行）。
-  本物の指での検査（375×812・CDP）はまだ木に入っていない——全件の試験時間の天井に余地ができてから足す（開発記録 2026-10-08-mobile-product）。
+- 門: `tests/mobile-next-checks.test.mjs` と `tests/mobile-next.spec.js`（375×812・本物の指）。親指の時計は `tests/mobile-product-checks.test.mjs`（京都の変化の時点・1864〜1890 年・
+  Atlas `time.stepHere`）。本物の指での親指の時計の検査（CDP）はまだ木に入っていない（開発記録 2026-10-08-mobile-product）。
 
-⚠ **ヘッドレスプレビューは `document.hidden`** なので WebGL の `load` が発火せず、
-`requestAnimationFrame` も止まる。地図描画は DOM／状態／console で検証し、UI のフェードインには
-`setTimeout` のフォールバックを持たせる（`?rafshim=1` で rAF を回す開発専用シムがある）。
+**ヘッドレスプレビューは `document.hidden`** なので WebGL の `load` が発火せず `requestAnimationFrame` も止まる。地図描画は DOM／状態／console で検証し、UI のフェードインには
+`setTimeout` のフォールバックを持たせる（`?rafshim=1` で rAF を回す開発専用シム）。
