@@ -844,9 +844,12 @@ export function sweepAdminRemnants(adminRoot) {
     const dir = join(adminRoot, name);
     try { if (!lstatSync(dir).isDirectory()) continue; } catch { continue; }
     if (existsSync(join(dir, 'gitdir')) || existsSync(join(dir, 'HEAD'))) continue;
+    /* a directory keeps its execute bit (POSIX cannot enter one without it); a file only needs write */
     const writable = (p) => {
-      try { chmodSync(p, 0o666); } catch { /* best effort */ }
-      try { if (lstatSync(p).isDirectory()) for (const c of readdirSync(p)) writable(join(p, c)); } catch { /* gone */ }
+      let isDir = false;
+      try { isDir = lstatSync(p).isDirectory(); } catch { return; }
+      try { chmodSync(p, isDir ? 0o777 : 0o666); } catch { /* best effort */ }
+      if (isDir) for (const c of readdirSync(p)) writable(join(p, c));
     };
     writable(dir);
     try { rmSync(dir, { recursive: true, force: true }); swept.push(name); } catch { /* leave it for the next run */ }
