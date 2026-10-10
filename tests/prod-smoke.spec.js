@@ -741,6 +741,14 @@ test('(#R533) the Companies tab ships resolved Commons logos and no dead logo ho
     } catch (e) { return { id: c.id, status: 0, type: String((e && e.message) || 'threw').slice(0, 60) }; }
   }));
   const ok = got.filter((g) => g.status === 200 && /image\//.test(g.type));
+  /* ⚠ A TIMEOUT IS «NOT OBSERVED», NOT «REFUSED» (.agents/rules/one-pass-or-a-reason.md §5).
+     MEASURED 2026-10-08 and 10-10: all three requests timed out (status 0) from the GitHub runner
+     while Commons served the same files to browsers. Only an ANSWER — a 4xx, a non-image — says the
+     data path is broken; when Commons gave no answer at all the claim is unmeasured, and it says so. */
+  if (!ok.length && got.every((g) => g.status === 0)) {
+    test.info().annotations.push({ type: 'unobserved', description: 'Commons did not answer from this runner: ' + got.map((g) => g.id + '=' + g.type).join(', ') });
+    test.skip(true, 'Commons did not answer any of the three requests from this runner (timeouts) — not observed, not refused');
+  }
   expect(ok.length, 'Commons must serve the shipped logos to ' + origin + ' — got '
     + got.map((g) => g.id + '=' + g.status + ' ' + g.type).join(', ')).toBeGreaterThan(0);
   console.log('[R533] company logos: ' + withLogo.length + '/' + rows.length
@@ -800,14 +808,34 @@ test('(#R276) prod draws the wind from the model, and the pixel is the colour th
          ±4 px no better — the curve is flat past the kernel, which is what says this is the support
          and not a fitted number. */
       const smp = EC.sampler('wind_u_component_10m');
-      let lo = Infinity, hi = -Infinity;
+      let lo = Infinity, hi = -Infinity, step = 0;
+      const grid = [];
       for (let dx = -1.5; dx <= 1.5; dx += 0.5) {
+        const col = [];
         for (let dy = -1.5; dy <= 1.5; dy += 0.5) {
           const q = window.IntMapGeoEngine.coords.unproject([X + dx, Y + dy]);
           const v = smp ? smp.value(q.lat, q.lng) : NaN;
+          col.push(v);
           if (v === v && isFinite(v)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
         }
+        grid.push(col);
       }
+      /* A finite grid of samples bounds the field's extremes only to within the change between two
+         neighbouring samples: the texel can take a value the grid stepped over. MEASURED in production
+         twice (2026-10-08, 10-10): pixels exactly on the 3.9 and 8.7 m/s entries over sampled
+         footprints ending at 3.89 and 8.68. So the footprint is widened by the largest neighbour
+         difference the field itself shows here — read off the field, not a tolerance; #R276's 0.36×
+         grey still lands ~128 RGB units outside. */
+      for (let i = 0; i < grid.length; i++) {
+        for (let j = 0; j < grid[i].length; j++) {
+          const v = grid[i][j];
+          if (!(v === v && isFinite(v))) continue;
+          for (const w of [grid[i + 1] && grid[i + 1][j], grid[i][j + 1]]) {
+            if (w === w && isFinite(w)) step = Math.max(step, Math.abs(w - v));
+          }
+        }
+      }
+      if (isFinite(lo)) { lo -= step; hi += step; }
       /* the renderer's OWN table, carried out whole — the verdict is taken in Node so that
          tests/r287-checks.test.mjs can run the same decision over failures this page cannot show */
       const ramp = sc && sc.breakpoints
