@@ -104,6 +104,23 @@ function slugTaken(master, slug) {
    then fails to bind and says so. That is recoverable (edit launch.json), unlike a shared name. */
 export const PREVIEW_PORTS = [4400, 4999];
 
+export const previewName = (slug) => `intmap-preview-${slug}`;
+
+/* Add (or replace) one configuration by name; with `entry` null, remove it. A missing file is
+   created only when there is something to add. */
+export function upsertLaunch(path, entry, name = entry && entry.name) {
+  let lj = { version: '0.0.1', configurations: [] };
+  if (existsSync(path)) lj = JSON.parse(readFileSync(path, 'utf8'));
+  else if (!entry) return false;
+  const before = (lj.configurations || []).length;
+  lj.configurations = (lj.configurations || []).filter((c) => c && c.name !== name);
+  if (entry) lj.configurations.unshift(entry);
+  if (!entry && lj.configurations.length === before) return false;
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, JSON.stringify(lj, null, 2) + '\n');
+  return true;
+}
+
 function portsNamedInLaunchJson(master) {
   const dirs = [master, ...q(['worktree', 'list', '--porcelain']).split('\n')
     .filter((l) => l.startsWith('worktree ')).map((l) => l.slice(9).trim())];
@@ -692,32 +709,29 @@ async function makeNew(slug) {
 
   placeData(dir, 'pull');
 
-  /* The preview entry is RELATIVE (`dist`) so it means the same thing from any checkout.
-     ⚠ (#R338) this file is NO LONGER TRACKED — it holds absolute paths into this machine's
-     worktrees, and while it was tracked the preview tool's writes into the MASTER's copy blocked
-     every fast-forward there (and with it the USB backup). It is still written and still read.
-     ⚠ The Browser preview tool reads the MASTER's .claude/launch.json and caches by name (#R289),
-     so a preview wanted before the merge still needs an absolute entry over there. */
-  const ljPath = join(dir, '.claude', 'launch.json');
+  /* Two entries, because there are two readers. The worktree's copy is RELATIVE (`dist`) so it means
+     the same thing from that checkout. The Browser preview tool reads only the MASTER's
+     .claude/launch.json and caches by name (#R289), so the master gets an ABSOLUTE entry pointing
+     into this worktree — before 2026-10-10 only the relative one was written and `preview_start`
+     answered «No server named …». `done` removes both again (it used to remove neither, and the
+     master's file had grown to ~200 dead entries).
+     ⚠ (#R338) this file is NOT TRACKED — it holds absolute paths into this machine's worktrees. */
   try {
     const port = await freePreviewPort(master);
     if (port == null) throw new Error(`${PREVIEW_PORTS[0]}〜${PREVIEW_PORTS[1]} に空きポートが無い`);
-    /* a fresh clone has no copy at all now that it is ignored — start one rather than warn */
-    mkdirSync(dirname(ljPath), { recursive: true });
-    if (!existsSync(ljPath)) writeFileSync(ljPath, JSON.stringify({ version: '0.0.1', configurations: [] }, null, 2) + '\n');
-    const lj = JSON.parse(readFileSync(ljPath, 'utf8'));
-    const name = `intmap-preview-${slug}`;
-    if (!lj.configurations.some((c) => c.name === name)) {
-      lj.configurations.unshift({
-        name,
-        runtimeExecutable: 'node',
-        runtimeArgs: ['scripts/serve.mjs', '--root', 'dist', '--port', String(port)],
-        port,
-        url: `http://127.0.0.1:${port}`,
-      });
-      writeFileSync(ljPath, JSON.stringify(lj, null, 2) + '\n');
-      console.log(`  ✓ preview   ${name}  →  http://127.0.0.1:${port}`);
-    }
+    const name = previewName(slug);
+    const abs = (p) => join(dir, p).replace(/\\/g, '/');
+    upsertLaunch(join(dir, '.claude', 'launch.json'), {
+      name, runtimeExecutable: 'node',
+      runtimeArgs: ['scripts/serve.mjs', '--root', 'dist', '--port', String(port)],
+      port, url: `http://127.0.0.1:${port}`,
+    });
+    upsertLaunch(join(master, '.claude', 'launch.json'), {
+      name, runtimeExecutable: 'node',
+      runtimeArgs: [abs('scripts/serve.mjs'), '--root', abs('dist'), '--port', String(port)],
+      port,
+    });
+    console.log(`  ✓ preview   ${name}  →  http://127.0.0.1:${port}`);
   } catch (e) { console.log('  ⚠ launch.json を更新できなかった: ' + e.message); }
 
   trustWithCodex(dir);
@@ -858,6 +872,16 @@ function done() {
   } catch { try { rmdirSync(nm); } catch { /* leave it; git worktree remove --force handles it */ } }
 
   placeData(here, 'unlink');
+
+  /* the preview entries `new` wrote — the master's absolute one outlives the worktree otherwise */
+  {
+    const m = /^wt-(.+)$/.exec(basename(here));
+    if (m) {
+      try {
+        if (upsertLaunch(join(master, '.claude', 'launch.json'), null, previewName(m[1]))) console.log(`  ✓ preview ${previewName(m[1])} を原本の launch.json から外した`);
+      } catch (e) { console.log('  ⚠ 原本の launch.json を直せなかった: ' + e.message); }
+    }
+  }
 
   /* ⚠ `git worktree remove` PARTIALLY SUCCEEDS ON THIS MACHINE, AND THE FIRST VERSION OF THIS
      FUNCTION TREATED THAT AS TOTAL FAILURE. Measured: the checkout is deleted and the entry drops
