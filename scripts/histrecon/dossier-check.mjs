@@ -184,24 +184,30 @@ export async function atomsFor(atomSet, countries) {
   throw new Error('no atom module declares SET = ' + atomSet + ' in scripts/histrecon/atoms/');
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const files = process.argv.slice(2);
-  if (!files.length) { console.error('usage: node scripts/histrecon/dossier-check.mjs <dossier.json> …'); process.exit(2); }
+/** check dossier files in order. Each dossier is judged against the catalogue of EVERY country it draws on — the
+    cache key is that list, because two dossiers of one polity key may name different countries (British India before
+    and after Burma's separation) and the second must not reuse the first's catalogue. `load` is atomsFor; it is a
+    parameter so the cache rule can be evaluated without fetching a catalogue (tests/hist-recon-expand-checks). */
+export async function checkFiles(files, { load = atomsFor, log = console.log } = {}) {
   let bad = 0;
   const cats = new Map();
   for (const f of files) {
     let D;
-    try { D = JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { console.log('✖ ' + f + ': ' + e.message); bad++; continue; }
-    /* the cache key is every country the dossier draws on — two dossiers of one polity key may name different
-       countries (British India before and after Burma's separation), and the second must not reuse the first's catalogue */
+    try { D = JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { log('✖ ' + f + ': ' + e.message); bad++; continue; }
     const ck = D.atomSet + '|' + D.country + '|' + atomCountriesOf(D).join(',');
-    if (!cats.has(ck)) cats.set(ck, await atomsFor(D.atomSet, atomCountriesOf(D)));
+    if (!cats.has(ck)) cats.set(ck, await load(D.atomSet, atomCountriesOf(D)));
     const r = checkDossier(D, cats.get(ck));
-    console.log((r.err.length ? '✖ ' : '✓ ') + path.basename(f) + ' — ' + (r.units || 0) + ' units, ' + (r.spans || 0) + ' spans, ' + r.err.length + ' error(s), ' + r.warn.length + ' warning(s)');
-    for (const m of r.err.slice(0, 60)) console.log('   ✖ ' + m);
-    if (r.err.length > 60) console.log('   … ' + (r.err.length - 60) + ' more');
-    for (const m of r.warn.slice(0, 20)) console.log('   · ' + m);
+    log((r.err.length ? '✖ ' : '✓ ') + path.basename(f) + ' — ' + (r.units || 0) + ' units, ' + (r.spans || 0) + ' spans, ' + r.err.length + ' error(s), ' + r.warn.length + ' warning(s)');
+    for (const m of r.err.slice(0, 60)) log('   ✖ ' + m);
+    if (r.err.length > 60) log('   … ' + (r.err.length - 60) + ' more');
+    for (const m of r.warn.slice(0, 20)) log('   · ' + m);
     if (r.err.length) bad++;
   }
-  process.exit(bad ? 1 : 0);
+  return bad;
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const files = process.argv.slice(2);
+  if (!files.length) { console.error('usage: node scripts/histrecon/dossier-check.mjs <dossier.json> …'); process.exit(2); }
+  process.exit((await checkFiles(files)) ? 1 : 0);
 }

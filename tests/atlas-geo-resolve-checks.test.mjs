@@ -201,7 +201,14 @@ test('R413 ⑤: a refused GPS resolves to NOTHING — never to the map centre, n
     /* …and coordinates Atlas obtained from the device can be handed straight back to any place argument */
     assert.deepEqual(await geoResolve().geocode('34.7016, 135.4959'),
       { lng: 135.4959, lat: 34.7016, name: '34.7016, 135.4959' });
-    assert.equal(await geoResolve().geocode('91, 0'), null, 'a latitude past the pole is not a coordinate');
+    /* not a coordinate, so it falls through to the place search — which here answers «nothing found» instead of
+       asking nominatim.openstreetmap.org (unit-tests-offline: the claim is the parser's, not the upstream's) */
+    const realFetch = globalThis.fetch;
+    NominatimGate.configure({ gapMs: 0, reset: true });
+    globalThis.fetch = async () => ({ ok: true, status: 200, text: async () => '[]', json: async () => [] });
+    try {
+      assert.equal(await geoResolve().geocode('91, 0'), null, 'a latitude past the pole is not a coordinate');
+    } finally { globalThis.fetch = realFetch; NominatimGate.configure({ gapMs: 1100, reset: true }); }
   });
 });
 

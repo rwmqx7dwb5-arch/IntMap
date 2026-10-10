@@ -112,24 +112,46 @@ test('union: a union the library refuses in one shot is computed pairwise, then 
 });
 
 test('dossier-check: two dossiers under one polity key that name different countries do not share a catalogue', async () => {
-  const { execFileSync } = await import('node:child_process');
+  /* the rule is the catalogue cache key, not the catalogues — it is evaluated with a loader that serves only the
+     countries it is asked for, so nothing is fetched (a CI run once failed here on a geoBoundaries 504) */
+  const os = await import('node:os');
+  const { checkFiles } = await import('../scripts/histrecon/dossier-check.mjs');
+  const CAT = { XXA: [{ id: 'A1' }], XXB: [{ id: 'B1' }] };
+  const loads = [];
+  const load = async (set, cs) => { loads.push(set + '|' + cs.join(',')); return Object.fromEntries(cs.filter((c) => CAT[c]).map((c) => [c, CAT[c]])); };
+  const D = (cs, atoms) => ({ country: 'PKX', atomSet: 'test', atomCountries: cs, scope: { from: '1900-01-01', to: '1930-12-31' },
+    units: [{ id: 'u', names: { en: 'Unit', ja: '単位' }, spans: [{ from: '1900-01-01', precision: 'day', to: null, atoms, sources: src }] }] });
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'intmap-dossier-cache-'));
+  try {
+    /* fewest countries first — the order that used to reuse the smaller catalogue for the larger dossier */
+    const small = path.join(tmp, 'small.json'), large = path.join(tmp, 'large.json');
+    fs.writeFileSync(small, JSON.stringify(D(['XXA'], ['A1'])));
+    fs.writeFileSync(large, JSON.stringify(D(['XXA', 'XXB'], ['A1', 'B1'])));
+    const out = [];
+    assert.equal(await checkFiles([small, large], { load, log: (m) => out.push(m) }), 0, out.join(' / '));
+    assert.deepEqual(loads, ['test|XXA', 'test|XXA,XXB'], 'each country list is loaded for itself');
+    /* a dossier that names the same countries again reuses the catalogue */
+    loads.length = 0;
+    assert.equal(await checkFiles([small, large, small], { load, log: () => {} }), 0);
+    assert.equal(loads.length, 2);
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+  /* the shipped dossiers: a polity key whose dossiers name different country lists (British India before and
+     after Burma) asks the loader once per list — the same rule on the files it was written for */
   const dir = path.join(ROOT, 'scripts', 'histrecon', 'dossiers');
-  const files = fs.readdirSync(dir).filter((n) => n.endsWith('.json'));
   const groups = new Map();
-  for (const n of files) {
-    const D = JSON.parse(fs.readFileSync(path.join(dir, n), 'utf8'));
-    if (!D.atomCountries) continue;
-    const k = D.atomSet + '|' + D.country;
+  for (const n of fs.readdirSync(dir).filter((x) => x.endsWith('.json'))) {
+    const J = JSON.parse(fs.readFileSync(path.join(dir, n), 'utf8'));
+    if (!J.atomCountries) continue;
+    const k = J.atomSet + '|' + J.country;
     if (!groups.has(k)) groups.set(k, []);
-    groups.get(k).push({ n, cs: D.atomCountries.join(',') });
+    groups.get(k).push({ n, set: J.atomSet, cs: J.atomCountries.join(',') });
   }
-  /* a polity key whose dossiers name different country lists (British India before and after Burma) */
   const mixed = [...groups.values()].find((g) => new Set(g.map((x) => x.cs)).size > 1);
   if (!mixed) return;
-  /* fewest countries first — the order that used to reuse the smaller catalogue for the larger dossier */
-  const order = mixed.slice().sort((a, b) => a.cs.split(',').length - b.cs.split(',').length).map((x) => path.join(dir, x.n));
-  const out = execFileSync(process.execPath, [path.join(ROOT, 'scripts', 'histrecon', 'dossier-check.mjs'), ...order], { encoding: 'utf8' });
-  assert.doesNotMatch(out, /^✖/m, out);
+  const order = mixed.slice().sort((p, q) => p.cs.split(',').length - q.cs.split(',').length);
+  loads.length = 0;
+  await checkFiles(order.map((x) => path.join(dir, x.n)), { load: async (set, cs) => { loads.push(set + '|' + cs.join(',')); return Object.fromEntries(cs.map((c) => [c, []])); }, log: () => {} });
+  assert.deepEqual(loads, [...new Set(order.map((x) => x.set + '|' + x.cs))]);
 });
 
 test('sample points by scanline are the fill\'s sample points — same cells, same order, same cap — on shipped rows', async () => {
