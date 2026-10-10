@@ -275,6 +275,12 @@ gh pr merge --squash --auto --delete-branch   # 緑なら勝手に merge され�
   `.gitattributes`、仕組みは `docs/AGENT-SETUP.md` §12）。終わったら `node scripts/merge-driver.mjs --finish`
   （保留した生成器を merge 後の木で走らせる。build が要るものは印字だけ）→ 差分を commit →
   `git push --force-with-lease`。**それでも残った衝突は本物**（人が書いたものを両側が変えた）。
+- ⚠ **Atlas の能力を足す PR が並行で何本もあるときは、auto-merge を 1 本にだけ掛ける**（2026-10-08〜09 実測、5 本）。
+  merge driver は衝突を解くが、**手書きの能力数**（`check:docs` の capability-count）・`async.*` の perf 天井・
+  評価の録画（cassette）は 1 本入るたびに残りの全部でずれ、必須チェックが strict でないので、古い main の上で緑の
+  PR が続けて入ると main が赤になる。1 本ずつ rebase →（`atlas-caps --write`・能力数・`npm run regen`・build・
+  `perf-budget --update`・門）で着地させるか、残りを**統合 1 本**にまとめて CI を 1 回にする。並行の担当には
+  能力数・天井・録画を触らせず、統合時に合わせる。
 - CI の deploy ログは `mode:'serial'` だと**最初の 1 件しか見せない**。「赤が 1 件」は
   「壊れているのが 1 件」ではない。
 - **非破壊的な migration・設定変更・deployment・commit・push・PR・merge に承認を求めない**
