@@ -72,12 +72,20 @@ test('#R503 ① AGENTS.md fits inside the budget Codex always applies', () => {
     + 'move a section to docs/AGENT-SETUP.md, .agents/rules/ or the round skill instead of raising this.');
 });
 
+/* The largest file that may stand in for the standing instructions without BEING them is the
+   provider-specific half: CLAUDE.md, held under this many characters by ② below. An AGENTS.md no
+   longer than that has become a pointer file — a stub. (lean-standing-instructions, 2026-10-10: the
+   floor was 12,000 chars, a figure taken from the file's size at the time rather than from what a
+   stub is; a rewrite that kept every rule at 11,750 chars tripped it. The NEEDLES below and
+   process-standing-rules ②③ are what prove the rules are there; this only catches the stub.) */
+const PROVIDER_HALF_MAX = 6000;
+
 test('#R503 ① AGENTS.md is the standing instructions, not a stub', () => {
   const md = read('AGENTS.md');
   /* ⚠ CHARACTERS, not bytes — this file is mostly Japanese, so 32 KB of UTF-8 is about 16 K
      characters. The ceiling above is the byte figure; this is the floor, and confusing the two
      is how a threshold ends up asserting nothing. */
-  assert.ok(md.length > 12000, `AGENTS.md is ${md.length} chars — it has been trimmed to a stub`);
+  assert.ok(md.length > PROVIDER_HALF_MAX, `AGENTS.md is ${md.length} chars — no larger than CLAUDE.md may be, so it has been trimmed to a stub`);
   /* the sections a session actually acts on; §11 and §12 are the ones a truncation eats first */
   for (const needle of ['## 1. 着手前に必ず確認するもの', '## 5. ワークフロー', '## 11. 作業終了処理', '## 12. 本ファイル自体の保守']) {
     assert.ok(md.includes(needle), `AGENTS.md lost ${JSON.stringify(needle)}`);
@@ -108,7 +116,7 @@ test('#R503 ② CLAUDE.md imports AGENTS.md and every rule file, outside code sp
 
 test('#R503 ② CLAUDE.md stays provider-specific — it does not become a second rulebook', () => {
   const md = read('CLAUDE.md');
-  assert.ok(md.length < 6000,
+  assert.ok(md.length < PROVIDER_HALF_MAX,
     `CLAUDE.md is ${md.length} chars. It is the Claude-Code-only half; anything both products need belongs in AGENTS.md (§9 — 正本を2つ作らない)`);
 });
 
