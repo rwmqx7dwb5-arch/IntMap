@@ -1,6 +1,6 @@
 {
  "//": "written by scripts/data-effects.mjs --update — UI handlers that reach a Supabase write / rpc / functions.invoke / auth change / POSTed Edge Function on an element that declares no data-effect, per file; ratcheted both ways by check:static",
- "reaching": 75,
+ "reaching": 72,
  "total": 0,
  "files": {}
 }

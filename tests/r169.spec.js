@@ -292,7 +292,7 @@ test('R169 #8 the place-label and readout modules really touched the map', async
 });
 
 test('R169 #9 LIVE getters: modules built in English follow a runtime language switch', async () => {
-  await page.evaluate(() => document.getElementById('lang-jp').click());
+  await page.evaluate(() => ((s) => { s.value = 'jp'; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.getElementById('setting-lang')));
   await page.waitForTimeout(2500);
   const jp = await page.evaluate(() => {
     let sat = '';
@@ -302,7 +302,7 @@ test('R169 #9 LIVE getters: modules built in English follow a runtime language s
   // satRenderController() re-renders from HOST.lang. If the module had captured the language at
   // factory time it would still be English here.
   expect(jp.sat, 'the satellite controller re-rendered in Japanese').toMatch(/[ぁ-んァ-ン一-龯]/);
-  await page.evaluate(() => document.getElementById('lang-en').click());
+  await page.evaluate(() => ((s) => { s.value = 'en'; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.getElementById('setting-lang')));
   await page.waitForTimeout(1500);
   expect(jp.feed.length).toBeGreaterThan(0);
 });

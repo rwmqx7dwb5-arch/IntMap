@@ -96,7 +96,6 @@ IntMapLang.define('zh', {
     "lblNavZoom":"縮放",
     "lblNewsCountries":"依國家媒體篩選新聞",
     "lblNewsSources":"新聞媒體",
-    "lblNightSide":"晝夜著色",
     "lblScience":"科學根據與邏輯",
     "lblShowRank":"排名編號（國家）",
     "lblSidebarStyle":"側邊欄外觀",
@@ -167,15 +166,12 @@ IntMapLang.define('zh', {
     "newsSourceAll":"所有媒體",
     "newsSourceMultiSel":"選擇媒體…",
     "newsSourcesHint":"只顯示你勾選的媒體的標題。清單依你目前資料源實際包含的媒體建立。",
-    "nightSideOff":"關閉 — 整顆地球均勻照亮",
-    "nightSideOn":"開啟（預設）— 讓夜側變暗並顯示城市燈光",
     "optDark":"深色",
     "optLight":"淺色",
     "proArchive":"十年時光回溯檔案",
     "proIntel":"俄・中在地一手來源情報",
     "reportBugBtn":"回報錯誤",
     "screenshotBtn":"地圖螢幕擷取（隱藏控制項，保留圖例）",
-    "sendFeedbackBtn":"傳送意見回饋",
     "shareView":"分享此畫面（複製連結）",
     "showRankOff":"關閉",
     "showRankOn":"開啟（預設）",
@@ -213,7 +209,7 @@ IntMapLang.define('zh', {
       viewMap:"地圖", viewSat:"衛星影像", settings:"設定", modalTitle:"設定", close:"關閉",
       tabDocked:"面板", lblDockPanels:"圖例與工具視窗", dockPanelsOff:"顯示於地圖上（預設）", dockPanelsOn:"收進側邊欄分頁", dockPanelsHint:"所有圖例、讀數與工具視窗都會移到左側邊欄的「面板」分頁，讓地圖保持清爽。點選地點時出現、與地圖位置相連的彈出視窗仍留在地圖上。",
       setSecAppearance:"外觀", setSecLayout:"版面與面板", setSecMap:"地圖操作", setSecUnits:"單位與時間", setSecNews:"新聞與跑馬燈", setSecAI:"AI", setSecKeys:"整合與金鑰", setSecAbout:"關於與支援",
-      lblTheme:"主題", lblTz:"時區設定", tzSearch:"搜尋時區…", btnApply:"套用", optAuto:"系統預設", optLocal:"當地時間（系統預設）",
+      lblTheme:"主題", lblTz:"時區設定", tzSearch:"搜尋時區…", optAuto:"系統預設", optLocal:"當地時間（系統預設）",
       dashCatMil:"軍事基地", dashCatTech:"科技／網路", dashCatMar:"海運／咽喉點", dashCatGeo:"地理／氣候",
       readWiki:"在維基百科閱讀 ↗", measure:"測量", areaTool:"面積", radius:"半徑", vol3dTool:"立體體積", points:"點", total:"合計", perimeter:"周長", area:"面積", clear:"清除", undoPt:"取消上一點",
       radiusHint:"點擊地圖放置圓形。可放置多個。",
@@ -801,7 +797,6 @@ IntMapLang.define('zh', {
     'Data used': "使用的資料",   /* atlas-console.js */
     'Date': "日期",   /* news-timeline.js */
     'day': "日",   /* space.js */
-    'Day/night': "晝夜",   /* news-timeline.js */
     'days': "天",   /* space.js */
     'days a year with no sun at all': "每年完全沒有日照的天數",   /* sims.js */
     'Dec': "12月",   /* ocean-currents.js */
@@ -2572,7 +2567,6 @@ IntMapLang.define('zh', {
     'USD, nominal': "美元，名目值",
     'Wind 10 m': "10 公尺風",
     'Wind data unavailable': "無法取得風場資料",
-    'You have unsaved changes. Discard them?': "你有尚未儲存的變更，要捨棄嗎？",
     'mmi': "mmi",
     /* == (#R231) THE STRINGS THIS TABLE COULD NOT SEE ====================================
        268 hand-written `lang==='jp'?...` chains became IntMapLang.t(...) calls this round

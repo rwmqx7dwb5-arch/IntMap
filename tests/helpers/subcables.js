@@ -64,13 +64,13 @@ export const readCaveats = (page, legendId) => page.evaluate(async (id) => {
   };
 }, legendId);
 
-/** switch the way a reader does — the pill — and prove it took (#R251) */
+/** switch the way a reader does — the Settings language picker (the header pills are gone: desktop-one-entry) — and prove it took (#R251) */
 export const setLang = (page, lang) => page.evaluate(async (code) => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   let btn = null;
-  for (let i = 0; i < 100 && !btn; i++) { btn = document.getElementById('lang-' + code); if (!btn) await sleep(50); }
-  if (!btn) return { ok: false, why: 'no #lang-' + code };
-  btn.click();
+  for (let i = 0; i < 100 && !btn; i++) { btn = document.querySelector('#setting-lang option[value="' + code + '"]'); if (!btn) await sleep(50); }
+  if (!btn) return { ok: false, why: 'no #setting-lang option ' + code };
+  ((s) => { s.value = code; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.getElementById('setting-lang'));
   const tag = window.IntMapLang.htmlTag(code);
   for (let i = 0; i < 120; i++) {
     if (window.IntMapLang.isLoaded(code) && document.documentElement.getAttribute('lang') === tag) break;

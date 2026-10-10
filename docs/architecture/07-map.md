@@ -746,7 +746,7 @@ Atlas の `research.related` / `research.impact` / 実世界オブジェクト�
 **読者の表を、地図・分析・公開まで 1 枚のパネルで。** 取り込み（§7.3d）・データセットと処理（§7.3e）・属性による着色・
 書き出し・絵葉書は前から在り、これはそれらを 1 つの流れにまとめて、欠けていた 3 段——①座標の無い表を場所に結ぶ
 ②Excel を地図に出す ③取り込んだ表を公開する——だけを足した面である。入口: **Layers ▸ Tools ▸ データスタジオ**
-（`tool.dataStudio`）・レイヤー ▾ の「地図データを読み込む」の隣の「データスタジオ」・**座標の無い表を地図に落としたとき**
+（`tool.dataStudio`。行が描画中かどうかも示す。パネルの中の 2 つ目のボタンは同じ扉の写しだったので無い）・**座標の無い表を地図に落としたとき**
 （`js/map-ui.js` の `handleFiles` が `format:'table'` を受けたら、遅延でスタジオを呼んでその表を渡す）・Atlas `data.studio`・
 `ds=` を持つ共有リンク。モジュールは**どの入口も同じ字句の `import('./data-studio.js')`** で読み（`js/lazy-modules.js` に登録せず、window に何も公開しない。`studio(HOST)` が 1 つの制御器を返す）、起動経路に載らない。`ds` を持つ復元は `js/map-ui.js` の viewHash が `MapState.onRestore` で聞いて import し、登録された持ち主が復元の保留値を受け取る
 （`js/table-bind.js` も同じ——起動の静的 import 木に入らないことを `tests/data-studio-checks.test.mjs` が測る）。

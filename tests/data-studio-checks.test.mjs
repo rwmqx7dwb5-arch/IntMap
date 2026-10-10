@@ -219,8 +219,9 @@ test('⑨ the studio publishes nothing on window, and every entry reaches it by 
     const n = ff.dynamicImports.filter((x) => x === './data-studio.js').length; if (n) dynamics[f] = n;
   }
   assert.deepEqual(statics, [], 'a static import of the studio puts it on that module\'s graph');
-  /* the four entries in js/map-ui.js (the button, a dropped table, Layers ▸ Tools, a restore carrying ds), Atlas's run and its observer */
-  assert.ok((dynamics['js/map-ui.js'] || 0) >= 4, 'js/map-ui.js entries: ' + JSON.stringify(dynamics));
+  /* the three entries in js/map-ui.js (a dropped table, Layers ▸ Tools, a restore carrying ds — the second «Data studio» button
+     was removed in desktop-one-entry: the Tools row is the one door), Atlas's run and its observer */
+  assert.ok((dynamics['js/map-ui.js'] || 0) >= 3, 'js/map-ui.js entries: ' + JSON.stringify(dynamics));
   assert.ok(dynamics['js/atlas-cap-data.js'] >= 1 && dynamics['js/atlas-capabilities.js'] >= 1, JSON.stringify(dynamics));
   for (const [f, ff] of G.facts) {
     if (f === 'js/data-studio.js') continue;

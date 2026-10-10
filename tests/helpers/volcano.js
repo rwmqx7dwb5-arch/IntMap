@@ -31,13 +31,13 @@ export async function volcanoLayerOn(page) {
   );
 }
 
-/** the language switch is `#lang-<code>`, a closure in js/app-body.js — there is no window.setLanguage.
+/** the language switch is `#setting-lang` → setLang(), a closure in js/app-body.js — there is no window.setLanguage.
  *  ⚠ WAIT FOR THE REGISTRY, NOT FOR A CLOCK. A fixed sleep is both slower than it needs to be and
  *  wrong when the machine is busy: what the caller actually needs is the locale table to have
  *  ARRIVED, which `IntMapLang.isLoaded` answers. (#R395 — this file stands in the push gate, and the
  *  gate's whole budget is 40 s.) */
 export const setLang = async (page, code) => {
-  await page.evaluate((c) => document.getElementById('lang-' + c)?.click(), code);
+  await page.evaluate((c) => ((s) => { s.value = c; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.getElementById('setting-lang')), code);
   await page.waitForFunction((c) => {
     try { return window.IntMapLang.isLoaded ? window.IntMapLang.isLoaded(c) : true; } catch (_) { return false; }
   }, code, { timeout: 20000 });

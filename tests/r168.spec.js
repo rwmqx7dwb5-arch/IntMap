@@ -379,7 +379,7 @@ test('R168 #9 LIVE getters: four of the modules re-render after a runtime langua
   // than by the module, so it would not discriminate. js/community.js cannot be rendered hermetically
   // — see the header.)
   const res = await page.evaluate(async () => {
-    document.getElementById('lang-jp')?.click();
+    ((s) => { s.value = 'jp'; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.getElementById('setting-lang'));
     await new Promise((r) => setTimeout(r, 1400));
     const out = {};
     document.getElementById('btn-stats')?.click();
@@ -402,7 +402,7 @@ test('R168 #9 LIVE getters: four of the modules re-render after a runtime langua
   expect(cjk.test(res.companies), 'js/companies-ui.js re-rendered in Japanese').toBe(true);
   expect(cjk.test(res.news), 'js/news-ui.js re-rendered in Japanese').toBe(true);
   expect(cjk.test(res.tool), 'js/tool-panel.js re-rendered in Japanese').toBe(true);
-  await page.evaluate(() => document.getElementById('lang-en')?.click());
+  await page.evaluate(() => ((s) => { s.value = 'en'; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.getElementById('setting-lang')));
   await page.waitForTimeout(800);
 });
 

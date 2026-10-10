@@ -290,12 +290,13 @@ export function searchGeocode(HOST){
     return z>0&&_pxApart(a,b,z)<=FRAME_PAD_PX;
   }
 
-  /* ══ (mobile-shell) TWO WAYS IN: Enter (the full search) and, on a phone, EVERY KEYSTROKE ══════════════════
+  /* ══ (mobile-shell) TWO WAYS IN: Enter (the full search) and EVERY KEYSTROKE ══════════════════════════════════
      `doGeocode({suggest:true})` answers while the reader types — from what is already on the device
      (`localFuzzyPlaces`: the countries, capitals and the gazetteer, the same rows the full search shows first),
      through the SAME row builder and the SAME `gotoPlace`, so a suggestion is a search result one keystroke
-     early and not a second implementation. It asks no network; Enter still does. On a phone the last row is
-     «Ask Atlas», because the field is the one entry for both a place and a question (`_askAtlasRow`).
+     early and not a second implementation. It asks no network; Enter still does. The last row is «Ask Atlas»,
+     because the field is the one entry for both a place and a question (`_askAtlasRow`). (desktop-one-entry) Both
+     were the phone's alone; a desktop reader typing a question into the same field got place rows or nothing.
      ⚠ A SEARCH THAT HAS BEEN OVERTAKEN WRITES NOTHING. Each call takes a generation; the three geocoders of an
      earlier Enter can answer after the reader has typed on, and their rows would land under the new letters. */
   let _gcGen=0;
@@ -304,15 +305,17 @@ export function searchGeocode(HOST){
      keyboard goes away (the answer is on the map) */
   function _picked(inp,name){ _gcGen++; inp.value=name; inp._imPicked=name.trim(); try{ if(HOST.isMobile()) inp.blur(); }catch(_){} }
   function _askAtlasRow(res,q){
-    try{ if(!HOST.isMobile()) return; }catch(_){ return; }
     const d=document.createElement('div'); d.className='ms-item ms-atlas'; d.setAttribute('role','option');
     const t=document.createElement('b'); t.textContent=IntMapLang.t(HOST.lang,'Ask Atlas','Atlasに聞く');
     const s=document.createElement('span'); s.className='ms-kind'; s.textContent=q;
     d.appendChild(t); d.appendChild(s);
     d.onclick=()=>{ res.style.display='none';
       try{ const inp=document.getElementById('ms-input'); if(inp){ inp.value=''; inp.blur(); } }catch(_){}
-      /* the Atlas tab opens (the same button the reader would press), then the console — fetched on first use — runs the question */
-      try{ const b=document.getElementById('btn-community'); if(b) b.click(); }catch(_){}
+      /* the Atlas tab opens (the same button the reader would press), then the console — fetched on first use — runs the question.
+         On a desktop whose left sidebar is folded away the tab would open out of sight, so the sidebar opens first — through
+         the one action that does it (ui.sidebar.open, js/app-body.js); the workspace mode has no sidebar and floats Atlas. */
+      try{ const OS=window.IntMapOS; if(OS&&!HOST.isMobile()&&!document.body.classList.contains('ws-mode')) OS.exec('ui.sidebar.open',{source:'ui'}); }catch(_){}
+      try{ const b=document.getElementById('btn-community'); if(b&&HOST.mode!=='atlas') b.click(); }catch(_){}   /* the tab button toggles: pressed on Atlas it would close it */
       try{ const Z=window.IntMapLazy; (Z?Z.need('atlasConsole'):Promise.resolve()).then(()=>{ const C=window.IntMapConsole; if(C&&C.run) C.run(q); }); }catch(_){} };
     res.appendChild(d);
   }

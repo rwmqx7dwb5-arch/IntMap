@@ -596,11 +596,12 @@ export function aiCore(HOST){
 
     if(typeof HOST.user==='undefined' || !HOST.user){
       wrap.innerHTML=
-        /* (#R33) The in-Settings "Log in / Sign up" button was removed as redundant (use the account button
-           top-right). Only the explanatory line remains. */
+        /* (#R33) The in-Settings "Log in / Sign up" button was removed as redundant (use the header's Log in
+           button). Only the explanatory line remains. (desktop-one-entry) It names the button by its label, not
+           by a position: «top-right» was wrong on a desktop, where the button heads the left sidebar. */
         `<div class="ai-row" style="font-size:12px;color:var(--text-muted);line-height:1.5;">`+
-          aiEsc(jp?'AI機能（要約・翻訳・位置解析・画像比較など）は、右上のアカウントからログインすると無料でご利用いただけます（1日'+HOST.AI_FREE_DAILY+'回まで）。APIキーは不要です。'
-                  :'AI features (summaries, translation, locating, image compare…) are free once you log in from the account button (top-right) — up to '+HOST.AI_FREE_DAILY+' uses per day. No API key needed.')+
+          aiEsc(jp?'AI機能（要約・翻訳・位置解析・画像比較など）は、「ログイン」ボタンからログインすると無料でご利用いただけます（1日'+HOST.AI_FREE_DAILY+'回まで）。APIキーは不要です。'
+                  :'AI features (summaries, translation, locating, image compare…) are free once you log in with the Log in button — up to '+HOST.AI_FREE_DAILY+' uses per day. No API key needed.')+
         `</div>`;
       return;
     }

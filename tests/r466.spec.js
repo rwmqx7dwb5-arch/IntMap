@@ -117,12 +117,20 @@ test('R466 設定を開いたまま言語を変えても、開き直しと同じ
     dd: (document.getElementById('newscountry-dd-label') || {}).textContent || '',
     tz: (document.getElementById('setting-tz-search') || {}).value,
   }));
-  expect(after.ticked, 'Apply していないチェックは言語切替で消えない').toEqual(kept.asked);
+  expect(after.ticked, 'チェックは言語切替で消えない').toEqual(kept.asked);
   expect(after.tz, '打ちかけの時刻帯の絞り込みも消えない').toBe('tok');
-  /* ⚠ 確定済みは空である。要約が確定済みから作られていたら「未選択」と出る——チェックの側から
-     作られていることを、その差で見る。 */
-  expect(kept.committed, 'この spec が Apply を押していない前提が崩れている').toEqual([]);
-  expect(after.dd, 'ボタンの要約はチェックの側から、切り替えた言語で書き直される').toContain('Japan');
+  /* (desktop-one-entry) 「適用」は無くなり、チェックはその場で確定する——確定済みがチェックと同じであること自体が新しい
+     約束で、言語切替がそれを壊さないことを上の ticked が見ている。 */
+  expect(kept.committed, 'チェックはその場で確定する（適用ボタンは無い）').toEqual(kept.asked);
+  expect(after.dd, 'ボタンの要約は、切り替えた言語で書き直される').toContain('Japan');
 
-  await page.evaluate(() => { const m = document.getElementById('settings-modal'); if (m) m.style.display = 'none'; });
+  /* 共有ページなので、この spec が確定させた設定（国・提供元・ニュースの言語・ティッカー）を元に戻してから閉じる */
+  await page.evaluate(() => {
+    const wrap = document.getElementById('newscountry-multi');
+    wrap.querySelectorAll('input:checked').forEach((b) => { b.checked = false; });
+    for (const [id, v] of [['setting-newscountry', 'off'], ['setting-newssource', 'off'], ['setting-newslang', 'ui'], ['setting-ticker', 'off']]) {
+      const s = document.getElementById(id); if (s && [...s.options].some((o) => o.value === v)) { s.value = v; s.dispatchEvent(new Event('change', { bubbles: true })); }
+    }
+    const m = document.getElementById('settings-modal'); if (m) m.style.display = 'none';
+  });
 });

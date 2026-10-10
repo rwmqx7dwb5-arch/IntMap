@@ -32,7 +32,7 @@ test('layer-manifest ①② the registry the modules build is exactly the manife
   const got = await page.evaluate(() => {
     window.reorganizeLayerPanel();
     const dd = document.getElementById('layer-dropdown');
-    const skipIn = (el) => el.closest('#layer-active-section') || el.closest('#layer-fav-section') || el.closest('#layer-search-wrap') || el.closest('#layer-tools');
+    const skipIn = (el) => el.closest('#layer-active-section') || el.closest('#layer-fav-section') || el.closest('#layer-tools');
     const boxes = Array.from(dd.querySelectorAll('input[type=checkbox]')).filter((cb) => !skipIn(cb));
     /* the walk js/map-ui.js's rowsFromDropdown did before layer-manifest: headings and rows in document order */
     let shelf = 'base'; const walked = [];

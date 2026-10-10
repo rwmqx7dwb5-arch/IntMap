@@ -64,8 +64,8 @@ export default [
          and «passe en français» were answered with 「非対応の言語」 by an app that has both. Every
          spelling a language row knows — its code, its aliases, its own name, its English name — now
          resolves, and a tenth language needs no edit here. */
-    async run(a, dctx, K) { const _langCode = K._langCode, setLang = K.setLang, clickId = K.clickId, R = K.R, note = K.note, L = K.L, warn = K.warn, esc = K.esc;
-      { const lg=_langCode(a.lang); if(lg){ let ok=false; try{ setLang(lg); ok=true; }catch(_){ ok=clickId('lang-'+lg); } return R(ok, note('✓ '+L('Language','言語','Sprache','Язык','Idioma')+': '+lg)); } return R(false, warn(L('Unsupported language','非対応の言語','Sprache nicht unterstützt','Язык не поддерживается','Idioma no admitido')+': '+esc(a.lang||''))); }
+    async run(a, dctx, K) { const _langCode = K._langCode, setLang = K.setLang, R = K.R, note = K.note, L = K.L, warn = K.warn, esc = K.esc;
+      { const lg=_langCode(a.lang); if(lg){ let ok=false; try{ setLang(lg); ok=true; }catch(_){} return R(ok, note('✓ '+L('Language','言語','Sprache','Язык','Idioma')+': '+lg)); } return R(false, warn(L('Unsupported language','非対応の言語','Sprache nicht unterstützt','Язык не поддерживается','Idioma no admitido')+': '+esc(a.lang||''))); }
     },
   },
   {

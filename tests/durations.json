@@ -162,5 +162,6 @@
  ],
  "tests/atlas-live-stream.spec.js": 36,
  "tests/supporter-funnel.spec.js": 28,
- "tests/keyboard-and-offline.spec.js": 23
+ "tests/keyboard-and-offline.spec.js": 23,
+ "tests/desktop-one-entry.spec.js": 11
 }

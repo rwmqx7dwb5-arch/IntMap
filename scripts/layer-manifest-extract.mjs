@@ -236,14 +236,14 @@ try {
   }, { GROUPS, OTHERS_IDS, EXTRA });
 
   /* the Japanese name of every row, so the manifest's i18n keys can be checked against what is drawn */
-  await page.evaluate(() => document.getElementById('lang-jp') && document.getElementById('lang-jp').click());
+  await page.evaluate(() => ((s) => { s.value = 'jp'; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.getElementById('setting-lang')));
   await page.waitForTimeout(1500);
   const jp = await page.evaluate(() => Array.from(document.querySelectorAll('#layer-dropdown input[type=checkbox]')).map((cb) => {
     const lab = cb.closest('label'); const sp = lab && lab.querySelector('span:not(.lyr-sw):not(.lfc-sw):not(.lsr-thumb)');
     return { id: cb.id, text: ((sp ? sp.textContent : (lab ? lab.textContent : '')) || '').replace(/\s+/g, ' ').trim() }; }));
   const jpById = new Map(jp.map((r) => [r.id, r.text]));
   facts.rows.forEach((r) => { r.textJp = jpById.get(r.id) || null; });
-  await page.evaluate(() => document.getElementById('lang-en') && document.getElementById('lang-en').click());
+  await page.evaluate(() => ((s) => { s.value = 'en'; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.getElementById('setting-lang')));
   await page.waitForTimeout(800);
 
   if (LAZY) {

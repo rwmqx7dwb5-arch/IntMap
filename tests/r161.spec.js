@@ -84,14 +84,14 @@ test('R161 (B) analyzeContext uses the engine and yields a usable pin in every U
     const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     /* ⚠ (#R251) THIS LOOP USED TO SWITCH NOTHING. It read
        `window.setLanguage ? window.setLanguage(lang) : null` — and there is no `window.setLanguage`;
-       the switch is `setLang()`, a closure in js/app-body.js wired to `#lang-<code>`. The guard made
+       the switch is `setLang()`, a closure in js/app-body.js wired to `#setting-lang`. The guard made
        it a silent no-op, so five iterations all measured English and the assertion below could not
        have failed for de/ru/es — the exact defect it was written for. Switch the way a reader does,
        and wait for the table (#R249: the <html lang> attribute lands before the strings do). */
     for (const lang of ['en', 'jp', 'de', 'ru', 'es']) {
-      const btn = document.getElementById('lang-' + lang);
+      const btn = document.querySelector('#setting-lang option[value="' + lang + '"]');
       if (btn) {
-        btn.click();
+        ((s) => { s.value = lang; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.getElementById('setting-lang'));
         const tag = window.IntMapLang.htmlTag(lang);
         for (let i = 0; i < 100; i++) {
           if (window.IntMapLang.isLoaded(lang) && document.documentElement.getAttribute('lang') === tag) break;

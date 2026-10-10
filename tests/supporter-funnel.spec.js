@@ -37,7 +37,7 @@ const limitSignal = () => page.evaluate(() => window.dispatchEvent(new CustomEve
 const setLang = async (code) => {
   const tag = code === 'jp' ? 'ja' : code;
   if (await page.evaluate((t) => document.documentElement.lang === t, tag)) return;   // already there: a switch re-renders the page for nothing
-  await page.evaluate((c) => document.getElementById('lang-' + c)?.click(), code);
+  await page.evaluate((c) => ((s) => { s.value = c; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.getElementById('setting-lang')), code);
   await page.waitForFunction((tag) => document.documentElement.lang === tag, code === 'jp' ? 'ja' : code, BOOT);
 };
 const openPanel = () => page.evaluate(() => document.getElementById('btn-blueberry').click());

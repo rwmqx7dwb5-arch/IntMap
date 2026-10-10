@@ -103,7 +103,7 @@ test('R164 #5 LIVE getters: modules built in English follow a runtime language s
      still a failure, and every assertion below still runs on the settled text. */
   const setLang = async (code) => {
     const was = await page.evaluate(() => (document.getElementById('beta-dl-ukrfront-lbl') || {}).textContent || '');
-    await page.evaluate((c) => document.getElementById('lang-' + c)?.click(), code);
+    await page.evaluate((c) => ((s) => { s.value = c; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.getElementById('setting-lang')), code);
     await page.waitForFunction((w) => ((document.getElementById('beta-dl-ukrfront-lbl') || {}).textContent || '') !== w,
       was, { timeout: 20_000 });
     await page.waitForTimeout(200);   /* the other listeners fire on the same tick, not later */

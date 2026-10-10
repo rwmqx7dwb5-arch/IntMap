@@ -575,7 +575,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     document.getElementById('text-settings').innerText=d.settings; document.getElementById('modal-title').innerText=d.modalTitle;
     document.getElementById('lbl-theme').innerText=d.lblTheme; document.getElementById('lbl-tz').innerText=d.lblTz;
     { const tzs=document.getElementById('setting-tz-search'); if(tzs) tzs.placeholder=d.tzSearch;   /* (#R459) no English fallback: keyed() puts en under every language */ }
-    document.getElementById('btn-close-settings').innerText=d.btnApply; document.getElementById('opt-theme-auto').innerText=d.optAuto;
+    document.getElementById('opt-theme-auto').innerText=d.optAuto;
     /* ⚠ (#R466) a relabel of `#opt-tz-auto` stood here — an id index.html lost in #R18, so it found nothing and 「Local (System Default)」 stayed English all session. The combo is rebuilt from `intmap-lang` now (wireTzSearch). */
     if(toolMode) updateToolPanel();
     try{ if(currentMapType==='sat'){ satRenderController(); satRefreshReadout(); } }catch(_){}
@@ -1878,16 +1878,21 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     const mob=()=>window.IntMapDevice.compact();
     /* (mobile-shell) on a phone the field is no longer a circle that has to be opened first: it is the head of the
        sheet (js/mobile-ui.js), always a field. An empty press puts the caret in it; a press with text searches. */
+    /* ⚠ (desktop-one-entry) a full search ENDS the suggestion that is still waiting: the candidates follow the typing (below)
+       120 ms after a keystroke, and a press or an Enter inside that window used to be overwritten by the device-only rows a
+       moment later — measured on a desktop: the card for 「Tokyo」 lost its second row before it could be picked. */
+    let _sugT=0;
     btn.onclick=()=>{
       if(mob() && !inp.value.trim()){ try{ inp.focus(); }catch(_){} return; }
-      doGeocode();
+      clearTimeout(_sugT); doGeocode();
     };
     /* Enter searches AND GOES to the first candidate (search-identity, js/search-geocode.js `go`) — unless a result is
        highlighted with the arrow keys, which Enter then picks (js/search-geocode.js listbox), or the Enter is an IME
        confirming its conversion (`isComposing`; 229 is the keyCode a browser reports for a key the IME consumed) */
-    inp.addEventListener('keydown',(e)=>{ if(e.key==='Enter'&&!e.isComposing&&e.keyCode!==229&&!e.defaultPrevented&&!inp.getAttribute('aria-activedescendant')) doGeocode({go:true}); });
-    /* (mobile-shell) …and on a phone the candidates follow the typing — local rows only, no network (js/search-geocode.js) */
-    let _sugT=0; inp.addEventListener('input',()=>{ if(!mob()) return; clearTimeout(_sugT); _sugT=setTimeout(()=>doGeocode({suggest:true}),120); });
+    inp.addEventListener('keydown',(e)=>{ if(e.key==='Enter'&&!e.isComposing&&e.keyCode!==229&&!e.defaultPrevented&&!inp.getAttribute('aria-activedescendant')){ clearTimeout(_sugT); doGeocode({go:true}); } });
+    /* (mobile-shell) …and the candidates follow the typing — local rows only, no network (js/search-geocode.js), with
+       «Ask Atlas» last. (desktop-one-entry) on every device, not only a phone. */
+    inp.addEventListener('input',()=>{ clearTimeout(_sugT); _sugT=setTimeout(()=>doGeocode({suggest:true}),120); });
     /* (#R106) blue only while the field has text — toggle a class the CSS keys off. */
     const _msHas=()=>{ try{ box.classList.toggle('has-text', !!inp.value.trim()); }catch(_){} };
     inp.addEventListener('input',_msHas); _msHas();
@@ -2791,7 +2796,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      measurement (168 own keys against English's 452 = 「基本的なUIですら言語が混在」). */
   function setLang(lang){
     if(!IntMapLang.codes().includes(lang) || currentLang===lang) return;
-    try{ IntMapLang.codes().forEach(L=>{ const b=document.getElementById('lang-'+L); if(b) b.classList.toggle('active',lang===L); }); }catch(_){}
     const sl=document.getElementById('setting-lang'); if(sl) sl.value=lang;
     window.IntMapLangSwitch.when(lang,()=>{ currentLang=lang;
       try{ document.documentElement.setAttribute('lang', IntMapLang.htmlTag(lang)); }catch(_){}
@@ -2800,11 +2804,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       try{ window.dispatchEvent(new Event('intmap-lang')); }catch(_){} });   /* modules that relabel on language change */
   }
   try{ window.IntMapLangSwitch.bind(()=>currentLang, updateI18n); }catch(_){}   /* a locale landing by any other route repaints too */
-  document.getElementById('lang-en').onclick=()=>setLang('en');
-  document.getElementById('lang-jp').onclick=()=>setLang('jp');
-  { const ld=document.getElementById('lang-de'); if(ld) ld.onclick=()=>setLang('de'); }
-  { const lr=document.getElementById('lang-ru'); if(lr) lr.onclick=()=>setLang('ru'); }
-  { const le=document.getElementById('lang-es'); if(le) le.onclick=()=>setLang('es'); }   /* (#R40) Spanish (beta) */
+  /* (desktop-one-entry) the header's EN/JP/DE/RU/ES pills that stood here were hidden at every width since #R11 —
+     `#setting-lang` is the one way in (Atlas's settings.language calls setLang too) */
   { const sl=document.getElementById('setting-lang'); if(sl) sl.addEventListener('change',e=>setLang(e.target.value)); }
   /* Multi-select news languages (shown when "Multiple languages…" is chosen in Settings). */
   const _nlDN={};   /* (#R246) one Intl.DisplayNames per UI language, built on demand */
@@ -2912,29 +2913,19 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     window.addEventListener('intmap-lang',()=>{ try{ populateTimezones(res.classList.contains('show')?inp.value:''); }catch(_){} });   /* ⚠ (#R466) the language can change while this list is up — the <select> is in the same dialog, so nothing ever re-ran populateTimezones(). Rebuilding is safe: the value (`prev`) AND the filter are carried across, so a half-typed search survives. */
   })();
   const modal=document.getElementById('settings-modal');
-  /* Discard-changes guard: any edit inside Settings marks it dirty; closing without Apply asks. */
-  let settingsDirty=false;
-  function closeSettings(){
-    if(settingsDirty && !confirm(IntMapLang.t(currentLang,'You have unsaved changes. Discard them?','変更を保存していません。破棄して閉じますか？','Ungespeicherte Änderungen verwerfen?','Изменения не сохранены. Отменить их?','Hay cambios sin guardar. ¿Descartarlos?'))) return;
-    settingsDirty=false; modal.style.display='none';
-    try{ window._accentPending=window.imAccent; applyAccent(); }catch(_){}   /* (#R114) discard any live accent preview → back to the committed colour */
-  }
-  modal.addEventListener('input', ()=>{ settingsDirty=true; });
-  modal.addEventListener('change', ()=>{ settingsDirty=true; });
-  /* ══ (#R212) THE DAY/NIGHT SWITCH TAKES EFFECT WHEN IT IS SWITCHED ═══════════════════════════════
-     「設定から、昼夜を表示するのをオフにできるように。（追記：オフにしてもオフにならない。）」 #R210 wired
-     it into the Apply handler, and Apply is `btn-close-settings` — but this dialog has a SECOND way
-     out (`closeSettings`, the × and Escape) which discards everything, and it is the one that looks
-     like «close». A display toggle has no reason to wait for a commit at all: it is instant, it is
-     reversible, and it persists itself (js/night-side.js writes the key). So it applies on `change`
-     as well — the Apply path still runs and is now a no-op for this control. */
-  { const ns=document.getElementById('setting-night-side');
-    if(ns) ns.addEventListener('change',()=>{ try{ if(window.IntMapNightSide) window.IntMapNightSide.setEnabled(ns.value!=='off'); }catch(_){} try{ window._imSyncNightSideRow&&window._imSyncNightSideRow(); }catch(_){} }); }
+  /* ══ (desktop-one-entry) A SETTING TAKES EFFECT WHEN IT IS CHANGED — THERE IS NO APPLY ══════════════════════
+     The dialog had two ways out that disagreed: «Apply» committed every control, while × / Escape / the backdrop
+     threw the edits away and asked about it first (#R212 already had to pull the day/night picker out of that
+     pipeline because «close» looked like the way out). Like iOS Settings, each control now commits on its own
+     `change` (a slider on `input`) — see commitSetting below — so there is nothing to save and nothing to discard:
+     «Done» and × both just close. The one control that cannot take effect in place is the map engine, which asks
+     before it reloads. */
+  function closeSettings(){ modal.style.display='none'; }
   /* (#R21) Tutorial button (top of Settings) — closes the panel and plays the guide tour (js/onboarding.js is the door, js/tour-player.js the player). */
   (function(){ const tb=document.getElementById('btn-tutorial'); if(!tb) return;
     const lbl=()=>{ const e=document.getElementById('btn-tutorial-lbl'); if(e) e.textContent=IntMapLang.t(currentLang,'Tutorial — layer showcase','チュートリアル（レイヤー紹介ツアー）','Tutorial — Ebenen-Rundgang','Обучение — обзор слоёв','Tutorial — recorrido de capas'); };
     lbl(); window.addEventListener('intmap-lang',lbl);
-    tb.onclick=(e)=>{ e.preventDefault(); settingsDirty=false; modal.style.display='none';
+    tb.onclick=(e)=>{ e.preventDefault(); modal.style.display='none';
       setTimeout(()=>{ try{ window._imStartDemo&&window._imStartDemo(true); }catch(_){} },150); };
   })();
   /* (#R180) the ENGINE line — see the note at its call site below. ⚠ (#R466) it has a NAME now because opening Settings was the only moment it could be right, and the language changes under it. */
@@ -2962,69 +2953,26 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     }catch(_){}
     /* (#R171) tilt ceiling + viewpoint-altitude readout reflect the SAVED state (each subsystem owns it) */
     try{ const tl=document.getElementById('setting-tilt-limit'); if(tl&&window.IntMapTilt) tl.value=window.IntMapTilt.isUnlimited()?'unlimited':'standard';
-      const ea=document.getElementById('setting-eye-alt'); if(ea&&window.IntMapEyeAlt) ea.value=window.IntMapEyeAlt.isOn()?'on':'off'; const ns=document.getElementById('setting-night-side'); if(ns&&window.IntMapNightSide&&window.IntMapNightSide.isOn) ns.value=window.IntMapNightSide.isOn()?'on':'off'; }catch(_){}   /* (#R210) 昼夜表示 */
+      const ea=document.getElementById('setting-eye-alt'); if(ea&&window.IntMapEyeAlt) ea.value=window.IntMapEyeAlt.isOn()?'on':'off'; }catch(_){}
     /* (#R180) the ENGINE, and — separately — the engine actually running. Those are two
        facts and conflating them is exactly how a silent fallback hides (#R162): Cesium can
        fail to load (no WebGL2, a blocked chunk, an offline first visit) and the session then
        runs on MapLibre while the stored choice still says otherwise. The select shows the
        CHOICE; the line under it shows what is really drawing, and only when they differ. */
     syncEngineStatus();
-    settingsDirty=false; modal.style.display='flex';
+    try{ _settingsOpened(); }catch(_){}   /* (desktop-one-entry) the news feed's settings as of now — see commitSetting */
+    modal.style.display='flex';
     /* (#R9) Always open scrolled to the TOP. Previously the Apply button kept focus, so reopening
        scrolled it into view at the very bottom. Reset both the content and the modal scroll positions. */
     try{ document.activeElement&&document.activeElement.blur&&document.activeElement.blur(); }catch(_){}
     const _mc=modal.querySelector('.settings-scroll')||modal.querySelector('.modal-content'); if(_mc){ _mc.scrollTop=0; requestAnimationFrame(()=>{ _mc.scrollTop=0; modal.scrollTop=0; }); }
   };
-  document.getElementById('btn-close-settings').onclick=()=>{
-    const _prevTheme=userTheme;
-    userTheme=document.getElementById('setting-theme').value; userTZ=document.getElementById('setting-tz').value; unitMode=document.getElementById('setting-units').value;
-    /* (#R38) FIX "Themeを変えるとサイドバーの透明度選択がリセットされる": R29.1 used to auto-overwrite the
-       sidebar appearance from a per-SKIN map when the theme changed. The skin themes that map needed were
-       DELETED in R33, so every surviving theme (auto/light/dark) mapped to 'opaque' → ANY theme change
-       silently wiped the user's Solid/Frosted/More-transparent choice. The sidebar appearance is an
-       INDEPENDENT user setting now; theme changes must NOT touch it. (Block removed — no auto-pick.) */
-    { const tu=document.getElementById('setting-temp-unit'); if(tu){ window.imUnitTemp=tu.value; try{ localStorage.setItem('intmap_temp_unit',window.imUnitTemp); }catch(_){} try{ bus.emit('intmap-units'); }catch(_){} } }   /* (#R276) every legend that prints a temperature redraws from one event */
-    { const al=document.getElementById('setting-ailocate'); if(al){ aiLocateMode=al.value; localStorage.setItem('intmap_ai_locate',aiLocateMode); } }
-    const prevNewsLang=newsLangMode; newsLangMode=document.getElementById('setting-newslang').value; localStorage.setItem('intmap_news_lang',newsLangMode);
-    /* Read the individually-selected news languages (when in "multiple languages" mode). */
-    const prevNewsLangs=newsLangs.slice();
-    const wrap=document.getElementById('newslang-multi');
-    if(wrap){ const picked=Array.from(wrap.querySelectorAll('input[type=checkbox]:checked')).map(c=>c.value); if(picked.length) newsLangs=picked; }
-    { const nld=document.getElementById('newslang-dd'); if(nld) nld.classList.remove('open'); try{ updateNewsLangLabel(); }catch(_){} }
-    try{ localStorage.setItem('intmap_news_langs',JSON.stringify(newsLangs)); }catch(_){}
-    /* News pin position is chosen from the News tab's segmented control, not here. */
-    /* (#R20) nav sensitivity — read sliders, apply live, persist via saveSettings (called in applyTheme path below via imSaveSettings users) */
-    try{ const zs=document.getElementById('setting-zoom-sens'), ps=document.getElementById('setting-pan-sens'), is=document.getElementById('setting-inertia');
-      if(zs) window.imNavZoomSens=Math.max(0.25,Math.min(3,(+zs.value||100)/100));
-      if(ps) window.imNavPanSens=Math.max(0.25,Math.min(3,(+ps.value||100)/100));
-      if(is) window.imNavInertia=Math.max(0,Math.min(1.5,(+is.value||100)/100));   /* (#R23) 0 → no inertia */
-      window._applyNavSens&&window._applyNavSens();
-    }catch(_){}
-    /* (#R171) tilt ceiling + viewpoint altitude — both take effect immediately and persist themselves */
-    try{ const tl=document.getElementById('setting-tilt-limit'); if(tl&&window.IntMapTilt) window.IntMapTilt.set(tl.value==='unlimited'); }catch(_){}
-    try{ const ea=document.getElementById('setting-eye-alt'); if(ea&&window.IntMapEyeAlt) window.IntMapEyeAlt.set(ea.value==='on'); const ns=document.getElementById('setting-night-side'); if(ns&&window.IntMapNightSide) window.IntMapNightSide.setEnabled(ns.value!=='off'); }catch(_){}   /* (#R210) 昼夜表示 */
-    /* (#R180) …and the ENGINE, which is the one setting that cannot take effect immediately:
-       a scene cannot be moved from one renderer to another once its sources, layers, markers
-       and camera hooks exist. So it is stored and the page reloads — announced, never silent,
-       and only when the value actually changed. */
-    let _engineReload=false;
-    try{ const es=document.getElementById('setting-engine'), ES=window.IntMapEngineSelect;
-      if(es&&ES&&es.value!==ES.choice()){ ES.set(es.value); _engineReload=true;
-        try{ imToast(t('engineSwitching')); }catch(_){} } }catch(_){}
-    try{ satSaveKeyInputs(); }catch(_){} try{ aiSaveSettings(); }catch(_){}
-    settingsDirty=false; modal.style.display='none'; applyTheme(); if(toolMode)updateToolPanel();
-    renderUI();
-    /* Changing the news-language scope/selection changes which feeds we pull → re-fetch. */
-    const langsChanged=(prevNewsLangs.length!==newsLangs.length)||prevNewsLangs.some((l,i)=>l!==newsLangs[i]);
-    if(prevNewsLang!==newsLangMode || (newsLangMode==='multi' && langsChanged)){ globalData=[]; try{ fetchData(); }catch(_){} }
-    /* (#R180) LAST, so every other setting on this panel has already been saved and applied
-       before the page goes away. The delay is only long enough for the toast to be read. */
-    if(_engineReload) setTimeout(()=>{ try{ location.reload(); }catch(_){} },700);
-  };
+  /* (desktop-one-entry) «Done» — the footer button that was «Apply». Every control has already committed itself. */
+  document.getElementById('btn-close-settings').onclick=closeSettings;
   document.getElementById('settings-close-x').onclick=closeSettings;
   modal.addEventListener('click',(e)=>{ if(e.target===modal) closeSettings(); });
   /* (a11y-shared-dialog) the Escape the #R212 note below promised now exists: the registry closes it through
-     closeSettings, so the discard-changes guard still asks; Tab stays inside; focus returns to the gear */
+     closeSettings; Tab stays inside; focus returns to the gear */
   window.IntMapDialog.adopt(modal,{ panel:modal.querySelector('.modal-content'), labelledby:'modal-title', close:closeSettings });
 
   /* ===== (#R9/#R10) "Buy me a blueberry" / 開発を支援する =====
@@ -3044,8 +2992,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     function close(){ bm.style.display='none'; }
     const btn=document.getElementById('btn-blueberry'); if(btn) btn.onclick=open;
     const x=document.getElementById('blueberry-close-x'); if(x) x.onclick=close;
-    /* (#R29.1) Settings → Feedback & bug report entry points. */
-    { const fb=document.getElementById('btn-send-feedback'); if(fb) fb.onclick=()=>{ try{ window._openFeedback&&window._openFeedback(); }catch(_){} }; }
+    /* (#R29.1) Settings → bug report entry point (feedback itself is the header's #btn-feedback-hdr — desktop-one-entry). */
     { const bg=document.getElementById('btn-report-bug'); if(bg) bg.onclick=()=>{ try{ window._openBugReport&&window._openBugReport(); }catch(_){} }; }
     /* (community-next) the reader's map corrections and their answers — js/map-corrections.js, fetched by this click */
     { const mr=document.getElementById('btn-map-reports'); if(mr) mr.onclick=()=>{ import('./map-corrections.js').then(m=>m.openMine(IM_HOST)).catch(()=>{ try{ imToast(IntMapLang.t(currentLang,'My map reports could not be loaded','地図の誤り報告を読み込めませんでした')); }catch(_){} }); }; }
@@ -3391,8 +3338,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
            account / feedback / settings row wrap = "横一列に並ばず改行されてしまう"). */
         b.innerHTML = (img?`<span class="acct-av" style="background:url('${IntMapSafe.html(IntMapSafe.url(img,{allowData:true}))}') center/cover;"></span>`:`<span class="acct-av">${IntMapSafe.html(window.imGetAvatar())}</span>`)+'<span class="acct-name">'+escapeHtml(nm)+'</span>'; }   /* (#R138 SEC) validate+escape the stored avatar data-URL */
     }
-    /* Sidebar EN/JP toggle shows only when logged OUT; logged-in users switch language in Settings. */
-    const lt=document.querySelector('.lang-toggle'); if(lt) lt.style.display = currentUser ? 'none' : 'flex';
   }
   /* (#R169) moved verbatim to js/community-board.js — see Architecture.md §3.1. */
   window.imViewProfile=imViewProfile;
@@ -3462,19 +3407,23 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       if(sw){ sw.classList.add('sel'); }
       else if(hex){ const c=p.querySelector('.accent-custom'); if(c) c.classList.add('sel'); const x=ci(); if(x) x.value=val; }
     }
-    function preview(val){ window._accentPending=val; applyAccentColor(val==='default'?null:val); markSel(val); }
-    window._accentPending=window.imAccent||'default';
-    /* reflect the COMMITTED accent in the picker (called on Settings open + after Atlas changes it) */
-    window._syncAccentPicker=function(){ window._accentPending=window.imAccent||'default'; const x=ci(); if(x&&/^#[0-9a-fA-F]{6}$/.test(window.imAccent||'')) x.value=window.imAccent; markSel(window.imAccent||'default'); };
-    /* delegated so it works regardless of when the modal mounts; buttons don't fire input/change → set dirty here */
-    document.addEventListener('click',(e)=>{ try{ const p=pk(); if(!p) return; const b=e.target&&e.target.closest&&e.target.closest('.accent-sw'); if(!b||!p.contains(b)) return; e.preventDefault(); preview(b.getAttribute('data-accent')||'default'); try{ settingsDirty=true; }catch(_){} }catch(_){} });
-    document.addEventListener('input',(e)=>{ try{ const t2=e.target; if(!t2||t2.id!=='setting-accent-custom') return; preview(String(t2.value||'')); try{ settingsDirty=true; }catch(_){} }catch(_){} });
+    /* (desktop-one-entry) a pick IS the commit — there is no Apply to wait for (see closeSettings). The colour well
+       recolours on every `input` while it is dragged and is persisted once, on its `change`, so a drag does not write
+       the account's prefs (saveSettings → _syncPrefsUp) a hundred times. */
+    function pick(val,persist){ window.imAccent=val; applyAccent(); markSel(val); if(persist) saveSettings(); }
+    /* reflect the accent in the picker (called on Settings open + after Atlas changes it) */
+    window._syncAccentPicker=function(){ const x=ci(); if(x&&/^#[0-9a-fA-F]{6}$/.test(window.imAccent||'')) x.value=window.imAccent; markSel(window.imAccent||'default'); };
+    /* on the picker itself (index.html markup, there before this runs) — which is also where its `data-effect` is declared;
+       the swatches are buttons, which fire no input/change */
+    const P=document.getElementById('accent-picker');
+    if(P){ P.addEventListener('click',(e)=>{ try{ const b=e.target&&e.target.closest&&e.target.closest('.accent-sw'); if(!b||!P.contains(b)) return; e.preventDefault(); pick(b.getAttribute('data-accent')||'default',true); }catch(_){} });
+      ['input','change'].forEach(ev=>P.addEventListener(ev,(e)=>{ try{ const t2=e.target; if(!t2||t2.id!=='setting-accent-custom') return; pick(String(t2.value||''),ev==='change'); }catch(_){} })); }
   })();
   function loadSettings(){
     let s={}; try{ s=JSON.parse(localStorage.getItem('intmap_settings')||'{}')||{}; }catch(_){ s={}; }
     window.imAccent=(typeof s.accent==='string'&&s.accent)?s.accent:'default'; try{ applyAccent(); }catch(_){}   /* (#R114) restore accent */
     if(s.theme) userTheme=(s.theme==='tactical'?'cyber':s.theme); if(s.tz) userTZ=s.tz; if(s.units) unitMode=s.units;   /* (#R22) migrate retired Tactical → Cyber */
-    if(IntMapLang.codes().includes(s.lang)){ currentLang=s.lang; IntMapLang.codes().forEach(L=>{ const b=document.getElementById('lang-'+L); if(b) b.classList.toggle('active',currentLang===L); }); }   /* (#R37) restore ALL four UI languages (was en/jp only → DE/RU never persisted across reloads) */
+    if(IntMapLang.codes().includes(s.lang)){ currentLang=s.lang; }   /* (#R37) restore ALL four UI languages (was en/jp only → DE/RU never persisted across reloads) */
     if(s.sidebarStyle) window.imSidebarStyle=s.sidebarStyle;
     if(s.aiModel&&typeof s.aiModel==='object') window.imAiModel=s.aiModel;   /* (#R722) developer model pick. Restored AND saved here: saveSettings() rebuilds the record from these globals, so a key written straight to localStorage is dropped by the next save. It rides in intmap_settings, so user_prefs carries it across devices. It grants nothing — ai-proxy re-decides from the account id. */
     if(s.labelLang) window.imLabelLang=s.labelLang;
@@ -3545,7 +3494,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   const renderNewsSourceChecks=()=>{ try{ NS().render(); }catch(_){} };
   const updateNewsSourceLabel=()=>{ try{ NS().syncLabel(); }catch(_){} };
 
-  /* ---------- Wire the new Settings controls (open → fill, Apply → commit+save) ---------- */
+  /* ---------- Wire the new Settings controls (open → fill; each control commits itself — commitSetting below) ---------- */
   { const open=document.getElementById('btn-open-settings');
     if(open) open.addEventListener('click',()=>{
       const v=(id)=>document.getElementById(id);
@@ -3555,8 +3504,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       if(v('setting-showrank'))      v('setting-showrank').value=(window.imShowRank||'on');   /* (#R139) default ON */
       if(v('setting-ticker'))        v('setting-ticker').value=(window.imTicker||'off');
       try{ window._populateTickerSyms&&window._populateTickerSyms(); }catch(_){}   /* (#R102) ticker symbol/item picker */
-      /* (#R207) the ticker's item picker follows the SELECT, not the saved value, so On/Off shows and
-         hides it without waiting for Apply (`_populateTickerSyms` reads the select — js/i18n-late.js). */
+      /* (#R207) the ticker's item picker follows the SELECT (`_populateTickerSyms` reads it — js/i18n-late.js), so
+         On/Off shows and hides it the moment it is chosen. */
       try{ const ts=v('setting-ticker'); if(ts&&!ts.__imTickVis){ ts.__imTickVis=true;
         ts.addEventListener('change',()=>{ try{ window._populateTickerSyms&&window._populateTickerSyms(); }catch(_){} }); } }catch(_){}
       try{ window._syncAccentPicker&&window._syncAccentPicker(); }catch(_){}   /* (#R114) reflect the committed accent */
@@ -3564,43 +3513,73 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       try{ renderNewsSourceChecks(); }catch(_){}   /* (#R207) rebuilt on every open — the feed it lists changes */
     });
   }
-  { const apply=document.getElementById('btn-close-settings');
-    if(apply) apply.addEventListener('click',()=>{
-      const v=(id)=>document.getElementById(id);
-      if(window._accentPending!=null){ window.imAccent=window._accentPending; try{ applyAccent(); }catch(_){} }   /* (#R114) commit the previewed accent (saveSettings below persists it) */
-      if(v('setting-sidebar-style')) window.imSidebarStyle=v('setting-sidebar-style').value;
-      if(v('setting-label-lang'))    window.imLabelLang=v('setting-label-lang').value;
-      if(v('setting-map-color'))     window.imMapColor=v('setting-map-color').value;   if(v('setting-dock-panels')){ window.imDockPanels=v('setting-dock-panels').value; try{ applyDockMode(); }catch(_){} }   /* (#R238) */
-      /* ⚠ (#R296) the `setting-layerpanel` commit stood here — removed with the control. */
-      if(v('setting-showrank')){ window.imShowRank=v('setting-showrank').value; try{ if(window._countriesActive&&window._countriesActive()&&typeof renderStats==='function') renderStats((typeof _countriesSearchVal==='function')?_countriesSearchVal():searchVal()); }catch(_){} }   /* (#R137) re-render Countries so the rank column appears/disappears immediately */
-      if(v('setting-ticker')){ window.imTicker=v('setting-ticker').value; try{ window.IntMapTicker&&window.IntMapTicker.apply(); }catch(_){} }
-      /* (#R207) both news pickers commit in js/news-sources.js. The COUNTRY one changes which feeds
-         are fetched; the OUTLET one is a view filter, so it re-renders rather than re-fetching. */
-      let newsCountriesChanged=false, newsSourcesChanged=false;
-      try{ newsCountriesChanged=!!NS().commitCountries(); }catch(_){}
-      try{ newsSourcesChanged=!!NS().commit(); }catch(_){}
-      applySidebarStyle();
-      try{ applyFlatPanSetting(); }catch(_){}
-      try{ applyLabelLang(); }catch(_){}
-      try{ applyTheme(); }catch(_){}        /* re-apply so a Map-color change takes effect */
-      saveSettings();
-      /* (#R8c) Reflect EVERY saved setting on screen immediately — the user reported Save not taking
-         effect. updateI18n() re-localizes + re-emits timezone/units-dependent text and the wind pill;
-         renderUI() re-renders the active tab; the coord readout is refreshed for the new units. */
-      try{ updateI18n(); }catch(_){}
-      try{ renderUI(); }catch(_){}
-      try{ if(typeof renderCoordReadout==='function') renderCoordReadout(); }catch(_){}
-      /* (#R15) Changing the national-media selection now actually refreshes the feed — refetch the news
-         so the chosen countries' outlets appear (previously the setting saved but nothing changed). */
-      if(newsCountriesChanged){ try{ updateNewsCountryLabel(); }catch(_){} try{ if(currentMode==='news'||currentMode==='saved'){ globalData=[]; fetchData(); } }catch(_){} }
-      /* (#R207) the outlet filter needs no network — recompute the filtered list and repaint. */
-      if(newsSourcesChanged){ try{ updateNewsSourceLabel(); }catch(_){}
+  /* ══ (desktop-one-entry) EACH SETTINGS CONTROL COMMITS ITSELF — the step that used to wait for «Apply» ═════════════
+     One delegated listener on the dialog: a `change` (or a slider's `input`) runs that control's own step and nothing
+     else, so a value Atlas or a shortcut set while the dialog was open is never written back from a stale field.
+     Controls that already commit on their own (language, ticker items, keyboard, map reading, usage counts, the
+     accent, the AIS key — js/data-layers.js) have no step here. */
+  let _newsSig=null, _newsT=0, _reflectT=0, _reflectFull=false, _navT=0;
+  /* which feeds the news fetch asks for: the language scope and, when it is «multi», the languages, and the
+     national outlets. A refetch runs only when this moved since the last fetch (or since the dialog opened). */
+  function _newsFeedSig(){ return JSON.stringify([newsLangMode,newsLangMode==='multi'?newsLangs:[],(window.imNewsCountries||[]).slice().sort()]); }
+  function _settingsOpened(){ if(!_newsT) _newsSig=_newsFeedSig(); }
+  /* ⚠ A RUN OF TICKS FETCHES ONCE. Ticking three countries is three `change`s; each restarts the wait, and when the
+     ticks stop the feed is fetched for where they ended — or not at all, if they ended where they started. */
+  function _newsRefetchSoon(){ clearTimeout(_newsT); _newsT=setTimeout(()=>{ _newsT=0; const sig=_newsFeedSig(); if(sig===_newsSig) return; _newsSig=sig; globalData=[]; try{ fetchData(); }catch(_){} },700); }
+  /* persist now; repaint once the burst is over. `full` re-runs updateI18n — the time-zone, unit and map-label
+     dependent text it re-emits (#R8c) — and the rest only need the active tab redrawn. */
+  function _reflectSettings(full){ saveSettings(); _reflectFull=_reflectFull||!!full; clearTimeout(_reflectT);
+    _reflectT=setTimeout(()=>{ const f=_reflectFull; _reflectFull=false;
+      if(f){ try{ updateI18n(); }catch(_){} } else { try{ renderUI(); }catch(_){} }
+      try{ if(typeof renderCoordReadout==='function') renderCoordReadout(); }catch(_){} },120); }
+  function commitSetting(e){ const el=e&&e.target; if(!el||!el.closest) return; const id=el.id||'', v=el.value;
+    const _in=(sel)=>!!el.closest(sel);
+    if(e.type==='input'&&!/^setting-(zoom-sens|pan-sens|inertia)$/.test(id)) return;   /* only the sliders commit while they move */
+    switch(id){
+      case 'setting-theme': userTheme=v; try{ applyTheme(); }catch(_){} return _reflectSettings(true);
+      case 'setting-tz': userTZ=v; return _reflectSettings(true);
+      case 'setting-units': unitMode=v; return _reflectSettings(true);
+      case 'setting-temp-unit': window.imUnitTemp=v; try{ localStorage.setItem('intmap_temp_unit',v); }catch(_){} try{ bus.emit('intmap-units'); }catch(_){} return _reflectSettings(false);   /* (#R276) every legend that prints a temperature redraws from one event */
+      case 'setting-ailocate': aiLocateMode=v; try{ localStorage.setItem('intmap_ai_locate',v); }catch(_){} return;
+      case 'setting-zoom-sens': case 'setting-pan-sens': case 'setting-inertia': {   /* (#R20/#R23) read, apply live, persist once the hand stops */
+        const g=(x)=>document.getElementById(x), zs=g('setting-zoom-sens'), ps=g('setting-pan-sens'), is=g('setting-inertia');
+        if(zs) window.imNavZoomSens=Math.max(0.25,Math.min(3,(+zs.value||100)/100));
+        if(ps) window.imNavPanSens=Math.max(0.25,Math.min(3,(+ps.value||100)/100));
+        if(is) window.imNavInertia=Math.max(0,Math.min(1.5,(+is.value||0)/100));   /* (#R23) 0 → no inertia */
+        try{ window._applyNavSens&&window._applyNavSens(); }catch(_){}
+        clearTimeout(_navT); _navT=setTimeout(saveSettings,300); return; }
+      /* (#R171) tilt ceiling + viewpoint altitude — each subsystem applies and persists itself */
+      case 'setting-tilt-limit': try{ window.IntMapTilt&&window.IntMapTilt.set(v==='unlimited'); }catch(_){} return;
+      case 'setting-eye-alt': try{ window.IntMapEyeAlt&&window.IntMapEyeAlt.set(v==='on'); }catch(_){} return;
+      /* (#R180) THE ENGINE cannot take effect in place: a scene cannot move from one renderer to another once its
+         sources, layers, markers and camera hooks exist. So it is stored and the page reloads — asked first, because
+         that reload is the one consequence of this dialog the reader cannot undo by choosing again. */
+      case 'setting-engine': { const ES=window.IntMapEngineSelect; if(!ES||v===ES.choice()) return;
+        if(!confirm(IntMapLang.t(currentLang,'Switching the map engine reloads the page. Switch now?','地図エンジンを切り替えるとページを再読み込みします。切り替えますか？'))){ el.value=ES.choice(); return; }
+        ES.set(v); try{ imToast(t('engineSwitching')); }catch(_){}
+        setTimeout(()=>{ try{ location.reload(); }catch(_){} },700); return; }   /* only long enough for the toast to be read */
+      case 'setting-sidebar-style': window.imSidebarStyle=v; applySidebarStyle(); return _reflectSettings(false);
+      case 'setting-label-lang': window.imLabelLang=v; try{ applyLabelLang(); }catch(_){} return _reflectSettings(true);
+      case 'setting-map-color': window.imMapColor=v; try{ applyTheme(); }catch(_){} return _reflectSettings(false);   /* a Map-color change is applyTheme's */
+      case 'setting-dock-panels': window.imDockPanels=v; try{ applyDockMode(); }catch(_){} return _reflectSettings(false);   /* (#R238) */
+      case 'setting-showrank': window.imShowRank=v; try{ if(window._countriesActive&&window._countriesActive()&&typeof renderStats==='function') renderStats((typeof _countriesSearchVal==='function')?_countriesSearchVal():searchVal()); }catch(_){} return _reflectSettings(false);   /* (#R137) the rank column appears/disappears now */
+      case 'setting-ticker': window.imTicker=v; try{ window.IntMapTicker&&window.IntMapTicker.apply(); }catch(_){} return _reflectSettings(false);
+      case 'setting-newslang': newsLangMode=v; try{ localStorage.setItem('intmap_news_lang',v); }catch(_){} try{ updateNewsLangLabel(); }catch(_){} return _newsRefetchSoon();
+    }
+    /* the news-language ticks persist themselves (renderNewsLangChecks); what follows from them is the fetch */
+    if(_in('#newslang-multi')) return _newsRefetchSoon();
+    /* (#R207) both news pickers commit in js/news-sources.js. The COUNTRY one changes which feeds are fetched; the
+       OUTLET one is a view filter, so it repaints rather than refetching. */
+    if(id==='setting-newscountry'||_in('#newscountry-multi')){ let ch=false; try{ ch=!!NS().commitCountries(); }catch(_){}
+      if(ch){ try{ updateNewsCountryLabel(); }catch(_){} saveSettings(); _newsRefetchSoon(); } return; }
+    if(id==='setting-newssource'||_in('#newssource-multi')){ let ch=false; try{ ch=!!NS().commit(); }catch(_){}
+      if(ch){ try{ updateNewsSourceLabel(); }catch(_){} saveSettings();
         try{ newsFiltered=computeFilteredNews(); renderedCount=0; renderUI(); }catch(_){}
-        try{ window._refreshNewsPins&&window._refreshNewsPins(); }catch(_){} }
-    });
+        try{ window._refreshNewsPins&&window._refreshNewsPins(); }catch(_){} } return; }
+    if(_in('#sat-keys-list')){ try{ satSaveKeyInputs(); }catch(_){} return; }
+    if(_in('#ai-settings-body')){ try{ aiSaveSettings(); }catch(_){} return; }
   }
-  /* Persist on the simpler toggles too (these have their own handlers; we just add saving) */
-  ['lang-en','lang-jp','lang-de','lang-ru','lang-es'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(saveSettings,0)); });
+  modal.addEventListener('change',commitSetting); modal.addEventListener('input',commitSetting);
 
   /* (#R298) the wrap rule (#R297) and its watchdog moved with the rest of the projection; the local
      name survives because the Settings commit above calls it and the global because it is a public
@@ -4271,7 +4250,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      card no longer appears. The builder (`_imWelcome`) is KEPT so nothing is deleted (still reachable if ever
      wired to a menu), it is simply never auto-invoked on load. */
   /* try{ setTimeout(_imWelcome,900); }catch(_){} */
-  try{ IntMapLang.syncChrome(setLang); IntMapLang.codes().forEach(L=>{ const b=document.getElementById('lang-'+L); if(b) b.classList.toggle('active',currentLang===L); }); }catch(_){}   /* (#R37) sync the active language pill for all four languages on boot */
+  try{ IntMapLang.syncChrome(); const sl=document.getElementById('setting-lang'); if(sl) sl.value=currentLang; }catch(_){}   /* (#R37) the language picker shows the saved language from boot */
 };
   /* (#R180) …and the other half of the barrier. `then(boot, boot)` on purpose: a
      Cesium that fails to load must still give the user the app — on MapLibre,

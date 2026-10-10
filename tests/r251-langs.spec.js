@@ -155,7 +155,7 @@ test('#R251 (deep) every language: nothing on screen is English while IntMap hol
       /* ⚠ SWITCH THE WAY A READER DOES — the language pill — AND PROVE IT TOOK. The first draft
          called `window.setLanguage(lang)` inside a `try {} catch {}`, copied from
          tests/r161.spec.js. There is no `window.setLanguage`; the switch is `setLang()`, a closure
-         in js/app-body.js wired to `#lang-<code>`. The call threw, the catch swallowed it, the
+         in js/app-body.js wired to `#setting-lang` (the header pills it once was wired to are gone: desktop-one-entry). The call threw, the catch swallowed it, the
          language never changed — and the test reported 681 strings as untranslated, every one an
          artifact of its own silence. That is this round's subject happening inside the instrument
          written to stop it. */
@@ -164,9 +164,9 @@ test('#R251 (deep) every language: nothing on screen is English while IntMap hol
          `readyState === 'complete'` is NOT late enough — ko failed here under the full suite and
          passed when this file ran alone, which is the signature of a race, not of a missing pill. */
       let btn = null;
-      for (let i = 0; i < 100 && !btn; i++) { btn = document.getElementById('lang-' + lang); if (!btn) await sleep(50); }
-      if (!btn) return { switched: false, why: 'no #lang-' + lang + ' pill after 5 s', found: [] };
-      btn.click();
+      for (let i = 0; i < 100 && !btn; i++) { btn = document.querySelector('#setting-lang option[value="' + lang + '"]'); if (!btn) await sleep(50); }
+      if (!btn) return { switched: false, why: 'no #setting-lang option ' + lang + ' after 5 s', found: [] };
+      ((s) => { s.value = lang; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.getElementById('setting-lang'));
       /* wait for the TABLE as well as the attribute — the attribute is set first (#R249), so a
          check that keys off it alone measures the moment before the translations arrive */
       const tag = window.IntMapLang.htmlTag(lang);
@@ -302,9 +302,9 @@ test('#R251 (deep) every language: nothing on screen is English while IntMap hol
     if (before == null) return { skipped: 'the Objects panel has no .iol-clear button in this build' };
 
     let btn = null;
-    for (let i = 0; i < 100 && !btn; i++) { btn = document.getElementById('lang-jp'); if (!btn) await sleep(50); }
-    if (!btn) return { skipped: 'no #lang-jp pill' };
-    btn.click();
+    for (let i = 0; i < 100 && !btn; i++) { btn = document.querySelector('#setting-lang option[value="' + 'jp' + '"]'); if (!btn) await sleep(50); }
+    if (!btn) return { skipped: 'no #setting-lang option jp' };
+    ((s) => { s.value = 'jp'; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.getElementById('setting-lang'));
     for (let i = 0; i < 120; i++) {
       if (window.IntMapLang.isLoaded('jp') && document.documentElement.getAttribute('lang') === 'ja') break;
       await sleep(50);

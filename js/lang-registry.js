@@ -22,7 +22,7 @@
  *      js/locales/pages.<code>.js, if the two reading pages should speak it too.
  *  THAT IS THE WHOLE COST. There is no row to add here, no import line in src/main.js, no picker to edit
  *  and no launch-screen table to remember: js/locale-boot.js globs the directory, so the set of languages
- *  IS the set of files, and `derive()` below works out the label, the BCP-47 tag and the pill from the
+ *  IS the set of files, and `derive()` below works out the label and the BCP-47 tag from the
  *  code. Nothing else in the app has to know, and NOTHING has to be touched at a call site. A language
  *  with an empty `inline` table renders every inline string in English and every keyed string in
  *  its own language — a partial translation degrades per string, never per screen.
@@ -97,13 +97,14 @@ export const IntMapLang=(function () {
        a list that will be wrong.)
        ⚠ THE FILENAME IS THE DECLARATION. js/locale-boot.js globs js/locales/ui.*.js, so the set of
        languages IS the set of files on disk. `declare()` appends every code this list does not already
-       name, and `derive()` works out the three facts a row needs:
+       name, and `derive()` works out the two facts a row needs:
          · html  — the BCP-47 tag: the code itself, unless META below says otherwise;
          · label — the language's OWN name, via Intl.DisplayNames (a picker that names languages in a
-                   language you cannot read is not a picker), unless META says otherwise;
-         · pill  — the code's first two letters, unless META says otherwise.
+                   language you cannot read is not a picker), unless META says otherwise.
+       (desktop-one-entry) A third, `pill` — the header button's short name — went with the header's
+       language pills; the Settings picker shows `label`.
        ⚠ THE ROWS BELOW STAY LITERAL BECAUSE THEY CARRY FACTS A FILENAME CANNOT. The two Chinese rows
-       need script-specific aliases, single-character pills, a (beta) mark and — critically — an ORDER,
+       need script-specific aliases and — critically — an ORDER,
        because `normalise` resolves a bare 'zh' to whichever row comes first. Anything with that kind
        of fact goes in META; everything else needs no entry anywhere.
        ⚠ AND THE FIRST FIVE STAY IN THIS ORDER FOREVER — it is the ARGUMENT ORDER of every L(…) /
@@ -114,7 +115,7 @@ export const IntMapLang=(function () {
        are still partial even though the app is at 100%」. As of this round pages.zh-hant.js is
        287/287 (`node scripts/i18n-pages-audit.mjs`), so the sentence that justified the mark is no
        longer true and the mark would be telling a reader something false. */
-    { code: 'zh', label: '繁體中文', html: 'zh-Hant', pill: '繁', alias: ['zh-hant', 'zh-tw', 'zh-hk', 'zh-mo'] },
+    { code: 'zh', label: '繁體中文', html: 'zh-Hant', alias: ['zh-hant', 'zh-tw', 'zh-hk', 'zh-mo'] },
     /* ══ (#R224) THE SEVENTH — 「簡体を追加して。(beta)」 ═══════════════════════════════════════════
        ⚠ IT IS A DERIVED FILE, NOT A SECOND TRANSLATION. js/locales/ui.zh-hans.js is generated from
        ui.zh.js by scripts/zh-hans.mjs — the Taiwan→mainland WORD table first (網路→网络, 資訊→信息,
@@ -126,14 +127,14 @@ export const IntMapLang=(function () {
        the earlier row and `normalise` falls back to the two-letter prefix) — #R223's argument, which
        is that handing one script's reader the other because the first two letters match is a guess.
        zh-CN / zh-SG / zh-MY / zh-Hans land here, zh-TW / zh-HK / zh-MO stay above. */
-    { code: 'zh-hans', label: '简体中文', html: 'zh-Hans', pill: '简',
+    { code: 'zh-hans', label: '简体中文', html: 'zh-Hans',
       alias: ['zh-hans', 'zh-cn', 'zh-sg', 'zh-my', 'hans'] }
   ];
   var FALLBACK = 'en';
 
   /* (#R232) facts a filename cannot carry, for codes that are NOT rows above. Empty today — every
      language added from here on is expected to need nothing — and this is where the exception goes
-     when one does (a script variant, a non-obvious tag, a pill that is not the first two letters). */
+     when one does (a script variant, a non-obvious tag). */
   var META = Object.create(null);
   /* (#R232) …and the tag, when the app's code and the BCP-47 tag disagree. 'jp' is the historical one
      and it is a row above; anything else that disagrees belongs here rather than in a call site. */
@@ -198,7 +199,6 @@ export const IntMapLang=(function () {
        on the two reading pages the same file is a <script src>. Absent, nothing is marked. */
     if (!m.label) { try { if ((window.IntMapLangBeta || []).indexOf(code) >= 0) label += ' (beta)'; } catch (e) {} }
     return { code: code, label: label, html: tag,
-             pill: m.pill || code.slice(0, 2).toUpperCase(),
              alias: (m.alias || []).slice() };
   }
   var loaders = Object.create(null);
@@ -435,17 +435,19 @@ export const IntMapLang=(function () {
   }
 
   /* used by the settings picker and by anything that has to enumerate languages */
-  function list() { return LANG_ROWS.map(function (l) { return { code: l.code, label: l.label, html: l.html, pill: l.pill || l.code.toUpperCase() }; }); }
+  function list() { return LANG_ROWS.map(function (l) { return { code: l.code, label: l.label, html: l.html }; }); }
   function htmlTag(code) { var l = byCode[normalise(code)]; return l ? l.html : 'en'; }
 
   /* ── THE CHROME, BUILT FROM THIS LIST ────────────────────────────────────────────────────────
-     The header pills and the Settings dropdown were five literals in index.html, so a sixth language
-     would have been invisible however completely it was translated. This ADDS whatever the page does
-     not already have: the five that ship keep their exact markup and their `lang-<code>` ids (which
-     the browser tests click), and a new row in LANGS appears in both places with no HTML edit.
+     The Settings dropdown was five literals in index.html, so a sixth language would have been
+     invisible however completely it was translated. This ADDS whatever the page does not already
+     have, so a new row in LANGS appears there with no HTML edit. (desktop-one-entry) The header's
+     row of language pills it also filled is gone: #R11 hid it at every width (`display:none
+     !important`), and `#setting-lang` — which Atlas's settings.language reaches through the same
+     setLang() — is the one way to choose a language.
      ⚠ It lives here rather than in js/app-body.js because that file has a line ceiling whose whole
      point is that new subjects go to their own file (#R199/#R200), and this is the language subject. */
-  function syncChrome(onPick) {
+  function syncChrome() {
     /* ⚠ (#R232) …AND THE DOCUMENT'S OWN LANGUAGE, which never followed a SAVED one. js/app-body.js
        sets it in setLang(), and setLang() returns early when the language is already current — which it
        always is on a cold load, because currentLang is seeded from the saved settings before any of this
@@ -457,21 +459,8 @@ export const IntMapLang=(function () {
        everything it has to know about the language. See syncDocument for why they were English. */
     syncDocument(null);
     try {
-      var bar = document.querySelector('.lang-toggle');
       var sel = document.getElementById('setting-lang');
       LANG_ROWS.forEach(function (l) {
-        if (bar && !document.getElementById('lang-' + l.code)) {
-          var b = document.createElement('button');
-          b.className = 'lang-btn'; b.id = 'lang-' + l.code;
-          /* ⚠ (#R224) `pill` EXISTS BECAUSE A CODE IS NOT ALWAYS A LABEL. The bar is a row of
-             two-letter pills; 'ZH-HANS'.toUpperCase() is seven characters and would wrap the row on
-             a phone. A language may therefore name its own pill — the two Chinese rows use 繁 / 简,
-             which is what a reader of either script actually looks for — and the full name stays in
-             the tooltip. Everything else keeps the code, so the five shipped pills are unchanged. */
-          b.textContent = l.pill || l.code.toUpperCase(); b.title = l.label;
-          b.addEventListener('click', function () { try { onPick(l.code); } catch (e) {} });
-          bar.appendChild(b);
-        }
         if (sel && !sel.querySelector('option[value="' + l.code + '"]')) {
           var o = document.createElement('option');
           o.value = l.code; o.textContent = l.label; sel.appendChild(o);

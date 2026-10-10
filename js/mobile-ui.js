@@ -118,11 +118,8 @@ export function mobileUI(HOST){
          are re-read here, where every other mobile label is. */
       try{ const B=window.IntMapBasemapSwitch; if(B){ B.relabel(); B.redraw(); } }catch(_){ }
     }
-    /* (#R231) THE LANGUAGE BUTTONS COME FROM THE REGISTRY, NOT FROM A LIST WRITTEN HERE — js/lang-registry.js
-       knows every code, so a sixth and seventh language relabel the proxies without anyone remembering them. */
-    (IntMapLang ? IntMapLang.codes() : ['en','jp','de','ru','es'])
-      .forEach(code=>{ const b=document.getElementById('lang-'+code); if(b) b.addEventListener('click',()=>setTimeout(syncControls,40)); });
-    /* (#R8 JP/EN) updateI18n() calls this after it relabels the desktop controls the proxies copy from. */
+    /* (#R8 JP/EN) updateI18n() calls this after it relabels the desktop controls the proxies copy from — the one
+       path every language switch takes (desktop-one-entry removed the header pills that also called it). */
     window._imSyncMobile=syncControls;
 
     /* ---- compass: exists only while the map is rotated/tilted ---- */
@@ -650,23 +647,27 @@ export function layoutReflow(HOST){
      and dropping it to a second row is what #R122 was asked to stop, so the WORDS give way instead:
      the full sentence while it fits the field's measured room, the short one when it does not, and the
      stylesheet's `text-overflow:ellipsis` below either.
-     ⚠ THE FULL FORM IS WHATEVER js/i18n.js LAST WROTE (`data-i18n-ph="msPh"`), read back through a
-     MutationObserver, so a language switch re-measures and nothing here restates the locale tables.
+     ⚠ A LANGUAGE SWITCH RE-MEASURES: js/i18n.js rewrites the placeholder (`data-i18n-ph="msPh"`) on every
+     switch, and the MutationObserver below takes that as the cue to fit the new language's sentence.
+     (desktop-one-entry) The sentence is «Search places or ask Atlas» on every device now — the field is the
+     one entry for both — and «Search places» where that does not fit.
      ⚠ MEASURED, NOT ASSUMED: the room is the field's own clientWidth less its padding, and the text is
      measured in the field's own computed font — a width threshold would be wrong in the other language. */
   (function(){
     function wire(){
       const inp=document.getElementById('ms-input'); if(!inp||typeof ResizeObserver!=='function') return;
-      let full=inp.placeholder, mine=null, ctx=null;
+      let mine=null, ctx=null;
       const fits=(txt)=>{ try{ const cs=getComputedStyle(inp); ctx=ctx||document.createElement('canvas').getContext('2d');
         ctx.font=[cs.fontStyle,cs.fontWeight,cs.fontSize,cs.fontFamily].join(' ');
         return ctx.measureText(txt).width<=inp.clientWidth-(parseFloat(cs.paddingLeft)||0)-(parseFloat(cs.paddingRight)||0); }catch(_){ return true; } };
-      /* (mobile-shell) on a phone the field is the ONE entry — a place or a question for Atlas — and says so */
+      /* (mobile-shell) the field is the ONE entry — a place or a question for Atlas — and says so. (desktop-one-entry) On a
+         desktop too: the «Ask Atlas» row follows the typing there now (js/search-geocode.js _askAtlasRow). Where the pill is
+         too narrow for that sentence it gives way to the short one, as the place-only sentence did. */
       const fit=()=>{ if(!inp.clientWidth) return;
-        const want=HOST.isMobile()? IntMapLang.t(HOST.lang,'Search places or ask Atlas','場所を検索・Atlas に質問')
-          : (fits(full)?full:IntMapLang.t(HOST.lang,'Search places','地名を検索'));
+        const ask=IntMapLang.t(HOST.lang,'Search places or ask Atlas','場所を検索・Atlas に質問');
+        const want=(HOST.isMobile()||fits(ask))? ask : IntMapLang.t(HOST.lang,'Search places','地名を検索');
         if(inp.placeholder!==want){ mine=want; inp.placeholder=want; } };
-      new MutationObserver(()=>{ if(inp.placeholder!==mine){ full=inp.placeholder; fit(); } }).observe(inp,{attributes:true,attributeFilter:['placeholder']});
+      new MutationObserver(()=>{ if(inp.placeholder!==mine) fit(); }).observe(inp,{attributes:true,attributeFilter:['placeholder']});
       new ResizeObserver(fit).observe(inp); fit(); }
     if(document.readyState!=='loading') setTimeout(wire,0); else document.addEventListener('DOMContentLoaded',wire);
   })();

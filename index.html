@@ -348,7 +348,7 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
          #coord-readout into the two slots at phone widths and hands them back when the window widens. -->
     <div class="m-head" id="m-head"><div class="sheet-grip" id="sheet-grip" aria-hidden="true"></div><div class="m-head-row"><div class="m-search-slot" id="m-search-slot"></div><button class="m-clock" id="m-clock" data-prints-map-time data-time-intent type="button" aria-label="Chronos" data-i18n-aria="tlMachine" title="Chronos" data-i18n-title="tlMachine"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.2"/><path d="M12 6.9V12l3.7 2.2"/></svg></button></div><div class="m-readout-slot" id="m-readout-slot"></div></div>
     <div class="header-area">
-      <div class="title-group"><h2>IntMap</h2><div class="lang-toggle"><button class="lang-btn active" id="lang-en" data-effect="private">EN</button><button class="lang-btn" id="lang-jp" data-effect="private">JP</button><button class="lang-btn" id="lang-de" data-effect="private">DE</button><button class="lang-btn" id="lang-ru" data-effect="private">RU</button><button class="lang-btn" id="lang-es" data-effect="private" title="Español">ES</button></div></div>
+      <div class="title-group"><h2>IntMap</h2></div>
       <!-- (#R123) desktop normal mode: the action buttons (WS / Log in / Feedback / Settings) live on a fixed
            SECOND row, so the first "IntMap" row carries no action buttons. injectAuthUI() inserts WS, Login and
            Feedback before #btn-open-settings, so they land inside .header-actions in that exact order. -->
@@ -569,7 +569,7 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
   </div><div id="map-credit" class="map-credit"></div></div>
 </div>
 
-<div class="modal-overlay" id="settings-modal">
+<div class="modal-overlay" id="settings-modal" data-effect="private"><!-- (desktop-one-entry) data-effect: each control commits itself through one listener on this dialog (js/app-body.js commitSetting) — the reader's own preferences, mirrored to their account -->
   <div class="modal-content" style="position:relative;">
     <button id="settings-close-x" type="button" aria-label="Close" data-i18n-aria="close" title="Close" data-i18n-title="close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:calc(var(--z-inset) + 2);">×</button>
     <!-- (#R39) The settings body scrolls inside .settings-scroll so the scrollbar gutter lives INSIDE the
@@ -593,7 +593,7 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
     <!-- (#R114) Accent color — recolours the UI accent (buttons, active tabs, sliders = --primary-color). -->
     
     <div class="setting-group"><label data-i18n="lblAccent">Accent color</label>
-      <div class="accent-picker" id="accent-picker">
+      <div class="accent-picker" id="accent-picker" data-effect="private">
         <button type="button" class="accent-sw" data-accent="default" style="--sw:#0a84ff" data-i18n-title="accentDefault" title="Default"></button>
         <button type="button" class="accent-sw" data-accent="#5e5ce6" style="--sw:#5e5ce6" title="Indigo" data-i18n-title="accIndigo"></button>
         <button type="button" class="accent-sw" data-accent="#af52de" style="--sw:#af52de" title="Purple" data-i18n-title="accPurple"></button>
@@ -639,8 +639,7 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
       <div class="sat-keys-hint" data-i18n="tiltHint">Unlimited lets you tilt past the horizon until the camera looks straight up. Beyond 180° the view repeats with the bearing reversed, so right-click the compass to type any angle from 0 to 360.</div></div>
     <!-- (#R171) Viewpoint altitude in the always-on readout (bottom-left corner of the map). -->
     <div class="setting-group"><label for="setting-eye-alt" data-i18n="lblEyeAlt">Viewpoint altitude in the readout</label><select id="setting-eye-alt"><option value="off" data-i18n="eyeAltOff">Off (default)</option><option value="on" data-i18n="eyeAltOn">On — show the camera's altitude</option></select></div>
-    <!-- (#R210) Day/night shading + VIIRS city lights (js/night-side.js). On by default; the answer persists. -->
-    <div class="setting-group"><label for="setting-night-side" data-i18n="lblNightSide">Day &amp; night shading</label><select id="setting-night-side"><option value="on" data-i18n="nightSideOn">On (default) — darken the night side &amp; show city lights</option><option value="off" data-i18n="nightSideOff">Off — one evenly lit globe</option></select></div>
+    <!-- (desktop-one-entry) the Day & night shading picker stood here — a second view of the Layers ▸ Basics row `#dl-nightside` (js/data-layers.js _setNightSide), which is the one switch now. -->
     <!-- (#R20) Map navigation sensitivity — zoom (wheel/pinch rate) + pan (drag inertia). 100% = the long-standing default. -->
     
     <div class="setting-group"><label data-i18n="lblNavSens">Map navigation sensitivity</label>
@@ -810,10 +809,10 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
     </div>
     <!-- (#R30) Playground moved OUT of Settings → Layers ▸ Tools (the old Quiz-mode spot). Quiz mode now
          lives INSIDE the Playground hub. -->
-    <!-- (#R29.1) Feedback & bug report — open the existing feedback flow or the new bug reporter anytime. -->
-    
+    <!-- (#R29.1) Feedback & bug report. (desktop-one-entry) «Send feedback» left this group: it opened the same form
+         (window._openFeedback) as the header's Feedback button (#btn-feedback-hdr, js/auth-ui.js), which is always on
+         screen. The bug reporter and the reader's map reports are their own forms and stay. -->
     <div class="setting-group" id="feedback-group"><label data-i18n="lblFeedback">Feedback &amp; bug report</label>
-      <button type="button" id="btn-send-feedback" class="ai-test-btn" style="width:100%;margin-bottom:8px;"><span data-icon="star"></span> <span data-i18n="sendFeedbackBtn">Send feedback</span></button>
       <button type="button" id="btn-report-bug" class="ai-test-btn" style="width:100%;margin-bottom:8px;"><span data-icon="bug"></span> <span data-i18n="reportBugBtn">Report a bug</span></button>
       <!-- (community-next) the reader's map corrections and the operator's answers — js/map-corrections.js (it reads; sending is the card's) -->
       <button type="button" id="btn-map-reports" class="ai-test-btn" style="width:100%;" data-effect="none"><span data-icon="flag"></span> <span data-i18n="myMapReportsBtn">My map reports</span></button>
@@ -821,18 +820,18 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
     <!-- (anonymous-usage-counts) IntMap's own anonymous counters — on by default, off stops them at once.
          Wired by js/usage-counts.js (the same switch Atlas's settings.usageCounts flips). -->
     <div class="setting-group"><label for="setting-usage-counts" data-i18n="lblUsageCounts">Anonymous usage statistics</label><select id="setting-usage-counts"><option value="on" data-i18n="usageCountsOn">On (default) — send anonymous counts</option><option value="off" data-i18n="usageCountsOff">Off — send nothing</option></select></div>
-    <!-- (#R9) Support button — always the last item before Apply, so future settings push it down but it
-         stays directly above Apply. -->
+    <!-- (#R9) Support button — always the last item before the footer, so future settings push it down but it
+         stays directly above Done. -->
     
     <div class="setting-group" id="support-group">
       <button type="button" id="btn-blueberry" class="ai-test-btn" style="width:100%;font-weight:600;" data-i18n="blueberryBtn">Support</button>
     </div>
     </div>
 </div><!-- /.settings-scroll -->
-    <!-- (#R34) Apply lives in a clean sticky FOOTER (matches the modal surface, rounded primary button +
+    <!-- (#R34) the footer button (Done since desktop-one-entry: every control commits itself, so it only closes) lives in a clean sticky FOOTER (matches the modal surface, rounded primary button +
          fine-print below) — the R33 full-bleed blue bar clashed with the iOS-clean design. -->
     <div class="settings-foot">
-      <button class="modal-close-btn" id="btn-close-settings" data-effect="private">Apply</button>
+      <button class="modal-close-btn" id="btn-close-settings" data-effect="none" data-i18n="mDone">Done</button>
       <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--text-muted);">
         <a href="./terms.html" id="link-terms" data-i18n="lnkTerms" style="color:var(--text-muted);">Terms of Service</a> ·
         <a href="./privacy.html" id="link-privacy" data-i18n="lnkPrivacy" style="color:var(--text-muted);">Privacy Policy</a>

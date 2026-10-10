@@ -55,7 +55,8 @@ function liftTilt({ GE, stored }) {
 test('#R171 the tilt ceiling is a real setting, wired both ways, in five languages', () => {
   assert.match(INDEX, /id="setting-tilt-limit"/, 'the Settings row exists');
   assert.match(INDEX, /tl\.value=window\.IntMapTilt\.isUnlimited\(\)\?'unlimited':'standard'/, 'opening Settings reflects the saved state');
-  assert.match(INDEX, /window\.IntMapTilt\.set\(tl\.value==='unlimited'\)/, 'Apply commits it');
+  /* (2026-10-10) settings commit the moment they change — no Apply step any more */
+  assert.match(INDEX, /case 'setting-tilt-limit':[^\n]*IntMapTilt\.set\(v==='unlimited'\)/, 'changing it commits it');
   /* ⚠ (#R239) SAME CLAIM, NEW HOME. Every keyed string moved into js/locales/ui.<code>.js — asking all
      NINE locale files is the stricter form of the same question. (#R203: move the assertion, say why.) */
   for (const k of ['lblTiltLimit', 'tiltStandard', 'tiltUnlimited', 'tiltHint']) {
@@ -91,7 +92,7 @@ test('#R171 the tilt ceiling is the RENDERER\'s, never a literal', () => {
 /* ⚠ READ, NOT RUN: a Settings row and the readout's DOM chip in the booted app. */
 test('#R171 the viewpoint-altitude readout is a real setting, in five languages, and shows up in the readout', () => {
   assert.match(INDEX, /id="setting-eye-alt"/, 'the Settings row exists');
-  assert.match(INDEX, /window\.IntMapEyeAlt\.set\(ea\.value==='on'\)/, 'Apply commits it');
+  assert.match(INDEX, /case 'setting-eye-alt':[^\n]*IntMapEyeAlt\.set\(v==='on'\)/, 'changing it commits it');
   /* ⚠ (#R239) same move as above — every keyed string lives in js/locales/ui.<code>.js now. */
   for (const k of ['lblEyeAlt', 'eyeAltOff', 'eyeAltOn']) {
     for (const c of ['en', 'jp', 'de', 'ru', 'es', 'fr', 'ko', 'zh', 'zh-hans']) {
