@@ -45,7 +45,7 @@
  *  unmerged branch is refused by git itself rather than by a rule written here.
  * ==========================================================================*/
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync, lstatSync, unlinkSync, rmdirSync, symlinkSync, mkdirSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, lstatSync, unlinkSync, rmdirSync, symlinkSync, mkdirSync, readdirSync, chmodSync, rmSync } from 'node:fs';
 import { join, resolve, dirname, basename } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -103,6 +103,23 @@ function slugTaken(master, slug) {
    ⚠ Two `new` runs in the same instant could still both see a port as free; the second preview
    then fails to bind and says so. That is recoverable (edit launch.json), unlike a shared name. */
 export const PREVIEW_PORTS = [4400, 4999];
+
+export const previewName = (slug) => `intmap-preview-${slug}`;
+
+/* Add (or replace) one configuration by name; with `entry` null, remove it. A missing file is
+   created only when there is something to add. */
+export function upsertLaunch(path, entry, name = entry && entry.name) {
+  let lj = { version: '0.0.1', configurations: [] };
+  if (existsSync(path)) lj = JSON.parse(readFileSync(path, 'utf8'));
+  else if (!entry) return false;
+  const before = (lj.configurations || []).length;
+  lj.configurations = (lj.configurations || []).filter((c) => c && c.name !== name);
+  if (entry) lj.configurations.unshift(entry);
+  if (!entry && lj.configurations.length === before) return false;
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, JSON.stringify(lj, null, 2) + '\n');
+  return true;
+}
 
 function portsNamedInLaunchJson(master) {
   const dirs = [master, ...q(['worktree', 'list', '--porcelain']).split('\n')
@@ -692,32 +709,29 @@ async function makeNew(slug) {
 
   placeData(dir, 'pull');
 
-  /* The preview entry is RELATIVE (`dist`) so it means the same thing from any checkout.
-     ⚠ (#R338) this file is NO LONGER TRACKED — it holds absolute paths into this machine's
-     worktrees, and while it was tracked the preview tool's writes into the MASTER's copy blocked
-     every fast-forward there (and with it the USB backup). It is still written and still read.
-     ⚠ The Browser preview tool reads the MASTER's .claude/launch.json and caches by name (#R289),
-     so a preview wanted before the merge still needs an absolute entry over there. */
-  const ljPath = join(dir, '.claude', 'launch.json');
+  /* Two entries, because there are two readers. The worktree's copy is RELATIVE (`dist`) so it means
+     the same thing from that checkout. The Browser preview tool reads only the MASTER's
+     .claude/launch.json and caches by name (#R289), so the master gets an ABSOLUTE entry pointing
+     into this worktree — before 2026-10-10 only the relative one was written and `preview_start`
+     answered «No server named …». `done` removes both again (it used to remove neither, and the
+     master's file had grown to ~200 dead entries).
+     ⚠ (#R338) this file is NOT TRACKED — it holds absolute paths into this machine's worktrees. */
   try {
     const port = await freePreviewPort(master);
     if (port == null) throw new Error(`${PREVIEW_PORTS[0]}〜${PREVIEW_PORTS[1]} に空きポートが無い`);
-    /* a fresh clone has no copy at all now that it is ignored — start one rather than warn */
-    mkdirSync(dirname(ljPath), { recursive: true });
-    if (!existsSync(ljPath)) writeFileSync(ljPath, JSON.stringify({ version: '0.0.1', configurations: [] }, null, 2) + '\n');
-    const lj = JSON.parse(readFileSync(ljPath, 'utf8'));
-    const name = `intmap-preview-${slug}`;
-    if (!lj.configurations.some((c) => c.name === name)) {
-      lj.configurations.unshift({
-        name,
-        runtimeExecutable: 'node',
-        runtimeArgs: ['scripts/serve.mjs', '--root', 'dist', '--port', String(port)],
-        port,
-        url: `http://127.0.0.1:${port}`,
-      });
-      writeFileSync(ljPath, JSON.stringify(lj, null, 2) + '\n');
-      console.log(`  ✓ preview   ${name}  →  http://127.0.0.1:${port}`);
-    }
+    const name = previewName(slug);
+    const abs = (p) => join(dir, p).replace(/\\/g, '/');
+    upsertLaunch(join(dir, '.claude', 'launch.json'), {
+      name, runtimeExecutable: 'node',
+      runtimeArgs: ['scripts/serve.mjs', '--root', 'dist', '--port', String(port)],
+      port, url: `http://127.0.0.1:${port}`,
+    });
+    upsertLaunch(join(master, '.claude', 'launch.json'), {
+      name, runtimeExecutable: 'node',
+      runtimeArgs: [abs('scripts/serve.mjs'), '--root', abs('dist'), '--port', String(port)],
+      port,
+    });
+    console.log(`  ✓ preview   ${name}  →  http://127.0.0.1:${port}`);
   } catch (e) { console.log('  ⚠ launch.json を更新できなかった: ' + e.message); }
 
   trustWithCodex(dir);
@@ -817,6 +831,32 @@ function trustWithCodex(dir) {
 }
 
 /* ── DONE ───────────────────────────────────────────────────────────────────────────────────── */
+/* An admin directory under <common git dir>/worktrees/ that has lost both `gitdir` and `HEAD` is not a
+   worktree any more: git began deleting it and stopped. MEASURED 2026-10-10: 244 of 318 such
+   directories had piled up, every one holding only read-only `logs/`, `refs/` and `ORIG_HEAD`, and
+   `git worktree prune` printed «Permission denied» for all 244 on every run. The cause is the
+   read-only attribute, not an open handle — clearing it lets the delete through. A directory that
+   still has `gitdir` or `HEAD` is left to git, so a live worktree is never touched. */
+export function sweepAdminRemnants(adminRoot) {
+  if (!existsSync(adminRoot)) return [];
+  const swept = [];
+  for (const name of readdirSync(adminRoot)) {
+    const dir = join(adminRoot, name);
+    try { if (!lstatSync(dir).isDirectory()) continue; } catch { continue; }
+    if (existsSync(join(dir, 'gitdir')) || existsSync(join(dir, 'HEAD'))) continue;
+    /* a directory keeps its execute bit (POSIX cannot enter one without it); a file only needs write */
+    const writable = (p) => {
+      let isDir = false;
+      try { isDir = lstatSync(p).isDirectory(); } catch { return; }
+      try { chmodSync(p, isDir ? 0o777 : 0o666); } catch { /* best effort */ }
+      if (isDir) for (const c of readdirSync(p)) writable(join(p, c));
+    };
+    writable(dir);
+    try { rmSync(dir, { recursive: true, force: true }); swept.push(name); } catch { /* leave it for the next run */ }
+  }
+  return swept;
+}
+
 function done() {
   const master = masterDir();
   const here = resolve(q(['rev-parse', '--show-toplevel']) || REPO);
@@ -836,6 +876,16 @@ function done() {
 
   placeData(here, 'unlink');
 
+  /* the preview entries `new` wrote — the master's absolute one outlives the worktree otherwise */
+  {
+    const m = /^wt-(.+)$/.exec(basename(here));
+    if (m) {
+      try {
+        if (upsertLaunch(join(master, '.claude', 'launch.json'), null, previewName(m[1]))) console.log(`  ✓ preview ${previewName(m[1])} を原本の launch.json から外した`);
+      } catch (e) { console.log('  ⚠ 原本の launch.json を直せなかった: ' + e.message); }
+    }
+  }
+
   /* ⚠ `git worktree remove` PARTIALLY SUCCEEDS ON THIS MACHINE, AND THE FIRST VERSION OF THIS
      FUNCTION TREATED THAT AS TOTAL FAILURE. Measured: the checkout is deleted and the entry drops
      out of `worktree list`, but deleting the bookkeeping directory under the master's
@@ -848,6 +898,11 @@ function done() {
   try { git(['worktree', 'remove', here, '--force'], master); }
   catch (e) { removeErr = String(e.message || e).split('\n').filter((l) => /error|fatal/i.test(l))[0] || 'unknown'; }
   q(['worktree', 'prune'], master);
+  {
+    const common = resolve(master, q(['rev-parse', '--git-common-dir'], master) || '.git');
+    const swept = sweepAdminRemnants(join(common, 'worktrees'));
+    if (swept.length) console.log(`  ✓ 消しかけの管理ディレクトリ ${swept.length} 件を片付けた（読み取り専用属性）`);
+  }
 
   const stillListed = q(['worktree', 'list', '--porcelain'], master)
     .split('\n').some((l) => l.startsWith('worktree ') && resolve(l.slice(9).trim()) === here);
