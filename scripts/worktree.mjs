@@ -45,7 +45,7 @@
  *  unmerged branch is refused by git itself rather than by a rule written here.
  * ==========================================================================*/
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync, lstatSync, unlinkSync, rmdirSync, symlinkSync, mkdirSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, lstatSync, unlinkSync, rmdirSync, symlinkSync, mkdirSync, readdirSync, chmodSync, rmSync } from 'node:fs';
 import { join, resolve, dirname, basename } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -817,6 +817,29 @@ function trustWithCodex(dir) {
 }
 
 /* ── DONE ───────────────────────────────────────────────────────────────────────────────────── */
+/* An admin directory under <common git dir>/worktrees/ that has lost both `gitdir` and `HEAD` is not a
+   worktree any more: git began deleting it and stopped. MEASURED 2026-10-10: 244 of 318 such
+   directories had piled up, every one holding only read-only `logs/`, `refs/` and `ORIG_HEAD`, and
+   `git worktree prune` printed «Permission denied» for all 244 on every run. The cause is the
+   read-only attribute, not an open handle — clearing it lets the delete through. A directory that
+   still has `gitdir` or `HEAD` is left to git, so a live worktree is never touched. */
+export function sweepAdminRemnants(adminRoot) {
+  if (!existsSync(adminRoot)) return [];
+  const swept = [];
+  for (const name of readdirSync(adminRoot)) {
+    const dir = join(adminRoot, name);
+    try { if (!lstatSync(dir).isDirectory()) continue; } catch { continue; }
+    if (existsSync(join(dir, 'gitdir')) || existsSync(join(dir, 'HEAD'))) continue;
+    const writable = (p) => {
+      try { chmodSync(p, 0o666); } catch { /* best effort */ }
+      try { if (lstatSync(p).isDirectory()) for (const c of readdirSync(p)) writable(join(p, c)); } catch { /* gone */ }
+    };
+    writable(dir);
+    try { rmSync(dir, { recursive: true, force: true }); swept.push(name); } catch { /* leave it for the next run */ }
+  }
+  return swept;
+}
+
 function done() {
   const master = masterDir();
   const here = resolve(q(['rev-parse', '--show-toplevel']) || REPO);
@@ -848,6 +871,11 @@ function done() {
   try { git(['worktree', 'remove', here, '--force'], master); }
   catch (e) { removeErr = String(e.message || e).split('\n').filter((l) => /error|fatal/i.test(l))[0] || 'unknown'; }
   q(['worktree', 'prune'], master);
+  {
+    const common = resolve(master, q(['rev-parse', '--git-common-dir'], master) || '.git');
+    const swept = sweepAdminRemnants(join(common, 'worktrees'));
+    if (swept.length) console.log(`  ✓ 消しかけの管理ディレクトリ ${swept.length} 件を片付けた（読み取り専用属性）`);
+  }
 
   const stillListed = q(['worktree', 'list', '--porcelain'], master)
     .split('\n').some((l) => l.startsWith('worktree ') && resolve(l.slice(9).trim()) === here);
