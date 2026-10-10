@@ -1423,15 +1423,18 @@ if (RULE && RULE !== 'i18n-open-gap') {
 {
   const scripts = JSON.parse(rd('package.json')).scripts || {};
   const gates = Object.keys(scripts).filter((k) => k.startsWith('check:')).sort();
-  const LISTS = ['.agents/roles/intmap-verifier.md', '.agents/rules/execution-strategy.md'];
+  /* (lean-standing-instructions, 2026-10-10) ONE list now. The verifier role carried a second full
+     copy, and holding the same 36 names in two places by hand was itself the two-正本 shape this rule
+     exists against; the role points at execution-strategy.md §4 instead. */
+  const LISTS = ['.agents/rules/execution-strategy.md'];
   if (gates.length < 5) fail('gate-lists', `package.json declares only ${gates.length} check:* scripts — this rule needs rewriting`);
   for (const f of LISTS) {
     const body = BODY.get(f);
-    if (body == null) { fail('gate-lists', `${f} was not scanned — it is one of the two documents that enumerate the gates`); continue; }
+    if (body == null) { fail('gate-lists', `${f} was not scanned — it is the document that enumerates the gates`); continue; }
     const absent = gates.filter((g) => !body.includes(g));
     if (absent.length) fail('gate-lists', `${f} enumerates the gates but never names ${absent.join(', ')}`);
   }
-  if (!problems.some((p) => p.startsWith('gate-lists'))) ok('gate-lists', `${gates.length} check:* gates, all named in both instruction documents`);
+  if (!problems.some((p) => p.startsWith('gate-lists'))) ok('gate-lists', `${gates.length} check:* gates, all named in the gate table (execution-strategy.md §4)`);
 }
 
 /* ═══ 25. the preview port, as scripts/worktree.mjs computes it ═══════════════════════════

@@ -1,10 +1,9 @@
 # AGENT-SETUP — Claude Code と Codex で、同じ IntMap を同じように作る
 
 > **対象読者**: IntMap を **Claude Code** または **Codex** で開く人と、そのエージェント自身。
-> **この文書が答えること**: 何が両方に共通で、何が製品固有で、**何が自動にならず手作業で残るか**。
->
-> ⚠ **恒久指示そのものはここに無い。** 正本は [`../AGENTS.md`](../AGENTS.md)（両製品が読む）。
-> ここは**配線図**であって、規則の写しではない（`AGENTS.md` §9）。
+> **答えること**: 何が両方に共通で、何が製品固有で、**何が自動にならず手作業で残るか**。
+> 恒久指示そのものはここに無い。正本は [`../AGENTS.md`](../AGENTS.md)（両製品が読む）。ここは**配線図**であって、
+> 規則の写しではない（`AGENTS.md` §9）。
 
 ---
 
@@ -13,61 +12,31 @@
 | 中身 | 正本（1 つ） | Claude Code が読む経路 | Codex が読む経路 |
 |---|---|---|---|
 | 恒久指示（§0〜§12） | **`AGENTS.md`** | `CLAUDE.md` の `@AGENTS.md` import | **そのまま自動**（設定も信頼も要らない） |
-| 実行戦略 | **`.agents/rules/execution-strategy.md`** | `CLAUDE.md` の `@` import | `AGENTS.md` §1 が「自分で開け」と要求 |
-| 場当たりのハードコーディングの禁止 | **`.agents/rules/no-ad-hoc-hardcoding.md`** | `CLAUDE.md` の `@` import | `AGENTS.md` §1 が「自分で開け」と要求 |
+| 規則（実行戦略・場当たりの禁止 ほか） | **`.agents/rules/*.md`** | `CLAUDE.md` の `@` import | `AGENTS.md` §1 が「自分で開け」と要求 |
 | 作業の手順 | **`.agents/skills/intmap-round/`** | `.claude/skills/`（生成）→ `/intmap-round` | **そのまま自動**（`$intmap-round`） |
 | 専用 subagent 5 役 | **`.agents/roles/*.md`** | `.claude/agents/*.md`（生成） | `.codex/agents/*.toml`（生成・**要 trust**） |
 | 製品固有の作法 | `CLAUDE.md` §A / `.codex/config.toml` の `developer_instructions` | 自動 | **要 trust** |
 | セッション開始時に何を伝えるか | **`.agents/session-start.json`** | `.claude/settings.json` の `hooks.SessionStart`（生成） | `.codex/hooks.json`（生成・**要 trust ＋ `/hooks` 承認**） |
 | 蓄積メモリ | **`scripts/agent-memory.mjs` が出すディレクトリ**（1 か所） | **自動で読む**（hook は要らない） | 上の正本の `products` が Codex だけに配る |
 
-**生成物は編集しない。** `.claude/agents/`・`.claude/skills/`・`.codex/agents/`・**両製品の
-SessionStart hook** は `node scripts/agent-sync.mjs --write` が `.agents/` から書き、
-`npm run check:agents` が照合する。写しを直しても、次の生成で消える——**直す場所は `.agents/` の側**。
+**生成物は編集しない。** `.claude/agents/`・`.claude/skills/`・`.codex/agents/`・**両製品の SessionStart hook** は
+`node scripts/agent-sync.mjs --write` が `.agents/` から書き、`npm run check:agents` が照合する（直す場所は `.agents/` の側）。
+hook の正本は `.agents/session-start.json` 1 つで、**どの製品に配るかは各コマンドの `products`**、配らない理由は `why`
+が持つ（片方の製品にだけ hook を足せる状態を作らない）。実際の非対称は 1 つ: Claude Code は `MEMORY.md` を自分で
+読み込むので、メモリの hook は Codex にしか要らない（両方に配ると同じ索引を二度渡す）。
 
-⚠ **(#R699) hook が最後まで手書きの写しだった。** #R696 までは `.claude/settings.json` と
-`.codex/hooks.json` が同じ起動コマンドを別々に持っており、**片方の製品にだけ hook を足せる状態**
-だった——それは #R696 が直した「メモリの正本が 2 つあった」のと同じ形で、配線のほうに残っていた。
-正本は `.agents/session-start.json` 1 つになり、**どの製品に配るかは各コマンドの `products`**、
-**配らない理由は `why`** が持つ。実際の非対称は 1 つだけある: Claude Code は `MEMORY.md` を自分で
-読み込むので、メモリの hook は Codex にしか要らない（両方に配ると同じ 43 KB を二度渡す）。
-**「両方に要る事実」と「両方が hook を要る」は別**であり、除外の理由は製品の実装の側にある。
+### `AGENTS.md` には 32,768 バイトの天井がある
 
-### ⚠ `AGENTS.md` には 32,768 バイトの天井がある
+Codex は `project_doc_max_bytes`（既定 **32,768**）まで読んで**止まる**。警告はどこにも出ない（実測 #R503・
+codex-cli 0.150.0: 36,095 バイトの `AGENTS.md` で、先頭の行は答えられ末尾の行は「無い」と答えた）。
+`.codex/config.toml` はこれを 262,144 に上げるが、**信頼されたプロジェクトでしか読まれない**（§7）ので、常に効いて
+いるのは既定値で、`npm run check:agents` は既定値に対して測る。天井に当たったら、上げるのではなく**正本を移す**
+（手順は skill、戦略は `.agents/rules/`、製品固有はこの文書と `CLAUDE.md`）。
 
-Codex は `project_doc_max_bytes`（既定 **32,768**）まで読んで**止まる**。
-**実測（#R503・codex-cli 0.150.0）**: 36,095 バイトの `AGENTS.md` を置いて訊いたところ、
-**先頭の行は答えられ、末尾の行は「無い」と答えた**。警告はどこにも出ない。
-
-`.codex/config.toml` はこれを 262,144 に上げるが、**それは信頼されたプロジェクトでしか読まれない**
-（§7）。つまり**常に効いている数は既定値のほう**なので、`npm run check:agents` は
-既定値に対して測る。天井に当たったら、上げるのではなく**正本を移す**——
-手順は skill、戦略は `.agents/rules/`、製品固有はこの文書と `CLAUDE.md`。
-
-#### ⚠ 数えるのは「ディスク上のバイト」で、それはチェックアウトごとに違う（#R718 の実測）
-
-`.gitattributes` が LF に固定していたのは **Linux で実行・解析される拡張子だけ**（`*.sh` `*.sql`
-`*.mjs` `*.yml` `*.yaml` `*.toml`）。**`*.md` はそこに無かった**ので `core.autocrlf` が決めた——
-このマシンでは `true`＝**行の終わりごとに復帰文字が 1 バイト余分に載る**。
-（2026-10-02 から `* text=auto eol=lf` で、新しいチェックアウトはどのマシンでも LF。それ以前に
-チェックアウトした木は git が書き直すまで CRLF のままなので、門が最悪値を測る理由は変わらない。）
-
-**実測 2026-09-14（`ea7664a1`）**: `AGENTS.md` は LF で 32,718 バイト・改行 465 本、
-このマシンのチェックアウトでは **33,183 バイト**。天井は 32,768。
-⇒ **CI（Linux・LF）は余白 50 バイトで緑、同じコミットが Codex の読むファイルとしては 415 バイト
-超過していて、落ちていたのは §12（本ファイル自体の保守）の末尾**だった。
-**どちらの判定も、自分の走っている環境については正しい。**
-
-⚠ **だからこの門は `scripts/eol.mjs`（#R283）で正規化しない。** #R283 が正規化を決めたのは
-「検査の主題は中身であって、改行はチェックアウトのものだから」だが、**この門の主題はチェックアウトの
-バイトそのもの**である——Codex はファイルシステムが渡したバイトを数え、復帰文字はその 1 つ。
-正規化すれば判定は**可搬になるのではなく、誰も訊いていない問い**（「別の保存の仕方なら入るか」）に
-答えるようになり、このマシンの読者は §12 を失ったままになる。
-
-⇒ **正規化もせず、走っている環境も信じない。** 測るのは**適合するチェックアウトが作りうる最悪値**
-＝**全改行を CRLF で保存したときのバイト数**（`LF のバイト数 + 改行の本数`）。
-これは中身から導出されるので **Linux でも Windows でも同じ数**になり、
-**どの読者が見るバイト数より小さくなることが無い**。
+数えるのは**ディスク上のバイト**で、CRLF の木（2026-10-02 の `* text=auto eol=lf` より前のチェックアウト）は改行ごとに
+1 バイト多い（実測: LF 32,718 バイトが 33,183 バイトになり、CI は緑のまま Codex は §12 を失っていた）。主題がバイトそのもの
+なので `scripts/eol.mjs` で正規化せず、**最悪値**＝`LF のバイト数 + 改行の本数` を測る（どの環境でも同じ数で、どの読者の
+バイト数より小さくならない）。
 
 ---
 
@@ -80,8 +49,7 @@ Codex は `project_doc_max_bytes`（既定 **32,768**）まで読んで**止ま�
 | 訊く | `AskUserQuestion` ツール | **質問だけを本文にして turn を終える** |
 | 計画を見せる | plan mode | `/plan` |
 
-⚠ Codex には専用の質問 UI が無い。作業を進めながら報告の末尾に質問を添えるのは、
-**§8 が禁じている形**（確認を取ったことにならない）。訊くなら、そこで止まる。
+Codex には専用の質問 UI が無い。作業を進めながら報告の末尾に質問を添えるのは §8 が禁じている形で、訊くならそこで止まる。
 
 ---
 
@@ -94,106 +62,80 @@ Codex は `project_doc_max_bytes`（既定 **32,768**）まで読んで**止ま�
 | `.claude/settings.local.json` | このマシンの許可 | されない | 読む | 使わない |
 | `~/.codex/config.toml` | Codex のモデル・信頼したプロジェクト | リポジトリ外 | — | 読む |
 
-⚠ **秘密情報を追跡対象のファイルへ書き写さない。** このリポジトリは public。
-`AGENTS.md` §2 が正本で、この表は「どちらが自動で読むか」だけを足している。
+秘密情報を追跡対象のファイルへ書き写さない（public。正本は `AGENTS.md` §2）。
 
 ---
 
 ## 4. プレビューと dev サーバ
 
-慣例は **`intmap-preview-<slug>`**、ポートは **4400〜4999 の空き**（`AGENTS.md` §2）。
-`node scripts/worktree.mjs new <slug>` が `.claude/launch.json` に 1 件足す——ポートは、この
-マシンのどの `launch.json`（原本と全 worktree）にも書かれておらず、いま listen もされていない
-最小の番号（`scripts/worktree.mjs` の `PREVIEW_PORTS`。テスト用サーバ `tests/helpers/session-seed.js` の範囲とは重ならない——`check:docs` の `preview-port` が測る）。
-⚠ 以前はラウンド番号に 4000 を足して決めていたので、**同じ番号を持った 2 セッションは同じポートを得た**。
+慣例は **`intmap-preview-<slug>`**、ポートは **4400〜4999 の空き**（`AGENTS.md` §2）。`node scripts/worktree.mjs new <slug>`
+が `.claude/launch.json` に 1 件足す——ポートは、このマシンのどの `launch.json`（原本と全 worktree）にも無く、いま listen
+もされていない最小の番号（`scripts/worktree.mjs` の `PREVIEW_PORTS`。テスト用サーバ `tests/helpers/session-seed.js` の
+範囲とは重ならない——`check:docs` の `preview-port` が測る）。
 
 - **Claude Code**: preview ツール（`preview_start`）で起動する。シェルから直に起動しない。
-- **Codex**: browser プラグインで開く。dev サーバが要るなら `npm run preview`
-  （`npm run serve` は build を伴う）。
+- **Codex**: browser プラグインで開く。dev サーバが要るなら `npm run preview`（`npm run serve` は build を伴う）。
 
-### ⚠ `.claude/launch.json` を追跡から外した理由（#R338・#R334 の実測）
+### `.claude/launch.json` を追跡から外した理由
 
-中身は `C:/Users/.../Temp/intmap-worktrees/…/dist` のような**このマシンだけの絶対パス**で、
-共有する意味が無い。追跡していた間は、preview ツールが**原本の**そのファイルへ書くため、
-**並行セッションが 1 つでもプレビューを持つと原本の早送りが拒否され**
-（`AGENTS.md` §6 が他セッションの未コミット変更を触ることを禁じているので、その拒否は正しい）、
-**USB バックアップも `skipped master-not-synced` で止まっていた**。
-実測 #R334: 19 セッション同時・原本は 3 コミット遅れ・バックアップは skip。
-
-外したことで、書き込みも読み出しも今までどおりのまま、他セッションの merge を塞がなくなった。
-**USB から復元した原本には preview 設定が無い状態で立ち上がるが、
-`node scripts/worktree.mjs new` が作り直す**ので手当は要らない。
+中身はこのマシンだけの絶対パスで、共有する意味が無い。追跡していた間は preview ツールが**原本の**そのファイルへ
+書くため、並行セッションが 1 つでもプレビューを持つと原本の早送りが拒否され（他セッションの未コミット変更を触らない
+`AGENTS.md` §6 どおりの正しい拒否）、USB バックアップも `skipped master-not-synced` で止まっていた（実測 #R334:
+19 セッション同時・原本は 3 コミット遅れ）。USB から復元した原本には preview 設定が無いが、`node scripts/worktree.mjs new`
+が作り直すので手当は要らない。
 
 ---
 
 ## 5. 製品のハーネスが作る worktree
 
-`AGENTS.md` §6 は「worktree は OneDrive の外に置く」と要求し、
-`node scripts/worktree.mjs new` はそれを守る。**効かないのは、製品のハーネスが
-リポジトリの中に作るもの。**
+`AGENTS.md` §6 の「worktree は OneDrive の外」は `node scripts/worktree.mjs new` が守る。**効かないのは、製品の
+ハーネスがリポジトリの中に作るもの。**
 
-**Claude Code**: `<repo>\.claude\worktrees\` にでき、そこは **OneDrive の中**である。
-実測（#R282 追記）: そこに 2 本・**611 MB・11,615 ファイル**があり、ファイル属性に PINNED が
-立っていて **OneDrive が実際にアップロードしていた**（追跡対象の本体は 113.8 MB / 693 ファイル
-なので、**同期量の約 9 割が一時物**）。
+**Claude Code**: `<repo>\.claude\worktrees\` にでき、そこは **OneDrive の中**（実測: 2 本・611 MB・11,615 ファイルが
+アップロードされ、同期量の約 9 割が一時物だった）。
 
-- 隔離が要るときは `node scripts/worktree.mjs new <slug>` を使う。
-  ⚠ **Agent tool の `isolation: "worktree"` を使わない。**
-- 恒久的に外へ出すには、その階層に**使用中の worktree が 1 本も無いとき**に
-  `.claude\worktrees` を OneDrive 外への junction に置き換える（OneDrive は reparse point を
-  たどらない）。**使用中の worktree があるときに行ってはならない。**
+- 隔離が要るときは `node scripts/worktree.mjs new <slug>`。**Agent tool の `isolation: "worktree"` を使わない。**
+- 恒久的に外へ出すには、その階層に**使用中の worktree が 1 本も無いとき**に `.claude\worktrees` を OneDrive 外への
+  junction に置き換える（OneDrive は reparse point をたどらない）。**使用中の worktree があるときに行ってはならない。**
 
 **Codex**: 同種のハーネス worktree は作らない。`scripts/worktree.mjs` だけを使う。
 
-**git の外にあるデータ**（data-outside-git）: `node scripts/worktree.mjs new` は `node_modules` と同じ扱いで
-`data-assets.json` の集合も用意する（その worktree の目録で `data:pull`。ディレクトリ集合は
-`%LOCALAPPDATA%intmap-data` の 1 部への junction なので、worktree を何本作っても 1 部）。`done` は
-削除の前にその junction を外す。⚠ **ハーネスの worktree**（上）にはこれが走らないので、そこでは自分で
-`npm run data:pull` を走らせる——走らせなければ門が赤くなってそう言う。
+**git の外にあるデータ**（data-outside-git）: `worktree.mjs new` は `node_modules` と同じ扱いで `data-assets.json` の集合も
+用意する（その worktree の目録で `data:pull`。ディレクトリ集合は `%LOCALAPPDATA%intmap-data` の 1 部への junction）。
+`done` は削除の前にその junction を外す。ハーネスの worktree では自分で `npm run data:pull` を走らせる（走らせなければ
+門が赤くなってそう言う）。
 
-### 5.1 ⚠⚠⚠ worktree を手で消すときは、リンクを 1 つも辿らない（#732 実測）
+### 5.1 worktree を手で消すときは、リンクを 1 つも辿らない
 
-どの worktree も `node_modules`（と上のデータ集合）を**原本・共有の 1 部への junction** として持つ（`scripts/worktree.mjs new`・ハーネス）。
-消す道具がそれを辿ると、**原本の `node_modules` の中身が消え、全セッションが同時に壊れる**。
-実測（2026-09-25）: `cmd /c dir /s /b /aL <worktree>` で「中のリンクを先に外す」つもりが junction の
-**向こう側**まで列挙し、原本から必須パッケージ 45 個と `acorn/dist/acorn.mjs` などのファイルが消えた
-（`npm ci` で復旧。`package.json` の有無だけを見る確認では**ファイル単位の欠損を見逃した**）。
+どの worktree も `node_modules`（とデータ集合）を**原本・共有の 1 部への junction** として持つ。消す道具がそれを辿ると
+**原本の `node_modules` の中身が消え、全セッションが同時に壊れる**（実測 2026-09-25: `cmd /c dir /s /b /aL` が
+junction の向こう側まで列挙し、必須パッケージ 45 個とファイル単位の欠損が出た。`npm ci` で復旧）。
 
 - 自分の worktree は `node scripts/worktree.mjs done` で片付ける（junction を先に外す）。
-- それ以外を消すときは、各項目を `lstat` で見て**リンクはリンクそのものだけ外す**実装を使う
-  （Node は junction を `isSymbolicLink()` と報告する）。`dir /s`・PowerShell 5.1 の
-  `Remove-Item -Recurse`・`rm -rf` を junction を含みうる木に使わない。
-- ⚠ OneDrive 配下のファイルは同期のために **reparse point 属性**を持つ（`.git/worktrees/*` も）。
-  「reparse point か」でリンクを判定すると全部がリンクに見える——見るのは `LinkType` / `isSymbolicLink()`。
-- 消した後は、原本で lock の全パッケージの**中身**が揃っているかを確かめる（`npm ci` が最も確実）。
+- それ以外は各項目を `lstat` で見て**リンクはリンクそのものだけ外す**（Node は junction を `isSymbolicLink()` と報告
+  する）。`dir /s`・PowerShell 5.1 の `Remove-Item -Recurse`・`rm -rf` を junction を含みうる木に使わない。
+- OneDrive 配下のファイルは **reparse point 属性**を持つ（`.git/worktrees/*` も）。リンクの判定は `LinkType` /
+  `isSymbolicLink()` で行う。
+- 消した後は、原本で lock の全パッケージの**中身**が揃っているかを確かめる（`npm ci` が最も確実。`package.json` の
+  有無だけではファイル単位の欠損を見逃す）。
 
-### 5.2 ⚠⚠ 共有される場所と、そこへ書くもの（build-isolation 実測 2026-10-08）
+### 5.2 共有される場所と、そこへ書くもの
 
-worktree は分かれていても、**次の場所は全セッションで 1 つ**である。
+worktree は分かれていても、次の場所は全セッションで 1 つである。
 
-- **subagent の scratchpad**（Claude Code）: 1 つのセッションが起動した subagent は**全員が親と同じ
-  scratchpad**（`…\Temp\claude\<cwd>\<session-id>\scratchpad`）を受け取る。worktree が別でも同じ。
-  実測: 9 体の 2 体が `npm run build > scratchpad/build2.log` を同じ名前に向け、読んだ側は**他の worktree の
-  ビルドログ**（先頭が NUL バイト＝後から `>` で切り詰めた書き手と、元の位置に書き続ける書き手）を
-  「自分のビルドが他の worktree の `dist/` に書いた」と読んだ。ビルドは交差していなかった。
-  ⇒ **scratchpad に置くファイル名には slug を入れる**（`build-<slug>.log`）。
-- **`node_modules`**（原本への junction）: `vite build` は設定を束ねた一時ファイルを
-  `node_modules/.vite-temp/` に書くが、名前は毎回一意で、束の中の `import.meta.dirname` は
-  **その木の設定ファイルの位置が文字列として焼き込まれる**——別の木の設定を取り違える経路は無い
-  （`tests/build-isolation-checks.test.mjs` が 2 つの木から同時に読ませて確かめる）。強制終了された
-  ビルドの一時ファイル（約 5 MB）は消えずに残り、そこは OneDrive の中である。
-  `vite`（dev）の依存キャッシュ `node_modules/.vite/` も共有になる（プレビューは `scripts/serve.mjs` で
-  dev サーバを使わない）。データ更新用スクリプトの上流キャッシュ（`node_modules/.cache/intmap-*`・
+- **subagent の scratchpad**（Claude Code）: 1 つのセッションが起動した subagent は全員が親と同じ scratchpad
+  （`…\Temp\claude\<cwd>\<session-id>\scratchpad`）を受け取る。⇒ **置くファイル名には slug を入れる**
+  （`build-<slug>.log`。同名のログを他人のビルドのものと取り違えた実測がある）。
+- **`node_modules`**（原本への junction）: `vite build` の一時ファイル `node_modules/.vite-temp/` は毎回一意の名前で、
+  束の中の `import.meta.dirname` にその木の設定の位置が焼き込まれる——別の木の設定を取り違える経路は無い
+  （`tests/build-isolation-checks.test.mjs`）。強制終了されたビルドの一時ファイル（約 5 MB）は OneDrive の中に残る。
+  `node_modules/.vite/`（dev の依存キャッシュ）、データ更新の上流キャッシュ（`node_modules/.cache/intmap-*`・
   `%TEMP%\intmap-*-cache`）も共有。
-- **時代タイルのキャッシュ**（`%LOCALAPPDATA%\intmap-data\hvt-cache`）: 全 worktree のビルドが読む。
-  内容のハッシュで名づけ、書きかけが「在る」と見えないよう、書いてから名前へ rename する。
-- **同じ木の `dist/`**: 1 つの worktree で 2 つのビルド（手で走らせたものと Playwright の webServer の
-  `npm run build` など）が重なると、互いの `dist/` を空にしてコピーし合った（実測: `EPIPE … being used
-  by another process`・CSS の無いページ）。ビルドは出力先を**1 本ずつ**握り（出力先から名づけた
-  named pipe。持ち主のプロセスが終われば OS が閉じる）、2 本目は待ってから作る（`vite.config.js` の
-  `acquireOutDirLock`）。別の出力先（`--outDir`）は待たない——同じ木で並ぶなら、片方を `--outDir` で
-  自分の場所へ出す。
-  ⚠ 錠が守るのは書き手どうしで、**そのビルドを配っているサーバ**は守らない。
+- **時代タイルのキャッシュ**（`%LOCALAPPDATA%\intmap-data\hvt-cache`）: 全 worktree のビルドが読む。内容のハッシュで
+  名づけ、書いてから名前へ rename する。
+- **同じ木の `dist/`**: 2 つのビルドが重なると互いの `dist/` を空にし合った（`EPIPE`・CSS の無いページ）。ビルドは
+  出力先を**1 本ずつ**握り（出力先から名づけた named pipe）、2 本目は待つ（`vite.config.js` の `acquireOutDirLock`）。
+  別の出力先（`--outDir`）は待たない。錠が守るのは書き手どうしで、そのビルドを配っているサーバは守らない。
 
 ---
 
@@ -209,133 +151,83 @@ worktree は分かれていても、**次の場所は全セッションで 1 つ
 | **モデルの指定** | frontmatter の `model`／Agent tool の `model` | **無い**（アカウント設定が決める） |
 | 並列 | 同じメッセージで複数起動 | 1 回の依頼でまとめて spawn |
 
-**MCP**: このリポジトリは MCP サーバを 1 つも宣言していない（`.mcp.json` は無い）。
-どちらの製品も、ブラウザ操作・ファイル操作などを**製品側が供給する**ものに頼っている。
-したがって **MCP の設定に移植すべきものは無い**——移植の対象は、上の表の「呼び方」だけ。
+**MCP**: このリポジトリは MCP サーバを 1 つも宣言していない（`.mcp.json` は無い）。どちらの製品もブラウザ操作など
+を製品側が供給するものに頼っているので、移植の対象は上の表の「呼び方」だけ。**本番検証の道具は同じではない**
+（Claude Code は preview ツール群、Codex は browser プラグイン）が、測る対象（`AGENTS.md` §5.1）は同じ。
 
-⚠ **本番検証の道具は同じではない。** Claude Code は preview ツール群、Codex は browser
-プラグイン。測る対象（`AGENTS.md` §5.1 の production verification）は同じ。
+### モデルの指定は Claude Code 固有の差である
 
-### ⚠ モデルの指定は Claude Code 固有の差である（#R787）
-
-**`.agents/roles/*.md` の `claude:` ブロックにある `model:` は、Codex には届かない。**
-`.codex/agents/*.toml` は Codex の**設定レイヤー**として読まれ、そこで走るモデルは
-**アカウント側の設定が決める**——役ファイルが選ぶものではない。したがって `model:` を
-`codex:` ブロックへ写す先が無く、写せば「読まれないキー」を作るだけになる。
-
-これは `AGENTS.md` §0-5 が言う「**片方だけが知っている状態**」に見えるが、そうではない——
-**どちらの役に何をさせるかという判断は [`.agents/skills/intmap-round/`](../.agents/skills/intmap-round/SKILL.md) §2 にあり、
-両方が読む。** 届かないのは、その判断を機械に伝える**手段**のほうだけである。
-
-⇒ **実務上の帰結: Codex で走る scout / i18n / verifier / implementer は、Claude Code 側より
-高いモデルで走ることがある。** これは欠陥ではなく、この表が明記している差。**昇格条件**（verifier に
-「環境要因か本物の退行か」を訊く 2 問目は上げる）は Codex では自動的に満たされている。
-
-**宣言が守られているかは、宣言からは見えない**——呼び出し側の `model` 上書きで既定は外れる
-（実測 2026-10-03: 既定を下げた後も 92% が Opus）。実際に答えたモデルを役ごとに数えるのは
-`node scripts/agent-models.mjs`（Claude Code の transcript を読む。Codex は対象外）。
-
-⚠ 綴りの誤りは `npm run check:agents` が止める。Claude Code は知らないモデル名を
-**黙って無視して継承に戻る**ので、宣言だけが残って誰も気づかない（`scripts/agent-sync.mjs`
-の `CLAUDE_MODELS`）。
+`.agents/roles/*.md` の `claude:` ブロックの `model:` は Codex には届かない（`.codex/agents/*.toml` の役で走るモデルは
+アカウント側が決めるので、`codex:` へ写せば読まれないキーを作るだけ）。どの役に何をさせるかの判断は
+[`.agents/skills/intmap-round/`](../.agents/skills/intmap-round/SKILL.md) §2 にあり両方が読む——届かないのは機械に
+伝える**手段**だけ。⇒ Codex で走る scout / i18n / verifier / implementer は Claude Code 側より高いモデルで走ることが
+あり、これはこの表が明記している差（昇格条件は自動的に満たされる）。
+実際に答えたモデルを役ごとに数えるのは `node scripts/agent-models.mjs`（Claude Code の transcript。Codex は対象外）。
+モデル名の綴りの誤りは `npm run check:agents` が止める（Claude Code は知らない名前を黙って継承に戻す。
+`scripts/agent-sync.mjs` の `CLAUDE_MODELS`）。
 
 ---
 
 ## 7. Codex を初めて使うときに、一度だけ要ること
 
-`AGENTS.md` は**何もしなくても読まれる**。以下は**それ以外の半分**を有効にするための手順で、
-`.codex/` の中身（5 役・hook・Codex 固有の作法）は**これを済ませるまで読まれない**。
+`AGENTS.md` は何もしなくても読まれる。`.codex/` の中身（5 役・hook・Codex 固有の作法）は以下を済ませるまで読まれない。
 
-1. **プロジェクトを信頼する。** 初回の TUI 起動時に訊かれる。
-   `node scripts/worktree.mjs new` は、作った作業場を `~/.codex/config.toml` に
-   `trust_level = "trusted"` として登録するので、**作業ごとの作業場については自動**。
-   原本（`C:\Users\gyuuk\OneDrive\IntMap`）だけは一度手で信頼する。
-2. **hook を承認する。** `/hooks` を開いて `SessionStart` を trust する。
-   Codex は hook の**ハッシュ**に対して信頼を記録するので、`.codex/hooks.json` を編集すると
-   **もう一度**訊かれる。承認するまで hook は「一覧には出るが走らない」。
-   ⚠ hook の command は**セッションの cwd** で走るので、`node scripts/worktree.mjs status --brief`
-   はチェックアウトの**根**から Codex を起動したときだけ当たる（`.claude/settings.json` と同じ形に
-   揃えてある）。公式の例は `$(git rev-parse --show-toplevel)` で根を解決するが、**それは POSIX の
-   構文**で、このマシンの既定シェルでは動かない。サブディレクトリから起動する運用にするなら
-   `commandWindows` を足す。
-3. **モデルと reasoning effort を選ぶ。** ⚠ **これが最大の非互換**。
-   `~/.codex/config.toml` の既定は利用者の設定であって、リポジトリからは変えていない
-   （費用は利用者のものなので、勝手に上げない）。IntMap の作業は
-   `AGENTS.md` §3 が根本原因での修正を、§3.5 が 9 言語すべてへの反映を要求する——
-   浅い推論だと**手順は踏むが判断が浅い**という形で落ちる。上げるなら:
+1. **プロジェクトを信頼する。** `node scripts/worktree.mjs new` は作った作業場を `~/.codex/config.toml` に
+   `trust_level = "trusted"` として登録するので作業場は自動。原本も同じ形で登録済み（機械が書ける）。
+2. **hook を承認する。** `/hooks` を開いて `SessionStart` を trust する。Codex は hook の**ハッシュ**に対して信頼を記録
+   するので、`.codex/hooks.json` を編集すると**もう一度**訊かれる。承認するまで hook は「一覧には出るが走らない」。
+   hook の command は**セッションの cwd** で走るので、`node scripts/worktree.mjs status --brief` はチェックアウトの
+   **根**から起動したときだけ当たる（公式の例の `$(git rev-parse --show-toplevel)` は POSIX 構文でこのマシンの既定
+   シェルでは動かない。サブディレクトリから起動する運用にするなら `commandWindows` を足す）。
+3. **モデルと reasoning effort を選ぶ**（最大の非互換）。費用は利用者のものなので、リポジトリからは変えない。
+   浅い推論だと「手順は踏むが判断が浅い」形で落ちる（`AGENTS.md` §3 は根本原因での修正を要求する）。上げるなら
+   `codex -c model_reasoning_effort="high"`、恒久的には `~/.codex/config.toml` に `model_reasoning_effort = "high"`。
 
-   ```bash
-   codex -c model_reasoning_effort="high"
-   ```
+### 手作業が残るもの（#R704 で実測）
 
-   恒久的にするなら `~/.codex/config.toml` に `model_reasoning_effort = "high"`。
-
-### 手作業が残るもの（**#R704 で実測し直した**）
-
-| 事項 | いまも手作業か | 実測 |
+| 事項 | いまも手作業か | 実測と理由 |
 |---|---|---|
-| hook の trust（`/hooks`） | **残る（1 回だけ・届かない間の代替がある）** | ⚠⚠⚠ **#R704 実測: `[hooks.state]` は 1 件も無く、この hook は一度も走っていなかった**——`~/.codex/sessions` の 2026-09-01 以降の全 rollout に「IntMap · 蓄積メモリの索引」は **0 件**、状態行が出てくる唯一の箇所は `[external_agent_tool_result]` の中＝**Claude Code の記録を取り込んだもの**だった。配線は正しく、スイッチが入っていなかっただけ。⚠ trust の実体は `~/.codex/config.toml` の `[hooks.state."<key>"] trusted_hash`（`struct HookStateToml` ＝ `enabled` ＋ `trusted_hash`）で、アプリ自身が `config/batchWrite` でそこへ書く。判定は完全一致なので、**`.codex/hooks.json` を変えるたびに 1 回要る**。残る理由は「設定ファイルに書けない」ではなく、**`key` と hash をアプリが計算する**こと——対象も算法も exe の文字列からは決まらなかった（`sha256` の実在箇所は hook と無関係な SigV4・TLS ばかり）。⚠ **届いていない間は「メモリが無い」ではない**——`AGENTS.md` §0 の 4 と `.codex/config.toml` C-0 が、同じ中身を自分で取る手順を持つ |
-| 原本を信頼する初回の 1 回 | **もう手作業ではない** | `~/.codex/config.toml` に `[projects.'…\IntMap'] trust_level = "trusted"` として実在し、`scripts/worktree.mjs` が作業場に同じ形を書いている。**機械が書ける形**なので、この行はかつての状態を写したままだった |
-| モデル / reasoning effort | **残る（アプリが所有している鍵だった）** | 費用の判断は利用者のものなので、勝手には上げない。#R704 で利用者が `high` を選んだ。⚠⚠ **`~/.codex/config.toml` に書いても持続しない**——`high` を書いた数分後に、**起動中の Codex が `low` を書き戻した**（実測 #R704）。この鍵はアプリのモデル選択 UI の写しなので、**UI で選ぶ**のが唯一の与え方で、`codex-setup.mjs` は**書かずに食い違いを報告する**（持続しない修正は、報告が嘘になるぶん修正が無いことより悪い）。⚠ **仕事ごとに自動で変える手段も無い**——`[projects."…"]` が持てるのは `trust_level` 1 つだけ（exe の `struct ProjectConfig with 1 element`）で、絞れる単位は profile のみ |
-| 承認とサンドボックス | **もう手作業ではない** | `AGENTS.md` §5.1 は commit・push・PR・merge・deployment に追加承認を求めないことを要求するが、#R704 実測で `approval_policy` も `sandbox_mode` も**未設定**＝アプリ既定に委ねられていた。`codex-setup.mjs --apply` が `workspace-write` ＋ `network_access = true` ＋ `approval_policy = "on-failure"` を書く |
-| workspace の外へ書くこと | **もう手作業ではない** | メモリの正本と `%LOCALAPPDATA%\Temp\intmap-worktrees` は**どの workspace にも入っていない**ので、`workspace-write` では書けない。`codex-setup.mjs` が 2 つとも**導出して** `writable_roots` に入れる（手で並べない）。⚠ USB ミラーだけは入れない——ドライブ文字はバックアップ時にラベルで見つけるものなので、今日の文字は明日の誤りになる。そこは `approval_policy` が 1 回訊く側に残す |
-| Codex アプリの "Choose project" | **残る（設定ファイルでは与えられない）** | `~/.codex/config.toml` にも CLI にも「起動時にこのプロジェクトを開く」キーは**見つからなかった**。アプリ所有の state（`~/.codex/.codex-global-state.json` の `selected-project`）でだけ与えられる——**設定面ではないので、リポジトリのスクリプトからは書かない** |
-| Claude Code 側の `@` import の確認 | 残る | 新しいセッションで `/context` を開き、**Memory files** に `CLAUDE.md` と `AGENTS.md` が並ぶことを見る |
+| hook の trust（`/hooks`） | **残る（`.codex/hooks.json` を変えるたびに 1 回）** | trust の実体は `~/.codex/config.toml` の `[hooks.state."<key>"] trusted_hash`（アプリが書く・完全一致判定）。**`key` と hash をアプリが計算する**ので設定から書けない。#R704 まで一度も trust されておらず hook は走っていなかった。届いていない間も `AGENTS.md` §0 の 4 と `.codex/config.toml` C-0 が同じ中身を自分で取る手順を持つ |
+| 原本を信頼する初回 | **もう手作業ではない** | `[projects.'…\IntMap'] trust_level = "trusted"` が実在し、`scripts/worktree.mjs` が作業場に同じ形を書く |
+| モデル / reasoning effort | **残る（アプリが所有する鍵）** | `config.toml` に書いても、起動中の Codex が UI の選択で書き戻す（`high` が数分後に `low` へ）。**UI で選ぶ**のが唯一の与え方で、`codex-setup.mjs` は書かずに食い違いを報告する。仕事ごとに変える手段も無い（`[projects."…"]` が持てるのは `trust_level` だけ・絞れる単位は profile のみ） |
+| 承認とサンドボックス | **もう手作業ではない** | `codex-setup.mjs --apply` が `workspace-write` ＋ `network_access = true` ＋ `approval_policy = "on-failure"` を書く（`AGENTS.md` §5.1 の追加承認不要に合わせる） |
+| workspace の外へ書くこと | **もう手作業ではない** | メモリの正本と `%LOCALAPPDATA%\Temp\intmap-worktrees` を `codex-setup.mjs` が導出して `writable_roots` に入れる。USB ミラーだけは入れない（ドライブ文字はバックアップ時にラベルで見つけるもの）——そこは `approval_policy` が 1 回訊く |
+| Codex アプリの "Choose project" | **残る** | 設定ファイルにも CLI にもキーが無く、アプリ所有の state（`~/.codex/.codex-global-state.json` の `selected-project`）だけ。リポジトリからは書かない |
+| Claude Code 側の `@` import の確認 | 残る | 新しいセッションで `/context` を開き、Memory files に `CLAUDE.md` と `AGENTS.md` が並ぶことを見る |
 
-⚠⚠ **「バンドルにはどちらの綴りも無い」は #R704 の実測で誤りだった。** build 0.153.4 の `codex.exe` に
-CLI フラグ `--dangerously-bypass-hook-trust`・環境変数 `BYPASS_HOOK_TRUST`・app-server の
-`bypass_hook_trust` override が**3 つとも実在する**（説明文ごと: 「DANGEROUS. Intended only for
-automation that already vets hook sources」）。**それでも採らない**——効く範囲が IntMap ではなく
-**このマシンの全プロジェクト**で、`/hooks` の 1 回と引き換えに払う代償として釣り合わない。
-⚠ **全自動にできる唯一の経路は管理層**
-（Windows なら `%ProgramData%\OpenAI\Codex\requirements.toml` の managed hook）で、管理者権限が要り、
-**hook の正本がリポジトリの外へ出る**——`.agents/` を 1 つの正本にした #R699 と逆向きなので採らない。
+hook の trust を飛ばす経路は実在する（`codex.exe` 0.153.4 の `--dangerously-bypass-hook-trust`・`BYPASS_HOOK_TRUST`・
+app-server の `bypass_hook_trust`）が、**採らない**——効く範囲がこのマシンの全プロジェクト。全自動にできる管理層
+（`%ProgramData%\OpenAI\Codex\requirements.toml` の managed hook）も、管理者権限が要り hook の正本がリポジトリの外へ出るので採らない。
 
-### このマシン側を 1 コマンドで揃える（#R704）
+### このマシン側を 1 コマンドで揃える
 
-`npm run check:agents` が見るのはリポジトリの中だけで、上の表の残り半分は `~/.codex/config.toml`
-——**リポジトリの外**にある。そこを測って揃えるのが:
+`npm run check:agents` はリポジトリの中だけを見る。リポジトリの外（`~/.codex/config.toml`）を測って揃えるのが:
 
 ```bash
 npm run setup:codex          # 何が揃っていて、何が手作業で残っているかを印字（何も書かない）
 npm run setup:codex:apply    # 揃える（変更前を config.toml.r704.bak に残す・冪等）
 ```
 
-⚠ **値の一覧をここに書き写さない。** 機械の正本は `scripts/codex-setup.mjs` の `SETTINGS` 1 か所で、
-そこには値と**なぜその値なのか**が並んでいる。⚠ **パスも書き写さない**——原本・メモリ・
-worktree の場所は、それぞれを所有しているものに訊いて導出する。
+値の一覧とその理由の正本は `scripts/codex-setup.mjs` の `SETTINGS` 1 か所。パスも書き写さない（所有者から導出する）。
 
-### 蓄積メモリは 1 か所で、両方が読み書きする（#R696）
+### 蓄積メモリは 1 か所で、両方が読み書きする
 
-⚠ **かつてここは「自動では渡らない」だった。** Claude Code は
-`~/.claude/projects/<原本のパス>/memory/` に**このリポジトリで学んだこと**を貯めていて、Codex は
-それを読まず、自分の `/memories` に別に貯めていた。**実測（#R696）: Codex 側の
-`memories_1.sqlite` に IntMap を含む行は 0 件**——同じ罠を、片方だけが知っている状態だった。
-これは設定の差ではなく、利用者が「別人が作業している」と感じるもの**そのもの**である。
-
-いまは正本が 1 つで、Codex は `SessionStart` hook から読む:
+正本は 1 つで、Claude Code は自動で読み、Codex は `SessionStart` hook から読む（かつて Codex 側に IntMap を含む記憶は
+0 件で、同じ罠を片方だけが知っていた）:
 
 ```bash
 node scripts/agent-memory.mjs --path      # 場所（どの worktree から呼んでも同じ）
 node scripts/agent-memory.mjs             # hook が渡すもの（先頭に場所、続けて索引）
+node scripts/agent-memory.mjs --check     # 索引 N / 天井 M 文字（超えていなくても述べる）
 ```
 
-- **パスはハードコードしていない。** 原本は `git rev-parse --git-common-dir` から導出し、
-  Claude Code の鍵（絶対パスの非英数字を `-` に置換）を組み立てる。だから
-  `AGENTS.md` §2 が避けたがっている「追跡ファイルにマシン固有の絶対パスを増やす」形にならない。
-- **切るときは黙って切らない**（#R694）。`--budget` は落とした文字数と、続きの読み方を印字する。
-- ⚠ **索引には天井がある。切るのは `--budget` ではなく、索引を自分で読み込む製品の側の上限**
-  （#R703 実測: 25,710 文字の `MEMORY.md` に「Only part of it was loaded.」）。**数の正本は
-  `scripts/agent-memory.mjs` の `INDEX_CEILING` 1 か所**で、ここには書き写さない。両製品の
-  `SessionStart` が毎回これを実測して述べる:
-
-  ```bash
-  node scripts/agent-memory.mjs --check    # 索引 N / 天井 M 文字（超えていなくても述べる）
-  ```
-
-  超えていたら**詰めるのは索引の古い側だけ**——実体の `.md` は 1 本も消さない。
-- **書く側も同じ場所**（`.codex/config.toml` の C-7）。そこは workspace の外なので、Codex の
-  サンドボックスが書き込みを拒むことがある——そのときは承認を求めて書く。
+- パスはハードコードしない（原本は `git rev-parse --git-common-dir` から導出し、Claude Code の鍵＝絶対パスの非英数字を
+  `-` に置換したものを組み立てる）。
+- 切るときは黙って切らない（`--budget` は落とした文字数と続きの読み方を印字する）。
+- **索引には天井がある**——切るのは `--budget` ではなく、索引を自分で読み込む製品の側の上限（実測: 25,710 文字の
+  `MEMORY.md` に「Only part of it was loaded.」）。数の正本は `scripts/agent-memory.mjs` の `INDEX_CEILING`。超えていたら
+  **詰めるのは索引の古い側だけ**で、実体の `.md` は 1 本も消さない。
+- 書く側も同じ場所（`.codex/config.toml` の C-7）。workspace の外なので、Codex のサンドボックスが拒んだら承認を求めて書く。
 
 ---
 
@@ -347,31 +239,22 @@ npm run check:docs       # 文書どうしの事実の突き合わせ
 node --test tests/process-agent-context-checks.test.mjs
 ```
 
-`check:agents` が落ちる典型は 3 つ——**天井に当たった**（§1）、
-**生成物を直接編集した**（`--write` で戻る）、**`CLAUDE.md` の `@AGENTS.md` を消した**
-（Claude Code のセッションが恒久指示ごと無くなる）。
+`check:agents` が落ちる典型は 3 つ——天井に当たった（§1）、生成物を直接編集した（`--write` で戻る）、
+`CLAUDE.md` の `@AGENTS.md` を消した（Claude Code のセッションが恒久指示ごと無くなる）。
 
 ## 9. Edge Function の deploy に `--use-api` が要る理由（実測）
 
-⚠ **通常の deploy は CI に移った。** `main` への push で `supabase/functions/**`・`supabase/config.toml`・
-`supabase/migrations/**` が変わると `.github/workflows/supabase-deploy.yml` が**最後に成功した配備から**変わった関数
-（`_shared/` か `config.toml` なら全関数・本番に無い宣言済みの関数は常に）と足された migration を出し、
-宣言された関数が本番に無ければ赤にする（正本は [`RELEASE.md`](RELEASE.md) の
-「Supabase: Edge Functions and migrations」）。secret `SUPABASE_ACCESS_TOKEN` が未登録なら run は赤で
-Issue が名前を述べる（登録は [`BACKUP-RESTORE.md`](BACKUP-RESTORE.md) 「一度だけの登録」）。
-**以下の手での deploy は緊急時の手段**——CI が赤で直すより早く出す必要があるとき・未登録の間だけ使う。
-`AGENTS.md` §5.1 は手での deploy を書いたままである（天井のため、別のラウンドで直す）。
+**通常の deploy は CI。** `main` への push で `supabase/functions/**`・`supabase/config.toml`・`supabase/migrations/**` が
+変わると `.github/workflows/supabase-deploy.yml` が**最後に成功した配備から**変わった関数（`_shared/` か `config.toml`
+なら全関数・本番に無い宣言済みの関数は常に）と足された migration を出し、宣言された関数が本番に無ければ赤にする
+（正本 [`RELEASE.md`](RELEASE.md) の「Supabase: Edge Functions and migrations」）。secret `SUPABASE_ACCESS_TOKEN` が
+未登録なら run は赤で Issue が名前を述べる（登録は [`BACKUP-RESTORE.md`](BACKUP-RESTORE.md)「一度だけの登録」）。
+**手での deploy（`AGENTS.md` §5.1）は緊急時の手段**——CI が赤で直すより早く出す必要があるとき・未登録の間だけ。
 
-`AGENTS.md` §5.1 のコマンドが `--use-api` を持っているのは、このマシンの状態を測った結果である。
-CI も同じ旗で出す（runner の Docker に依存しない）。
-
-- 既定のバンドルは **Docker** を使う。`docker --version` は **29.6.1** を返す（＝CLI は入っている）が、
-  止まっているのは**デーモン**で、`docker info` は `failed to connect to the docker API at npipe:…`
-  を返す（実測 2026-08-24）。
-- 旗が無いと **標準出力が 1 バイトも出ないまま 600 秒経っても終わらない**ので、「まだ実行中」と
-  「詰まっている」の区別がつかない。
-- ⚠ **進んでいるかどうかは経過時間ではなく `supabase functions list` の `version` / `updated_at`**
-  で判定する。
+`--use-api` はこのマシンの状態を測った結果である（CI も同じ旗で出す）。既定のバンドルは **Docker** を使うが、
+`docker --version` は 29.6.1 を返すのに**デーモン**は止まっていて `docker info` は `failed to connect to the docker API
+at npipe:…`（実測 2026-08-24）。旗が無いと標準出力が 1 バイトも出ないまま 600 秒経っても終わらない。
+**進んでいるかは経過時間ではなく `supabase functions list` の `version` / `updated_at`** で判定する。
 
 ### Edge Function の名簿（**ここが正本**）
 
@@ -379,142 +262,97 @@ CI も同じ旗で出す（runner の Docker に依存しない）。
 `client-errors` / `delete-account` / `fetch-relay` / `gdelt-relay` / `news-ingest` / `news-relay` / `quotes-relay` /
 `radiation-feed` / `reader-reports` / `refresh-news` / `routing-relay` / `sv-cov` / `usage-count` / `volcano-feed` / `who-don`）。21 本すべてが
 `supabase/config.toml` に `[functions.*]` として宣言されている。
-⚠ **`_shared/` は関数ではない**——ライブラリ用ディレクトリ（`ai-provider.js`・`newsgeo.js`・`relay-guard.js`・`rate-limit.js`・
+**`_shared/` は関数ではない**——ライブラリ用ディレクトリ（`ai-provider.js`・`newsgeo.js`・`relay-guard.js`・`rate-limit.js`・
 `atlas-persona.js`・`aviation-codec.js`・`aviation-model.js`・`news-cluster.js`・`news-entities.js`・`news-geo-prompt.js`・
 `news-ingest.js`・`radiation-sources.js`・`volcano-parse.js`・`who-don-extract.js`・`bbox.js`・`read-budget.js`・`client-error-shape.js`・`site-origin.js`・`fetch-relay-policy.js`・`ai-ledger.js`・`ai-usage.js`・`atlas-grade-schema.js`・`ai-stream.js`・`plans.js`・`inquiry-shape.js`・`correction-shape.js`・`place-watch.js`・`great-circle.js`）で、import した関数の中に CLI がバンドルする。`[functions._shared]` を書いてはならない。
 
-⚠ この節は `AGENTS.md` から移してきたものである（deploy の実測は #R515、名簿は #R628）。
-**`AGENTS.md` には 32,768 バイトの天井があり、超えた分は無言で落ちる**ので、測定の詳細も名簿も
-ここが正本で、`AGENTS.md` は 1 行で指すだけにする。**数と名前を 2 か所に置かない。**
+`AGENTS.md` の天井のため、測定の詳細も名簿もここが正本で、`AGENTS.md` は 1 行で指すだけ。**数と名前を 2 か所に置かない。**
 
 ---
 
 ## 10. USB バックアップのスクリプトが守っていること（**書き換えるときも壊さないこと**）
 
-**いつ走らせるか**は `AGENTS.md` §11.2（「作業のたびに毎回」と、このマシンにある shell）。
+**いつ走らせるか**は `AGENTS.md` §11.2（「作業のたびに毎回」と、このマシンにある shell）。起動は `powershell` であって
+`pwsh` ではない（PowerShell 7 は無い。実測 `$PSVersionTable` は 5.1.26100.9168。スクリプトは 5.1 で完動する）。
+以下は **`scripts/backup-usb.ps1` が実装している不変条件**——どれも、壊してもコピー自体は成功して見えるものばかり。
 
-⚠ **起動は `powershell` であって `pwsh` ではない。** このマシンに PowerShell 7 は**無い**
-（実測 `$PSVersionTable` は **5.1.26100.9168**）。#R372 まで `AGENTS.md` はここを `pwsh -File …` と書いて
-いて、**その通りにやると終了処理の最後の1歩が必ず `CommandNotFoundException` で落ちた**。
-スクリプトは 5.1 で完動する（`AGENTS.md` から移した実測・2026-09-25）。
-ここは **`scripts/backup-usb.ps1` が実装している不変条件**——どれも、壊しても
-コピー自体は成功して見えるものばかりなので、スクリプトを書き換えるときはここを読む。
-
-- ⚠ **ミラー元は原本（`C:\Users\gyuuk\OneDrive\IntMap`）であって、temp の worktree ではない。**
-  スクリプトは原本の場所を**ハードコードせず** `git rev-parse --git-common-dir` から導出するので、
-  どの worktree から実行しても原本を見る。**原本が merge 後の状態でなければ、スクリプトは同期せず
-  `skipped` で終わる**——だから先に原本を最新化する（**その順序を指示するのは `AGENTS.md` §11.2**。
-  ここに書き写さない）。
+- **ミラー元は原本（`C:\Users\gyuuk\OneDrive\IntMap`）であって、temp の worktree ではない。** 原本の場所は
+  `git rev-parse --git-common-dir` から導出するので、どの worktree から実行しても原本を見る。原本が merge 後の状態で
+  なければ同期せず `skipped` で終わる（順序の指示は `AGENTS.md` §11.2）。
 - **同期方向は `原本 → USB` の一方向のみ。** USB 上のファイルを作業元にしない。逆同期しない。
-- **USB のルートが IntMap の完全ミラー**になる。中身は **Git HEAD の追跡対象ファイル**
-  （＝サイトを再現するのに必要なものすべて。`node_modules` / `.git` / `dist` / キャッシュは入らない）。
-  新規は作成、更新は上書き、**リポジトリに無いものは USB からも削除**する。
-  例外は `.intmap-backup-id.json` ——ドライブを識別するためにスクリプト自身が置く管理情報。
-- ⚠ **git の外にあるデータ集合も USB に入る**（data-outside-git）。`data-assets.json` が名指す集合（`data/border-detail/`・
-  `data/hist-eras.js`）は追跡対象ではないが、サイトの再構築に要るので、スクリプトは
-  `node scripts/data-assets.mjs list` の一覧を追跡ファイルに**足して**ミラーする。`list` は先に
-  「原本に置かれているものが目録の sha256 どおりか」を検証し、**無い・違うなら一覧を 1 行も出さずに失敗する**
-  ——そのときスクリプトは**ミラーせず** `RESULT failed data-assets-not-placed` で終わる（ミラーすると USB の
-  正しい写しが「リポジトリに無いもの」として消されるから）。原本の集合は `npm run master:sync` が
-  早送りのあとに `data:pull` で置く（原本では OneDrive の外の共有ストアへの junction で、OneDrive は
-  reparse point をたどらない。USB へはリンクではなく中身がコピーされる）。
-- ⚠ **マシン固有のファイルは、意図的に USB に入らない**（上の §4）。追跡外なので
-  ミラーの対象外であり、**次回同期で USB 上の古い写しは削除される**。これは正しい。
-- ⚠ **早送りを塞いでいた当のファイルが、早送りを通す側にも要る。** 追跡から外すだけでは、
-  **それを外すコミット自身を早送りできない**（早送りは HEAD の木から目標の木への 1 回の checkout で
-  あって履歴の再生ではないから、そのコミットはここでもファイルを消す必要があり、git は
-  ローカルで変更された／追跡外のパスの削除をどちらも拒否する。#R339 で両方を実測）。
-  そこで `master-sync.mjs --sync` が、**宣言されたマシン固有のパスに限り**、中身を退避 → git に消させる
-  → 書き戻す。**commit もせず、捨てもしない**（`AGENTS.md` §6）。宣言に無いパスが 1 つでも混じれば拒否のまま。
-- **ドライブは推測しない。** ボリュームラベル `INTMAP-BACKUP`（または上記の識別ファイル）で特定する。
-  ラベル付きが無く、書き込み可能なリムーバブルが**ちょうど1台**のときだけ、それを採用してラベルを刻む。
-  候補が複数あって一意に決まらない場合は**スキップして報告する**。
-  **バックアップ先としては、内蔵 SSD・システムドライブ・OneDrive・ネットワークドライブを対象外**
-  にする（DriveType で除外。⚠ OneDrive はミラーの**元**であって、**先**ではない）。
-- **コピーが成功したことを、バックアップが成功したことにしない。** 同期後に両側を再帰的に歩き直し、
-  相対パス・存在・SHA-256 が**完全に一致することを確認する**。一致した場合のみ成功とする。
+- **USB のルートが IntMap の完全ミラー**。中身は **Git HEAD の追跡対象ファイル**（`node_modules` / `.git` / `dist` /
+  キャッシュは入らない）。新規は作成、更新は上書き、**リポジトリに無いものは USB からも削除**する。例外は
+  `.intmap-backup-id.json`（ドライブを識別するためにスクリプト自身が置く管理情報）。
+- **git の外にあるデータ集合も入る**（data-outside-git）。`data-assets.json` が名指す集合（`data/border-detail/`・
+  `data/hist-eras.js`）を `node scripts/data-assets.mjs list` の一覧として追跡ファイルに足す。`list` は原本の配置が目録の
+  sha256 どおりかを先に検証し、無い・違うなら 1 行も出さずに失敗する——そのときスクリプトは**ミラーせず**
+  `RESULT failed data-assets-not-placed` で終わる（ミラーすると USB の正しい写しが消されるから）。原本の集合は
+  `npm run master:sync` が早送りのあとに `data:pull` で置く（USB へはリンクではなく中身がコピーされる）。
+- **マシン固有のファイル**（§4）は追跡外なのでミラーの対象外で、USB 上の古い写しは次回同期で削除される（正しい）。
+- 追跡から外すコミット自身の早送りでは、git がローカルで変更された／追跡外のパスの削除を拒む。そこで
+  `master-sync.mjs --sync` が**宣言されたマシン固有のパスに限り**中身を退避 → git に消させる → 書き戻す（commit も
+  破棄もしない。宣言に無いパスが混じれば拒否のまま）。
+- **ドライブは推測しない。** ボリュームラベル `INTMAP-BACKUP`（または識別ファイル）で特定する。ラベル付きが無く、
+  書き込み可能なリムーバブルが**ちょうど1台**のときだけそれを採用してラベルを刻む。一意に決まらなければ**スキップして
+  報告する**。内蔵 SSD・システムドライブ・OneDrive・ネットワークドライブは対象外（DriveType で除外。OneDrive はミラーの元）。
+- **コピーが成功したことを、バックアップが成功したことにしない。** 同期後に両側を再帰的に歩き直し、相対パス・存在・
+  SHA-256 が**完全に一致することを確認する**。一致した場合のみ成功とする。
 - **失敗したら原因を調べ、再同期・再検証する**（既定3回）。それでも駄目なら**無限ループにせず**失敗として終える。
-- **成功したときだけ**、台帳に日時を書く:
-  `~/.claude/projects/C--Users-gyuuk-OneDrive-IntMap/usb-backup-state.json`（リポジトリの外・追跡対象外）。
+- **成功したときだけ**台帳に日時を書く: `~/.claude/projects/C--Users-gyuuk-OneDrive-IntMap/usb-backup-state.json`
+  （リポジトリの外・追跡対象外）。
 
 ---
 
 ## 11. 原本と並行セッション——`AGENTS.md` §6 の規則の理由と実測
 
-`AGENTS.md` §6 は規則だけを持つ（天井のため・§1）。**規則を変えるときに読み直すべき実測**はここにある。
-（2026-09-25 に `AGENTS.md` から移した。規則そのものは 1 つも移していない。）
+`AGENTS.md` §6 は規則だけを持つ。規則を変えるときに読み直すべき実測はここにある。
 
-- ⚠ **なぜ原本を作業場にしないのか（#R282 実測）。** 原本を作業場にすると排他ロックと回復手順が要り、
-  ロックは**失効ロック**という壊れ方を作る。実測: 初版の `--sync` が、**原本で `feat/session-a` を
-  使っているセッションの作業ディレクトリを、別セッションの終了処理が黙って `main` に切り替えた**
-  （成功メッセージまで出た）。**`main` 専用なら切り替える branch が無い。**
-- ⚠ **原本だけが「どの工程も責任を持たない写し」になっていた（#R282 実測）。** worktree を既定にしていた
-  間に、原本は origin/main より **15 コミット・159 ファイル**遅れていた（R272〜R279 が丸ごと欠落）。
-  OneDrive の同期エンジンは正常に動いていた——**原本に何も書き込まれていなかった**だけ。GitHub と USB は
-  各回で更新されていた。⇒ `node scripts/master-sync.mjs --sync` を §5 の最終工程に置いた。
-- **`--sync` は冪等で、1 回の実行がその時点で merge 済みの全セッション分を運ぶ。** 早送りが触らない
-  ファイル（**他セッションのマシン固有ファイルなど**）は素通りし、実際に上書きになる場合だけ
-  `git merge --ff-only` 自身の理由を出して止まる。`--check` は「遅れている」と「汚れている」を分け、
-  汚れは警告として印字するが exit 0 を妨げない——**USB ミラーは作業ディレクトリをそのまま写すので、
-  汚れたまま写すのが §10 の要求**。
-  ⚠ 以前は「汚れていれば何であれ拒否」だった。**正しい作業がゲートを迂回した実例がある**——
-  用心深く見える拒否は、安全を足さずに**ツールを迂回する習慣を教える**。
-- **テストの dev サーバもセッションごとに分かれる理由**（`tests/helpers/session-seed.js`）。以前は全チェック
-  アウトが 4173 を共有し `reuseExistingServer` が効いていたため、**2 つ目のセッションは自分のビルドを作らず
-  相手の `dist/` を試験する**か、相手がサーバを落とした瞬間に `ERR_CONNECTION_REFUSED` で死んでいた
-  （実測 **2 failed / 25 did not run**。私有ポートなら同じ木で **52 passed**）。
-- ⚠ **識別子に番号を使わない理由（2026-09-25・利用者承認済み）。** `worktree.mjs new` は以前
-  「空きラウンド番号」＝全記録・branch・worktree・tests の最大＋1 を配っていた。**走査した全セッションが
-  同じ番号を得る**ので、改番は例外ではなく定常状態だった（#R671 は 7 回、同時期の別セッションは 4 回。
-  add/add 衝突の衝突マーカーが commit されて検査ファイルが 1 本丸ごと走らなくなった）。
-  今は slug を `git worktree add -b feat/<slug>` で**原子的に**取る——同じマシンの worktree は ref の
-  名前空間を共有するので、同じ slug は 2 つ目が git に拒まれる（`tests/process-without-round-numbers-checks.test.mjs` ①）。
-- ⚠⚠ **`git stash` は全 worktree で共有される**（`refs/stash` は clone に 1 本）。clean な木で
-  stash→pop すると、自分は何も積んでいないので**別セッションの stash を pop する**（2026-10-02 実測・
-  中身は失われなかった）。統合の退避に stash を使わず、**commit か一時 branch** で。main の取り込みは
-  `git rebase origin/main` と merge driver（`node scripts/merge-driver.mjs --finish`・§12）。
+- **なぜ原本を作業場にしないのか。** 作業場にすると排他ロックと回復手順が要り、ロックは失効ロックという壊れ方を作る。
+  実測 #R282: 初版の `--sync` が、原本で `feat/session-a` を使っていたセッションの作業ディレクトリを、別セッションの
+  終了処理が黙って `main` に切り替えた。**`main` 専用なら切り替える branch が無い。**
+- **原本だけが「どの工程も責任を持たない写し」になっていた**（実測: origin/main より 15 コミット・159 ファイル遅れ。
+  OneDrive は正常で、原本に何も書き込まれていなかった）。⇒ `node scripts/master-sync.mjs --sync` を §5 の最終工程に置いた。
+- **`--sync` は冪等で、1 回の実行がその時点で merge 済みの全セッション分を運ぶ。** 早送りが触らないファイル
+  （他セッションのマシン固有ファイルなど）は素通りし、実際に上書きになる場合だけ `git merge --ff-only` の理由を出して
+  止まる。`--check` は「遅れ」と「汚れ」を分け、汚れは警告として印字するが exit 0 を妨げない（USB ミラーは作業
+  ディレクトリをそのまま写す）。以前の「汚れていれば何であれ拒否」は、正しい作業にゲートを迂回させた。
+- **テストの dev サーバをセッションごとに分ける理由**（`tests/helpers/session-seed.js`）: 全チェックアウトが 4173 を共有し
+  `reuseExistingServer` が効いていた間は、2 つ目のセッションが相手の `dist/` を試験するか、相手がサーバを落とした瞬間に
+  `ERR_CONNECTION_REFUSED` で死んだ（実測 2 failed / 25 did not run。私有ポートなら 52 passed）。
+- **識別子に番号を使わない理由**（利用者承認済み）は `.agents/skills/intmap-round/` §4。slug は
+  `git worktree add -b feat/<slug>` で**原子的に**取る（`tests/process-without-round-numbers-checks.test.mjs` ①）。
+- **`git stash` は全 worktree で共有される**（`refs/stash` は clone に 1 本）。clean な木で stash→pop すると**別セッションの
+  stash を pop する**（2026-10-02 実測）。統合の退避は **commit か一時 branch** で。main の取り込みは `git rebase origin/main`
+  と merge driver（`node scripts/merge-driver.mjs --finish`・§12）。
 
 ---
 
 ## 12. 生成物の merge driver——**追跡されない設定が 1 つある**
 
-並行 PR が着地するたびに残りが DIRTY になり、衝突のほぼ全部が**人が書かないもの**（生成物・台帳・件数）
-だった（2026-10-01 実測・15 本）。その解き方は `scripts/merge-driver.mjs` が持ち、どのファイルを
-どう解くかの**宣言は `.gitattributes` の 1 か所**（`merge=intmap-generated` と `intmap-merge=json|regen|tokens`）。
-何を測っているかは [`TESTING.md`](TESTING.md) の `tests/generated-file-merge-driver-checks.test.mjs`。
+並行 PR の衝突のほぼ全部が**人が書かないもの**（生成物・台帳・件数）だった（2026-10-01 実測・15 本）。解き方は
+`scripts/merge-driver.mjs` が持ち、どのファイルをどう解くかの**宣言は `.gitattributes` の 1 か所**
+（`merge=intmap-generated` と `intmap-merge=json|regen|tokens`）。何を測っているかは [`TESTING.md`](TESTING.md) の
+`tests/generated-file-merge-driver-checks.test.mjs`。
 
-- ⚠ **`.gitattributes` だけでは効かない。** git は driver の**コマンド**を追跡されたファイルからは読まず
-  （任意コマンドの実行になるため）、clone の config（`merge.intmap-generated.driver`）からだけ読む。
-  未登録なら git は黙って普通の行マージに戻る——壊れはしないが、解けたはずの衝突が人に回る。
-- **登録は冪等で、3 か所が行う**: `node scripts/worktree.mjs status`（**両製品の SessionStart hook**）、
-  `worktree.mjs new`、`master-sync.mjs --sync`。手で行うなら `node scripts/merge-driver.mjs --install`。
-  ⚠ **config は clone の全 worktree が共有する**（実測）ので、1 回の登録がこのマシンの全セッションに効く。
-  Codex で hook が未 trust でも、`new` と `--sync` が同じものを書く——**製品による差は無い**。
-  ⚠ **登録は「書いた」ではなく「git が読み返した」で判定する**（2026-10-02 実測: config に driver が無く、
-  rebase が台帳を 1 つも解かなかった。`--sync` は fast-forward が成功した最後の行でしか登録していなかった）。
-  `master-sync.mjs` は**どのモードでも終了より前に**登録し、`--sync` の後は原本自身の新しい
-  `merge-driver.mjs --install` でもう一度登録する。読み返せなければ `--check` も `--sync` も赤
-  （`tests/generated-file-merge-driver-checks.test.mjs` ⑨ が一時 clone で全経路を走らせる）。
-- **台帳の行ごとの規則**は書き手が持つ: `intmap-clash-by=<script>` の `mergeClash(keys)`。
-  `tests/perf-baseline.json` は数（`requests`・`modules`）を合算し、量は main の値を取る。
-- ⚠ **driver が走る間、作業ツリーは merge 後の木ではない**（git 2.54・merge-ort 実測: main だけが変えた
-  ファイルが、driver の呼び出し時点ではまだ branch 側の中身だった）。だから生成物は driver の中で
-  作り直さず、**記録だけして** merge／rebase の後に `node scripts/merge-driver.mjs --finish` が生成器を
-  走らせる。待っているものは `worktree.mjs status` が言う。build・ブラウザ・ネットワークが要る生成器
-  （`perf-budget.mjs --update` など）は走らせず、コマンドを印字する。
-- ⚠ **どちらが main か**は操作で逆になる（実測）: `git merge origin/main` では %B、`git rebase origin/main`
-  では %A。driver は rebase／cherry-pick の最中かと `main` 上にいるかで判定する。
-- ⚠ **GitHub 側の merge（PR の DIRTY 判定・Update branch ボタン・squash）は driver を使わない。**
-  解くのは手元の `git rebase origin/main`（手順は `.agents/skills/intmap-round/` §5）。CI は merge を
-  しないので、CI に登録は要らない（driver そのものの検査は `npm test` の中で一時リポジトリに対して走る）。
-- 古い branch（この宣言より前に切ったもの）を `git merge` すると、その branch の `.gitattributes` が読まれる
-  ので driver は呼ばれない（実測）。`git rebase origin/main` なら main 側の宣言が効く。script の無い
-  checkout で呼ばれたときは、登録コマンド自身が `git merge-file` に戻り、普通の衝突マーカーを残す。
-- **同じ宣言を衝突の外でも使う: `npm run regen`**（`scripts/regen.mjs`）。全件テストを PR の CI に
-  任せたので、帳簿のずれ（古い生成物・下げ忘れた台帳）は commit の前にこれで消す。`intmap-regen` の
-  生成器を全部走らせ、`intmap-tighten=<writer>` を持つ台帳は writer を走らせて、**全部の動きが締める
-  方向（数が減る・名前やキーが消える）のときだけ**結果を残す。緩む方向は元のバイトに戻して名指す
-  ——merge で台帳を作り直さない理由（`--update` は木にあるものを何でも受け入れる）と同じ問いだから。
-  `intmap-tighten-info=<key>` は書き手が参考値として持つ欄（門が読まない）で、どちらへ動いてもよい。
-  宣言の無い台帳（実測値・上へ締める床）には触れない。全部を並列に走らせて約 25 秒（直列で 2 分 13 秒、
-  うち `global-surface.mjs --update` が 53 秒。2026-10-05 実測）。
+- **`.gitattributes` だけでは効かない。** git は driver の**コマンド**を clone の config（`merge.intmap-generated.driver`）から
+  だけ読む。未登録なら黙って普通の行マージに戻る（解けたはずの衝突が人に回る）。
+- **登録は冪等で、3 か所が行う**: `node scripts/worktree.mjs status`（両製品の SessionStart hook）、`worktree.mjs new`、
+  `master-sync.mjs --sync`。手でなら `node scripts/merge-driver.mjs --install`。config は clone の全 worktree が共有するので
+  1 回の登録が全セッションに効き、Codex で hook が未 trust でも `new` と `--sync` が書く。**登録は「git が読み返した」で
+  判定する**——`master-sync.mjs` はどのモードでも終了前に登録し、`--sync` の後は原本の新しい `merge-driver.mjs --install`
+  でもう一度。読み返せなければ `--check` も `--sync` も赤（同テスト ⑨ が一時 clone で全経路を走らせる）。
+- 台帳の行ごとの規則は書き手が持つ（`intmap-clash-by=<script>` の `mergeClash(keys)`）。`tests/perf-baseline.json` は数
+  （`requests`・`modules`）を合算し、量は main の値を取る。
+- **driver が走る間、作業ツリーは merge 後の木ではない**（git 2.54・merge-ort 実測）。だから driver は記録だけして、
+  merge／rebase の後に `node scripts/merge-driver.mjs --finish` が生成器を走らせる（待っているものは `worktree.mjs status`
+  が言う。build・ブラウザ・ネットワークが要る生成器——`perf-budget.mjs --update` など——はコマンドを印字する）。
+- **どちらが main か**は操作で逆になる（`git merge origin/main` では %B、`git rebase origin/main` では %A）。driver は
+  rebase／cherry-pick の最中かと `main` 上にいるかで判定する。
+- **GitHub 側の merge（DIRTY 判定・Update branch・squash）は driver を使わない。** 解くのは手元の `git rebase origin/main`
+  （`.agents/skills/intmap-round/` §5）。CI は merge しないので登録は要らない。
+- 宣言より前に切った branch の `git merge` では driver は呼ばれない（rebase なら効く）。script の無い checkout では
+  `git merge-file` に戻り、普通の衝突マーカーを残す。
+- **同じ宣言を衝突の外でも使う: `npm run regen`**（`scripts/regen.mjs`・使い方は skill §4）。`intmap-tighten=<writer>` の
+  台帳は**全部の動きが締める方向（数が減る・名前やキーが消える）のときだけ**結果を残し、緩む方向は元のバイトに戻して名指す
+  （`--update` は木にあるものを何でも受け入れるから）。`intmap-tighten-info=<key>` は門が読まない参考値。宣言の無い台帳
+  （実測値・上へ締める床）には触れない。並列で約 25 秒（直列 2 分 13 秒）。

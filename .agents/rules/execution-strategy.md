@@ -28,18 +28,15 @@
 - 1〜2 コマンドで終わる確認
 - **設計・最終判断・利用者への報告**（委譲できない）
 
-⚠ **小さい仕事を並列化しない。** 目安は **3 ファイル以上**／**100 行超**／**30 秒以上**。
-それ未満は起動費のほうが高い。
+**小さい仕事を並列化しない**（目安 3 ファイル以上／100 行超／30 秒以上。それ未満は起動費のほうが高い）。
 
 ## 3. 並列編集の安全（競合・二重実装・矛盾を防ぐ）
 
 - **同じファイルを 2 体に書かせない。** 分解は**ファイル単位**で、重なるなら直列にする。
 - implementer には**作業ディレクトリの絶対パスと、触ってよいファイルの一覧**を渡す。
-  ⚠ **ハーネスが作る worktree を隔離に使わない**（OneDrive の中にできる。`docs/AGENT-SETUP.md` §5）
-  ——`node scripts/worktree.mjs new <slug>` が外に作る。
+  ハーネスが作る worktree は使わない（OneDrive の中・`docs/AGENT-SETUP.md` §5）——`node scripts/worktree.mjs new <slug>`。
 - **統合・commit・push・merge はメインだけが行う。** agent にさせない。
 - 他セッションの branch・worktree・未コミット変更・stash に触れない（`AGENTS.md` §6）。
-- 識別子は**主題（slug）**。番号を名前にしない——tests・記録・memory も slug で（§6 の skill §4）。
 
 ## 4. 検証は段で上げる——作業中は対象だけ、広い網は 1 回だけ
 
@@ -51,9 +48,8 @@
 | 3 | **PR の CI** | `npm test` 相当 |
 | 4 | 3-D・Cesium・物理・シミュレータを触ったとき | `npm run test:deep` |
 
-⚠ **下の表が段 1 の全部である**（`package.json` の `check:*` が正本で、
-`gate-lists` 規則が両者を突き合わせる）。**ゲートを足したらこの表と
-`.agents/roles/intmap-verifier.md` の両方に書く**（経緯は開発記録の R403、第 6 節）。
+**下の表が段 1 の全部で、ゲートの一覧はここ 1 か所**（`package.json` の `check:*` と `gate-lists` 規則が
+突き合わせる）。ゲートを足したらこの表に書く。各ゲートが何を主張するかは `docs/TESTING.md`。
 
 | 触った主題 | ゲート |
 |---|---|
@@ -85,8 +81,8 @@
 | 起動費用・配られる資産（**build が要る**） | `npm run check:perf` `npm run check:assets` |
 | spec を足した・組み替えた | `npm run check:testbudget` |
 
-⚠ 段 3 は CI だけ（`AGENTS.md` §4）。⚠ 段 0〜2 を飛ばして push しない。
-⚠ **速度のために品質を落とさない。** 段を省くのではなく、**段の中を並列にする**。
+段 3 は CI だけ（`AGENTS.md` §4）。段 0〜2 を飛ばして push しない。
+**速度のために品質を落とさない。** 段を省くのではなく、**段の中を並列にする**。
 
 ## 5. context を太らせない
 

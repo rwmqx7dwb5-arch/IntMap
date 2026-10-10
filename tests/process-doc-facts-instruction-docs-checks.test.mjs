@@ -269,8 +269,9 @@ const NEW_RULES = [
     from: '繁体の **`js/locales/ui.zh.js`** を編集して', to: '繁体の **`js/locales/ui.zh-hant.js`** を編集して' },
 
   /* gate-lists — 一覧が package.json に追いつかなくなる */
-  { rule: 'gate-lists', file: '.agents/roles/intmap-verifier.md', why: 'a gate dropped from the list a session is sent to',
-    from: '| `npm run check:wars` | 紛争データの生成物と定義の一致 |\n', to: '' },
+  /* (lean-standing-instructions) the one gate table is execution-strategy.md §4; the verifier role points at it */
+  { rule: 'gate-lists', file: '.agents/rules/execution-strategy.md', why: 'a gate dropped from the list a session is sent to',
+    from: '| 紛争データ | `npm run check:wars` |\n', to: '' },
 
   /* preview-port — 式が worktree.mjs と食い違う */
   { rule: 'preview-port', file: 'AGENTS.md', why: 'the port convention drifting from the tool that assigns it',
