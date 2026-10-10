@@ -108,11 +108,20 @@ export function mobileUI(HOST){
     const PROXY_SEL='#mo-sheet [data-proxy], #tools-sheet [data-proxy], #bm-pop [data-proxy]';
     function proxy(btn){ const id=btn.getAttribute('data-proxy'); const real=document.getElementById(id); if(!real) return; real.click(); setTimeout(syncControls,0); if(/^btn-tool-/.test(id)) closeSheet(); }
     document.querySelectorAll('#mo-sheet [data-proxy], #tools-sheet [data-proxy]').forEach(b=>b.addEventListener('click',()=>proxy(b)));
+    /* The words of a real control, without its icon. The old rule dropped the FIRST WORD, which was the emoji
+       when icons were emoji; once icons became [data-icon] SVG spans the first word was the label's own
+       («Distance / area» → «/ area», «3-D volume» → «volume»; measured in production 2026-10-11). So the icon
+       is removed by what it IS, not by where it sits. */
+    function labelOf(real){
+      const c=real.cloneNode(true);
+      c.querySelectorAll('[data-icon],svg,img,.caret-sm').forEach(n=>n.remove());
+      return (c.textContent||'').replace(/\s+/g,' ').trim();
+    }
     function syncControls(){
       document.querySelectorAll(PROXY_SEL).forEach(b=>{
         const real=document.getElementById(b.getAttribute('data-proxy')); if(!real) return;
         if(b.classList.contains('m-seg-btn')){ const txt=(real.textContent||'').trim(); if(txt) b.textContent=txt; }
-        else if(b.classList.contains('m-tool-btn')){ const m=(real.textContent||'').trim().match(/^(\S+)\s+([\s\S]+)$/); const lbl=b.querySelector('span:last-child'); if(lbl&&m) lbl.textContent=m[2].trim(); }
+        else if(b.classList.contains('m-tool-btn')){ const t=labelOf(real); const lbl=b.querySelector('span:last-child'); if(lbl&&t) lbl.textContent=t; }
         b.classList.toggle('active', real.classList.contains('active')||real.classList.contains('tool-on'));
       });
       /* (#R139) the Layers button is accent-coloured ONLY when a thematic layer is selected.
