@@ -83,8 +83,9 @@ test('#R257 ② AGENTS.md still carries each standing rule', () => {
        終わっていない。**規則が消えたのではなく形が変わった**ので、needle も substance を
        追う——⑴ 無断の削除は今も禁止 ⑵ 確認を取ってから行う、の両方が在ること。
        3文書が揃っているかは check:docs の `shrink-policy` が別に見ている。 */
-    ['無断の削除・縮小の禁止','承認の無い削除・縮小・無効化・簡略化は、今までどおり禁止'],
-    ['削除は提案→確認→実行','確認を取ってから行う'],
+    /* (2026-10-10) 方針が再び変わった: 能力と品質は下げず、形式上の削除は自分の判断で行う。 */
+    ['能力と品質の床',        '能力と品質は下げない'],
+    ['形式上の削除の許可',    '形式上の削除は自分の判断で行う'],
     ['勝手な変更の禁止',      '要求された範囲を超える変更'],
     ['ハリボテ実装の禁止',    'プレースホルダーの実装は禁止'],
     ['Atlas/catalog/SYS',     'SYS 定義'],
@@ -428,7 +429,10 @@ test('#R260 ⑤ CONSTITUTION.md and Architecture.md record the finish procedure'
  *    何も証明しない（規則が読んでいるのはその窓だから）。
  * ==========================================================================*/
 
+/* (2026-10-10) 方針は「能力と品質は下げない／形式上の削除は承認不要」に変わった。錨も
+   `既存機能` から `能力と品質` へ移り、②③ は床と許可の名前を外す変異になった。 */
 const CANON = 'CONSTITUTION.md';
+const ANCHOR = '能力と品質';
 const OWNERS = [CANON, 'AGENTS.md', 'PRODUCT.md'];
 const WIN = 700;                 /* scripts/doc-facts.mjs の窓と同じ幅 */
 
@@ -465,7 +469,7 @@ async function breaking(file, mutate, fn) {
    （規則は「どれか1つの窓が条件を満たせば緑」なので、1つ残せば変異は無効になる）。 */
 function editWindows(src, fn) {
   let out = '', last = 0;
-  for (const m of src.matchAll(/既存機能/g)) {
+  for (const m of src.matchAll(new RegExp(ANCHOR, 'g'))) {
     if (m.index < last) continue;                         /* 重なった窓 */
     const end = Math.min(src.length, m.index + WIN);
     out += src.slice(last, m.index) + fn(src.slice(m.index, end));
@@ -490,32 +494,32 @@ const red = (r, file, why) => {
   assert.ok(r.out.includes(file), `the gate failed but never named ${file} (${why}):\n` + r.out);
 };
 
-test('R473 ① 3つの正本が、確認つきの形で削除・縮小の方針を述べている', async () => {
+test('R473 ① 3つの正本が、床と許可の両方を持つ形で削除の方針を述べている', async () => {
   await green('shrink-policy must be green before any mutation below means anything');
   /* 規則を信じる前に、錨が実在することを直接確かめる（規則が「見ていなかった」ことによる緑を除く） */
   for (const f of OWNERS) {
     const body = readLF(join(ROOT, f));
-    assert.ok(body.includes('既存機能'), `${f} does not state the policy about 既存機能 at all`);
-    const win = body.slice(body.indexOf('既存機能'), body.indexOf('既存機能') + WIN);
-    assert.match(win, /削除|縮小/, `${f} names 既存機能 but not what may happen to it`);
-    assert.match(win, /確認|承認/, `${f} states the policy without the asking step`);
+    assert.ok(body.includes(ANCHOR), `${f} does not state the policy about ${ANCHOR} at all`);
+    const win = body.slice(body.indexOf(ANCHOR), body.indexOf(ANCHOR) + WIN);
+    assert.match(win, /下げない|削らない/, `${f} states the policy without the floor`);
+    assert.match(win, /形式上の削除/, `${f} states the policy without naming formal removal`);
   }
 });
 
-test('R473 ② どの1文書からでも「確認」の段が消えたら赤い', async () => {
+test('R473 ② どの1文書からでも床（下げない）が消えたら赤い', async () => {
   {
     for (const f of OWNERS) {
-      await breaking(f, (s) => editWindows(s, (w) => w.replace(/確認|承認/g, '——')),
-        (r) => red(r, f, 'permission with the asking step dropped'));
+      await breaking(f, (s) => editWindows(s, (w) => w.replace(/下げない|削らない/g, '——')),
+        (r) => red(r, f, 'permission with the floor dropped'));
     }
   }
 });
 
-test('R473 ③ 「勝手にはしない」が消えたら赤い', async () => {
+test('R473 ③ 「形式上の削除」の名前が消えたら赤い', async () => {
   {
     for (const f of OWNERS) {
-      await breaking(f, (s) => editWindows(s, (w) => w.replace(/勝手|承認の無い|承認されるまで/g, '——')),
-        (r) => red(r, f, 'a permission with no brake on doing it alone'));
+      await breaking(f, (s) => editWindows(s, (w) => w.replace(/形式上の削除/g, '——')),
+        (r) => red(r, f, 'a floor with nothing named as allowed'));
     }
   }
 });
@@ -534,7 +538,7 @@ test('R473 ④ Atlas の但し書きは CONSTITUTION.md が正本で、そこか
 test('R473 ⑤ 他の2文書が正本を名指さなくなったら赤い', async () => {
   {
     for (const f of OWNERS.filter((x) => x !== CANON)) {
-      await breaking(f, (s) => editWindows(s, (w) => w.split(CANON).join('憲法')),
+      await breaking(f, (s) => editWindows(s, (w) => w.split(CANON).join('憲法').split('substance-over-form.md').join('規則')),
         (r) => red(r, f, 'the pointer to the owner of the Atlas carve-out is gone'));
     }
   }
@@ -543,7 +547,7 @@ test('R473 ⑤ 他の2文書が正本を名指さなくなったら赤い', asyn
 test('R473 ⑥ 錨ごと消えても緑にならない（文が消えたせいで緑、を作らない）', async () => {
   {
     for (const f of OWNERS) {
-      await breaking(f, (s) => s.split('既存機能').join('既存の機能'),
+      await breaking(f, (s) => s.split(ANCHOR).join('能力・品質'),
         (r) => red(r, f, 'the policy simply stopped being stated'));
     }
   }
