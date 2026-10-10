@@ -95,7 +95,7 @@ export async function downloadAccountData(DB) {
 
 /** The sentence for a failed door, in the reader's language. */
 export function failureText(error, lang) {
-  const T = (en, jp) => IntMapLang.t(lang, en, jp);
+  const T = IntMapLang.pick(() => lang);
   if (error === 'sign_in') return T('Sign in to see your data.', 'データを見るにはログインしてください。');
   if (error === 'rate_limited') return T('You have downloaded several copies in the last hour. Please try again a little later.', '直近1時間に何度か書き出しています。少し時間をおいてからお試しください。');
   if (error === 'unavailable') return T('The account service is not reachable right now.', 'アカウントのサービスに接続できません。');
@@ -132,7 +132,7 @@ function ensureStyle() {
 }
 
 function itemNode(i, lang) {
-  const T = (en, jp) => IntMapLang.t(lang, en, jp);
+  const T = IntMapLang.pick(() => lang);
   const bits = [];
   if (i.purpose) bits.push(el('p', { text: i.purpose }));
   if (i.retention) bits.push(el('p', { text: T('Kept: ', '保持: ') + i.retention }));
@@ -146,7 +146,7 @@ function itemNode(i, lang) {
 /** Open the «Your data» sheet. `HOST` is the app host (DB, user, lang, imToast, openAuthModal). */
 export async function openYourData(HOST) {
   const lang = HOST && HOST.lang;
-  const T = (en, jp) => IntMapLang.t(lang, en, jp);
+  const T = IntMapLang.pick(() => lang);
   if (!HOST || !HOST.user) { try { HOST && HOST.openAuthModal && HOST.openAuthModal(); } catch (_) { } return; }
   ensureStyle();
   const old = document.getElementById('ydc-modal'); if (old) old.remove();

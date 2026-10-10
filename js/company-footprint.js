@@ -83,7 +83,7 @@ export function tally(rows) {
 export function companyFootprint(HOST) {
   const GE = () => IntMapGeoEngine;
   const L = IntMapLang.pick(() => HOST.lang);
-  const t = (en, jp) => IntMapLang.t(HOST.lang, en, jp);
+  const t = IntMapLang.pick(() => HOST.lang);
   const H = (v) => globalThis.IntMapSafe.html(v == null ? '' : String(v));
   const CD = () => window.IntMapCompanyData;
 

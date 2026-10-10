@@ -50,7 +50,7 @@ let hideT = 0, rafW = 0, pendingW = null;
 const cache = new Map();   /* the record per centre — the same centre asked twice reads once */
 
 const lang = () => { try { return (H && H.lang) || 'en'; } catch (_) { return 'en'; } };
-const L = (en, jp) => IntMapLang.t(lang(), en, jp);
+const L = IntMapLang.pick(() => lang());
 const tag = () => { try { return IntMapLang.htmlTag(lang()) || 'en'; } catch (_) { return 'en'; } };
 const POS = () => { try { const v = +HS().rail.POS; return v > 0 ? v : 1000; } catch (_) { return 1000; } };
 const curY = () => new Date().getFullYear();

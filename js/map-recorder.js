@@ -1184,7 +1184,7 @@ let pcStyled = false;
  *   t(key)     the panel's translator · link() the share link now · caption() → {title, note} · lang() the reader's language
  */
 export function createPostcardTab(ctx) {
-  const t = ctx.t;
+  const tk = ctx.t;
   let size = 'card', host = null, gen = 0, last = /** @type {any} */ (null), file = /** @type {File|null} */ (null);
   const node = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
   const nav = /** @type {any} */ (navigator);
@@ -1202,7 +1202,7 @@ export function createPostcardTab(ctx) {
     paint(); paintBusy(false);
     return r;
   }
-  function paintBusy(b) { const pv = host && host.querySelector('.sh-pc-pv'); if (pv) pv.dataset.busy = b ? '1' : ''; if (b && host && !last) status(t('postcardMaking')); }
+  function paintBusy(b) { const pv = host && host.querySelector('.sh-pc-pv'); if (pv) pv.dataset.busy = b ? '1' : ''; if (b && host && !last) status(tk('postcardMaking')); }
   function status(s) { const n = host && host.querySelector('.sh-pc-status'); if (n) n.textContent = s; }
   function paint() {
     if (!host || !last) return;
@@ -1210,22 +1210,22 @@ export function createPostcardTab(ctx) {
     const save = /** @type {HTMLAnchorElement} */ (host.querySelector('.sh-pc-save')), go = /** @type {HTMLButtonElement} */ (host.querySelector('.sh-pc-go'));
     const cr = host.querySelector('.sh-pc-credits');
     if (!last.ok) {
-      status(last.error === 'busy' ? t('postcardBusy') : last.error === 'not-drawn' ? t('postcardNotDrawn') : t('postcardFailed'));
+      status(last.error === 'busy' ? tk('postcardBusy') : last.error === 'not-drawn' ? tk('postcardNotDrawn') : tk('postcardFailed'));
       save.setAttribute('aria-disabled', 'true'); save.removeAttribute('href'); go.disabled = true; return;
     }
     img.src = last.url; img.width = last.w; img.height = last.h;
     save.href = last.url; save.download = last.name; save.removeAttribute('aria-disabled'); go.disabled = false;
     const share = canShareFile(file);
     go.dataset.mode = share ? 'share' : 'save-copy';
-    go.replaceChildren(iconNode(share ? 'share' : 'clipboard'), ' ' + (share ? t('postcardShare') : t('postcardSaveCopy')));
+    go.replaceChildren(iconNode(share ? 'share' : 'clipboard'), ' ' + (share ? tk('postcardShare') : tk('postcardSaveCopy')));
     status(last.w + ' × ' + last.h + ' · PNG' + (last.paired ? ' · ' + last.then + ' | ' + last.now + (last.place ? ' · ' + last.place : '') : '')
-      + (last.legendsOmitted ? ' · ' + t('postcardLegendsOmitted').replace('{n}', String(last.legendsOmitted)) : ''));
-    if (cr) cr.textContent = t('postcardCredits') + last.credits.join(' · ');
+      + (last.legendsOmitted ? ' · ' + tk('postcardLegendsOmitted').replace('{n}', String(last.legendsOmitted)) : ''));
+    if (cr) cr.textContent = tk('postcardCredits') + last.credits.join(' · ');
     paintPair();
   }
   /* (then-now-card) THEN & NOW FROM THE SHARE PANEL — the picture is the swipe whenever the comparison window shows it
      (`postcard` pairs by itself); this row says which picture it is, and opens the swipe when it is not on. */
-  const tt = (en, jp) => IntMapLang.t(ctx.lang(), en, jp);
+  const tt = IntMapLang.pick(() => ctx.lang());
   function paintPair() {
     const row = host && host.querySelector('.sh-pc-pair'); if (!row) return;
     const b = /** @type {HTMLButtonElement} */ (row.querySelector('button')), d = row.querySelector('.sh-pc-pair-d');
@@ -1245,20 +1245,20 @@ export function createPostcardTab(ctx) {
   function render(h) {
     if (!pcStyled) { pcStyled = true; const st = document.createElement('style'); st.textContent = PC_CSS; document.head.appendChild(st); }
     host = h; h.replaceChildren();
-    const desc = node('div', null, t('postcardDesc')); desc.style.cssText = 'font-size:11.5px;color:var(--text-muted);';
-    const seg = node('div', 'sh-seg'); seg.setAttribute('role', 'group'); seg.setAttribute('aria-label', t('postcardSize'));
+    const desc = node('div', null, tk('postcardDesc')); desc.style.cssText = 'font-size:11.5px;color:var(--text-muted);';
+    const seg = node('div', 'sh-seg'); seg.setAttribute('role', 'group'); seg.setAttribute('aria-label', tk('postcardSize'));
     Object.keys(POSTCARD_SIZES).forEach((k) => {
       const b = /** @type {HTMLButtonElement} */ (node('button')); b.type = 'button'; b.dataset.size = k;
-      b.append(t(LABEL[k]), node('small', null, POSTCARD_SIZES[k].w + ' × ' + POSTCARD_SIZES[k].h));
+      b.append(tk(LABEL[k]), node('small', null, POSTCARD_SIZES[k].w + ' × ' + POSTCARD_SIZES[k].h));
       b.setAttribute('aria-pressed', String(k === size));
       b.onclick = () => { size = k; seg.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); make(); };
       seg.appendChild(b);
     });
-    const pv = node('div', 'sh-pc-pv'); const img = /** @type {HTMLImageElement} */ (node('img')); img.alt = t('postcardPreview'); pv.appendChild(img);
+    const pv = node('div', 'sh-pc-pv'); const img = /** @type {HTMLImageElement} */ (node('img')); img.alt = tk('postcardPreview'); pv.appendChild(img);
     const row = node('div', 'sh-row');
     const go = /** @type {HTMLButtonElement} */ (node('button', 'sh-btn sh-pc-go')); go.type = 'button'; go.style.flex = '1'; go.disabled = true;
     const save = /** @type {HTMLAnchorElement} */ (node('a', 'sh-btn sec sh-pc-save')); save.setAttribute('aria-disabled', 'true'); save.setAttribute('role', 'button');
-    save.append(iconNode('save'), ' ' + t('postcardSave'));
+    save.append(iconNode('save'), ' ' + tk('postcardSave'));
     row.append(go, save);
     const st = node('div', 'sh-pc-status'); st.setAttribute('aria-live', 'polite');
     const inc = node('div', 'sh-inc sh-pc-credits');
@@ -1273,13 +1273,13 @@ export function createPostcardTab(ctx) {
         /* the picture, the link that opens the same map, and the caption — the phone's share sheet, where a post starts */
         const c = ctx.caption() || {};
         try { await nav.share({ files: [file], title: c.title || 'IntMap', text: c.note || undefined, url: last.link }); }
-        catch (e) { if (!e || e.name !== 'AbortError') status(t('postcardFailed')); }
+        catch (e) { if (!e || e.name !== 'AbortError') status(tk('postcardFailed')); }
         return;
       }
       /* no file sharing here: the file is saved and the link copied, in one press */
       try { save.click(); } catch (_) { /* the Save button is still there */ }
       let ok = false; try { await navigator.clipboard.writeText(last.link); ok = true; } catch (_) { ok = false; }
-      status(ok ? t('postcardSavedCopied') : t('postcardSavedNoCopy'));
+      status(ok ? tk('postcardSavedCopied') : tk('postcardSavedNoCopy'));
     };
     if (last && last.ok) paint(); else paintPair();
     return { refresh: () => make() };
@@ -1294,7 +1294,7 @@ export function createPostcardTab(ctx) {
  */
 export function mountRecorder(el, host) {
   const d = document; if (!el) return null;
-  const t = (en, jp) => IntMapLang.t(host.lang(), en, jp);
+  const t = IntMapLang.pick(() => host.lang());
   lang = host.lang();
   const node = (tag, cls, text) => { const n = d.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
   const MR = W_().MediaRecorder;

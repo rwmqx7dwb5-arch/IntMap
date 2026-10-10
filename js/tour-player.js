@@ -57,7 +57,7 @@ import { icon } from './icons.js';
 
 /* the reader's language, as the app holds it (js/i18n.js) */
 function lang() { try { return window.IntMapI18N.lang(); } catch (_) { return 'en'; } }
-const t = (en, jp) => IntMapLang.t(lang(), en, jp);
+const t = IntMapLang.pick(() => lang());
 /** a text that is an LA(en, jp) tuple (a declared tour) or a plain string (a tour Atlas assembled) */
 const txt = (v) => (Array.isArray(v) ? IntMapLang.t(lang(), v[0], v[1]) : String(v == null ? '' : v));
 const H = (s) => globalThis.IntMapSafe.html(s);

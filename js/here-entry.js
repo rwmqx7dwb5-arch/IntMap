@@ -15,7 +15,7 @@ import { hostDoor } from './host-door.js';
 import './safe-html.js';
 
 const lang = () => { try { return window.IntMapI18N.lang(); } catch (_) { return 'en'; } };
-const t = (en, jp) => IntMapLang.t(lang(), en, jp);
+const t = IntMapLang.pick(() => lang());
 const H = (s) => globalThis.IntMapSafe.html(s);
 const CSS = [
   '.hn-entry{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px 10px 2px;}',

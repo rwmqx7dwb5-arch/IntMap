@@ -103,7 +103,7 @@ export default [
     phrases: () => ['このページの通信', '通信の透明性', '外部への送信'].concat(['transparency', 'outbound']),   /* the Japanese phrases, then the English words — two lists, not translations of each other */
     schema: () => ({ type: 'object', properties: { type: { type: 'string', enum: ['connections'] }, show: bool() } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, esc = K.esc, HOST = K.HOST;
-      const lang = HOST.lang, T = (en, jp) => IntMapLang.t(lang, en, jp);
+      const lang = HOST.lang, T = IntMapLang.pick(() => lang);
       const M = await import('./connections-panel.js');
       const D = await M.describe(lang);
       const m = D.model;

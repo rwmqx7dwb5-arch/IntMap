@@ -49,7 +49,6 @@ import * as bus from './bus.js';
 import { narratorApi } from './narrator-api.js';
 
 /* ── the pure parts ───────────────────────────────────────────────────────────────────────────── */
-const tr = (lang, en, jp) => IntMapLang.t(lang, en, jp);
 
 /** one coordinate as words: 35.7° N / 北緯35.7° */
 export function fmtLatLng(lat, lng, lang) {
@@ -59,7 +58,7 @@ export function fmtLatLng(lat, lng, lang) {
 }
 /** the date the map is drawing, when it is not now; astronomical years ≤ 0 are BCE */
 export function fmtWhen(year, iso, lang) {
-  if (year <= 0) return tr(lang, (1 - year) + ' BCE', '紀元前' + (1 - year) + '年');
+  if (year <= 0) return IntMapLang.t(lang, (1 - year) + ' BCE', '紀元前' + (1 - year) + '年');
   return iso || String(year);
 }
 /**
@@ -72,15 +71,15 @@ export function composeSummary(s, lang) {
   const where = fmtLatLng(s.lat, s.lng, lang);
   const z = Math.round(s.zoom * 10) / 10;
   out.push(s.place
-    ? tr(lang, 'Map centred on ' + s.place + ' (' + where + '), zoom ' + z + '.', '地図の中心: ' + s.place + '（' + where + '）、ズーム ' + z + '。')
-    : tr(lang, 'Map centred at ' + where + ', zoom ' + z + '.', '地図の中心: ' + where + '、ズーム ' + z + '。'));
-  if (s.when) out.push(tr(lang, 'Showing ' + s.when + '.', s.when + ' の地図を表示中。'));
+    ? IntMapLang.t(lang, 'Map centred on ' + s.place + ' (' + where + '), zoom ' + z + '.', '地図の中心: ' + s.place + '（' + where + '）、ズーム ' + z + '。')
+    : IntMapLang.t(lang, 'Map centred at ' + where + ', zoom ' + z + '.', '地図の中心: ' + where + '、ズーム ' + z + '。'));
+  if (s.when) out.push(IntMapLang.t(lang, 'Showing ' + s.when + '.', s.when + ' の地図を表示中。'));
   const n = s.layers.length;
   out.push(n
-    ? tr(lang, 'Layers on (' + n + '): ' + s.layers.join(', ') + '.', '表示中のレイヤー（' + n + '）: ' + s.layers.join('、') + '。')
-    : tr(lang, 'No layers are on.', '表示中のレイヤーはありません。'));
+    ? IntMapLang.t(lang, 'Layers on (' + n + '): ' + s.layers.join(', ') + '.', '表示中のレイヤー（' + n + '）: ' + s.layers.join('、') + '。')
+    : IntMapLang.t(lang, 'No layers are on.', '表示中のレイヤーはありません。'));
   if (s.counts && s.counts.length) out.push(s.counts.join(lang === 'jp' ? '。' : '. ') + (lang === 'jp' ? '。' : '.'));
-  if (s.selected) out.push(tr(lang, 'Selected: ' + s.selected + '.', '選択中: ' + s.selected + '。'));
+  if (s.selected) out.push(IntMapLang.t(lang, 'Selected: ' + s.selected + '.', '選択中: ' + s.selected + '。'));
   return out.join(' ');
 }
 /**
@@ -118,7 +117,7 @@ export function makeMapNarrator(HOST, CTX) {
   mapEl.setAttribute('role', 'region');
   mapEl.setAttribute('aria-describedby', 'map-narration');
   mapEl.setAttribute('aria-keyshortcuts', 'Alt+N Alt+Shift+N Alt+R Alt+Shift+R');
-  const nameRegion = () => { try { mapEl.setAttribute('aria-label', tr(lang(), 'Map', '地図')); } catch (_) {} };
+  const nameRegion = () => { try { mapEl.setAttribute('aria-label', IntMapLang.t(lang(), 'Map', '地図')); } catch (_) {} };
   nameRegion();
   const FOCUSABLE = 'a[href],button,input,select,textarea,[tabindex]:not([tabindex="-1"])';
   const ensureFocusable = () => { try { if (!mapEl.hasAttribute('tabindex') && !mapEl.querySelector(FOCUSABLE)) mapEl.tabIndex = 0; } catch (_) {} };
@@ -143,7 +142,7 @@ export function makeMapNarrator(HOST, CTX) {
     try {
       for (const id of L.active()) {
         const st = L.state(id); const f = st && L.featuresIn ? L.featuresIn(id, null) : null;
-        if (Array.isArray(f)) out.push(tr(lang(), st.label + ': ' + f.length + ' in view', st.label + ': 表示範囲内に ' + f.length + ' 件'));
+        if (Array.isArray(f)) out.push(IntMapLang.t(lang(), st.label + ': ' + f.length + ' in view', st.label + ': 表示範囲内に ' + f.length + ' 件'));
       }
     } catch (_) {}
     return out;
@@ -269,13 +268,13 @@ export function makeMapNarrator(HOST, CTX) {
       list = candidates(); listMoved = moved; listLayers = sig;
       at = prev ? list.findIndex((c) => c.key === prev) : -1;
     }
-    if (!list.length) { at = -1; speak(tr(lang(), 'No selectable features near the centre of the map.', '地図の中心付近に選べる地物はありません。')); return false; }
+    if (!list.length) { at = -1; speak(IntMapLang.t(lang(), 'No selectable features near the centre of the map.', '地図の中心付近に選べる地物はありません。')); return false; }
     at = (at + dir + list.length) % list.length;
     if (at < 0) at = 0;
     const c = list[at];
     selected = featureName(c.feature);
-    const label = selected || tr(lang(), 'unnamed feature', '名前のない地物');
-    speak(tr(lang(), 'Feature ' + (at + 1) + ' of ' + list.length + ': ' + label, '地物 ' + (at + 1) + ' / ' + list.length + ': ' + label));
+    const label = selected || IntMapLang.t(lang(), 'unnamed feature', '名前のない地物');
+    speak(IntMapLang.t(lang(), 'Feature ' + (at + 1) + ' of ' + list.length + ': ' + label, '地物 ' + (at + 1) + ' / ' + list.length + ': ' + label));
     pressing = true;
     try { GE().events.pressAt({ x: c.x, y: c.y }); } catch (_) {} finally { pressing = false; }
     return true;

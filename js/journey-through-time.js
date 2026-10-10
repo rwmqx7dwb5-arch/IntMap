@@ -64,7 +64,7 @@ export function instantOf(spec, nowDate) {
 }
 /** the instant in words, in the reader's language */
 export function instantLabel(I, lang) {
-  const t = (en, jp) => IntMapLang.t(lang, en, jp);
+  const t = IntMapLang.pick(() => lang);
   if (I.now) return t('Today', '今日');
   const yl = I.year <= 0 ? t((1 - I.year) + ' BC', '紀元前' + (1 - I.year) + '年') : t(String(I.year), I.year + '年');
   if (!I.iso) return yl;
@@ -216,7 +216,7 @@ function failText(code, t) {
   return t('Could not be read.', '読み込めませんでした。');
 }
 export function answerHtml(R, lang, opts) {
-  const o = opts || {}, t = (en, jp) => IntMapLang.t(lang, en, jp);
+  const o = opts || {}, t = IntMapLang.pick(() => lang);
   const km = (x) => Math.round(x).toLocaleString(lang === 'jp' ? 'ja-JP' : 'en-US') + ' km';
   const sw = (c) => c ? '<span style="display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px;background:' + htmlText(c) + ';"></span>' : '';
   const nmOf = (P) => P.names.map((n) => n.local || n.en).join(' / ');

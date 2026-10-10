@@ -68,7 +68,7 @@ function errOf(error) {
 
 /** The sentence for a failed door, in the reader's language. */
 export function shareFailureText(error, lang) {
-  const T = (en, jp) => IntMapLang.t(lang, en, jp);
+  const T = IntMapLang.pick(() => lang);
   if (error === 'sign_in') return T('Sign in to publish or keep a collection.', 'コレクションを公開・保存するにはログインしてください。');
   if (error === 'empty') return T('There is nothing in that collection to publish.', 'そのコレクションには公開できる場所や地図がありません。');
   if (error === 'not_found') return T('This collection is not published (any more). Ask whoever sent the link for a new one.', 'このコレクションは公開されていません（公開が終わった可能性があります）。リンクを送った人に新しいリンクを頼んでください。');
@@ -142,7 +142,7 @@ async function copyShared(DB, token, into) {
 
 /** What a finished copy says, in the reader's language. */
 export function copyResultText(r, lang) {
-  const T = (en, jp) => IntMapLang.t(lang, en, jp);
+  const T = IntMapLang.pick(() => lang);
   const had = r.placesHad + r.viewsHad;
   return T('Added to My places · ' + r.collection + ': ' + r.placesAdded + ' place(s), ' + r.viewsAdded + ' map(s)' + (had ? ' (' + had + ' already there)' : ''),
     'マイプレイス「' + r.collection + '」に追加しました: 場所 ' + r.placesAdded + ' 件・地図 ' + r.viewsAdded + ' 件' + (had ? '（' + had + ' 件は保存済み）' : ''));
@@ -184,7 +184,7 @@ function ensureStyle() {
  *  @returns {{pins: string[]}} */
 function showShared(HOST, token, col) {
   const lang = HOST && HOST.lang;
-  const T = (en, jp) => IntMapLang.t(lang, en, jp);
+  const T = IntMapLang.pick(() => lang);
   ensureStyle();
   const old = document.getElementById('scol-card'); if (old) old.remove();
   const label = T('Shared collection', '共有されたコレクション') + ' · ' + col.title;

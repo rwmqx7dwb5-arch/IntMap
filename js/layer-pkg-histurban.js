@@ -33,7 +33,7 @@ export function histurbanPackage(K) {
   const { GE, HOST, opacities } = K;
   const CIRCLES = 'imhu-circles', LABELS = 'imhu-labels', SRC_C = 'imhu-circles-src', SRC_L = 'imhu-labels-src', CITY = 'ofm-city';
   const empty = () => ({ type: 'FeatureCollection', features: [] });
-  const text = (/** @type {string} */ en, /** @type {string} */ jp) => IntMapLang.t(HOST.lang, en, jp);
+  const text = IntMapLang.pick(() => HOST.lang);
   const escape = (/** @type {any} */ v) => window.IntMapSafe.html(String(v == null ? '' : v));
   const HS = () => window.IntMapHistScale;
   const tag = () => IntMapLang.htmlTag(HOST.lang);

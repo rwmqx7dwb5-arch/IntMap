@@ -32,7 +32,6 @@ const LIST_MS = 8000;
 const SEEN_KEY = 'intmap-whats-new-seen';
 const SCHEMA = 'intmap-whats-new/1';
 
-const t = (lang, en, jp) => IntMapLang.t(lang, en, jp);
 const docLang = () => { try { return IntMapLang.normalise(document.documentElement.lang || 'en'); } catch (_) { return 'en'; } };
 
 let listP = null;
@@ -87,7 +86,7 @@ export async function paintMark(btn) {
   ensureCSS();
   if (!m) { m = document.createElement('span'); m.className = 'wn-mark'; btn.appendChild(m); }
   m.textContent = String(n);
-  m.setAttribute('aria-label', t(docLang(), n + ' new', n + ' 件の新着'));
+  m.setAttribute('aria-label', IntMapLang.t(docLang(), n + ' new', n + ' 件の新着'));
   btn.setAttribute('data-unread', String(n));
 }
 
@@ -95,7 +94,7 @@ export async function paintMark(btn) {
 export async function describe({ since, limit, lang } = {}) {
   const L = lang || docLang();
   const list = await load();
-  if (list.unreadable) return { ok: false, reason: list.unreadable, entries: [], text: t(L, 'The list of changes could not be read.', '更新情報を読めませんでした。') };
+  if (list.unreadable) return { ok: false, reason: list.unreadable, entries: [], text: IntMapLang.t(L, 'The list of changes could not be read.', '更新情報を読めませんでした。') };
   const rows = entriesIn(list, L, { since, limit });
   const unread = new Set(unreadOf(list, readSeen()));
   return { ok: true, entries: rows.map((r) => Object.assign({ unread: unread.has(r.id) }, r)), total: list.entries.length,
@@ -136,22 +135,22 @@ function dayWords(iso, lang) {
 function render(root, list, lang, unread) {
   const panel = root.querySelector('.modal-content');
   panel.replaceChildren();
-  const x = el('button', ''); x.type = 'button'; x.setAttribute('aria-label', t(lang, 'Close', '閉じる'));
+  const x = el('button', ''); x.type = 'button'; x.setAttribute('aria-label', IntMapLang.t(lang, 'Close', '閉じる'));
   x.style.cssText = 'position:absolute;top:12px;right:12px;width:44px;height:44px;border:none;background:transparent;color:var(--text-muted);font-size:22px;cursor:pointer;';
   x.textContent = '×'; x.addEventListener('click', close);
   const head = el('div', 'wn-head');
   const badge = el('div', 'wn-badge'); badge.setAttribute('aria-hidden', 'true');
   try { badge.appendChild(iconNode('sparkle')); } catch (_) { /* no picture */ }
   const hb = el('div', '');
-  const h = el('h3', '', t(lang, 'What’s new', '新着')); h.id = 'im-whats-new-title';
-  hb.append(h, el('p', 'wn-sub', t(lang, 'Changes to IntMap you can see, newest first. The date is the day each change was recorded.', 'IntMap に加わった、読者に見える変更（新しい順）。日付はその変更が記録された日です。')));
+  const h = el('h3', '', IntMapLang.t(lang, 'What’s new', '新着')); h.id = 'im-whats-new-title';
+  hb.append(h, el('p', 'wn-sub', IntMapLang.t(lang, 'Changes to IntMap you can see, newest first. The date is the day each change was recorded.', 'IntMap に加わった、読者に見える変更（新しい順）。日付はその変更が記録された日です。')));
   head.append(badge, hb);
   panel.append(x, head);
   if (list.unreadable) {
-    panel.appendChild(el('p', 'wn-sub', t(lang, 'The list of changes could not be read. Try again when online.', '更新情報を読めませんでした。オンラインのときにもう一度お試しください。')));
+    panel.appendChild(el('p', 'wn-sub', IntMapLang.t(lang, 'The list of changes could not be read. Try again when online.', '更新情報を読めませんでした。オンラインのときにもう一度お試しください。')));
   } else {
     const rows = entriesIn(list, lang);
-    if (!rows.length) panel.appendChild(el('p', 'wn-sub', t(lang, 'Nothing has been announced yet.', 'まだお知らせはありません。')));
+    if (!rows.length) panel.appendChild(el('p', 'wn-sub', IntMapLang.t(lang, 'Nothing has been announced yet.', 'まだお知らせはありません。')));
     let day = null, ul = null;
     for (const r of rows) {
       if (r.date !== day) {
@@ -162,20 +161,20 @@ function render(root, list, lang, unread) {
         sec.append(h4, ul); panel.appendChild(sec);
       }
       const li = el('li', 'wn-row');
-      if (unread.has(r.id)) { li.setAttribute('data-unread', ''); li.appendChild(el('span', 'wn-new', t(lang, 'New', '新着'))); }
+      if (unread.has(r.id)) { li.setAttribute('data-unread', ''); li.appendChild(el('span', 'wn-new', IntMapLang.t(lang, 'New', '新着'))); }
       li.appendChild(document.createTextNode(r.text));
       /* the link is the build's own (repository + /pull/N); anything that is not https is not drawn as a link */
-      if (r.url && /^https:\/\//.test(r.url)) { const a = el('a', 'wn-pr', t(lang, 'Change #' + r.pr, '変更 #' + r.pr)); a.href = r.url; a.target = '_blank'; a.rel = 'noopener'; li.appendChild(a); }
+      if (r.url && /^https:\/\//.test(r.url)) { const a = el('a', 'wn-pr', IntMapLang.t(lang, 'Change #' + r.pr, '変更 #' + r.pr)); a.href = r.url; a.target = '_blank'; a.rel = 'noopener'; li.appendChild(a); }
       ul.appendChild(li);
     }
   }
   const foot = el('div', 'wn-foot');
-  const page = el('a', 'ai-test-btn', t(lang, 'Updates page', '更新情報のページ'));
+  const page = el('a', 'ai-test-btn', IntMapLang.t(lang, 'Updates page', '更新情報のページ'));
   page.href = lang === 'jp' ? './ja/updates.html' : './updates.html'; page.target = '_blank'; page.rel = 'noopener';
-  const feed = el('a', 'ai-test-btn', t(lang, 'Feed (Atom)', 'フィード（Atom）'));
+  const feed = el('a', 'ai-test-btn', IntMapLang.t(lang, 'Feed (Atom)', 'フィード（Atom）'));
   feed.href = lang === 'jp' ? './ja/updates.xml' : './updates.xml'; feed.target = '_blank'; feed.rel = 'noopener';
   /* (weekly-earth) the other thing IntMap publishes every week — the planet's large natural events (scripts/weekly-earth-pages.mjs) */
-  const weekly = el('a', 'ai-test-btn', t(lang, 'This week on Earth', '今週の地球'));
+  const weekly = el('a', 'ai-test-btn', IntMapLang.t(lang, 'This week on Earth', '今週の地球'));
   weekly.href = hubHref(lang); weekly.target = '_blank'; weekly.rel = 'noopener';
   foot.append(page, feed, weekly);
   panel.appendChild(foot);
@@ -190,7 +189,7 @@ export async function open() {
     const panel = el('div', 'modal-content'); panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-modal', 'true');
     panel.setAttribute('aria-labelledby', 'im-whats-new-title'); panel.setAttribute('aria-busy', 'true');
     panel.style.position = 'relative';
-    panel.appendChild(el('p', 'wn-sub', t(docLang(), 'Reading…', '読み込んでいます…')));
+    panel.appendChild(el('p', 'wn-sub', IntMapLang.t(docLang(), 'Reading…', '読み込んでいます…')));
     root.appendChild(panel); document.body.appendChild(root);
     try { window.IntMapDialog.adopt(root, { panel, labelledby: 'im-whats-new-title', backdrop: true }); } catch (_) { /* no registry: Escape and the trap are lost, the page is not */ }
   }

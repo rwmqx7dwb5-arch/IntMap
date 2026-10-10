@@ -61,7 +61,6 @@ export function stepDay(md, by) { const A = allDays(); const i = A.indexOf(md); 
 /** the events of 'MM-DD', oldest first (the index's order) — the index's calendar cut (js/time-index.js onDay) */
 export const eventsOn = onDay;
 
-const T = (lang, en, jp) => IntMapLang.t(lang, en, jp);
 const nameOf = (p, lang) => (lang === 'jp' && p.jp ? p.jp : p.en);
 function names(list, lang) {
   const n = list.map((p) => nameOf(p, lang));
@@ -77,15 +76,15 @@ export function describe(ev, idx, lang) {
   if (ev.src === 'wars') {
     const w = (idx && idx.wars && idx.wars[ev.war]) || null;
     return { year, text: (lang === 'jp' && ev.name.jp) || ev.name.en, war: w ? ((lang === 'jp' && w.jp) || w.en) : ev.war,
-      record: T(lang, 'IntMap’s war record', 'IntMap の戦争記録') };
+      record: IntMapLang.t(lang, 'IntMap’s war record', 'IntMap の戦争記録') };
   }
   const parts = [];
-  if (ev.appeared) parts.push(T(lang, 'the map begins drawing ' + names(ev.appeared, 'en'), names(ev.appeared, 'jp') + 'が地図に現れる'));
-  if (ev.ended) parts.push(T(lang, 'the map stops drawing ' + names(ev.ended, 'en'), names(ev.ended, 'jp') + 'が地図から消える'));
-  if (ev.redrawn) parts.push(T(lang, 'new borders for ' + names(ev.redrawn, 'en'), names(ev.redrawn, 'jp') + 'の国境が変わる'));
-  let text = parts.join(T(lang, '; ', '。'));
+  if (ev.appeared) parts.push(IntMapLang.t(lang, 'the map begins drawing ' + names(ev.appeared, 'en'), names(ev.appeared, 'jp') + 'が地図に現れる'));
+  if (ev.ended) parts.push(IntMapLang.t(lang, 'the map stops drawing ' + names(ev.ended, 'en'), names(ev.ended, 'jp') + 'が地図から消える'));
+  if (ev.redrawn) parts.push(IntMapLang.t(lang, 'new borders for ' + names(ev.redrawn, 'en'), names(ev.redrawn, 'jp') + 'の国境が変わる'));
+  let text = parts.join(IntMapLang.t(lang, '; ', '。'));
   if (lang !== 'jp') text = text.charAt(0).toUpperCase() + text.slice(1);
-  return { year, text, record: T(lang, 'the border record (CShapes 2.0)', '国境の記録（CShapes 2.0）'), maybeYearOnly: !!ev.maybeYearOnly };
+  return { year, text, record: IntMapLang.t(lang, 'the border record (CShapes 2.0)', '国境の記録（CShapes 2.0）'), maybeYearOnly: !!ev.maybeYearOnly };
 }
 
 /** The day's headline: the border day that changes the most polities (js/atlas-reasoning.js rankChanges — a COUNT of
@@ -161,7 +160,7 @@ export async function openEvent(ev, idx, lang) {
 /* ══ THE APP'S DOORS ═════════════════════════════════════════════════════════════════════════════════ */
 function lang() { try { return window.IntMapI18N.lang(); } catch (_) { return 'en'; } }
 /* the reader's language, read at the call — the same wrapper js/showcase-gallery.js writes its words with */
-const t = (en, jp) => IntMapLang.t(lang(), en, jp);
+const t = IntMapLang.pick(() => lang());
 const H = (s) => globalThis.IntMapSafe.html(String(s == null ? '' : s));
 /** '3 October' / '10月3日' for 'MM-DD' */
 export function dayWords(md, lg) {

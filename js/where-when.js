@@ -274,7 +274,7 @@ export function whenText(when, lang) {
 }
 /** what the parse could not do, in words — null when there is nothing to say */
 export function problemText(parsed, lang) {
-  const L = (en, jp) => IntMapLang.t(lang, en, jp);
+  const L = IntMapLang.pick(() => lang);
   const out = [];
   const p = parsed && parsed.problem, w = parsed && parsed.when;
   if (p && p.code === 'unknown-era') out.push(L('«' + p.text + '» is not an era this search can convert. It reads Common Era years, years before the Common Era and Japanese era names.', '「' + p.text + '」は変換できる元号ではありません。西暦・紀元前・和暦に対応しています。'));
@@ -344,7 +344,7 @@ function todayName(c, lang) { const k = c.k || []; if (IntMapLang.normalise(lang
  * @returns {{name:string, lng:number, lat:number, kind:string, level:number, source:'histCities'|'pleiades', note:string, guard?:number}[]}
  */
 export function histCandidates(place, when, lang) {
-  const out = [], L =(en, jp) => IntMapLang.t(lang, en, jp);
+  const out = [], L =IntMapLang.pick(() => lang);
   const d = when ? dnum(instantOf(when)) : null, y = when ? when.y : null;
   try {
     const H = window.IntMapHistCities, recs = H && H.records && H.records();
@@ -420,7 +420,7 @@ export function eraNameAt(lng, lat, when, lang, name) {
  * @returns {Promise<{parsed:ReturnType<typeof parse>, rows:{key:string,title:string,sub:string,name?:string,lng?:number,lat?:number,kind?:string,bbox?:any,level?:number,source:string,timeOnly?:boolean}[], note:string|null}>}
  */
 export async function interpret(text, deps) {
-  const D = deps || {}, lang = D.lang || 'en', L = (en, jp) => IntMapLang.t(lang, en, jp);
+  const D = deps || {}, lang = D.lang || 'en', L = IntMapLang.pick(() => lang);
   const parsed = parse(text, { min: D.min });
   const note = problemText(parsed, lang);
   if (!parsed.when) return { parsed, rows: [], note };

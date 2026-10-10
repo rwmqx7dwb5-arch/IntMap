@@ -289,7 +289,7 @@ export function mountLapse(el, host) {
   const d = D(); if (!el || !d) return null;
   /** @type {{f:HTMLInputElement, to:HTMLInputElement, stp:HTMLInputElement}|null} */
   let form = null;
-  const t = (en, jp) => IntMapLang.t(host.lang(), en, jp);
+  const t = IntMapLang.pick(() => host.lang());
   const unitOfMode = (m) => (m === 'date' ? 'day' : m === 'time' ? 'hour' : 'year');
   if (!st.playing) st.unit = unitOfMode(host.mode());
   const node = (tag, cls, text) => { const n = d.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };

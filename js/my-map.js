@@ -48,7 +48,7 @@ const snapPx = (HOST) => { try { const v = +HOST.SNAP_PX; return v > 0 ? v : 22;
 
 export function myMap(HOST) {
   const GE = () => IntMapGeoEngine;
-  const L = (en, jp) => IntMapLang.t(HOST.lang, en, jp);
+  const L = IntMapLang.pick(() => HOST.lang);
   const H = (s) => globalThis.IntMapSafe.html(s);
   const G = () => window.IntMapGeodesy;
   const toast = (m) => { try { HOST.imToast(m); } catch (_) { } };

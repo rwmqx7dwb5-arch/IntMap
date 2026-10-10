@@ -183,7 +183,7 @@ const CSS = '#share-panel .sh-cite h5{margin:12px 0 4px;font-size:12.5px;font-we
 let styled = false;
 
 export function createCiteTab(ctx) {
-  const T = (en, jp) => IntMapLang.t(ctx.lang(), en, jp);
+  const T = IntMapLang.pick(() => ctx.lang());
   let host = null, fmt = 'apa', gen = 0;
   const node = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
   const area = (label, rows) => { const a = /** @type {HTMLTextAreaElement} */ (node('textarea')); a.readOnly = true; a.rows = rows; a.setAttribute('aria-label', label); a.spellcheck = false; return a; };

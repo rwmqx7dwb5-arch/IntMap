@@ -58,7 +58,7 @@ function ensureStyle() { if (typeof document === 'undefined' || !document.head |
 
 /** @param {any} host  what js/wb-layers.js hands over (see `indBrowser` there) */
 export function makeIndicatorBrowser(host) {
-  const t = (en, jp) => IntMapLang.t(host.lang(), en, jp);
+  const t = IntMapLang.pick(() => host.lang());
   const esc = (s) => globalThis.IntMapSafe.html(String(s == null ? '' : s));   /* the app's one escaper (js/safe-html.js) */
   const shelfOf = (rowId) => { const l = LAYERS.find((x) => x.id === rowId); return l ? l.shelf : null; };
   const shelfName = (key) => { try { const k = IntMapLang.keyed(host.lang()); return (k && k[key]) || key; } catch (_) { return key; } };

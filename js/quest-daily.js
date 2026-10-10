@@ -175,7 +175,7 @@ export async function dailySummary(host, opts) {
 
 /** the reader's words for an account failure */
 export function dailyFailureText(code, lang) {
-  const T = (en, jp) => IntMapLang.t(lang, en, jp);
+  const T = IntMapLang.pick(() => lang);
   if (code === 'signed_out') return T('Kept in this browser only. Sign in to keep your streak on every device.', 'このブラウザにだけ記録しています。ログインすると、どの端末でも同じ連続記録になります。');
   if (code === 'not_deployed' || code === 'unavailable') return T('Your account’s record could not be reached; this browser’s days are shown.', 'アカウントの記録に接続できませんでした。このブラウザの記録を表示しています。');
   return T('Your account’s record could not be read; this browser’s days are shown.', 'アカウントの記録を読み込めませんでした。このブラウザの記録を表示しています。');

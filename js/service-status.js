@@ -47,7 +47,6 @@ const BUNDLE_URL = './data/service-status.json';
    practice — the clock only separates 「slow」 from 「not there」. CANON: this constant. */
 const BUNDLE_MS = 8000;
 
-const t = (lang, en, jp) => IntMapLang.t(lang, en, jp);
 const docLang = () => { try { return IntMapLang.normalise(document.documentElement.lang || 'en'); } catch (_) { return 'en'; } };
 
 /* ── the bundle, once per page ───────────────────────────────────────────────────────────────── */
@@ -122,11 +121,11 @@ export function upstreamSentence(row, lang, measuredAt) {
   if (!row) return '';
   const night = measuredAt ? when(measuredAt, lang) : '';
   if (row.verdict === 'alive') {
-    return t(lang, 'In the nightly check' + (night ? ' (' + night + ')' : '') + ' this source was answering.',
+    return IntMapLang.t(lang, 'In the nightly check' + (night ? ' (' + night + ')' : '') + ' this source was answering.',
       '毎晩の確認' + (night ? '（' + night + '）' : '') + 'では、このデータ元は応答していました。');
   }
   if (row.verdict === 'unobserved') {
-    return t(lang, 'The nightly check could not reach this source to tell.', '毎晩の確認では、このデータ元の状態を確かめられませんでした。');
+    return IntMapLang.t(lang, 'The nightly check could not reach this source to tell.', '毎晩の確認では、このデータ元の状態を確かめられませんでした。');
   }
   const since = row.downSince ? when(row.downSince, lang) : '';
   const last = row.lastAlive ? when(row.lastAlive, lang) : '';
@@ -140,7 +139,7 @@ export function upstreamSentence(row, lang, measuredAt) {
   const en = (refused ? 'This source has been refusing requests' + (code ? ' (' + code + ')' : '') : 'This source has not been answering')
     + (since ? ' since ' + since : runs ? ' in the last ' + runs + ' nightly checks' : ' in the nightly check')
     + (last ? '; it last answered ' + last : '') + '.';
-  return t(lang, en, en);
+  return IntMapLang.t(lang, en, en);
 }
 
 /* ── (ops-next) the record over time ─────────────────────────────────────────────────────────────
@@ -179,10 +178,10 @@ export function recordSentence(series, lang) {
   const r = recordOf(series);
   if (!r.measured) return '';
   if (r.answered === r.measured) {
-    return r.measured === 1 ? t(lang, 'Answered the one nightly check so far.', 'これまでの毎晩の確認（1 晩）で応答。')
-      : t(lang, 'Answered all of the last ' + r.measured + ' nightly checks.', '直近 ' + r.measured + ' 晩の確認すべてで応答。');
+    return r.measured === 1 ? IntMapLang.t(lang, 'Answered the one nightly check so far.', 'これまでの毎晩の確認（1 晩）で応答。')
+      : IntMapLang.t(lang, 'Answered all of the last ' + r.measured + ' nightly checks.', '直近 ' + r.measured + ' 晩の確認すべてで応答。');
   }
-  return t(lang, 'Answered ' + r.answered + ' of the last ' + r.measured + ' nightly checks.', '直近 ' + r.measured + ' 晩の確認のうち ' + r.answered + ' 晩で応答。');
+  return IntMapLang.t(lang, 'Answered ' + r.answered + ' of the last ' + r.measured + ' nightly checks.', '直近 ' + r.measured + ' 晩の確認のうち ' + r.answered + ' 晩で応答。');
 }
 
 /** the cells a strip draws for a series: [{ c, tone }] — the tone vocabulary of the rows */
@@ -203,27 +202,27 @@ export function composeStatus(m, lang) {
   /* ── this device ── */
   const dev = [];
   dev.push(m.online === false
-    ? { tone: 'bad', icon: 'signal', title: t(lang, 'Offline', 'オフライン'), detail: t(lang, 'This device has no network. Maps and data you have already opened can still be shown; nothing new can be fetched.', 'この端末はネットワークにつながっていません。一度開いた地図とデータは表示できますが、新しいものは取得できません。') }
-    : { tone: 'ok', icon: 'signal', title: t(lang, 'Online', 'オンライン'), detail: t(lang, 'This device can reach the network.', 'この端末はネットワークにつながっています。') });
-  if (m.shell === true) dev.push({ tone: 'ok', icon: 'save', title: t(lang, 'Opens without a network', 'ネットワークが無くても開ける'), detail: t(lang, 'A copy of IntMap is stored on this device, so it opens offline. The map shows the areas you have already viewed.', 'この端末に IntMap の本体が保存されているので、オフラインでも開けます。地図は一度表示した範囲が出ます。') });
-  else if (m.shell === false) dev.push({ tone: 'muted', icon: 'save', title: t(lang, 'Not stored for offline use yet', 'オフライン用にはまだ保存されていません'), detail: t(lang, 'The copy is stored the next time IntMap is opened with a network.', '次にネットワークのある状態で開いたときに保存されます。') });
-  else dev.push({ tone: 'muted', icon: 'save', title: t(lang, 'Offline opening is not available here', 'この環境ではオフラインで開けません'), detail: t(lang, 'This browser or this copy of IntMap keeps no offline copy.', 'このブラウザ、またはこの IntMap は、オフライン用の保存を持ちません。') });
-  if (Number.isFinite(m.storageMB) && m.storageMB > 0) dev.push({ tone: 'muted', icon: 'folder', title: t(lang, 'Stored on this device: ' + m.storageMB + ' MB', 'この端末に保存: ' + m.storageMB + ' MB'), detail: t(lang, 'Map tiles and data kept so that places you revisit load without the network.', '再訪した場所をネットワーク無しで出すために保存している地図タイルとデータです。') });
-  out.sections.push({ id: 'device', title: t(lang, 'This device', 'この端末'), rows: dev });
+    ? { tone: 'bad', icon: 'signal', title: IntMapLang.t(lang, 'Offline', 'オフライン'), detail: IntMapLang.t(lang, 'This device has no network. Maps and data you have already opened can still be shown; nothing new can be fetched.', 'この端末はネットワークにつながっていません。一度開いた地図とデータは表示できますが、新しいものは取得できません。') }
+    : { tone: 'ok', icon: 'signal', title: IntMapLang.t(lang, 'Online', 'オンライン'), detail: IntMapLang.t(lang, 'This device can reach the network.', 'この端末はネットワークにつながっています。') });
+  if (m.shell === true) dev.push({ tone: 'ok', icon: 'save', title: IntMapLang.t(lang, 'Opens without a network', 'ネットワークが無くても開ける'), detail: IntMapLang.t(lang, 'A copy of IntMap is stored on this device, so it opens offline. The map shows the areas you have already viewed.', 'この端末に IntMap の本体が保存されているので、オフラインでも開けます。地図は一度表示した範囲が出ます。') });
+  else if (m.shell === false) dev.push({ tone: 'muted', icon: 'save', title: IntMapLang.t(lang, 'Not stored for offline use yet', 'オフライン用にはまだ保存されていません'), detail: IntMapLang.t(lang, 'The copy is stored the next time IntMap is opened with a network.', '次にネットワークのある状態で開いたときに保存されます。') });
+  else dev.push({ tone: 'muted', icon: 'save', title: IntMapLang.t(lang, 'Offline opening is not available here', 'この環境ではオフラインで開けません'), detail: IntMapLang.t(lang, 'This browser or this copy of IntMap keeps no offline copy.', 'このブラウザ、またはこの IntMap は、オフライン用の保存を持ちません。') });
+  if (Number.isFinite(m.storageMB) && m.storageMB > 0) dev.push({ tone: 'muted', icon: 'folder', title: IntMapLang.t(lang, 'Stored on this device: ' + m.storageMB + ' MB', 'この端末に保存: ' + m.storageMB + ' MB'), detail: IntMapLang.t(lang, 'Map tiles and data kept so that places you revisit load without the network.', '再訪した場所をネットワーク無しで出すために保存している地図タイルとデータです。') });
+  out.sections.push({ id: 'device', title: IntMapLang.t(lang, 'This device', 'この端末'), rows: dev });
   if (m.online === false) notes.push('offline');
 
   /* ── the layers that are on ── */
   const lay = [];
   const probs = Array.isArray(m.layerProblems) ? m.layerProblems : [];
   for (const p of probs) {
-    const word = p.state === 'nodata' ? t(lang, 'No data for this date', 'この日時のデータなし')
-      : p.state === 'unobserved' ? t(lang, 'No reply', '応答なし') : t(lang, "Couldn't load", '読み込めません');
+    const word = p.state === 'nodata' ? IntMapLang.t(lang, 'No data for this date', 'この日時のデータなし')
+      : p.state === 'unobserved' ? IntMapLang.t(lang, 'No reply', '応答なし') : IntMapLang.t(lang, "Couldn't load", '読み込めません');
     lay.push({ tone: p.state === 'nodata' ? 'muted' : 'warn', icon: 'layers', title: p.label + ' — ' + word, detail: [p.detail, p.upstream].filter(Boolean).join(' ') });
   }
   const on = Number.isInteger(m.layersOn) ? m.layersOn : 0;
-  if (!probs.length) lay.push({ tone: on ? 'ok' : 'muted', icon: 'layers', title: on ? t(lang, on + ' layer(s) on, all drawn', on + ' 件のレイヤーを表示中・すべて描画できています') : t(lang, 'No layers are on', '表示中のレイヤーはありません'), detail: '' });
+  if (!probs.length) lay.push({ tone: on ? 'ok' : 'muted', icon: 'layers', title: on ? IntMapLang.t(lang, on + ' layer(s) on, all drawn', on + ' 件のレイヤーを表示中・すべて描画できています') : IntMapLang.t(lang, 'No layers are on', '表示中のレイヤーはありません'), detail: '' });
   else notes.push('layers');
-  out.sections.push({ id: 'layers', title: t(lang, 'Layers on the map', '地図のレイヤー'), rows: lay });
+  out.sections.push({ id: 'layers', title: IntMapLang.t(lang, 'Layers on the map', '地図のレイヤー'), rows: lay });
 
   /* ── the suppliers, last night ── */
   const b = m.bundle || {};
@@ -231,15 +230,15 @@ export function composeStatus(m, lang) {
   const sup = [];
   let all = null;
   if (!U) {
-    sup.push({ tone: 'muted', icon: 'clock', title: t(lang, 'The nightly check could not be read', '毎晩の確認の記録を読めませんでした'), detail: t(lang, 'Nothing is said about the data sources until it can be read.', '読めるまでは、データ元について何も述べません。') });
+    sup.push({ tone: 'muted', icon: 'clock', title: IntMapLang.t(lang, 'The nightly check could not be read', '毎晩の確認の記録を読めませんでした'), detail: IntMapLang.t(lang, 'Nothing is said about the data sources until it can be read.', '読めるまでは、データ元について何も述べません。') });
   } else if (U.networkObserved === false) {
-    sup.push({ tone: 'muted', icon: 'clock', title: t(lang, 'Last night’s check measured nothing', '昨夜の確認は何も測れていません'), detail: t(lang, 'The checking machine had no network, so this is not a statement about the sources.', '確認する側がネットワークにつながっていなかったため、データ元についての記録ではありません。') });
+    sup.push({ tone: 'muted', icon: 'clock', title: IntMapLang.t(lang, 'Last night’s check measured nothing', '昨夜の確認は何も測れていません'), detail: IntMapLang.t(lang, 'The checking machine had no network, so this is not a statement about the sources.', '確認する側がネットワークにつながっていなかったため、データ元についての記録ではありません。') });
   } else {
     const bad = U.hosts.filter(down);
-    const head = t(lang, 'Checked ' + when(U.measuredAt, lang) + ' — ' + U.hosts.length + ' sources', when(U.measuredAt, lang) + ' に確認・' + U.hosts.length + ' 件のデータ元');
-    if (!bad.length) sup.push({ tone: 'ok', icon: 'check-circle', title: t(lang, 'Every source answered', 'すべてのデータ元が応答しました'), detail: head });
+    const head = IntMapLang.t(lang, 'Checked ' + when(U.measuredAt, lang) + ' — ' + U.hosts.length + ' sources', when(U.measuredAt, lang) + ' に確認・' + U.hosts.length + ' 件のデータ元');
+    if (!bad.length) sup.push({ tone: 'ok', icon: 'check-circle', title: IntMapLang.t(lang, 'Every source answered', 'すべてのデータ元が応答しました'), detail: head });
     else {
-      sup.push({ tone: 'warn', icon: 'warning', title: t(lang, bad.length + ' source(s) did not answer', bad.length + ' 件のデータ元が応答しませんでした'), detail: head });
+      sup.push({ tone: 'warn', icon: 'warning', title: IntMapLang.t(lang, bad.length + ' source(s) did not answer', bad.length + ' 件のデータ元が応答しませんでした'), detail: head });
       for (const r of bad) {
         const rec = recordSentence(seriesOf(b, r.host), lang);
         sup.push({ tone: 'bad', icon: 'dot', title: whatOf(r, lang), detail: r.host + ' — ' + upstreamSentence(r, lang, U.measuredAt) + (rec ? ' ' + rec : ''), series: seriesOf(b, r.host) });
@@ -249,7 +248,7 @@ export function composeStatus(m, lang) {
     all = U.hosts.map((r) => {
       const rec = recordSentence(seriesOf(b, r.host), lang);
       return { tone: down(r) ? 'bad' : r.verdict === 'alive' ? 'ok' : 'muted', title: whatOf(r, lang), host: r.host, series: seriesOf(b, r.host),
-        detail: (r.verdict === 'alive' ? t(lang, 'answering', '応答あり') : down(r) ? upstreamSentence(r, lang, U.measuredAt) : t(lang, 'not measured', '確認できず')) + (rec ? ' · ' + rec : '') };
+        detail: (r.verdict === 'alive' ? IntMapLang.t(lang, 'answering', '応答あり') : down(r) ? upstreamSentence(r, lang, U.measuredAt) : IntMapLang.t(lang, 'not measured', '確認できず')) + (rec ? ' · ' + rec : '') };
     });
   }
   /* (ops-next) the record over time: every measured night, the share of the measured sources that answered.
@@ -261,43 +260,43 @@ export function composeStatus(m, lang) {
     const pct = tot.m ? Math.round((tot.a / tot.m) * 1000) / 10 : null;
     const from = when(nights[0].at, lang), to = when(nights[nights.length - 1].at, lang);
     record = { nights, pct,
-      title: t(lang, 'The record: ' + nights.length + ' nightly check(s)', '記録: 毎晩の確認 ' + nights.length + ' 回分'),
-      detail: pct == null ? t(lang, 'No night measured any source.', 'どの晩もデータ元を測れていません。')
-        : t(lang, pct + '% of source checks answered, ' + from + ' – ' + to + '. Each bar is one night; a source the check could not reach is left out, not counted as down.',
+      title: IntMapLang.t(lang, 'The record: ' + nights.length + ' nightly check(s)', '記録: 毎晩の確認 ' + nights.length + ' 回分'),
+      detail: pct == null ? IntMapLang.t(lang, 'No night measured any source.', 'どの晩もデータ元を測れていません。')
+        : IntMapLang.t(lang, pct + '% of source checks answered, ' + from + ' – ' + to + '. Each bar is one night; a source the check could not reach is left out, not counted as down.',
           from + ' 〜 ' + to + ' の確認のうち ' + pct + '% で応答。棒は 1 晩ずつ。確かめられなかったデータ元は数に入れず、停止とも数えません。') };
   }
-  out.sections.push({ id: 'upstream', title: t(lang, 'Data sources (checked every night)', 'データ元（毎晩の確認）'), rows: sup, all, record });
+  out.sections.push({ id: 'upstream', title: IntMapLang.t(lang, 'Data sources (checked every night)', 'データ元（毎晩の確認）'), rows: sup, all, record });
 
   /* ── Atlas, evaluated ── */
   const A = b.atlasEval || null;
   const atl = [];
-  if (!A) atl.push({ tone: 'muted', icon: 'clock', title: t(lang, 'The evaluation record could not be read', '評価の記録を読めませんでした'), detail: '' });
+  if (!A) atl.push({ tone: 'muted', icon: 'clock', title: IntMapLang.t(lang, 'The evaluation record could not be read', '評価の記録を読めませんでした'), detail: '' });
   else {
     atl.push(A.lastSuccessAt
-      ? { tone: 'ok', icon: 'check-circle', title: t(lang, 'Last evaluated ' + when(A.lastSuccessAt, lang), '最後に評価された日時: ' + when(A.lastSuccessAt, lang)), detail: t(lang, 'Atlas’s answers to recorded questions are checked against an answer key every night.', '記録した質問への Atlas の答えを、毎晩、解答と照らしています。') }
-      : { tone: 'warn', icon: 'warning', title: t(lang, 'Atlas’s answers have not been evaluated yet', 'Atlas の答えはまだ一度も評価されていません'), detail: t(lang, 'None of the ' + A.total + ' scheduled evaluations' + (A.windowFrom ? ' since ' + when(A.windowFrom, lang) : '') + ' measured anything.', (A.windowFrom ? when(A.windowFrom, lang) + ' 以降の' : '') + '予定された ' + A.total + ' 回の評価は、どれも何も測れていません。') });
+      ? { tone: 'ok', icon: 'check-circle', title: IntMapLang.t(lang, 'Last evaluated ' + when(A.lastSuccessAt, lang), '最後に評価された日時: ' + when(A.lastSuccessAt, lang)), detail: IntMapLang.t(lang, 'Atlas’s answers to recorded questions are checked against an answer key every night.', '記録した質問への Atlas の答えを、毎晩、解答と照らしています。') }
+      : { tone: 'warn', icon: 'warning', title: IntMapLang.t(lang, 'Atlas’s answers have not been evaluated yet', 'Atlas の答えはまだ一度も評価されていません'), detail: IntMapLang.t(lang, 'None of the ' + A.total + ' scheduled evaluations' + (A.windowFrom ? ' since ' + when(A.windowFrom, lang) : '') + ' measured anything.', (A.windowFrom ? when(A.windowFrom, lang) + ' 以降の' : '') + '予定された ' + A.total + ' 回の評価は、どれも何も測れていません。') });
     const L = A.latest;
     if (L && L.conclusion !== 'success') {
-      atl.push({ tone: 'muted', icon: 'note', title: L.measured === false ? t(lang, 'The latest run (' + when(L.at, lang) + ') stopped before evaluating', '最新の回（' + when(L.at, lang) + '）は評価の前に止まりました') : t(lang, 'The latest run (' + when(L.at, lang) + ') did not pass', '最新の回（' + when(L.at, lang) + '）は通りませんでした'),
-        detail: L.why && L.why.length ? t(lang, 'The run says: ', '実行の記録: ') + L.why[0] : '' });
+      atl.push({ tone: 'muted', icon: 'note', title: L.measured === false ? IntMapLang.t(lang, 'The latest run (' + when(L.at, lang) + ') stopped before evaluating', '最新の回（' + when(L.at, lang) + '）は評価の前に止まりました') : IntMapLang.t(lang, 'The latest run (' + when(L.at, lang) + ') did not pass', '最新の回（' + when(L.at, lang) + '）は通りませんでした'),
+        detail: L.why && L.why.length ? IntMapLang.t(lang, 'The run says: ', '実行の記録: ') + L.why[0] : '' });
     }
     /* (ops-next) the half that needs no session — measured every night even while the live half cannot be.
        It is IntMap's own code between the model and the map, not Atlas's answers, and the row says so. */
     const O = A.offline;
     if (O && O.replay && O.reach) {
       atl.push({ tone: O.replay.clean === O.replay.cassettes ? 'ok' : 'warn', icon: 'gauge',
-        title: t(lang, 'Measured without signing in' + (O.at ? ' (' + when(O.at, lang) + ')' : ''), 'ログイン不要の部分の計測' + (O.at ? '（' + when(O.at, lang) + '）' : '')),
-        detail: t(lang, O.replay.clean + ' of ' + O.replay.cassettes + ' recorded Atlas turns still run as recorded. The words of the answer-key questions alone (word search, not meaning) reach ' + O.reach.reached + ' of the ' + O.reach.pairs + ' capabilities their answers use. This checks IntMap’s own code, not the answers.',
+        title: IntMapLang.t(lang, 'Measured without signing in' + (O.at ? ' (' + when(O.at, lang) + ')' : ''), 'ログイン不要の部分の計測' + (O.at ? '（' + when(O.at, lang) + '）' : '')),
+        detail: IntMapLang.t(lang, O.replay.clean + ' of ' + O.replay.cassettes + ' recorded Atlas turns still run as recorded. The words of the answer-key questions alone (word search, not meaning) reach ' + O.reach.reached + ' of the ' + O.reach.pairs + ' capabilities their answers use. This checks IntMap’s own code, not the answers.',
           '記録した Atlas の手順 ' + O.replay.cassettes + ' 本のうち ' + O.replay.clean + ' 本が記録どおりに動きます。解答つきの質問の言葉だけで（語の検索のみ・意味の検索なし）、答えに要る能力 ' + O.reach.pairs + ' 件のうち ' + O.reach.reached + ' 件に届きます。これは IntMap 自身のコードの確認で、答えの評価ではありません。') });
     }
   }
-  out.sections.push({ id: 'atlas', title: t(lang, 'Atlas quality check', 'Atlas の品質評価'), rows: atl });
+  out.sections.push({ id: 'atlas', title: IntMapLang.t(lang, 'Atlas quality check', 'Atlas の品質評価'), rows: atl });
 
   out.tone = notes.includes('offline') ? 'bad' : notes.length ? 'warn' : 'ok';
-  out.headline = notes.includes('offline') ? t(lang, 'You are offline', 'オフラインです')
-    : notes.includes('layers') ? t(lang, 'Some layers could not be drawn', '描けていないレイヤーがあります')
-      : notes.includes('upstream') ? t(lang, 'IntMap is working; some data sources are not answering', 'IntMap は動いています。一部のデータ元が応答していません')
-        : t(lang, 'Everything is working', 'すべて動いています');
+  out.headline = notes.includes('offline') ? IntMapLang.t(lang, 'You are offline', 'オフラインです')
+    : notes.includes('layers') ? IntMapLang.t(lang, 'Some layers could not be drawn', '描けていないレイヤーがあります')
+      : notes.includes('upstream') ? IntMapLang.t(lang, 'IntMap is working; some data sources are not answering', 'IntMap は動いています。一部のデータ元が応答していません')
+        : IntMapLang.t(lang, 'Everything is working', 'すべて動いています');
   return out;
 }
 
@@ -455,7 +454,7 @@ const HEAD_ICON = { ok: 'check-circle', warn: 'warning', bad: 'warning' };
 function render(root, s, lang) {
   const panel = root.querySelector('.modal-content');
   panel.replaceChildren();
-  const x = el('button', 'ims-x'); x.type = 'button'; x.setAttribute('aria-label', t(lang, 'Close', '閉じる'));
+  const x = el('button', 'ims-x'); x.type = 'button'; x.setAttribute('aria-label', IntMapLang.t(lang, 'Close', '閉じる'));
   x.style.cssText = 'position:absolute;top:12px;right:12px;width:44px;height:44px;border:none;background:transparent;color:var(--text-muted);font-size:22px;cursor:pointer;';
   x.textContent = '×'; x.addEventListener('click', close);
   const head = el('div', 'ims-head'); head.dataset.tone = s.tone;
@@ -463,7 +462,7 @@ function render(root, s, lang) {
   try { badge.appendChild(iconNode(HEAD_ICON[s.tone] || 'info')); } catch (_) { /* no picture */ }
   const hb = el('div', '');
   const h = el('h3', '', s.headline); h.id = 'im-status-title';
-  hb.append(h, el('p', 'ims-sub', t(lang, 'IntMap, now — read when you opened this', 'IntMap のいま — 開いた時点の状態')));
+  hb.append(h, el('p', 'ims-sub', IntMapLang.t(lang, 'IntMap, now — read when you opened this', 'IntMap のいま — 開いた時点の状態')));
   head.append(badge, hb);
   panel.append(x, head);
   for (const sec of s.sections) {
@@ -481,7 +480,7 @@ function render(root, s, lang) {
     }
     if (sec.all && sec.all.length) {
       const d = el('details', '');
-      d.appendChild(el('summary', '', t(lang, 'All ' + sec.all.length + ' sources and their last answer', '全 ' + sec.all.length + ' 件のデータ元と最後の応答')));
+      d.appendChild(el('summary', '', IntMapLang.t(lang, 'All ' + sec.all.length + ' sources and their last answer', '全 ' + sec.all.length + ' 件のデータ元と最後の応答')));
       const ga = el('div', 'ims-group'); ga.setAttribute('role', 'list');
       for (const r of sec.all) { const n = rowNode({ tone: r.tone, icon: 'dot', title: r.title, detail: r.host + ' — ' + r.detail, series: r.series }); n.setAttribute('role', 'listitem'); ga.appendChild(n); }
       d.appendChild(ga); box.appendChild(d);
@@ -489,13 +488,13 @@ function render(root, s, lang) {
     panel.appendChild(box);
   }
   const foot = el('div', 'ims-foot');
-  const again = el('button', 'ai-test-btn', t(lang, 'Check again', 'もう一度確認'));
+  const again = el('button', 'ai-test-btn', IntMapLang.t(lang, 'Check again', 'もう一度確認'));
   again.type = 'button'; again.addEventListener('click', () => { bundleP = null; open(); });
-  const src = el('a', 'ai-test-btn', t(lang, 'Data sources page', 'データ出典ページ'));
+  const src = el('a', 'ai-test-btn', IntMapLang.t(lang, 'Data sources page', 'データ出典ページ'));
   src.href = './sources.html'; src.target = '_blank'; src.rel = 'opener';
   src.style.cssText = 'display:flex;align-items:center;justify-content:center;text-decoration:none;box-sizing:border-box;';
   /* (ops-next) what changed, beside what is working — the updates page scripts/whats-new.mjs builds */
-  const upd = el('a', 'ai-test-btn', t(lang, 'What’s new', '新着'));
+  const upd = el('a', 'ai-test-btn', IntMapLang.t(lang, 'What’s new', '新着'));
   upd.href = lang === 'jp' ? './ja/updates.html' : './updates.html'; upd.target = '_blank'; upd.rel = 'noopener';
   upd.style.cssText = src.style.cssText;
   foot.append(again, src, upd);
@@ -512,7 +511,7 @@ export async function open(ctx) {
     root = el('div', 'modal-overlay'); root.id = 'im-status';
     const panel = el('div', 'modal-content'); panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-modal', 'true');
     panel.setAttribute('aria-labelledby', 'im-status-title'); panel.setAttribute('aria-busy', 'true');
-    panel.appendChild(el('p', 'ims-sub', t(docLang(), 'Reading…', '確認しています…')));
+    panel.appendChild(el('p', 'ims-sub', IntMapLang.t(docLang(), 'Reading…', '確認しています…')));
     root.appendChild(panel); document.body.appendChild(root);
     try { window.IntMapDialog.adopt(root, { panel, labelledby: 'im-status-title', backdrop: true }); } catch (_) { /* no registry: Escape and the trap are lost, the page is not */ }
   }
