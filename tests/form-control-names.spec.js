@@ -288,18 +288,21 @@ test('③ every tool the Tools menu opens, opened one at a time, has a name on e
   await page.waitForFunction(() => !!window.__imap && window.__imap.isStyleLoaded(), null, { timeout: 60_000 });
 
   /* ⚠ THE DOORS ARE FOUND, NOT LISTED. Two places in the app say which tools exist:
-       · the Tools section of the Layers panel (`.lst-toolbody`) — the rows js/map-ui.js builds from its
-         tool registry, plus the real `#layer-tools` strip every module appends its own button to;
+       · the toolbar's Tools panel (`#measure-dropdown .tlp-root`, tools-out-of-layers) — its measuring buttons, the
+         rows js/map-ui.js builds from its tool registry, plus the real `#layer-tools` strip every module appends
+         its own button to;
        · the phone's tools sheet (`#tools-sheet [data-proxy]`) — the list of the map toolbar's tools,
          each naming the real button it presses.
      Each door is pressed, the page is left to build what it opens, every form control then in the
      DOM is read, and the door is closed again before the next one — one panel at a time, so no two
      simulators ever run together on the main thread. */
-  await page.waitForFunction(() => document.querySelectorAll('.lst-toolbody .lst-toolrow').length > 0, null, { timeout: 30_000 });
+  await page.waitForFunction(() => document.querySelectorAll('#measure-dropdown .lst-toolrow').length > 0, null, { timeout: 30_000 });
+  await page.click('#btn-measure-menu');   /* opened as a reader opens it, so «a door the reader can see» is measured */
+  await page.waitForFunction(() => !!document.querySelector('#measure-dropdown #layer-tools'), null, { timeout: 30_000 });
   const doors = await page.evaluate(() => {
     const out = [];
     const key = (e) => e.dataset.act ? `[data-act="${e.dataset.act}"]` : (e.id ? '#' + e.id : null);
-    for (const e of document.querySelectorAll('.lst-toolbody button')) {
+    for (const e of document.querySelectorAll('#measure-dropdown .tlp-root button')) {
       if (!e.getClientRects().length) continue;            /* a door the reader cannot see is not a door */
       const k = key(e); if (k && !out.includes(k)) out.push(k);
     }

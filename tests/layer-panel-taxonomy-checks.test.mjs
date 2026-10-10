@@ -259,22 +259,23 @@ test('#R469 ⑤ 等高線 is a switch inside three legends, and 傾斜・斜面�
 });
 
 /* ══════════════════ ⑦ ツールは畳めて、検索はそこまで届く ══════════════════════════════════ */
-test('#R469 ⑦ the Tools section collapses, and a search still reaches into it', () => {
-  const tb = fnBody(MUC, 'toolsBlock');
+test('#R469 ⑦ the Tools sections collapse, and a Layers search still reaches the tools', () => {
+  /* (tools-out-of-layers) the tools are the Tools panel's four sections now; each folds the way the old block did */
+  const tb = fnBody(MUC, '_foldSec');   /* the one folding heading the sections (and the Layers presets) share */
+  assert.ok(/_foldSec\(sec,'tlp-sech','tlp-body'/.test(fnBody(MUC, '_toolSec')), 'each Tools section is built with it');
   /* ⚠ THE OLD HEADER LOOKED EXACTLY LIKE A CATEGORY HEADER AND DID NOTHING: a bare `.lst-sech` with
      a `:hover` rule, no chevron, no listener, no count. */
   assert.ok(/lst-chev/.test(tb), 'the header has the same chevron a category header has');
   assert.ok(/addEventListener\('click'/.test(tb), '…and it is pressable');
-  assert.ok(/_secClosed\[TOOLS_SEC\]/.test(tb), '…and remembers its state the way a category does');
-  assert.ok(/lst-cnt/.test(tb), '…and says how many tools are behind it');
-  assert.ok(/lst-toolbody/.test(tb), 'the rows live in a body that can be hidden');
-  assert.ok(/body\.appendChild\(b\)/.test(tb),
+  assert.ok(/_secClosed\[sk\]/.test(tb), '…and remembers its state the way a category does');
+  assert.ok(/body\.classList\.toggle\('closed',now\)/.test(tb) && /return body;/.test(tb), 'the rows live in a body that can be hidden');
+  assert.ok(/body\.appendChild\(_toolRow\(/.test(fnBody(MUC, '_fillTools')),
     'the rows go INTO that body — appended to the wrapper they would stay visible when it closes');
-  /* ⚠ A COLLAPSIBLE SECTION IS EXACTLY WHAT TURNS A WORKING FILTER INTO A DEAD ONE: the rows would
-     be narrowed correctly inside a body the reader cannot see, which reads as 「検索が効かない」. */
+  /* ⚠ (#R291) the Layers search found the tools when they stood under the layers; moving them must not lose that.
+     While a query is typed the matching rows are drawn under the layers by the same row builder. */
   const ft = fnBody(MUC, 'filterTiles');
-  assert.ok(/lst-toolrow/.test(ft), 'the filter reaches the tool rows (#R291)');
-  assert.ok(/tb\.style\.display=q\?'flex':''/.test(ft), '…and forces the section open while searching');
+  assert.ok(/lst-toolhits/.test(ft) && /_toolRow\(t,/.test(ft), 'the filter draws the tools a query matches (#R291)');
+  assert.ok(/const found=q\?TOOLS\.filter/.test(ft), '…and only while there is a query — with none, Layers holds no tool row');
   /* the same rule for the two folds this round added */
   assert.ok(/const folded=!q&&/.test(ft),
     'a query overrides both folds — a reader who types 「道路」 is looking for that row, and ' +

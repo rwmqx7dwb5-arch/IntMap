@@ -23,28 +23,33 @@
   viewport を確かめる）。
 
 
-### 8.6 レイヤー欄の Tools 帯 (`#layer-tools`) は読者のパネルへ運ばれる
+### 8.6 分析の帯 (`#layer-tools`) は Tools パネルへ、プリセットは Layers パネルへ運ばれる
 
-`#layer-tools` は**実体が 1 つのノード**で、`js/data-layers.js` の `reorganizeLayerPanel()` が
-毎回組み直し、`js/map-ui.js` の `_placeLayerTools()` が**読者が実際に見ているホスト**の Tools 節
-（`.lst-toolbody`）へ**移す**。`#layer-active-section` が `_placeActiveSection()` で運ばれるのと
-同じ形で、**写しは作らない**。
+`#layer-tools`（比較ビュー・相関分析・地図データの読み込み・データと分析・プレイグラウンド）は**実体が
+1 つのノード**で、`js/data-layers.js` の `reorganizeLayerPanel()` が毎回組み直し、`js/map-ui.js` の
+`_placeLayerTools()` が**読者が実際に見ている Tools パネル**（デスクトップの Tools ▾ か携帯の Map tools
+シート、§8.1）の「分析」節（`.tlp-sec[data-sec="analysis"] > .tlp-body`）へ**移す**。同じ関数が、レイヤー状態である
+`#lyr-presets` を**読者が見ている Layers パネル**のプリセット節（`.lst-presets-body`）へ移す。
+`#layer-active-section` が `_placeActiveSection()` で運ばれるのと同じ形で、**写しは作らない**。
+帯もプリセットも持たない側の節は隠れる（空の見出しを描かない）。
 
-- **運ぶのは 4 つの瞬間だけ**——タイル盤の再構築（`buildTiles`）・パネルの開きと閉じ・
+- **運ぶ瞬間**——Tools パネルの組み立てと開き（`mountTools()`。デスクトップはトリガを押すたび、携帯は
+  シートを開くたび）・言語の切り替え・タイル盤の再構築（`buildTiles`）・Layers パネルの開きと閉じ・
   `reorganizeLayerPanel()` の末尾。⚠ **起動直後、まだ帯が `#layer-dropdown` にいる窓がある**
-  （パネルを一度も開いていない間）。到達可能性を測る側は、**読者と同じようにパネルを開いてから**測ること。
-- **ホストは幅から導かず、ブラウザに訊く。** 携帯でもデスクトップ側のサイドバーは `isConnected` の
+  （Tools パネルが組まれる前）。到達可能性を測る側は、**読者と同じようにパネルを開いてから**測ること。
+- **ホストは幅から導かず、ブラウザに訊く。** 携帯でもデスクトップ側のパネルは `isConnected` の
   ままなので、`getClientRects().length`（＝組版されているか）で選び、`_hostShown` で「実際に
-  引き上げられているシート」を優先する。運べるホストが無ければ**帯はそのまま**（fail safe）。
+  引き上げられているシート」を優先し、トリガが押されたパネルがあればそれを先にする。運べるホストが無ければ
+  **ノードはそのまま**（fail safe）。
 - ⚠ **運んだ先が捨てられる瞬間がある。** `buildTiles()` は `.lst-root` を `replaceWith` で丸ごと
-  差し替え、`unmountFrom()` はホストごと `remove()` する。帯は**その前に `#layer-dropdown` へ退避**
-  させる——外れたノードは `getElementById` から消え、id で救い出す `reorganizeLayerPanel()` が
-  空の帯を作り直してしまう（実測: 携帯 375px で `#btn-correlate` / `#edu-mount` / `#lyr-presets` が
-  セッションの残り全部で行方不明になった）。**`document.body` へは退避させない**——パネルの外に出た
-  帯は地図の上に描かれる。
+  差し替え、`unmountFrom()` はホストごと `remove()` し、Tools パネルは言語が変わると節を組み直す。
+  運んだノードは**その前に `#layer-dropdown` へ退避**させる——外れたノードは `getElementById` から消え、
+  id で救い出す `reorganizeLayerPanel()` が空の帯を作り直してしまう（実測: 携帯 375px で `#btn-correlate` /
+  `#edu-mount` / `#lyr-presets` がセッションの残り全部で行方不明になった）。**`document.body` へは退避させない**
+  ——パネルの外に出たノードは地図の上に描かれる。
 - **節の見出しは 1 つ。** 帯は自分の「ツール」見出しを持つが、運ばれた先では入れ子の 2 つ目になるので
-  CSS が隠す（規則は**配置**に付いていて、ボタンの id には付いていない）。件数は運ばれたあとに
-  **数え直す**。検索も帯に効く（帯のボタンは `data-nm` を持たないので、読者に見えている文字で照合する）。
+  CSS が隠す（規則は**配置**に付いていて、ボタンの id には付いていない）。帯の扉（帯の直下のボタン、または
+  直下の包みのボタン）を押すと、行と同じく Tools パネルが引っ込む。
 
 ⚠⚠⚠ **なぜこの経路が要るのか——帯そのものは、読者のどの画面にも属していない。**
 `imLayerPanel` は**定数 `right`** なので `body.lsr-avail` は全幅で常時付き、クラシックの

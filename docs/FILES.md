@@ -1192,7 +1192,7 @@ ash-model.js                      火山灰の拡散モデル本体（Mastin の
                                   Ganser の落下速度・変形拡散・気圧面の風の入れ子ネスト・降灰と
                                   飛行高度帯ごとの濃度）。DOM も window も持たない（export const ASH）
 ash-plume.js                      「いま噴火したら」火山灰のパネル・地図・露出（地名辞典の町・空港）
-                                  window.IntMapAshPlume（遅延・火山カード・ツール欄・Atlas から開く）
+                                  window.IntMapAshPlume（遅延・火山カード・Tools ▾・Atlas から開く）
 sim-datasets.js                   シミュレーションの出力を分析用データセットとして登録する 1 つの扉
                                   （出自は sim 名・版・引数・乱数の種）。import して使う
 shakemap.js                       USGS ShakeMap——1つの地震の地震動そのもの（等値線・震度の面・
@@ -1234,14 +1234,14 @@ nominatim-gate.js                 **Nominatim の前に立つ唯一のキュー*
                                   window.IntMapNominatimGate ＋ ES import の両方（同一インスタンス）
 routing-cards.js                  経路候補カード／手順／区間の共通描画 window.IntMapRouteCards
 routing-export.js                 GPX・GeoJSON・共有状態 window.IntMapRouteExport
-photo-geo.js                      写真の撮影地点探索パネル（Layers ▸ Tools ▸ Photo location・遅延取得）window.IntMapPhotoGeo
+photo-geo.js                      写真の撮影地点探索パネル（Tools ▾ ▸ Photo location・遅延取得）window.IntMapPhotoGeo
 photo-geo-terrain.js              写真照合用の地形——terrarium DEM を局所ラスタへ、方位別の稜線仰角
 photo-geo-skyline.js              写真から空と山の境界を抽出（画像適応しきい値＋動的計画法・与えられた境界の画素吸着）
 photo-geo-vision.js               視覚モデルに稜線を訊く（schema・返答の検証・折れ線→案内線・送信の同意と表明）window.IntMapPhotoVision
 photo-geo-match.js                カメラモデルと稜線の一致度・方位探索・判定
 photo-geo-search.js               矩形の走査（粗→細）・候補の抑制・見積り
 photo-geo-exif.js                 EXIF の向き・焦点距離・GPS（GPS は結果に使わず表示のみ）
-routing-ui.js                     経路パネル（Layers ▸ Tools ▸ Directions・遅延取得）window.IntMapRouteUI
+routing-ui.js                     経路パネル（Tools ▾ ▸ Directions・遅延取得）window.IntMapRouteUI
 routing-ops.js                    経路の分析 window.IntMapRoutingOps。線に沿った標本と点包含・今日の国境の読みは
                                   モジュール直下で export し、journey-through-time.js が同じ 1 つを使う
 routing-errors.js                 経路の失敗の分類（15コード・再試行可否・fallback可否）window.IntMapRouteErrors
@@ -1436,7 +1436,7 @@ my-map.js                         **マイマップ**（window.IntMapMyMap・遅
                                   （共有リンクの `&mm=`・自分の地図は手元の写しが勝ち、他人の地図は読み取り専用で表示し保存できる）、
                                   計測は計測ツールの関数（HOST.ringArea・distTXT/areaTXT）、分析はデータセット（provenance kind
                                   `sketch`）、書き出しは js/gis-export.js（GeoJSON / GeoPackage）、地図上のピン・図形・半径円を移す。
-                                  Layers ▸ Tools・Atlas `map.myMap`・オブジェクト一覧から
+                                  Tools ▾・Atlas `map.myMap`・オブジェクト一覧から
 my-map-doc.js                     マイマップの**文書（純関数）**——地物の形と検証（頂点は入るときに 1e-6° へ丸める）、リンク形
                                   （Encoded Polyline・信用せず読み直し、読めない地物は数える）、描く形（大円を 0.1° 以下の断片に・
                                   日付変更線で切る・極を囲む範囲は描かない）、GeoJSON の FeatureCollection
@@ -1444,7 +1444,7 @@ data-studio.js                    **データスタジオ**（window に公開�
                                   Atlas の添付）を地図のファイルの扉（GeoJSONUpload.handle）で読み、場所の列で国（Natural Earth 1:50m に
                                   gis-ops の join）または都市（GeoNames の点）に結び、GeoJSONUpload.style で塗り分け、データセットとして
                                   分析・Atlas へ渡し、地図の状態の `ds` 欄（リンクそのものに表を入れる）・GeoJSON/CSV/GeoPackage・絵葉書で公開。
-                                  リンクの文書の符号器と読み手（純関数）も持つ。Layers ▸ Tools・地図データの読み込みの隣・表を落としたとき・Atlas `data.studio`
+                                  リンクの文書の符号器と読み手（純関数）も持つ。Tools ▾・地図データの読み込みの隣・表を落としたとき・Atlas `data.studio`
 table-bind.js                     **表の場所の列**（純関数）——各列が ISO 3166-1 の 2 文字・3 文字・数字コード／国名（Intl.DisplayNames が
                                   名前を持つ全ロケールと Natural Earth の名前の列から発見）／都市名（GeoNames）のどれかを値で判定し、行ごとに
                                   場所の鍵（ISO alpha-3、無ければ ADM0_A3／GeoNames id）を返す。同名は曖昧として解決しない（同じ行の国の列で絞る）

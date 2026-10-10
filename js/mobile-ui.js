@@ -84,7 +84,12 @@ export function mobileUI(HOST){
         /* (#R232) …and the tile grid re-reads the row set on every open, because rows are still being
            built for ~1.5 s after boot (eco / l9 / beta) and because Atlas or a legend may have toggled
            something while the sheet was shut. mountInto() is idempotent and only rebuilds on a change. */
-        try{ window.IntMapLayerSidebar&&window.IntMapLayerSidebar.mountInto&&window.IntMapLayerSidebar.mountInto(moMountLayers); }catch(_){} } }
+        try{ window.IntMapLayerSidebar&&window.IntMapLayerSidebar.mountInto&&window.IntMapLayerSidebar.mountInto(moMountLayers); }catch(_){} }
+      /* (tools-out-of-layers) the Map tools sheet is the phone's Tools panel — the SAME four sections the desktop's
+         「ツール ▾」 has, built by the same js/map-ui.js `mountTools`: its proxy tiles are 測る・描く, then 道具,
+         シミュレーション and 分析. Idempotent, so every open only re-syncs the rows and carries the analysis strip here. */
+      if(el===toolsSheet){ try{ const L=window.IntMapLayerSidebar, sc=toolsSheet.querySelector('.m-sheet-scroll');
+        if(L&&L.mountTools&&sc) L.mountTools(sc,{ measure:toolsSheet.querySelector('.m-tool-grid'), onPick:closeSheet }); }catch(_){} } }
     function closeSheet(){ if(openSheetEl){ openSheetEl.classList.remove('show'); openSheetEl=null; } }
     /* (a11y-shared-dialog) both sheets already say role=dialog aria-modal — now they keep it: Escape closes, Tab stays in.
        Open is the .show class; focus is not moved on a phone. */

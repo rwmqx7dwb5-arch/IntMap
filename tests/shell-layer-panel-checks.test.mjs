@@ -163,24 +163,24 @@ test('R666 ①: the pandemic simulator is an OS action, not three copies of an o
     'and it fetches the lazy module rather than assuming it is here');
   assert.match(s, /IntMapOS\.register\('sim\.pandemic'[\s\S]{0,400}?window\._pgPandemic\(\)/,
     'and presses the simulator itself, not the hub');
-  assert.match(s, /IntMapOS\.register\('sim\.pandemic'[\s\S]{0,500}?btn:'btn-pandemic-sim'/,
-    'and names the button the Layers strip builds');
+  /* (tools-out-of-layers) the strip's button is gone — its one control is the Tools panel's row (data-act) — so the
+     meta names no button that would not be on the page (js/atlas-selfcheck.js reports a meta.btn that is missing) */
+  assert.ok(!/IntMapOS\.register\('sim\.pandemic'[^\n]*btn:'btn-pandemic-sim'/.test(s),
+    'and names no button the page no longer has');
 });
 
-/* ── ② the row in Layers ▸ Tools ───────────────────────────────────────────────────────────── */
-/* spelling kept: browser script (js/data-layers.js, js/analysis-panels.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
-test('R666 ②: Layers ▸ Tools has a row of its own for the pandemic simulator', () => {
-  const s = read('js/data-layers.js');
-  assert.match(s, /b\.id='btn-pandemic-sim'/, 'the button is built…');
-  assert.match(s, /const _pan=_panBtn\(\);/, '…once per rebuild, like _seisBtn…');
-  assert.match(s, /if\(_pan\) tools\.appendChild\(_pan\);/, '…and appended to the Tools strip');
-  /* the press goes through the command; the direct call is only the fallback for a kernel that is
-     not up yet — the same two-step `_seisBtn` uses */
-  const body = s.slice(s.indexOf("const _panBtn=()=>{"), s.indexOf("order.push(mkHr());", s.indexOf("const _panBtn=()=>{")));
-  assert.match(body, /OS\.exec\('sim\.pandemic',\{source:'ui'\}\)/, 'one press = one command');
-  assert.match(body, /IntMapLazy\.need\('playground'\)[\s\S]*?_pgPandemic/, 'with a fallback that still opens the simulator');
+/* ── ② the row in the Tools panel ──────────────────────────────────────────────────────────── */
+/* (tools-out-of-layers) #R666 built a strip button; #R670 added the row; #R766 hid the button wherever the row stood.
+   The button is gone now and the row — the Tools panel's 「シミュレーション」 — is the one door. */
+/* spelling kept: browser script (js/data-layers.js, js/map-ui.js, js/analysis-panels.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
+test('R666 ②: the Tools panel has a row of its own for the pandemic simulator, and only one', () => {
+  const s = nocomment(read('js/data-layers.js'));
+  assert.ok(!/btn-pandemic-sim/.test(s) && !/_panBtn/.test(s), 'the strip builds no second button for it');
+  const ui = read('js/map-ui.js');
+  const row = ui.slice(ui.indexOf("{ id:'sim.pandemic'"), ui.indexOf("{ id:'sim.pandemic'") + 600);
+  assert.match(row, /run:null/, 'one press = one command (the OS action js/app-body.js registers)');
   /* the label is the name the hub card already carries, so the four locale packs need no new key */
-  assert.match(body, /IntMapLang\.t\(lang,'Pandemic Simulator'/, 'one thing, one name');
+  assert.match(row, /label:\(\)=>T\('Pandemic Simulator'/, 'one thing, one name');
   /* ⚠ THE HUB IS NOT REPLACED — 「Playground ハブは残す」 */
   assert.match(read('js/analysis-panels.js'), /id="btn-edu"/, 'the Playground hub keeps its button');
 });
@@ -570,12 +570,14 @@ test('R670 ②: the pandemic simulator is a Tools row, with a name, a hint and a
 
 /* ── ③ the classic dropdown's button is not removed, and not the thing being relied on ──────── */
 /* spelling kept: browser script (js/data-layers.js, js/map-ui.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
-test('R670 ③: #btn-pandemic-sim stays for the classic panel, and is not the reachability claim', () => {
-  /* ⚠ NOT DELETED. `imLayerPanel` still has a `classic` setting and `#layer-tools` is what that
-     setting draws — the earthquake simulator keeps its button there for the same reason (#R242).
-     What changed is what the repository CLAIMS: reachability is the row in js/map-ui.js. */
-  assert.match(read('js/data-layers.js'), /b\.id='btn-pandemic-sim'/, 'the classic panel keeps its button');
-  assert.match(read('js/map-ui.js'), /id:'sim\.pandemic'/, '…and the default panel has the row');
+test('R670 ③: the reachability claim is the row, and the strip carries no twin of it', () => {
+  /* (tools-out-of-layers) #R670 kept #btn-pandemic-sim for the classic panel. `imLayerPanel` is a constant 'right'
+     (js/app-body.js), so no setting draws that panel, and the strip it lived in is carried into the Tools panel —
+     beside the row for the same command. One command, one door: the two strip buttons are gone, the rows remain. */
+  const dl = nocomment(read('js/data-layers.js'));
+  assert.ok(!/btn-pandemic-sim|btn-seismic-sim/.test(dl), 'the strip builds no twin of a Tools row');
+  assert.match(read('js/map-ui.js'), /id:'sim\.pandemic'/, '…and the Tools panel has the row');
+  assert.match(read('js/map-ui.js'), /id:'sim\.seismic'/, '…for the earthquake simulator too');
 });
 }
 
@@ -614,7 +616,9 @@ test('R766 ① the carried strip is lifted out before the root that holds it is 
   const discard = mapUi.indexOf("old.replaceWith(root)");
   assert.ok(discard > 0, 'buildTiles still replaces the tile root');
   const before = mapUi.slice(0, discard);
-  const rescue = before.lastIndexOf("querySelector('#layer-tools')");
+  /* (tools-out-of-layers) the node carried into the tile browser is the presets (#lyr-presets) now; the strip is
+     carried into the Tools panel, whose own rebuild (_fillTools) parks it first — asserted at the end of this test */
+  const rescue = before.lastIndexOf("querySelector('#lyr-presets')");
   assert.ok(rescue > 0,
     'the strip is looked for before the root is replaced — without this the carried node is detached');
   /* and the rescue must belong to THIS replacement, not to something far above it */
@@ -624,6 +628,9 @@ test('R766 ① the carried strip is lifted out before the root that holds it is 
   const near = mapUi.slice(rescue, discard);
   assert.match(near, /getElementById\('layer-dropdown'\)/,
     'the rescued strip is parked in the classic dropdown (hidden), not in document.body');
+  const fill = mapUi.slice(mapUi.indexOf('function _fillTools('), mapUi.indexOf("root.textContent='';", mapUi.indexOf('function _fillTools(')));
+  assert.match(fill, /querySelector\('#layer-tools'\)[\s\S]*getElementById\('layer-dropdown'\)/,
+    'the Tools panel parks the strip before it empties itself');
 });
 
 /* ② The two surfaces over the same commands must agree by COMPUTATION. #R242→#R243 and
@@ -637,7 +644,7 @@ test('R766 ② the twin-dedupe is computed from declarations, not from a written
   assert.match(mapUi, /querySelectorAll\('\[data-os-act\]'\)/,
     'the strip buttons are asked which command they press');
   /* the failure this guards: a pairing written as a literal id-to-id map anywhere in the placement */
-  const place = mapUi.slice(mapUi.indexOf('window._placeLayerTools'), mapUi.indexOf('window._placeLayerTools') + 1800);
+  const place = mapUi.slice(mapUi.indexOf('function placeLayerTools('), mapUi.indexOf('window._placeLayerTools=placeLayerTools'));
   assert.ok(place.length > 200, 'the placement function is still here');
   assert.ok(!/btn-seismic-sim|btn-pandemic-sim|btn-gis-panel|btn-compare|btn-edu|lp-save/.test(place),
     'the placement names no button by id — it would rescue that one and leave the next one dark');
@@ -647,8 +654,9 @@ test('R766 ② the twin-dedupe is computed from declarations, not from a written
    the twin simply appears twice. So every `data-os-act` must match a tool row's own `id:`. */
 /* spelling kept: browser script (js/map-ui.js, js/data-layers.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
 test('R766 ③ every data-os-act names a command the tile browser actually offers', () => {
+  /* (tools-out-of-layers) the two buttons that had a twin are gone, so today there may be none; the rule stays for
+     the next button that declares one — the dedupe in _placeLayerTools still computes from it */
   const declared = [...dataLayers.matchAll(/dataset\.osAct\s*=\s*'([^']+)'/g)].map((m) => m[1]);
-  assert.ok(declared.length > 0, 'the buttons that have a twin declare the command they press');
   const rowIds = new Set([...mapUi.matchAll(/\{\s*id:\s*'([a-zA-Z][\w.]*)'/g)].map((m) => m[1]));
   for (const act of declared) {
     assert.ok(rowIds.has(act),

@@ -1770,46 +1770,13 @@ export function dataLayers(HOST){
            (see end of this fn + the #layer-active-section CSS) so adding/removing chips never reflows the
            rows above → a layer toggle moves the panel 0px on desktop AND mobile, while it stays pinned visible. */
         const mkHr=()=>{ const h=document.createElement('hr'); h.style.cssText='border:0;border-top:1px solid rgba(128,128,128,0.2);width:100%;margin:6px 0;'; return h; };
-        /* (#R242) one button, created once and re-used on every rebuild — the same shape `_edu` and
-           `btn-correlate` have, so `reorganizeLayerPanel` moves it rather than duplicating it. */
-        /* ⚠⚠ (#R766) `data-os-act` ON THE TWO BUTTONS BELOW — js/map-ui.js now carries this whole
-           strip into the panel the reader opens, where 地震 and パンデミック ALREADY have rows of
-           their own (#R243/#R670 put them there). Each button names the OS action it presses, each
-           row already names its own, and the overlap is computed from the two declarations — so the
-           twin is silenced without either file holding a written pairing of ids, and a row added
-           tomorrow silences its twin by itself. The mark is on the BUTTON for the same reason
-           `data-lyr-tool` is (#R729): the module can add a third without editing js/map-ui.js. */
-        const _seisBtn=()=>{
-          let b=document.getElementById('btn-seismic-sim');
-          const lbl=IntMapLang.t(lang,'Earthquake simulator','地震シミュレーター','Erdbeben-Simulator','Симулятор землетрясений','Simulador de terremotos');
-          if(b){ const sp=b.querySelector('span'); if(sp) sp.textContent=lbl; return b; }
-          b=document.createElement('button'); b.id='btn-seismic-sim'; b.type='button'; b.className='ai-test-btn'; b.dataset.osAct='sim.seismic';
-          b.style.cssText='width:100%;text-align:center;margin:6px 0 0;';
-          b.innerHTML='<span></span>'; b.querySelector('span').textContent=lbl;
-          b.onclick=()=>{ try{ const OS=window.IntMapOS; if(OS&&OS.exec&&OS.has&&OS.has('sim.seismic')){ OS.exec('sim.seismic',{source:'ui'}); return; } }catch(_){}
-            try{ window.IntMapLazy.need('seismic').then(()=>{ try{ window.IntMapSeismic&&window.IntMapSeismic.open({}); }catch(_){} }); }catch(_){} };
-          return b;
-        };
-        /* ══ ⚠ (#R666) 「LayersのToolsからアクセスできるように。」 — THE PANDEMIC SIMULATOR ═══════════
-           Up to now it was ONE OF FOUR CARDS inside the Playground hub: a reader who wanted it pressed
-           🎮 プレイグラウンド, read a screen about three other things, and pressed again. The hub keeps
-           its button below; this is the simulator's own row, one press, beside the earthquake
-           simulator it is a sibling of.
-           ⚠ SAME SHAPE AS `_seisBtn` ON PURPOSE — created once and re-used on every rebuild (so
-           `reorganizeLayerPanel` MOVES it rather than making a second one), relabelled in place on a
-           language change, and the open goes through the OS action `sim.pandemic` (js/app-body.js)
-           so this button, the palette and Atlas are one path rather than three copies. */
-        const _panBtn=()=>{
-          let b=document.getElementById('btn-pandemic-sim');
-          const lbl=IntMapLang.t(lang,'Pandemic Simulator','パンデミック・シミュレーター','Pandemie-Simulator','Симулятор пандемии','Simulador de pandemia');
-          if(b){ const sp=b.querySelector('span'); if(sp) sp.textContent=lbl; return b; }
-          b=document.createElement('button'); b.id='btn-pandemic-sim'; b.type='button'; b.className='ai-test-btn'; b.dataset.osAct='sim.pandemic';
-          b.style.cssText='width:100%;text-align:center;margin:6px 0 0;';
-          b.innerHTML='<span></span>'; b.querySelector('span').textContent=lbl;
-          b.onclick=()=>{ try{ const OS=window.IntMapOS; if(OS&&OS.exec&&OS.has&&OS.has('sim.pandemic')){ OS.exec('sim.pandemic',{source:'ui'}); return; } }catch(_){}
-            try{ window.IntMapLazy.need('playground').then(()=>{ try{ window._pgPandemic&&window._pgPandemic(); }catch(_){} }); }catch(_){} };
-          return b;
-        };
+        /* ══ (tools-out-of-layers) THE EARTHQUAKE AND PANDEMIC BUTTONS THAT STOOD HERE ARE GONE — ONE DOOR EACH ══════
+           #R242 / #R666 built `#btn-seismic-sim` / `#btn-pandemic-sim` into this strip, and #R766 then had to HIDE them
+           wherever the strip was carried, because the same commands already had rows (`sim.seismic` / `sim.pandemic`,
+           js/map-ui.js SIM_TOOLS) in the same panel — the twin was drawn and then suppressed on every rebuild. Both
+           simulators are rows of the Tools panel's 「シミュレーション」 now, opened through the same OS actions the
+           buttons pressed (js/app-body.js), which the palette, the right-click menu and Atlas also press. The strip
+           keeps the doors no row offers: compare, correlation, import, data & analysis and the Playground. */
         order.push(mkHr());
         const placed=new Set();
         if(nsRow) placed.add(nsRow);   /* (#R233) already in the basic-display block above */
@@ -1868,6 +1835,8 @@ export function dataLayers(HOST){
           otherRows.forEach(r=>{ try{ r.style.display=''; }catch(_){} _markRest(r,false); order.push(r); });
         }
         /* ══ ⚠ (#R242) THE SEISMIC SIMULATOR IS REACHABLE FROM THE LAYERS PANEL ═════════════════════
+           (tools-out-of-layers) HISTORY — its button left this strip; see the note at the top of this block. */
+        /*
            「地震シミュレータはレイヤー欄からも開けるようにしろ。」 It could be opened from Atlas, from
            a right-click on the map (js/tool-panel.js) and from the command palette — none of which is
            where a reader looking for it goes. It joins the Tools strip beside 比較ビュー / 相関分析 /
@@ -1885,10 +1854,8 @@ export function dataLayers(HOST){
         const cmpBtn=document.getElementById('btn-compare'); const ugj=document.getElementById('ugj-list');
         const corrBtn=document.getElementById('btn-correlate');   /* (#R39) capture BEFORE tools.innerHTML='' detaches it */
         let tools=document.getElementById('layer-tools'); if(!tools){ tools=document.createElement('div'); tools.id='layer-tools'; }
-        const _pr=document.getElementById('lyr-presets');   /* (#R20) rescue the presets host before the wipe */
+        const _pr=document.getElementById('lyr-presets');   /* (#R20) rescue the presets host before the wipe — (tools-out-of-layers) it is layer state, so it is NOT put in the strip (below) */
         const _edu=document.getElementById('edu-mount');    /* (#R20) …and the Education-mode button */
-        const _seis=_seisBtn();   /* (#R242) 「地震シミュレータはレイヤー欄からも開けるようにしろ。」 */
-        const _pan=_panBtn();     /* (#R666) 「LayersのToolsからアクセスできるように。」 */
         tools.innerHTML='';
         const th=document.createElement('div'); th.className='lyr-head lyr-section-label'; th.style.marginTop='2px'; th.textContent=(IntMapLang.t(lang,'Tools','ツール','Werkzeuge','Инструменты','Herramientas')); tools.appendChild(th);
         /* reset display: these persistent buttons get moved here each rebuild; clear any stale display:none
@@ -1897,11 +1864,11 @@ export function dataLayers(HOST){
         if(corrBtn){ corrBtn.style.display=''; corrBtn.style.width='100%'; corrBtn.style.margin='6px 0 0'; tools.appendChild(corrBtn); }   /* (#R39) two-layer scatter/correlation */
         upBtns.forEach((b,i)=>{ b.style.display=''; b.style.width='100%'; b.style.margin=i?'5px 0 0':'6px 0 0'; tools.appendChild(b); });
         if(ugj){ ugj.style.display=''; tools.appendChild(ugj); }
-        if(_seis) tools.appendChild(_seis);   /* (#R242) the seismic simulator, beside the other tools */
-        if(_pan) tools.appendChild(_pan);     /* (#R666) …and the pandemic simulator, one press */
         if(_edu) tools.appendChild(_edu); /* (#R20) Education mode button lives in Tools */
-        if(_pr) tools.appendChild(_pr);   /* (#R20) layer presets live in Tools */
-        if(cmpBtn||upBtn||_seis||_pan){ order.push(mkHr()); order.push(tools); }
+        if(cmpBtn||upBtn||corrBtn||_edu){ order.push(mkHr()); order.push(tools); }
+        /* (tools-out-of-layers) the presets are parked at the end of this registry; js/map-ui.js `_placeLayerTools`
+           carries them into the Layers panel's own presets section, exactly as it carries the strip to the Tools panel */
+        if(_pr) order.push(_pr);
         order.forEach(n=>dd.appendChild(n));
         /* (#R64) Active layers is now the sticky-TOP bar ("一番下にあったら意味ない"); its fixed-height chip row
            preserves the R32 zero-movement guarantee. _placeActiveSection (called below) prepends it. */

@@ -623,6 +623,9 @@
     .measure-menu-container, .share-menu-container{ position:relative; display:inline-block; }   /* (#R151) share menu mirrors the measure menu */
     .measure-dropdown, .share-dropdown{ display:none; position:absolute; top:calc(100% + 6px); left:0; z-index:var(--z-dropdown); background:var(--glass-fill); border:1px solid var(--glass-border,rgba(128,128,128,0.18)); border-radius:12px; padding:6px; box-shadow:var(--shadow); min-width:182px; flex-direction:column; gap:4px; backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); }   /* (#R153) FOLLOW the Solid/Frosted-Glass appearance setting like every other popup (#R33 "全てのUIはこの設定に従うように"): --glass-fill is the ONE shared material — it resolves to the OPAQUE --card-bg in Solid mode (so NOT transparent — the original "無条件で透過しないように") and to a translucent rgba in the two glass modes (so NOT unconditionally opaque either — the "無条件で不透過するな" addendum). R152 hardcoded --card-bg which ignored the glass modes. */
     .share-dropdown{ left:auto; right:0; }   /* (#R151) share sits near the right edge → anchor the dropdown right so it never overflows the viewport */
+    /* (tools-out-of-layers) 「Tools ▾」 is a panel of four sections now (js/map-ui.js `mountTools`), so it is anchored right like
+       Share, as wide as the Layers panel's cards, and scrolls inside itself rather than running off the bottom of the window. */
+    #measure-dropdown{ left:auto; right:0; width:min(340px, calc(100vw - 24px)); max-height:calc(100vh - 120px); overflow-y:auto; overscroll-behavior:contain; padding:8px; }
     .measure-menu-container.open .measure-dropdown, .share-menu-container.open .share-dropdown{ display:flex; }
     .measure-dropdown .view-btn, .share-dropdown .view-btn{ width:100%; text-align:left; justify-content:flex-start; margin:0; }
     .caret-sm{ font-size:9px; opacity:0.7; }
@@ -1061,18 +1064,20 @@
        of them (quiz + presets were wrapped in #edu-mount / #lyr-presets, whose box added irregular spacing).
        display:contents dissolves those wrappers; the button height is forced so a wrapped label can't change
        it. This is why the spacing kept reading "ランダム". */
-    #layer-tools > #edu-mount, #layer-tools > #lyr-presets{ display:contents !important; }
+    #layer-tools > #edu-mount{ display:contents !important; }
+    /* (tools-out-of-layers) the presets are their own Layers section now, not a child of the strip */
+    .lst-presets-body > #lyr-presets{ display:flex; flex-direction:column; gap:6px; margin:0 !important; }
     /* (#R28) 38px STILL read as "縦幅が大きくて不自然" next to the compact layer rows above. Tighten to a
        slim 34px single-line button (labels stay 1 line + ellipsis) so the four tools sit as a neat, low
        group rather than chunky tall blocks. */
     #layer-tools > #btn-compare, #layer-tools > #btn-upload-geojson,
-    #layer-tools #btn-edu, #layer-tools #lp-save{
+    #layer-tools #btn-edu, #lyr-presets #lp-save{
       height:34px !important; min-height:34px !important; box-sizing:border-box;
       display:flex !important; align-items:center; justify-content:center; gap:7px;
       text-align:center; line-height:1.15; padding:0 12px; overflow:hidden; margin:0 !important; font-size:12.5px;
     }
     #layer-tools #btn-compare > span, #layer-tools #btn-upload-geojson > span,
-    #layer-tools #btn-edu > span, #layer-tools #lp-save > span{
+    #layer-tools #btn-edu > span, #lyr-presets #lp-save > span{
       overflow:hidden; white-space:nowrap; text-overflow:ellipsis; min-width:0;
     }
     /* (#R20) Desktop Tools: NOT pinned/sticky any more — the user asked for it to sit in normal flow at

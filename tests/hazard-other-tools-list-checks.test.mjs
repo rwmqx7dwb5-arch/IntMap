@@ -81,11 +81,14 @@ test('R211 share: the simulators register by their lazy-module name, and a pendi
 {
 /* strip block and line comments — a test must match CODE, never a note quoting the instruction */
 
-/* ── ⑤ the seismic simulator is reachable from the Layers panel ───────────────────────────────── */
-test('R242 ⑤ the Layers panel opens the seismic simulator through the OS action', () => {
-  assert.ok(/btn-seismic-sim/.test(code(read('js/data-layers.js'))), 'the Tools strip must carry the button');
+/* ── ⑤ the seismic simulator is reachable from the panel of tools ──────────────────────────────────
+   (tools-out-of-layers) The strip's own button (#btn-seismic-sim) is gone: it was a second door to the same command
+   that #R766 had to hide on every rebuild. The door is the Tools panel's row, and it presses the OS action. */
+test('R242 ⑤ the Tools panel opens the seismic simulator through the OS action, through one door', () => {
+  assert.ok(/id:'sim\.seismic'/.test(code(read('js/map-ui.js'))), 'the Tools panel carries the row');
+  assert.ok(!/btn-seismic-sim/.test(code(read('js/data-layers.js'))), 'and the strip no longer builds a second button for it');
   assert.ok(/IntMapOS\.register\('sim\.seismic'/.test(code(read('js/app-body.js'))),
-    'one command, so the palette, Atlas and this button are one path');
+    'one command, so the palette, Atlas and this row are one path');
 });
 }
 
@@ -97,11 +100,15 @@ test('R242 ⑤ the Layers panel opens the seismic simulator through the OS actio
     prose could contain ([[intmap-recurring-lessons]] E, nine rounds running). */
 {
 
-/* ── ⑥ the simulator is reachable from the Layers panel a reader actually opens ────────────────── */
-test('R243 ⑥ the tile browser carries a Tools row that runs the OS action', () => {
+/* ── ⑥ the simulator is reachable from the panel a reader actually opens ──────────────────────────
+   (tools-out-of-layers) That panel is the Tools panel now — the desktop's 「ツール ▾」 and the phone's tools sheet —
+   built by mountTools, and the tile browser holds no tool row (only a search draws matching ones). */
+test('R243 ⑥ the Tools panel carries a row that runs the OS action', () => {
   const c = code(read('js/map-ui.js'));
-  assert.ok(/function toolsBlock\(/.test(c) && /root\.appendChild\(toolsBlock\(\)\)/.test(c),
-    'the row must be built into the tile browser — #layer-tools lives in #layer-dropdown, which is display:none on the default setting');
+  assert.ok(/function mountTools\(/.test(c) && /body\.appendChild\(_toolRow\(t,o\.onPick\)\)/.test(c),
+    'the row must be built into the Tools panel — #layer-tools lives in #layer-dropdown, which is display:none on the default setting');
+  assert.ok(/mountTools\(dd,/.test(c) && /getElementById\('measure-dropdown'\)/.test(c), "and that panel is the desktop toolbar's Tools menu");
+  assert.ok(!/toolsBlock/.test(c), 'the tile browser no longer appends a tools block');
   assert.ok(/id:'sim\.seismic'/.test(c) && /OS\.exec\(t\.id/.test(c),
     'and it must go through IntMapOS, so the palette, the right-click menu and this row are one path');
 });
@@ -129,8 +136,8 @@ test('R258 ⑨: every non-layer simulation is a row in the tools list', () => {
   });
   assert.ok(!s.includes("id:'sim.tsunami'"), 'and the tsunami has no row of its own');
   assert.match(s, /function registerSimTools\(\)/, 'each is an IntMapOS action…');
-  assert.match(s, /function toolsBlock\(\)\{ registerSimTools\(\);/,
-    '…registered when the browser is built, not in the factory body (IntMapOS does not exist yet then)');
+  assert.match(s, /function mountTools\(container,opts\)\{ if\(!container\) return null;\s*build\(\); registerSimTools\(\);/,
+    '…registered when the Tools panel is built, not in the factory body (IntMapOS does not exist yet then)');
 });
 test('R258 ⑨b: 地震波シミュレーター is 地震シミュレーター in every language', () => {
   /* ⚠ the CODE, not the comments: js/map-ui.js quotes the instruction verbatim, and a round's
@@ -228,18 +235,19 @@ test('R264 ④: the tool rows are spaced and highlighted like the tiles', () => 
      the column and its gap live there — left on the wrapper, a closed section would still reserve a
      row of empty space where the tools were. What #R264 measured — the tool cards are spaced like
      the tile cards — is measured on whichever element declares the column. */
-  const toolGap = s.match(/\.lst-toolbody,\.lsr-mount \.lst-toolbody\{[^}]*gap:(\d+)px;/);
+  /* (tools-out-of-layers) …and the body is the Tools panel's section body (.tlp-body) now. */
+  const toolGap = s.match(/\.tlp-body\{[^}]*gap:(\d+)px;/);
   assert.ok(gridGap && toolGap, 'both blocks declare a gap');
   assert.equal(toolGap[1], gridGap[1], 'the tool cards use the same gap the tile cards do');
-  assert.match(s, /\.lst-toolbody,\.lsr-mount \.lst-toolbody\{[^}]*display:flex;flex-direction:column;/,
+  assert.match(s, /\.tlp-body\{display:flex;flex-direction:column;/,
     '…which needs the collapsible body to be a flex column, not a block');
-  const onRule = s.indexOf('.lst-toolrow.on,.lsr-mount .lst-toolrow.on{');
-  const hoverRule = s.indexOf('.lst-toolrow:hover,.lsr-mount .lst-toolrow:hover{');
+  const onRule = s.indexOf('.tlp-root .lst-toolrow.on,.lst-toolhits .lst-toolrow.on{');
+  const hoverRule = s.indexOf('.tlp-root .lst-toolrow:hover,.lst-toolhits .lst-toolrow:hover{');
   assert.ok(onRule > 0 && hoverRule > 0, 'both rules exist');
   assert.ok(onRule > hoverRule,
     '`.cls.on` and `.cls:hover` have equal specificity — `.on` must come later to win, as .lst-tile.on does');
   const tileOn = s.match(/\.lst-tile\.on\{([^}]*)\}/);
-  const rowOn = s.match(/\.lst-toolrow\.on,\.lsr-mount \.lst-toolrow\.on\{([^}]*)\}/);
+  const rowOn = s.match(/\.lst-toolrow\.on,\.lst-toolhits \.lst-toolrow\.on\{([^}]*)\}/);
   assert.ok(tileOn && rowOn, 'both highlights are declared');
   assert.equal(rowOn[1], tileOn[1], 'and «selected» looks the same whichever kind of card it is');
 });
@@ -259,7 +267,7 @@ test('R264 ⑤: every tool row names a module, and every module can report and c
      and that is asserted below for all of them. */
   assert.ok(ids.length >= 8, 'every simulation in the list carries its module (#R261/#R296)');
   assert.match(ui, /const _toolOn=\(t\)=>\{ const m=_tmod\(t\);/, 'the row reads the module, never a cached class');
-  assert.match(ui, /if\(_toolOn\(t\)\)\{ _toolOff\(t\); syncTools\(\); return; \}/, 'a second press closes');
+  assert.match(ui, /if\(_toolOn\(t\)\)\{ _toolOff\(t\); syncTools\(\); _pick\(pick\); return; \}/, 'a second press closes');
   assert.match(ui, /function syncTools\(\)/, 'and the rows re-read the modules rather than trusting their own class');
   /* ⚠ eight of the thirteen are lazy chunks: production verification measured the panel open with
      the row still unlit, because a fixed timeout cannot outwait a chunk download. The sync hangs off

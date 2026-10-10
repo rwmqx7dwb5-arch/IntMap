@@ -1,7 +1,7 @@
 /* ============================================================================
  *  IntMap · js/command-palette.js — ONE FIELD FOR EVERYTHING THE APP CAN BE ASKED  (Ctrl/⌘+K)
  * ----------------------------------------------------------------------------
- *  IntMap has 170-odd layers on fourteen shelves, a strip of tools at the foot of the Layers panel, five sidebar
+ *  IntMap has 170-odd layers on fourteen shelves, a Tools panel of measuring tools, simulations and analysis, five sidebar
  *  tabs, a kernel of commands, the places on the device, 533 companies, sixteen example maps and the classroom
  *  tours — and until now every one of them had its own door, in its own panel, which a reader had to know to open.
  *  Seven comments in this repository already spoke of «the command palette» as one of the ways in (the seismic and
@@ -10,7 +10,7 @@
  *  ── WHAT IS IN IT — DISCOVERED, NEVER LISTED (.agents/rules/no-ad-hoc-hardcoding.md §2-4) ──────────────────────
  *    action    every kernel command (window.IntMapOS) that something already NAMES for a reader (`nameCommand` below):
  *              a control bound to it — its meta `btn`, a control that names it with `data-os-act`, or a row that
- *              carries it as `data-act` (the Layers panel's tool rows, js/map-ui.js SIM_TOOLS) — named by that control
+ *              carries it as `data-act` (the Tools panel's rows, js/map-ui.js SIM_TOOLS) — named by that control
  *              in the reader's language, or the reader-facing `title` ([en, jp]) its meta declares, even before its
  *              control is drawn. Each is also found by the spellings the capability registry gives the same id
  *              (window.IntMapCapabilities — «radiation», «fallout», «plume» for the plume simulator), and run through
@@ -94,14 +94,14 @@ const H = (s) => globalThis.IntMapSafe.html(s);
 /* ══ THE SOURCES ═════════════════════════════════════════════════════════════════════════════════════════════ */
 const nameOf = (el) => String((el && (el.getAttribute('aria-label') || el.getAttribute('title') || el.textContent)) || '').replace(/\s+/g, ' ').trim();
 /* The app's toolbars, whose every button is an action by construction: the map's control column (view, base, grid,
-   measure, share, layers, compass), the sidebar's tabs, the Layers panel's tools strip and the tool buttons. Named
+   tools, share, layers, compass), the sidebar's tabs, the Tools panel's analysis strip and the tool buttons. Named
    as surfaces, not as buttons — a control added to any of them is offered without an edit here. */
 const ACTION_SURFACES = ['.map-controls-top button[id]', '.control-panel button[id]', '#layer-tools button', 'button[id^="btn-tool-"]'];
 
 /* ══ WHAT A KERNEL COMMAND IS CALLED, FOR A READER — OR WHY IT HAS NO NAME (wave2-prod-fixes) ══════════════════════
    MEASURED on production (cb3a391): «radiation» and «plume» found no plume simulator, and the palette held none of
    sim.radiation, sim.terrainWater, sim.ashPlume, sim.los, sim.reach, sim.sun, sim.nightSky, sim.drone. Each is a row of
-   the Layers panel's tool list with a name and a hint in the reader's language (js/map-ui.js SIM_TOOLS), registered in
+   the Tools panel's list with a name and a hint in the reader's language (js/map-ui.js SIM_TOOLS), registered in
    the kernel beside that row — but the row carries its command as `data-act`, its meta has no `btn` and no `title`, and
    the palette asked only those two. The names existed; the palette was not reading the place they were written.
    So a command is named from what already names it, in this order, and the capability registry's spellings for the same
