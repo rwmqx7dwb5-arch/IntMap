@@ -2463,6 +2463,15 @@ test('tools-out-of-layers ④ on a phone the Map tools sheet has the same sectio
     expect(rowsOf(phone), 'the same rows as the desktop menu').toEqual(rowsOf(desk));
     expect(await page.locator('#tools-sheet .tlp-sec[data-sec="measure"] [data-proxy="btn-tool-measure"]').count(),
       '測る・描く holds the proxy tiles').toBe(1);
+    /* every proxy tile says the WHOLE label of the control it presses (2026-10-11: «Distance / area» read
+       «/ area» and «3-D volume» read «volume» — the first word was dropped as if it were an emoji icon) */
+    const labels = await page.evaluate(() => [...document.querySelectorAll('#tools-sheet .m-tool-btn[data-proxy]')].map((b) => {
+      const real = document.getElementById(b.getAttribute('data-proxy'));
+      const word = real && real.querySelector('[data-i18n]');
+      return { id: b.getAttribute('data-proxy'), tile: (b.querySelector('span:last-child') || b).textContent.trim(), real: word ? word.textContent.trim() : null };
+    }).filter((x) => x.real));
+    expect(labels.length, 'proxy tiles with a labelled real control').toBeGreaterThan(3);
+    for (const x of labels) expect(x.tile, x.id + ' tile label').toBe(x.real);
     /* a row is pressable where a finger lands, and pressing it lowers the sheet */
     const r = page.locator('#tools-sheet .lst-toolrow[data-act="tool.directions"]');
     await r.scrollIntoViewIfNeeded();
