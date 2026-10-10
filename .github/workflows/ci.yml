@@ -69,7 +69,7 @@ jobs:
       pages: ${{ steps.names.outputs.pages }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -83,7 +83,7 @@ jobs:
       - name: Build the site (Vite)
         run: npm run build
       - name: Hand the build to the jobs that read it
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: ${{ steps.names.outputs.site }}
           path: |
@@ -100,7 +100,7 @@ jobs:
       - name: The start-up measurement, for the ceiling bot
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         run: node scripts/perf-budget.mjs --report > perf-measured.json
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         with:
           name: perf-measured-${{ github.run_attempt }}
@@ -164,7 +164,7 @@ jobs:
           - { shard: 3, of: 3 }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -177,7 +177,7 @@ jobs:
         run: echo "build=$(node scripts/ci-gates.mjs --needs-build ${{ matrix.shard }}/${{ matrix.of }})" >> "$GITHUB_OUTPUT"
       - name: The run's build (dist/ + .perf/build-report.json)
         if: ${{ steps.reads.outputs.build == 'true' && needs.build.result == 'success' }}
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
         with:
           name: ${{ needs.build.outputs.site }}
           path: .
@@ -187,7 +187,7 @@ jobs:
         run: node scripts/ci-gates.mjs --shard ${{ matrix.shard }}/${{ matrix.of }} --timings gate-timings.json
       # The measured seconds go back into .github/gate-cost.json by hand (`--update`), not by a bot:
       # the ledger decides BALANCE only, so drift costs seconds, never coverage.
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: ${{ !cancelled() }}
         with:
           name: gate-timings-${{ matrix.shard }}
@@ -220,7 +220,7 @@ jobs:
     if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -244,7 +244,7 @@ jobs:
     if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -422,7 +422,7 @@ jobs:
           - { shard: 3, of: 3 }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -440,7 +440,7 @@ jobs:
       # ⚠ THE FILE IS WRITTEN OUTSIDE THE CHECKOUT ($RUNNER_TEMP). The reporter holds it open, empty,
       # for the whole run; inside the tree it was an invalid JSON file for check:static (tests/news-ingest-checks.test.mjs #R394 ②b)
       # and an untracked file for the clean-tree assertions (tests/process-round-naming-checks.test.mjs #R674 ⑦) that run in this same job.
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: ${{ !cancelled() }}
         with:
           name: checks-timings-${{ matrix.shard }}
@@ -628,10 +628,10 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version-file: .nvmrc
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
         with:
           pattern: baseline-*
           path: _timings
@@ -717,7 +717,7 @@ jobs:
           # Commits and trees only — no file contents of old commits are read.
           fetch-depth: 0
           filter: blob:none
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version-file: .nvmrc
       # (delivery-quality) WHOSE red is it. The last nights read together (deep-history.mjs, tonight
@@ -733,7 +733,7 @@ jobs:
       # The shards upload their Playwright report — junit.xml included — whenever they are not
       # cancelled, so the failing tests can be NAMED rather than linked to. A miss is survivable:
       # deep-alarm.mjs says "the shards uploaded no report" instead of printing an empty list.
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
         continue-on-error: true
         with:
           pattern: playwright-report-deep-*
@@ -836,7 +836,7 @@ jobs:
             scripts/aws-publish.mjs
             scripts/pages-publish-guard.mjs
           sparse-checkout-cone-mode: false
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
         with:
           name: ${{ needs.build.outputs.site }}
           path: .
@@ -862,7 +862,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -881,7 +881,7 @@ jobs:
         run: node scripts/site-url.mjs --pages-agrees "${{ needs.pages.outputs.page_url }}"
       - name: Upload post-deploy report
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: post-deploy-report
           path: test-results/
