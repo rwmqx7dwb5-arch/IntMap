@@ -13,9 +13,11 @@
 
 @.agents/rules/one-pass-or-a-reason.md
 
+@.agents/rules/substance-over-form.md
+
 ---
 
-> **上の 5 行は import であって要約ではない。** Claude Code は `@` の指すファイルを起動時に
+> **上の 6 行は import であって要約ではない。** Claude Code は `@` の指すファイルを起動時に
 > 展開して読み込む（相対パスは本ファイルからの相対）。**恒久指示の正本は `AGENTS.md`** で、
 > 本ファイルはそれに Claude Code 固有の作法を足すだけのもの。
 > Codex は `AGENTS.md` を直に読む。対応表は [`docs/AGENT-SETUP.md`](docs/AGENT-SETUP.md)。
