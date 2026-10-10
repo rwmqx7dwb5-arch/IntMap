@@ -1,6 +1,6 @@
 {
   "//": "written by scripts/layer-packages.mjs --update — the size of js/data-layers.js and the rows it still switches by name; only ever lowered (check:static `layer-packages`)",
-  "lines": 5226,
+  "lines": 5193,
   "windowAssignments": 114,
   "branches": [
     "aod",

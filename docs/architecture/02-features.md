@@ -1049,7 +1049,7 @@ Exclusive Economic Zone）を、別の操作に割り当ててある。
 残りは「根拠不足」と答える。**その「答えない」動作が機能の一部である。**
 
 風景写真の空と山の境界線を、標高データから計算した稜線と照合し、撮影地点と撮影方向の候補を返す。
-入口は Layers ▸ Tools ▸ Photo location（`tool.photoLocate`）、Atlas からは capability `photo.locate`。
+入口は Tools ▾ ▸ Photo location（`tool.photoLocate`）、Atlas からは capability `photo.locate`。
 
 | ファイル | 役割 |
 |---|---|
@@ -1093,7 +1093,7 @@ worker client を含む）が届き、worker 本体は最初の検索が始ま�
 
 ⚠ **HYSPLIT / FLEXPART の代わりではない。** 系統（ラグランジュ粒子輸送＋乱流拡散＋乾性湿性沈着）は
 同じだが、気象場は公開 API の格子点であって数値予報モデルの全格子ではなく、化学も地形の効果も
-入っていない。入口は Layers ▸ Tools ▸ 放射性プルーム拡散、Atlas からは capability `sim.radiation`
+入っていない。入口は Tools ▾ ▸ 放射性プルーム拡散、Atlas からは capability `sim.radiation`
 （回答は `js/atlas-cap-sim.js` の `sim.radiation` の run）。
 
 | ファイル | 役割 |

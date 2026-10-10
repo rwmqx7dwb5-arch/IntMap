@@ -16,7 +16,7 @@
 **撮影地点と撮影方向の候補**を返す。利用者は写真を入れ、地図上で「撮影者がいた可能性のある範囲」を
 矩形で指定する。
 
-入口は **Layers ▸ Tools ▸ Photo location**（`js/map-ui.js` の `tool.photoLocate`）、
+入口は **Tools ▾ ▸ Photo location**（`js/map-ui.js` の `tool.photoLocate`）、
 Atlas からは capability **`photo.locate`**。
 
 ### 1.1 二つの矩形を混同しない

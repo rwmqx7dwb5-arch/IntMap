@@ -1110,14 +1110,17 @@ async function r291Mock() {
   await page.route(/nominatim\.openstreetmap\.org/, (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
 }
+/* (tools-out-of-layers) the door is the toolbar's 「ツール ▾」 now — the Layers panel holds no tool row. A row press
+   closes the menu, so every press opens it first, the way a reader does. */
+async function toolsMenuOpen() {
+  if (!(await page.evaluate(() => document.querySelector('.measure-menu-container').classList.contains('open')))) await page.click('#btn-measure-menu');
+  await page.waitForSelector('#measure-dropdown .lst-toolrow', { state: 'visible', timeout: 30_000 });
+}
+const R291_ROW = '#measure-dropdown .lst-toolrow[data-act="tool.directions"]';
 async function r291Open() {
-  await page.evaluate(async () => {
-    try { window.IntMapLayerSidebar.open(); } catch (_) { /* it may already be open */ }
-    await new Promise((r) => setTimeout(r, 1200));
-  });
-  await page.locator('.lst-toolrow[data-act="tool.directions"]:visible').first().click();
+  await toolsMenuOpen();
+  await page.locator(R291_ROW).click();
   await page.waitForFunction(() => !!(window.IntMapRouteUI && window.IntMapRouteUI.isOpen()), null, { timeout: 20_000 });
-  await page.evaluate(() => { try { window.IntMapLayerSidebar.close(); } catch (_) { } });
 }
 /* every test below rides the same boot, but any one of them may also be run alone with `-g` —
    so the ones that need the panel say so instead of inheriting it from the test before. */
@@ -1137,10 +1140,10 @@ async function r291Route() {
   await page.waitForFunction(() => window.IntMapRouteStore.hasRoute(), null, { timeout: 20_000 });
 }
 
-test('R291 ① Layers → Tools carries Directions, and the keyboard opens it', async () => {
+test('R291 ① Tools carries Directions, and the keyboard opens it', async () => {
   await r291Mock();
-  const row = page.locator('.lst-toolrow[data-act="tool.directions"]:visible').first();
-  await page.evaluate(async () => { try { window.IntMapLayerSidebar.open(); } catch (_) { } await new Promise((r) => setTimeout(r, 1200)); });
+  const row = page.locator(R291_ROW);
+  await toolsMenuOpen();
   await expect(row).toBeVisible();
   await expect(row).toContainText(/Directions/);
   /* ⚠ 「マウス、タッチ、キーボードの全てで開ける」 — a <button> is what makes that true by
@@ -1149,14 +1152,15 @@ test('R291 ① Layers → Tools carries Directions, and the keyboard opens it', 
   await row.focus();
   await page.keyboard.press('Enter');
   await page.waitForFunction(() => !!(window.IntMapRouteUI && window.IntMapRouteUI.isOpen()), null, { timeout: 20_000 });
-  await page.evaluate(() => { try { window.IntMapLayerSidebar.close(); } catch (_) { } });
   await expect(page.locator('#route-panel')).toBeVisible();
+  /* (tools-out-of-layers) the panel focuses its first field 60 ms after opening (js/routing-ui.js), and that focus makes it
+     the panel being used — above the toolbar's menu. A reader's next press comes after it; so does this one. */
+  await page.waitForFunction(() => !!(document.activeElement && document.activeElement.closest('#route-panel')), null, { timeout: 5_000 })
+    .catch(() => { /* a panel opened with its start already chosen does not take the focus */ });
   /* pressing it again closes the PANEL — and a second press must never build a second one */
   const before = await page.locator('#route-panel').count();
-  await page.evaluate(async () => { try { window.IntMapLayerSidebar.open(); } catch (_) { } await new Promise((r) => setTimeout(r, 900)); });
-  await row.click(); await page.waitForTimeout(400);
-  await row.click(); await page.waitForTimeout(1200);
-  await page.evaluate(() => { try { window.IntMapLayerSidebar.close(); } catch (_) { } });
+  await toolsMenuOpen(); await row.click(); await page.waitForTimeout(400);
+  await toolsMenuOpen(); await row.click(); await page.waitForTimeout(1200);
   expect(await page.locator('#route-panel').count(), 'a second press must not build a second panel').toBe(before);
   await expect(page.locator('#route-panel')).toBeVisible();
 });
@@ -1283,11 +1287,9 @@ test('R291 ⑤ / R296 closing the panel takes the route with it; the endpoints s
     return [s.from.place && s.from.place.name, s.to.place && s.to.place.name];
   })).toEqual(['Tokyo Station', 'Yokohama Station']);
   /* re-opening shows the same journey, ready to recompute */
-  await page.evaluate(async () => { try { window.IntMapLayerSidebar.open(); } catch (_) { } await new Promise((r) => setTimeout(r, 1200)); });
-  const row = page.locator('.lst-toolrow[data-act="tool.directions"]:visible').first();
-  await row.click();
+  await toolsMenuOpen();
+  await page.locator(R291_ROW).click();
   await page.waitForFunction(() => !!(window.IntMapRouteUI && window.IntMapRouteUI.isOpen()), null, { timeout: 20_000 });
-  await page.evaluate(() => { try { window.IntMapLayerSidebar.close(); } catch (_) { } });
   expect(await page.locator('#route-panel .rtp-field[data-f="to"] input').inputValue()).toBe('Yokohama Station');
   /* …and 「経路を消去」 clears without closing */
   await r291Route();
@@ -2214,15 +2216,15 @@ const r766Doors = () => page.evaluate(async () => {
   /* the strip and the tile browser's rows are two surfaces over the same OS commands; the overlap
      is computed from two declarations (`data-os-act` on the button, `data-act` on the row) rather
      than from a written pairing of ids, so this measures that the computation actually ran. */
-  const tb = strip.closest('.lst-toolbody');
+  const tb = strip.closest('.tlp-root');   /* (tools-out-of-layers) the Tools panel the strip is carried into */
   const rows = new Set(tb ? Array.from(tb.querySelectorAll('.lst-toolrow[data-act]'))
     .filter((b) => getComputedStyle(b).display !== 'none').map((b) => b.dataset.act) : []);
   const dupes = Array.from(strip.querySelectorAll('[data-os-act]'))
     .filter((b) => getComputedStyle(b).display !== 'none' && rows.has(b.dataset.osAct))
     .map((b) => b.dataset.osAct);
   return {
-    strip: strip.closest('.lsr-mount') ? '.lsr-mount'
-      : strip.closest('#layer-sidebar-r') ? '#layer-sidebar-r'
+    strip: strip.closest('#tools-sheet') ? '#tools-sheet'
+      : strip.closest('#measure-dropdown') ? '#measure-dropdown'
         : strip.closest('#layer-dropdown') ? '#layer-dropdown' : '?',
     doors, dupes,
   };
@@ -2249,23 +2251,20 @@ function r766Assert(d, where) {
  *  happen by itself. This is also what puts the strip in place: `_placeLayerTools` runs on a build,
  *  an open, a close and a rebuild, so before the first open the strip may still be parked in
  *  `#layer-dropdown` (measured — the earlier draft's wait for `.lst-toolbody` was a race). */
+/* (tools-out-of-layers) …and the panel a reader opens for these doors is the toolbar's 「ツール ▾」 now: the strip is
+   carried into its 「分析」 section, not into the Layers panel. Opened by pressing its trigger, as a reader does. */
 async function r766OpenPanel() {
-  const wasOpen = await page.evaluate(() => document.body.classList.contains('lsr-open'));
-  if (!wasOpen) {
-    await page.click('#lsr-toggle');
-    await page.waitForFunction(() => document.body.classList.contains('lsr-open'), null, { timeout: 30_000 });
-  }
+  const wasOpen = await page.evaluate(() => document.querySelector('.measure-menu-container').classList.contains('open'));
+  if (!wasOpen) await page.click('#btn-measure-menu');
   await page.waitForFunction(() => {
     const t = document.getElementById('layer-tools');
-    return !!t && !!t.closest('.lst-toolbody');
+    return !!t && !!t.closest('#measure-dropdown .tlp-body');
   }, null, { timeout: 30_000 });
   return wasOpen;
 }
 async function r766RestorePanel(wasOpen) {
   if (wasOpen) return;
-  await page.evaluate(() => { try { document.getElementById('lsr-toggle')?.click(); } catch { /* nothing to restore */ } });
-  await page.waitForFunction(() => !document.body.classList.contains('lsr-open'), null, { timeout: 30_000 })
-    .catch(() => { /* restore is courtesy — the assertions above already ran */ });
+  await page.evaluate(() => { try { window._closeMeasureMenu && window._closeMeasureMenu(); } catch { /* nothing to restore */ } });
 }
 
 test('R766 ① every door the layer tools strip offers is reachable on a desktop viewport', async () => {
@@ -2320,22 +2319,164 @@ test('R766 ③ every door is reachable on a phone viewport too', async () => {
   await page.setViewportSize({ width: 375, height: 812 });
   try {
     await page.waitForFunction(() => document.body.classList.contains('m-lyr-tiles'), null, { timeout: 30_000 });
-    await page.click('#m-fab-map');
+    /* (tools-out-of-layers) the phone's panel for these doors is the Map tools sheet */
+    await page.click('#m-fab-tools');
     /* the sheet arrives by transition; poll the thing that is moving rather than guess a number */
     await page.waitForFunction(() => {
-      const sh = document.getElementById('mo-sheet');
+      const sh = document.getElementById('tools-sheet');
       return !!sh && sh.classList.contains('show')
         && sh.getBoundingClientRect().top < window.innerHeight - 200;
     }, null, { timeout: 30_000 });
     await page.waitForFunction(() => {
       const t = document.getElementById('layer-tools');
-      return !!t && !!t.closest('#mo-mount-layers .lst-toolbody');
+      return !!t && !!t.closest('#tools-sheet .tlp-body');
     }, null, { timeout: 30_000 });
     r766Assert(await r766Doors(), 'phone 375');
+    await page.evaluate(() => { try { document.getElementById('tools-done').click(); } catch { /* courtesy */ } });
   } finally {
     if (before) await page.setViewportSize(before);
     /* the strip is handed back to the desktop host by the same placement call; wait for it so a
        later test in this serial suite never sees the page mid-hand-off */
+    await page.waitForFunction(() => !document.body.classList.contains('m-lyr-tiles'), null, { timeout: 30_000 })
+      .catch(() => { /* restore is courtesy — nothing below asserts on the layout */ });
+  }
+});
+
+/* ══ (tools-out-of-layers) 「何を見るか」と「何をするか」を分ける — on this suite's booted page ════════════════════
+   The Layers panel held the tool rows and the analysis strip under the layers, and the measuring tools sat in a separate
+   「Measure ▾」. They are ONE Tools panel now — the toolbar's 「ツール ▾」, and the Map tools sheet on a phone — in four
+   sections built by js/map-ui.js `mountTools` from SIM_TOOLS, and every row presses the IntMapOS command the palette,
+   the right-click menu and Atlas press. ⚠ HERE AND NOT IN A FILE OF ITS OWN for the reason R766 gives above: a new
+   spec is charged the p75 of a boot (36 s) against a core ceiling of 0.3 min (`npm run check:testbudget`, measured
+   this round: 0.9 min with the file), and this suite has already booted. Each test leaves the page as it found it.
+   The rows are DISCOVERED and compared between surfaces; only the three doors ③ presses are named. */
+/** what a Tools panel holds, read off the page: its sections in order, and the rows/buttons of each */
+const toolsPanel = (rootSel) => page.evaluate((sel) => {
+  const root = document.querySelector(sel); if (!root) return null;
+  return Array.from(root.querySelectorAll(':scope > .tlp-sec')).map((s) => ({
+    sec: s.dataset.sec, hidden: s.hidden,
+    heading: ((s.querySelector('.tlp-sech') || {}).textContent || '').trim(),
+    rows: Array.from(s.querySelectorAll('.lst-toolrow[data-act]')).map((b) => b.dataset.act),
+    named: Array.from(s.querySelectorAll('.lst-toolrow')).every((b) => !!(b.querySelector('b') || {}).textContent),
+    buttons: s.querySelectorAll('button').length,
+    strip: !!s.querySelector('#layer-tools'),
+  }));
+}, rootSel);
+const toolsMenuIsOpen = () => page.evaluate(() => document.querySelector('.measure-menu-container').classList.contains('open'));
+
+test('tools-out-of-layers ① the Tools menu has four sections and every row, and each row is a kernel command', async () => {
+  await expect(page.locator('#btn-measure-menu')).toContainText(/Tools|ツール/);
+  await toolsMenuOpen();
+  try {
+    const secs = await toolsPanel('#measure-dropdown .tlp-root');
+    expect(secs.map((s) => s.sec), 'the four sections, in order').toEqual(['measure', 'tool', 'sim', 'analysis']);
+    for (const s of secs) {
+      expect(s.hidden, s.sec + ' is shown').toBe(false);
+      expect(s.heading.length, s.sec + ' has a heading').toBeGreaterThan(1);
+      expect(s.buttons, s.sec + ' offers something to press').toBeGreaterThan(0);
+    }
+    const by = Object.fromEntries(secs.map((s) => [s.sec, s]));
+    /* 測る・描く is the four controls the Measure menu had — the same nodes, so their ids and handlers are unchanged */
+    for (const id of ['btn-tool-measure', 'btn-tool-draw', 'btn-tool-radius', 'btn-tool-volume']) {
+      expect(await page.locator('#measure-dropdown .tlp-sec[data-sec="measure"] #' + id).count(), id + ' is in 測る・描く').toBe(1);
+    }
+    expect(by.tool.rows.length > 0 && by.tool.rows.every((a) => a.startsWith('tool.')), '道具 holds the tool.* rows').toBe(true);
+    expect(by.sim.rows.length > 0 && by.sim.rows.every((a) => a.startsWith('sim.')), 'シミュレーション holds the sim.* rows').toBe(true);
+    expect(by.tool.named && by.sim.named, 'every row has a name').toBe(true);
+    expect(by.analysis.strip, '分析 holds the analysis strip').toBe(true);
+    /* every row presses a command the kernel holds — the one door the palette, the right-click menu and Atlas share */
+    const all = by.tool.rows.concat(by.sim.rows);
+    expect(await page.evaluate((ids) => ids.filter((id) => !(window.IntMapOS && window.IntMapOS.has(id))), all),
+      'rows whose command the kernel does not hold').toEqual([]);
+    /* one door per simulator: the strip carries no twin of a row */
+    expect(await page.locator('#btn-seismic-sim, #btn-pandemic-sim').count(), 'the strip buttons that duplicated two rows are gone').toBe(0);
+  } finally { await page.evaluate(() => { try { window._closeMeasureMenu(); } catch { /* courtesy */ } }); }
+});
+
+test('tools-out-of-layers ② the Layers panel holds no tool row and no analysis strip; a search still finds a tool; the presets stay', async () => {
+  const wasOpen = await page.evaluate(() => document.body.classList.contains('lsr-open'));
+  if (!wasOpen) await page.click('#lsr-toggle');
+  try {
+    await page.waitForFunction(() => document.body.classList.contains('lsr-open')
+      && document.querySelectorAll('#layer-sidebar-r .lst-tile[data-lid]').length > 20, null, { timeout: 30_000 });
+    const inLayers = await page.evaluate(() => ({
+      rows: document.querySelectorAll('#layer-sidebar-r .lst-toolrow').length,
+      strip: !!document.querySelector('#layer-sidebar-r #layer-tools'),
+      presetsMade: !!document.getElementById('lyr-presets'),
+      presetsHere: !!document.querySelector('#layer-sidebar-r .lst-presets #lyr-presets'),
+    }));
+    expect(inLayers.rows, 'tool rows in the Layers panel').toBe(0);
+    expect(inLayers.strip, 'the analysis strip is not in the Layers panel').toBe(false);
+    if (inLayers.presetsMade) expect(inLayers.presetsHere, 'the layer presets are a section of the Layers panel').toBe(true);
+    /* #R291: the Layers search still finds a tool — drawn only while the query is typed */
+    await page.fill('#lsr-q', 'directions');
+    await expect(page.locator('#layer-sidebar-r .lst-toolhits .lst-toolrow[data-act="tool.directions"]')).toBeVisible();
+    await page.fill('#lsr-q', '');
+    await expect(page.locator('#layer-sidebar-r .lst-toolrow')).toHaveCount(0);
+  } finally {
+    if (!wasOpen) await page.evaluate(() => { try { document.getElementById('lsr-toggle').click(); } catch { /* courtesy */ } });
+  }
+});
+
+test('tools-out-of-layers ③ a row opens its tool, and the menu gets out of the way', async () => {
+  await page.evaluate(() => { try { if (window.IntMapRouteUI && window.IntMapRouteUI.isOpen()) window.IntMapRouteUI.close(); } catch { /* none open */ } });
+  await toolsMenuOpen();
+  await page.locator('#measure-dropdown .lst-toolrow[data-act="tool.directions"]').click();
+  await page.waitForFunction(() => !!(window.IntMapRouteUI && window.IntMapRouteUI.isOpen()), null, { timeout: 30_000 });
+  expect(await toolsMenuIsOpen(), 'the menu closed behind the tool').toBe(false);
+  await page.evaluate(() => window.IntMapRouteUI.close());
+
+  await toolsMenuOpen();
+  await page.locator('#measure-dropdown .lst-toolrow[data-act="sim.seismic"]').click();
+  await page.waitForFunction(() => !!(window.IntMapSeismic && window.IntMapSeismic.state().open), null, { timeout: 45_000 });
+  await expect(page.locator('#sq-panel')).toBeVisible();
+  /* the row reads the module, so it is lit while the simulator runs, and a second press closes it (#R264) */
+  await toolsMenuOpen();
+  const row = page.locator('#measure-dropdown .lst-toolrow[data-act="sim.seismic"]');
+  await expect(row).toHaveClass(/\bon\b/);
+  await row.click();
+  await page.waitForFunction(() => !window.IntMapSeismic.state().open, null, { timeout: 15_000 });
+
+  await toolsMenuOpen();
+  await page.locator('#btn-tool-measure').click();
+  await expect(page.locator('#tool-panel')).toBeVisible();
+  await expect(page.locator('#btn-measure-menu')).toHaveClass(/tool-on/);
+  expect(await toolsMenuIsOpen(), 'the menu closed behind the measuring tool').toBe(false);
+  await page.locator('#tool-panel .tp-close').click();
+  await expect(page.locator('#tool-panel')).toBeHidden();
+});
+
+test('tools-out-of-layers ④ on a phone the Map tools sheet has the same sections and rows; the Layers sheet has none', async () => {
+  const desk = await toolsPanel('#measure-dropdown .tlp-root');
+  const before = page.viewportSize();
+  await page.setViewportSize({ width: 375, height: 812 });
+  try {
+    await page.waitForFunction(() => document.body.classList.contains('m-lyr-tiles'), null, { timeout: 30_000 });
+    await page.click('#m-fab-tools');
+    await page.waitForFunction(() => {
+      const sh = document.getElementById('tools-sheet');
+      return !!sh && sh.classList.contains('show') && !!sh.querySelector('.tlp-root');
+    }, null, { timeout: 30_000 });
+    const phone = await toolsPanel('#tools-sheet .tlp-root');
+    expect(phone.map((s) => s.sec), 'the same four sections').toEqual(['measure', 'tool', 'sim', 'analysis']);
+    const rowsOf = (p) => p.filter((s) => s.sec === 'tool' || s.sec === 'sim').flatMap((s) => s.rows);
+    expect(rowsOf(phone), 'the same rows as the desktop menu').toEqual(rowsOf(desk));
+    expect(await page.locator('#tools-sheet .tlp-sec[data-sec="measure"] [data-proxy="btn-tool-measure"]').count(),
+      '測る・描く holds the proxy tiles').toBe(1);
+    /* a row is pressable where a finger lands, and pressing it lowers the sheet */
+    const r = page.locator('#tools-sheet .lst-toolrow[data-act="tool.directions"]');
+    await r.scrollIntoViewIfNeeded();
+    await r.click();
+    await page.waitForFunction(() => !!(window.IntMapRouteUI && window.IntMapRouteUI.isOpen()), null, { timeout: 30_000 });
+    expect(await page.evaluate(() => document.getElementById('tools-sheet').classList.contains('show')), 'the sheet went down').toBe(false);
+    await page.evaluate(() => window.IntMapRouteUI.close());
+    /* the Layers sheet: tiles, and no tool row */
+    await page.click('#m-fab-map');
+    await page.waitForFunction(() => document.querySelectorAll('#mo-mount-layers .lst-tile[data-lid]').length > 20, null, { timeout: 30_000 });
+    expect(await page.locator('#mo-mount-layers .lst-toolrow').count(), 'tool rows in the Layers sheet').toBe(0);
+    await page.evaluate(() => { try { document.getElementById('mo-done').click(); } catch { /* courtesy */ } });
+  } finally {
+    if (before) await page.setViewportSize(before);
     await page.waitForFunction(() => !document.body.classList.contains('m-lyr-tiles'), null, { timeout: 30_000 })
       .catch(() => { /* restore is courtesy — nothing below asserts on the layout */ });
   }

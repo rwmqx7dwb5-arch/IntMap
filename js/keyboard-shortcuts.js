@@ -93,7 +93,7 @@ export function makeKeyboardShortcuts(HOST, CTX) {
         import('./offline-maps.js').then(m=>m.openOfflineMaps(HOST)).catch(()=>{ try{ imToast(KL('Offline maps could not be opened','オフライン地図を開けませんでした')); }catch(_){} }); }); }
     /* ══ (ux-next) Ctrl/⌘+K — THE COMMAND PALETTE ═════════════════════════════════════════════════════════
        One field for everything the app can be asked: the actions (the controls the kernel's commands are bound to and
-       the Layers panel's tools), every row of the Layers registry, the places on the device, the company atlas, the
+       the Tools panel's rows), every row of the Layers registry, the places on the device, the company atlas, the
        example maps and tours — and Atlas, which takes whatever was typed. js/command-palette.js, fetched on first use.
        It answers in a text field too (a palette is reached for from wherever the caret is); inside the palette the same
        keys hand the text to Atlas (the palette handles that itself and stops the event). Desktop and phone alike — a

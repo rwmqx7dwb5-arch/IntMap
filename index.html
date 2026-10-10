@@ -454,9 +454,15 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
              the whole change: .map-view-group is a plain flex row with no first/last-child styling, and the panel
              follows the button on its own (IntMapObjects._placePanel anchors under #btn-tool-objects' own rect). -->
         <button class="view-btn" id="btn-tool-objects" title="Objects" data-i18n-title="ttlObjects" style="display:none;"><span data-icon="folder"></span> <span data-i18n="objectsBtn">Objects</span><span id="tool-objects-n" style="margin-left:5px;font-weight:700;opacity:0.85;"></span></button>
+        <!-- (tools-out-of-layers) 「Measure ▾」 became 「Tools ▾」: ONE panel for what the reader can DO — 測る・描く (the four
+             buttons below, unchanged ids and handlers), 道具, シミュレーション and 分析. js/map-ui.js `mountTools` builds the
+             other three sections into this dropdown from SIM_TOOLS and carries #layer-tools into 分析; the Layers panel
+             no longer holds any of them. The ids stay so every existing caller (Atlas clickId, shortcuts, the phone's
+             data-proxy tiles, tests) still reaches the same controls. -->
         <div class="measure-menu-container">
-          <button class="view-btn" id="btn-measure-menu" title="Measurement tools" data-i18n-title="ttlMeasureTools"><span data-icon="set-square"></span> <span data-i18n="measureMenuBtn">Measure</span> <span class="caret-sm">▾</span></button>
+          <button class="view-btn" id="btn-measure-menu" title="Map tools" data-i18n-title="ttlMapTools" aria-haspopup="true"><span data-icon="set-square"></span> <span data-i18n="ttlTools">Tools</span> <span class="caret-sm">▾</span></button>
           <div class="measure-dropdown" id="measure-dropdown">
+            <div class="tlp-measure">
             <button class="view-btn" id="btn-tool-measure" title="Measure distance / area" data-i18n-title="ttlMeasureDA"><span data-icon="ruler"></span> <span data-i18n="measureDistBtn">Distance / area</span></button>
             <button class="view-btn" id="btn-tool-draw" title="Freehand draw & trace" data-i18n-title="ttlDrawTrace"><span data-icon="pencil"></span> <span data-i18n="drawBtn">Draw</span></button>
             <button class="view-btn" id="btn-tool-radius" title="Radius" data-i18n-title="radius"><span data-icon="radius"></span> <span data-i18n="radiusBtn">Radius</span></button><!-- (#R151) Radius folded INTO the Measure menu (Distance/area · Draw · Radius) per request -->
@@ -464,6 +470,7 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
             <!-- (#R176) 「DronesはMeasureに置くな。どこにも置くな。」 — the 🛸 Drone button is gone from this menu
                  and from the mobile Tools sheet. The planner itself (js/drone-nav.js) is untouched and still
                  answers the Atlas `drone` action; only its place in the toolbar was wrong. -->
+            </div>
           </div>
         </div>
         <!-- (#R151) Screenshot + link folded INTO one Share menu per request -->

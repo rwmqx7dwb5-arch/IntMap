@@ -904,6 +904,8 @@ export function layerSidebar(HOST){
         +'#layer-sidebar-r .lst-tile.lst-row.lst-basic.on .lst-sw i,.lsr-mount .lst-tile.lst-row.lst-basic.on .lst-sw i{transform:translateX(13px);}'
         +'#layer-sidebar-r .lst-tile.lst-basic+.lst-tile.lst-basic,.lsr-mount .lst-tile.lst-basic+.lst-tile.lst-basic{margin-top:-2px;}'
         /* ══ ⚠⚠⚠ (#R243) THE TOOL ROW — 「地震シミュレータはレイヤー欄からも開けるようにしろ。」 ══════
+           (tools-out-of-layers) HISTORY: the row is drawn in the Tools panel now, not in the tile browser —
+           the note after these two explains where, and why the Layers panel no longer holds it.
            #R242 answered this by appending a button to `#layer-tools`, which lives inside
            `#layer-dropdown` — the CLASSIC dropdown, and `imLayerPanel` has defaulted to `'right'`
            since #R154. MEASURED on the shipped build: the button exists, `display:block`, and its
@@ -929,19 +931,39 @@ export function layerSidebar(HOST){
            does not sit 16 px further down than the tiles' first row. */
         /* (#R469) the gap moved onto the collapsible body so the section can be closed without the
            wrapper still reserving a row of empty space where the tools were. */
-        +'#layer-sidebar-r .lst-tools,.lsr-mount .lst-tools{margin-top:18px;display:block;}'
-        +'#layer-sidebar-r .lst-toolbody,.lsr-mount .lst-toolbody{display:flex;flex-direction:column;gap:8px;}'
-        +'#layer-sidebar-r .lst-toolbody.closed,.lsr-mount .lst-toolbody.closed{display:none;}'
-        +'#layer-sidebar-r .lst-tools>.lst-sech,.lsr-mount .lst-tools>.lst-sech{margin-bottom:8px;}'
+        /* ══ (tools-out-of-layers) THE TOOLS LEFT THE LAYERS PANEL ══════════════════════════════════════
+           「何を見るか」と「何をするか」が 1 つの箱にあった. The rows are drawn into the Tools panel now — the
+           desktop's 「ツール ▾」 (`#measure-dropdown`) and the phone's Map tools sheet, both through
+           `mountTools` below — and the Layers panel keeps only what is layer state: the presets.
+           The card rules below are scoped to `.tlp-root` (the Tools panel) and `.lst-toolhits` (the rows a
+           Layers search still finds, #R291), the only two places a tool row is drawn. */
+        +'#layer-sidebar-r .lst-presets,.lsr-mount .lst-presets{margin-top:18px;display:block;}'
+        +'#layer-sidebar-r .lst-presets[hidden],.lsr-mount .lst-presets[hidden]{display:none;}'
+        +'#layer-sidebar-r .lst-presets-body.closed,.lsr-mount .lst-presets-body.closed{display:none;}'
+        +'#layer-sidebar-r .lst-presets>.lst-sech,.lsr-mount .lst-presets>.lst-sech{margin-bottom:8px;}'
+        +'#layer-sidebar-r .lst-toolhits,.lsr-mount .lst-toolhits{margin-top:18px;display:flex;flex-direction:column;gap:8px;}'
+        +'#layer-sidebar-r .lst-toolhits[hidden],.lsr-mount .lst-toolhits[hidden]{display:none;}'
+        +'#layer-sidebar-r .lst-toolhits>.lst-sech,.lsr-mount .lst-toolhits>.lst-sech{cursor:default;margin-bottom:0;}'
+        +'.tlp-root{display:flex;flex-direction:column;gap:2px;min-width:0;}'
+        +'.tlp-sec[hidden]{display:none;}'
+        +'.tlp-sech{display:flex;align-items:center;gap:7px;margin:10px 2px 6px;padding:3px 4px;border-radius:7px;font-size:12px;font-weight:600;letter-spacing:0.01em;color:var(--text-muted);cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;}'
+        +'.tlp-sec:first-child>.tlp-sech{margin-top:2px;}'
+        +'.tlp-sech:hover{color:var(--text-main);}'
+        +'.tlp-sech .lst-chev{flex:0 0 auto;width:6.5px;height:6.5px;border-right:1.8px solid currentColor;border-bottom:1.8px solid currentColor;transform:rotate(45deg);transition:transform .18s ease;position:relative;top:-2px;}'
+        +'.tlp-sech.closed .lst-chev{transform:rotate(-45deg);top:0;}'
+        +'.tlp-body{display:flex;flex-direction:column;gap:8px;min-width:0;}'
+        +'.tlp-body.closed{display:none;}'
+        +'.tlp-body>.tlp-measure{display:grid;grid-template-columns:1fr 1fr;gap:4px;}'
+        +'.tlp-body>.m-tool-grid{margin-bottom:0;}'
         /* ══ ⚠⚠⚠ (#R766) #layer-tools IS CARRIED IN HERE, SO ITS OWN SECTION HEADER IS A SECOND ONE ═══
-           `_placeLayerTools` below moves the real `#layer-tools` node into `.lst-toolbody`; the strip
-           carries a 「ツール」 header of its own (js/data-layers.js builds one on every rebuild), which
-           inside this section is the same heading twice. It is HIDDEN rather than not built, because
+           `_placeLayerTools` below moves the real `#layer-tools` node into the Tools panel's 「分析」 body;
+           the strip carries a 「ツール」 header of its own (js/data-layers.js builds one on every rebuild),
+           which inside this section is the same heading twice. It is HIDDEN rather than not built, because
            the strip is also the classic dropdown's own section and that copy still needs its heading
            — the rule is written against the PLACEMENT (「a section header nested inside a section」)
            rather than against the id of one button, so a module that adds a third heading is covered. */
-        +'.lst-toolbody > #layer-tools > .lyr-section-label{display:none;}'
-        +'.lst-toolbody > #layer-tools{gap:8px;margin:0;}'
+        +'.tlp-body > #layer-tools > .lyr-section-label{display:none;}'
+        +'.tlp-body > #layer-tools{gap:8px;margin:0;}'
         /* ══ (#R469) 「その他N件」 — the fold inside a category ═══════════════════════════════════════
            Full-width in a 3-column grid, and quiet: it is a way IN to rows the reader did not name,
            not a control competing with the layers themselves. The chevron is the same glyph the
@@ -958,23 +980,23 @@ export function layerSidebar(HOST){
         /* (#R469) the three exclusive 基本表示 choices. `role=radio` + the switch the rows already use;
            only one carries `.on`, because `IntMapBaseDisplay` only ever names one. */
         +'#layer-sidebar-r .lst-tile.lst-mode .lst-nm,.lsr-mount .lst-tile.lst-mode .lst-nm{font-weight:600;}'
-        +'#layer-sidebar-r .lst-toolrow,.lsr-mount .lst-toolrow{width:100%;box-sizing:border-box;display:flex;align-items:center;gap:10px;'
+        +'.tlp-root .lst-toolrow,.lst-toolhits .lst-toolrow{width:100%;box-sizing:border-box;display:flex;align-items:center;gap:10px;'
           +'min-height:46px;padding:9px 12px;border-radius:12px;border:1px solid rgba(128,128,128,0.18);'
           +'background:var(--card-bg);color:var(--text-main);font-size:12.5px;font-weight:500;cursor:pointer;text-align:left;'
           +'transition:background .13s ease,border-color .13s ease;-webkit-tap-highlight-color:transparent;}'
-        +'#layer-sidebar-r .lst-toolrow:hover,.lsr-mount .lst-toolrow:hover{border-color:rgba(128,128,128,0.38);background:var(--input-bg);}'
-        +'#layer-sidebar-r .lst-toolrow:active,.lsr-mount .lst-toolrow:active{transform:scale(0.995);}'
+        +'.tlp-root .lst-toolrow:hover,.lst-toolhits .lst-toolrow:hover{border-color:rgba(128,128,128,0.38);background:var(--input-bg);}'
+        +'.tlp-root .lst-toolrow:active,.lst-toolhits .lst-toolrow:active{transform:scale(0.995);}'
         /* ⚠ (#R264) AFTER `:hover`, exactly as `.lst-tile.on` is. `#id .cls:hover` and `#id .cls.on`
            have the SAME specificity, so the one written later wins — an `on` row the pointer happens
            to be over would otherwise lose its accent border while it is being pressed. */
-        +'#layer-sidebar-r .lst-toolrow.on,.lsr-mount .lst-toolrow.on{border-color:var(--primary-color);box-shadow:0 0 0 1px var(--primary-color);}'
-        +'#layer-sidebar-r .lst-toolic,.lsr-mount .lst-toolic{flex:0 0 auto;width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;'
+        +'.tlp-root .lst-toolrow.on,.lst-toolhits .lst-toolrow.on{border-color:var(--primary-color);box-shadow:0 0 0 1px var(--primary-color);}'
+        +'.tlp-root .lst-toolic,.lst-toolhits .lst-toolic{flex:0 0 auto;width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;'
           +'background:color-mix(in srgb, var(--primary-color) 16%, transparent);color:var(--primary-color);}'
-        +'#layer-sidebar-r .lst-toolt,.lsr-mount .lst-toolt{flex:1;min-width:0;position:relative;}'
+        +'.tlp-root .lst-toolt,.lst-toolhits .lst-toolt{flex:1;min-width:0;position:relative;}'
         /* (#R291) 「現在経路が存在する場合は、控えめなアクティブ表示」 — a route outlives its panel, so a
            row needs a way to say «there is one» that is not the same signal as «the panel is open». */
-        +'#layer-sidebar-r .lst-tooldot,.lsr-mount .lst-tooldot{position:absolute;top:2px;right:-2px;width:7px;height:7px;border-radius:50%;background:var(--primary-fill);}'
-        +'#layer-sidebar-r .lst-toolgo,.lsr-mount .lst-toolgo{flex:0 0 auto;color:var(--text-muted);font-size:15px;}'
+        +'.tlp-root .lst-tooldot,.lst-toolhits .lst-tooldot{position:absolute;top:2px;right:-2px;width:7px;height:7px;border-radius:50%;background:var(--primary-fill);}'
+        +'.tlp-root .lst-toolgo,.lst-toolhits .lst-toolgo{flex:0 0 auto;color:var(--text-muted);font-size:15px;}'
         /* Active-layers bar pinned at the top of the tile browser — COMPACT here: the chip strip is hidden
            (it turns into clutter as layers pile up — "選択レイヤーが増加すると煩雑"); the counter + List
            overlay + Clear-all carry the same functions in one constant-height row. */
@@ -1356,11 +1378,15 @@ export function layerSidebar(HOST){
            number beside it would be counting the switches those choices SET, not options to pick from. */
         if(g.querySelector('.lst-mode')) return;
         const h=g.previousElementSibling; if(h&&h.classList.contains('lst-sech')){ const c=document.createElement('span'); c.className='lst-cnt'; c.textContent=g.querySelectorAll('.lst-tile').length; h.appendChild(c); } });
-      root.appendChild(toolsBlock());   /* (#R243) 「地震シミュレータはレイヤー欄からも」 — see the CSS note */
+      /* (tools-out-of-layers) the foot of the Layers panel is the layer PRESETS — layer state, so it stays here.
+         The tools and the analysis strip that stood here (#R243 / #R766) are the Tools panel now (`mountTools`). */
+      root.appendChild(presetsBlock());
       /* ⚠ (#R232) `#lst-root` was an ID and there can now be two of them on the page at once, so the
          root is found by CLASS within its own host. The id is kept on the sidebar's copy because
          tests and older selectors name it. */
       /* ══ ⚠⚠⚠ (#R766) THE STRIP IS RESCUED BEFORE THE ROOT THAT HOLDS IT IS THROWN AWAY ════════
+         (tools-out-of-layers) The node carried in here is `#lyr-presets` now — `#layer-tools` goes to the
+         Tools panel, which is not rebuilt by this — and the hazard below is the same one, measured on the strip:
          `#layer-tools` is a REAL node carried in here by `_placeLayerTools`, not a copy — so the
          `replaceWith` below discards it along with the root it is sitting in, and a DETACHED node is
          one `document.getElementById` can no longer find. MEASURED on a 375px phone before this
@@ -1372,7 +1398,7 @@ export function layerSidebar(HOST){
          `document.body`, where a strip with no panel around it would be drawn ON the map. The next
          `_placeLayerTools()` (the line after this rebuild) carries it back into the new section. */
       const old=host.querySelector('.lst-root');
-      try{ const lt=old&&old.querySelector('#layer-tools'); const dd=document.getElementById('layer-dropdown');
+      try{ const lt=old&&old.querySelector('#lyr-presets'); const dd=document.getElementById('layer-dropdown');
         if(lt&&dd) dd.appendChild(lt); }catch(_){}
       if(old) old.replaceWith(root); else bodyEl.appendChild(root);
       if(host===sb) root.id='lst-root';
@@ -1702,10 +1728,10 @@ export function layerSidebar(HOST){
          are the two that STAY — both are called by something else now. */
     ];
     /* one door per tool — the palette, Atlas and this row all press the same one (#R242).
-       ⚠ CALLED FROM `toolsBlock()`, not from the factory body: this module is constructed during
+       ⚠ CALLED FROM `mountTools()`, not from the factory body: this module is constructed during
        boot and `window.IntMapOS` is built later in js/app-body.js, so a registration at load time
        would be a silent no-op (#R200 ⑥'s shape, in a different file). The tile browser is assembled
-       long after both exist, and `OS.has` keeps it idempotent. */
+       long after both exist (the desktop's Tools panel is built 1.5 s in), and `OS.has` keeps it idempotent. */
     /* ══ ⚠⚠⚠ (#R264) A TOOL CARD NOW CARRIES THE TOOL'S STATE ══════════════════════════════════════
        「…選択中はハイライトし…もう一度タイルを押したら選択解除されるように。」 A layer tile can do this
        because it owns a checkbox; a tool card owns nothing — the state lives in the simulator, so
@@ -1736,135 +1762,194 @@ export function layerSidebar(HOST){
       SIM_TOOLS.forEach(t=>{ if(!t.run) return; try{ if(OS.has&&OS.has(t.id)) return;
         OS.register(t.id,()=>Promise.resolve(t.run()),{label:t.en,group:t.group||'sim'}); }catch(_){} }); }catch(_){} }
     const TOOLS=SIM_TOOLS;
-    /* ⚠ (#R469) the tools section's collapse state shares `_secClosed` with the layer categories, under
-       a key no translated section name can collide with. It is remembered for the session exactly as a
-       category is, and it starts OPEN — 「ツールも、レイヤーカテゴリと同様に畳めるように」 asks for the
-       ability, and #R210 settled that a section defaults to open unless it is Beta. */
-    const TOOLS_SEC='__tools__';
-    function toolsBlock(){ registerSimTools();
-      const wrap=document.createElement('div'); wrap.className='lst-tools';
-      if(!(TOOLS_SEC in _secClosed)) _secClosed[TOOLS_SEC]=false;
-      const closed=!!_secClosed[TOOLS_SEC];
-      const h=document.createElement('div'); h.className='lst-sech'+(closed?' closed':'');
+    /* ══ (tools-out-of-layers) THE TOOLS PANEL — 「何を見るか」と「何をするか」を分ける ══════════════════════════
+       These rows stood at the foot of the Layers panel (#R243 → #R469), with the analysis strip carried in beside them
+       (#R766), and the measuring tools — the same kind of thing — sat in a separate 「Measure ▾」 menu. A reader who
+       opened Layers to choose what to SEE found fifteen things to DO under the layers. They are ONE panel now, in four
+       sections, drawn where a reader goes for a verb: the desktop's 「ツール ▾」 (`#measure-dropdown`, the Measure menu
+       it replaces) and the phone's Map tools sheet (`#tools-sheet`). ONE builder for both (`mountTools`), ONE registry
+       (`SIM_TOOLS`), ONE door per row (`IntMapOS.exec`) — and the Layers panel draws none of them.
+         · 測る・描く — the container's own measuring controls (`opts.measure`: the desktop's four buttons, the phone's
+           proxy tiles). They are CARRIED in, not redrawn, so their handlers are the ones they always had.
+         · 道具 / シミュレーション — the rows of `SIM_TOOLS`, split by the `group` each row already declares (the same
+           field `registerSimTools` hands the kernel), so a new row lands in its section with no list written here.
+         · 分析 — the real `#layer-tools` strip (compare, correlation, import, data & analysis, Playground), carried by
+           `_placeLayerTools` exactly as #R766 carried it; only the place it is carried TO changed.
+       ⚠ THE LAYERS SEARCH STILL FINDS A TOOL — #R291 「Layersの検索で route / directions / 経路 …から発見できるように」.
+       While a query is typed, the matching rows are drawn under the layers by `filterTiles`, through the same `_toolRow`;
+       with no query the Layers panel holds no tool row at all. */
+    const TOOL_SECS=[
+      ['measure', ()=>T('Measure & draw','測る・描く')],
+      ['tool',    ()=>T('Utilities','道具')],
+      ['sim',     ()=>T('Simulations','シミュレーション')],
+      ['analysis',()=>T('Analysis','分析')] ];
+    const _toolGroup=(t)=>t.group||'sim';   /* the same default `registerSimTools` hands the kernel */
+    const _toolHosts=[];                    /* { root, opts } — every mounted Tools panel */
+    const _toolNm=(t)=>((t.label()+' '+t.hint()+' '+(t.en||'')+' '+(t.keys||'')).toLowerCase());   /* (#R291) findable by what it IS too */
+    const _pick=(f)=>{ try{ if(typeof f==='function') f(); }catch(_){} };
+    /* ONE ROW — drawn by the Tools panel and by a Layers search alike. `pick` is what the surface it sits in does after
+       a press (the desktop menu closes, the phone's sheet goes down, the Layers overlay on a phone closes). */
+    function _toolRow(t,pick){
+      const b=document.createElement('button'); b.type='button'; b.className='lst-toolrow'+(_toolOn(t)?' on':''); b.dataset.act=t.id;
+      const ic=document.createElement('span'); ic.className='lst-toolic'; ic.innerHTML=t.ic;
+      const tx=document.createElement('span'); tx.className='lst-toolt';
+      const nm=document.createElement('b'); nm.style.cssText='display:block;font-weight:600;'; nm.textContent=t.label();
+      const hn=document.createElement('span'); hn.style.cssText='display:block;font-size:11px;color:var(--text-muted);line-height:1.35;margin-top:1px;'; hn.textContent=t.hint();
+      tx.appendChild(nm); tx.appendChild(hn);
+      const go=document.createElement('span'); go.className='lst-toolgo'; go.textContent='›';
+      /* (#R291) a tool may own something that outlives its panel — a drawn route is the first —
+         so a row can carry a quiet mark that says so without claiming the panel is open. */
+      if(t.dot){ const d=document.createElement('span'); d.className='lst-tooldot'; d.hidden=!_toolDot(t);
+        d.setAttribute('aria-label',T('active','使用中','aktiv','активно','activo')); tx.appendChild(d); }
+      b.dataset.nm=_toolNm(t);
+      b.appendChild(ic); b.appendChild(tx); b.appendChild(go);
+      /* ⚠ (#R264) THE SECOND PRESS CLOSES — and it asks the module, not the class on this button.
+         A row rebuilt while its tool is running, or a tool closed by its own × since this row was
+         drawn, would both make a cached class lie; `_toolOn` is the live answer either way.
+         ⚠ The OPEN still goes through `IntMapOS.exec` — one door, pressed by the palette, the
+         right-click menu, Atlas and this row alike (#R242). Only the CLOSE is direct, because there is no
+         OS action for it and inventing thirteen would be a second registry to keep in step. */
+      b.addEventListener('click',()=>{
+        if(_toolOn(t)){ _toolOff(t); syncTools(); _pick(pick); return; }
+        /* ⚠⚠ (#R264 追記) THE SYNC WAITS FOR THE OPEN, IT DOES NOT GUESS HOW LONG IT TAKES. Eight of
+           these rows are LAZY CHUNKS that take seconds, not the 340 ms a timeout was willing to wait;
+           `OS.exec` hands back whatever the command returned, which for every lazy tool is the promise
+           of its arrival, so that is what the sync hangs off. The timeout stays for plain values. */
+        let p=null;
+        try{ const OS=window.IntMapOS; if(OS&&OS.exec) p=OS.exec(t.id,{source:'ui'}); }catch(_){}
+        syncTools(); setTimeout(syncTools,340);
+        try{ if(p&&typeof p.then==='function') p.then(syncTools,syncTools); }catch(_){}
+        _pick(pick); });   /* the panel over the map gets out of the way of the tool that needs the map */
+      return b;
+    }
+    /* ONE FOLDING HEADING — a heading that folds its body, remembered for the session in `_secClosed` under a key no
+       translated name can collide with: the ability #R469 gave the old Tools block, kept for each Tools section and for
+       the Layers presets. Appends the heading and the body to `wrap` and hands back the body. */
+    function _foldSec(wrap,headCls,bodyCls,sk,label){
+      if(!(sk in _secClosed)) _secClosed[sk]=false;
+      const closed=!!_secClosed[sk];
+      const h=document.createElement('div'); h.className=headCls+(closed?' closed':'');
       h.setAttribute('aria-expanded',closed?'false':'true'); window.IntMapDialog.makeActionable(h);
-      /* ⚠ THE CHEVRON IS WHY THE OLD HEADER LIED. It was a bare `.lst-sech` with a `:hover` rule and no
-         chevron, no listener and no count — it looked exactly like a category header and did nothing. */
       const cv=document.createElement('span'); cv.className='lst-chev'; h.appendChild(cv);
-      const tt=document.createElement('span'); tt.textContent=T('Tools','ツール','Werkzeuge','Инструменты','Herramientas'); h.appendChild(tt);
-      const cnt=document.createElement('span'); cnt.className='lst-cnt'; cnt.textContent=TOOLS.length; h.appendChild(cnt);
-      const body=document.createElement('div'); body.className='lst-toolbody'+(closed?' closed':'');
+      const tt=document.createElement('span'); tt.textContent=label; h.appendChild(tt);
+      const body=document.createElement('div'); body.className=bodyCls+(closed?' closed':'');
       h.addEventListener('click',()=>{ const now=!h.classList.contains('closed');
         h.classList.toggle('closed',now); h.setAttribute('aria-expanded',now?'false':'true');
-        body.classList.toggle('closed',now); _secClosed[TOOLS_SEC]=now; });
-      wrap.appendChild(h); wrap.appendChild(body);
-      TOOLS.forEach(t=>{
-        const b=document.createElement('button'); b.type='button'; b.className='lst-toolrow'+(_toolOn(t)?' on':''); b.dataset.act=t.id;
-        const ic=document.createElement('span'); ic.className='lst-toolic'; ic.innerHTML=t.ic;
-        const tx=document.createElement('span'); tx.className='lst-toolt';
-        const nm=document.createElement('b'); nm.style.cssText='display:block;font-weight:600;'; nm.textContent=t.label();
-        const hn=document.createElement('span'); hn.style.cssText='display:block;font-size:11px;color:var(--text-muted);line-height:1.35;margin-top:1px;'; hn.textContent=t.hint();
-        tx.appendChild(nm); tx.appendChild(hn);
-        const go=document.createElement('span'); go.className='lst-toolgo'; go.textContent='›';
-        /* (#R291) a tool may own something that outlives its panel — a drawn route is the first —
-           so a row can carry a quiet mark that says so without claiming the panel is open. */
-        if(t.dot){ const d=document.createElement('span'); d.className='lst-tooldot'; d.hidden=!_toolDot(t);
-          d.setAttribute('aria-label',T('active','使用中','aktiv','активно','activo')); tx.appendChild(d); }
-        /* (#R291) the row is findable by what it IS as well as by its name in this language */
-        b.dataset.nm=((t.label()+' '+t.hint()+' '+(t.en||'')+' '+(t.keys||'')).toLowerCase());
-        b.appendChild(ic); b.appendChild(tx); b.appendChild(go);
-        /* ⚠ (#R264) THE SECOND PRESS CLOSES — and it asks the module, not the class on this button.
-           A row rebuilt while its tool is running, or a tool closed by its own × since this row was
-           drawn, would both make a cached class lie; `_toolOn` is the live answer either way.
-           ⚠ The OPEN still goes through `IntMapOS.exec` — one door, pressed by the palette, the
-           right-click menu and this row alike (#R242). Only the CLOSE is direct, because there is no
-           OS action for it and inventing thirteen would be a second registry to keep in step. */
-        b.addEventListener('click',()=>{
-          if(_toolOn(t)){ _toolOff(t); syncTools(); return; }
-          /* ⚠⚠ (#R264 追記) THE SYNC WAITS FOR THE OPEN, IT DOES NOT GUESS HOW LONG IT TAKES.
-             PRODUCTION VERIFICATION caught this: eight of these thirteen are LAZY CHUNKS, and a
-             chunk takes seconds, not the 340 ms a timeout was willing to wait — measured on the
-             shipped build, pressing 「地震シミュレーター」 opened the panel (`state().open` true,
-             `#sq-panel` display flex) with the row still UNLIT, and it only lit on the next pointer
-             release anywhere on the page. `OS.exec` hands back whatever the command returned, which
-             for every lazy tool is the promise of its arrival, so that is what the sync hangs off.
-             The timeout stays for the commands that return a plain value. */
-          let p=null;
-          try{ const OS=window.IntMapOS; if(OS&&OS.exec) p=OS.exec(t.id,{source:'ui'}); }catch(_){}
-          syncTools(); setTimeout(syncTools,340);
-          try{ if(p&&typeof p.then==='function') p.then(syncTools,syncTools); }catch(_){}
-          try{ if(isMob()) close(); }catch(_){} });   /* on a phone the panel covers the map the tool needs */
-        body.appendChild(b);   /* (#R469) into the collapsible body, not the wrapper */
-      });
-      return wrap;
-    }
+        body.classList.toggle('closed',now); _secClosed[sk]=now; });
+      wrap.appendChild(h); wrap.appendChild(body); return body; }
+    /* a Tools section: a quiet iOS-style heading over its rows */
+    function _toolSec(key,label){
+      const sec=document.createElement('div'); sec.className='tlp-sec'; sec.dataset.sec=key;
+      _foldSec(sec,'tlp-sech','tlp-body','__tools_'+key+'__',label); return sec; }
+    function _fillTools(h){ const root=h.root, o=h.opts||{};
+      /* ⚠ (#R766's hazard) the carried strip leaves before the sections it sits in are thrown away, and is parked in
+         `#layer-dropdown` — where it lived before it was ever carried — never in `document.body` */
+      try{ const lt=root.querySelector('#layer-tools'), dd=document.getElementById('layer-dropdown'); if(lt&&dd) dd.appendChild(lt); }catch(_){}
+      const meas=o.measure||null;
+      root.textContent='';
+      TOOL_SECS.forEach(([k,lbl])=>{ const sec=_toolSec(k,lbl()); const body=sec.querySelector('.tlp-body');
+        if(k==='measure'){ if(meas) body.appendChild(meas); }
+        else if(k!=='analysis') TOOLS.filter(t=>_toolGroup(t)===k).forEach(t=>body.appendChild(_toolRow(t,o.onPick)));
+        /* 分析 is decided by `_placeLayerTools` (it holds the strip or it does not); the others by what they hold */
+        sec.hidden=(k==='analysis')?true:!body.childElementCount;
+        root.appendChild(sec); });
+      root.dataset.lang=String(HOST.lang||''); }
+    /* Idempotent: the first call builds the panel into `container`; every later call re-syncs the rows' state (or
+       rebuilds them after a language change) and carries the analysis strip to the panel being opened. */
+    function mountTools(container,opts){ if(!container) return null;
+      build(); registerSimTools();   /* build() runs css(); the kernel registration is the rows' door (#R242) */
+      let h=_toolHosts.find(x=>x.root.parentNode===container);
+      if(!h){ const root=document.createElement('div'); root.className='tlp-root';
+        container.appendChild(root); h={ root, opts:opts||{} }; _toolHosts.push(h);
+        /* a door of the carried strip closes the panel it was pressed in, as a row does — a button that is a direct
+           child of the strip, or the button of a direct child that wraps one (#edu-mount). The buttons inside the
+           uploaded-file list are not doors: they act on a file and leave the panel open. */
+        const hh=h;
+        root.addEventListener('click',(e)=>{ try{ const lt=root.querySelector('#layer-tools'); const b=e.target.closest&&e.target.closest('button');
+          if(!lt||!b||!lt.contains(b)) return;
+          const p=b.parentElement, door=(p===lt)||(p&&p.parentElement===lt&&p.querySelector(':scope > button')===b);
+          if(door) _pick(hh.opts.onPick); }catch(_){} });
+        _fillTools(h); }
+      else { if(opts) h.opts=opts; if(h.root.dataset.lang!==String(HOST.lang||'')) _fillTools(h); else syncTools(); }
+      try{ placeLayerTools(h.root); }catch(_){}
+      return h.root; }
+    /* the desktop's 「ツール ▾」 — built at boot (so the kernel holds every row's command, and the palette finds each row,
+       before anyone opens anything), and re-synced on every press of its trigger */
+    function mountDesktopTools(){ const dd=document.getElementById('measure-dropdown'); if(!dd) return null;
+      return mountTools(dd,{ measure:dd.querySelector('.tlp-measure'),
+        onPick:()=>{ try{ window._closeMeasureMenu&&window._closeMeasureMenu(); }catch(_){} } }); }
+    /* ⚠ THE MENU IS WHAT IS BEING USED. It opens over the map beside floating windows (the route panel is one), and a
+       fronted window (`.im-front`) stands above every menu — measured: with the route panel open, a press on the
+       Directions row landed on the panel's header. A pointer press on the trigger already raises the toolbar
+       (js/ui-stack.js `wire`); a press that is not a pointer (the palette, Atlas' clickId, a test) does not, so the
+       opener says that it opened something — the same `opened()` the Chronos panel's openers use. */
+    try{ const trig=document.getElementById('btn-measure-menu'); if(trig) trig.addEventListener('click',()=>{ try{ mountDesktopTools();
+      const dd=document.getElementById('measure-dropdown'); if(dd&&dd.getClientRects().length) window.IntMapStack.opened(dd); }catch(_){} }); }catch(_){}
+    setTimeout(()=>{ try{ mountDesktopTools(); }catch(_){} },1500);
+    window.addEventListener('intmap-lang',()=>setTimeout(()=>{ try{ _toolHosts.forEach(h=>{ if(h.root.isConnected) _fillTools(h); });
+      placeLayerTools(); }catch(_){} },40));
     /* ══ (#R264) …AND THE ROWS FOLLOW THE TOOLS, NOT ONLY THE PRESSES ═══════════════════════════════
        A simulator is closed from its own × far more often than from this list, and #R254's lesson is
        that a highlight which only updates on its own button is a highlight that goes stale and lies.
        The cheapest honest signal is that closing anything is a POINTER RELEASE somewhere on the page,
-       so the rows re-read the modules just after one — 13 property reads, and only while a tools
-       block is actually mounted. No timer, no observer, no second copy of the state. */
+       so the rows re-read the modules just after one — a few property reads per row, wherever rows are drawn.
+       No timer, no observer, no second copy of the state. */
     const _toolDot=(t)=>{ try{ return !!(t&&t.dot&&t.dot()); }catch(_){ return false; } };
-    function syncTools(){ try{ _liveHosts().forEach(h=>h.querySelectorAll('.lst-toolrow').forEach(b=>{
+    function syncTools(){ try{ document.querySelectorAll('.lst-toolrow[data-act]').forEach(b=>{
       const t=TOOLS.find(x=>x.id===b.dataset.act); if(!t) return; b.classList.toggle('on',_toolOn(t));
-      const d=b.querySelector('.lst-tooldot'); if(d) d.hidden=!_toolDot(t); })); }catch(_){} }
+      const d=b.querySelector('.lst-tooldot'); if(d) d.hidden=!_toolDot(t); }); }catch(_){} }
     try{ document.addEventListener('pointerup',()=>{ try{ if(document.querySelector('.lst-toolrow')) setTimeout(syncTools,60); }catch(_){} },true); }catch(_){}
-    /* ══ ⚠⚠⚠ (#R766) THE DOORS PARKED IN #layer-tools ARE CARRIED TO THE PANEL A READER OPENS ════════
-       THE THIRD TIME THE SAME DEFECT WAS REPORTED, and the two notes above this file's tool CSS
-       (#R243, #R670) are the first two: a module appends a button to `#layer-tools`, the button
+    /* ══ (tools-out-of-layers) THE LAYER PRESETS ARE LAYER STATE, SO THEY STAY IN THE LAYERS PANEL ═══════════════
+       「現在のレイヤー構成を保存」 and the saved presets were one of the strip's doors; they are the only one that is
+       about what the map SHOWS, so they are a section of their own at the foot of the tile browser. */
+    const PRESETS_SEC='__presets__';
+    function presetsBlock(){
+      const wrap=document.createElement('div'); wrap.className='lst-presets'; wrap.hidden=true;   /* shown once it holds #lyr-presets */
+      _foldSec(wrap,'lst-sech','lst-presets-body',PRESETS_SEC,T('Presets','プリセット')); return wrap; }
+    /* ══ ⚠⚠⚠ (#R766) THE DOORS PARKED IN #layer-dropdown ARE CARRIED TO THE PANEL A READER OPENS ════════
+       THE THIRD TIME THE SAME DEFECT WAS REPORTED: a module appends a button to `#layer-tools`, the button
        exists, its handler is correct, its OS action is registered — and `#layer-tools` lives inside
-       `#layer-dropdown`, which no reader is shown. `imLayerPanel` is a CONSTANT `'right'` since #R296
-       (js/app-body.js), so `apply()`'s else arm is unreachable and `body.lsr-avail` is on at EVERY
-       width; the only rule that can show the classic dropdown (css/intmap.css) is scoped to
-       `#mo-mount-layers` inside `@media(max-width:768px)`, and at that width css/intmap.css hides
-       `#layer-tools` by name. MEASURED this round: all NINE children of `#layer-tools` — 比較ビュー /
-       相関分析 / 地図データの読み込み / データと分析 / 地震 / パンデミック / Playground / プリセット —
-       had a 0×0 rect at every width tried. There is no width at which any of them was reachable.
-
-       ⚠⚠ THE FIRST TWO FIXES COPIED A DOOR INTO `SIM_TOOLS`, AND THAT IS WHY THIS IS THE THIRD TIME.
-       Re-stating one button as one row rescues that button and leaves the next one dark — the shape
-       `.agents/rules/no-ad-hoc-hardcoding.md` forbids. So the ROUTE is fixed instead: the real
-       `#layer-tools` node is MOVED into the tools section of whichever host the reader is actually
-       looking at, exactly as `_placeActiveSection` (js/data-layers.js) already moves the real
-       `#layer-active-section` node. A module that appends to `#layer-tools` tomorrow is carried with
-       no list to update, which is the property the two earlier fixes did not have.
-
-       ⚠ THE HOST IS ASKED, NOT DERIVED FROM THE WIDTH. Both hosts stay `isConnected` — on a phone the
-       desktop sidebar is `display:none`, not removed — so `_liveHosts()` alone would park the strip
-       in the hidden one. `getClientRects().length` is the browser's own answer to 「is this laid out」
-       and costs nothing written down; `_hostShown` then prefers a sheet that is actually pulled up.
-       It FAILS SAFE: with no host to carry it, the strip is left where reorganizeLayerPanel put it. */
-    function _syncToolsCount(body){ try{
-      const w=body.closest('.lst-tools'); if(!w) return;
-      const c=w.querySelector('.lst-sech .lst-cnt'); if(!c) return;
-      /* what the reader can press AT THE TOP OF THIS STRIP — measured, not written down. A wrapper
-         (#edu-mount, #lyr-presets) counts once because that is one entry to the reader, and a
-         deduped row counts zero because it is not on screen. */
-      let n=body.querySelectorAll(':scope > .lst-toolrow').length;
-      const lt=body.querySelector(':scope > #layer-tools');
-      if(lt) n+=Array.from(lt.children).filter(el=>el.style.display!=='none'&&(el.tagName==='BUTTON'||el.querySelector('button'))).length;
-      c.textContent=n;
-    }catch(_){} }
-    window._placeLayerTools=function(){
+       `#layer-dropdown`, which no reader is shown (`imLayerPanel` is a constant `'right'`). MEASURED then: all nine
+       children of `#layer-tools` had a 0×0 rect at every width tried.
+       ⚠⚠ THE ROUTE IS FIXED, NOT THE BUTTONS: the real node is MOVED into the panel the reader is looking at, exactly
+       as `_placeActiveSection` (js/data-layers.js) moves `#layer-active-section`. A module that appends to
+       `#layer-tools` tomorrow is carried with no list to update.
+       (tools-out-of-layers) TWO NODES, TWO PANELS: `#layer-tools` goes to the Tools panel's 「分析」, and `#lyr-presets`
+       (layer state) to the Layers panel's presets section.
+       ⚠ THE HOST IS ASKED, NOT DERIVED FROM THE WIDTH. Every host stays `isConnected` — on a phone the desktop's
+       panels are `display:none`, not removed — so `getClientRects().length` (the browser's own 「is this laid out」)
+       picks, `_hostShown` prefers a sheet that is actually pulled up, and `prefer` is the panel whose trigger was just
+       pressed. It FAILS SAFE: with no host to carry it, a node is left where reorganizeLayerPanel put it. */
+    const _laidOut=(cands,prefer)=>((prefer&&cands.indexOf(prefer)>=0&&prefer.getClientRects().length)?prefer:null)
+      || cands.find(h=>_hostShown(h)&&h.getClientRects().length) || cands.find(h=>h.getClientRects().length) || cands[0] || null;
+    function placeLayerTools(prefer){
       try{
-        const tools=document.getElementById('layer-tools'); if(!tools) return;
-        const cands=_liveHosts().filter(h=>h.querySelector('.lst-toolbody'));
-        const host=cands.find(h=>_hostShown(h)&&h.getClientRects().length)
-                || cands.find(h=>h.getClientRects().length) || cands[0] || null;
-        const body=host?host.querySelector('.lst-toolbody'):null;
-        if(!body) return;                     /* nothing built yet — leave the strip where it is */
-        if(tools.parentNode!==body) body.appendChild(tools);
-        /* ⚠ THE DUPLICATE IS FOUND BY THE DOOR EACH SIDE PRESSES, NOT BY A WRITTEN PAIRING OF IDS.
-           地震 and パンデミック already have `.lst-toolrow`s here (#R243/#R670 put them there), so
-           showing the strip's copies too would offer the same command twice. Each such button
-           declares the OS action it presses (`data-os-act`, js/data-layers.js) and each row already
-           declares its own (`data-act`); the overlap is COMPUTED from those two declarations, so a
-           row added tomorrow silences its twin without this line being edited. A button that
-           declares nothing is shown — the honest answer when nobody has said they are the same. */
-        const acts=new Set(Array.from(body.querySelectorAll('.lst-toolrow[data-act]')).map(b=>b.dataset.act));
-        tools.querySelectorAll('[data-os-act]').forEach(b=>{ b.style.display=acts.has(b.dataset.osAct)?'none':''; });
-        _syncToolsCount(body);
+        const tools=document.getElementById('layer-tools');
+        const roots=_toolHosts.map(h=>h.root).filter(r=>r.isConnected);
+        const root=tools?_laidOut(roots,prefer):null;
+        const body=root?root.querySelector('.tlp-sec[data-sec="analysis"] > .tlp-body'):null;
+        if(tools&&body){
+          if(tools.parentNode!==body) body.appendChild(tools);
+          /* ⚠ A DUPLICATE IS FOUND BY THE DOOR EACH SIDE PRESSES, NOT BY A WRITTEN PAIRING OF IDS. A strip button
+             that declares the OS action it presses (`data-os-act`) is hidden when a row of the same panel already
+             declares it (`data-act`) — computed from the two declarations, so a row added tomorrow silences its
+             twin without this line being edited. A button that declares nothing is shown. */
+          const acts=new Set(Array.from(root.querySelectorAll('.lst-toolrow[data-act]')).map(b=>b.dataset.act));
+          tools.querySelectorAll('[data-os-act]').forEach(b=>{ b.style.display=acts.has(b.dataset.osAct)?'none':''; });
+        }
+        /* each panel says whether it holds the strip, so an empty 「分析」 heading is never drawn */
+        roots.forEach(r=>{ const s=r.querySelector('.tlp-sec[data-sec="analysis"]'); if(s) s.hidden=!s.querySelector('#layer-tools'); });
       }catch(_){}
-    };
+      try{
+        const pr=document.getElementById('lyr-presets');
+        const hosts=_liveHosts().filter(h=>h.querySelector('.lst-presets-body'));
+        const host=pr?_laidOut(hosts,null):null;
+        const body=host?host.querySelector('.lst-presets-body'):null;
+        if(pr&&body&&pr.parentNode!==body) body.appendChild(pr);
+        hosts.forEach(h=>{ const s=h.querySelector('.lst-presets'); if(s) s.hidden=!s.querySelector('#lyr-presets'); });
+      }catch(_){}
+    }
+    window._placeLayerTools=placeLayerTools;   /* js/data-layers.js calls it after every rebuild of the registry */
     /* cheap state re-sync (no rebuild): reflect the live checkboxes onto the existing tiles */
     function syncTiles(){ try{ _liveHosts().forEach(h=>h.querySelectorAll('.lst-tile').forEach(t2=>{ const id=t2.dataset.lid; if(!id) return;
       const cb=document.getElementById(id); if(cb) tileOn(t2,!!cb.checked); })); }catch(_){} }
@@ -1911,29 +1996,21 @@ export function layerSidebar(HOST){
         /* (#R309) …and a section drawn as rows is `flex`, not `grid` — this inline value is what forces a
            collapsed section open while a search is running, so it has to name that section's own display. */
         g.style.display=vis?(q?(g.classList.contains('lst-rows')?'flex':'grid'):''):'none'; const h=g.previousElementSibling; if(h&&h.classList.contains('lst-sech')) h.style.display=vis?'':'none'; });
-      /* (#R291) 「Layersの検索で route / directions / 経路 / ルート / 道順 等から発見できるように」 — the
-         tool rows were outside this filter entirely, so a search narrowed the layers and left the
-         tools alone. They match on their own name, their hint, their English id and a keyword list. */
-      /* ⚠⚠ (#R469) …AND A SEARCH FORCES THE TOOLS SECTION OPEN, now that it can be closed.
-         「レイヤー検索欄が、ツールにも効くように」 came in the same breath as 「ツールも…畳めるように」, and a
-         collapsible section is exactly what turns a working filter into a dead one: the rows would be
-         narrowed correctly inside a body the reader cannot see, which reads as 「検索が効かない」. The
-         inline `display` beats `.closed`'s, and clearing it on an empty query hands the class back. */
-      try{ const tw=root.querySelector('.lst-tools'); if(tw){ let tv=0;
-        tw.querySelectorAll('.lst-toolrow').forEach(b=>{ const show=!q||String(b.dataset.nm||'').indexOf(q)>=0; b.style.display=show?'':'none'; if(show) tv++; });
-        /* ⚠ (#R766) THE CARRIED STRIP IS SEARCHED TOO, OR A SEARCH LEAVES IT STANDING. `#layer-tools`
-           is moved in here by `_placeLayerTools`, and its buttons carry no `data-nm` — without this a
-           query for 「経路」 filtered every row away and left 比較ビュー / データと分析 sitting under the
-           heading as though they had matched it. They are matched on the text the reader can actually
-           see, which is the only name these buttons have; a twin hidden by the dedupe stays hidden,
-           because being hidden is an answer about the OTHER copy rather than about this query. */
-        tw.querySelectorAll(':scope > .lst-toolbody > #layer-tools > *').forEach(el=>{
-          if(el.dataset&&el.dataset.osAct&&el.style.display==='none') return;   /* deduped — not this filter's to show */
-          if(!(el.tagName==='BUTTON'||el.querySelector('button'))) return;      /* a heading or a file list is not a door */
-          const show=!q||String(el.textContent||'').toLowerCase().indexOf(q)>=0;
-          el.style.display=show?'':'none'; if(show) tv++; });
-        const tb=tw.querySelector('.lst-toolbody'); if(tb) tb.style.display=q?'flex':'';
-        tw.style.display=tv?'':'none'; } }catch(_){} }
+      /* (#R291) 「Layersの検索で route / directions / 経路 / ルート / 道順 等から発見できるように」 — a search that
+         narrowed the layers and left the tools unfindable was the defect then, and moving the tools to their own
+         panel must not bring it back. (tools-out-of-layers) While a query is typed, the tools it matches are drawn
+         HERE, under the layers, by the same `_toolRow` the Tools panel uses — matched on their name, their hint,
+         their English id and a keyword list. With no query nothing is drawn: the Layers panel holds no tool row. */
+      try{ let hits=root.querySelector(':scope > .lst-toolhits');
+        if(!hits){ hits=document.createElement('div'); hits.className='lst-toolhits'; root.insertBefore(hits,root.querySelector(':scope > .lst-presets')); }
+        hits.textContent='';
+        const found=q?TOOLS.filter(t=>_toolNm(t).indexOf(q)>=0):[];
+        if(found.length){ const h=document.createElement('div'); h.className='lst-sech';
+          const tt=document.createElement('span'); tt.textContent=T('Tools','ツール','Werkzeuge','Инструменты','Herramientas'); h.appendChild(tt); hits.appendChild(h);
+          found.forEach(t=>hits.appendChild(_toolRow(t,()=>{ try{ if(isMob()) close(); }catch(_){} }))); }   /* on a phone the panel covers the map the tool needs */
+        hits.hidden=!found.length; }catch(_){}
+      /* the presets are found by what they say, like every other row; while a query narrows the list they stand aside */
+      try{ const ps=root.querySelector(':scope > .lst-presets'); if(ps) ps.style.display=(q&&String(ps.textContent||'').toLowerCase().indexOf(q)<0)?'none':''; }catch(_){} }
     function open(){ build();   /* (#R107) mobile allowed — the right-sidebar layer panel now works on phones too (overlay, no map push) */
       /* (#R72) SPEED ("layersをクリックしたときの反応が非常に遅い"): the full reorganize+rebuild ran on EVERY
          open. Now the grid is rebuilt only when the row set actually changed; an unchanged grid just re-syncs
@@ -2070,12 +2147,12 @@ export function layerSidebar(HOST){
       return host;
     }
     /* ⚠ (#R766) same hazard as the rebuild above, one level up: this removes the whole host, and the
-       carried `#layer-tools` may be inside it. Park it back in the classic dropdown first. */
+       carried `#lyr-presets` may be inside it. Park it back in the classic dropdown first. */
     function unmountFrom(container){ try{ const host=container&&container.querySelector('.lsr-mount');
-      try{ const lt=host&&host.querySelector('#layer-tools'); const dd=document.getElementById('layer-dropdown');
+      try{ const lt=host&&host.querySelector('#lyr-presets'); const dd=document.getElementById('layer-dropdown');
         if(lt&&dd) dd.appendChild(lt); }catch(_){}
       if(host){ const i=_hosts.indexOf(host); if(i>=0) _hosts.splice(i,1); host.remove(); } }catch(_){} }
-    return { open, close, toggle, apply, mountInto, unmountFrom };
+    return { open, close, toggle, apply, mountInto, unmountFrom, mountTools };
   })();
 }
 

@@ -721,7 +721,7 @@ Atlas の `research.related` / `research.impact` / 実世界オブジェクト�
 **読者が自分で描くピン・線・範囲と、その名前・メモ・色。保存し、共有リンクで運び、測り、分析し、書き出す。**
 ログインしていれば「アカウントに保存」で、いまの地図の上のこの図形を地図ドキュメント（`js/map-doc.js` `fromMyMap`——フラグメントの
 `mm=` が図形を運ぶ）にしてライブラリ（§8.1.2）の `save_view` に渡す（map-document-unify）。ブラウザの一覧は残る。
-入口: **Layers ▸ Tools ▸ マイマップ**（`tool.myMap`）・Atlas `map.myMap`（`{"type":"myMap","action":…}`）・
+入口: **Tools ▾ ▸ マイマップ**（`tool.myMap`）・Atlas `map.myMap`（`{"type":"myMap","action":…}`）・
 オブジェクト一覧（種類 `mymap`）・`mm=` を持つ共有リンク。モジュールは遅延（`IntMapLazy` の `myMap`、公開名
 `window.IntMapMyMap`）で、起動経路に載らない。
 
@@ -745,7 +745,7 @@ Atlas の `research.related` / `research.impact` / 実世界オブジェクト�
 
 **読者の表を、地図・分析・公開まで 1 枚のパネルで。** 取り込み（§7.3d）・データセットと処理（§7.3e）・属性による着色・
 書き出し・絵葉書は前から在り、これはそれらを 1 つの流れにまとめて、欠けていた 3 段——①座標の無い表を場所に結ぶ
-②Excel を地図に出す ③取り込んだ表を公開する——だけを足した面である。入口: **Layers ▸ Tools ▸ データスタジオ**
+②Excel を地図に出す ③取り込んだ表を公開する——だけを足した面である。入口: **Tools ▾ ▸ データスタジオ**
 （`tool.dataStudio`。行が描画中かどうかも示す。パネルの中の 2 つ目のボタンは同じ扉の写しだったので無い）・**座標の無い表を地図に落としたとき**
 （`js/map-ui.js` の `handleFiles` が `format:'table'` を受けたら、遅延でスタジオを呼んでその表を渡す）・Atlas `data.studio`・
 `ds=` を持つ共有リンク。モジュールは**どの入口も同じ字句の `import('./data-studio.js')`** で読み（`js/lazy-modules.js` に登録せず、window に何も公開しない。`studio(HOST)` が 1 つの制御器を返す）、起動経路に載らない。`ds` を持つ復元は `js/map-ui.js` の viewHash が `MapState.onRestore` で聞いて import し、登録された持ち主が復元の保留値を受け取る

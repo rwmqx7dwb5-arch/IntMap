@@ -14,7 +14,7 @@
 "ui:details":"詳細資料 ↗","ui:loadingData":"正在載入國家資料…","ui:dataNA":"無資料","ui:noData":"查無國家資料。","ui:sortGdp":"GDP","ui:sortPop":"人口","ui:sortArea":"面積","ui:sortName":"A–Z","ui:sortHDI":"HDI","ui:sortMil":"軍費",
 "ui:elev":"海拔","ui:bearing":"方位","ui:presetNone":"— 請選擇 —","ui:presetLbl":"距離預設","ui:opacity":"不透明度","ui:circumference":"圓周長","ui:lblUnits":"度量單位","ui:unitBoth":"公制＋英制","ui:unitMetric":"僅公制","ui:unitImperial":"僅英制","ui:msPh":"搜尋地球上任何地點…",
 "ui:spType":"類型","ui:flat":"平面","ui:globe":"地球儀","ui:threeD":"3D","ui:gridBtn":"經緯格線","ui:gridLayer":"格線與標註","ui:lblTempUnit":"溫度","ui:tempBoth":"°C＋°F","ui:tempC":"僅 °C","ui:tempF":"僅 °F",
-"ui:measureMenuBtn":"測量","ui:measureDistBtn":"距離／面積","ui:drawBtn":"繪製","ui:vol3dBtn":"立體體積","ui:radiusBtn":"半徑","ui:objectsBtn":"物件","ui:mScreenshot":"螢幕擷取","ui:shareMenuBtn":"分享","ui:shareLinkBtn":"分享／複製連結","ui:layersBtn":"圖層 ▾",
+"ui:measureDistBtn":"距離／面積","ui:drawBtn":"繪製","ui:vol3dBtn":"立體體積","ui:radiusBtn":"半徑","ui:objectsBtn":"物件","ui:mScreenshot":"螢幕擷取","ui:shareMenuBtn":"分享","ui:shareLinkBtn":"分享／複製連結","ui:layersBtn":"圖層 ▾",
 "ui:ctxDropPin":"放置圖釘","ui:ctxMeasureFrom":"從此開始測量","ui:ctxPostHere":"發佈到社群","ui:ctxDistFrom":"與前一個圖釘的距離","ui:ctxCopy":"複製座標","ui:ctxClearPins":"移除所有圖釘","ui:ctxThisPoint":"此地點","ui:coords":"座標","ui:depth":"深度","ui:climate":"氣候",
 "ui:tlMachine":"時光機","ui:lyrEEZ":"專屬經濟海域／12浬","ui:lyrShips":"即時船舶動態","ui:lyrPlanes":"即時航班動態","ui:lyrSats":"即時衛星","ui:lyrThermal":"熱異常（火點）","ui:poiLabels":"地點、商家與設施","ui:shipsZoomHint":"放大以載入即時船舶",
 "ui:aisNoKey":"即時船舶暫時無法顯示 — 共用資料來源沒有回應。","ui:aisKeyLabel":"即時船舶動態（AISstream 金鑰）","ui:aisKeyHint":"選填。沒有金鑰也能從共用資料來源看到即時船舶。填入 aisstream.io 的免費金鑰後，這個瀏覽器會直接接收全球即時串流，稍微更新一些。金鑰僅儲存在這個瀏覽器中。",
