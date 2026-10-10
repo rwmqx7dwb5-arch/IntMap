@@ -77,6 +77,14 @@ test('② the Chronos panel reads the clock\'s year as a page — 1920 off the b
   const sheet = page.locator('#yb-sheet');
   await expect(sheet).toBeVisible(BOOT);
   await expect(sheet.locator('.yb-title')).toContainText('1920');
+  /* (map-layer-system-chronos) the page is IN FRONT of the panel that opened it — the click on «Read this year» marks
+     the Chronos panel as the one being used, and the sheet lay under it (only a 48 px strip of it showed at 1280×720).
+     Asked of the hit test over the sheet's whole box, not of the one button the steps below press. */
+  const covered = await page.evaluate(() => { const s = document.getElementById('yb-sheet'), b = s.getBoundingClientRect(), out = [];
+    for (const fx of [0.1, 0.5, 0.9]) for (const fy of [0.1, 0.5, 0.9]) { const x = b.left + b.width * fx, y = b.top + b.height * fy, h = document.elementFromPoint(x, y);
+      if (!s.contains(h)) out.push(Math.round(x) + ',' + Math.round(y) + ' → ' + (h ? (h.id || h.className || h.tagName) : 'nothing')); }
+    return out; });
+  expect(covered, 'points of the year book covered by another surface').toEqual([]);
   /* the change days come from the record the map draws (CShapes 2.0), with the record's own citation */
   await expect(sheet).toContainText('1920-02-02', { timeout: 90_000 });
   await expect(sheet).toContainText('CShapes 2.0');

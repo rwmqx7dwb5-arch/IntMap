@@ -26,7 +26,9 @@
  *                    js/window-manager.js, which still exports that name and now calls `order`).
  *    front(el) / back()   the ONE panel being used (`.im-front`, the `front` layer) and the
  *                    desktop sidebars' place above or below the windows (`body.im-float-front`).
- *    wire()          the document listeners that call the two above on «some operation».
+ *    opened(el)      a surface an operation has just opened takes the mark from the panel the
+ *                    operation was made in (else it opens under it — map-layer-system-chronos).
+ *    wire()         the document listeners that call the two above on «some operation».
  *    panelOf(el)     the element that stands in the band for a gesture on `el`.
  *    clipOf(el)      the ancestor that CUTS `el` — the #823 shape (a result list under a pill whose
  *                    `overflow:hidden` clipped it), measured, so a regression can ask it.
@@ -228,6 +230,25 @@
   function front(el) { D().body.classList.add('im-float-front'); mark(el); }
   /** nothing is being used: an open sidebar is in front of every window again */
   function back() { D().body.classList.remove('im-float-front'); mark(null); }
+  /* ══ ⚠ (map-layer-system-chronos) WHAT AN OPERATION OPENS IS WHAT IS BEING USED ═══════════════
+     The mark follows the gesture, and the gesture that OPENS a panel lands in the panel it was made
+     in — so that panel is raised to `front` and the one it opened appears BENEATH it. MEASURED
+     2026-10-10 on the built app at 1280×720: «Read this year» in the Chronos panel marked
+     `#news-timeline` (`.im-front`, 2650); the year book it opened (`#yb-sheet`, `--z-sheet` 1650,
+     top:72 right:12) lay under it — `elementFromPoint` at the sheet's «next year» button returned
+     `#ntl-zone`, and the sheet's whole body (x ≥ 934) was covered; only a 48 px strip showed. The
+     panel had covered the body since the sheet existed; #1034 made the panel 59 px taller (the
+     «Then & now» row), which carried the cover over the header's buttons too, and the nightly's
+     click on «next year» could no longer land. The polity-arc sheet, opened from the same panel at
+     the same place and level, opened under it the same way.
+     So an opener says that it opened something, and the mark moves there — the same rule as a
+     gesture inside it (`panelOf`, so a surface inside a trapped context marks the context that
+     competes), and never onto a layer already above the band (#R508: the mark would sink it). */
+  function opened(el) {
+    if (!el || aboveBand(el)) return false;
+    front(panelOf(el) || el);
+    return true;
+  }
 
   function act(t, mayDemote) {
     if (!t || !t.closest) return;
@@ -286,5 +307,5 @@
     return null;
   }
 
-  G.IntMapStack = { z, level, register, isWindow, order, front, back, wire, wired: () => _wired, panelOf, aboveBand, clipOf, SHELL_SIDE, NOT_PANEL };
+  G.IntMapStack = { z, level, register, isWindow, order, front, back, opened, wire, wired: () => _wired, panelOf, aboveBand, clipOf, SHELL_SIDE, NOT_PANEL };
 })(typeof window !== 'undefined' ? window : globalThis);

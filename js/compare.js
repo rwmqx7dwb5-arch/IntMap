@@ -1031,6 +1031,9 @@ export function compare(HOST){
       });
     }
     function open(){ build(); win.style.display='flex'; minimized=false; win.classList.remove('cmp-min');
+      /* (map-layer-system-chronos) opened by an operation: it takes the front from the panel the operation was made in —
+         «Then & now» in the Chronos panel otherwise opened this window under that panel (js/ui-stack.js `opened`) */
+      try{ window.IntMapStack.opened(win); }catch(_){}
       paintTime(); applyTime();   /* (time-compare-lapse) the window's instant, and the picked layer judged at it */
       /* (#R30) While compare is open on mobile, MOVE the main-map FAB stack to the bottom-LEFT (CSS on
          body.cmp-open). The compare window is a full-width top panel and its close × sits top-right — exactly

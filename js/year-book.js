@@ -281,6 +281,8 @@ function openYearBook(host) {
     document.body.appendChild(sheet);
   }
   sheet.hidden = false;
+  /* opened by the reader's operation: it takes the front from the panel the operation was made in (js/ui-stack.js `opened`) */
+  try { globalThis.IntMapStack.opened(sheet); } catch (_) { /* no stack owner (Node) */ }
   if (!unsub && host.time && host.time.on) unsub = host.time.on(() => { clearTimeout(timer); timer = setTimeout(paint, 250); });
   paint();
   return { close: closeYearBook };
