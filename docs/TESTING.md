@@ -203,6 +203,9 @@ process it starts. A gate proves the committed bytes; a live read belongs to the
 `check:histrecon` fetched the RISTAT 1897 districts and an HTTP 504 from dataverse.nl turned an unrelated PR red;
 the same day every declared gate passed under the guard with no refusal. A gate that needs the network now fails on
 every run with `no-network: …` naming what it asked for — move that read into the build and commit what it produced.
+The regression suite (`test:checks`) is refused the same way through `tests/helpers/offline.mjs` (loopback still
+passes, for fixtures served on 127.0.0.1); a test file that must reach a host says so with a `network-allowed: <reason>`
+comment (2026-10-11: none does).
 `tests/histrecon-check-no-network-checks.test.mjs` runs `check:histrecon` offline with an empty atom cache and shows a
 CI shard turning an online gate red. ⚠ `npm run check:<x>` typed by hand is not guarded; to reproduce a runner,
 `node --import ./scripts/no-network.mjs scripts/<gate>.mjs --check`.

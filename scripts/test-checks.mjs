@@ -49,6 +49,15 @@ function takeFlag(argv, name) {
   return null;
 }
 
+/* ══ (unit-tests-offline) THE SUITE DOES NOT REACH ANOTHER HOST ═══════════════════════════════════════
+   tests/helpers/offline.mjs is preloaded through NODE_OPTIONS, so it is in every test file's process AND in every
+   node script a test spawns (a test that runs a CLI is where the 2026-10-10 geoBoundaries 504 came from). A file
+   that must reach a host says why in itself (`network-allowed: <reason>`); the helper's header has the rule. */
+export function offlineEnv(root, env = process.env) {
+  const flag = '--import=' + pathToFileURL(join(root, 'tests', 'helpers', 'offline.mjs')).href;
+  return { ...env, NODE_OPTIONS: [env.NODE_OPTIONS, flag].filter(Boolean).join(' ') };
+}
+
 function main() {
   const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..');
   const argv = process.argv.slice(2);
@@ -93,7 +102,7 @@ function main() {
        '--test-reporter-destination=' + timings]
     : [];
   const r = spawnSync(process.execPath, ['--test', ...reporters, ...argv, ...targets],
-    { stdio: 'inherit', cwd: shardSpec != null ? ROOT : undefined });
+    { stdio: 'inherit', cwd: shardSpec != null ? ROOT : undefined, env: offlineEnv(ROOT) });
   if (r.error) throw r.error;
   say();
   /* a null status means the child was killed by a signal; treating that as 0 is how a suite reports
