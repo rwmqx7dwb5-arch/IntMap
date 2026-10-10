@@ -290,6 +290,8 @@ export async function openArc(want) {
     document.body.appendChild(sheet);
   }
   sheet.hidden = false;
+  /* opened by the reader's operation: it takes the front from the panel the operation was made in (js/ui-stack.js `opened`) */
+  try { globalThis.IntMapStack.opened(sheet); } catch (_) { /* no stack owner (Node) */ }
   if (!unsubClock) unsubClock = IntMapTime.on(() => { clearTimeout(paintTimer); paintTimer = setTimeout(() => { if (state.arc) paintArc(); }, 200); });
   const w = want || {};
   if (typeof w.lang === 'function') langOf = w.lang;
