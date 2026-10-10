@@ -61,7 +61,7 @@ export function newsIntel(HOST) {
      ⚠ `clockUntil` IS WHERE THE LAYER APPLIES CHRONOS (js/layer-time-decl.js names it): the window ends at
      the master clock's instant — now on the live clock, the chosen instant otherwise. */
   function clockUntil() {
-    try { const s = IntMapTime.state(); return s.isLive ? Date.now() : new Date(s.when).getTime(); } catch (_) { return Date.now(); }
+    try { return IntMapTime.nowMs(); } catch (_) { return Date.now(); }
   }
   const isLive = () => { try { return !!IntMapTime.state().isLive; } catch (_) { return true; } };
 

@@ -212,8 +212,7 @@ export function outbreaks(HOST) {
        reader has moved to — the layer answers about that day and re-renders when it moves. */
     function clockDay() {
       try {
-        const st = IntMapTime.state();
-        const d = st.isLive ? new Date() : new Date(st.when);
+        const d = IntMapTime.when();
         return isFinite(d.getTime()) ? d : new Date();
       } catch (_) { return new Date(); }
     }

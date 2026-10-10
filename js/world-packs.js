@@ -5877,7 +5877,7 @@ export function worldPacksBody(HOST){
         try{ paintFlood(null,null,fn); }catch(_){} }
 
       function fmtT(ms){ try{ return new Date(ms).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(_){ return new Date(ms).toISOString().slice(0,16).replace('T',' '); } }
-      function when(){ try{ const st=IntMapTime.state(); return st.isLive?Date.now():+new Date(st.when); }catch(_){ return Date.now(); } }
+      function when(){ try{ return IntMapTime.nowMs(); }catch(_){ return Date.now(); } }
       const isLive=()=>{ try{ return IntMapTime.isLive(); }catch(_){ return true; } };
       /* ══ (#R216) THE DATE FIELD AND THE PLAY BUTTON ═══════════════════════════════════════════════
          Local time in the field, because a tide table is read in local time; the master clock stores

@@ -200,6 +200,18 @@ window.IntMapRiverCourse=(function(){
     for(const p of pts){ const d=nearestKm(geo,p[0],p[1]); if(d<best) best=d; if(best<=0) break; }
     return best;
   }
+  /* ══ IS THIS NOMINATIM ROW A WATERWAY LINE? — the ONE statement of it ══════════════════════════
+     A row is a river course when OSM classes it `waterway` (jsonv2 says `category`, the old format
+     `class` — #R64) or types it river / canal / stream, AND its geometry is a line. This file's tracer
+     and js/atlas-console.js's `fetchRiverLine` used to write the same expression twice; both read
+     this one now, so a change to what counts as a river reaches both doors at once. */
+  function isWaterwayLine(o){
+    if(!o) return false;
+    const cls=String(o.class||o.category||'').toLowerCase();
+    const typ=String(o.type||'').toLowerCase();
+    const gt=(o.geojson&&o.geojson.type)||'';
+    return (cls==='waterway'||/^(river|canal|stream)$/.test(typ))&&/LineString/.test(gt);
+  }
   async function _nominatim(name,anchors){
     try{
       /* (#R489) the app's ONE one-a-second floor — js/nominatim-gate.js. Reached through `window`
@@ -210,12 +222,7 @@ window.IntMapRiverCourse=(function(){
       if(!r.ok) return null;
       const j=await r.json(); if(!Array.isArray(j)) return null;
       /* waterway results only, and only the ones that actually run past the river we already have */
-      const cands=j.filter(o=>{
-        const cls=String(o.class||o.category||'').toLowerCase();
-        const typ=String(o.type||'').toLowerCase();
-        const gt=(o.geojson&&o.geojson.type)||'';
-        return (cls==='waterway'||/^(river|canal|stream)$/.test(typ))&&/LineString/.test(gt);
-      });
+      const cands=j.filter(isWaterwayLine);
       const keep=[]; let bestD=Infinity;
       for(const c of cands){ const d=_minKmToAny(c.geojson,anchors);
         if(d<=NEAR_KM){ keep.push(c.geojson); if(d<bestD) bestD=d; } }
@@ -288,6 +295,6 @@ window.IntMapRiverCourse=(function(){
     return out;
   }
 
-  return { nameSet, nameList, sameRiver, nearestKm, linesOf, course, union:_union,
+  return { nameSet, nameList, sameRiver, nearestKm, linesOf, course, union:_union, isWaterwayLine,
     _cacheKey:cacheKey, NEAR_KM, PASSES };
 })();

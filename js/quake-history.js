@@ -81,7 +81,7 @@ export function quakeHistory(HOST) {
   const st = { open: false, seq: 0, loading: false, err: '', errKind: null, centre: null, name: '', radiusKm: QH.DEFAULT_RADIUS,
     askedMag: QH.DEFAULT_MAG, floor: null, anchor: null, rec: null, sel: null, painted: 0, paintError: '' };
 
-  function clockMs() { try { const s = IntMapTime.state(); return s.isLive ? Date.now() : new Date(s.when).getTime(); } catch (_) { return Date.now(); } }
+  function clockMs() { try { return IntMapTime.nowMs(); } catch (_) { return Date.now(); } }
   function clockLive() { try { return IntMapTime.state().isLive; } catch (_) { return true; } }
 
   /* ── reading ComCat ───────────────────────────────────────────────────────────────────────────── */

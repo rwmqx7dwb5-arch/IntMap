@@ -311,7 +311,7 @@ export function newsTimeline(HOST){
        live) and pushes it to the master clock. (#R139) When that date is TODAY, times AFTER the current moment are NOT
        selectable (no future) — a PAST date is fully scrubbable 0–24h. Time-of-day data (day/night terminator, sun/shadow)
        then syncs to it, exactly like Year/Date already sync. */
-    function _timeBase(){ const st=IntMapTime.state(); return st.isLive?new Date():new Date(st.when); }
+    function _timeBase(){ return IntMapTime.when(); }
     /* ⚠ (#R210) THE TIME SLIDER IS NO LONGER CLIPPED AT "now" ══════════════════════════════════════
        「今日の中で、現在時刻以降を選択できないスライダーの仕様にするのはやめて。」 #R139 capped today at
        the current minute on the reasoning that the app must not claim to know the future. That is
@@ -880,7 +880,7 @@ export function newsTimeline(HOST){
       try{ syncBorderStep(e); }catch(_){}   /* (#R421) the day the borders on screen came into being */
       if(mode==='time'){ /* (#R137) Time tab: show the time-of-day of the current instant (now when live).
                            (#R139) keep the slider/picker max at "now" while the selected date is today (no future). */
-        const w=e.when; const base=e.isLive?new Date():new Date(e.when); const maxM=_timeMaxMins();
+        const w=e.when; const maxM=_timeMaxMins();
         if(slider.max!==String(maxM)) slider.max=String(maxM); _updTimeMax();
         const zf=zFields(w); let mins=zf.h*60+zf.m; if(mins>maxM) mins=maxM;   /* (#R289) in the chosen zone */
         tl.classList.toggle('active',!e.isLive);

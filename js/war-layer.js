@@ -75,7 +75,6 @@ export function warLayer(HOST) {
   const canDraw = () => { try { return !!HOST.canDraw(); } catch (_) { try { return !!GE().ready(); } catch (__) { return false; } } };
   /* a 9-language object out of data/wars.json — the keys are js/lang-registry.js's own codes */
   const say = (o) => (o && (o[HOST.lang] || o.en)) || '';
-  const iso = (d) => { const x = new Date(d); return isNaN(x) ? '' : x.toISOString().slice(0, 10); };
   const esc = (x) => HOST.escapeHtml(String(x == null ? '' : x));
   /* the Wikipedia subdomain for the reader's language — the registry's BCP-47 tag with the script
      subtag stripped, because zh-hans.wikipedia.org does not exist (js/atlas-sources.js, #R318). */
@@ -611,7 +610,7 @@ export function warLayer(HOST) {
           if (a === 'first') setDate(sp[0]);
           else if (a === 'prev') setDate(addDays(curDate || sp[0], -1));
           else if (a === 'next') setDate(addDays(curDate || sp[0], 1));
-          else if (a === 'clock') { let d = null; try { d = IntMapTime.isLive() ? iso(new Date()) : IntMapTime.iso(); } catch (_) { } if (d) setDate(d); }
+          else if (a === 'clock') { let d = null; try { d = IntMapTime.iso(); } catch (_) { } if (d) setDate(d); }
           renderPanel();
         };
       });
@@ -770,7 +769,7 @@ export function warLayer(HOST) {
          once, on the way on, and never again — the slider and the play button never touch it. */
       const sp = spanOf(W);
       let clock = null;
-      try { clock = IntMapTime.isLive() ? iso(new Date()) : IntMapTime.iso(); } catch (_) { }
+      try { clock = IntMapTime.iso(); } catch (_) { }
       if (!clock || clock < sp[0] || clock > sp[1]) {
         /* ⚠ (restore-clock-and-elam) …AND ONLY THE READER CHOSE IT. A row a share link or a saved session switched
            on (js/war-fronts.js passes `restored`, read from the restore's own mark at the moment of the change)
@@ -815,7 +814,7 @@ export function warLayer(HOST) {
         if (!on) return;
         const W = war(); if (!W) return;
         const sp = spanOf(W);
-        const d = e.isLive ? iso(new Date()) : e.iso;
+        const d = IntMapTime.iso();
         if (d < sp[0] || d > sp[1]) return;
         stopPlay();
         if (awaitClock) { awaitClock = false; if (!ensure()) return; setVis(true); shownKey = null; }

@@ -195,10 +195,14 @@ window.IntMapRouteGeocode = (function () {
       };
     });
   }
-  async function nominatim(q, signal, Rp) {
-    var hold = nominatimSlot();
-    if (hold < 0) throw new Error('rate_floor');                /* one is already queued — see nominatimSlot */
-    if (hold) await wait(hold);                                 /* the policy floor is a RATE: wait for it */
+  async function nominatim(q, signal, Rp, confirm) {
+    if (confirm) {                                              /* a confirming door is not a keystroke: it queues (js/nominatim-gate.js «A BATCH must queue») */
+      var g = GATE(); if (g) await g.nominatimSlot();
+    } else {
+      var hold = nominatimSlot();
+      if (hold < 0) throw new Error('rate_floor');              /* one is already queued — see nominatimSlot */
+      if (hold) await wait(hold);                               /* the policy floor is a RATE: wait for it */
+    }
     if (signal && signal.aborted) throw abortError();           /* the reader typed on while we waited */
     /* ⚠ (#R802) `namedetails=1` costs nothing and is what lets an English query agree with a feature
        named in Japanese (「Mount Fuji」→ 富士山 through `name:en`). Without it the rule below could only
@@ -211,7 +215,9 @@ window.IntMapRouteGeocode = (function () {
        js/atlas-geo-resolve.js); this one offers a list, and a half-typed 「Shinj」 must still reach
        「Shinjuku Station」. Containment scores 1, so every prefix a reader types is exempt anyway. */
     var R = await Rp, core = R ? R.queryCore(q) : '';
-    return (j || []).filter(function (x) { return !R || R.rankable(core, x) > 0; }).map(function (x) {
+    return (j || []).filter(function (x) {
+      return !R || (R.rankable(core, x) > 0 && (!confirm || R.namesakeOk(core, x)));   /* the confirming door adds its own clause — see resolve() */
+    }).map(function (x) {
       var a = x.address || {};
       var parts = String(x.display_name || '').split(',').map(function (s) { return s.trim(); });
       return {
@@ -229,8 +235,27 @@ window.IntMapRouteGeocode = (function () {
    * @param {object} o          {near:[lng,lat], lang, limit, signal}
    * @returns {Promise<{items:Array, error:string}>}
    */
-  async function suggest(q, o) {
+  function suggest(q, o) { return gather(q, o || {}, false); }
+
+  /* ══ ⚠⚠⚠ THE ONE DOOR THAT CONFIRMS A TYPED PLACE WITHOUT A READER PICKING IT ═══════════════════
+     js/routing.js's `openPanel(from, to)` (Atlas, the widget board, a share link) and its
+     `geoNear` (js/atlas-cap-routing.js's same-name disambiguation) are handed a STRING and must put
+     ONE point in the field. They used to do it through a second geocoder of their own — the `geo1()`
+     this file's header describes — which took nearest-within-300-km, else most populous, of five rows
+     it never asked anything about: 「Sahara」 answered with whatever Nominatim's free-text search had
+     left after dropping the words it could not match. That second implementation is gone; the string
+     now goes through the SAME sources, the SAME ranking and the SAME agreement rules as `suggest()`,
+     plus the clause js/atlas-geo-resolve.js reserves for a door that CONFIRMS (`namesakeOk`: a shop
+     or a street answers only to its own whole name), and Nominatim QUEUES here instead of dropping —
+     nobody is typing on. When no row agrees with what was asked, the answer is null: an empty field
+     the reader can see, not a confident wrong point. */
+  async function resolve(q, o) {
     o = o || {};
+    var r = await gather(q, { near: o.near, lang: o.lang, signal: o.signal, limit: 1 }, true);
+    return (r.items && r.items[0]) || null;
+  }
+
+  async function gather(q, o, confirm) {
     if (o.lang) _lang = o.lang;
     q = String(q || '').trim();
     if (q.length < 1) return { items: [], error: '' };
@@ -244,7 +269,7 @@ window.IntMapRouteGeocode = (function () {
        source — 0x00, not the two characters that spell the escape — which makes every byte-oriented
        tool classify this file as binary and skip it whole (ripgrep does, so a search of the
        repository for anything in here returned nothing at all). The key is the same string either way. */
-    var key = _lang + '\u0000' + q.toLowerCase();
+    var key = (confirm ? 'confirm\u0000' : '') + _lang + '\u0000' + q.toLowerCase();
     var hit = cacheGet(key);
     if (hit) return { items: rank(hit.slice(), o.near).slice(0, o.limit || 8), error: '' };
 
@@ -268,7 +293,7 @@ window.IntMapRouteGeocode = (function () {
       ran++; errs++; return [];
     };
     var jobs = [openMeteo(q, o.signal, Rp).then(settle, fail)];
-    if (longEnough(q)) jobs.push(nominatim(q, o.signal, Rp).then(settle, fail));
+    if (longEnough(q)) jobs.push(nominatim(q, o.signal, Rp, confirm).then(settle, fail));
 
     var got = await Promise.all(jobs);
     got.forEach(function (arr) { items = items.concat(arr); });
@@ -335,7 +360,7 @@ window.IntMapRouteGeocode = (function () {
   function recent() { return recents.map(function (r) { var c = Object.assign({}, r); c.kind = c.kind; return c; }); }
 
   return {
-    suggest: suggest, reverse: reverse, rank: rank, dedupe: dedupe,
+    suggest: suggest, resolve: resolve, reverse: reverse, rank: rank, dedupe: dedupe,
     parseLatLng: parseLatLng, kindOf: kindOf, kindLabel: kindLabel, longEnough: longEnough,
     remember: remember, recent: recent,
     setLang: function (l) { _lang = l || 'en'; },

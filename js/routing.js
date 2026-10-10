@@ -828,26 +828,19 @@ export function routing(HOST){
        distance + time, and a scrollable turn-by-turn list. ===== */
     const LL=IntMapLang.pick(()=>HOST.lang);
     const escp=s=>window.IntMapSafe.html(s);
-    /* (#R126) 経路10-10 §6.3/§6.4: SAME-NAME disambiguation — fetch several candidates and prefer the one near the
-       current map view (then the most populous), instead of blindly taking hit #1 ("Potsdam" from a Germany view
-       geocoded to Potsdam NY, USA). refLL (optional) = the point to bias toward (map centre / other endpoint). */
+    /* ══ ⚠⚠ THE STRING → ONE POINT DOOR IS js/routing-geocode.js's `resolve()`, NOT A SECOND GEOCODER HERE ══
+       `geo1()` lived here: five Open-Meteo / Nominatim rows, nearest within 300 km (#R126's Potsdam
+       rule), else the most populous — and not one of them was ever asked whether it was what had been
+       typed, so a query no row agreed with still put the most important stranger in the field. The
+       ranking it used is the one js/routing-geocode.js `rank()` already applies, and the agreement
+       rules it lacked are js/atlas-geo-resolve.js `placeRules`; `resolve()` is both, and answers null
+       when nothing agrees. Reached through `window` because this file may hold no top-level
+       declarations (tests/layer-boot-graph-checks.test.mjs (#R175) #4). The bias point is the map
+       centre, as before — it is used for ranking only and is never sent anywhere. */
     function _mapCtr(){ try{ const c=GE().camera.getCenter(); return [c.lng,c.lat]; }catch(_){ return null; } }
-    function _pickNear(cands,refLL){ if(!cands.length) return null; const ref=refLL||_mapCtr(); if(!ref) return cands[0];
-      const scored=cands.map(c=>({c,d:_hav(ref,[c.lng,c.lat])}));
-      const near=scored.filter(s=>s.d<=300).sort((a,b)=>a.d-b.d);
-      if(near.length) return near[0].c;
-      scored.sort((a,b)=>((b.c.pop||0)-(a.c.pop||0))||(a.d-b.d)); return scored[0].c; }
-    async function geo1(q,refLL){ q=String(q||'').trim(); if(!q) return null;
-      const m=q.match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/); if(m) return {lng:+m[2],lat:+m[1],name:(+m[1]).toFixed(3)+', '+(+m[2]).toFixed(3)};
-      try{ const st=stationLL(q); if(st) return st; }catch(_){}
-      try{ const r=await fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(q)+'&count=5&language='+(IntMapLang.locale(HOST.lang,"en"))); const j=await r.json();
-        const cs=(j&&j.results||[]).map(g=>({lng:+g.longitude,lat:+g.latitude,pop:+g.population||0,name:g.name+(g.admin1?(', '+g.admin1):'')+(g.country?(', '+g.country):'')}));
-        const b=_pickNear(cs,refLL); if(b) return b; }catch(_){}
-      try{ const _g=window.IntMapNominatimGate; if(_g) await _g.nominatimSlot();   /* (#R489) the app's ONE one-a-second floor — js/nominatim-gate.js (reached through `window`: no top-level declarations here, tests/layer-boot-graph-checks.test.mjs (#R175) #4) */
-        const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&q='+encodeURIComponent(q)); const j=await r.json();
-        const cs=(j||[]).map(x=>({lng:+x.lon,lat:+x.lat,pop:+x.importance*1e6||0,name:(x.display_name||q).split(',').slice(0,2).join(', ')}));
-        const b=_pickNear(cs,refLL); if(b) return b; }catch(_){}
-      return null; }
+    async function geoNear(q,refLL){ q=String(q||'').trim(); if(!q) return null;
+      const rg=window.IntMapRouteGeocode; if(!rg||typeof rg.resolve!=='function') return null;
+      try{ return await rg.resolve(q,{near:refLL||_mapCtr(),lang:HOST.lang}); }catch(_){ return null; } }
     /* ══ ⚠⚠⚠ (#R291) THE PANEL'S PRIVATE STATE IS GONE FROM THIS FILE ═════════════════════════════
        `pFrom / pTo / pVia / pMode / pAvoid / pAreas / pTModes / pMaxWalk / pLastResult` lived here,
        in the same closure as the router, and NOTHING else could read one of them. Atlas therefore
@@ -995,8 +988,8 @@ export function routing(HOST){
         const mapped=_isTransit(ml)?'transit':({car:'driving',drive:'driving',driving:'driving',walk:'walking',foot:'walking',walking:'walking',cycle:'cycling',bike:'cycling',cycling:'cycling'})[ml];
         if(mapped) ST.setMode(mapped); }
       if(ST){
-        if(from) ST.setPlace('from',(typeof from==='object'&&from.lng!=null)?from:await geo1(String(from)));
-        if(to) ST.setPlace('to',(typeof to==='object'&&to.lng!=null)?to:await geo1(String(to))); }
+        if(from) ST.setPlace('from',(typeof from==='object'&&from.lng!=null)?from:await geoNear(String(from)));
+        if(to) ST.setPlace('to',(typeof to==='object'&&to.lng!=null)?to:await geoNear(String(to))); }
       try{ await window.IntMapLazy.need('routeUi'); }catch(_){}
       /* ⚠ (#R299) `reveal` — this caller ASKED to see a journey (Atlas, the widget board, a tap on
          the line), so a panel the reader left minimised is opened up rather than opened as a title
@@ -1101,7 +1094,7 @@ export function routing(HOST){
        panel asks the first two when it is re-opened; the surfaces that light a 「there is a route」
        dot (js/map-ui.js's Tools row, the widget board) can ask the third rather than assume. */
     return { route, clear, ensureLayers, openPanel, _src:SRC, selectAlt, selectStep, maneuver:_maneuver,
-             stationLL, geoNear:geo1, exportRoute, _routeExport, hasRoute, painted, repaint, visible,
+             stationLL, geoNear, exportRoute, _routeExport, hasRoute, painted, repaint, visible,
              alts, altAt, altsOf, routeCoords:_routeCoords, exportPayload, frame, setInsets,
              startPick, endPick, picking,
              startAreaDraw, endAreaDraw:_endAreaDraw, areas, removeArea, clearAreas, highlightArea, drawingArea,

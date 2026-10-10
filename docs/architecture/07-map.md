@@ -992,6 +992,8 @@ Atlas の `research.related` / `research.impact` / 実世界オブジェクト�
 - 携帯のChronosは出典表示の実際の矩形から下端と利用可能な高さを決め、シート移動・リサイズに追従する。高さが足りない場合は操作部の内部をスクロールできる。
 
 - **時刻はマスタークロック `window.IntMapTime` 1本**。⚠ **2つ目の時計を作らない。**
+  「その時計の瞬間（ライブなら今）」は時計に訊く——`when()`（Date）・`nowMs()`（ミリ秒）・`iso()`（日付）。
+  ⚠ 呼び出し側で `isLive ? Date.now() : when` を組み立てない（`tests/one-geocode-one-clock-checks.test.mjs` が js/ 全体で拒む）。
 - **下限は `IntMapHistScale.FLOOR` が決める**（`IntMapTime.min`）。⚠ **この数を書き写さない**——スライダーの `min`・入力の
   ガード・目盛りは全部 `IntMapTime.min` を実行時に読む（`js/news-timeline.js`）。
   その範囲に何があるかは**各出典が決める**のであって、時計は最短のものに揃えない:

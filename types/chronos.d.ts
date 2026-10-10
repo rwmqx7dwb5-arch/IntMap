@@ -27,6 +27,8 @@ export interface ChronosSetOptions {
 export interface Chronos {
   get(): Date | null;
   when(): Date;
+  /** `when()` in epoch ms — now when live */
+  nowMs(): number;
   iso(): string;
   year(): number;
   isLive(): boolean;
