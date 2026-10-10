@@ -120,10 +120,67 @@ export function collisions() {
   return { keys: byEn.size, hits };
 }
 
+/* ⚠ RECORDED, NOT JUDGED — a second list, and deliberately not BENIGN. (2026-10-10, one-translate-rule)
+   When the local `(en,jp)=>IntMapLang.t(...)` helpers became `IntMapLang.pick(...)` bindings the
+   instrument could finally see their call sites, and these 43 collisions appeared. They are not new:
+   the sites existed and already shared one inline row. Some are plainly one meaning (spacing, の/無,
+   brackets); some are not («From» period vs currency, «Stop» halt vs waypoint, «open» vs 規制なし).
+   Telling them apart, and giving the outliers their own English key, is translation work, and the
+   nine-language system is frozen (AGENTS.md §3-5: a coverage hole is recorded, not fixed). English and
+   Japanese are unaffected — both come from each site's own arguments; only the seven frozen languages
+   read the shared row. So they are listed here as OPEN, the gate stays red for any NEW collision, and an
+   entry that stops colliding must be deleted (the same both-directions rule as BENIGN). */
+const FROZEN_OPEN = new Set([
+  "From",
+  "Reading…",
+  "Stop",
+  " · dated 1 January: may be the year only",
+  "an unnamed shape",
+  "Answer",
+  "Ask Atlas",
+  "Categories",
+  "Colouring",
+  "depth ",
+  "Drawn from another date",
+  "empty",
+  "Example maps",
+  "Finish",
+  "Hide",
+  "Largest",
+  "Layers on the map",
+  "Location",
+  "medium",
+  "Move",
+  "Next",
+  "Not drawn — no source states this date",
+  "Not read: ",
+  "Note",
+  "Notes",
+  "On this day",
+  "One colour",
+  "open",
+  "Place",
+  "Published",
+  "Question",
+  "Radius (km)",
+  "Recent",
+  "Reference",
+  "Rename",
+  "Sector",
+  "Show",
+  "Show on the map",
+  "skipped",
+  "To",
+  "under ",
+  "unnamed shape",
+  "Years",
+]);
+
 const { keys, hits } = collisions();
-const unlisted = hits.filter((h) => !BENIGN.has(h.en));
+const unlisted = hits.filter((h) => !BENIGN.has(h.en) && !FROZEN_OPEN.has(h.en));
 const live = new Set(hits.map((h) => h.en));
 const stale = [...BENIGN].filter((k) => !live.has(k)).sort();
+const staleOpen = [...FROZEN_OPEN].filter((k) => !live.has(k) || BENIGN.has(k)).sort();
 
 /* ⚠ (#R239) the machine-readable form scripts/i18n-audit.mjs reads — one gate, one copy of each
    measurement (see the header of scripts/i18n-pages-audit.mjs). */
@@ -147,7 +204,8 @@ if (process.argv.includes('--list')) {
 console.log(`IntMap · one English key, two meanings — the inline table has ONE row per key  (#R370)\n`);
 console.log(`  distinct English keys       ${keys}`);
 console.log(`  keys with >1 Japanese       ${hits.length}`);
-console.log(`  …judged benign (allowlist)  ${hits.length - unlisted.length}`);
+console.log(`  …judged benign (allowlist)  ${hits.filter((h) => BENIGN.has(h.en)).length}`);
+console.log(`  …recorded open (freeze)     ${hits.filter((h) => FROZEN_OPEN.has(h.en)).length}`);
 console.log(`  …UNLISTED                   ${unlisted.length}`);
 if (stale.length) console.log(`  …stale allowlist entries    ${stale.length}`);
 
@@ -162,6 +220,9 @@ if (process.argv.includes('--gate')) {
     problems.push(`${stale.length} BENIGN entr(ies) in scripts/i18n-key-collision-audit.mjs no longer collide `
       + `— delete them, or the allowlist becomes a place a real collision can hide: ${stale.map((s) => JSON.stringify(s)).join(', ')}`);
   }
+  if (staleOpen.length) {
+    problems.push(`${staleOpen.length} FROZEN_OPEN entr(ies) no longer collide (or were judged benign) — delete them: ${staleOpen.map((x) => JSON.stringify(x)).join(', ')}`);
+  }
   if (problems.length) {
     console.error('\n✖ key-collision gate: ' + problems.join('; '));
     console.error('  fr / ko / zh-Hant / zh-Hans resolve a call site by its ENGLISH string, so one key');
@@ -171,5 +232,5 @@ if (process.argv.includes('--gate')) {
     console.error('  `node scripts/i18n-key-collision-audit.mjs --list` prints every site.');
     process.exit(1);
   }
-  console.log('\n✓ key-collision gate: every English key carries one meaning, or is a judged-benign duplicate.');
+  console.log('\n✓ key-collision gate: no new collision — every English key carries one meaning, is a judged-benign duplicate, or is recorded open under the language freeze (FROZEN_OPEN).');
 }

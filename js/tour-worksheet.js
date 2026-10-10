@@ -36,7 +36,7 @@ import { playingTour, go, status, readerLang } from './tour-player.js';
 import { iconNode } from './icons.js';
 
 const lang = () => { try { return readerLang(); } catch (_) { return 'en'; } };
-const T = (en, jp) => IntMapLang.t(lang(), en, jp);
+const T = IntMapLang.pick(() => lang());
 const LA = /** @type {(...a: string[]) => string[]} */ (IntMapLang.pickArgs());   /* the tuple helper js/tours.js uses */
 
 /* How long one step may take to be drawn before the sheet says it could not be pictured.
@@ -71,7 +71,7 @@ async function drawn(TL, bound) {
    site: { name, link }, base: the page's directory URL, made: Date }  → the model the DOM is built from. */
 export function sheetModel(tour, shots, o) {
   o = o || {};
-  const L = o.lang || 'en'; const t = (en, jp) => IntMapLang.t(L, en, jp);
+  const L = o.lang || 'en'; const t = IntMapLang.pick(() => L);
   const units = (tour.curriculum || []).map((k) => CURRICULUM[k]).filter(Boolean)
     .map((c) => IntMapLang.t(L, c.subject[0], c.subject[1]) + ' — ' + IntMapLang.t(L, c.item[0], c.item[1]));
   const credits = [];
@@ -212,7 +212,7 @@ const MISS = {
 
 /** the page, from the model */
 function buildPaper(m) {
-  const t = (en, jp) => IntMapLang.t(m.lang, en, jp);
+  const t = IntMapLang.pick(() => m.lang);
   const paper = node('article', 'imw-paper'); paper.setAttribute('lang', IntMapLang.htmlTag(m.lang));
   const head = node('header', 'imw-head'); const hl = node('div');
   hl.appendChild(node('h1', null, m.title));

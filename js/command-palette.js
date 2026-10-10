@@ -87,7 +87,7 @@ export function rankEntries(q, entries, recent) {
 /* ══ THE READER'S LANGUAGE ═══════════════════════════════════════════════════════════════════════════════════ */
 let HOST = null;
 const lang = () => { try { return (HOST && HOST.lang) || window.IntMapI18N.lang(); } catch (_) { return 'en'; } };
-const t = (en, jp) => IntMapLang.t(lang(), en, jp);
+const t = IntMapLang.pick(() => lang());
 const txt = (v) => (Array.isArray(v) ? IntMapLang.t(lang(), v[0], v[1]) : String(v == null ? '' : v));
 const H = (s) => globalThis.IntMapSafe.html(s);
 

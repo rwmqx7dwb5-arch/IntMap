@@ -274,7 +274,7 @@ async function printDoc(doc) {
 }
 /** what the reader calls each kind of document, in their language */
 export function kindLabel(kind, lang) {
-  const T = (en, jp) => IntMapLang.t(lang, en, jp);
+  const T = IntMapLang.pick(() => lang);
   if (kind === 'map') return T('My map', 'マイマップ');
   if (kind === 'tour') return T('Tour', 'ツアー');
   if (kind === 'brief') return T('Atlas answer', 'Atlas の回答');
@@ -349,7 +349,7 @@ export function showPlaces(HOST, places, opts) {
 
 /** The sentence for a failed door, in the reader's language. */
 export function placeFailureText(error, lang) {
-  const T = (en, jp) => IntMapLang.t(lang, en, jp);
+  const T = IntMapLang.pick(() => lang);
   if (error === 'sign_in') return T('Sign in to keep places in your account.', '場所をアカウントに保存するにはログインしてください。');
   if (error === 'full') return T('This account already holds the most places it can. Delete some to save more.', 'このアカウントに保存できる場所の上限に達しています。いくつか削除してから保存してください。');
   if (error === 'invalid') return T('That place needs a name and a position on the globe.', '場所には名前と地球上の位置が必要です。');
@@ -430,7 +430,7 @@ function ensureStyle() {
  *  account once the sheet has read the account, and the sheet says what happened. */
 export async function openMyPlaces(HOST, opts) {
   const lang = HOST && HOST.lang;
-  const T = (en, jp) => IntMapLang.t(lang, en, jp);
+  const T = IntMapLang.pick(() => lang);
   if (!HOST || !HOST.user) {
     if (opts && opts.save) { try { HOST.imToast(placeFailureText('sign_in', lang)); } catch (_) { } }
     try { HOST && HOST.openAuthModal && HOST.openAuthModal(); } catch (_) { } return;

@@ -103,7 +103,7 @@ export function upTo(list, when) {
 /* ══ WORDS FOR A WIKIDATA RECORD (IntMap's own words: en + jp — CONSTITUTION.md §7) ═════════════════ */
 /* what the property that dated the record says happened on that date ('' for a point in time: the date says it) */
 function propWord(prop, lang) {
-  const T = (en, jp) => IntMapLang.t(lang, en, jp);
+  const T = IntMapLang.pick(() => lang);
   switch (prop) {
     case 'P580': return T('began', '開始');
     case 'P571': return T('founded', '成立');

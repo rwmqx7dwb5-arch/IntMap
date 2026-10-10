@@ -261,24 +261,30 @@ export const IntMapLang=(function () {
   /* ⚠ `getLang` IS A FUNCTION, NOT A VALUE (#R165's rule). Every module that used to write its own
      helper closed over `HOST.lang` / `currentLang` through a live accessor for exactly this reason:
      the app reassigns the current language at runtime and a captured value never changes. */
+  /* ⚠ ONE RESOLUTION RULE. `pick()` and `t()` both end here: `read` is the live language accessor, `args`
+     the call's arguments and `o` the index of the English column in them (0 for `pick()`, 1 for
+     `t(lang, …)` whose first argument is the language). There is no second copy of this body. */
+  function resolve(read, args, o) {
+    var n = args.length - o;
+    if (!n) return '';
+    var code;
+    try { code = normalise(read()); } catch (e) { code = FALLBACK; }
+    var i = idx[code];
+    if (i == null) return args[o];
+    if (i > 0 && i < n) {
+      var v = args[o + i];
+      if (v != null && v !== '') return v;
+    }
+    if (i !== 0) {
+      var tb = inline[code];
+      if (tb) { var s = tb[args[o]]; if (s != null && s !== '') return s; }
+    }
+    return args[o];
+  }
+  /** @param {() => string} getLang  the LIVE language accessor
+      @returns {((...texts: any[]) => string) & { arr: (a: any) => string }}  English first, then the other columns */
   function pick(getLang) {
-    var fn = function () {
-      var n = arguments.length;
-      if (!n) return '';
-      var code;
-      try { code = normalise(getLang()); } catch (e) { code = FALLBACK; }
-      var i = idx[code];
-      if (i == null) return arguments[0];
-      if (i > 0 && i < n) {
-        var v = arguments[i];
-        if (v != null && v !== '') return v;
-      }
-      if (i !== 0) {
-        var t = inline[code];
-        if (t) { var s = t[arguments[0]]; if (s != null && s !== '') return s; }
-      }
-      return arguments[0];
-    };
+    var fn = function () { return resolve(getLang, arguments, 0); };
     /* (#R241) the same resolution for a tuple held as data — see `pickArgs` below. ⚠ ONE rule: this
        IS `fn`, applied, so the positional slots and the inline-table fallback cannot drift apart. */
     fn.arr = function (a) { return Array.isArray(a) ? fn.apply(null, a) : (a == null ? '' : String(a)); };
@@ -349,14 +355,7 @@ export const IntMapLang=(function () {
   /** (module-graph) the signature the call sites use, now that the type checker reads the import:
       @param {string|(() => string)} lang  @param {...*} texts  English first, then the other columns  @returns {string} */
   function t(lang, ...texts) {   /* `texts` names the columns for the checker; the body reads `arguments`, as before */
-    var n = arguments.length;
-    if (n < 2) return '';
-    var code; try { code = normalise(typeof lang === 'function' ? lang() : lang); } catch (e) { code = FALLBACK; }
-    var i = idx[code];
-    if (i == null) return arguments[1];
-    if (i > 0 && i + 1 < n) { var v = arguments[i + 1]; if (v != null && v !== '') return v; }
-    if (i !== 0) { var tb = inline[code]; if (tb) { var s = tb[arguments[1]]; if (s != null && s !== '') return s; } }
-    return arguments[1];
+    return resolve(function () { return typeof lang === 'function' ? lang() : lang; }, arguments, 1);
   }
 
   /* ══ (#R231) THE BCP-47 TAG FOR `Intl`, FROM THE SAME ONE LIST ════════════════════════════════
@@ -396,6 +395,25 @@ export const IntMapLang=(function () {
     return o;
   }
 
+  /* the LIVE keyed tables and the reader's current language — js/i18n.js owns window.IntMapI18N, and this is
+     the one place in the registry that reads it (it merges into those objects in place and js/i18n-late.js adds
+     keys to them after boot, neither of which `ui` sees). null when js/i18n.js has not run. */
+  function live() { try { return (typeof window !== 'undefined' && window.IntMapI18N) || null; } catch (e) { return null; } }
+  function currentCode() { var I = live(); return (I && I.lang) ? I.lang() : FALLBACK; }
+
+  /* ONE key lookup for a caller that holds a key and a fallback, not a table: the live table of `code` (the
+     reader's current language when `code` is null), English underneath per key, then `fallback`. An empty or
+     missing value falls through. */
+  function keyedText(code, key, fallback) {
+    try {
+      var c = normalise(code == null ? currentCode() : code);
+      var I = live();
+      var tbl = (I && I[c]) || keyed(c);
+      var en = (I && I[FALLBACK]) || ui[FALLBACK] || {};
+      return tbl[key] || en[key] || fallback;
+    } catch (_) { return fallback; }
+  }
+
   /* ══ ⚠⚠⚠ (#R249) THE FIFTEENTH SURFACE — THE DOCUMENT'S OWN METADATA ═══════════════════════════
      「全ての言語について、すべての面において対応が完璧かどうか点検し、未了点があれば修正して。」
 
@@ -423,9 +441,7 @@ export const IntMapLang=(function () {
      with itself. That is a BUILD-time question. scripts/i18n-doc-audit.mjs records the decision. */
   function syncDocument(code) {
     try {
-      var c = normalise(code == null
-        ? ((window.IntMapI18N && window.IntMapI18N.lang) ? window.IntMapI18N.lang() : FALLBACK)
-        : code);
+      var c = normalise(code == null ? currentCode() : code);
       document.documentElement.setAttribute('lang', htmlTag(c));
       var d = keyed(c);
       if (d && d.docTitle) document.title = d.docTitle;
@@ -513,7 +529,7 @@ export const IntMapLang=(function () {
     return '';
   }
   return { LANGS: LANG_ROWS, FALLBACK: FALLBACK, list: list, codes: codes, syncChrome: syncChrome,
-           define: define, pick: pick, pickArgs: pickArgs, keyed: keyed, t: t, locale: locale,
+           define: define, pick: pick, pickArgs: pickArgs, keyed: keyed, keyedText: keyedText, t: t, locale: locale,
            normalise: normalise, has: has, index: index, htmlTag: htmlTag, syncDocument: syncDocument,
            englishName: englishName, codeForEnglishName: codeForEnglishName,
            /* (#R232) discovery + lazy loading */

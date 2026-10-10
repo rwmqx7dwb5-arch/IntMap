@@ -48,7 +48,7 @@ export default [
     ],
     schema: () => ({ type: 'object', properties: { place: str(), country: str(), lng: lng(), lat: lat(), what: one.apply(null, CORRECTION.kinds), layer: str(), message: str() } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, esc = K.esc, HOST = K.HOST, geocode = K.geocode;
-      const lang = HOST.lang, T = (en, jp) => IntMapLang.t(lang, en, jp);
+      const lang = HOST.lang, T = IntMapLang.pick(() => lang);
       let pt = null;
       if (a.lng != null && a.lat != null && isFinite(+a.lng) && isFinite(+a.lat)) pt = { lng: +a.lng, lat: +a.lat, name: a.place ? String(a.place) : null };
       else if (a.place) {
@@ -73,7 +73,7 @@ export default [
     ],
     schema: () => (noArgs('myMapReports')),
     async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, esc = K.esc, HOST = K.HOST;
-      const lang = HOST.lang, T = (en, jp) => IntMapLang.t(lang, en, jp);
+      const lang = HOST.lang, T = IntMapLang.pick(() => lang);
       const M = await import('./map-corrections.js');
       const got = await M.readReports(HOST);
       if (!got.ok) return R(false, warn(esc(T('The answers could not be read (' + got.error + ').', '回答を読み込めませんでした（' + got.error + '）。'))));
@@ -90,7 +90,7 @@ export default [
     ],
     schema: () => ({ type: 'object', properties: { limit: num(1, 500) } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, esc = K.esc, HOST = K.HOST;
-      const lang = HOST.lang, T = (en, jp) => IntMapLang.t(lang, en, jp);
+      const lang = HOST.lang, T = IntMapLang.pick(() => lang);
       const M = await import('./map-corrections.js');
       const got = await M.publicLog(HOST, a.limit ? Math.round(+a.limit) : 50);
       if (!got.ok) return R(false, warn(esc(T('The corrections log could not be read (' + got.error + ').', '訂正の記録を読み込めませんでした（' + got.error + '）。'))));

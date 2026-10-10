@@ -16,7 +16,7 @@ export function histPlaces(HOST) {
   let data = null, pending = null, controller = null, disposed = false, painting = false;
   let fc = empty(), key = '', popup = null;
   const byId = new Map();
-  const text = (en, jp) => IntMapLang.t(HOST.lang, en, jp);
+  const text = IntMapLang.pick(() => HOST.lang);
   const escape = value => window.IntMapSafe.html(String(value == null ? '' : value));
   /* Pleiades explicitly documents [-1000,-1] as 1000–1 BCE, not JS years:
      https://pleiades.stoa.org/vocabularies/time-periods/1st-millennium-bce */

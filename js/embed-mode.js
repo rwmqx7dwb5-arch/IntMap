@@ -260,13 +260,7 @@ export function createEmbedTab(ctx) {
 }
 
 /* ══ THE EMBED VIEW — only when this page IS an embed ════════════════════════════════════════ */
-function tr(key, fallback) {
-  try {
-    const I = window.IntMapI18N, c = (I && I.lang && I.lang()) || 'en';
-    const v = (I && I[c] && I[c][key]) || (I && I.en && I.en[key]);
-    return v || fallback;
-  } catch (_) { return fallback; }
-}
+function tr(key, fallback) { return IntMapLang.keyedText(null, key, fallback); }
 function langTag() {
   try { const I = window.IntMapI18N, c = (I && I.lang && I.lang()) || 'en'; return IntMapLang.htmlTag(c); }
   catch (_) { return 'en'; }

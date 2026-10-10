@@ -112,7 +112,7 @@ async function runtime(payload = data, initialLive = false, fetcher) {
      its page-level collaborators from (js/hist-scale.js and js/label-scale.js are imported into it first). */
   const edges = {
     'js/geo-engine.js': { IntMapGeoEngine: ge },
-    'js/lang-registry.js': { IntMapLang: { t: (lang, en, jp) => lang === 'jp' ? jp : en, htmlTag: lang => lang === 'jp' ? 'ja' : lang } },
+    'js/lang-registry.js': { IntMapLang: { t: (lang, en, jp) => lang === 'jp' ? jp : en, pick: (get) => (en, jp) => get() === 'jp' ? jp : en, htmlTag: lang => lang === 'jp' ? 'ja' : lang } },
     'js/chronos.js': { IntMapTime: { isLive: () => live, when: () => date, on(fn) { subscribers.add(fn); return () => subscribers.delete(fn); } } },
   };
   const ctx = {

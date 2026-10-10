@@ -63,7 +63,7 @@ export function analysisEvents(HOST){
     const viewing=()=>!!(lastDash&&lastDash.isConnected&&lastDash.querySelector('[data-evstep]'));
     IntMapTime.on(()=>{ const k=dayKey(IntMapTime.when()); if(k===clockDay||!viewing()) return;
       clearTimeout(clockT); clockT=setTimeout(()=>{ try{ renderDashboard(); }catch(_){} },250); });
-    const T=(en,jp)=>IntMapLang.t(HOST.lang,en,jp);
+    const T=IntMapLang.pick(() => HOST.lang);
     const kindOf=(r)=>r.src==='wars'?'war':r.src==='cshapes'?'geo':(r.kind||'geo');
     /* one record, as this view states it: its date (to its precision), its words, the line under them, its place, its links */
     function card(r){

@@ -71,7 +71,6 @@ export const lastEndedWeek = (now) => weekOf(Date.parse(weekOf(now).from) - DAY)
    EONET's categories are a closed vocabulary of its own (https://eonet.gsfc.nasa.gov/api/v3/categories, 13 ids on
    2026-10-04); the English is EONET's title for each, the Japanese is IntMap's. An id EONET adds later falls back to
    the title EONET gave it in the data, so a new category is shown under its own name rather than dropped. */
-const T = (lang, en, jp) => IntMapLang.t(lang, en, jp);
 const CATEGORY_JP = { drought: '干ばつ', dustHaze: '砂塵・煙霧', earthquakes: '地震', floods: '洪水', landslides: '地すべり', manmade: '人為的な事象',
   seaLakeIce: '海氷・湖氷（氷山）', severeStorms: '激しい嵐（熱帯低気圧など）', snow: '雪', tempExtremes: '異常な気温', volcanoes: '火山', waterColor: '水の色の変化', wildfires: '山火事' };
 /** the category's name in the reader's language; `title` is EONET's own English for it (carried in the data) */
@@ -80,8 +79,8 @@ export const categoryWords = (id, title, lang) => (lang === 'jp' && CATEGORY_JP[
 const COLOUR = { earthquakes: 0, wildfires: 1, volcanoes: 2, floods: 4, seaLakeIce: 4, severeStorms: 5 };
 const colourOf = (cat) => PALETTE[cat in COLOUR ? COLOUR[cat] : 3];
 /* EONET's units as it writes them → the reader's words; an unknown unit is shown as written */
-const unitWords = (u, lang) => (u === 'kts' ? T(lang, 'kt', 'ノット') : u === 'hectare' ? T(lang, 'ha', 'ヘクタール') : u === 'acres' ? T(lang, 'acres', 'エーカー')
-  : u === 'NM^2' ? T(lang, 'sq NM', '平方海里') : String(u || ''));
+const unitWords = (u, lang) => (u === 'kts' ? IntMapLang.t(lang, 'kt', 'ノット') : u === 'hectare' ? IntMapLang.t(lang, 'ha', 'ヘクタール') : u === 'acres' ? IntMapLang.t(lang, 'acres', 'エーカー')
+  : u === 'NM^2' ? IntMapLang.t(lang, 'sq NM', '平方海里') : String(u || ''));
 const num = (v, lang) => (+v).toLocaleString(lang === 'jp' ? 'ja-JP' : 'en-US', { maximumFractionDigits: 1 });
 /** 'YYYY-MM-DD HH:MM UTC' of an ISO instant (both languages: the upstreams' own clock) */
 const utcWords = (iso) => String(iso).slice(0, 10) + ' ' + String(iso).slice(11, 16) + ' UTC';
@@ -98,18 +97,18 @@ export function weekWords(w, lang) {
 /** what one item of a week says, in the reader's language: { kind, title, sub, when, at, url, sources } */
 export function describe(item, idx, lang) {
   if (item.kind === 'quake') {
-    const what = item.ty ? item.ty : T(lang, 'Earthquake', '地震');
+    const what = item.ty ? item.ty : IntMapLang.t(lang, 'Earthquake', '地震');
     const title = 'M ' + (+item.m).toFixed(1) + ' — ' + (item.p || coordWords(item.at, lang));
-    const sub = [what + (item.mt ? ' (' + item.mt + ')' : ''), T(lang, 'depth ', '深さ ') + num(item.at[2], lang) + ' km', utcWords(item.t)];
-    if (item.ts) sub.push(T(lang, 'USGS tsunami flag set', 'USGS の津波フラグあり'));
-    if (item.al) sub.push(T(lang, 'PAGER alert: ', 'PAGER 警報: ') + item.al);
+    const sub = [what + (item.mt ? ' (' + item.mt + ')' : ''), IntMapLang.t(lang, 'depth ', '深さ ') + num(item.at[2], lang) + ' km', utcWords(item.t)];
+    if (item.ts) sub.push(IntMapLang.t(lang, 'USGS tsunami flag set', 'USGS の津波フラグあり'));
+    if (item.al) sub.push(IntMapLang.t(lang, 'PAGER alert: ', 'PAGER 警報: ') + item.al);
     return { kind: 'quake', title, sub: sub.join(' · '), when: item.t, at: item.at, url: idx.sources.usgs.eventPage + item.id,
       sources: [{ name: 'USGS', url: idx.sources.usgs.eventPage + item.id }] };
   }
   const sub = [categoryWords(item.cat, idx.categories && idx.categories[item.cat], lang)];
-  if (item.mag != null) sub.push((item.cat === 'severeStorms' ? T(lang, 'max wind ', '最大風速 ') : item.cat === 'wildfires' ? T(lang, 'burned area ', '焼失面積 ') : '') + num(item.mag, lang) + ' ' + unitWords(item.unit, lang));
+  if (item.mag != null) sub.push((item.cat === 'severeStorms' ? IntMapLang.t(lang, 'max wind ', '最大風速 ') : item.cat === 'wildfires' ? IntMapLang.t(lang, 'burned area ', '焼失面積 ') : '') + num(item.mag, lang) + ' ' + unitWords(item.unit, lang));
   sub.push(item.d0.slice(0, 10) === item.d1.slice(0, 10) ? item.d0.slice(0, 10) : item.d0.slice(0, 10) + ' – ' + item.d1.slice(0, 10));
-  if (!item.at) sub.push(T(lang, 'not placed: EONET gives this event only an outline whose axis order it does not state', '位置は示しません: EONET はこの事象に軸順の明示されない輪郭しか与えていません'));
+  if (!item.at) sub.push(IntMapLang.t(lang, 'not placed: EONET gives this event only an outline whose axis order it does not state', '位置は示しません: EONET はこの事象に軸順の明示されない輪郭しか与えていません'));
   return { kind: 'event', title: item.title, sub: sub.join(' · '), when: item.d1, at: item.at, url: (item.src[0] && item.src[0].url) || idx.sources.eonet.eventApi + item.id,
     sources: [...item.src.map((s) => ({ name: s.id, url: s.url })), { name: 'EONET', url: idx.sources.eonet.eventApi + item.id }] };
 }
@@ -137,7 +136,7 @@ function counts(week) {
 /** one sentence of counts, in the reader's language */
 export function summary(week, idx, lang) {
   const C = counts(week);
-  const parts = [T(lang, C.quakes + ' earthquake' + (C.quakes === 1 ? '' : 's') + ' of M ' + idx.rule.minMagnitude + '+', 'M' + idx.rule.minMagnitude + ' 以上の地震 ' + C.quakes + ' 件')];
+  const parts = [IntMapLang.t(lang, C.quakes + ' earthquake' + (C.quakes === 1 ? '' : 's') + ' of M ' + idx.rule.minMagnitude + '+', 'M' + idx.rule.minMagnitude + ' 以上の地震 ' + C.quakes + ' 件')];
   for (const c of C.byCategory) parts.push(lang === 'jp' ? categoryWords(c.cat, idx.categories[c.cat], lang) + ' ' + c.n + ' 件' : c.n + ' ' + String(categoryWords(c.cat, idx.categories[c.cat], lang)).toLowerCase());
   return parts.join(lang === 'jp' ? '、' : ', ');
 }
@@ -172,7 +171,7 @@ export function weekState(week, idx, lang) {
     const w = Math.min(...pts.map((p) => p[0])), e = Math.max(...pts.map((p) => p[0])), s = Math.min(...pts.map((p) => p[1])), n = Math.max(...pts.map((p) => p[1]));
     view = e - w > 180 || pts.length === 1 ? (pts.length === 1 ? { lng: w, lat: s, zoom: POINT_ZOOM, bearing: 0, pitch: 0, proj: 'flat' } : WORLD()) : fitView(w - 5, s - 5, e + 5, n + 5, POINT_ZOOM);
   }
-  const title = T(lang, 'This week on Earth — ', '今週の地球 — ') + weekWords(week, lang);
+  const title = IntMapLang.t(lang, 'This week on Earth — ', '今週の地球 — ') + weekWords(week, lang);
   return { view, layers: [], time: { at: isoDay(Date.parse(week.to + 'T00:00:00Z') - DAY) }, title, mymap: feats.length ? toLinkValue(doc(week.w, title, feats)) : null };
 }
 /** the addresses: 'index.html#v=…' */

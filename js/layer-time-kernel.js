@@ -81,7 +81,7 @@ function load() {
 function lang() {
   try { return IntMapLang.normalise(D().documentElement.lang || 'en'); } catch (_) { return 'en'; }
 }
-const tr = (en, jp) => { try { return IntMapLang.t(lang(), en, jp); } catch (_) { return en; } };
+const tr = IntMapLang.pick(() => lang());
 const pickText = (o) => (o ? tr(o.en, o.jp) : '');
 
 /** the instant a clock is at — { when, live, now }. (time-compare-lapse) A map has its own clock

@@ -40,7 +40,7 @@ const GE = () => IntMapGeoEngine;
 const H = (s) => globalThis.IntMapSafe.html(String(s == null ? '' : s));
 let HOST = null;
 const lang = () => (HOST && HOST.lang) || 'en';
-const t = (en, jp) => IntMapLang.t(lang(), en, jp);
+const t = IntMapLang.pick(() => lang());
 const pick = (o) => (o ? (lang() === 'jp' ? o.jp : o.en) : '');
 
 /* ══ THE YEAR, HIDDEN — one class on <body>, and what it hides is what SAYS it prints the time ═════════

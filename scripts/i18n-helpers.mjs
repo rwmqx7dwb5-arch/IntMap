@@ -249,10 +249,38 @@ export function exposedHelpers() {
   _exposed = out;
   return out;
 }
+/* ⚠ A PROVEN NAME IS PROVEN FOR THE FILE, NOT FOR EVERY SCOPE IN IT. `provenNames()` collects names, and these
+   instruments are not scope-aware — which is fine for finding CALL SITES (a call to `t(…)` is read as a
+   translation call wherever it is) but not for EXPOSURE, because exposure turns a *property key* into a
+   repo-wide helper name. js/map-recorder.js binds `t` to the registry and also writes
+   `lines.map((t, i) => ({ text: t, … }))`; read scope-blind, that handed the key `text` to every file
+   (then `title`, `content`, `name` … 800 keys), and 591 `from('profiles')`-shaped calls became «translation
+   call sites with one argument». So a name is exposed through a property only if the file never
+   declares the same name again as a parameter or as something that is not a helper. */
+function unshadowed(ast, names, exposed) {
+  const other = new Set();
+  const param = (p) => {
+    if (!p) return;
+    if (p.type === 'Identifier') other.add(p.name);
+    else if (p.type === 'AssignmentPattern') param(p.left);
+    else if (p.type === 'RestElement') param(p.argument);
+    else if (p.type === 'ArrayPattern') p.elements.forEach(param);
+    else if (p.type === 'ObjectPattern') p.properties.forEach((q) => param(q.value || q.argument));
+  };
+  const fn = (f) => f.params.forEach(param);
+  walk.simple(ast, {
+    FunctionDeclaration: fn, FunctionExpression: fn, ArrowFunctionExpression: fn,
+    CatchClause(c) { param(c.param); },
+    VariableDeclarator(d) { if (d.id.type !== 'Identifier') param(d.id); else if (!bindsHelper(d.init, exposed)) other.add(d.id.name); },
+  });
+  const out = new Set();
+  for (const n of names) if (!other.has(n)) out.add(n);
+  return out;
+}
 function onePass(asts, exposed) {
   const out = new Set(exposed);
   for (const [, { src, ast }] of asts) {
-    const names = provenNames(src, ast, exposed);
+    const names = unshadowed(ast, provenNames(src, ast, exposed), exposed);
     walk.simple(ast, {
       Property(p) {
         const key = p.key ? (p.key.name || p.key.value) : null;

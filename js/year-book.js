@@ -295,7 +295,7 @@ function closeYearBook() {
 async function paint() {
   if (!sheet || sheet.hidden || !hostRef) return;
   const H = hostRef, my = ++seq;
-  const t = (en, jp) => IntMapLang.t(H.lang(), en, jp);
+  const t = IntMapLang.pick(() => H.lang());
   const when = H.time.when();
   const yl = yearLabel(when.getFullYear(), t);
   sheet.innerHTML = head(H, t, yl) + '<div class="yb-body"><div class="yb-wait">' + esc(t('Reading the records for ' + yl + '…', yl + ' の記録を読んでいます…')) + '</div></div>';
@@ -426,7 +426,7 @@ export function openFromPage(h) {
 /** the year as Atlas's answer — the same reading, in sentences (js/atlas-cap-time.js `time.yearbook`). Here, beside the page,
     so the two say the same things and Atlas's chunk does not carry them. `lang` is the reader's language; `note` is Atlas's own mark. */
 export function atlasHtml(r, when, show, lang, note) {
-  const t = (en, jp) => IntMapLang.t(lang, en, jp);
+  const t = IntMapLang.pick(() => lang);
   const yl = when.getFullYear() <= 0 ? t((1 - when.getFullYear()) + ' BC', '紀元前' + (1 - when.getFullYear()) + '年') : String(when.getFullYear());
   let out = note('✓ ' + t('The world in ' + yl, yl + '年の世界')) + (show ? ' — ' + esc(t('opened in the Chronos panel', 'Chronos パネルに表示しました')) : '');
   const B = r.borders;

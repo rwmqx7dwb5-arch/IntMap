@@ -130,7 +130,7 @@ export function studioState() { return CTL ? CTL.state() : null; }
 function freeName(base, taken) { if (taken.indexOf(base) < 0) return base; let i = 2; while (taken.indexOf(base + '_' + i) >= 0) i++; return base + '_' + i; }
 
 function dataStudio(HOST) {
-  const L = (en, jp) => IntMapLang.t(HOST.lang, en, jp);
+  const L = IntMapLang.pick(() => HOST.lang);
   const H = (s) => globalThis.IntMapSafe.html(s);
   const toast = (m) => { try { HOST.imToast(m); } catch (_) { } };
   const GU = () => { try { return window.GeoJSONUpload || null; } catch (_) { return null; } };

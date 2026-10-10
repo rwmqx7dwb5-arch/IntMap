@@ -51,7 +51,7 @@ function viewLines(views, esc, T, lang) {
 }
 function docKind(v, lang) {
   const d = fromSavedView(v);
-  const T = (en, jp) => IntMapLang.t(lang, en, jp);
+  const T = IntMapLang.pick(() => lang);
   const k = d ? d.kind : 'view';
   const name = k === 'map' ? T('my map', 'マイマップ') : k === 'tour' ? T('tour', 'ツアー') : k === 'brief' ? T('Atlas answer', 'Atlas の回答') : T('map', '地図');
   return d && d.steps.length > 1 ? name + ' · ' + T(d.steps.length + ' steps', d.steps.length + ' ステップ') : name;
@@ -142,7 +142,7 @@ export default [
     ],
     schema: () => ({ type: 'object', properties: { place: str(), country: str(), lng: num(-180, 180), lat: num(-90, 90), pinId: str(), name: str(), note: str(), collection: str() } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, esc = K.esc, HOST = K.HOST, GLEDGER = K.GLEDGER, geocode = K.geocode, _lnorm = K._lnorm;
-      const lang = HOST.lang, T = (en, jp) => IntMapLang.t(lang, en, jp);
+      const lang = HOST.lang, T = IntMapLang.pick(() => lang);
       if (!HOST.user) return R(false, warn(T('Sign in to keep places in your account.', '場所をアカウントに保存するにはログインしてください。')), { meta: SIGN_IN });
       let lng = null, lat = null, label = '', pinNote = '';
       if (a.pinId != null && a.pinId !== '') {
@@ -176,7 +176,7 @@ export default [
     ],
     schema: () => ({ type: 'object', properties: { collection: str(), name: str() } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, esc = K.esc, HOST = K.HOST;
-      const lang = HOST.lang, T = (en, jp) => IntMapLang.t(lang, en, jp);
+      const lang = HOST.lang, T = IntMapLang.pick(() => lang);
       if (!HOST.user) return R(false, warn(T('Sign in to see your saved places.', '保存した場所を見るにはログインしてください。')), { meta: SIGN_IN });
       const M = await import('./my-places.js');
       const r = await M.listPlaces(HOST.DB);
@@ -201,7 +201,7 @@ export default [
     ],
     schema: () => ({ type: 'object', properties: { collection: str(), name: str(), id: str() } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, esc = K.esc, HOST = K.HOST;
-      const lang = HOST.lang, T = (en, jp) => IntMapLang.t(lang, en, jp);
+      const lang = HOST.lang, T = IntMapLang.pick(() => lang);
       if (!HOST.user) return R(false, warn(T('Sign in to show your saved places.', '保存した場所を表示するにはログインしてください。')), { meta: SIGN_IN });
       const M = await import('./my-places.js');
       const r = await M.listPlaces(HOST.DB);
@@ -219,7 +219,7 @@ export default [
     ],
     schema: () => ({ type: 'object', properties: { id: str(), name: str(), collection: str(), all: one('collection') } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, esc = K.esc, HOST = K.HOST;
-      const lang = HOST.lang, T = (en, jp) => IntMapLang.t(lang, en, jp);
+      const lang = HOST.lang, T = IntMapLang.pick(() => lang);
       if (!HOST.user) return R(false, warn(T('Sign in to manage your saved places.', '保存した場所を管理するにはログインしてください。')), { meta: SIGN_IN });
       if (!a.id && !a.name && !(a.collection && a.all === 'collection')) return R(false, warn(T('Which saved place should I delete?', 'どの保存場所を削除しますか？')), needs('NEEDS_INPUT'));
       const M = await import('./my-places.js');
@@ -250,7 +250,7 @@ export default [
     ],
     schema: () => ({ type: 'object', properties: { name: str(), note: str(), collection: str(), what: one('map', 'myMap', 'tour', 'atlasTour', 'answer'), entry: str() } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, esc = K.esc, HOST = K.HOST;
-      const lang = HOST.lang, T = (en, jp) => IntMapLang.t(lang, en, jp);
+      const lang = HOST.lang, T = IntMapLang.pick(() => lang);
       if (!HOST.user) return R(false, warn(T('Sign in to keep maps in your account.', '地図をアカウントに保存するにはログインしてください。')), { meta: SIGN_IN });
       const M = await import('./my-places.js');
       const w = await docToSave(a, T);
@@ -271,7 +271,7 @@ export default [
     ],
     schema: () => ({ type: 'object', properties: { name: str(), id: str(), collection: str(), asMap: bool(), step: num(1, 200) } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, esc = K.esc, HOST = K.HOST;
-      const lang = HOST.lang, T = (en, jp) => IntMapLang.t(lang, en, jp);
+      const lang = HOST.lang, T = IntMapLang.pick(() => lang);
       if (!HOST.user) return R(false, warn(T('Sign in to open your saved maps.', '保存した地図を開くにはログインしてください。')), { meta: SIGN_IN });
       if (!a.id && !a.name && !a.collection) return R(false, warn(T('Which saved map should I open?', 'どの保存した地図を開きますか？')), needs('NEEDS_INPUT'));
       const M = await import('./my-places.js');
@@ -300,7 +300,7 @@ export default [
     ],
     schema: () => ({ type: 'object', properties: { collection: str(), all: one('everything', 'unfiled'), title: str() } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, esc = K.esc, HOST = K.HOST;
-      const lang = HOST.lang, T = (en, jp) => IntMapLang.t(lang, en, jp);
+      const lang = HOST.lang, T = IntMapLang.pick(() => lang);
       if (!HOST.user) return R(false, warn(T('Sign in to publish a collection.', 'コレクションを公開するにはログインしてください。')), { meta: SIGN_IN });
       const M = await import('./my-places.js');
       const S = await import('./shared-collection.js');
@@ -324,7 +324,7 @@ export default [
     ],
     schema: () => ({ type: 'object', properties: { collection: str(), all: one('everything', 'unfiled') } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, esc = K.esc, HOST = K.HOST;
-      const lang = HOST.lang, T = (en, jp) => IntMapLang.t(lang, en, jp);
+      const lang = HOST.lang, T = IntMapLang.pick(() => lang);
       if (!HOST.user) return R(false, warn(T('Sign in to manage your published collections.', '公開したコレクションを管理するにはログインしてください。')), { meta: SIGN_IN });
       if (!a.collection && !a.all) return R(false, warn(T('Which collection should I stop publishing?', 'どのコレクションの公開をやめますか？')), needs('NEEDS_INPUT'));
       const S = await import('./shared-collection.js');
@@ -347,7 +347,7 @@ export default [
     schema: () => ({ type: 'object', properties: { id: str(), name: str(), place: str(), country: str(), lng: num(-180, 180), lat: num(-90, 90),
       radiusKm: num(1, 1000), quakeMinMag: offOrNum(2.5, 9.5), alertMinLevel: offOrNum(1, 4), volcanoMinRank: offOrNum(1, 4), newsMinSources: offOrNum(1, 50), enabled: bool() } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, esc = K.esc, HOST = K.HOST;
-      const lang = HOST.lang, T = (en, jp) => IntMapLang.t(lang, en, jp);
+      const lang = HOST.lang, T = IntMapLang.pick(() => lang);
       if (!HOST.user) return R(false, warn(T('Sign in to watch places.', '場所を見守るにはログインしてください。')), { meta: SIGN_IN });
       let target = null;
       if (a.id || (a.name && !a.place && a.lng == null)) {
@@ -390,7 +390,7 @@ export default [
     ],
     schema: () => ({ type: 'object', properties: { id: str(), name: str(), collection: str(), all: one('collection') } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, esc = K.esc, HOST = K.HOST;
-      const lang = HOST.lang, T = (en, jp) => IntMapLang.t(lang, en, jp);
+      const lang = HOST.lang, T = IntMapLang.pick(() => lang);
       if (!HOST.user) return R(false, warn(T('Sign in to manage watched places.', '見守る場所を管理するにはログインしてください。')), { meta: SIGN_IN });
       if (!a.id && !a.name && !(a.collection && a.all === 'collection')) return R(false, warn(T('Which watched place should I stop watching?', 'どの場所の見守りをやめますか？')), needs('NEEDS_INPUT'));
       const n = await namedPlaces(a, HOST);
@@ -411,7 +411,7 @@ export default [
     ],
     schema: () => ({ type: 'object', properties: { id: str(), name: str() } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, esc = K.esc, HOST = K.HOST;
-      const lang = HOST.lang, T = (en, jp) => IntMapLang.t(lang, en, jp);
+      const lang = HOST.lang, T = IntMapLang.pick(() => lang);
       if (!HOST.user) return R(false, warn(T('Sign in to see your watched places.', '見守る場所を見るにはログインしてください。')), { meta: SIGN_IN });
       const W = await import('./place-watch.js');
       const c = await W.checkNow(HOST);
@@ -436,7 +436,7 @@ export default [
     ],
     schema: () => ({ type: 'object', properties: { id: str(), name: str() } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, esc = K.esc, HOST = K.HOST;
-      const lang = HOST.lang, T = (en, jp) => IntMapLang.t(lang, en, jp);
+      const lang = HOST.lang, T = IntMapLang.pick(() => lang);
       if (!HOST.user) return R(false, warn(T('Sign in to manage watched places.', '見守る場所を管理するにはログインしてください。')), { meta: SIGN_IN });
       const W = await import('./place-watch.js');
       let ids = null;

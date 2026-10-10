@@ -161,7 +161,7 @@ const kmWords = (km) => Math.round(km).toLocaleString() + ' km²';
 const shortSrc = (src) => String(src || '').split(' · ')[0].replace(/\s*\(.*$/, '').replace(/^.*\//, '').trim();
 const recordName = (idx, rec) => shortSrc(idx.src && idx.src[rec]) || rec;
 function edgeWords(idx, side, x, lg) {
-  const t = (en, jp) => IntMapLang.t(lg, en, jp);
+  const t = IntMapLang.pick(() => lg);
   if (!x || x.y == null) return '';
   const at = yearWords(x.y, lg);
   if (x.edge === 'today') return t(at + ' — still drawn in the last year the records cover', at + '（記録が届く最後の年にも描かれている）');
@@ -184,7 +184,7 @@ export function spanOf(D) {
   return [a, Math.max(b, a + 1)];
 }
 function chartSvg(idx, arc, D, lg, nowY) {
-  const t = (en, jp) => IntMapLang.t(lg, en, jp);
+  const t = IntMapLang.pick(() => lg);
   const sp = spanOf(D); if (!sp) return '';
   const [a, b] = sp, top = Math.max(1, D.peak.km) * 1.1;
   const X = (y) => ML + (CW - ML - MR) * (y - a) / (b - a), Y = (km) => MT + (CH - MT - MB) * (1 - km / top);
@@ -314,20 +314,20 @@ function closeArc() {
   if (unsubLapse) { try { unsubLapse(); } catch (_) { /* gone */ } unsubLapse = null; }
 }
 function head(arc) {
-  const t = (en, jp) => IntMapLang.t(lang(), en, jp);
+  const t = IntMapLang.pick(() => lang());
   return '<header class="pa-head"><button type="button" class="pa-back" data-act="list" aria-label="' + esc(t('All polities', '政体の一覧')) + '"' + (arc ? '' : ' hidden') + '>‹</button>'
     + '<h3 class="pa-title">' + esc(t('Rise and fall', '政体の盛衰')) + '</h3>'
     + '<button type="button" class="pa-x" data-act="close" aria-label="' + esc(t('Close', '閉じる')) + '">×</button></header>';
 }
 function listRow(idx, a, lg) {
-  const t = (en, jp) => IntMapLang.t(lg, en, jp), D = describe(idx, a);
+  const t = IntMapLang.pick(() => lg), D = describe(idx, a);
   const span = !D.first ? '' : D.last.edge === 'today' ? t(yearWords(D.first.y, lg) + ' – still drawn in ' + yearWords(D.last.y, lg), yearWords(D.first.y, lg) + '〜' + yearWords(D.last.y, lg) + 'にも描画') : yearWords(D.first.y, lg) + '–' + yearWords(D.last.y, lg);
   return '<li><button type="button" class="pa-row" data-arc="' + esc(idx.arcs.indexOf(a)) + '"><span class="pa-n">' + esc(nameOf(a, lg)) + '</span><span class="pa-v">' + esc(kmWords(a.pk[1])) + '</span>'
     + '<span class="pa-s">' + esc(span + ' · ' + t('largest in ', '最大 ') + yearWords(a.pk[0], lg)) + (lg === 'jp' && a.j ? ' · ' + esc(a.n) : '') + '</span></button></li>';
 }
 function paintList() {
   if (!sheet || !state.idx) return;
-  const idx = state.idx, lg = lang(), t = (en, jp) => IntMapLang.t(lg, en, jp);
+  const idx = state.idx, lg = lang(), t = IntMapLang.pick(() => lg);
   state.arc = null;
   const had = sheet.querySelector('.pa-q');
   const rows = state.q ? search(idx, state.q, 40) : largest(idx, 25);
@@ -341,7 +341,7 @@ function paintList() {
 }
 function paintArc() {
   if (!sheet || sheet.hidden || !state.idx || !state.arc) return;
-  const idx = state.idx, a = state.arc, lg = lang(), t = (en, jp) => IntMapLang.t(lg, en, jp), D = describe(idx, a);
+  const idx = state.idx, a = state.arc, lg = lang(), t = IntMapLang.pick(() => lg), D = describe(idx, a);
   const keep = sheet.querySelector('.pa-body'), scroll = keep ? keep.scrollTop : 0;
   const recKey = D.records.map((r) => '<span><i class="pa-' + esc(r) + '"></i>' + esc(recordName(idx, r)) + '</span>').join('') + (D.sheets.length ? '<span><i class="pa-sw"></i>' + esc(recordName(idx, 'sheet') + t(' (its own sheet years)', '（その図の年）')) + '</span>' : '');
   const rel = related(idx, a, lg);
@@ -387,7 +387,7 @@ function chartYear(ev) {
 function onChartMove(ev) {
   const y = chartYear(ev); if (y == null || !state.arc) return;
   const out = sheet.querySelector('.pa-read'); if (!out) return;
-  const lg = lang(), t = (en, jp) => IntMapLang.t(lg, en, jp), v = valueAt(state.idx, state.arc, y);
+  const lg = lang(), t = IntMapLang.pick(() => lg), v = valueAt(state.idx, state.arc, y);
   out.textContent = yearWords(y, lg) + ': ' + (v ? kmWords(v.km) + ' · ' + v.recs.map((r) => recordName(state.idx, r)).join(' + ') : t('not drawn', '描かれていない'));
 }
 function onClick(ev) {

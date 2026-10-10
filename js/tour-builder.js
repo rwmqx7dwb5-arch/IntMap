@@ -36,7 +36,7 @@ import { fromTourDraft, hasMap } from './map-doc.js';   /* (map-document-unify) 
 /* the player's reading of the language, its HTML encoder and its way to the map (js/tour-player.js) */
 import { IntMapLang } from './lang-registry.js';
 import { readerLang, escapeHtml, mapReady, openLink, startTour } from './tour-player.js';
-const t = (en, jp) => IntMapLang.t(readerLang(), en, jp);
+const t = IntMapLang.pick(() => readerLang());
 const H = (s) => escapeHtml(s);
 
 /* ══ THE DRAFT — this browser's copy of the tour being written ════════════════════════════════════ */

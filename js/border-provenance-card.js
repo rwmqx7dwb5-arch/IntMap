@@ -49,7 +49,7 @@ export const BorderProvenanceCard = (function () {
   const br = (arr) => arr.map((x, i) => (i ? html`<br>${x}` : html`${x}`));
   const sep = (arr, s) => arr.map((x, i) => (i ? html`${s}${x}` : html`${x}`));
   function W(HOST) {
-    const T = (en, jp) => IntMapLang.t(HOST.lang, en, jp);
+    const T = IntMapLang.pick(() => HOST.lang);
     const tag = (() => { try { return IntMapLang.htmlTag(HOST.lang) || 'en'; } catch (_) { return 'en'; } })();
     const year = (y) => { try { return window.IntMapHistScale.yearText(y, tag, HOST.lang === 'jp' ? '年' : null); } catch (_) { return String(y); } };
     const pad = (n) => String(n).padStart(2, '0');

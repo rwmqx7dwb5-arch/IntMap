@@ -300,7 +300,7 @@ export function forAtlas(rec) {
    → «CShapes 2.0», «aourednik/historical-basemaps (github.com/…) · GPL-3.0 · …» → «historical-basemaps») */
 const shortSrc = (src) => String(src || '').split(' · ')[0].replace(/\s*\(.*$/, '').replace(/^.*\//, '').trim();
 function words(lang, records) {
-  const L = (en, jp) => IntMapLang.t(lang, en, jp);
+  const L = IntMapLang.pick(() => lang);
   const tag = (() => { try { return IntMapLang.htmlTag(lang) || 'en'; } catch (_) { return 'en'; } })();
   const yearT = (y) => { try { return HS().yearText(y, tag, lang === 'jp' ? '年' : null); } catch (_) { return String(y); } };
   const dayT = (k) => { const p = kParts(k); try { return HS().dateText(p[0], p[1], p[2], tag); } catch (_) { return p.join('-'); } };

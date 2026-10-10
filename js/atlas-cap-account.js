@@ -32,7 +32,7 @@ export default [
     ],
     schema: () => (noArgs('myData')),
     async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, esc = K.esc, HOST = K.HOST;
-      const lang = HOST.lang, T = (en, jp) => IntMapLang.t(lang, en, jp);
+      const lang = HOST.lang, T = IntMapLang.pick(() => lang);
       if (!HOST.user) return R(false, warn(T('Sign in to see what your account holds.', 'アカウントが保持しているデータを見るにはログインしてください。')), { meta: SIGN_IN });
       const M = await import('./account-data.js');
       const inv = await M.readInventory(HOST.DB);
@@ -54,7 +54,7 @@ export default [
     ],
     schema: () => (noArgs('myDataExport')),
     async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, esc = K.esc, HOST = K.HOST;
-      const lang = HOST.lang, T = (en, jp) => IntMapLang.t(lang, en, jp);
+      const lang = HOST.lang, T = IntMapLang.pick(() => lang);
       if (!HOST.user) return R(false, warn(T('Sign in to download your data.', 'データをダウンロードするにはログインしてください。')), { meta: SIGN_IN });
       const M = await import('./account-data.js');
       const r = await M.downloadAccountData(HOST.DB);

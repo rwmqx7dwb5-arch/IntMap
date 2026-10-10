@@ -83,7 +83,7 @@ export function aiCore(HOST){
   async function aiPaintModelPicker(){
     const box=document.getElementById('ai-model-pick'); if(!box) return;
     const note=document.getElementById('ai-model-note');
-    const L=(en,jp)=>IntMapLang.t(HOST.lang,en,jp);
+    const L=IntMapLang.pick(() => HOST.lang);
     if(!_modelCat && !_modelCatErr){
       try{ _modelCat=await aiFetchModels(); }catch(e){ _modelCatErr=String((e&&e.message)||e); }
       if(!document.getElementById('ai-model-pick')) return;   /* the panel closed while we asked */
@@ -571,7 +571,7 @@ export function aiCore(HOST){
        developer (intmap_dev flag, or logged in but currentUser not yet populated) saw the login prompt instead
        of the unlimited state ("開発者なので無制限に / 設定欄のグラフに反映されていない"). */
     if(aiDev()){
-      const L=(en,jp)=>IntMapLang.t(HOST.lang,en,jp);
+      const L=IntMapLang.pick(() => HOST.lang);
       const pick=aiModelPick();
       wrap.innerHTML=
         /* (#R101) the "✨ Built-in AI is ready…" line duplicated the section hint above — removed (de-dup + no ✨). */

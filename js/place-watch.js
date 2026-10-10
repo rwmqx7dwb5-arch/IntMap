@@ -296,7 +296,7 @@ function announce(run) {
   if (!news.length) return;
   news.forEach((x) => told.add(x.it.key));
   notifiedPut(told);
-  const lang = host && host.lang, T = (en, jp) => IntMapLang.t(lang, en, jp);
+  const lang = host && host.lang, T = IntMapLang.pick(() => lang);
   const top = triage(news.map((x) => x.it))[0];
   const owner = news.find((x) => x.it === top).r.place.name;
   const more = news.length - 1;
@@ -335,7 +335,7 @@ export function stopWatching() {
 /* ── words ────────────────────────────────────────────────────────────────────────────────────── */
 
 function kindWord(k, lang) {
-  const T = (en, jp) => IntMapLang.t(lang, en, jp);
+  const T = IntMapLang.pick(() => lang);
   if (k === 'quake') return T('Earthquake', '地震');
   if (k === 'warning') return T('Warning', '警報');
   if (k === 'volcano') return T('Volcano', '火山');
@@ -344,18 +344,18 @@ function kindWord(k, lang) {
 }
 /* the warnings layer's ladder, in the words js/widget-render.js severityWord already uses */
 function levelWord(n, lang) {
-  const T = (en, jp) => IntMapLang.t(lang, en, jp);
+  const T = IntMapLang.pick(() => lang);
   return [T('none', 'なし'), T('advisory', '注意'), T('warning', '警報'), T('danger', '危険'), T('emergency', '特別警報')][Math.max(0, Math.min(4, n | 0))];
 }
 function volcanoWord(n, lang) {
-  const T = (en, jp) => IntMapLang.t(lang, en, jp);
+  const T = IntMapLang.pick(() => lang);
   return [T('normal', '平常'), T('baseline', '平常（監視中）'), T('advisory (yellow)', '注意（黄）'), T('watch (orange)', '警戒（橙）'), T('warning (red)', '警告（赤）')][Math.max(0, Math.min(4, n | 0))];
 }
 function kmText(km) { return km == null ? '' : (km < 10 ? km.toFixed(1) : String(Math.round(km))) + ' km'; }
 function agoText(ms, lang) {
   if (!ms) return '';
   const m = Math.max(0, Math.round((Date.now() - ms) / 60000));
-  const T = (en, jp) => IntMapLang.t(lang, en, jp);
+  const T = IntMapLang.pick(() => lang);
   if (m < 1) return T('just now', 'たった今');
   if (m < 60) return T(m + ' min ago', m + '分前');
   const h = Math.round(m / 60);
@@ -364,14 +364,14 @@ function agoText(ms, lang) {
 }
 /** One record as a line: what, how strong, where, how far, when. */
 export function itemLine(it, lang) {
-  const T = (en, jp) => IntMapLang.t(lang, en, jp);
+  const T = IntMapLang.pick(() => lang);
   if (it.kind === 'quake') return T('M' + it.measure.toFixed(1) + ' earthquake', 'M' + it.measure.toFixed(1) + ' の地震') + (it.title ? ' — ' + it.title : '') + (it.km != null ? ' (' + kmText(it.km) + ')' : '');
   if (it.kind === 'warning') return levelWord(it.measure, lang) + ' — ' + it.title;
   if (it.kind === 'volcano') return it.title + ': ' + (it.measureText || volcanoWord(it.measure, lang)) + (it.km != null ? ' (' + kmText(it.km) + ')' : '');
   return it.title + T(' — ' + it.measure + ' independent outlets', ' — 独立した ' + it.measure + ' 媒体');
 }
 function reasonText(reason, lang) {
-  const T = (en, jp) => IntMapLang.t(lang, en, jp);
+  const T = IntMapLang.pick(() => lang);
   if (reason === 'warnings-layer-off') return T('not read — switch on the Weather warnings layer to include warnings', '未確認 — 警報を含めるには「気象警報」レイヤーをオンにしてください');
   if (reason === 'not-read') return T('not read yet', 'まだ確認していません');
   return T('could not be read this time', '今回は読み取れませんでした') + ' (' + reason + ')';
@@ -487,7 +487,7 @@ function flyToItem(it) {
 }
 
 function settingsEditor(w, lang, onSave) {
-  const T = (en, jp) => IntMapLang.t(lang, en, jp);
+  const T = IntMapLang.pick(() => lang);
   const s = watchSettings(w);
   const sel = (id, label, cur, opts) => {
     const x = el('select', { id, 'aria-label': label });
@@ -521,7 +521,7 @@ function settingsEditor(w, lang, onSave) {
 export async function openWatchDigest(HOST) {
   host = HOST || host;
   const lang = host && host.lang;
-  const T = (en, jp) => IntMapLang.t(lang, en, jp);
+  const T = IntMapLang.pick(() => lang);
   if (!host || !host.user) { try { host && host.openAuthModal && host.openAuthModal(); } catch (_) { } return; }
   ensureStyle();
   const old = document.getElementById('pw-modal'); if (old) old.remove();
