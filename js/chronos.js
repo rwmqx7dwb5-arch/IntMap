@@ -140,6 +140,9 @@ function clock(name){
   const OS={};
   OS.get=()=>_when?new Date(_when):null;         /* the raw instant, or null when live */
   OS.when=()=>_when?new Date(_when):now();       /* always a Date (now when live) */
+  /* the instant in epoch ms (now when live). Twelve subsystems wrote `isLive ? Date.now() : when`
+     for themselves; this is that question asked of the one clock, so «live» is decided here only. */
+  OS.nowMs=()=>(_when?new Date(_when):now()).getTime();
   OS.iso=()=>ymdISO(_when||now());
   OS.year=()=>(_when||now()).getFullYear();
   OS.isLive=()=>_when==null;

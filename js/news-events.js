@@ -108,7 +108,7 @@ export function newsEvents(HOST) {
   /* ── 時刻の文言 ─────────────────────────────────────────────────────────
      ⚠ **1 つの時計に訊く。** 「n 分前」は端末のいまではなく IntMap のマスタークロックで
        決まる（window.IntMapTime。#R288 以降の全レイヤーの規則）。 */
-  const nowMs = () => { try { const st = IntMapTime.state(); return (st.isLive ? new Date() : st.when).getTime(); } catch (_) { return Date.now(); } };
+  const nowMs = () => { try { return IntMapTime.nowMs(); } catch (_) { return Date.now(); } };
   function ago(iso) {
     const t = Date.parse(iso);
     if (!isFinite(t)) return '';

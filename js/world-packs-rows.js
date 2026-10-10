@@ -43,8 +43,8 @@ export function worldPacks(HOST){
        ONE clock (#R94 standing rule: window.IntMapTime is the master). A layer that needs a year
        asks for it here and re-fetches when the kernel says the time moved, so 「タイムマシン対応」 is
        one subscription rather than five. */
-    function nowYear(){ try{ const st=IntMapTime.state();
-      const d=st.isLive?new Date():new Date(st.when); const y=d.getUTCFullYear();
+    function nowYear(){ try{
+      const d=IntMapTime.when(); const y=d.getUTCFullYear();
       return isFinite(y)?y:new Date().getUTCFullYear(); }catch(_){ return new Date().getUTCFullYear(); } }
     const _timeSubs=[];
     try{ IntMapTime.on(()=>{ _timeSubs.forEach(f=>{ try{ f(nowYear()); }catch(_){} }); }); }catch(_){}

@@ -408,7 +408,7 @@ export function atlasConsole(HOST){
       let out=null;
       try{ await NominatimGate.nominatimSlot(); const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=8&polygon_geojson=1&polygon_threshold=0.0008&namedetails=1&q='+encodeURIComponent(nm),{headers:{Accept:'application/json'}});   /* (#R489) …behind the app's one floor — js/nominatim-gate.js */
         if(r.ok){ const j=await r.json();
-          if(Array.isArray(j)){ const wat=j.filter(o=>{ const c=(o.class||o.category||'').toLowerCase(); const gt=(o.geojson&&o.geojson.type)||''; return (c==='waterway'||/^(river|canal|stream)$/.test(String(o.type||'').toLowerCase()))&&/LineString/.test(gt); })
+          if(Array.isArray(j)){ const wat=j.filter(o=>window.IntMapRiverCourse.isWaterwayLine(o))   /* the one statement of «a waterway line» — js/river-course.js (eager, src/main.js) */
             .sort((x,y)=>((+y.importance||0)-(+x.importance||0)))[0];
             if(wat) out={geo:wat.geojson,name:(wat.display_name||nm).split(',')[0],nameEn:(wat.namedetails&&(wat.namedetails['name:en']||wat.namedetails.int_name))||''}; } } }catch(_){}
       if(!out){ try{ const ll=await geocode(nm); if(ll&&isFinite(ll.lng)){ const d2=3.2; const bb='('+(ll.lat-d2).toFixed(2)+','+(ll.lng-d2).toFixed(2)+','+(ll.lat+d2).toFixed(2)+','+(ll.lng+d2).toFixed(2)+')';

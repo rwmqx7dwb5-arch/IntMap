@@ -54,7 +54,7 @@ export function newsStory(HOST) {
 
   /* ── the clock: the story ends at the master clock's instant ─────────────────────────────────── */
   function clockUntil() {
-    try { const s = IntMapTime.state(); return s.isLive ? Date.now() : new Date(s.when).getTime(); } catch (_) { return Date.now(); }
+    try { return IntMapTime.nowMs(); } catch (_) { return Date.now(); }
   }
 
   /* ── countries, through the boot facade's one outline loader (js/news-pulse.js `outlines`) ───── */
