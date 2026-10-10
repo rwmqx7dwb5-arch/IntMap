@@ -1386,8 +1386,9 @@ export function dataLayers(HOST){
          ⚠ AND THE NEW ROW IS THE SECOND HALF OF THE SAME INSTRUCTION: 「昼夜の表示は、設定だけでなく
          レイヤー選択欄の基本表示からもオンオフできるように。」 It drives window.IntMapNightSide, which
          owns its own on/off state and its own persistence (localStorage 'intmap_night_side', #R210) —
-         so this row READS that state rather than keeping a second copy of it, and Settings' own
-         `#setting-night-side` picker is mirrored both ways. One quantity, one owner. */
+         so this row READS that state rather than keeping a second copy of it. One quantity, one owner.
+         (desktop-one-entry) Settings' `#setting-night-side` picker, which mirrored this row, is gone: the
+         row is the one switch on screen, and Atlas's `nightSide` reaches the same owner. */
       ['thermal','lyrThermal'],['nightsat','lyrNightSat'],['nightside','lyrNightSide'],
       ['__grp','lyrGrpDemo'],
       ['pop','lyrPop'],['popgrid','lyrPopGrid'],['gdppc','lyrGDPpc'],['tfr','lyrTFR'],['hdi','lyrHDI'],['dem','lyrDem'],['histurban','lyrHistUrban'],
@@ -4027,11 +4028,11 @@ export function dataLayers(HOST){
       try{ if(!GE().scene.hasImage('ship-civ')) GE().scene.addImage('ship-civ',make('#17a2b8')); }catch(_){}
       try{ if(!GE().scene.hasImage('ship-mil')) GE().scene.addImage('ship-mil',make('#ff3b30')); }catch(_){}
     }
-    /* AISstream key field in Settings (added via addEventListener so the existing handlers still run). */
+    /* AISstream key field in Settings — commits on its own `change` (blur / Enter), like every Settings control since the Apply button went (desktop-one-entry). */
     (function wireAisKey(){
-      const ob=document.getElementById('btn-open-settings'), cb=document.getElementById('btn-close-settings');
+      const ob=document.getElementById('btn-open-settings'), ki=document.getElementById('setting-ais-key');
       if(ob) ob.addEventListener('click',()=>{ const i=document.getElementById('setting-ais-key'); if(i) i.value=aisKey; });
-      if(cb) cb.addEventListener('click',()=>{ const i=document.getElementById('setting-ais-key'); if(!i) return; const nk=i.value.trim();
+      if(ki) ki.addEventListener('change',()=>{ const i=ki; const nk=i.value.trim();
         if(nk!==aisKey){ aisKey=nk; try{ aisKey?localStorage.setItem('intmap_ais_key',aisKey):localStorage.removeItem('intmap_ais_key'); }catch(_){}
           if(GE().layers.has('lyr-ships')&&GE().layers.getLayout('lyr-ships','visibility')==='visible'){ stopAIS(); startShips(); updateShipsZoomHint(); } } });
     })();
@@ -4745,28 +4746,26 @@ export function dataLayers(HOST){
       return req;
     }
     /* ══ (#R232) THE ONE PLACE THE DAY/NIGHT SWITCH IS WRITTEN ═══════════════════════════════════
-       There are now THREE surfaces for one boolean — this layer row, the Settings picker
-       (`#setting-night-side`) and Atlas's `nightSide` action — and this project's recurring defect is
+       There were THREE surfaces for one boolean — this layer row, the Settings picker (removed in
+       desktop-one-entry: it was a second view of this row) and Atlas's `nightSide` action — and this project's recurring defect is
        exactly that shape: 「同じ量の設定が二か所にあると片方は永久に届かない」. So none of them owns
        the value. js/night-side.js does (it persists it); every surface calls through here, and here
        re-points the OTHER surfaces at the answer it just got back. */
     function _setNightSide(on){
       let now=!!on;
       try{ if(window.IntMapNightSide) now=!!window.IntMapNightSide.setEnabled(!!on); }catch(_){}
-      try{ const sel=document.getElementById('setting-night-side'); if(sel) sel.value=now?'on':'off'; }catch(_){}
       try{ const cb=document.getElementById('dl-nightside'); if(cb&&cb.checked!==now){ cb.checked=now;
         const row=document.getElementById('lyrrow-nightside'); if(row) row.classList.toggle('on',now); } }catch(_){}
       try{ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){}
       return now;
     }
-    /* …and the reverse direction: Settings and Atlas both go through window.IntMapNightSide directly,
-       so this is what lets the row notice. Published rather than local because js/app-body.js's
-       Settings handler and js/atlas-console.js's action both need it. */
+    /* …and the reverse direction: Atlas goes through window.IntMapNightSide directly (its `nightSide`
+       capability and its feature chip), so this is what lets the row notice. Published rather than
+       local because js/atlas-cap-layers.js and js/atlas-console.js both need it. */
     window._imSyncNightSideRow=function(){ try{
       const on=!window.IntMapNightSide||window.IntMapNightSide.isOn();
       const cb=document.getElementById('dl-nightside'); if(cb&&cb.checked!==on){ cb.checked=on;
         const row=document.getElementById('lyrrow-nightside'); if(row) row.classList.toggle('on',on); }
-      const sel=document.getElementById('setting-night-side'); if(sel) sel.value=on?'on':'off';
       window._refreshActiveLayers&&window._refreshActiveLayers();
     }catch(_){} };
     /* (#R34) GENERIC ORPHAN SWEEP — the definitive fix for "オンになっているのにactive layersに表示されず、消すこと

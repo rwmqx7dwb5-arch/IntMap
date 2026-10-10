@@ -180,7 +180,7 @@ test('R167 #4 the legal texts render, and LIVE getters follow a runtime switch t
   const en = await paint();
   expect(en, 'the Privacy tab painted its English text').toMatch(/Privacy Policy/i);
 
-  await page.evaluate(() => document.getElementById('lang-jp')?.click());
+  await page.evaluate(() => ((s) => { s.value = 'jp'; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.getElementById('setting-lang')));
   await page.waitForTimeout(900);
   const jp = await paint();
   expect(jp, 'the legal text re-rendered in Japanese through the live host getter').toMatch(/[぀-ヿ一-鿿]/);
@@ -195,7 +195,7 @@ test('R167 #4 the legal texts render, and LIVE getters follow a runtime switch t
   });
   expect(railJp, 'the rail overlay row re-labelled in Japanese').toMatch(/[぀-ヿ一-鿿]/);
 
-  await page.evaluate(() => document.getElementById('lang-en')?.click());
+  await page.evaluate(() => ((s) => { s.value = 'en'; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.getElementById('setting-lang')));
   await page.waitForTimeout(900);
 });
 

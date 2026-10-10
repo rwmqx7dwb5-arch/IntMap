@@ -195,7 +195,7 @@ cesium-vector-tiles.js            第2エンジンのベクタタイル
 cesium-input.js                   Cesium のカメラを MapLibre のジェスチャで動かす
 i18n.js                           window.IntMapI18N — キー付き UI 表の組み立て
 i18n-late.js                      後から足す翻訳と、ティッカー自身の設定パネル
-lang-registry.js                  言語の唯一のリスト window.IntMapLang（code / label / html / alias と pick）
+lang-registry.js                  言語の唯一のリスト window.IntMapLang（code / label / html / alias と pick）。設定の言語欄 #setting-lang の選択肢を書く
 lang-switch.js                    言語変更は「待てるイベント」——文字列が届く前に描き直さない。locale の取得失敗を理由つきで読者に言う
 locales/_langs.js                 生成物。読み物2ページ用の言語コード一覧（scripts/i18n-langs.mjs が書く）
 locales/ui.<code>.js              1言語＝1ファイルの UI 文字列表（9言語）。起動時に読むのは en だけ、他は言語ごとの遅延チャンク
@@ -1324,7 +1324,7 @@ command-palette.js                **コマンドパレット**（Ctrl/⌘+K）�
 layer-row-label.js                レイヤー登録簿の 1 行が読者に見せる名前（Atlas とコマンドパレットが同じ読み方をする）
 onboarding.js                     ウェルカムカード・ガイドツアーへの入口（`_imStartDemo`。ツアー本体は tour-player.js）・進捗コントロール
 sidebar-style.js                  左サイドバーの材質（不透明／フロスト2種）と、フロスト時にカメラへ渡す左 inset
-search-geocode.js                 検索欄——問い合わせの前処理・ジオコーディング・結果カード。`goToLocal`（端末上の 1 行へ同じ飛び方で）
+search-geocode.js                 検索欄——問い合わせの前処理・ジオコーディング・結果カード・打鍵ごとの候補と最後の行の「Atlas に聞く」（全端末）。`goToLocal`（端末上の 1 行へ同じ飛び方で）
 where-when.js                     **「どこ＋いつ」の読み方**（1 つ）——「京都 1600」「Berlin May 1945」「慶長5年 京都」を場所と時刻に分ける構文解析
                                   （紀元の語と月名は `Intl`・和暦は ICU の japanese 暦）、場所を同梱の地名辞書・歴史都市名・Pleiades から引き、
                                   マスタークロックへ合わせる（`applyWhen`）。検索欄・コマンドパレット・Atlas `time.whereWhen` が使う。使うときに読む
@@ -2466,7 +2466,7 @@ scripts/
                                   index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
                                   マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
                                   なるなら 1 ファイルで両方を名乗る
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 156 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 157 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の

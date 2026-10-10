@@ -164,9 +164,13 @@ test('R232 layers: the flat night layer is gone and the shading has one owner', 
   assert.doesNotMatch(dl, /\['night','lyrNight'\]/, 'and its row');
   assert.match(dl, /\['nightside','lyrNightSide'\]/, 'the row that replaced it drives the shading');
   assert.match(dl, /function _setNightSide\(on\)/, 'ONE place writes the boolean');
-  assert.match(dl, /window\._imSyncNightSideRow/, '…and the other two surfaces re-read it');
-  assert.match(read('js/app-body.js'), /_imSyncNightSideRow/, 'Settings follows');
-  assert.match((read('js/atlas-console.js') + '\n' + capsSource()), /_imSyncNightSideRow/, 'Atlas follows');
+  assert.match(dl, /window\._imSyncNightSideRow/, '…and the other surface re-reads it');
+  /* (desktop-one-entry) the Settings picker was a second view of the Layers row and is gone — the row is the one switch on
+     screen, and every Atlas path that writes the boolean (the nightSide capability and the console's feature chip) re-points it */
+  assert.doesNotMatch(read('index.html') + read('js/app-body.js'), /setting-night-side/, 'the Settings copy of the switch is gone');
+  assert.doesNotMatch(noJs(read('js/data-layers.js')), /setting-night-side/, '…and nothing still writes to it');
+  assert.match(capsSource(), /setEnabled\(want\)[^\n]*\n[^\n]*_imSyncNightSideRow/, 'Atlas’s nightSide capability: the Layers row follows');
+  assert.match(noJs(read('js/atlas-console.js')), /nightSide:\{[^\n]*setEnabled\(!!v\)[^\n]*_imSyncNightSideRow/, 'Atlas’s feature chip: the Layers row follows');
   assert.match(read('js/session-tabs.js'), /'dl-night':'dl-nightside'/, 'a saved session is migrated');
 });
 }

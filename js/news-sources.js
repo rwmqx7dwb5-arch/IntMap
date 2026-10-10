@@ -88,7 +88,8 @@ export function newsSources(HOST,DEPS){
       return true;
     }
 
-    /* Apply pressed. Returns true when the selection actually moved, so the caller knows whether to
+    /* A tick or the mode changed (js/app-body.js commitSetting — every Settings control commits itself; desktop-one-entry).
+       It leaves the dropdown open, so several outlets can be ticked in a row. Returns true when the selection actually moved, so the caller knows whether to
        repaint. ⚠ "Default"/off means NO outlets selected, whatever is still ticked in the panel it
        hides — otherwise turning the feature off would leave it on. */
     function commit(){
@@ -97,7 +98,6 @@ export function newsSources(HOST,DEPS){
       const sel=document.getElementById('setting-newssource');
       const mode=sel?sel.value:'multi';
       window.imNewsSources=(mode==='off')?[]:Array.from(wrap.querySelectorAll('input:checked')).map(c=>c.value);
-      const dd=document.getElementById('newssource-dd'); if(dd) dd.classList.remove('open');
       syncLabel();
       return before!==(window.imNewsSources||[]).slice().sort().join(' ');
     }
@@ -130,7 +130,7 @@ export function newsSources(HOST,DEPS){
       if(!wrap.dataset.built){
         wrap.innerHTML=Object.keys(NEWS_COUNTRY_FEEDS).map(code=>'<label><input type="checkbox" value="'+esc(code)+'"> <span>'+NEWS_COUNTRY_FEEDS[code].flag+' <span class="ncx" data-code="'+esc(code)+'"></span></span></label>').join('');
         wrap.dataset.built='1';
-        /* the button summary follows the ticks live; the selection itself commits on Apply */
+        /* the button summary follows the ticks live; the selection itself commits on the same change (commitCountries) */
         wrap.addEventListener('change',()=>{ const el=document.getElementById('newscountry-dd-label');
           if(el) el.textContent=countryLabelOf(Array.from(wrap.querySelectorAll('input:checked')).map(c=>c.value)); });
       }
@@ -147,14 +147,13 @@ export function newsSources(HOST,DEPS){
       }
       return true;
     }
-    /* Apply pressed — same "off means none" rule as the outlet picker above. */
+    /* a tick or the mode changed — same "off means none" rule, and the dropdown stays open, as the outlet picker above. */
     function commitCountries(){
       const wrap=document.getElementById('newscountry-multi'); if(!wrap) return false;
       const before=(window.imNewsCountries||[]).slice().sort().join(',');
       const sel=document.getElementById('setting-newscountry');
       const mode=sel?sel.value:'multi';
       window.imNewsCountries=(mode==='off')?[]:Array.from(wrap.querySelectorAll('input:checked')).map(c=>c.value);
-      const dd=document.getElementById('newscountry-dd'); if(dd) dd.classList.remove('open');
       return before!==(window.imNewsCountries||[]).slice().sort().join(',');
     }
 

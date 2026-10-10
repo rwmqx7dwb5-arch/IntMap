@@ -341,10 +341,11 @@ test('r246 ⑦ the positional audit excuses an untranslated word per LANGUAGE, n
 test('R224 ④ Simplified Chinese is registered and regenerates byte-for-byte', () => {
   const reg = read('js/lang-registry.js');
   /* ⚠ (#R239) …and the same for Simplified — see the note in tests/r223-checks. */
-  assert.match(reg, /\{ code: 'zh-hans', label: '简体中文', html: 'zh-Hans', pill: '简',/);
+  assert.match(reg, /\{ code: 'zh-hans', label: '简体中文', html: 'zh-Hans',/);
   assert.match(reg, /alias: \['zh-hans', 'zh-cn', 'zh-sg', 'zh-my', 'hans'\]/, 'the Simplified tags only');
   assert.ok(!/'zh-tw'[^\]]*zh-hans/.test(reg), 'zh-TW must stay with Traditional');
-  assert.match(reg, /b\.textContent = l\.pill \|\| l\.code\.toUpperCase\(\);/, 'a code is not always a pill');
+  /* (desktop-one-entry) the header pills whose short names `pill` held are gone — the one language picker is #setting-lang */
+  assert.doesNotMatch(reg, /\bpill\b\s*:/, 'no row carries a pill any more');
   /* (#R232) …the generated list, not an import line — see the matching note in tests/r223-checks. */
   assert.match(read('js/locales/_langs.js'), /"zh-hans"/, 'zh-hans is in the generated language list');
   const hansFull = read('js/locales/ui.zh-hans.js');

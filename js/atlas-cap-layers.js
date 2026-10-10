@@ -231,7 +231,7 @@ export default [
     async run(a, dctx, K) { const L = K.L, R = K.R, note = K.note, _featTogHtml = K._featTogHtml, warn = K.warn;
       { const want=!(a.on===false||/^(off|hide)$/i.test(String(a.mode||''))); let ok=false, st=null;
           try{ if(window.IntMapNightSide){ window.IntMapNightSide.setEnabled(want); st=window.IntMapNightSide.state(); ok=true; } }catch(_){}
-          try{ window._imSyncNightSideRow&&window._imSyncNightSideRow(); }catch(_){}   /* (#R232) the Layers row + the Settings picker follow */
+          try{ window._imSyncNightSideRow&&window._imSyncNightSideRow(); }catch(_){}   /* (#R232) the Layers row follows */
           const detail=(want&&st)?(' — '+(st.built?L('drawn','描画中','gezeichnet','нарисовано','dibujado'):L('appears as you zoom out','ズームアウトすると現れます','erscheint beim Herauszoomen','появится при отдалении','aparece al alejar'))
             +(st.lights?(' · '+L('city lights loaded','夜間光を読み込み済み','Nachtlichter geladen','ночные огни загружены','luces nocturnas cargadas')):'')):'';
           return R(ok, ok?note('✓ '+L('Night side of the Earth','地球の夜側','Nachtseite der Erde','Ночная сторона Земли','Lado nocturno de la Tierra')+': '+(want?'on':'off')+detail)+_featTogHtml('nightSide'):warn('')); }

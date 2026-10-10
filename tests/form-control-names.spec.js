@@ -273,8 +273,8 @@ test.describe('② phone', () => {
       expect(tr && tr.ok, 'the theme action reported success').toBe(true);
       await changes(c0);
       const f0 = await page.evaluate((id) => JSON.stringify(window.__imap.getLayoutProperty(id, 'text-field')), victim);
-      const other = await page.evaluate(() => (document.getElementById('lang-jp').classList.contains('active') ? 'en' : 'jp'));
-      await page.evaluate((c) => document.getElementById('lang-' + c).click(), other);
+      const other = await page.evaluate(() => (document.getElementById('setting-lang').value === 'jp' ? 'en' : 'jp'));
+      await page.evaluate((c) => ((s) => { s.value = c; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.getElementById('setting-lang')), other);
       await page.waitForFunction(({ id, f }) => JSON.stringify(window.__imap.getLayoutProperty(id, 'text-field')) !== f, { id: victim, f: f0 }, { timeout: 15_000 });
     });
   });

@@ -260,9 +260,6 @@
     .title-group{ display:flex; align-items:center; gap:12px; min-width:0; } h2{ font-size:22px; font-weight:600; margin:0; letter-spacing:-0.3px; }
     .btn-settings{ flex-shrink:0; }
     /* (#R11) Header EN/JP toggle removed — language is changed from Settings only. */
-    .lang-toggle{ display:none !important; }
-    .lang-btn{ background:transparent; border:none; padding:4px 8px; font-size:11px; font-weight:600; color:var(--text-muted); cursor:pointer; border-radius:6px; transition:0.2s; }
-    .lang-btn.active{ background:var(--card-bg); color:var(--text-main); box-shadow:0 1px 4px rgba(0,0,0,0.1); }
     .btn-settings{ background:var(--input-bg); border:none; color:var(--text-main); padding:8px 14px; cursor:pointer; font-size:13px; font-weight:500; border-radius:20px; transition:0.2s; }
     .btn-settings:hover{ background:rgba(128,128,128,0.1); }
     /* (#R31) account avatar = a real circular chip (photo or emoji), name beside it — not a bare emoji
@@ -1127,7 +1124,7 @@
     [data-theme="dark"] select option, [data-theme="dark"] select optgroup{ background-color:#1c1c1e; color:#f5f5f7; }
     [data-theme="dark"] select{ color-scheme:dark; }
     [data-theme="light"] select{ color-scheme:light; }
-    .tp-select, .tp-select option, .tp-select optgroup, .lang-toggle option{ background-color:var(--card-bg); color:var(--text-main); }
+    .tp-select, .tp-select option, .tp-select optgroup{ background-color:var(--card-bg); color:var(--text-main); }
     [data-theme="dark"] .tp-select, [data-theme="dark"] .tp-select option, [data-theme="dark"] .tp-select optgroup{ background-color:#1c1c1e !important; color:#f5f5f7 !important; }
     .modal-close-btn{ width:100%; padding:12px; background:var(--primary-fill); color:#fff; border:none; cursor:pointer; font-weight:500; border-radius:10px; font-size:14px; margin-top:14px; } .modal-close-btn:hover{ filter:brightness(1.08); }
     /* (#R34/#R39) Settings = a flex column: a SCROLLING body (.settings-scroll) + a non-scrolling Apply
@@ -2553,8 +2550,7 @@
          inline `style.display` that js/map-extras.js's filter() writes (author !important beats an
          inline declaration — #R223). The elements are NOT removed: the tiles still read their
          checkboxes, and a wider window brings the classic panel straight back. */
-      body.m-lyr-tiles #mo-mount-layers .layer-dropdown > #layer-search-wrap,
-      body.m-lyr-tiles #mo-mount-layers .layer-dropdown > #layer-fav-section{ display:none !important; }
+      body.m-lyr-tiles #mo-mount-layers .layer-dropdown > #layer-fav-section{ display:none !important; }   /* (desktop-one-entry) #layer-search-wrap, the other half of this rule, was deleted with its module in #R296 */
       /* ⚠⚠ (#R235) …AND `#sat-controller` HAS TO BE HIDDEN, NOT MERELY LEFT BEHIND. js/mobile-ui.js
          no longer moves it into the sheet, and its desktop home is #map-container — so simply not
          moving it left a 280 × 174 panel floating ON THE MAP of a 375 px phone, which is worse than

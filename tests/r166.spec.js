@@ -160,7 +160,7 @@ test('R166 #4 LIVE getters: modules built in English follow a runtime switch to 
   expect(before.corr, 'the correlation button (js/analysis-panels.js) is labelled').toBeTruthy();
   expect(before.l9, 'the dams row label (js/layer-packs.js) is labelled').toBeTruthy();
 
-  await page.evaluate(() => document.getElementById('lang-jp')?.click());
+  await page.evaluate(() => ((s) => { s.value = 'jp'; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.getElementById('setting-lang')));
   await page.waitForTimeout(900);
   const after = await page.evaluate(() => ({
     corr: document.querySelector('#btn-correlate span')?.textContent || '',
@@ -171,7 +171,7 @@ test('R166 #4 LIVE getters: modules built in English follow a runtime switch to 
   expect(after.l9, 'the dams row re-labelled through the live host getter').not.toBe(before.l9);
   expect(after.l9).toMatch(/[぀-ヿ一-鿿]/);
 
-  await page.evaluate(() => document.getElementById('lang-en')?.click());
+  await page.evaluate(() => ((s) => { s.value = 'en'; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.getElementById('setting-lang')));
   await page.waitForTimeout(900);
   expect(await page.evaluate(() => document.querySelector('#btn-correlate span')?.textContent || '')).toBe(before.corr);
 });

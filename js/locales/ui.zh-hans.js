@@ -100,7 +100,6 @@ IntMapLang.define('zh-hans', {
     "lblNavZoom":"缩放",
     "lblNewsCountries":"依国家媒体筛选新闻",
     "lblNewsSources":"新闻媒体",
-    "lblNightSide":"昼夜着色",
     "lblScience":"科学根据与逻辑",
     "lblShowRank":"排名编号（国家）",
     "lblSidebarStyle":"侧边栏外观",
@@ -171,15 +170,12 @@ IntMapLang.define('zh-hans', {
     "newsSourceAll":"所有媒体",
     "newsSourceMultiSel":"选择媒体…",
     "newsSourcesHint":"只显示你勾选的媒体的标题。列表依你目前数据源实际包含的媒体建立。",
-    "nightSideOff":"关闭 — 整颗地球均匀照亮",
-    "nightSideOn":"开启（默认）— 让夜侧变暗并显示城市灯光",
     "optDark":"深色",
     "optLight":"浅色",
     "proArchive":"十年时光回溯文件",
     "proIntel":"俄・中在地一手来源情报",
     "reportBugBtn":"回报错误",
     "screenshotBtn":"地图屏幕撷取（隐藏控制项，保留图例）",
-    "sendFeedbackBtn":"传送意见回馈",
     "shareView":"分享此画面（复制链接）",
     "showRankOff":"关闭",
     "showRankOn":"开启（默认）",
@@ -217,7 +213,7 @@ IntMapLang.define('zh-hans', {
       viewMap:"地图", viewSat:"卫星影像", settings:"设置", modalTitle:"设置", close:"关闭",
       tabDocked:"面板", lblDockPanels:"图例与工具窗口", dockPanelsOff:"显示于地图上（默认）", dockPanelsOn:"收进侧边栏分页", dockPanelsHint:"所有图例、读数与工具窗口都会移到左侧边栏的「面板」分页，让地图保持清爽。点击地点时出现、与地图位置相连的弹出窗口仍留在地图上。",
       setSecAppearance:"外观", setSecLayout:"版面与面板", setSecMap:"地图操作", setSecUnits:"单位与时间", setSecNews:"新闻与跑马灯", setSecAI:"AI", setSecKeys:"整合与密钥", setSecAbout:"关于与支持",
-      lblTheme:"主题", lblTz:"时区设置", tzSearch:"搜索时区…", btnApply:"应用", optAuto:"系统默认", optLocal:"当地时间（系统默认）",
+      lblTheme:"主题", lblTz:"时区设置", tzSearch:"搜索时区…", optAuto:"系统默认", optLocal:"当地时间（系统默认）",
       dashCatMil:"军事基地", dashCatTech:"科技／网络", dashCatMar:"海运／咽喉点", dashCatGeo:"地理／气候",
       readWiki:"在维基百科阅读 ↗", measure:"测量", areaTool:"面积", radius:"半径", vol3dTool:"立体体积", points:"点", total:"合计", perimeter:"周长", area:"面积", clear:"清除", undoPt:"取消上一点",
       radiusHint:"点击地图放置圆形。可放置多个。",
@@ -805,7 +801,6 @@ IntMapLang.define('zh-hans', {
     'Data used': "使用的数据",   /* atlas-console.js */
     'Date': "日期",   /* news-timeline.js */
     'day': "日",   /* space.js */
-    'Day/night': "昼夜",   /* news-timeline.js */
     'days': "天",   /* space.js */
     'days a year with no sun at all': "每年完全没有日照的天数",   /* sims.js */
     'Dec': "12月",   /* ocean-currents.js */
@@ -2576,7 +2571,6 @@ IntMapLang.define('zh-hans', {
     'USD, nominal': "美元，名目值",
     'Wind 10 m': "10 米风",
     'Wind data unavailable': "无法取得风场数据",
-    'You have unsaved changes. Discard them?': "你有尚未保存的变更，要舍弃吗？",
     'mmi': "mmi",
     /* == (#R231) THE STRINGS THIS TABLE COULD NOT SEE ====================================
        268 hand-written `lang==='jp'?...` chains became IntMapLang.t(...) calls this round

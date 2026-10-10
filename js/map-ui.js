@@ -53,9 +53,9 @@ import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set
    replaced the search boxes' U+2715 with two SVG strokes, which fixed the fallback for two of the
    app's forty-odd close buttons and left the rest on the character nobody draws — 「改悪をするな。
    元に戻せ」 is that, and the answer is the mark the rest of the app was already using rather than a
-   third one. This function stays the ONE definition, because there are TWO layer-search boxes —
-   this file's `.lsr-clear` and js/map-extras.js's `.ls-clear` — and #R239's standing lesson is a
-   defect fixed in one of two copies and left in the other. */
+   third one. This function stays the ONE definition: the layer-search box it was shared between two
+   copies of (this file's `.lsr-clear` and the classic panel's `.ls-clear`, removed in #R296) is one
+   box now, and the other close marks read it too. */
 window.IntMapClearGlyph=function(){ return '×'; };
 /* ══ ⚠⚠ (#R271) A CLEAR MARK BELONGS TO ITS FIELD, NOT TO THE BOX AROUND IT ══════════════════════
    「レイヤー検索欄の×の様子がおかしい。不自然な位置の×。」 — #R270 fixed the SHAPE (that half holds:
@@ -86,8 +86,8 @@ window.IntMapClearGlyph=function(){ return '×'; };
    ⚠ IT SCROLLS A PANEL, NOT THE MAP. The camera is untouched — CONSTITUTION §3, 「レイヤーを選択
    しても視点を一切動かさない」 — and it scrolls only the nearest ancestor that is actually
    scrollable, so on a phone (where the sheet is the scroller) it is the sheet that moves.
-   ⚠ ONE DEFINITION, BOTH SEARCH BOXES — the classic panel's `#layer-search` (js/map-extras.js) and
-   this file's tile-grid `.lsr-q`. #R239's lesson is a defect fixed in one of two copies. */
+   ⚠ ONE DEFINITION — this file's tile-grid `.lsr-q` is the only layer-search box since #R296 removed
+   the classic panel's. */
 window.IntMapSearchToTop=function(el){
   try{
     if(!el||!el.getBoundingClientRect) return false;
@@ -801,8 +801,7 @@ export function layerSidebar(HOST){
            context; the button sits inside its right-hand padding and appears only with a query. */
         +'.lsr-search{position:relative;}'
         +'.lsr-search input{padding-right:38px !important;}'
-        /* (#R268) 「レイヤー検索欄の×ボタンに背景は不要」 — the disc is gone from BOTH search boxes
-           (this one and js/map-extras.js's `#layer-search`); hover moves the glyph, not a plate. */
+        /* (#R268) 「レイヤー検索欄の×ボタンに背景は不要」 — no disc; hover moves the glyph, not a plate. */
         /* ══ ⚠⚠ (#R270) THE × WAS A CHARACTER NOBODY IN THIS APP'S TYPEFACE DRAWS ══════════════════
            「レイヤー検索欄の×の様子がおかしい。不自然な形の×。」
            MEASURED in the running page: `measureText('×')` returns 9.8027 px at 12 px in EVERY
@@ -812,17 +811,17 @@ export function layerSidebar(HOST){
            and it is a different mark on every operating system. That is the 不自然な形.
            → It is GEOMETRY now: two strokes of one SVG, 1.6 px wide with round caps, centred in the
            box. Exactly symmetric, the same on every platform, and it inherits `currentColor` so the
-           hover state is unchanged. Both search boxes get it — see js/map-extras.js. */
+           hover state is unchanged. */
         +'.lsr-search .lsr-clear{display:none;position:absolute;right:22px;top:50%;transform:translateY(-50%);width:20px;height:20px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--text-muted);cursor:pointer;align-items:center;justify-content:center;line-height:1;}'
         +'.lsr-search .lsr-clear[data-on="1"]{display:flex;}'
         /* (#R273) the mark is a CHARACTER again (see IntMapClearGlyph) — sized and weighted to sit
            in the field the way the app's other close marks sit in their panels */
-        +'.lsr-search .lsr-clear,#layer-search-wrap .ls-clear{font-size:17px;font-weight:400;line-height:1;}'
+        +'.lsr-search .lsr-clear{font-size:17px;font-weight:400;line-height:1;}'
         +'.lsr-search .lsr-clear:hover{background:transparent;color:var(--text-main);}'
         +'.lsr-mount .lsr-search .lsr-clear{right:8px;}'
         /* the native WebKit clear button would sit UNDER this one on Chrome (`type=search`), i.e.
-           two marks in one place — the other half of 「不自然な形の×」 (see js/map-extras.js) */
-        +'.lsr-search input::-webkit-search-cancel-button,#layer-search-wrap input::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none;display:none;}'
+           two marks in one place — the other half of 「不自然な形の×」 */
+        +'.lsr-search input::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none;display:none;}'
         +'#layer-sidebar-r .lsr-body{flex:1;overflow-y:auto;padding:0 12px 24px;min-height:0;}'
         /* (#R70/#R71) TILE GRID — 3 columns, mercator-true previews (aspect matches the canvas exactly:
            nothing stretched), tightened typography, quieter card chrome ("素人が作ったようなダサい"対策). */
@@ -1081,7 +1080,7 @@ export function layerSidebar(HOST){
          manifest. What is still read off the row is what only the row knows: the checkbox (its state)
          and the name a module composes for it. A row the manifest does not declare still gets a tile,
          under Beta — where reorganizeLayerPanel's safety sweep files it — and the spec fails for it. */
-      const skipIn=el=>el.closest&&(el.closest('#layer-active-section')||el.closest('#layer-fav-section')||el.closest('#layer-search-wrap')||el.closest('#layer-tools'));
+      const skipIn=el=>el.closest&&(el.closest('#layer-active-section')||el.closest('#layer-fav-section')||el.closest('#layer-tools'));
       const secOf=(key)=>{ if(key===BASE) return '';   /* the always-on block has no heading above it */
         const h=dd.querySelector(':scope > .lyr-head[data-i18n="'+key+'"]'); if(h) return (h.textContent||'').replace(/\s+/g,' ').trim();
         try{ const T=window.IntMapI18N||{}; return ((T[HOST.lang]&&T[HOST.lang][key])||(T.en&&T.en[key])||key); }catch(_){ return key; } };
@@ -3637,17 +3636,15 @@ export function geojsonUpload(HOST){
          on this branch: #btn-gis-panel existed for ~1 s and was gone. Adding one more id to that
          rescue list would fix this button and drop the next one, so the rescue reads the ATTRIBUTE
          instead, and the mark belongs to the button rather than to the list. */
-      wrap.innerHTML=`<hr style="border:0;border-top:1px solid rgba(128,128,128,0.2);width:100%;margin:6px 0;"><button id="btn-upload-geojson" data-lyr-tool="upload" class="ai-test-btn" style="width:100%;">${icon('folder')} <span data-i18n="importGeoFile">Import map data</span></button><button id="btn-gis-panel" data-lyr-tool="upload" class="ai-test-btn" style="width:100%;margin-top:5px;"><span data-i18n="gisWorkbench">Data &amp; analysis</span></button><button id="btn-data-studio" data-lyr-tool="upload" class="ai-test-btn" style="width:100%;margin-top:5px;"><span class="ds-lbl">Data studio</span></button><div id="ugj-list" style="margin-top:5px;"></div>`;
+      wrap.innerHTML=`<hr style="border:0;border-top:1px solid rgba(128,128,128,0.2);width:100%;margin:6px 0;"><button id="btn-upload-geojson" data-lyr-tool="upload" class="ai-test-btn" style="width:100%;">${icon('folder')} <span data-i18n="importGeoFile">Import map data</span></button><button id="btn-gis-panel" data-lyr-tool="upload" class="ai-test-btn" style="width:100%;margin-top:5px;"><span data-i18n="gisWorkbench">Data &amp; analysis</span></button><div id="ugj-list" style="margin-top:5px;"></div>`;
       dd.appendChild(wrap); listEl=wrap.querySelector('#ugj-list');
       wrap.querySelector('#btn-upload-geojson').onclick=()=>fileInput.click();
       /* (#R729) the operating surface for everything that was imported or computed. The module is
          fetched when the button is pressed, never before — a session that only looks at layers
          downloads no polygon clipper (js/gis-core.js). */
-      /* (data-studio) the table → places → colours → link surface, beside the two doors it is built from. IntMap's own words, en + jp. */
-      const dsb=wrap.querySelector('#btn-data-studio');
-      const dsLabel=()=>{ const sp=dsb&&dsb.querySelector('.ds-lbl'); if(sp) sp.textContent=IntMapLang.t(HOST.lang,"Data studio — map your table","データスタジオ — 表を地図に"); };
-      dsLabel(); window.addEventListener('intmap-lang',dsLabel);
-      if(dsb) dsb.onclick=()=>{ try{ import('./data-studio.js').then(m=>m.studio(HOST).open()).catch(()=>{ toast(IntMapLang.t(HOST.lang,"Could not open the data studio","データスタジオを開けませんでした")); }); }catch(_){} };
+      /* (desktop-one-entry) a «Data studio — map your table» button stood here, a second door to the studio beside the
+         Layers ▸ Tools row `tool.dataStudio` (SIM_TOOLS above), which opens the same instance (js/data-studio.js studio())
+         and also shows whether a table is drawn. The row is the one door. */
       wrap.querySelector('#btn-gis-panel').onclick=async()=>{ try{ const ok=window.IntMapLazy?await window.IntMapLazy.need('gisCore'):false; if(ok&&window.IntMapGis) window.IntMapGis.toggle(); else toast(IntMapLang.t(HOST.lang,"Could not open the data panel","データパネルを開けませんでした","Das Datenpanel konnte nicht geöffnet werden","Не удалось открыть панель данных","No se pudo abrir el panel de datos")); }catch(_){} };
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
     mountButton(); setTimeout(mountButton,1500);

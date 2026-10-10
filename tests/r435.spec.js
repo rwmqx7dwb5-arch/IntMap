@@ -152,9 +152,11 @@ test('R435 the event detail opens as the reading surface, and nothing renders be
   expect(open.atlasSelected).toBe('r435evt01');
 
   /* ── ③-a 背景の再描画は、読んでいる人に見えない ───────────────────────────────
-     設定の適用は `renderUI()` を呼ぶ——auth の realtime 購読・言語切替と同じ経路である。
+     設定の変更は `renderUI()` を呼ぶ——auth の realtime 購読・言語切替と同じ経路である（desktop-one-entry
+     以降は「適用」ボタンが無く、変えた瞬間に反映される。その再描画は 120 ms 後に 1 回）。
      ⚠ ここで一覧が戻ると、サイドバーの flex 列が高さを折半する＝報告の「半分だけ」。 */
-  await page.evaluate(() => document.getElementById('btn-close-settings').click());
+  await page.evaluate(() => { const s = document.getElementById('setting-showrank'); s.dispatchEvent(new Event('change', { bubbles: true })); });
+  await page.waitForTimeout(400);
   const after = await probe(page, CHROME);
   expect(after.feed.disp, 'a background re-render must not put the list back beside the reader').toBe('none');
   expect(after.pane.disp).not.toBe('none');

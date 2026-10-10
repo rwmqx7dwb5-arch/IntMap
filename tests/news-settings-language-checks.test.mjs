@@ -138,12 +138,13 @@ test('R466 ③ 命名掃引は自分の書いた aria-label に印を付け、�
 
 /* ── ④ 届かない引き金に繋がったままの relabel が無い ────────────────────────────
    `js/dash-extended.js` の relabel はヘッダの言語ピルの click を聞いていた。#R11 が
-   `.lang-toggle` を `display:none !important` にして以来、そのボタンは押しようがない。 */
+   `.lang-toggle` を `display:none !important` にして以来、そのボタンは押しようがなく、
+   desktop-one-entry でピルそのものを消した（言語の入口は Settings の #setting-lang だけ）。 */
 /* 綴りのまま: 主張が配線・不在・一意性（どこが何を呼ぶか／無いこと／1 か所だけ）で、評価して取り出せる値が無い */
-test('R466 ④ 恒久的に隠されたヘッダの言語ピルを、relabel の引き金にしていない', () => {
-  const css = codeOnly(R('css/intmap.css'), { lang: 'css' });
-  assert.match(css, /\.lang-toggle\s*\{[^}]*display:\s*none\s*!important/,
-    'ヘッダの言語ピルが隠されなくなった — この検査の前提が変わっている');
+test('R466 ④ 消えたヘッダの言語ピルを、relabel の引き金にしていない', () => {
+  const html = R('index.html');
+  assert.doesNotMatch(html, /class="lang-toggle"|id="lang-(en|jp)"/, 'ヘッダの言語ピルが戻っている — 言語の入口は #setting-lang の 1 つ');
+  assert.match(html, /<select id="setting-lang"/, '言語の入口 #setting-lang が無い');
   const dash = CODE('js/dash-extended.js');
   assert.ok(!/'lang-jp'/.test(dash),
     'ヘッダの言語ピルにまだ relabel を繋いでいる — 押せないボタンは引き金にならない');

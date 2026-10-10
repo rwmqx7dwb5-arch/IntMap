@@ -156,7 +156,7 @@ test('R163 #7 LIVE getters: modules built in English follow a runtime language s
     turn: String(window.IntMapRouting.maneuver({ maneuver: { type: 'turn', modifier: 'left' } }).text || ''),
   }));
   const setLang = async (code) => {
-    await page.evaluate((c) => document.getElementById('lang-' + c)?.click(), code);
+    await page.evaluate((c) => ((s) => { s.value = c; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.getElementById('setting-lang')), code);
   };
   /* (spacetime-train) asked every 100 ms until the probe has moved, instead of reading it once after a fixed 700 ms: the
      claim (and the failure when a module holds a copy of the language) is the same, the wait no longer outlasts it */

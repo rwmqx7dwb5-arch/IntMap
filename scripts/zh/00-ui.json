@@ -5,7 +5,7 @@
 "ui:emptyHint":"尚未選擇分頁 — 地圖目前是乾淨的。<br>請在上方選擇分頁以顯示內容。",
 "ui:viewMap":"地圖","ui:viewSat":"衛星影像","ui:settings":"設定","ui:modalTitle":"設定","ui:close":"關閉",
 "ui:setSecAppearance":"外觀","ui:setSecLayout":"版面與面板","ui:setSecMap":"地圖操作","ui:setSecUnits":"單位與時間","ui:setSecNews":"新聞與跑馬燈","ui:setSecAI":"AI","ui:setSecKeys":"整合與金鑰","ui:setSecAbout":"關於與支援",
-"ui:lblTheme":"主題","ui:lblTz":"時區設定","ui:tzSearch":"搜尋時區…","ui:btnApply":"套用","ui:optAuto":"系統預設","ui:optLocal":"當地時間（系統預設）",
+"ui:lblTheme":"主題","ui:lblTz":"時區設定","ui:tzSearch":"搜尋時區…","ui:optAuto":"系統預設","ui:optLocal":"當地時間（系統預設）",
 "ui:dashCatMil":"軍事基地","ui:dashCatTech":"科技／網路","ui:dashCatMar":"海運／咽喉點","ui:dashCatGeo":"地理／氣候",
 "ui:readWiki":"在維基百科閱讀 ↗","ui:measure":"測量","ui:areaTool":"面積","ui:radius":"半徑","ui:vol3dTool":"立體體積","ui:points":"點","ui:total":"合計","ui:perimeter":"周長","ui:area":"面積","ui:clear":"清除","ui:undoPt":"取消上一點",
 "ui:radiusHint":"點擊地圖放置圓形。可放置多個。",

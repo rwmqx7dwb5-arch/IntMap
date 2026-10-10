@@ -64,12 +64,12 @@ const shown = (page, lang, rows) => page.waitForFunction(({ lang, hist, modern, 
     ディレクトリを読んだあとに `lang-registry.syncDocument()` が書く（#R249）。 */
 async function switchTo(page, lang, rows) {
   const ok = await page.waitForFunction((l) => {
-    const b = document.getElementById('lang-' + l);
+    const b = document.querySelector('#setting-lang option[value="' + l + '"]');
     if (!b) return false;
-    b.click();
+    ((s) => { s.value = l; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.getElementById('setting-lang'));
     return true;
   }, lang, { timeout: 20000, polling: 200 }).catch(() => null);
-  expect(ok, `#lang-${lang} の言語ピルが 20 秒たっても書かれない`).toBeTruthy();
+  expect(ok, `#setting-lang の ${lang} が 20 秒たっても書かれない`).toBeTruthy();
   await shown(page, lang, rows);
 }
 
@@ -244,7 +244,7 @@ test('R424 1916年の一覧で、歴史の行のサブ行が現代の行と同�
   await page.evaluate(() => {
     const b = document.getElementById('cp-close'), p = document.getElementById('country-popup');
     if (b && p && p.style.display === 'block') b.click();
-    const en = document.getElementById('lang-en'); if (en) en.click();
+    ((s) => { s.value = 'en'; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.getElementById('setting-lang'));
     window.IntMapTime.setNow({ source: 'test' });
   });
   await page.waitForFunction(() => document.documentElement.getAttribute('lang') === 'en',

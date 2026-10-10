@@ -241,8 +241,8 @@ test('⑦ writing controls: the ledger agrees; an undeclared new one is red, dec
   const now = DE.check(tree);
   assert.ok(now.ok, now.lines.join('\n'));
   assert.ok(now.found.some((x) => x.selector === '#fb-send' && x.declared), 'the feedback send button is found and declared');
-  assert.ok(now.found.some((x) => x.file === 'js/app-body.js' && x.selector === '#lang-en' && x.declared),
-    'the language buttons reach the preferences upsert through window._syncPrefsUp, and are found — and declared private');
+  assert.ok(now.found.some((x) => x.file === 'js/app-body.js' && x.selector === '#setting-lang' && x.declared),
+    'the language picker reaches the preferences upsert through window._syncPrefsUp, and is found — and declared private (the header pills it replaced went in desktop-one-entry)');
   assert.ok(now.found.some((x) => x.file === 'js/map-ui.js' && x.selector === '[data-del]' && x.declared),
     'a selector is answered from its own file first: [data-del] in js/map-ui.js is the preset delete, not the waypoint in js/drone-nav.js');
   /* the probe's markup is the tree's own pages (index.html and every standalone page — DE.readTree reads the same

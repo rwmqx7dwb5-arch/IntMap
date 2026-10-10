@@ -99,7 +99,7 @@ test('R160 (B) the right-anchored HUD slides left to clear the open right sideba
 });
 
 test('R160 (C) changing a setting does not re-open a right sidebar the user closed', async () => {
-  // open Settings so every control reflects the current state (so Apply changes nothing but what we intend)
+  // open Settings so every control reflects the current state (so the change below commits nothing but what we intend)
   await page.evaluate(() => document.getElementById('btn-open-settings')?.click());
   await page.waitForTimeout(300);
   // user deliberately CLOSES the right sidebar
@@ -107,10 +107,13 @@ test('R160 (C) changing a setting does not re-open a right sidebar the user clos
   await page.waitForTimeout(400);
   const beforeApply = await page.evaluate(() => document.body.classList.contains('lsr-open'));
   expect(beforeApply, 'right sidebar is closed before applying settings').toBeFalsy();
-  // Apply settings WITHOUT changing the layer-panel mode
-  await page.evaluate(() => document.getElementById('btn-close-settings')?.click());
+  // (desktop-one-entry) a setting takes effect when it is changed — there is no Apply. Commit one (the theme, to the
+  // value it already has: applyTheme + the repaint every committed change runs), then close with Done.
+  await page.evaluate(() => { const s = document.getElementById('setting-theme'); s.dispatchEvent(new Event('change', { bubbles: true })); });
   await page.waitForTimeout(500);
+  await page.evaluate(() => document.getElementById('btn-close-settings')?.click());
+  await page.waitForTimeout(200);
   const afterApply = await page.evaluate(() => document.body.classList.contains('lsr-open'));
-  expect(afterApply, 'the right sidebar must stay CLOSED after a settings apply (no force-reopen)').toBeFalsy();
+  expect(afterApply, 'the right sidebar must stay CLOSED after a setting commits (no force-reopen)').toBeFalsy();
   expect(diag.pageErrors, `pageerror(s):\n${diag.pageErrors.join('\n---\n')}`).toHaveLength(0);
 });
