@@ -28,6 +28,7 @@
  *       the door (the records are DISCOVERED from data/border-coast.js's own registry of pools).
  * ==========================================================================*/
 import { test } from 'node:test';
+import { clockStub } from './helpers/clock-stub.mjs';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { readFileSync, readdirSync, openSync, readSync, closeSync, existsSync } from 'node:fs';
@@ -262,7 +263,7 @@ function adminHarness({ publish }) {
     events: { on: () => {}, once: () => {}, off: () => {} }, camera: { getZoom: () => 3, getBounds: () => null },
     coords: { queryRenderedFeatures: () => [] } };
   const win = { IntMapGeoEngine: GE, addEventListener: () => {},
-    IntMapTime: { on: () => {}, onIntent: () => {}, min: 1 },
+    IntMapTime: clockStub({ on: () => {}, onIntent: () => {}, min: 1 }),
     IntMapLang: { pickArgs: () => ((...a) => a), pick: () => ({ arr: (a) => a[0] }), htmlTag: () => 'en' },
     IntMapMemBudget: { maySpeculate: () => false } };
   win.window = win;

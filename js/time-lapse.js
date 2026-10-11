@@ -230,7 +230,7 @@ export function startLapse(o) {
   if (o.loop != null) st.loop = !!o.loop;
   const ms = (v, end) => {
     if (v == null || v === '') return null;
-    if (typeof v === 'number' || /^[+-]?\d{1,6}$/.test(String(v).trim())) { const y = Math.round(+v); return end && y >= new Date().getUTCFullYear() ? null : yearInstant(y); }
+    if (typeof v === 'number' || /^[+-]?\d{1,6}$/.test(String(v).trim())) { const y = Math.round(+v); return /* local year, as the clock's own fold (js/chronos.js isPresentYear) — a UTC read disagreed around New Year */ end && IntMapTime.isPresentYear(y) ? null : yearInstant(y); }
     const t = Date.parse(String(v)); return isFinite(t) ? t : null;
   };
   if (o.from !== undefined) st.from = ms(o.from, false);

@@ -1101,7 +1101,7 @@ export function timeAdmin1(HOST) {
        is Now — everything else is the past and the modern line steps aside. */
     IntMapTime.on(e => {
       clearTimeout(_tick);
-      if (e.isLive || e.year >= new Date().getFullYear()) { active = false; lastWhen = null; for (const t of TIERS) t.clear(); _know.clear(); _applyNow(); return; }
+      if (e.isLive || IntMapTime.isPresentYear(e.year)) { active = false; lastWhen = null; for (const t of TIERS) t.clear(); _know.clear(); _applyNow(); return; }
       const w = e.when; lastWhen = w;
       /* ══ ⚠⚠⚠ TODAY'S PROVINCES GO THE MOMENT THE CLOCK LEAVES NOW, NOT WHEN THE ERA DATA ARRIVES ══
          MEASURED as an intermittent failure of tests/r530.spec.js ① — 1 run in 3, and only ever the

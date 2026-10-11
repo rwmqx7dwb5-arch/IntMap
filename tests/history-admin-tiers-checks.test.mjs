@@ -30,6 +30,7 @@ import { fileURLToPath } from 'node:url';
 import { createExpression } from '@maplibre/maplibre-gl-style-spec';
 import { asClassicScript } from './app-source.mjs';
 import { importModule, langRegistry } from './helpers/import-module.mjs';
+import { clockStub } from './helpers/clock-stub.mjs';
 import { HIST_ADMIN_GAPS } from '../js/border-coast.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -323,7 +324,7 @@ function tierHarness(opts = {}) {
   const win = {}; win.window = win; win.addEventListener = () => {};
   win.IntMapGeoEngine = GE;
   win.HIST_ADMIN_GAPS = HIST_ADMIN_GAPS;   /* the HIST_ADMIN_GAPS import edge of js/border-coast.js, handed in like the others */
-  win.IntMapTime = { on: (f) => { win.__clock = f; }, min: 1 };
+  win.IntMapTime = clockStub({ on: (f) => { win.__clock = f; }, min: 1 });
   win.IntMapLang = { pickArgs: () => ((...a) => a), pick: () => ({ arr: (a) => a[0] }), htmlTag: () => 'en' };
   win.IntMapMemBudget = { deviceIsPhone: () => true };
   win.IntMapBorderCoast = { marks: () => null, lineGeom: () => null, load: () => Promise.resolve(null),
@@ -632,7 +633,7 @@ async function orderHarness(n, counted) {
     },
     mocks: {
       'js/geo-engine.js': { IntMapGeoEngine: GE },
-      'js/chronos.js': { IntMapTime: { on: () => {}, min: 1 } },
+      'js/chronos.js': { IntMapTime: clockStub({ on: () => {}, min: 1 }) },
       'js/lang-registry.js': { IntMapLang: { pickArgs: () => ((...a) => a), pick: () => ({ arr: (a) => a[0] }), htmlTag: () => 'en' } },
       'js/border-coast.js': { IntMapBorderCoast: { marks: () => null, lineGeom: () => null, load: () => Promise.resolve(null),
                                                    onArrive: () => {}, wholeLines: () => ({ type: 'FeatureCollection', features: [] }) },

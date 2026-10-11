@@ -74,7 +74,9 @@ export async function timeBorders(opts = {}) {
   /* (deep-tier-reds) the module's clock listeners are kept, so a caller can move the clock (`clock(e)` below); nothing
      here calls them on its own */
   const listeners = [];
-  const IntMapTime = { year: () => (opts.year != null ? opts.year : 1500), isLive: () => false, on: (fn) => { listeners.push(fn); }, when: () => null };
+  /* (one-present-year) «is this year the present?» is the real clock's own predicate, handed over — not a copy of its rule */
+  const { IntMapTime: realClock } = await importModule('js/chronos.js', { globals: { window: {}, document: undefined } });
+  const IntMapTime = { year: () => (opts.year != null ? opts.year : 1500), isLive: () => false, on: (fn) => { listeners.push(fn); }, when: () => null, isPresentYear: realClock.isPresentYear };
   const globals = { ...sandbox, window: w };
   langRegistry();   /* the real registry, with the shipped language list declared */
   const history = await importModule('js/history.js', { globals });

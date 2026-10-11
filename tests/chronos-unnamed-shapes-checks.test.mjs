@@ -36,6 +36,7 @@ import { dirname, join } from 'node:path';
 import vm from 'node:vm';
 import { installSafe } from './helpers/safe-html.mjs';
 import { importModule, langRegistry } from './helpers/import-module.mjs';
+import { clockStub } from './helpers/clock-stub.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -130,7 +131,7 @@ async function loadModule(lang = 'en') {
      its import edges, and `timeBorders` is its exported factory (there is no window.IntMapModules). */
   const M = await importModule('js/time-borders.js', {
     globals: { window: win, document: win.document, navigator: win.navigator },
-    mocks: { 'js/geo-engine.js': { IntMapGeoEngine: E.eng }, 'js/chronos.js': { IntMapTime: { on: noop } } },
+    mocks: { 'js/geo-engine.js': { IntMapGeoEngine: E.eng }, 'js/chronos.js': { IntMapTime: clockStub({ on: noop }) } },
   });
   const HOST = { lang, canDraw: () => true, isMobile: () => false };
   return { mod: M.timeBorders(HOST), bundle: win.__HISTERAS, win, E, HOST };

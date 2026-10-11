@@ -46,11 +46,11 @@ export function companiesUi(HOST){
   function _coWireTime(){ if(HOST._coTimeWired||!(IntMapTime&&IntMapTime.on)) return; HOST._coTimeWired=true;
     const _apply=hy=>{ try{ IntMapCompanies.setYear(hy, ()=>{ if(document.getElementById('co-cmp-view')){ try{ HOST.showCoCompare([...HOST.coCompareSet]); }catch(_){} } else if(HOST.mode==='info'||document.body.classList.contains('ws-mode')){ try{ renderCompanies(); }catch(_){} } }); }catch(_){} };
     IntMapTime.on(e=>{ clearTimeout(HOST._coTimeDeb); HOST._coTimeDeb=setTimeout(()=>{
-      const cur=new Date().getFullYear(); const y=(e&&e.year!=null)?e.year:null; _apply(((e&&e.isLive)||y==null||y>=cur)?null:y);
+      const y=(e&&e.year!=null)?e.year:null; _apply(((e&&e.isLive)||y==null||IntMapTime.isPresentYear(y))?null:y);
     }, 320); });
     /* (#R142) initial sync: if the map was ALREADY time-travelled before Companies was first opened, the subscription
        above would miss that past event — reflect the current clock now so the ranking opens on the historical year. */
-    try{ const cur=new Date().getFullYear(); const y=IntMapTime.year(); if(!IntMapTime.isLive()&&y!=null&&y<cur) _apply(y); }catch(_){}
+    try{ const y=IntMapTime.year(); if(!IntMapTime.isLive()&&y!=null&&!IntMapTime.isPresentYear(y)) _apply(y); }catch(_){}
   }
 
   let _coCmpTsGen=0;

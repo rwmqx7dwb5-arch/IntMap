@@ -23,6 +23,7 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { createExpression } from '@maplibre/maplibre-gl-style-spec';
 import { importModule, langRegistry } from './helpers/import-module.mjs';
+import { clockStub } from './helpers/clock-stub.mjs';
 import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -536,7 +537,7 @@ async function loadModule() {
      the recorder and the clock are handed at their import edges — border-coast.js gets the same ones,
      as it did when both ran on the one fake window. No network: fetch rejects, as a missing one threw. */
   const page = { window: win, document: win.document, navigator: win.navigator, fetch: () => Promise.reject(new Error('offline')) };
-  const edges = { 'js/geo-engine.js': { IntMapGeoEngine: E.eng }, 'js/chronos.js': { IntMapTime: { on: noop } } };
+  const edges = { 'js/geo-engine.js': { IntMapGeoEngine: E.eng }, 'js/chronos.js': { IntMapTime: clockStub({ on: noop }) } };
   langRegistry();
   const { IntMapBorderCoast } = await importModule('js/border-coast.js', { globals: page, mocks: edges });
   const M = await importModule('js/time-borders.js', { globals: page, mocks: { ...edges, 'js/border-coast.js': { IntMapBorderCoast } } });
@@ -854,7 +855,7 @@ async function harness(global,years){
     border/coast store are handed at its import edges (they were window stubs). No network. */
  langRegistry();
  const M=await importModule('js/time-borders.js',{globals:{window:w,document:w.document,navigator:w.navigator,fetch:()=>Promise.reject(new Error('offline'))},
-  mocks:{'js/geo-engine.js':{IntMapGeoEngine:GE},'js/chronos.js':{IntMapTime:{on:noop}},'js/border-coast.js':{IntMapBorderCoast:bc}}});
+  mocks:{'js/geo-engine.js':{IntMapGeoEngine:GE},'js/chronos.js':{IntMapTime:clockStub({on:noop})},'js/border-coast.js':{IntMapBorderCoast:bc}}});
  const mod=M.timeBorders({lang:'en',canDraw:()=>true,isMobile:()=>false});
  return {mod,sources,writes,rings, async arrive(idx){const r=rings[idx];detail.set(idx,[r[0],[r[0][0]+0.5,0.0002],...r.slice(1)]);await Promise.resolve();callbacks.forEach(cb=>cb());},fine:idx=>detail.get(idx)};
 }

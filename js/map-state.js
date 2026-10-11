@@ -38,6 +38,7 @@
  *  ⚠ but a module that LAZY chunks also import (js/chronos.js) must not: see the note at the `time`
  *  owner in js/map-ui.js (measured: one more request for every session).
  * ==========================================================================*/
+import { IntMapTime } from './chronos.js';   /* (one-present-year) «is this year the present?» is the clock's question, asked of it */
 
 /** @typedef {{ lng:number, lat:number, zoom:number, bearing:number, pitch:number, proj:('globe'|'flat'|null) }} ViewValue */
 /** @typedef {null | { at:string, instant?:(string|null), year?:(number|null) } | { daysAgo:number }} TimeValue */
@@ -390,7 +391,7 @@ export const MapState = {
   /** the saved session's spelling of the map's fields (js/session-tabs.js adds the app chrome around it) */
   session() { /** @type {Object<string,any>} */ const out = {};
     SCHEMA.forEach((f) => { if (!f.session) return; const v = MapState.read(f.key);
-      if (f.key === 'time') { const y = v && 'year' in v ? v.year : null; out[f.session] = (y && y < new Date().getFullYear()) ? y : null; }
+      if (f.key === 'time') { const y = v && 'year' in v ? v.year : null; out[f.session] = (y && !IntMapTime.isPresentYear(y)) ? y : null; }
       else if (f.key === 'base') out[f.session] = v === undefined ? 'map' : v;
       else if (f.key === 'terrain') out[f.session] = !!v;
       else out[f.session] = v === undefined ? [] : v; });

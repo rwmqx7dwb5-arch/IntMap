@@ -2217,7 +2217,7 @@ export function timeBorders(HOST){
     function modernAt(when,live){
       const isD=(when instanceof Date)&&!isNaN(when.getTime());
       const year=isD?when.getFullYear():Math.round(+when);
-      return !!live || year>=new Date().getFullYear() || year>CS_MAX; }   /* (#R94i/#R117) recent years keep the MODERN borders — CShapes carries accurate borders through 2019 */
+      return !!live || IntMapTime.isPresentYear(year) || year>CS_MAX; }   /* (#R94i/#R117) recent years keep the MODERN borders — CShapes carries accurate borders through 2019 */
     async function collectionAt(when,o){ o=o||{};
       if(modernAt(when,o.live)) return { modern:true, key:null, fc:null };
       const isD=(when instanceof Date)&&!isNaN(when.getTime());

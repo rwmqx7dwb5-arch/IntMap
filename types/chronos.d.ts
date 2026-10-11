@@ -32,6 +32,8 @@ export interface Chronos {
   iso(): string;
   year(): number;
   isLive(): boolean;
+  /** is year y the present (local calendar) year or later — the one fold-into-live rule */
+  isPresentYear(y: number): boolean;
   /** the oldest year the clock accepts — read at call time from js/hist-scale.js FLOOR */
   min: number;
   state(): ChronosEvent;

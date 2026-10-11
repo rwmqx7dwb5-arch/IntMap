@@ -142,7 +142,7 @@ export default [
       if (a.year != null) {
         const y = Math.round(+a.year);
         if (y < IntMapTime.min) return R(false, warn(L('Chronos reaches back to ' + IntMapTime.min, 'Chronos は ' + IntMapTime.min + ' 年まで遡れます')));
-        if (y >= new Date().getFullYear()) IntMapTime.setNow({ source: 'atlas' }); else IntMapTime.setYear(y, { source: 'atlas' });
+        if (IntMapTime.isPresentYear(y)) IntMapTime.setNow({ source: 'atlas' }); else IntMapTime.setYear(y, { source: 'atlas' });
       }
       const e = B.select(hit.id);
       if (!e) return R(false, warn(L('Could not choose ', '選べませんでした: ') + esc(hit.name)));

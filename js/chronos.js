@@ -146,6 +146,10 @@ function clock(name){
   OS.iso=()=>ymdISO(_when||now());
   OS.year=()=>(_when||now()).getFullYear();
   OS.isLive=()=>_when==null;
+  /* «is year y the present year or later?» — the one place that decides a year folds into live. LOCAL calendar year
+     (`now().getFullYear()`), like `year()`/`setYear` — a UTC read would disagree with the clock for the hours around
+     New Year. Callers ask this instead of writing `y >= new Date().getFullYear()` themselves. */
+  OS.isPresentYear=y=>Math.round(+y)>=now().getFullYear();
   try{ Object.defineProperty(OS,'min',{get:ymin,enumerable:true,configurable:true}); }catch(_){ /** @type {{min:number}} */ (OS).min=ymin(); }
   OS.state=()=>ev('query');
   OS.on=function(fn){ if(typeof fn==='function'){ subs.push(fn); return ()=>{ const i=subs.indexOf(fn); if(i>=0) subs.splice(i,1); }; } return ()=>{}; };
@@ -159,10 +163,10 @@ function clock(name){
        control in the panel all arrive here, so none of them has to remember to say so separately.
        Future instants (the forecast, the tides) and «earlier this year» are not a journey into the
        past and do not count. */
-    if(nd&&nd.getFullYear()<now().getFullYear()) OS.intent('clock:'+(opts.source||'api'));
+    if(nd&&!OS.isPresentYear(nd.getFullYear())) OS.intent('clock:'+(opts.source||'api'));
     return broadcast(opts.source), OS; };
   OS.setYear=function(y,opts){ y=Math.round(+y); if(!(y>=ymin())) return OS;
-    const n=now(); if(y>=n.getFullYear()) return OS.setNow(opts);
+    if(OS.isPresentYear(y)) return OS.setNow(opts);
     return OS.set(atUTC(y,5,15,12,0,0), opts); };   /* mid-June noon UTC: neutral season/terminator */
   OS.setDaysAgo=function(days,opts){ days=Math.round(+days||0);
     if(days<=0) return OS.setNow(opts);

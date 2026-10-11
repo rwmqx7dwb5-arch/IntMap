@@ -462,14 +462,13 @@ async function travel(a, dctx, K) { const L = K.L, R = K.R, note = K.note, warn 
           const nowMsg=()=>R(true, note('✓ '+L('Back to now','現在に戻しました','Zurück zu jetzt','Вернулись в настоящее','Volvimos al presente')));
           if(!T){ const sl=document.getElementById('ntl-slider'); if(sl){ let v=3650,da=(a.daysAgo!=null)?Math.round(+a.daysAgo):null; if(da==null&&a.date){ const t0=Date.parse(String(a.date)); if(!isNaN(t0)) da=Math.round((Date.now()-t0)/86400000); } if(da!=null) v=Math.max(0,Math.min(3650,3650-da)); else if(a.value!=null) v=+a.value; sl.value=v; sl.dispatchEvent(new Event('input',{bubbles:true})); } return R(true, note(L('Time set','時刻を設定しました','Zeit gesetzt','Время задано','Hora establecida'))); }   /* (#R108) explained, not a bare ✓ */
           if(a.reset||a.now||a.live){ T.setNow({source:'atlas'}); return nowMsg(); }
-          const curY=new Date().getFullYear();
           let y=(a.year!=null)?Math.round(+a.year):null;
           if(y==null&&typeof a.date==='string'){ const m=a.date.match(/^\s*(\d{3,4})\s*$/); if(m) y=+m[1]; }
           /* ⚠⚠ (#R380) THE GUARD READ THE KERNEL AND THE SENTENCE BESIDE IT DID NOT. `y<T.min` has always
              been the real test, but the words were the literal 1900 in all nine languages — so when #R349
              moved the floor to 1850 (and #R604 to AD 1) this refusal went on telling every reader that 1875, a year the
              next statement accepts, is out of reach. The number now comes from the same place the test does. */
-          if(y!=null){ if(y>=curY){ T.setNow({source:'atlas'}); return nowMsg(); } if(y<T.min) return R(false, warn(L('Chronos reaches back to {y}','Chronosは{y}年まで遡れます','Bis {y} zurück','До {y} года','Hasta {y}').replace(/\{y\}/g,String(T.min)))); T.setYear(y,{source:'atlas'}); return R(true, note(y+' — '+synced)); }
+          if(y!=null){ if(T.isPresentYear(y)){ T.setNow({source:'atlas'}); return nowMsg(); } if(y<T.min) return R(false, warn(L('Chronos reaches back to {y}','Chronosは{y}年まで遡れます','Bis {y} zurück','До {y} года','Hasta {y}').replace(/\{y\}/g,String(T.min)))); T.setYear(y,{source:'atlas'}); return R(true, note(y+' — '+synced)); }
           if(a.date){ const t0=Date.parse(String(a.date)); if(!isNaN(t0)){ if(t0>Date.now()){ T.setNow({source:'atlas'}); return nowMsg(); } T.set(new Date(t0),{source:'atlas'}); return R(true, note(ymdISO(new Date(t0))+' — '+synced)); } }
           if(a.daysAgo!=null){ const da=Math.round(+a.daysAgo); if(da<=0){ T.setNow({source:'atlas'}); return nowMsg(); } T.setDaysAgo(da,{source:'atlas'}); return R(true, note(ymdISO(T.when())+' — '+synced)); }
           if(a.value!=null){ T.setDaysAgo(3650-(+a.value),{source:'atlas'}); return R(true, note(ymdISO(T.when()))); }
@@ -549,7 +548,7 @@ async function yearbook(a, K) {
   if (!when) when = T.when();
   const YB = await import('./year-book.js');
   const h = { lang: () => (HOST && HOST.lang) || 'en', countryStats: () => (HOST && HOST.countryStats) || {}, escape: esc };
-  if (a.show) { if (when.getFullYear() >= new Date().getFullYear()) T.setNow({ source: 'atlas' }); else T.set(when, { source: 'atlas' }); YB.openFromPage(h); }
+  if (a.show) { if (T.isPresentYear(when.getFullYear())) T.setNow({ source: 'atlas' }); else T.set(when, { source: 'atlas' }); YB.openFromPage(h); }
   const r = await YB.readYear(when, YB.pageDeps(h));
   return R(true, YB.atlasHtml(r, when, !!a.show, h.lang(), note), { yearbook: r });
 }
