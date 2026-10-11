@@ -714,13 +714,15 @@ function inWorkerGraph(id, getModuleInfo) {
 const ML_TSCONFIG = { compilerOptions: { target: 'es2022', useDefineForClassFields: false } };
 const ML_SRC_RE = /[\\/]node_modules[\\/]maplibre-gl[\\/]src[\\/].*\.ts$/;
 export function maplibreSource() {
+  let maps = false;   /* a map in dev only — the production build publishes none (tests/security-logic) */
   return {
     name: 'intmap-maplibre-source',
     enforce: 'pre',
+    configResolved(c) { maps = c.command === 'serve'; },
     async transform(code, id) {
       const file = id.split('?')[0];
       if (!ML_SRC_RE.test(file)) return null;
-      const r = await transformWithOxc(code, file, { lang: 'ts', sourcemap: true, tsconfig: ML_TSCONFIG });
+      const r = await transformWithOxc(code, file, { lang: 'ts', sourcemap: maps, tsconfig: ML_TSCONFIG });
       return { code: r.code, map: r.map };
     },
   };
