@@ -396,6 +396,15 @@ export function newsTimeline(HOST){
     let _bsSeq=0;
     const _TB=()=>window.IntMapTimeBorders;
     const _bsWord=()=>L5('Borders','国境','Grenzen','Границы','Fronteras');
+    /* ══ (stepper-waits-for-borders) THE STEPPER ANSWERS FOR THE WORLD THE MAP HAS FINISHED OPENING ═══════════════
+       Its answers are asked of the records the map has OPENED (js/time-borders.js _EDGES — it never starts a download),
+       and the map opens them while it composes the instant. Asked at once, they were asked of a half-open world.
+       MEASURED on production (2026-10-11, clock to 1 July 150): `›` went to 154 for the first ~7 s — before the coast
+       pieces had arrived it could not know of 151 — and the label stayed «Borders» with no year for 148 s, because
+       changeAt answered null while the records were still on their way and nothing asked again. So both wait for
+       `settled()` — the turn the clock event opened for this instant's borders, the one the subdivisions already wait
+       on — taken one microtask late, after the clock's synchronous broadcast has reached js/time-borders.js too. */
+    const _bsReady=(TB)=>Promise.resolve().then(()=>(TB.settled?TB.settled():null)).catch(()=>null);
     function _bsInRange(y){ try{ const r=_TB().range(); return y>=r.min&&y<=r.max; }catch(_){ return false; } }
     function syncBorderStep(e){ if(!bStep) return;
       /* shown by the INSTANT, not by the open tab: the borders are on the map whichever tab is up */
@@ -405,7 +414,7 @@ export function newsTimeline(HOST){
          measured blank for >1.5 s at 375 px. A control that appears with no label reads as broken. */
       if(bStepLbl&&!bStepLbl.textContent) bStepLbl.textContent=_bsWord();
       const TB=_TB(); if(!TB||!TB.changeAt) return; const my=++_bsSeq;
-      Promise.all([TB.changeAt(e.when),TB.changeBefore(e.when),TB.changeAfter(e.when)]).then(function(r){
+      _bsReady(TB).then(()=>Promise.all([TB.changeAt(e.when),TB.changeBefore(e.when),TB.changeAfter(e.when)])).then(function(r){
         if(my!==_bsSeq) return;
         /* (border-stepper-every-record) a change the records state only to the year is printed as the year — «Jan 1, 127»
            was a day nobody stated (js/time-borders.js changePrecision; year-book and Atlas already read it). The year is the
@@ -415,7 +424,7 @@ export function newsTimeline(HOST){
         if(bStepNext) bStepNext.disabled=!r[2]; }).catch(function(){}); }
     function _bsStep(dir){ const TB=_TB(); if(!TB||!TB.changeAfter) return;
       let st; try{ st=IntMapTime.state(); }catch(_){ return; }
-      (dir<0?TB.changeBefore(st.when):TB.changeAfter(st.when)).then(function(d){
+      _bsReady(TB).then(()=>(dir<0?TB.changeBefore(st.when):TB.changeAfter(st.when))).then(function(d){
         if(d) try{ IntMapTime.set(d,{source:'ui'}); }catch(_){} }).catch(function(){}); }
     /* (#R290) `on()`, `kEra()`, `HBY` and `hbAt()` lived here to fill the 「反映内容」 chips — the
        Köppen era, the historical-borders snapshot and which of the year-driven layers were on.
