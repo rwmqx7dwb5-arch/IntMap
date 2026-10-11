@@ -212,6 +212,126 @@ export const TOURS = [
     ],
   },
   {
+    /* (ww2-tour) 歴史総合 Ｃ（3）「経済危機と第二次世界大戦」; 世界史探究 Ｄ（4）; KS3 history «1901 to the present day».
+       Every step draws the Second World War layer (dl-ww2 — data/wars.json, compiled in scripts/wars/ww2.mjs): each state
+       coloured by the side that held it, and a front line where the record has one, which then decides each side of it.
+       ⚠ THE BORDERS ARE NOT THE WAR. CShapes 2.0 keeps Austria, Czechoslovakia and Poland on the map through 1938–45 (it
+       records states as the international system recognised them), and draws neither Manchukuo nor Japan's occupations;
+       so the sentences say what the LAYER shows for annexation and occupation, and name the border map's view only to
+       set the two apart. The sides and lines each sentence relies on are asked of wars.json on the step's own day by
+       tests/ww2-tour-checks.test.mjs (France grey south of the armistice line, Poland split at the German–Soviet line of
+       28 September 1939 with the Soviet side grey, the China front, Italy contested after September 1943 …).
+       dev-notes/2026-10-11-ww2-tour.md. */
+    id: 'ww2-world',
+    topic: 'history',
+    curriculum: ['rekishi-c'],
+    title: LA('The Second World War, 1939–1945', '第二次世界大戦　1939→1945'),
+    blurb: LA(
+      'Seven views on a layer that colours each state by the side that held it: the first days of the war in Europe, the fall of France, Pearl Harbor, the furthest reach of the Axis and of Japan’s conquests, D-Day, and the surrender.',
+      '国ごとに、その土地を押さえていた陣営の色で塗るレイヤーで7つの場面をたどります。ヨーロッパでの開戦、フランスの敗北、真珠湾攻撃、枢軸国と日本の占領地が最も広がった時期、ノルマンディー上陸、そして降伏。'),
+    steps: [
+      {
+        id: 'ww2-europe-1939',
+        title: LA('Europe on 3 September 1939', '1939年9月3日のヨーロッパ'),
+        view: { lng: 15, lat: 50, zoom: 3.2, proj: 'f' },
+        base: 'map',
+        at: '1939-09-03',
+        layers: ['dl-ww2'],
+        say: LA(
+          '3 September 1939: two days after Germany invaded Poland, Britain and France declare war on Germany. On this layer red is the Axis side and blue the Allies. Germany had annexed Austria in March 1938 and occupied Bohemia and Moravia in March 1939. The border map still draws Austria and Czechoslovakia, because it records the states the world recognised; the layer colours the land by who held it. Italy, Germany’s ally, has not yet entered the war.',
+          '1939年9月3日、ドイツがポーランドに侵攻した2日後に、イギリスとフランスがドイツに宣戦します。このレイヤーでは赤が枢軸国側、青が連合国側です。ドイツは1938年3月にオーストリアを併合し、1939年3月にはベーメン（ボヘミア）とメーレン（モラヴィア）を占領していました。国境の地図は国際的に認められた国を記録するので、オーストリアとチェコスロバキアを描き続けます。このレイヤーは、その土地を実際に押さえていた側の色で塗ります。ドイツの同盟国イタリアは、まだ参戦していません。'),
+        ask: LA(
+          'Find Austria and Czechoslovakia. Why can a map of borders and a map of who held the land disagree?',
+          'オーストリアとチェコスロバキアを探してみましょう。国境の地図と、その土地を誰が押さえていたかの地図は、なぜ食い違うことがあるのでしょう。'),
+        drawn: {},
+      },
+      {
+        id: 'ww2-europe-1940',
+        title: LA('Europe on 1 July 1940', '1940年7月1日のヨーロッパ'),
+        view: { lng: 12, lat: 50, zoom: 3.2, proj: 'f' },
+        base: 'map',
+        at: '1940-07-01',
+        layers: ['dl-ww2'],
+        say: LA(
+          '1 July 1940. In ten months Germany has conquered Poland, then Denmark and Norway, the Netherlands, Belgium and Luxembourg, and France. The line across Poland is the German–Soviet line of 28 September 1939: the Soviet Union, which had invaded from the east on 17 September under its pact with Germany, holds the land beyond it, drawn grey because it is not at war with Germany. The line across France is the armistice line of June 1940: Germany occupies the north and the Atlantic coast, and the south, grey, is governed from Vichy. Italy entered the war on 10 June. Britain and its empire fight on.',
+          '1940年7月1日です。10か月のうちにドイツはポーランドを征服し、続いてデンマークとノルウェー、オランダ・ベルギー・ルクセンブルク、そしてフランスを破りました。ポーランドを横切る線は1939年9月28日の独ソの境界線です。ドイツとの条約にもとづいて9月17日に東から侵攻したソ連がその東側を押さえていて、ドイツと戦っていないため灰色で描かれています。フランスを横切る線は1940年6月の休戦協定の境界線で、北部と大西洋岸をドイツが占領し、灰色の南部はヴィシーの政府が治めています。イタリアは6月10日に参戦しました。イギリスとその帝国は戦いを続けます。'),
+        ask: LA(
+          'Which parts of this map are grey, and what does grey mean on this layer? Use the legend.',
+          'この地図で灰色の部分はどこでしょう。このレイヤーで灰色は何を表しているでしょう。凡例で確かめてみましょう。'),
+        drawn: {},
+      },
+      {
+        id: 'ww2-asia-1941',
+        title: LA('East Asia and the Pacific on 8 December 1941', '1941年12月8日の東アジアと太平洋'),
+        view: { lng: 125, lat: 20, zoom: 2.5, proj: 'f' },
+        base: 'map',
+        at: '1941-12-08',
+        layers: ['dl-ww2'],
+        say: LA(
+          '8 December 1941 in East Asia — still 7 December in Hawaii. Japan attacks Pearl Harbor, Malaya, Hong Kong and the Philippines, and the United States enters the war. Japan had been at war with China since July 1937: the line across China is that war’s front, with Japan holding the coast and the north China plain behind it. Japanese troops are already in French Indochina. In Europe, Germany invaded the Soviet Union on 22 June, which brought the Soviet Union onto the Allied side.',
+          '東アジアでは1941年12月8日、ハワイではまだ7日です。日本は真珠湾、マレー半島、香港、フィリピンを攻撃し、アメリカが参戦します。日本は1937年7月から中国と戦争をしていました。中国を横切る線はその戦争の前線で、その手前の沿岸部と華北の平原を日本が押さえています。日本軍はすでにフランス領インドシナに進駐しています。ヨーロッパでは6月22日にドイツがソ連に侵攻し、ソ連は連合国側に加わりました。'),
+        ask: LA(
+          'Why would Japan attack the United States, Britain and the Netherlands on the same day? Look at what lies to the south of Indochina.',
+          '日本はなぜ、アメリカ・イギリス・オランダを同じ日に攻撃したのでしょう。インドシナの南に何があるかを見てみましょう。'),
+        drawn: {},
+      },
+      {
+        example: 'ww2-1942',
+        say: LA(
+          '1 November 1942 in Europe and North Africa, near the furthest reach of the Axis. The Eastern Front runs to the Volga, where the battle of Stalingrad has been fought since August; in Egypt the British Eighth Army attacked at El Alamein on 23 October. Within weeks both battles had turned against the Axis.',
+          '1942年11月1日のヨーロッパと北アフリカです。枢軸国の勢力が最も広がった時期にあたります。東部戦線はヴォルガ川まで達し、8月からスターリングラードで戦いが続いています。エジプトでは10月23日、イギリス第8軍がエル・アラメインで攻撃を始めました。数週間のうちに、どちらの戦いも枢軸国に不利に転じます。'),
+        ask: LA(
+          'Find Stalingrad and El Alamein. How far had the Axis come from Germany and Italy — and why might that distance itself become a weakness?',
+          'スターリングラードとエル・アラメインを探してみましょう。枢軸国はドイツ・イタリアからどこまで進んでいたでしょう。その遠さが、なぜ弱点にもなりえたのでしょう。'),
+      },
+      {
+        id: 'ww2-asia-1942',
+        title: LA('East Asia and the Pacific on 1 November 1942', '1942年11月1日の東アジアと太平洋'),
+        view: { lng: 125, lat: 10, zoom: 2.4, proj: 'f' },
+        base: 'map',
+        at: '1942-11-01',
+        layers: ['dl-ww2'],
+        say: LA(
+          '1 November 1942, near the furthest reach of Japan’s conquests: Burma, Malaya and Singapore, the Philippines and the Dutch East Indies are held by Japan, and Thailand fights at its side. But in June Japan lost four aircraft carriers at Midway, and in August American forces landed on Guadalcanal — the Solomon Islands are drawn as contested.',
+          '1942年11月1日、日本の占領地が最も広がった時期です。ビルマ、マレー半島とシンガポール、フィリピン、オランダ領東インドを日本が押さえ、タイは日本と共に戦っています。しかし6月、日本はミッドウェー海戦で空母4隻を失い、8月にはアメリカ軍がガダルカナル島に上陸しました。ソロモン諸島は争奪中として描かれています。'),
+        ask: LA(
+          'How far is Guadalcanal from Tokyo? What would it take to supply troops and ships that far away?',
+          'ガダルカナル島は東京からどのくらい離れているでしょう。そこまで兵や船に物資を送り続けるには、何が必要だったでしょう。'),
+        drawn: {},
+      },
+      {
+        id: 'ww2-europe-1944',
+        title: LA('Europe on 6 June 1944', '1944年6月6日のヨーロッパ'),
+        view: { lng: 15, lat: 50, zoom: 3.0, proj: 'f' },
+        base: 'map',
+        at: '1944-06-06',
+        layers: ['dl-ww2'],
+        say: LA(
+          '6 June 1944, D-Day: Allied troops land in Normandy. Germany has occupied the whole of France since November 1942. In the east, since its defeats at Stalingrad and Kursk, the German army has been driven back towards its own border, and Italy, which left the Axis in September 1943, is divided by a front. Behind the German lines the Holocaust is being carried out: about six million Jews were murdered by Nazi Germany and its collaborators. The layer marks the camps.',
+          '1944年6月6日、ノルマンディー上陸作戦の日です。連合国軍がノルマンディーに上陸します。ドイツは1942年11月からフランス全土を占領しています。東では、スターリングラードとクルスクで敗れたあと、ドイツ軍は自国の国境の方へ押し戻されています。1943年9月に枢軸国から離れたイタリアは、前線によって分断されています。ドイツ軍の後方ではホロコーストが進められていました。ナチス・ドイツとその協力者によって、およそ600万人のユダヤ人が殺害されました。このレイヤーは収容所の場所を示しています。'),
+        ask: LA(
+          'Follow the lines on this map. From how many directions is Germany being attacked in June 1944?',
+          'この地図の線をたどってみましょう。1944年6月、ドイツはいくつの方向から攻められているでしょう。'),
+        drawn: {},
+      },
+      {
+        id: 'ww2-world-1945',
+        title: LA('The world on 2 September 1945', '1945年9月2日の世界'),
+        view: { lng: 60, lat: 30, zoom: 1.5, proj: 'f' },
+        base: 'map',
+        at: '1945-09-02',
+        layers: ['dl-ww2'],
+        say: LA(
+          '2 September 1945: Japan signs the instrument of surrender in Tokyo Bay, after the atomic bombings of Hiroshima and Nagasaki and the Soviet Union’s entry into the war against Japan in August. Germany surrendered on 8 May; the border map now draws it in two parts, the Soviet zone and the zones of the Western Allies. Korea is no longer drawn as part of Japan: the map divides it at the 38th parallel, where American and Soviet forces were to take the Japanese surrender. Tens of millions of people, most of them civilians, died in the war.',
+          '1945年9月2日、日本は東京湾で降伏文書に調印します。8月の広島と長崎への原子爆弾の投下と、ソ連の対日参戦のあとでした。ドイツは5月8日に降伏し、国境の地図はソ連の占領地区と西側連合国の占領地区の2つに分けて描いています。朝鮮はもう日本の一部としては描かれず、地図は北緯38度線で2つに分けています。その線を境に、アメリカ軍とソ連軍が日本軍の降伏を受けることになっていました。この戦争で何千万もの人が亡くなり、その多くは民間人でした。'),
+        ask: LA(
+          'Compare this map with the one of 1939. Which borders changed because of the war, and which divisions were new?',
+          'この地図を1939年の地図と比べてみましょう。戦争によって変わった国境はどれで、新しく生まれた分断はどれでしょう。'),
+        drawn: {},
+      },
+    ],
+  },
+  {
     /* (sales-schools) 歴史総合 Ｄ（3）「世界秩序の変容と日本」 — 「冷戦の終結」 in the course of study's words; KS3 history
        «challenges for Britain, Europe and the wider world 1901 to the present day». The dates are CShapes 2.0's rows
        (data/cshapes.js): the German Democratic Republic ends 1990-10-02; Czechoslovakia ends 1992-12-31 and the Czech
@@ -511,6 +631,24 @@ export const CAPTURED_STEPS = {
   },
   "japan-1872": {
     "hash": "#v=136.5000,36.0000,5.00,0,0,f&tt=1872-07-01"
+  },
+  "ww2-europe-1939": {
+    "hash": "#v=15.0000,50.0000,3.20,0,0,f&l=dl-ww2&tt=1939-09-03"
+  },
+  "ww2-europe-1940": {
+    "hash": "#v=12.0000,50.0000,3.20,0,0,f&l=dl-ww2&tt=1940-07-01"
+  },
+  "ww2-asia-1941": {
+    "hash": "#v=125.0000,20.0000,2.50,0,0,f&l=dl-ww2&tt=1941-12-08"
+  },
+  "ww2-asia-1942": {
+    "hash": "#v=125.0000,10.0000,2.40,0,0,f&l=dl-ww2&tt=1942-11-01"
+  },
+  "ww2-europe-1944": {
+    "hash": "#v=15.0000,50.0000,3.00,0,0,f&l=dl-ww2&tt=1944-06-06"
+  },
+  "ww2-world-1945": {
+    "hash": "#v=60.0000,30.0000,1.50,0,0,f&l=dl-ww2&tt=1945-09-02"
   },
   "europe-1991": {
     "hash": "#v=16.0000,52.0000,3.20,0,0,f&tt=1991-07-01"
