@@ -280,7 +280,10 @@ export function timeBorders(HOST){
        Reviewed 2026-10-07 for 651 «Egypt (UK)» from 1886: Britain governed Egypt from the occupation of 1882 (Tel el-Kebir,
        13 September 1882; the army of occupation and the Consul-General, Cromer 1883–1907); the protectorate of
        1914-12-18 changed the legal form (it ended Ottoman suzerainty), not who governed — so the rule stands, and the
-       record's own row of 1914-12-18 is not a change of this name. */
+       record's own row of 1914-12-18 is not a change of this name.
+       (era-names-by-day) 365 «Soviet Union» ends on 1991-12-21, the Alma-Ata Protocol («with the formation of the
+       Commonwealth of Independent States, the USSR ceases to exist») and the record's own edge; the bare 1992 it replaced
+       drew «Soviet Union» to 31 December, past the formal dissolution of 26 December as well. */
     const _CS_ERA={
       2:[[9999,'United States']], 3:[[9999,'Alaska (USA)']], 4:[[1894,'Kingdom of Hawaii'],[1898,'Republic of Hawaii'],[9999,'Hawaii (USA)']],
       6:[[1899,'Puerto Rico (Spain)'],[9999,'Puerto Rico (USA)']], 31:[[1973,'Bahamas (UK)']], 51:[[1962,'Jamaica (UK)']],
@@ -289,7 +292,7 @@ export function timeBorders(HOST){
       120:[[9999,'French Guiana (France)']], 205:[[1937,'Irish Free State'],[9999,'Ireland']],
       255:[[9999,'Germany']], 260:[[1949,'Germany (Western Allies)'],[1990,'West Germany'],[9999,'Germany']], 265:[[1949,'Germany (USSR)'],[9999,'East Germany']],
       325:[[9999,'Italy']], 343:[[9999,'North Macedonia']], 360:[[9999,'Romania']],
-      365:[[1923,'Russia'],[1992,'Soviet Union'],[9999,'Russia']], 370:[[9999,'Belarus']],
+      365:[[1923,'Russia'],[[1991,12,21],'Soviet Union'],[9999,'Russia']], 370:[[9999,'Belarus']],
       395:[[1918,'Iceland (Denmark)'],[1944,'Iceland (Denmark)'],[9999,'Iceland']],
       404:[[1974,'Portuguese Guinea (Portugal)'],[9999,'Guinea-Bissau']], 411:[[1968,'Spanish Guinea (Spain)'],[9999,'Equatorial Guinea']],
       420:[[1965,'Gambia (UK)']], 432:[[[1960,6,20],'French Sudan (France)'],[9999,'Mali']], 433:[[1960,'Senegal (France)']],
@@ -2103,7 +2106,10 @@ export function timeBorders(HOST){
     /* the first year whose label `tagSame` reads off the year itself (the era identities and the former states are asked
        at a date only from here on); below it a label depends on the name alone. js/time-countries.js's own floor, verbatim. */
     function _labelFloor(){ return (window.IntMapMaddison&&window.IntMapMaddison.minYear)||1900; }
-    function tagSame(fc,year){ try{ if(!fc||!Array.isArray(fc.features)) return fc;
+    /* (era-names-by-day) the instant the labels are written for: the one go() was asked for when it is a day, else the year */
+    const _tagWhen=()=>((_provWhen instanceof Date&&!isNaN(_provWhen.getTime()))?_provWhen:shownYear);
+    function tagSame(fc,when){ try{ if(!fc||!Array.isArray(fc.features)) return fc;
+      const _isD=(when instanceof Date)&&!isNaN(when.getTime()), year=_isD?when.getFullYear():when;
       const lg=(typeof HOST.lang!=='undefined')?HOST.lang:'en';
       const HID=window.IntMapHistId, HS=window.IntMapHistStates;
       const _disp=(o)=>((o.name&&_LTB.arr(o.name))||((lg==='jp'&&o.nameJp)?o.nameJp:o.nameEn)||o.nameEn||'');
@@ -2122,7 +2128,11 @@ export function timeBorders(HOST){
           if(o.nameEn){ cur.set(_normNm(o.nameEn),disp); curRow.delete(_normNm(o.nameEn)); } if(o.nameJp) cur.set(_normNm(o.nameJp),disp); } }catch(_){}
       const _y=(year!=null&&isFinite(year))?+year:null;
       const _mfloor=_labelFloor();
-      const _d=(_y!=null&&_y>=_mfloor)?(_y+'-07-01T00:00:00Z'):null;
+      /* (era-names-by-day) the DAY being drawn, when there is one — the era identities (js/history.js histId) and the former
+         states change on days; a bare year is still read at 1 July. Noon UTC of the local calendar day, so a state that
+         begins at 00:00Z of that day holds it. */
+      const _pad2=n=>String(n).padStart(2,'0');
+      const _d=(_y!=null&&_y>=_mfloor)?(_isD?(String(_y).padStart(4,'0')+'-'+_pad2(when.getMonth()+1)+'-'+_pad2(when.getDate())+'T12:00:00Z'):(_y+'-07-01T00:00:00Z')):null;
       /* successors a former state covers this year: their own era identity must NOT be applied on top of it —
          the Countries list hides those rows for the same reason (js/history.js `histStates.apply`). */
       const _cov=new Set();
@@ -2138,7 +2148,7 @@ export function timeBorders(HOST){
          that is right only by coincidence is the thing that check exists to stop.) */
       try{ const MODNM={CHN:['China'],DEU:['Germany'],ITA:['Italy'],IRN:['Iran','Persia'],THA:['Thailand','Siam'],IDN:['Indonesia','Dutch East Indies'],JPN:['Japan'],RUS:['Russia'],GBR:['United Kingdom'],ESP:['Spain'],PRT:['Portugal'],BRA:['Brazil'],EGY:['Egypt'],FRA:['France'],HUN:['Hungary'],KOR:['Korea','South Korea'],ETH:['Ethiopia','Abyssinia']};   /* (#R117/#R118) expanded identities */
         if(_d&&HID&&HID.at) for(const code in MODNM){ if(_cov.has(code)) continue;
-          const e=HID.at(code,_y); if(!e||!e.name) continue; const disp=_LTB.arr(e.name); if(!disp) continue;
+          const e=HID.at(code,_d); if(!e||!e.name) continue; const disp=_LTB.arr(e.name); if(!disp) continue;
           MODNM[code].forEach(mn=>{ cur.set(_normNm(mn),disp); curRow.delete(_normNm(mn)); }); } }catch(_){}
       /* ⚠ (#R410) …AND THE FORMER STATES, WHOSE POLYGON USUALLY CARRIES A SUCCESSOR'S MODERN NAME. At 1916 the
          CShapes polygons are «Russia» and «Japan» while the Countries rows are «Russian Empire» and «Empire of
@@ -2172,7 +2182,7 @@ export function timeBorders(HOST){
       }catch(_){} });
       return fc;
       }catch(_){ return fc; } }
-    function apply(fc){ const mySeq=seq; shownFC=fc; _writeNote(); try{ fc=tagSame(fc,shownYear); }catch(_){}
+    function apply(fc){ const mySeq=seq; shownFC=fc; _writeNote(); try{ fc=tagSame(fc,_tagWhen()); }catch(_){}
       /* (#R94m) set the data on the EXISTING source directly (not gated by isStyleLoaded) — that gate was why a
          SECOND year change didn't update: ensure() could transiently return false and block setData, so the
          borders stayed on the first year until you went back to Now. No re-assert timeouts → no flicker.
@@ -2327,7 +2337,7 @@ export function timeBorders(HOST){
        hundred kilobytes to write back what is already there. */
     window.addEventListener('intmap-hist-identity',()=>{ try{ if(!active||!shownFC||!Array.isArray(shownFC.features)) return;
       const sig=()=>JSON.stringify(shownFC.features.map(f=>{ const p=f.properties||{}; return [p._same||0,p._modName||'',p._locName||'']; }));
-      const before=sig(); tagSame(shownFC,shownYear); if(sig()===before) return;
+      const before=sig(); tagSame(shownFC,_tagWhen()); if(sig()===before) return;
       if(GE().layers.hasSource('imtb-src')&&GE().layers.has('imtb-line')){ GE().layers.setSourceData('imtb-src',shownFC);
         /* (#R531) the identities changed, not the geometry — but this path also runs when the layers
            were rebuilt underneath, so the outline is re-asserted with them rather than left empty. */

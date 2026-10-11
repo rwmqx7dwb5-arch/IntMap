@@ -168,15 +168,30 @@ function chunk(type, data) {
 }
 export function png(cv) {
   /* a card is a few flat colours and the 3×3 averages of their edges — measured 2026-10-03: 113 distinct colours on the
-     1945-08-15 card — so it fits a palette exactly, and a palette PNG is lossless and about a third of the size. A card
-     that ever holds more than 256 is written as RGB, unchanged in content. */
-  const n = cv.w * cv.h, index = new Map(), idx = new Uint8Array(n);
-  for (let i = 0; i < n && index.size <= 256; i++) {
-    const c = (cv.px[i * 3] << 16) | (cv.px[i * 3 + 1] << 8) | cv.px[i * 3 + 2];
-    let k = index.get(c); if (k == null) { k = index.size; index.set(c, k); }
-    idx[i] = k;
+     1945-08-15 card — so it fits a palette exactly, and a palette PNG is lossless and about a third of the size.
+     (era-names-by-day) …AND WHEN A FEW EDGE PIXELS GO PAST 256, THEY TAKE THE NEAREST OF THE 256. MEASURED 2026-10-11: the
+     1990-10-03 card holds 262 colours, and 6 of its 756,000 pixels are outside the 256 most frequent — three outlines
+     meeting under the 3×3 average. Written as RGB for those 6 it was 89 kB against 36 kB, and 1991-12-21 reached 130 kB,
+     past what an unfurl takes. A pixel whose colour is not in the palette is an average of colours that are, so the nearest
+     palette colour (by RGB distance) is a neighbour's shade. Only when such pixels are a small share of the card (1%, a
+     bound three orders above the measured 0.0008%) — a card that ever draws real gradients is written as RGB, unchanged. */
+  const n = cv.w * cv.h, freq = new Map();
+  for (let i = 0; i < n; i++) { const c = (cv.px[i * 3] << 16) | (cv.px[i * 3 + 1] << 8) | cv.px[i * 3 + 2]; freq.set(c, (freq.get(c) || 0) + 1); }
+  const ranked = [...freq.entries()].sort((a, b) => b[1] - a[1]);
+  const outside = ranked.slice(256).reduce((s, e) => s + e[1], 0);
+  const index = new Map(), idx = new Uint8Array(n);
+  if (outside <= n * 0.01) {
+    ranked.slice(0, 256).forEach(([c], k) => index.set(c, k));
+    const pal = ranked.slice(0, 256).map(([c]) => [c >> 16, (c >> 8) & 0xff, c & 0xff]);
+    const near = new Map();
+    for (const [c] of ranked.slice(256)) {
+      const r = c >> 16, g = (c >> 8) & 0xff, b = c & 0xff; let best = 0, bd = Infinity;
+      pal.forEach((p, k) => { const d = (p[0] - r) ** 2 + (p[1] - g) ** 2 + (p[2] - b) ** 2; if (d < bd) { bd = d; best = k; } });
+      near.set(c, best);
+    }
+    for (let i = 0; i < n; i++) { const c = (cv.px[i * 3] << 16) | (cv.px[i * 3 + 1] << 8) | cv.px[i * 3 + 2]; const k = index.get(c); idx[i] = k != null ? k : near.get(c); }
   }
-  if (index.size <= 256) {
+  if (index.size) {
     const raw = Buffer.alloc((cv.w + 1) * cv.h);
     for (let y = 0; y < cv.h; y++) { raw[y * (cv.w + 1)] = 0; raw.set(idx.subarray(y * cv.w, (y + 1) * cv.w), y * (cv.w + 1) + 1); }
     const plte = Buffer.alloc(index.size * 3);
@@ -245,7 +260,13 @@ export async function drawCard(o) {
     const [y, m, d] = o.date.split('-').map(Number);
     const prev = new Date(Date.UTC(2000, m - 1, d - 1)); prev.setUTCFullYear(y, m - 1, d - 1);
     const iso = prev.toISOString().slice(0, 10);
-    strokeRows(rowsOn(iso).filter((f) => has(o.ended, f)), C.ended, SS * 2 + 1);
+    /* (era-names-by-day) a unit both ended and appeared is the same unit under a new name (1990-10-03 West Germany →
+       Germany, 1991-12-21 Soviet Union → Russia — gwcode 260, 365): its new name is filled above, and tracing the old
+       outline over it drew the whole border twice in two translucent colours. MEASURED: 10-03 and 12-21 left the
+       palette (>256 colours) and 12-21 grew to 130 kB, past what an unfurl takes. What ended is the units that did not
+       continue (East Germany). */
+    const renamed = new Set((o.ended || []).filter((g) => (o.appeared || []).includes(g)));
+    strokeRows(rowsOn(iso).filter((f) => has(o.ended, f) && !renamed.has(f[1])), C.ended, SS * 2 + 1);
   }
   if (o.point) {
     const cx = (o.point[0] - F.w) * sx, cy = (F.yN - mercY(o.point[1])) * sy;

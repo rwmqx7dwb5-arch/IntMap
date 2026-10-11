@@ -244,7 +244,7 @@ test('R380 ⑨: travelling renames the countries in the list instead of emptying
    画面に出た文字そのものは tests/r410.spec.js（門）と tests/r410-late.spec.js（deep）がブラウザで測る。 */
 
 /* ── ① the tables the labels now read ANSWER THE YEAR ─────────────────────────────────────────── */
-test('R410 ①: IntMapHistId.at() and IntMapHistStates.activeAt() are functions of the year alone', () => {
+test('R410 ①: IntMapHistId.at() and IntMapHistStates.activeAt() are functions of the instant alone', () => {
   const HID = MOD.histId({});
   /* the three the report named, plus the two the fix's own measurement caught */
   assert.equal(HID.at('DEU', 1916).name[0], 'German Empire');
@@ -254,7 +254,9 @@ test('R410 ①: IntMapHistId.at() and IntMapHistStates.activeAt() are functions 
   assert.equal(HID.at('GBR', 1916).name[0], 'United Kingdom of Great Britain and Ireland',
     'the 1939 table has no GBR entry, which is how «United Kingdom» survived the move back');
   assert.equal(HID.at('ESP', 1916), null, 'Spain had no era identity in 1916 — «Spanish Republic» began in 1931');
-  assert.equal(HID.at('ESP', 1939).name[0], 'Spanish Republic');
+  /* (era-names-by-day) a bare year is read at 1 July: in 1939 that is after the war's end on 1 April */
+  assert.equal(HID.at('ESP', 1939).name[0], 'Francoist Spain');
+  assert.equal(HID.at('ESP', '1939-03-31').name[0], 'Spanish Republic');
 
   /* the former state whose polygon still carries a successor's modern name */
   const H = MOD.histStates({});
@@ -296,10 +298,12 @@ test('R410 ②: the label table covers every code IntMapHistId carries', () => {
 /* ── ③ the era name is chosen by the YEAR, not by the rename standing in countryStats ──────────── */
 /* ⚠ SPELLING, ON PURPOSE: `tagSame` and `go()` are internals of the border layer's closure that
    write into a live renderer; the drawn text is measured in a browser by tests/r410.spec.js. */
-test('R410 ③: tagSame is given the year and asks the table for it', () => {
-  assert.ok(/function tagSame\(fc\s*,\s*year\)/.test(TB), 'tagSame no longer takes the year it is drawing');
-  assert.ok(/tagSame\(fc\s*,\s*shownYear\)/.test(TB), 'apply() stopped handing it the year');
-  assert.ok(/HID\.at\(code\s*,\s*_y\)/.test(TB), 'the era identity is not looked up by year any more');
+test('R410 ③: tagSame is given the instant it is drawing and asks the table for it', () => {
+  /* (era-names-by-day) the instant, not only its year: the identities change on days */
+  assert.ok(/function tagSame\(fc\s*,\s*when\)/.test(TB), 'tagSame no longer takes the instant it is drawing');
+  assert.ok(/tagSame\(fc\s*,\s*_tagWhen\(\)\)/.test(TB), 'apply() stopped handing it the instant');
+  assert.ok(/const _tagWhen=\(\)=>\(\(_provWhen instanceof Date/.test(TB), 'the instant is not the one go() was asked for');
+  assert.ok(/HID\.at\(code\s*,\s*_d\)/.test(TB), 'the era identity is not looked up at the day drawn any more');
   assert.deepEqual(TB.match(/_histId/g) || [], [],
     'the label is gated on the rename again — that is the defect, one listener reading another’s output');
   /* ⚠ (#R421) the claim is that `shownYear` is assigned in go()'s preamble, BEFORE the first branch,
@@ -420,7 +424,7 @@ test('R410 ④: both ends of the identity announcement exist', async () => {
   assert.ok(/addEventListener\('intmap-hist-identity'/.test(TB), 'js/time-borders.js stopped listening');
   const h = /addEventListener\('intmap-hist-identity',\(\)=>\{[\s\S]*?\}\);/.exec(TB);
   assert.ok(h, 'the listener body cannot be read');
-  assert.ok(/tagSame\(shownFC\s*,\s*shownYear\)/.test(h[0]), 'the listener does not re-tag the snapshot on screen');
+  assert.ok(/tagSame\(shownFC\s*,\s*_tagWhen\(\)\)/.test(h[0]), 'the listener does not re-tag the snapshot on screen');
   assert.ok(/setSourceData\('imtb-src'/.test(h[0]), 'the re-tag never reaches the renderer');
   assert.ok(/if\(sig\(\)===before\) return;/.test(h[0]),
     'the guard is gone: repaint() fires twice per travel and would push a few hundred kB back for nothing');

@@ -268,17 +268,20 @@ export async function mapReader() {
   w.IntMapMaddison = H.maddison();
   await w.IntMapMaddison.load();
   const HS = w.IntMapHistStates;
-  const formerFor = (y) => {
+  /* (era-names-by-day) the former states the app's list holds ON THE DAY asked (histStates.apply reads the date) */
+  const isoNoon = (d) => String(d.getFullYear()).padStart(4, '0') + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + 'T12:00:00Z';
+  const formerFor = (when) => {
+    const y = when.getFullYear();
     for (const S of HS.STATES) if (stats[S.code] && stats[S.code]._hist) delete stats[S.code];
     if (y < w.IntMapMaddison.minYear) return;   /* below the Countries list's floor the app applies no former state */
-    for (const S of HS.activeAt(y + '-07-01T00:00:00Z')) stats[S.code] = { _hist: true, name: S.name, nameEn: w.IntMapHistName(S.name, 0), nameJp: w.IntMapHistName(S.name, 1), sov: true };
+    for (const S of HS.activeAt(isoNoon(when))) stats[S.code] = { _hist: true, name: S.name, nameEn: w.IntMapHistName(S.name, 0), nameJp: w.IntMapHistName(S.name, 1), sov: true };
   };
 
   /** what the map draws on `when` (a Date), and the name it writes on each feature in each language */
   async function labelsAt(when) {
     const y = when.getFullYear();
     clock.year = y;
-    formerFor(y);
+    formerFor(when);
     const r = await api.collectionAt(when);
     if (!r || r.modern || !r.fc) return r ? { modern: !!r.modern, tier: r.tier || null, fc: null, labels: null } : null;
     /* what the map writes on each outline, in each language: the pass `apply` runs before the name layers
@@ -288,7 +291,7 @@ export async function mapReader() {
     const labels = {};
     for (const L of LANGS) {
       host.lang = L.key;
-      api.tagSame(r.fc, y);
+      api.tagSame(r.fc, when);   /* (era-names-by-day) the instant, as the app's apply() hands it */
       labels[L.key] = r.fc.features.map((f) => {
         const p = f.properties || {};
         const v = p._corrected ? (p.NAME || p.name) : p._same === 1 ? (p._modName || p.NAME || p.name) : (p._locName || p.NAME || p.name);

@@ -390,49 +390,80 @@ export function histId(countryStats){
     const F_IRPAHL=flag('<rect width="30" height="6.667" fill="#239F40"/><rect y="6.667" width="30" height="6.667" fill="#ffffff"/><rect y="13.333" width="30" height="6.667" fill="#DA0000"/><g transform="translate(15,10)" stroke="#B8860B" stroke-width="0.4"><line x1="0" y1="-3.4" x2="0" y2="-2.2"/><line x1="0" y1="3.4" x2="0" y2="2.2"/><line x1="-3.4" y1="0" x2="-2.2" y2="0"/><line x1="3.4" y1="0" x2="2.2" y2="0"/><line x1="-2.4" y1="-2.4" x2="-1.6" y2="-1.6"/><line x1="2.4" y1="-2.4" x2="1.6" y2="-1.6"/><line x1="-2.4" y1="2.4" x2="-1.6" y2="1.6"/><line x1="2.4" y1="2.4" x2="1.6" y2="1.6"/></g><circle cx="15" cy="10" r="2.1" fill="#E8B800"/>');
     const F_ESPF=flag('<rect width="30" height="20" fill="#AA151B"/><rect y="5" width="30" height="10" fill="#F1BF00"/><g transform="translate(11,10)"><path d="M-4.4,-3 Q-1.2,-1.2 0,-3.8 Q1.2,-1.2 4.4,-3 Q2.8,0 3.2,2.4 L-3.2,2.4 Q-2.8,0 -4.4,-3 Z" fill="#1a1a1a"/><rect x="-1.5" y="-1.6" width="3" height="3.9" rx="0.4" fill="#F1BF00" stroke="#AA151B" stroke-width="0.35"/></g>');
     const ID={
-      CHN:[{from:1636,to:1912,name:LA('Qing Empire','清','Qing-Reich','Империя Цин','Imperio Qing'),flag:F_QING,wiki:'Qing dynasty'},
-           {from:1912,to:1949,name:LA('Republic of China','中華民国','Republik China','Китайская Республика','República de China'),flag:F_ROC,wiki:'Republic of China (1912–1949)'}],
-      DEU:[{from:1871,to:1918,name:LA('German Empire','ドイツ帝国','Deutsches Kaiserreich','Германская империя','Imperio alemán'),flag:F_GEMP,wiki:'German Empire'},
-           {from:1919,to:1932,name:LA('Weimar Republic','ヴァイマル共和政','Weimarer Republik','Веймарская республика','República de Weimar'),flag:F_WEIMAR,wiki:'Weimar Republic'},
-           {from:1933,to:1945,name:LA('Nazi Germany','ナチス・ドイツ','Deutsches Reich (1933–1945)','Нацистская Германия','Alemania nazi'),flag:F_GEMP,wiki:'Nazi Germany'},
+      CHN:[{from:1636,to:[1912,2,12],name:LA('Qing Empire','清','Qing-Reich','Империя Цин','Imperio Qing'),flag:F_QING,wiki:'Qing dynasty'},
+           {from:[1912,2,12],to:[1949,10,1],name:LA('Republic of China','中華民国','Republik China','Китайская Республика','República de China'),flag:F_ROC,wiki:'Republic of China (1912–1949)'}],
+      DEU:[{from:1871,to:[1918,11,9],name:LA('German Empire','ドイツ帝国','Deutsches Kaiserreich','Германская империя','Imperio alemán'),flag:F_GEMP,wiki:'German Empire'},
+           {from:[1918,11,9],to:[1933,1,30],name:LA('Weimar Republic','ヴァイマル共和政','Weimarer Republik','Веймарская республика','República de Weimar'),flag:F_WEIMAR,wiki:'Weimar Republic'},
+           {from:[1933,1,30],to:[1945,5,8],name:LA('Nazi Germany','ナチス・ドイツ','Deutsches Reich (1933–1945)','Нацистская Германия','Alemania nazi'),flag:F_GEMP,wiki:'Nazi Germany'},
            /* (#R130) West Germany 1949–1990 (DEU carrier). East Germany is a separate CShapes polygon resolved via
               _VANISHED; the flag is the modern black-red-gold, correct for the FRG, so no era flag needed. */
-           {from:1949,to:1990,name:LA('West Germany','西ドイツ','Bundesrepublik Deutschland (1949–1990)','ФРГ','Alemania Occidental'),wiki:'West Germany'}],
-      ITA:[{from:1861,to:1946,name:LA('Kingdom of Italy','イタリア王国','Königreich Italien','Королевство Италия','Reino de Italia'),flag:F_ITK,wiki:'Kingdom of Italy'}],
-      IRN:[{from:1800,to:1925,name:LA('Persia','ペルシャ','Persien','Персия','Persia'),flag:F_PERSIA,wiki:'Qajar Iran'},
+           {from:1949,to:[1990,10,3],name:LA('West Germany','西ドイツ','Bundesrepublik Deutschland (1949–1990)','ФРГ','Alemania Occidental'),wiki:'West Germany'}],
+      ITA:[{from:1861,to:[1946,6,2],name:LA('Kingdom of Italy','イタリア王国','Königreich Italien','Королевство Италия','Reino de Italia'),flag:F_ITK,wiki:'Kingdom of Italy'}],
+      IRN:[{from:1800,to:[1925,12,15],name:LA('Persia','ペルシャ','Persien','Персия','Persia'),flag:F_PERSIA,wiki:'Qajar Iran'},
            /* (#R130) Pahlavi era 1925–1979 — was wrongly showing "Iran" + the modern Islamic-Republic flag. */
-           {from:1925,to:1979,name:LA('Imperial State of Iran','パフレヴィー朝イラン','Kaiserreich Iran','Пехлевийский Иран','Estado Imperial de Irán'),flag:F_IRPAHL,wiki:'Pahlavi Iran'}],
-      THA:[{from:1800,to:1939,name:LA('Siam','シャム','Siam','Сиам','Siam'),flag:F_SIAM,wiki:'Rattanakosin Kingdom'}],
+           {from:[1925,12,15],to:[1979,2,11],name:LA('Imperial State of Iran','パフレヴィー朝イラン','Kaiserreich Iran','Пехлевийский Иран','Estado Imperial de Irán'),flag:F_IRPAHL,wiki:'Pahlavi Iran'}],
+      THA:[{from:1800,to:[1939,6,24],name:LA('Siam','シャム','Siam','Сиам','Siam'),flag:F_SIAM,wiki:'Rattanakosin Kingdom'}],
       IDN:[{from:1800,to:1945,name:LA('Dutch East Indies','オランダ領東インド','Niederländisch-Indien','Голландская Ост-Индия','Indias Orientales Neerlandesas'),flag:F_NLD,wiki:'Dutch East Indies'}],
       /* (#R117) 歴史国家拡充 — more per-era identities (era name + era flag + era Wikipedia on the country card) */
-      JPN:[{from:1868,to:1946,name:LA('Empire of Japan','大日本帝国','Japanisches Kaiserreich','Японская империя','Imperio del Japón'),wiki:'Empire of Japan'}],   /* 日章旗 = the modern flag — keep it */
-      RUS:[{from:1721,to:1917,name:LA('Russian Empire','ロシア帝国','Russisches Kaiserreich','Российская империя','Imperio ruso'),flag:F_RUEH,wiki:'Russian Empire'},
-           {from:1918,to:1922,name:LA('Soviet Russia (RSFSR)','ソビエト・ロシア（ロシアSFSR）','Sowjetrussland (RSFSR)','Советская Россия (РСФСР)','Rusia soviética (RSFSR)'),flag:F_RSFSR,wiki:'Russian Soviet Federative Socialist Republic'}],
-      GBR:[{from:1801,to:1926,name:LA('United Kingdom of Great Britain and Ireland','グレートブリテン・アイルランド連合王国','Vereinigtes Königreich Großbritannien und Irland','Соединённое Королевство Великобритании и Ирландии','Reino Unido de Gran Bretaña e Irlanda'),wiki:'United Kingdom of Great Britain and Ireland'}],
-      ESP:[{from:1931,to:1939,name:LA('Spanish Republic','スペイン第二共和政','Zweite Spanische Republik','Вторая Испанская Республика','Segunda República Española'),flag:F_ESP2,wiki:'Second Spanish Republic'},
+      JPN:[{from:1868,to:[1947,5,3],name:LA('Empire of Japan','大日本帝国','Japanisches Kaiserreich','Японская империя','Imperio del Japón'),wiki:'Empire of Japan'}],   /* 日章旗 = the modern flag — keep it */
+      RUS:[{from:1721,to:[1917,3,15],name:LA('Russian Empire','ロシア帝国','Russisches Kaiserreich','Российская империя','Imperio ruso'),flag:F_RUEH,wiki:'Russian Empire'},
+           {from:[1917,11,7],to:[1922,12,30],name:LA('Soviet Russia (RSFSR)','ソビエト・ロシア（ロシアSFSR）','Sowjetrussland (RSFSR)','Советская Россия (РСФСР)','Rusia soviética (RSFSR)'),flag:F_RSFSR,wiki:'Russian Soviet Federative Socialist Republic'}],
+      GBR:[{from:1801,to:[1927,4,12],name:LA('United Kingdom of Great Britain and Ireland','グレートブリテン・アイルランド連合王国','Vereinigtes Königreich Großbritannien und Irland','Соединённое Королевство Великобритании и Ирландии','Reino Unido de Gran Bretaña e Irlanda'),wiki:'United Kingdom of Great Britain and Ireland'}],
+      ESP:[{from:[1931,4,14],to:[1939,4,1],name:LA('Spanish Republic','スペイン第二共和政','Zweite Spanische Republik','Вторая Испанская Республика','Segunda República Española'),flag:F_ESP2,wiki:'Second Spanish Republic'},
            /* (#R130) Francoist Spain 1939–1975 — rojigualda with the eagle of St John (modern Spain shows a different coat of arms). */
-           {from:1939,to:1975,name:LA('Francoist Spain','フランコ体制期のスペイン','Spanien unter Franco','Франкистская Испания','España franquista'),flag:F_ESPF,wiki:'Francoist Spain'}],
-      PRT:[{from:1800,to:1910,name:LA('Kingdom of Portugal','ポルトガル王国','Königreich Portugal','Королевство Португалия','Reino de Portugal'),flag:F_PTK,wiki:'Kingdom of Portugal'}],
-      BRA:[{from:1822,to:1889,name:LA('Empire of Brazil','ブラジル帝国','Kaiserreich Brasilien','Бразильская империя','Imperio del Brasil'),flag:F_BRE,wiki:'Empire of Brazil'}],
-      EGY:[{from:1922,to:1952,name:LA('Kingdom of Egypt','エジプト王国','Königreich Ägypten','Королевство Египет','Reino de Egipto'),flag:F_EGYK,wiki:'Kingdom of Egypt'}],
+           {from:[1939,4,1],to:[1975,11,20],name:LA('Francoist Spain','フランコ体制期のスペイン','Spanien unter Franco','Франкистская Испания','España franquista'),flag:F_ESPF,wiki:'Francoist Spain'}],
+      PRT:[{from:1800,to:[1910,10,5],name:LA('Kingdom of Portugal','ポルトガル王国','Königreich Portugal','Королевство Португалия','Reino de Portugal'),flag:F_PTK,wiki:'Kingdom of Portugal'}],
+      BRA:[{from:1822,to:[1889,11,15],name:LA('Empire of Brazil','ブラジル帝国','Kaiserreich Brasilien','Бразильская империя','Imperio del Brasil'),flag:F_BRE,wiki:'Empire of Brazil'}],
+      EGY:[{from:[1922,2,28],to:[1953,6,18],name:LA('Kingdom of Egypt','エジプト王国','Königreich Ägypten','Королевство Египет','Reino de Egipto'),flag:F_EGYK,wiki:'Kingdom of Egypt'}],
       /* (#R118) further era identities — era Wikipedia + era name (flags unchanged where the flag was the same) */
       /* (#R349) 1852-1870 is inside the clock's reach now, and it was the Second Empire — the Third
          Republic entry beside it began in 1870 and cannot answer for it. */
-      FRA:[{from:1852,to:1870,name:LA('Second French Empire','フランス第二帝政','Zweites Französisches Kaiserreich','Вторая французская империя','Segundo Imperio francés'),wiki:'Second French Empire'},
-           {from:1870,to:1940,name:LA('French Third Republic','フランス第三共和政','Dritte Französische Republik','Третья французская республика','Tercera República Francesa'),wiki:'French Third Republic'}],
-      HUN:[{from:1920,to:1946,name:LA('Kingdom of Hungary','ハンガリー王国','Königreich Ungarn','Королевство Венгрия','Reino de Hungría'),flag:F_HUNK,wiki:'Kingdom of Hungary (1920–1946)'}],
+      FRA:[{from:[1852,12,2],to:[1870,9,4],name:LA('Second French Empire','フランス第二帝政','Zweites Französisches Kaiserreich','Вторая французская империя','Segundo Imperio francés'),wiki:'Second French Empire'},
+           {from:[1870,9,4],to:[1940,7,10],name:LA('French Third Republic','フランス第三共和政','Dritte Französische Republik','Третья французская республика','Tercera República Francesa'),wiki:'French Third Republic'}],
+      HUN:[{from:1920,to:[1946,2,1],name:LA('Kingdom of Hungary','ハンガリー王国','Königreich Ungarn','Королевство Венгрия','Reino de Hungría'),flag:F_HUNK,wiki:'Kingdom of Hungary (1920–1946)'}],
       /* (#R128) more per-era identities so the card shows the era name/flag (not the modern "South Korea"/"Ethiopia").
          KOR keeps the Taegukgi (historically continuous); imperial Ethiopia uses the plain tricolor (F_ETHIMP). */
-      KOR:[{from:1392,to:1897,name:LA('Joseon','朝鮮（李氏朝鮮）','Joseon','Чосон','Joseon'),wiki:'Joseon'},
-           {from:1897,to:1910,name:LA('Korean Empire','大韓帝国','Kaiserreich Korea','Корейская империя','Imperio coreano'),wiki:'Korean Empire'}],
-      ETH:[{from:1855,to:1974,name:LA('Ethiopian Empire','エチオピア帝国','Kaiserreich Abessinien','Эфиопская империя','Imperio etíope'),flag:F_ETHIMP,wiki:'Ethiopian Empire'}]
+      KOR:[{from:1392,to:[1897,10,13],name:LA('Joseon','朝鮮（李氏朝鮮）','Joseon','Чосон','Joseon'),wiki:'Joseon'},
+           {from:[1897,10,13],to:[1910,8,29],name:LA('Korean Empire','大韓帝国','Kaiserreich Korea','Корейская империя','Imperio coreano'),wiki:'Korean Empire'}],
+      ETH:[{from:1855,to:[1974,9,12],name:LA('Ethiopian Empire','エチオピア帝国','Kaiserreich Abessinien','Эфиопская империя','Imperio etíope'),flag:F_ETHIMP,wiki:'Ethiopian Empire'}]
     };
-    function at(code,year){ const arr=ID[code]; if(!arr||!year) return null; for(const e of arr){ if(year>=e.from&&year<=e.to) return e; } return null; }
+    /* ══ (era-names-by-day) A BOUND IS A YEAR OR A DAY ═══════════════════════════════════════════════════════════════
+       A bare year is the whole year, as the table has always meant: `from` its 1 January, `to` through its 31 December.
+       [y,m,d] is the day the change took effect — `from` that day, `to` up to (not including) it, the day the next state
+       began. Written as days where two states shared a year (1870, 1897, 1912, 1925, 1939 — the year form gave the whole
+       year to whichever was listed first) and where the record the map draws changes on a day (MEASURED: 1990-10-03 to
+       12-31 the unified Germany was labelled «West Germany», because this table answered for the year and CShapes 260 had
+       already changed; dev-notes/2026-10-08-sales-schools.md §3). The acts the days are:
+         Qing → ROC 1912-02-12 (abdication edict) · ROC → PRC 1949-10-01 (proclaimed) · German Empire → 1918-11-09 (republic
+         proclaimed) · Weimar → 1933-01-30 (Hitler appointed) · Nazi Germany → 1945-05-08 (surrender in force; CShapes'
+         Germany row ends 05-07) · West Germany → 1990-10-03 (reunification; CShapes 260's edge) · Kingdom of Italy →
+         1946-06-02 (institutional referendum) · Persia → 1925-12-15 (Reza Shah sworn in) · Pahlavi → 1979-02-11 (the
+         revolution's victory) · Siam → 1939-06-24 (renamed) · Empire of Japan → 1947-05-03 (Constitution of Japan in force)
+         · Russian Empire → 1917-03-15 (abdication) · RSFSR 1917-11-07 (October Revolution) → 1922-12-30 (Treaty on the
+         Creation of the USSR) · UK of GB and Ireland → 1927-04-12 (Royal and Parliamentary Titles Act) · Second Republic
+         1931-04-14 → 1939-04-01 (the war's end) · Francoist Spain → 1975-11-20 (Franco's death) · Kingdom of Portugal →
+         1910-10-05 · Empire of Brazil → 1889-11-15 (republics proclaimed) · Kingdom of Egypt 1922-02-28 (independence
+         declared) → 1953-06-18 (republic declared) · Second Empire 1852-12-02 → Third Republic 1870-09-04 → 1940-07-10
+         (full powers to Pétain) · Kingdom of Hungary → 1946-02-01 (Second Republic) · Joseon → Korean Empire 1897-10-13
+         (proclaimed) → 1910-08-29 (annexation in force) · Ethiopian Empire → 1974-09-12 (Haile Selassie deposed).
+       Bounds left as years state no more than the year (a dynasty's founding year, a contested end such as the Dutch
+       East Indies'). `when` is a Date (read on the LOCAL calendar, as the map's own record keys are — js/time-borders.js
+       _kOf), a 'YYYY-MM-DD…' string (its written date), or a bare year (read at 1 July, the sample the labels have
+       always used for a year). */
+    const _k=(y,m,d)=>y*10000+m*100+d;
+    const _fromK=v=>Array.isArray(v)?_k(v[0],v[1],v[2]):_k(v,1,1);
+    const _toK=v=>Array.isArray(v)?_k(v[0],v[1],v[2]):_k(v+1,1,1);
+    function _whenK(w){
+      if(typeof w==='number') return isFinite(w)?_k(Math.round(w),7,1):NaN;
+      if(w instanceof Date) return isNaN(w.getTime())?NaN:_k(w.getFullYear(),w.getMonth()+1,w.getDate());
+      const m=/^([+-]?\d{1,6})-(\d{2})-(\d{2})/.exec(String(w)); return m?_k(+m[1],+m[2],+m[3]):NaN; }
+    function at(code,when){ const arr=ID[code]; if(!arr||when==null||when==='') return null; const t=_whenK(when); if(!isFinite(t)) return null;
+      for(const e of arr){ if(t>=_fromK(e.from)&&t<_toK(e.to)) return e; } return null; }
     let _applied=null;
     function clear(){ if(!_applied) return; for(const code in _applied){ const s=countryStats[code]; if(!s) continue; const o=_applied[code];
       s.nameEn=o.nameEn; s.nameJp=o.nameJp; s.name=o.name; s.flag=o.flag; s.wiki=o.wiki; if(!o._hid) delete s._histId; } _applied=null; }
-    function apply(date){ clear(); const year=new Date(date).getFullYear(); const saved={};
-      for(const code in ID){ const s=countryStats[code]; if(!s||s._histHidden) continue; const e=at(code,year); if(!e) continue;
+    function apply(date){ clear(); const saved={};
+      for(const code in ID){ const s=countryStats[code]; if(!s||s._histHidden) continue; const e=at(code,date); if(!e) continue;
         saved[code]={nameEn:s.nameEn,nameJp:s.nameJp,name:s.name,flag:s.flag,wiki:s.wiki,_hid:!!s._histId};
         s.nameEn=_nmEn(e.name); s.nameJp=_nmJp(e.name); s.name=e.name; s.flag=(e.flag||s.flag); s.wiki=e.wiki; s._histId=true; }   /* (#R117) an entry without an era flag keeps the country's own flag (e.g. Empire of Japan = 日章旗) */
       if(Object.keys(saved).length) _applied=saved; }
