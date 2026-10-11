@@ -69,6 +69,11 @@ export function classify(err) {
   return out;
 }
 
+/* the states that have something to SAY — a pill on the row, and a sentence in the record. «ok» and «loading»
+   say nothing: «ok» carrying «The layer could not be drawn» (the fallback sentence below) was read on production
+   by Atlas and by a verifier as a contradiction — state ok, detail «could not be drawn» (layer-state-ok-says-nothing). */
+export const SPEAKS = (st) => st === 'failed' || st === 'unobserved' || st === 'nodata';
+
 /* the words. IntMap's own text: en + jp (CONSTITUTION.md §7) through IntMapLang.t, which falls back to English. */
 function words(lang) {
   return {
@@ -135,7 +140,7 @@ export function makeLayerState(opts) {
     const st = rec ? rec.state : '';
     try { if (host.classList && host.classList.contains('lst-tile')) { if (st) host.dataset.imState = st; else delete host.dataset.imState; } } catch (_) { /* not an element */ }
     let m = host.querySelector(':scope > .lyr-state');
-    if (st !== 'failed' && st !== 'unobserved' && st !== 'nodata') { if (m) m.remove(); return; }
+    if (!SPEAKS(st)) { if (m) m.remove(); return; }
     if (!m) { m = doc.createElement('span'); m.className = 'lyr-state'; host.appendChild(m); }
     const W = words(lang());
     m.dataset.state = st;
@@ -158,7 +163,7 @@ export function makeLayerState(opts) {
   let tileMo = null;
   function watchTiles() {
     let need = false;
-    for (const r of recs.values()) if (r.state === 'failed' || r.state === 'unobserved' || r.state === 'nodata') { need = true; break; }
+    for (const r of recs.values()) if (SPEAKS(r.state)) { need = true; break; }
     if (!need) { if (tileMo) { tileMo.disconnect(); tileMo = null; } return; }
     if (tileMo || !doc || !doc.body || typeof MutationObserver === 'undefined') return;
     tileMo = new MutationObserver((ms) => {
@@ -263,7 +268,7 @@ export function makeLayerState(opts) {
   const pub = (r) => ({ id: r.id, state: r.state, reason: r.reason, status: r.status, message: r.message,
     retries: r.retries, since: r.since, label: labelOf(r.id), healed: r.healed ? Object.assign({}, r.healed) : null,
     /* (shell-experience) the words the row shows, and last night's check of the supplier asked (or null) */
-    detail: words(lang()).detail(r) + (r.upstreamWords ? ' ' + r.upstreamWords(lang()) : ''),
+    detail: SPEAKS(r.state) ? words(lang()).detail(r) + (r.upstreamWords ? ' ' + r.upstreamWords(lang()) : '') : null,
     url: r.url || null, upstream: r.upstream ? Object.assign({}, r.upstream) : null });
 
   return {
