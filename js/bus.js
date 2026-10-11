@@ -103,6 +103,11 @@ export const EVENTS = Object.freeze({
     from: ['js/gazetteer.js'],
     pending: { 'js/gazetteer.js': 'script' },
   },
+  'intmap-news-feed': {
+    means: 'the set of headlines the news feed holds was replaced (a fetch, the cache, the clock moving to another day); whatever is counted from it re-counts',
+    detail: null,
+    from: ['js/app-body.js'],
+  },
   'intmap-newsgeo-world-ready': {
     means: 'the last slice of the world place table was registered with the news geocoder',
     detail: '{ rows }',

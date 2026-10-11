@@ -408,7 +408,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      * declared in index.html as the single source of truth; the RW list (now ten) is pinned by
      * tests/atlas-console-kernel-checks.test.mjs (#R165). globalData and newsFeatures already have their live getters above
      * with the rest of the mutable state, so these two lines are only their write halves. */
-    set globalData(v){ globalData=v; },             set newsFeatures(v){ newsFeatures=v; },
+    set globalData(v){ globalData=v; bus.emit('intmap-news-feed'); },   /* (news-sources-follow-feed) every feed that LANDS comes through here; the outlet picker counts it */             set newsFeatures(v){ newsFeatures=v; },
     get extendedDashDB(){ return extendedDashDB; }, set extendedDashDB(v){ extendedDashDB=v; },
     /* mutable — reassigned at runtime (setGrid() flips isGridOn, the countries checkbox flips
      * countryInfoOn), so a captured copy would go stale */
