@@ -15,21 +15,10 @@
  *  measures IntMap and not the runner's route to AWS.
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
-import { deflateSync, crc32 } from 'node:zlib';
+import { terrariumTile, TERRARIUM_HOSTS } from './helpers/network.js';
 
-/* a valid 256×256 grey PNG, built from nothing */
-function png() {
-  const chunk = (type, data) => {
-    const len = Buffer.alloc(4); len.writeUInt32BE(data.length);
-    const td = Buffer.concat([Buffer.from(type, 'ascii'), data]);
-    const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(td) >>> 0);
-    return Buffer.concat([len, td, crc]);
-  };
-  const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(256, 0); ihdr.writeUInt32BE(256, 4); ihdr[8] = 8; ihdr[9] = 2;
-  const raw = Buffer.alloc(256 * (1 + 256 * 3), 0x80); for (let y = 0; y < 256; y++) raw[y * (1 + 256 * 3)] = 0;
-  return Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
-}
-const TILE = png();
+/* a valid 256×256 PNG, every pixel grey 0x80 — terrarium 128.5 m (tests/helpers/network.js) */
+const TILE = terrariumTile(128.5);
 
 async function boot(page) {
   await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
@@ -37,7 +26,7 @@ async function boot(page) {
   await page.waitForFunction(() => !!document.getElementById('map-narration'), null, { timeout: 20_000 });
 }
 async function answerSuppliers(context) {
-  await context.route(/elevation-tiles-prod|\/\/s3\.amazonaws\.com\/elevation/, (route) => route.fulfill({ status: 200, contentType: 'image/png', headers: { 'access-control-allow-origin': '*' }, body: TILE }));
+  await context.route(TERRARIUM_HOSTS, (route) => route.fulfill({ status: 200, contentType: 'image/png', headers: { 'access-control-allow-origin': '*' }, body: TILE }));
   await context.route(/nominatim\.openstreetmap\.org|open-meteo\.com/, (route) => route.abort());
 }
 const narration = (page) => page.evaluate(() => document.getElementById('map-narration').textContent);
