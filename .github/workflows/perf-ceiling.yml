@@ -63,7 +63,7 @@ jobs:
       #   same commit whenever the job acts at all (the next step refuses any other), so the safe
       #   checkout costs nothing.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version-file: .nvmrc
       - name: Is main still the commit that was measured?
@@ -76,7 +76,7 @@ jobs:
           else echo "::notice::main has moved past the measured commit — the CI run for the newer main measures it (a bot-merged commit starts no run; the next push does)."; echo "current=false" >> "$GITHUB_OUTPUT"; fi
       - name: The measurement of that exact build
         if: ${{ steps.current.outputs.current == 'true' }}
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
         with:
           pattern: perf-measured-*
           path: ${{ runner.temp }}/perf-measured

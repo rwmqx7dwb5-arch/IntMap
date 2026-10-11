@@ -83,7 +83,7 @@ jobs:
         if: steps.scope.outputs.run == 'true'
         # (#R138 SEC) third-party action pinned to a full commit SHA (supply-chain: a moveable tag could be
         # repointed to malicious code). Dependabot (github-actions ecosystem) proposes SHA bumps. v3 = 46f7f98.
-        uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520  # v3.0.0
+        uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359  # v3.0.1
         with:
           version: 2.106.0
 
