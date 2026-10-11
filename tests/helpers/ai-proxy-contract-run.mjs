@@ -49,7 +49,12 @@ const recordBody = (text) => {
 };
 /* The one value the function draws from the clock: Gemini's call ids ("g" + Date.now base 36 + "_" + i). */
 const unclock = (s) => s.replace(/"g[0-9a-z]{6,}_(\d+)"/g, '"g<clock>_$1"');
-const headersOf = (h) => Object.fromEntries([...new Headers(h || {}).entries()].sort(([a], [b]) => (a < b ? -1 : 1)));
+/* The one value a LIBRARY writes about itself: supabase-js stamps its own version on every request it makes
+   (x-client-info «supabase-js/2.117.2; runtime=deno»). That is a fact about the dependency, not about what the
+   function does, so a patch bump of supabase-js turned the photograph red with nothing in ai-proxy changed
+   (Dependabot #1073, 2.117.2 → 2.117.3). Recorded as «supabase-js/<version>»; the rest of the header is kept. */
+const unversion = (v) => String(v).replace(/\bsupabase-js\/\d+\.\d+\.\d+(?:[-+][\w.]+)?/g, 'supabase-js/<version>');
+const headersOf = (h) => Object.fromEntries([...new Headers(h || {}).entries()].map(([k, v]) => [k, k === 'x-client-info' ? unversion(v) : v]).sort(([a], [b]) => (a < b ? -1 : 1)));
 
 let req = null;   /* the request being served */
 let calls = [];
