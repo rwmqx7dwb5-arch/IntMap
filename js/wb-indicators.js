@@ -176,22 +176,22 @@ export function makeWorldBankReader(deps) {
      answer the host gave) asks the SAME question once more, its parameters written in the reverse order: a different
      cache entry, an identical meaning. One retry, different from the first, recorded on the answer as `via`
      (.agents/rules/one-pass-or-a-reason.md §5). Lapses if the World Bank's CDN starts varying its cache on Origin. */
-  function addresses(q) {
+  function read(o) {
+    const q = o || {};
     const base = 'https://api.worldbank.org/v2/country/' + encodeURIComponent(q.country || 'all') + '/indicator/' + encodeURIComponent(q.code) + '?';
     const parts = ['format=json', q.source ? 'source=' + q.source : '', q.date ? 'date=' + q.date : '', q.mrnev ? 'mrnev=' + q.mrnev : '',
       'per_page=' + (q.perPage || 400)].filter(Boolean);
-    return [base + parts.join('&'), base + parts.slice().reverse().join('&')];
-  }
-  function read(o) {
-    const q = o || {};
-    const [u, second] = addresses(q);
+    const u = base + parts.join('&');
+    const second = base + parts.slice().reverse().join('&');
     const scale = +q.scale || 1;
     const key = u + '#' + scale;
     if (kept.has(key)) return kept.get(key);
-    const ask = (addr) => readWithin(addr, clockFor(addr) * scale, undefined, q.idle ? { idle: true } : undefined);
+    const opts = q.idle ? { idle: true } : undefined;
     let via = null;
-    const p = slot(() => ask(u)
-      .catch((e) => { if (!(e && e.reason === 'network')) throw e; via = 'second-address'; return ask(second); })
+    /* ⚠ both reads are written out against `u` / `second` — tests/stalled-fetch-and-surface-gauge-checks ⑦ traces a read's
+       address back to the World Bank literal to prove its clock is clockFor(); a helper taking the address as a parameter hid it */
+    const p = slot(() => readWithin(u, clockFor(u) * scale, undefined, opts)
+      .catch((e) => { if (!(e && e.reason === 'network')) throw e; via = 'second-address'; return readWithin(second, clockFor(second) * scale, undefined, opts); })
       .then((r) => {
         const j = JSON.parse(r.text);
         if (!Array.isArray(j)) return { status: 'unavailable', rows: [], late: false };   /* the host answered, and not with the API's shape */
