@@ -26,6 +26,7 @@
  *  goes in its own file, and the core only ever shrinks (tests/shell-app-body-modules-checks.test.mjs #R200 ⑤).
  * ==========================================================================*/
 import { IntMapLang } from './lang-registry.js';
+import * as bus from './bus.js';
 
 export function newsSources(HOST,DEPS){
   /* (#R207) the country table comes from js/tables.js through the caller, the same way every other
@@ -187,6 +188,17 @@ export function newsSources(HOST,DEPS){
       }
     }
     try{ window.addEventListener('intmap-lang',relabel); }catch(_){}
+
+    /* ══ (news-sources-follow-feed) THE FEED CHANGES WHILE THIS DIALOG IS OPEN ════════════════════
+       The outlet list IS the feed (top of file), and the feed is replaced under an open Settings: the
+       language <select> in the same dialog refetches it in the new language. `relabel()` above only
+       rewrites OUR words, so the rows kept counting the old feed until Settings was opened again —
+       MEASURED in the nightly deep tier (tests/r466.spec.js): live «AP · Al Jazeera (1)», reopened
+       «조선일보 (7)». Re-rendering is safe here, unlike in relabel(): every tick commits on its own
+       `change` (js/app-body.js commitSetting), so `imNewsSources` already holds what is ticked. A
+       closed dialog is left alone — opening it renders. */
+    try{ bus.on('intmap-news-feed',()=>{ const m=document.getElementById('settings-modal');
+      if(m&&m.style.display&&m.style.display!=='none') render(); }); }catch(_){}
 
     /* one wiring pass for both dropdown buttons — identical behaviour, so identical code */
     ['newssource','newscountry'].forEach(k=>{

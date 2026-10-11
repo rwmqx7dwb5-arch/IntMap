@@ -10,6 +10,7 @@
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { IntMapTables } from './tables.js';
+import * as bus from './bus.js';
 
 export function newsFeed(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -239,6 +240,12 @@ export function newsFeed(HOST){
     }
     return base;
   }
+  /* (news-sources-follow-feed) A FEED LANDS HERE AND NOWHERE ELSE. Every set of headlines this file puts into
+     the shared feed — the server rows, the cache, the Event list, the live RSS — goes through land(), which says
+     so on the bus. What is COUNTED from the feed (the outlet picker, js/news-sources.js) re-counts on that, instead
+     of only when Settings is opened — the language <select> in that same dialog refetches the feed under it.
+     ⚠ The IM_HOST setter cannot raise it: every IM_HOST setter is a bare assignment by contract (#R165). */
+  function land(items){ HOST.globalData=items; bus.emit('intmap-news-feed'); }
   /* News cache → instant render on load/return, refreshed in the background. */
   function loadNewsCache(){
     try{ const c=JSON.parse(localStorage.getItem('intmap_news_cache')||'null');
@@ -296,7 +303,7 @@ export function newsFeed(HOST){
         .eq('lang',HOST.lang).order('pub_date',{ascending:false}).limit(150);
       if(error) throw error;
       if(!data||!data.length) return false;          /* not seeded yet → fall through to live RSS */
-      HOST.globalData=data.map(serverRowToItem);
+      land(data.map(serverRowToItem));
       saveNewsCache();
       if(HOST.mode==='news'||HOST.mode==='saved') startNews();
       return true;
@@ -323,14 +330,14 @@ export function newsFeed(HOST){
   async function fetchData(opts){
     const feed=document.getElementById('live-news-feed');
     if(opts&&opts.background&&!_asked&&HOST.mode!=='news'&&HOST.mode!=='saved'){
-      if(HOST.globalData.length===0){ const c=loadNewsCache(); if(c&&c.length) HOST.globalData=c; }
+      if(HOST.globalData.length===0){ const c=loadNewsCache(); if(c&&c.length) land(c); }
       return;
     }
     _asked=true;
     _answeredFor=null;
     const askedFor=_instantKey();
     /* 1) Instant: show cached headlines immediately while fresh ones load. */
-    if(HOST.globalData.length===0){ const cached=loadNewsCache(); if(cached&&cached.length){ HOST.globalData=cached; if(HOST.mode==='news'||HOST.mode==='saved') startNews(); } }
+    if(HOST.globalData.length===0){ const cached=loadNewsCache(); if(cached&&cached.length){ land(cached); if(HOST.mode==='news'||HOST.mode==='saved') startNews(); } }
     if((HOST.mode==='news'||HOST.mode==='saved')&&feed&&HOST.globalData.length===0) feed.innerHTML=`<div class="empty-msg">${HOST.t('loading')}</div>`;
     /* 1a) (#R386) EVENT MODE — 記事ではなく**出来事**の一覧。
        ⚠ **搭載条件を先に見て、満たさないなら取りに行かない。** Event 経路が答えを持つのは
@@ -346,7 +353,7 @@ export function newsFeed(HOST){
         if(okLazy && window.IntMapNewsEvents && await window.IntMapNewsEvents.load()){
           /* ⚠ 一覧を入れるのは**ここだけ**。`HOST.globalData` の書き手はこのファイル 1 つで、
              出来事のモジュールは項目を**作る**だけである（#R165 の RW 契約）。 */
-          HOST.globalData = window.IntMapNewsEvents.loaded();
+          land(window.IntMapNewsEvents.loaded());
           window.IntMapNewsEvents.renderChips();
           if(HOST.mode==='news'||HOST.mode==='saved') startNews();
           return;
@@ -379,7 +386,7 @@ export function newsFeed(HOST){
           desc:stripHTML(descHtml)
         });
       });
-      if(byLink.size){ HOST.globalData=buildItems(byLink); any=true; if(HOST.mode==='news'||HOST.mode==='saved') startNews(); }
+      if(byLink.size){ land(buildItems(byLink)); any=true; if(HOST.mode==='news'||HOST.mode==='saved') startNews(); }
     };
     try{
       await Promise.all(feedUrls().map(async u=>{ try{ ingest(await HOST.fetchViaProxy(u)); }catch(_){} }));
