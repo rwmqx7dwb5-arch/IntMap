@@ -125,12 +125,8 @@ export async function build(opt = {}) {
      one instant in each band is read first. Below 1689 every one is a 1 January (a year), so 1 July of it reads the new state. */
   for (const y of [clio.window[0], B.ohmFrom, B.csFrom]) await R.labelsAt(july1(y));
   const changed = (await R.api.changeDates()).map((d) => d.getFullYear());
-  /* ⚠ …and the years the coast pieces (data/hist-coast-snap.js) begin and end, which `changeDates` does not list. MEASURED
-     2026-10-08: the drawn areas of Han Dynasty, Mahan, Goths … differ between 1 July 150 and 1 July 151 (the coast pieces are
-     judged again where the sheet the map shows changes), and 151 is in no list `changeDates` returns — so the Chronos
-     stepper does not stop there either (dev-notes/2026-10-08-hist-product.md). Read here from the bundle the map composes,
-     until `changeDates` lists them; then this line adds nothing. */
-  for (const f of readBundle('data/hist-coast-snap.js').feats) { changed.push(f[2]); changed.push(f[5]); }
+  /* (border-stepper-every-record) the coast pieces (data/hist-coast-snap.js) are among them: the map registers every open
+     record's edges, and the instants read above open the coast pieces with the rest */
   const at = instants(B, [...sheetYears], changed);
   const years = opt.years ? at.filter((y) => opt.years.includes(y)) : at;
   const skipped = { described: 0, unnamed: 0, sheetFill: 0 };

@@ -204,6 +204,18 @@ export function timeBorders(HOST){
        Built once, lazily, off the same bundle the polygons come from — no second source to drift. */
     let _csBnd=null;
     const _ymd=(y,m,d)=>y*10000+m*100+d;
+    /* ══ (border-stepper-every-record) EVERY RECORD THE MAP DRAWS FROM SAYS, WHEN IT OPENS, WHERE IT CHANGES ══════════
+       The stepper (`changeAfter` / `changeBefore` / `changeDates`) and the precision a change is printed with
+       (`changePrecision`) used to name each record's edge list one by one. The list missed one: the coast pieces
+       (data/hist-coast-snap.js) are judged again where the sheet the map shows changes, so 1 July 150 and 151 draw
+       Han, Mahan, the Goths … tens of km² apart — and 151 was in no list, so `‹ ›` stepped over it
+       (dev-notes/2026-10-08-hist-product.md §2; scripts/build-polity-arcs.mjs filled the hole for itself).
+       So a record whose loader asks the job for its edges registers them HERE, with the precision its dates are
+       stated at, and the readers walk the register. A record added later is stepped through by registering, not by
+       remembering to edit two readers. `precision` null: the record states no dates of its own (a coast piece
+       begins and ends where its parent row or sheet does), and the year-based reading below answers. */
+    const _EDGES=new Map();
+    const _edgesOpened=(rec,precision,keys)=>{ _EDGES.set(rec,{keys:keys||[],precision}); return keys; };
     /* ⚠ (hist-bundles-off-main) THE LIST IS COMPUTED WHERE THE RECORD IS. The bundle lives on another
        thread now (js/hist-bundles.js) and the page holds only the records it has drawn, so «every
        start and every day-after-an-end» is asked of the thread that holds every record — `csLoad`
@@ -214,6 +226,8 @@ export function timeBorders(HOST){
        cache key, so scrubbing a quiet decade re-renders NOTHING while 1920 now steps thirteen times. */
     /* (#R518) the search itself, once — the OpenHistoricalMap record below asks the same question of its own
        boundary list, and a second copy of a binary search is a second place for it to be wrong. */
+    /* the last edge at or before `t`, or null when every edge is after it (unlike _epochIn, which answers the first) */
+    function _lastAtOrBefore(b,t){ if(!b.length||b[0]>t) return null; return _epochIn(b,t); }
     function _epochIn(b,t){ let lo=0,hi=b.length-1,ans=b.length?b[0]:t;
       while(lo<=hi){ const mid=(lo+hi)>>1; if(b[mid]<=t){ ans=b[mid]; lo=mid+1; } else hi=mid-1; }
       return ans; }
@@ -230,7 +244,7 @@ export function timeBorders(HOST){
     let _csD=null,_csP=null,_csH=null; const _csGeom=new Map();
     function csLoad(){ if(_csD) return Promise.resolve(_csD); if(_csP) return _csP;
       _csP=Promise.resolve().then(()=>HB().open({file:'data/cshapes.js',global:'__CSHAPES'}))
-        .then(h=>h?h.edges('inclusive',_ymd(CS_MIN,1,1),_ymd(CS_MAX,12,31)).then(b=>{ _csBnd=b; _csH=h; _csD=h.data; return _csD; }):null)
+        .then(h=>h?h.edges('inclusive',_ymd(CS_MIN,1,1),_ymd(CS_MAX,12,31)).then(b=>{ _csBnd=_edgesOpened('cshapes','day',b); _csH=h; _csD=h.data; return _csD; }):null)
         .catch(()=>null)
         .then(d=>{ if(!d) _csP=null; return d; });
       return _csP; }
@@ -524,7 +538,7 @@ export function timeBorders(HOST){
        EXCLUSIVE here, so the edge is the end itself (the job's end:'exclusive') */
     function hbLoad(){ if(_hbD) return Promise.resolve(_hbD); if(_hbP) return _hbP;
       _hbP=Promise.resolve().then(()=>HB().open({file:'data/hist-borders.js',global:'__HISTB'}))
-        .then(h=>h?h.edges('exclusive',_ymd(HB_MIN,1,1),_ymd(HB_MAX,12,31)).then(b=>{ _hbBnd=b; _hbH=h; _hbD=h.data; return _hbD; }):null)
+        .then(h=>h?h.edges('exclusive',_ymd(HB_MIN,1,1),_ymd(HB_MAX,12,31)).then(b=>{ _hbBnd=_edgesOpened('ohm','day',b); _hbH=h; _hbD=h.data; return _hbD; }):null)
         .catch(()=>null)
         .then(d=>{ if(!d) _hbP=null; return d; });
       return _hbP; }
@@ -958,7 +972,7 @@ export function timeBorders(HOST){
     let _olD=null,_olP=null,_olH=null,_olBnd=null; const _olGeom=new Map();
     function olLoad(){ if(_olD) return Promise.resolve(_olD); if(_olP) return _olP;
       _olP=Promise.resolve().then(()=>HB().open({file:'data/hist-borders-late.js',global:'__HISTBLATE'}))
-        .then(h=>h?h.edges('exclusive',_ymd(CS_MIN,1,1),_ymd(CS_MAX+1,1,1)).then(b=>{ _olBnd=b; _olH=h; _olD=h.data; return _olD; }):null)
+        .then(h=>h?h.edges('exclusive',_ymd(CS_MIN,1,1),_ymd(CS_MAX+1,1,1)).then(b=>{ _olBnd=_edgesOpened('ohm-late','day',b); _olH=h; _olD=h.data; return _olD; }):null)
         .catch(()=>null)
         .then(d=>{ if(!d) _olP=null; return d; });
       return _olP; }
@@ -973,7 +987,7 @@ export function timeBorders(HOST){
     function clLoad(){ if(_clD) return Promise.resolve(_clD); if(_clP) return _clP;
       _clP=Promise.resolve().then(()=>HB().open({file:'data/hist-clio.js',global:'__HISTCLIO'}))
         /* every edge the record has: its rows all end by CShapes' first day, and no clock reaches below the record's deepest sheet */
-        .then(h=>h?h.edges('exclusive',_ymd(-999999,1,1),_ymd(CS_MAX+1,1,1)).then(b=>{ _clBnd=b; _clH=h; _clD=h.data; return _clD; }):null)
+        .then(h=>h?h.edges('exclusive',_ymd(-999999,1,1),_ymd(CS_MAX+1,1,1)).then(b=>{ _clBnd=_edgesOpened('clio','year',b); _clH=h; _clD=h.data; return _clD; }):null)
         .catch(()=>null)
         .then(d=>{ if(!d) _clP=null; return d; });
       return _clP; }
@@ -1027,7 +1041,7 @@ export function timeBorders(HOST){
     let _snD=null,_snP=null,_snH=null,_snBnd=null; const _snGeom=new Map();
     function snLoad(){ if(_snD) return Promise.resolve(_snD); if(_snP) return _snP;
       _snP=Promise.resolve().then(()=>HB().open({file:'data/hist-coast-snap.js',global:'__HISTCOASTSNAP'}))
-        .then(h=>h?h.edges('exclusive',_ymd(-999999,1,1),_ymd(CS_MAX+1,1,1)).then(b=>{ _snBnd=b; _snH=h; _snD=h.data; return _snD; }):null)
+        .then(h=>h?h.edges('exclusive',_ymd(-999999,1,1),_ymd(CS_MAX+1,1,1)).then(b=>{ _snBnd=_edgesOpened('coast-snap',null,b); _snH=h; _snD=h.data; return _snD; }):null)
         .catch(()=>null)
         .then(d=>{ if(!d) _snP=null; return d; });
       return _snP; }
@@ -2777,13 +2791,13 @@ export function timeBorders(HOST){
        harness that evaluates the file itself. That is exactly when the map is drawing from it, so the stepper at 1950 does not
        pull a bundle to answer about 500 AD, and no path here can start a download. */
     async function _allBounds(){ const out=[];
-      try{ const h=await hbLoad(); if(h) for(const k of hbBounds(h)) out.push(k); }catch(_){}
-      try{ const c=await csLoad(); if(c) for(const k of csBounds(c)) out.push(k); }catch(_){}
+      /* the two day-dated records the stepper has always opened for itself (OpenHistoricalMap 1689–1885, CShapes) */
+      try{ await hbLoad(); }catch(_){}
+      try{ await csLoad(); }catch(_){}
+      /* (border-stepper-every-record) every record that is open — the two above, and Cliopatria, OpenHistoricalMap on
+         CShapes' days and the coast pieces when the map has drawn from them — asked only of what is already open */
+      for(const {keys} of _EDGES.values()) for(const k of keys) out.push(k);
       try{ const e=_erD||window.__HISTERAS||null; if(e) for(const y of erYears(e)) if(y<HB_MIN) out.push(_ymd(y,1,1)); }catch(_){}
-      /* (hist-coverage-expansion) the composed world changes when a Cliopatria row begins or ends, and when
-         its sheet layer moves to the next sheet — asked only of what is already open, like the sheets above */
-      try{ if(_clD&&_clBnd) for(const k of _clBnd) out.push(k); }catch(_){}
-      try{ if(_olD&&_olBnd) for(const k of _olBnd) out.push(k); }catch(_){}   /* (hist-colonial-era-borders) OHM on CShapes' days */
       try{ if(_rsD) for(const y of rsYears(_rsD)) out.push(_ymd(y,1,1)); }catch(_){}
       return [...new Set(out)].sort((a,b)=>a-b); }
     /* ⚠ (hist-coverage-expansion) A CHANGE DATE IS ONLY AS PRECISE AS THE RECORD THAT STATES IT. CShapes and
@@ -2792,8 +2806,9 @@ export function timeBorders(HOST){
        `'year'` ones as the year — 1 January is not a date anyone stated. A Cliopatria edge that the builder
        split on an OpenHistoricalMap day IS that day, and is found among OHM's own edges. */
     function changePrecision(when){ try{ const t=_kOf(when);
-      if((_hbD&&hbBounds().indexOf(t)>=0)||(_csD&&csBounds().indexOf(t)>=0)||(_olD&&_olBnd&&_olBnd.indexOf(t)>=0)) return 'day';
-      if(_clD&&_clBnd&&_clBnd.indexOf(t)>=0) return 'year';
+      const said=p=>{ for(const e of _EDGES.values()) if(e.precision===p&&e.keys.indexOf(t)>=0) return true; return false; };
+      if(said('day')) return 'day';
+      if(said('year')) return 'year';
       const y=Math.floor(t/10000); return (y<CS_MIN&&(_erD||_rsD))?'year':'day'; }catch(_){ return 'day'; } }
     async function changeAfter(when){ try{ const t=_kOf(when), b=await _allBounds();
       for(const k of b) if(k>t) return _kToDate(k); return null; }catch(_){ return null; } }
@@ -2804,10 +2819,13 @@ export function timeBorders(HOST){
       const w=(when instanceof Date&&!isNaN(when.getTime()))?when:null; if(!w) return null;
       const y=w.getFullYear();   /* (#R695) LOCAL, like `_kOf` two lines up — one clock per function; mixing UTC and local here would shift a day at the year boundary */
       /* (hist-coverage-expansion) the composed world began on the latest of the edges its three layers stand on */
-      if(y<CS_MIN&&_clD&&_rsD){ const t=_ymd(y,w.getMonth()+1,w.getDate()); let best=_epochIn(_clBnd||[],t);
-        if(y>=HB_MIN&&y<=HB_MAX&&_hbD){ const e=hbEpoch(_hbD,y,w.getMonth()+1,w.getDate()); if(e>best) best=e; }
-        const ys=rsYears(_rsD), ny=ys.length?nearest(y,ys):null; if(ny!=null){ const k=_ymd(ny,1,1); if(k<=t&&k>best) best=k; }
-        return _kToDate(best); }
+      if(y<CS_MIN&&_clD&&_rsD){ const t=_ymd(y,w.getMonth()+1,w.getDate()); let best=null;
+        /* (border-stepper-every-record) the latest edge at or before `t` of every open record (_EDGES): Cliopatria, OHM
+           1689–1885 and the coast pieces, which the stepper now stops at — so the panel names the world it stopped on.
+           MEASURED: stepped to 151, the panel still read «Jan 1, 127» (a Cliopatria edge), the world before the step. */
+        for(const {keys} of _EDGES.values()){ const e=_lastAtOrBefore(keys,t); if(e!=null&&(best==null||e>best)) best=e; }
+        const ys=rsYears(_rsD), ny=ys.length?nearest(y,ys):null; if(ny!=null){ const k=_ymd(ny,1,1); if(k<=t&&(best==null||k>best)) best=k; }
+        return best==null?null:_kToDate(best); }
       if(y>=HB_MIN&&y<=HB_MAX){ const h=await hbLoad(); if(!h) return null;
         return _kToDate(hbEpoch(h,y,w.getMonth()+1,w.getDate())); }
       /* ⚠⚠⚠ (#R698) THIS ASKED `shownY`, AND `shownY` IS A PROMISE'S OUTPUT. #R695 wrote it as

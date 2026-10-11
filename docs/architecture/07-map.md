@@ -594,6 +594,8 @@ Atlas は `time.placeHistory`（`year` を渡すとその年に有効な行も�
   規則が切り替わりうる各年の 1 月 1 日を表から導く）。`[y,m,d]` の規則は記録の境に縛られているので軸は要らない。
 - **変化日の索引は多角形と同じレコードから導出する**（`csBounds`：開始日と終了日の翌日）。`IntMapTimeBorders` が `changeAfter` / `changeBefore` /
   `changeAt` / `changeDates` で公開し、Chronos の**国境ステッパー**（`#ntl-bstep`・`js/news-timeline.js`）はそれだけを尋ね、マスタークロックに書く。
+  変化日の一覧は、記録ごとの読み込み器が開いた時点で自分の境界と日付の精度（日・年・持たない）を 1 つの登録簿（`_EDGES`）に入れ、
+  一覧と精度の判定はその登録簿を回す——海岸の補い（`data/hist-coast-snap.js`）の境も、地図がそこから描いていればステッパーが止まる。
 - **1689–1885 は `data/hist-borders.js`（OpenHistoricalMap・CC0 1.0）で、同じ日単位の機構で引く**（`hbFC` / `hbBounds` / `hbEpoch`）。OHM の
   `admin_level=2` 境界関係を `scripts/build-hist-borders.mjs` がリングプール形式へ落とした——**記録 1411 件**、窓の中の**変化日 881 件**、
   各年6月15日に生きている政体は 164〜216。境界の幾何だけを更新する生成経路は名称・有効期間・識別子を保持し、補正済みの形状を上流で上書きしない。

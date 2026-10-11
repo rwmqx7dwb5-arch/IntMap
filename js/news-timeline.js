@@ -407,7 +407,10 @@ export function newsTimeline(HOST){
       const TB=_TB(); if(!TB||!TB.changeAt) return; const my=++_bsSeq;
       Promise.all([TB.changeAt(e.when),TB.changeBefore(e.when),TB.changeAfter(e.when)]).then(function(r){
         if(my!==_bsSeq) return;
-        if(bStepLbl) bStepLbl.textContent=r[0]?(_bsWord()+' · '+_dateText(r[0])):_bsWord();
+        /* (border-stepper-every-record) a change the records state only to the year is printed as the year — «Jan 1, 127»
+           was a day nobody stated (js/time-borders.js changePrecision; year-book and Atlas already read it). The year is the
+           LOCAL one, like the key it came from (_kToDate) — a display zone could move 1 January into the year before */
+        if(bStepLbl) bStepLbl.textContent=r[0]?(_bsWord()+' · '+((TB.changePrecision&&TB.changePrecision(r[0])==='year')?yLabel(r[0].getFullYear()):_dateText(r[0]))):_bsWord();
         if(bStepPrev) bStepPrev.disabled=!r[1];
         if(bStepNext) bStepNext.disabled=!r[2]; }).catch(function(){}); }
     function _bsStep(dir){ const TB=_TB(); if(!TB||!TB.changeAfter) return;
