@@ -103,11 +103,18 @@ test('R322 ① every operation the renderer already deduplicates is left alone; 
   /* GeoJSONSource.setData still has no comparison of its own — that absence is the whole argument
      for skipping it here, so it is asserted rather than remembered: the same object twice is two
      updates for the worker. */
+  /* (maplibre-6-13) A REAL SOURCE, NOT A STAND-IN FOR ITS PRIVATE METHOD. The stand-in here used to be
+     `{ _updateWorkerData }` — 6.13 replaced that private method with an update queue (`_workerUpdates`), and the
+     check died on a name, not on the question. The source is now built as the renderer builds it, with only the
+     worker replaced: what crosses to the worker is counted. Under 6.13 a WAITING setData is replaced by the next one
+     (UpdateQueue.replace) — that coalesces a burst, it does not compare data — so each call is awaited here: the same
+     object twice, on an idle source, is two full reparses. */
   let posted = 0;
-  const src = { _updateWorkerData() { posted++; return Promise.resolve(); } };
+  const actor = { sendAsync: async (m) => { if (m && m.data && 'data' in m.data) posted++; return {}; } };
+  const src = new ml.GeoJSONSource('census', { type: 'geojson' }, { getActor: () => actor }, new ml.Evented());
   const fc = { type: 'FeatureCollection', features: [] };
-  ml.GeoJSONSource.prototype.setData.call(src, fc);
-  ml.GeoJSONSource.prototype.setData.call(src, fc);
+  await src.setData(fc);
+  await src.setData(fc);
   assert.equal(posted, 2,
     'GeoJSONSource.setData now compares its argument — the skip in js/geo-engine.js became a second mechanism for a job the renderer does, and must be switched off');
 
