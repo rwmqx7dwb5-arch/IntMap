@@ -43,7 +43,10 @@ test('① the adapter reads the transform the painter draws with, and isAnimatin
   const r = await page.evaluate(async () => {
     const m = window.__imap, E = window.IntMapGeoEngine;
     const out = {
-      samePainter: window.__mlTr() === (m.painter && m.painter.transform),
+      /* the transform the painter last drew with. 6.11 kept it on the painter (`new Painter(gl, transform)`); from 6.12
+         the map hands it to every frame (`painter.render(style, this._camera.transform, …)`) and the painter keeps that
+         frame's on `frameRenderContext.transform` — the same object, asked where it now lives (maplibre-6-13) */
+      samePainter: window.__mlTr() === (m.painter && ((m.painter.frameRenderContext && m.painter.frameRenderContext.transform) || m.painter.transform)),
       mapHasTransform: 'transform' in m,
       mapHasIsEasing: typeof m.isEasing,
       idle: E.camera.isAnimating(),
