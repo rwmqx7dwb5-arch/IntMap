@@ -26,7 +26,7 @@
  *  goes in its own file, and the core only ever shrinks (tests/shell-app-body-modules-checks.test.mjs #R200 ⑤).
  * ==========================================================================*/
 import { IntMapLang } from './lang-registry.js';
-import { on } from './bus.js';
+import * as bus from './bus.js';
 
 export function newsSources(HOST,DEPS){
   /* (#R207) the country table comes from js/tables.js through the caller, the same way every other
@@ -197,7 +197,7 @@ export function newsSources(HOST,DEPS){
        «조선일보 (7)». Re-rendering is safe here, unlike in relabel(): every tick commits on its own
        `change` (js/app-body.js commitSetting), so `imNewsSources` already holds what is ticked. A
        closed dialog is left alone — opening it renders. */
-    try{ on('intmap-news-feed',()=>{ const m=document.getElementById('settings-modal');
+    try{ bus.on('intmap-news-feed',()=>{ const m=document.getElementById('settings-modal');
       if(m&&m.style.display&&m.style.display!=='none') render(); }); }catch(_){}
 
     /* one wiring pass for both dropdown buttons — identical behaviour, so identical code */

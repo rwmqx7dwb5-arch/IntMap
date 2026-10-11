@@ -25,8 +25,12 @@ date: 2026-10-11
 ## 2. 直し方（事例ではなく契機を足した）
 
 - `js/bus.js` に `intmap-news-feed`（フィードが差し替えられた）を宣言。
-- 上げるのは `js/app-body.js` の `IM_HOST` の `globalData` setter **1 か所**。フィードが着地する経路
-  （`js/news-feed.js` の取得・キャッシュ・出来事、`js/news-timeline.js` の日付移動）は全部ここを通る。
+- 上げるのは `js/news-feed.js` の `land()` **1 か所**。見出しをフィードに入れる書き手はこのファイルだけで
+  （サーバの行・キャッシュ・出来事の一覧・live RSS の 5 か所）、全部 `land()` を通すようにした。
+  ⚠ 最初は `IM_HOST` の `globalData` setter から上げたが、#R165 の RW 契約（setter は代入だけ・
+  `tests/atlas-console-kernel-checks.test.mjs`）が PR の CI で落とした。契約が正しい——setter に副作用を
+  持たせると、日付移動の `HOST.globalData=[]`（`js/news-timeline.js`）のような「捨てる」書き込みまで
+  「着地した」と言うことになる。捨てた直後には必ず取り直しが走り、その着地が `land()` を通る。
 - `js/news-sources.js` はそれを聞き、**設定が開いているときだけ** `render()` する（閉じていれば開くときに塗る）。
   `relabel()` が再描画を避けた理由（未適用のチェックを捨てる）はここには無い——各チェックは自分の
   `change` で commit される（desktop-one-entry）ので、`imNewsSources` が既にチェックされているものを持つ。

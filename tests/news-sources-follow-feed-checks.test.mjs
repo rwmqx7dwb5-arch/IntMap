@@ -8,7 +8,7 @@
  *
  *  ここでは製品のモジュールを実際に評価する（綴りを読まない）: フィードを差し替えて
  *  `intmap-news-feed` を上げ、開いている欄は新しいフィードを数え、閉じている欄は触られないこと。
- *  上げる側（js/app-body.js の globalData の setter）は tests/event-bus-checks.test.mjs が
+ *  上げる側（js/news-feed.js の land()）は tests/event-bus-checks.test.mjs が
  *  js/bus.js の `from` と突き合わせる。
  * ==========================================================================*/
 import test from 'node:test';
