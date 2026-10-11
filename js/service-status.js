@@ -327,7 +327,7 @@ async function gather(ctx) {
   try {
     const snap = ctx && typeof ctx.layers === 'function' ? ctx.layers() : [];
     for (const r of (Array.isArray(snap) ? snap : [])) {
-      if (r.state !== 'failed' && r.state !== 'unobserved' && r.state !== 'nodata') continue;
+      if (r.detail == null) continue;   /* the owner gives a sentence only to a state that is a problem (js/layer-state.js SPEAKS); this file is also loaded raw by sources.html, so it reads the record rather than importing the rule */
       /* the record's own detail already carries the supplier's sentence once js/layer-state.js has joined it */
       const row = (!r.upstream && r.url) ? upstreamFor(bundle, requestHost(r.url)) : null;
       probs.push({ label: r.label, state: r.state, detail: r.detail || r.message || '',
