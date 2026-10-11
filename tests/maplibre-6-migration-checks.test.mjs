@@ -10,7 +10,7 @@
  *    ② the renderer's camera internals are reached in ONE place (`_cam` / `_tr`), and nothing reads
  *       the members v6 took off the map, writes the hook property, or asks for getMatrixForModel
  *    ③ src/vendor.js imports the namespace (v6 has no default export) and hands MapLibre the worker
- *       the build emits, before any Map exists — because the published worker imports a sibling
+ *       the build emits, before any Map exists — a chunk built from the worker's source entry
  *    ④ …and that worker is a chunk of the SAME build, importing the renderer's own shared chunk: the
  *       placement is asked of the module graph, and the build refuses a worker chunk that would
  *       evaluate a module outside the worker's graph (dev-notes/2026-09-28-maplibre-shared-worker.md)
@@ -109,6 +109,7 @@ const workerPlugin = (command) => {
 };
 const PKG_DIR = dirname(require.resolve('maplibre-gl/package.json'));
 const ML_FILE = (f) => join(PKG_DIR, 'dist', f).replace(/\\/g, '/');
+const ML_SRC = (f) => join(PKG_DIR, 'src', f).replace(/\\/g, '/');
 
 test('③ src/vendor.js publishes the namespace and the worker the build emits, before any map exists', async () => {
   assert.equal(ml.default, undefined, 'maplibre-gl 6 has no default export — `import maplibregl from` would bind undefined');
@@ -138,22 +139,21 @@ test('③ src/vendor.js publishes the namespace and the worker the build emits, 
   assert.ok(id, `vite.config.js maplibreSharedWorker resolves ${spec}`);
   const emitted = [];
   const code = await build.load.call({
-    resolve: async (s) => ({ id: require.resolve(s).replace(/\\/g, '/'), external: false }),
+    resolve: async (s) => ({ id: s.replace(/\\/g, '/'), external: false }),
     emitFile: (o) => { emitted.push(o); return 'REF0'; },
     error: (m) => { throw new Error(m); },
   }, id);
   assert.equal(emitted.length, 1, 'the build emits the worker once');
   assert.equal(emitted[0].type, 'chunk', 'as a CHUNK of this build — not a separate worker bundle that repeats the shared code');
-  assert.equal(emitted[0].id, ML_FILE('maplibre-gl-worker.mjs'), 'and the chunk is the published worker');
+  assert.equal(emitted[0].id, ML_SRC('source/worker.ts'), 'and the chunk is built from the worker\'s SOURCE entry — the one MapLibre\'s own build bundles');
   assert.match(code, /import\.meta\.ROLLUP_FILE_URL_REF0/, 'the URL is the emitted chunk\'s, hashed with the build');
   const dev = workerPlugin('serve');
-  assert.match(await dev.load.call({}, dev.resolveId(spec)), /maplibre-gl-worker\.mjs\?worker&url/,
+  assert.match(await dev.load.call({}, dev.resolveId(spec)), /source\/worker\.ts\?worker&url/,
     '`vite dev` has no chunks: it answers with Vite\'s dev worker URL');
-  /* WHY BUILT and not copied (`?url`): the published worker is not self-contained. A verbatim copy's
-     first statement imports a file that would not be there. */
-  const workerSrc = readFileSync(ML_FILE('maplibre-gl-worker.mjs'), 'utf8');
-  const rel = parse(workerSrc).body.filter((s) => s.type === 'ImportDeclaration').map((s) => s.source.value);
-  assert.ok(rel.some((v) => v.startsWith('./')), `the published worker imports a sibling (${rel.join(', ')}), which is why it must be BUILT, not copied`);
+  /* WHY BUILT and not copied (`?url`): the worker entry is TypeScript that imports the modules it shares
+     with the renderer — building both from source is what gives them one copy (maplibre-from-source-checks) */
+  const rel = [...readFileSync(ML_SRC('source/worker.ts'), 'utf8').matchAll(/^import\s[^;]*?from\s+'([^']+)'/gm)].map((m) => m[1]);
+  assert.ok(rel.some((v) => v.startsWith('../')), `the worker source imports modules of the library (${rel.join(', ')}), which is why it must be BUILT, not copied`);
 });
 
 /* a synthetic module graph with MapLibre 6's shape: the worker and the renderer both import the shared

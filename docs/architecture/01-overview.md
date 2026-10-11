@@ -84,13 +84,17 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 - **実行時依存は npm から取る**（CDN の浮動タグは使わない）。`src/vendor.js` が `maplibregl` / `turf` / `topojson` /
   `mlcontour` / `supabase` / `sb` を同じグローバル名で再公開する。KaTeX と html2canvas は動的 import で別チャンク。
   `package.json` の `dependencies` がアプリに入る依存の唯一のリスト（`src/vendor.js` の見出しは主版だけ）。
-  **maplibre-gl は 6 系で ESM 専用**（`import * as maplibregl`）。配布は本体 `maplibre-gl.mjs`・worker
-  `maplibre-gl-worker.mjs`・両者が import する `maplibre-gl-shared.mjs` の 3 本で、本体は worker を module worker として
-  起こす。`vite.config.js` の `maplibreSharedWorker` が worker を同じビルドの entry チャンクとして出し
+  **maplibre-gl は 6 系で ESM 専用**（`import * as maplibregl`）。本体は worker を module worker として起こし、両者は
+  多くのコードを共有する。**配布物（`dist/*.mjs`）ではなく、パッケージ同梱の TypeScript ソースから組む**——6.13 で配布物は
+  本体と worker がそれぞれ共有部分（約 500 kB）を抱える自己完結の 2 本になったため。`vite.config.js` の alias が
+  `maplibre-gl` をパッケージのソースの本体入口（`index.ts`）に向け、`maplibreSource` がそのソースを MapLibre 自身の設定（target es2022・
+  `useDefineForClassFields: false`。npm には tsconfig が同梱されないので、無いと IntMap の tsconfig を拾う）で変換する。
+  `maplibreSharedWorker` が worker（ソースの `worker.ts`）を同じビルドの entry チャンクとして出し
   （`emitFile({type:'chunk'})`）、`src/vendor.js` は `virtual:maplibre-gl-worker-url` から URL を受けて最初の Map より前に
   `setWorkerUrl` で渡す。両者が import するものは **`maplibre-gl-shared` チャンク 1 本**になり、shared はネットワークを
   1 回しか渡らない。shared に置くものは worker の静的 import のグラフが決め、worker のグラフの外のモジュールが入れば
-  ビルドが止まる。`vite dev` では同じ virtual モジュールが dev worker URL（`?worker&url`）を返す（素の `?url` では
+  ビルドが止まる（例外は束ね器自身が合成する runtime だけ——モジュールの記録を持たない）。MapLibre が依存するパッケージは
+  インストール済みの `package.json` から推移的に数えて同じ 2 つのグループに入れる。`vite dev` では同じ virtual モジュールが dev worker URL（`?worker&url`）を返す（素の `?url` では
   worker が最初の import で死ぬ）。CSP は `worker-src 'self'` のままで足りる。
   他のモジュールが自分で動的 import する依存もそこに宣言する（警報レイヤーの `polygon-clipping`——「発表なし」の形と
   灰色斜線の形を計算し、`js/world-packs.js` が別チャンクで取る。推移的に届いているものは依存ではない）。
@@ -188,9 +192,10 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   丸ごと eager になる（実測 eager raw 4.78 → 9.45 MB）。Rolldown の runtime（`\0rolldown/runtime.js`、約 1.3 kB）は
   独立チャンク `rolldown-runtime` に置かれる（複数の消費者がいるため）。したがって eager は
   **main＋`maplibre-gl`＋`maplibre-gl-shared`＋`geo`＋`supabase`＋`rolldown-runtime`** の 6 本と CSS 2 本、それに MapLibre の
-  worker チャンク 1 本（`maplibre-gl-worker-*.js`、約 19 kB）。`maplibre-gl` には `maplibre-gl.mjs`・worker の URL モジュール・
-  worker が使わない補助（modulepreload polyfill・Oxc の補助）、`maplibre-gl-shared` には `maplibre-gl-shared.mjs` と preload
-  helper が入り、worker チャンクは `maplibre-gl-shared` を import する。
+  worker チャンク 1 本（`maplibre-gl-worker-*.js`、約 5 kB）。`maplibre-gl` には本体だけが使うソース・worker の URL モジュール・
+  worker が使わない補助（modulepreload polyfill・Oxc の補助）、`maplibre-gl-shared` には worker が届くソースと依存パッケージ、
+  preload helper が入り、worker チャンクは `maplibre-gl-shared` を、`maplibre-gl-shared` は `rolldown-runtime` を import する
+  （依存の 1 つが CommonJS なので worker も runtime の相互運用を使う）。
 - **`resolve.mainFields` は `module` を `browser` より前に置く**（Vite 8 は既定順で `browser` を先に取るので、そのままだと
   `polygon-clipping`・`turf-jsts`・`html2canvas` が ESM から UMD に替わる）。
 - **CSS の最小化は esbuild（`build.cssMinify: 'esbuild'`）。** Lightning CSS は `backdrop-filter: X; -webkit-backdrop-filter: X;` の

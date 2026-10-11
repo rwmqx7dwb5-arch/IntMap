@@ -30,14 +30,13 @@
  * ==========================================================================*/
 /* ══ MAPLIBRE 6 IS ESM-ONLY, AND ITS WORKER IS A REAL FILE ═══════════════════════════════════
    v6 publishes no default export (`import * as` is the documented form) and no longer carries its
-   worker as a string it turns into a blob: the worker is dist/maplibre-gl-worker.mjs, which imports
-   its sibling maplibre-gl-shared.mjs by relative path. A bundler has to be told where the built
+   worker as a string it turns into a blob: the worker is a module of its own, which this build makes from
+   MapLibre's source next to the renderer (vite.config.js, maplibreSharedWorker — the bare `maplibre-gl`
+   below is MapLibre's src/index.ts, compiled as MapLibre compiles it). A bundler has to be told where the built
    worker lives (setWorkerUrl) — without it MapLibre resolves the file against its own module URL,
    which inside our bundle is the hashed renderer chunk, and the map mounts but no tile ever loads.
-   `?worker&url` is Vite's worker pipeline: it builds the worker WITH its shared sibling into one
-   self-contained file among the other assets and hands back its URL. (A plain `?url` copies the
-   worker verbatim WITHOUT the sibling, and it dies on its first import — MapLibre's own install
-   notes say the same.) Same-origin, so the CSP's `worker-src 'self'` already admits it.
+   The URL is the worker chunk of this same build (`virtual:maplibre-gl-worker-url`), which imports the
+   chunk it shares with the renderer. Same-origin, so the CSP's `worker-src 'self'` already admits it.
    Set once, here, before any Map exists: MapLibre starts its worker pool with the first Map. */
 import * as maplibregl from 'maplibre-gl';
 import maplibreWorkerUrl from 'virtual:maplibre-gl-worker-url';
