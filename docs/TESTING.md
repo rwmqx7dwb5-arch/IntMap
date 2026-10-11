@@ -404,6 +404,13 @@ all on the camera the Map now composes, or gone), and each failed SILENTLY: a mi
   hands `setWorkerUrl` the worker the build emits as an entry chunk of the SAME build (received from
   `virtual:maplibre-gl-worker-url`) before `window.maplibregl` exists, so the renderer and its worker share
   one `maplibre-gl-shared` chunk instead of shipping it twice.
+* `tests/maplibre-from-source-checks.test.mjs` — MapLibre is built from the TypeScript its package
+  ships: the `maplibre-gl` alias is the installed package's source entry (`index.ts` under its `src`) and exports exactly the names
+  the published renderer exports; that source is compiled with MapLibre's own class-field semantics
+  (a field declared without an initializer is not a field — measured against the published dist); the
+  chunk groups hold every package MapLibre reaches (discovered from the installed `package.json` files);
+  the worker may evaluate the bundler's own runtime but still not a plugin's module it does not import;
+  and a failed build reports its own error instead of the app-shell step's ENOENT.
 * `tests/maplibre-6-migration.spec.js` — the running renderer: the transform the adapter reads IS the
   painter's; `isAnimating()` sees a `flyTo`; the worker is same-origin and tiles a GeoJSON source;
   a point in the air (`coords.projectAltitude`) lands on the pixels MapLibre itself draws for an

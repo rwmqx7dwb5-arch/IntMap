@@ -28,11 +28,12 @@
  *  the list — a new asset cannot be silently left out of the deploy, which is the one failure mode
  *  this arrangement could otherwise have.
  * ==========================================================================*/
-import { defineConfig } from 'vite';
+import { defineConfig, transformWithOxc } from 'vite';
 import { cpSync, createReadStream, existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, statSync, unlinkSync } from 'node:fs';
 import { connect as netConnect, createServer as netCreateServer } from 'node:net';
 import { basename, dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
+import { createRequire } from 'node:module';
 import { createHash } from 'node:crypto';
 import { buildReportPlugin, REPORT_PATH } from './scripts/build-report.mjs';
 import { injectAppShell } from './scripts/app-shell.mjs';
@@ -409,15 +410,22 @@ function copyStatic() {
    promise rather than a coincidence of copyStatic being synchronous) — and it throws, failing the build,
    if the token is gone or a named file is missing, so a worker can never ship with a shell that is not
    this build's. */
-function appShell() {
-  let out = null;
+export function appShell() {
+  let out = null, written = false;
   return {
     name: 'intmap-app-shell',
     apply: 'build',
     configResolved(c) { out = outDirOf(c); },
+    /* closeBundle runs after a FAILED bundle too, and Rolldown passes it no error. There is then no build
+       report, and reading it threw a second error (ENOENT on .perf/build-report.json) that Vite printed
+       INSTEAD of the bundler's own — MEASURED: a chunk error in generateBundle was reported as a missing
+       file. So the shell is written only for a bundle that was written. */
+    buildStart() { written = false; },
+    writeBundle() { written = true; },
     closeBundle: {
       sequential: true,
       handler() {
+        if (!written) return;
         const shell = injectAppShell(out, JSON.parse(readFileSync(REPORT_PATH, 'utf8')));
         this.info?.(`app shell: ${shell.immutable.length + shell.mutable.length} files, ${(shell.bytes / 1024).toFixed(0)} kB, build ${shell.build}`);
       },
@@ -611,11 +619,16 @@ function staticallyReached(id, getModuleInfo) {
 }
 
 /* ══ ⚠⚠ (MapLibre 6) ONE COPY OF THE SHARED CODE, FOR THE RENDERER AND FOR ITS WORKER ══════════════════
-   MapLibre 6 publishes three ES modules and says how they fit together (node_modules/maplibre-gl/build/
-   readme.md, and the worker factory in dist/maplibre-gl.mjs): the renderer (maplibre-gl.mjs) and the
-   worker (maplibre-gl-worker.mjs) both import the third, maplibre-gl-shared.mjs, and the renderer starts
-   the worker as a MODULE worker (`new Worker(url, {type:'module'})`). Served that way, the shared code
-   crosses the network once — the worker's `import` of it is answered by the HTTP cache the page filled.
+   MapLibre's renderer starts its worker as a MODULE worker (`new Worker(url, {type:'module'})`), and the
+   two run much of the same code. 6.0–6.12 published three ES modules — the renderer and the worker each
+   importing a third, maplibre-gl-shared.mjs. 6.13 (upstream #8621) made the two published files
+   self-contained, each with its own ~500 kB copy of that code: MEASURED, eager +466 kB raw / +130 kB gzip
+   (dev-notes/2026-10-11-maplibre-6-13.md). The package also ships its TypeScript source, and MapLibre's
+   own build is two entries over it (node_modules/maplibre-gl/build/readme.md: src/index.ts and
+   src/source/worker.ts). So THIS build bundles those same two entries: the `maplibre-gl` alias below
+   names src/index.ts, ML_WORKER_SPEC names src/source/worker.ts, maplibreSource() compiles them as
+   MapLibre does, and the shared code is again one chunk, crossing the network once — the worker's
+   `import` of it is answered by the HTTP cache the page filled (dev-notes/2026-10-11-maplibre-from-source.md).
    The migration first handed the worker to Vite's `?worker&url`, which builds it as a SEPARATE bundle
    with the shared module copied inside: MEASURED, 516 kB of shared code shipped twice, the boot's
    brotli +119 kB (dev-notes/2026-09-27-maplibre-6-migration.md §4).
@@ -630,14 +643,45 @@ function staticallyReached(id, getModuleInfo) {
    graph (the renderer's main-thread code, or Vite's modulepreload polyfill, would run in the worker and
    touch `document`). generateBundle below proves it on the finished bundle and fails the build if not.
    ⚠ `vite dev` has no chunks: there the same virtual module answers with Vite's dev worker URL (the
-   file served out of node_modules, which imports its sibling from node_modules — what `?worker&url`
-   has always done in dev). */
-const ML_WORKER_SPEC = 'maplibre-gl/dist/maplibre-gl-worker.mjs';
+   worker's source entry, compiled and served by Vite with its imports — what `?worker&url` does in dev). */
+const ML_DIR = dirname(createRequire(import.meta.url).resolve('maplibre-gl/package.json'));
+const ML_RENDERER_SRC = slash(resolve(ML_DIR, 'src/index.ts'));
+const ML_WORKER_SPEC = slash(resolve(ML_DIR, 'src/source/worker.ts'));
+/* every package MapLibre's source reaches — its own dependencies and theirs, read from the installed
+   package.json files (not listed here), so the chunk groups below hold the whole library */
+const ML_PACKAGES = (() => {
+  const out = new Set(), q = [['maplibre-gl', ML_DIR]];
+  while (q.length) {
+    const [name, dir] = q.shift();
+    out.add(name);
+    const deps = Object.keys(JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')).dependencies || {});
+    for (const d of deps) if (!out.has(d) && !d.startsWith('@types/')) q.push([d, packageDir(d, dir)]);
+  }
+  return [...out];
+})();
+/* a package's directory as Node finds it from the package that depends on it (its `exports` may not
+   expose ./package.json, so require.resolve cannot be asked for it) */
+function packageDir(name, from) {
+  const found = createRequire(join(from, 'package.json')).resolve.paths(name).map((base) => join(base, name)).find((d) => existsSync(join(d, 'package.json')));
+  if (!found) throw new Error(`maplibre-gl depends on ${name}, which is not installed`);
+  return found;
+}
 const ML_WORKER_URL_ID = 'virtual:maplibre-gl-worker-url';
 /* the resolved id of the worker entry, set by the plugin when it emits the chunk and read by the chunk
    groups below (they run after the module graph is complete, i.e. after the plugin's load) */
 const mlWorker = { id: null };
 const _workerGraph = new WeakMap();
+/* What the worker may evaluate: its own graph, and the bundler's RUNTIME — the code Rolldown synthesizes
+   itself (`rolldown/runtime.js`: the CommonJS interop and export helpers). That module comes from no
+   file and no plugin, so the module graph has no record of it (getModuleInfo answers null) and no
+   module lists it as an import; it defines functions and touches nothing. MEASURED when MapLibre began
+   to be built from its source: one of its dependencies is CommonJS, the worker's code needs the interop,
+   and the runtime landed in a chunk of its own that the worker imports. A virtual module a PLUGIN
+   supplies (Vite's modulepreload polyfill, which touches `document`) does have a record, so it is still
+   refused unless the worker's graph reaches it. */
+function workerNeeds(id, getModuleInfo) {
+  return inWorkerGraph(id, getModuleInfo) || (isBundlerHelper(id) && !getModuleInfo(id));
+}
 function inWorkerGraph(id, getModuleInfo) {
   const root = mlWorker.id && getModuleInfo(mlWorker.id);
   if (!root) return false;
@@ -656,6 +700,34 @@ function inWorkerGraph(id, getModuleInfo) {
   }
   return set.has(id);
 }
+/* MapLibre's TypeScript is compiled as MapLibre compiles it. The package ships its source but not its
+   tsconfig.json, so a .ts file under node_modules/maplibre-gl/src would otherwise pick up the NEAREST
+   tsconfig — IntMap's (target es2022, no useDefineForClassFields), i.e. [[Define]] semantics: every
+   field declared without an initializer becomes `defineProperty(this, 'x', undefined)`. MEASURED: 1,710
+   of them in the two chunks, and not only bytes — a subclass that redeclares a field the base class's
+   constructor already set would reset it to undefined. Upstream's own tsconfig.json (maplibre-gl-js
+   v6.13.0, read 2026-10-11) says target es2022 with useDefineForClassFields false, and its published
+   dist/ is built that way (`this.status=e`, no field definitions). Those two options are the ones that
+   change emitted code; the rest of its tsconfig is type checking and declaration output.
+   ⚠ Expires when MapLibre changes those two options upstream — the dist it publishes would then disagree
+   with this build, and tests/maplibre-from-source-checks.test.mjs compares the two. */
+const ML_TSCONFIG = { compilerOptions: { target: 'es2022', useDefineForClassFields: false } };
+const ML_SRC_RE = /[\\/]node_modules[\\/]maplibre-gl[\\/]src[\\/].*\.ts$/;
+export function maplibreSource() {
+  let maps = false;   /* a map in dev only — the production build publishes none (tests/security-logic) */
+  return {
+    name: 'intmap-maplibre-source',
+    enforce: 'pre',
+    configResolved(c) { maps = c.command === 'serve'; },
+    async transform(code, id) {
+      const file = id.split('?')[0];
+      if (!ML_SRC_RE.test(file)) return null;
+      const r = await transformWithOxc(code, file, { lang: 'ts', sourcemap: maps, tsconfig: ML_TSCONFIG });
+      return { code: r.code, map: r.map };
+    },
+  };
+}
+
 export function maplibreSharedWorker() {
   const RESOLVED = '\0' + ML_WORKER_URL_ID;
   let serve = false;
@@ -685,7 +757,7 @@ export function maplibreSharedWorker() {
         if (seen.has(f)) continue;
         seen.add(f);
         const c = byName.get(f);
-        for (const id of Object.keys(c.modules)) if (!inWorkerGraph(id, graph)) alien.push(`${id} (in ${f})`);
+        for (const id of Object.keys(c.modules)) if (!workerNeeds(id, graph)) alien.push(`${id} (in ${f})`);
         for (const i of c.imports) q.push(i);
       }
       if (alien.length) this.error(`the MapLibre worker would evaluate modules it does not import — ${alien.slice(0, 8).join(', ')}`);
@@ -711,8 +783,11 @@ export default defineConfig({
      31.3 kB of the eager `supabase` chunk. src/supabase-unbundled-stub.js says what fails, and how
      loudly, if something ever reaches for them; tests/deps-runtime-majors-checks.test.mjs fails
      first. admin.html loads the SDK's complete UMD build and is not affected. */
+  /* MapLibre's source is compiled by maplibreSource() above, with MapLibre's own options */
+  oxc: { exclude: [/\.js$/, ML_SRC_RE] },
   resolve: {
-    alias: [{ find: /^#wasm-(single|multi)-thread$/, replacement: resolve(ROOT, 'src/satellite-wasm-stub.js') },
+    alias: [{ find: /^maplibre-gl$/, replacement: ML_RENDERER_SRC },
+      { find: /^#wasm-(single|multi)-thread$/, replacement: resolve(ROOT, 'src/satellite-wasm-stub.js') },
       { find: /^@supabase\/(storage|functions)-js$/, replacement: resolve(ROOT, 'src/supabase-unbundled-stub.js') }],
     /* ══ `module` BEFORE `browser` — WHAT VITE 6 CHOSE, NOW SAID INSTEAD OF SNIFFED ════════════════
        Until Vite 8, a package that declares BOTH a string `browser` and a `module` field was resolved
@@ -811,9 +886,9 @@ export default defineConfig({
                the page (and without this group Rolldown gives its runtime a request of its own).
                The ids are virtual (`\0`-prefixed) and carry no node_modules/ path, which is what
                separates them from a package's own modules.
-               ⚠ (MapLibre 6) THE PACKAGE IS THREE FILES NOW, AND THEY ARE THREE CHUNKS.
-               6.x is ESM-only: dist/maplibre-gl.mjs (the renderer) and dist/maplibre-gl-worker.mjs
-               both import dist/maplibre-gl-shared.mjs. The worker is an entry chunk of its own
+               ⚠ (MapLibre 6) THE LIBRARY IS THREE CHUNKS, BUILT FROM ITS SOURCE.
+               The renderer (src/index.ts) and the worker (src/source/worker.ts) import much of the
+               same code, and the packages it depends on (ML_PACKAGES, discovered). The worker is an entry chunk of its own
                (maplibreSharedWorker above), and what it reaches — the shared module, and any helper
                the bundler injected into it — goes to `maplibre-gl-shared` FIRST (the higher priority),
                so the renderer and the worker import one file. Everything else of the package, and
@@ -821,10 +896,10 @@ export default defineConfig({
                (`inWorkerGraph`), not a file name; the build fails if the worker's chunks ever hold a
                module outside its graph. Both chunk names still carry "maplibre-gl" (the #R166
                stack attribution above reads the name, and a worker stack names its chunk too). */
-            { name: (id, ctx) => (id !== mlWorker.id && inWorkerGraph(id, (m) => ctx.getModuleInfo(m)) ? 'maplibre-gl-shared' : null),
-              debugName: 'maplibre-gl-shared', priority: 5, test: (id) => isBundlerHelper(id) || inPackage(id, 'maplibre-gl') },
-            { name: (id, ctx) => (inWorkerGraph(id, (m) => ctx.getModuleInfo(m)) ? null : 'maplibre-gl'),
-              debugName: 'maplibre-gl', priority: 4, test: (id) => isBundlerHelper(id) || inPackage(id, 'maplibre-gl') },
+            { name: (id, ctx) => (id !== mlWorker.id && workerNeeds(id, (m) => ctx.getModuleInfo(m)) ? 'maplibre-gl-shared' : null),
+              debugName: 'maplibre-gl-shared', priority: 5, test: (id) => isBundlerHelper(id) || inPackage(id, ...ML_PACKAGES) },
+            { name: (id, ctx) => (workerNeeds(id, (m) => ctx.getModuleInfo(m)) ? null : 'maplibre-gl'),
+              debugName: 'maplibre-gl', priority: 4, test: (id) => isBundlerHelper(id) || inPackage(id, ...ML_PACKAGES) },
             /* ⚠ (#R209) buffer + convex (and their geometry engine) are NOT in the eager geo chunk: the
                app calls them from ONE place (the reachable-area hull in js/sims.js, which awaits
                window.turf.ensureHeavy()), and naming them here would drag them back in with the rest
@@ -891,5 +966,5 @@ export default defineConfig({
      than read off filenames. scripts/perf-budget.mjs is the gate that reads it; it runs on
      every build because the report is what stops "the biggest chunk is big" from being
      mistaken for "startup is slow". */
-  plugins: [buildStampPlugin(ROOT), siteUrlPlugin(), maplibreSharedWorker(), buildReportPlugin(), copyStatic(), historyPagesPlugin(), publicApiPlugin(), countryPagesPlugin(), yearPagesPlugin(), whatsNewPlugin(), onThisDayPagesPlugin(), weeklyEarthPagesPlugin(), appShell(), histTiles(), katexAssets(), supabaseAdminSdk(), supabaseAdminSdkDev(), cesiumAssets(), cesiumDevAssets(), cspHashesPlugin(), buildLock()],
+  plugins: [buildStampPlugin(ROOT), siteUrlPlugin(), maplibreSource(), maplibreSharedWorker(), buildReportPlugin(), copyStatic(), historyPagesPlugin(), publicApiPlugin(), countryPagesPlugin(), yearPagesPlugin(), whatsNewPlugin(), onThisDayPagesPlugin(), weeklyEarthPagesPlugin(), appShell(), histTiles(), katexAssets(), supabaseAdminSdk(), supabaseAdminSdkDev(), cesiumAssets(), cesiumDevAssets(), cspHashesPlugin(), buildLock()],
 });
