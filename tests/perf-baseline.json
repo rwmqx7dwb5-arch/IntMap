@@ -35,7 +35,7 @@
       "atlas-where-when": 3763,
       "aviation-live": 33249,
       "border-provenance-card": 30065,
-      "cesium": 4907732,
+      "cesium": 4946391,
       "cesium-engine": 67922,
       "cesium-input": 18254,
       "cesium-layers": 19282,
@@ -167,7 +167,7 @@
   "dist": {
     "total": 1424418816,
     "data": 1201690151,
-    "assets": 20300098
+    "assets": 20420402
   },
   "phone": {
     "bytes": 342631,

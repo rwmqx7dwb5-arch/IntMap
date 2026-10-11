@@ -48,7 +48,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -75,7 +75,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -87,7 +87,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -99,7 +99,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -117,7 +117,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -146,7 +146,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -158,7 +158,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -170,7 +170,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -188,7 +188,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -217,7 +217,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -229,7 +229,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -241,7 +241,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -256,7 +256,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1"
@@ -284,7 +284,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -296,7 +296,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -308,7 +308,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -326,7 +326,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -354,7 +354,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -366,7 +366,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -378,7 +378,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -396,7 +396,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -425,7 +425,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -437,7 +437,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -449,7 +449,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -464,7 +464,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1"
@@ -494,7 +494,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -506,7 +506,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -518,7 +518,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -536,7 +536,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -568,7 +568,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -580,7 +580,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -592,7 +592,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -610,7 +610,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -640,7 +640,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -652,7 +652,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -664,7 +664,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -698,7 +698,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -710,7 +710,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -722,7 +722,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -754,7 +754,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -766,7 +766,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -778,7 +778,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -811,7 +811,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -823,7 +823,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -835,7 +835,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -863,7 +863,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -875,7 +875,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -887,7 +887,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -919,7 +919,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -931,7 +931,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -943,7 +943,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -961,7 +961,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -989,7 +989,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -1001,7 +1001,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -1013,7 +1013,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -1031,7 +1031,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -1086,7 +1086,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -1098,7 +1098,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -1110,7 +1110,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -1178,7 +1178,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -1199,7 +1199,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -1252,7 +1252,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -1264,7 +1264,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -1276,7 +1276,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -1344,7 +1344,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -1365,7 +1365,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -1418,7 +1418,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -1430,7 +1430,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -1442,7 +1442,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -1569,7 +1569,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -1590,7 +1590,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -1625,7 +1625,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -1637,7 +1637,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -1649,7 +1649,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -1978,7 +1978,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -1993,7 +1993,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -2054,7 +2054,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -2066,7 +2066,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -2078,7 +2078,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -2407,7 +2407,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -2428,7 +2428,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -2481,7 +2481,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -2493,7 +2493,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -2505,7 +2505,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -2598,7 +2598,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -2619,7 +2619,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -2672,7 +2672,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -2684,7 +2684,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -2696,7 +2696,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -2763,7 +2763,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -2784,7 +2784,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -2837,7 +2837,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -2849,7 +2849,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -2861,7 +2861,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -2938,7 +2938,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -2959,7 +2959,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -3012,7 +3012,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -3024,7 +3024,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -3036,7 +3036,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -3084,7 +3084,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -3105,7 +3105,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -3159,7 +3159,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -3171,7 +3171,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -3183,7 +3183,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -3290,7 +3290,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -3349,7 +3349,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -3361,7 +3361,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -3373,7 +3373,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -3435,7 +3435,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -3456,7 +3456,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -3523,7 +3523,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -3535,7 +3535,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -3547,7 +3547,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -3695,7 +3695,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -3716,7 +3716,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -3779,7 +3779,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -3791,7 +3791,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -3803,7 +3803,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -3942,7 +3942,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -3963,7 +3963,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -4016,7 +4016,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -4028,7 +4028,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -4040,7 +4040,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -4107,7 +4107,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -4128,7 +4128,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -4170,7 +4170,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -4182,7 +4182,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -4194,7 +4194,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -4256,7 +4256,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -4295,7 +4295,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -4307,7 +4307,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -4319,7 +4319,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -4381,7 +4381,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -4420,7 +4420,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -4432,7 +4432,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -4444,7 +4444,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -4506,7 +4506,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -4561,7 +4561,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -4573,7 +4573,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -4585,7 +4585,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -4691,7 +4691,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -4712,7 +4712,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -4767,7 +4767,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -4779,7 +4779,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -4791,7 +4791,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -4924,7 +4924,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -4945,7 +4945,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -4982,7 +4982,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -4994,7 +4994,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -5006,7 +5006,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -5167,7 +5167,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -5222,7 +5222,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -5234,7 +5234,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -5246,7 +5246,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -5352,7 +5352,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -5373,7 +5373,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -5409,7 +5409,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -5421,7 +5421,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -5433,7 +5433,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -5495,7 +5495,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -5510,7 +5510,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -5554,7 +5554,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -5566,7 +5566,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -5578,7 +5578,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -5613,7 +5613,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -5651,7 +5651,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -5663,7 +5663,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -5675,7 +5675,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -5710,7 +5710,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -5742,7 +5742,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -5754,7 +5754,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -5766,7 +5766,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -5784,7 +5784,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -5924,7 +5924,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -5945,7 +5945,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -5960,7 +5960,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -6024,7 +6024,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -6036,7 +6036,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -6048,7 +6048,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -6309,7 +6309,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -6330,7 +6330,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -6366,7 +6366,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -6378,7 +6378,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -6390,7 +6390,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -6426,7 +6426,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -6438,7 +6438,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -6450,7 +6450,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -6468,7 +6468,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -6543,7 +6543,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -6555,7 +6555,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -6567,7 +6567,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -6583,7 +6583,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -6601,7 +6601,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -6739,7 +6739,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -6760,7 +6760,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -6775,7 +6775,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -6891,7 +6891,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -6903,7 +6903,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -6915,7 +6915,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -6933,7 +6933,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -7071,7 +7071,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -7092,7 +7092,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -7159,7 +7159,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -7171,7 +7171,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -7183,7 +7183,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -7321,7 +7321,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -7342,7 +7342,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -7370,7 +7370,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -7382,7 +7382,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -7394,7 +7394,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -7533,7 +7533,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -7594,7 +7594,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -7606,7 +7606,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -7716,7 +7716,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -7728,7 +7728,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -7817,7 +7817,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -7829,7 +7829,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -7882,7 +7882,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -7935,7 +7935,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -7947,7 +7947,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -8058,7 +8058,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -8117,7 +8117,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -8129,7 +8129,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -8141,7 +8141,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -8239,7 +8239,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -8260,7 +8260,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -8322,7 +8322,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -8334,7 +8334,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -8346,7 +8346,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -8506,7 +8506,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -8527,7 +8527,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -8563,7 +8563,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -8575,7 +8575,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -8587,7 +8587,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -8646,7 +8646,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -8661,7 +8661,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -8698,7 +8698,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -8710,7 +8710,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -8722,7 +8722,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -8740,7 +8740,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -8788,7 +8788,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -8800,7 +8800,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -8812,7 +8812,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -8939,7 +8939,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -8960,7 +8960,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -9006,7 +9006,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -9018,7 +9018,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -9030,7 +9030,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -9146,7 +9146,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -9167,7 +9167,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -9213,7 +9213,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -9225,7 +9225,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -9237,7 +9237,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -9351,7 +9351,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -9372,7 +9372,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -9418,7 +9418,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -9430,7 +9430,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -9442,7 +9442,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -9546,7 +9546,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -9567,7 +9567,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -9606,7 +9606,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -9618,7 +9618,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -9630,7 +9630,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -9691,7 +9691,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -9730,7 +9730,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -9742,7 +9742,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -9754,7 +9754,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -9815,7 +9815,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -9830,7 +9830,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -9901,7 +9901,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -9913,7 +9913,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -9925,7 +9925,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -10079,7 +10079,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -10100,7 +10100,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -10137,7 +10137,7 @@
       "headers": {
        "apikey": "anon-key",
        "authorization": "Bearer jwt",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno",
+       "x-client-info": "supabase-js/<version>; runtime=deno",
        "x-supabase-api-version": "2024-01-01"
       },
       "body": null
@@ -10149,7 +10149,7 @@
        "accept-profile": "public",
        "apikey": "service-key",
        "authorization": "Bearer service-key",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": null
      },
@@ -10161,7 +10161,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
@@ -10179,7 +10179,7 @@
        "authorization": "Bearer service-key",
        "content-profile": "public",
        "content-type": "application/json",
-       "x-client-info": "supabase-js/2.117.2; runtime=deno"
+       "x-client-info": "supabase-js/<version>; runtime=deno"
       },
       "body": {
        "p_user": "u-1",
