@@ -37,17 +37,21 @@ test('① data/on-this-day.json is what the records give (the map\'s own code, r
 
 test('② named days say what the border record says on them, and nothing it does not date', () => {
   const day = (md, d) => IDX.days[md].filter((e) => e.d === d && e.src === 'cshapes');
-  /* 1990-10-03: the record stops drawing the GDR and redraws the Federal Republic */
+  /* 1990-10-03: the record stops drawing the GDR, and the Federal Republic's unit is drawn as «Germany» from that day.
+     (era-names-by-day) until the era names changed on days, «West Germany» was written to 31 December 1990 and this
+     day read «new borders for West Germany» */
   const de = day('10-03', '1990-10-03')[0];
   assert.ok(de, '1990-10-03 is a border day of CShapes');
-  assert.deepEqual(enNames(de.ended), ['East Germany']);
-  assert.deepEqual(enNames(de.redrawn), ['West Germany']);
+  assert.deepEqual(enNames(de.ended), ['West Germany', 'East Germany']);
+  assert.deepEqual(enNames(de.appeared), ['Germany']);
   /* 1945-08-15: Korea under Japan, Taiwan and Karafuto end; the two zones of occupation begin — in Japanese as the map writes them */
   const k45 = day('08-15', '1945-08-15')[0];
   assert.deepEqual(enNames(k45.appeared).sort(), ['Korea (USA)', 'Korea (USSR)']);
   for (const n of ['Korea (Japan)', 'Taiwan (Japan)', 'Karafuto (Japan)']) assert.ok(enNames(k45.ended).includes(n), n + ' ends on 1945-08-15');
   assert.equal(k45.ended.find((p) => p.en === 'Korea (Japan)').jp, '朝鮮（日本）');
-  assert.ok(enNames(day('08-15', '1947-08-15')[0].appeared).includes('Pakistan'));
+  /* (era-names-by-day) named as the map names it from that day — the former state of 1947–1971, not the present-day
+     Pakistan the list held when former states were read at 1 July (before independence) */
+  assert.ok(enNames(day('08-15', '1947-08-15')[0].appeared).includes('Pakistan (incl. East Pakistan)'));
   const k48 = day('08-15', '1948-08-15')[0];
   assert.deepEqual(enNames(k48.appeared), ['South Korea']);
   assert.deepEqual(enNames(k48.ended), ['Korea (USA)']);
@@ -105,8 +109,8 @@ test('④ the reader: calendar, headline, words, and a link the map reads back',
   }
   /* the words, in both languages, for one day the reader can check */
   const de = IDX.days['10-03'].find((e) => e.d === '1990-10-03');
-  assert.equal(OTD.describe(de, IDX, 'en').text, 'The map stops drawing East Germany; new borders for West Germany');
-  assert.equal(OTD.describe(de, IDX, 'jp').text, '東ドイツが地図から消える。西ドイツの国境が変わる');
+  assert.equal(OTD.describe(de, IDX, 'en').text, 'The map begins drawing Germany; the map stops drawing West Germany, East Germany');
+  assert.equal(OTD.describe(de, IDX, 'jp').text.split('。')[0], 'ドイツが地図に現れる');
 });
 
 test('⑤ the pages: one per day with events, links resolve, hreflang, nothing executes, an exact sitemap', async () => {

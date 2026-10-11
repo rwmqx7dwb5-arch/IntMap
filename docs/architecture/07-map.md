@@ -728,8 +728,9 @@ Atlas は `time.placeHistory`（`year` を渡すとその年に有効な行も�
   `scripts/build-maddison.mjs`）。歴史的国家のクリックは当時の名称・当時の記事に解決し、出典の名称を歴史地物の身元として保持する（現代国家の名前・
   記事・旗で上書きしない）。時代→記事の表は各政体の実際の開始年で始まり（窓の下限を開始年として書かない）、検査は表の全行を読み、1900 で始まって
   よい行は理由付きの許可リストに載る。
-- **地図の国名ラベルと Countries 一覧は、同じ「その年の身元」を出す。** ラベル側は `countryStats` の改名を読まず、年だけの関数
-  `IntMapHistId.at(code, year)` と `IntMapHistStates.activeAt(year)` に訊く。改名が当たっている国の現代名は `IntMapHistId._applied()`。適用する年の範囲は
+- **地図の国名ラベルと Countries 一覧は、同じ「その日の身元」を出す。** ラベル側は `countryStats` の改名を読まず、描いている時点だけの関数
+  `IntMapHistId.at(code, when)` と `IntMapHistStates.activeAt(when)` に訊く。時代の身元の表（`js/history.js` `histId`）の境は年か日で、
+  2 つの国が同じ年を分け合う所と、地図の記録が日で変わる所は日で書く（年だけの境はその年まるごと、年だけの問いは 7 月 1 日で読む）。改名が当たっている国の現代名は `IntMapHistId._applied()`。適用する年の範囲は
   一覧側と同じ式。旧国家は `IntMapHistStates.hbRe(code)` でポリゴン名に結ぶ（クリック経路と同じ対応表）。`js/time-countries.js` は身元が変わるたび
   **`intmap-hist-identity`** を投げ、ラベルは札が動いたときだけ貼り直す。
 - **昔の国名ラベルは国境ポリゴンとは別の点ソース（`imtb-lbl-src`）から描く**（ポリゴンに `symbol-placement:'point'` を当てると外環ひとつにつき1個の
