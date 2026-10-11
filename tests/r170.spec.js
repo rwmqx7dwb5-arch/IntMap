@@ -13,7 +13,7 @@
 //      the ground elevation, or the box would float above the mountain instead of above the sea.
 //   3. The requested defaults, observed on a fresh profile: no ticker, no workspace, Countries open.
 import { test, expect, bootPage, loadLazyModules } from './helpers/app.js';
-import { routeUpstream } from './helpers/network.js';
+import { routeUpstream, answerTerrarium } from './helpers/network.js';
 
 /* ⚠ (#R208) THE APPLICATION IS BOOTED ONCE PER WORKER, NOT ONCE PER TEST. Every test in this file
    used to start the whole app to ask one question of it. Measured, that boot is 2.4 s on the
@@ -122,10 +122,15 @@ test('the place-search pill sits level with the top-right controls', async ({ ap
 test('Measure ▸ 3-D volume draws a real-scale box and honours the typed altitudes', async ({ app }) => {
   test.setTimeout(150000);
   const page = app.page;
-  await page.evaluate(async () => {
+  /* (volume3d-spec-hermetic-dem) THE GROUND IS ANSWERED BY THE TEST. The claim below is arithmetic on whatever the DEM
+     says — base and top reduced by the ground — so the ground is a known 1,000 m (tests/helpers/network.js has the
+     nightly measurement: 5 of 6 flaky nights were the AWS tile not arriving within 30 s). */
+  const GROUND = 1000;
+  const stopTerrain = await answerTerrarium(page, GROUND);
+  try {
+  await page.evaluate(() => {
     window.__imap.setProjection({ type: 'mercator' });
     window.__imap.jumpTo({ center: [138.7274, 35.30], zoom: 10, pitch: 70, bearing: 0 });
-    await new Promise(r => setTimeout(r, 2000));
   });
 
   await page.click('#btn-measure-menu');
@@ -134,14 +139,19 @@ test('Measure ▸ 3-D volume draws a real-scale box and honours the typed altitu
   await expect(page.locator('.tp-title')).toContainText('3');
 
   const canvas = await page.locator('canvas.maplibregl-canvas').boundingBox();
+  /* each click is waited for by what it does — the vertex count — not by a sleep (the one nightly failure here that
+     was not the DEM read 0 points after four clicks with 200 ms between them) */
+  let n = 0;
   for (const [fx, fy] of [[0.42, 0.55], [0.58, 0.55], [0.58, 0.66], [0.42, 0.66]]) {
     await page.mouse.click(canvas.x + canvas.width * fx, canvas.y + canvas.height * fy);
-    await page.waitForTimeout(200);
+    n++;
+    await page.waitForFunction((want) => window.IntMapVolume3D.state().points === want, n, { timeout: 15000 })
+      .catch(async () => { throw new Error('click ' + n + ' was not counted: ' + JSON.stringify(await page.evaluate(() => window.IntMapVolume3D.state()))); });
   }
 
   await page.fill('#v3d-base', '2000');
   await page.fill('#v3d-top', '6000');
-  await page.waitForTimeout(500);
+  await page.waitForFunction(() => { const s = window.IntMapVolume3D.state(); return s.base === 2000 && s.top === 6000 && s.painted; }, null, { timeout: 15000 });
 
   const st = await page.evaluate(() => window.IntMapVolume3D.state());
   expect(st.points).toBe(4);
@@ -171,14 +181,16 @@ test('Measure ▸ 3-D volume draws a real-scale box and honours the typed altitu
      Measured on main: 3 failures in 3 runs here, and 2 in 3 on the branch, for that reason alone.
      Over Mt Fuji a reading of 0 m is not plausible, so a positive value IS the "settled" signal, and
      chaseGround() re-paints within a second of the real tile arriving. */
-  await page.waitForFunction(() => window.IntMapVolume3D.state().ground > 0, null, { timeout: 30000 });
+  await page.waitForFunction((g) => Math.abs((window.IntMapVolume3D.state().ground || 0) - g) < 1, GROUND, { timeout: 30000 })
+    .catch(async () => { const s = await page.evaluate(() => window.IntMapVolume3D.state());
+      throw new Error('the DEM never answered ' + GROUND + ' m: ' + JSON.stringify({ ground: s.ground, groundState: s.groundState, groundError: s.groundError, terrain: s.terrain })); });
   const on = await page.evaluate(() => ({
     st: window.IntMapVolume3D.state(),
     base: window.__imap.getPaintProperty('imv3d-vol', 'fill-extrusion-base'),
     height: window.__imap.getPaintProperty('imv3d-vol', 'fill-extrusion-height'),
   }));
   expect(on.st.terrain).toBe(true);
-  expect(on.st.ground).toBeGreaterThan(0);
+  expect(Math.abs(on.st.ground - GROUND), 'the ground read is the DEM the test answered').toBeLessThan(1);
   expect(on.st.base, 'the altitudes the user typed must not change').toBe(2000);
   expect(on.st.top).toBe(6000);
   expect(Math.abs(on.base - (2000 - on.st.ground)), 'base must be reduced by the ground elevation').toBeLessThan(1.5);
@@ -186,9 +198,8 @@ test('Measure ▸ 3-D volume draws a real-scale box and honours the typed altitu
 
   // closing the tool removes the box
   await page.click('#tool-panel .tp-close');
-  await page.waitForTimeout(400);
-  const gone = await page.evaluate(() => window.IntMapVolume3D.state().painted);
-  expect(gone).toBe(false);
+  await page.waitForFunction(() => window.IntMapVolume3D.state().painted === false, null, { timeout: 15000 });
+  } finally { await stopTerrain(); }
 });
 
 test('Atlas can draw a 3-D volume over a named place', async ({ app }) => {

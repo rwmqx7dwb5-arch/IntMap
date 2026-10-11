@@ -1,3 +1,4 @@
+import { deflateSync, crc32 } from 'node:zlib';
 // Test networking policy + error classification, shared by the smoke and QA specs.
 //
 // Why intercept at all? Three of the commission's requirements at once:
@@ -151,4 +152,35 @@ export function collectPageDiagnostics(page) {
     if (frame === page.mainFrame()) d.navigations.push(frame.url());
   });
   return d;
+}
+
+/* ══ TERRAIN WITHOUT AWS ════════════════════════════════════════════════════════════════════════════════════
+   A spec whose subject is what IntMap DOES with the ground must not measure the runner's route to the AWS terrarium
+   bucket. MEASURED on the nightly deep tier (2026-09-27 → 10-08): tests/r170's 3-D volume test waited 30 s for the
+   first DEM reading over Mt Fuji on 5 of 6 flaky nights and passed on the retry each time — the product follows the
+   tile in on render events (js/volume3d.js chaseGround); the tile simply had not arrived.
+   terrariumTile(m) is a valid 256×256 PNG every pixel of which decodes (Mapzen terrarium: R·256 + G + B/256 − 32768)
+   to `m` metres, rounded to 1/256 m. answerTerrarium(target, m) answers every host alias js/dem-source.js uses with it
+   and returns the function that stops answering (a shared worker page must not keep a test's route). */
+export function terrariumTile(metres) {
+  const v = Math.round((metres + 32768) * 256) / 256;
+  const rgb = [Math.floor(v / 256), Math.floor(v) % 256, Math.round((v % 1) * 256)];
+  const chunk = (type, data) => {
+    const len = Buffer.alloc(4); len.writeUInt32BE(data.length);
+    const td = Buffer.concat([Buffer.from(type, 'ascii'), data]);
+    const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(td) >>> 0);
+    return Buffer.concat([len, td, crc]);
+  };
+  const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(256, 0); ihdr.writeUInt32BE(256, 4); ihdr[8] = 8; ihdr[9] = 2;
+  const row = 1 + 256 * 3, raw = Buffer.alloc(256 * row);
+  for (let y = 0; y < 256; y++) for (let x = 0; x < 256; x++) raw.set(rgb, y * row + 1 + x * 3);
+  return Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
+}
+/* every alias js/dem-source.js round-robins over — the bucket name is in the host or in the path */
+export const TERRARIUM_HOSTS = /elevation-tiles-prod/;
+export async function answerTerrarium(target, metres) {
+  const body = terrariumTile(metres);
+  const handler = (route) => route.fulfill({ status: 200, contentType: 'image/png', headers: { 'access-control-allow-origin': '*' }, body });
+  await target.route(TERRARIUM_HOSTS, handler);
+  return () => target.unroute(TERRARIUM_HOSTS, handler);
 }
