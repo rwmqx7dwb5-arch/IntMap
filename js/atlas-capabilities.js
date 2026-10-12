@@ -345,6 +345,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["time.journey","journey","journeyThroughTime,bordersThen,crossingsThroughTime,routeThroughTime,historicalCrossings","time","paint","map.line","map,explanation","session","none","points",""],
       ["time.stepHere","stepHere","nextChangeHere,previousChangeHere,stepPlaceHistory","time","time","time","map,time","session","none","point",""],
       ["time.quakeHistory","quakeHistory","earthquakeHistory,seismicHistory,quakeRecord,earthquakeRecord,pastEarthquakes","time","panel","panel.quakeHistory,camera","panel,explanation","session","none","place?","quakeHistory"],
+      ["time.territoryChange","territoryChange","landChangedHands,territorialChanges,borderChangeMap,whoGainedLand,changedHands","time","paint","map.polygon","map,explanation","session","none","place?",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 
@@ -909,6 +910,12 @@ export function makeAtlasCapabilities(HOST, OPTS) {
           var html = (raw && raw.html) || '';
           var unresolved = (raw && raw.exec && Array.isArray(raw.exec.unresolved)) ? raw.exec.unresolved : [];
           if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: html };
+          /* ⚠ (wave4-atlas) AN ANSWER WHOSE MAP IS EMPTY IS AN ANSWER. A painter that measured and found nothing to draw
+             («the records draw the same polity over every cell at both instants») says so with `meta.paintsNothing`, and
+             nothing moving is then the state it set out to reach — the verdict `not_rendered` would tell Atlas a correct
+             answer failed and send it to ask again (.agents/rules/one-pass-or-a-reason.md §1). Only `true` counts: a
+             painter that did not say it has made no such claim. */
+          if (raw && raw.meta && raw.meta.paintsNothing === true) return { status: 'completed', code: 'ok', observed: { paint: after || null, nothing: true }, html: html };
           /* the dispatch says some of what it was asked for never resolved. ⚠ (#R742) THAT IS A
              STATEMENT ABOUT THE TARGETS, NOT ABOUT THE MAP: this used to return `not_rendered` without
              looking at the map at all, so thirteen oblasts drawn and one unresolved was reported as

@@ -247,6 +247,24 @@ export default [
     async run(a, dctx, K) { const { atlasRun } = await import('./journey-through-time.js'); return atlasRun(a, K); },
   },
   {
+    row: ['time.territoryChange',       'territoryChange', 'landChangedHands,territorialChanges,borderChangeMap,whoGainedLand,changedHands', 'time', 'paint', 'map.polygon', 'map,explanation', 'session', 'none', 'place?', ''],
+    /* (wave4-atlas) WHICH LAND CHANGED HANDS BETWEEN TWO INSTANTS, DRAWN ON THE MAP — over a region, each record is asked
+       which polity it draws at the centre of every cell of one lattice, at both instants, and the cells whose answer
+       changed are drawn as the land that passed from one polity to another (coloured by the receiver), each transfer in
+       km² and as a share of what the giver and the receiver hold in the region. Polities are compared by the identifier
+       the records state (CShapes gw, else Wikidata), so a state renamed under one code is listed, not painted; land one
+       instant draws and the other does not is the edge of a record, not a transfer. The run lives in
+       js/territory-change.js, fetched on first use. Atlas picks the instants and the region; nothing here picks them. */
+    doc: [
+      { in: 'time.coverage', at: 440, text: '{"type":"territoryChange","from":int|"YYYY-MM-DD"|"now","to"?:int|"YYYY-MM-DD"|"now" (default the instant on the clock),"place"?:str (a region: a country, a continent, "Europe", "world") | "bbox"?:[w,s,e,n],"stepKm"?:num | "stepDeg"?:num,"drawRenamed"?:bool} = LAND THAT CHANGED HANDS / 持ち主が変わった土地 — the map\'s own historical border record (CShapes 2.0 by the day from 1886; OpenHistoricalMap, Cliopatria and the era sheets before it — the record names itself) is asked, at both instants, which polity it draws at the centre of every cell of one lattice over the region (no place and no bbox = the region on screen); the land whose polity differs is DRAWN on the map, coloured by the polity that holds it at the second instant, and listed giver → receiver with km², the share of the giver\'s and of the receiver\'s land in the region it is, the number of separate pieces and where the largest lies. Polities are compared by the CShapes state code where both instants state one, else the Wikidata item, else the names the records write: «Russia» → «Soviet Union» (one code) is RENAMED, listed and not drawn (drawRenamed:true draws it too); «Korean Empire» → «Korea (Japan)» keeps the code and writes the holder in brackets, so it IS drawn and marked sameIdentifier; a pair compared by name only is marked comparedByNameOnly — across the 1886 seam between records one polity can carry two names, say so. Land drawn at one instant only (recordOnly) is the edge of a record, NEVER a conquest or a loss. Areas are lattice areas: the step (default about a million cells over the region — ≈3 km over Europe, 0.25° over the world) is in the result; land narrower than a cell can be missed; the wait grows with the cells (≈0.5 s per million), and a step the page cannot hold is refused with the default step (lattice-too-large). A date for a treaty or a war (a bare year is mid-June). The clock does not move — add timeTravel for the borders under the colour. Use for 「第一次世界大戦の前後でヨーロッパの領土はどう変わった？」「1938年と1950年で国境が変わった土地を地図で」「1904年から1911年に日本が得た土地」「ポーランドの土地はどこから来たか」「which land changed hands in Europe between 1913 and 1924」「what territory did Germany lose after WWII」. Quote the km², the records and the flags as returned. ' },
+    ],
+    phrases: () => ['領土の変化', '持ち主が変わ', '割譲', '併合された土地', 'どこからどこへ', '失った領土', '得た領土'].concat(['changed hands', 'territorial changes', 'lost territory', 'gained territory', 'ceded']),   /* the Japanese phrases, then the English words — two lists, not translations of each other */
+    chips: 'highlight',   /* the map's on/off chip a completed run switches (js/atlas-console.js _ovlOf) — the polygon layer drawPolygon paints */
+    schema: () => ({ type: 'object', properties: { from: loose(), to: loose(), fromYear: int(), toYear: int(), fromDate: str(), toDate: str(), place: str(), region: str(), bbox: list(num(), 4, 4), stepKm: num(0), stepDeg: num(0), drawRenamed: bool() },
+      anyOf: [{ required: ['from'] }, { required: ['fromYear'] }, { required: ['fromDate'] }] }),
+    async run(a, dctx, K) { const { atlasRun } = await import('./territory-change.js'); return atlasRun(a, K); },
+  },
+  {
     row: ['time.stepHere',              'stepHere',       'nextChangeHere,previousChangeHere,stepPlaceHistory',          'time',    'time',    'time',                   'map,time',            'session', 'none',   'point',    ''],
     /* (mobile-product) STEP THE CLOCK TO THE NEXT (OR PREVIOUS) INSTANT THE MAP CHANGES OVER ONE POINT — the instants the
        thumb on the phone's clock stops at (js/time-thumb.js) and its arrow keys step between, read off the same record as
