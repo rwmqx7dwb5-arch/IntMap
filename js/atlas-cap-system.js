@@ -182,6 +182,38 @@ export default [
     },
   },
   {
+    /* (wave4-security) 「この端末に保存されているもの」— what this browser holds for IntMap, held against the ledger derived from
+       every storage write in the code (js/device-storage-panel.js). Read only: deleting is the reader's own two-tap action
+       in the list, never a model's — so the row reads and opens, and the capability says where the delete lives. */
+    row: ['system.deviceStorage',       'deviceStorage',  'storedOnThisDevice,localData,browserStorage,whatIsStoredHere,cookies', 'system', 'none', '', 'explanation', 'read', 'none', '', ''],
+    doc: [
+      { in: 'more-features', at: 840, text: '{"type":"deviceStorage","show"?:true} = WHAT THIS BROWSER KEEPS FOR INTMAP, read from the browser itself (every localStorage and sessionStorage key, every IndexedDB database the browser lists, every Cache Storage store with its number of files, cookies, and the browser\'s own estimate of the space used), each held against IntMap\'s ledger derived from every storage write in its code: grouped by kind — sign-in and keys (e.g. a reader\'s own AIS or satellite keys, the sign-in session) / what the reader made / a record of what they did / preferences / copies and housekeeping — with what each item is and its size, NEVER its contents. Names IntMap\'s code does not write are listed separately (the site address is shared with other pages). Says what it cannot see. Use for 「この端末に何が保存されている？」「ブラウザに残っているデータ」「Cookie は使っている？」「API キーはどこに保存？」, "what does IntMap store on my device?", "local storage", "does IntMap use cookies?". show:true also opens the list (Settings ▸ Privacy ▸ Stored on this device), where the reader can delete one item or «Forget this device»; deleting is done there by the reader, not by Atlas; ' },
+    ],
+    phrases: () => ['この端末に保存', '端末のデータ', 'ローカル保存', 'クッキー'].concat(['storage', 'cookies', 'localstorage']),   /* the Japanese phrases, then the English words — two lists, not translations of each other */
+    schema: () => ({ type: 'object', properties: { type: { type: 'string', enum: ['deviceStorage'] }, show: bool() } }),
+    async run(a, dctx, K) { const R = K.R, note = K.note, esc = K.esc, HOST = K.HOST;
+      const lang = HOST.lang, T = IntMapLang.pick(() => lang);
+      const M = await import('./device-storage-panel.js');
+      const D = await M.describe(lang);
+      const m = D.model;
+      const tone = { ok: '#34c759', warn: 'var(--widget-warning,#ff9f0a)', bad: 'var(--widget-danger,#ff3b30)' };
+      let h = '<div style="font-weight:600;margin:2px 0 4px;">' + esc(m.headline) + '</div><div style="font-size:11.5px;opacity:.75;margin:0 0 6px;">' + esc(m.sub) + '</div>';
+      for (const s of m.sections) {
+        if (s.id === 'coverage') continue;
+        h += '<div style="font-size:11px;font-weight:600;opacity:.75;margin:8px 0 2px;">' + esc(s.title) + ' · ' + s.rows.length + '</div><div style="font-size:12px;line-height:1.6;">'
+          + s.rows.slice(0, 12).map((r) => '<span style="color:' + (tone[r.tone] || 'var(--text-muted)') + '">' + icon('dot') + '</span> ' + esc(r.title) + (r.detail ? ' <span style="opacity:.7;">— ' + esc(r.detail) + '</span>' : '')).join('<br>')
+          + (s.rows.length > 12 ? '<br><span style="opacity:.7;">' + esc(T('… and ' + (s.rows.length - 12) + ' more in the full list', '…ほか ' + (s.rows.length - 12) + ' 件（一覧に全件）')) + '</span>' : '') + '</div>';
+      }
+      const cov = m.sections.find((s) => s.id === 'coverage');
+      if (cov) h += note(esc(cov.rows.filter((r) => r.tone !== 'ok').map((r) => r.title + ': ' + r.detail).join(' / ')));
+      let shown = false;
+      if (a && a.show) { try { await M.open(); shown = true; } catch (_) { shown = false; } }
+      h += note(esc(shown ? T('The list is open — each item can be deleted there, or all of IntMap\'s at once with «Forget this device».', '一覧を開きました。項目ごとに、または「この端末から消去」でまとめて消せます。')
+        : T('To delete an item: Settings ▸ Privacy ▸ Stored on this device.', '消すには: 設定 ▸ プライバシー ▸ この端末に保存されているもの。')));
+      return R(true, h, { meta: { deviceStorage: D.facts } });
+    },
+  },
+  {
     /* (ops-next) 「新着」— what changed in IntMap, from whats-new.json (scripts/whats-new.mjs writes it at build from the
        reader's lines every merge's record carries). Read only: the list is IntMap's own words about itself. */
     row: ['system.whatsNew',            'whatsNew',       'whatsnew,changelog,releaseNotes,updates,newFeatures',          'system',  'none',    '',                       'explanation',         'read',    'none',   '',         ''],

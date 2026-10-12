@@ -2205,6 +2205,9 @@ script、読者向けの出典行。
 - **`probe-declared`** — `scripts/outbound-hosts.json` の、ブラウザが要求する行はどれも代表の
   `probe` を持つ（または持てない理由）。訊くのは毎晩の `scripts/upstream-liveness.mjs`
   （`docs/MONITORING.md` §1e）。
+- **`stored-disclosed`**（wave4-security）— ブラウザのコードが読者のブラウザに書く全ての名前（キー・データベース・キャッシュ）が
+  `scripts/device-storage-words.json` に種類と en/jp の語を持ち、書き込みの消えた行・読めない名前・Cookie の設定が無く、
+  `data/device-storage-ledger.json` がその導出と一致する。規則は `scripts/device-storage-ledger.mjs`（`docs/DATA-GOVERNANCE.md` §4.8）。
 - **`facets-accounted`** — 19 欄が主題ごとに `stated` / `undeclared(why)` / `notApplicable(why)` の
   **どれか 1 つ**に入る。⚠ **鍵が無いのはこの 3 つのどれでもない。**
 - **`ledger-shrinks`** — 既存の違反は `data/governance-ledger.json` にあり、**counts は下向きにしか
@@ -4993,6 +4996,9 @@ UTC の日・今日の途中・未来の日は無い・2 月 30 日は日でな�
 `index.html` から、報告ボタンは用件 `security` の相談フォームへ、関数・最後の migration・フォームが同じ語を持つ。
 spec 1 本（実ブラウザ）: 経路で満たした要求・WebSocket・CSP が拒否したスクリプトが一覧のそれぞれの節に出る、
 Playwright 自身の記録した main frame の完了した要求が一覧に全部ある、開いている間に増えた接続先が出る、Escape で閉じる。
+同じ boot の後半（wave4-security）: 秘密を入れたキーと共有アドレスの他のページのキーを入れ、「この端末に保存されているもの」が
+キーを「ログインとキー」に、他のページのキーを「名前の無いもの」に置き、値を一切表示せず、2 回押しで 1 件消し、「この端末から消去」で
+再読み込みし、ページ自身が開いていたデータベース（消去要求に `blocked` を返す）が再読み込み後に消えていて、他のページのキーが残る。
 ### `tests/security-hardening-checks.test.mjs` (security-hardening)
 10 本・ネットワーク無し。どれも規則を**実データで評価**する。① ロックの全依存辺が範囲を満たす（読めない指定と欠けも 0）・
 実ロックの全 caret 下限を 1 patch 下げるとその辺がその位置で赤・範囲の読みが node-semver の答えと一致 ② JWT は
@@ -5039,3 +5045,16 @@ migration の既定値・CHECK を照合する。③ ページの読み手と実
 セッションのピン（`user-pins`）としてその位置に入りカメラが枠に収める、③ 一覧の地図を押すとアドレスがその地図の
 `v=` / `tt=` になりカメラが移る（共有リンクの復元）、④ 未ログインの「マイプレイスに追加」はログインを開きトークンを
 このタブの `sessionStorage` に残す、⑤ 閉じるとアドレスから `collection` が消え待ちトークンも消える。
+
+### `tests/wave4-security-checks.test.mjs` (wave4-security)
+「この端末に保存されているもの」。node 10 本・ネットワーク無し。発見と一覧の実関数を、注入したソースと偽のブラウザで評価する。
+① リポジトリの全書き込みに種類と en/jp の語があり、配る台帳が導出と同一、Cookie の設定 0 ② 語の無い新しい書き込み・
+書き込みの消えた行・Cookie・読めない名前をそれぞれ拒む ③ 名前を束縛で読む（const・連結・テンプレート・`?:`・キーのオブジェクト・
+名前を返す関数・別モジュールの包み関数・`indexedDB` を引数で受けた `idb.open`）、ストレージでないオブジェクトは数えない、
+`caches.keys()` から読み戻した名前は新しい名前でない ④ 種類の語が台帳の順に en/jp で在る ⑤ 照合は完全一致が先・長いパターン・
+同じ領域だけ、ログインのセッションは `signsOut` の credential ⑥ 偽のブラウザに秘密を入れ、観測・モデル・書き出しのどこにも
+値が出ない、種類の順・名前の無いもの（共有アドレスの他のページ）・件数・`valuesIncluded:false` ⑦ 「この端末から消去」は台帳が
+名指すものだけ、台帳を読めないときは何も消さず誰も「名前が無い」と言わない ⑧ 廃止した AI のキーをどのモジュールも保持しない
+⑨ Atlas の行・設定のボタンとリスナ・`security.html`／`ja/` の種類ごとの数が台帳と一致・Privacy §2 の文（en/jp）。
+⑩ ログインのセッションの行は supabase-js の式を `src/vendor.js` の URL で評価した IntMap 自身の名前で、他のプロジェクトのセッションに当たらない・
+固定部分が IntMap のものと証明できないワイルドカードは `bulk:false` が無ければ門が拒む（⑦ は一括消去がそれらと他のプロジェクトのセッションを取らないこと）。

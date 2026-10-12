@@ -562,6 +562,12 @@ export const TEXT = {
     sendsNote: P('Grouped by what is sent, most personal first. The full list, site by site, is section 4 of the privacy policy.',
       '送るもの別に、個人に近いものから並べています。接続先ごとの全一覧はプライバシーポリシーの第 4 項にあります。'),
     sitesN: P('{n} sites', '{n} 件の接続先'),
+    deviceH: P('What stays in your browser', 'ブラウザに残るもの'),
+    deviceNote: P('Everything IntMap\'s code can keep in your browser — {names} kinds of item, found by reading every place the code writes one, never by a list someone keeps. In the map, Settings, then Privacy, then Stored on this device shows what your browser actually holds, with what each item is and its size (never its contents), and deletes one item or all of them.',
+      'IntMap のコードがブラウザに残しうるもの — {names} 種類。コードが書き込む箇所をすべて読んで数えたもので、誰かが手で管理する一覧ではありません。地図の「設定」から「プライバシー」の「この端末に保存されているもの」を開くと、あなたのブラウザが実際に保持しているものを、各項目が何か・大きさ（中身は表示しません）とともに示し、1 件ずつ、またはまとめて消せます。'),
+    itemsN: P('{n} kinds', '{n} 種類'),
+    cookiesNone: P('IntMap\'s code sets no cookies.', 'IntMap のコードは Cookie を設定しません。'),
+    cookiesSome: P('IntMap\'s code sets cookies; each is listed in the map.', 'IntMap のコードは Cookie を設定します。各 Cookie は地図の中の一覧に載っています。'),
     seeH: P('See it for yourself', '自分の目で確かめる'),
     see: [
       P('Open the list', '一覧を開く'),

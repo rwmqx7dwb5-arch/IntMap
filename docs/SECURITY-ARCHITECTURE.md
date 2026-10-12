@@ -782,6 +782,26 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
   «unlisted», when the statement itself cannot be read. `tests/security-next.spec.js` holds Playwright's
   own record of the main frame's finished requests against the list.
 
+- **(wave4-security) What the browser KEEPS is shown and deletable too.** `js/device-storage-panel.js`
+  (Settings ▸ Privacy ▸ Stored on this device, and Atlas `system.deviceStorage`) asks the browser for every
+  localStorage / sessionStorage key, every IndexedDB database it will name, every Cache Storage store and
+  its entry count, cookies, and the storage estimate, and judges each against `data/device-storage-ledger.json`:
+  grouped by kind (sign-in and keys → what the reader made → a record of use → preferences → copies and
+  housekeeping). **Values are never displayed or exported** — a value can be a session token or an API key.
+  The ledger is derived by `scripts/device-storage-ledger.mjs` from EVERY storage write in the browser code
+  (receivers by value flow, names through bindings, across modules) with the words of
+  `scripts/device-storage-words.json`; `check:datagov` (rule `stored-disclosed`) refuses an undescribed
+  name, a stale row, an unreadable name and any cookie write. The site's origin is shared with the
+  account's other Pages sites, so an unnamed item is shown apart, and «Forget this device» deletes only
+  ledger-named items and reloads (the sign-in session is removed by logging out, not by deleting the key
+  under a live client that would rewrite it). The session row is IntMap's own project only: supabase-js's
+  own key expression is evaluated with `src/vendor.js` `SUPABASE_URL`, never a `sb-*` pattern that would
+  reach another project's session on the shared origin; and a wildcard is taken in bulk only when its fixed
+  part proves the key is IntMap's (the product name, or a name derived from IntMap's backend) — `imc_*`
+  is marked `bulk:false` and the generator refuses an unproven wildcard without it. The same pass stopped `js/app-body.js` carrying the retired
+  BYOK AI provider keys forward in `intmap_ai_config` (loaded and re-saved ever since BYOK was retired, read by nothing;
+  Privacy §2 says no AI key is kept in the browser) and rewrites an old stored copy without them.
+
 - **(own-fetch-relay) No public CORS relay is used.** Upstreams that send no `Access-Control-Allow-Origin`
   (Google News RSS, GDELT, Yahoo share prices, the TeleGeography cable files, Street-View coverage
   tiles, the IMF DataMapper, the thirteen "511" camera lists, the GEBCO depth service, CelesTrak

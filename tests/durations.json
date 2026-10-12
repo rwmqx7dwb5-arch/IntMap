@@ -10,7 +10,7 @@
  "tests/map-motion.spec.js": 40,
  "tests/collection-workspace.spec.js": 22,
  "tests/sales-next.spec.js": 45,
- "tests/security-next.spec.js": 19,
+ "tests/security-next.spec.js": 31,
  "tests/community-next.spec.js": 8,
  "tests/map-next.spec.js": 31,
  "tests/ux-next.spec.js": 44,

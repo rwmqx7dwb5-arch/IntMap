@@ -1450,6 +1450,11 @@ connection-watch.js               **このページが実際に通信した相�
 connections-panel.js              **「このページの通信」**——記録した各ホストを `data/connection-ledger.json`（出口の台帳から導出）と突き合わせ、
                                   送るもの別にまとめ、台帳に名前の無いもの・台帳と食い違うもの・CSP が拒否したものと、この一覧に見えないものを
                                   述べる。ライブ更新・JSON の書き出し。Atlas `system.connections` も同じ `describe` を読む。オンデマンド
+device-storage-panel.js           **「この端末に保存されているもの」**——ブラウザが持つもの（localStorage・sessionStorage・IndexedDB・
+                                  Cache Storage・Cookie・容量の見積り）を尋ね、各項目を `data/device-storage-ledger.json` と突き合わせて
+                                  種類別（ログインとキー → 作ったもの → 操作の記録 → 設定 → 写しと内部の記録）に並べる。中身は表示も書き出しも
+                                  しない。1 件ずつ・「この端末から消去」（台帳が名指すものだけ）で消せる。照合の規則 `globMatch` は台帳の
+                                  生成器も使う。Atlas `system.deviceStorage` も同じ `describe` を読む。オンデマンド（wave4-security）
 auth-ui.js                        アカウント・認証・Supabase のブート
 account-data.js                  「あなたのデータ」——アカウントが保持するものの目録（account_data_inventory）と完全な書き出し
                                   （export_account_data・JSON 1 ファイル）。どの表かは DB が発見する（削除と同じ走査）——このファイルは
@@ -1675,6 +1680,10 @@ connection-ledger.json            **このページの通信を何と突き合�
                                   （host・形〈disclosure／link／dormant／removedBy〉・what・送るもの・Privacy §4 の語句・要求する行の probe〈毎晩の確認と同じ
                                   1 回の要求。導入前の接続診断が読む〉）。生成は
                                   scripts/connection-ledger.mjs（`--write` / `--check`）。`check:datagov`（規則 outbound-disclosed）が突き合わせる
+device-storage-ledger.json        **この端末に保存されているものを何と突き合わせるか**——ブラウザのコードが書き込む全ての名前（キー・
+                                  データベース・キャッシュ。`*` は実行時に決まる部分）と、その種類・読者向けの語（en/jp）・書くファイル、
+                                  Cookie を書く箇所の数。生成は scripts/device-storage-ledger.mjs（`--write` / `--check`）。
+                                  `check:datagov`（規則 stored-disclosed）が突き合わせる
 offline-sources.json              **どの供給元のファイルを回線なしで使えるよう保存してよいか**——`scripts/outbound-hosts.json` の各ホスト行の
                                   `offline`（allowed・kind・pathPrefix・規約の URL・理由）から導出。述べられていないホストは入らない。
                                   生成は scripts/offline-sources.mjs（`--write` / `--check`）。`check:datagov`（規則 offline-declared）が突き合わせる
@@ -2369,6 +2378,11 @@ scripts/
   whats-new.mjs                   **更新情報**——dev-notes/ の `newsen`/`newsjp` から `whats-new.json`・`updates.html`／`ja/updates.html`・
                                   Atom（`updates.xml`／`ja/updates.xml`）・`sitemap-updates.xml` を build 時に dist/ へ（`whatsNewPlugin`）
   connection-ledger.mjs           `data/connection-ledger.json` を、ホスト台帳（outbound-hosts.json）から導出して書く／照合する（security-next）
+  device-storage-ledger.mjs       ブラウザのコードの保存の書き込み（setItem・indexedDB.open・caches.open）を acorn で全部見つけ、名前を束縛
+                                  （const・連結・テンプレート・オブジェクト・関数の戻り値・モジュールをまたぐ包み関数）で読み、
+                                  `device-storage-words.json` の語と合わせて `data/device-storage-ledger.json` を書く／照合する（wave4-security）
+  device-storage-words.json       ブラウザに保存する名前ごとの種類と読者向けの語（en/jp）。ライブラリが自分の名前で書くもの（ログインの
+                                  セッション）は `libraries` に、その名前を作るソースの行とともに
   offline-sources.mjs             `data/offline-sources.json` を、ホスト台帳（outbound-hosts.json）の `offline` から導出して書く／照合する
   lib/nightly-status.mjs          夜間ジョブの記録を値にする 1 か所——`readerUpstreams`（読者向けの上流の要約）・
                                   `atlasEvalState` / `atlasEvalLine`（最後の成功・最新の回が何も測っていないか・失敗した段の注記）。

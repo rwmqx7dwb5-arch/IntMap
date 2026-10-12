@@ -82,6 +82,18 @@
   （枠の中・`sw.js` が制御していないときのバックグラウンド処理）を毎回述べる。台帳を読めないときは「照合できなかった」と言う。公開のページ `security.html`（`ja/`）は、送るものと接続先の数・
   アクセス解析の有無・`script-src` の中身を台帳と `index.html` から、依存の脆弱性照合を `.github/workflows/` から読んで書き、非公開の報告窓口（相談フォームの用件 `security`）へ渡す。GitHub の
   非公開の脆弱性報告は有効になっていない（`docs/SECURITY-ARCHITECTURE.md` §9）。
+- **このブラウザが IntMap のために保持しているものを、読者が見て消せる**（設定 ▸ プライバシー ▸ この端末に保存されているもの・Atlas `system.deviceStorage`）。
+  `js/device-storage-panel.js`（オンデマンド）がブラウザに尋ねる——localStorage と sessionStorage の全キー（大きさは UTF-16 の 2 バイト／文字）・`indexedDB.databases()` が名指すデータベース・
+  Cache Storage の全保存領域とその件数・Cookie・`navigator.storage.estimate()`／`persisted()`——そして各項目を `data/device-storage-ledger.json` と突き合わせ、種類別（ログインとキー →
+  作ったもの → 操作の記録 → 設定 → 写しと内部の記録）に並べる。**中身は表示も書き出しもしない**（キーの値はログインのトークンでありうる）。台帳は `scripts/device-storage-ledger.mjs` が
+  ブラウザのコードの**全ての書き込み**（`setItem`・`indexedDB.open`・`caches.open`。受け手は綴りでなく値の流れで、名前は束縛——const・連結・テンプレート・オブジェクト・関数の戻り値・
+  モジュールをまたぐ包み関数——で読む）から発見し、`scripts/device-storage-words.json` の語と合わせて導出する。`check:datagov`（規則 `stored-disclosed`）は語の無い名前・書き込みの消えた行・
+  読めない名前・Cookie の設定を拒む。ログインのセッション（supabase-js が自分の名前 `sb-<ref>-auth-token` で書く）は語ファイルの `libraries` に、その名前を作るソースの行とともに宣言し、
+  門が `node_modules` のその行を読む。サイトのアドレス（GitHub Pages のホスト）は同じアカウントの他のページと共有なので、台帳に名前の無い項目は「名前が無い」として別に示し、
+  「この端末から消去」は台帳が名指すものだけを消して再読み込みする（ログインのセッションは個別には消さず、ログアウトで消える）。ログインの
+  セッションの名前は supabase-js の式を `src/vendor.js` の `SUPABASE_URL` で評価した IntMap 自身のもので、他のプロジェクトのセッションに当たらない。
+  ワイルドカードは固定部分が IntMap のものと証明できるときだけ一括消去の対象（できないもの `imc_*` は `bulk:false`、門が強制）。公開のページ `security.html` の「ブラウザに残るもの」は
+  同じ台帳から種類ごとの数とログイン・キーの一覧を書く。
 - **`index.html` の `script-src` には現在 `'unsafe-eval'` と 7 つの CDN の source が入っている**（インラインの `<script>` のハッシュはこの数に入らない）（`unpkg.com` / `maps.googleapis.com` /
   `www.googletagmanager.com` / `www.google-analytics.com` / `ssl.google-analytics.com` / `www.clarity.ms` / `*.clarity.ms`）。`unpkg.com` だけは 1 ファイルの完全なパス
   （`https://unpkg.com/@openmeteo/weather-map-layer@0.0.19/dist/index.js`）で、`js/wx-ecmwf.js` の `SDK_VER` を上げるときは CSP のパスも同じ版にする（`tests/output-taint-gate-checks.test.mjs` ⑥ が
