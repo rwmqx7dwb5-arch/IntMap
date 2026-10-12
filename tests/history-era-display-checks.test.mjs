@@ -23,6 +23,7 @@
  *  data/hist-borders.js arrive by <script> tag and every such tag fails here — the real degraded path.
  * ==========================================================================*/
 import { test } from 'node:test';
+import { clockStub } from './helpers/clock-stub.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -73,7 +74,7 @@ async function loadModule(lang = 'en') {
   await importModule('js/hist-bundles.js', { globals });   /* (hist-bundles-off-main) the door the module opens its records through */
   const { timeBorders } = await importModule('js/time-borders.js', { globals, mocks: {
     'js/geo-engine.js': { IntMapGeoEngine: ge.value },
-    'js/chronos.js': { IntMapTime: { on: noop } },
+    'js/chronos.js': { IntMapTime: clockStub({ on: noop }) },
     'js/lang-registry.js': { IntMapLang: LANG },
   } });
   const HOST = { lang, canDraw: () => false, isMobile: () => false };

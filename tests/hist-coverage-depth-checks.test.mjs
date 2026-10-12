@@ -21,6 +21,7 @@
  *       the overview and never coarser, and the non-commercial record's detail is fragments of its own.
  * ==========================================================================*/
 import { test } from 'node:test';
+import { clockStub } from './helpers/clock-stub.mjs';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
@@ -418,7 +419,7 @@ test('⑬ zoomed in, the gap line of a surveyed row is its detail; zoomed out, t
     IntMapHistBundles: { globalOf: (o) => (o === view ? G.global : null), ringOrigin: () => null } };
   const fetch = async (p) => { calls.push(p); const f = join(ROOT, p); return existsSync(f) ? { ok: true, json: async () => JSON.parse(readFileSync(f, 'utf8')) } : { ok: false, json: async () => null }; };
   const { IntMapBorderCoast: bc } = await importModule('js/border-coast.js', { globals: { window: w, fetch },
-    mocks: { 'js/geo-engine.js': { IntMapGeoEngine: engine }, 'js/chronos.js': { IntMapTime: { on: () => {} } } } });
+    mocks: { 'js/geo-engine.js': { IntMapGeoEngine: engine }, 'js/chronos.js': { IntMapTime: clockStub({ on: () => {} }) } } });
   await bc.load();
   const marks = bc.marks(G.set);
   const count = (g) => (g ? g.coordinates.reduce((n, l) => n + l.length, 0) : 0);

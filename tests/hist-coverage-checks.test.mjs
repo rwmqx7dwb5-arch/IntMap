@@ -14,6 +14,7 @@
  *       then HASC — and refuses a country with a stated reason the holes ledger carries
  */
 import { test } from 'node:test';
+import { clockStub } from './helpers/clock-stub.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -273,7 +274,7 @@ test('⑤ travelled to 1900, the page hatches the ground the record is silent ab
     },
     mocks: {
       'js/geo-engine.js': { IntMapGeoEngine: GE },
-      'js/chronos.js': { IntMapTime: { on: () => {}, min: 1, onIntent: () => {} } },
+      'js/chronos.js': { IntMapTime: clockStub({ on: () => {}, min: 1, onIntent: () => {} }) },
       'js/lang-registry.js': { IntMapLang: { pickArgs: () => ((...a) => a), pick: () => ({ arr: (a) => a[0] }), htmlTag: () => 'en' } },
       'js/border-coast.js': { IntMapBorderCoast: { marks: () => null, lineGeom: () => null, load: () => Promise.resolve(null),
                                                    onArrive: () => {}, wholeLines: () => ({ type: 'FeatureCollection', features: [] }) },

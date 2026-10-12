@@ -29,6 +29,7 @@ import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { clockFloor } from './helpers/hist-scale.mjs';
 import { importModule } from './helpers/import-module.mjs';
+import { clockStub } from './helpers/clock-stub.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const R = (p) => readLF(join(ROOT, p));
@@ -363,11 +364,11 @@ async function boot(opts = {}) {
   const subs = [], events = [];
   const clock = { when: opts.when || new Date(Date.UTC(1860, 6, 1)) };
   const win = {
-    IntMapTime: {
+    IntMapTime: clockStub({
       on: (f) => subs.push(f),
       when: () => new Date(clock.when),
       year: () => clock.when.getUTCFullYear(), isLive: () => false, min: 1850,
-    },
+    }),
     IntMapMaddison: madStub(opts.minYear),
     fetch: () => Promise.reject(new Error('offline')),
     document: { baseURI: 'https://example.invalid/' },

@@ -816,7 +816,7 @@ export function makeAtlasExamples(HOST, CTX) {
                 '{place}: что ночные огни говорят о том, где там люди и деньги?',
                 '{place}: ¿qué dicen las luces nocturnas sobre dónde están su gente y su dinero?') },
       /* ── where Chronos is ────────────────────────────────────────────────────────────────── */
-      { k:'year', w:9, on:(f)=>f.st&&!f.live&&f.year&&f.year<new Date().getFullYear(),
+      { k:'year', w:9, on:(f)=>f.st&&!f.live&&f.year&&!IntMapTime.isPresentYear(f.year),
         t:()=>L('What was happening in {place} in {year}?',
                 '{year}年の{place}では何が起きていた？',
                 '{place}: Was geschah dort im Jahr {year}?',
@@ -1053,7 +1053,7 @@ export function makeAtlasExamples(HOST, CTX) {
 
     /* the world-scale pool — same machinery, so「nowhere in particular」 is not four constants either */
     const W=[
-      { k:'w-year', w:9, on:(f)=>f&&!f.live&&f.year&&f.year<new Date().getFullYear(),
+      { k:'w-year', w:9, on:(f)=>f&&!f.live&&f.year&&!IntMapTime.isPresentYear(f.year),
         t:()=>L('What did the world look like in {year}?','{year}年の世界はどうなっていた？','Wie sah die Welt im Jahr {year} aus?','Каким был мир в {year} году?','¿Cómo era el mundo en {year}?') },
       { k:'w-alerts', w:8, on:(f)=>f&&f.has('wp-dl-alerts'),
         t:()=>L('Where in the world are the most severe weather warnings in force right now?','いま世界で最も重い気象警報が出ているのはどこ？','Wo auf der Welt gelten gerade die schwersten Wetterwarnungen?','Где в мире сейчас действуют самые серьёзные метеопредупреждения?','¿Dónde del mundo están vigentes ahora los avisos meteorológicos más graves?') },

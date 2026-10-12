@@ -159,7 +159,7 @@ export function makeTimeCountries(HOST, CTX) {
     IntMapTime.on(e=>{ clearTimeout(deb); const my=++seq;
       deb=setTimeout(async()=>{
         const y=e.year;
-        if(e.isLive || y>=new Date().getFullYear()){ if(curYear!=null||window._imTimePreWB){ window._imTimePreWB=null; restore(); repaint(); } return; }
+        if(e.isLive || IntMapTime.isPresentYear(y)){ if(curYear!=null||window._imTimePreWB){ window._imTimePreWB=null; restore(); repaint(); } return; }
         const MFLOOR=(window.IntMapMaddison&&window.IntMapMaddison.minYear)||1900;
         if(y<MFLOOR){ /* before the Maddison historical series → keep present figures, flag the floor */
           if(curYear!=null){ restore(); } window._imTimePreWB=y; window._imTimeYear=null; repaint(); return; }
