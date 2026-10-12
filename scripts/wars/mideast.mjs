@@ -96,7 +96,7 @@ const MIDEAST = {
     ['1948-06-11', 'Ramla', 'ARAB'], ['1948-06-11', 'Haifa', 'ISRAEL'],
     ['1948-06-11', 'Beersheba', 'ARAB'], ['1948-06-11', 'Safed', 'ISRAEL'],
     ['1948-06-11', 'Tiberias', 'ISRAEL'], ['1948-06-11', 'Damascus', 'ARAB'],
-    ['1948-06-11', 'Hebron', 'ARAB'], ['1948-06-11', 'Gaza', 'ARAB'],
+    ['1948-06-11', 'Hebron', 'LINE'], ['1948-06-11', 'Gaza', 'ARAB'],
     /* 1948 · Operation Danny takes Lydda and Ramle, and Operation Yoav takes Beersheba */
     ['1948-07-20', 'Lod', 'ISRAEL'], ['1948-07-20', 'Beersheba', 'ARAB'],
     ['1948-10-25', 'Beersheba', 'ISRAEL'], ['1948-10-25', 'Ashkelon', 'ARAB'],

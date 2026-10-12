@@ -45,11 +45,8 @@ export function countryAt(d, pt) {
   return null;
 }
 
-/* the side a reader sees at `pt` on day `d` of war `id`: the piece of the country that contains the point, cut the
-   way js/war-layer.js cuts it for the fill (WarGeom.warPieces). (ww2-tour) Not WarGeom.factionAt — that asks which
-   side of its NEAREST line segment the point is on, which the fill never does: MEASURED, on 1944-06-06 it put Moscow
-   on the Axis side of the Eastern Front (the line bends round the Belarus salient, and the nearest segment faces the
-   other way), while the map fills Moscow Allied. */
+/* the side a reader sees at `pt` on day `d` of war `id`: the piece of the fill that contains the point — js/war-geom.js
+   `factionAt`, which looks the point up in the pieces `warPieces` draws (war-fill-nearest-front). */
 export function faction(id, d, pt) {
   const w = war(id);
   const hit = countryAt(d, pt);
@@ -57,8 +54,5 @@ export function faction(id, d, pt) {
   let base = 'NEUTRAL';
   const tl = w.control[hit[1]];
   if (tl) for (const [dd, k] of tl) { if (dd <= d) base = k; }
-  for (const piece of WarGeom.warPieces(polysOf(hit), base, cutsFor(w, hit[1], d))) {
-    if (WarGeom.pointInPolys(pt, piece.polys)) return piece.faction;
-  }
-  return null;
+  return WarGeom.factionAt(pt, polysOf(hit), base, cutsFor(w, hit[1], d));
 }

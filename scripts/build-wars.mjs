@@ -122,12 +122,16 @@ const CHECKS = [
   ['ww2', '1940-06-25', 'Paris', 'AXIS'], ['ww2', '1940-06-25', 'Vichy', 'NEUTRAL'],
   ['ww2', '1941-12-05', 'Minsk', 'AXIS'], ['ww2', '1941-12-05', 'Moscow', 'ALLIED'],
   ['ww2', '1941-12-05', 'Kyiv', 'AXIS'], ['ww2', '1941-12-05', 'Stalingrad', 'ALLIED'],
-  ['ww2', '1942-11-19', 'Rostov-on-Don', 'AXIS'], ['ww2', '1942-11-19', 'Stalingrad', 'ALLIED'],
-  ['ww2', '1943-11-06', 'Kyiv', 'ALLIED'], ['ww2', '1943-11-06', 'Minsk', 'AXIS'],
+  /* (war-fill-nearest-front) the siege: the city inside the ring, Estonia behind the German line (until 1944) */
+  ['ww2', '1942-11-19', 'Leningrad', 'ALLIED'], ['ww2', '1942-11-19', 'Tallinn', 'AXIS'], ['ww2', '1942-02-01', 'Narva', 'AXIS'],
+  /* (war-fill-nearest-front) West Hunan held — Zhijiang was the airfield Ichi-Go never took — while the corridor ran to Indochina */
+  ['ww2', '1945-01-01', 'Zhijiang', 'ALLIED'], ['ww2', '1944-12-02', 'Zhijiang', 'ALLIED'],
+  ['ww2', '1942-11-19', 'Rostov-on-Don', 'AXIS'], ['ww2', '1942-11-19', 'Stalingrad', 'LINE'],
+  ['ww2', '1943-11-06', 'Kyiv', 'LINE'], ['ww2', '1943-11-06', 'Minsk', 'AXIS'],
   ['ww2', '1944-08-29', 'Minsk', 'ALLIED'], ['ww2', '1944-08-29', 'Warsaw', 'AXIS'],
   ['ww2', '1945-04-16', 'Berlin', 'AXIS'], ['ww2', '1945-04-16', 'Poznan', 'ALLIED'],
   ['ww2', '1944-06-30', 'Bayeux', 'ALLIED'], ['ww2', '1944-06-30', 'Paris', 'AXIS'],
-  ['ww2', '1944-09-15', 'Paris', 'ALLIED'], ['ww2', '1944-09-15', 'Metz', 'AXIS'],
+  ['ww2', '1944-09-15', 'Paris', 'ALLIED'], ['ww2', '1944-09-15', 'Metz', 'LINE'],
   ['ww2', '1944-01-17', 'Naples', 'ALLIED'], ['ww2', '1944-01-17', 'Rome', 'AXIS'],
   ['ww2', '1942-07-01', 'Alexandria', 'ALLIED'], ['ww2', '1942-07-01', 'Mersa Matruh', 'AXIS'],
   ['ww2', '1939-09-01', 'Chongqing', 'ALLIED'], ['ww2', '1939-09-01', 'Beijing', 'AXIS'],
@@ -205,7 +209,7 @@ const CHECKS = [
      same). None of them is visible on a map; all of them are visible here. ══════════════════════ */
   /* Poland and France, 1939–40 */
   ['ww2', '1939-09-10', 'Katowice', 'AXIS'], ['ww2', '1939-09-10', 'Lublin', 'ALLIED'],
-  ['ww2', '1939-09-20', 'Lviv', 'ALLIED'], ['ww2', '1939-09-20', 'Warsaw', 'AXIS'],
+  ['ww2', '1939-09-20', 'Lviv', 'LINE'], ['ww2', '1939-09-20', 'Warsaw', 'AXIS'],
   ['ww2', '1940-06-11', 'Paris', 'ALLIED'], ['ww2', '1940-06-11', 'Amiens', 'AXIS'],
   ['ww2', '1940-06-20', 'Bordeaux', 'ALLIED'], ['ww2', '1940-06-20', 'Lyon', 'ALLIED'],
   /* Norway */
@@ -226,9 +230,9 @@ const CHECKS = [
   ['ww2', '1942-10-01', 'Krasnodar', 'AXIS'], ['ww2', '1942-10-01', 'Baku', 'ALLIED'],
   ['ww2', '1943-03-01', 'Kursk', 'ALLIED'], ['ww2', '1943-03-01', 'Orel', 'AXIS'],
   ['ww2', '1943-04-15', 'Kharkiv', 'AXIS'], ['ww2', '1943-04-15', 'Kursk', 'ALLIED'],
-  ['ww2', '1943-09-01', 'Kharkiv', 'ALLIED'], ['ww2', '1943-09-01', 'Kyiv', 'AXIS'],
+  ['ww2', '1943-09-01', 'Kharkiv', 'LINE'], ['ww2', '1943-09-01', 'Kyiv', 'AXIS'],
   ['ww2', '1944-02-15', 'Leningrad', 'ALLIED'], ['ww2', '1944-02-15', 'Tallinn', 'AXIS'],
-  ['ww2', '1944-02-15', 'Kherson', 'ALLIED'], ['ww2', '1944-02-15', 'Odesa', 'AXIS'],
+  ['ww2', '1944-02-15', 'Kherson', 'LINE'], ['ww2', '1944-02-15', 'Odesa', 'AXIS'],
   ['ww2', '1944-07-20', 'Minsk', 'ALLIED'], ['ww2', '1944-07-20', 'Kaunas', 'AXIS'],
   ['ww2', '1944-11-15', 'Lodz', 'AXIS'], ['ww2', '1944-11-15', 'Lublin', 'ALLIED'],
   ['ww2', '1945-01-20', 'Warsaw', 'ALLIED'], ['ww2', '1945-01-20', 'Poznan', 'AXIS'],
@@ -236,9 +240,9 @@ const CHECKS = [
   /* Karelia — the front #R349 drew with one line, on a chord that ran west of Petrozavodsk */
   ['ww2', '1942-06-01', 'Petrozavodsk', 'AXIS'], ['ww2', '1942-06-01', 'Vyborg', 'AXIS'],
   ['ww2', '1943-06-01', 'Petrozavodsk', 'AXIS'], ['ww2', '1944-08-01', 'Petrozavodsk', 'ALLIED'],
-  ['ww2', '1944-08-01', 'Vyborg', 'ALLIED'],
+  ['ww2', '1944-08-01', 'Vyborg', 'LINE'],
   /* the desert */
-  ['ww2', '1941-01-01', 'Bardia', 'ALLIED'], ['ww2', '1941-01-01', 'Benghazi', 'AXIS'],
+  ['ww2', '1941-01-01', 'Bardia', 'LINE'], ['ww2', '1941-01-01', 'Benghazi', 'AXIS'],
   ['ww2', '1941-05-01', 'Bardia', 'AXIS'], ['ww2', '1941-05-01', 'Sidi Barrani', 'ALLIED'],
   ['ww2', '1942-03-01', 'Benghazi', 'AXIS'], ['ww2', '1942-03-01', 'Tobruk', 'ALLIED'],
   ['ww2', '1942-08-01', 'Mersa Matruh', 'AXIS'], ['ww2', '1942-08-01', 'Alexandria', 'ALLIED'],
@@ -256,12 +260,12 @@ const CHECKS = [
   ['ww2', '1944-08-28', 'Paris', 'ALLIED'], ['ww2', '1944-08-28', 'Nancy', 'AXIS'],
   ['ww2', '1944-08-28', 'Metz', 'AXIS'], ['ww2', '1944-08-28', 'Marseille', 'ALLIED'],
   ['ww2', '1944-08-28', 'Brussels', 'AXIS'],
-  ['ww2', '1944-11-01', 'Nancy', 'ALLIED'], ['ww2', '1944-11-01', 'Metz', 'AXIS'],
+  ['ww2', '1944-11-01', 'Nancy', 'ALLIED'], ['ww2', '1944-11-01', 'Metz', 'LINE'],
   ['ww2', '1944-11-01', 'Brussels', 'ALLIED'],
   ['ww2', '1944-12-24', 'Aachen', 'ALLIED'], ['ww2', '1944-12-24', 'Cologne', 'AXIS'],
-  ['ww2', '1944-12-24', 'Strasbourg', 'ALLIED'], ['ww2', '1944-12-24', 'Colmar', 'AXIS'],
+  ['ww2', '1944-12-24', 'Strasbourg', 'ALLIED'], ['ww2', '1944-12-24', 'Colmar', 'LINE'],
   ['ww2', '1944-12-24', 'Marseille', 'ALLIED'], ['ww2', '1944-12-24', 'Dinant', 'ALLIED'],
-  ['ww2', '1945-03-01', 'Colmar', 'ALLIED'], ['ww2', '1945-03-01', 'Cologne', 'AXIS'],
+  ['ww2', '1945-03-01', 'Colmar', 'ALLIED'], ['ww2', '1945-03-01', 'Cologne', 'LINE'],
   ['ww2', '1945-04-20', 'Cologne', 'ALLIED'], ['ww2', '1945-04-20', 'Munich', 'AXIS'],
   /* Burma, and the only Indian ground the war reached */
   ['ww2', '1943-06-01', 'Rangoon', 'AXIS'], ['ww2', '1943-06-01', 'Mandalay', 'AXIS'],
@@ -453,6 +457,29 @@ for (const [warId, date, place, want] of CHECKS) {
   const war = out.wars.find((w) => w.id === warId);
   const p = placeOf(place);
   if (!war || !p) { bad(`check ${warId} ${date} ${place}: cannot be run`); continue; }
+  /* ⚠ (war-fill-nearest-front) A PLACE ON THE LINE IS NO EVIDENCE OF EITHER SIDE. A city used as an anchor of
+     the line in force is ON it, and takes whichever side the arithmetic happens to give a point on a boundary —
+     the Strasbourg/Karlsruhe note in scripts/wars/ww2.mjs is this lesson, written once and never checked.
+     MEASURED: the D-Day line ran Carentan–Bayeux–Ouistreham, and «Bayeux was Allied on 1944-06-15» was
+     answered by a tie between two segments, not by the record. Such a check proves nothing, so it is refused.
+     ON_LINE is 0.01° (about 1 km): every anchor is exactly on its line (distance 0); no real place a check
+     names sits within a kilometre of a line it is not an anchor of — measured over data/wars.json.
+     A place that really WAS at the front that day (Stalingrad on 1942-11-19, Metz before 22 November 1944,
+     Kherson across the Dnieper) is checked as what it was: `'LINE'`, «the record puts this place on a front
+     line that day». Two of the eighteen side checks this refused had asserted the wrong side and passed on
+     the tie — Kherson «Soviet» on 1944-02-15 (German until March) and Bardia «British» on 1941-01-01
+     (Italian until 3–5 January). */
+  const ON_LINE = 0.01;
+  const onLine = war.fronts.some((F) => {
+    if (F.until && date >= F.until) return false;
+    let cur = null; for (const D of F.dates) { if (D.d <= date) cur = D; }
+    return cur && cur.pts.length >= 2 && WarGeom.nearestOnPath([p[0], p[1]], cur.pts).dist < ON_LINE;
+  });
+  if (want === 'LINE') {
+    if (onLine) checked++; else bad(`check FAILED — on ${date} the record says ${place} was on the front, and no line in force passes through it`);
+    continue;
+  }
+  if (onLine) { bad(`check ${warId} ${date} ${place}: the place is ON the line in force that day — a check there cannot tell the sides apart`); continue; }
   const got = factionAtPoint(war, date, [p[0], p[1]]);
   if (got !== want) bad(`check FAILED — on ${date} the map puts ${place} under ${got}, the record says ${want}`);
   else checked++;

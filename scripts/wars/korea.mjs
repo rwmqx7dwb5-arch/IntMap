@@ -113,7 +113,7 @@ const KOREA = {
     ['1951-04-30', 'Yeoncheon', 'DPRK'], ['1951-04-30', 'Seoul', 'UN'], ['1951-04-30', 'Wonju', 'UN'],
     ['1951-06-20', 'Chuncheon', 'UN'], ['1951-06-20', 'Gangneung', 'UN'], ['1951-06-20', 'Kaesong', 'DPRK'],
     /* the stalemate, where only `control` speaks */
-    ['1952-06-01', 'Seoul', 'UN'], ['1952-06-01', 'Cheorwon', 'UN'],
+    ['1952-06-01', 'Seoul', 'UN'], ['1952-06-01', 'Cheorwon', 'LINE'],
     ['1952-06-01', 'Pyongyang', 'DPRK'], ['1952-06-01', 'Kaesong', 'DPRK'],
     ['1953-07-27', 'Seoul', 'UN'], ['1953-07-27', 'Pyongyang', 'DPRK'],
   ],

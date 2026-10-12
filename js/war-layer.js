@@ -249,6 +249,7 @@ export function warLayer(HOST) {
     let awaitClock = false;
     let shownKey = null, curDate = null, curFronts = [], curFrame = null;
     let playT = null, stepDays = 5;
+    const pieceCache = new Map(), PIECE_CACHE = 64;
 
     const war = () => warById(warId);
     const setVis = (v) => IDS.forEach((id) => { try { if (GE().layers.has(id)) GE().layers.setLayout(id, 'visibility', v ? 'visible' : 'none'); } catch (_) { } });
@@ -295,9 +296,20 @@ export function warLayer(HOST) {
       for (const e of entitiesAt(dateStr)) {
         const base = baseFaction(W, e.gw, dateStr);
         const cuts = cutsFor(fronts, e.gw);
-        let pieces;
-        try { pieces = WarGeom.warPieces(polysOf(e.i), base, cuts); }
-        catch (_) { pieces = [{ faction: base, polys: polysOf(e.i) }]; }   /* a country whose cut cannot be computed is drawn whole, under whoever the record says holds it — never dropped */
+        /* (war-fill-nearest-front) the pieces depend only on the country, its base side and the dated lines cutting it,
+           and those change on a line's date, not daily — so a played or scrubbed war asks WarGeom once per line, not per
+           day. MEASURED 2026-10-13 (node 24): a country two fronts cut is split where the nearest front changes, mean 30 ms,
+           worst 91 ms (Russia, 1915-08-05). */
+        const pk = e.i + '|' + base + '|' + fronts.filter((a) => a.D.cuts.indexOf(e.gw) >= 0).map((a) => a.F.id + '@' + a.D.d).join(',');
+        let pieces = pieceCache.get(pk);
+        if (!pieces) {
+          try { pieces = WarGeom.warPieces(polysOf(e.i), base, cuts); }
+          catch (_) { pieces = [{ faction: base, polys: polysOf(e.i) }]; }   /* a country whose cut cannot be computed is drawn whole, under whoever the record says holds it — never dropped */
+          pieceCache.set(pk, pieces);
+          /* at most PIECE_CACHE keys: a day has one key per country a line cuts — at most nine in data/wars.json (measured
+             2026-10-13: WW1 on 1916-11-18) — so this holds several line changes either side of the clock */
+          if (pieceCache.size > PIECE_CACHE) pieceCache.delete(pieceCache.keys().next().value);
+        }
         for (const p of pieces) {
           const fac = W.factions[p.faction] || W.factions.NEUTRAL;
           areas.features.push({
