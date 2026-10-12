@@ -194,6 +194,8 @@ export function parseDate(text) {
   const head = W[0].toUpperCase();
   const pair = (kw2, qual) => {
     const i = W.findIndex((x, j) => j > 0 && x.toUpperCase() === kw2);
+    /* BET needs its AND: «BET 1900» bounds nothing on the far side, and is not «from 1900 on» (FROM alone is a period) */
+    if (qual === 'between' && i < 0) return { raw, qual, phrase, cal: 'gregorian', problem: 'unreadable' };
     const a = dateOf(i > 0 ? W.slice(1, i) : W.slice(1)), b = i > 0 ? dateOf(W.slice(i + 1)) : null;
     if (a.problem) return Object.assign({ raw, qual, phrase }, { cal: a.cal, problem: a.problem });
     if (b && b.problem) return Object.assign({ raw, qual, phrase }, { cal: b.cal, problem: b.problem });
@@ -298,7 +300,14 @@ function coord(v, pos, neg, max) {
 const cleanName = (v) => String(v || '').replace(/\//g, ' ').replace(/\s+/g, ' ').trim();
 
 /* an event structure → { tag, type?, date, place?, lng?, lat? } — the structure carries DATE or PLAC */
+/* the structures the specification defines as ADMINISTRATIVE — when the record itself was made or last edited, not
+   anything that happened to the person: CHANGE_DATE (5.5.1 and 7.0, tag CHAN) and CREATION_DATE (7.0, tag CREA). They carry
+   a DATE (and a TIME) like an event does, so «carries DATE or PLAC» alone would read a file's last edit as the end of a life.
+   The table is the specification's, by structure name; it is not a list of tags found in files. */
+const ADMINISTRATIVE = { CHANGE_DATE: 'CHAN', CREATION_DATE: 'CREA' };
+const ADMIN_TAGS = new Set(Object.values(ADMINISTRATIVE));
 function eventOf(n) {
+  if (ADMIN_TAGS.has(n.tag)) return null;
   const D = kid(n, 'DATE'), P = kid(n, 'PLAC');
   if (!D && !P) return null;
   const ev = { tag: n.tag };

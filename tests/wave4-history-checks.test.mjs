@@ -57,6 +57,8 @@ test('① GEDCOM dates: qualifiers are spans of days, other calendars are conver
   assert.equal(D('29 FEB 1900').problem, 'unreadable', '1900 is not a Gregorian leap year');
   assert.equal(D('@#DJULIAN@ 29 FEB 1700').k0, 17000311, '…but 1700 is a Julian one');
   assert.equal(D('(unknown)').problem, 'phrase');
+  assert.equal(D('BET 1900').problem, 'unreadable', 'BET without its AND bounds nothing — not «1900 onwards»');
+  assert.equal(D('FROM 1900').k1, null, '…while FROM alone is an open period');
   /* what a reader types */
   assert.equal(G.readDateInput('1905-03-12').k0, 19050312);
   assert.equal(G.readDateInput('1905年3月').prec, 'month');
@@ -98,6 +100,12 @@ test('② the file: events by structure, coordinates, families, character sets',
   assert.equal(G.decode(enc.encode('0 HEAD\n1 CHAR ANSEL\n0 @I1@ INDI\n1 NAME é\n')).problem, 'ansel', 'ANSEL with its own bytes is refused, not guessed');
   assert.ok(G.decode(enc.encode('0 HEAD\n1 CHAR ANSEL\n0 @I1@ INDI\n1 NAME Anna\n')).text, '…and read where it is plain ASCII');
   assert.equal(G.decode(new Uint8Array([...enc.encode('0 HEAD\n1 CHAR ANSI\n1 NAME '), 0xE9])).text.slice(-1), 'é', 'ANSI is Windows-1252');
+  /* the record's own administrative dates (CHANGE_DATE / CREATION_DATE) are not events: a life without a death must not
+     run to the day the file was last edited, and a family's edit date must not be counted twice */
+  const admin = G.parseGedcom(['0 HEAD', '1 GEDC', '2 VERS 7.0', '0 @I1@ INDI', '1 NAME A /B/', '1 BIRT', '2 DATE 1900', '1 CHAN', '2 DATE 3 MAR 2024', '3 TIME 10:00', '1 CREA', '2 DATE 1 JAN 2020',
+    '0 @I2@ INDI', '1 NAME C /D/', '0 @F1@ FAM', '1 HUSB @I1@', '1 WIFE @I2@', '1 MARR', '2 DATE 1925', '1 CHAN', '2 DATE 3 MAR 2024', '0 TRLR'].join(String.fromCharCode(10)));
+  assert.deepEqual(admin.people[0].events.map((e) => e.tag), ['BIRT', 'MARR']);
+  assert.deepEqual([admin.counts.events, admin.people[1].events.map((e) => e.tag)], [3, ['MARR']]);
   assert.ok(G.parseGedcom('hello').problems.some((p) => p.what === 'not-gedcom'));
 });
 
