@@ -162,16 +162,20 @@ test('the eye pivot installs both halves and restores the renderer afterwards (#
     /* ⚠ (MapLibre 6) the correction is a CAMERA method now — the modifier chain calls it with `this`
        the camera the map composes — so the repair has to sit on the camera, and so does this probe.
        Under 6.x a patch on the map is never consulted; asking the map would report «unpatched» for
-       a working repair and «patched» for a dead one. */
+       a working repair and «patched» for a dead one.
+       ⚠ (MapLibre 6.13) the method's NAME is asked of the adapter (eyePivotDiag().underGuardName), not
+       written here: 6.13 renamed it, and a copy of the old name in this probe would have gone on
+       reporting «not patched» about a method that no longer exists. */
     const m = window.__mlCam(), wait = ms => new Promise(res => setTimeout(res, ms));
     const D = () => window.IntMapGeoEngine.camera.eyePivotDiag();
-    const patched = () => Object.prototype.hasOwnProperty.call(m, '_elevateCameraIfInsideTerrain');
+    const NAME = D().underGuardName;
+    const patched = () => Object.prototype.hasOwnProperty.call(m, NAME);
     window.IntMapTilt.set(false); await wait(250);
     const off = { diag: D(), patched: patched() };
     window.IntMapTilt.set(true); await wait(250);
     const on = { diag: D(), patched: patched() };
     window.IntMapTilt.set(false); await wait(250);
-    const back = { diag: D(), patched: patched(), stillCallable: typeof m._elevateCameraIfInsideTerrain === 'function' };
+    const back = { diag: D(), patched: patched(), stillCallable: typeof m[NAME] === 'function' };
     return { off, on, back };
   });
   expect(r.on.diag.pivot, 'the setting is on').toBe(true);
@@ -197,7 +201,11 @@ test('the eye pivot installs both halves and restores the renderer afterwards (#
        elevation it is shown is the one the engine is about to apply.
      · And with the flight simulator driving the camera itself (__fsCamActive, the one case the
        tilt hook stands down for), the repair stands down too and the answer is MapLibre's own
-       again — which is only possible if it delegates rather than returning nothing. */
+       again — which is only possible if it delegates rather than returning nothing.
+   ⚠ (MapLibre 6.13) the method answers with a TRANSFORM now — the one it was handed while the camera
+   is clear, a corrected copy otherwise — so «corrects» is read as a changed pitch or zoom. And it is
+   handed the proposal itself rather than a clone, so the repair must judge its own clone: the
+   proposal's elevation coming back untouched is pinned too. */
 test('the underground check is repaired, not suppressed (#R179)', async ({ app }) => {
   test.setTimeout(120000);
   const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
@@ -211,23 +219,28 @@ test('the underground check is repaired, not suppressed (#R179)', async ({ app }
     /* MapLibre's own, from the prototype it was patched over — a fresh clone each time, since the
        repair mutates the transform it is handed (that is the whole point of it) */
     let proto = Object.getPrototypeOf(cam);
-    while (proto && !Object.prototype.hasOwnProperty.call(proto, '_elevateCameraIfInsideTerrain'))
+    const NAME = window.IntMapGeoEngine.camera.eyePivotDiag().underGuardName;
+    while (proto && !Object.prototype.hasOwnProperty.call(proto, NAME))
       proto = Object.getPrototypeOf(proto);
     const lookUp = () => { const t = window.__mlTr().clone(); t.setPitch(150); t.setElevation(0); return t; };
-    const corrects = a => !!(a && (a.pitch != null || a.zoom != null));
-    const raw = proto && proto._elevateCameraIfInsideTerrain;
+    const corrects = (t, a) => !!(a && (a.pitch !== t.pitch || a.zoom !== t.zoom));
+    const ask = (fn) => { const t = lookUp(); return corrects(t, fn(t)); };
+    const raw = proto && proto[NAME];
+    const kept = lookUp(); cam[NAME](kept);
     const out = {
       foundProto: typeof raw === 'function',
-      rawFires: typeof raw === 'function' ? corrects(raw.call(cam, lookUp())) : null,
-      repaired: corrects(cam._elevateCameraIfInsideTerrain(lookUp())),
+      rawFires: typeof raw === 'function' ? ask((t) => raw.call(cam, t)) : null,
+      repaired: ask((t) => cam[NAME](t)),
+      proposalUntouched: kept.elevation === 0 && kept.pitch === 150,
     };
-    try { window.__fsCamActive = true; out.whileFlying = corrects(cam._elevateCameraIfInsideTerrain(lookUp())); }
+    try { window.__fsCamActive = true; out.whileFlying = ask((t) => cam[NAME](t)); }
     finally { window.__fsCamActive = false; }
     return out;
   });
   expect(r.foundProto, 'MapLibre\'s own method must still be on the prototype').toBe(true);
   expect(r.rawFires, 'unrepaired, it rewrites the camera on a look-up — the defect\'s mechanism').toBe(true);
   expect(r.repaired, 'shown the elevation the engine applies, it finds nothing wrong').toBe(false);
+  expect(r.proposalUntouched, 'and the proposal it was handed is not written to — the hook reads it as the gesture\'s history').toBe(true);
   expect(r.whileFlying, 'and it is delegated to, not replaced: the flight sim gets MapLibre\'s own answer').toBe(true);
 });
 
