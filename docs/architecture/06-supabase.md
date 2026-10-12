@@ -10,7 +10,7 @@
 
 ### 6.1 テーブル
 
-**表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](../DATABASE.md)**（pgTAP による実証手順も同じファイル）。現在 **45 表**（`quest_daily_results`（今日のクエストの記録・§8.6.4） /
+**表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](../DATABASE.md)**（pgTAP による実証手順も同じファイル）。現在 **47 表**（`class_sets` と `class_set_answers`（クラスのセットと生徒の提出・§8.6.4） / `quest_daily_results`（今日のクエストの記録・§8.6.4） /
 `map_corrections`（地図の誤り報告・§11） / `place_watches`（見守る場所） / `saved_views` / `collection_shares` / `news_event_entities` / `ai_turn_answers` / `atlas_notebook_entries`（Atlas の
 調査ノート・同期をオンにした読者のみ） / `usage_counts` / `saved_places` / `account_data_catalog` / `profiles` / `profiles_public` / `current_news` / `geo_pins` / `favorites` / `user_prefs` /
 `dashboard_cards` / `ai_usage` / `ai_turns` / `ai_gloss_usage` / `relay_rate_buckets` / `atlas_capability_vectors` / `usage_counts`（匿名の利用統計） / `community_*` 5 表 / `feedback` /
@@ -37,6 +37,11 @@
   RLS で、挿入は場所が呼び手のものであるときだけ、`user_id` はトリガー `tg_place_watches_own` が固定する。判定はページ（§18.1）。
 - **今日のクエストの記録（`quest_daily_results`）** は読者・暦の日・種類ごとに 1 行（主キー）で 5 問の得点だけ（`js/quest-engine.js` の `DAILY_N`・`QUEST_MAX`）。UPDATE の権限が無く
   2 回目は主キーで拒まれる。所有者の RLS、`user_id` はトリガー `tg_quest_daily_results_own` が固定し、UTC で明日より後の日は拒む。pgTAP は `30_quest_daily_test.sql`。
+- **クラスのセット（`class_sets`）と生徒の提出（`class_set_answers`）** — ログインした先生が学ぶクエストをクラスに配る。セットは種類・seed・問題数（5／10）・題・受付中か・
+  コード（8 文字・`gen_random_uuid()` の乱数バイトから。生徒のリンクの鍵）で、所有者の RLS・作成は 1 日 50（`relay_take('class-set')`）。生徒は**アカウントなし**で
+  `class_set_open(code)`・`class_set_submit(code, name, answers)` の 2 つだけを呼ぶ（SECURITY DEFINER・コメントに `ANON MAY CALL:`）。提出は名前と**生の答え**だけで
+  **得点を持たない**（ボードが同じエンジンで採点する）。同じ名前の 2 度目は `name_taken`、締め切ったセットは受け付けない、1 セット 400 まで、提出の速さはセットごとの `relay_take('class-answer')`（一度に 45・10 分で 45 回復、超えると `busy`）。読む・消すはセットの持ち主だけ。
+  作ってから 365 日で提出ごと削除（pg_cron `class-sets-purge`）。pgTAP は `39_class_quest_test.sql`。
 
 **DB の設計図は `supabase/migrations/` だけ**（全テーブル・制約・index・RLS・grants・トリガ・RPC）。本番へ手で SQL を流さない。手順は [`docs/MIGRATIONS.md`](../MIGRATIONS.md)。
 

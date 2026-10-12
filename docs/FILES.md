@@ -1547,6 +1547,10 @@ quest-panel.js                    **学ぶクエストのパネル**——出題
 quest-daily.js                    **今日のクエストの記録と連続日数**——その日のセット（seed `d<YYYY>-<MM>-<DD>`）の最初の結果を、このブラウザ（localStorage
                                   `intmap_quest_daily`）とログイン中はアカウント（`quest_daily_results`）に残し、両方を合わせて連続日数・最近 7 日を数える。
                                   パネル・アカウントのシート・Atlas の learn.daily が同じ集計を読む（遅延・グローバル無し）（§8.6.4）
+quest-class.js                    **クラスのセット**（DOM なし）——クラスのリンク `&class=<code>` の読み書き、答えが運ばれる形（場所＝[lng,lat] 小数 3 桁・年・null）、
+                                  エンジンで全提出を採点する集計（問題ごとの平均・中央値・いちばん苦戦した問題）、CSV、`class_sets`／`class_set_answers` と生徒の 2 つの RPC の扉（§8.6.4）
+quest-class-board.js              **先生のボード**——クラスのセットの一覧・作成・1 セットの結果（リンク・受付の開閉・平均・苦戦した問題・場所の問題のクラスのタップを地図に・
+                                  年の分布・生徒ごとの得点・提出の削除・CSV）。採点は quest-panel.js の questionsOf() のエンジン。Atlas の learn.class も読む（遅延・グローバル無し）（§8.6.4）
 premium-plan.js                   プレミアムの節——ただしその全機能が無料である
 supporter.js                      IntMap を支援する——支援パネルの「支援の使い道」（プラン表の 1 日の上限と
                                   public.operating_stats() の今月の AI 要求数・トークン数）と、控えめな提案カード
@@ -1934,7 +1938,7 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全21本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（52本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（53本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス） ＋ 見守る場所 ＋ 保存した地図と公開コレクション ＋ 地図ドキュメント（ツアー・回答の段）。32本）
   functions/<name>/index.ts       Edge Functions（21本。一覧と各本の役割は Architecture.md §6.2。
