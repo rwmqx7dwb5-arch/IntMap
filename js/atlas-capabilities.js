@@ -345,7 +345,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["time.journey","journey","journeyThroughTime,bordersThen,crossingsThroughTime,routeThroughTime,historicalCrossings","time","paint","map.line","map,explanation","session","none","points",""],
       ["time.stepHere","stepHere","nextChangeHere,previousChangeHere,stepPlaceHistory","time","time","time","map,time","session","none","point",""],
       ["time.quakeHistory","quakeHistory","earthquakeHistory,seismicHistory,quakeRecord,earthquakeRecord,pastEarthquakes","time","panel","panel.quakeHistory,camera","panel,explanation","session","none","place?","quakeHistory"],
-      ["data.companyTies","companyTies","companiesBetweenCountries,foreignCompanies,companiesAbroad,corporatePresence,whoseCompanies","data","paint","map.companyTies","map,explanation","session","none","country?","companyTies"],
+      ["sim.aftershocks","aftershocks","aftershockForecast,aftershockProbability,aftershockOutlook,afterShocks","sim","panel","panel.aftershock,camera","panel,explanation","session","none","place?","aftershock"],
     ];
     /* ⚠ GENERATED ROWS — END */
 

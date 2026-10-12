@@ -444,6 +444,8 @@ export function quakeHistory(HOST) {
       + '<div class="qh-sel-act">';
     h += atIt ? '<span class="qh-at">' + S(L('The map shows this moment', '地図はこの瞬間です')) + '</span>'
       : '<button type="button" class="qh-moment" data-qh="moment" data-time-intent="1">' + S(L('Show this moment', 'この瞬間の地図にする')) + '</button>';
+    /* (wave4-science) the aftershock forecast of the chosen quake — through the one door (js/wb-layers.js `data-as-open`), from M5 */
+    if (e.mag != null && e.mag >= 5) h += '<button type="button" class="nst-all" data-as-open="' + S(e.id) + '">' + S(L('Aftershock forecast', '余震の見通し')) + '</button>';
     if (e.shakemap) h += '<button type="button" class="nst-all" data-qh="shake">' + S(L('Ground shaking (ShakeMap)', '揺れの分布（ShakeMap）')) + '</button>';
     if (e.url) h += '<a class="nst-all qh-usgs" href="' + S(window.IntMapSafe.url(e.url)) + '" target="_blank" rel="noopener">' + S(L('USGS event page', 'USGS の地震ページ')) + '</a>';
     return h + '</div></div>';

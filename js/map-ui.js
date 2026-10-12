@@ -1658,6 +1658,15 @@ export function layerSidebar(HOST){
         run:()=>_askPoint(_lazy('ashPlume',(ll)=>{ const A=window.IntMapAshPlume; return A&&A.open({ lng:ll.lng, lat:ll.lat }); }),'sim.ashPlume'),
         label:()=>T('Volcanic ash — if it erupted now','火山灰 — いま噴火したら'),
         hint:()=>T('Where the ash of an eruption here would go on the live upper-air wind','ここで噴火したら、実際の上空の風で灰がどこへ行くか') },
+      /* ══ (wave4-science) AFTERSHOCK FORECAST (js/aftershock.js) ══════════════════════════════════════
+         From this list there is no earthquake under the cursor, so the card opens on its chooser — the M5.5+ earthquakes of the
+         last 30 days (USGS's own summary feed) — rather than asking for a point: a forecast belongs to an earthquake, not to a
+         place. The popup, the earthquake record and Atlas `sim.aftershocks` open it on a named quake. One kernel id for all. */
+      { id:'sim.aftershocks', mod:'IntMapAftershock', get ic(){ return String(icon('chart',{size:16})); }, en:'Aftershock forecast',
+        keys:'aftershock aftershocks forecast probability omori earthquake sequence seismic 余震 余震確率 余震の見通し 地震 確率 大森',
+        run:_lazy('aftershock',()=>{ const A=window.IntMapAftershock; return A&&A.open({}); }),
+        label:()=>T('Aftershock forecast','余震の見通し'),
+        hint:()=>T('After a large earthquake, the chance of aftershocks of each size — and how well such forecasts have done','大きな地震のあと、各規模の余震が起きる確率と、その見通しの当たり具合') },
       /* ⚠ (#R296) ONE ROW FOR BOTH — 「電波・通信圏と見通し線解析を統合して」. The panel switches between
          「見通し線」 (geometry / radar shadow) and 「電波・通信圏」 (the same viewshed with refraction, a
          frequency and a link-budget range); the `sim.rf` row that stood below is gone with it. */

@@ -441,6 +441,23 @@ Atlas は `time.placeHistory`（`year` を渡すとその年に有効な行も�
 
 読めなかったとき（時間切れ・拒否・到達不能）は理由を言い、「地震が無かった」とは言わない。0 件は「カタログの答え」と言う。
 
+### 7.3j 余震の見通し (Aftershock forecast) — `js/aftershock.js` / `js/aftershock-core.js`
+
+M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1 年に M3／M5／M6／M7 以上と「本震と同規模以上」の余震が少なくとも 1 回起きる確率と、
+回数の 95% の範囲を出す。モデルは Reasenberg & Jones (1989)、事前分布は USGS が地殻変動の区分ごとに公表した一般パラメータ
+（Page et al. 2016）で、その系列の余震でベイズ更新する（p・c は固定＝USGS の OAF の Bayesian 結合と同じ）。手法の正本は
+`science.html#aftershock`（`js/locales/pages.{en,ja}.js`）、正本の説明（出典・送るもの）は [`docs/MAP-LAYERS.md`](../MAP-LAYERS.md) の「余震の見通し」。
+
+| 部品 | 中身 |
+|---|---|
+| 事実 | `js/aftershock-core.js`（純粋）——区分 `regimeAt`（カリフォルニアの 5 区域→García の 0.05° 格子）・検知限界 `completenessAt` / `mcAt`・余震域 `zoneOf`（Wells & Coppersmith の破壊長、本震と M≥magCentroid の余震の球面重心）・`kIntegral`・`posterior`・`forecast`（事後分布上のポアソン混合で確率と 2.5/50/97.5%）・`run`（答え合わせ `check` を含む）・USGS の `oaf` 製品の読み `oafUrl` / `readOafForecast`・`?as=` |
+| 束 | `data/aftershock-regimes.json.gz`（`scripts/build-aftershock-regimes.mjs`。OpenSHA OAF の 3 ファイルを 1 コミットに固定して無加工で写す・CC0）／`data/aftershock-hindcast.json`（`scripts/build-aftershock-hindcast.mjs`。2015〜2024 年の M7 以上 137 系列を本震の 1 日後に出した見通しと実際） |
+| カードと地図 | `js/aftershock.js`（IntMapLazy の `aftershock`）。ソース `as-src`、層 `as-ring` / `as-pt` / `as-main`。**マスタークロックが見通しの時点**——時計を動かすと読み込み済みの記録から計算し直し、範囲を外れたときだけ読み直す。ライブの時計がライブのまま進むだけでは計算し直さない |
+| 扉 | `js/wb-layers.js`（起動時）——地震ポップアップの「余震の見通し」（M5 以上）・`data-as-open`（地震の記録の選んだ地震からも）・命令 `aftershock.open`・`?as=` の検出。Tools ▾ の `sim.aftershocks` 行（`js/map-ui.js`）は最近 30 日の M5.5 以上の一覧で開く |
+| Atlas | `sim.aftershocks`（`js/atlas-cap-sim.js`。observer `panel`、要約は `forAtlas`、`at` で見通しの時点） |
+
+読めなかったときは理由を言い、「余震が無かった」とは言わない。USGS 自身の予測（いまは ETAS）がある地震では並べて示し、合算しない。
+
 ### 7.4 Chronos（統一時間）と「年」
 
 #### 歴史の束の読み込み
