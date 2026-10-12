@@ -13,7 +13,11 @@
  *  shared_collection(token) (the public read; anon may call it), copy_shared_collection(token).
  *
  *  Reached from: the page's address (`?collection=` — js/auth-ui.js loads this file only then), the «My
- *  places» sheet (js/my-places.js) and Atlas (js/atlas-cap-places.js). Loaded on demand.
+ *  places» sheet (js/my-places.js), Atlas (js/atlas-cap-places.js) and (community-maps) the Community maps directory
+ *  (js/community-maps.js openEntry → openShared). Loaded on demand.
+ *  (community-maps) A collection its owner LISTED carries its listing in the public read — the name it is listed under,
+ *  its summary, how many readers kept it, and the listed collection it was built on — and the card shows it, with a
+ *  way to report it (js/community-maps.js listingSection) and a way on to the rest of Community maps.
  * ==========================================================================*/
 import { IntMapLang } from './lang-registry.js';
 import { IntMapGeoEngine } from './geo-engine.js';   /* the renderer, through the contract */
@@ -21,6 +25,9 @@ import { showPlaces, openDoc, kindLabel } from './my-places.js';
 import { fromSavedView, isTour } from './map-doc.js';   /* (map-document-unify) a published map is a map document: a map, a my map, a tour, an Atlas answer */
 import { MapState } from './map-state.js';   /* the address bar is written through the store's one door */
 
+/* the owner's own columns of a share (supabase/migrations/20261003211500_collection_workspace.sql, + 20261013080000_community_maps.sql) */
+const SHARE_COLS = 'id,collection,title,token,created_at,listed_at,author_name,summary,hidden_at,hidden_reason';
+const SHARE_COLS_BEFORE_LISTING = 'id,collection,title,token,created_at';
 /* the token the database mints: 32 hex characters (gen_random_uuid() without its dashes) */
 const TOKEN_RE = /^[0-9a-f]{32}$/;
 /* A visitor who presses «Add to My places» signed out is sent to sign in, and a sign-in comes back to the bare page
@@ -55,6 +62,13 @@ export function searchWithout(search) {
   q.delete('collection');
   const s = q.toString();
   return s ? '?' + s : '';
+}
+
+/** (community-maps) The address naming `token` as the collection on show, every other query field kept. */
+function searchWith(search, token) {
+  let q; try { q = new URLSearchParams(String(search || '')); } catch (_) { q = new URLSearchParams(); }
+  q.set('collection', String(token));
+  return '?' + q.toString();
 }
 
 
@@ -98,7 +112,9 @@ export async function publishCollection(DB, collection, title) {
 export async function listShares(DB) {
   if (!DB) return { ok: false, error: 'unavailable' };
   try {
-    const { data, error } = await DB.from('collection_shares').select('id,collection,title,token,created_at').order('created_at', { ascending: true });
+    /* (community-maps) the owner's own listing columns too; a database the migration has not reached names no such column (42703) */
+    let { data, error } = await DB.from('collection_shares').select(SHARE_COLS).order('created_at', { ascending: true });
+    if (error && error.code === '42703') ({ data, error } = await DB.from('collection_shares').select(SHARE_COLS_BEFORE_LISTING).order('created_at', { ascending: true }));
     if (error) return { ok: false, error: errOf(error) };
     return { ok: true, shares: (Array.isArray(data) ? data : []).map((s) => Object.assign({}, s, { url: shareUrl(s.token) })) };
   } catch (_) { return { ok: false, error: 'failed' }; }
@@ -125,7 +141,9 @@ async function readShared(DB, token) {
     if (error) return { ok: false, error: errOf(error) };
     if (!data || data.ok !== true) return { ok: false, error: (data && data.error) || 'not_found' };
     return { ok: true, title: String(data.title || ''), collection: data.collection, published_at: data.published_at || null, updated_at: data.updated_at || null,
-      places: Array.isArray(data.places) ? data.places : [], views: Array.isArray(data.views) ? data.views : [] };
+      places: Array.isArray(data.places) ? data.places : [], views: Array.isArray(data.views) ? data.views : [],
+      /* (community-maps) present only while the owner lists it in Community maps (and the operator has not hidden it) */
+      listing: data.listing && typeof data.listing === 'object' ? data.listing : null };
   } catch (_) { return { ok: false, error: 'failed' }; }
 }
 
@@ -221,11 +239,23 @@ function showShared(HOST, token, col) {
   const keep = el('button', { cls: 'acct-btn', id: 'scol-keep', type: 'button', text: T('Add to My places', 'マイプレイスに追加') });
   keep.dataset.effect = 'private';   /* writes the visitor's own rows (copy_shared_collection) — scripts/data-effects.mjs */
   const close = el('button', { cls: 'acct-btn acct-btn-quiet', id: 'scol-close', type: 'button', text: T('Close', '閉じる') });
+  /* (community-maps) the way on from one shared collection to the others readers listed */
+  const more = el('button', { cls: 'acct-btn acct-btn-quiet', id: 'scol-more', type: 'button', text: T('More in Community maps', 'みんなの地図をもっと見る') });
+  more.dataset.effect = 'none';
+  more.onclick = () => { import('./community-maps.js').then((C) => C.openCommunityMaps(HOST)).catch(() => { }); };
+  const listingSlot = el('div', { id: 'scol-listing' });
   const card = el('section', { id: 'scol-card', role: 'region', 'aria-labelledby': 'scol-h' }, [
     el('p', { cls: 'scol-k', text: T('Shared collection · read-only', '共有されたコレクション · 閲覧専用') }),
     el('h2', { id: 'scol-h', text: col.title }),
     el('p', { cls: 'scol-sub', text: T(col.places.length + ' place(s) · ' + col.views.length + ' map(s)', '場所 ' + col.places.length + ' 件 · 地図 ' + col.views.length + ' 件') }),
-  ].concat(body, [el('div', { cls: 'scol-btns' }, [keep, close]), msg]));
+    listingSlot,
+  ].concat(body, [el('div', { cls: 'scol-btns' }, [keep, close]), el('div', { cls: 'scol-btns' }, [more]), msg]));
+  if (col.listing) {
+    /* the listing's words are the owner's: js/community-maps.js sets every one of them as text */
+    import('./community-maps.js').then((C) => {
+      if (listingSlot.isConnected) listingSlot.appendChild(C.listingSection(HOST, token, col.listing, (t) => { openShared(HOST, t); }));
+    }).catch(() => { });
+  }
   const doCopy = async () => {
     keep.disabled = true;
     const r = await copyShared(HOST.DB, token, null);
@@ -246,6 +276,19 @@ function showShared(HOST, token, col) {
   };
   document.body.appendChild(card);
   return { pins, copy: doCopy };
+}
+
+/** (community-maps) Open a published collection by its token from inside the app (the directory, a «built on» link):
+ *  the address names it — so a reload, or the link copied from the bar, opens the same collection — and its card is
+ *  shown exactly as its link would show it. @returns {Promise<{ok, error?, pins?}>} */
+export async function openShared(HOST, token) {
+  const t = String(token || '').trim().toLowerCase();
+  if (!TOKEN_RE.test(t) || !HOST) return { ok: false, error: 'not_found' };
+  const col = await readShared(HOST.DB, t);
+  if (!col.ok) return col;
+  try { const GE = IntMapGeoEngine; if (GE && GE.whenCanDraw) await GE.whenCanDraw(); } catch (_) { }
+  MapState.address(searchWith(location.search, t), null);
+  return Object.assign({ ok: true, title: col.title, listing: col.listing }, showShared(HOST, t, col));
 }
 
 /** `?collection=<token>` — or the token a signed-out «Add to My places» left in this tab: read the collection and

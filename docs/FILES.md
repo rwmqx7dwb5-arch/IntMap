@@ -1425,7 +1425,11 @@ my-places.js                      マイプレイス——アカウントに保�
                                   地図ドキュメントを save_view に渡す（1 枚の地図は従来どおりの 4 引数、段のあるものは kind と steps つき）
 shared-collection.js              公開コレクション——publish_collection / 公開の停止（所有者の DELETE）/ 公開の読み取り shared_collection(token) /
                                   自分のアカウントへの写し copy_shared_collection と、`?collection=<token>` で開いたページのカード（場所をピンで、
-                                  地図を一覧で。複数段の地図＝ツアーは授業モードで再生）。auth-ui.js がそのページでだけ読み込む。オンデマンド（collection-workspace）
+                                  地図を一覧で。複数段の地図＝ツアーは授業モードで再生）。auth-ui.js がそのページでだけ読み込む。オンデマンド（collection-workspace）。
+                                  掲載中ならカードに作成者・紹介文・保存された数・元にした地図と報告、アプリ内から開く openShared（community-maps）
+community-maps.js                 みんなの地図——読者が掲載した公開コレクションの目録（community_maps を GET で・語／並び／地図の表示範囲）・
+                                  地図で開く（shared-collection.js openShared）・ライブラリの掲載の箱（list_community_map / unlist・保存された数）・
+                                  公開カードの掲載欄と報告（report_community_map）・管理者の報告一覧と外す／戻す／却下。markup を書かない。オンデマンド
 place-watch.js                    見守る場所——保存した場所の周辺の地震（USGS）・気象警報（警報レイヤー自身の記録）・火山の警戒レベル
                                   （volcano-intel）・独立した複数媒体が報じた出来事（news_events）を、IntMap を開いている間 10 分ごとに
                                   読み、新しいものをトースト 1 回とアカウントボタンの印で知らせ、ダイジェストのシートに出す。判定は
@@ -1521,6 +1525,7 @@ admin-corrections.js              admin-corrections.html の動き——管理�
 map-corrections.js                地図の誤り報告の読者側——カード（地点・表示・年を添付）、送信（reader-reports kind correction）、受付番号の保管、
                                   回答の読み取り（受付番号とアカウント）、回答の通知、公開記録。クリックで取得（起動経路に載らない）
 atlas-cap-corrections.js          Atlas の corrections.* —— report（下書きしてカードを開く・送るのは読者）／mine／log
+atlas-cap-community.js            Atlas の community.* —— browse（目録）／open（地図で開く）／list（掲載・表示名は訊く）／unlist／mine（届いた数）
 admin-inquiries.js                admin-inquiries.html の動き——管理者の確認、相談の一覧・状態・メモ・削除、支援者の掲載・非表示・削除
 admin-pipeline.js                 相談のコンソールの Pipeline タブ（ES module・admin-inquiries.js がタブを開いたとき import()）——会話の段
                                   （lead→talking→trial→adopted|declined）・次にやること・期日。語はページの data-*（inquiry-shape.js が正本）
@@ -1890,7 +1895,7 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全21本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（52本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（53本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス） ＋ 見守る場所 ＋ 保存した地図と公開コレクション ＋ 地図ドキュメント（ツアー・回答の段）。32本）
   functions/<name>/index.ts       Edge Functions（21本。一覧と各本の役割は Architecture.md §6.2。

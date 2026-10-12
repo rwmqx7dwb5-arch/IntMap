@@ -47,6 +47,9 @@ is the human explanation.
 | `quest_daily_results` *(watch-account-product)* | **Today's quest** — one row per (`user_id`, `day`, `kind`) (the primary key): `scores` smallint[] (exactly 5, each 0–1000 — `DAILY_N` and `QUEST_MAX` of `js/quest-engine.js`), `kind` (`where`/`when`), `day` (≥ 2026-10-08, the first day of the day's sets; a trigger refuses a day after tomorrow in UTC), `created_at` (the trigger's). The first finish of a day's set; there is no UPDATE grant, so a second insert of the same day and kind is refused by the key (23505, the page says «already recorded»). | Owner. | Owner INSERT of `day`, `kind`, `scores` only (`user_id` is `auth.uid()`, pinned by trigger `tg_quest_daily_results_own`). No UPDATE, no DELETE (account deletion removes them). |
 | `saved_views` *(collection-workspace)* | An account's **saved maps** — `name` (1-120), `note` (≤2000), `collection` (≤60), `state` (the share link's fragment without `#`, as `js/map-state.js` writes it; CHECK it begins with `v=` and is ≤32,768 characters), `created_at`/`updated_at` (the database's). **One row per document per account** *(map-document-unify)*: `kind` (`view` | `map` | `tour` | `brief` — a name for the Library and Atlas, nothing branches on it), `steps` (NULL for one map with no words of its own — every row saved before documents — else `[{state, title, say, ask}]`, at most `saved_view_steps_limit()` steps and 1 MiB; `state` is the first step that names a map), `doc_md5` generated `md5(state ‖ steps)` with UNIQUE `(user_id, doc_md5)` — equal to `state_md5` (generated `md5(state)`) on every row whose `steps` is NULL, so «the same map is one row» is unchanged and a tour that starts on a saved map is a second row. | Owner (RLS `user_id = auth.uid()`). | **No INSERT grant** — `save_view()` only. Owner: UPDATE of `name`/`note`/`collection` (column grant; the map itself is not rewritten in place), DELETE. |
 | `collection_shares` *(collection-workspace)* | The collections an account chose to **publish read-only** — `collection` (NULL = everything, `''` = unfiled), `title` (1-120), `token` (32 hex of `gen_random_uuid()`, UNIQUE — the link's whole access control), `created_at`/`updated_at`. UNIQUE NULLS NOT DISTINCT `(user_id, collection)`: one share per collection. | Owner. **The public reads a share only through `shared_collection(token)`** — anon holds no privilege on the table (tokens are not listable). | **No INSERT grant** — `publish_collection()` only. Owner: UPDATE of `title` (column grant), DELETE (= unpublish: the link answers `not_found` at once). |
+| `collection_shares` listing *(community-maps)* | The owner's **second** decision, on the same row: `listed_at` (NULL = link only), `author_name` (1-40, no control characters — the name the owner typed for the listing, never the account's e-mail or profile name; CHECK: a listed row has one), `summary` (≤500), `derived_from` (→ `collection_shares(id)`, set null — the share the owner copied INTO this collection), `hidden_at`/`hidden_reason` (≤300 — an administrator's decision). The owner's column grant is still `update (title)`: these are written only by `list_community_map()` / `unlist_community_map()` / `moderate_community_map()`. | Owner (own row). **The public reads the listed, unhidden ones through `community_maps()`** and one through `shared_collection(token)` (`listing`). | The three functions. |
+| `collection_copies` *(community-maps)* | The **copy receipt**: one row per (`share_id` → `collection_shares`, cascade; `user_id` → `auth.users`, cascade) — the collection the copy was filed under (`into_collection` ≤60) and `copied_at`. Not left by an owner copying their own. | The copier (own rows). An owner sees only the count (`my_collection_reach()`, `community_maps()`). anon nothing. | `copy_shared_collection()` only (no INSERT grant). |
+| `community_map_reports` *(community-maps)* | A signed-in reader's **report** on a listed collection: one per (`share_id`, `user_id`) — `reason` (`spam` / `offensive` / `personal_info` / `copyright` / `misleading` / `other`), `note` (≤1000), `status` (`open` / `dismissed` / `actioned`), `created_at`. | The reporter (own rows) and an admin (`is_admin()`). The collection's owner never. | `report_community_map()` (insert / update own) and `moderate_community_map()` (status) only. |
 | `favorites` | Saved (★) article links. | Owner. | Owner. |
 
 ### Community
@@ -155,6 +158,9 @@ itself; `grant execute` means "may call", never "may do".
 - `quest_daily_results.user_id` → **`auth.users(id)`** (cascade) — discovered by `_owned_by_user_cols()`: the export and account deletion reach it.
 - `saved_views.user_id` and `collection_shares.user_id` → **`auth.users(id)`** (cascade) — the same: deleting the
   account removes the maps and every link it published, and the export carries both.
+- *(community-maps)* `collection_copies` and `community_map_reports`: `share_id` → **`collection_shares(id)`** (cascade —
+  unpublishing takes the receipts and reports with it) and `user_id` → **`auth.users(id)`** (cascade — discovered by
+  `_owned_by_user_cols()`); `collection_shares.derived_from` → **`collection_shares(id)`** (set null — the lineage is cut, the listing stays).
 
 ## Functions & triggers
 
@@ -197,6 +203,12 @@ itself; `grant execute` means "may call", never "may do".
 | `public.publish_collection(text, text)` *(collection-workspace)* | SECURITY DEFINER, `search_path=''` | **The only way into `collection_shares`.** Publishes one collection of the caller (NULL = everything) and returns its token with the place / map counts; publishing a published collection returns the **same** token (`created = false`); an empty collection is refused (22023). EXECUTE = authenticated, service_role. |
 | `public.shared_collection(text)` *(collection-workspace, map-document-unify)* | SECURITY DEFINER, `search_path=''`, STABLE | Each map carries its `kind` and `steps` (a visitor plays a published tour). **The public read** — anon may call it (its comment carries `ANON MAY CALL:` — `11_definer_execute_test.sql`). For a published token: `{ok, format:'intmap-collection', version, title, collection, published_at, updated_at, places:[{name,note,collection,lng,lat,zoom}], …}` and the saved maps as `{name,note,collection,state}` entries — what the collection holds **now**, built from named keys (no row id, no account, no e-mail). Anything else: `{ok:false, error:'not_found'}`. |
 | `public.copy_shared_collection(text, text)` *(collection-workspace, map-document-unify)* | SECURITY DEFINER, `search_path=''` | Copies each document with its `kind` and `steps`; «already held» is the same `doc_md5`. A signed-in reader keeps a published collection in **their own** account, filed under the second argument (default: its title): new positions / maps are inserted (`source = 'shared'`), ones already held are left and counted (`places_had` / `views_had`) — copying twice equals copying once. Enforces both fences on what is new (54000). EXECUTE = authenticated, service_role. |
+| `public.list_community_map(text, text, text, text)` *(community-maps)* | SECURITY DEFINER, `search_path=''` | **The only way into Community maps.** Publishes the collection through `publish_collection()` if it is not published (an empty one is refused there, 22023), then lists it under `p_author` (required the first time, kept after; 22023) and `p_summary`; `listed=false` when it was listed already; records `derived_from` (the caller's most recent copy filed into this collection); refuses a hidden collection (55000). Account = `auth.uid()`. EXECUTE = authenticated. |
+| `public.unlist_community_map(text)` *(community-maps)* | SECURITY DEFINER, `search_path=''` | Out of the directory, the link kept; `false` when it was not listed. EXECUTE = authenticated. |
+| `public.community_maps(text, text, integer, integer, double precision[])` *(community-maps)* | SECURITY DEFINER, `search_path=''`, STABLE | **The directory** — anon may call it (`ANON MAY CALL:`): the listed, unhidden, non-empty collections from named keys only (token, title, summary, author, counts, centre and box, `reused`, `derived`, `based_on` while the original is listed); words matched as words (`%`/`_` escaped), sort `new`/`reused`/`updated`, an optional `[w,s,e,n]` box (west > east crosses the antimeridian), ≤50 a page. |
+| `public.my_collection_reach()` *(community-maps)* | SECURITY DEFINER, `search_path=''`, SQL | Per own published collection: `reused` (other accounts' receipts) and `derived` (listed collections built on it). Counts only. EXECUTE = authenticated. |
+| `public.report_community_map(text, text, text)` *(community-maps)* | SECURITY DEFINER, `search_path=''` | One report per collection and account (again = update; reopens a dismissed one); only listed collections (P0002), not one's own (22023). EXECUTE = authenticated. |
+| `public.community_map_reports_admin()` / `public.moderate_community_map(text, text, text)` *(community-maps)* | SECURITY DEFINER, `search_path=''` | The moderation queue (never the reporter) and the decision `hide` (reason required — the owner reads it; open reports → actioned) / `restore` / `dismiss`. `is_admin()` or 42501. EXECUTE = authenticated. |
 | `public.sweep_ai_turns()` | SECURITY DEFINER, `search_path=''` | Deletes turn rows older than a day. The ledger is a scratch pad, not a history. EXECUTE = service_role only. |
 | `public.claim_ai_answer(uuid, text, text, integer, integer)` | SECURITY DEFINER, `search_path=''` | *(atlas-stream-replay)* Decides whether the request with this replay key runs: `claimed` (run it — `attempts` is this run's number, `after_state` is `failed` / `abandoned` when it runs again after an observed failure or a dead run), `done` (the stored answer — do not run), `running` (another request holds it and is beating — wait). One row lock decides, so two retries cannot both run it. Deletes the account's expired rows first. EXECUTE = service_role only. |
 | `public.peek_ai_answer(uuid, text, text)` | SECURITY DEFINER, `search_path=''` | *(atlas-stream-replay)* What a retry finds, without claiming: `done` (with the body) / `failed` / `running` / `abandoned`; no row when nothing was registered or it expired. ai-proxy asks it **before** `consume_ai_turn`, so a stored answer is returned without spending a call. EXECUTE = service_role only. |
@@ -293,7 +305,7 @@ update public.profiles set is_admin = true where email = 'you@example.com';
 ## Data classification (drives backup + retention)
 
 - **A — critical, irreplaceable:** `profiles`, `ai_usage`, `ai_gloss_usage`, `user_prefs`, `favorites`, `saved_places`, `place_watches`,
-  `saved_views`, `collection_shares`, `quest_daily_results`,
+  `saved_views`, `collection_shares`, `collection_copies`, `community_map_reports`, `quest_daily_results`,
   `donations`, `feedback`, `bug_reports`, all `community_*`. User-generated / account data.
   ⚠ **`news_events`, `news_event_articles`, `news_cluster_decisions` and `saved_news_events`
   belong here too.** Re-fetching the feeds returns the articles; it does not return which articles
@@ -338,7 +350,7 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
 
 ### What is tested (files)
 
-- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **45**, key
+- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **47**, key
   PKs/FKs exist, and `profiles_public` does not leak `email`/`is_admin` (and is not a view).
 - **`01_rls_matrix_test.sql`** — the isolation matrix (§7.3): anon can't read PII tables; A
   can't read/update/delete B's rows; A can't self-escalate `is_admin`/`plan`; A can't
@@ -451,6 +463,18 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
   step that is not a map link and too many steps are refused by name; ④ `kind` and `steps` are not updatable in place and
   another account sees none; ⑤ anon reads a published tour's kind and steps (no account id, no `doc_md5`), a copy keeps
   them and a second copy adds nothing.
+
+- **`38_community_maps_test.sql`** *(community-maps)* — ① the two new tables have RLS, their catalogue sentences, no INSERT
+  for anyone but the functions, and the owner cannot write a share's listing columns; ② `list_community_map()` publishes and
+  lists in one call, needs a name the first time, keeps it after (`listed=false`), refuses an empty collection and a 41-character
+  name; ③ anon reads the directory — only listed, non-empty collections, exactly the named keys, no account id or e-mail; words
+  match title and name case-insensitively and a «%» matches nothing; the box finds Japan and Europe and crosses the antimeridian;
+  the page and the sort are clamped; ④ a copy leaves one receipt (twice = once; not for the owner's own), invisible to the owner,
+  who reads the counts; ⑤ a listing built from a copy names the original (title, author, link) — but not an unlisted one, whose
+  link appears nowhere; ⑥ reports: once per account (again = update), not an invented reason, not a link-only collection, not
+  one's own, never read by the owner, not by anon; only an admin reads the queue and hides (with a reason the owner reads; a
+  hidden collection leaves the directory and cuts the lineage, cannot be listed again, and its link still opens), restores or
+  dismisses; ⑦ the export carries the receipts and reports; unpublishing takes them with it and cuts the lineage.
 
 - **`17_ai_counters_never_negative_test.sql`** *(ai-usage-ledger-sign)* — ① over the catalogue: every base
   table in `public` with a `count` column carries a `CHECK (count >= n)`; ② the table owner (the role Studio
