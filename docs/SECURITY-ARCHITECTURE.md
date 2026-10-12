@@ -1156,6 +1156,24 @@ one thing vanilla CI could not otherwise reproduce.
   fragment) — no row id, account id or e-mail, and no whole-row `to_jsonb`, so a column added later is not published by
   accident (`tests/collection-workspace-checks.test.mjs` ①). A map from another account is untrusted text: the client
   re-encodes it through the share-link codec (`js/my-places.js canonicalState`) before keeping or opening it.
+- **Community maps (community-maps):** listing a published collection is a **second** explicit act (`list_community_map()`,
+  definer, account from `auth.uid()`); the owner's column grant on `collection_shares` stays `update (title)`, so the listing
+  columns, the lineage and an administrator's hiding cannot be written directly. The name a listing shows is one the owner
+  types for it (1-40 characters, no control characters) — never the account's e-mail or profile name, and Atlas asks for one
+  rather than make it up. The second anon-callable read, `community_maps()`, returns **only listed, unhidden rows**, from named
+  keys (no row id, account id or e-mail), matches the reader's words as words (`%`, `_`, `` escaped — a «%» is not a wildcard
+  that enumerates), and is asked as a GET (read-only in PostgREST). ⚠ **An unlisted link is never disclosed through somebody
+  else's listing**: the lineage (`based_on`) names the original — with its token — only while that original is listed and not
+  hidden, the rule held at every place it is read (`tests/wave4-community-checks.test.mjs` ①, pgTAP 38 ⑤). Copy receipts
+  (`collection_copies`) and reports (`community_map_reports`) are the writer's own rows with **no INSERT grant**; an owner sees
+  only counts, never who copied or reported. Moderation is `is_admin()`-gated in the function (42501 otherwise), a hide needs a
+  reason the owner reads, and it takes the collection out of the directory without touching the owner's link. ⚠ **A decision
+  must not live on a row its subject can delete**: the hold (`community_map_holds`) and the reports (`community_map_subjects` /
+  `community_map_reports`) are on (account, collection), not on the share row the owner deletes when unpublishing — so
+  unpublishing and publishing again neither lifts a hold nor erases the reports (pgTAP 38 ⑥b). The subject names the owner
+  without a foreign key or a `user_id` column, so `_owned_by_user_cols()` does not hand it to anyone's export and a reporter's
+  export carries an opaque subject id, never the owner's account. Every
+  owner-written word is set as text by `js/community-maps.js`, which writes no markup at all.
 - **Passkeys (WebAuthn):** supabase-js's passkey API (`signInWithPasskey`, `registerPasskey`,
   `auth.passkey.list/delete`; on by default since the SDK stopped reading `experimental.passkey`) —
   sign-in on the login modal, enroll/list/remove in the account Security section. Feature-detected

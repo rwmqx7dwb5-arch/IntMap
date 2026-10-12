@@ -5038,6 +5038,17 @@ migration の既定値・CHECK を照合する。③ ページの読み手と実
 複数一致の地図は開かない・地図は共有リンクの復元で 1 度だけ開く・表示の無い地図は保存しない。④ 入口は動的 import
 （起動経路に載らない）・ログイン待ちのトークンの鍵を auth-ui とカードが共有する・書き込む操作要素は効果を宣言する
 （公開は `outward`）。
+### `tests/wave4-community-checks.test.mjs` (community-maps)
+5 本・データベース無し（DB の半分は `supabase/tests/38_community_maps_test.sql`）。① migration の扉——掲載・掲載の取り消し・報告・写しは
+uuid を取らず `auth.uid()` で口座を決め anon から剥がされ、管理の 2 本は `is_admin()` に訊く。anon に渡る EXECUTE は**全数を発見して**
+`community_maps` と `shared_collection` の 2 本だけ・どちらも理由を書き、答えを名前つきの欄から組む（`user_id`・`id`・`email`・`share_id` の欄も
+行ごとの `to_jsonb` も無い）。元の地図（`based_on`）を読む全箇所が「元が掲載中で非表示でない」を条件に持つ。新しい 2 表は何も持たずに始まり、
+関数以外は書かない。持ち主の列 grant は広がらない。写しの受領は持ち主以外だけが残す。② DB が縛る語（表示名 40・紹介文 500・メモ 1000・
+報告の理由・並び）を migration から読み、ページの定数と一致させる。③ 出荷される純関数を**評価**——名前・項目・経度をまたぐ範囲・地球全体・
+届いた数の文・両言語。④ 扉と Atlas の能力 5 本を**代役の DB で実行**——目録は GET・与えられないものは送らない・空の名前は DB に訊く前に拒む・
+掲載はコレクションの指定が無ければ訊き、表示名が無ければ訊き（Atlas は作らない）何も掲載しない・結果がリンクを運ぶ・掲載していないものを外すのは
+「もう済んでいる」・題が 2 件に一致すれば開かない・地図が無ければ範囲を訊く。⑤ 入口は動的 import・アカウントの行・ギャラリーの宣言された
+イベント・`js/community-maps.js` は markup を書かない。
 ### `tests/collection-workspace.spec.js` (collection-workspace)
 1 本・自分で起動する（クエリは起動時に 1 度だけ読まれるので、起動そのものが主題）。公開の読み取り
 `shared_collection` を PostgREST の形で答え（migration の適用の有無に依らない）、`?collection=<token>` で開いたページを

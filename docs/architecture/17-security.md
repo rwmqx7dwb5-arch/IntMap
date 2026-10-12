@@ -51,7 +51,8 @@
 - **アカウントの目録・書き出し・場所の保存**（`account_data_inventory` / `export_account_data` / `save_place`）＝ Edge Function を持たない SECURITY DEFINER RPC で、口座を名指す引数を持たない
   （`auth.uid()` だけが口座を決める。`delete_account_data(uuid)` が service_role 専用なのと逆の設計）。EXECUTE は `authenticated` だけ。書き出しは `relay_take('account-export')` の柵を持つ。
   `saved_places` へ入る口は `save_place()` だけ（INSERT の grant が無い）で、所有者は列単位 grant で `user_id` / `created_at` を書き換えられない。`save_view` と `publish_collection` も同じ形。
-  `anon` が呼べるのは `shared_collection(token)` だけ（トークン 122 ビットがリンクの鍵・表は `anon` から読めない・返すのは名前つきの欄だけ）。正本は `docs/SECURITY-ARCHITECTURE.md`。
+  `anon` が呼べるのは `shared_collection(token)` と、持ち主が掲載したものだけの目録 `community_maps()` だけ（トークン 122 ビットがリンクの鍵・表は `anon` から読めない・返すのは名前つきの
+  欄だけ）。みんなの地図の掲載・報告・モデレーションも関数だけが書く（`list_community_map` / `report_community_map` / `moderate_community_map`）。正本は `docs/SECURITY-ARCHITECTURE.md`。
 - **無認証中継**は `_shared/relay-guard.js` を共有する（本数と一覧は §6.2）。
 
 ### 17.3 ブラウザ側の設定

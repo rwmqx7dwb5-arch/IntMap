@@ -153,6 +153,11 @@ export const EVENTS = Object.freeze({
     detail: '{ doc }',
     from: ['js/atlas-notebook.js', 'js/tour-builder.js'],
   },
+  'intmap-open-community': {
+    means: 'something asks for Community maps (js/community-maps.js — the collections readers listed for everyone); js/auth-ui.js opens it with the app host',
+    detail: null,
+    from: ['js/showcase-gallery.js'],
+  },
   'intmap-theme': {
     means: 'the colour theme (data-theme on <html>) changed between light and dark; the sky re-renders',
     detail: null,

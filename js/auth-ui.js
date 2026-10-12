@@ -200,6 +200,9 @@ export function authUi(HOST){
     /* (map-document-unify) the Library is asked for by the places that hold no host of their own — the tour builder, Atlas's
        notebook and briefing — with the map document to save into the account, if any (js/bus.js 'intmap-open-library') */
     bus.on('intmap-open-library',(e)=>{ const d=e&&e.detail; import('./my-places.js').then(M=>M.openMyPlaces(HOST,{ save:(d&&d.doc)||null })).catch(()=>{}); });
+    /* (community-maps) Community maps is asked for by the places that hold no host of their own — the gallery (js/bus.js
+       'intmap-open-community'); signed out it is read-only (the directory is public), so no sign-in is asked for */
+    bus.on('intmap-open-community',()=>{ import('./community-maps.js').then(M=>M.openCommunityMaps(HOST)).catch(()=>{}); });
 
     const m=document.createElement('div'); m.id='auth-modal';
     m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:calc(var(--z-toast) + 2000);padding:20px;';
@@ -481,6 +484,7 @@ export function authUi(HOST){
         <div class="acct-card acct-rows">
           <button class="acct-row" id="acct-my-places">${_authL('Library · My places','ライブラリ（マイプレイス）')}</button>
           <button class="acct-row" id="acct-watch">${_authL('Watched places','見守る場所')}</button>
+          <button class="acct-row" id="acct-community">${_authL('Community maps','みんなの地図')}</button>
           <button class="acct-row" id="acct-daily">${_authL('Today’s quest','今日のクエスト')}</button>
           <button class="acct-row" id="acct-your-data">${_authL('What IntMap holds about you','IntMap が保持しているあなたのデータ')}</button>
           <button class="acct-row" id="acct-export" data-effect="private">${_authL('Download a copy of your data (JSON)','データのコピーをダウンロード（JSON）')}</button>
@@ -586,6 +590,8 @@ export function authUi(HOST){
       document.getElementById('acct-my-places').onclick=()=>{ _acctClose(); import('./my-places.js').then(M=>M.openMyPlaces(HOST)).catch(()=>{}); };
       /* (watch-places) the digest of the watched places — and, when the watcher has found something, how much is new */
       document.getElementById('acct-watch').onclick=()=>{ _acctClose(); import('./place-watch.js').then(M=>M.openWatchDigest(HOST)).catch(()=>{}); };
+      /* (community-maps) the collections readers listed for everyone — where the reader's own listed ones appear too */
+      document.getElementById('acct-community').onclick=()=>{ _acctClose(); import('./community-maps.js').then(M=>M.openCommunityMaps(HOST)).catch(()=>{}); };
       try{ const n=+(document.getElementById('btn-account')||{getAttribute:()=>0}).getAttribute('data-watch-new')||0;
         if(n>0) document.getElementById('acct-watch').textContent=_authL('Watched places','見守る場所')+' · '+_authL(n+' new','新着 '+n); }catch(_){}
       /* (watch-account-product) today's quest — the day's sets and the streak, kept in the account (js/quest-daily.js). The row
