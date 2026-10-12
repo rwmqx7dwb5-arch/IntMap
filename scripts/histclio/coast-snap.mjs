@@ -155,7 +155,12 @@ export function sheetReach(y, years, floor, csMin) {
    → { rows: [{ k, t, rank, i, sy, name, s, e, polys, bb, band }], heads, csMin, csMax, years }
    `i` is the row's index in its bundle (for a sheet, the feature's index in its sheet, `sy` the sheet's year; a sheet's
    unnamed shapes are rows with i = −1 − blank index). `name` is the record's English, '' where it draws the shape
-   without one (a sheet's blank, a name Cliopatria's review withholds). Cliopatria's realms are not rows: a realm is the
+   without one (a sheet's blank).
+   ⚠ (clio-great-britain-name) A NAME THE REVIEW WITHHOLDS IS NOT A BLANK. The row is still the record's polity — its
+   outline, its realm and its card stay; only the label is not drawn, because history places that name elsewhere in time
+   (scripts/histclio/review.json `rows`). So its identity here is the withheld name (`wn`), and its coast is matched like
+   any other row's. MEASURED 2026-10-12: withholding «Kingdom of Great Britain» after 1800 took 37 coast pieces off the
+   map with the name (Kuwait 1886–1961 among them) — land the row draws went blank because its label did. Cliopatria's realms are not rows: a realm is the
    union of member rows drawn over them (scripts/hist-fidelity.mjs counts its ground through them the same way). */
 export function loadRows() {
   const heads = {}, rows = [];
@@ -177,7 +182,7 @@ export function loadRows() {
       d.feats.forEach((f, i) => push(T, rank, i, (f[0] && f[0].en) || '', Math.max(ymd(f[2], f[3], f[4]), lo), Math.min(ymd(f[5], f[6], f[7]), hi), res(d, f[8]), null, f));
     } else if (T.t === 'clio') {
       const lo = ymd(d.window[0], 1, 1), hi = ymd(d.window[1] + 1, 1, 1);
-      d.feats.forEach((f, i) => { if (f[9] && f[9].r) return; push(T, rank, i, (f[0] && f[0].en) || '', Math.max(ymd(f[2], f[3], f[4]), lo), Math.min(ymd(f[5], f[6], f[7]), hi), res(d, f[8]), null, f); });
+      d.feats.forEach((f, i) => { if (f[9] && f[9].r) return; push(T, rank, i, (f[0] && f[0].en) || (f[9] && f[9].wn) || '', Math.max(ymd(f[2], f[3], f[4]), lo), Math.min(ymd(f[5], f[6], f[7]), hi), res(d, f[8]), null, f); });
     } else if (T.t === 'sheet') {
       const ys = d.snaps.map((s) => s.y), floor = clockFloor();
       for (const sn of d.snaps) {
@@ -705,7 +710,8 @@ export function writeSnap(rows, heads, results, why, { log = console.error, writ
   log(`${SNAP_FILE}: ${feats.length} rows, ${rings.length} rings, ${rings.reduce((a, r) => a + r.length, 0)} points, ${(body.length / 1e6).toFixed(2)} MB — pieces judged: ${Object.entries(head.judged).map(([k, v]) => k + ' ' + v).join(', ')} (${((Date.now() - t0) / 1000).toFixed(0)} s)`);
   return { head, rings, feats };
 }
-export const snapName = (f) => (typeof f[0] === 'string' ? f[0] : ((f[0] && f[0].en) || ''));
+/* a snap row's polity: its name, or the name the review withholds from its parent (the identity loadRows matches on) */
+export const snapName = (f) => (typeof f[0] === 'string' ? f[0] : ((f[0] && f[0].en) || (f[9] && f[9].m && f[9].m.wn) || ''));
 
 /* ══ READING THE BUNDLE (the gates, the tests and scripts/hist-fidelity.mjs) ════════════════════════
    the snap rows in force on [y, m, d], each with its parent row → [{ f, parent, polys }] */
