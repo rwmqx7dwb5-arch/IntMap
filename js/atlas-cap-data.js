@@ -520,6 +520,53 @@ export default [
         companySites: { country: cc, sites: q.sites, totalCompanies: nCo, groups: q.groups, types: q.types, countries: q.countries, companies: q.companies, of: q.of, asOf: q.generatedAt } } }); },
   },
   {
+    row: ['data.companyTies',           'companyTies',    'companiesBetweenCountries,foreignCompanies,companiesAbroad,corporatePresence,whoseCompanies', 'data', 'paint', 'map.companyTies', 'map,explanation', 'session', 'none', 'country?', 'companyTies'],
+    /* (wave4-companies) the company atlas read by country PAIR: the country a company is headquartered in against the
+       country each of its published sites stands in (js/company-ties.js over data/companies/footprint.json). With a
+       country: «in» = whose companies operate there, «out» = where its companies operate; without one, every pair.
+       It always draws (shaded partners + great-circle lines, claimed under 'map.companyTies', so the 'paint' verdict
+       asks the renderer); "hide" takes it down. Never moves the camera. */
+    doc: [
+      { in: 'tools-panels', at: 920, text: 'COMPANIES BETWEEN COUNTRIES (企業でつながる国・外国企業・海外進出): {"type":"companyTies","action"?:"show"|"hide","country"?:str,"direction"?:"in"|"out","groups"?:["hq"|"office"|"factory"|"rnd"|"logistics"|"other"],"sectors"?:[str]} = reads the company atlas by country pair — a company counts for the country of its headquarters, a site for the country it stands in. With country and direction "in" (default): whose companies have published sites there, by home country, and what share of the sites there belong to companies headquartered elsewhere; direction "out": where the companies headquartered there have sites abroad, by host country, and what share of their sites are abroad. Without country: every cross-border pair, ranked by the number of companies joining them. Always draws the partner countries shaded and a line from home to host for each pair, with a card; "hide" removes them. groups narrows to kinds of site (factories only: ["factory"]); sectors are the company atlas keys (tech, semi, auto, energy, pharma…). Use for 「メキシコに工場を持つ外国企業はどこの国の会社？」「日本企業はどの国に進出している？」「ドイツの企業の海外拠点」「企業でつながる国を地図に」, "whose companies operate in Vietnam", "where do Korean companies have factories abroad", "the corporate links between countries". Only the companies IntMap carries and only the sites their sources publish — not investment statistics; say so. For the sites inside one country regardless of origin use companySites.\n' },
+    ],
+    schema: () => ({ type: 'object', properties: { action: one('show', 'hide'), country: str(), direction: one('in', 'out'), groups: list(one('hq', 'office', 'factory', 'rnd', 'logistics', 'other')), sectors: list(str()) } }),
+    async run(a, dctx, K) { const R = K.R, warn = K.warn, note = K.note, L = K.L, esc = K.esc, ensureData = K.ensureData, resolveCountry = K.resolveCountry, nm = K.nm, countryStats = K.countryStats;
+      const ok = await window.IntMapLazy.need('companyTies'); const T = ok && window.IntMapCompanyTies;
+      if (!T) return R(false, warn(L('The company atlas is not available', '企業アトラスを利用できません')), { meta: { code: 'MODULE_UNAVAILABLE', category: 'capability', retryable: false, produced: [], userGoalSatisfied: false } });
+      if (a.action === 'hide') { T.close(); return R(true, note('✓ ' + esc(L('Companies between countries removed from the map', '企業でつながる国を地図から外しました')))); }
+      let cc = null, cname = '';
+      if (a.country) { try { await ensureData(); } catch (_) { } const c = await resolveCountry(a.country);
+        if (!c || !c.code) return R(false, warn(L('Country not found', '国が見つかりません') + ': ' + esc(a.country)), { meta: { code: 'NOT_FOUND', category: 'input', retryable: false, semanticTarget: a.country, produced: [], userGoalSatisfied: false } });
+        cc = String(c.code).toUpperCase(); cname = c.name || cc; }
+      const dir = a.direction === 'out' ? 'out' : 'in';
+      const groups = Array.isArray(a.groups) && a.groups.length ? a.groups : null, sectors = Array.isArray(a.sectors) && a.sectors.length ? a.sectors : null;
+      let q = null; try { q = await T.query({ country: cc, direction: dir, groups, sectors }); } catch (_) { q = null; }
+      if (!q) return R(false, warn(L('The company sites could not be loaded', '企業の拠点を読み込めませんでした')), { meta: { code: 'UPSTREAM_UNAVAILABLE', category: 'evidence', retryable: true, produced: [], userGoalSatisfied: false } });
+      try { await T.open({ country: cc, direction: dir, groups, sectors }); } catch (_) { }
+      const name = (k) => { try { const s = countryStats && countryStats[k]; return (s && nm(s)) || k; } catch (_) { return k; } };
+      const li = (label, n, sites) => '<li>' + esc(label) + ' <span style="color:var(--text-muted)">' + esc(L(n + ' companies · ' + sites + ' sites', n + ' 社 · ' + sites + ' か所')) + '</span></li>';
+      let html, facts, hits;
+      if (q.kind === 'country') {
+        hits = q.cross.sites;
+        html = '<div style="font-weight:600;margin:2px 0 4px;">' + esc(cname) + ' — ' + esc(!q.sites
+          ? (dir === 'out' ? L('no company headquartered here has a published site in the company atlas', '企業アトラスに、ここに本社を置く企業の公表拠点はありません') : L('the company atlas has no published site here', '企業アトラスに、ここの公表拠点はありません'))
+          : dir === 'out'
+          ? L(q.companies + ' companies headquartered here publish ' + q.sites + ' sites; ' + q.cross.sites + ' (' + q.cross.share + '%) are in ' + q.partners.length + ' other countries', 'ここに本社を置く ' + q.companies + ' 社の公表拠点 ' + q.sites + ' か所のうち ' + q.cross.sites + ' か所（' + q.cross.share + '%）が他の ' + q.partners.length + ' か国')
+          : L('of ' + q.sites + ' published sites here, ' + q.cross.sites + ' (' + q.cross.share + '%) belong to ' + q.cross.companies + ' companies headquartered in ' + q.partners.length + ' other countries', 'ここにある公表拠点 ' + q.sites + ' か所のうち ' + q.cross.sites + ' か所（' + q.cross.share + '%）は、他の ' + q.partners.length + ' か国に本社を置く ' + q.cross.companies + ' 社のもの')) + '</div>';
+        if (q.partners.length) html += '<ol style="margin:4px 0 6px 18px;padding:0;font-size:12px;line-height:1.5;">' + q.partners.map((p) => li(name(p.cc) + ' (' + p.companies.slice(0, 3).map((c) => c.name).join(', ') + (p.nCompanies > 3 ? ', …' : '') + ')', p.nCompanies, p.sites)).join('') + '</ol>';
+        facts = { country: cc, direction: dir, sites: q.sites, companies: q.companies, domestic: q.domestic, cross: q.cross,
+          partners: q.partners.map((p) => ({ cc: p.cc, companies: p.nCompanies, sites: p.sites, groups: p.groups, names: p.companies.map((c) => ({ id: c.id, name: c.name, sites: c.sites })) })) };
+      } else {
+        hits = q.pairs.length;
+        html = '<div style="font-weight:600;margin:2px 0 4px;">' + esc(L(q.cross.sites + ' of ' + q.sites + ' published sites (' + q.cross.share + '%) belong to a company headquartered in another country · ' + q.pairs.length + ' country pairs', '公表拠点 ' + q.sites + ' か所のうち ' + q.cross.sites + ' か所（' + q.cross.share + '%）が他国に本社を置く企業のもの · 国の組 ' + q.pairs.length)) + '</div>';
+        if (q.pairs.length) html += '<ol style="margin:4px 0 6px 18px;padding:0;font-size:12px;line-height:1.5;">' + q.pairs.map((p) => li(name(p.from) + ' → ' + name(p.to), p.nCompanies, p.sites)).join('') + '</ol>';
+        facts = { country: null, sites: q.sites, cross: q.cross, pairs: q.pairs.map((p) => ({ from: p.from, to: p.to, companies: p.nCompanies, sites: p.sites })) };
+      }
+      html += '<div style="font-size:11px;color:var(--text-muted);">' + esc(L('Only the ' + q.of.companies + ' companies in IntMap’s company atlas and the sites their sources publish (profiles of ' + q.of.generatedAt + ') — not investment statistics.', 'IntMap の企業アトラスにある ' + q.of.companies + ' 社について、出典が公表している拠点だけです（プロフィール ' + q.of.generatedAt + ' 時点）。投資統計ではありません。')) + '</div>';
+      return R(true, html, { meta: { code: hits ? 'OK' : 'NO_RESULTS', category: hits ? 'ok' : 'evidence', retryable: false, semanticTarget: cc || 'world', produced: ['map', 'explanation'], userGoalSatisfied: true,
+        companyTies: Object.assign(facts, { of: q.of, asOf: q.of.generatedAt }) } }); },
+  },
+  {
     row: ['data.studio',                'dataStudio',     'tableToMap,mapMyTable,tableStudio,spreadsheetMap',            'data',    'dataStudio', 'map.dataStudio',     'map,panel',           'session', 'none',   '',         '',           'external'],
     /* (data-studio) THE READER'S OWN TABLE ON THE MAP — js/data-studio.js through its published controller. The table is read by the
        map's file door (CSV / TSV / Excel / pasted; an Atlas attachment by name), its place column is recognised by the values

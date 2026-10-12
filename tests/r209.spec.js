@@ -259,6 +259,8 @@ const MEMBER = {
   /* (ux-next) the company footprint. Both of its doors read `query` — Atlas's `company.footprint`
      (js/atlas-cap-data.js) and the session tabs' `company.footprint` (js/session-tabs.js). */
   companyFootprint: ['IntMapCompanyFootprint', 'query'],
+  /* (wave4-companies) companies between countries. Atlas's `data.companyTies` and the kernel's `company.ties` both call open(). */
+  companyTies: ['IntMapCompanyTies', 'open'],
   /* (map-next) the reader's own map. Atlas's `map.myMap` (js/atlas-cap-map.js) refuses a body without `state`. */
   myMap: ['IntMapMyMap', 'state'],
   /* (news-next) the story view. js/news-pulse.js's needStory() takes the body and calls `open`. */

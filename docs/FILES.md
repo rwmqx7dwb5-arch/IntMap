@@ -1148,6 +1148,9 @@ company-facilities.js             選択中の企業の拠点を地図に描く�
 company-footprint.js              **企業の拠点の地図**——全企業の公表拠点を 1 枚に（data/companies/footprint.json）。グループ・業種の
                                   切り替え、表示範囲の企業と国の集計、`query()`（Atlas `data.companySites`）。カメラは動かさない。
                                   遅延（IntMapLazy `companyFootprint`） IntMapCompanyFootprint
+company-ties.js                   **企業でつながる国**——同じ拠点を「本社の国 → 拠点の国」の組で読む（外国企業の割合・海外拠点の割合・
+                                  世界の組）。相手国の塗りと大圏の線、`query()`（Atlas `data.companyTies`）。カメラは動かさない。
+                                  遅延（IntMapLazy `companyTies`） IntMapCompanyTies
 dash-extended.js                  ダッシュボードのキャッシュと拡張情報カード
 widgets.js                        ウィジェット板の入口（export widgets）——
                                   HOST との接続と window.IntMapWidgets2 の公開契約だけを持つ

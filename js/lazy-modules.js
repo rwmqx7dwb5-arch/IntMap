@@ -105,6 +105,7 @@ export const LAZY_REGISTRY = Object.freeze({
   companyData: { publishes: 'IntMapCompanyData', load: () => import('./company-data.js'), mount: (IM_HOST, m) => { window.IntMapCompanyData=m.companyData(IM_HOST); } },
   companyPanel: { publishes: 'IntMapCompanyPanel', load: () => import('./company-panel.js'), mount: (IM_HOST, m) => { window.IntMapCompanyPanel=m.companyPanel(IM_HOST); }, also: ['companyData', 'companyFacilities'] },
   companyFootprint: { publishes: 'IntMapCompanyFootprint', load: () => import('./company-footprint.js'), mount: (IM_HOST, m) => { window.IntMapCompanyFootprint=m.companyFootprint(IM_HOST); }, also: ['companyData'] },
+  companyTies: { publishes: 'IntMapCompanyTies', load: () => import('./company-ties.js'), mount: (IM_HOST, m) => { window.IntMapCompanyTies=m.companyTies(IM_HOST); }, also: ['companyData', 'companyFootprint'] },
   companyFacilities: { publishes: 'IntMapCompanyFacilities', load: () => import('./company-facilities.js'), mount: (IM_HOST, m) => { window.IntMapCompanyFacilities=m.companyFacilities(IM_HOST); }, also: ['companyData'] },
   analysisCorrelate: { publishes: '__imAnalysisCorrelate', load: () => import('./analysis-correlate.js'), mount: (IM_HOST, m) => { m.analysisCorrelate(IM_HOST); } },
   analysisEvents: { publishes: '__imAnalysisEvents', load: () => import('./analysis-world-events.js'), mount: (IM_HOST, m) => { m.analysisEvents(IM_HOST); } },
