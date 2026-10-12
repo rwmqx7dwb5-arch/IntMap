@@ -270,4 +270,34 @@ export default [
       return R(true, html, { meta: { code: n ? 'OK' : 'NO_RESULTS', category: n ? 'ok' : 'evidence', retryable: false, semanticTarget: (r.terms || []).join(','),
         produced: ['panel', 'explanation'], userGoalSatisfied: !!r.terms.length, story: r } }); },
   },
+  {
+    row: ['news.edition',               'newsEdition',    'todayOnTheMap,dailyEdition,newsDigest,todaysNews,dayInNews',  'data',    'panel',   'panel.newsEdition,camera', 'panel,explanation', 'session', 'none',   '',         'newsEdition', 'external'],
+    doc: [
+      { in: 'events', at: 400, text: 'TODAY ON THE MAP (the day\'s news edition): {"type":"newsEdition","day"?:"YYYY-MM-DD","play"?:bool} — every news EVENT reported during the 24 hours up to the Chronos clock\'s instant (or, with "day", during that UTC day of the ~30-day archive), ranked by the number of INDEPENDENT OUTLETS that have reported it, opened as a card and drawn on the map (the top ten numbered, every other placed event as a dot). Replies with the window, how many events (new in the window / continuing from earlier / by 2+ outlets), HOW MANY WERE FIRST REPORTED SINCE THE READER\'S LAST VISIT (this browser opened the edition then) and which of the top ten they are, the top ten (headline, place, outlets, first report), the topics and the countries reported from, and the edition\'s link. "play":true flies the camera to the top ten in order. Use for 「世界で何が起きた？」, 「前回から何が新しい？」, 「最も多く報じられた出来事」, 「10月5日のニュースまとめ」, "what happened in the world today", "what\'s new since I last looked", "today\'s top news on the map", "news digest for yesterday". It follows the Chronos clock. Say that the rank counts outlets — it is not a judgement of importance — and that for a past day the counts are the events\' counts now.\n' },
+    ],
+    /* the reader's own words for it — 「今日」 is here and not in the catalogue text: five blocks already carry it, so as a
+       documentation term it ranks nothing (DOC_TERM_MAX_DF) and only takes the word from the capability that had it */
+    phrases: () => ['今日のニュース', '今日の世界', '前回から新しい', 'ニュースのまとめ'].concat(['today on the map', 'news digest', 'top news today', 'since i last looked', 'what happened today']),   /* the Japanese phrases, then the English words — two lists, not translations of each other */
+    schema: () => ({ type: 'object', properties: { day: str(), play: bool() } }),
+    async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, esc = K.esc;
+      const N = window.IntMapNewsIntel;
+      if (!N || typeof N.edition !== 'function') return R(false, warn(L('Today on the map is not available', '今日の世界を利用できません')), { meta: { code: 'MODULE_UNAVAILABLE', category: 'capability', retryable: false, produced: [], userGoalSatisfied: false } });
+      const day = String(a.day || '').trim();
+      const r = await N.edition(Object.assign(day ? { day } : {}, a.play ? { play: true } : {}));
+      if (r && r.error === 'no_such_day') return R(false, warn(L('There is no edition for that day — give a past or present day as YYYY-MM-DD', 'その日の版はありません。過去か今日の日付を YYYY-MM-DD で指定してください') + ': ' + esc(day)), { meta: { code: 'NEEDS_INPUT', category: 'input', retryable: true, semanticTarget: day, produced: [], userGoalSatisfied: false } });
+      if (!r || r.ok === false) return R(false, warn(L('The news collection could not be read — this does not mean there was no news', 'ニュースの収集を読めませんでした（ニュースが無かったという意味ではありません）')), { meta: { code: 'UPSTREAM_UNAVAILABLE', category: 'evidence', retryable: true, produced: [], userGoalSatisfied: false, errorKind: r && r.errorKind } });
+      const when = r.kind === 'day' ? L('{d} (UTC)', '{d}（UTC）').replace('{d}', String(r.day)) : L('24 hours to {t} UTC', '{t} UTC までの 24 時間').replace('{t}', String(r.until || '').slice(0, 16).replace('T', ' '));
+      let html = '<div style="font-weight:600;margin:2px 0 4px;">' + esc(r.kind === 'day' ? L('The day on the map', 'この日の世界') : L('Today on the map', '今日の世界')) + ' — ' + esc(when) + '</div>';
+      if (!r.events) html += '<div style="font-size:12px;line-height:1.55;">' + esc(L('The news collection has no event reported during this window.', 'この期間に報じられた出来事は、ニュースの収集にありません。')) + '</div>';
+      else {
+        html += '<div style="font-size:12px;line-height:1.55;">' + esc(L('{n} events · {a} new · {b} continuing · {m} by 2+ independent outlets', '{n} 件・新しく {a} 件・以前から続く {b} 件・独立した2媒体以上 {m} 件')
+          .replace('{n}', String(r.events) + (r.cut ? '+' : '')).replace('{a}', String(r.newInWindow)).replace('{b}', String(r.continuing)).replace('{m}', String(r.multiSource))) + '</div>';
+        if (r.newSinceLastVisit != null) html += '<div style="font-size:12px;line-height:1.55;">' + esc(L('{n} first reported since your last visit ({t} UTC) — {k} of the top ten', '前回（{t} UTC）以降に初めて報じられたもの {n} 件——上位10件のうち {k} 件').replace('{n}', String(r.newSinceLastVisit)).replace('{t}', String(r.lastVisit || '').slice(0, 16).replace('T', ' ')).replace('{k}', String(r.newSinceLastVisitInTop))) + '</div>';
+        html += '<ol style="margin:4px 0 6px 18px;padding:0;font-size:12px;line-height:1.5;">' + r.top.map((e) => '<li>' + esc(e.title) + ' <span style="color:var(--text-muted)">(' + esc([e.place || e.country, e.outlets + ' ' + L('outlets', '媒体'), e.newInWindow ? '' : L('continuing from earlier', '以前から続く')].filter(Boolean).join(' · ')) + ')</span></li>').join('') + '</ol>';
+        if (r.countries && r.countries.length) html += '<div style="font-size:11.5px;color:var(--text-muted);">' + esc(L('Reported most from: ', '報道の多い国: ')) + esc(r.countries.slice(0, 6).map((c) => c.country + ' ' + c.events).join(' · ')) + '</div>';
+      }
+      html += '<div style="font-size:11px;color:var(--text-muted);line-height:1.5;">' + esc(L('Ranked by the number of independent outlets that have reported each event — a count, not a judgement of importance.', '各出来事を報じた独立した媒体の数の順——数であって、重要度の判定ではありません。')) + '</div>';
+      return R(true, html, { meta: { code: r.events ? 'OK' : 'NO_RESULTS', category: r.events ? 'ok' : 'evidence', retryable: false, semanticTarget: r.day || 'latest',
+        produced: ['panel', 'explanation'], userGoalSatisfied: true, edition: r } }); },
+  },
 ];

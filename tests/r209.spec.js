@@ -263,6 +263,8 @@ const MEMBER = {
   myMap: ['IntMapMyMap', 'state'],
   /* (news-next) the story view. js/news-pulse.js's needStory() takes the body and calls `open`. */
   newsStory: ['__imNewsStory', 'open'],
+  /* (wave4-news) Today on the map. js/news-pulse.js's needEdition() takes the body and calls `open`. */
+  newsEdition: ['__imNewsEdition', 'open'],
 };
 
 test('R209 ③: every deferred module actually arrives, registers and publishes', async ({ app }) => {
