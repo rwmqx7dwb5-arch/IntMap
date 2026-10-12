@@ -345,6 +345,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["time.journey","journey","journeyThroughTime,bordersThen,crossingsThroughTime,routeThroughTime,historicalCrossings","time","paint","map.line","map,explanation","session","none","points",""],
       ["time.stepHere","stepHere","nextChangeHere,previousChangeHere,stepPlaceHistory","time","time","time","map,time","session","none","point",""],
       ["time.quakeHistory","quakeHistory","earthquakeHistory,seismicHistory,quakeRecord,earthquakeRecord,pastEarthquakes","time","panel","panel.quakeHistory,camera","panel,explanation","session","none","place?","quakeHistory"],
+      ["system.speed","speed","fieldSpeed,loadTime,startupTime,performance,howFast","system","none","","explanation","read","none","",""],
       ["community.browse","communityMaps","browseCommunityMaps,findCommunityMaps,publicMaps,othersMaps,sharedMapsDirectory","community","none","panel.community","explanation","session","none","",""],
       ["community.open","communityMapOpen","openCommunityMap,openListedCollection,showCommunityMap","community","panel","map.object,camera","panel","session","none","",""],
       ["community.list","listCommunityMap","listInCommunityMaps,shareWithEveryone,makeMapPublic","community","none","account.places","explanation","external","explicit","",""],

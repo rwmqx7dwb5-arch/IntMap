@@ -2388,7 +2388,12 @@ scripts/
   build-service-status.mjs        `data/service-status.json` を作る。最新の `upstream-liveness` artifact と `atlas-eval.yml`
                                   の実行記録を gh で読み、言うことが変わったときだけ書く。読めなかった半分は `null` と理由
                                   毎晩の結果を `history` に畳み込む（`advanceHistory`・`--backfill` で残っている結果から埋める）、
-                                  選挙の上流の言葉は宣言から（`readerLedger`）、`atlas-eval-offline` を件数に（`offlineSummary`）
+                                  選挙の上流の言葉は宣言から（`readerLedger`）、`atlas-eval-offline` を件数に（`offlineSummary`）、
+                                  読者の手元での速さを `field-speed.mjs` から（`fieldSpeed`）
+  field-speed.mjs                 **読者の手元での速さ**——公開の読み `public.field_speed()` を頁めくりで読み（鍵は `src/vendor.js`
+                                  から）、版と端末ごとの分位（半数・4 人に 3 人が何秒以内か）と、よく測れた最新の版が前の版より
+                                  遅いか（`judge`・帯 300+ どうしで 10 ポイント）を出す。状態ページの文（en / jp）も `sentences()` がここで作る。
+                                  `build-service-status.mjs` と `worktree.mjs status` が読む
   whats-new.mjs                   **更新情報**——dev-notes/ の `newsen`/`newsjp` から `whats-new.json`・`updates.html`／`ja/updates.html`・
                                   Atom（`updates.xml`／`ja/updates.xml`）・`sitemap-updates.xml` を build 時に dist/ へ（`whatsNewPlugin`）
   connection-ledger.mjs           `data/connection-ledger.json` を、ホスト台帳（outbound-hosts.json）から導出して書く／照合する（security-next）
@@ -2568,7 +2573,8 @@ scripts/
   nightly-blame.mjs               **nightly の赤を、それを起こした変更へ渡す**。退行ごとに main の commit の範囲と、
                                   spec の reach に触れた変更（＝容疑）を証拠つきで並べる。`--markdown` は
                                   `deep-alarm.mjs --append` が Issue に足す節、`--dispatch` は退行と範囲ごとに 1 回
-                                  だけ `nightly-bisect.yml` を起動する（run 名が鍵）。`worktree.mjs status` が 1 行で出す
+                                  だけ `nightly-bisect.yml` を起動する（run 名が鍵）。`worktree.mjs status` が 1 行で出す。
+                                  読めなかった晩は理由ごとに数え、1 晩も読めなかった窓は「赤なし」ではなく「判定していない」と書く
   nightly-bisect.mjs              **どの merge が壊したかを測って決める**。範囲の各 commit（と通った晩＝対照）で
                                   その 1 テストを単独で 3 回走らせ、境目を判定する（culprit / narrowed /
                                   passes-alone / control-not-clean / flaky-at-bad / unmeasured）。判定は nightly の
@@ -2616,6 +2622,8 @@ tests/
   prod-smoke.spec.js              実 URL に対するスモーク（PROD_URL）
   security.spec.js                実ブラウザでの無害化確認
   helpers/network.js              hermetic なルーティングと console の分類
+  helpers/field-speed-page.mjs    本物の `js/usage-counts.js` を偽のページで 1 回起動し、起動画面が上がった後に送られる行を出す
+                                  （起動画面の判定は 1 ページ 1 回の promise なので、1 プロセス＝1 ページ）
   helpers/colour-difference.js    **2色がどれくらい違って見えるか**（sRGB→CIELAB＋CIEDE2000）。
                                   #R487 まで prod-smoke は「見分けられるか」を **sRGB のユークリッド距離**で
                                   訊いていたが、その距離は見え方を順序づけない（出荷中の風の表で実測、

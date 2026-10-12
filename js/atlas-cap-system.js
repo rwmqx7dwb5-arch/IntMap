@@ -237,7 +237,34 @@ export default [
     },
   },
   {
-    row: ['system.module',              'module',         '',                                                          'system',  'panel',   'panel.any',              'panel',               'session', 'none',   '',         ''],
+    /* (field-speed) 「IntMap はどれくらい速く開く？」— how long readers wait for the map to become usable, by release and
+       device, whether the newest release is slower than the one before (scripts/field-speed.mjs decides; the status page
+       carries it), and how long THIS visit took (index.html's launch-screen record). Read only: every number is a
+       measurement that already exists, and one that could not be read is said to be unread, never guessed. */
+    row: ['system.speed',               'speed',          'fieldSpeed,loadTime,startupTime,performance,howFast',          'system',  'none',    '',                       'explanation',         'read',    'none',   '',         ''],
+    doc: [
+      { in: 'more-features', at: 880, text: '{"type":"speed"} = 読者の手元での速さ — HOW FAST INTMAP OPENS FOR READERS, measured on real page loads (anonymous counts, by release): for phones and for computers, how long half of readers and 3 in 4 readers waited until the map could be used, for the newest release with enough page loads; whether the newest well-measured release is SLOWER (or faster, or settles the map less often) than the release before it; and how long THIS visit took. Use for "how fast is IntMap?", "did the last update make it slower?", "why is it slow to start?", 「IntMap は速い？」「起動に何秒かかる？」「最近遅くなった？」「今回の起動は何秒？」. The same reading is the 「読者の手元で開く速さ」 section of the status page {"type":"module","name":"IntMapStatus","method":"open"}.\n' },
+    ],
+    schema: () => (noArgs('speed')),
+    async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, esc = K.esc;
+      /* the status page's own model (describe): its speed section and this visit's row — no second reading of the bundle */
+      let P = null;
+      try { P = await statusPage.describe(); } catch (_) { P = null; }
+      const secs = P && P.status && P.status.sections;
+      const sp = secs && secs.find((x) => x.id === 'speed');
+      if (!sp) return R(false, warn(L('The speed record could not be read.', '速さの記録を読めませんでした。')), { meta: { code: 'SOURCE_UNREADABLE', category: 'upstream', retryable: true, produced: [], userGoalSatisfied: false } });
+      const visit = ((secs.find((x) => x.id === 'device') || { rows: [] }).rows).find((r) => r.icon === 'gauge') || null;
+      const rows = sp.rows.concat(visit ? [visit] : []);
+      /* a muted row says the record is unread or empty — an honest answer, but not a measurement */
+      const ok = sp.rows.some((r) => r.tone !== 'muted') || !!visit;
+      let h = '<div style="font-weight:600;margin:2px 0 6px;">' + icon('gauge') + ' ' + esc(L('How fast IntMap opens for readers', '読者の手元で開く速さ')) + '</div>';
+      h += rows.map((r) => '<div style="font-size:12.5px;line-height:1.5;margin:4px 0;">' + esc(r.title + (r.detail ? ' — ' + r.detail : '')) + '</div>').join('');
+      return R(true, h, { exec: { speed: { rows: rows.map((r) => ({ tone: r.tone, title: r.title, detail: r.detail })) } },
+        meta: { code: ok ? 'OK' : 'SOURCE_UNREADABLE', category: ok ? 'ok' : 'upstream', retryable: !ok, produced: ['explanation'], userGoalSatisfied: ok } });
+    },
+  },
+  {
+    row: ['system.module',              'module',        '',                                                          'system',  'panel',   'panel.any',              'panel',               'session', 'none',   '',         ''],
     doc: [
       { in: 'system.module', text: (c) => 'MODULE fallback (advanced — open/close any IntMap subsystem panel by name, incl. ones with no toolbar button): {"type":"module","name":"IntMapX","method":"open"|"toggle"|"close"|"clear"}. Use only when no specific action or "control" fits. Available modules: ' + c.moduleCatalog() + '\n' },
     ],
