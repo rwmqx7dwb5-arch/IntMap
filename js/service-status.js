@@ -53,10 +53,12 @@ const docLang = () => { try { return IntMapLang.normalise(document.documentEleme
 let bundleP = null;
 /** last night's measurement, or { unreadable: why } — never throws; asked again only after a failure.
     ⚠ NOT `unread`: the bundle itself carries an `unread` list (the halves its builder could not read), and an
-    empty list is truthy — the first draft read every good bundle as unreadable. `usable()` is the one test. */
-export function loadStatus() {
+    empty list is truthy — the first draft read every good bundle as unreadable. `usable()` is the one test.
+    (wave4-sales) `url` is for a page that is not at the site's root (ja/readiness.html): BUNDLE_URL is relative to the DOCUMENT,
+    so such a page names the same file from where it stands. */
+export function loadStatus(url) {
   if (!bundleP) {
-    bundleP = jsonWithin(BUNDLE_URL, BUNDLE_MS).then((b) => (b && typeof b === 'object' ? b : { unreadable: 'parse' }),
+    bundleP = jsonWithin(url || BUNDLE_URL, BUNDLE_MS).then((b) => (b && typeof b === 'object' ? b : { unreadable: 'parse' }),
       (e) => { bundleP = null; return { unreadable: (e && e.reason) || 'network' }; });
   }
   return bundleP;

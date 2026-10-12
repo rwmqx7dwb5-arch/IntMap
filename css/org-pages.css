@@ -141,3 +141,34 @@
   body[data-org-page="school-handout"] .og-handout-dl{ font-size:10px; gap:2px 10px; }
   body[data-org-page="school-handout"] a{ color:#000 !important; text-decoration:none; }
 }
+
+/* (wave4-sales) readiness.html — the network and device check. The allowlist tables work without a script; the result card
+   and each row's last cell are written by js/readiness-page.js, and the tone classes (is-ok / is-warn / is-bad) are its only
+   vocabulary: green reached, amber «the service, not your network» or a slower device, red what IT has to act on. */
+.rd-start{ border:none; font-family:inherit; cursor:pointer; }
+.rd-start[disabled]{ opacity:.55; pointer-events:none; }
+.rd-result .lp-cta button{ border:1px solid var(--pg-line); font-family:inherit; cursor:pointer; }
+#rd-copy-allow{ border:1px solid var(--pg-line); font-family:inherit; cursor:pointer; margin-left:0; }
+.rd-verdict{ border-left:4px solid var(--pg-line); }
+.rd-verdict.is-ready{ border-left-color:#34c759; }
+.rd-verdict.is-partial{ border-left-color:#ff9f0a; }
+.rd-verdict.is-not-ready{ border-left-color:#ff3b30; }
+.rd-lines{ list-style:none; padding:0; margin:10px 0 0; display:grid; gap:4px; font-size:15px; color:var(--pg-ink-2); }
+.rd-lines li{ position:relative; padding-left:18px; }
+.rd-lines li::before{ content:""; position:absolute; left:2px; top:.55em; width:8px; height:8px; border-radius:50%; background:var(--pg-mut); }
+.rd-lines li.is-ok::before{ background:#34c759; }
+.rd-lines li.is-warn::before{ background:#ff9f0a; }
+.rd-lines li.is-bad::before{ background:#ff3b30; }
+.rd-tier{ margin-top:22px; }
+.rd-tier h3{ font-size:17px; margin:0 0 4px; color:var(--pg-ink); }
+.rd-count{ font-size:13px; font-weight:500; color:var(--pg-mut); margin-left:6px; }
+.rd-table table{ font-size:14px; }
+.rd-table td:first-child{ white-space:nowrap; }
+.rd-table td:last-child{ width:220px; color:var(--pg-mut); }
+.rd-table .rd-state.is-ok{ color:#248a3d; }
+.rd-table .rd-state.is-warn{ color:var(--pg-warn); }
+.rd-table .rd-state.is-bad{ color:#d70015; font-weight:600; }
+@media (max-width:640px){
+  .rd-table td:first-child{ white-space:normal; overflow-wrap:anywhere; }
+  .rd-table td:last-child{ width:auto; }
+}

@@ -118,6 +118,12 @@ export const STATIC_ASSETS = [
   'js/service-status.js',
   'js/host-match.js',
   'js/fetch-deadline.js',
+  /* (wave4-sales) …and the rest of js/service-status.js's static imports. MEASURED 2026-10-13: it imports js/bus.js (and that
+     js/mobile-sheet.js), neither of which was copied — so the page's import of the status reader failed in dist/ and the data-
+     sources page never said which supplier had not answered. tests/wave4-sales-checks.test.mjs now walks the import graph of
+     every module this list ships, so a module a raw page reaches cannot be left behind again. */
+  'js/bus.js',
+  'js/mobile-sheet.js',
   /* (#R280) the Terms and the Privacy Policy as ORDINARY PAGES with their own URL — a policy that
      can only be reached by opening the app and clicking a footer link cannot be linked to, cited
      or read by someone deciding whether to sign in at all. Same shape as the two pages above:
@@ -159,6 +165,9 @@ export const STATIC_ASSETS = [
   'contact.html',
   'support.html',
   'security.html',                      // (security-next) what the page sends and to whom, and the private way to report a problem
+  'readiness.html',                     // (wave4-sales) the network and device check an organisation runs before adopting IntMap
+  'js/readiness-page.js',               // (wave4-sales) …the check on that page, a module
+  'js/readiness-check.js',              // (wave4-sales) …and the rules it shares with Atlas (system.readiness), which it imports
   'admin-inquiries.html',
   'js/org-page.js',
   'js/admin-inquiries.js',

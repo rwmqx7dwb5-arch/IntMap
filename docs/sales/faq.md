@@ -19,6 +19,7 @@
 | API はあるか | 研究 | オープンデータ `api/v1/` と埋め込み API（`developers.html`）、引用タブからの国境の GeoJSON。有償の API・稼働保証は無い |
 | 地図に載せる出典表記は | 報道 | 共有 ▸ 引用 の「図の下に入れる出典表記」（絵葉書が焼き込むのと同じ出典。`js/map-recorder.js` `mapCredits`） |
 | 国境をデータで使えるか | 報道・研究・開発者 | 引用タブの GeoJSON。形ごとのライセンスに従う。CShapes 2.0 の形は非営利の条件なので入れない（`js/border-extract.js`・`api/v1/catalog.json`） |
+| うちのネットワーク・端末で動くか／何を許可すればよいか | 学校（情報担当）・接続診断 | `readiness.html` をその端末・ネットワークで実行してもらう。許可リストはページそのもの（`scripts/outbound-hosts.json` の probe、3 層は `js/readiness-check.js`）。[手引き §3b](README.md) |
 
 ## 公開ページに無い問い
 
