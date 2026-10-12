@@ -618,7 +618,7 @@ Atlas は `time.placeHistory`（`year` を渡すとその年に有効な行も�
 - **描かれる線は多角形の輪郭ではない**（`data/border-coast.js`・`scripts/build-border-coast.mjs`）。同梱の海岸線（`data/coastline.json.gz`＝Natural Earth
   1:10m・2 km 許容）に対して、辺のどこか1点でも `INLAND_KM` より内陸なら境界、そうでなければ海岸線の写しと判定し、15の束（`cshapes` /
   `hist-borders` / `hist-borders-late` / `hist-clio` / `hist-coast-snap` / `hist-eras-rest` / `hist-admin1` / `hist-admin2` / `hist-admin3` / `hist-eras` /
-  `hist-kuni` / `hist-admin-fill` / `hist-admin-surveys` / `hist-admin-surveys-nc` / `hist-admin-recon`）の全リング **136,414 本**について「描く run」を
+  `hist-kuni` / `hist-admin-fill` / `hist-admin-surveys` / `hist-admin-surveys-nc` / `hist-admin-recon`）の全リング **136,461 本**について「描く run」を
   印す。束は `data/` を走査して発見し（`discoverBundles()`）、`--check` は印された束の集合が `data/` の束の集合と厳密に一致することを要求する。各
   エントリは自分のグローバル名（`global`）を持つ。面積 0 のリングは描かない（束からは削らない）。印の**読み手は `js/border-coast.js`** ただ1つで、
   `js/time-borders.js` と `js/time-admin1.js` が呼び、run だけをつないだ MultiLineString を線用の source（`imtb-ln-src` / `imta-ln-src` /
