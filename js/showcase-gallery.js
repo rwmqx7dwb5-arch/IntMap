@@ -140,7 +140,9 @@ function wireCards(root) {
    on a phone fills the sheet the field has raised (css/intmap.css #m-search-slot). It is drawn only while the
    field is EMPTY and focused — js/search-geocode.js asks for it then, and the first letter typed replaces it
    with the place candidates. One row, examples then tours, scrolled sideways; «See all» opens the gallery. */
-export function showInResults(res) {
+/** `onLeave` — what «See all» ends where the strip is drawn. Absent: the search's list closes (as it always did);
+ *  the phone sheet's home (js/start-home.js) passes its own, so its strip stays — the shape of js/here-entry.js entryRow. */
+export function showInResults(res, onLeave) {
   if (!res) return false;
   style();
   const g = galleryItems();
@@ -155,7 +157,8 @@ export function showInResults(res) {
   wireCards(res);
   import('./on-this-day.js').then((m) => m.fillSlot(res.querySelector('.otd-slot'))).catch(() => { /* no card: the strip stands alone */ });
   const all = res.querySelector('.sg-all');
-  if (all) all.addEventListener('click', () => { res.style.display = 'none'; res.innerHTML = ''; openGallery(); });
+  const leave = typeof onLeave === 'function' ? onLeave : () => { res.style.display = 'none'; res.innerHTML = ''; };
+  if (all) all.addEventListener('click', () => { leave(); openGallery(); });
   res.style.display = 'block';
   return true;
 }

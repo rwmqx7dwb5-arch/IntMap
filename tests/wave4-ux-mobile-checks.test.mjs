@@ -77,7 +77,25 @@ test('wave4-ux-mobile ③ the search and the home hold one «Where you are» row
   assert.doesNotMatch(he.slice(he.indexOf('export function entryRow('), he.indexOf('export function showEntry(')), /ms-results|res\.innerHTML/, 'the row itself ends nothing');
   const sh = read('js/start-home.js');
   assert.match(sh, /entryRow\(null\)/, 'the home holds the row and ends nothing');
-  assert.match(sh, /showInResults\(gal\)/, 'the day\'s map and the examples are the gallery\'s own strip');
+  assert.match(sh, /showInResults\(gal, \(\) => \{\}\)/, 'the day\'s map and the examples are the gallery\'s own strip, and the home keeps it');
+});
+
+test('wave4-ux-mobile ③b «See all» ends what the caller says: the search\'s list closes, the home keeps its strip', () => {
+  /* MEASURED (review): the handler emptied whatever `res` it was handed, so in the home one press of «See all» left the
+     strip blank until a language change or a re-mount. The ending is the caller's now, as entryRow(onPress) does. */
+  const sg = read('js/showcase-gallery.js');
+  const fn = sg.slice(sg.indexOf('export function showInResults('), sg.indexOf('/** the empty state is showing in this list */'));
+  assert.match(fn, /export function showInResults\(res, onLeave\)/);
+  assert.match(fn, /const leave = typeof onLeave === 'function' \? onLeave : \(\) => \{ res\.style\.display = 'none'; res\.innerHTML = ''; \};/, 'no ending given: the list closes, as in the search');
+  assert.match(fn, /all\.addEventListener\('click', \(\) => \{ leave\(\); openGallery\(\); \}\)/, '«See all» runs the caller\'s ending');
+  assert.equal((fn.match(/res\.innerHTML = ''/g) || []).length, 1, 'the only emptying is the default ending');
+  /* the search still passes no ending, so it keeps closing its list */
+  assert.match(read('js/search-geocode.js'), /G\.showInResults\(res\);/);
+  /* the home's ending empties nothing */
+  const sh = read('js/start-home.js');
+  const call = /showInResults\(gal, \(([^)]*)\) => \{([^}]*)\}\)/.exec(sh);
+  assert.ok(call, 'the home passes its own ending');
+  assert.doesNotMatch(call[2], /innerHTML|display/, 'and it leaves the strip as it is');
 });
 
 test('wave4-ux-mobile ④ the install entry is one held prompt with two doors', async () => {

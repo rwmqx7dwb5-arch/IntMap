@@ -150,7 +150,9 @@ function render() {
   start.replaceChildren();
   const live = document.createElement('section'); live.className = 'sh-live'; start.appendChild(live); drawLive(live);
   start.appendChild(entryRow(null));
-  const gal = document.createElement('div'); gal.className = 'sh-gallery'; start.appendChild(gal); showInResults(gal);
+  const gal = document.createElement('div'); gal.className = 'sh-gallery'; start.appendChild(gal);
+  /* «See all» opens the gallery over the home and leaves the strip where it is (the default empties the search's list) */
+  showInResults(gal, () => {});
   const inst = document.createElement('section'); inst.className = 'sh-install'; start.appendChild(inst); drawInstall(inst);
 }
 
