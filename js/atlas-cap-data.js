@@ -16,7 +16,7 @@
  *  `policy`, `goal`, `chips` and `catalogueSilent`. js/atlas-caps.js says what each one is; nothing outside the
  *  entry names them.
  * ==========================================================================*/
-import { str, num, int, one, list, obj, lat, lng, loose } from './atlas-caps.js';
+import { str, num, int, one, list, obj, lat, lng, loose, bool } from './atlas-caps.js';
 import { weatherFacts } from './atlas-result-facts.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import { jsonWithin } from './fetch-deadline.js';   /* (developer-embed) the open-data catalogue, read under the host's clock */
@@ -542,6 +542,23 @@ export default [
     schema: () => ({ type: 'object', properties: { action: one('open', 'bind', 'style', 'link', 'status', 'clear'), attachment: str(), column: str(),
       kind: one('iso3', 'iso2', 'numeric', 'country', 'city'), within: str(), field: str(), mode: one('categorical', 'graduated'), method: one('quantile', 'equal'), classes: int(2) } }),
     async run(a, dctx, K) { return dataStudioRun(a, K); },
+  },
+  {
+    row: ['data.worldFlows',            'worldFlows',     'countryFlows,countryConnections,migrationFlows,diaspora,migrantStock', 'data', 'panel', 'panel.worldFlows,camera,time', 'panel,explanation', 'session', 'none', 'country', ''],
+    /* (wave4-mobility) WORLD FLOWS — who one country is connected to, each flow read from its own record at the latest year it
+       states at or before the clock (js/world-flows.js over js/world-flows-core.js): PEOPLE (UN DESA International Migrant Stock
+       2024 — how many born here live in each other country, or how many living here were born in each, mid-year 1990…2024), DATA
+       (submarine cable systems landing in both countries and in service by the year — the cable record the map draws) and FLIGHTS
+       (OpenFlights airline routes in June 2014). GOODS are the Trade flows layer's (js/world-packs.js): kind "trade" with `show`
+       opens that layer on the country — one implementation of trade, two doors. Read-only unless `show` (the card and the arcs on the
+       map; with `year`, the clock moves there). */
+    doc: [
+      { in: 'country', at: 600, text: '{"type":"worldFlows","country":str (a country name in English or Japanese, or ISO alpha-3 / alpha-2),"kind"?:"migration"|"cables"|"flights"|"trade" (omitted = all),"direction"?:"out"|"in" (migration: out = born here living abroad, in = living here born abroad; flights: routes departing / arriving; trade: exports / imports; ignored for cables),"year"?:int (the latest year the record states at or before it is read; omitted = the year of the clock, or the latest when the clock is live),"top"?:int (partners returned, default 10),"show"?:bool (open the World flows card and draw arcs to the partners on the map; with kind "trade", open the Trade flows layer on the country instead)} = WORLD FLOWS / 世界とのつながり — WHO ONE COUNTRY IS CONNECTED TO (its emigrants and immigrants, its submarine cables, its airline routes), with the value and share of each partner: migrant stock by country of birth / residence (UN DESA 2024 — a STOCK of people at mid-year, not a number of moves; years 1990, 1995 … 2020, 2024; the DESA total includes origins it does not attribute), submarine cable systems shared (a count of systems, not capacity; cables retired before today are not in the record) and airline routes (OpenFlights June 2014 — routes, not seats or passengers). Goods trade by partner is NOT read here: kind "trade" names the Trade flows layer (wp-dl-trade, CEPII BACI through the OEC) and opens it with show. Use for "where do Mexicans abroad live", "who lives in Japan from abroad", "フィリピン出身者はどこに住んでいる", "日本に住む外国出身者の出身国", "which countries are connected to Egypt by submarine cables", "how has the Indian diaspora changed since 1990". `readings[].partners` are the facts (value, share, onMap); a reading with ok:false and reason "before-record" means the record starts after that year — say so, do not substitute another year. Name the record and its caveat when you quote a number. ' },
+    ],
+    phrases: () => ['移民', '在外', '出身者', '外国出身', '世界とのつながり', '海底ケーブルでつながる'].concat(['emigrants', 'immigrants', 'diaspora', 'migrants from', 'born abroad', 'connected to']),
+    schema: () => ({ type: 'object', properties: { country: str(), kind: one('migration', 'cables', 'flights', 'trade'), direction: one('out', 'in'), year: int(), top: int(1, 250), show: bool() }, required: ['country'] }),
+    /* the run lives beside the card (js/world-flows.js), fetched on first use, so the Atlas chunk does not carry it */
+    async run(a, dctx, K) { const F = await import('./world-flows.js'); return F.atlas(a, K); },
   },
 ];
 

@@ -422,6 +422,11 @@ export const IntMapRefData = (function(){
        ⚠ AND THE ROW SAYS THE DATE, because the reader needs it: the upstream stopped being updated
        in June 2014 and says so itself. A credit that hid that would be the wrong credit. */
     {n:'OpenFlights — airline route database (country-pair route counts for the pandemic simulator; snapshot of June 2014, no longer updated; ODbL 1.0)',u:'https://openflights.org/data.php',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
+    /* (wave4-mobility) World flows (js/world-flows.js) — the record scripts/build-world-flows.mjs reads into data/world-flows.json.
+       CC BY 3.0 IGO allows commercial reuse with credit: the IMS 2024 workbook states it on every sheet (read 2026-10-13). The name
+       below is the `paidBy` of that builder's GOVERNANCE. */
+    {n:'UN DESA Population Division — International Migrant Stock 2024 (CC BY 3.0 IGO)',u:'https://www.un.org/development/desa/pd/content/international-migrant-stock',lic:'CC BY 3.0 IGO',licUrl:'https://creativecommons.org/licenses/by/3.0/igo/',credit:true,
+     cite:'United Nations Department of Economic and Social Affairs, Population Division (2024). International Migrant Stock 2024.'},
     /* (#R678) WHO Global Health Observatory — the UHC service coverage index (SDG 3.8.1) and IHR
        SPAR capacity 7, which give the pandemic simulator each country's medical capacity and
        emergency-response capability instead of the GDP proxy all four capacities used to share.

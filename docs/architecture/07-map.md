@@ -441,6 +441,28 @@ Atlas は `time.placeHistory`（`year` を渡すとその年に有効な行も�
 
 読めなかったとき（時間切れ・拒否・到達不能）は理由を言い、「地震が無かった」とは言わない。0 件は「カタログの答え」と言う。
 
+### 7.3j 世界とのつながり (World flows) — `js/world-flows.js` / `js/world-flows-core.js`
+
+1 つの国が、人・データ・航空路でどの国とどれだけつながっているかを、カードと地図の弧で読む。弧は国から相手へ大圏に沿い、
+太さは最大の相手との比、`›` が流れの向き（「この国の出身者が住む先」「出発する路線」は国から出る、「この国に住む人の出身国」
+「到着する路線」は国へ入る）。リストと地図は同じ相手を同じ順で出す（既定 15 件・「すべて表示」で全件）。
+
+| 流れ | 記録 | 何の数か |
+|---|---|---|
+| 人 | `data/world-flows.json`（`scripts/build-world-flows.mjs` が UN DESA International Migrant Stock 2024 の Table 1 から書く・CC BY 3.0 IGO） | ある国で生まれ別の国に住む人の**ストック**（年央 1990・1995 … 2020・2024）。移動した人数ではない。合計は DESA が述べる値（出身・居住が「その他・不明」の分を含む）で、名指しの相手の和との差を「記録が国を特定していない分」と書く |
+| データ | `data/subcables-meta.json`（海底ケーブルレイヤーと同じ記録） | 両国に陸揚げされ、その年までに運用開始した**系統の数**。容量ではない。退役したケーブルは記録に無いので過去は少なく数える。運用開始年の無い系統は「現在」だけに数える |
+| 航空路 | `data/mobility.json` の `pairs`（OpenFlights 2014 年 6 月） | 国の組ごとの**路線数**。座席・便数・旅客ではない |
+| モノ | **このカードは描かない** | 「貿易フロー」レイヤー（`wp-dl-trade`・`js/world-packs.js`、CEPII BACI を OEC 経由）が既に答える。カードの「モノ」は、そのレイヤーを同じ国と向きで開く扉（行の `change` と、レイヤー族が登録した `IntMapShareState` の `world`——共有リンクと同じ 2 手）。貿易の実装は 1 つ |
+
+| 部品 | 中身 |
+|---|---|
+| 事実 | `js/world-flows-core.js`（純粋）——国の表 `placeIndex`（ISO 3 文字・2 文字・`N:<M49>`）と名前の照合、時刻の規則 `yearFor`（時計の年以前で最も新しい記録の年。記録より前は答えず `before-record` と最初の年）、3 つの読み方、`summarise`（合計・割合・地図外）、`arcLine`（アプリの turf の大圏を経度の連続に直す——180 度線で世界を横切らない）、`arcFeatures` |
+| 国 | Natural Earth（`data/ne-countries` の 10m、公有）の `LABEL_X/Y`・`NAME_EN`・`NAME_JA`・`ISO_N3_EH`。同じ番号を国と属領が持つときは `ADM0_A3 = ISO_A3_EH` の地物が国。Natural Earth に無い DESA の地域（一覧は束の `migration.unplaced`、ビルドが印字する）は DESA の名前で表に残し、位置を持たず、カードが「地図外」と数える |
+| カードと地図 | `js/world-flows.js`（遅延チャンク・窓口を公開しない）。`.country-popup` のカード、ソース `wf-src`（流れを替えると作り直し、`attribution` がその記録を名乗る）と層 `wf-arc` / `wf-arrow` / `wf-end`（順位の丸、押すとその国へ）/ `wf-rank` / `wf-home`。`IntMapTime.on` で読み直し、図の棒を押すと時計がその年へ。枠取りはカードが覆わない部分へ（`js/card-clearance.js`）、地球儀では地球がその部分を満たすズーム（`log2(π·D/512)`）より引かず、国を中心に置く |
+| 扉 | Tools ▾ の「道具」`tool.worldFlows`（`js/map-ui.js`）・地点カードの国の行（`js/place-dossier.js` `data-hn="flows"`）・リンク `?wf=<ISO3>.<流れ>.<向き>`（`src/main.js` → `bootFromUrl`）・Atlas `data.worldFlows`（`js/atlas-cap-data.js`、observer `panel`） |
+
+読めなかったときは「読み込みの失敗であって、つながりが無いという意味ではない」と言う。記録より前の年は別の年で代用しない。
+
 ### 7.4 Chronos（統一時間）と「年」
 
 #### 歴史の束の読み込み

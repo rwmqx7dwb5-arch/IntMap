@@ -1,7 +1,7 @@
 {
   "gov": {
     "note": "これは「まだ果たしていない義務」の台帳であって、免責ではない。 Every entry is a bundle or a builder that does not yet state its own provenance as a value. The gate fails on anything NOT in here, and fails again when the counts are larger than reality — so a repair always shrinks this file, and nothing may be added to it except by a round that says in DEV-NOTES.md why the structure could not state it instead (.agents/rules/no-ad-hoc-hardcoding.md §6).",
-    "generatedAt": "2026-10-09T05:58:06.106Z",
+    "generatedAt": "2026-10-12T18:12:32.699Z",
     "declaredBy": "scripts/data-governance.mjs",
     "cadence": "static"
   },
@@ -1909,6 +1909,19 @@
       "why": "facet-undeclared"
     },
     {
+      "subject": "data/world-flows",
+      "facets": [
+        "origin.publisher",
+        "origin.url",
+        "origin.retrievedAt",
+        "rights.licence",
+        "rights.licenceUrl",
+        "precedence.rank",
+        "precedence.over"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
       "subject": "scripts/build-admin1.mjs → data/admin1-world.json.gz",
       "facets": [
         "origin.retrievedAt",
@@ -3485,6 +3498,24 @@
       "why": "facet-undeclared"
     },
     {
+      "subject": "scripts/build-world-flows.mjs → data/world-flows.json",
+      "facets": [
+        "origin.publisher",
+        "origin.url",
+        "origin.retrievedAt",
+        "rights.licence",
+        "rights.licenceUrl",
+        "freshness.generatedAt",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates",
+        "precedence.rank",
+        "precedence.over"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
       "subject": "scripts/companies/discover.mjs → data/companies/manifest.json",
       "facets": [
         "origin.url",
@@ -3780,8 +3811,8 @@
   ],
   "unreadableDeclaration": [],
   "counts": {
-    "undeclared": 197,
-    "undeclaredFacets": 2558,
+    "undeclared": 199,
+    "undeclaredFacets": 2577,
     "updateFailureExposed": 0,
     "shardsWithoutIndex": 1,
     "unreadableDeclaration": 0
