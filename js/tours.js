@@ -338,12 +338,12 @@ export const TOURS = [
        Republic and Slovakia begin 1993-01-01; the fifteen successor states of the Soviet Union are all in force on
        1993-01-01. ⚠ No sentence dates a single successor state: CShapes starts them on different days (the Baltic
        states 1991-09-06, the Soviet recognition; Belarus 1991-08-25; Ukraine 1991-12-26) and Slovenia and Croatia on
-       1992-04-27, which are not their declarations. ⚠ The second step is 1991-07-01 (the Warsaw Pact's formal end), not
-       the reunification day: on 1990-10-03 the map LABELS the Federal Republic «West Germany» — js/history.js's era name
-       for DEU runs `from:1949,to:1990` by whole years, though the record itself says «Germany» from that day (seen in
-       the captured picture). ⚠ The last step is in 1993, not in the last days of 1991: the map's name
-       rule (js/time-borders.js _CS_ERA 365) calls the record «Soviet Union» through 1991-12-31. Macedonia is not named:
-       the same table labels it «North Macedonia» in every year. Both reported in dev-notes/2026-10-08-sales-schools.md. */
+       1992-04-27, which are not their declarations. The second step is the reunification day itself, 1990-10-03: until
+       the era names changed on days (dev-notes/2026-10-11-era-names-by-day.md) the map labelled the Federal Republic
+       «West Germany» to 31 December 1990, and this step stood on 1991-07-01 to step round it (cold-war-end-true-dates).
+       The last step is in 1993 because that is the first day all fifteen successor states are in force in the record.
+       Macedonia is not named: the map labels it «North Macedonia» in every year (its name table binds «Macedonia» to
+       another item — dev-notes/2026-10-11-era-names-by-day.md §5). */
     id: 'cold-war-end',
     topic: 'history',
     curriculum: ['rekishi-d'],
@@ -362,15 +362,15 @@ export const TOURS = [
           'この地図の国のうち、ワルシャワ条約機構でソ連の同盟国だったのはどの国でしょう。NATO の加盟国はどの国でしょう。'),
       },
       {
-        id: 'europe-1991',
-        title: LA('Europe on 1 July 1991', '1991年7月1日のヨーロッパ'),
+        id: 'europe-1990',
+        title: LA('Europe on 3 October 1990', '1990年10月3日のヨーロッパ'),
         view: { lng: 16, lat: 52, zoom: 3.2, proj: 'f' },
         base: 'map',
-        at: '1991-07-01',
+        at: '1990-10-03',
         layers: [],
         say: LA(
-          '1 July 1991. Germany has been one state again since 3 October 1990, when East Germany joined the Federal Republic — eleven months after the Berlin Wall was opened in November 1989. On this day the Warsaw Pact, the Soviet Union’s military alliance with the states of eastern Europe, is formally dissolved. Czechoslovakia, Yugoslavia and the Soviet Union are still on the map.',
-          '1991年7月1日です。1990年10月3日に東ドイツが西ドイツに加わり、ドイツは再び1つの国になっています。1989年11月にベルリンの壁が開かれてから11か月後のことでした。この日、ソ連と東ヨーロッパの国々の軍事同盟であるワルシャワ条約機構が正式に解散します。チェコスロバキア、ユーゴスラビア、ソ連はまだ地図の上にあります。'),
+          '3 October 1990. East Germany joins the Federal Republic, and Germany is one state again — eleven months after the Berlin Wall was opened in November 1989. Czechoslovakia, Yugoslavia and the Soviet Union are still on the map, and the Warsaw Pact, the Soviet Union’s military alliance with the states of eastern Europe, still exists: it will be dissolved on 1 July 1991.',
+          '1990年10月3日です。東ドイツが西ドイツに加わり、ドイツは再び1つの国になります。1989年11月にベルリンの壁が開かれてから11か月後のことでした。チェコスロバキア、ユーゴスラビア、ソ連はまだ地図の上にあり、ソ連と東ヨーロッパの国々の軍事同盟であるワルシャワ条約機構もまだ存在しています。ワルシャワ条約機構が解散するのは1991年7月1日です。'),
         ask: LA(
           'Compare with 1985. Which border has disappeared? Why might it have been the first to go?',
           '1985年と比べてみましょう。消えた国境はどれでしょう。なぜそれが最初に消えたのでしょう。'),
