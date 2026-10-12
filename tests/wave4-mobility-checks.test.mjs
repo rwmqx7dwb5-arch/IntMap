@@ -94,7 +94,22 @@ test('④ the readings: one cell from both sides; cables never fewer later; flig
   for (let y = 1990; y <= 2024; y++) { const c = C.cablePartners(meta, P, jpn, y); assert.ok(c.systems >= prev, 'cables in service never fall as the year advances (the record holds no retirements)'); prev = c.systems; }
   const now = C.cablePartners(meta, P, jpn, null);
   assert.ok(now.systems >= prev && now.partners.length > 0, 'today counts every listed system that is not planned');
+  /* (review) ONE rule for a year and for today: a planned system is never in service — measured before the fix, the US read 90
+     today and 97 for this year's bar, and a future year counted systems the record calls planned */
+  const thisYear = new Date().getUTCFullYear();
+  const planned = new Set(Object.values(meta.cables).filter((c) => c.isPlanned).map((c) => c.name));
+  assert.ok(planned.size > 0 && Object.values(meta.cables).some((c) => c.isPlanned && c.rfsYear != null), 'the record holds planned systems with a year (the case the rule is about)');
+  for (const i of [jpn, at('USA'), at('EGY'), at('GBR')]) {
+    assert.equal(C.cablePartners(meta, P, i, thisYear).systems, C.cablePartners(meta, P, i, null).systems, P.rows[i].c + ': this year\'s count is today\'s');
+    for (const y of [2000, thisYear, thisYear + 5]) for (const p of C.cablePartners(meta, P, i, y).partners) assert.ok(!p.names.some((n) => planned.has(n)), P.rows[i].c + ' ' + y + ': no planned system is counted in service');
+  }
   const S = C.summarise(P, jpn, 'cables', 'link', null, now.partners, { base: now.systems });
+  /* (review) a cable has no direction: its arcs carry `link`, and the arrowhead layer leaves them out */
+  const cf = C.arcFeatures(P, S).filter((x) => x.properties.k === 'arc');
+  assert.ok(cf.length && cf.every((x) => x.properties.link === 1), 'cable arcs are links');
+  const mf = C.arcFeatures(P, C.summarise(P, jpn, 'migration', 'out', my, C.migrationPartners(MIG, jpn, 'out', my))).filter((x) => x.properties.k === 'arc');
+  assert.ok(mf.length && mf.every((x) => x.properties.link === 0), 'a directed flow is not a link');
+  assert.match(rd('js/world-flows.js'), /id: ARROW, type: 'symbol', source: SRC, filter: \['all', \['==', \['get', 'k'\], 'arc'\], \['!=', \['get', 'link'\], 1\]\]/, 'the arrowhead layer filters links out');
   assert.equal(S.total, now.systems, 'a cable share is of the country\'s systems');
   const mob = json('data/mobility.json');
   const fl = C.flightPartners(mob, P, jpn, 'out');

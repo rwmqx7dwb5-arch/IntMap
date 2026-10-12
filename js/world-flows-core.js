@@ -123,9 +123,9 @@ export function cablePartners(meta, P, i, year) {
     const c = meta.cables[id];
     const cc = c.countryCodes || [];
     if (!cc.includes(me.a2)) continue;
-    let live;
-    if (c.rfsYear != null) live = year == null ? !c.isPlanned : c.rfsYear <= year;
-    else live = year == null && !c.isPlanned;
+    /* ONE rule for a past year and for today: a system the record calls planned is not in service, whatever its year (22 planned
+       systems carry a ready-for-service year; counting them by year alone made the count for a year disagree with today's) */
+    const live = !c.isPlanned && (c.rfsYear != null ? (year == null || c.rfsYear <= year) : year == null);
     if (!live) continue;
     if (c.rfsYear == null) res.undated++;
     res.systems++;
@@ -224,7 +224,7 @@ export function arcFeatures(P, reading, n) {
     const q = P.rows[r.p], to = [q.x, q.y];
     const inward = reading.dir === 'in';
     const line = arcLine(inward ? to : from, inward ? from : to);
-    out.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: line }, properties: { k: 'arc', code: q.c, rank: r.rank, v: r.v, w: max > 0 ? r.v / max : 0 } });
+    out.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: line }, properties: { k: 'arc', code: q.c, rank: r.rank, v: r.v, w: max > 0 ? r.v / max : 0, link: reading.dir === 'link' ? 1 : 0 } });
     out.push({ type: 'Feature', geometry: { type: 'Point', coordinates: to }, properties: { k: 'end', code: q.c, rank: r.rank, w: max > 0 ? r.v / max : 0 } });
   });
   out.push({ type: 'Feature', geometry: { type: 'Point', coordinates: from }, properties: { k: 'home', code: me.c } });

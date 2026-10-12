@@ -456,7 +456,8 @@ function paint() {
         const font = ['literal', ['Noto Sans Regular']];
         L.add({ id: ARC, type: 'line', source: SRC, filter: ['==', ['get', 'k'], 'arc'], layout: { 'line-cap': 'round', 'line-join': 'round' },
           paint: { 'line-color': colour, 'line-width': ['interpolate', ['linear'], ['get', 'w'], 0, 1, 1, 7], 'line-opacity': ['interpolate', ['linear'], ['get', 'w'], 0, 0.45, 1, 0.9] } }, before);
-        L.add({ id: ARROW, type: 'symbol', source: SRC, filter: ['==', ['get', 'k'], 'arc'],
+        /* the arrowhead says which way the flow runs — a link (a cable system shared by both countries) has no way, so no head */
+        L.add({ id: ARROW, type: 'symbol', source: SRC, filter: ['all', ['==', ['get', 'k'], 'arc'], ['!=', ['get', 'link'], 1]],
           layout: { 'symbol-placement': 'line', 'symbol-spacing': 140, 'text-field': '›', 'text-font': font, 'text-size': 16, 'text-keep-upright': false, 'text-rotation-alignment': 'map', 'text-allow-overlap': true, 'text-ignore-placement': true },
           paint: { 'text-color': colour, 'text-halo-color': 'rgba(255,255,255,0.85)', 'text-halo-width': 1.1 } }, before);
         L.add({ id: END, type: 'circle', source: SRC, filter: ['==', ['get', 'k'], 'end'],
