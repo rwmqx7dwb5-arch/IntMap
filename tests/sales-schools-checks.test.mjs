@@ -49,19 +49,19 @@ test('① the turning points the sentences rely on are edges of the record, on t
   assert.ok(!namesOn(ohm, stepAt(OPEN, 'east-asia-1876')).includes('Tokugawa Shogunate'), 'no shogunate in 1876');
 
   const cs = bundle('data/cshapes.js');
-  const on1985 = namesOn(cs, '1985-07-01'), on1991 = namesOn(cs, stepAt(COLD, 'europe-1991')), on1993 = namesOn(cs, stepAt(COLD, 'europe-1993'));
+  const on1985 = namesOn(cs, '1985-07-01'), on1990 = namesOn(cs, stepAt(COLD, 'europe-1990')), on1993 = namesOn(cs, stepAt(COLD, 'europe-1993'));
   assert.ok(on1985.includes('German Democratic Republic'), 'two German states in 1985');
-  assert.ok(!on1991.includes('German Democratic Republic'), 'one German state on the 1991 step (the GDR ends 1990-10-02)');
+  assert.ok(!on1990.includes('German Democratic Republic'), 'one German state on the reunification step (the GDR ends 1990-10-02)');
   assert.ok(namesOn(cs, '1990-10-01').includes('German Democratic Republic'), 'negative: two days before reunification still has it (the row ends 1990-10-02, exclusive)');
-  assert.ok(on1991.includes('Czechoslovakia') && on1991.includes('Russia (Soviet Union)') && on1991.includes('Yugoslavia'));
+  assert.ok(on1990.includes('Czechoslovakia') && on1990.includes('Russia (Soviet Union)') && on1990.includes('Yugoslavia'));
   /* «the day Czechoslovakia divided» — the record's own edge */
   assert.ok(namesOn(cs, '1992-12-30').includes('Czechoslovakia') && !on1993.includes('Czechoslovakia'));
   assert.ok(on1993.includes('Czech Republic') && on1993.includes('Slovakia'));
-  /* «Russia and fourteen other states»: the successors in force on the step, none of them on the 1991 step */
+  /* «Russia and fourteen other states»: the successors in force on the step, none of them on the reunification step */
   const successors = ['Estonia', 'Latvia', 'Lithuania', 'Belarus (Byelorussia)', 'Ukraine', 'Moldova', 'Georgia', 'Armenia',
     'Azerbaijan', 'Kazakhstan', 'Uzbekistan', 'Turkmenistan', 'Kyrgyz Republic', 'Tajikistan'];
   assert.equal(successors.length, 14);
-  for (const s of successors) { assert.ok(on1993.includes(s), s + ' on 1993-01-01'); assert.ok(!on1991.includes(s), s + ' not yet on the 1991 step'); }
+  for (const s of successors) { assert.ok(on1993.includes(s), s + ' on 1993-01-01'); assert.ok(!on1990.includes(s), s + ' not yet on the reunification step'); }
   const step = COLD.steps.find((s) => s.id === 'europe-1993');
   for (const s of successors) assert.ok(step.drawn.labels.includes(s), 'the step declares ' + s);
   /* the Baltic states were independent between the wars (the question points at the 1920 map) */
