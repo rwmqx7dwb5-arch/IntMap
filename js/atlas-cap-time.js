@@ -262,6 +262,22 @@ export default [
     async run(a, dctx, K) { return stepHere(a, K); },
   },
   {
+    row: ['time.lifeAtPlace',           'lifeAtPlace',    'livedUnder,lifeThroughBorders,ancestorJurisdiction,familyHistory', 'time', 'time', 'time,camera',       'map,time,explanation', 'session', 'none',   'point',    ''],
+    /* (wave4-history) A LIFE AT ONE PLACE, READ ACROSS THE BORDER RECORDS — js/family-history.js over the same record as
+       time.placeHistory (js/place-history.js): what the map draws over the point on the first day of the life and on the
+       last, the dated changes inside it (each classified — a change of polity, a record's handover, another row of the same
+       polity, an overlap, a span no record covers — and only the first kind counted), the first-level divisions, and the
+       changes INSIDE a date that is only a year or a month. play:true runs the clock through exactly those days; open:true
+       opens «Family history across borders» with the life filled in (kept only when the reader presses Keep). */
+    doc: [
+      { in: 'time.coverage', at: 520, text: '{"type":"lifeAtPlace","place"?:str,"lng"?:num,"lat"?:num,"from":"YYYY-MM-DD"|"YYYY-MM"|int (astronomical year)|GEDCOM date ("ABT 1905","@#DJULIAN@ 12 MAR 1890"),"to"?:same (default today),"name"?:str,"play"?:bool,"open"?:bool} = A LIFE AT ONE PLACE / 生涯と国境 — for a person (or anyone) who lived at one point from "from" to "to": the polity and the first-level division IntMap\'s historical border records draw over that exact point on the first and on the last day, EVERY DATED CHANGE of what they draw there in between, each with its kind — "polity" (a polity is no longer drawn and another is: COUNTED), "record" (a record hands the ground to another record, e.g. where CShapes begins in 1886: not a change in the world), "version" (another row of the same polity), "overlap" (two claims), "gap" (no record) — the count of polity changes (changesCounted), and when a date is only a year or a month, the changes INSIDE it (changesWithinTheDate: the day decides the answer). Dates in a non-Gregorian calendar are converted (Julian, French Republican, Hebrew). The records date LEGAL SOVEREIGNTY (CShapes 2.0 by treaty from 1886; OpenHistoricalMap from 1689; Cliopatria before) — not wartime occupation: say so, quote the dates and the record names as returned, and never call a "record" change a change of state. play:true runs the master clock through exactly those days at the place; open:true opens the Family history across borders sheet with this life filled in (the reader keeps it). Use for 「祖母は1910年にウージュホロドで生まれ1995年に亡くなった。何回国が変わった？」「動かずに何か国で暮らした？」「曾祖父が1880年にリヴィウで生まれたとき、そこはどこの国だった？」「my great-grandfather was born in Lemberg in 1880 — which country was that?」「how many countries did someone in Uzhhorod live in without moving」. ' },
+    ],
+    phrases: () => ['生涯', '曾祖父', '曾祖母', '祖父', '祖母', '先祖', '家系', '動かずに'].concat(['lived under', 'without moving', 'great-grandfather', 'great-grandmother', 'ancestor', 'genealogy', 'family history']),   /* the Japanese phrases, then the English words — two lists, not translations of each other */
+    schema: () => ({ type: 'object', properties: { place: str(), lng: num(), lat: num(), from: loose(), to: loose(), name: str(), play: bool(), open: bool() }, required: ['from'], anyOf: [{ required: ['place'] }, { required: ['lat', 'lng'] }] }),
+    /* the run lives in js/family-history.js, fetched on first use, so the Atlas chunk does not carry it */
+    async run(a, dctx, K) { const got = await pointOf(a, K); if (got.fail) return got.fail; const { atlasRun } = await import('./family-history.js'); return atlasRun(a, K, got.pt); },
+  },
+  {
     row: ['time.quakeHistory',          'quakeHistory',   'earthquakeHistory,seismicHistory,quakeRecord,earthquakeRecord,pastEarthquakes', 'time', 'panel',  'panel.quakeHistory,camera', 'panel,explanation', 'session', 'none',   'place?',   'quakeHistory'],
     /* (live-news-product) THE EARTHQUAKE RECORD OF A PLACE — js/quake-history.js (the card and the map) over
        js/quake-history-core.js (the facts): every earthquake the USGS ANSS ComCat holds within a radius at or above a
