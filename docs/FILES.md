@@ -82,6 +82,9 @@ og-image.jpg                    リンクのカードの絵（本物の JPEG。�
 （dist だけ）history/years/ ja/history/years/ sitemap-years.xml
                                 年ごとの世界地図（年ごとのページと絵 world-map.svg・世紀ごとの一覧）とその sitemap。
                                 ビルドが scripts/year-pages.mjs で書く（§8.6.4）
+（dist だけ）history/polities/ ja/history/polities/ sitemap-polities.xml
+                                政体の盛衰の入口ページ（政体ごとのページとカード card.png・世紀ごとの一覧）とその sitemap。
+                                ビルドが scripts/polity-pages.mjs で書く（§8.6.4）
 （dist だけ）weekly/ ja/weekly/ sitemap-weekly.xml
                                 今週の地球（ISO 週ごとのページ・一覧・Atom フィード feed.xml）とその sitemap。
                                 ビルドが scripts/weekly-earth-pages.mjs で書く（§8.6.4）
@@ -1390,7 +1393,8 @@ polity-arc.js                     **政体の盛衰**——1 つの政体を全�
                                   記録の切り替わりかを区別）、描かれた面積の推移のグラフ（区間ごとに描いた記録の色・記録の継ぎ目の破線）、最大の
                                   描画面積の年、記録上の別の名前（同じ Wikidata 項目・地図上の同じ名前）。グラフを押すと時計がその年へ、「一生を再生」は
                                   形が変わる年だけをタイムラプスで。索引は data/polity-arcs.json。入口は Chronos パネル・この場所の歴史の各行・
-                                  Atlas `time.polityArc`（docs/architecture/07-map.md §7.4c）
+                                  Atlas `time.polityArc`（docs/architecture/07-map.md §7.4c）。同じ読み手（describe・valueAt・related・chartSvg・largest）で
+                                  政体の盛衰の静的な入口ページ（scripts/polity-pages.mjs、§8.6.4）も書かれる
 family-history.js                 **家族史と国境**——読者の家族（手入力、または GEDCOM の読み込み）の各出来事を、その日・その場所で
                                   歴史の記録が描く政体と第 1 級区分で読み（日付が年・月だけなら幅の中の変化も）、各人物の生涯のあいだの
                                   政体の変化を数える（記録の切り替わり・同じ政体の別の行・重なり・継ぎ目は数えない）。地名は端末の地名辞典と
@@ -2036,6 +2040,11 @@ scripts/
   year-pages.mjs                  年ごとの世界地図の生成器（yearPagesPlugin）——年は記録から規則で選び（chooseYears）、名前と絵は
                                   history-pages.mjs mapReader、出来事は data/on-this-day.json（§8.6.4）
   year-pages-text.mjs             そのページの文の唯一の写し（en + jp）
+  polity-pages.mjs                政体の盛衰の入口ページ・カード・sitemap の生成器と `--queue` の投稿の下書き——政体と事実は
+                                  data/polity-arcs.json を js/polity-arc.js で読み、カードの形は history-pages.mjs mapReader（§8.6.4）
+  polity-pages-text.mjs           そのページと下書きの文の唯一の写し（en + jp）
+  polity-choice.mjs               政体ページのアドレス・一覧・sitemap の名前と Vite プラグイン（polityPagesPlugin）——生成器を import しないので
+                                  history-pages.mjs・year-pages.mjs・vite.config.js が循環なしに読む
   lib/world-svg.mjs               世界の絵（Equal Earth・SVG）を記録の輪郭から描く——表示のための簡略化と日付変更線の処理
   build-weekly-earth.mjs          data/weekly-earth.json を書く——USGS FDSN と NASA EONET に 1 回ずつ訊き、終わった週を足す（無人の定期更新の名簿）（§8.6.4）
   weekly-earth-pages.mjs          今週の地球の静的ページ・Atom フィード・sitemap の生成器（weeklyEarthPagesPlugin）と、`--queue` の投稿の下書き
