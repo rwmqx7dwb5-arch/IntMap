@@ -65,6 +65,7 @@ import { OTD_HUB } from './on-this-day-pages.mjs';
 import { pagePath as updatesPath, feedPath as updatesFeed } from './whats-new.mjs';
 import { readLedger } from './outbound-hosts.mjs';
 import { SENDS_WORDS } from '../js/connections-panel.js';
+import { KIND_WORDS } from '../js/device-storage-panel.js';   /* (wave4-security) the kinds of what is kept in the browser, in the in-map list's own words */
 import { MODEL as CURRICULUM_KIT } from './curriculum-kit.mjs';   /* (curriculum-sales-kit) the unit map's model — units, and the links the app's codecs write */
 import { kindTitle } from '../js/quest-engine.js';                 /* (curriculum-sales-kit) a quest kind's name, the panel's own */
 
@@ -574,6 +575,21 @@ export function securityFacts() {
     unsafeEval: /'unsafe-eval'/.test(scriptSrc),
     leakCheckByPrefix: stated.some((r) => r.sends && r.sends.code === 'credential-prefix'),
     advisoryWatch: advisoryWatch(),
+    device: deviceFacts(),
+  };
+}
+/* (wave4-security) what the browser code keeps in the reader's browser — data/device-storage-ledger.json, which
+   scripts/device-storage-ledger.mjs derives from every storage write in the code and check:datagov holds to it
+   (rule stored-disclosed). Counted by kind, in the list's order; the credentials are named by their own words. */
+function deviceFacts() {
+  const L = JSON.parse(rd('data/device-storage-ledger.json'));
+  if (!Array.isArray(L.names) || !L.names.length) throw new Error('org-pages: data/device-storage-ledger.json names nothing');
+  const unworded = L.kinds.filter((k) => !KIND_WORDS[k]);
+  if (unworded.length) throw new Error('org-pages: no words for these kinds of stored item: ' + unworded.join(', '));
+  if (!Number.isInteger(L.cookiesWritten)) throw new Error('org-pages: data/device-storage-ledger.json does not say how many cookies the code sets');
+  return {
+    names: L.names.length, cookies: L.cookiesWritten,
+    kinds: L.kinds.map((kind) => ({ kind, rows: L.names.filter((r) => r.kind === kind) })).filter((g) => g.rows.length),
   };
 }
 /* (security-hardening) a job that audits the shipped (non-dev) dependencies from the lock, weekly and on every PR */
@@ -600,6 +616,9 @@ function securityBody(F, L) {
   if (S.leakCheckByPrefix) guards.push(T.leakCheck);
   if (S.advisoryWatch) guards.push(T.advisoryWatch);
   guards.push(T.yourData);
+  /* (wave4-security) the kinds of what stays in the browser, each with its count; the sign-in and keys are named */
+  const D = S.device;
+  const deviceTiles = D.kinds.map((g) => `<div class="lp-tile" data-kind="${g.kind}"><h3>${esc(KIND_WORDS[g.kind][0][k])}</h3><p><b>${esc(fill(T.itemsN[k], { n: n(g.rows.length) }))}</b> — ${esc(KIND_WORDS[g.kind][1][k])}</p>${g.kind === 'credential' ? '<ul class="og-list">' + g.rows.map((r) => '<li>' + esc(k === 1 ? r.jp : r.en) + '</li>').join('') + '</ul>' : ''}</div>`);
   const li = (list) => list.map((p) => `<li>${esc(p[k])}</li>`).join('\n        ');
   return `<main class="lp-main">
   <section class="lp-hero lp-hero-t">
@@ -618,6 +637,14 @@ function securityBody(F, L) {
     <p class="lp-sub">${esc(T.sendsNote[k])} <a href="${L.up}privacy.html">${esc(TEXT.footer.privacy[k])} →</a></p>
     <div class="lp-grid3">
       ${sendTiles.join('\n      ')}
+    </div>
+  </section>
+
+  <section class="lp-sec" id="device">
+    <h2>${esc(T.deviceH[k])}</h2>
+    <p class="lp-sub">${esc(fill(T.deviceNote[k], { ...W, names: n(D.names) }))} ${esc(D.cookies ? T.cookiesSome[k] : T.cookiesNone[k])}</p>
+    <div class="lp-grid3">
+      ${deviceTiles.join('\n      ')}
     </div>
   </section>
 

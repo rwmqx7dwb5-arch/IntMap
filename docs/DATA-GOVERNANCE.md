@@ -330,6 +330,25 @@ builder を走らせた日のまま（spacecraft・small-bodies 08-10、osm-dipl
   リクエストされないホストに書いてある、を拒み、`checkRepository` が `data/offline-sources.json` が台帳の導出と一致することを測る。
   ⚠ 規約は変わる——`basis` を開き直した日が分かるよう、変えるときは開発記録に日付を残す。
 
+### 4.8 端末に残すもの — 読者のブラウザに何を書くか（規則 `stored-disclosed`）
+
+通信先（§4.3）が「誰と話すか」なら、これは「**読者のブラウザに何を残すか**」。ブラウザのコード（`js/`・`src/`・`sw.js` と、追跡された各ページのインラインの `<script>`）の
+**全ての書き込み**——`localStorage.setItem`／`sessionStorage.setItem`／`indexedDB.open`／`caches.open`——を
+`scripts/device-storage-ledger.mjs` が acorn で見つける。
+
+- ⚠ **受け手は綴りでなく値の流れで決める。** `idbBackend(indexedDB)` で渡された引数の `idb.open(DB)`（別モジュール）、
+  `const g = idbGlobal(); g.open(…)` も書き込みで、`store.setItem`（ストレージでないオブジェクト）は書き込みではない。
+- ⚠ **名前は束縛で読む**——const・`+`・テンプレート・`?:`・キーのオブジェクト・名前を返す関数・包み関数の引数（呼び出し元が
+  別モジュールでも）。どの束縛も決めない部分は `*`（`'intmap_login_count_'+uid` は `intmap_login_count_*`）。**全体が読めない名前は
+  推測せず拒む**（全てに一致し、何も説明しない）。`caches.keys()` から読み戻した名前を開くのは新しい名前ではない。
+- 語は `scripts/device-storage-words.json`（名前ごとの種類 `credential`／`content`／`history`／`preference`／`cache` と en/jp の語）。
+  名前は意味を述べないので語は導出できない——これはサーバ側の `account_data_catalog` と同じ目録である。
+- ライブラリが自分の名前で書くもの（ログインのセッション `sb-<ref>-auth-token`）は `libraries` に、名前を作る**ソースの行**とともに述べ、
+  門が `node_modules` のその行を読む。ライブラリが名前を変えれば、読者の端末ではなくここで赤くなる。
+- 門が拒むもの: 語の無い名前・書き込みの消えた行・読めない名前・**Cookie の設定**（IntMap のコードは設定しない。セキュリティのページと
+  一覧がそう述べる）・`data/device-storage-ledger.json` が導出と一致しない。読者はその導出を **設定 ▸ プライバシー ▸
+  この端末に保存されているもの**（`js/device-storage-panel.js`）で、自分のブラウザが実際に持つものと突き合わせる。
+
 ---
 
 ## 5. 欠損・異常値・重複 — 測るが、拒まない

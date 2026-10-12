@@ -775,6 +775,9 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
          js/connection-watch.js records from boot and owns this button's one click listener) — and the public security page. -->
     <div class="setting-group" id="connections-group"><label data-i18n="lblConnections">Privacy</label>
       <button type="button" id="btn-connections" class="ai-test-btn" style="width:100%;"><span data-icon="network"></span> <span data-i18n="viewConnections">This page's connections — who it has contacted, and what each is sent</span></button>
+      <!-- (wave4-security) what this browser keeps for IntMap, held against what the code says it writes (js/device-storage-panel.js,
+           fetched on first use; the same listener in js/connection-watch.js opens it) -->
+      <button type="button" id="btn-device-storage" class="ai-test-btn" style="width:100%;margin-top:8px;"><span data-icon="lock"></span> <span data-i18n="viewDeviceStorage">Stored on this device — what IntMap keeps in this browser, and a way to delete it</span></button>
       <a id="link-security" href="./security.html" target="_blank" rel="noopener" class="ai-test-btn" style="width:100%;display:block;box-sizing:border-box;text-align:center;text-decoration:none;margin-top:8px;" data-i18n="viewSecurityPage">Security &amp; trust — how IntMap protects you, and how to report a problem ↗</a>
     </div>
     <!-- (#R211) 「科学的根拠・ロジックの説明ページ」 — the data-source list answers WHERE a number came

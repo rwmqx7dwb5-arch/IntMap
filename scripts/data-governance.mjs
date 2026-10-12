@@ -44,6 +44,10 @@
  *                       ledger row whose host the code no longer requests fails too. The rule itself
  *                       lives in scripts/outbound-hosts.mjs (tests/outbound-hosts-disclosed-checks
  *                       evaluates it on injected files); this gate only runs it.
+ *    stored-disclosed   (wave4-security) every name the browser code WRITES into the reader's browser — storage keys,
+ *                       IndexedDB databases, Cache Storage caches — has a kind and en + jp words in
+ *                       scripts/device-storage-words.json, and data/device-storage-ledger.json is what they derive
+ *                       (the file the reader's «Stored on this device» list reads). Rule: scripts/device-storage-ledger.mjs.
  *    probe-declared     every host the browser REQUESTS declares one representative probe in the
  *                       same ledger (or says why it cannot be probed). Checked here without a
  *                       network; scripts/upstream-liveness.mjs asks them, nightly.
@@ -1187,6 +1191,20 @@ async function main() {
   say('probe-declared', lv.probes.length > 0, lv.probes.length + ' probe(s) declared in ' + OUTBOUND_LEDGER
     + ' for the hosts the browser requests; ' + lv.notRequested.length + ' row(s) are links, dormant, or say why they cannot be probed');
   for (const p of lv.problems) say('probe-declared', false, p);
+
+  /* ── 9. stored-disclosed ─────────────────────────────────────────────────────────────── */
+  /* (wave4-security) The third half of «what the page does with the reader»: not what it ships nor whom it talks to,
+     but what it KEEPS in the reader's browser. Every name the browser code writes (localStorage / sessionStorage /
+     IndexedDB / Cache Storage — parsed, through the code's own bindings) has words and a kind in
+     scripts/device-storage-words.json, no row names a write that is gone, no write's name is unreadable, no cookie is
+     set, and data/device-storage-ledger.json — what the reader's «Stored on this device» list holds the browser
+     against — is what those derive. The rule lives in scripts/device-storage-ledger.mjs; this gate only runs it.
+     ⚠ The same refusal of an empty universe: a parser that found no write has measured nothing. */
+  const { check: checkStored, OUT: STORED_LEDGER } = await import('./device-storage-ledger.mjs');
+  const st = checkStored(ROOT);
+  say('stored-disclosed', st.found.length > 0, st.found.length + ' name(s) the browser code writes into the reader\'s browser');
+  for (const p of st.problems) say('stored-disclosed', false, p);
+  if (!st.problems.length) say('stored-disclosed', true, 'every one has a kind and en + jp words, and ' + STORED_LEDGER + ' is what they derive');
 
   /* ── the measurement, always printed ──────────────────────────────────────────────────── */
   const shards = m.bs.filter((b) => b.kind === 'shard');
