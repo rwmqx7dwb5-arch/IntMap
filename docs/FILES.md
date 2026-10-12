@@ -835,7 +835,14 @@ news-events.js                    出来事単位の News（一覧・カテゴ�
                                   国の日報と企業パネルが読む行を開く口（`openRow`・`columns`）を持つ
 news-pulse.js                     「国ごとのニュースの脈」のレイヤー行と IntMapOS 命令と窓口
                                   `IntMapNewsIntel`（**eager**——行・名前・命令だけ。本体は news-intel.js）。
-                                  ストーリーの扉（`IntMapNewsIntel.story`・命令 `newsstory.open`・`?story=`）もここ
+                                  ストーリーの扉（`IntMapNewsIntel.story`・命令 `newsstory.open`・`?story=`）と
+                                  今日の世界の扉（`IntMapNewsIntel.edition`・命令 `newsedition.open`・`?edition=`）もここ
+news-edition.js                   今日の世界（その日のニュースを 1 つの版として）のカード——前回からの件数・
+                                  上位 10 件（媒体の数の順）・地図の番号のピンと再生・カテゴリと国・過去の日のチップ・
+                                  リンクとテキストのコピー。遅延取得（IntMapLazy の newsEdition）。正本は docs/NEWS-EVENTS.md §18
+news-edition-core.js              その計算の全部（純粋なモジュール）——窓（直近 24 時間／UTC の 1 日）・どの出来事が
+                                  窓に入るか・順位・前回以降・国とカテゴリの集計・`?edition=`・前回の時刻（このブラウザ）。
+                                  node が本番のデータで同じ関数を評価する
 news-story.js                     ストーリー（見出しが同じ語を含む出来事を日をまたいで束ねたもの）のカード——
                                   語のチップ・再生できる年表・地図（初報の時刻の色・広がりの線）・広がりの数。
                                   遅延取得（IntMapLazy の newsStory）。正本は docs/NEWS-EVENTS.md §17
