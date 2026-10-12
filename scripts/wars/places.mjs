@@ -11,12 +11,13 @@
  *  lines quoting «Kursk» cannot disagree about where Kursk is, and that a mistyped digit is a place
  *  in the wrong country rather than a silent kink in a front.
  *
- *  Entries are [lon, lat, ISO2] — plus a fourth field '!' on the eight names the bundled gazetteer
+ *  Entries are [lon, lat, ISO2] — plus a fourth field '!' on the names the bundled gazetteer
  *  knows as a DIFFERENT place. Kalinin here is the wartime name of Tver; the gazetteer's Kalinin is a
  *  town a thousand kilometres away. Midway here is the atoll; the gazetteer's Midway is a town in the
  *  United States. Zhijiang here is 芷江 in Hunan; the gazetteer's is 枝江 in Hubei. Chełmno here is the
- *  village on the Ner the camp was named after; the gazetteer's is the town on the Vistula. Opting
- *  those eight out by name is narrower than loosening the tolerance for all of them, and it leaves a
+ *  village on the Ner the camp was named after; the gazetteer's is the town on the Vistula. Pingxiang here is 凭祥 on the Guangxi–Tonkin
+ *  border; the gazetteer's is 萍乡 in Jiangxi. Opting
+ *  those out by name is narrower than loosening the tolerance for all of them, and it leaves a
  *  written reason where the exception is.
  *
  *  The ISO2 is not decoration: scripts/build-wars.mjs cross-checks
@@ -56,6 +57,8 @@ export const PLACES = {
   'Vichy': [3.426, 46.128, 'FR'], 'Moulins': [3.334, 46.564, 'FR'], 'Chalon-sur-Saone': [4.854, 46.780, 'FR'],
   'Saint-Jean-Pied-de-Port': [-1.238, 43.163, 'FR'], 'Geneva': [6.143, 46.204, 'CH'],
   'Caen': [-0.370, 49.183, 'FR'], 'Saint-Lo': [-1.089, 49.116, 'FR'], 'Falaise': [-0.196, 48.892, 'FR'], 'Bayeux': [-0.703, 49.277, 'FR'],
+  'Quineville': [-1.296, 49.513, 'FR'], 'Montebourg': [-1.380, 49.488, 'FR'], 'Picauville': [-1.401, 49.378, 'FR'],
+  "Caumont-l'Evente": [-0.804, 49.091, 'FR'], 'Tilly-sur-Seulles': [-0.626, 49.176, 'FR'], 'Epron': [-0.371, 49.222, 'FR'],
   'Le Havre': [0.107, 49.494, 'FR'], 'Rouen': [1.099, 49.443, 'FR'], 'Toulon': [5.930, 43.125, 'FR'],
   'Marseille': [5.370, 43.297, 'FR'], 'Lyon': [4.836, 45.764, 'FR'], 'Grenoble': [5.724, 45.189, 'FR'],
   'Strasbourg': [7.751, 48.573, 'FR'], 'Colmar': [7.359, 48.079, 'FR'],
@@ -66,7 +69,7 @@ export const PLACES = {
   'Arnhem': [5.898, 51.985, 'NL'], 'Rotterdam': [4.478, 51.924, 'NL'], /* ── Eastern Front (both wars) ───────────────────────────────────────────────────────────── */
   'Memel': [21.135, 55.703, 'LT'], 'Kaunas': [23.904, 54.898, 'LT'], 'Vilnius': [25.280, 54.687, 'LT'],
   'Riga': [24.105, 56.946, 'LV'], 'Daugavpils': [26.536, 55.875, 'LV'], 'Tallinn': [24.754, 59.437, 'EE'],
-  'Narva': [28.190, 59.377, 'EE'], 'Pskov': [28.336, 57.819, 'RU'], 'Novgorod': [31.270, 58.521, 'RU'],
+  'Narva': [28.190, 59.377, 'EE'], 'Uritsk': [30.175, 59.839, 'RU'], 'Pushkin': [30.396, 59.714, 'RU'], 'Pskov': [28.336, 57.819, 'RU'], 'Novgorod': [31.270, 58.521, 'RU'],
   'Leningrad': [30.316, 59.939, 'RU'], 'Tikhvin': [33.539, 59.645, 'RU'], 'Staraya Russa': [31.360, 57.993, 'RU'],
   'Velikiye Luki': [30.517, 56.331, 'RU'], 'Rzhev': [34.329, 56.263, 'RU'], 'Kalinin': [35.912, 56.859, 'RU', '!'],
   'Klin': [36.728, 56.333, 'RU'], 'Istra': [36.869, 55.921, 'RU'], 'Moscow': [37.618, 55.756, 'RU'],
@@ -78,7 +81,7 @@ export const PLACES = {
   'Kotelnikovo': [43.144, 47.632, 'RU'], 'Murmansk': [33.083, 68.970, 'RU'], 'Petsamo': [31.170, 69.550, 'RU'],
   'Kandalaksha': [32.412, 67.157, 'RU'], 'Kestenga': [31.780, 65.885, 'RU'],
   'Medvezhyegorsk': [34.464, 62.913, 'RU'], 'Lodeynoye Pole': [33.552, 60.727, 'RU'],
-  'Vyborg': [28.752, 60.708, 'RU'], 'Konigsberg': [20.511, 54.710, 'RU'],
+  'Vyborg': [28.752, 60.708, 'RU'], 'Fastiv': [29.920, 50.078, 'UA'], 'Konigsberg': [20.511, 54.710, 'RU'],
   'Vitebsk': [30.209, 55.184, 'BY'], 'Nevel': [29.926, 56.023, 'RU'],
   'Orsha': [30.421, 54.509, 'BY'], 'Mogilev': [30.334, 53.900, 'BY'], 'Gomel': [31.000, 52.442, 'BY'],
   'Minsk': [27.567, 53.902, 'BY'], 'Baranavichy': [26.019, 53.132, 'BY'], 'Pinsk': [26.096, 52.121, 'BY'],
@@ -91,7 +94,7 @@ export const PLACES = {
   'Sevastopol': [33.523, 44.616, 'UA'], 'Kerch': [36.470, 45.356, 'UA'], 'Perekop': [33.700, 46.160, 'UA'],
   'Kovel': [24.710, 51.217, 'UA'], 'Lutsk': [25.336, 50.747, 'UA'], 'Rivne': [26.251, 50.619, 'UA'],
   'Lviv': [24.032, 49.842, 'UA'], 'Ternopil': [25.595, 49.554, 'UA'], 'Chernivtsi': [25.935, 48.292, 'UA'],
-  'Warsaw': [21.012, 52.230, 'PL'], 'Lodz': [19.457, 51.759, 'PL'], 'Lublin': [22.567, 51.247, 'PL'],
+  'Warsaw': [21.012, 52.230, 'PL'], 'Sochaczew': [20.238, 52.229, 'PL'], 'Mlawa': [20.384, 53.113, 'PL'], 'Lodz': [19.457, 51.759, 'PL'], 'Lublin': [22.567, 51.247, 'PL'],
   'Deblin': [21.850, 51.559, 'PL'], 'Krakow': [19.945, 50.065, 'PL'], 'Tarnow': [20.986, 50.013, 'PL'],
   'Gorlice': [21.160, 49.657, 'PL'], 'Przemysl': [22.783, 49.784, 'PL'], 'Sandomierz': [21.749, 50.681, 'PL'],
   'Danzig': [18.646, 54.352, 'PL'], 'Poznan': [16.926, 52.407, 'PL'], 'Katowice': [19.024, 50.259, 'PL'],
@@ -265,7 +268,7 @@ export const PLACES = {
   /* ⚠ THE SEVENTH OPT-OUT. Zhijiang here is 芷江 in western Hunan — the airfield the last Japanese
      offensive of the war was aimed at, and where the surrender delegation landed. The gazetteer's
      Zhijiang is 枝江 in Hubei, 388 km away: same pinyin, different characters, different town. */
-  'Zhijiang': [109.678, 27.442, 'CN', '!'],
+  'Zhijiang': [109.678, 27.442, 'CN', '!'], 'Pingxiang': [106.755, 22.097, 'CN', '!'],
   'Seoul': [126.978, 37.567, 'KR'], /* ── WW2 · the Pacific, where the record is places and days rather than a line ───────────── */
   'Corregidor': [120.575, 14.383, 'PH'], 'Bataan': [120.470, 14.640, 'PH'], 'Lingayen': [120.232, 16.021, 'PH'],
   'Kwajalein': [167.732, 8.720, 'MH'], 'Eniwetok': [162.337, 11.500, 'MH'], 'Truk': [151.850, 7.450, 'FM'],
