@@ -158,8 +158,8 @@ function _redrawLocalGlyphs(m,cover){
          the horizon reach, the eye geometry and the lifted projection below. None is public in any
          form; the Map's public getters forward to exactly this object (`getZoom(){ return
          this._camera.transform.zoom; }`).
-       · `_elevateCameraIfInsideTerrain`, which is now a CAMERA method: the modifier chain calls
-         `this._elevateCameraIfInsideTerrain(tr)` with `this` the camera, so an override placed on
+       · the underground correction (`_raiseCameraByPitchAndZoom` since 6.13, see _UG_NAME), which is
+         a CAMERA method: it is called as `this.<name>(tr)` with `this` the camera, so an override placed on
          the MAP — where #R179 put it under v5 — is never consulted, and it does not throw either.
        · `isEasing()`, which the Map no longer forwards: under v6 `m.isEasing` is undefined, and
          isAnimating() read «not animating» for every flyTo.
@@ -990,16 +990,30 @@ function _redrawLocalGlyphs(m,cover){
      #R162's lesson is that a `typeof` guard around a renderer internal makes a feature vanish in
      SILENCE if the internal is ever renamed, and this one would take the whole seventh-round fix
      with it. The regression test asserts 'active' while the pivot is on. */
-  /* ⚠ (MapLibre 6) THE OVERRIDE GOES ON THE CAMERA. The method moved from Map to the Camera the map
-     composes, and Camera.applyUpdatedTransform calls it as `this._elevateCameraIfInsideTerrain(tr)`
-     with `this` the camera — an own property on the map is simply never read. The order is unchanged
-     from 5.24 (it is still modifiers[0], ahead of transformCameraUpdate), so everything below holds. */
+  /* ⚠ (MapLibre 6) THE OVERRIDE GOES ON THE CAMERA. The method lives on the Camera the map composes
+     and is called as `this.<name>(tr)` with `this` the camera — an own property on the map is simply
+     never read.
+     ⚠⚠ (MapLibre 6.13) …AND IT WAS RENAMED, WITH A NEW CONTRACT. 6.13 replaced
+     `_elevateCameraIfInsideTerrain(tr) → {pitch?,zoom?}` (a modifier whose answer was applied to a
+     clone) with `_raiseCameraByPitchAndZoom(tr) → ITransform`: it returns `tr` itself while the
+     camera is clear, else a CORRECTED COPY. Camera.applyUpdatedTransform reaches it through
+     `_keepCameraAboveTerrain(tr)` with `tr` the proposal itself, still before transformCameraUpdate,
+     and once more after the hook, on the camera the hook approved, when the hook named an elevation.
+     The repair did not move with the rename: install found no `_elevateCameraIfInsideTerrain`,
+     answered false, and every live look-up drag from 6.13 on froze at exactly 90° — the defect this
+     repair exists for (measured 2026-10-13 on the build: pitch 90.0 in every look-up case of
+     tests/r179.spec.js, and the post-deploy smoke failing on that number since the 6.13 deploy).
+     The name is one constant so install, removal and the diagnosis cannot disagree about it, and
+     tests/look-up-gesture-checks.test.mjs asks the INSTALLED MapLibre that a method of this name
+     exists with this contract — a fast check, because the browser specs that perform the drag are
+     deep-tier and never ran on the version bump. */
+  const _UG_NAME='_raiseCameraByPitchAndZoom';
   function _installUnderGuard(m){
     if(_ugShim||!m) return false;
     const cam=_cam(m);
-    if(!(cam&&typeof cam._elevateCameraIfInsideTerrain==='function')) return false;
-    const own=Object.prototype.hasOwnProperty.call(cam,'_elevateCameraIfInsideTerrain');
-    const prev=cam._elevateCameraIfInsideTerrain, orig=prev.bind(cam);
+    if(!(cam&&typeof cam[_UG_NAME]==='function')) return false;
+    const own=Object.prototype.hasOwnProperty.call(cam,_UG_NAME);
+    const prev=cam[_UG_NAME], orig=prev.bind(cam);
     try{
       /* (#R179) …and it is asked THROUGH A CATCH, because it can throw. Measured on `main` as
          well as here, so this is pre-existing and only reachable with unlimited tilt on (the
@@ -1008,49 +1022,56 @@ function _redrawLocalGlyphs(m,cover){
          To" from inside this very method. Its own arithmetic asks calculateCameraOptionsFromTo
          for a camera whose position coincides with the centre it is looking at, which is exactly
          what pitch 180 with the target on the ground means (sin p = 0, so the eye is directly
-         over the centre). The exception escapes into _applyUpdatedTransform, which does not catch
+         over the centre). The exception escapes into applyUpdatedTransform, which does not catch
          it, so the whole camera update dies mid-flight. A refusal is the honest answer for a
-         degenerate pair — there is no direction to elevate along — so that is what it becomes. */
-      cam._elevateCameraIfInsideTerrain=(t)=>{
-        const ask=()=>{ try{ return orig(t); }catch(_){ return null; } };
-        const wants=a=>!!(a&&(a.pitch!=null||a.zoom!=null));
-        const first=ask();
-        /* the overwhelmingly common case: it is happy, and this shim did not exist */
-        if(first&&!wants(first)) return first;
-        if(!_eyePivot) return first||{};
-        try{ if(window.__fsCamActive) return first||{}; }catch(_){}
+         degenerate pair — there is no direction to elevate along — so that is what it becomes:
+         the transform handed in, uncorrected. */
+      cam[_UG_NAME]=(t)=>{
+        const ask=(x)=>{ try{ return orig(x); }catch(_){ return null; } };
+        const first=ask(t);
+        /* the overwhelmingly common case: it is happy (it handed back the same transform), and this
+           shim did not exist */
+        if(first===t) return t;
+        const theirs=first||t;
+        if(!_eyePivot) return theirs;
+        try{ if(window.__fsCamActive) return theirs; }catch(_){}
         /* (#R179) …and it stands down for a camera the caller DECLARED. The repair's premise is
            that the engine is about to put an elevation on this transform which makes the camera
            legitimate — true while the eye is being held, false here: a declared camera returns the
            target to the ground (see the _decl branch in the hook), so it really is the camera
            MapLibre thinks it is, and if that is underground its correction is the right answer
            rather than something to talk it out of. */
-        if(_decl&&(_decl.zoom||_decl.center)) return first||{};
-        if(!(t&&typeof t.setElevation==='function')) return first||{};
-        if(gSpherical(t)){                  /* (MapLibre 6) see _heldSphereCamera */
-          const sol=_heldSphereCamera(m,t);
-          if(!sol||typeof t.clone!=='function') return first||{};
-          let probe=null;
-          try{ probe=t.clone();
-               if(sol.pitch!=null&&isFinite(sol.pitch)) probe.setPitch(sol.pitch);
-               if(sol.zoom!=null&&isFinite(sol.zoom)) probe.setZoom(sol.zoom);
-               if(isFinite(sol.lng)&&isFinite(sol.lat)) probe.setCenter(new maplibregl.LngLat(sol.lng,sol.lat));
-          }catch(_){ return first||{}; }
-          let a=null; try{ a=orig(probe); }catch(_){ a=null; }
-          return (a&&!wants(a))?{}:(first||{});
-        }
-        const el=_heldElevation(m,t);
-        if(el==null) return first||{};
-        t.setElevation(el);                 /* the transform it judges is the one we will produce */
-        return ask()||{};
+        if(_decl&&(_decl.zoom||_decl.center)) return theirs;
+        if(!(t&&typeof t.clone==='function')) return theirs;
+        /* The camera this engine is about to produce is judged on a CLONE, never on `t`: under 6.13
+           `t` is the proposal itself (_requestedCameraState during a drag), which the hook reads as
+           the gesture's history (#R173/#R177). 6.12 handed the old method a clone, so writing the
+           held elevation into it never reached the proposal, and that must stay true. */
+        let probe=null;
+        try{
+          probe=t.clone();
+          if(gSpherical(t)){                /* (MapLibre 6) see _heldSphereCamera */
+            const sol=_heldSphereCamera(m,t); if(!sol) return theirs;
+            if(sol.pitch!=null&&isFinite(sol.pitch)) probe.setPitch(sol.pitch);
+            if(sol.zoom!=null&&isFinite(sol.zoom)) probe.setZoom(sol.zoom);
+            if(isFinite(sol.lng)&&isFinite(sol.lat)) probe.setCenter(new maplibregl.LngLat(sol.lng,sol.lat));
+            /* only the verdict is borrowed on the sphere: the hook makes that camera itself */
+            return ask(probe)===probe?t:theirs;
+          }
+          const el=_heldElevation(m,t); if(el==null) return theirs;
+          probe.setElevation(el);           /* the transform it judges is the one we will produce */
+        }catch(_){ return theirs; }
+        /* what 6.12 did with the old answer: the corrected pitch/zoom (if any) applied over the camera
+           carrying the elevation this engine applies — the hook then starts from that */
+        return ask(probe)||probe;
       };
     }catch(_){ return false; }
     _ugShim={ cam, prev, own }; return true;
   }
   function _removeUnderGuard(){
     const s=_ugShim; _ugShim=null; if(!s) return false;
-    try{ if(s.own) s.cam._elevateCameraIfInsideTerrain=s.prev;
-         else delete s.cam._elevateCameraIfInsideTerrain; }catch(_){ return false; }
+    try{ if(s.own) s.cam[_UG_NAME]=s.prev;
+         else delete s.cam[_UG_NAME]; }catch(_){ return false; }
     return true;
   }
   /* The MapLibre adapter — the ONLY implemented renderer in Phase 1. Every method is a 1:1 pass-through. */
@@ -1421,7 +1442,7 @@ function _redrawLocalGlyphs(m,cover){
           let cur, was;
           try{ cur={ lng:t.center.lng, lat:t.center.lat, zoom:t.zoom, bearing:t.bearing, pitch:t.pitch };
                /* "before" is read from the LIVE map, not from a cache of what we returned last time:
-                  MapLibre runs _elevateCameraIfInsideTerrain and its constraints after us, so a cached
+                  MapLibre runs its underground correction and its constraints after us, so a cached
                   value slowly diverges from what was actually applied (measured: 392 m of drift over a
                   116° drag, 8 m when read live). */
                const c=m.getCenter();
@@ -1614,12 +1635,15 @@ function _redrawLocalGlyphs(m,cover){
     /* (#R179) the two halves of the eye pivot, reported rather than assumed — see the contract note */
     /* ⚠ (MapLibre 6) both halves are read where v6 keeps them — the composed camera — not off the map,
        which has neither: reading `m.transformCameraUpdate` would report «no hook» with the hook
-       installed, and `m._elevateCameraIfInsideTerrain` would report 'n/a' with the guard active. */
+       installed, and the map's own correction (_UG_NAME) would report 'n/a' with the guard active. */
     eyePivotDiag(){ const m=_m(), c=_cam(m);
       return { pivot:_eyePivot,
                hook:(()=>{ try{ return !!(c&&c.transformCameraUpdate); }catch(_){ return false; } })(),
-               underGuard:(!c||typeof c._elevateCameraIfInsideTerrain!=='function')?'n/a'
+               underGuard:(!c||typeof c[_UG_NAME]!=='function')?'n/a'
                           :(_ugShim?'active':'off'),
+               /* which renderer method the repair sits over — so a probe asks the adapter rather than
+                  keeping its own copy of a name MapLibre has already renamed once (6.13) */
+               underGuardName:_UG_NAME,
                /* (#R179) what the last caller DECLARED, and what the hook last did with it. Reported
                   because the declaration is the thing that replaced six rounds of history-guessing:
                   if it silently stopped arriving, every declared camera would go back to fighting

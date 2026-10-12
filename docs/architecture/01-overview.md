@@ -240,8 +240,8 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   アダプタに足したメソッドは必ず契約側にも出す（出さないと「2つ目以降」が静かに落ちる）。
 - **アダプタがレンダラの内部に触れる口は 2 つだけ**——`_cam(m)`（MapLibre 6 の Map が合成して持つ Camera、`map._camera`）と
   `_tr(m)`（painter が描画に使う transform）。6 系の Map は `map.transform` を持たないので、行列・遠クリップ面・視点距離は
-  `_tr` を、`isEasing()`（`camera.isAnimating()`）と `_elevateCameraIfInsideTerrain`（無制限チルトの地下補正。修理はカメラに
-  置く）は `_cam` を通る。視点ピボットのフックは公開の `setTransformCameraUpdate`（`transformCameraUpdate` 欄は 6 系で
+  `_tr` を、`isEasing()`（`camera.isAnimating()`）と地下補正（6.13 から `_raiseCameraByPitchAndZoom`。無制限チルトで見上げる
+  ドラッグの修理はカメラに置き、名前はアダプタの `_UG_NAME` 1 か所で `camera.eyePivotDiag().underGuardName` が述べる）は `_cam` を通る。視点ピボットのフックは公開の `setTransformCameraUpdate`（`transformCameraUpdate` 欄は 6 系で
   読まれない）。高度つきの点の画面位置（`coords.projectAltitude`・`layers.projectMercAlt`）は、6.0 で消えた
   `getMatrixForModel` の代わりに、カスタムレイヤーの投影データをシェーダの `projectTileFor3D` と同じ式で CPU で通す
   （平面・球・11→12 のクロスフェードとも）。描く側——衛星（`js/orbit-points.js`）・航空機（`js/aircraft-points.js`）・3-D 体積

@@ -393,7 +393,7 @@ on `A().x` does not narrow the second call `A().x()`). Turning it on is a separa
 ### The renderer's internals, asked of the installed MapLibre — `tests/maplibre-6-migration-*`
 
 MapLibre 6 moved or removed every renderer internal `js/geo-engine.js` stood on (`map.transform`,
-`transform.getMatrixForModel`, `isEasing`, `transformCameraUpdate`, `_elevateCameraIfInsideTerrain` —
+`transform.getMatrixForModel`, `isEasing`, `transformCameraUpdate`, the underground correction —
 all on the camera the Map now composes, or gone), and each failed SILENTLY: a missing field reads
 `undefined`, a patch on the wrong object is never called. So nothing here reads a copy of the names:
 
@@ -404,6 +404,10 @@ all on the camera the Map now composes, or gone), and each failed SILENTLY: a mi
   hands `setWorkerUrl` the worker the build emits as an entry chunk of the SAME build (received from
   `virtual:maplibre-gl-worker-url`) before `window.maplibregl` exists, so the renderer and its worker share
   one `maplibre-gl-shared` chunk instead of shipping it twice.
+* `tests/look-up-gesture-checks.test.mjs` — the one Camera internal the eye pivot overrides (named once,
+  `_UG_NAME` in the adapter) exists in the installed MapLibre source the build compiles, answers with a
+  transform, and is reached by `applyUpdatedTransform` before `transformCameraUpdate`. MapLibre 6.13
+  renamed it; the drag specs that would have noticed are deep-tier, so this is the fast reader.
 * `tests/maplibre-from-source-checks.test.mjs` — MapLibre is built from the TypeScript its package
   ships: the `maplibre-gl` alias is the installed package's source entry (`index.ts` under its `src`) and exports exactly the names
   the published renderer exports; that source is compiled with MapLibre's own class-field semantics

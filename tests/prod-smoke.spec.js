@@ -1016,90 +1016,131 @@ test('(#R276) prod shows a real cyclone: a calm eye inside a ring of strong wind
     }
     /* js/weather.js reveals a slot through a 260 ms `raster-opacity-transition`; let it finish */
     await new Promise((r) => setTimeout(r, 1000));
-    return new Promise((res) => {
+    const c = map.getCanvas();
+    /* every pixel below is read inside a 'render' callback — the drawing buffer is only defined
+       between the frame being drawn and the next composite */
+    const readAll = (pts) => new Promise((res) => {
       map.once('render', () => {
-        const c = map.getCanvas();
         const gl = c.getContext('webgl2') || c.getContext('webgl');
-        const read = (lng, lat) => {
+        const rx = c.width / c.clientWidth, ry = c.height / c.clientHeight;
+        res(pts.map(([lng, lat]) => {
           const p = window.IntMapGeoEngine.coords.project([lng, lat]);
-          const rx = c.width / c.clientWidth, ry = c.height / c.clientHeight;
           const sx = Math.round(p.x * rx), sy = Math.round(c.height - p.y * ry);
           if (sx < 0 || sy < 0 || sx >= c.width || sy >= c.height) return null;
           const px = new Uint8Array(4);
           gl.readPixels(sx, sy, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
           return Array.from(px);
-        };
-        const EC = window.IntMapECMWF;
-        const sc = EC.scale('wind_u_component_10m', true);
-        const eyeV = EC.valueNow('wind_u_component_10m', e.eye.la, e.eye.lo);
-        const ringV = EC.valueNow('wind_u_component_10m', e.peak.la, e.peak.lo);
-        const want = (v) => { try { return EC.sdk().getColor(sc, v, true).slice(0, 3).map(Math.round); } catch { return null; } };
-        /* THE SPEEDS THE MODEL ACTUALLY TAKES UNDER ONE PIXEL — the same ±1.5 px support the
-           (#R287) test above derives and measured (477 live pixels across six views; 476 of them
-           inside it, and ±2/±3/±4 no better, which is what says this is the filter's support and
-           not a fitted number). Same renderer, same `raster-resampling: linear`, so the same
-           support — it is stated here rather than shared because the two tests read different
-           views and a helper would hide which one a failure came from. */
-        const smp = EC.sampler('wind_u_component_10m');
-        const foot = (lng, lat) => {
-          const p = window.IntMapGeoEngine.coords.project([lng, lat]);
-          let lo = Infinity, hi = -Infinity;
-          for (let dx = -1.5; dx <= 1.5; dx += 0.5) {
-            for (let dy = -1.5; dy <= 1.5; dy += 0.5) {
-              const q = window.IntMapGeoEngine.coords.unproject([p.x + dx, p.y + dy]);
-              const v = smp ? smp.value(q.lat, q.lng) : NaN;
-              if (v === v && isFinite(v)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
-            }
-          }
-          return [lo, hi];
-        };
-        /* carried out whole so tests/r382-checks.test.mjs can put the same verdict through the
-           failures this page cannot show (#R287) */
-        const ramp = sc && sc.breakpoints
-          ? { breakpoints: sc.breakpoints.slice(), colors: sc.colors.map((q) => [q[0], q[1], q[2]]) }
-          : null;
-        /* ══ ⚠⚠⚠ (#R458) EVERY POINT ON THIS SCREEN THE CROSS-CLAIM COULD BE ASKED OF ══════════
-           The finder's two points are one candidate pair among many, and at some hours they are a
-           pair the claim below cannot be made about at all (see `separablePair` in
-           tests/helpers/wind-ramp.js for the measurement that says so). So the same box the finder
-           searched is walked on the same 0.1° lattice, split by the finder's own 0.6 × peak line
-           into 「calm」 and 「strong」, and each point is carried out with the two numbers the claim
-           is stated in: the pixel it paints and the speeds the model takes under that pixel.
-           ⚠ THE PAIR IS NOT CHOSEN HERE. This gathers; tests/helpers/wind-ramp.js decides, so
-           tests/r458-checks.test.mjs can put the same decision through the overlap this page
-           cannot be made to show. ⚠ AND IT READS THROUGH `read()`, in this one frame, so the
-           candidates are pixels of the SAME picture the pair is judged in. */
-        const cut = e.peak.sp * 0.6;
-        const calm = [], strong = [], seen = new Set();
-        const tScan = Date.now();
-        const add = (la, lo) => {
-          const k = la + ',' + lo;
-          if (seen.has(k)) return;
-          seen.add(k);
-          const v = smp ? smp.value(la, lo) : NaN;
-          if (!(v === v && isFinite(v))) return;
-          const px = read(lo, la);
-          if (!px) return;                       /* off screen — no pixel, no candidate */
-          (v <= cut ? calm : strong).push({ la, lo, v, foot: foot(lo, la), px: px.slice(0, 3) });
-        };
-        add(e.eye.la, e.eye.lo);                 /* index 0 on each side is the pair the finder */
-        add(e.peak.la, e.peak.lo);               /* chose, so 「keep it if it works」 is expressible */
-        for (let dla = -1.5; dla <= 1.5 + 1e-9; dla += 0.1) {
-          for (let dlo = -1.5; dlo <= 1.5 + 1e-9; dlo += 0.1) {
-            add(+(e.peak.la + dla).toFixed(2), +(e.peak.lo + dlo).toFixed(2));
-          }
-        }
-        res({
-          eyePx: read(e.eye.lo, e.eye.la), ringPx: read(e.peak.lo, e.peak.la),
-          eyeV, ringV, eyeWant: want(eyeV), ringWant: want(ringV),
-          eyeFoot: foot(e.eye.lo, e.eye.la), ringFoot: foot(e.peak.lo, e.peak.la),
-          eyeCands: calm, ringCands: strong, scanMs: Date.now() - tScan,
-          ramp, settled, settledMs,
-          particles: window.Wind._dbg().drawn,
-        });
+        }));
       });
       map.triggerRepaint();
     });
+    const EC = window.IntMapECMWF;
+    const sc = EC.scale('wind_u_component_10m', true);
+    const eyeV = EC.valueNow('wind_u_component_10m', e.eye.la, e.eye.lo);
+    const ringV = EC.valueNow('wind_u_component_10m', e.peak.la, e.peak.lo);
+    const want = (v) => { try { return EC.sdk().getColor(sc, v, true).slice(0, 3).map(Math.round); } catch { return null; } };
+    /* THE SPEEDS THE MODEL ACTUALLY TAKES UNDER ONE PIXEL — the same ±1.5 px support the
+       (#R287) test above derives and measured (477 live pixels across six views; 476 of them
+       inside it, and ±2/±3/±4 no better, which is what says this is the filter's support and
+       not a fitted number). Same renderer, same `raster-resampling: linear`, so the same
+       support — it is stated here rather than shared because the two tests read different
+       views and a helper would hide which one a failure came from. */
+    const smp = EC.sampler('wind_u_component_10m');
+    const foot = (lng, lat) => {
+      const p = window.IntMapGeoEngine.coords.project([lng, lat]);
+      let lo = Infinity, hi = -Infinity;
+      for (let dx = -1.5; dx <= 1.5; dx += 0.5) {
+        for (let dy = -1.5; dy <= 1.5; dy += 0.5) {
+          const q = window.IntMapGeoEngine.coords.unproject([p.x + dx, p.y + dy]);
+          const v = smp ? smp.value(q.lat, q.lng) : NaN;
+          if (v === v && isFinite(v)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+        }
+      }
+      return [lo, hi];
+    };
+    /* carried out whole so tests/r382-checks.test.mjs can put the same verdict through the
+       failures this page cannot show (#R287) */
+    const ramp = sc && sc.breakpoints
+      ? { breakpoints: sc.breakpoints.slice(), colors: sc.colors.map((q) => [q[0], q[1], q[2]]) }
+      : null;
+    /* ══ ⚠⚠⚠ (#R458) EVERY POINT ON THIS SCREEN THE CROSS-CLAIM COULD BE ASKED OF ══════════
+       The finder's two points are one candidate pair among many, and at some hours they are a
+       pair the claim below cannot be made about at all (see `separablePair` in
+       tests/helpers/wind-ramp.js for the measurement that says so). So the same box the finder
+       searched is walked on the same 0.1° lattice, split by the finder's own 0.6 × peak line
+       into 「calm」 and 「strong」, and each point is carried out with the two numbers the claim
+       is stated in: the pixel it paints and the speeds the model takes under that pixel.
+       ⚠ THE PAIR IS NOT CHOSEN HERE. This gathers; tests/helpers/wind-ramp.js decides, so
+       tests/r458-checks.test.mjs can put the same decision through the overlap this page
+       cannot be made to show. ⚠ AND EVERY PIXEL IS READ IN ONE FRAME, so the candidates are
+       pixels of the SAME picture the pair is judged in. */
+    const cut = e.peak.sp * 0.6;
+    const pts = [], seen = new Set();
+    const tScan = Date.now();
+    const add = (la, lo) => {
+      const k = la + ',' + lo;
+      if (seen.has(k)) return;
+      seen.add(k);
+      const v = smp ? smp.value(la, lo) : NaN;
+      if (!(v === v && isFinite(v))) return;
+      pts.push({ la, lo, v, foot: foot(lo, la) });
+    };
+    add(e.eye.la, e.eye.lo);                 /* index 0 on each side is the pair the finder */
+    add(e.peak.la, e.peak.lo);               /* chose, so 「keep it if it works」 is expressible */
+    for (let dla = -1.5; dla <= 1.5 + 1e-9; dla += 0.1) {
+      for (let dlo = -1.5; dlo <= 1.5 + 1e-9; dlo += 0.1) {
+        add(+(e.peak.la + dla).toFixed(2), +(e.peak.lo + dlo).toFixed(2));
+      }
+    }
+    /* the finder's own two points first, then every candidate — one list, so one frame */
+    const at = [[e.eye.lo, e.eye.la], [e.peak.lo, e.peak.la], ...pts.map((q) => [q.lo, q.la])];
+    const shown = await readAll(at);
+    const particles = window.Wind._dbg().drawn;
+    /* ══ ⚠⚠⚠ (2026-10-13) …AND A PIXEL IS ONLY THE RASTER'S IF NOTHING IS PAINTED OVER IT ══════
+       Four post-deploy runs on 2026-10-11 read a near-black [10,7,12] and a near-white [212,210,213]
+       as the storm's colours. The storm was real (39 m/s, eye at 19°N 105°W) and the screenshot
+       shows the picture was right: the eye sat on Manzanillo, under its name, its halo and the
+       coastline, all of which the style draws ABOVE the wind. The test had asked a label what speed
+       it stood for. Over open ocean the same reads passed, which is why it came and went with the
+       storm's track and not with a deploy.
+       So the renderer is asked, not a list of layer names or a margin: the same frame is drawn once
+       more with every visible layer above the wind raster hidden, and a point is a candidate only
+       where the two frames agree — there, nothing above the wind changed the pixel. The verdict
+       is still taken on the picture the reader sees (`shown`), never on the stripped one, so a
+       layer that multiplied itself over the whole raster (#R276's 0.36× grey) still fails: it
+       leaves no pixel that agrees, and that is reported in the field's own words below. */
+    const L = map.getStyle().layers;
+    const top = L.reduce((k, l, i) => (l.type === 'raster' && windSources().includes(l.source) ? i : k), -1);
+    const over = top < 0 ? [] : L.slice(top + 1)
+      .filter((l) => ((l.layout && l.layout.visibility) || 'visible') !== 'none')
+      .map((l) => l.id);
+    let bare = null;
+    try {
+      over.forEach((id) => map.setLayoutProperty(id, 'visibility', 'none'));
+      bare = await readAll(at);
+    } finally {
+      over.forEach((id) => { try { map.setLayoutProperty(id, 'visibility', 'visible'); } catch (_) {} });
+      map.triggerRepaint();
+    }
+    const same = (a, b) => !!a && !!b && a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
+    const calm = [], strong = [], covered = new Map();
+    pts.forEach((q, j) => {
+      const i = j + 2;
+      const px = shown[i];
+      if (!px) return;                       /* off screen — no pixel, no candidate */
+      if (!same(px, bare[i])) {               /* painted over — the pixel is not the raster's */
+        covered.set(q.v <= cut ? 'calm' : 'strong', (covered.get(q.v <= cut ? 'calm' : 'strong') || 0) + 1);
+        return;
+      }
+      (q.v <= cut ? calm : strong).push({ la: q.la, lo: q.lo, v: q.v, foot: q.foot, px: px.slice(0, 3) });
+    });
+    return {
+      eyePx: shown[0], ringPx: shown[1],
+      eyeV, ringV, eyeWant: want(eyeV), ringWant: want(ringV),
+      eyeCands: calm, ringCands: strong, scanMs: Date.now() - tScan,
+      coveredCalm: covered.get('calm') || 0, coveredStrong: covered.get('strong') || 0, over,
+      ramp, settled, settledMs, particles,
+    };
   }, { peak: found.peak, eye: storm.eye });
 
   expect(pic.eyePx, 'the eye is on screen').not.toBeNull();
@@ -1174,13 +1215,16 @@ test('(#R276) prod shows a real cyclone: a calm eye inside a ring of strong wind
      unit, rather than skipped or waved through. The decision itself is in
      tests/helpers/wind-ramp.js so tests/r458-checks.test.mjs can watch it fail. */
   const pair = separablePair(pic.eyeCands, pic.ringCands);
-  expect(pair.eye, 'the storm the finder measured is on this screen — ' + pair.why).not.toBeNull();
+  expect(pair.eye, 'the storm the finder measured is on this screen — ' + pair.why
+    + ' (' + pic.coveredCalm + ' calm and ' + pic.coveredStrong + ' strong point(s) were left out because a layer '
+    + 'above the wind changed their pixel: ' + pic.over.join(', ') + ')').not.toBeNull();
   console.log('[R458] eye ' + pair.eye.la + ',' + pair.eye.lo + ' foot '
     + pair.eye.foot[0].toFixed(2) + '…' + pair.eye.foot[1].toFixed(2) + ' | eyewall '
     + pair.ring.la + ',' + pair.ring.lo + ' foot ' + pair.ring.foot[0].toFixed(2) + '…'
     + pair.ring.foot[1].toFixed(2) + ' | gap ' + pair.gap.toFixed(2) + ' m/s'
     + (pair.repicked ? ' (re-picked; as found ' + pair.origGap.toFixed(2) + ')' : ' (as found)')
     + ' — from ' + pair.considered.calm + ' calm + ' + pair.considered.strong + ' strong candidates'
+    + ' (' + (pic.coveredCalm + pic.coveredStrong) + ' under a label or line left out)'
     + ' read in ' + pic.scanMs + ' ms');
   const eyePx = pair.eye.px.slice(0, 3), ringPx = pair.ring.px.slice(0, 3);
   const eyeFoot = pair.eye.foot, ringFoot = pair.ring.foot;
