@@ -42,7 +42,11 @@ test('ui.createSubView returns the whole contract, scoped to its own view (#R179
       style: { version: 8, sources: { r: { type: 'raster', tiles: ['https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'], tileSize: 256 } },
                layers: [{ id: 'r', type: 'raster', source: 'r' }] } });
     if (!v) return { made: false };
-    await new Promise(res => setTimeout(res, 2500));
+    /* (test-time-headroom) the sub-view has parsed its style and holds its layer — at most the 2.5 s this used to sleep */
+    for (const end = performance.now() + 2500; performance.now() < end;) {
+      try { if ((v.ready() || v.canDraw()) && v.layers.has('r')) break; } catch (_) { }
+      await new Promise(res => setTimeout(res, 50));
+    }
     const sections = ['camera', 'coords', 'layers', 'scene', 'ui', 'render', 'input', 'events'];
     const engineKeys = k => Object.keys(GE[k] || {}).sort();
     const viewKeys = k => Object.keys(v[k] || {}).sort();
@@ -97,7 +101,13 @@ test('the compare pane drives its own view entirely through the contract (#R179)
     const wait = ms => new Promise(res => setTimeout(res, ms));
     if (!(window.IntMapCompare && window.IntMapCompare.open)) return { opened: false };
     window.IntMapCompare.open();
-    await wait(4000);
+    /* (test-time-headroom) the pane's view is built, styled and carrying a visible base layer on a drawn canvas — the
+       state the reading below asks about — at most the 4 s this used to sleep */
+    for (const end = performance.now() + 4000; performance.now() < end;) {
+      try { const m = window.IntMapCompare._map && window.IntMapCompare._map(); const c = m && m.render.canvas();
+        if (m && (m.ready() || m.canDraw()) && (m.layers.isVisible('cmp-base-carto') || m.layers.isVisible('cmp-base-sat')) && c && c.width > 0) break; } catch (_) { }
+      await wait(50);
+    }
     const v = window.IntMapCompare._map && window.IntMapCompare._map();
     if (!v) return { opened: true, view: false };
     const out = {

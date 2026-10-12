@@ -19,6 +19,9 @@ import { installHermeticRouting, collectPageDiagnostics } from './helpers/networ
 import { seededStorageState } from './helpers/session-seed.js';
 import { loadLazyModules } from './helpers/app.js';
 import { publishedGlobals } from './app-source.mjs';
+/* (test-time-headroom) the fixed sleeps in this file are waits for the state they stood in for — tests/helpers/settle.js.
+   Every expect() below is unchanged; only the moment it looks moved. Before/after: dev-notes/2026-10-13-test-time-headroom.md */
+import { until } from './helpers/settle.js';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -161,7 +164,7 @@ test('R166 #4 LIVE getters: modules built in English follow a runtime switch to 
   expect(before.l9, 'the dams row label (js/layer-packs.js) is labelled').toBeTruthy();
 
   await page.evaluate(() => ((s) => { s.value = 'jp'; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.getElementById('setting-lang')));
-  await page.waitForTimeout(900);
+  await until(page, (c) => (document.documentElement.getAttribute('lang') || '').toLowerCase().startsWith(c), 'ja', { timeout: 15000 });
   const after = await page.evaluate(() => ({
     corr: document.querySelector('#btn-correlate span')?.textContent || '',
     l9: document.getElementById('l9-dl-dams-lbl')?.textContent || '',
@@ -172,7 +175,7 @@ test('R166 #4 LIVE getters: modules built in English follow a runtime switch to 
   expect(after.l9).toMatch(/[぀-ヿ一-鿿]/);
 
   await page.evaluate(() => ((s) => { s.value = 'en'; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.getElementById('setting-lang')));
-  await page.waitForTimeout(900);
+  await until(page, (c) => (document.documentElement.getAttribute('lang') || '').toLowerCase().startsWith(c), 'en', { timeout: 15000 });
   expect(await page.evaluate(() => document.querySelector('#btn-correlate span')?.textContent || '')).toBe(before.corr);
 });
 
@@ -238,7 +241,7 @@ test('R166 #6 WRITE-THROUGH: the Playground sets HOST.mode / HOST.satPanelDismis
 
   const opened = await page.evaluate(() => { if (typeof window._pgWorldExplorer !== 'function') return false; window._pgWorldExplorer(); return true; });
   expect(opened, 'World Explorer is reachable from the page').toBe(true);
-  await page.waitForTimeout(2500);
+  await until(page, () => !!document.getElementById('pg-we-panel'), null, { timeout: 15000 });
   expect(await page.evaluate(() => !!document.getElementById('pg-we-panel')), 'World Explorer started').toBe(true);
 
   // (a) currentMode: re-select News. A stale 'news' would make setMode TOGGLE IT OFF instead.

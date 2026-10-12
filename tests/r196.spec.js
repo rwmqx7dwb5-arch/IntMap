@@ -14,12 +14,16 @@
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
 import { loadLazyModules } from './helpers/app.js';
+/* (test-time-headroom) the fixed sleeps in this file are waits for the state they stood in for — tests/helpers/settle.js.
+   Every expect() below is unchanged; only the moment it looks moved. Before/after: dev-notes/2026-10-13-test-time-headroom.md */
+import { until, idleAfter } from './helpers/settle.js';
 
 const BOOT = { timeout: 90_000 };
 const ready = async (page) => {
   await page.goto('/?rafshim=1', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.IntMapGeoEngine && window.IntMapGeoEngine.ready(), null, BOOT);
-  await page.waitForTimeout(1500);
+  /* (test-time-headroom) not a 1.5 s tail: the renderer can draw (the barrier tests/helpers/app.js bootPage() uses) */
+  await until(page, () => { try { return !window.IntMapGeoEngine.canDraw || window.IntMapGeoEngine.canDraw(); } catch (_) { return true; } }, null, { timeout: 60000 });
 };
 
 /* ── ① 「地震シミュレーター、地点を選びなおせない。」 ───────────────────────────────────────── */
@@ -186,11 +190,13 @@ test.describe('R196 ③ the sky', () => {
        Playwright loads all round, and a frame captured before the atmosphere is drawn is exactly a
        neutral grey. That is a measurement to make on an idle machine, not a guess to ship.
        The pin is kept anyway: it removes one real source of nondeterminism from a pixel test. */
-    await page.evaluate(() => {
+    /* (test-time-headroom) the renderer's idle after the pin and the jump (every tile and the sky drawn), at most the 7 s
+       this used to sleep — the frame is read when it is finished, not at a fixed moment */
+    await idleAfter(page, () => {
       window.IntMapTime.set(new Date(Date.UTC(2026, 5, 21, 3, 0, 0)), { allowFuture: true, source: 'test' });
       window.IntMapGeoEngine.camera.jumpTo({ center: [138.7, 35.2], zoom: 5, pitch: 60, bearing: 0 });
-    });
-    await page.waitForTimeout(7000);
+    }, null, 7000);
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
     /* and prove the pin took, so a silently-ignored clock cannot make this pass for the wrong reason */
     const sunEl = await page.evaluate(() => {
       const S = window.IntMapSky, T = window.IntMapTime;
@@ -241,11 +247,18 @@ test.describe('R196 ⑤ the satellite prefetch', () => {
   test('does not ask twice for a tile it has already asked for', async ({ page }) => {
     test.setTimeout(240_000);
     const reqs = [];
-    page.on('request', (r) => { if (/World_Imagery/.test(r.url())) reqs.push(r.url()); });
+    let lastReq = 0;
+    page.on('request', (r) => { if (/World_Imagery/.test(r.url())) { reqs.push(r.url()); lastReq = Date.now(); } });
     await ready(page);
     await page.evaluate(() => { const b = document.getElementById('btn-view-sat'); if (b) b.click(); });
     await page.evaluate(() => window.IntMapGeoEngine.camera.jumpTo({ center: [139.767, 35.681], zoom: 12, pitch: 0, bearing: 0 }));
-    await page.waitForTimeout(8000);
+    /* (test-time-headroom) the first view has finished asking — its tiles AND the prefetch ring the settle issues after
+       them: no imagery request for a whole second — at most the 8 s this used to sleep. The 2.5 s after the pan below is
+       NOT shortened: that window is the one the claim counts in. */
+    for (const end = Date.now() + 8000; Date.now() < end;) {
+      if (lastReq && Date.now() - lastReq >= 1000) break;
+      await page.waitForTimeout(100);
+    }
 
     reqs.length = 0;
     await page.evaluate(async () => { for (let i = 0; i < 16; i++) { window.__imap.panBy([40, 24], { duration: 0 }); await new Promise((r) => setTimeout(r, 250)); } });
