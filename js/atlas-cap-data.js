@@ -161,11 +161,10 @@ export default [
   {
     row: ['data.countryCard',           'selectCountry',  'country',                                                     'data',    'panel',   'panel.country',          'panel',               'session', 'none',   'country',  ''],
     doc: [
-      { in: 'country', at: 10, text: '{"type":"selectCountry","country":str} (open its info card); ' },
+      { in: 'country', at: 10, text: '{"type":"selectCountry","country":str} (open its info card — its capital, population, area, GDP, currency, languages, neighbours and time zones, with Isolate / Time-series / Compare / AI brief; 国の情報カード: 首都・人口・面積・GDP・通貨・言語・隣国・時間帯); ' },
     ],
     /* genuinely interchangeable — the ONLY substitution repair may make */
     policy: { equivalents: ['data.timeSeries'] },
-    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { country: str(), name: str(), place: str() }, anyOf: [{ required: ['country'] }, { required: ['name'] }, { required: ['place'] }] }), /* `selectCountry` */
     async run(a, dctx, K) { const ensureData = K.ensureData, resolveCountry = K.resolveCountry, showCountryDetail = K.showCountryDetail, GE = K.GE, R = K.R, note = K.note, esc = K.esc, warn = K.warn, L = K.L;
       { await ensureData(); const c=await resolveCountry(a.country||a.name||a.place); if(c&&c.code&&typeof showCountryDetail==='function'){ try{ showCountryDetail(c.code,c.name); }catch(_){} if(c.ll){ try{ GE().camera.flyTo({center:[c.ll.lng,c.ll.lat],zoom:Math.max(GE().camera.getZoom(),3.5),duration:1000}); }catch(_){} } return R(true, note(icon('flag')+' '+esc(c.name))); } return R(false, warn(L('Country not found','国が見つかりません','Land nicht gefunden','Страна не найдена','País no encontrado')+': '+esc(a.country||a.name||a.place||''))); }

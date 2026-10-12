@@ -1872,7 +1872,16 @@ export function makeAtlasCapabilities(HOST, OPTS) {
               var na = norm(a);
               if (!na) return;
               var needle = form ? '"' + na + '"' : '"type":"' + na + '"';
-              for (var i = b.text.indexOf(needle); i >= 0; i = b.text.indexOf(needle, i + 1)) found.push(i);
+              for (var i = b.text.indexOf(needle); i >= 0; i = b.text.indexOf(needle, i + 1)) {
+                /* ⚠ (wave4-train) A QUOTED WORD FOLLOWED BY `:` IS ANOTHER ENTRY'S ARGUMENT, NOT A MENTION. Measured
+                   2026-10-13: system.deviceStorage's entry opens `{"type":"deviceStorage","show"?:true}`, and on the
+                   catalogue line that holds it places.show has no `"type":"show"` — so the bare `"show"` (an argument
+                   key) was read as places.show's opening and handed it the rest of deviceStorage's entry:
+                   「この端末に何が保存されている？」 ranked places.show first, and deviceStorage scored nothing for any
+                   word its own entry wrote. A key names a parameter of the entry it sits in; prose names a capability. */
+                if (form && /^\s*\??\s*:/.test(b.text.slice(i + needle.length, i + needle.length + 4))) continue;
+                found.push(i);
+              }
             });
           }
           if (!found.length) { b.unnamed.push(id); return; }

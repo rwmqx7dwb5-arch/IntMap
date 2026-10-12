@@ -125,6 +125,11 @@ export const STATIC_ASSETS = [
      every module this list ships, so a module a raw page reaches cannot be left behind again. */
   'js/bus.js',
   'js/mobile-sheet.js',
+  /* (wave4-train) …and the release rule js/service-status.js reads (field-speed: `releaseOf`, `BOOT_ENDINGS` from the
+     usage-count function's shape.js — plain ESM, no dependency, the one rule the page and the counter share). The two branches
+     met only in the merge: the status reader learned the import after the sales branch had listed its imports, so dist/ would
+     have served the raw pages a module whose import 404s. Same walk as above (tests/wave4-sales-checks.test.mjs ⑤). */
+  'supabase/functions/usage-count/shape.js',
   /* (#R280) the Terms and the Privacy Policy as ORDINARY PAGES with their own URL — a policy that
      can only be reached by opening the app and clicking a footer link cannot be linked to, cited
      or read by someone deciding whether to sign in at all. Same shape as the two pages above:
