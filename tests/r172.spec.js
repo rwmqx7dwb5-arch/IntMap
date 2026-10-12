@@ -12,6 +12,9 @@
 //      numbers are exact and the test does not depend on who happens to be flying (#R170b).
 import { test, expect } from '@playwright/test';
 import { loadLazyModules } from './helpers/app.js';
+/* (test-time-headroom) the fixed sleeps in this file are waits for the state they stood in for — tests/helpers/settle.js.
+   Every expect() below is unchanged; only the moment it looks moved. Before/after: dev-notes/2026-10-13-test-time-headroom.md */
+import { until } from './helpers/settle.js';
 
 /* ⚠ (#R186) THESE TESTS GESTURE ON THE MAP, SO THE MAP HAS TO BE UNDER THE POINTER.
    #R186 made Köppen and the submarine cables on by default, which also opens their legends — and the
@@ -44,7 +47,9 @@ const boot = async (page, query) => {
   await page.goto('/index.html' + (query || ''), { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !!window.__imap, null, { timeout: 60000 });
   await page.waitForFunction(() => window.__imap.isStyleLoaded(), null, { timeout: 60000 }).catch(() => {});
-  await page.waitForTimeout(600);   /* (#R212) the style is already loaded — this tail was 1.5 s in 20 specs */
+  /* (test-time-headroom) the 600 ms tail (#R212) is the renderer's own «can draw» now — the barrier tests/helpers/app.js
+     bootPage() uses */
+  await until(page, () => { try { return !window.IntMapGeoEngine.canDraw || window.IntMapGeoEngine.canDraw(); } catch (_) { return true; } }, null, { timeout: 60000 });
 };
 
 /* How much of the lower half of the viewport is NOT the background wash? A cockpit looking at
@@ -78,13 +83,14 @@ test('the flight simulator shows a WORLD, not a white void', async ({ page }) =>
      that will never appear on its own. */
   await loadLazyModules(page);
   await page.evaluate(() => window.IntMapFlightSim.start({ lng: 138.66, lat: 35.30, alt: 3500, hdg: 90 }));
-  await page.waitForTimeout(9000);
+  /* (test-time-headroom) not 9 s of flight: the cockpit is up — the state the reading below asks about */
+  await until(page, () => { try { const m = window.__imap; return window.IntMapFlightSim.active() && m.getZoom() > 11.1 && !!m.getTerrain(); } catch (_) { return false; } }, null, { timeout: 60000 });
   /* (#R173) PAUSE before the heavy reads. What is asserted is a property of the frame on screen, and a
      paused cockpit stops rewriting the camera every frame — on a GPU-less runner that was the difference
      between seven minutes and seconds. */
   await page.evaluate(() => { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'p', bubbles: true }));
     window.dispatchEvent(new KeyboardEvent('keyup', { key: 'p', bubbles: true })); });
-  await page.waitForTimeout(2500);
+  await until(page, () => (window.IntMapFlightSim._st()._pauseStart || 0) > 0, null, { timeout: 15000 });   /* (test-time-headroom) paused, not 2.5 s */
 
   const during = await page.evaluate(() => ({
     active: window.IntMapFlightSim.active(),
@@ -102,26 +108,60 @@ test('the flight simulator shows a WORLD, not a white void', async ({ page }) =>
   expect(during.zoom).toBeGreaterThan(11.1);
 
   const vp = page.viewportSize();
-  const colours = await groundDetail(page, { x: Math.round(vp.width * 0.30), y: Math.round(vp.height * 0.62),
-    width: Math.round(vp.width * 0.30), height: Math.round(vp.height * 0.20) });
+  /* (test-time-headroom) asked until the ground has arrived, rather than once after a 9 s flight: a white void never
+     reaches the threshold however long it is asked, which is the defect this guards */
   // Measured on the restored build: hundreds of distinct binned colours of terrain and imagery in this
   // patch. The #R171 cockpit was a single fog colour with the HUD over it, which counts about three.
-  expect(colours, 'the lower half of the cockpit must contain real ground').toBeGreaterThan(40);
+  await expect.poll(() => groundDetail(page, { x: Math.round(vp.width * 0.30), y: Math.round(vp.height * 0.62),
+    width: Math.round(vp.width * 0.30), height: Math.round(vp.height * 0.20) }),
+  { timeout: 60000, intervals: [500, 1000], message: 'the lower half of the cockpit must contain real ground' }).toBeGreaterThan(40);
 
   // …and the engine refuses to go back to the projection that blanked it
   const refused = await page.evaluate(() => window.IntMapGeoEngine.camera.setProjection('globe-true'));
   expect(refused, 'the contract declines what it cannot honour').toBe(false);
 
   await page.evaluate(() => window.IntMapFlightSim.stop());
-  await page.waitForTimeout(1500);
 });
 
-test('the 3-D volume is a closed body, has no altitude ceiling, and takes a unit', async ({ page }) => {
-  test.setTimeout(120000);
+/* (test-time-headroom) ONE BOOT FOR THE TWO 3-D VOLUME TESTS. Each booted the whole app to open the same tool. The
+   footprint shapes are drawn first (they are drawn by hand on a freshly opened tool, as before); the model's own claims —
+   the closed body, no ceiling, the units — are then asked of the same tool through its API, and setRing() replaces the
+   footprint, so they start from the state the second test used to build. Every expect() of both is here, unchanged. */
+test('the 3-D volume: every footprint shape draws, not only the polygon — and the body is closed, has no altitude ceiling, and takes a unit', async ({ page }) => {
+  test.setTimeout(240000);
   await boot(page);
-  await page.evaluate(() => document.getElementById('btn-tool-volume').click());
+  await page.evaluate(() => { window.__imap.jumpTo({ center: [138.73, 35.36], zoom: 11, pitch: 55, bearing: 20 }); document.getElementById('btn-tool-volume').click(); });
   await page.waitForFunction(() => !!window.IntMapVolume3D, null, { timeout: 30000 });   /* (#R311) that click fetches the tool (js/lazy-modules.js) */
-  await page.waitForTimeout(800);
+  await until(page, () => !!document.getElementById('v3d-base'));   /* (test-time-headroom) the tool is open — its panel is built — not a sleep */
+
+  const out = {};
+  for (const kind of ['circle', 'rect', 'freehand']) {
+    await page.evaluate(k => { document.querySelector(`.v3d-shape[data-shape="${k}"]`).click(); }, kind);
+    await until(page, (k) => window.IntMapVolume3D.state().shape === k, kind, { timeout: 5000 });
+    await page.mouse.move(660, 470); await page.mouse.down();
+    for (let i = 1; i <= 10; i++) { await page.mouse.move(660 + i * 13, 470 + i * 7); await page.waitForTimeout(40); }
+    await page.mouse.up();
+    await until(page, (k) => { const s = window.IntMapVolume3D.state(); return s.shape === k && s.points >= 3 && s.painted; }, kind, { timeout: 10000 });
+    out[kind] = await page.evaluate(() => { const s = window.IntMapVolume3D.state(); return { pts: s.points, area: Math.round(s.areaM2), painted: s.painted, shape: s.shape }; });
+  }
+  // polygon last, by clicking vertices
+  await page.evaluate(() => { document.querySelector('.v3d-shape[data-shape="polygon"]').click(); });
+  await until(page, () => window.IntMapVolume3D.state().shape === 'polygon', null, { timeout: 5000 });
+  for (const [k, [x, y]] of [[600, 430], [800, 430], [720, 560]].entries()) {
+    await page.mouse.click(x, y);
+    await until(page, (n) => window.IntMapVolume3D.state().points >= n, k + 1, { timeout: 5000 });
+  }
+  await until(page, () => window.IntMapVolume3D.state().painted, null, { timeout: 10000 });
+  out.polygon = await page.evaluate(() => { const s = window.IntMapVolume3D.state(); return { pts: s.points, area: Math.round(s.areaM2), painted: s.painted, shape: s.shape }; });
+
+  for (const k of ['circle', 'rect', 'freehand', 'polygon']) {
+    expect(out[k].shape, `${k} must be the active shape`).toBe(k);
+    expect(out[k].pts, `${k} must produce a footprint`).toBeGreaterThanOrEqual(3);
+    expect(out[k].area, `${k} must enclose real ground`).toBeGreaterThan(0);
+    expect(out[k].painted, `${k} must reach the renderer`).toBe(true);
+  }
+
+  /* ── the closed body, its ceiling and its unit, on the same open tool ── */
 
   const st = await page.evaluate(() => {
     const V = window.IntMapVolume3D;
@@ -158,37 +198,6 @@ test('the 3-D volume is a closed body, has no altitude ceiling, and takes a unit
   expect(gone.api, 'the module no longer offers the choice').toBe('undefined');
   expect(gone.flag, 'nor reports one').toBe(false);
   expect(gone.box, 'and the panel has no checkbox for it').toBe(false);
-});
-
-test('every footprint shape draws, not only the polygon', async ({ page }) => {
-  test.setTimeout(180000);
-  await boot(page);
-  await page.evaluate(() => { window.__imap.jumpTo({ center: [138.73, 35.36], zoom: 11, pitch: 55, bearing: 20 }); document.getElementById('btn-tool-volume').click(); });
-  await page.waitForFunction(() => !!window.IntMapVolume3D, null, { timeout: 30000 });   /* (#R311) that click fetches the tool (js/lazy-modules.js) */
-  await page.waitForTimeout(1200);
-
-  const out = {};
-  for (const kind of ['circle', 'rect', 'freehand']) {
-    await page.evaluate(k => { document.querySelector(`.v3d-shape[data-shape="${k}"]`).click(); }, kind);
-    await page.waitForTimeout(400);
-    await page.mouse.move(660, 470); await page.mouse.down();
-    for (let i = 1; i <= 10; i++) { await page.mouse.move(660 + i * 13, 470 + i * 7); await page.waitForTimeout(40); }
-    await page.mouse.up(); await page.waitForTimeout(900);
-    out[kind] = await page.evaluate(() => { const s = window.IntMapVolume3D.state(); return { pts: s.points, area: Math.round(s.areaM2), painted: s.painted, shape: s.shape }; });
-  }
-  // polygon last, by clicking vertices
-  await page.evaluate(() => { document.querySelector('.v3d-shape[data-shape="polygon"]').click(); });
-  await page.waitForTimeout(400);
-  for (const [x, y] of [[600, 430], [800, 430], [720, 560]]) { await page.mouse.click(x, y); await page.waitForTimeout(300); }
-  await page.waitForTimeout(800);
-  out.polygon = await page.evaluate(() => { const s = window.IntMapVolume3D.state(); return { pts: s.points, area: Math.round(s.areaM2), painted: s.painted, shape: s.shape }; });
-
-  for (const k of ['circle', 'rect', 'freehand', 'polygon']) {
-    expect(out[k].shape, `${k} must be the active shape`).toBe(k);
-    expect(out[k].pts, `${k} must produce a footprint`).toBeGreaterThanOrEqual(3);
-    expect(out[k].area, `${k} must enclose real ground`).toBeGreaterThan(0);
-    expect(out[k].painted, `${k} must reach the renderer`).toBe(true);
-  }
 });
 
 /* ⚠ (remove-synthetic-planes) THE AIRCRAFT TEST THAT STOOD HERE BOOTED `?aviation=v1` — the per-browser

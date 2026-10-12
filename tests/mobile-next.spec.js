@@ -12,6 +12,7 @@
  *    workers (playwright.config.js), so the inbox is filled the way the worker fills it.
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
+import { settleLayout as settle } from './helpers/settle.js';
 
 const TOKYO_TOWER = { latitude: 35.658585, longitude: 139.745433, accuracy: 12 };
 
@@ -38,30 +39,8 @@ const REACH = (sel) => {
   return out;
 };
 
-/* (spacetime-train) MOTION HAS STOPPED — the condition a fixed wait stood in for. Each named element's box (and its scroll
-   offset) is read on three consecutive frames and must be the same on all three, and no finite animation or transition that
-   moves it, its ancestors or its descendants may be running. Reading the box forces the style flush, so a transition that a
-   class change has just asked for has already begun by the first read: a check made before the motion starts cannot pass.
-   Unlike a fixed wait it cannot judge a panel half-way through its move, and it does not wait past the moment it stops. */
-async function settle(page, sels, timeout = 15_000) {
-  const deadline = Date.now() + timeout;
-  for (;;) {
-    const ok = await page.evaluate((list) => new Promise((res) => {
-      const els = list.map((s) => document.querySelector(s));
-      if (els.some((e) => !e)) { res(false); return; }
-      const snap = () => els.map((e) => { const r = e.getBoundingClientRect(); return [r.left, r.top, r.width, r.height, e.scrollTop, e.scrollLeft].map((v) => Math.round(v * 2) / 2).join(','); }).join('|');
-      const moving = () => document.getAnimations().some((a) => {
-        if (a.playState !== 'running' || !a.effect || !(a.effect.target instanceof Element)) return false;
-        if (a.effect.getTiming().iterations === Infinity) return false;   /* a spinner never stops; it does not move the panel */
-        const t = a.effect.target; return els.some((e) => t === e || t.contains(e) || e.contains(t));
-      });
-      const a = snap();
-      requestAnimationFrame(() => { const b = snap(); requestAnimationFrame(() => { const c = snap(); res(a === b && b === c && !moving()); }); });
-    }), sels);
-    if (ok) return;
-    if (Date.now() > deadline) throw new Error('still moving after ' + timeout + ' ms: ' + sels.join(', '));
-  }
-}
+/* (spacetime-train) MOTION HAS STOPPED — the condition a fixed wait stood in for. (test-time-headroom) One copy, shared:
+   tests/helpers/settle.js `settleLayout`. */
 
 test.describe('mobile-next: 375 × 812, touch', () => {
   test.use({ viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true, geolocation: TOKYO_TOWER, permissions: ['geolocation'] });
