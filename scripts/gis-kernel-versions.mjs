@@ -128,7 +128,9 @@ export const KERNELS = {
      reach) cannot change a recipe that predates them. What moved is which of two answers — a
      number or a named refusal — a replayed step produces, and a reader comparing two loads is
      entitled to know that. */
-  'js/gis-ops.js': { version: 'ops-9', sha256: 'e331e5a3e2780f1404c30870afa6e478104e2c4a80b568a48ea492350997a050' },
+  /* (voronoi) HASH ONLY: a new op (`voronoi`) that no saved recipe names, and a call-time read of the
+     kernel it needs. Every op that existed replays to the same numbers and the same refusals. */
+  'js/gis-ops.js': { version: 'ops-9', sha256: 'baa41e83384b567c365491e2b47a13365ee80a4a399f1eb2adec77265e045d63' },
   /* `geom-1` likewise: validate() and repair() are new doors, and the boolean engine behind union,
      intersection and difference was measured unchanged over 800,000 pairs. */
     /* (#R783) geom-1 -> geom-2: MultiPolygon validity grew its THIRD stage (parts-overlap /
@@ -254,6 +256,11 @@ export const KERNELS = {
      crs-2 had no way to state one. The measurement behind it: EPSG:3857 area is +311% at 60°N and
      +10744% at 84°N; the datum term nobody had measured is +0.449% at the equator on this app's own
      sphere; and `exact: true` was a claim about a surface's OWN datum, not about the ground. */
+  /* (voronoi) voronoi-1: the first version. The spherical nearest-site diagram (hull neighbours,
+     octant clipping on the true positions, densification to the sphere's own error against WGS-84)
+     and the branch-and-bound search for the farthest place. Raise it when a replayed `voronoi` step
+     would draw a different border or name a different farthest place. */
+  'js/gis-voronoi.js': { version: 'voronoi-1', sha256: '2ca8a32a3066960fd9e2c3a393359db9cc279da71158affc844755e9dee2acc3' },
   'js/gis-crs.js': { version: 'crs-3', sha256: 'dd306fe9a1f2424ed8518d95c24b14bf6cc200ede37e1067f6510e01eaa3efa9' },
 };
 

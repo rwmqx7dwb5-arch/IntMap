@@ -256,7 +256,7 @@ gis-core.js                       **GIS 中核の 1 つの扉**（#R729）— �
                                   （`window.GeoJSONUpload.add` を通す＝地図に載せる道を 2 本作らない）。
                                   遅延読み込み `gisCore`。正本 `docs/GIS-CORE.md`
 gis-runtime.js                    **GIS の組み立て**（#R783）— `makeGisRuntime(deps)` が、ブラウザ入口と
-                                  **同じ `mount()`** で 15 のカーネルを載せる。`externals` を渡せば閉じた集合
+                                  **同じ `mount()`** で 16 のカーネルを載せる。`externals` を渡せば閉じた集合
                                   （渡していないものは scope に在っても使わない）、渡さなければ生きた scope。
                                   ⚠ **Atlas 用 GIS と外部 AI 用 GIS を別に作らないための 1 か所**。
                                   `js/gis-core.js` がこれを名前で読んで再公開する。
@@ -395,6 +395,12 @@ gis-index.js                      **空間索引** `window.IntMapGisIndex`（#R7
                                   `stats()` が仕事を述べる（build/query の時間・候補・**実際に幾何を見た数**・
                                   索引無しなら見たはずの数・その比・抱えている構造）。⚠ **数える場所は 1 つ**
                                   ——呼び出し元の厳密な判定は `queryEach(…,{test})` として渡され、写されない
+gis-voronoi.js                    **球面の最寄り圏** `window.IntMapGisVoronoi` — `voronoi` op の算術。
+                                  近傍は 3 次元凸包（＝球面 Delaunay）から、セルは**真の位置**の二等分面で
+                                  8 つの八分円を切り出す（極は片の角・日付変更線をまたぐ片は無い）。
+                                  共円の地点は凸包だけをずらした位置で建て、候補に 2 環近傍を足す。
+                                  境界の描画と「いちばん遠い場所」の探索の許容は球と WGS-84 の差
+                                  （`docs/GIS-CORE.md` §2.4.1 の 0.56 %）で、つまみではない（§2.9）
 gis-worker.js                     **Worker の束ね役** `window.IntMapGisWorker`（#R752）— 重い算術を
                                   main thread の外で走らせる。⚠ **`js/gis-ops.js` の yield の代わり
                                   ではなく隣**——あちらが足すのは応答性、これが足すのは**並列性**
