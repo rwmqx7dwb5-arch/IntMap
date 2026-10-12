@@ -29,7 +29,7 @@ import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { ingestVerdict } from './news-intel-core.js';   /* (news-intelligence) 取り込みの健全性の判定 — node が同じ関数を評価する */
 import { freshChip } from './freshness.js';     /* (news-intelligence) 「いつ時点か・誰が測ったか」の 1 つの部品 */
-import { readSeen } from './news-edition-core.js';   /* (wave4-news) 「今日の世界」を前回開いた時刻——入口の件数の起点 */
+import { readSeen, makeSinceCounter } from './news-edition-core.js';   /* (wave4-news) 「今日の世界」を前回開いた時刻——入口の件数の起点 */
 
 export function newsEvents(HOST) {
   const L = IntMapLang.pick(() => HOST.lang);
@@ -466,18 +466,15 @@ export function newsEvents(HOST) {
      ⚠ 件数は**サーバーに数えさせる**（head の count）。読み込んだ 200 件から数えると、200 件を超えた朝に嘘になる。
      ⚠ 数えるのは時計が「いま」のときだけ——前回の印は「いまのニュースをそこまで読んだ」という記録だから。 */
   const EDITION_COUNT_TTL_MS = HEALTH_TTL_MS;   /* 同じ一覧の再描画のたびに訊かない長さ（取り込みの 1 行と同じ） */
-  let edCount = null, edCountAt = 0, edCountFor = null, edCountP = null;
-  function editionCount(seen) {
-    if (edCountP) return edCountP;
-    if (edCountFor === seen && Date.now() - edCountAt < EDITION_COUNT_TTL_MS) return Promise.resolve(edCount);
-    if (!HOST.DB || typeof HOST.DB.from !== 'function') return Promise.resolve(null);
-    edCountP = Promise.resolve(HOST.DB.from('news_events').select('id', { count: 'exact', head: true })
-      .eq('status', 'active').is('merged_into', null).gt('first_published_at', new Date(seen).toISOString()))
-      .then(({ count, error }) => { if (error) throw error; edCount = typeof count === 'number' ? count : null; return edCount; })
-      .catch(() => { edCount = null; return null; })
-      .finally(() => { edCountAt = Date.now(); edCountFor = seen; edCountP = null; });
-    return edCountP;
-  }
+  /* the ONE count of «new since your last visit» (js/news-edition-core.js makeSinceCounter, held per last visit); the
+     card asks the same counter through API.sinceLastVisit, so the entry and the card cannot say two numbers */
+  const editionCount = makeSinceCounter({ ttlMs: EDITION_COUNT_TTL_MS, ask: async (seen) => {
+    if (!HOST.DB || typeof HOST.DB.from !== 'function') return null;
+    const { count, error } = await HOST.DB.from('news_events').select('id', { count: 'exact', head: true })
+      .eq('status', 'active').is('merged_into', null).gt('first_published_at', new Date(seen).toISOString());
+    if (error) throw error;
+    return count;
+  } });
   /* the entry's look, injected with it (this module is lazy; its rules are not in the eager css/intmap.css) */
   function editionEntryStyle() {
     if (document.getElementById('news-edition-css')) return;
@@ -964,6 +961,7 @@ export function newsEvents(HOST) {
     categories: () => CATS.map(([k, v]) => ({ key: k, label: L.arr(v) })),
     /* (wave4-news) the edition re-counts its entry after it marked a visit — only when the entry is on screen
        (re-rendering the chips here would show them outside News) */
+    sinceLastVisit: (seen) => editionCount(seen),
     refreshEditionEntry: () => { const el = document.getElementById('news-edition-entry'); if (el && el.style.display !== 'none') renderEditionEntry(); },
     category: () => category,
     setCategory: (c) => { category = c || 'all'; renderChips(); try { HOST.startNews(); } catch (_) { } },

@@ -51,7 +51,7 @@ export function newsEdition(HOST) {
   const store = () => { try { return window.localStorage; } catch (_) { return null; } };
 
   const st = { open: false, seq: 0, spec: {}, win: null, ed: null, rows: null, loading: false, err: '', fail: null,
-    seenBefore: null, marked: false, walking: null, stop: -1, painted: 0, paintError: '', health: null };
+    seenBefore: null, sinceTotal: null, marked: false, walking: null, stop: -1, painted: 0, paintError: '', health: null };
   const failed = (e) => { st.err = (e && e.message) || String(e); st.fail = failureOf(e); };
 
   function clockMs() { try { return IntMapTime.nowMs(); } catch (_) { return Date.now(); } }
@@ -89,6 +89,11 @@ export function newsEdition(HOST) {
     if (error) throw error;
     return data || [];
   }
+  /* «N new since your last visit»: the server's count of every event first reported after the mark — the same counter the
+     News entry reads (js/news-events.js API.sinceLastVisit), so the two never differ. null = could not count. */
+  async function sinceLastVisit(seen) {
+    try { await window.IntMapLazy.need('newsEvents'); const E = window.IntMapNewsEvents; return E && E.sinceLastVisit ? await E.sinceLastVisit(seen) : null; } catch (_) { return null; }
+  }
   async function readHealth() {
     try { await window.IntMapLazy.need('newsEvents'); const E = window.IntMapNewsEvents; return E && E.health ? await E.health() : null; } catch (_) { return null; }
   }
@@ -109,11 +114,13 @@ export function newsEdition(HOST) {
     show(); draw();
     if (!st.win) { st.loading = false; draw(); paint(); return summary(); }
     /* the last visit is read BEFORE this visit is marked, so the edition can say what is new since then */
-    st.seenBefore = readSeen(store());
+    st.seenBefore = readSeen(store()); st.sinceTotal = null;
     try {
-      const [rows, idx, health] = await Promise.all([fetchRows(st.win), countries().catch(() => null), st.win.kind === 'rolling' && clockLive() ? readHealth() : Promise.resolve(null)]);
+      const rolling = st.win.kind === 'rolling';
+      const [rows, idx, health, total] = await Promise.all([fetchRows(st.win), countries().catch(() => null), rolling && clockLive() ? readHealth() : Promise.resolve(null),
+        rolling && st.seenBefore != null ? sinceLastVisit(st.seenBefore) : Promise.resolve(null)]);
       if (my !== st.seq) return null;
-      index = idx; st.rows = rows; st.health = health;
+      index = idx; st.rows = rows; st.health = health; st.sinceTotal = total;
       st.ed = buildEdition(rows, { sinceMs: st.win.sinceMs, untilMs: st.win.untilMs, seenMs: st.win.kind === 'rolling' ? st.seenBefore : null,
         keyAt: index ? index.keyAt : null, limit: EDITION.LIMIT });
       /* a visit is marked only when the LIVE edition was read: the mark is «this reader has seen the news up to now» */
@@ -382,8 +389,10 @@ export function newsEdition(HOST) {
       h += '<div class="ned-fresh">' + freshChip({ at: v.lastOkAt, rhythmMs: v.rhythmMs, now: Date.now(), unverified: v.state === 'unverified', verb: 'updated',
         by: L('IntMap news collection', 'IntMap のニュース収集'), lang: HOST.lang, fmt: fmtDT }) + '</div>';
     }
-    if (E.counts.sinceSeen != null) {
-      h += '<div class="ned-since"><b>' + S(nf(E.counts.sinceSeen)) + '</b><span>' + S(L('new since your last visit ({t}) · {k} of the top ten', '件が前回（{t}）から新しく報じられました・上位10件のうち {k} 件').replace('{t}', fmtDT(E.seenMs)).replace('{k}', nf(E.counts.sinceSeenTop))) + '</span></div>';
+    if (E.seenMs != null && st.sinceTotal != null) {
+      h += '<div class="ned-since"><b>' + S(nf(st.sinceTotal)) + '</b><span>' + S(L('new since your last visit ({t}) · {k} of the top ten', '件が前回（{t}）から新しく報じられました・上位10件のうち {k} 件').replace('{t}', fmtDT(E.seenMs)).replace('{k}', nf(E.counts.sinceSeenTop))) + '</span></div>';
+    } else if (E.seenMs != null) {
+      h += '<div class="ned-since"><span>' + S(L('Could not count what is new since your last visit ({t}) — marked below: {k} of the top ten', '前回（{t}）以降の件数を数えられませんでした——上位10件のうち {k} 件に印を付けています').replace('{t}', fmtDT(E.seenMs)).replace('{k}', nf(E.counts.sinceSeenTop))) + '</span></div>';
     } else if (st.win.kind === 'rolling') {
       h += '<div class="ned-since ned-first"><span>' + S(L('From your next visit, this edition marks what was first reported since you were last here.', '次に開いたときから、前回以降に初めて報じられた出来事に印が付きます。')) + '</span></div>';
     }
@@ -458,7 +467,7 @@ export function newsEdition(HOST) {
     return Object.assign(base, {
       events: E.counts.events, cut: E.cut, newInWindow: E.counts.new, continuing: E.counts.continuing, multiSource: E.counts.multiSource,
       unplaced: E.counts.unplaced, atSea: E.counts.atSea,
-      lastVisit: E.seenMs != null ? new Date(E.seenMs).toISOString() : null, newSinceLastVisit: E.counts.sinceSeen, newSinceLastVisitInTop: E.counts.sinceSeenTop,
+      lastVisit: E.seenMs != null ? new Date(E.seenMs).toISOString() : null, newSinceLastVisit: E.seenMs != null ? st.sinceTotal : null, newSinceLastVisitInTop: E.counts.sinceSeenTop,
       visitMarked: st.marked,
       top: E.top.map((e) => ({ rank: e.n, title: e.title, place: e.place, country: countryName(e.country), category: e.cat, outlets: e.sources, articles: e.articles,
         firstReported: new Date(e.at).toISOString(), newInWindow: e.isNew, newSinceLastVisit: e.sinceSeen, publicId: e.id })),
@@ -469,8 +478,10 @@ export function newsEdition(HOST) {
     });
   }
 
-  /* a basemap swap discards the layers (js/news-story.js listens to the same signal) */
-  try { GE().events.on('styledata', () => { if (st.open && !GE().layers.hasSource(SRC)) { wired = false; paint(); } }); } catch (_) { }
+  /* ⚠ A basemap swap discards the LAYERS, not the clicks: the engine registers a layer's click / hover by layer id on
+     the map (js/geo-engine.js onLayer → map.on(type, layerId, fn)), and that registration outlives setStyle. Re-wiring
+     here added a second delegated click per swap, and one tap then opened the event once per swap. Only repaint. */
+  try { GE().events.on('styledata', () => { if (st.open && !GE().layers.hasSource(SRC)) { paint(); } }); } catch (_) { }
   try { bus.on('intmap-lang', () => setTimeout(() => { if (st.open) draw(); }, 30)); } catch (_) { }
 
   const API = { open, close, play, pause: stopWalk, goTo, summary, link, text,

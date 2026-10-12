@@ -86,11 +86,14 @@ export function rank(a, b) {
 /** buildEdition(rows, { sinceMs, untilMs, seenMs, keyAt, limit, top }) — public.news_events rows read as an edition:
  *    events      every event whose reporting span overlaps the window, in rank order, each with
  *                  isNew      first reported inside the window (else it continues from `at`)
- *                  sinceSeen  first reported after `seenMs` (the reader's last visit) — only when seenMs is given
+ *                  sinceSeen  first reported after `seenMs` (the reader's last visit) — only when seenMs is given. This is
+ *                             the MARK on an event of this window; how many events in all were first reported since the
+ *                             last visit is NOT counted here (a visit two days ago reaches outside a 24-hour window) — it
+ *                             is the server's count, through `makeSinceCounter` below, the one number the entry and the card say
  *                  country    the country its point is in (keyAt), or null (at sea / unplaced)
  *    top         the first `top` of them, numbered
- *    counts      events · new · continuing · multiSource (2+ independent outlets) · unplaced · atSea · sinceSeen ·
- *                sinceSeenTop (how many of the top are new since the last visit)
+ *    counts      events · new · continuing · multiSource (2+ independent outlets) · unplaced · atSea ·
+ *                sinceSeenTop (how many of the top are marked new since the last visit)
  *    categories  [{ key, n }] most first;  countries [{ key, n }] most first
  *    cut         the server returned `limit` rows — there may be more */
 export function buildEdition(rows, opts) {
@@ -112,14 +115,13 @@ export function buildEdition(rows, opts) {
   events.sort(rank);
   const top = events.slice(0, topN).map((e, i) => Object.assign(e, { n: i + 1 }));
   const counts = { events: events.length, new: 0, continuing: 0, multiSource: 0, unplaced: 0, atSea: 0,
-    sinceSeen: seen != null ? 0 : null, sinceSeenTop: seen != null ? 0 : null };
+    sinceSeenTop: seen != null ? 0 : null };
   const cats = new Map(), ctry = new Map();
   for (const e of events) {
     if (e.isNew) counts.new++; else counts.continuing++;
     if (e.sources >= 2) counts.multiSource++;
     if (!e.p) counts.unplaced++;
     else if (keyAt && !e.country) counts.atSea++;
-    if (e.sinceSeen) counts.sinceSeen++;
     if (e.cat) cats.set(e.cat, (cats.get(e.cat) || 0) + 1);
     if (e.country) ctry.set(e.country, (ctry.get(e.country) || 0) + 1);
   }
@@ -127,6 +129,27 @@ export function buildEdition(rows, opts) {
   const byN = (m) => Array.from(m, ([key, n]) => ({ key, n })).sort((a, b) => b.n - a.n || (a.key < b.key ? -1 : 1));
   return { sinceMs: since, untilMs: until, seenMs: seen, events, top, counts, categories: byN(cats), countries: byN(ctry),
     cut: !!(o.limit && (rows || []).length >= o.limit) };
+}
+
+/** makeSinceCounter({ ask, ttlMs, now }) → count(seenMs) — how many events in all were first reported after the last visit,
+ *  the ONE number «N new since your last visit» means wherever it is said (the News entry, the card, Atlas). `ask(seenMs)`
+ *  resolves to the server's count (js/news-events.js: a head count of `first_published_at > seen`), or null.
+ *  ⚠ HELD PER LAST VISIT: an answer — and a question still in flight — belongs to the `seenMs` it was asked for. A count
+ *    asked for the previous mark is never handed back for the new one (the mark moves the moment the edition is read).
+ *  A failed ask is null («could not count»), never 0, and is not kept, so the next render asks again. */
+export function makeSinceCounter(o) {
+  const ask = o.ask, ttl = o.ttlMs, now = o.now || (() => Date.now());
+  const kept = new Map(), flying = new Map();
+  return function count(seen) {
+    if (seen == null || !isFinite(+seen)) return Promise.resolve(null);
+    const k = +seen, hit = kept.get(k);
+    if (hit && now() - hit.at < ttl) return Promise.resolve(hit.n);
+    if (flying.has(k)) return flying.get(k);
+    const p = Promise.resolve().then(() => ask(k)).then((n) => (typeof n === 'number' && n >= 0 ? n : null), () => null)
+      .then((n) => { flying.delete(k); if (n != null) { kept.clear(); kept.set(k, { n, at: now() }); } return n; });
+    flying.set(k, p);
+    return p;
+  };
 }
 
 /** walkOrder(edition) — the placed events of the top, in rank order: the stops of «Play the edition» */

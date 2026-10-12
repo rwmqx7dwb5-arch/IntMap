@@ -66,16 +66,19 @@ test('wave4-news ③ a row outside the window is not in the edition, whatever th
   assert.deepEqual(ed.events.map((e) => [e.id, e.isNew]), [['through', false], ['on', true]]);
 });
 
-test('wave4-news ④ new since the last visit is the first report after it, and only when a visit is known', () => {
+test('wave4-news ④ the window MARKS what is new since the last visit; it does not count it (the server does, once)', () => {
   const seen = Date.parse('2026-10-05T12:00:00Z');
   const ed = build({ seenMs: seen });
   const want = FX.rows.filter((r) => Date.parse(r.first_published_at) > seen).length;
-  assert.equal(ed.counts.sinceSeen, want);
+  assert.equal(ed.events.filter((e) => e.sinceSeen).length, want);
   assert.ok(want > 0 && want < 619);
+  /* review: a window-local total said a smaller number than the entry's server count when the last visit was more than
+     24 hours ago, under the same words. The edition carries no such total. */
+  assert.equal('sinceSeen' in ed.counts, false, 'no window-local «new since your last visit» total');
   assert.equal(ed.counts.sinceSeenTop, ed.top.filter((e) => Date.parse(e.row.first_published_at) > seen).length);
   for (const e of ed.events) assert.equal(e.sinceSeen, e.at > seen);
   const none = build();
-  assert.equal(none.counts.sinceSeen, null, 'no last visit: the edition does not claim anything is new since one');
+  assert.equal(none.counts.sinceSeenTop, null, 'no last visit: the edition does not claim anything is new since one');
   assert.ok(none.events.every((e) => !e.sinceSeen));
 });
 
@@ -174,4 +177,44 @@ test('wave4-news ⑫ the privacy policy says what this browser keeps, in both la
   const t = read('js/legal-text.js');
   assert.match(t, /<b>今日の世界<\/b>を最後に開いた日時/);
   assert.match(t, /<b>Today on the map<\/b> keeps the time you last opened it in your browser/);
+});
+
+test('wave4-news ⑬ one count of «new since your last visit»: the entry, the card and Atlas read the same counter, held per last visit', async () => {
+  /* the counter is the shipped one; ask() is the server — answered here from the production day */
+  const asked = [];
+  let release = null;
+  const gate = new Promise((r) => { release = r; });
+  const count = core.makeSinceCounter({ ttlMs: 60000, now: () => 0, ask: async (seen) => { asked.push(seen); await gate; return FX.rows.filter((r) => Date.parse(r.first_published_at) > seen).length; } });
+  const a = Date.parse('2026-10-04T00:00:00Z'), b = Date.parse('2026-10-05T12:00:00Z');
+  const pa = count(a), pb = count(b);   /* the mark moved while the first count was still in flight */
+  release();
+  const [na, nb] = await Promise.all([pa, pb]);
+  assert.deepEqual(asked, [a, b], 'a count in flight for the old mark is not handed back for the new one');
+  assert.ok(na > nb, 'a mark further back counts more');
+  assert.equal(nb, FX.rows.filter((r) => Date.parse(r.first_published_at) > b).length);
+  assert.equal(await count(b), nb); assert.equal(asked.length, 2, 'the same mark inside the TTL is not asked again');
+  const failing = core.makeSinceCounter({ ttlMs: 60000, ask: async () => { throw new Error('57014'); } });
+  assert.equal(await failing(b), null, 'a failed count is «could not count», never 0');
+  assert.equal(await count(null), null);
+  /* the card's number is that counter's, not a window total; the entry calls the same one */
+  const body = code('js/news-edition.js'), list = code('js/news-events.js');
+  assert.match(list, /const editionCount = makeSinceCounter\(/);
+  assert.match(list, /sinceLastVisit: \(seen\) => editionCount\(seen\)/);
+  assert.match(body, /E\.sinceLastVisit\(seen\)/);
+  assert.match(body, /newSinceLastVisit: E\.seenMs != null \? st\.sinceTotal : null/);
+  assert.doesNotMatch(body, /counts\.sinceSeen\b(?!Top)/);
+});
+
+test('wave4-news ⑭ a basemap swap repaints a layer; it never re-registers its clicks (one tap, one open) — every js/ file', async () => {
+  /* the engine's layer handlers are map.on(type, layerId, fn): they outlive setStyle. Re-wiring on 'styledata' added one
+     more delegated click per swap. The fact is held for every file, not the four that had it. */
+  const { readdirSync } = await import('node:fs');
+  const bad = [];
+  for (const f of readdirSync(join(ROOT, 'js')).filter((x) => x.endsWith('.js'))) {
+    const c = code('js/' + f);
+    for (const m of c.matchAll(/events\.on\(\s*'styledata'[^\n]*/g)) if (/\bwired\s*=\s*false\b/.test(m[0])) bad.push(f);
+  }
+  assert.deepEqual(bad, []);
+  const ge = code('js/geo-engine.js');
+  assert.match(ge, /onLayer\(e,layer,c\)\{[\s\S]{0,400}m\.on\(e,layer,c\)/, 'the delegation the rule rests on: a click is registered on the map by layer id');
 });
