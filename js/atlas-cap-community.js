@@ -55,8 +55,8 @@ export default [
       const r = await C.browse(HOST.DB, { query: a.query, sort: a.sort, limit: a.limit ? Math.round(+a.limit) : 20, bbox });
       if (!r.ok) return R(false, warn(esc(C.failureText(r.error, lang))));
       if (a.show) { try { C.openCommunityMaps(HOST, { query: a.query, sort: a.sort, area: !!a.area }); } catch (_) { } }
-      const head = T('Community maps: ' + r.total + ' collection(s)' + (a.query ? ' matching «' + a.query + '»' : '') + (a.area ? ' about this area' : ''),
-        'みんなの地図: ' + r.total + ' 件' + (a.query ? '（「' + a.query + '」に一致）' : '') + (a.area ? '（この範囲）' : ''));
+      const head = T('Community maps: ' + r.items.length + ' collection(s)' + (a.query ? ' matching «' + a.query + '»' : '') + (a.area ? ' about this area' : '') + (r.hasMore ? ' — more exist (ask with a higher limit or narrower words)' : ''),
+        'みんなの地図: ' + r.items.length + ' 件' + (a.query ? '（「' + a.query + '」に一致）' : '') + (a.area ? '（この範囲）' : '') + (r.hasMore ? '——さらにあります（件数を増やすか言葉を絞って訊いてください）' : ''));
       if (!r.items.length) return R(true, note(esc(head + T(' — nothing listed matches.', ' — 一致する掲載はありません。'))), { meta: { code: 'OK', category: 'ok', retryable: false, userGoalSatisfied: true, produced: ['explanation'] } });
       return R(true, note(esc(head)) + entryLines(r.items, C, esc, lang));
     },

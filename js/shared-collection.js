@@ -26,7 +26,7 @@ import { fromSavedView, isTour } from './map-doc.js';   /* (map-document-unify) 
 import { MapState } from './map-state.js';   /* the address bar is written through the store's one door */
 
 /* the owner's own columns of a share (supabase/migrations/20261003211500_collection_workspace.sql, + 20261013080000_community_maps.sql) */
-const SHARE_COLS = 'id,collection,title,token,created_at,listed_at,author_name,summary,hidden_at,hidden_reason';
+const SHARE_COLS = 'id,collection,title,token,created_at,listed_at,author_name,summary';
 const SHARE_COLS_BEFORE_LISTING = 'id,collection,title,token,created_at';
 /* the token the database mints: 32 hex characters (gen_random_uuid() without its dashes) */
 const TOKEN_RE = /^[0-9a-f]{32}$/;
@@ -116,7 +116,14 @@ export async function listShares(DB) {
     let { data, error } = await DB.from('collection_shares').select(SHARE_COLS).order('created_at', { ascending: true });
     if (error && error.code === '42703') ({ data, error } = await DB.from('collection_shares').select(SHARE_COLS_BEFORE_LISTING).order('created_at', { ascending: true }));
     if (error) return { ok: false, error: errOf(error) };
-    return { ok: true, shares: (Array.isArray(data) ? data : []).map((s) => Object.assign({}, s, { url: shareUrl(s.token) })) };
+    /* (community-maps) an administrator's hold is on the COLLECTION, not on its share row (it outlives unpublishing): the
+       owner reads their own holds and each share says whether its collection is held, and why. No hold table yet (the
+       migration has not reached this database) is no hold. */
+    let holds = [];
+    try { const h = await DB.from('community_map_holds').select('collection,reason,hidden_at'); if (!h.error && Array.isArray(h.data)) holds = h.data; } catch (_) { holds = []; }
+    const held = (s) => holds.find((h) => (h.collection == null ? null : String(h.collection)) === (s.collection == null ? null : String(s.collection))) || null;
+    return { ok: true, shares: (Array.isArray(data) ? data : []).map((s) => { const h = held(s);
+      return Object.assign({}, s, { url: shareUrl(s.token), hidden_at: h ? h.hidden_at : null, hidden_reason: h ? h.reason : null }); }) };
   } catch (_) { return { ok: false, error: 'failed' }; }
 }
 

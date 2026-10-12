@@ -59,9 +59,12 @@ test('① the doors: the account is auth.uid(), anon reads only the directory an
     assert.doesNotMatch(body, /to_jsonb\(\s*[a-z]+\s*\)/, name + ': no whole-row to_jsonb (a column added later would be published)');
   }
   /* the original's link travels only while the original is listed and not hidden — at every place it is read */
-  const origins = SQL.match(/where\s+o\.id\s*=\s*[a-z]+\.derived_from[^)]*/g) || [];
-  assert.ok(origins.length >= 2, 'the lineage is read in the directory and in the collection\'s read');
-  for (const o of origins) assert.match(o, /o\.listed_at\s+is\s+not\s+null\s+and\s+o\.hidden_at\s+is\s+null/, 'an unlisted or hidden original is never named: ' + o);
+  assert.match(fnBody('community_map_origin').body, /o\.listed_at\s+is\s+not\s+null\s+and\s+not\s+public\.community_map_held\(o\.user_id,\s*o\.collection\)/, 'the one origin rule: listed and not held');
+  for (const name of anonGrants) {
+    const body = fnBody(name).body;
+    assert.doesNotMatch(body, /o\.id\s*=\s*[a-z]+\.derived_from/, name + ' does not read the original itself — it asks community_map_origin()');
+    assert.match(body, /'based_on',\s*public\.community_map_origin\(/, name + ' names the original through community_map_origin()');
+  }
   for (const t of ['collection_copies', 'community_map_reports']) {
     assert.match(SQL, new RegExp('revoke\\s+all\\s+on\\s+table\\s+public\\.' + t + '\\s+from\\s+public,\\s*anon,\\s*authenticated'), t + ' starts from nothing (TRUNCATE ignores RLS)');
     assert.doesNotMatch(SQL, new RegExp('grant\\s+[^;]*\\b(insert|update)\\b[^;]*on\\s+table\\s+public\\.' + t + '\\s+to\\s+[^;]*\\b(authenticated|anon)\\b', 'i'), 'nobody but the functions writes ' + t);
@@ -128,7 +131,7 @@ test('④ the doors and the Atlas capabilities, evaluated with a stand-in databa
   const C = await import('../js/community-maps.js');
   const tok = 'abcdefabcdefabcdefabcdefabcdefab', tok2 = '1234512345123451234512345123451a';
   const item = (t, title) => ({ token: t, title, author: 'Ms A', summary: '', places: 2, maps: 0, tours: 0, lng: 135.6, lat: 34.8, reused: 1, derived: 0, based_on: null });
-  const DB = fakeDB({ community_maps: { data: { ok: true, total: 2, offset: 0, items: [item(tok, 'Kansai trip'), item(tok2, 'Kansai trip (2)')] }, error: null } });
+  const DB = fakeDB({ community_maps: { data: { ok: true, has_more: false, offset: 0, items: [item(tok, 'Kansai trip'), item(tok2, 'Kansai trip (2)')] }, error: null } });
   const r = await C.browse(DB, { query: '  ', sort: 'bogus', limit: 999 });
   assert.equal(r.ok, true); assert.equal(r.items.length, 2);
   const call = DB.calls[0];
@@ -174,6 +177,28 @@ test('④ the doors and the Atlas capabilities, evaluated with a stand-in databa
   assert.equal(area.meta.code, 'NEEDS_INPUT', 'no map to read an area from → asked, not the whole world quietly');
   const all = await browse.run({ query: 'Kansai' }, {}, K3);
   assert.equal(all.ok, true); assert.ok(all.html.includes(tok) && all.html.includes('Kept by 1 reader'), 'each entry with its token and reach');
+});
+
+test('⑥ the hold and the reports are on the collection; the directory reads a page, in an index', () => {
+  /* review: a hold on the share row died with the owner's DELETE, and the reports cascaded away with it */
+  const tbl = (name) => { const m = new RegExp('create table if not exists public\\.' + name + ' \\(([\\s\\S]*?)\\n\\);').exec(SQL); assert.ok(m, name); return m[1]; };
+  const holds = tbl('community_map_holds'), reports = tbl('community_map_reports'), subjects = tbl('community_map_subjects');
+  assert.match(holds, /unique nulls not distinct \(user_id, collection\)/, 'a hold is one per (account, collection)');
+  for (const [n, t] of [['community_map_holds', holds], ['community_map_reports', reports]]) assert.doesNotMatch(t, /share_id|collection_shares/, n + ' does not hang on the share row');
+  assert.doesNotMatch(subjects, /references|user_id/, 'a subject names the owner without a foreign key or a user_id (a reporter\'s export never carries it)');
+  assert.doesNotMatch(SQL, /alter table public\.collection_shares add column[^;]*hidden/, 'nothing about hiding lives on collection_shares');
+  const list = fnBody('list_community_map').body;
+  const at = list.indexOf('community_map_held(v_uid, v_coll)');
+  assert.ok(at >= 0 && at < list.indexOf('publish_collection('), 'list_community_map asks the hold on the collection before anything is published');
+  /* review: the directory aggregated every listing on every read */
+  const dir = fnBody('community_maps').body;
+  assert.doesNotMatch(dir, /'total'/, 'no total (it would read every listing)');
+  assert.match(dir, /'has_more'/);
+  const indexes = [...SQL.matchAll(/create index if not exists \w+\s+on public\.collection_shares \(([^)]*)\) where listed_at is not null/g)].map((m) => m[1].replace(/\s+/g, ' ').trim());
+  const orders = [...dir.matchAll(/order by (c\.[^\n]*?)\s+limit v_lim \+ 1/g)].map((m) => m[1].replace(/\bc\./g, '').replace(/\s+/g, ' ').trim());
+  assert.equal(orders.length, 3, 'one page query per order');
+  for (const o of orders) assert.ok(indexes.includes(o), 'the order «' + o + '» is exactly a partial index on the listed rows: ' + indexes.join(' | '));
+  assert.match(SQL, /create trigger collection_copies_count after insert or delete on public\.collection_copies/, 'reused_count is kept by the receipts, not counted on a read');
 });
 
 test('⑤ the UI doors are on demand and declared', () => {

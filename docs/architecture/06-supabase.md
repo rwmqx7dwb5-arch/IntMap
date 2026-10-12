@@ -10,7 +10,7 @@
 
 ### 6.1 テーブル
 
-**表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](../DATABASE.md)**（pgTAP による実証手順も同じファイル）。現在 **47 表**（`collection_copies` と `community_map_reports`（みんなの地図の写しの受領と報告） / `quest_daily_results`（今日のクエストの記録・§8.6.4） /
+**表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](../DATABASE.md)**（pgTAP による実証手順も同じファイル）。現在 **49 表**（`collection_copies`・`community_map_reports`・`community_map_subjects`・`community_map_holds`（みんなの地図の写しの受領・報告・報告の対象・管理者の非表示） / `quest_daily_results`（今日のクエストの記録・§8.6.4） /
 `map_corrections`（地図の誤り報告・§11） / `place_watches`（見守る場所） / `saved_views` / `collection_shares` / `news_event_entities` / `ai_turn_answers` / `atlas_notebook_entries`（Atlas の
 調査ノート・同期をオンにした読者のみ） / `usage_counts` / `saved_places` / `account_data_catalog` / `profiles` / `profiles_public` / `current_news` / `geo_pins` / `favorites` / `user_prefs` /
 `dashboard_cards` / `ai_usage` / `ai_turns` / `ai_gloss_usage` / `relay_rate_buckets` / `atlas_capability_vectors` / `usage_counts`（匿名の利用統計） / `community_*` 5 表 / `feedback` /
@@ -39,7 +39,9 @@
   `collection_copies`（コレクションと口座ごとに 1 行・持ち主自身の写しは数えない）を残し、持ち主は数だけを読む（`my_collection_reach()`）。写した先のコレクションを掲載すると
   `derived_from` が元を指し、元が掲載中で非表示でない間だけ目録と `shared_collection()` の `listing` がその題・作者・リンクを示す（未掲載の元のリンクは出さない）。報告は
   `report_community_map()`（ログイン必須・口座ごとに 1 件・自分のものは不可）→ `community_map_reports`、管理者が `community_map_reports_admin()` で読み `moderate_community_map()` で
-  外す（理由必須・持ち主が読む・持ち主は再掲載できない）／戻す／却下する。リンクは触らない。pgTAP `38_community_maps_test.sql`。画面は §8.1.2、モデレーションは §11。
+  外す（理由必須・持ち主が読む・持ち主は再掲載できない）／戻す／却下する。**報告と非表示は共有行ではなく (口座, コレクション) に付く**（`community_map_subjects`・
+  `community_map_holds`）ので、持ち主が公開をやめて出し直しても非表示は解けず報告も消えない。リンクは触らない。目録はページの分だけ読む（並びごとの部分索引・
+  `reused_count` と `content_updated_at` はトリガーが保つ・総数は返さず `has_more`）。pgTAP `38_community_maps_test.sql`。画面は §8.1.2、モデレーションは §11。
 - **見守る場所（`place_watches`）** は保存場所 1 件に 1 行（`place_id` が主キー）。半径・種類ごとの基準（NULL＝見守らない）・オン/オフ・既読（`seen_at`・`seen_keys` ≤ 2,000）。所有者の
   RLS で、挿入は場所が呼び手のものであるときだけ、`user_id` はトリガー `tg_place_watches_own` が固定する。判定はページ（§18.1）。
 - **今日のクエストの記録（`quest_daily_results`）** は読者・暦の日・種類ごとに 1 行（主キー）で 5 問の得点だけ（`js/quest-engine.js` の `DAILY_N`・`QUEST_MAX`）。UPDATE の権限が無く

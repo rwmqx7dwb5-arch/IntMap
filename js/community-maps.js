@@ -133,7 +133,8 @@ export function failureText(error, lang) {
 
 /* ── the doors ────────────────────────────────────────────────────────────────────────────────── */
 
-/** The directory. q = { query, sort, offset, limit, bbox } → {ok, total, items, sort, offset, error?} */
+/** The directory, a page at a time. q = { query, sort, offset, limit, bbox } → {ok, items, hasMore, sort, offset, error?}
+ *  (no total: the database reads one page plus one row, never every listing — supabase/migrations/20261013080000_community_maps.sql §6) */
 export async function browse(DB, q) {
   if (!DB) return { ok: false, error: 'unavailable' };
   q = q || {};
@@ -146,7 +147,7 @@ export async function browse(DB, q) {
     const { data, error } = await DB.rpc('community_maps', args, { get: true });
     if (error) return { ok: false, error: errOf(error) };
     if (!data || data.ok !== true) return { ok: false, error: 'failed' };
-    return { ok: true, total: +data.total || 0, sort: data.sort, offset: +data.offset || 0, items: (Array.isArray(data.items) ? data.items : []).map(entryOf).filter(Boolean) };
+    return { ok: true, hasMore: data.has_more === true, sort: data.sort, offset: +data.offset || 0, items: (Array.isArray(data.items) ? data.items : []).map(entryOf).filter(Boolean) };
   } catch (_) { return { ok: false, error: 'failed' }; }
 }
 
@@ -318,7 +319,7 @@ export async function openCommunityMaps(HOST, opts) {
   ensureStyle();
   const old = document.getElementById('cmm-modal'); if (old) old.remove();
 
-  const st = { query: String(opts.query || ''), sort: SORTS.indexOf(opts.sort) >= 0 ? opts.sort : 'new', area: !!opts.area, offset: 0, items: [], total: 0, gen: 0 };
+  const st = { query: String(opts.query || ''), sort: SORTS.indexOf(opts.sort) >= 0 ? opts.sort : 'new', area: !!opts.area, offset: 0, items: [], hasMore: false, gen: 0 };
   const msg = el('p', { cls: 'acct-msg', role: 'status', 'aria-live': 'polite' });
   const search = el('input', { cls: 'cmm-search', id: 'cmm-q', type: 'search', maxlength: '100', 'aria-label': T('Search Community maps', 'みんなの地図を検索'), placeholder: T('Search titles, summaries and names', '題・紹介文・作成者で検索') });
   search.value = st.query;
@@ -359,21 +360,21 @@ export async function openCommunityMaps(HOST, opts) {
         : T('No collection has been listed yet. Be the first: publish a collection in your Library and list it.', 'まだ掲載されたコレクションはありません。ライブラリでコレクションを公開して、最初の掲載をしてください。') }));
     }
     st.items.forEach((e) => list.appendChild(card(e, lang, onOpen)));
-    more.hidden = st.items.length >= st.total;
-    msg.textContent = st.total ? T(st.total + (st.total === 1 ? ' collection' : ' collections'), st.total + ' 件') : '';
+    more.hidden = !st.hasMore;
+    msg.textContent = '';
   };
   /* one request per change: a newer one makes an older answer stale (gen), so a slow page cannot overwrite a newer one */
   const load = async (append) => {
     const gen = ++st.gen;
     if (!append) st.offset = 0;
     const bbox = st.area ? viewBbox() : null;
-    if (st.area && !bbox) { st.items = []; st.total = 0; render(); msg.textContent = T('The map is showing the whole globe — zoom in to ask about an area.', '地図が地球全体を表示しています。範囲で探すには拡大してください。'); return; }
+    if (st.area && !bbox) { st.items = []; st.hasMore = false; render(); msg.textContent = T('The map is showing the whole globe — zoom in to ask about an area.', '地図が地球全体を表示しています。範囲で探すには拡大してください。'); return; }
     msg.textContent = T('Reading…', '読み込み中…');
     const r = await browse(HOST.DB, { query: st.query, sort: st.sort, offset: append ? st.items.length : 0, limit: PAGE, bbox });
     if (gen !== st.gen) return;
     if (!r.ok) { msg.textContent = failureText(r.error, lang); return; }
     st.items = append ? st.items.concat(r.items) : r.items;
-    st.total = r.total;
+    st.hasMore = r.hasMore;
     render();
   };
   let typing = null;
@@ -391,7 +392,7 @@ export async function openCommunityMaps(HOST, opts) {
   try { sheet.focus(); } catch (_) { }
   await load(false);
   if (HOST && HOST.user && HOST.DB && await isAdmin(HOST.DB)) moderation(HOST, modSlot, lang);
-  return { ok: true, total: st.total, items: st.items.slice() };
+  return { ok: true, hasMore: st.hasMore, items: st.items.slice() };
 }
 
 /* ── an administrator's part of the sheet: the reported collections and the three decisions ─────────── */
@@ -412,7 +413,7 @@ async function moderation(HOST, slot, lang) {
       /* hiding and restoring change what every reader finds; dismissing settles the queue (scripts/data-effects.mjs) */
       if (action === 'dismiss') b.dataset.effect = 'private'; else b.dataset.effect = 'outward';
       b.onclick = async () => {
-        const r = await moderate(HOST.DB, it.token, action, why.value);
+        const r = await moderate(HOST.DB, it.ref, action, why.value);   /* the queue's ref: the collection, published or not */
         res.textContent = r.ok ? T('Done.', '完了しました。') : failureText(r.error, lang);
         if (r.ok) moderation(HOST, slot, lang);
       };
@@ -420,7 +421,7 @@ async function moderation(HOST, slot, lang) {
     };
     box.appendChild(el('div', { cls: 'cmm-card' }, [
       el('h3', { text: String(it.title || '') }),
-      el('p', { cls: 'cmm-by', text: T('by ', '作成: ') + String(it.author || '—') + (it.hidden_at ? T(' · hidden: ', ' · 非表示: ') + String(it.hidden_reason || '') : '') }),
+      el('p', { cls: 'cmm-by', text: T('by ', '作成: ') + String(it.author || '—') + (it.published ? '' : T(' · not published now', ' · 現在は非公開')) + (it.hidden_at ? T(' · hidden: ', ' · 非表示: ') + String(it.hidden_reason || '') : '') }),
       el('p', { cls: 'cmm-meta', text: T('Open reports: ', '未対応の報告: ') + (+it.open || 0) + ' / ' + (+it.total || 0) + ' — ' + reasons }),
       why,
       el('div', { cls: 'cmm-acts' }, [act('hide', T('Take out of Community maps', 'みんなの地図から外す')), act('restore', T('Put back in Community maps', 'みんなの地図に戻す')), act('dismiss', T('Dismiss reports', '報告を却下'))]),
@@ -431,8 +432,8 @@ async function moderation(HOST, slot, lang) {
 }
 
 /* ══ THE LIBRARY'S LISTING BOX — inside a published collection's share panel (js/my-places.js) ═══════════════
-   `share` is the owner's own row (js/shared-collection.js listShares — listed_at, author_name, summary, hidden_at,
-   hidden_reason are the owner's own columns), `reachOf` its counts. `done()` asks the sheet to read the account again. */
+   `share` is the owner's own row (js/shared-collection.js listShares — listed_at, author_name, summary are the owner's own
+   columns; hidden_at / hidden_reason come from the owner's hold on the collection, community_map_holds), `reachOf` its counts. `done()` asks the sheet to read the account again. */
 export function listingBox(HOST, share, reachOf, done) {
   const lang = HOST && HOST.lang;
   const T = IntMapLang.pick(() => lang);

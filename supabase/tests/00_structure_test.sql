@@ -4,7 +4,7 @@
 --  Executed by `supabase test db` (see docs/DATABASE.md).
 -- ============================================================================
 begin;
-select plan(110);  -- (community-maps) +4: collection_copies and community_map_reports join both lists   -- (watch-account-product) +2: quest_daily_results joins both lists   -- (monitors-retire) −16: the five area-monitor tables leave both lists (−10) and their six key/function assertions go (−6)   -- (community-next) +2: map_corrections joins both lists   -- (watch-places) +2: place_watches joins both lists   -- (collection-workspace) +4: saved_views and collection_shares join both lists   -- (sales-channels) +4: org_inquiries and supporters join both lists   -- (atlas-os) +2: atlas_notebook_entries joins both lists   -- (news-intelligence) +2: news_event_entities joins both lists   -- (account-data-center / my-places) +4: account_data_catalog and saved_places join both lists
+select plan(114);  -- (community-maps) +8: collection_copies, community_map_reports, community_map_holds and community_map_subjects join both lists   -- (watch-account-product) +2: quest_daily_results joins both lists   -- (monitors-retire) −16: the five area-monitor tables leave both lists (−10) and their six key/function assertions go (−6)   -- (community-next) +2: map_corrections joins both lists   -- (watch-places) +2: place_watches joins both lists   -- (collection-workspace) +4: saved_views and collection_shares join both lists   -- (sales-channels) +4: org_inquiries and supporters join both lists   -- (atlas-os) +2: atlas_notebook_entries joins both lists   -- (news-intelligence) +2: news_event_entities joins both lists   -- (account-data-center / my-places) +4: account_data_catalog and saved_places join both lists
                    -- (anonymous-usage-counts) +2: usage_counts joins both lists   -- (atlas-stream-replay) +2: ai_turn_answers joins both lists
                    -- (atlas-semantic-search) +2: atlas_capability_vectors joins both lists   -- (client-error-log) +2: client_errors joins both lists
                    -- (#R801) +2 tables in both lists, +2 has_function   -- (#R334) +16: the eight Event tables join the has_table list and the RLS list
@@ -96,9 +96,10 @@ from unnest(array[
   'quest_daily_results',
   -- (community-maps) who kept a copy of which published collection (written only by copy_shared_collection()) and the
   -- reports on collections listed in Community maps (written only by report_community_map(); the reporter and an
-  -- administrator read them) (supabase/tests/38_community_maps_test.sql).
-  'collection_copies','community_map_reports'
-]) as t;                                                    -- 47 assertions
+  -- administrator read them), on what they are about (community_map_subjects — read by the functions only) and an
+  -- administrator's holds (supabase/tests/38_community_maps_test.sql).
+  'collection_copies','community_map_reports','community_map_holds','community_map_subjects'
+]) as t;                                                    -- 49 assertions
 
 -- 2) RLS is ENABLED on every one of them (fail-closed: a table with RLS off fails).
 select ok(
@@ -130,8 +131,9 @@ from unnest(array[
   'place_watches',                                           -- (watch-places) see the note above
   'saved_views','collection_shares',                        -- (collection-workspace) see the note above
   'quest_daily_results',                                     -- (watch-account-product) see the note above
-  'collection_copies','community_map_reports'                -- (community-maps) see the note above
-]) as t;                                                    -- 47 assertions
+  'collection_copies','community_map_reports',               -- (community-maps) see the note above
+  'community_map_holds','community_map_subjects'
+]) as t;                                                    -- 49 assertions
 
 -- (#R386) 2b) The operator RPCs exist. The admin console has buttons wired to these four names;
 --   a button that calls a function which is not there fails at the moment an operator needs it.

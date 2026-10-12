@@ -1147,7 +1147,12 @@ one thing vanilla CI could not otherwise reproduce.
   hidden, the rule held at every place it is read (`tests/wave4-community-checks.test.mjs` ①, pgTAP 38 ⑤). Copy receipts
   (`collection_copies`) and reports (`community_map_reports`) are the writer's own rows with **no INSERT grant**; an owner sees
   only counts, never who copied or reported. Moderation is `is_admin()`-gated in the function (42501 otherwise), a hide needs a
-  reason the owner reads, and it takes the collection out of the directory without touching the owner's link. Every
+  reason the owner reads, and it takes the collection out of the directory without touching the owner's link. ⚠ **A decision
+  must not live on a row its subject can delete**: the hold (`community_map_holds`) and the reports (`community_map_subjects` /
+  `community_map_reports`) are on (account, collection), not on the share row the owner deletes when unpublishing — so
+  unpublishing and publishing again neither lifts a hold nor erases the reports (pgTAP 38 ⑥b). The subject names the owner
+  without a foreign key or a `user_id` column, so `_owned_by_user_cols()` does not hand it to anyone's export and a reporter's
+  export carries an opaque subject id, never the owner's account. Every
   owner-written word is set as text by `js/community-maps.js`, which writes no markup at all.
 - **Passkeys (WebAuthn):** supabase-js's passkey API (`signInWithPasskey`, `registerPasskey`,
   `auth.passkey.list/delete`; on by default since the SDK stopped reading `experimental.passkey`) —
