@@ -43,6 +43,7 @@ import { hostMatches } from './host-match.js';
 import { IntMapLang } from './lang-registry.js';
 import { iconNode } from './icons.js';
 import * as bus from './bus.js';
+import { releaseOf, BOOT_ENDINGS } from '../supabase/functions/usage-count/shape.js';   /* (field-speed) this page's own release */
 
 /* where the nightly measurement is shipped (scripts/build-service-status.mjs OUT) */
 const BUNDLE_URL = './data/service-status.json';
@@ -195,7 +196,7 @@ export function recordSentence(series, lang) {
 /** this visit, from the launch screen's own record (index.html __imBoot.marks()): { ms, ending } or null */
 export function bootOfThisVisit(marks) {
   if (!marks || typeof marks !== 'object') return null;
-  for (const k of ['idle', 'timeout', 'no-renderer']) if (Number.isFinite(marks[k])) return { ms: marks[k], ending: k };
+  for (const k of BOOT_ENDINGS) if (Number.isFinite(marks[k])) return { ms: marks[k], ending: k };
   return null;
 }
 /** the row about this visit, or null — a detail only when the screen lifted without a settled map */
@@ -203,16 +204,20 @@ export function thisVisitRow(boot, lang) {
   if (!boot) return null;
   const sec = (boot.ms / 1000).toFixed(1);
   return { tone: boot.ending === 'idle' ? 'ok' : 'warn', icon: 'gauge', title: IntMapLang.t(lang, 'This visit was ready in ' + sec + ' s', '今回は ' + sec + ' 秒で使えるようになりました'),
-    detail: boot.ending === 'idle' ? '' : boot.ending === 'timeout' ? IntMapLang.t(lang, 'The map had not finished drawing.', '地図の表示はまだ途中でした。')
-      : IntMapLang.t(lang, 'This browser could not draw the map.', 'このブラウザでは地図を描けませんでした。') };
+    detail: boot.ending === 'idle' ? '' : boot.ending === 'timeout' ? IntMapLang.t(lang, 'Before the map had finished.', '地図の表示の途中で開きました。')
+      : IntMapLang.t(lang, 'Without the map (it could not be drawn).', '地図を描けずに開きました。') };
 }
 
-/** the speed section's rows from the bundle's `fieldSpeed` (null = not read): { rows, worse } */
-export function speedRows(F, lang) {
+/** the speed section's rows from the bundle's `fieldSpeed` (null = not read): { rows, worse }.
+    `self` is this page's release (shape.js releaseOf(INTMAP_BUILD)): the bundle ships inside a release, so every
+    release it may name is that one or older — a row speaking for a newer one is not shown (and cannot set the headline). */
+export function speedRows(F, lang, self) {
   const W = F && F.words;
   if (!W || !Array.isArray(W.rows)) return { rows: [{ tone: 'muted', icon: 'clock', title: IntMapLang.t(lang, 'The speed record could not be read', '速さの記録を読めませんでした'), detail: '' }], worse: false };
   const k = lang === 'jp' ? 'jp' : 'en';
-  return { rows: W.rows.map((r) => ({ tone: r.tone, icon: r.icon, title: r[k].t, detail: r[k].d })), worse: !!W.worse };
+  let kept = W.rows.filter((r) => !self || !r.rel || r.rel <= self);
+  if (!kept.length && W.empty) kept = [W.empty];
+  return { rows: kept.map((r) => ({ tone: r.tone, icon: r.icon, title: r[k].t, detail: r[k].d })), worse: kept.some((r) => r.tone === 'warn') };
 }
 
 /** the cells a strip draws for a series: [{ c, tone }] — the tone vocabulary of the rows */
@@ -301,7 +306,7 @@ export function composeStatus(m, lang) {
   out.sections.push({ id: 'upstream', title: IntMapLang.t(lang, 'Data sources (checked every night)', 'データ元（毎晩の確認）'), rows: sup, all, record });
 
   /* ── (field-speed) how fast it opens for readers ── */
-  const sp = speedRows(m.bundle ? (m.bundle.fieldSpeed || null) : null, lang);
+  const sp = speedRows(m.bundle ? (m.bundle.fieldSpeed || null) : null, lang, m.release);
   if (sp.worse) notes.push('speed');
   out.sections.push({ id: 'speed', title: IntMapLang.t(lang, 'How fast IntMap opens for readers', '読者の手元で開く速さ'), rows: sp.rows });
 
@@ -375,7 +380,7 @@ async function gather(ctx) {
   } catch (_) { /* no layer state yet */ }
   let boot = null;
   try { boot = bootOfThisVisit(window.__imBoot && window.__imBoot.marks()); } catch (_) { boot = null; }
-  return { lang, model: { bundle: usable(bundle) ? bundle : null, online: navigator.onLine !== false, shell, storageMB: mb, layersOn: activeLayerCount(), layerProblems: probs, boot } };
+  return { lang, model: { bundle: usable(bundle) ? bundle : null, online: navigator.onLine !== false, shell, storageMB: mb, layersOn: activeLayerCount(), layerProblems: probs, boot, release: releaseOf(window.INTMAP_BUILD) } };
 }
 
 /** for js/layer-state.js: last night's row for a failed request (plain data, for Atlas) */
@@ -418,14 +423,6 @@ export async function describe(ctx) {
     if (sec.record) lines.push('- ' + sec.record.title + ' — ' + sec.record.detail);
   }
   return { text: lines.join('\n'), status: s };
-}
-
-/** (field-speed) for Atlas (`system.speed`): the page's own speed section and this visit — the same model, no DOM */
-export async function speed(ctx) {
-  const { lang, model } = await gather(ctx);
-  return { rows: composeStatus(model, lang).sections.find((x) => x.id === 'speed').rows, visit: thisVisitRow(model.boot, lang),
-    fieldSpeed: model.bundle ? model.bundle.fieldSpeed || null : null, thisVisit: model.boot,
-    unread: model.bundle ? (model.bundle.unread || []).find((u) => u.half === 'fieldSpeed') || null : { why: 'data/service-status.json' } };
 }
 
 /* ── the page ────────────────────────────────────────────────────────────────────────────────── */

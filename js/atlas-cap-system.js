@@ -157,15 +157,20 @@ export default [
     ],
     schema: () => (noArgs('speed')),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, esc = K.esc;
-      let S = null;
-      try { S = await statusPage.speed(); } catch (_) { S = null; }
-      if (!S) return R(false, warn(L('The speed record could not be read.', '速さの記録を読めませんでした。')), { meta: { code: 'SOURCE_UNREADABLE', category: 'upstream', retryable: true, produced: [], userGoalSatisfied: false } });
+      /* the status page's own model (describe): its speed section and this visit's row — no second reading of the bundle */
+      let P = null;
+      try { P = await statusPage.describe(); } catch (_) { P = null; }
+      const secs = P && P.status && P.status.sections;
+      const sp = secs && secs.find((x) => x.id === 'speed');
+      if (!sp) return R(false, warn(L('The speed record could not be read.', '速さの記録を読めませんでした。')), { meta: { code: 'SOURCE_UNREADABLE', category: 'upstream', retryable: true, produced: [], userGoalSatisfied: false } });
+      const visit = ((secs.find((x) => x.id === 'device') || { rows: [] }).rows).find((r) => r.icon === 'gauge') || null;
+      const rows = sp.rows.concat(visit ? [visit] : []);
+      /* a muted row says the record is unread or empty — an honest answer, but not a measurement */
+      const ok = sp.rows.some((r) => r.tone !== 'muted') || !!visit;
       let h = '<div style="font-weight:600;margin:2px 0 6px;">' + icon('gauge') + ' ' + esc(L('How fast IntMap opens for readers', '読者の手元で開く速さ')) + '</div>';
-      const ok = !!S.fieldSpeed;
-      h += S.rows.concat(S.visit ? [S.visit] : []).map((r) => '<div style="font-size:12.5px;line-height:1.5;margin:4px 0;">' + esc(r.title + (r.detail ? ' — ' + r.detail : '')) + '</div>').join('');
-      if (!ok && S.unread && S.unread.why) h += '<div style="font-size:11px;color:var(--text-muted);">' + esc(L('Not read: ', '読めなかった理由: ') + S.unread.why) + '</div>';
-      return R(true, h, { exec: { speed: { fieldSpeed: S.fieldSpeed, thisVisit: S.thisVisit, unread: S.unread } },
-        meta: { code: ok || S.thisVisit ? 'OK' : 'SOURCE_UNREADABLE', category: ok || S.thisVisit ? 'ok' : 'upstream', retryable: !ok, produced: ['explanation'], userGoalSatisfied: !!(ok || S.thisVisit) } });
+      h += rows.map((r) => '<div style="font-size:12.5px;line-height:1.5;margin:4px 0;">' + esc(r.title + (r.detail ? ' — ' + r.detail : '')) + '</div>').join('');
+      return R(true, h, { exec: { speed: { rows: rows.map((r) => ({ tone: r.tone, title: r.title, detail: r.detail })) } },
+        meta: { code: ok ? 'OK' : 'SOURCE_UNREADABLE', category: ok ? 'ok' : 'upstream', retryable: !ok, produced: ['explanation'], userGoalSatisfied: ok } });
     },
   },
   {

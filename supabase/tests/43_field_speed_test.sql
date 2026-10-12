@@ -4,7 +4,7 @@
 --  WHAT THIS PROVES (the half that needs a Postgres):
 --    · the SURFACE — field_speed is SECURITY DEFINER with a pinned search_path, anon may call it and its
 --      comment says why (11_definer_execute_test's rule), and anon still cannot read usage_counts itself;
---    · it publishes SHARES, never counts — the arithmetic of the shares, the band, the 30-load floor,
+--    · it publishes SHARES, never counts — the arithmetic of the shares, the band, the 100-load floor, whole percents,
 --      and that it reads only the two speed metrics (a page view or a layer count never leaves through it);
 --    · the window — a row older than p_days is not read.
 --  The declaration (buckets, endings, the release alphabet) and the browser side are evaluated in Node by
@@ -44,6 +44,9 @@ select ok(not exists(select 1 from information_schema.routine_columns c
                       where c.specific_schema = 'public' and c.routine_name = 'field_speed'
                         and c.column_name in ('n', 'count', 'total', 'day')),
           'field-speed: no returned column is a count or a day');
+select is((select c.data_type::text from information_schema.routine_columns c
+            where c.specific_schema = 'public' and c.routine_name = 'field_speed' and c.column_name = 'share'),
+          'integer', 'field-speed: a share is a whole percent — a decimal place would give a small group''s count back');
 
 -- ─────────────────────────────────────────────────────────────────────────────
 --  2. THE ARITHMETIC — written as the owner (the table refuses everyone else), read as anon
@@ -55,8 +58,8 @@ insert into public.usage_counts (day, metric, dimension, count) values
   ((now() at time zone 'utc')::date - 1, 'ready',    '202610130900-aaaaaaa.m.4s', 60),
   ((now() at time zone 'utc')::date,     'boot_end', '202610130900-aaaaaaa.m.idle', 97),
   ((now() at time zone 'utc')::date,     'boot_end', '202610130900-aaaaaaa.m.timeout', 3),
-  -- release A, desktops: 29 page loads — under the floor, withheld
-  ((now() at time zone 'utc')::date,     'ready',    '202610130900-aaaaaaa.d.1s', 29),
+  -- release A, desktops: 99 page loads — under the floor, withheld (below 100 the shares would give the count)
+  ((now() at time zone 'utc')::date,     'ready',    '202610130900-aaaaaaa.d.1s', 99),
   -- a row older than the window: never read
   ((now() at time zone 'utc')::date - 30, 'ready',   '202610130900-aaaaaaa.m.20s', 500),
   -- a dimension that is not the speed shape: never read
@@ -79,13 +82,13 @@ reset role;
 
 select ok((select v from _cap where k = 'anon_table') in ('DENIED', '0'), 'field-speed: anon still reads nothing of usage_counts directly');
 select is((select v from _cap where k = 'rows'), '4', 'field-speed: four rows — two ready buckets and two endings of the one group over the floor');
-select is((select v from _cap where k = 'a_m_2s'), '40.0|100+', 'field-speed: a share of the group, summed over the days, with the band of its page loads');
-select is((select v from _cap where k = 'a_m_4s'), '60.0', 'field-speed: the other bucket of the same group');
+select is((select v from _cap where k = 'a_m_2s'), '40|100+', 'field-speed: a share of the group, summed over the days, with the band of its page loads');
+select is((select v from _cap where k = 'a_m_4s'), '60', 'field-speed: the other bucket of the same group');
 select is((select v from _cap where k = 'a_m_20'), '0', 'field-speed: a row older than the window is not read');
-select is((select v from _cap where k = 'a_d'), '0', 'field-speed: a group under 30 page loads is withheld');
-select is((select v from _cap where k = 'end_to'), '3.0', 'field-speed: the endings are shares of their own group');
+select is((select v from _cap where k = 'a_d'), '0', 'field-speed: a group of 99 page loads is withheld');
+select is((select v from _cap where k = 'end_to'), '3', 'field-speed: the endings are shares of their own group');
 select is((select v from _cap where k = 'other'), '0', 'field-speed: no other metric and no malformed dimension leaves through it');
-select is((select v from _cap where k = 'sum'), '100.0', 'field-speed: the shares of a group add up to the whole');
+select is((select v from _cap where k = 'sum'), '100', 'field-speed: the shares of a group add up to the whole');
 select is((select v from _cap where k = 'wide'), '1', 'field-speed: a wider window reads the older row');
 
 select * from finish();

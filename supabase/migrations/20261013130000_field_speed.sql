@@ -18,12 +18,13 @@
 --
 --  ⚠ WHY SHARES AND A BAND, NOT COUNTS. The counts are IntMap's traffic, which the operator decided is an
 --  admin's to read (anonymous-usage-counts). A share and a band answer «how fast» without answering «how
---  many»; a release/device with fewer than 30 page loads in the window is not returned at all — below
---  that a share is noise, and rounded shares of a handful of loads would spell the handful out.
---  THE FLOOR (.agents/rules/no-ad-hoc-hardcoding.md §4): 30 page loads is where the standard error of a
---  share near one half falls under 10 points (sqrt(.25/30) ≈ 0.091): below it a published share says more
---  about the draw than about the release. (Judging a release needs far more — scripts/field-speed.mjs compares
---  only releases in the 300+ band.) Expires if the page ever publishes finer shares than whole buckets.
+--  many»; a release/device with fewer than 100 page loads in the window is not returned at all.
+--  THE FLOOR AND THE ROUNDING ARE ONE RULE (.agents/rules/no-ad-hoc-hardcoding.md §4): a share is published as a
+--  WHOLE percent, and only for a group of 100 page loads or more. At n ≥ 100 one page load moves a share by at most
+--  one point, so every whole percent is reachable from many different n — the row of shares cannot be solved back
+--  into its count. Below 100 (or with a decimal place) each load is a step larger than the rounding, and the shares
+--  spell n out (MEASURED in review: with one decimal, 30–99 loads give n exactly). Expires if the rounding gets
+--  finer — then the floor must rise with it (n ≥ 100 / step).
 --  Canon: here (the reader takes the band it is given and states it).
 --
 --  ⚠ NO NEW STORE, NO NEW PERSONAL DATA. It reads usage_counts and writes nothing; it returns no day, so the
@@ -31,7 +32,7 @@
 -- ============================================================================
 
 create or replace function public.field_speed(p_days integer default 14)
-returns table (metric text, release text, device text, bucket text, share numeric, loads text)
+returns table (metric text, release text, device text, bucket text, share integer, loads text)
 language sql
 stable
 security definer
@@ -55,20 +56,19 @@ as $$
          g.release,
          case g.dev when 'm' then 'mobile' else 'desktop' end,
          g.bucket,
-         round(100.0 * g.n / g.total, 1),
+         round(100.0 * g.n / g.total)::integer,
          case when g.total >= 10000 then '10000+'
               when g.total >= 3000  then '3000+'
               when g.total >= 1000  then '1000+'
               when g.total >= 300   then '300+'
-              when g.total >= 100   then '100+'
-              else '30+' end
+              else '100+' end
     from g
-   where g.total >= 30
+   where g.total >= 100
    order by g.metric, g.release desc, g.dev, g.bucket;
 $$;
 
 comment on function public.field_speed(integer) is
-  'field-speed: for each release and device, the share of page loads whose launch screen lifted in each time range (metric ready) and in each way (metric boot_end) over the last p_days (1-90) days, with a coarse band for the number of page loads; groups under 30 page loads are withheld. Reads usage_counts, writes nothing, returns no count and no day. ANON MAY CALL: it is the public reading of reader speed published on the status page, and it returns only shares of releases with at least 30 page loads, never a count.';
+  'field-speed: for each release and device, the share of page loads whose launch screen lifted in each time range (metric ready) and in each way (metric boot_end) over the last p_days (1-90) days, as whole percents with a coarse band for the number of page loads; groups under 100 page loads are withheld (below it the shares would give the count). Reads usage_counts, writes nothing, returns no count and no day. ANON MAY CALL: it is the public reading of reader speed published on the status page, and it returns only whole-percent shares of releases with at least 100 page loads, never a count.';
 
 revoke execute on function public.field_speed(integer) from public;
 grant  execute on function public.field_speed(integer) to anon, authenticated, service_role;

@@ -452,7 +452,7 @@ nothing is sent with Do Not Track or Global Privacy Control, and the Settings sw
 stops it at once and discards what was not yet sent. Rows are purged after 400 days (pg_cron `usage-counts-purge`);
 an admin reads totals through `usage_counts_summary`, which is SECURITY INVOKER so the admin-only SELECT policy decides.
 *(field-speed)* The one thing anyone may read from it is `field_speed(p_days)` — SECURITY DEFINER, executable by anon — which returns only
-**shares** of the two speed metrics per release and device with a coarse band, withholds any group under 30 page loads, and returns no count
+**shares** of the two speed metrics per release and device with a coarse band, as whole percents, withholds any group under 100 page loads (below it the shares spell the count out), and returns no count
 and no day, so the traffic the counts describe stays the admin's.
 
 ⚠ **(anon-write-guard) `?refresh=1` on `aviation-feed` and `ais-feed` draws from ONE project-wide allowance.**

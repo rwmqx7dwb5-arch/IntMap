@@ -28,7 +28,8 @@
  *
  *  ⚠ WHAT IS NOT SAID. A share is of the page loads the counter heard — readers with Do Not Track, Global
  *  Privacy Control or the setting off are not in it, and neither is a page that started hidden. A release
- *  with fewer than 30 page loads is not published at all. A verdict needs two releases with 300+ page loads
+ *  with fewer than PUBLISH_FLOOR (100) page loads is not published at all, and a release that is not on main is never
+ *  published (knownReleases). A verdict needs two releases with 300+ page loads
  *  each; without them the answer is «not judged» and says why — never «same».
  *
  *      node scripts/field-speed.mjs            the releases and the verdict
@@ -36,6 +37,7 @@
  *      node scripts/field-speed.mjs --days 30  a wider window (1–90; the database clamps it)
  * ==========================================================================*/
 import fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BOOT_BUCKETS, BOOT_ENDINGS, BOOT_EDGES_MS } from '../supabase/functions/usage-count/shape.js';
@@ -54,6 +56,35 @@ export const DAYS = 14;
    CANON: here; the migration's band edges are the database's. */
 export const JUDGE_BANDS = Object.freeze(['300+', '1000+', '3000+', '10000+']);
 export const SHIFT_POINTS = 10;
+/* the smallest group public.field_speed() returns — CANON: the migration's `where g.total >= …` (its comment has
+   why: below it whole-percent shares give the count back). Said here only to tell the reader; the test holds them equal. */
+export const PUBLISH_FLOOR = 100;
+
+/* ══ ONLY A RELEASE THAT EXISTS IS PUBLISHED ══════════════════════════════════════════════════════
+   The counter's server can refuse what cannot be a release (a future or 90-day-old time — shape.js), but not a
+   well-formed invention of a plausible one: anyone can POST `<minute>-<7 hex>`. What a release IS, is what
+   scripts/build-stamp.mjs makes the stamp from — the committer time (to the minute) and the short sha of the commit
+   built — and every release is a first-parent commit of main. So the releases are read from main's own history and
+   a row whose release is not one of them is dropped before anything is said (and counted, so the bundle says how
+   many it dropped). A history that cannot be read (a shallow clone) verifies nothing: then nothing is published.
+   The window is the counter's own maximum age (shape.js RELEASE_MAX_AGE_MS, 90 days) plus a day. */
+const MINUTE = (ms) => new Date(ms).toISOString().replace(/[-:T]/g, '').slice(0, 12);
+/** main's first-parent releases of the last 91 days: [{ minute, sha }] — or null when the history cannot be read */
+export function knownReleases(root = ROOT) {
+  const git = (args) => execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 16 * 1024 * 1024 }).trim();
+  try {
+    if (git(['rev-parse', '--is-shallow-repository']) === 'true') return null;
+    let ref = 'origin/main';
+    try { git(['rev-parse', '--verify', '--quiet', ref]); } catch { ref = 'HEAD'; }
+    return git(['log', '--first-parent', '--since=91 days ago', '--format=%H %ct', ref]).split('\n').filter(Boolean)
+      .map((l) => { const [sha, ct] = l.split(' '); return { minute: MINUTE(+ct * 1000), sha }; });
+  } catch { return null; }
+}
+/** is `rel` (`<minute>-<short sha>`) one of `known`? — the minute and the sha must both agree */
+export function isKnownRelease(rel, known) {
+  const m = /^(\d{12})-([0-9a-f]{7,12})$/.exec(String(rel || ''));
+  return !!m && (known || []).some((k) => k.minute === m[1] && k.sha.startsWith(m[2]));
+}
 
 /** «202610121710-6830fff» → { at: '2026-10-12T17:10:00Z', sha: '6830fff' } (null when it is not a release) */
 export function releaseParts(rel) {
@@ -158,7 +189,8 @@ const PAGE = 1000;
 const DEADLINE_MS = 20000;
 
 /** { measuredAt, days, releases, verdict } — or { unread: why }. Never throws. */
-export async function fetchFieldSpeed({ root = ROOT, days = DAYS, fetchImpl = globalThis.fetch, now = () => new Date() } = {}) {
+export async function fetchFieldSpeed({ root = ROOT, days = DAYS, fetchImpl = globalThis.fetch, now = () => new Date(), known = knownReleases(root) } = {}) {
+  if (!known) return { unread: 'main\'s history cannot be read here (a shallow clone), so no release can be verified — nothing is published' };
   const ep = endpointOf(root);
   if (!ep) return { unread: 'the project address and key could not be read from src/vendor.js' };
   if (typeof fetchImpl !== 'function') return { unread: 'no fetch in this runtime' };
@@ -184,10 +216,12 @@ export async function fetchFieldSpeed({ root = ROOT, days = DAYS, fetchImpl = gl
     rows.push(...page);
     if (page.length < PAGE) break;
   }
-  const releases = summarise(rows);
+  /* a release main never had is not a release: its rows are dropped, and how many such releases were seen is said */
+  const fake = new Set(rows.filter((r) => !isKnownRelease(r && r.release, known)).map((r) => r && r.release));
+  const releases = summarise(rows.filter((r) => !fake.has(r && r.release)));
   const verdict = judge(releases);
   return { measuredAt: now().toISOString(), days, edgesMs: BOOT_EDGES_MS.slice(), releases: releases.slice(0, 12), verdict,
-    words: sentences({ releases, verdict, days }) };
+    words: sentences({ releases, verdict, days }), unverified: fake.size };
 }
 
 /* ── the reader's words, decided here once (en + jp — CONSTITUTION.md §7) ──────────────────────────
@@ -202,7 +236,7 @@ const W = {
     rel: (r) => (r ? `release ${MON[+r.at.slice(5, 7) - 1]} ${+r.at.slice(8, 10)} ${r.at.slice(11, 16)} UTC (${r.sha})` : ''),
     dist: (d, w) => `: half ${w(d.p50)}, 3 in 4 ${w(d.p75)}`,
     loads: (d) => ` · ${d.loads} page loads` + (d.idle != null ? ` · map settled ${d.idle}%` : ''),
-    none: (days) => `No release has 30 page loads in the last ${days} days yet`,
+    none: (days) => `No release has ${PUBLISH_FLOOR} page loads in the last ${days} days yet`,
     slower: 'the newest release opens more slowly', faster: 'the newest release opens faster', 'less-reliable': 'the newest release settles the map less often',
   },
   jp: {
@@ -211,7 +245,7 @@ const W = {
     rel: (r) => (r ? `版 ${+r.at.slice(5, 7)}月${+r.at.slice(8, 10)}日 ${r.at.slice(11, 16)} UTC（${r.sha}）` : ''),
     dist: (d, w) => `：半数が ${w(d.p50)}、4 人に 3 人が ${w(d.p75)}`,
     loads: (d) => `・${d.loads} 回` + (d.idle != null ? `・地図が表示し終えて開いた ${d.idle}%` : ''),
-    none: (days) => `直近 ${days} 日に 30 回以上数えられた版はまだありません`,
+    none: (days) => `直近 ${days} 日に ${PUBLISH_FLOOR} 回以上数えられた版はまだありません`,
     slower: '最新の版は開くのが遅くなりました', faster: '最新の版は開くのが速くなりました', 'less-reliable': '最新の版は地図を表示し終えて開く回が減りました',
   },
 };
@@ -230,22 +264,24 @@ export function sentences({ releases, verdict, days }) {
     const r = rels.find((x) => x.devices[dev]);
     if (!r) continue;
     const d = r.devices[dev];
-    rows.push({ tone: 'ok', icon: 'gauge', ...both((w) => ({ t: w.dev[dev] + w.dist(d, w.within), d: w.rel(r) + w.loads(d) })) });
+    rows.push({ tone: 'ok', icon: 'gauge', rel: r.release, ...both((w) => ({ t: w.dev[dev] + w.dist(d, w.within), d: w.rel(r) + w.loads(d) })) });
   }
-  if (!rows.length) rows.push({ tone: 'muted', icon: 'clock', ...both((w) => ({ t: w.none(days || DAYS), d: '' })) });
+  /* the row a page shows when it has none of its own to show (none published, or all newer than the page) */
+  const empty = { tone: 'muted', icon: 'clock', ...both((w) => ({ t: w.none(days || DAYS), d: '' })) };
+  if (!rows.length) rows.push(empty);
   let worse = false;
   for (const dev of ['mobile', 'desktop']) {
     const v = verdict && verdict[dev];
     if (!v || v.state === 'unjudged' || v.state === 'same') continue;
     const shaky = v.state === 'less-reliable', bad = v.state !== 'faster';
     if (bad) worse = true;
-    rows.push({ tone: bad ? 'warn' : 'ok', icon: bad ? 'warning' : 'check-circle', ...both((w) => ({
+    rows.push({ tone: bad ? 'warn' : 'ok', icon: bad ? 'warning' : 'check-circle', rel: v.newer, ...both((w) => ({
       t: w.dev[dev] + (w === W.jp ? '：' : ': ') + w[v.state],
       d: (shaky ? '' : w.within(v.edge) + (w === W.jp ? '：' : ': ')) + (shaky ? v.idleNow : v.now) + '% (' + w.rel(rel(v.newer)) + ') ← '
         + (shaky ? v.idleWas : v.was) + '% (' + w.rel(rel(v.older)) + ')',
     })) });
   }
-  return { worse, rows };
+  return { worse, rows, empty };
 }
 
 /* ── words (Japanese: the operator's) ───────────────────────────────────────────────────────── */

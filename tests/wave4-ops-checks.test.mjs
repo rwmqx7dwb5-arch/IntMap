@@ -78,7 +78,17 @@ test('③ the public reading publishes shares and bands, the bands the verdict n
   const sql = src('supabase/migrations/20261013130000_field_speed.sql');
   const bands = [...sql.matchAll(/then '(\d+\+)'/g)].map((m) => m[1]).concat([...sql.matchAll(/else '(\d+\+)'/g)].map((m) => m[1]));
   for (const b of FS.JUDGE_BANDS) assert.ok(bands.includes(b), `the verdict asks for band ${b}, which the database returns`);
-  assert.match(sql, /where g\.total >= 30/, 'groups under the floor are withheld');
+  /* (review) a share with a decimal place lets 30–99 loads be solved back into their count: whole percents, floor 100 */
+  assert.equal(+/where g\.total >= (\d+)/.exec(sql)[1], FS.PUBLISH_FLOOR, 'the floor the reader states is the floor the database keeps');
+  assert.ok(FS.PUBLISH_FLOOR >= 100, 'at n >= 100 one load moves a whole-percent share by at most one point');
+  assert.match(sql, /round\(100\.0 \* g\.n \/ g\.total\)::integer/, 'a share is a whole percent');
+  assert.match(sql, /share integer/);
+  assert.doesNotMatch(sql, /'30\+'/, 'no band below the floor');
+  /* the privacy policy says the same floor and the same rounding, in both languages */
+  const legal = src('js/legal-text.js');
+  assert.match(legal, new RegExp('fewer than ' + FS.PUBLISH_FLOOR + ' page loads is not shown'));
+  assert.match(legal, /as whole percentages, never counts/);
+  assert.match(legal, new RegExp('整数の割合です。' + FS.PUBLISH_FLOOR + ' 回未満の版は公開しません'));
   assert.match(sql, /ANON MAY CALL: \S/, 'the comment says why anon may call it (pgTAP 11)');
   assert.doesNotMatch(sql.split('returns table')[1].split(')')[0], /\b(n|count|total|day)\b/, 'no returned column is a count or a day');
   const pattern = /'\^\[0-9\]\{12\}-\[0-9a-f\]\{7,12\}\\\.\[md\]\\\.\[a-z0-9-\]\+\$'/.exec(sql);
@@ -100,7 +110,7 @@ const RELS = [
   row('boot_end', A, 'mobile', 'idle', 96, '300+'), row('boot_end', A, 'mobile', 'timeout', 4, '300+'),
   row('ready', B2, 'mobile', '2s', 10, '1000+'), row('ready', B2, 'mobile', '3s', 50, '1000+'), row('ready', B2, 'mobile', '6s', 40, '1000+'),
   row('boot_end', B2, 'mobile', 'idle', 95, '1000+'), row('boot_end', B2, 'mobile', 'timeout', 5, '1000+'),
-  row('ready', B2, 'desktop', '1s', 70, '30+'), row('ready', B2, 'desktop', '2s', 30, '30+'),
+  row('ready', B2, 'desktop', '1s', 70, '100+'), row('ready', B2, 'desktop', '2s', 30, '100+'),
   row('ready', 'garbage', 'mobile', '1s', 100, '300+'),
 ];
 test('④ the reading: quantiles from shares, newest first, and a verdict only between two well-measured releases', () => {
@@ -120,7 +130,7 @@ test('④ the reading: quantiles from shares, newest first, and a verdict only b
   const v = FS.judge(rels);
   /* A's 3-in-4 wait is «within 3 s» (80% of A); B2 had 60% within 3 s: 20 points fewer → slower */
   assert.deepEqual(v.mobile, { state: 'slower', newer: B2, older: A, edge: '3s', now: 60, was: 80 });
-  assert.equal(v.desktop.state, 'unjudged', 'one release with 30+ loads is not a comparison');
+  assert.equal(v.desktop.state, 'unjudged', 'one release with 100+ loads is not a comparison');
   assert.match(v.desktop.why, /300\+/);
   /* the same distribution is «same»; a small move is not a regression */
   const same = FS.judge(FS.summarise(RELS.map((r) => (r.release === B2 && r.device === 'mobile' && r.metric === 'ready') ? { ...r, share: { '2s': 25, '3s': 50, '6s': 25 }[r.bucket] } : r)));
@@ -153,14 +163,15 @@ test('④ the endpoint: the key the page has, paged until a short page, and «no
     const off = +new URL(url).searchParams.get('offset');
     return { ok: true, json: async () => (off === 0 ? page : [row('ready', B2, 'mobile', '2s', 100, '300+')]) };
   };
-  const got = await FS.fetchFieldSpeed({ root: ROOT, fetchImpl: fake, now: () => new Date('2026-10-13T00:00:00Z') });
+  const known = [{ minute: '202610110900', sha: 'a'.repeat(40) }, { minute: '202610121710', sha: 'b'.repeat(40) }];
+  const got = await FS.fetchFieldSpeed({ root: ROOT, fetchImpl: fake, known, now: () => new Date('2026-10-13T00:00:00Z') });
   assert.equal(asked.length, 2, 'a full page asks for the next one');
   assert.match(asked[0], /\/rest\/v1\/rpc\/field_speed\?p_days=14&limit=1000&offset=0$/);
   assert.deepEqual(got.releases.map((r) => r.release), [B2, A]);
   assert.equal(got.measuredAt, '2026-10-13T00:00:00.000Z');
-  const missing = await FS.fetchFieldSpeed({ root: ROOT, fetchImpl: async () => ({ ok: false, status: 404, text: async () => '{"code":"PGRST202"}' }) });
+  const missing = await FS.fetchFieldSpeed({ root: ROOT, known, fetchImpl: async () => ({ ok: false, status: 404, text: async () => '{"code":"PGRST202"}' }) });
   assert.match(missing.unread, /HTTP 404 \(the function is not deployed yet\)/);
-  const down = await FS.fetchFieldSpeed({ root: ROOT, fetchImpl: async () => { throw new Error('ECONNRESET'); } });
+  const down = await FS.fetchFieldSpeed({ root: ROOT, known, fetchImpl: async () => { throw new Error('ECONNRESET'); } });
   assert.match(down.unread, /no answer from the database: ECONNRESET/);
 });
 
@@ -175,6 +186,63 @@ test('④ the bundle carries the reading — and a reading that failed is null w
 });
 
 /* ── ⑤ ─────────────────────────────────────────────────────────────────────── */
+/* ── (review) forging ─────────────────────────────────────────────────────── */
+test('④b a release main never had is never published — and the server refuses what cannot be a release', async () => {
+  /* the forgery the review measured: a well-formed future release, 300+ loads, every reader slow */
+  const FORGED = '209912312359-aaaaaaa';
+  const forged = [...RELS, row('ready', FORGED, 'mobile', '20s', 100, '1000+'), row('boot_end', FORGED, 'mobile', 'timeout', 100, '1000+')];
+  const known = [{ minute: '202610110900', sha: 'a'.repeat(40) }, { minute: '202610121710', sha: 'b'.repeat(40) }];
+  const got = await FS.fetchFieldSpeed({ root: ROOT, known, fetchImpl: async () => ({ ok: true, json: async () => forged }) });
+  assert.deepEqual(got.releases.map((r) => r.release), [B2, A], 'the forged «newest» release is not one of them');
+  assert.equal(got.unverified, 2, 'and the bundle says how many releases it refused (the forgery and the malformed one)');
+  assert.equal(got.verdict.mobile.newer, B2, 'the verdict compares real releases only');
+  assert.ok(!/Dec 31 23:59|12月31日 23:59/.test(JSON.stringify(got.words)), 'no sentence names it');
+  /* the same sha at another minute is not the release either — the stamp is both */
+  assert.equal(FS.isKnownRelease('202610121711-bbbbbbb', known), false);
+  assert.equal(FS.isKnownRelease('202610121710-bbbbbbb', known), true);
+  /* a history that cannot be read verifies nothing, so nothing is published */
+  const shallow = await FS.fetchFieldSpeed({ root: ROOT, known: null, fetchImpl: async () => { throw new Error('must not be asked'); } });
+  assert.match(shallow.unread, /shallow clone/);
+  /* main's own history is the source: the commit this tree is on is a release, at its committer minute */
+  const here = FS.knownReleases(ROOT);
+  if (here) {
+    const ct = +execFileSync('git', ['log', '-1', '--format=%ct', here[0].sha], { cwd: ROOT, encoding: 'utf8' }).trim();
+    assert.ok(FS.isKnownRelease(S.releaseOf(new Date(ct * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z') + '-' + here[0].sha.slice(0, 7)), here),
+      'a stamp built the way scripts/build-stamp.mjs builds it is recognised');
+  }
+
+  /* the server: future and too-old releases, and one speed dimension per request */
+  const now = Date.UTC(2026, 9, 13, 12, 0);
+  const body = (rows) => JSON.stringify({ c: rows });
+  const kept = (rows) => S.parse(body(rows), now).rows.map((r) => r.m + ' ' + r.d);
+  assert.deepEqual(kept([['ready', FORGED + '.m.2s', 1]]), [], 'a release in the future');
+  assert.deepEqual(kept([['ready', '202606010000-aaaaaaa.m.2s', 1]]), [], 'a release older than field_speed can read (90 days)');
+  assert.deepEqual(kept([['ready', '202610131130-aaaaaaa.m.2s', 1]]), ['ready 202610131130-aaaaaaa.m.2s'], 'a release of the last half hour');
+  assert.ok(S.acceptRow('ready', FORGED + '.m.2s', 1), 'the browser has no clock check: its own clock may be wrong, the server decides');
+  /* filling the day's ceiling: 64 distinct releases in one request open ONE dimension, not 64 */
+  const flood = Array.from({ length: 64 }, (_, i) => ['ready', '20261013' + String(1000 + i).padStart(4, '0') + '-' + 'abcdef0'.slice(0, 6) + (i % 10) + '.m.2s', 1]);
+  assert.equal(S.parse(body(flood), now).rows.filter((r) => r.m === 'ready').length, 1, 'one speed dimension per request');
+  const honest = S.parse(body([['view', '', 1], ['ready', '202610131130-aaaaaaa.m.2s', 1], ['boot_end', '202610131130-aaaaaaa.m.idle', 1]]), now).rows;
+  assert.equal(honest.length, 3, 'an honest page load loses nothing');
+  /* so the ceiling takes as many requests as it has dimensions, and one caller is held far below that */
+  assert.ok(S.METRICS.ready.maxDims / S.METRICS.ready.perRequest > 120, 'more requests than one caller may send in an hour');
+});
+
+test('④c the page never shows a release newer than itself', async () => {
+  const St = await import(modUrl('js/service-status.js'));
+  const rels = FS.summarise(RELS);
+  const verdict = FS.judge(rels);
+  const F = { words: FS.sentences({ releases: rels, verdict, days: 14 }) };
+  assert.ok(F.words.rows.every((r) => r.rel), 'every row says which release it speaks for');
+  const all = St.speedRows(F, 'en', B2);
+  assert.equal(all.worse, true);
+  const older = St.speedRows(F, 'en', A);   /* a page of release A cannot know B2 */
+  assert.ok(!older.rows.some((r) => /bbbbbbb/.test(r.title + r.detail)), older.rows.map((r) => r.detail).join(' | '));
+  assert.equal(older.rows.length, 1, 'every row was about B2: the page says it has nothing to show, not an empty section');
+  assert.equal(older.rows[0].tone, 'muted');
+  assert.equal(older.worse, false, 'a row the page refused cannot set the headline');
+});
+
 test('⑤ the status page: a speed section in en and jp, a slower release in the headline, and this visit', async () => {
   const St = await import(modUrl('js/service-status.js'));
   const rels = FS.summarise(RELS);
@@ -219,9 +287,8 @@ test('⑤ the status page: a speed section in en and jp, a slower release in the
 
 test('⑤ Atlas and the operator reach the same reading', () => {
   assert.match(src('js/atlas-cap-system.js'), /row: \['system\.speed',\s+'speed'/);
-  assert.match(src('js/atlas-cap-system.js'), /statusPage\.speed\(\)/, 'Atlas reads the status page\'s own reading — no second computation');
+  assert.match(src('js/atlas-cap-system.js'), /await statusPage\.describe\(\);[\s\S]{0,400}x\.id === 'speed'/, 'Atlas reads the status page\'s own speed section — no second computation');
   assert.ok(src('js/atlas-capabilities.js').includes('["system.speed","speed",'), 'and it is in the registry Atlas searches');
-  assert.match(src('js/layer-state.js'), /speed: \(\) => statusPageModule\(\)\.then\(\(m\) => m\.speed\(\)\)/);
   assert.match(src('scripts/worktree.mjs'), /fieldSpeedLine\(/, 'worktree status prints it');
   assert.match(src('scripts/build-service-status.mjs'), /fetchFieldSpeed\(/, 'the bundle builder reads it');
   /* the privacy policy says it, in both languages */

@@ -135,7 +135,7 @@
   `supabase/functions/usage-count/shape.js`（ブラウザと関数が同じファイルを import し、宣言に無い metric・規則に合わない dimension を捨てる）。日はサーバーの時計で決め、IP・User-Agent・
   アカウント・セッション・時刻は持たない。守りは POST 限定・本文上限 16 KiB・Origin・共有 token bucket 2 つ（閉じて失敗）・metric ごと 1 日の dimension 数の上限
   （`record_usage_counts`）。1 日の上限は `USAGE_COUNT_GLOBAL_PER_DAY`。保持は 400 日（pg_cron `usage-counts-purge`）。読むのは `admin.html` の **Usage** と **Growth** タブ（Growth は
-  入口・流入元・utm・Atlas の回答の型で読み、utm 付きの発信リンクも作る。`usage_counts_summary` は SECURITY INVOKER）。読者の手元での速さ（`ready` / `boot_end`）だけは `field_speed(p_days)`（SECURITY DEFINER・anon 可）が版と端末ごとの**割合**と帯で公開する（30 回未満は出さない・件数と日は返さない。§15.10）。[`docs/MONITORING.md`](../MONITORING.md) §2b。
+  入口・流入元・utm・Atlas の回答の型で読み、utm 付きの発信リンクも作る。`usage_counts_summary` は SECURITY INVOKER）。読者の手元での速さ（`ready` / `boot_end`）だけは `field_speed(p_days)`（SECURITY DEFINER・anon 可）が版と端末ごとの**割合**と帯で公開する（整数％・100 回未満は出さない・件数と日は返さない。§15.10）。[`docs/MONITORING.md`](../MONITORING.md) §2b。
 - **`reader-reports`** … フィードバックとバグ報告の書き込み先（`--no-verify-jwt`・秘密なし）。`js/feedback.js` の 2 つのフォームと組織からの相談フォーム（`contact.html`・`js/org-page.js`、
   kind `inquiry`）が POST し、関数が service_role で `feedback` / `bug_reports` / `org_inquiries` に 1 行書く（相談の語彙・上限・返信先は `_shared/inquiry-shape.js`。返信先は本人が書いた
   アドレスで、`user_id` だけが検証済みのセッションから来る。見えない欄 `website_confirm` が埋まっていれば 400）。表へ直接は書けない（`anon`・`authenticated` の INSERT policy と grant は

@@ -472,7 +472,9 @@ index.html __imBoot          the launch screen records when and how it lifted (i
                             no release. Same beacon, same consent rules as §2b.
   → usage_counts            (day, metric, dimension) += 1, admin-only like every other count
   → public.field_speed(p_days)   the ONE public reading: per release and device, the SHARE in each range and
-                            each ending and a band (30+ … 10000+); groups under 30 withheld; no count, no day
+                            each ending (whole percents) and a band (100+ … 10000+); groups under 100 withheld; no count, no day
+                            only releases on main's first-parent history are published (field-speed.mjs knownReleases);
+                            the function refuses future / 90-day-old releases and one speed dimension per request
   → scripts/field-speed.mjs  quantiles (half / 3 in 4 within N s) and the verdict (below)
   → scripts/build-service-status.mjs → data/service-status.json `fieldSpeed` (tle-refresh.yml's bot PR, twice a day)
   → the status page «IntMap, now» (section «How fast IntMap opens for readers»), Atlas `system.speed`,

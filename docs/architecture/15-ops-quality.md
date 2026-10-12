@@ -149,7 +149,9 @@ deep tier は push でも PR でも走らない（`scripts/tiers.mjs`）ので n
   宣言は `supabase/functions/usage-count/shape.js`（`ready` / `boot_end`・`bootRows`）、聞くのは `js/usage-counts.js`（`js/boot-stage.js` の
   `interactive()`）。匿名の利用統計と同じ同意の規則・同じ送信・同じ保持（§2b）。隠れて始まった・使えるようになる前に隠れた・版の無い読み込みは数えない。
 - **公開の読みは 1 つ**: `public.field_speed(p_days)`（migration `20261013130000_field_speed.sql`・pgTAP `43_field_speed_test.sql`）。版と端末ごとの
-  **割合**と帯だけを返し、30 回未満は出さず、件数と日は返さない（件数＝通信量は管理者だけのもの）。
+  **整数％の割合**と帯だけを返し、100 回未満は出さず、件数と日は返さない（件数＝通信量は管理者だけのもの。下限と丸めの根拠は migration のコメント）。
+- **版の実在**: 状態ページに出る版は main の first-parent の commit（その commit 時刻の分と短い sha＝build stamp と同じ出所）と一致するものだけ（`field-speed.mjs` `knownReleases`）。
+  ページ自身も自分の版より新しい版の行を出さない。Edge 側は未来（1 時間超）と 90 日より古い版を拒み、1 要求に速さの次元を 1 つずつしか受けない（`shape.js` `parse`）。
 - **判定**: `scripts/field-speed.mjs`（`summarise`・`judge`・`line`）。帯 300+ の版どうしで、新しい版が前の版の「4 人に 3 人」の時間以内に使えた割合が
   10 ポイント以上減れば遅くなった・増えれば速くなった・時間は同じで落ち着いて開いた割合が 10 ポイント減れば信頼性が下がった。2 版そろわなければ「判定なし」。
 - **読み手**: `data/service-status.json` の `fieldSpeed`（`build-service-status.mjs`・bot PR で 1 日 2 回）→ 状態ページの節「読者の手元で開く速さ」と

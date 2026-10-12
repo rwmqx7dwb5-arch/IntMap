@@ -116,9 +116,31 @@ export function bootBucket(ms) {
   for (let i = 0; i < BOOT_EDGES_MS.length; i++) if (v <= BOOT_EDGES_MS[i]) return BOOT_BUCKETS[i];
   return 'late';
 }
-const releaseDim = (tail) => (d) => {
+/* ══ (field-speed) A RELEASE THAT CANNOT EXIST IS REFUSED ON THE SERVER ══════════════════════════════
+   The shape alone lets a caller invent `209912312359-aaaaaaa`. Whether a release REALLY exists is a question for
+   main's history (scripts/field-speed.mjs asks git, the same source scripts/build-stamp.mjs writes the stamp
+   from, and publishes nothing else); the server can still refuse what no release can be, by time:
+     · RELEASE_FUTURE_MS = 1 h — a stamp is the committer time of a commit already merged and built, so it is never
+       after the moment its page reports; the hour is clock skew between GitHub and the function, not a window.
+     · RELEASE_MAX_AGE_MS = 90 days — public.field_speed() reads at most 90 days (its least(p_days, 90)); an older
+       release could never be read, so its rows only occupy the day's ceiling. Expires with that clamp.
+   `now` is passed only by the server (parse below). The browser's acceptRow has none: its own clock may be wrong,
+   and a wrong clock must not cost a reader's honest row — the server's clock decides. */
+const RELEASE_FUTURE_MS = 3600e3;
+const RELEASE_MAX_AGE_MS = 90 * 864e5;
+/** the UTC time a release names (ms), or NaN */
+export function releaseTime(rel) {
+  const m = /^(\d{4})(\d\d)(\d\d)(\d\d)(\d\d)-/.exec(String(rel || ''));
+  return m ? Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]) : NaN;
+}
+const releaseDim = (tail) => (d, now) => {
   const p = String(d == null ? '' : d).split('.');
-  return p.length === 3 && RELEASE.test(p[0]) && (p[1] === 'm' || p[1] === 'd') && tail.indexOf(p[2]) >= 0 ? p.join('.') : null;
+  if (!(p.length === 3 && RELEASE.test(p[0]) && (p[1] === 'm' || p[1] === 'd') && tail.indexOf(p[2]) >= 0)) return null;
+  if (now != null) {
+    const t = releaseTime(p[0]);
+    if (!(t <= now + RELEASE_FUTURE_MS && t >= now - RELEASE_MAX_AGE_MS)) return null;
+  }
+  return p.join('.');
 };
 
 /** the two rows one page load adds, or [] — { stamp, mobile, ms, ending }; a hidden or prerendered start
@@ -173,16 +195,16 @@ export const METRICS = Object.freeze({
   feature:      { dim: closed(['compare', 'timelapse', 'share', 'donate', 'install']), max: 1, maxDims: 5 },   // page loads in which the feature was used
   atlas:        { dim: closed(['']),                                          max: 100, maxDims: 1 },   // questions asked to Atlas (the count only — never the question)
   atlas_mode:   { dim: closed(['text', 'map', 'chart', 'mixed']),             max: 100, maxDims: 4 },   // Atlas answers by the kind Atlas declared for them (js/atlas-agent.js ANSWER_MODES) — counted when a turn ends with an answer; never the question or the answer
-  ready:        { dim: releaseDim(BOOT_BUCKETS),                              max: 1,   maxDims: 720 },   // (field-speed) page loads whose launch screen lifted within this range, by release and device — the range, never the time
-  boot_end:     { dim: releaseDim(BOOT_ENDINGS),                              max: 1,   maxDims: 240 },   // (field-speed) how that launch screen lifted (map settled / an escape / no map renderer), by release and device
+  ready:        { dim: releaseDim(BOOT_BUCKETS),                              max: 1,   maxDims: 720, perRequest: 1 },   // (field-speed) page loads whose launch screen lifted within this range, by release and device — the range, never the time
+  boot_end:     { dim: releaseDim(BOOT_ENDINGS),                              max: 1,   maxDims: 240, perRequest: 1 },   // (field-speed) how that launch screen lifted (map settled / an escape / no map renderer), by release and device
 });
 
 /** acceptRow(metric, dimension, n) → { m, d, n, cap } | null — the ONE validator both sides use. */
-export function acceptRow(metric, dimension, n) {
+export function acceptRow(metric, dimension, n, now) {
   const m = String(metric == null ? '' : metric);
   if (!Object.prototype.hasOwnProperty.call(METRICS, m)) return null;
   const spec = METRICS[m];
-  const d = spec.dim(dimension == null ? '' : dimension);
+  const d = spec.dim(dimension == null ? '' : dimension, now);
   if (d == null) return null;
   const k = Math.floor(Number(n));
   if (!Number.isFinite(k) || k < 1) return null;
@@ -203,16 +225,23 @@ export function encode(rows) {
 }
 
 /** parse(text) → { rows } | { error } — the server's reading of one request. */
-export function parse(text) {
+export function parse(text, now = Date.now()) {
   let body = null;
   try { body = JSON.parse(String(text)); } catch (_) { body = null; }
   if (!body || typeof body !== 'object' || !Array.isArray(body.c)) return { error: 'invalid_request' };
   if (body.c.length < 1 || body.c.length > MAX_ROWS_PER_REQUEST) return { error: 'invalid_request' };
   const merged = new Map();
+  /* (field-speed) `perRequest`: how many DISTINCT dimensions of the metric one request may carry. An honest page
+     load sends exactly one `ready` and one `boot_end`; without the limit one request could open 64 new dimensions
+     and twelve requests would fill the day's ceiling (720), refusing the real newest release. With it, filling it
+     takes 720 requests — past the per-caller bucket (120/hour), so from many addresses at once. */
+  const seen = {};
   for (const t of body.c) {
     if (!Array.isArray(t)) continue;
-    const r = acceptRow(t[0], t[1], t[2]);
+    const r = acceptRow(t[0], t[1], t[2], now);
     if (!r) continue;                                   // undeclared / refused: dropped, never stored
+    const lim = METRICS[r.m].perRequest;
+    if (lim && !merged.has(r.m + '\u0000' + r.d) && (seen[r.m] = (seen[r.m] || 0) + 1) > lim) continue;
     const key = r.m + '\u0000' + r.d;
     const prev = merged.get(key);
     /* a row repeated inside one request is still clamped to the metric's per-request max */
