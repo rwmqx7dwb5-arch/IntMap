@@ -1391,6 +1391,14 @@ polity-arc.js                     **政体の盛衰**——1 つの政体を全�
                                   描画面積の年、記録上の別の名前（同じ Wikidata 項目・地図上の同じ名前）。グラフを押すと時計がその年へ、「一生を再生」は
                                   形が変わる年だけをタイムラプスで。索引は data/polity-arcs.json。入口は Chronos パネル・この場所の歴史の各行・
                                   Atlas `time.polityArc`（docs/architecture/07-map.md §7.4c）
+family-history.js                 **家族史と国境**——読者の家族（手入力、または GEDCOM の読み込み）の各出来事を、その日・その場所で
+                                  歴史の記録が描く政体と第 1 級区分で読み（日付が年・月だけなら幅の中の変化も）、各人物の生涯のあいだの
+                                  政体の変化を数える（記録の切り替わり・同じ政体の別の行・重なり・継ぎ目は数えない）。地名は端末の地名辞典と
+                                  歴史都市名・Pleiades に訊き、1 つに決まるときだけ置く。このブラウザにだけ保存。入口は Chronos パネル・
+                                  Atlas `time.lifeAtPlace`（docs/architecture/07-map.md §7.4d）。最初に要るときに取りに行く
+gedcom.js                         **GEDCOM（5.5.1 / 7.0）の読み手**——文字コード（BOM・CHAR。ANSEL は ASCII の範囲だけ）、記録の木、
+                                  DATE か PLAC を持つ構造を出来事として、座標（PLAC.MAP）、家族の出来事を両配偶者へ。日付は文法どおりに
+                                  日の幅へ（ユリウス暦・フランス革命暦・ユダヤ暦を換算）。family-history.js が読む
 events-near.js                    範囲 × 期間の地震と出来事の**読み手 1 つ**——USGS の M2.5 以上・7 日のフィードをセッション内で 1 回
                                   取得して共有し、`news_events` の窓をページ送りで読み、どちらも位置を送らずに端末で範囲を絞る。
                                   状態の語彙（`ok` / `none` / `unavailable`＋理由）の正本。地点カード・place-watch.js・
