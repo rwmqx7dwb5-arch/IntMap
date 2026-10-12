@@ -101,6 +101,9 @@ export function makeGisOps() {
        it had to (`result.worker.reason`), which is the diagnosis a reader can act on rather than a
        silence they have to guess at ([[intmap-atlas-failed-because-intmap-said-so]]). */
     function workerKernel() { try { return (typeof window !== 'undefined' && window.IntMapGisWorker) || null; } catch (_) { return null; } }
+    /* (voronoi) The spherical nearest-site diagram, read at call time like every kernel above —
+       js/gis-core.js mounts it, so its version reaches provenance.engine with the others. */
+    function voronoiKernel() { try { return (typeof window !== 'undefined' && window.IntMapGisVoronoi) || null; } catch (_) { return null; } }
     function earthKm() { const g = geodesy(); const R = g && g._R_EARTH_KM; return (typeof R === 'number' && isFinite(R) && R > 0) ? R : null; }
 
     const D2R = Math.PI / 180;
@@ -983,6 +986,22 @@ export function makeGisOps() {
           { name: 'prefix', type: 'text', required: false },
           { name: 'unmatched', type: 'enum', required: false, default: 'keep', values: ['keep', 'drop'] },
         ],
+      },
+      voronoi: {
+        /* 最寄り圏と、いちばん遠い場所 (docs/GIS-CORE.md §2.9): the ground of the window divided by which
+           site of input 0 is nearest — every place, including the places nobody has a row for — and,
+           for each region, the point farthest from its site. nearestJoin answers 「どれが近いか」 for
+           rows somebody already has; this answers it for the land, which is where 「どの施設からも
+           いちばん遠い場所」 is.
+           ⚠ THE DIAGRAM IS SPHERICAL (js/gis-voronoi.js), so the sites that decide a region need not
+           be inside the window: an airport across a border is the nearest one for the land beside it,
+           and dropping it would hand that land to a farther site. ⚠ NO PARAMETERS, deliberately: the
+           drawing tolerance and the search tolerance are the sphere's own error against WGS-84
+           (§2.4.1), not a knob — see that kernel's header. */
+        id: 'voronoi',
+        surface: ['sphere', 'degree-plane'], inputs: 2, accepts: ['Point', 'Polygon'], output: 'Polygon',
+        needsGeodesy: true, needsGeometry: true, needsVoronoi: true,
+        params: [],
       },
       timeJoin: {
         /* 時点・期間による結合: 「当時の区域」「観測時点の統計」「期間が重なるイベント」 as one op.
@@ -1949,6 +1968,177 @@ export function makeGisOps() {
           ties: ties, passes: passes, searchedToLimit: capped,
           indexed: cand.indexed, seedKm: seed, capKm: cap,
         }));
+    }
+
+    /* ══ (voronoi) 最寄り圏と、いちばん遠い場所 ═════════════════════════════════════════════════
+       One row per site of input 0 whose nearest-site region meets the window (input 1): the region
+       cut to the window, the site's own columns, and where in it the farthest point from the site
+       is. The arithmetic is js/gis-voronoi.js's; this runner decides what a ROW is and measures.
+         · ⚠ TWO ROWS AT ONE POSITION ARE ONE SITE, and the region goes to the lower row — the rule
+           nearestJoin already states for a tie. The other rows are counted (`coincidentRows`)
+           rather than given an empty region, which would read as 「誰にとっても最寄りではない」.
+         · A MultiPoint row is several sites with one identity: its region is the union of theirs,
+           and its farthest point is the farthest over each part from that part's own position.
+         · ⚠ A REGION THAT CONTAINS A POLE IS NOT REJOINED ACROSS THE 0°/180° PLANE. The kernel hands
+           a cell over as octant pieces; within one half of the longitudes they rejoin into a ring
+           at most 180° wide, but the two halves of a polar region would rejoin into a ring as wide
+           as the world, which js/gis-geometry.js refuses by name (`geometry-wraps-world`). They
+           travel as the two parts of one MultiPolygon instead, which is the same ground.
+         · The farthest point is SEARCHED, not sampled: `_farthestKm` is the distance from
+           (`_farthestLng`, `_farthestLat`) to its NEAREST site (the region's own or a neighbour's —
+           a drawn border stands within the sphere's own error of the true one), and
+           stats.farthestBoundKm is the proof that nothing in the window is farther (§2.9). */
+    async function runVoronoi(siteDs, winDs, ctx) {
+      const GG = geometry(), VK = voronoiKernel();
+      const Rk = earthKm();
+      const writes = ['_siteRow', '_areaKm2', '_farthestKm', '_farthestLng', '_farthestLat'];
+      for (const name of writes) if (hasField(siteDs, name)) return fail('output-column-in-use', { input: 0, name: name });
+
+      /* distinct positions, each owned by the lowest row that names it */
+      const rows = siteDs.features();
+      const keyOf = (p) => {
+        const lat = p[1];
+        /* every longitude names the same point at a pole */
+        /* a longitude already in range is kept to the bit — the modular form moves -3.1 to -3.0999999999999943 */
+        const lng = (Math.abs(lat) >= 90) ? 0 : (p[0] >= -180 && p[0] < 180) ? p[0] : ((((p[0] + 180) % 360) + 360) % 360) - 180;
+        return { key: lng + ',' + lat, pos: [lng, lat] };
+      };
+      const at = new Map(), positions = [], owner = [];
+      let coincident = 0, unplaced = 0;
+      for (let r = 0; r < rows.length; r++) {
+        const pts = GG.pointsOf(rows[r] && rows[r].geometry);
+        if (!pts.length) { unplaced++; continue; }
+        let shared = false;
+        for (const p of pts) {
+          if (!(Math.abs(p[1]) <= 90)) continue;
+          const k = keyOf(p);
+          if (at.has(k.key)) { if (owner[at.get(k.key)] !== r) shared = true; continue; }
+          at.set(k.key, positions.length); positions.push(k.pos); owner.push(r);
+        }
+        if (shared) coincident++;
+      }
+      if (!positions.length) return fail('no-features', { input: 0 });
+      const wins = windowsOf(winDs);
+      if (!wins.length) return fail('no-overlay-polygons', { input: 1 });
+
+      /* one tick per site in each of the three walks: the hull, the cells, and the cut to the window */
+      const total = positions.length * 3;
+      const built = await VK.cells(positions, { earthKm: Rk, tick: () => ctx.tick(1, total) });
+      if (!built.ok) return fail(built.why === 'cancelled' ? 'cancelled' : 'geometry-failed', { done: ctx.done(), total: total, why: built.why });
+
+      const cand = candidateSource(wins);
+      const led = makeGeoLedger();
+      const perRow = new Map();
+      let outside = 0, borderTol = 0;
+      for (let u = 0; u < positions.length; u++) {
+        if (!(await ctx.tick(1, total))) return fail('cancelled', { done: ctx.done(), total: total });
+        const cell = built.cells[u];
+        if (!cell || !cell.ok) { led.ok({ ok: false, why: 'geometry-failed', detail: { position: positions[u], why: cell && cell.why } }); continue; }
+        const site = positions[u];
+        /* The cell lies in the cap of radius `radiusKm` around its site, so a window farther than that
+           cannot meet it — the index pads the site's box by exactly that many km (padBoxKm). */
+        const near = [];
+        cand.each([site[0], site[1], site[0], site[1]], cell.radiusKm, (w) => { near.push(w); return true; });
+        const parts = [];
+        for (const pc of cell.pieces) {
+          const piece = { type: 'Polygon', coordinates: [pc.ring] };
+          const pb = bboxOf(piece);
+          for (const w of near) {
+            if (!boxesMeet(pb, w.bbox)) continue;
+            const r = GG.attempt.intersection(piece, w.geometry);
+            if (!led.ok(r)) continue;
+            if (r.geometry) parts.push({ geometry: r.geometry, half: pc.half });
+          }
+        }
+        if (!parts.length) { outside++; continue; }
+        if (cell.edgeTolKm > borderTol) borderTol = cell.edgeTolKm;
+        const rings = [];
+        for (const pt of parts) for (const poly of polygonsOf(pt.geometry)) for (const ring of poly) rings.push(ring);
+        const far = VK.farthest(site, rings, Rk, (p) => parts.some((pt) => GG.pointInGeometry(p, pt.geometry)),
+          (cell.neighbours || []).map((j) => positions[j]), cell.edgeTolKm);
+        if (!far) led.ok({ ok: false, why: 'geometry-failed', detail: { position: site, stage: 'farthest' } });
+        const r = owner[u];
+        if (!perRow.has(r)) perRow.set(r, { parts: [], polar: false, far: null });
+        const acc = perRow.get(r);
+        for (const pt of parts) acc.parts.push(pt);
+        if (cell.polar) acc.polar = true;
+        if (far && (!acc.far || far.km > acc.far.km)) acc.far = far;
+      }
+
+      /* ⚠ THE FARTHEST PLACE IS FOLDED BEFORE ANY ROW IS ASSEMBLED, and the proof is withdrawn when
+         ground is missing. A row whose pieces could not be rejoined still MEASURED its region, and
+         dropping it here dropped its farthest point with it — so a window whose farthest place lay in
+         that region answered with a smaller `farthestKm` and a bound «proving» nothing was farther.
+         Every way the window's ground can go uncomputed (a cell the kernel could not build, a cut to
+         the window that failed, a region not measured, a rejoin that failed) is counted in `led`,
+         and any of them leaves `farthestBoundKm` null: the farthest place FOUND is still reported,
+         but nobody can say what lies in the ground that was not computed. The same count makes the
+         record's coverage `partial` (inheritCoverage reads `geometryFailed`). */
+      let best = null, bestRow = null, boundKm = 0;
+      for (const r of Array.from(perRow.keys()).sort((a, b) => a - b)) {
+        const far = perRow.get(r).far;
+        if (far && (!best || far.km > best.km)) { best = far; bestRow = r; }
+        if (far && far.boundKm > boundKm) boundKm = far.boundKm;
+      }
+      const out = [];
+      for (const r of Array.from(perRow.keys()).sort((a, b) => a - b)) {
+        const acc = perRow.get(r);
+        /* Rejoined within each half of the longitudes first (the octant seams at ±90° and the
+           equator, and the pieces of several window features); then across the 0° and 180°
+           meridians unless the region holds a pole — see the note above this runner. */
+        const halves = [];
+        let lost = false;
+        for (const h of [1, -1]) {
+          const gs = acc.parts.filter((pt) => pt.half === h).map((pt) => pt.geometry);
+          if (!gs.length) continue;
+          if (gs.length === 1) { halves.push(gs[0]); continue; }
+          const m = GG.attempt.union(gs);
+          if (!led.ok(m)) { lost = true; break; }
+          if (m.geometry) halves.push(m.geometry);
+        }
+        if (lost) continue;
+        let geom = null;
+        if (halves.length === 1) geom = halves[0];
+        else if (acc.polar) {
+          const polys = [];
+          for (const g of halves) for (const p of polygonsOf(g)) polys.push(p);
+          geom = polyGeometry(polys);
+        } else if (halves.length > 1) {
+          const m = GG.attempt.union(halves);
+          if (!led.ok(m)) continue;
+          geom = m.geometry;
+        }
+        if (!geom) { led.ok({ ok: false, why: 'geometry-failed', detail: { row: r, stage: 'rejoin' } }); continue; }
+        const far = acc.far;
+        out.push({
+          type: 'Feature',
+          properties: withProps(props(rows[r]), {
+            _siteRow: r, _areaKm2: areaKm2(geom),
+            _farthestKm: far ? far.km : null,
+            _farthestLng: far ? far.at[0] : null,
+            _farthestLat: far ? far.at[1] : null,
+          }),
+          geometry: geom,
+        });
+      }
+      const groundMissing = led.failed() > 0;
+      return withGeoStats({ ok: true, features: out }, led, {
+        surface: 'sphere',
+        sites: positions.length,
+        coincidentRows: coincident,
+        rowsWithoutPosition: unplaced,
+        sitesOutsideWindow: outside,
+        neighbours: built.method,
+        hullOrphans: built.orphans,
+        farthestKm: best ? best.km : null,
+        farthestLng: best ? best.at[0] : null,
+        farthestLat: best ? best.at[1] : null,
+        farthestRow: bestRow,
+        farthestBoundKm: (best && !groundMissing) ? boundKm : null,
+        farthestBoundWhy: groundMissing ? 'regions-not-computed' : null,
+        sphereRelError: VK.sphereRelError(),
+        borderToleranceKm: borderTol,
+      });
     }
 
     /* ══ ⚠⚠⚠ (#R783) 半開で読む — その日はどちらのものか ══════════════════════════════════════
@@ -5406,6 +5596,9 @@ export function makeGisOps() {
          when js/gis-units.js is not mounted: a conversion this file performed with a factor it
          invented would be the one thing the op exists to stop. */
       if (decl.needsUnits && !unitKernel()) return fail('units-unavailable');
+      /* (voronoi) A shape engine that did not arrive is the existing 「この処理は実行されていません」,
+         not an empty diagram. */
+      if (decl.needsVoronoi && !voronoiKernel()) return fail('geometry-unavailable', { kernel: 'voronoi' });
       if (decl.needsGeometry) {
         const GG = geometry();
         if (!GG) return fail('geometry-missing');
@@ -5532,6 +5725,7 @@ export function makeGisOps() {
            row is, what is nearest to it, when it holds. */
         spatialJoin: () => runSpatialJoin(ds[0], ds[1], params, R, ctx),
         nearestJoin: () => runNearestJoin(ds[0], ds[1], params, R, ctx),
+        voronoi: () => runVoronoi(ds[0], ds[1], ctx),
         timeJoin: () => runTimeJoin(ds[0], ds[1], params, R, ctx),
         compute: () => runCompute(ds[0], params, R, ctx),
         /* (#R783) 単位換算——同じ §9 の「手作業の倍率計算ではなく」。 */
