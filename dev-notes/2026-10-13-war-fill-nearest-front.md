@@ -1,6 +1,7 @@
 ---
 title: 戦争レイヤーの塗りを「最寄りの戦線が、陸伝いに、その点で決める」に——1942 年前半のソ連占領地全体・1915 年夏のオーストリア＝ハンガリー・バルジの戦い中のフランスが逆の色だった／線の頂点を判定していた照合 18 件
 date: 2026-10-13
+pr: 1102
 newsen: War maps now colour each place by the front nearest to it over land. Fixed: occupied Soviet land shown Soviet in early 1942, Austria-Hungary shown Allied in summer 1915, France shown German during the Bulge, and Estonia, Lod and Ramla on the wrong side.
 newsjp: 戦争地図の塗りを、陸伝いに最も近い戦線で決めるように直しました。1942 年前半にソ連の独軍占領地全体が連合国側に、1915 年夏にオーストリア＝ハンガリー全土が連合国側に、バルジの戦いの間にフランスがドイツ側に塗られていた誤りや、エストニア、リッダ、ラムラの陣営が逆だった誤りがなくなります。
 ---
