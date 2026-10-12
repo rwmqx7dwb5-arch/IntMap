@@ -239,3 +239,53 @@ test('wave4-education ⑧ Atlas: learn.class is registered, and its schema\'s ac
   for (const a of actions) assert.ok(doc.includes('"' + a + '"'), 'the catalogue does not name «' + a + '»');
   assert.match(doc, /クラスのセット/);
 });
+
+/* ── review fixes ───────────────────────────────────────────────────────────────────────────────── */
+test('wave4-education ⑨ a name a spreadsheet would run as a formula is written as text', () => {
+  const qs = engine.generate('where', 'w4edu', 5, DATA);
+  const names = ['=HYPERLINK("http://x","y")', '+1', '-1', '@SUM(A1)', '\tx', '\rx', 'Aiko'];
+  const T = CLASS.tally(engine, qs, names.map((name, id) => ({ id, name, created_at: '2026-10-13T01:00:00Z', answers: qs.map(() => null) })));
+  const rows = CLASS.classCsv(qs, T, 'en').split('\r\n').slice(1).filter(Boolean);
+  const first = (l) => l.match(/^"((?:[^"]|"")*)"/)[1].replace(/""/g, '"');
+  const got = new Map(rows.map((l) => [first(l).replace(/^'/, ''), first(l)]));
+  for (const n of names.slice(0, -1)) assert.equal(got.get(n), "'" + n, JSON.stringify(n) + ' is not guarded');
+  assert.equal(got.get('Aiko'), 'Aiko', 'an ordinary name is unchanged');
+  /* numbers stay numbers: a total is not prefixed */
+  assert.match(rows[0], /^"[^"]*","[^"]*","\d+"/);
+});
+
+test('wave4-education ⑩ Atlas reads a set with its own host — the board need never have been opened', () => {
+  const board = codeOnly(read('js/quest-class-board.js'));
+  const body = board.slice(board.indexOf('export async function readSet(code, host)'));
+  assert.ok(body.length > 30, 'readSet takes the caller\'s host');
+  const fn = body.slice(0, body.indexOf('\n}\n') + 2);
+  assert.doesNotMatch(fn, /\bHOST\b/, 'readSet reads the board\'s own HOST, which only openBoard() sets');
+  assert.match(codeOnly(read('js/atlas-cap-learn.js')), /B\.readSet\(code, HOST\)/, 'Atlas hands readSet its host');
+});
+
+test('wave4-education ⑪ hand-ins are paced by the shared bucket, and the teacher can close and clear a set in one act', async () => {
+  const fn = MIG.slice(MIG.indexOf('create or replace function public.class_set_submit'), MIG.indexOf('comment on function public.class_set_submit'));
+  const take = fn.indexOf("public.relay_take('class-answer', v_set.id::text,");
+  assert.ok(take > 0, 'class_set_submit takes from the repository\'s one shared bucket (relay_take), keyed by the set');
+  assert.ok(take > fn.indexOf("'invalid'") && take < fn.indexOf('insert into public.class_set_answers'), 'only a well-formed try takes a token, and it is taken before the row is written');
+  assert.match(fn, /'error', 'busy'/);
+  assert.equal([...MIG.matchAll(/create table if not exists/g)].length, 2, 'no bucket of its own: the two tables and nothing else');
+  assert.ok(CLASS.classFailureText('busy', 'en') !== CLASS.classFailureText('failed', 'en'), '«busy» has its own words');
+  assert.match(read('js/quest-panel.js'), /const RESENDABLE = \[[^\]]*'busy'/, 'a student told «busy» can hand in again');
+  /* clearClassAnswers closes FIRST, then deletes every hand-in of the set */
+  const calls = [];
+  const chain = (table) => {
+    const c = { op: null, table, filters: [] };
+    const api = {
+      update(v) { c.op = 'update:' + JSON.stringify(v); return api; },
+      delete() { c.op = 'delete'; return api; },
+      eq(k, v) { c.filters.push(k + '=' + v); return api; },
+      select() { calls.push(c.table + ' ' + c.op + ' ' + c.filters.join('&')); return Promise.resolve({ data: c.op === 'delete' ? [{ id: 1 }, { id: 2 }] : [{ id: 'S', open: false }], error: null }); },
+    };
+    return api;
+  };
+  const r = await CLASS.clearClassAnswers({ from: chain }, 'S');
+  assert.deepEqual(calls, ['class_sets update:{"open":false} id=S', 'class_set_answers delete set_id=S']);
+  assert.deepEqual(r, { ok: true, closed: true, removed: 2 });
+  assert.match(codeOnly(read('js/quest-class-board.js')), /CLASS\.clearClassAnswers\(HOST && HOST\.DB, s\.id\)/, 'the board offers it');
+});

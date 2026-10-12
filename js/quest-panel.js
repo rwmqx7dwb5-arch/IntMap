@@ -481,7 +481,7 @@ async function handIn(set) {
   set.cls.sent = r;
   if (Q === set && Q.phase === 'done') paint();
 }
-const RESENDABLE = ['name_taken', 'invalid_name', 'unavailable', 'failed', 'not_deployed'];
+const RESENDABLE = ['name_taken', 'invalid_name', 'busy', 'unavailable', 'failed', 'not_deployed'];
 function classDoneHTML() {
   const c = Q.cls, r = c.sent;
   let line, ok = false, again = '';

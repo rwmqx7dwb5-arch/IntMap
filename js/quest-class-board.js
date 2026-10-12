@@ -45,7 +45,7 @@ const fmt = (v) => Number(v).toLocaleString(lang() === 'jp' ? 'ja-JP' : 'en-GB')
 const BOARD_REFRESH_MS = 15000;
 
 /* ══ STATE ═══════════════════════════════════════════════════════════════════════════════════════ */
-let panel = null, view = 'list', sets = null, cur = null, err = null, tick = null, langOff = null, armDelete = false, shownQ = null;
+let panel = null, view = 'list', sets = null, cur = null, err = null, tick = null, langOff = null, armDelete = false, armClear = false, shownQ = null;
 /* cur = { set, qs, engine, rows, T } — the set on screen, its questions, the engine, its hand-ins and their tally */
 
 /** what the board shows now — openBoard() resolves with it, and that is what Atlas reads after it acts */
@@ -219,6 +219,8 @@ function paintSet() {
       + '<button type="button" class="qcb-rm" data-id="' + H(st.id) + '" aria-label="' + H(t('Remove the hand-in of ', '提出を削除: ') + st.name) + '">×</button></div>').join('') + '</div>'
       + '<div class="qcb-acts"><button type="button" class="ai-test-btn" id="qcb-csv">' + icon('save') + ' ' + H(t('Download CSV', 'CSV をダウンロード')) + '</button></div>';
   }
+  if (T && T.count) body += '<button type="button" class="ai-test-btn qcb-del" id="qcb-clear">' + icon('trash') + ' ' + H(armClear ? t('Tap again to close the set and delete all ' + T.count + ' hand-ins', 'もう一度押すと、セットを締め切り、提出 ' + T.count + ' 件をすべて削除します')
+    : t('Close and clear every hand-in (e.g. someone filled the set)', '締め切って提出をすべて消す（誰かにセットを埋められたときなど）')) + '</button>';
   body += '<button type="button" class="ai-test-btn qcb-del" id="qcb-del">' + icon('trash') + ' ' + H(armDelete ? t('Tap again to delete the set and every hand-in', 'もう一度押すと、セットと提出がすべて削除されます') : t('Delete this set', 'このセットを削除')) + '</button>';
   p.innerHTML = header('', true) + body;
   wire();
@@ -241,6 +243,15 @@ function paintSet() {
     err = r.ok ? null : r.error; await refresh();
   }));
   const csv = p.querySelector('#qcb-csv'); if (csv) csv.addEventListener('click', () => downloadCsv());
+  const clr = p.querySelector('#qcb-clear');
+  if (clr) clr.addEventListener('click', async () => {
+    if (!armClear) { armClear = true; paint(); return; }
+    armClear = false;
+    const r = await CLASS.clearClassAnswers(HOST && HOST.DB, s.id);
+    err = r.ok ? null : r.error;
+    if (r.closed) cur.set = Object.assign({}, cur.set, { open: false });
+    keepRefreshing(); clearMap(); await refresh();
+  });
   const del = p.querySelector('#qcb-del');
   if (del) del.addEventListener('click', async () => {
     if (!armDelete) { armDelete = true; paint(); return; }
@@ -291,7 +302,7 @@ function keepRefreshing() {
   if (view === 'set' && cur && cur.set.open) tick = everyTick('quest-class-board', BOARD_REFRESH_MS, () => { if (panel && panel.style.display !== 'none' && view === 'set') refresh(); });
 }
 async function showList() {
-  view = 'list'; cur = null; armDelete = false; stopRefresh(); clearMap();
+  view = 'list'; cur = null; armDelete = false; armClear = false; stopRefresh(); clearMap();
   paint();
   if (!(HOST && HOST.user)) return;
   const r = await CLASS.listClassSets(HOST.DB);
@@ -300,7 +311,7 @@ async function showList() {
 }
 function showCreate(d) { view = 'create'; err = null; draft = { kind: d.kind, seed: d.seed || null, n: SET_LENGTHS.indexOf(+d.n) >= 0 ? +d.n : SET_LENGTHS[0] }; stopRefresh(); paint(); }
 async function showSet(s) {
-  view = 'set'; armDelete = false; err = null; clearMap();
+  view = 'set'; armDelete = false; armClear = false; err = null; clearMap();
   cur = { set: s, qs: [], engine: null, rows: null, T: null, dataError: false };
   paint();
   const made = await questionsOf(s.kind, s.seed, s.n);
@@ -348,15 +359,18 @@ export async function openBoard(o) {
   await showList();
   return boardState();
 }
-/** Atlas's view of one set: its tally, read now (the same tally the board shows). → { ok, set, qs, T } | { ok:false, error } */
-export async function readSet(code) {
-  const r = await CLASS.listClassSets(HOST && HOST.DB);
+/** Atlas's view of one set: its tally, read now (the same tally the board shows). `host` is the caller's (Atlas's K.HOST):
+ *  the board may never have been opened in this session, so its own HOST cannot be the one read with.
+ *  → { ok, set, qs, T } | { ok:false, error } */
+export async function readSet(code, host) {
+  const DB = host && host.DB;
+  const r = await CLASS.listClassSets(DB);
   if (!r.ok) return { ok: false, error: r.error };
   const s = r.sets.find((x) => x.code === String(code || '').toUpperCase());
   if (!s) return { ok: false, error: 'not_found', sets: r.sets };
   const made = await questionsOf(s.kind, s.seed, s.n);
   if (!made.ok) return { ok: false, error: 'data', set: s };
-  const a = await CLASS.classAnswers(HOST.DB, s.id);
+  const a = await CLASS.classAnswers(DB, s.id);
   if (!a.ok) return { ok: false, error: a.error, set: s };
   return { ok: true, set: s, qs: made.qs, T: CLASS.tally(made.engine, made.qs, a.rows) };
 }

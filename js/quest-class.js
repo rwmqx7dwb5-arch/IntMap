@@ -116,11 +116,20 @@ export function questionLabel(q, lang) {
   return (jp ? q.text.jp : q.text.en) + ' (' + q.d + ')';
 }
 
+/* A cell a spreadsheet would read as a formula — a student typed «=HYPERLINK(…)» as their name — is kept as text: a value
+   that begins with = + - @, a tab or a carriage return gets a leading apostrophe (OWASP «CSV injection»). Numbers are ours
+   and are written as numbers; only text is guarded, so a negative longitude in an answer cell is text and is guarded too. */
+function csvText(v) {
+  if (v == null) return '';
+  if (typeof v === 'number') return String(v);
+  const s = String(v);
+  return /^[=+\-@\t\r]/.test(s) ? "'" + s : s;
+}
 /** The tally as CSV (RFC 4180: comma-separated, every field quoted, CRLF) — one row per student: the name, when they
  *  handed in, the total, then for each question its points and what they answered (km away / years off / skipped). */
 export function classCsv(qs, T, lang) {
   const L = IntMapLang.pick(() => lang);
-  const q = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const q = (v) => '"' + csvText(v).replace(/"/g, '""') + '"';
   const head = [L('Name', '名前'), L('Handed in (UTC)', '提出（UTC）'), L('Total', '合計') + ' / ' + T.max];
   qs.forEach((x, i) => { head.push('Q' + (i + 1) + ' ' + L('points scored', '得点') + ' — ' + questionLabel(x, lang)); head.push('Q' + (i + 1) + ' ' + L('answer', '答え')); });
   const lines = [head.map(q).join(',')];
@@ -191,6 +200,18 @@ export async function setClassOpen(DB, setId, open) {
 /** Delete a whole set (its hand-ins go with it) or one hand-in. → { ok, removed, error? } */
 export async function deleteClassSet(DB, setId) { return del(DB, 'class_sets', setId); }
 export async function deleteClassAnswer(DB, answerId) { return del(DB, 'class_set_answers', answerId); }
+/** Close a set and delete every hand-in under it (someone filled it, or took classmates' names): closed FIRST, so nothing
+ *  arrives between the two. → { ok, closed, removed, error? } */
+export async function clearClassAnswers(DB, setId) {
+  const c = await setClassOpen(DB, setId, false);
+  if (!c.ok) return { ok: false, closed: false, removed: 0, error: c.error };
+  if (!DB) return { ok: false, closed: true, removed: 0, error: 'unavailable' };
+  try {
+    const { data, error } = await DB.from('class_set_answers').delete().eq('set_id', setId).select('id');
+    if (error) return { ok: false, closed: true, removed: 0, error: errOf(error) };
+    return { ok: true, closed: true, removed: (data || []).length };
+  } catch (_) { return { ok: false, closed: true, removed: 0, error: 'unavailable' }; }
+}
 async function del(DB, table, id) {
   if (!DB) return { ok: false, removed: 0, error: 'unavailable' };
   try {
@@ -231,6 +252,7 @@ export function classFailureText(code, lang) {
     case 'closed': return T('Your teacher has closed this set, so answers are no longer sent. You can still play it.', '先生がこのセットを締め切ったため、答えはもう送られません。問題を解くことはできます。');
     case 'name_taken': return T('Someone has already handed in under this name for this set. If that was not you, use a different name.', 'このセットには、この名前ですでに提出があります。あなたでなければ、別の名前にしてください。');
     case 'invalid_name': return T('Type a name of 1 to ' + CLASS_NAME_MAX + ' characters.', '名前を 1〜' + CLASS_NAME_MAX + ' 文字で入力してください。');
+    case 'busy': return T('Many answers are arriving for this set right now. Wait a minute, then hand in again.', 'このセットにいま提出が集中しています。1 分ほど待ってから、もう一度提出してください。');
     case 'full': return T('This set has taken as many answers as it can.', 'このセットは受け付けられる数の答えに達しました。');
     case 'invalid': return T('These answers do not fit this set, so they were not sent.', 'この答えはセットに合わないため、送られませんでした。');
     case 'not_deployed': case 'unavailable': return T('The class results could not be reached. Check the connection and try again.', 'クラスの結果に接続できませんでした。接続を確認して、もう一度お試しください。');

@@ -182,7 +182,7 @@ export default [
       }
       if (act === 'results') {
         if (!code) return R(false, warn(esc(L('Which set? Give its code (list shows them).', 'どのセットですか？ コードを指定してください（list で一覧できます）。'))), { meta: { code: 'needs_input' } });
-        const r = await B.readSet(code);
+        const r = await B.readSet(code, HOST);
         if (!r.ok) return r.error === 'data' ? R(false, warn(esc(L('The questions of this set could not be made from the map\'s data', 'このセットの問題を地図のデータから作れませんでした'))), { meta: { code: 'UNAVAILABLE' } }) : fail(r.error);
         const T = r.T;
         const qLines = T.questions.map((x) => {

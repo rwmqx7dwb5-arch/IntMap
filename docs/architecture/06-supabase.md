@@ -40,7 +40,7 @@
 - **クラスのセット（`class_sets`）と生徒の提出（`class_set_answers`）** — ログインした先生が学ぶクエストをクラスに配る。セットは種類・seed・問題数（5／10）・題・受付中か・
   コード（8 文字・`gen_random_uuid()` の乱数バイトから。生徒のリンクの鍵）で、所有者の RLS・作成は 1 日 50（`relay_take('class-set')`）。生徒は**アカウントなし**で
   `class_set_open(code)`・`class_set_submit(code, name, answers)` の 2 つだけを呼ぶ（SECURITY DEFINER・コメントに `ANON MAY CALL:`）。提出は名前と**生の答え**だけで
-  **得点を持たない**（ボードが同じエンジンで採点する）。同じ名前の 2 度目は `name_taken`、締め切ったセットは受け付けない、1 セット 400 まで。読む・消すはセットの持ち主だけ。
+  **得点を持たない**（ボードが同じエンジンで採点する）。同じ名前の 2 度目は `name_taken`、締め切ったセットは受け付けない、1 セット 400 まで、提出の速さはセットごとの `relay_take('class-answer')`（一度に 45・10 分で 45 回復、超えると `busy`）。読む・消すはセットの持ち主だけ。
   作ってから 365 日で提出ごと削除（pg_cron `class-sets-purge`）。pgTAP は `39_class_quest_test.sql`。
 
 **DB の設計図は `supabase/migrations/` だけ**（全テーブル・制約・index・RLS・grants・トリガ・RPC）。本番へ手で SQL を流さない。手順は [`docs/MIGRATIONS.md`](../MIGRATIONS.md)。

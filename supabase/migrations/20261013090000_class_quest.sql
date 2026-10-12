@@ -36,6 +36,12 @@
 --    · 400 answers per set — an ESTIMATE, not a measurement: a whole school year group (a Japanese 学年 of up
 --      to ten classes of 40) on one set. Expires the day a teacher is measured to be refused below that.
 --      It bounds what one code can be made to store; it is not a fairness rule.
+--    · 45 hand-ins per set at once, refilled 45 every 10 minutes (relay_take bucket 'class-answer', keyed by the
+--      set — the repository's one shared bucket, 20260918100000_r801_relay_rate_limit.sql) — an ESTIMATE: a class of
+--      40 handing in in the same minute, with room for a few retyped names. Every valid try takes a token, a refused
+--      name included, so a stranger who has the link fills the set (or takes classmates' names) at most 45 at a time
+--      and 270 an hour, not 400 in a second; the teacher's board closes the set and clears every hand-in in one act
+--      (js/quest-class.js clearClassAnswers). Expires the day a class is measured to be refused below that.
 --    · 50 sets per teacher per day (relay_take bucket 'class-set', refilled 50 a day) — an ESTIMATE: six
 --      lessons a day, several sets a lesson, with room to spare. A fence against a loop, not a quota.
 --    · 365 days — a set and every answer under it are deleted a year after the set was made (pg_cron
@@ -227,6 +233,7 @@ declare
   v_lng  numeric;
   v_lat  numeric;
   v_yr   numeric;
+  v_ok   boolean;
 begin
   select * into v_set from public.class_sets s where s.code = upper(btrim(coalesce(p_code, ''))) for update;
   if not found then
@@ -267,6 +274,11 @@ begin
   if v_n >= 400 then
     return jsonb_build_object('ok', false, 'error', 'full');
   end if;
+  -- the pace: every well-formed try on this set takes a token (a refused name too — that is what stops a name grab)
+  select r.allowed into v_ok from public.relay_take('class-answer', v_set.id::text, 45, 45.0 / 600, 1) r;
+  if not coalesce(v_ok, false) then
+    return jsonb_build_object('ok', false, 'error', 'busy');
+  end if;
   begin
     insert into public.class_set_answers (set_id, name, answers) values (v_set.id, v_name, p_answers);
   exception when unique_violation then
@@ -276,7 +288,7 @@ begin
 end;
 $$;
 comment on function public.class_set_submit(text, text, jsonb) is
-  '(wave4-education) A student hands in a class set: the name they typed (1–24 characters) and their raw answers (n of them; a place question [lng, lat], a year question an integer year, a skip null). → {ok:true, answered} or {ok:false, error: not_found | closed | invalid_name | invalid | full | name_taken}. The first hand-in under a name stands. ANON MAY CALL: students have no account; the code their teacher handed them is the door, the set must still be open, the row holds only the name and the answers, and only the teacher whose set it is can read it (RLS).';
+  '(wave4-education) A student hands in a class set: the name they typed (1–24 characters) and their raw answers (n of them; a place question [lng, lat], a year question an integer year, a skip null). → {ok:true, answered} or {ok:false, error: not_found | closed | invalid_name | invalid | full | busy | name_taken}. The first hand-in under a name stands; every well-formed try takes a token from the set''s relay_take bucket ''class-answer'' (45, refilled 45 every 10 minutes) — «busy» when it is empty. ANON MAY CALL: students have no account; the code their teacher handed them is the door, the set must still be open, the row holds only the name and the answers, and only the teacher whose set it is can read it (RLS).';
 revoke execute on function public.class_set_submit(text, text, jsonb) from public;
 grant  execute on function public.class_set_submit(text, text, jsonb) to anon, authenticated, service_role;
 

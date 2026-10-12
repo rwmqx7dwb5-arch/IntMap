@@ -157,9 +157,44 @@ select is((select v from _cap where k='b_make'),   'ROWS:1',   'B makes B''s own
 select is((select v from _cap where k='a_drop'),   'ROWS:1',   'the teacher removes one hand-in (a name that should not be there)');
 select is((select v from _cap where k='a_left'),   '1',        'one hand-in is left');
 
+-- ④b the pace and the teacher's one act: a stranger with the link cannot fill a set or take names faster than the
+--    set's relay_take bucket ('class-answer', 45 at once) allows, and the teacher closes the set and clears it all
+select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}', true);
+set local role authenticated;
+select _run('a_pace', 'insert into public.class_sets (kind, seed, n, title) values (''where'', ''pace'', 5, ''pace'')');
+reset role;
+insert into _codes select 'pace', code from public.class_sets where seed = 'pace';
+select set_config('request.jwt.claims', '{"role":"anon"}', true);
+set local role anon;
+select _sel('p_busy', 'select count(*)::text from generate_series(1, 46) g
+                        where public.class_set_submit((select code from _codes where kind = ''pace''), ''flood'' || g, ''[null,null,null,null,null]''::jsonb) ->> ''error'' = ''busy''');
+select _sel('p_count', 'select public.class_set_open((select code from _codes where kind = ''pace'')) ->> ''answered''');
+reset role;
+select set_config('request.jwt.claims', '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}', true);
+set local role authenticated;
+select _run('p_b_clear', 'delete from public.class_set_answers where set_id = (select id from public.class_sets where seed = ''pace'')');
+reset role;
+select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}', true);
+set local role authenticated;
+select _run('p_close', 'update public.class_sets set open = false where seed = ''pace''');
+select _run('p_clear', 'delete from public.class_set_answers where set_id = (select id from public.class_sets where seed = ''pace'')');
+reset role;
+select set_config('request.jwt.claims', '{"role":"anon"}', true);
+set local role anon;
+select _sel('p_after', 'select public.class_set_submit((select code from _codes where kind = ''pace''), ''late'', ''[null,null,null,null,null]''::jsonb) ->> ''error''');
+reset role;
+
+select is((select v from _cap where k='a_pace'),    'ROWS:1', 'A makes a third set');
+select is((select v from _cap where k='p_busy'),    '1',      'the 46th hand-in in a burst is «busy» — 45 at once is the set''s pace');
+select is((select v from _cap where k='p_count'),   '45',     'the burst stored 45, not 46');
+select is((select v from _cap where k='p_b_clear'), 'ROWS:0', 'another teacher clears nothing of A''s');
+select is((select v from _cap where k='p_close'),   'ROWS:1', 'the teacher closes the flooded set');
+select is((select v from _cap where k='p_clear'),   'ROWS:45','the teacher clears every hand-in of the set in one statement');
+select is((select v from _cap where k='p_after'),   'closed', 'nothing more arrives once it is closed');
+
 -- ⑤ the ceiling, the purge, the export and account deletion ───────────────────────
 insert into public.class_set_answers (set_id, name, answers)
-  select (select id from public.class_sets where user_id = '11111111-1111-1111-1111-111111111111' and kind = 'where'),
+  select (select id from public.class_sets where user_id = '11111111-1111-1111-1111-111111111111' and seed = 'abc123'),
          's' || g, '[null,null,null,null,null]'::jsonb
     from generate_series(1, 399) g;
 select set_config('request.jwt.claims', '{"role":"anon"}', true);
@@ -177,13 +212,13 @@ select is((select v from _cap where k='exp_b'), '1', 'the export reaches class_s
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 set local role service_role;
 select _sel('del_b', 'select public.delete_account_data(''22222222-2222-2222-2222-222222222222'') -> ''tables'' ->> ''class_sets''');
-update public.class_sets set created_at = now() - interval '366 days' where user_id = '11111111-1111-1111-1111-111111111111' and kind = 'where';
+update public.class_sets set created_at = now() - interval '366 days' where user_id = '11111111-1111-1111-1111-111111111111' and seed = 'abc123';
 select _sel('purge', 'select public.purge_class_sets(365)::text');
 reset role;
 select is((select v from _cap where k='del_b'), '1', 'account deletion reaches class_sets with no list naming it');
 select is((select v from _cap where k='purge'), '1', 'the purge removes the set made more than 365 days ago');
 select is((select count(*)::int from public.class_set_answers), 0, 'its hand-ins go with it');
-select is((select count(*)::int from public.class_sets where user_id = '11111111-1111-1111-1111-111111111111'), 1, 'the younger set stays');
+select is((select count(*)::int from public.class_sets where user_id = '11111111-1111-1111-1111-111111111111'), 2, 'the younger sets stay');
 
 -- grants
 select ok(not has_table_privilege('authenticated', 'public.class_sets', 'truncate'),         'authenticated holds no TRUNCATE on class_sets');
