@@ -73,3 +73,30 @@
 .yp-era:last-child{ border-bottom:none; }
 .yp-era h2{ margin:0; font-size:19px; }
 @media (max-width:640px){ .yp-era{ grid-template-columns:minmax(0,1fr); } }
+
+/* ── (polity-pages) the polity pages (history/polities/… · ja/history/polities/…, scripts/polity-pages.mjs) ──
+   The chart is the app's own (js/polity-arc.js chartSvg, the same SVG and the same classes); the record colours are the
+   sheet's (js/polity-arc.js CSS — tests/polity-pages-checks.test.mjs holds the two to the same three colours). */
+.pp-facts{ display:grid; grid-template-columns:minmax(0,12em) minmax(0,1fr); gap:10px 18px; margin:0 0 18px; }
+.pp-facts dt{ color:var(--pg-mut); font-size:15px; }
+.pp-facts dd{ margin:0; font-size:17px; font-weight:600; font-variant-numeric:tabular-nums; }
+.pp-edge{ display:block; margin-top:2px; font-size:13px; font-weight:400; color:var(--pg-mut); }
+.pp-chart{ margin:16px 0 0; padding:14px 14px 10px; border-radius:var(--pg-radius); background:var(--pg-surface); border:1px solid var(--pg-line-soft); }
+.pp-chart .pa-chart{ display:block; width:100%; height:auto; }
+.pp-chart .pa-bar{ opacity:.85; }
+.pp-chart .pa-clio,.pa-key i.pa-clio{ fill:#8e6bd8; background:#8e6bd8; }
+.pp-chart .pa-ohm,.pa-key i.pa-ohm{ fill:#2bb3a3; background:#2bb3a3; }
+.pp-chart .pa-cshapes,.pa-key i.pa-cshapes{ fill:#3b82f6; background:#3b82f6; }
+.pp-chart .pa-dot{ fill:none; stroke:var(--pg-mut); stroke-width:1.4; }
+.pp-chart .pa-peak{ fill:var(--pg-surface); stroke:var(--pg-ink); stroke-width:1.6; }
+.pp-chart .pa-seam{ stroke:var(--pg-mut); stroke-width:1; stroke-dasharray:3 3; }
+.pp-chart .pa-seamt,.pp-chart .pa-tick{ font-size:9px; fill:var(--pg-mut); }
+.pp-chart .pa-axis{ stroke:var(--pg-line); stroke-width:1; }
+.pa-key{ display:flex; flex-wrap:wrap; gap:4px 14px; margin-top:8px; font-size:13px; color:var(--pg-mut); }
+.pa-key i{ display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:5px; vertical-align:-1px; }
+.pp-span{ margin-left:6px; font-size:12px; color:var(--pg-mut); }
+.pp-plain{ display:inline-flex; align-items:center; min-height:34px; padding:0 14px; color:var(--pg-mut); font-size:14px; }
+@media (max-width:640px){
+  .pp-facts{ grid-template-columns:minmax(0,1fr); gap:2px 0; }
+  .pp-facts dd{ margin-bottom:10px; }
+}

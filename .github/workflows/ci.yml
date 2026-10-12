@@ -80,8 +80,30 @@ jobs:
         run: |
           echo "site=site-build-${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
           echo "pages=github-pages-${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+      # (polity-pages) THE CARDS OF THE POLITY PAGES ARE KEPT BETWEEN RUNS, IN A CACHE OF THEIR OWN.
+      # scripts/polity-pages.mjs keeps each card it draws in the card store beside the data store (cardStoreOf: «<store>-cards»;
+      # the build step sets no INTMAP_DATA_STORE, so on this runner that is ~/.cache/intmap-data-cards), named by the digest of
+      # what its pixels depend on, so a build draws only the cards whose inputs changed (MEASURED 2026-10-13: 2,112 cards,
+      # ~70 MB, 0.2–0.45 s each). The path is NOT under ${{ runner.temp }}/intmap-data, the one path the data-assets
+      # action's cache restores and saves, and the key prefix intmap-polity-cards- is not its intmap-data-, so neither cache
+      # writes the other's files. Restored from the latest main run that saved it; saved only on a push to main (the
+      # timings' shape below: a run-id key, read back by its prefix). The build itself removes the cards it did not use
+      # (pruneUnused — the same rule on a developer's machine), so what is saved is exactly this build's cards.
+      # tests/polity-pages-checks.test.mjs ⑧ reads these steps against the code.
+      - name: Restore the polity cards (the latest main run's)
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ~/.cache/intmap-data-cards
+          key: intmap-polity-cards-${{ github.run_id }}
+          restore-keys: intmap-polity-cards-
       - name: Build the site (Vite)
         run: npm run build
+      - name: Keep the polity cards for the next run
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ~/.cache/intmap-data-cards
+          key: intmap-polity-cards-${{ github.run_id }}
       - name: Hand the build to the jobs that read it
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:

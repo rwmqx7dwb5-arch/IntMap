@@ -52,6 +52,7 @@ import { publicApiPlugin } from './scripts/public-api.mjs';
 import { whatsNewPlugin } from './scripts/whats-new.mjs';
 import { countryPagesPlugin } from './scripts/country-pages.mjs';   // (country-pages) one entry page per country, after the history pages and the public API it links to
 import { yearPagesPlugin } from './scripts/year-pages.mjs';   // (history-year-pages) «World map in 1914» — one page per chosen year with the world drawn, after the history pages it links
+import { polityPagesPlugin } from './scripts/polity-choice.mjs';   // (polity-pages) «Mongol Empire through time» — one page per polity the dated records draw, after the year pages it links
 import { onThisDayPagesPlugin } from './scripts/on-this-day-pages.mjs';   // (marketing-next) the «on this day» pages and their cards, written into dist/ like the history pages
 import { weeklyEarthPagesPlugin } from './scripts/weekly-earth-pages.mjs';   // (weekly-earth) «This week on Earth»: a page per week, the hub and the Atom feeds
 
@@ -966,5 +967,5 @@ export default defineConfig({
      than read off filenames. scripts/perf-budget.mjs is the gate that reads it; it runs on
      every build because the report is what stops "the biggest chunk is big" from being
      mistaken for "startup is slow". */
-  plugins: [buildStampPlugin(ROOT), siteUrlPlugin(), maplibreSource(), maplibreSharedWorker(), buildReportPlugin(), copyStatic(), historyPagesPlugin(), publicApiPlugin(), countryPagesPlugin(), yearPagesPlugin(), whatsNewPlugin(), onThisDayPagesPlugin(), weeklyEarthPagesPlugin(), appShell(), histTiles(), katexAssets(), supabaseAdminSdk(), supabaseAdminSdkDev(), cesiumAssets(), cesiumDevAssets(), cspHashesPlugin(), buildLock()],
+  plugins: [buildStampPlugin(ROOT), siteUrlPlugin(), maplibreSource(), maplibreSharedWorker(), buildReportPlugin(), copyStatic(), historyPagesPlugin(), publicApiPlugin(), countryPagesPlugin(), yearPagesPlugin(), polityPagesPlugin(), whatsNewPlugin(), onThisDayPagesPlugin(), weeklyEarthPagesPlugin(), appShell(), histTiles(), katexAssets(), supabaseAdminSdk(), supabaseAdminSdkDev(), cesiumAssets(), cesiumDevAssets(), cspHashesPlugin(), buildLock()],
 });

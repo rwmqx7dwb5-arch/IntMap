@@ -21,6 +21,7 @@ import { join, dirname, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
 const { COUNTRY_HUB } = await import('../scripts/country-pages.mjs');   /* (country-pages) the history hub links it */
 const { YEAR_HUB } = await import('../scripts/year-pages.mjs');   /* (history-year-pages) the history hub links the year list too */
+const { POLITY_HUB } = await import('../scripts/polity-pages.mjs');   /* (polity-pages) and the polity list */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -217,7 +218,8 @@ test('⑦ runs partition the years; neighbours differ; pages, links, map links, 
       const target = abs ? m[1].slice('__INTMAP_SITE_URL__'.length) : posix.normalize(dir + m[1]);
       const ok = target === '' || out[target + (target.endsWith('/') ? 'index.html' : '')] || STATIC.has(target) || out[target] || target === 'og-image.jpg'
         || target === COUNTRY_HUB || target === 'ja/' + COUNTRY_HUB   /* (country-pages) the history hub links the country list, which its own generator writes */
-        || target.startsWith(YEAR_HUB) || target.startsWith('ja/' + YEAR_HUB);   /* (history-year-pages) and the year list and year pages, which scripts/year-pages.mjs writes */
+        || target.startsWith(YEAR_HUB) || target.startsWith('ja/' + YEAR_HUB)   /* (history-year-pages) and the year list and year pages, which scripts/year-pages.mjs writes */
+        || target === POLITY_HUB || target === 'ja/' + POLITY_HUB;   /* (polity-pages) and the polity list, which scripts/polity-pages.mjs writes */
       assert.ok(ok, rel + ' links to ' + m[1] + ' (' + target + '), which is neither generated nor shipped');
     }
   }
@@ -242,7 +244,8 @@ test('⑦ runs partition the years; neighbours differ; pages, links, map links, 
   const { COUNTRY_SITEMAP } = await import('../scripts/country-pages.mjs');   /* (country-pages) the fourth */
   const { WEEKLY_SITEMAP } = await import('../scripts/weekly-earth-pages.mjs');   /* (weekly-earth) the weekly digest's */
   const { YEAR_SITEMAP } = await import('../scripts/year-pages.mjs');   /* (history-year-pages) the year pages' */
-  assert.deepEqual(idx, ['sitemap.xml', H.SITEMAP, 'sitemap-updates.xml', OTD_SITEMAP, COUNTRY_SITEMAP, WEEKLY_SITEMAP, YEAR_SITEMAP], 'the sitemap index joins the landing sitemap, this one, the one of the updates pages, the «on this day» one, the country pages’ one, the weekly one and the year pages’ one');
+  const { POLITY_SITEMAP } = await import('../scripts/polity-pages.mjs');   /* (polity-pages) the polity pages' */
+  assert.deepEqual(idx, ['sitemap.xml', H.SITEMAP, 'sitemap-updates.xml', OTD_SITEMAP, COUNTRY_SITEMAP, WEEKLY_SITEMAP, YEAR_SITEMAP, POLITY_SITEMAP], 'the sitemap index joins the landing sitemap, this one, the one of the updates pages, the «on this day» one, the country pages’ one, the weekly one, the year pages’ one and the polity pages’ one');
 });
 
 test('⑦b the words of the entry pages exist in both languages, key for key', async () => {

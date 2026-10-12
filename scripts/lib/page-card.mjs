@@ -14,19 +14,32 @@
  *    · drawCountryCard the country pages (scripts/country-pages.mjs): the country's outline (Natural Earth admin-0, the
  *                      outline the page and the public API are about) filled, the countries around it as land, framed
  *                      on the page's own frame (js/country-extent.js homeExtent) — no words but the wordmark, because a
- *                      country's name differs by language and the card is one picture for both.
+ *                      country's name differs by language and the card is one picture for both;
+ *    · drawPolityCard  (polity-pages) the polity pages (scripts/polity-pages.mjs): the shape drawn under a polity's name in
+ *                      the year it is largest, among every outline the map draws that day, the year in figures.
  *
- *  ⚠ THE CARD STATES NOTHING THE PAGE DOES NOT. Both draw only geometry the page already lists or links; neither adds a
+ *  ⚠ THE CARD STATES NOTHING THE PAGE DOES NOT. Each draws only geometry the page already lists or links; none adds a
  *  name, a date or a claim. The raster, the Mercator frame, the figures and the PNG writer are scripts/lib/map-card.mjs's
  *  (the «on this day» cards'); the Equal Earth rings are scripts/lib/world-svg.mjs's — nothing is copied.
  *  ⚠ SIMPLIFIED FOR DISPLAY ONLY (.agents/rules/historical-verification.md §0): rings are reduced to a third of an output
  *  pixel; the data is untouched.
  * ==========================================================================*/
-import { CARD, frameFor, mercatorPainter, stamp, png, canvas, fillRings, strokeRing, downsample, CARD_COLOURS as C, CARD_SUPERSAMPLE as SS } from './map-card.mjs';
+import { CARD, frameFor, mercatorPainter, stamp, png, canvas, fillRings, strokeRing, downsample, todayLand, drawerFiles, CARD_COLOURS as C, CARD_SUPERSAMPLE as SS } from './map-card.mjs';
 import { isMainThread, workerData } from 'node:worker_threads';
 import { pixelRings, outlineRing, heightAt, FILLS, hue } from './world-svg.mjs';
 
 export { CARD };
+
+/** (polity-pages) the version of the drawing: a digest of every file a card's pixels depend on besides its own geometry and
+ *  words — this file, the Equal Earth rings it imports (world-svg.mjs) and map-card.mjs's own (drawerFiles). A cache of cards
+ *  keyed with it is emptied, in effect, by any change to how a card is drawn. */
+export async function drawerKey() {
+  const { createHash } = await import('node:crypto');
+  const { readFileSync } = await import('node:fs');
+  const h = createHash('sha256');
+  for (const f of [new URL(import.meta.url), new URL('./world-svg.mjs', import.meta.url), ...(await drawerFiles())]) h.update(readFileSync(f)).update('\0');
+  return h.digest('hex').slice(0, 16);
+}
 export const CARD_FILE = 'card.png';
 
 const rgb = (hex) => [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
@@ -89,17 +102,43 @@ export async function drawCountryCard(o) {
   P.strokePolys(o.context, C.edge, SS);
   P.fillPolys([o.country], C.war, 0.9);
   P.strokePolys([o.country], C.text, SS);
-  /* a country smaller than a few pixels of the card (the Vatican, Monaco, a reef) would be filled and still not be seen —
-     a card «highlighting» what nobody can find. Its place is marked instead, as the «on this day» cards mark an event. */
-  const box = pixelBox(P, o.country);
-  if (box && Math.max(box[2] - box[0], box[3] - box[1]) < MARK_BELOW_PX * SS) {
-    const cx = (box[0] + box[2]) / 2, cy = (box[1] + box[3]) / 2;
-    const circle = (r) => { const pts = []; for (let i = 0; i < 48; i++) { const t = i / 48 * Math.PI * 2; pts.push([cx + r * Math.cos(t), cy + r * Math.sin(t)]); } return pts; };
-    fillRings(cv, [circle(18 * SS)], C.war, 0.25);
-    fillRings(cv, [circle(9 * SS)], C.text);
-    fillRings(cv, [circle(6.5 * SS)], C.war);
-  }
+  markIfSmall(cv, P, o.country);
   await stamp(cv, '');
+  return png(downsample(cv, SS));
+}
+/* a shape smaller than a few pixels of the card (the Vatican, Monaco, a reef, a city republic) would be filled and still not
+   be seen — a card «highlighting» what nobody can find. Its place is marked instead, as the «on this day» cards mark an event.
+   (polity-pages) one rule for the country cards and the polity cards. */
+function markIfSmall(cv, P, polys) {
+  const box = pixelBox(P, polys);
+  if (!box || Math.max(box[2] - box[0], box[3] - box[1]) >= MARK_BELOW_PX * SS) return;
+  const cx = (box[0] + box[2]) / 2, cy = (box[1] + box[3]) / 2;
+  const circle = (r) => { const pts = []; for (let i = 0; i < 48; i++) { const t = i / 48 * Math.PI * 2; pts.push([cx + r * Math.cos(t), cy + r * Math.sin(t)]); } return pts; };
+  fillRings(cv, [circle(18 * SS)], C.war, 0.25);
+  fillRings(cv, [circle(9 * SS)], C.text);
+  fillRings(cv, [circle(6.5 * SS)], C.war);
+}
+
+/**
+ * (polity-pages) A polity in the year the shape drawn under its name is largest, as a polity page frames it
+ * (scripts/polity-pages.mjs). Today's land is laid first in the ground colour — the record is not the land (the reason
+ * scripts/lib/map-card.mjs gives) — then every outline the map draws that day, then the polity's own outline over them,
+ * and the year in figures (one picture for both languages; the name is the page's og:title).
+ * @param {{ box: number[], polity: number[][][][], context: number[][][][][], label: string }} o
+ *   `box` the frame [w,s,e,n] (the box of the shape at its largest, data/polity-arcs.json `pk`); `polity` its polygons that
+ *   day; `context` the polygons of every outline the map draws that day; `label` the year in figures
+ * @returns {Promise<Buffer>} the PNG
+ */
+export async function drawPolityCard(o) {
+  const cv = canvas(CARD.width * SS, CARD.height * SS, C.sea);
+  const P = mercatorPainter(cv, frameFor(o.box));
+  P.fillPolys((await todayLand()).map((poly) => [poly]), C.ground);   /* each part its own set, so the frame culls it */
+  P.fillPolys(o.context, C.land);
+  P.strokePolys(o.context, C.edge, SS);
+  P.fillPolys([o.polity], C.war, 0.9);
+  P.strokePolys([o.polity], C.text, SS);
+  markIfSmall(cv, P, o.polity);
+  await stamp(cv, o.label);
   return png(downsample(cv, SS));
 }
 

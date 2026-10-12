@@ -63,8 +63,9 @@ export function search(idx, q, limit) {
     .sort((x, y) => x.r - y.r || y.a.pk[1] - x.a.pk[1]).slice(0, limit || 30).map((x) => x.a);
 }
 /** the polities the DATED records draw (Cliopatria, OpenHistoricalMap, CShapes), by their largest drawn extent — the
- *  sheets' cultural areas are searchable but not ranked beside them: a sheet states a period, not a polity's year */
-function largest(idx, limit) { return idx.arcs.filter((a) => a.d && a.d.length).slice(0, limit || 20); }
+ *  sheets' cultural areas are searchable but not ranked beside them: a sheet states a period, not a polity's year.
+ *  (polity-pages) exported: the same rule chooses which polities have a static page (scripts/polity-pages.mjs) */
+export function largest(idx, limit) { return idx.arcs.filter((a) => a.d && a.d.length).slice(0, limit || 20); }
 /** one polity by its Wikidata item, else its name; when several share the item, the one the map draws in `year` */
 function find(idx, want) {
   const w = want || {};
@@ -127,8 +128,10 @@ export function describe(idx, arc) {
   out.peak = { y: pk[0], km: pk[1], recs: pk[2] ? recsOf(idx, pk[2]) : ['sheet'], bb: pk[3] || arc.bb };
   return out;
 }
-/** the drawn area in year `y` (the step the index holds), and the records that drew it — null where it is not drawn */
-function valueAt(idx, arc, y) {
+/** the drawn area in year `y` (the step the index holds), and the records that drew it — null where it is not drawn
+ *  (polity-pages: exported with `related` and `chartSvg` — the static pages, scripts/polity-pages.mjs, read the index
+ *  through the same three, so a page and this sheet cannot state a polity differently) */
+export function valueAt(idx, arc, y) {
   const d = arc.d || [];
   let hit = null;
   for (const p of d) { if (p[0] <= y) hit = p; else break; }
@@ -137,7 +140,7 @@ function valueAt(idx, arc, y) {
   return sh ? { y, km: sh[1], recs: ['sheet'] } : null;
 }
 /** the other names: linked to the same Wikidata item, or written identically by the map in the reader's language */
-function related(idx, arc, lang) {
+export function related(idx, arc, lang) {
   const out = [], seen = new Set([arc]);
   const qs = arc.q || [];
   for (const a of idx.arcs) if (!seen.has(a) && (a.q || []).some((q) => qs.includes(q))) { seen.add(a); out.push({ arc: a, why: 'qid', qid: (a.q || []).find((q) => qs.includes(q)) }); }
@@ -183,7 +186,9 @@ export function spanOf(D) {
   if (D.sheets.length && !D.points.length) { a = D.sheets[0].y; b = D.sheets[D.sheets.length - 1].y; if (b - a < 20) { a -= 10; b += 10; } }
   return [a, Math.max(b, a + 1)];
 }
-function chartSvg(idx, arc, D, lg, nowY) {
+/** the chart, as an SVG string (`nowY` null: no clock line) — styled by the classes below (CSS), and on the static pages
+ *  by css/history-pages.css, which names the same classes */
+export function chartSvg(idx, arc, D, lg, nowY) {
   const t = IntMapLang.pick(() => lg);
   const sp = spanOf(D); if (!sp) return '';
   const [a, b] = sp, top = Math.max(1, D.peak.km) * 1.1;
