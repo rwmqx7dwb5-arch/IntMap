@@ -73,9 +73,10 @@ test.describe('mobile-next: 375 × 812, touch', () => {
     await page.waitForSelector('#ms-results .hn-entry [data-hn-entry="here"]', { state: 'visible', timeout: 20_000 });
     const order = await page.evaluate(() => { const r = document.getElementById('ms-results'); return [...r.children].map((c) => c.className.split(' ')[0]); });
     expect(order[0], 'the phone\'s doors come first, above the example maps').toBe('hn-entry');
-    const rows = await page.evaluate(() => [...document.querySelectorAll('.hn-entry button')].map((b) => { const r = b.getBoundingClientRect(); return { h: r.height, own: document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest('button') === b }; }));
+    /* (wave4-ux-mobile) scoped to the search's list: the sheet's home holds the same row (js/start-home.js), hidden under the list while it is open */
+    const rows = await page.evaluate(() => [...document.querySelectorAll('#ms-results .hn-entry button')].map((b) => { const r = b.getBoundingClientRect(); return { h: r.height, own: document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest('button') === b }; }));
     for (const r of rows) { expect(r.own, 'the row is what a finger lands on').toBe(true); expect(r.h).toBeGreaterThanOrEqual(44); }
-    await page.tap('.hn-entry [data-hn-entry="here"]');
+    await page.tap('#ms-results .hn-entry [data-hn-entry="here"]');
     await page.waitForSelector('#pd-popup', { state: 'visible', timeout: 20_000 });
     await page.waitForFunction(() => document.querySelectorAll('#pd-popup [data-pending]').length === 0 && !!document.querySelector('#pd-popup .hn-sec'), null, { timeout: 60_000 });
     const card = await page.evaluate(() => ({

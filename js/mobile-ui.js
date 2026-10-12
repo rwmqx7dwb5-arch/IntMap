@@ -231,6 +231,8 @@ export function mobileUI(HOST){
         moveTo(mSearch,mSearchSlot); moveTo(mReadout,mReadoutSlot);
       }
       else{ restoreHome(layerDropdown); restoreHome(satController); restoreHome(mSearch); restoreHome(mReadout); closeSheet(); document.body.classList.remove('sheet-full','sheet-min','sheet-hidden');
+        /* (wave4-ux-mobile) the sheet's home is a phone's: the widget board goes back to the column */
+        if(_startMod){ try{ _startMod.unmountStart(); }catch(_){} _startMod=null; _startP=null; }
         /* ⚠ restoreHome(satController) STAYS: a session that was narrow when #R234 shipped may still
            have the element parked in #mo-mount-sat, and widening has to bring it back either way. */
         try{ window.IntMapLayerSidebar&&window.IntMapLayerSidebar.unmountFrom&&window.IntMapLayerSidebar.unmountFrom(moMountLayers); }catch(_){}
@@ -269,13 +271,25 @@ export function mobileUI(HOST){
        follow. ONE formula for the settled detent and the live drag.
        ⚠ (share-embed-distribution) An EMBED draws no sheet (js/ui-device.js embedded() is the one answer), so it
        covers nothing. */
-    function sheetCovers(d,ty){ if(!mq.matches||window.IntMapDevice.embedded()) return 0; return Math.min(Math.max(0,d.H-ty), Math.round(window.innerHeight*0.82)); }
+    const embedded=()=>window.IntMapDevice.embedded();   /* (wave4-ux-mobile) one read for the two questions below: an embed draws no sheet */
+    function sheetCovers(d,ty){ if(!mq.matches||embedded()) return 0; return Math.min(Math.max(0,d.H-ty), Math.round(window.innerHeight*0.82)); }
     const _reduceMotion=()=>{ try{ return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(_){ return false; } };
     const _cssLinear=(()=>{ try{ return CSS.supports('transition-timing-function','linear(0, 1)'); }catch(_){ return false; } })();
+    /* ══ (wave4-ux-mobile) THE SHEET'S HOME IS FETCHED WHEN THE READER REACHES FOR IT ═══════════════════════════════
+       js/start-home.js puts the starts (where you are · live now · the day's map and the examples · the home-screen
+       entry) above the widget board. Nothing of it is on the start-up path: the first grab of the sheet or the first
+       rest above `min` asks for it, and the sheet at `min` is the search row exactly as before. A re-raise refreshes it
+       (the board may have been rebuilt, the panel's rows may have arrived). */
+    let _startMod=null, _startP=null;
+    function wantStart(){ if(!mq.matches||embedded()) return;
+      if(_startMod){ try{ _startMod.refreshStart(); }catch(_){} return; }
+      if(_startP) return;
+      _startP=import('./start-home.js').then(({ mountStart, refreshStart, unmountStart })=>{ if(!mq.matches){ _startP=null; return; } _startMod={ refreshStart, unmountStart }; mountStart(sidebar); }).catch(()=>{ _startP=null; }); }
     function setDetent(name,animate,v0){
       if(animate===undefined) animate=true;
       name=ALIAS[name]||name; if(!(name in RANK)) name='half';
       const d=recompute(); currentDetent=name;
+      if(RANK[name]>RANK.min) wantStart();
       const ty=d.ty(name);
       /* the spring this release rides: the finger's velocity at release is its initial velocity, so a
          hard flick arrives faster than a gentle let-go (the motion UIKit gives a sheet) */
@@ -327,6 +341,7 @@ export function mobileUI(HOST){
       if(_padRAF) return; _padRAF=requestAnimationFrame(()=>{ _padRAF=0; if(_padPending===_lastPad) return; _lastPad=_padPending; _selfCam++; try{ const C=_cam(); if(C) C.setPadding({top:0,left:0,right:0,bottom:_padPending}); }catch(_){} finally{ _selfCam--; } }); }
     function curTy(){ return parseFloat(sidebar.style.getPropertyValue('--sheet-ty'))||0; }
     function dragStart(y){ try{ const C=_cam(); if(C) C.stop(); }catch(_){}   /* (#R140) a re-grab mid-animation hands control straight back to the finger */
+      wantStart();   /* (wave4-ux-mobile) the finger is pulling: the home is drawn before the sheet comes to rest */
       dragD=recompute(); maxTy=dragD.ty('hidden'); dragging=true; startY=y;
       /* the sheet is where it is DRAWN — mid-spring that is not its target, so read the transform, not the variable */
       let t=curTy(); try{ const m=/matrix(?:3d)?\(([^)]+)\)/.exec(getComputedStyle(sidebar).transform||''); if(m){ const v=m[1].split(',').map(Number); const y=v.length===16?v[13]:v[5]; if(isFinite(y)) t=y; } }catch(_){}
