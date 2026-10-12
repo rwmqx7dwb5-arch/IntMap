@@ -115,7 +115,7 @@ test('③ the page: card, map links, the app\'s chart, year and day links, struc
   const idx = M.idx, otdDays = JSON.parse(read(OTD.INDEX_PATH)).days;
   for (const p of M.pages) for (const L of LANGS) {
     const html = page(p.slug, L);
-    assert.ok(html.includes(`<meta property="og:image" content="__INTMAP_SITE_URL__${P.cardPath(p.slug)}">`), p.slug + ' names its own card');
+    assert.ok(html.includes(`<meta property="og:image" content="__INTMAP_SITE_URL__${P.cardFor(M, p)}">`), p.slug + ' names its card');
     assert.ok(html.includes('<meta property="og:image:alt"'), p.slug + ' states the card\'s alt');
     for (const [kind, y] of [['peak', p.D.peak.y], ['first', p.D.first.y], ['last', p.D.last.y]]) {
       const m = new RegExp('href="(?:\\.\\./)*index\\.html(#[^"]+)" data-polity-map="' + kind + '"').exec(html);
@@ -191,20 +191,31 @@ test('④ the card draws the shape the index measured', async () => {
   process.env.INTMAP_DATA_STORE = store;
   try {
     const two = M.pages.filter((q) => q.slug === 'mongol-empire' || q.slug === 'san-marino');
-    const first = await P.drawCards({ ...M, pages: two }, dir);
-    assert.deepEqual(first.files, two.map((q) => P.cardPath(q.slug)));
-    assert.deepEqual([first.drawn, first.cached], [2, 0], 'an empty cache draws every card');
+    /* …and a third page whose card is the SAME picture as the first's (the same polity under another address): a card is
+       written once, at the digest of its bytes, and both pages name that one file */
+    const twin = { ...two[0], slug: two[0].slug + '-twin' };
+    const Mx = { ...M, pages: [...two, twin] };
+    const first = await P.drawCards(Mx, dir);
+    for (const q of Mx.pages) assert.match(first.cardOf[q.slug], new RegExp('^' + P.CARD_DIR + '[0-9a-f]{20}\\.png$'), q.slug + ' names a card by its content');
+    assert.equal(first.cardOf[twin.slug], first.cardOf[two[0].slug], 'the same picture is one file, named by both pages');
+    assert.notEqual(first.cardOf[two[1].slug], first.cardOf[two[0].slug], 'a different picture is another file');
+    assert.deepEqual(first.files.slice().sort(), [...new Set(two.map((q) => first.cardOf[q.slug]))].sort(), 'each file listed once');
+    assert.equal(P.cardFor(Mx, twin), first.cardOf[two[0].slug], 'the page renders the file its card is');
+    assert.ok(P.outputs && (await P.outputs(Mx))[P.polityPath(twin.slug, LANGS[0]) + 'index.html'].includes(first.cardOf[two[0].slug]));
+    assert.equal(first.drawn + first.cached, 3, 'every page has its card');
+    assert.ok(first.drawn >= 2, 'an empty cache draws every distinct card');
     assert.equal(first.pruned, 0, 'a subset of the pages removes nothing from the store');
     assert.ok(first.workers >= 1 && first.workers <= 2, 'never more workers than years');
-    const bytes = two.map((q) => readFileSync(join(dir, P.cardPath(q.slug))));
+    const bytes = two.map((q) => readFileSync(join(dir, first.cardOf[q.slug])));
     const again = await P.drawCards({ ...M, pages: two }, dir);
     assert.deepEqual([again.drawn, again.cached], [0, 2], 'a full cache draws nothing');
-    two.forEach((q, i) => assert.ok(readFileSync(join(dir, P.cardPath(q.slug))).equals(bytes[i]), q.slug + ': the cached card is the drawn card'));
+    assert.deepEqual(again.cardOf, Object.fromEntries(two.map((q) => [q.slug, first.cardOf[q.slug]])), 'the cached cards are the same files');
+    two.forEach((q, i) => assert.ok(readFileSync(join(dir, again.cardOf[q.slug])).equals(bytes[i]), q.slug + ': the cached card is the drawn card'));
     /* the key moves with every input of the pixels: the drawing code, the day, the outline, the frame, the figures */
     const base = ['d', 'day', [[[[0, 0], [1, 0], [0, 1]]]], [0, 0, 1, 1], '1279'];
     const k0 = P.cardKey(...base);
     for (let i = 0; i < base.length; i++) { const v = base.slice(); v[i] = i === 2 ? [[[[0, 0], [2, 0], [0, 1]]]] : i === 3 ? [0, 0, 1, 2] : base[i] + 'x'; assert.notEqual(P.cardKey(...v), k0, 'input ' + i); }
-    const files = [P.cardPath(p.slug)];
+    const files = [first.cardOf[p.slug]];
     const png = decodePng(readFileSync(join(dir, files[0])));
     assert.equal(png.w, 1200); assert.equal(png.h, 630);
     /* the card's frame (scripts/lib/map-card.mjs frameFor) and Mongolia (105° E, 47° N), inside the empire in 1279 */
@@ -246,7 +257,7 @@ test('⑥ the post drafts', () => {
   for (const d of drafts) {
     assert.equal(campaignOf(new URL(d.link).search).length, 3, d.channel + ' tags pass the counter');
     assert.ok(d.link.startsWith(site + P.polityPath(p.slug, LANGS.find((l) => l.key === d.lang))), d.link);
-    assert.equal(d.image, site + P.cardPath(p.slug));
+    assert.equal(d.image, site + P.cardFor(M, p));
     assert.ok(d.text.includes(d.link));
     if (d.channel === 'x') assert.ok(d.fits, 'fits X: ' + d.text);
   }

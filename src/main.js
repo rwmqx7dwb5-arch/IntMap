@@ -254,7 +254,7 @@ import '../js/ocean-currents-field.js';
 import '../js/outbreaks.js';   /* (#R216) 世界の海流 — same World-data toolkit; AFTER world-packs for the same reason industry-web is. (#R650) …and the WHO Disease Outbreak News layer. */
 import '../js/sims.js';
 import '../js/tables.js';
-import '../js/legal.js';        /* …which imports js/legal-text.js — the words privacy.html / terms.html also read */
+import '../js/legal.js';        /* the modal; its words (js/legal-text.js, which privacy.html / terms.html also read) arrive on demand — IntMapLazy 'legalText' */
 /* (#R231) the phone's base-map square + its popover — the five view controls, lifted out of the Map &
    layers sheet ("レイヤー選択欄から分離"). After js/mobile-ui.js because initMobileUI() installs it. */
 import '../js/basemap-switch.js';

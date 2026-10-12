@@ -134,7 +134,7 @@ export const STATIC_ASSETS = [
      can only be reached by opening the app and clicking a footer link cannot be linked to, cited
      or read by someone deciding whether to sign in at all. Same shape as the two pages above:
      shells served verbatim, so everything they <script src> has to be copied too. js/legal-text.js
-     is served RAW here AND bundled into the app (src/main.js imports it) for the same reason
+     is served RAW here AND bundled into the app (as an on-demand chunk the Terms / Privacy modal loads — js/lazy-modules.js legalText) for the same reason
      js/reference-data.js is: it is the ONE copy of the text, and copying it is how the page avoids
      becoming a second one that goes stale. */
   'privacy.html',

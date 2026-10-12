@@ -113,6 +113,9 @@ export const LAZY_REGISTRY = Object.freeze({
   warLayer: { publishes: '__imWarFronts', load: () => import('./war-layer.js'), mount: (IM_HOST, m) => { m.warLayer(IM_HOST); } },
   waves: { publishes: 'IntMapWaves', load: () => import('./waves.js'), mount: (IM_HOST, m) => { window.IntMapWaves=m.waves(IM_HOST); } },
   navigation: { publishes: 'IntMapNavigation', load: () => import('./navigation.js'), self: true },
+  /* (wave4-train) the Terms and the Privacy Policy, read only when the reader opens them (js/legal.js) — 59 kB of policy prose was
+     in the start-up bundle for a modal most visits never open. privacy.html / terms.html still load the same file raw. */
+  legalText: { publishes: 'IntMapLegalText', load: () => import('./legal-text.js'), self: true },
   routingTraffic: { publishes: 'IntMapRouteTraffic', load: () => import('./routing-traffic.js'), self: true },
   newsEvents: { publishes: 'IntMapNewsEvents', load: () => import('./news-events.js'), mount: (IM_HOST, m) => { window.IntMapNewsEvents=m.newsEvents(IM_HOST); } },
   photoGeo: { publishes: 'IntMapPhotoGeo', load: () => import('./photo-geo.js'), mount: (IM_HOST, m) => { window.IntMapPhotoGeo=m.photoGeo(IM_HOST); } },

@@ -224,6 +224,8 @@ const MEMBER = {
      member is the door js/map-ui.js and Atlas both call; routingTraffic's is the one js/routing.js
      calls on the first route request. */
   navigation: ['IntMapNavigation', 'start'],
+  /* (wave4-train) the policy text, fetched when the Terms / Privacy modal opens (js/legal.js) */
+  legalText: ['IntMapLegalText', 'html'],
   routingTraffic: ['IntMapRouteTraffic', 'route'],
   /* ⚠⚠ (#R400) EIGHT MORE, FROM FIVE DIFFERENT ROUNDS, AND THAT IS THE THIRD TIME.
      Read the #R341 note above: #R322 added five keys to the loader and not to this table, so the

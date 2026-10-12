@@ -176,10 +176,12 @@ test('R167 #4 the legal texts render, and LIVE getters follow a runtime switch t
   // js/legal.js reads HOST.lang on EVERY call; a captured copy of currentLang would freeze the
   // Terms/Privacy texts in English for the rest of the session.
   // ids read out of js/legal.js, not guessed: #legal-tab-privacy paints #legal-body.
-  const paint = () => page.evaluate(() => {
-    document.getElementById('legal-tab-privacy')?.click();
-    return (document.getElementById('legal-body')?.textContent || '').trim().slice(0, 400);
-  });
+  /* (wave4-train) the words arrive on demand the first time (js/lazy-modules.js `legalText`), so the paint is awaited */
+  const paint = async () => {
+    await page.evaluate(() => document.getElementById('legal-tab-privacy')?.click());
+    await page.waitForFunction(() => (document.getElementById('legal-body')?.textContent || '').trim().length > 0, null, { timeout: 15000 });
+    return page.evaluate(() => (document.getElementById('legal-body')?.textContent || '').trim().slice(0, 400));
+  };
   const en = await paint();
   expect(en, 'the Privacy tab painted its English text').toMatch(/Privacy Policy/i);
 

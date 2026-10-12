@@ -33,7 +33,7 @@
  *    node scripts/polity-pages.mjs --list           print every polity's page path; write nothing
  *    node scripts/polity-pages.mjs --queue [--only mongol-empire,ottoman-empire]   print the post drafts; send nothing
  * ==========================================================================*/
-import { readFileSync, writeFileSync, mkdirSync, existsSync, copyFileSync, renameSync, rmSync, utimesSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, renameSync, rmSync, utimesSync, readdirSync, statSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { Worker, isMainThread, workerData, parentPort, threadId } from 'node:worker_threads';
 import { join, dirname, resolve } from 'node:path';
@@ -60,6 +60,19 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const polityPath = (slug, L) => L.dir + POLITY_HUB + slug + '/';
 export const hubPath = (L) => L.dir + POLITY_HUB;
 export const cardPath = (slug) => POLITY_HUB + slug + '/' + CARD_FILE;
+/* ⚠ (wave4-train) A CARD IS NAMED BY ITS CONTENT, NOT BY ITS PAGE. Measured 2026-10-13: two pairs of polities (a polity and another
+   name the records give the same land, drawn with the same outline on the same day of the same largest year) drew byte-identical
+   cards, and dist/ carried each picture twice (scripts/asset-report.mjs «one dataset, one file»). So every card is written once,
+   at the digest of its bytes, and each page names the file its card IS — two pages whose cards are the same picture name one file.
+   The name follows from the picture alone, so a subset of the pages (--only, the checks) names the same file the full build does. */
+/* written out rather than composed: the directory is the name scripts/asset-report.mjs finds the hash-named files by (a computed name's
+   directory prefix), and it must stay under the polity hub */
+export const CARD_DIR = 'history/polities/card/';
+if (!CARD_DIR.startsWith(POLITY_HUB)) throw new Error('polity-pages: the card directory is not under ' + POLITY_HUB);
+export const cardFileOf = (png) => CARD_DIR + createHash('sha256').update(png).digest('hex').slice(0, 20) + '.png';
+/** the card a page names: the drawn card's file once drawCards has run (M.cardOf), the page's own address before it has
+ *  (outputs(M) without drawing is a preview — writeTo and --queue always draw first) */
+export const cardFor = (M, p) => (M.cardOf && M.cardOf[p.slug]) || cardPath(p.slug);
 
 /* ══ THE MODEL ═════════════════════════════════════════════════════════════════════════════════════ */
 
@@ -163,7 +176,7 @@ function renderPolity(M, p, L) {
     { name: T.crumb, path: hubPath(L) },
     { name: W.name, path: polityPath(p.slug, L) },
   ];
-  const card = SITE_TOKEN + cardPath(p.slug);
+  const card = SITE_TOKEN + cardFor(M, p);
   const sameAs = (arc.q || []).map((q) => 'https://www.wikidata.org/wiki/' + q);
   const ld = [
     { '@context': 'https://schema.org', '@type': 'WebPage', name: title, description, url: SITE_TOKEN + polityPath(p.slug, L), inLanguage: L.tag,
@@ -189,7 +202,7 @@ function renderPolity(M, p, L) {
         <a class="lp-btn lp-btn-2" href="${up}${hubPath(L)}">${esc(T.ctaHub)}</a>
       </div>
     </div>
-    <figure class="otd-card"><img src="${up}${cardPath(p.slug)}" width="${CARD.width}" height="${CARD.height}" alt="${esc(fill(T.cardAlt, W))}" decoding="async">
+    <figure class="otd-card"><img src="${up}${cardFor(M, p)}" width="${CARD.width}" height="${CARD.height}" alt="${esc(fill(T.cardAlt, W))}" decoding="async">
       <figcaption class="lp-note">${esc(fill(T.cardCaption, W))}</figcaption></figure>
   </section>
 
@@ -239,7 +252,7 @@ ${T.method.map((m) => `    <p class="lp-note">${esc(fill(m, { ohmFrom: String(M.
     <p class="hp-chips"><a href="${up}${hubPath(L)}">${esc(T.nav.hub)}</a> <a href="${up}${L.dir}${YEAR_HUB}">${esc(T.nav.years)}</a> <a href="${up}${L.dir}${HISTORY_HUB}">${esc(T.nav.history)}</a> <a href="${up}${L.dir}${OTD_HUB}">${esc(T.nav.onThisDay)}</a></p>
     <p><a class="lp-open" href="${up}sources.html">${esc(T.sourcesLink)} →</a></p>
   </section>`;
-  const image = { path: cardPath(p.slug), width: CARD.width, height: CARD.height, alt: fill(T.cardAlt, W) };
+  const image = { path: cardFor(M, p), width: CARD.width, height: CARD.height, alt: fill(T.cardAlt, W) };
   return shell({ ...M, image }, L, { path: polityPath(p.slug, L), pathFor: (l) => polityPath(p.slug, l), title, description, crumbs, ld, body });
 }
 
@@ -346,7 +359,7 @@ export function pruneUnused(dir, startedAt) {
   return n;
 }
 /** the jobs of one year — what a worker needs to draw that year's cards (the page model stays on the build's thread) */
-const jobsOf = (M, y) => M.pages.filter((p) => p.D.peak.y === y).map((p) => ({ name: p.arc.n, file: cardPath(p.slug), box: p.D.peak.bb || p.arc.bb, label: yearWords(y, 'en') }));
+const jobsOf = (M, y) => M.pages.filter((p) => p.D.peak.y === y).map((p) => ({ slug: p.slug, name: p.arc.n, box: p.D.peak.bb || p.arc.bb, label: yearWords(y, 'en') }));
 /** the cache key of a card: the digest of everything its pixels depend on */
 function digest(parts) {
   const h = createHash('sha256');
@@ -361,22 +374,25 @@ async function drawYear(R, y, jobs, dir, cache, drawer) {
   const r = await R.labelsAt(july1(y));
   if (!r || r.modern || !r.fc) throw new Error('polity-pages: the map answered nothing for ' + isoDay(y));
   const day = digest(r.fc.features.map((f) => partsOf(f.geometry)));
-  const n = { drawn: 0, cached: 0 };
+  const n = { drawn: 0, cached: 0, cardOf: {} };
+  const put = (j, png) => {
+    const rel = cardFileOf(png), path = join(dir, rel);
+    if (!existsSync(path)) { mkdirSync(dirname(path), { recursive: true }); writeFileSync(path, png); }   /* the same picture is one file */
+    n.cardOf[j.slug] = rel;
+  };
   for (const j of jobs) {
     const { polity, context } = shapesAt(r, j.name);
     if (!polity.length) throw new Error('polity-pages: the map draws no «' + j.name + '» on ' + isoDay(y) + ', the year the index says it is largest');
-    const path = join(dir, j.file);
-    mkdirSync(dirname(path), { recursive: true });
     const key = cardKey(drawer, day, polity, j.box, j.label);
     const kept = cache ? join(cache, key.slice(0, 2), key + '.png') : null;
     if (kept && existsSync(kept)) {
-      copyFileSync(kept, path); n.cached++;
+      put(j, readFileSync(kept)); n.cached++;
       /* a hit marks the card as used (pruneUnused keeps what a build touched) */
       try { const now = new Date(); utimesSync(kept, now, now); } catch (_) { /* read-only store: still a hit */ }
       continue;
     }
     const png = await drawPolityCard({ box: j.box, polity, context, label: j.label });
-    writeFileSync(path, png);
+    put(j, png);
     n.drawn++;
     if (kept) {
       try {
@@ -405,17 +421,21 @@ export async function drawCards(M, dir) {
   const k = Math.max(1, Math.min(years.length, cpus - 1, Math.floor(os.freemem() / READER_BYTES)));
   /* the years with the most cards first, so the queue ends on short jobs */
   const queue = [...years].sort((a, b) => jobsOf(M, b).length - jobsOf(M, a).length || a - b);
-  const total = { drawn: 0, cached: 0 };
+  if (M.pages.some((p) => polityPath(p.slug, LANGS[0]) === LANGS[0].dir + CARD_DIR)) throw new Error('polity-pages: a polity\'s address is the card directory «' + CARD_DIR + '»');
+  const total = { drawn: 0, cached: 0 }, cardOf = {};
   await Promise.all(Array.from({ length: k }, () => new Promise((ok, fail) => {
     const w = new Worker(new URL(import.meta.url), { workerData: { polityCards: true, dir, cache, drawer } });
     const next = () => { const y = queue.shift(); w.postMessage(y == null ? null : { y, jobs: jobsOf(M, y) }); };
-    w.on('message', (m) => { if (!m.ready) { total.drawn += m.drawn; total.cached += m.cached; } next(); });
+    w.on('message', (m) => { if (!m.ready) { total.drawn += m.drawn; total.cached += m.cached; Object.assign(cardOf, m.cardOf); } next(); });
     w.on('error', fail);
     w.on('exit', (code) => (code ? fail(new Error('polity-pages: a card worker exited with ' + code)) : ok()));
   })));
   /* only a build that asked for every page knows which cards are unused (a subset — the checks, --only — removes nothing) */
   const pruned = cache && M.all && M.pages.length === M.all.length ? pruneUnused(cache, startedAt) : 0;
-  return { files: M.pages.map((p) => cardPath(p.slug)), ...total, workers: k, cache, pruned };
+  const missing = M.pages.filter((p) => !cardOf[p.slug]);
+  if (missing.length) throw new Error('polity-pages: no card came back for ' + missing.map((p) => p.slug).join(', '));
+  M.cardOf = cardOf;
+  return { files: [...new Set(M.pages.map((p) => cardOf[p.slug]))], cardOf, ...total, workers: k, cache, pruned };
 }
 /* a worker thread started by drawCards: its own map, then one year at a time until the queue sends null.
    Not a top-level await: scripts/history-pages.mjs imports this module back (the note at the foot of this file). */
@@ -432,9 +452,9 @@ if (!isMainThread && workerData && workerData.polityCards) (async () => {
 
 export async function writeTo(dir, opt) {
   const M = await model(opt);
+  const cards = await drawCards(M, dir);   /* first: a page names the file its card is (cardFor) */
   const out = await outputs(M);
   for (const [rel, body] of Object.entries(out)) { const p = join(dir, rel); mkdirSync(dirname(p), { recursive: true }); writeFileSync(p, body); }
-  const cards = await drawCards(M, dir);
   return { model: M, files: Object.keys(out).concat(cards.files), cards };
 }
 
@@ -451,7 +471,7 @@ export function draftsFor(M, p, site) {
     for (const ch of CHANNELS) {
       const link = site + polityPath(p.slug, L) + '?utm_source=' + ch + '&utm_medium=social&utm_campaign=' + POST_CAMPAIGN;
       const text = fill(T.post.x, { ...wordsOf(p, L), link });
-      out.push({ slug: p.slug, lang: L.key, channel: ch, text, link, image: site + cardPath(p.slug), fits: ch !== 'x' || xWeight(text) <= X_MAX });
+      out.push({ slug: p.slug, lang: L.key, channel: ch, text, link, image: site + cardFor(M, p), fits: ch !== 'x' || xWeight(text) <= X_MAX });
     }
   }
   return out;
@@ -479,6 +499,9 @@ if (isMain) (async () => {
     console.log('polity-pages: wrote ' + files.length + ' files (' + M.pages.length + ' polities × ' + LANGS.length + ' languages, and their cards: ' + C.drawn + ' drawn, ' + C.cached + ' from the cache' + (C.cache ? ', ' + C.pruned + ' unused removed' : ' (no cache)') + ', ' + C.workers + ' worker threads) into ' + arg('--out') + ' in ' + (Date.now() - t0) + ' ms');
   } else if (process.argv.includes('--queue')) {
     const M = await model(arg('--only') ? { only: arg('--only').split(',') } : {});
+    const { mkdtempSync } = await import('node:fs'), { tmpdir } = await import('node:os');
+    const scratch = mkdtempSync(join(tmpdir(), 'polity-queue-cards-'));
+    try { await drawCards(M, scratch); } finally { rmSync(scratch, { recursive: true, force: true }); }
     for (const ch of CHANNELS) if (campaignOf('?utm_source=' + ch + '&utm_medium=social&utm_campaign=' + POST_CAMPAIGN).length !== 3) throw new Error('polity-pages: the tags for ' + ch + ' do not pass the counter\'s rule');
     process.stdout.write(queueMarkdown(M, siteUrl('')) + '\n');
   } else if (process.argv.includes('--list')) {

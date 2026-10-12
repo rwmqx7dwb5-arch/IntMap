@@ -83,7 +83,7 @@ og-image.jpg                    リンクのカードの絵（本物の JPEG。�
                                 年ごとの世界地図（年ごとのページと絵 world-map.svg・世紀ごとの一覧）とその sitemap。
                                 ビルドが scripts/year-pages.mjs で書く（§8.6.4）
 （dist だけ）history/polities/ ja/history/polities/ sitemap-polities.xml
-                                政体の盛衰の入口ページ（政体ごとのページとカード card.png・世紀ごとの一覧）とその sitemap。
+                                政体の盛衰の入口ページ（政体ごとのページ・カード card/<中身のハッシュ>.png・世紀ごとの一覧）とその sitemap。
                                 ビルドが scripts/polity-pages.mjs で書く（§8.6.4）
 （dist だけ）weekly/ ja/weekly/ sitemap-weekly.xml
                                 今週の地球（ISO 週ごとのページ・一覧・Atom フィード feed.xml）とその sitemap。
@@ -1510,7 +1510,7 @@ table-bind.js                     **表の場所の列**（純関数）——各
                                   名前を持つ全ロケールと Natural Earth の名前の列から発見）／都市名（GeoNames）のどれかを値で判定し、行ごとに
                                   場所の鍵（ISO alpha-3、無ければ ADM0_A3／GeoNames id）を返す。同名は曖昧として解決しない（同じ行の国の列で絞る）
 legal-text.js                     利用規約とプライバシーポリシーの**本文**（唯一の写し。JA/EN）
-legal.js                          その本文をアプリ内モーダルに表示する
+legal.js                          その本文をアプリ内モーダルに表示する（本文は開いたときに遅延モジュール legalText で読む）
 dialog.js                         ダイアログの唯一の契約 window.IntMapDialog —— 登録簿（open/adopt・anyOpen）、Esc・Tab トラップ・
                                   閉じたときのフォーカス復帰、「押せる」の契約（role+tabindex を Enter/Space で押す委譲・makeActionable）、
                                   検索欄の listbox（矢印キー）。数える側は scripts/keyboard-reach.mjs
