@@ -130,7 +130,7 @@ export const KERNELS = {
      entitled to know that. */
   /* (voronoi) HASH ONLY: a new op (`voronoi`) that no saved recipe names, and a call-time read of the
      kernel it needs. Every op that existed replays to the same numbers and the same refusals. */
-  'js/gis-ops.js': { version: 'ops-9', sha256: 'baa41e83384b567c365491e2b47a13365ee80a4a399f1eb2adec77265e045d63' },
+  'js/gis-ops.js': { version: 'ops-9', sha256: '11b10ed29dd9a613e2005a44f1e2b1f2a13743d314fa4d57e841b0483e9d6b22' },
   /* `geom-1` likewise: validate() and repair() are new doors, and the boolean engine behind union,
      intersection and difference was measured unchanged over 800,000 pairs. */
     /* (#R783) geom-1 -> geom-2: MultiPolygon validity grew its THIRD stage (parts-overlap /

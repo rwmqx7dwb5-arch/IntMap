@@ -280,3 +280,54 @@ test('⑦ 同じ入力は同じバイトに・カーネルは版を述べて組�
   assert.match(text, /voronoi\(2: Point sites, Polygon window\)/, 'the planner is not told about the op');
   assert.match(text, /farthestBoundKm/);
 });
+
+/* ══ ⑧ — ground that was not computed withdraws the proof ═══════════════════════════════════════ */
+
+test('⑧ 区域が欠けたら上界を主張しない——結合に失敗した行・作れなかった圏でも、いちばん遠い場所は先に畳み、farthestBoundKm は null・記録は partial', async () => {
+  const B = await boot();
+  const r = rng(21);
+  /* a window across the 0° meridian and the equator, so most regions are rejoined from octant pieces */
+  const sites = []; for (let i = 0; i < 80; i++) sites.push(pt(-10 + r() * 20, -10 + r() * 20));
+  const win = [box(-8, -8, 8, 8)];
+  const whole = await voronoi(B, sites, win);
+  assert.ok(whole.stats.farthestBoundKm != null && whole.stats.farthestBoundWhy == null);
+  const winner = whole.stats.farthestRow;
+
+  /* ⑴ every rejoin fails: rows are lost, but the farthest place they measured is still the answer */
+  const real = B.w.IntMapGisGeometry;
+  B.w.IntMapGisGeometry = Object.assign({}, real, { attempt: Object.assign({}, real.attempt, { union: () => ({ ok: false, why: 'clipper-failed' }) }) });
+  try {
+    const s = B.data.add({ title: 's', features: sites }); const w = B.data.add({ title: 'w', features: win });
+    const res = await B.ops.run({ op: 'voronoi', inputs: [s.id, w.id] });
+    assert.equal(res.ok, true, res.why);
+    assert.ok(res.stats.geometryFailed > 0, 'no rejoin failed — the case is not exercised');
+    assert.ok(res.dataset.count < whole.dataset.count);
+    assert.equal(res.stats.farthestKm, whole.stats.farthestKm, 'a lost row took its farthest point with it');
+    assert.equal(res.stats.farthestRow, winner);
+    assert.equal(res.stats.farthestBoundKm, null, 'a bound was claimed over ground that was not computed');
+    assert.equal(res.stats.farthestBoundWhy, 'regions-not-computed');
+    assert.equal(res.dataset.provenance.coverage.completeness, 'partial');
+  } finally { B.w.IntMapGisGeometry = real; }
+
+  /* ⑵ the kernel could not build the cell that holds the farthest place */
+  const V = B.w.IntMapGisVoronoi;
+  B.w.IntMapGisVoronoi = Object.assign({}, V, {
+    cells: async (positions, o) => {
+      const built = await V.cells(positions, o);
+      const at = positions.findIndex((p) => p[0] === sites[winner].geometry.coordinates[0] && p[1] === sites[winner].geometry.coordinates[1]);
+      built.cells[at] = { ok: false, why: 'cell-empty' };
+      return built;
+    },
+  });
+  try {
+    const s = B.data.add({ title: 's2', features: sites }); const w = B.data.add({ title: 'w2', features: win });
+    const res = await B.ops.run({ op: 'voronoi', inputs: [s.id, w.id] });
+    assert.equal(res.ok, true, res.why);
+    /* the farthest place usually sits where several regions meet, so a neighbour may still reach it —
+       what may not survive is the claim that nothing is farther */
+    assert.ok(res.stats.geometryFailed > 0 && res.stats.farthestKm <= whole.stats.farthestKm);
+    assert.ok(!res.dataset.features().some((f) => f.properties._siteRow === winner), 'the region the kernel could not build still has a row');
+    assert.equal(res.stats.farthestBoundKm, null, 'a smaller farthest place was «proved» with its region missing');
+    assert.equal(res.dataset.provenance.coverage.completeness, 'partial');
+  } finally { B.w.IntMapGisVoronoi = V; }
+});

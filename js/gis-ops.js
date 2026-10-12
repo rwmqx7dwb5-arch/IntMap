@@ -1999,7 +1999,8 @@ export function makeGisOps() {
       const keyOf = (p) => {
         const lat = p[1];
         /* every longitude names the same point at a pole */
-        const lng = (Math.abs(lat) >= 90) ? 0 : ((((p[0] + 180) % 360) + 360) % 360) - 180;
+        /* a longitude already in range is kept to the bit — the modular form moves -3.1 to -3.0999999999999943 */
+        const lng = (Math.abs(lat) >= 90) ? 0 : (p[0] >= -180 && p[0] < 180) ? p[0] : ((((p[0] + 180) % 360) + 360) % 360) - 180;
         return { key: lng + ',' + lat, pos: [lng, lat] };
       };
       const at = new Map(), positions = [], owner = [];
@@ -2055,6 +2056,7 @@ export function makeGisOps() {
         for (const pt of parts) for (const poly of polygonsOf(pt.geometry)) for (const ring of poly) rings.push(ring);
         const far = VK.farthest(site, rings, Rk, (p) => parts.some((pt) => GG.pointInGeometry(p, pt.geometry)),
           (cell.neighbours || []).map((j) => positions[j]), cell.edgeTolKm);
+        if (!far) led.ok({ ok: false, why: 'geometry-failed', detail: { position: site, stage: 'farthest' } });
         const r = owner[u];
         if (!perRow.has(r)) perRow.set(r, { parts: [], polar: false, far: null });
         const acc = perRow.get(r);
@@ -2063,8 +2065,22 @@ export function makeGisOps() {
         if (far && (!acc.far || far.km > acc.far.km)) acc.far = far;
       }
 
-      const out = [];
+      /* ⚠ THE FARTHEST PLACE IS FOLDED BEFORE ANY ROW IS ASSEMBLED, and the proof is withdrawn when
+         ground is missing. A row whose pieces could not be rejoined still MEASURED its region, and
+         dropping it here dropped its farthest point with it — so a window whose farthest place lay in
+         that region answered with a smaller `farthestKm` and a bound «proving» nothing was farther.
+         Every way the window's ground can go uncomputed (a cell the kernel could not build, a cut to
+         the window that failed, a region not measured, a rejoin that failed) is counted in `led`,
+         and any of them leaves `farthestBoundKm` null: the farthest place FOUND is still reported,
+         but nobody can say what lies in the ground that was not computed. The same count makes the
+         record's coverage `partial` (inheritCoverage reads `geometryFailed`). */
       let best = null, bestRow = null, boundKm = 0;
+      for (const r of Array.from(perRow.keys()).sort((a, b) => a - b)) {
+        const far = perRow.get(r).far;
+        if (far && (!best || far.km > best.km)) { best = far; bestRow = r; }
+        if (far && far.boundKm > boundKm) boundKm = far.boundKm;
+      }
+      const out = [];
       for (const r of Array.from(perRow.keys()).sort((a, b) => a - b)) {
         const acc = perRow.get(r);
         /* Rejoined within each half of the longitudes first (the octant seams at ±90° and the
@@ -2092,7 +2108,7 @@ export function makeGisOps() {
           if (!led.ok(m)) continue;
           geom = m.geometry;
         }
-        if (!geom) continue;
+        if (!geom) { led.ok({ ok: false, why: 'geometry-failed', detail: { row: r, stage: 'rejoin' } }); continue; }
         const far = acc.far;
         out.push({
           type: 'Feature',
@@ -2104,9 +2120,8 @@ export function makeGisOps() {
           }),
           geometry: geom,
         });
-        if (far && (!best || far.km > best.km)) { best = far; bestRow = r; }
-        if (far && far.boundKm > boundKm) boundKm = far.boundKm;
       }
+      const groundMissing = led.failed() > 0;
       return withGeoStats({ ok: true, features: out }, led, {
         surface: 'sphere',
         sites: positions.length,
@@ -2119,7 +2134,8 @@ export function makeGisOps() {
         farthestLng: best ? best.at[0] : null,
         farthestLat: best ? best.at[1] : null,
         farthestRow: bestRow,
-        farthestBoundKm: best ? boundKm : null,
+        farthestBoundKm: (best && !groundMissing) ? boundKm : null,
+        farthestBoundWhy: groundMissing ? 'regions-not-computed' : null,
         sphereRelError: VK.sphereRelError(),
         borderToleranceKm: borderTol,
       });
