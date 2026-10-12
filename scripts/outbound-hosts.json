@@ -730,11 +730,11 @@
     },
     {
       "host": "earthquake.usgs.gov",
-      "what": "USGS earthquake feeds, ShakeMap and the catalogue query behind a place's earthquake record",
-      "whatJp": "USGS の地震フィード・ShakeMap・場所の地震の記録のカタログ検索",
+      "what": "USGS earthquake feeds, ShakeMap and the catalogue queries behind a place's earthquake record and an aftershock forecast",
+      "whatJp": "USGS の地震フィード・ShakeMap・場所の地震の記録と余震の見通しのカタログ検索",
       "sends": {
         "code": "coordinates",
-        "detail": "the request itself for the feeds; for a place's earthquake record, the place rounded to whole degrees and a radius"
+        "detail": "the request itself for the feeds; for a place's earthquake record, the place rounded to whole degrees and a radius; for an aftershock forecast, the earthquake's own catalogue position and its aftershock zone's radius, or a named place rounded to whole degrees"
       },
       "disclosure": {
         "en": "USGS (earthquake feeds — and when you open the earthquake record of a place, that place rounded to whole degrees and the radius you chose",

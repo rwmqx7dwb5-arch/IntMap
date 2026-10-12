@@ -1206,6 +1206,14 @@ quake-history.js                  **この場所の地震の記録**のカード
 quake-history-core.js             その事実の全部（純粋なモジュール）——FDSN の要求（地点は整数度に丸め、半径をその分広げる）・
                                   件数を先に訊いて下限を上げる規則（一度に 3,000 件）・端末での正確な円・最大・順位・年代・
                                   時刻 T までの記録・`?qh=`。node が実際の ComCat の答えで同じ関数を評価する
+aftershock.js                     **余震の見通し**のカードと地図——M5 以上の地震について、今後 1 日〜1 年に各規模の余震が起きる確率と
+                                  回数の 95% の範囲、根拠（区分・一般パラメータ・事後分布）、累積余震と予想の図、USGS 自身の予測（あれば）、
+                                  実績。マスタークロックが見通しの時点で、終わった期間は答え合わせ。扉は js/wb-layers.js
+                                  （地震のポップアップ・命令 `aftershock.open`・`?as=`）。遅延取得（IntMapLazy の aftershock）
+                                  window.IntMapAftershock
+aftershock-core.js                そのモデルの全部（純粋なモジュール）——Reasenberg & Jones (1989) に USGS の一般パラメータ
+                                  （Page et al. 2016・García et al. 2012 の区分）を事前分布とするベイズ更新、時間変化する検知限界、
+                                  余震域、ポアソン混合の確率と範囲、答え合わせ、USGS の oaf 製品の読み。node が実際の ComCat の答えで評価する
 seismic.js                        地震波シミュレータ（477 KB）
 seismic-events.js                 過去の地震——公表された震源パラメータ
 seismic-site.js                   場址項は周波数の関数である window.IntMapSiteAmp

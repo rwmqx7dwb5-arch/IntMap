@@ -118,6 +118,7 @@ export const LAZY_REGISTRY = Object.freeze({
   myMap: { publishes: 'IntMapMyMap', load: () => import('./my-map.js'), mount: (IM_HOST, m) => { window.IntMapMyMap=m.myMap(IM_HOST); } },
   shakeMap: { publishes: 'IntMapShakeMap', load: () => import('./shakemap.js'), mount: (IM_HOST, m) => { window.IntMapShakeMap=m.shakeMap(IM_HOST); } },
   quakeHistory: { publishes: 'IntMapQuakeHistory', load: () => import('./quake-history.js'), mount: (IM_HOST, m) => { m.quakeHistory(IM_HOST); } },
+  aftershock: { publishes: 'IntMapAftershock', load: () => import('./aftershock.js'), mount: (IM_HOST, m) => { m.aftershock(IM_HOST); } },   /* (wave4-science) the aftershock forecast — doors in js/wb-layers.js */
   radiationLayer: { publishes: 'IntMapRadiationObs', load: () => import('./radiation-layer.js'), mount: (IM_HOST, m) => { window.IntMapRadiationObs=m.radiationLayer(IM_HOST); } },
   newsIntel: { publishes: '__imNewsIntel', load: () => import('./news-intel.js'), mount: (IM_HOST, m) => { m.newsIntel(IM_HOST); }, also: ['newsEvents'] },
   newsStory: { publishes: '__imNewsStory', load: () => import('./news-story.js'), mount: (IM_HOST, m) => { m.newsStory(IM_HOST); }, also: ['newsEvents'] },
