@@ -85,6 +85,16 @@ newsjp: 設定 ▸ プライバシーに「この端末に保存されている�
 - 実ブラウザ: `tests/security-next.spec.js` の同じ boot の後半に足した（単独の spec は 2 回目の boot の分だけ高かった）。
   ローカル実測（負荷の高い同じ機械で各 2 回）で本体 5.4–5.6 s → 8.9–9.3 s。`tests/durations.json` の記録を同じ比で 19 → 31 にした。
 
+### レビューで直したもの——共有アドレスで他のプロジェクトのものを消さない
+
+- ログインのセッションの行が `sb-*-auth-token*` で、同じアカウントの他の Pages サイトが同じアドレスで使う Supabase のセッションまで
+  「この端末から消去」の対象になっていた。名前は supabase-js 自身の式（`form`、`node_modules` にあることを門が確かめる）を
+  `src/vendor.js` の `SUPABASE_URL` で評価して得る（ref を手で書かない）。
+- 規則にした: ワイルドカードは固定部分が IntMap のものと証明できるとき（製品名 `manifest.webmanifest` `name` を含む、または
+  基盤から導いた名前で始まる）だけ一括消去の対象。証明できない `imc_*`（`js/dash-extended.js` の予備の保存）は `"bulk": false` と述べ、
+  無ければ `check:datagov`（stored-disclosed）が拒む。一覧は 1 件ずつの削除だけを出し、理由を行に書く。
+- 回帰: `tests/wave4-security-checks.test.mjs` ⑦（他のプロジェクトのセッションと `imc_` を一括消去が取らない。フィルタを外すと赤）・⑩。
+
 ## 3. 共有面
 
 - `check:surface`: `window.IntMapDialog` の読みが 1 本増える（48 → 49）。`js/dialog.js` は export を持たず（「このページの通信」と同じ）、

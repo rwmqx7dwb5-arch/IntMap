@@ -344,7 +344,13 @@ builder を走らせた日のまま（spacecraft・small-bodies 08-10、osm-dipl
 - 語は `scripts/device-storage-words.json`（名前ごとの種類 `credential`／`content`／`history`／`preference`／`cache` と en/jp の語）。
   名前は意味を述べないので語は導出できない——これはサーバ側の `account_data_catalog` と同じ目録である。
 - ライブラリが自分の名前で書くもの（ログインのセッション `sb-<ref>-auth-token`）は `libraries` に、名前を作る**ソースの行**とともに述べ、
-  門が `node_modules` のその行を読む。ライブラリが名前を変えれば、読者の端末ではなくここで赤くなる。
+  門が `node_modules` のその行を読む。ライブラリが名前を変えれば、読者の端末ではなくここで赤くなる。名前はその式（`form`）を
+  ページが基盤を設定する URL（`src/vendor.js` の `SUPABASE_URL`）で**評価**して得る——`sb-*-auth-token*` のような全プロジェクトに
+  当たるパターンにはしない。
+- ⚠ **アドレスは同じアカウントの全 Pages サイトと共有。** ワイルドカードの行は、固定部分が IntMap のものだと**証明できる**とき
+  （製品名 `manifest.webmanifest` の `name` を含む、または IntMap の基盤から導いた名前で始まる。`provesOwnership`）だけ
+  「この端末から消去」の対象になる。証明できないもの（`imc_*`）は語ファイルで `"bulk": false` と述べなければ門が拒み、
+  一覧は 1 件ずつの削除だけを出す。
 - 門が拒むもの: 語の無い名前・書き込みの消えた行・読めない名前・**Cookie の設定**（IntMap のコードは設定しない。セキュリティのページと
   一覧がそう述べる）・`data/device-storage-ledger.json` が導出と一致しない。読者はその導出を **設定 ▸ プライバシー ▸
   この端末に保存されているもの**（`js/device-storage-panel.js`）で、自分のブラウザが実際に持つものと突き合わせる。

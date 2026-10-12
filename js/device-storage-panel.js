@@ -109,9 +109,11 @@ export function judge(seen, ledger) {
   };
 }
 
-/** the items «Forget this device» deletes — only those the ledger names (the address is shared: see the header) */
+/** the items «Forget this device» deletes — only those the ledger names, and of those not a row marked `bulk:false`: a
+    wildcard whose fixed part cannot prove the key is IntMap's (the address is shared: see the header; the rule is
+    scripts/device-storage-ledger.mjs provesOwnership). Such an item is still deleted by the reader's own tap. */
 export function forgettable(judged) {
-  return judged && judged.comparable ? judged.kinds.flatMap((g) => g.items) : [];
+  return judged && judged.comparable ? judged.kinds.flatMap((g) => g.items).filter((i) => !(i.row && i.row.bulk === false)) : [];
 }
 
 const kb = (n, lang) => {
@@ -158,7 +160,8 @@ export function compose(seen, ledger, lang) {
     sections.push({
       id: 'kind-' + g.kind, kind: g.kind, title: T(...head), note: T(...note),
       rows: g.items.map((it) => itemRow(it, g.kind === 'credential' ? 'bad' : 'ok', icon, wordsOf(it.row),
-        it.row.signsOut ? T('Log out to remove it (Account ▸ Log out).', 'ログアウトすると消えます（アカウント ▸ ログアウト）。') : '')),
+        it.row.signsOut ? T('Log out to remove it (Account ▸ Log out).', 'ログアウトすると消えます（アカウント ▸ ログアウト）。')
+          : it.row.bulk === false ? T('Not taken by «Forget this device»: its name could also belong to another page on this address.', '「この端末から消去」では消しません。この名前は同じアドレスの他のページのものでもありえます。') : '')),
     });
   }
   /* what this list can and cannot see — always shown, so a short list is never mistaken for a complete one */

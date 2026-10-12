@@ -90,7 +90,9 @@
   モジュールをまたぐ包み関数——で読む）から発見し、`scripts/device-storage-words.json` の語と合わせて導出する。`check:datagov`（規則 `stored-disclosed`）は語の無い名前・書き込みの消えた行・
   読めない名前・Cookie の設定を拒む。ログインのセッション（supabase-js が自分の名前 `sb-<ref>-auth-token` で書く）は語ファイルの `libraries` に、その名前を作るソースの行とともに宣言し、
   門が `node_modules` のその行を読む。サイトのアドレス（GitHub Pages のホスト）は同じアカウントの他のページと共有なので、台帳に名前の無い項目は「名前が無い」として別に示し、
-  「この端末から消去」は台帳が名指すものだけを消して再読み込みする（ログインのセッションは個別には消さず、ログアウトで消える）。公開のページ `security.html` の「ブラウザに残るもの」は
+  「この端末から消去」は台帳が名指すものだけを消して再読み込みする（ログインのセッションは個別には消さず、ログアウトで消える）。ログインの
+  セッションの名前は supabase-js の式を `src/vendor.js` の `SUPABASE_URL` で評価した IntMap 自身のもので、他のプロジェクトのセッションに当たらない。
+  ワイルドカードは固定部分が IntMap のものと証明できるときだけ一括消去の対象（できないもの `imc_*` は `bulk:false`、門が強制）。公開のページ `security.html` の「ブラウザに残るもの」は
   同じ台帳から種類ごとの数とログイン・キーの一覧を書く。
 - **`index.html` の `script-src` には現在 `'unsafe-eval'` と 7 つの CDN の source が入っている**（インラインの `<script>` のハッシュはこの数に入らない）（`unpkg.com` / `maps.googleapis.com` /
   `www.googletagmanager.com` / `www.google-analytics.com` / `ssl.google-analytics.com` / `www.clarity.ms` / `*.clarity.ms`）。`unpkg.com` だけは 1 ファイルの完全なパス

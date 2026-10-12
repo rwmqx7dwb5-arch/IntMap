@@ -794,7 +794,11 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
   name, a stale row, an unreadable name and any cookie write. The site's origin is shared with the
   account's other Pages sites, so an unnamed item is shown apart, and «Forget this device» deletes only
   ledger-named items and reloads (the sign-in session is removed by logging out, not by deleting the key
-  under a live client that would rewrite it). The same pass stopped `js/app-body.js` carrying the retired
+  under a live client that would rewrite it). The session row is IntMap's own project only: supabase-js's
+  own key expression is evaluated with `src/vendor.js` `SUPABASE_URL`, never a `sb-*` pattern that would
+  reach another project's session on the shared origin; and a wildcard is taken in bulk only when its fixed
+  part proves the key is IntMap's (the product name, or a name derived from IntMap's backend) — `imc_*`
+  is marked `bulk:false` and the generator refuses an unproven wildcard without it. The same pass stopped `js/app-body.js` carrying the retired
   BYOK AI provider keys forward in `intmap_ai_config` (loaded and re-saved ever since BYOK was retired, read by nothing;
   Privacy §2 says no AI key is kept in the browser) and rewrites an old stored copy without them.
 

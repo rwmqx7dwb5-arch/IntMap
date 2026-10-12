@@ -385,23 +385,53 @@ export function names(writes) {
 
 export function readWords(root = ROOT) { return JSON.parse(fs.readFileSync(path.join(root, WORDS), 'utf8')); }
 
+/* ══ WHOSE NAME IS IT — the address is shared ══════════════════════════════════════════════════════════════════
+   The site's address is shared by every Pages site the same account publishes, and a browser's storage belongs to the
+   address. A name that is a WILDCARD reaches every key that fits it, so a wildcard may be taken by «Forget this device»
+   only when its fixed part PROVES the key is IntMap's: it contains the product's own name (manifest.webmanifest
+   `name`, the name the browser installs IntMap under), or it starts with a name derived from IntMap's own backend
+   (a library row below). Anything else (`imc_*` — any page could write `imc_x`) must say `bulk:false` in the words
+   file, and check() refuses it until it does; the reader can still delete such an item one at a time. */
+export function owner(root = ROOT) {
+  const product = String(JSON.parse(fs.readFileSync(path.join(root, 'manifest.webmanifest'), 'utf8')).name || '').toLowerCase();
+  if (!product) throw new Error('device-storage-ledger: manifest.webmanifest names no product');
+  return { product };
+}
+export function provesOwnership(glob, own, derivedNames = []) {
+  if (!String(glob).includes('*')) return true;
+  const fixed = String(glob).split('*')[0].toLowerCase();
+  return (!!own.product && fixed.includes(own.product)) || derivedNames.some((d) => d && fixed.startsWith(String(d).toLowerCase()));
+}
+
+/* ══ A LIBRARY'S OWN NAME, EVALUATED — never a pattern over every project ═══════════════════════════════════════
+   The library writes under a name it forms from the URL it is given (supabase-js: `sb-${baseUrl.hostname.split(".")[0]}-auth-token`).
+   That expression (`form`, checked to be in the package's shipped source) is evaluated with the URL read from the
+   file the page itself configures it from (`base`), so the row names IntMap's own project and no one else's. */
+export function libraryName(root, lib) {
+  const src = fs.readFileSync(path.join(root, lib.base.file), 'utf8');
+  const m = new RegExp(lib.base.pattern).exec(src);
+  if (!m) throw new Error('device-storage-ledger: ' + lib.base.file + ' does not hold ' + lib.base.pattern);
+  const name = new Function(lib.base.as, 'return ' + lib.form)(new URL(m[1]));   /* the library's own expression, nothing of ours */
+  return String(name) + (lib.suffix || '');
+}
 /* a library's own key: the declared `form` must still be in the package's shipped source */
 function libraryLine(root, lib) {
   try { return fs.readFileSync(path.join(root, 'node_modules', lib.package, lib.file), 'utf8').includes(lib.form); } catch (_) { return false; }
 }
 
 /** The derived file: provenance as values, then one row per name (discovered + declared library names), and how many places in the code set a cookie (`cookiesWritten` — the security page reads it; check() refuses any above 0). */
-export function derive(found, words, cookies = []) {
+export function derive(found, words, cookies = [], root = ROOT) {
   const rows = [];
   const w = new Map((words.names || []).map((r) => [r.area + ':' + r.name, r]));
   for (const n of found) {
     const r = w.get(n.area + ':' + n.name);
     const row = { area: n.area, name: n.name, kind: r ? r.kind : null, en: r ? r.en : '', jp: r ? r.jp : '', by: n.writers };
     if (r && r.signsOut) row.signsOut = true;
+    if (r && r.bulk === false) row.bulk = false;
     rows.push(row);
   }
   for (const lib of words.libraries || []) {
-    const row = { area: lib.area, name: lib.name, kind: lib.kind, en: lib.en, jp: lib.jp, by: ['node_modules/' + lib.package] };
+    const row = { area: lib.area, name: libraryName(root, lib), kind: lib.kind, en: lib.en, jp: lib.jp, by: ['node_modules/' + lib.package] };
     if (lib.signsOut) row.signsOut = true;
     rows.push(row);
   }
@@ -422,11 +452,10 @@ export function derive(found, words, cookies = []) {
 }
 
 /** Everything wrong, as sentences. Empty = the ledger describes exactly what the code writes. */
-export function check(root = ROOT, files = browserScripts(root)) {
+export function check(root = ROOT, files = browserScripts(root), words = readWords(root)) {
   const problems = [];
   const { writes, unreadable, cookies } = discover(files);
   const found = names(writes);
-  const words = readWords(root);
   const have = new Set(found.map((n) => n.area + ':' + n.name));
   for (const u of unreadable) problems.push(`${u.file}:${u.line} writes to ${u.area} storage under a name no binding in the file fixes — give the name a literal (or a const) so the reader can be told what it is`);
   for (const c of cookies) problems.push(`${c.file}:${c.line} sets a cookie — IntMap's statement (and the device panel) says it sets none; describe it in ${WORDS} and the panel before shipping one`);
@@ -439,11 +468,19 @@ export function check(root = ROOT, files = browserScripts(root)) {
     }
   }
   for (const r of words.names || []) if (!have.has(r.area + ':' + r.name)) problems.push(`${WORDS}: ${r.area}:${r.name} — no code writes this name any more; remove the row`);
+  /* a wildcard «Forget this device» may take only when its fixed part proves the key is IntMap's */
+  const own = owner(root);
+  const derived = [];
+  for (const lib of words.libraries || []) { try { derived.push(libraryName(root, lib).split('*')[0]); } catch (e) { problems.push(`${WORDS}: library name — ${e.message}`); } }
+  for (const r of (words.names || []).concat((words.libraries || []).map((l) => { try { return { ...l, name: libraryName(root, l) }; } catch (_) { return null; } }).filter(Boolean))) {
+    if (r.bulk !== false && !provesOwnership(r.name, own, derived)) problems.push(`${WORDS}: ${r.area}:${r.name} — a wildcard whose fixed part does not prove the key is IntMap's (no «${own.product}», no name derived from IntMap's backend): another page on the shared address could own a key it matches. Narrow the name, or mark it "bulk": false so «Forget this device» leaves it to the reader`);
+  }
   for (const lib of words.libraries || []) {
     if (!libraryLine(root, lib)) problems.push(`${WORDS}: library name ${lib.name} — node_modules/${lib.package}/${lib.file} no longer contains «${lib.form}»; the library renamed its key`);
     if (!KINDS.includes(lib.kind) || !lib.en || !lib.jp) problems.push(`${WORDS}: library name ${lib.name} needs a kind and en + jp words`);
   }
-  const want = JSON.stringify(derive(found, words, cookies)) + '\n';
+  let want = '';
+  try { want = JSON.stringify(derive(found, words, cookies, root)) + '\n'; } catch (e) { problems.push(e.message); }
   let file = '';
   try { file = fs.readFileSync(path.join(root, OUT), 'utf8'); } catch (_) { /* missing */ }
   if (file !== want) problems.push(`${OUT} is not what the code and ${WORDS} derive — run: node scripts/device-storage-ledger.mjs --write`);
