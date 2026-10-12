@@ -12,6 +12,10 @@
  *       and nothing told the reader it had one;
  *    ④ when Atlas's answers were last evaluated — never: atlas-eval.yml ran eight times and stopped at
  *       its first step each time for want of two secrets (scripts/lib/nightly-status.mjs).
+ *    ⑤ (field-speed) how long readers wait for the map — measured nowhere outside the lab until the anonymous
+ *       counter counted it by release (scripts/field-speed.mjs has the reading and the verdict). The page
+ *       says how fast the newest release opens for readers, whether it is slower than the one before, and
+ *       how long THIS visit took (index.html __imBoot.marks(), read from this page — never sent from here).
  *
  *  THIS FILE PUTS THEM ON ONE PAGE, AND PUTS ① WHERE THE READER ALREADY LOOKS.
  *    · the page — Settings ▸ 「IntMap のいま」, `statusPage.open()` (js/layer-state.js keeps
@@ -184,6 +188,33 @@ export function recordSentence(series, lang) {
   return IntMapLang.t(lang, 'Answered ' + r.answered + ' of the last ' + r.measured + ' nightly checks.', '直近 ' + r.measured + ' 晩の確認のうち ' + r.answered + ' 晩で応答。');
 }
 
+/* ── (field-speed) the readers' wait ─────────────────────────────────────────────────────────────
+   The numbers AND their sentences were decided by scripts/field-speed.mjs at build (`fieldSpeed.words`, en and jp);
+   this only picks the reader's language. A UI language with no sentence of its own reads the English one. */
+
+/** this visit, from the launch screen's own record (index.html __imBoot.marks()): { ms, ending } or null */
+export function bootOfThisVisit(marks) {
+  if (!marks || typeof marks !== 'object') return null;
+  for (const k of ['idle', 'timeout', 'no-renderer']) if (Number.isFinite(marks[k])) return { ms: marks[k], ending: k };
+  return null;
+}
+/** the row about this visit, or null — a detail only when the screen lifted without a settled map */
+export function thisVisitRow(boot, lang) {
+  if (!boot) return null;
+  const sec = (boot.ms / 1000).toFixed(1);
+  return { tone: boot.ending === 'idle' ? 'ok' : 'warn', icon: 'gauge', title: IntMapLang.t(lang, 'This visit was ready in ' + sec + ' s', '今回は ' + sec + ' 秒で使えるようになりました'),
+    detail: boot.ending === 'idle' ? '' : boot.ending === 'timeout' ? IntMapLang.t(lang, 'The map had not finished drawing.', '地図の表示はまだ途中でした。')
+      : IntMapLang.t(lang, 'This browser could not draw the map.', 'このブラウザでは地図を描けませんでした。') };
+}
+
+/** the speed section's rows from the bundle's `fieldSpeed` (null = not read): { rows, worse } */
+export function speedRows(F, lang) {
+  const W = F && F.words;
+  if (!W || !Array.isArray(W.rows)) return { rows: [{ tone: 'muted', icon: 'clock', title: IntMapLang.t(lang, 'The speed record could not be read', '速さの記録を読めませんでした'), detail: '' }], worse: false };
+  const k = lang === 'jp' ? 'jp' : 'en';
+  return { rows: W.rows.map((r) => ({ tone: r.tone, icon: r.icon, title: r[k].t, detail: r[k].d })), worse: !!W.worse };
+}
+
 /** the cells a strip draws for a series: [{ c, tone }] — the tone vocabulary of the rows */
 const CELL_TONE = Object.freeze({ a: 'ok', r: 'warn', d: 'bad', u: 'muted', '.': 'none' });
 
@@ -208,6 +239,8 @@ export function composeStatus(m, lang) {
   else if (m.shell === false) dev.push({ tone: 'muted', icon: 'save', title: IntMapLang.t(lang, 'Not stored for offline use yet', 'オフライン用にはまだ保存されていません'), detail: IntMapLang.t(lang, 'The copy is stored the next time IntMap is opened with a network.', '次にネットワークのある状態で開いたときに保存されます。') });
   else dev.push({ tone: 'muted', icon: 'save', title: IntMapLang.t(lang, 'Offline opening is not available here', 'この環境ではオフラインで開けません'), detail: IntMapLang.t(lang, 'This browser or this copy of IntMap keeps no offline copy.', 'このブラウザ、またはこの IntMap は、オフライン用の保存を持ちません。') });
   if (Number.isFinite(m.storageMB) && m.storageMB > 0) dev.push({ tone: 'muted', icon: 'folder', title: IntMapLang.t(lang, 'Stored on this device: ' + m.storageMB + ' MB', 'この端末に保存: ' + m.storageMB + ' MB'), detail: IntMapLang.t(lang, 'Map tiles and data kept so that places you revisit load without the network.', '再訪した場所をネットワーク無しで出すために保存している地図タイルとデータです。') });
+  const visit = thisVisitRow(m.boot || null, lang);   /* (field-speed) */
+  if (visit) dev.push(visit);
   out.sections.push({ id: 'device', title: IntMapLang.t(lang, 'This device', 'この端末'), rows: dev });
   if (m.online === false) notes.push('offline');
 
@@ -267,6 +300,11 @@ export function composeStatus(m, lang) {
   }
   out.sections.push({ id: 'upstream', title: IntMapLang.t(lang, 'Data sources (checked every night)', 'データ元（毎晩の確認）'), rows: sup, all, record });
 
+  /* ── (field-speed) how fast it opens for readers ── */
+  const sp = speedRows(m.bundle ? (m.bundle.fieldSpeed || null) : null, lang);
+  if (sp.worse) notes.push('speed');
+  out.sections.push({ id: 'speed', title: IntMapLang.t(lang, 'How fast IntMap opens for readers', '読者の手元で開く速さ'), rows: sp.rows });
+
   /* ── Atlas, evaluated ── */
   const A = b.atlasEval || null;
   const atl = [];
@@ -296,7 +334,8 @@ export function composeStatus(m, lang) {
   out.headline = notes.includes('offline') ? IntMapLang.t(lang, 'You are offline', 'オフラインです')
     : notes.includes('layers') ? IntMapLang.t(lang, 'Some layers could not be drawn', '描けていないレイヤーがあります')
       : notes.includes('upstream') ? IntMapLang.t(lang, 'IntMap is working; some data sources are not answering', 'IntMap は動いています。一部のデータ元が応答していません')
-        : IntMapLang.t(lang, 'Everything is working', 'すべて動いています');
+        : notes.includes('speed') ? IntMapLang.t(lang, 'The newest release opens more slowly for some readers', '最新の版は一部の読者で開くのが遅くなっています')
+          : IntMapLang.t(lang, 'Everything is working', 'すべて動いています');
   return out;
 }
 
@@ -334,7 +373,9 @@ async function gather(ctx) {
         upstream: row ? upstreamSentence(row, lang, bundle.upstream && bundle.upstream.measuredAt) : '' });
     }
   } catch (_) { /* no layer state yet */ }
-  return { lang, model: { bundle: usable(bundle) ? bundle : null, online: navigator.onLine !== false, shell, storageMB: mb, layersOn: activeLayerCount(), layerProblems: probs } };
+  let boot = null;
+  try { boot = bootOfThisVisit(window.__imBoot && window.__imBoot.marks()); } catch (_) { boot = null; }
+  return { lang, model: { bundle: usable(bundle) ? bundle : null, online: navigator.onLine !== false, shell, storageMB: mb, layersOn: activeLayerCount(), layerProblems: probs, boot } };
 }
 
 /** for js/layer-state.js: last night's row for a failed request (plain data, for Atlas) */
@@ -377,6 +418,14 @@ export async function describe(ctx) {
     if (sec.record) lines.push('- ' + sec.record.title + ' — ' + sec.record.detail);
   }
   return { text: lines.join('\n'), status: s };
+}
+
+/** (field-speed) for Atlas (`system.speed`): the page's own speed section and this visit — the same model, no DOM */
+export async function speed(ctx) {
+  const { lang, model } = await gather(ctx);
+  return { rows: composeStatus(model, lang).sections.find((x) => x.id === 'speed').rows, visit: thisVisitRow(model.boot, lang),
+    fieldSpeed: model.bundle ? model.bundle.fieldSpeed || null : null, thisVisit: model.boot,
+    unread: model.bundle ? (model.bundle.unread || []).find((u) => u.half === 'fieldSpeed') || null : { why: 'data/service-status.json' } };
 }
 
 /* ── the page ────────────────────────────────────────────────────────────────────────────────── */

@@ -291,6 +291,12 @@ around its first red night nowhere on the page. A red test with no owner is walk
 - **What to do.** Read the verdict; for `culprit` / `narrowed`, fix forward on that change's surface
   (never by loosening the assertion that caught it); for `passes-alone`, find what the shard does to
   the test; for `control-not-clean` / `flaky-at-bad`, the test is unstable alone and is the work.
+- **A night that could not be read is said, with its reason** *(nightly-unread)*. Measured 2026-10-13: every alarm
+  since the section existed said «No test has been red on two consecutive read nights (window: 14 nights, 0 read)» —
+  a verdict about nights that were never read, while the same history read all 14 on a workstation. The section
+  now groups the unread nights by reason (gh's own words — the HTTP status and message on stderr, not
+  «Command failed»), and a window with no night read says **«No night could be read … NOT KNOWN»** instead of
+  «nothing red». If the reason is a permission, the deep-alarm job's `permissions:` is where it is granted.
 
 ## 2. Error monitoring
 
@@ -391,7 +397,9 @@ analytics vendor, no IP, no user id (not even for a signed-in reader), no sessio
 ```
 js/usage-counts.js          counts one page load: view · entry (link / embed / showcase / about / teachers) ·
                             ref (host name) · utm_* · lang (en/jp/other) · device (mobile/desktop) · layer ·
-                            feature · atlas (questions) · atlas_mode (the kind each answer declared)
+                            feature · atlas (questions) · atlas_mode (the kind each answer declared) ·
+                            ready / boot_end (field-speed: the range of the wait until the map was usable and how
+                            the launch screen lifted, by release and device — §2c)
   → navigator.sendBeacon     when the page is hidden or closed (text/plain, no preflight)
   → supabase/functions/usage-count   validates every row against usage-count/shape.js, drops the rest
   → record_usage_counts      (server UTC day, metric, dimension) += n
@@ -445,6 +453,48 @@ ceiling in the Usage tab is the signal that the ceiling (an estimate) has expire
 ### Retention
 400 days — a year plus a month, so a day can be compared with the same day a year earlier — removed daily by
 the pg_cron job `usage-counts-purge`, which the migration schedules itself (idempotently, when pg_cron exists).
+
+## 2c. How long readers wait, by release (field-speed)
+
+### Why
+Every speed instrument IntMap had was a lab instrument — the bytes a start-up downloads (`check:perf`) and one
+phone profile on one runner (`scripts/frame-profile.mjs --boot`). None of them is a reader: a release could pass
+every ceiling and still make the map slower to become usable on the phones people hold, and nothing would say so.
+
+### The path
+```
+index.html __imBoot          the launch screen records when and how it lifted (idle / timeout / no-renderer)
+  → js/usage-counts.js ⑥    once, when js/boot-stage.js interactive() resolves: shape.js bootRows —
+                            ready    = <release>.<m|d>.<1s|2s|3s|4s|6s|8s|12s|20s|late>
+                            boot_end = <release>.<m|d>.<idle|timeout|no-renderer>
+                            (<release> = the build stamp's minute and short sha). Not counted when the page
+                            started hidden or prerendered, or was hidden before it became usable, or carries
+                            no release. Same beacon, same consent rules as §2b.
+  → usage_counts            (day, metric, dimension) += 1, admin-only like every other count
+  → public.field_speed(p_days)   the ONE public reading: per release and device, the SHARE in each range and
+                            each ending and a band (30+ … 10000+); groups under 30 withheld; no count, no day
+  → scripts/field-speed.mjs  quantiles (half / 3 in 4 within N s) and the verdict (below)
+  → scripts/build-service-status.mjs → data/service-status.json `fieldSpeed` (tle-refresh.yml's bot PR, twice a day)
+  → the status page «IntMap, now» (section «How fast IntMap opens for readers»), Atlas `system.speed`,
+    `node scripts/worktree.mjs status` (the brief prints a line only when a release is worse)
+```
+
+### The verdict
+Per device: the newest release with **300+** page loads against the release with 300+ before it. It is **slower**
+when the share of its loads usable within the older release's 3-in-4 wait fell by **10 points** or more (at 300 per
+side that is ≈ 2.4 standard errors of the difference); **faster** the other way; **less reliable** when the wait held
+but the share whose launch screen lifted on a settled map fell by 10 points. Without two such releases the answer
+is «not judged» and says why — never «same». The numbers and their expiry are in `scripts/field-speed.mjs`.
+
+### What to do when it says slower
+`node scripts/field-speed.mjs` lists the releases; the two named in the verdict bound the change (`git log
+<older-sha>..<newer-sha>`). Reproduce with `node scripts/frame-profile.mjs --boot` on both, and look first at what
+moved onto the start-up path (`check:perf`'s eager rows, `js/boot-stage.js`'s plan).
+
+### Until the migration and the function are deployed
+`field_speed` answers 404 (`PGRST202`) and the usage-count function refuses the two metrics it does not yet know;
+the bundle says «field_speed answered HTTP 404 (the function is not deployed yet)» in `unread` and the page says the
+record could not be read.
 
 ## Error classification (§8.5)
 

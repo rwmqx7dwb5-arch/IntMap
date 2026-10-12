@@ -315,6 +315,8 @@ export const statusPage = {
   close: () => statusPageModule().then((m) => m.close()),
   toggle: () => statusPageModule().then((m) => (m.shown() ? m.close() : m.open(statusCtx()))),
   describe: () => statusPageModule().then((m) => m.describe(statusCtx())),
+  /* (field-speed) the readers' wait by release and this visit's — Atlas `system.speed` */
+  speed: () => statusPageModule().then((m) => m.speed()),
 };
 /* ══ (ops-next) 「新着」— THE WHAT'S-NEW PAGE'S HANDLE, BESIDE THE STATUS PAGE'S AND FOR THE SAME REASON ══════
    js/whats-new.js is fetched the first time the page is opened or its button is first on screen; this file is

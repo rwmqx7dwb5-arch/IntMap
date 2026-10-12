@@ -26,6 +26,10 @@
  *      question is never read here and never sent.
  *    · an ATLAS ANSWER's declared kind (text / map / chart / mixed): the turn loop's 'answered' event on
  *      the same bus (growth-loop) — the kind only, never the question or the answer.
+ *    · (field-speed) HOW LONG THE MAP TOOK TO BECOME USABLE: when the launch screen lifts (js/boot-stage.js
+ *      interactive()), the range its wait fell in and how it lifted (index.html __imBoot.marks()), under the
+ *      release the page carries — shape.js bootRows. Not counted when the page started hidden or prerendered
+ *      (a background tab's start is throttled, and nobody was waiting for it).
  *  Nothing else is read: no User-Agent string, no account, no time, no address beyond the above.
  *
  *  WHEN NOTHING IS SENT AT ALL:
@@ -48,8 +52,12 @@ import {
   campaignOf,
   entryOf,
   sitePageOf,
+  bootRows,
+  BOOT_ENDINGS,
 } from '../supabase/functions/usage-count/shape.js';
 import { isLayer, isDisplay } from './layer-manifest.js';
+/* (field-speed) «the launch screen has lifted» is asked of the one place that already answers it */
+import { BootStage } from './boot-stage.js';
 
 const FUNCTION = 'usage-count';
 /* the one stored preference — present only when the reader changed it; absent = on (the default) */
@@ -264,15 +272,19 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined' && typeof w
 
   /* ② language and device, once, at the first send — the app has chosen its language by then */
   let described = false;
+  /* the device class the counter keeps (`device`, and the <m|d> of the speed rows ⑥) — read when it is used */
+  const deviceClass = () => {
+    let kind = 'desktop';
+    try { const D = window.IntMapDevice; if (D) kind = D.kind(); } catch (_) { kind = 'desktop'; }
+    return kind === 'desktop' ? 'desktop' : 'mobile';
+  };
   const describe = () => {
     if (described) return;
     described = true;
     let lang = '';
     try { lang = (window.IM_HOST && window.IM_HOST.lang) || document.documentElement.getAttribute('lang') || ''; } catch (_) { lang = ''; }
     counter.add('lang', langBucket(lang));
-    let kind = 'desktop';
-    try { const D = window.IntMapDevice; if (D) kind = D.kind(); } catch (_) { kind = 'desktop'; }
-    counter.add('device', kind === 'desktop' ? 'desktop' : 'mobile');
+    counter.add('device', deviceClass());
   };
   const flush = () => { describe(); counter.flush(); };
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); });
@@ -315,6 +327,28 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined' && typeof w
   document.addEventListener('DOMContentLoaded', () => setTimeout(attach, 0));
   window.addEventListener('load', attach);
   for (const t of ['pointerdown', 'keydown']) document.addEventListener(t, attach, { capture: true, passive: true });
+
+  /* ⑥ (field-speed) how long this page load took until the reader could use it — once, when the launch
+     screen lifts. A start the reader did not watch is not a wait: a page that was hidden (or prerendered)
+     at any moment before it became usable is left out. The browser's own record of visibility changes is
+     read where it exists (it covers the time before this module ran); the listener covers the rest. */
+  let unwatched = false;
+  try { unwatched = document.visibilityState === 'hidden' || document.prerendering === true; } catch (_) { unwatched = false; }
+  const onHide = () => { if (document.visibilityState === 'hidden') unwatched = true; };
+  document.addEventListener('visibilitychange', onHide);
+  try {
+    BootStage.interactive().then(() => {
+      let marks = null;
+      try { marks = window.__imBoot && window.__imBoot.marks(); } catch (_) { marks = null; }
+      const ending = marks ? BOOT_ENDINGS.find((k) => Number.isFinite(marks[k])) : null;
+      if (!ending || unwatched) return;
+      try {
+        const vis = performance.getEntriesByType('visibility-state');
+        if (vis.some((e) => e.name === 'hidden' && e.startTime <= marks[ending])) return;
+      } catch (_) { /* no record of its own: the listener's answer stands */ }
+      for (const r of bootRows({ stamp: window.INTMAP_BUILD, mobile: deviceClass() === 'mobile', ms: marks[ending], ending })) counter.add(r.m, r.d);
+    });
+  } catch (_) { /* no launch screen to wait for: nothing to count */ }
 
   /* ⑤ the switch — Settings and Atlas (settings.usageCounts) both go through set() */
   const SELECT_ID = 'setting-usage-counts';
