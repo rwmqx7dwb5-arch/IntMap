@@ -442,23 +442,39 @@ Atlas は `time.placeHistory`（`year` を渡すとその年に有効な行も�
 
 読めなかったとき（時間切れ・拒否・到達不能）は理由を言い、「地震が無かった」とは言わない。0 件は「カタログの答え」と言う。
 
-### 7.3j 余震の見通し (Aftershock forecast) — `js/aftershock.js` / `js/aftershock-core.js`
+### 7.3j 世界とのつながり (World flows) — `js/world-flows.js` / `js/world-flows-core.js`
 
+1 つの国が、人・データ・航空路でどの国とどれだけつながっているかを、カードと地図の弧で読む。弧は国から相手へ大圏に沿い、
+太さは最大の相手との比、`›` が流れの向き（「この国の出身者が住む先」「出発する路線」は国から出る、「この国に住む人の出身国」
+「到着する路線」は国へ入る）。リストと地図は同じ相手を同じ順で出す（既定 15 件・「すべて表示」で全件）。
+
+| 流れ | 記録 | 何の数か |
+|---|---|---|
+| 人 | `data/world-flows.json`（`scripts/build-world-flows.mjs` が UN DESA International Migrant Stock 2024 の Table 1 から書く・CC BY 3.0 IGO） | ある国で生まれ別の国に住む人の**ストック**（年央 1990・1995 … 2020・2024）。移動した人数ではない。合計は DESA が述べる値（出身・居住が「その他・不明」の分を含む）で、名指しの相手の和との差を「記録が国を特定していない分」と書く |
+| データ | `data/subcables-meta.json`（海底ケーブルレイヤーと同じ記録） | 両国に陸揚げされ、その年までに運用開始した**系統の数**（記録が計画中と述べる系統はどの年でも数えない）。容量ではない。退役したケーブルは記録に無いので過去は少なく数える。運用開始年の無い系統は「現在」だけに数える |
+| 航空路 | `data/mobility.json` の `pairs`（OpenFlights 2014 年 6 月） | 国の組ごとの**路線数**。座席・便数・旅客ではない |
+| モノ | **このカードは描かない** | 「貿易フロー」レイヤー（`wp-dl-trade`・`js/world-packs.js`、CEPII BACI を OEC 経由）が既に答える。カードの「モノ」は、そのレイヤーを同じ国と向きで開く扉（行の `change` と、レイヤー族が登録した `IntMapShareState` の `world`——共有リンクと同じ 2 手）。貿易の実装は 1 つ |
+
+| 部品 | 中身 |
+|---|---|
+| 事実 | `js/world-flows-core.js`（純粋）——国の表 `placeIndex`（ISO 3 文字・2 文字・`N:<M49>`）と名前の照合、時刻の規則 `yearFor`（時計の年以前で最も新しい記録の年。記録より前は答えず `before-record` と最初の年）、3 つの読み方、`summarise`（合計・割合・地図外）、`arcLine`（アプリの turf の大圏を経度の連続に直す——180 度線で世界を横切らない）、`arcFeatures` |
+| 国 | Natural Earth（`data/ne-countries` の 10m、公有）の `LABEL_X/Y`・`NAME_EN`・`NAME_JA`・`ISO_N3_EH`。同じ番号を国と属領が持つときは `ADM0_A3 = ISO_A3_EH` の地物が国。Natural Earth に無い DESA の地域（一覧は束の `migration.unplaced`、ビルドが印字する）は DESA の名前で表に残し、位置を持たず、カードが「地図外」と数える |
+| カードと地図 | `js/world-flows.js`（遅延チャンク・窓口を公開しない）。`.country-popup` のカード、ソース `wf-src`（流れを替えると作り直し、`attribution` がその記録を名乗る）と層 `wf-arc` / `wf-arrow` / `wf-end`（順位の丸、押すとその国へ）/ `wf-rank` / `wf-home`。`IntMapTime.on` で読み直し、図の棒を押すと時計がその年へ。枠取りはカードが覆わない部分へ（`js/card-clearance.js`）、地球儀では地球がその部分を満たすズーム（`log2(π·D/512)`）より引かず、国を中心に置く |
+| 扉 | Tools ▾ の「道具」`tool.worldFlows`（`js/map-ui.js`）・地点カードの国の行（`js/place-dossier.js` `data-hn="flows"`）・リンク `?wf=<ISO3>.<流れ>.<向き>`（`src/main.js` → `bootFromUrl`）・Atlas `data.worldFlows`（`js/atlas-cap-data.js`、observer `panel`） |
+
+読めなかったときは「読み込みの失敗であって、つながりが無いという意味ではない」と言う。記録より前の年は別の年で代用しない。
+
+### 7.3j 余震の見通し (Aftershock forecast) — `js/aftershock.js` / `js/aftershock-core.js`
 M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1 年に M3／M5／M6／M7 以上と「本震と同規模以上」の余震が少なくとも 1 回起きる確率と、
 回数の 95% の範囲を出す。モデルは Reasenberg & Jones (1989)、事前分布は USGS が地殻変動の区分ごとに公表した一般パラメータ
 （Page et al. 2016）で、その系列の余震でベイズ更新する（p・c は固定＝USGS の OAF の Bayesian 結合と同じ）。手法の正本は
 `science.html#aftershock`（`js/locales/pages.{en,ja}.js`）、正本の説明（出典・送るもの）は [`docs/MAP-LAYERS.md`](../MAP-LAYERS.md) の「余震の見通し」。
-
-| 部品 | 中身 |
-|---|---|
 | 事実 | `js/aftershock-core.js`（純粋）——区分 `regimeAt`（カリフォルニアの 5 区域→García の 0.05° 格子）・検知限界 `completenessAt` / `mcAt`・余震域 `zoneOf`（Wells & Coppersmith の破壊長、本震と M≥magCentroid の余震の球面重心）・`kIntegral`・`posterior`・`forecast`（事後分布上のポアソン混合で確率と 2.5/50/97.5%）・`run`（答え合わせ `check` を含む）・USGS の `oaf` 製品の読み `oafUrl` / `readOafForecast`・`?as=` |
 | 束 | `data/aftershock-regimes.json.gz`（`scripts/build-aftershock-regimes.mjs`。OpenSHA OAF の 3 ファイルを 1 コミットに固定して無加工で写す・CC0）／`data/aftershock-hindcast.json`（`scripts/build-aftershock-hindcast.mjs`。2015〜2024 年の M7 以上 137 系列を本震の 1 日後に出した見通しと実際） |
 | カードと地図 | `js/aftershock.js`（IntMapLazy の `aftershock`）。ソース `as-src`、層 `as-ring` / `as-pt` / `as-main`。**マスタークロックが見通しの時点**——時計を動かすと読み込み済みの記録から計算し直し、範囲を外れたときだけ読み直す。ライブの時計がライブのまま進むだけでは計算し直さない |
 | 扉 | `js/wb-layers.js`（起動時）——地震ポップアップの「余震の見通し」（M5 以上）・`data-as-open`（地震の記録の選んだ地震からも）・命令 `aftershock.open`・`?as=` の検出。Tools ▾ の `sim.aftershocks` 行（`js/map-ui.js`）は最近 30 日の M5.5 以上の一覧で開く |
 | Atlas | `sim.aftershocks`（`js/atlas-cap-sim.js`。observer `panel`、要約は `forAtlas`、`at` で見通しの時点） |
-
 読めなかったときは理由を言い、「余震が無かった」とは言わない。USGS 自身の予測（いまは ETAS）がある地震では並べて示し、合算しない。
-
 ### 7.4 Chronos（統一時間）と「年」
 
 #### 歴史の束の読み込み

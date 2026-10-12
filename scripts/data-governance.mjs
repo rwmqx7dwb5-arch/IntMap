@@ -453,6 +453,21 @@ function initializer(src, from) {
   return null;
 }
 
+/* A statement's top-level comma-separated parts (strings and brackets respected) — the declarators of one
+   `const a = 1, b = 2`. A part that is not `NAME = …` is not a declarator and is ignored by the caller. */
+function topLevelParts(expr) {
+  const out = []; let depth = 0, from = 0;
+  for (let k = 0; k < expr.length; k++) {
+    const c = expr[k];
+    if (c === '"' || c === "'" || c === '`') { const j = endOfString(expr, k); if (j < 0) return [expr]; k = j; continue; }
+    if (c === '{' || c === '[' || c === '(') depth++;
+    else if (c === '}' || c === ']' || c === ')') depth--;
+    else if (c === ',' && depth === 0) { out.push(expr.slice(from, k)); from = k + 1; }
+  }
+  out.push(expr.slice(from));
+  return out;
+}
+
 /* The file's own constants whose initialiser is PURE DATA, as values. ⚠ THIS IS WHAT MAKES THE
    BEST-WRITTEN DECLARATIONS READABLE: `url: SRC` is the right way to write one, because the URL the
    builder fetches and the URL the record states are one fact and belong in one place. A reader that
@@ -465,9 +480,18 @@ function initializer(src, from) {
 function literalConsts(src) {
   const known = new Map();
   const pending = [];
+  /* ⚠ ONE `const` MAY DECLARE SEVERAL NAMES. Measured 2026-10-13: build-aftershock-hindcast.mjs writes
+     `const MIN_MAG = 7, FROM = '2015-01-01', …;` and its declaration says `'M' + MIN_MAG`, so taking the whole
+     statement as ONE initialiser bound nothing and called a well-written declaration unreadable. The statement
+     is split at its top-level commas, and every `NAME = expr` declarator is a constant of its own. */
   for (const m of src.matchAll(/(?:^|\n)[ \t]*(?:export\s+)?const\s+([A-Za-z_$][\w$]*)\s*=/g)) {
-    const expr = initializer(src, m.index + m[0].length);
-    if (expr != null && !known.has(m[1])) pending.push({ name: m[1], expr });
+    const whole = initializer(src, m.index + m[0].length);
+    if (whole == null) continue;
+    topLevelParts(whole).forEach((part, i) => {
+      const later = i > 0 ? /^\s*([A-Za-z_$][\w$]*)\s*=(?!=)([\s\S]*)$/.exec(part) : null;
+      const d = i === 0 ? { name: m[1], expr: part } : later ? { name: later[1], expr: later[2] } : null;
+      if (d && !known.has(d.name)) pending.push(d);
+    });
   }
   const dataOnly = (expr) => {
     /* strings blanked out so that their contents cannot look like code */

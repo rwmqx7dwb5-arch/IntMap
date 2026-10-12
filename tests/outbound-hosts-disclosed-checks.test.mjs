@@ -94,6 +94,24 @@ test('④ a new host in a js/ literal is red; the same URL in a comment or an <a
   assert.equal(occ[0] && occ[0].link, 'anchor', 'an href assembled by concatenation is still an href');
 });
 
+test('④b a row\'s own probe on the readiness page is that row\'s; the same host anywhere else, or a probe no row states, is red', () => {
+  /* the row read from the ledger: one whose probe names a host its `host` field does not (the readiness page's case) */
+  const row = LEDGER_NOW.hosts.find((r) => r.probe && typeof r.probe.url === 'string' && new URL(r.probe.url).hostname !== r.host);
+  assert.ok(row, 'no row whose probe host differs from its host — the case this rule exists for is gone');
+  const probeHost = new URL(row.probe.url).hostname;
+  const page = (url) => `\n<table><tr data-probe="${url.replace(/&/g, '&amp;')}" data-host="${row.host}"><td>x</td></tr></table>\n`;
+  const html = FILES.find((f) => f.file.endsWith('.html')).file;
+  assert.deepEqual(run({ files: withFile(html, (t) => t + page(row.probe.url)) }).problems.filter((p) => p.startsWith(probeHost + ' ')), [],
+    'the row\'s own probe request is accounted for by the row');
+  const other = run({ files: withFile(html, (t) => t + page(row.probe.url + 'x')) });
+  assert.ok(other.problems.some((p) => p.startsWith(probeHost + ' is requested')), 'a probe no row states is red: ' + other.problems.join('\n'));
+  const js = FILES.find((f) => f.file.startsWith('js/') && f.file.endsWith('.js')).file;
+  const fetched = run({ files: withFile(js, (t) => t + `\n;fetch('https://${probeHost}/elsewhere');\n`) });
+  if (!LEDGER_NOW.hosts.some((r) => r.host === probeHost)) {
+    assert.ok(fetched.problems.some((p) => p.startsWith(probeHost + ' is requested')), 'the same host requested elsewhere is red: ' + fetched.problems.join('\n'));
+  }
+});
+
 test('⑤ a ledger row whose host the code no longer requests is red', () => {
   const ledger = clone(LEDGER_NOW);
   ledger.hosts.push({ host: 'gone.example.org', what: 'nothing any more', link: 'was a link' });

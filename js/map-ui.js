@@ -1596,6 +1596,14 @@ export function layerSidebar(HOST){
         dot:()=>{ try{ const s=dsOpened&&dsOpened.state(); return !!(s&&s.drawn); }catch(_){ return false; } },
         label:()=>T('Data studio','データスタジオ'),
         hint:()=>T('Map your own table by country or city, colour it, analyse it and share it as a link','自分の表を国や都市に結び、塗り分け・分析し、リンクで公開する') },
+      /* (wave4-mobility) WORLD FLOWS — who a country is connected to by people, goods, submarine cables and airline routes, as arcs
+         on the map that follow the clock (js/world-flows.js — a chunk of its own, reached by import(); it publishes no global, so
+         the row carries no `mod` and a press always opens it). */
+      { id:'tool.worldFlows', ic:_svg('<circle cx="5" cy="17" r="2"/><circle cx="19" cy="17" r="2"/><path d="M6.6 15.6C8.6 8.5 15.4 8.5 17.4 15.6"/><path d="M15.2 11.6l2.2 4 1.6-4.2"/>'), en:'World flows', group:'tool',
+        keys:'world flows connections migration migrants diaspora trade exports imports partners cables flights routes 世界とのつながり つながり 移民 在外 出身者 貿易 輸出 輸入 貿易相手 海底ケーブル 航空路',
+        run:()=>import('./world-flows.js').then(m=>m.openFlows({})).then(()=>true,()=>{ try{ HOST.imToast(T('World flows could not be loaded — check your connection and try again.','世界とのつながりを読み込めませんでした。接続を確認して、もう一度お試しください。')); }catch(_){} return false; }),
+        label:()=>T('World flows','世界とのつながり'),
+        hint:()=>T('Who a country is connected to — people, goods, data cables and flights — over time','国と国のつながり（人・モノ・データ・航空路）とその変化') },
       { id:'sim.seismic', mod:'IntMapSeismic', ic:SVG_QUAKE, run:null,   /* registered in js/app-body.js beside the OS kernel */
         label:()=>T('Earthquake simulator','地震シミュレーター','Erdbeben-Simulator','Симулятор землетрясений','Simulador de terremotos'),
         hint:()=>T('Place a source and watch the shaking spread','震源を置いて揺れの広がりを見る','Herd setzen und die Erschütterung verfolgen','Задайте очаг и смотрите, как расходятся колебания','Coloque una fuente y vea propagarse el temblor') },

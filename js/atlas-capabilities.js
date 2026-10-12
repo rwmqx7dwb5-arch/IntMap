@@ -345,7 +345,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["time.journey","journey","journeyThroughTime,bordersThen,crossingsThroughTime,routeThroughTime,historicalCrossings","time","paint","map.line","map,explanation","session","none","points",""],
       ["time.stepHere","stepHere","nextChangeHere,previousChangeHere,stepPlaceHistory","time","time","time","map,time","session","none","point",""],
       ["time.quakeHistory","quakeHistory","earthquakeHistory,seismicHistory,quakeRecord,earthquakeRecord,pastEarthquakes","time","panel","panel.quakeHistory,camera","panel,explanation","session","none","place?","quakeHistory"],
-      ["system.speed","speed","fieldSpeed,loadTime,startupTime,performance,howFast","system","none","","explanation","read","none","",""],
+      ["data.worldFlows","worldFlows","countryFlows,countryConnections,migrationFlows,diaspora,migrantStock","data","panel","panel.worldFlows,camera,time","panel,explanation","session","none","country",""],
       ["community.browse","communityMaps","browseCommunityMaps,findCommunityMaps,publicMaps,othersMaps,sharedMapsDirectory","community","none","panel.community","explanation","session","none","",""],
       ["community.open","communityMapOpen","openCommunityMap,openListedCollection,showCommunityMap","community","panel","map.object,camera","panel","session","none","",""],
       ["community.list","listCommunityMap","listInCommunityMaps,shareWithEveryone,makeMapPublic","community","none","account.places","explanation","external","explicit","",""],
@@ -357,6 +357,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["sim.aftershocks","aftershocks","aftershockForecast,aftershockProbability,aftershockOutlook,afterShocks","sim","panel","panel.aftershock,camera","panel,explanation","session","none","place?","aftershock"],
       ["system.readiness","readiness","networkCheck,deploymentCheck,schoolNetwork,allowlist,firewallCheck,readinessCheck","system","none","","explanation","read","none","",""],
       ["system.deviceStorage","deviceStorage","storedOnThisDevice,localData,browserStorage,whatIsStoredHere,cookies","system","none","","explanation","read","none","",""],
+      ["system.speed","speed","fieldSpeed,loadTime,startupTime,performance,howFast","system","none","","explanation","read","none","",""],
       ["time.territoryChange","territoryChange","landChangedHands,territorialChanges,borderChangeMap,whoGainedLand,changedHands","time","paint","map.polygon","map,explanation","session","none","place?",""],
       ["time.lifeAtPlace","lifeAtPlace","livedUnder,lifeThroughBorders,ancestorJurisdiction,familyHistory","time","time","time,camera","map,time,explanation","session","none","point",""],
     ];

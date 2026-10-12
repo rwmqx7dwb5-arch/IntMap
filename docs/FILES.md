@@ -1227,6 +1227,11 @@ quake-history.js                  **この場所の地震の記録**のカード
 quake-history-core.js             その事実の全部（純粋なモジュール）——FDSN の要求（地点は整数度に丸め、半径をその分広げる）・
                                   件数を先に訊いて下限を上げる規則（一度に 3,000 件）・端末での正確な円・最大・順位・年代・
                                   時刻 T までの記録・`?qh=`。node が実際の ComCat の答えで同じ関数を評価する
+world-flows.js                    **世界とのつながり**のカードと地図の弧——1 つの国が人（UN DESA の移民ストック）・データ（海底ケーブル系統）・
+                                  航空路（OpenFlights 2014）でどの国とつながるかを、時計の年以前で最も新しい記録で。「モノ」は貿易フロー
+                                  レイヤーを同じ国で開く扉。扉は Tools・地点カードの国の行・`?wf=`・Atlas `data.worldFlows`。遅延チャンク（§7.3j）
+world-flows-core.js               その事実の全部（純粋なモジュール）——国の表と照合・時刻の規則・3 つの読み方・合計と割合・弧（大圏の経度を連続に）
+card-clearance.js                 カードが覆わない部分に地図を収める余白（fitBounds の padding）。js/news-story.js と js/quake-history.js も同じ規則を閉包に持つ
 aftershock.js                     **余震の見通し**のカードと地図——M5 以上の地震について、今後 1 日〜1 年に各規模の余震が起きる確率と
                                   回数の 95% の範囲、根拠（区分・一般パラメータ・事後分布）、累積余震と予想の図、USGS 自身の予測（あれば）、
                                   実績。マスタークロックが見通しの時点で、終わった期間は答え合わせ。扉は js/wb-layers.js
@@ -1747,7 +1752,7 @@ subcables.json                    海底ケーブルの経路（`scripts/build-s
 subcables-lp.json                 陸揚げ地点（点）。既存の黄色い点はこれを描く
 subcables-meta.json               ケーブル単位のメタデータ（所有者・RFS・総延長・接続国・
                                   陸揚げ地点）と、陸揚げ地点ごとの「ここに来るケーブル」。
-                                  クリック時のポップアップだけが読む（線の描画は読まない）。
+                                  クリック時のポップアップと「世界とのつながり」のデータ（国ごとの共有系統）が読む（線の描画は読まない）。
                                   ⚠ カードを9言語で出すための**結合鍵**も持つ——国名の
                                   ISO 3166-1 alpha-2（`countryCodes` / `cc`）・`rfsMonth` /
                                   `rfsQuarter`・`lengthKm`。国名や月名の訳語は入れない（CLDR）
@@ -1773,7 +1778,7 @@ airports.json                     国ごとの**定期便のある空港の規�
 mobility.json                     **国どうしの航空路線数**（有向 4,565 ペア・出発国 230）と、国別の
                                   **実測の入国旅行者数**（World Bank `ST.INT.ARVL`・2019 年以前の最新年）。
                                   パンデミック・シミュレーターが「次にどの国へ届くか」を引く重みに使う
-                                  （`js/playground.js` がシムを開いたときだけ取りに行く）。
+                                  （`js/playground.js` がシムを開いたときだけ取りに行く）。路線数は「世界とのつながり」の航空路も読む（§7.3j）。
                                   上流は OpenFlights（ODbL 1.0）＋ OurAirports（public domain・空港コード→国）
                                   ＋ World Bank（CC BY 4.0）。生成は `scripts/build-mobility.mjs`（`--check` あり）。
                                   ⚠⚠ **路線表は 2014 年 6 月で更新が止まっている**（OpenFlights 自身が明記）。
@@ -1936,6 +1941,9 @@ on-this-day.json                  **日付つき出来事の索引**——暦の
                                   その横に Wikidata が述べる出来事（`events`：項目・日付を述べた属性・精度つき）。scripts/build-on-this-day.mjs が書き、--check が照合する（§8.6.3）
 polity-arcs.json                  **政体の盛衰の索引**——地図が描く名前ごとの、記録が変える瞬間ごとの描画面積（km²・描いた記録）、最大の描画面積の年と枠、
                                   Wikidata 項目。scripts/build-polity-arcs.mjs が地図のコード（history-pages.mjs mapReader）で書く（§7.4c）
+world-flows.json                  **世界とのつながりの表**——国（Natural Earth の位置と名前、表に無い DESA の地域は位置なし）と、UN DESA International
+                                  Migrant Stock 2024 の出身国 × 居住国の年央ストック（1990〜2024 の 8 時点・欠けは null）と DESA が述べる合計。
+                                  scripts/build-world-flows.mjs が書く（`--check` あり・§7.3j）
 weekly-earth.json                 ISO 週ごとの記録（USGS の M5.5 以上の地震・NASA EONET の自然現象）。scripts/build-weekly-earth.mjs が週を足し、既にある週は保つ。--check が形式を照合する（§8.6.4）
 wars.json                         6つの戦争の記録（支配・戦線・作戦・種別・兵力と死傷／`scripts/build-wars.mjs` が書き、検証する）
 religion.json / language.json     宗教の分布／言語の分布（国ごとの記録＋言語名・ISO 639-3・訳）
@@ -2029,6 +2037,8 @@ scripts/
                                   その前日を比べ、戦争の記録の出来事と合わせて暦の日ごとに。Wikidata の出来事は下の写しから。`--check` で記録と照合（§8.6.3）
   build-polity-arcs.mjs           data/polity-arcs.json（政体の盛衰の索引）を書く——地図のコード（history-pages.mjs mapReader）で Cliopatria が変わる年と
                                   1689〜2019 年の毎年 7 月 1 日を読み、名前ごとに描かれた面積を記録つきで。`--check` で束と照合、`--show <名前>` で 1 件（§7.4c）
+  build-world-flows.mjs           data/world-flows.json（世界とのつながりの表）を書く——UN DESA International Migrant Stock 2024 の Table 1 を
+                                  Natural Earth の国に M49 で結ぶ。表に無い地域は落とさず位置なしで残し印字する。`--check` で上流と照合（§7.3j）
   fetch-world-events.mjs          索引が運ぶ Wikidata の出来事を取る（選んだ記事 → 項目 → 日付・精度・場所・名前・説明）。日付を述べない項目は
                                   落とし、史実と矛盾する値は理由つきで拒む。写しは scripts/time-index/wikidata-events.json（生成器はネットに出ない）
   on-this-day-pages.mjs           この日の歴史地図の静的ページ・カードの絵・sitemap の生成器（onThisDayPagesPlugin）と、
