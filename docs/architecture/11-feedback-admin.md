@@ -26,6 +26,8 @@
   RLS が 0 行しか返さない。
 - **バグ報告**：`bug_reports`（診断情報 JSON 付き。`reader-reports` 経由で誰でも送れる・表へ直接は書けない・admin が閲覧）。
 - **教育向けの導入パック**：単元対応表（`curriculum.html`）と学校向けの 1 枚（`school-handout.html`）、いずれも `ja/` あり（§8.6.5）。どちらも相談フォーム（`about=classroom`）へ結ぶ。
+- **導入前の接続診断**：`readiness.html`（と `ja/`、§8.6.6）——組織が使う端末とネットワークで、地図の描画と全接続先への到達を確かめ、許可が必要な接続先を示す。結果は
+  相談フォームに添えられる（`contact.html?attach=readiness`、送るのは本人）。Atlas `system.readiness`。
 - **組織からの相談**：報道機関・学校・研究機関/NGO 向けの紹介ページ（`for-newsrooms.html`・`for-schools.html`・`for-research.html` と `ja/`）から `contact.html` のフォームへ。
   `reader-reports`（kind `inquiry`）経由で `org_inquiries` に入り、表へ直接は書けない。読むのは相談のコンソール `admin-inquiries.html`（`admin.html` とは別のページ・同じアカウント・`noindex`）
   ——状態（new / replied / closed / spam）とメモを付け、削除し、支援者を掲載する。保存期間は受信から 730 日、spam は 30 日（`purge_org_inquiries`・pg_cron）。ページの文は

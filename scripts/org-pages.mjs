@@ -23,6 +23,10 @@
  *                         and «Make a tour for this unit»; a unit with none says «not covered yet» (scripts/curriculum-kit.mjs)
  *    school-handout.html  (curriculum-sales-kit) one A4 sheet for a school's leadership and IT staff — every fact on it is
  *                         another page's string or a number read from its owner
+ *    readiness.html       (wave4-sales) the network and device check an organisation runs on its own device and network
+ *                         before adopting IntMap: the allowlist (every host the browser requests, sorted into what the map
+ *                         opens with / IntMap's backend / the data layers) and the check that asks each one from there
+ *                         (js/readiness-page.js, js/readiness-check.js)
  *
  *  ══ WHY GENERATED (the same reasons as scripts/landing.mjs, whose facts() this file reuses) ═══════
  *    · the PROSE        → scripts/org-pages-text.mjs (en + jp, one place)
@@ -63,7 +67,8 @@ import { brandFacts, words as brandWords, factWords, jpegInfo } from './brand.mj
 import { HUB as HISTORY_HUB } from './history-pages.mjs';
 import { OTD_HUB } from './on-this-day-pages.mjs';
 import { pagePath as updatesPath, feedPath as updatesFeed } from './whats-new.mjs';
-import { readLedger } from './outbound-hosts.mjs';
+import { readLedger, deriveConnectionLedger } from './outbound-hosts.mjs';
+import { probeRows, firstViewHosts, TIERS, MAP_CONTEXT, PROBE_TIMEOUT_MS, PROBE_CONCURRENCY } from '../js/readiness-check.js';   /* (wave4-sales) the readiness check's own rules, so the page's allowlist and the check sort a host the same way */
 import { SENDS_WORDS } from '../js/connections-panel.js';
 import { MODEL as CURRICULUM_KIT } from './curriculum-kit.mjs';   /* (curriculum-sales-kit) the unit map's model — units, and the links the app's codecs write */
 import { kindTitle } from '../js/quest-engine.js';                 /* (curriculum-sales-kit) a quest kind's name, the panel's own */
@@ -114,7 +119,7 @@ export function orgFacts() {
   const plan = PLANS[DEFAULT_PLAN];
   if (!plan || !Number.isFinite(plan.aiTurnsPerDay)) throw new Error('org-pages: cannot read the default plan\'s aiTurnsPerDay');
   return {
-    ...F, backend, anonKey, spamDays: +spamDays, keepDays: +keepDays, security: securityFacts(),
+    ...F, backend, anonKey, spamDays: +spamDays, keepDays: +keepDays, security: securityFacts(), readiness: readinessFacts(backend),
     cartoFree: Number(carto[1].replace(/,/g, '')), aiTurns: plan.aiTurnsPerDay,
     sizes: Object.values(EMBED_SIZES).filter((s) => typeof s.w === 'number').map((s) => [s.w, s.h]),
   };
@@ -139,14 +144,32 @@ function fill(s, W) {
 }
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
+/* ── (wave4-sales) the readiness check's facts, from their owners ───────────────────────────────────
+   · which hosts the FIRST VIEW needs — index.html's own <link rel="preconnect"> («the hosts every cold start needs before it
+     can draw anything», #R192), the declaration the app itself acts on;
+   · IntMap's backend — src/vendor.js (orgFacts reads it);
+   · every host the browser requests and the one request that asks it — the derived connection ledger (the same rows the
+     page's own connection list and data/connection-ledger.json carry), sorted by js/readiness-check.js probeRows().
+   A tier with no host stops the generator: a page that says «nothing is needed to open the map» would be a false all-clear. */
+export function readinessFacts(backend) {
+  const hrefs = [...rd('index.html').matchAll(/<link rel="preconnect" href="([^"]+)"/g)].map((m) => m[1]);
+  const firstView = firstViewHosts(hrefs);
+  const probes = probeRows(deriveConnectionLedger(readLedger()).hosts, { firstView, backend: new URL(backend).hostname });
+  for (const t of TIERS) if (!probes.some((p) => p.tier === t)) throw new Error('org-pages: the readiness check has no host in the tier «' + t + '»');
+  return { probes, firstView, worstS: Math.ceil(probes.length / PROBE_CONCURRENCY) * PROBE_TIMEOUT_MS / 1000 };
+}
+
 /* ── head ─────────────────────────────────────────────────────────────────────────────────── */
 const FONT_CSS_ORIGIN = 'https://fonts.googleapis.com', FONT_FILE_ORIGIN = 'https://fonts.gstatic.com';
 /* The policy is what the page loads: its own CSS, pictures and one script; the CJK face on a Japanese
    page; and IntMap's own backend ONLY on the two pages that talk to it (contact sends, support reads). */
-function cspMeta({ webFonts, backend }) {
+function cspMeta({ webFonts, backend, probes }) {
   return '<meta http-equiv="Content-Security-Policy" content="' + [
     "default-src 'self'", "base-uri 'self'", "object-src 'none'", "form-action 'self'", "frame-src 'none'",
-    "connect-src 'self'" + (backend ? ' ' + backend : ''), "img-src 'self' data:",
+    /* (wave4-sales) the readiness page asks every requested host once, and a probe the host REDIRECTS (to another of its
+       own hosts) must not be refused by this page's policy and reported as «blocked by your network» — so it may connect to
+       any https origin, and to nothing that is not https */
+    "connect-src 'self'" + (probes ? ' https:' : backend ? ' ' + backend : ''), "img-src 'self' data:",
     "style-src 'self'" + (webFonts ? ' ' + FONT_CSS_ORIGIN : ''), "font-src 'self' data:" + (webFonts ? ' ' + FONT_FILE_ORIGIN : ''),
     "script-src 'self'",
   ].join('; ') + '">';
@@ -166,7 +189,7 @@ function head(F, L, page) {
 <html lang="${L.tag}">
 <head>
 <meta charset="utf-8">
-${cspMeta({ webFonts: cjk, backend: TALKS.has(page) ? F.backend : '' })}
+${cspMeta({ webFonts: cjk, backend: TALKS.has(page) ? F.backend : '', probes: page === 'readiness' })}
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <!-- GENERATED by scripts/org-pages.mjs from scripts/org-pages-text.mjs — edit those, not this file. -->
 <title>${esc(title)}</title>
@@ -193,7 +216,8 @@ ${LANGS.map((l) => `<link rel="alternate" hreflang="${l.tag}" href="${esc(url(l)
 <link rel="stylesheet" href="${L.up}css/landing.css">
 <link rel="stylesheet" href="${L.up}css/org-pages.css">
 <script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>
-<script src="${L.up}js/org-page.js"></script>
+<script src="${L.up}js/org-page.js"></script>${page === 'readiness' ? `
+<script type="module" src="${L.up}js/readiness-page.js"></script>` : ''}
 </head>`;
 }
 
@@ -307,6 +331,7 @@ function introBody(F, L, page) {
     <div class="lp-grid2">
       ${tiles(T.it, L, W)}
     </div>
+    <div class="lp-cta"><a class="lp-btn" href="./readiness.html">${esc(T.itCheck[k])}</a></div>
   </section>
 
   <section class="lp-sec" id="lessons">
@@ -500,7 +525,7 @@ function contactBody(F, L) {
   <section class="lp-sec og-contact">
     <form class="og-form" id="og-form" novalidate data-effect="outward" data-lang="${L.key}"
       data-msg-sending="${esc(T.sending[k])}" data-msg-sent="${esc(T.sent[k])}" data-msg-failed="${esc(T.failed[k])}"
-      data-msg-limited="${esc(T.limited[k])}" data-msg-invalid="${esc(T.invalid[k])}">
+      data-msg-limited="${esc(T.limited[k])}" data-msg-invalid="${esc(T.invalid[k])}" data-msg-attached="${esc(TEXT.readiness.attached[k])}">
       <div class="og-row">
         ${field('og-audience', 'audience', T.audienceL, `<select id="og-audience" name="audience" required>${opts(INQUIRY.audiences, T.audiences)}</select>`)}
         ${field('og-purpose', 'purpose', T.purposeL, `<select id="og-purpose" name="purpose" required>${opts(INQUIRY.purposes, T.purposes)}</select>`)}
@@ -856,9 +881,90 @@ function handoutBody(F, L) {
     <dl class="og-handout-dl">
       <dt>${esc(T.unitMap[k])}</dt><dd><a href="./curriculum.html">${esc(abs('curriculum.html'))}</a></dd>
       <dt>${esc(T.itPage[k])}</dt><dd><a href="./for-schools.html#it">${esc(abs('for-schools.html'))}</a></dd>
+      <dt>${esc(T.networkCheck[k])}</dt><dd><a href="./readiness.html">${esc(abs('readiness.html'))}</a></dd>
       <dt>${esc(TEXT.footer.privacy[k])}</dt><dd><a href="${L.up}privacy.html">${esc(F.site + 'privacy.html')}</a></dd>
       <dt>${esc(T.askH[k])}</dt><dd>${esc(T.ask[k])} <a href="${contactHref('school-handout')}">${esc(contact)}</a></dd>
     </dl>
+  </section>
+</main>`;
+}
+
+/* ── (wave4-sales) the network and device check — readiness.html ─────────────────────────────────────
+   The allowlist is the page: every host the browser requests, in three tiers, as a table that works without a script
+   (an IT department can act on it from the printout). js/readiness-page.js turns each row into a probe — the row's
+   data-probe is the request, data-tier the tier — and writes the answer into the row's last cell. The words it needs
+   travel as data-* JSON in the page's language, so the script holds none. */
+function readinessBody(F, L) {
+  const T = TEXT.readiness, k = L.i, R = F.readiness;
+  const n = (v) => v.toLocaleString(L.num);
+  const W = { ...words(F, L), probes: n(R.probes.length), worst: n(R.worstS) };
+  const pick = (o) => esc(JSON.stringify(Object.fromEntries(Object.entries(o).map(([key, v]) => [key, v[k]]))));
+  const rows = (tier) => R.probes.filter((p) => p.tier === tier).map((p) =>
+    `<tr data-probe="${esc(p.url)}" data-host="${esc(p.host)}" data-tier="${tier}"><td><code>${esc(p.host)}</code></td><td>${esc(k ? p.whatJp : p.what)}</td><td class="rd-state">${esc(T.live.pending[k])}</td></tr>`).join('\n          ');
+  const site = `<tr data-site><td><code>__INTMAP_SITE_URL__</code></td><td>${esc(T.siteRow[k])}</td><td class="rd-state">—</td></tr>\n          `;
+  const tierBlock = (tier) => `<div class="rd-tier" id="tier-${tier}">
+      <h3>${esc(T.tiers[tier][k])} <span class="rd-count" data-count-for="${tier}"></span></h3>
+      <p class="lp-sub">${esc(T.tierNotes[tier][k])}</p>
+      <div class="lp-tablewrap rd-table">
+        <table>
+          <thead><tr><th>${esc(T.colHost[k])}</th><th>${esc(T.colWhat[k])}</th><th>${esc(T.colState[k])}</th></tr></thead>
+          <tbody>
+          ${tier === 'first' ? site : ''}${rows(tier)}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  return `<main class="lp-main rd" id="rd" data-lang="${L.key}" data-up="${L.up}" data-context="${MAP_CONTEXT}" data-timeout-ms="${PROBE_TIMEOUT_MS}" data-concurrency="${PROBE_CONCURRENCY}"
+  data-live="${pick(T.live)}" data-report="${pick(T.report)}" data-tiers="${pick(T.tiers)}">
+  <section class="lp-hero lp-hero-t">
+    <div class="lp-hero-text">
+      <h1>${esc(T.h1[k])}</h1>
+      <p class="lp-lede">${esc(fill(T.lede[k], W))}</p>
+      <div class="lp-cta">
+        <button class="lp-btn rd-start" id="rd-start" type="button" data-effect="none" hidden>${esc(T.start[k])}</button>
+        <a class="lp-btn lp-btn-2" href="#allow">${esc(T.allowLink[k])}</a>
+      </div>
+      <p class="lp-note">${esc(fill(T.startNote[k], W))}</p>
+      <noscript><p class="lp-note">${esc(T.noScript[k])}</p></noscript>
+    </div>
+  </section>
+
+  <section class="lp-sec rd-result" id="result" hidden>
+    <h2>${esc(T.resultH[k])}</h2>
+    <p class="og-status" id="rd-progress" role="status" aria-live="polite"></p>
+    <div class="lp-tile rd-verdict" id="rd-verdict" hidden>
+      <h3 id="rd-verdict-h"></h3>
+      <p id="rd-verdict-p"></p>
+      <ul class="rd-lines" id="rd-device"></ul>
+      <ul class="rd-lines" id="rd-tiers"></ul>
+      <div class="lp-cta">
+        <button class="lp-btn lp-btn-2" id="rd-copy-report" type="button" data-effect="none">${esc(T.copyReport[k])}</button>
+        <button class="lp-btn lp-btn-2" id="rd-download" type="button" data-effect="none">${esc(T.downloadReport[k])}</button>
+        <a class="lp-btn" id="rd-send" href="./contact.html?attach=readiness">${esc(T.sendReport[k])}</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="lp-sec" id="allow">
+    <h2>${esc(T.allowH[k])}</h2>
+    <p class="lp-sub">${esc(T.allowNote[k])} <a href="${L.up}privacy.html">${esc(TEXT.footer.privacy[k])} →</a> <a href="./security.html">${esc(TEXT.nav.security[k])} →</a></p>
+    <div class="lp-cta"><button class="lp-btn lp-btn-2" id="rd-copy-allow" type="button" data-effect="none" hidden>${esc(T.copyAllow[k])}</button></div>
+    ${TIERS.map(tierBlock).join('\n    ')}
+  </section>
+
+  <section class="lp-sec" id="limits">
+    <h2>${esc(T.limitsH[k])}</h2>
+    <ul class="og-list">
+      ${T.limits.map((p) => `<li>${esc(p[k])}</li>`).join('\n      ')}
+    </ul>
+  </section>
+
+  <section class="lp-sec" id="talk">
+    <div class="lp-support">
+      <h2>${esc(TEXT.common.ctaH[k])}</h2>
+      <p>${esc(TEXT.common.cta[k])}</p>
+      <a class="lp-btn" href="./contact.html">${esc(TEXT.common.ctaBtn[k])}</a>
+    </div>
   </section>
 </main>`;
 }
@@ -935,7 +1041,7 @@ function correctionsBody(F, L) {
 }
 
 export function renderPage(F, page, L) {
-  const body = page === 'contact' ? contactBody(F, L) : page === 'support' ? supportBody(F, L) : page === 'security' ? securityBody(F, L) : page === 'corrections' ? correctionsBody(F, L) : page === 'press' ? pressBody(F, L) : page === 'curriculum' ? curriculumBody(F, L) : page === 'school-handout' ? handoutBody(F, L) : introBody(F, L, page);
+  const body = page === 'contact' ? contactBody(F, L) : page === 'support' ? supportBody(F, L) : page === 'security' ? securityBody(F, L) : page === 'corrections' ? correctionsBody(F, L) : page === 'press' ? pressBody(F, L) : page === 'curriculum' ? curriculumBody(F, L) : page === 'school-handout' ? handoutBody(F, L) : page === 'readiness' ? readinessBody(F, L) : introBody(F, L, page);
   return withInlineHashes(`${head(F, L, page)}
 <body class="lp og-page" data-org-page="${page}">
 ${topbar(L, page)}

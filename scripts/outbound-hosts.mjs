@@ -477,6 +477,9 @@ export function deriveConnectionLedger(ledger) {
     if (r.sends) out.sends = { code: r.sends.code, detail: r.sends.detail };
     if (form === 'disclosure') out.disclosure = { en: r.disclosure.en, jp: r.disclosure.jp };
     if (form === 'dormant') out.switch = r.dormant.switch;
+    /* (wave4-sales) the one representative request the nightly check makes (scripts/upstream-liveness.mjs) — the
+       readiness check (js/readiness-check.js) makes the same request from the reader's own device and network */
+    if (form === 'disclosure' && r.probe && typeof r.probe.url === 'string') out.probe = r.probe.url;
     return out;
   });
   const seen = new Set();

@@ -124,6 +124,64 @@ export default [
     },
   },
   {
+    /* (wave4-sales) WILL INTMAP WORK HERE — the readiness check (js/readiness-check.js) run on the reader's own device and
+       network: the drawing context the map engine needs, and one request to every host the browser code requests (the
+       derived connection ledger's probes), sorted by the same rule readiness.html uses (index.html's preconnect = what the
+       map opens with; the backend; the data layers), each host it could not reach joined to last night's check. */
+    row: ['system.readiness',           'readiness',      'networkCheck,deploymentCheck,schoolNetwork,allowlist,firewallCheck,readinessCheck', 'system', 'none', '', 'explanation',  'read',    'none',   '',         ''],
+    doc: [
+      { in: 'more-features', at: 800, text: '{"type":"readiness","scope"?:"essential"|"all"} = NETWORK AND DEVICE CHECK BEFORE ADOPTING INTMAP — runs, on THIS device and THIS network, the check an organisation (school, newsroom, company, town hall) needs before deciding to use IntMap: whether the browser offers the drawing context the map needs (and whether it is hardware accelerated), background workers, an offline copy; and sends ONE request to each outside service the IntMap page loads, reporting which were reached and which were not — sorted into what the map opens with (base map, imagery, typefaces), IntMap\'s own backend (Atlas, sign-in, forms) and the data layers — and, for each one not reached, whether last night\'s check found that service answering (then it is likely blocked on this network and IT should allow it) or silent too (then it is likely the service). scope:"essential" asks only what the map opens with and the backend (seconds); the default asks all. Not reached is an observed failure; no answer in time is reported apart. Its result links the full page (readiness.html) with the list of addresses to allow and a report to copy or attach to an enquiry. Use for 「学校のネットワークで使える？」「導入前に確認したい」「フィルターで何を許可すればいい？」「接続診断」, "will IntMap work on our network?", "what do we need to allow in our firewall?", "readiness check".\n' },
+    ],
+    phrases: () => ['接続診断', '導入前の確認', '学校のネットワーク', '許可リスト'].concat(['readiness', 'allowlist', 'firewall']),   /* the Japanese phrases, then the English words — two lists, not translations of each other */
+    schema: () => ({ type: 'object', properties: { type: { type: 'string', enum: ['readiness'] }, scope: one('essential', 'all') } }),
+    async run(a, dctx, K) { const R = K.R, warn = K.warn, note = K.note, esc = K.esc, L = K.L;
+      const C = await import('./readiness-check.js');
+      const P = await import('./connections-panel.js');
+      const ledger = await P.loadLedger();
+      if (!ledger || ledger.unreadable) {
+        return R(false, warn(L('The list of services IntMap loads could not be read, so nothing was checked.', 'IntMap が読み込む接続先の一覧を読めなかったため、何も確認していません。')), { meta: { code: 'SOURCE_UNREADABLE', category: 'upstream', retryable: true, produced: [], userGoalSatisfied: false } });
+      }
+      const W = (typeof window !== 'undefined') ? window : globalThis;
+      const firstView = C.firstViewHosts(Array.prototype.map.call(document.querySelectorAll('link[rel="preconnect"]'), (l) => l.href));
+      let backend = ''; try { backend = new URL(W.SUPABASE_URL).hostname; } catch (_) { backend = ''; }
+      let probes = C.probeRows(ledger.hosts, { firstView, backend });
+      if (a && a.scope === 'essential') probes = probes.filter((p) => p.tier !== 'layer');
+      const device = C.deviceReport(document, W);
+      const results = await C.probeAll(probes, {});
+      let lastNight = null;
+      if (results.some((r) => r.verdict !== 'reached')) {
+        try { const S = await import('./service-status.js'); const b = await S.loadStatus(); if (S.usable(b)) lastNight = (h) => S.upstreamFor(b, h); } catch (_) { lastNight = null; }
+      }
+      const m = C.assess(device, results, lastNight);
+      const dot = (c) => '<span style="color:' + c + '">' + icon('dot') + '</span>';
+      const G = '#34c759', A = 'var(--widget-warning,#ff9f0a)', X = 'var(--widget-danger,#ff3b30)';
+      const head = m.overall === 'ready' ? L('IntMap works on this device and network.', 'この端末とネットワークで IntMap を使えます。')
+        : m.overall === 'partial' ? L('The map works here, but some services were not reached.', '地図は使えますが、一部の接続先に到達できませんでした。')
+          : L('The map will not work properly here yet.', 'このままでは地図が正しく表示されません。');
+      const tierName = { first: L('What the map opens with', '地図を開くのに必要なもの'), backend: L('Atlas, sign-in and forms', 'Atlas・ログイン・フォーム'), layer: L('Data layers', 'データレイヤー') };
+      const state = (r) => r.verdict === 'timeout' ? L('no answer in time', '時間内に応答なし') : L('not reached', '到達できず');
+      let h = '<div style="font-weight:600;margin:2px 0 6px;">' + esc(head) + '</div><div style="font-size:12px;line-height:1.75;">';
+      h += dot(device.map ? G : X) + ' ' + esc(L('Map drawing', '地図の描画')) + ' (' + esc(device.context) + '): ' + esc(device.map ? L('available', '使用可能') : L('not available', '使用不可')) + '<br>';
+      if (device.map && device.accelerated != null) h += dot(device.accelerated ? G : A) + ' ' + esc(device.accelerated ? L('drawing uses the graphics processor', '描画に GPU を使用') : L('drawing runs in software — slow', '描画がソフトウェア処理 — 動作が遅い')) + '<br>';
+      h += dot(device.workers ? G : X) + ' ' + esc(L('Background work (Web Workers)', 'バックグラウンド処理（Web Worker）')) + ': ' + esc(device.workers ? L('available', '使用可能') : L('not available', '使用不可')) + '<br>';
+      for (const t of C.TIERS) { const c = m.tiers[t]; if (!c.total) continue;
+        h += dot(c.reached === c.total ? G : t === 'layer' ? A : X) + ' ' + esc(tierName[t]) + ': ' + c.reached + ' / ' + c.total + ' ' + esc(L('reached', '件に到達')) + '<br>'; }
+      h += '</div>';
+      const list = (rows, title) => rows.length ? '<div style="font-size:11px;font-weight:600;opacity:.75;margin:8px 0 2px;">' + esc(title) + ' · ' + rows.length + '</div><div style="font-size:12px;line-height:1.6;">'
+        + rows.slice(0, 12).map((r) => esc(r.host) + ' <span style="opacity:.7;">— ' + esc(L(r.what, r.whatJp)) + ' (' + esc(state(r)) + ')</span>').join('<br>')
+        + (rows.length > 12 ? '<br><span style="opacity:.7;">' + esc(L('… and ' + (rows.length - 12) + ' more on the check page', '…ほか ' + (rows.length - 12) + ' 件（診断ページに全件）')) + '</span>' : '') + '</div>' : '';
+      h += list(m.allow, L('Not reached from here — likely blocked on this network; allow these', 'この端末から到達できず — このネットワークで遮断されている可能性（許可が必要）'));
+      h += list(m.supplierDown, L('Not reached, and silent in last night\'s check too — likely the service', '到達できず、昨夜の確認でも応答なし — 提供元の不調の可能性'));
+      if (m.missing.length && !lastNight) h += note(esc(L('Last night\'s check could not be read, so it is not known whether these are blocked here or down at the service.', '昨夜の確認を読めなかったため、ここで遮断されているのか提供元の不調なのかは分かりません。')));
+      h += note('<a href="./readiness.html" target="_blank" rel="noopener">' + esc(L('Open the full check — the list of addresses to allow and a report to copy or send with an enquiry', '診断ページを開く — 許可が必要なアドレスの一覧と、コピー・相談に添付できる結果')) + '</a>');
+      const facts = { overall: m.overall, device, checked: m.checked, reached: m.reached, scope: (a && a.scope) || 'all',
+        tiers: Object.fromEntries(C.TIERS.map((t) => [t, { total: m.tiers[t].total, reached: m.tiers[t].reached }])),
+        notReached: m.missing.map((r) => ({ host: r.host, tier: r.tier, verdict: r.verdict, supplier: r.supplier })), lastNightRead: !!lastNight };
+      /* the check RAN and its result is the answer — a host it could not reach is a finding, never this operation failing */
+      return R(true, h, { meta: { readiness: facts } });
+    },
+  },
+  {
     /* (ops-next) 「新着」— what changed in IntMap, from whats-new.json (scripts/whats-new.mjs writes it at build from the
        reader's lines every merge's record carries). Read only: the list is IntMap's own words about itself. */
     row: ['system.whatsNew',            'whatsNew',       'whatsnew,changelog,releaseNotes,updates,newFeatures',          'system',  'none',    '',                       'explanation',         'read',    'none',   '',         ''],

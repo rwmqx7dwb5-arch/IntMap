@@ -59,6 +59,8 @@ for-newsrooms.html / press.html / for-schools.html / for-research.html / contact
 curriculum.html / school-handout.html
                                 単元対応表（3 つのカリキュラムの単元と、開ける地図・授業ツアー・クエスト・「この単元のツアーを作る」）と
                                 学校向けの A4 1 枚の案内（ja/ が日本語版）。同じく scripts/org-pages.mjs が生成する。Architecture.md §8.6.5
+readiness.html                  導入前の接続診断——許可が必要な接続先の一覧（3 層）と、この端末・ネットワークでの診断（js/readiness-page.js）。
+                                ja/ が日本語版。同じく scripts/org-pages.mjs が生成する。Architecture.md §8.6.6
                                 scripts/org-pages.mjs が生成する（手で編集しない。文は scripts/org-pages-text.mjs）。Architecture.md §11
 admin-inquiries.html            相談のコンソール（org_inquiries の閲覧・状態とメモ・削除、supporters の掲載）。英語・noindex。
 admin-corrections.html          地図の誤り報告のコンソール（map_corrections を世界地図の上に並べ、回答・公開する）。英語・noindex。
@@ -1571,6 +1573,10 @@ whats-new.js                      **「新着」**——IntMap に加わった�
                                   `newsen`/`newsjp` から書く）。設定 ▸ 新着・未読の印（ボタンが初めて画面に入ったときに数える）・
                                   Atlas の `system.whatsNew` が読む。初めて使われたときに取得（握りは `layer-state.js` の
                                   `window.IntMapWhatsNew`）。15-ops-quality.md §15.9
+readiness-check.js                導入前の接続診断の規則——描画文脈（maplibre-gl と同じ）・接続先を 3 層に分ける（index.html の preconnect／基盤／
+                                  レイヤー）・1 回の no-cors 問い合わせ（到達／到達できず／時間内に応答なし）・昨夜の確認と結ぶ判定。
+                                  readiness.html（js/readiness-page.js）と Atlas の system.readiness が読み、scripts/org-pages.mjs が許可リストを書く。08-ui.md §8.6.6
+readiness-page.js                 readiness.html の動き（素のまま配るモジュール）——押すと診断し、行ごとに結果を書き、結果をコピー・保存・相談へ添付
 host-match.js                     出口の台帳（`scripts/outbound-hosts.json`）のホスト名・パターン（`*.wikipedia.org`）の照合 1 つ。
                                   `scripts/upstream-liveness.mjs` と `service-status.js` が同じ関数を読む
 fetch-deadline.js                 締切つきの取得 `jsonWithin()` / `readWithin()`——相手が答えるのをやめても必ず終わる 1 回の取得。
@@ -1641,7 +1647,8 @@ service-status.json               **昨夜の確認を読者へ**——上流ホ
                                   （`.github/workflows/tle-refresh.yml` が 1 日 2 回）。`history` に毎晩の判定を 1 晩 1 文字で最大 90 晩
                                   （公開台帳）、`atlasEval.offline` にセッション不要の評価の件数
 connection-ledger.json            **このページの通信を何と突き合わせるか**——`scripts/outbound-hosts.json` の全行のうち読者に見せる部分
-                                  （host・形〈disclosure／link／dormant／removedBy〉・what・送るもの・Privacy §4 の語句）。生成は
+                                  （host・形〈disclosure／link／dormant／removedBy〉・what・送るもの・Privacy §4 の語句・要求する行の probe〈毎晩の確認と同じ
+                                  1 回の要求。導入前の接続診断が読む〉）。生成は
                                   scripts/connection-ledger.mjs（`--write` / `--check`）。`check:datagov`（規則 outbound-disclosed）が突き合わせる
 offline-sources.json              **どの供給元のファイルを回線なしで使えるよう保存してよいか**——`scripts/outbound-hosts.json` の各ホスト行の
                                   `offline`（allowed・kind・pathPrefix・規約の URL・理由）から導出。述べられていないホストは入らない。
