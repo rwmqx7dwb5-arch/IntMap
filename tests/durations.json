@@ -1,4 +1,6 @@
 {
+ "tests/wave4-news.spec.js": 6,
+ "tests/wave4-history.spec.js": 8,
  "tests/wave4-ux-mobile.spec.js": 22,
  "tests/hist-product.spec.js": 8,
  "tests/mobile-product.spec.js": 26,
