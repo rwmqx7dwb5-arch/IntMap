@@ -93,7 +93,9 @@ JA: IntMap は無料の地球の時空間アトラスです。いまの世界と
 |---|---|---|---|
 | `img/showcase/europe-1914.jpg` | `img/showcase/europe-1914-card.jpg` | Europe on 27 June 1914 | 1914年6月27日のヨーロッパ |
 | `img/showcase/europe-1920.jpg` | `img/showcase/europe-1920-card.jpg` | Europe on 1 July 1920 | 1920年7月1日のヨーロッパ |
+| `img/showcase/ww2-1942.jpg` | `img/showcase/ww2-1942-card.jpg` | The Second World War, 1 November 1942 | 第二次世界大戦　1942年11月1日 |
 | `img/showcase/cold-war-1985.jpg` | `img/showcase/cold-war-1985-card.jpg` | Cold War Europe, 1985 | 冷戦期のヨーロッパ　1985年 |
+| `img/showcase/korea-1950.jpg` | `img/showcase/korea-1950-card.jpg` | The Korean War, 10 September 1950 | 朝鮮戦争　1950年9月10日 |
 | `img/showcase/japan-1900.jpg` | `img/showcase/japan-1900-card.jpg` | Japan in 1900 | 1900年の日本 |
 | `img/showcase/world-100.jpg` | `img/showcase/world-100-card.jpg` | The world in AD 100 | 西暦100年の世界 |
 | `img/showcase/world-3000bc.jpg` | `img/showcase/world-3000bc-card.jpg` | The world in 3000 BC | 紀元前3000年の世界 |

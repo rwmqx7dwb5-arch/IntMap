@@ -84,7 +84,6 @@ const DECLARED = [
   },
   {
     id: 'ww2-1942',
-    withheld: 'MEASURED 2026-10-02: opened from its link, the map can end on the war\u2019s first day instead of the link\u2019s date. js/map-ui.js restore() ticks the war row at +700 ms and sets the clock at +900 ms; js/war-layer.js moves the clock to the record\u2019s first day when its row comes on with the clock outside the war, and decides that only after data/wars.json (954 kB) has arrived. When the record arrives after +900 ms the war layer wins (1939-08-23 instead of 1942-11-01, seen in tests/landing-showcase.spec.js under load); on a real network that is the usual case. Returns when the share-link restore owns the clock over a row\u2019s entry move.',
     topic: 'history',
     audience: ['curious', 'teachers'],
     curriculum: ['rekishi-c'],
@@ -125,7 +124,6 @@ const DECLARED = [
   },
   {
     id: 'korea-1950',
-    withheld: 'the same race as ww2-1942 (js/war-layer.js\u2019s entry move against the share-link restore\u2019s clock)',
     topic: 'history',
     audience: ['teachers'],
     curriculum: ['rekishi-d'],
@@ -457,11 +455,23 @@ export const CAPTURED = {
     "card": "img/showcase/europe-1920-card.jpg",
     "thumb": "img/showcase/europe-1920-thumb.jpg"
   },
+  "ww2-1942": {
+    "hash": "#v=30.0000,45.0000,2.60,0,0,f&l=dl-ww2&tt=1942-11-01",
+    "image": "img/showcase/ww2-1942.jpg",
+    "card": "img/showcase/ww2-1942-card.jpg",
+    "thumb": "img/showcase/ww2-1942-thumb.jpg"
+  },
   "cold-war-1985": {
     "hash": "#v=16.0000,52.0000,3.20,0,0,f&tt=1985-07-01",
     "image": "img/showcase/cold-war-1985.jpg",
     "card": "img/showcase/cold-war-1985-card.jpg",
     "thumb": "img/showcase/cold-war-1985-thumb.jpg"
+  },
+  "korea-1950": {
+    "hash": "#v=127.8000,36.4000,5.40,0,0,f&l=dl-korea&tt=1950-09-10",
+    "image": "img/showcase/korea-1950.jpg",
+    "card": "img/showcase/korea-1950-card.jpg",
+    "thumb": "img/showcase/korea-1950-thumb.jpg"
   },
   "japan-1900": {
     "hash": "#v=133.0000,34.0000,4.00,0,0,f&tt=1900-07-01",
@@ -540,16 +550,6 @@ export const CAPTURED = {
     "image": "img/showcase/world-heritage.jpg",
     "card": "img/showcase/world-heritage-card.jpg",
     "thumb": "img/showcase/world-heritage-thumb.jpg"
-  },
-  "ww2-1942": {
-    "hash": "#v=30.0000,45.0000,2.60,0,0,f&l=dl-ww2&tt=1942-11-01",
-    "image": "img/showcase/ww2-1942.jpg",
-    "card": "img/showcase/ww2-1942-card.jpg"
-  },
-  "korea-1950": {
-    "hash": "#v=127.8000,36.4000,5.40,0,0,f&l=dl-korea&tt=1950-09-10",
-    "image": "img/showcase/korea-1950.jpg",
-    "card": "img/showcase/korea-1950-card.jpg"
   }
 };
 /* ⚠ GENERATED SHOWCASE — END */

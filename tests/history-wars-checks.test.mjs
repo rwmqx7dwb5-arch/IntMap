@@ -36,42 +36,11 @@ const R = (p) => readLF(join(ROOT, p));
 const raw = (p) => readFileSync(join(ROOT, p), 'utf8');
 /* comments are prose: a rule asserted only inside a comment block asserts nothing */
 
-const wars = JSON.parse(raw('data/wars.json'));
+/* (ww2-tour) the war, the record and «what will a reader see» are read by one helper, shared with tests/ww2-tour-checks */
+import { wars, CS, dnum, polysOf, war, cutsFor, faction } from './helpers/war-faction.mjs';
 const WARS = wars;
-const csText = raw('data/cshapes.js');
-const CS = JSON.parse(csText.slice(csText.indexOf('=') + 1).replace(/;\s*$/, ''));
-const dnum = (d) => { const p = String(d).split('-'); return (+p[0]) * 10000 + (+p[1]) * 100 + (+p[2]); };
-const polysOf = (f) => f[8].map((poly) => poly.map((ri) => CS.rings[ri]));
-const war = (id) => wars.wars.find((w) => w.id === id);
 const front = (id, fid) => war(id).fronts.find((f) => f.id === fid);
 const LANGS = ['en', 'jp', 'de', 'ru', 'es', 'zh', 'zh-hans', 'fr', 'ko'];
-
-/* the fronts that cut one CShapes polity on one day, read the way js/war-fronts.js reads them */
-const cutsFor = (w, gw, d) => {
-  const out = [];
-  for (const F of w.fronts) {
-    if (F.until && d >= F.until) continue;
-    let cur = null;
-    for (const D of F.dates) { if (D.d <= d) cur = D; }
-    if (!cur || cur.cuts.indexOf(gw) < 0) continue;
-    out.push({ pts: cur.pts, left: cur.left || F.left, right: cur.right || F.right });
-  }
-  return out;
-};
-/* «what will a reader see» at a point on a day: the country under it, its base colour and the cuts */
-function faction(id, d, pt) {
-  const w = war(id), t = dnum(d);
-  let hit = null;
-  for (const f of CS.feats) {
-    if (f[2] * 10000 + f[3] * 100 + f[4] > t || f[5] * 10000 + f[6] * 100 + f[7] < t) continue;
-    if (WarGeom.pointInPolys(pt, polysOf(f))) { hit = f; break; }
-  }
-  assert.ok(hit, `${d}: no country contains ${pt}`);
-  let base = 'NEUTRAL';
-  const tl = w.control[hit[1]];
-  if (tl) for (const [dd, k] of tl) { if (dd <= d) base = k; }
-  return WarGeom.factionAt(pt, polysOf(hit), base, cutsFor(w, hit[1], d));
-}
 
 /* a statement block taken by its braces, string-aware — the same matcher as liftFunction, for a
    block that is not a function declaration (an `if (…) {…}`, an object literal, a `for`) */

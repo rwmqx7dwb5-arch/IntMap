@@ -168,6 +168,14 @@
     <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__s/europe-1920.html"/>
     <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/s/europe-1920.html"/>
   </url>
+  <url><loc>__INTMAP_SITE_URL__s/ww2-1942.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__s/ww2-1942.html"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/s/ww2-1942.html"/>
+  </url>
+  <url><loc>__INTMAP_SITE_URL__ja/s/ww2-1942.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__s/ww2-1942.html"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/s/ww2-1942.html"/>
+  </url>
   <url><loc>__INTMAP_SITE_URL__s/cold-war-1985.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__s/cold-war-1985.html"/>
     <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/s/cold-war-1985.html"/>
@@ -175,6 +183,14 @@
   <url><loc>__INTMAP_SITE_URL__ja/s/cold-war-1985.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__s/cold-war-1985.html"/>
     <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/s/cold-war-1985.html"/>
+  </url>
+  <url><loc>__INTMAP_SITE_URL__s/korea-1950.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__s/korea-1950.html"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/s/korea-1950.html"/>
+  </url>
+  <url><loc>__INTMAP_SITE_URL__ja/s/korea-1950.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__s/korea-1950.html"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/s/korea-1950.html"/>
   </url>
   <url><loc>__INTMAP_SITE_URL__s/japan-1900.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__s/japan-1900.html"/>
