@@ -314,6 +314,12 @@ export function dailyStreak(days, today) {
   return { current, best, playedToday };
 }
 
+/* ══ THE SET LENGTHS — what the panel offers (js/quest-panel.js «Questions per set»)   (wave4-education) ══════════════════
+   A link may carry any n ≥ 1, but these are the lengths a reader is offered, and the only ones a CLASS SET may have:
+   the table that keeps class sets (supabase/migrations/20261013090000_class_quest.sql, CHECK n in (5, 10)) holds exactly
+   this list, and tests/wave4-education-checks.test.mjs holds the two together. DAILY_N is the first. */
+export const SET_LENGTHS = Object.freeze([DAILY_N, 10]);
+
 /* ══ THE CHALLENGE LINK — `?quest=<kind>.<seed>.<n>` (the page's mode, beside `?tour=` — js/map-state.js address) ══ */
 export function questQuery(kind, seed, n) { return '?quest=' + encodeURIComponent(kind) + '.' + encodeURIComponent(seed) + '.' + Math.max(1, Math.floor(+n) || 1); }
 /** `?quest=…` read back → { kind, seed, n }, or null when it is not a quest this engine can ask */

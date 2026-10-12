@@ -14,6 +14,10 @@
  *  the streak and the last week (js/quest-daily.js); the first finish of a day's set is recorded — in this browser,
  *  and in the account when signed in — and a replay is practice. The account sheet's «Today's quest» row
  *  (js/auth-ui.js) and Atlas (`learn.daily`) open the same menu and sets.
+ *  CLASS SETS (wave4-education): a challenge link with a class code (`&class=<code>`, js/quest-class.js) opens on a screen
+ *  that asks the student's name; at the end of the set the RAW answers (kept in Q.answers) are handed in to the teacher,
+ *  who reads them on the board (js/quest-class-board.js — opened from the menu's «Your class sets» and the end screen's
+ *  «Use with a class»). The board re-makes the questions with questionsOf() below and scores with this file's engine.
  *  Doors: the quiz menu (js/analysis-edu.js), Layers ▸ Tools (js/map-ui.js SIM_TOOLS), a challenge link
  *  (`?quest=<kind>.<seed>.<n>` — src/main.js, beside `?tour=`), and Atlas (`learn.quest`, js/atlas-cap-learn.js),
  *  which reads `questState()` after it acts (.agents/rules/one-pass-or-a-reason.md — the observer asks the module).
@@ -33,8 +37,9 @@ import * as bus from './bus.js';
 import './safe-html.js';
 import * as OTD from './on-this-day.js';
 import { nameItems } from './layer-manifest.js';   /* the display rows that write names — their own declaration (`names`) */
-import { makeQuestEngine, QUEST_KIND_IDS, QUEST_DATA, kindTitle, kindNeeds, questQuery, questFromSearch, newSeed, SEED_RE, DAILY_N, dailySeed, isDailySet, parseDay } from './quest-engine.js';
+import { makeQuestEngine, QUEST_KIND_IDS, QUEST_DATA, kindTitle, kindNeeds, questQuery, questFromSearch, newSeed, SEED_RE, DAILY_N, dailySeed, isDailySet, parseDay, SET_LENGTHS } from './quest-engine.js';
 import * as DAILY from './quest-daily.js';   /* (watch-account-product) today's quest — the day's results, the streak, where they are kept */
+import * as CLASS from './quest-class.js';   /* (wave4-education) class sets — a student's hand-in, a teacher's way to make one */
 
 const GE = () => IntMapGeoEngine;
 const H = (s) => globalThis.IntMapSafe.html(String(s == null ? '' : s));
@@ -73,9 +78,18 @@ const engine = makeQuestEngine({
   get halfCircumferenceKm() { const G = geodesy(); return G ? G._HALF_CIRCUM : null; },
 });
 
+/** (wave4-education) the questions of (kind, seed, n) and the engine that scores them — the same data, the same engine
+ *  the panel asks with, so the class board (js/quest-class-board.js) scores a hand-in exactly as the student's panel did.
+ *  → { ok:true, qs, engine } | { ok:false, reason } */
+export async function questionsOf(kind, seed, n) {
+  if (QUEST_KIND_IDS.indexOf(kind) < 0 || !SEED_RE.test(String(seed || ''))) return { ok: false, reason: 'unknown-kind' };
+  try { return { ok: true, qs: engine.generate(kind, String(seed), n, await need(kind)), engine }; }
+  catch (e) { return { ok: false, reason: 'data', detail: String((e && e.message) || e) }; }
+}
+
 /* ══ STATE — one quest at a time ═════════════════════════════════════════════════════════════════ */
-/** @type {null|{ kind:string, seed:string, n:number, qs:any[], i:number, phase:'ask'|'shown'|'done', results:any[], answer:any, newBest?:boolean,
- *   daily:null|{ day:string, practice:boolean, record?:any } }} */
+/** @type {null|{ kind:string, seed:string, n:number, qs:any[], i:number, phase:'ask'|'shown'|'done', results:any[], answers:any[], answer:any, newBest?:boolean,
+ *   daily:null|{ day:string, practice:boolean, record?:any }, cls:null|{ code:string, title:string, name:string, sent:any } }} */
 let Q = null;
 let panel = null, saved = null, clickOn = false, langOff = null, menuN = 5;
 const SRC = 'quest-answer-src', L_LINE = 'quest-answer-line', L_PT = 'quest-answer-pt';
@@ -87,13 +101,14 @@ export function questState() {
   const pts = Q.results.reduce((s, r) => s + (r ? r.points : 0), 0), max = Q.results.reduce((s, r) => s + (r ? r.max : 0), 0);
   return { open, kind: Q.kind, seed: Q.seed, n: Q.n, index: Math.min(Q.i + 1, Q.qs.length), of: Q.qs.length, phase: Q.phase,
     points: pts, max, link: questLink(Q.kind, Q.seed, Q.n), blind: document.body.classList.contains(BLIND_CLASS),
-    daily: Q.daily ? { day: Q.daily.day, practice: !!Q.daily.practice, record: Q.daily.record || null } : null };
+    daily: Q.daily ? { day: Q.daily.day, practice: !!Q.daily.practice, record: Q.daily.record || null } : null,
+    cls: Q.cls ? { code: Q.cls.code, title: Q.cls.title, name: Q.cls.name, sent: Q.cls.sent || null } : null };
 }
 /** the challenge link of (kind, seed, n): this page's address with the quest as its query */
 export function questLink(kind, seed, n) {
   try { return location.origin + location.pathname + questQuery(kind, seed, n); } catch (_) { return questQuery(kind, seed, n); }
 }
-function freshSeed() {
+export function freshSeed() {
   const w = new Uint32Array(2);
   try { crypto.getRandomValues(w); } catch (_) { w[0] = Date.now() >>> 0; w[1] = (performance.now() * 1000) >>> 0; }
   return newSeed(w[0], w[1]);
@@ -240,9 +255,12 @@ function paintMenu() {
     + '<div class="qst-today" id="qst-today">' + todayHTML(summary) + '</div>'
     + '<div class="qst-sec">' + H(t('Any time', 'いつでも')) + '</div>'
     + '<div class="qst-kinds">' + kinds + '</div>'
-    + '<label class="qst-n">' + H(t('Questions per set', '1 回の問題数')) + ' <select id="qst-n"><option value="5">5</option><option value="10">10</option></select></label>';
+    + '<label class="qst-n">' + H(t('Questions per set', '1 回の問題数')) + ' <select id="qst-n">' + SET_LENGTHS.map((v) => '<option value="' + H(v) + '">' + H(v) + '</option>').join('') + '</select></label>'
+    + '<button type="button" class="ai-test-btn qst-kind qst-classes" id="qst-classes">' + icon('users') + ' <span><b>' + H(t('Your class sets', 'クラスのセット')) + '</b><small>'
+    + H(t('Give a class a set and see every student’s answers — who took part, the hardest question, the class’s taps on the map.', 'クラスにセットを配り、生徒全員の答えを見ます——参加者・いちばん難しかった問題・クラスのタップを地図で。')) + '</small></span></button>';
   wire();
   wireToday();
+  const cls = p.querySelector('#qst-classes'); if (cls) cls.addEventListener('click', () => { openClassBoard(); });
   const sel = /** @type {HTMLSelectElement} */ (p.querySelector('#qst-n')); sel.value = String(menuN);
   sel.addEventListener('change', () => { menuN = +sel.value || 5; paintMenu(); });
   p.querySelectorAll('.qst-kind').forEach((b) => b.addEventListener('click', () => { startQuest({ kind: b.getAttribute('data-kind'), n: menuN }); }));
@@ -371,12 +389,14 @@ function paintDone() {
   p.innerHTML = header(H(Q.daily ? t('Today’s ', '今日の') + kindTitle(Q.kind, lang()) + ' · ' + dayLong(Q.daily.day) : kindTitle(Q.kind, lang())))
     + '<div class="qst-total"><b>' + H(st.points) + '</b> / ' + H(st.max) + (Q.newBest ? '<span>' + H(t('New personal best', '自己ベスト更新')) + '</span>' : (best != null ? '<span>' + H(t('Best ', '自己ベスト ')) + H(best) + '</span>' : '')) + '</div>'
     + (Q.daily ? dailyDoneHTML() : '')
+    + (Q.cls ? classDoneHTML() : '')
     + '<ol class="qst-list">' + rows + '</ol>'
     + '<div class="qst-share"><div class="qst-share-h">' + icon('link') + ' ' + H(t('Challenge link — everyone who opens it gets these same questions', '挑戦リンク——開いた人は全員この同じ問題を解きます')) + '</div>'
     + '<input type="text" readonly id="qst-link" value="' + H(st.link) + '" aria-label="' + H(t('Challenge link', '挑戦リンク')) + '">'
     + '<div class="qst-acts"><button type="button" class="ai-test-btn" id="qst-copy">' + icon('clipboard') + ' ' + H(t('Copy', 'コピー')) + '</button>'
     + (Q.daily ? '<button type="button" class="ai-test-btn" id="qst-copyres">' + icon('clipboard') + ' ' + H(t('Copy the result', '結果をコピー')) + '</button>' : '')
     + (share ? '<button type="button" class="ai-test-btn" id="qst-sharebtn">' + icon('share') + ' ' + H(t('Share…', '共有…')) + '</button>' : '') + '</div></div>'
+    + (!Q.cls && CLASS.classable(Q.kind, Q.seed, Q.n) ? '<button type="button" class="ai-test-btn" id="qst-class">' + icon('users') + ' ' + H(t('Use with a class — see every student’s answers', 'クラスで使う——生徒全員の答えを見る')) + '</button>' : '')
     + '<div class="qst-acts"><button type="button" class="ai-test-btn qst-go" id="qst-again">' + H(t('New set', '新しい問題で')) + '</button>'
     + '<button type="button" class="ai-test-btn" id="qst-menu">' + H(t('Other quests', 'ほかのクエスト')) + '</button></div>';
   wire();
@@ -400,6 +420,14 @@ function paintDone() {
     res.innerHTML = done ? icon('check') + ' ' + H(t('Copied', 'コピーしました')) : H(t('Could not copy — the link above can be copied', 'コピーできませんでした。上のリンクはコピーできます'));
   });
   const again = p.querySelector('#qst-again'); if (again) again.addEventListener('click', () => startQuest({ kind: Q.kind, n: Q.n }));
+  const resend = p.querySelector('#qst-cls-send');
+  if (resend) resend.addEventListener('click', () => {
+    const f = /** @type {HTMLInputElement} */ (p.querySelector('#qst-cls-name'));
+    const nm = CLASS.cleanName(f && f.value);
+    if (!nm) { Q.cls.sent = { ok: false, error: 'invalid_name' }; paint(); return; }
+    Q.cls.name = nm; handIn(Q);
+  });
+  const useCls = p.querySelector('#qst-class'); if (useCls) useCls.addEventListener('click', () => { openClassBoard({ create: { kind: Q.kind, seed: Q.seed, n: Q.n } }); });
   const menu = p.querySelector('#qst-menu'); if (menu) menu.addEventListener('click', () => { endSet(); paintMenu(); });
   p.querySelectorAll('.qst-open').forEach((b) => b.addEventListener('click', async () => {
     const q = Q.qs[+b.getAttribute('data-i')];
@@ -424,7 +452,7 @@ function answer(a) {
   if (!Q || Q.phase !== 'ask') return;
   const q = Q.qs[Q.i];
   const r = engine.score(q, a);
-  Q.results[Q.i] = r; Q.phase = 'shown';
+  Q.results[Q.i] = r; Q.answers[Q.i] = a; Q.phase = 'shown';
   if (q.kind === 'where') { unnamed(false); holdTaps(false); drawAnswer(q.at, a ? [a.lng, a.lat] : null); }
   else blind(false);   /* the answer is out: the clock may say the day now */
   try { bus.emit(MAP_ANSWER_EVENT, { kind: 'card' }); } catch (_) { }
@@ -437,6 +465,36 @@ function next() {
   Q.newBest = keepBest(Q.kind, Q.n, questState().points);
   paint();
   if (Q.daily && !Q.daily.practice) recordToday(Q);
+  if (Q.cls) handIn(Q);
+}
+/* (wave4-education) A CLASS SET'S HAND-IN — the raw answers in the travelling shape (js/quest-class.js encodeAnswer) and the
+   name the student typed, once, when the set is finished. What the database said is shown where the result is. A refusal
+   («closed», «name_taken») is a fact about the set, not a failure to retry — the screen says which, and offers to send
+   again only where sending again can differ: another name after «name_taken», or after the connection failed. */
+async function handIn(set) {
+  set.cls.sent = { pending: true };
+  if (Q === set) paint();
+  const answers = set.qs.map((q, i) => CLASS.encodeAnswer(q.kind, set.answers[i]));
+  let r;
+  try { r = await CLASS.submitClassAnswers(HOST && HOST.DB, set.cls.code, set.cls.name, answers); }
+  catch (_) { r = { ok: false, error: 'unavailable' }; }
+  set.cls.sent = r;
+  if (Q === set && Q.phase === 'done') paint();
+}
+const RESENDABLE = ['name_taken', 'invalid_name', 'unavailable', 'failed', 'not_deployed'];
+function classDoneHTML() {
+  const c = Q.cls, r = c.sent;
+  let line, ok = false, again = '';
+  if (!r || r.pending) line = t('Handing in your answers…', '答えを提出しています…');
+  else if (r.ok) { ok = true; line = t('Handed in to your teacher as «' + c.name + '».', '「' + c.name + '」として先生に提出しました。') + ' ' + t(r.answered + ' in the class so far.', 'これまでに ' + r.answered + ' 人が提出しています。'); }
+  else {
+    line = CLASS.classFailureText(r.error, lang());
+    if (RESENDABLE.indexOf(r.error) >= 0) {
+      again = '<div class="qst-name-row"><input type="text" id="qst-cls-name" maxlength="' + H(CLASS.CLASS_NAME_MAX) + '" value="' + H(r.error === 'name_taken' ? '' : c.name) + '" aria-label="' + H(t('Your name', 'あなたの名前')) + '" placeholder="' + H(t('Your name', 'あなたの名前')) + '">'
+        + '<button type="button" class="ai-test-btn qst-go" id="qst-cls-send">' + H(t('Hand in', '提出する')) + '</button></div>';
+    }
+  }
+  return '<div class="qst-dres' + (ok ? '' : ' practice') + '">' + H((c.title ? c.title + ' · ' : '') + t('Class set', 'クラスのセット')) + '<small>' + H(line) + '</small>' + again + '</div>';
 }
 /* (watch-account-product) THE FIRST FINISH OF A DAY'S SET IS RECORDED — in this browser, and in the account when signed
    in (js/quest-daily.js recordDay). What the record said is shown where the result is (dailyDoneHTML), then the
@@ -491,7 +549,8 @@ export async function startQuest(o) {
      the menu, Atlas, or a friend's link to today's set. A day and kind that already has its result is practice from the start. */
   const day = DAILY.today();
   const daily = isDailySet(kind, seed, n, day) && qs.length === DAILY_N ? { day, practice: playedToday(kind, day) } : null;
-  Q = { kind, seed, n, qs, i: 0, phase: 'ask', results: [], answer: null, daily };
+  const cls = o.cls && CLASS.CLASS_CODE_RE.test(String(o.cls.code || '')) ? { code: String(o.cls.code), title: String(o.cls.title || ''), name: String(o.cls.name || ''), sent: null } : null;
+  Q = { kind, seed, n, qs, i: 0, phase: 'ask', results: [], answers: [], answer: null, daily, cls };
   ask();
   return Object.assign({ ok: true }, questState());
 }
@@ -530,18 +589,66 @@ export function closeQuest(opts) {
 /** the page was opened with `?quest=<kind>.<seed>.<n>` (src/main.js): start that set once the map is ready */
 export async function bootFromUrl() {
   const want = questFromSearch(location.search);
+  const code = CLASS.classCodeFromSearch(location.search);   /* (wave4-education) a class set's link */
   /* the query is spent: a reload is an ordinary start (the link is offered again at the end of the set) */
-  try { const q = new URLSearchParams(location.search); q.delete('quest'); MapState.address(q.toString()); } catch (_) { /* cosmetic */ }
+  try { const q = new URLSearchParams(location.search); q.delete('quest'); q.delete('class'); MapState.address(q.toString()); } catch (_) { /* cosmetic */ }
   if (!want) return { ok: false, reason: 'bad-link' };
   HOST = await whenHost();
-  await new Promise((res) => {
+  if (code) { await mapReady(); return joinClass(want, code); }
+  await mapReady();
+  return startQuest(want);
+}
+function mapReady() {
+  return new Promise((res) => {
     const t0 = Date.now();
     const ok = () => { try { return GE().hasRenderer() && GE().ready(); } catch (_) { return false; } };
     /* 30 s: the bound js/place-dossier.js whenMapReady waits for the same renderer at boot; the set starts either way */
     const tick = () => { if (ok() || Date.now() - t0 > 30000) res(); else setTimeout(tick, 150); };
     tick();
   });
-  return startQuest(want);
+}
+
+/* ══ A CLASS SET — the student's door, and the teacher's (wave4-education) ════════════════════════════════
+   The student's link names a set by its code; the SET's own quest is asked (the database's kind, seed and n — a link
+   whose quest was edited by hand does not hand in answers to other questions). The name is asked before the first
+   question, so a student who closes the tab at the end has still been asked. A set that cannot take answers (closed,
+   deleted, unreachable) is said so, and the questions can still be played. */
+async function joinClass(want, code) {
+  const p = ensure(); p.style.display = 'block';
+  p.innerHTML = header('') + '<div class="qst-hint">' + H(t('Opening the class set…', 'クラスのセットを開いています…')) + '</div>'; wire();
+  const set = await CLASS.openClassSet(HOST && HOST.DB, code);
+  const quest = set.ok ? { kind: set.kind, seed: set.seed, n: +set.n } : want;
+  const takes = !!(set.ok && set.open);
+  p.innerHTML = header(H(t('Class set', 'クラスのセット')))
+    + (set.ok && set.title ? '<div class="qst-name">' + H(set.title) + '</div>' : '')
+    + '<div class="qst-q">' + H(kindTitle(quest.kind, lang())) + ' · ' + H(t(quest.n + ' questions', quest.n + ' 問')) + '</div>'
+    + (takes ? '<div class="qst-hint">' + H(t('Type the name your teacher asked for. Your answers are sent to your teacher at the end — nothing else is.', '先生に言われた名前を入力してください。最後に答えが先生に送られます（それ以外は送られません）。')) + '</div>'
+      + '<div class="qst-name-row"><input type="text" id="qst-cls-name" maxlength="' + H(CLASS.CLASS_NAME_MAX) + '" autocomplete="off" aria-label="' + H(t('Your name', 'あなたの名前')) + '" placeholder="' + H(t('Your name', 'あなたの名前')) + '"></div>'
+      + '<div class="qst-hint" id="qst-cls-msg" role="status"></div>'
+      + '<button type="button" class="ai-test-btn qst-go" id="qst-cls-go">' + H(t('Start the set', '始める')) + '</button>'
+      : '<div class="qst-dres practice">' + H(CLASS.classFailureText(set.ok ? 'closed' : set.error, lang())) + '</div>'
+      + '<button type="button" class="ai-test-btn qst-go" id="qst-cls-play">' + H(t('Play the questions', '問題を解く')) + '</button>');
+  wire();
+  const go = p.querySelector('#qst-cls-go'), play = p.querySelector('#qst-cls-play');
+  const field = /** @type {HTMLInputElement|null} */ (p.querySelector('#qst-cls-name'));
+  if (play) play.addEventListener('click', () => { startQuest(quest); });
+  if (go) {
+    const start = () => {
+      const nm = CLASS.cleanName(field && field.value);
+      if (!nm) { const m = p.querySelector('#qst-cls-msg'); if (m) m.textContent = CLASS.classFailureText('invalid_name', lang()); return; }
+      startQuest(Object.assign({}, quest, { cls: { code: set.code || code, title: set.title || '', name: nm } }));
+    };
+    go.addEventListener('click', start);
+    if (field) { field.addEventListener('keydown', (e) => { if (e.key === 'Enter') start(); }); try { field.focus(); } catch (_) { } }
+  }
+  /* the link is open: the screen waits for the student's name (or for «Play» when the set takes nothing) */
+  return takes ? { ok: true, phase: 'join', code: set.code || code } : { ok: false, reason: set.ok ? 'closed' : set.error, quest };
+}
+/** (wave4-education) the teacher's board of class sets — `o.create` = { kind, seed, n } makes a set of that quest first */
+export async function openClassBoard(o) {
+  HOST = HOST || await whenHost();
+  const B = await import('./quest-class-board.js');
+  return B.openBoard(Object.assign({ host: HOST }, o || {}));
 }
 
 /* ══ THE LOOK — iOS-like, on the app's own variables (css/intmap.css), injected when first drawn ══════════ */
@@ -604,5 +711,10 @@ const CSS = [
   '.qst .qst-dres{font-size:12.5px;font-weight:600;line-height:1.45;padding:8px 10px;margin:0 0 8px;border-radius:10px;background:rgba(52,199,89,0.12);}',
   '.qst .qst-dres.practice{background:var(--input-bg);}',
   '.qst .qst-dres small{display:block;font-size:11.5px;font-weight:400;color:var(--text-muted);margin-top:2px;}',
+  /* (wave4-education) a class set — the name field, and the menu's door to the board */
+  '.qst .qst-name-row{display:flex;gap:8px;margin:8px 0 2px;}',
+  '.qst .qst-name-row input{flex:1;min-width:0;padding:8px 10px;border-radius:10px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font:inherit;font-size:15px;}',
+  '.qst .qst-name-row .ai-test-btn{width:auto;margin-top:0;}',
+  '.qst .qst-classes{margin-top:10px;}',
   '@media (max-width:640px){#quest-panel.qst{top:auto;bottom:calc(12px + var(--safe-bottom));max-height:58dvh;}}',
 ].join('\n');
