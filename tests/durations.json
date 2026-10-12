@@ -1,4 +1,5 @@
 {
+ "tests/wave4-ux-mobile.spec.js": 22,
  "tests/hist-product.spec.js": 8,
  "tests/mobile-product.spec.js": 26,
  "tests/live-news-product.spec.js": 8,

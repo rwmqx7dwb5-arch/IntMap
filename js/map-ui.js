@@ -2152,7 +2152,9 @@ export function layerSidebar(HOST){
       try{ const lt=host&&host.querySelector('#lyr-presets'); const dd=document.getElementById('layer-dropdown');
         if(lt&&dd) dd.appendChild(lt); }catch(_){}
       if(host){ const i=_hosts.indexOf(host); if(i>=0) _hosts.splice(i,1); host.remove(); } }catch(_){} }
-    return { open, close, toggle, apply, mountInto, unmountFrom, mountTools };
+    /* (wave4-ux-mobile) `rows` is the panel's own reading of its rows (id, the name the row shows, its checkbox, `rest`),
+       handed to the phone sheet's home (js/start-home.js) so its «Live now» chips say what the tiles say — not a copy. */
+    return { open, close, toggle, apply, mountInto, unmountFrom, mountTools, rows: rowsFromDropdown };
   })();
 }
 

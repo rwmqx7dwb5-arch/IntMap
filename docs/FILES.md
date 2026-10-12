@@ -1365,7 +1365,11 @@ events-near.js                    範囲 × 期間の地震と出来事の**読�
                                   状態の語彙（`ok` / `none` / `unavailable`＋理由）の正本。地点カード・place-watch.js・
                                   Atlas の research.related / impact / 実世界オブジェクトが読む
 here-entry.js                     検索欄の空の状態の先頭に「いま、ここ」「写真の場所」の 2 行を出す（search-geocode.js が
-                                  作例ギャラリーと一緒に読む）。写真は押した瞬間にファイル選択を開く
+                                  作例ギャラリーと一緒に読む）。同じ行（entryRow）を start-home.js も持つ。写真は押した瞬間にファイル選択を開く
+start-home.js                     **携帯のシートのホーム**——タブを選んでいないシートの先頭に、いまいる場所・「いまの地球」（ライブの
+                                  レイヤーのスイッチ。時間の宣言・パネルの畳み・組まれた行から導く）・この日の歴史地図と作例・
+                                  ホーム画面への追加を置き、ウィジェットボードを同じスクロールの下に借りる。シートを掴むか min より上で
+                                  止まったときに mobile-ui.js が読む（起動では読まない）。幅が広がるとボードを返す
 share-inbox.js                    **共有で開く**——共有シート（manifest の share_target → sw.js が受けて `?share=<id>`）・写真の
                                   場所・Atlas `view.openShared` が渡したものを地図で開く。写真はカメラの記録（EXIF の位置と撮影時刻、
                                   photo-geo-exif.js）からピン・地点カード（「いま」が先頭）・撮影日の地図。位置の無い写真は稜線照合（photo-geo.js）へ。
@@ -2466,7 +2470,7 @@ scripts/
                                   index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
                                   マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
                                   なるなら 1 ファイルで両方を名乗る
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 157 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 158 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の
