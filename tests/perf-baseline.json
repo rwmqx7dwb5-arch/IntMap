@@ -9,8 +9,8 @@
     "cssGzip": 63308
   },
   "async": {
-    "raw": 12837219,
-    "gzip": 4259231,
+    "raw": 13341494,
+    "gzip": 4443537,
     "chunks": {
       "account-data": 7346,
       "aircraft-detail": 17009,
@@ -23,7 +23,7 @@
       "atlas-attach": 23189,
       "atlas-caps-modules": 80,
       "atlas-chart": 10493,
-      "atlas-console": 1491131,
+      "atlas-console": 1558285,
       "atlas-executor": 59145,
       "atlas-geo-resolve": 49361,
       "atlas-hist-urban": 7748,
@@ -57,7 +57,7 @@
       "events-near": 9518,
       "flight-sim": 115313,
       "geo-import": 17728,
-      "gis-core": 539216,
+      "gis-core": 550533,
       "gis-export": 19659,
       "gis-geopackage": 26784,
       "gis-geotiff": 24050,
@@ -93,7 +93,7 @@
       "my-places": 29138,
       "navigation": 60823,
       "net-health-live": 16816,
-      "news-events": 36483,
+      "news-events": 38922,
       "news-intel": 26157,
       "news-intel-core": 7380,
       "news-story": 26818,
@@ -115,7 +115,7 @@
       "quake-history": 32745,
       "quest-daily": 4512,
       "quest-engine": 4928,
-      "quest-panel": 28155,
+      "quest-panel": 33938,
       "radiation-layer": 14639,
       "railways": 27934,
       "routing-traffic": 12306,
@@ -165,9 +165,9 @@
     }
   },
   "dist": {
-    "total": 1424418816,
-    "data": 1201690151,
-    "assets": 20415517
+    "total": 1570310796,
+    "data": 1207969159,
+    "assets": 20850871
   },
   "phone": {
     "bytes": 342631,
