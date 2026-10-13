@@ -132,9 +132,12 @@ test('③ history, named: the changes counted are the dated changes of polity th
   assert.deepEqual(kinds(F, 'polity'), ['1868-01-03']);
   assert.ok(kinds(F, 'version').length >= 2, 'the versions are listed');
   assert.deepEqual(kinds(F, 'record'), ['1886-01-01'], '1886 is a change of record');
-  /* Uzhhorod 1910–1995: the 25 days Cliopatria covers between CShapes' Soviet Union and Ukraine are a seam, not a polity */
+  /* Uzhhorod 1910–1995: Hungarian from the First Vienna Award (2 Nov 1938) until the Red Army took the town (27 Oct 1944)
+     — the record's own review cut (scripts/cshapes/review.json) — and the 25 days Cliopatria covers between CShapes'
+     Soviet Union and Ukraine are a seam, not a polity */
   F = await life(22.2879, 48.6208, '1910', '1995');
-  assert.equal(F.changesCounted, 3);
+  assert.deepEqual(kinds(F, 'polity'), ['1918-11-05', '1938-11-02', '1944-10-28', '1945-05-08', '1991-12-26']);
+  assert.equal(F.changesCounted, 5);
   assert.deepEqual(kinds(F, 'polity').slice(-1), ['1991-12-26']);
   /* Strasbourg 1860–1950: the transfer of 1871 is drawn as an overlap and counted once, on the day the French claim ends */
   F = await life(7.7521, 48.5734, '1860', '1950');
