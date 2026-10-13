@@ -1806,9 +1806,12 @@ maddison.json                     マディソン・プロジェクトの歴史 
 data/cshapes.js                   歴史的国境（CShapes 2.0・1886-01-01〜2019・**CC BY-NC-SA 4.0**）。
                                   ⚠ 束の `src` が**自分のライセンスを名乗る**（#R717）——歴史の 6 束のうち
                                   ここだけが名乗っておらず、**表示が再配布の条件になっている唯一の束**だった。
-                                  史実で審査した所見（条約の施行日への変化日の移動・島の帰属・CShapes に無い単位）は
-                                  `scripts/cshapes/review.json` が述べ、`scripts/build-cshapes.mjs --review` が束に当てる
-                                  （冪等。読者への註は束の `review.notes`＝カードの説明行）。調印日で記録された変化の
+                                  史実で審査した所見（条約の施行日への変化日の移動・島の帰属・輪郭の一部（地域）の
+                                  持ち主と期間・CShapes に無い単位）は `scripts/cshapes/review.json` が述べ、
+                                  `scripts/build-cshapes.mjs --review` が束に当てる（冪等。読者への註は束の
+                                  `review.notes`＝カードの説明行）。地域を切る線（`regions`）は CShapes 自身の行・
+                                  OpenHistoricalMap の版を固定した関係・条約が座標で述べる線から導き、`--regions` が
+                                  `scripts/cshapes/regions.json` に撮る（切り方は `scripts/cshapes/cuts.mjs`）。調印日で記録された変化の
                                   候補は `--effective` が Wikidata に訊いて `scripts/cshapes/effective.json` に撮り
                                   （`scripts/cshapes/effective.mjs`）、`--check` が全候補の判定を求める
 data/hist-borders.js              歴史的国境の 1689–1885（OpenHistoricalMap・CC0 1.0／`scripts/build-hist-borders.mjs`）。
@@ -1853,7 +1856,7 @@ data/histnames.json               **歴史的な政体名の、記録をまた�
                                   ⚠ **上流が書いた名前は上書きしない**。⚠ **出荷する言語の方針は
                                   `scripts/histnames/langs.mjs` の 1 か所**（いまは en / jp）
 data/border-coast.js              歴史的な輪郭の各辺が「境界」か「その記録が持つ海岸線の写し」かの印（`data/` から
-                                  **発見された**束すべて・いまは15・全 136,461 リング分／
+                                  **発見された**束すべて・いまは15・全 136,483 リング分／
                                   `scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
                                   `imta2-line` はこの印の run だけを描く。読み手は js/border-coast.js
                                   （束の索引でも**環そのものの同一性**でも引ける）。⚠ 面積 0 のリングは

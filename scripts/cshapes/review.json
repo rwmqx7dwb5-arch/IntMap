@@ -1,10 +1,14 @@
 {
- "about": "Reviewed findings against data/cshapes.js (CShapes 2.0). CShapes codes de jure changes on the day a treaty was SIGNED, leaves out territorial changes under 10,000 km² and carries present-day borders back where it codes no change (CShapes 2.0 Documentation, G. Schvitz, 2018-12-21, §3). Each finding is judged against the treaty or instrument that made the change, and IntMap draws who governed the ground on that day. Read by scripts/build-cshapes.mjs: `--review` applies `edges` (a change moved to the day it took effect) and `ground` (whole island polygons moved from one record to another for a span; a polygon is moved only when every vertex of its outer ring lies inside `within`, and a polygon partly inside fails the build — nothing is cut) to the committed bundle, and copies `notes` into it as `review.notes`, which js/time-borders.js shows on the card of the outline they name. `units` declares an outline CShapes does not have (its code is IntMap's, not a Gleditsch-Ward code). `examined` are findings looked at and NOT changed, with the reason. Gate: npm run check:cshapes (re-applying this file to the committed bundle must change nothing, and every entry is measured on the bundle).",
- "reviewedOn": "2026-10-07",
+ "about": "Reviewed findings against data/cshapes.js (CShapes 2.0). CShapes codes de jure changes on the day a treaty was SIGNED, leaves out territorial changes under 10,000 km² and carries present-day borders back where it codes no change (CShapes 2.0 Documentation, G. Schvitz, 2018-12-21, §3). Each finding is judged against the treaty or instrument that made the change, and IntMap draws who governed the ground on that day. Read by scripts/build-cshapes.mjs: `--review` applies `edges` (a change moved to the day it took effect) and `ground` (whole island polygons moved from one record to another for a span; a polygon is moved only when every vertex of its outer ring lies inside `within`, and a polygon partly inside fails the build — `ground` cuts nothing) and `cuts` (a PART of an outline moved to another record for a span, cut along a line from `regions` — each derived from a cited record and photographed in scripts/cshapes/regions.json by `--regions`; scripts/cshapes/cuts.mjs) to the committed bundle, and copies `notes` into it as `review.notes`, which js/time-borders.js shows on the card of the outline they name. `units` declares an outline CShapes does not have (its code is IntMap's, not a Gleditsch-Ward code). `examined` are findings looked at and NOT changed, with the reason. Gate: npm run check:cshapes (re-applying this file to the committed bundle must change nothing, and every entry is measured on the bundle).",
+ "reviewedOn": "2026-10-13",
  "units": {
   "7401": {
    "name": "Ryukyu Islands",
    "basis": "IntMap's own code for the Nansei Islands under United States administration (1946-01-29 to 1972-05-14). CShapes 2.0 has no such unit and assigns no code; 7401 is chosen beside Japan's 740 because Japan kept residual sovereignty. It is not a Gleditsch-Ward code."
+  },
+  "3681": {
+   "name": "Memel Territory",
+   "basis": "IntMap's own code for the Klaipėda (Memel) Territory under the High Commissioner of the Principal Allied Powers (1920-02-15 to 1923-02-18). CShapes 2.0 has no such unit; 3681 is chosen beside Lithuania's 368, to which the Conference of Ambassadors transferred it in 1923. It is not a Gleditsch-Ward code."
   }
  },
  "ground": [
@@ -210,8 +214,224 @@
      "url": "https://icr.ethz.ch/data/cshapes/CShapes-2.0_Codebook.pdf"
     }
    ]
+  },
+  {
+   "id": "danzig-annexation-1939",
+   "gw": 291,
+   "upstream": [1938, 9, 1],
+   "at": [1939, 9, 1],
+   "history": "CShapes 2.0 ends the Free City of Danzig on 31 August 1938 and draws its ground by no record from 1 to 29 September 1938, then inside Germany from 30 September 1938 (the row of the Munich Agreement). The Free City existed until 1 September 1939: that day Gauleiter Albert Forster's Staatsgrundgesetz declared it part of the German Reich, and the Reichstag's Gesetz über die Wiedervereinigung der Freien Stadt Danzig mit dem Deutschen Reich of the same day carried the annexation out. The upstream day is a year early; the Free City is drawn until 31 August 1939, and the cut danzig-1938-1939 takes its outline back out of Germany's row for those months.",
+   "sources": [
+    { "cite": "Staatsgrundgesetz der Freien Stadt Danzig über die Wiedervereinigung mit dem Deutschen Reich, 1 September 1939; Gesetz über die Wiedervereinigung der Freien Stadt Danzig mit dem Deutschen Reich, 1 September 1939" },
+    { "cite": "Treaty of Versailles, 28 June 1919, Articles 100-108 (the Free City of Danzig)" },
+    { "cite": "Freie Stadt Danzig (German Wikipedia), read 2026-10-13", "url": "https://de.wikipedia.org/wiki/Freie_Stadt_Danzig" }
+   ]
   }
  ],
+ "cuts": [
+  {
+   "id": "danzig-1938-1939",
+   "from": 255,
+   "to": 291,
+   "s": [1938, 9, 30],
+   "e": [1939, 8, 31],
+   "region": "danzig-free-city",
+   "history": "Germany's CShapes row of 30 September 1938 to 7 May 1945 draws the Free City of Danzig inside the Reich from its first day, eleven months before the annexation of 1 September 1939 (see danzig-annexation-1939). Until then the Free City's own outline is the Free City's.",
+   "sources": [
+    { "cite": "Staatsgrundgesetz der Freien Stadt Danzig über die Wiedervereinigung mit dem Deutschen Reich, 1 September 1939" }
+   ]
+  },
+  {
+   "id": "bukovina-austria-1918",
+   "from": 310,
+   "to": 305,
+   "s": [1918, 11, 3],
+   "e": [1918, 11, 10],
+   "region": "bukovina-1919",
+   "history": "Bukovina was a crown land of the Austrian half of the monarchy (Cisleithania) and never part of the Kingdom of Hungary, yet CShapes 2.0 draws it inside Hungary from 3 November 1918 to 9 September 1919 and adds it to Romania on 10 September 1919, the day Austria signed the Treaty of Saint-Germain, whose Article 59 renounces the former Duchy of Bukovina in favour of Romania. From 3 to 10 November 1918 Ukrainian and Romanian national councils divided Czernowitz and the land between them, and no record draws either; Bukovina is drawn in Austria on those days — the state CShapes gives the rest of Cisleithania then, and the one that renounced Bukovina by treaty.",
+   "sources": [
+    { "cite": "Treaty of Saint-Germain-en-Laye, 10 September 1919, Article 59" },
+    { "cite": "Union of Bukovina with Romania (English Wikipedia), timeline of November 1918, read 2026-10-13", "url": "https://en.wikipedia.org/wiki/Union_of_Bukovina_with_Romania" }
+   ]
+  },
+  {
+   "id": "bukovina-romania-1918",
+   "from": 310,
+   "to": 360,
+   "s": [1918, 11, 11],
+   "e": [1919, 9, 9],
+   "region": "bukovina-1919",
+   "history": "The Romanian army entered Czernowitz on 11 November 1918, after the Ukrainian National Committee withdrew on 10 November; the Romanian National Council formed a government of Bukovina on 12 November and the General Congress of Bukovina voted for union with Romania on 28 November 1918. Romania governed Bukovina from then on; Austria renounced it by the Treaty of Saint-Germain (Art. 59), which is the day CShapes 2.0 moves it — from Hungary, which never held it.",
+   "sources": [
+    { "cite": "Treaty of Saint-Germain-en-Laye, 10 September 1919, Article 59" },
+    { "cite": "Union of Bukovina with Romania (English Wikipedia), timeline of November 1918, read 2026-10-13", "url": "https://en.wikipedia.org/wiki/Union_of_Bukovina_with_Romania" }
+   ]
+  },
+  {
+   "id": "karafuto-50n",
+   "from": 365,
+   "to": 7351,
+   "s": [1905, 9, 5],
+   "e": [1945, 8, 14],
+   "region": "karafuto-50n",
+   "history": "Article IX of the Treaty of Portsmouth (5 September 1905) ceded Sakhalin south of the fiftieth degree of north latitude to Japan, and the boundary was demarcated on that parallel. CShapes 2.0 ends Southern Sakhalin (7351) at 49.897°N, about 11 km south of the parallel, and draws the strip between in Russia: measured on the bundle, 1,575 km² of the 33,544 km² of Sakhalin south of 50°N, so the outline was 4.7% smaller than the ground the treaty describes.",
+   "sources": [
+    { "cite": "Treaty of Portsmouth, 5 September 1905, Article IX" }
+   ]
+  },
+  {
+   "id": "memel-german-1886-1920",
+   "from": [365, 368],
+   "to": 255,
+   "s": [1886, 1, 1],
+   "e": [1920, 2, 14],
+   "region": "memel-territory",
+   "keeps": [[23.90, 54.90]],
+   "history": "The Memel (Klaipėda) Territory — the Prussian land north of the Neman — was Prussian from the Treaty of Melno (1422) and part of the German Empire from 1871. Article 99 of the Treaty of Versailles (signed 28 June 1919, in force 10 January 1920) detached it and placed it at the disposal of the Principal Allied and Associated Powers; the German troops left and a French administration took over on 15 February 1920. CShapes 2.0 carries Lithuania's present border back over it, drawing it in Russia until 15 February 1918 and in Lithuania after, because it leaves out changes under 10,000 km².",
+   "sources": [
+    { "cite": "Treaty of Versailles, 28 June 1919, Article 99" },
+    { "cite": "Klaipėda Region (English Wikipedia): the French temporary military administration from 15 February 1920, read 2026-10-13", "url": "https://en.wikipedia.org/wiki/Klaip%C4%97da_Region" },
+    { "cite": "G. Schvitz, Cshapes 2.0: Documentation, 21 December 2018, §3", "url": "https://icr.ethz.ch/data/cshapes/CShapes-2.0_Codebook.pdf" }
+   ]
+  },
+  {
+   "id": "memel-allied-1920-1923",
+   "from": 368,
+   "to": 3681,
+   "s": [1920, 2, 15],
+   "e": [1923, 2, 18],
+   "region": "memel-territory",
+   "keeps": [[23.90, 54.90]],
+   "history": "From 15 February 1920 the territory was governed by a High Commissioner of the Principal Allied Powers (the French General Dominique Odry, then Gabriel Petisné from 1 May 1921). After the Klaipėda Revolt of January 1923 the Conference of Ambassadors transferred it to Lithuania on 16 February 1923, and the High Commissioner handed over to Lithuania's plenipotentiary on 19 February 1923. Lithuania did not govern it before then, so it is drawn as its own unit, not inside Lithuania.",
+   "sources": [
+    { "cite": "Klaipėda Region (English Wikipedia): High Commissioners, 15 February 1920 - 19 February 1923, read 2026-10-13", "url": "https://en.wikipedia.org/wiki/Klaip%C4%97da_Region" },
+    { "cite": "Decision of the Conference of Ambassadors, 16 February 1923; Convention concerning the Territory of Memel, Paris, 8 May 1924" }
+   ]
+  },
+  {
+   "id": "memel-german-1939-1945",
+   "from": [368, 365],
+   "to": 255,
+   "s": [1939, 3, 23],
+   "e": [1945, 1, 27],
+   "region": "memel-territory",
+   "keeps": [[23.90, 54.90]],
+   "history": "Lithuania ceded the territory to Germany by the treaty Juozas Urbšys and Joachim von Ribbentrop signed in Berlin in the early hours of 23 March 1939, and German troops entered Memel that day. Germany held the city until the Red Army took it on 28 January 1945. CShapes 2.0 draws the territory in Lithuania until 1 June 1940 and in the Soviet Union after.",
+   "sources": [
+    { "cite": "Treaty between Germany and Lithuania on the reunion of the Memel Territory with the German Reich, Berlin, 22-23 March 1939" },
+    { "cite": "Klaipėda Region (English Wikipedia): the 1939 treaty and the Battle of Memel to 28 January 1945, read 2026-10-13", "url": "https://en.wikipedia.org/wiki/Klaip%C4%97da_Region" }
+   ]
+  },
+  {
+   "id": "hlucin-german-1886-1920",
+   "from": [300, 315],
+   "to": 255,
+   "s": [1886, 1, 1],
+   "e": [1920, 2, 3],
+   "region": "hlucin-region",
+   "keeps": [[14.42, 50.08]],
+   "history": "The Hlučín Region was Prussian from the Treaty of Breslau (11 June 1742) — part of the province of Silesia and of the German Empire — until Article 83 of the Treaty of Versailles gave it to Czechoslovakia; it was handed over on 4 February 1920. CShapes 2.0 draws it inside Austria-Hungary and then Czechoslovakia from 1886 because it carries the Czech border back over a change under 10,000 km² (316.9 km²). CShapes draws no record in the Czech lands from 3 to 10 November 1918; the region was German on those days and is drawn so.",
+   "sources": [
+    { "cite": "Treaty of Breslau, 11 June 1742; Treaty of Versailles, 28 June 1919, Article 83" },
+    { "cite": "Hlučín Region (English Wikipedia), read 2026-10-13", "url": "https://en.wikipedia.org/wiki/Hlu%C4%8D%C3%ADn_Region" }
+   ]
+  },
+  {
+   "id": "julian-march-1920",
+   "from": 345,
+   "to": 325,
+   "s": [1920, 11, 12],
+   "e": [1924, 2, 21],
+   "region": "julian-march-1920",
+   "keeps": [[20.46, 44.82]],
+   "history": "The Treaty of Rapallo (signed 12 November 1920, in force 2 February 1921) fixed the border of Italy and the Kingdom of Serbs, Croats and Slovenes: Italy received Gorizia, Trieste and Istria with the west of Carniola (Art. 1), the city of Zara (Art. 2) and the islands of Cres, Lošinj, Lastovo and Palagruža (Art. 3); Fiume became a free state. Italian troops had held this ground since the armistice of November 1918. CShapes 2.0 carries Yugoslavia's post-1947 border back over all of it from 10 September 1919.",
+   "sources": [
+    { "cite": "Treaty of Rapallo between the Kingdom of Italy and the Kingdom of the Serbs, Croats and Slovenes, 12 November 1920, Articles 1-4" },
+    { "cite": "Treaty of Rapallo (1920) (English Wikipedia), read 2026-10-13", "url": "https://en.wikipedia.org/wiki/Treaty_of_Rapallo_(1920)" }
+   ]
+  },
+  {
+   "id": "julian-march-1924",
+   "from": 345,
+   "to": 325,
+   "s": [1924, 2, 22],
+   "e": [1943, 9, 8],
+   "region": "julian-march-1924",
+   "keeps": [[20.46, 44.82]],
+   "history": "Under the Treaty of Rome (27 January 1924) Fiume was annexed to Italy on 22 February 1924; the Rapallo border otherwise stood until the Axis invasion of Yugoslavia in April 1941. Italy governed this ground until the armistice of 8 September 1943, after which Germany occupied it (the Operational Zone of the Adriatic Littoral). CShapes 2.0 draws all of it in Yugoslavia.",
+   "sources": [
+    { "cite": "Treaty of Rome between Italy and the Kingdom of the Serbs, Croats and Slovenes, 27 January 1924" },
+    { "cite": "Armistice of Cassibile, signed 3 September 1943, announced 8 September 1943" }
+   ]
+  },
+  {
+   "id": "ruthenia-vienna-1938",
+   "from": 315,
+   "to": 310,
+   "s": [1938, 11, 2],
+   "e": [1944, 10, 27],
+   "region": "ruthenia-vienna-1938",
+   "keeps": [[14.42, 50.08]],
+   "history": "The First Vienna Award (2 November 1938) gave Hungary southern Slovakia and the south-west of Subcarpathian Ruthenia, with Uzhhorod (Ungvár), Mukachevo (Munkács) and Berehove (Beregszász). CShapes 2.0 draws the Slovak part in Hungary from 2 November 1938 and leaves the Ruthenian part in Czechoslovakia. The Red Army's East Carpathian offensive took the region in October 1944, most of it secured by 28 October 1944; from then CShapes' own rows draw it (Czechoslovakia, whose government delegation came to Khust that October, then the Soviet Union from 8 May 1945).",
+   "sources": [
+    { "cite": "First Vienna Award, 2 November 1938" },
+    { "cite": "Carpathian Ruthenia (English Wikipedia): the Vienna Award and the Soviet takeover, read 2026-10-13", "url": "https://en.wikipedia.org/wiki/Carpathian_Ruthenia" }
+   ]
+  },
+  {
+   "id": "carpatho-ukraine-1939",
+   "from": 315,
+   "to": 310,
+   "s": [1939, 3, 16],
+   "e": [1944, 10, 27],
+   "region": "carpatho-ukraine-1939",
+   "keeps": [[14.42, 50.08]],
+   "history": "Carpatho-Ukraine proclaimed its independence on 15 March 1939 as the Hungarian army invaded it; Hungary formally annexed the territory on 16 March and the last organised resistance ended on 18 March 1939. Hungary governed it until the Soviet offensive of October 1944. CShapes 2.0 draws no change there: it keeps Czechoslovakia whole apart from the Munich and Vienna cessions until 1945.",
+   "sources": [
+    { "cite": "Carpatho-Ukraine (English Wikipedia): the invasion of 14-18 March 1939 and the annexation of 16 March, read 2026-10-13", "url": "https://en.wikipedia.org/wiki/Carpatho-Ukraine" },
+    { "cite": "Carpathian Ruthenia (English Wikipedia): the Soviet takeover, 28 October 1944, read 2026-10-13", "url": "https://en.wikipedia.org/wiki/Carpathian_Ruthenia" }
+   ]
+  }
+ ],
+ "regions": {
+  "danzig-free-city": {
+   "of": { "cshapes": { "gw": 291, "on": [1930, 1, 1] } },
+   "is": "The Free City of Danzig as CShapes 2.0 itself draws it (code 291, 1919-06-28 to 1938-08-31): the line is the bundle's own, so cutting along it adds no new line."
+  },
+  "bukovina-1919": {
+   "of": { "minus": [ { "cshapes": { "gw": 360, "on": [1919, 9, 10] } }, { "cshapes": { "gw": 360, "on": [1919, 9, 9] } } ] },
+   "is": "The ground CShapes 2.0 adds to Romania on 10 September 1919, the day Austria signed the Treaty of Saint-Germain renouncing Bukovina (Art. 59): Romania's row of that day less its row of the day before. Both lines are CShapes' own."
+  },
+  "karafuto-50n": {
+   "of": { "line": [[141.5, 45.7], [145.5, 45.7], [145.5, 50.0], [141.5, 50.0], [141.5, 45.7]] },
+   "is": "Sakhalin south of the fiftieth parallel, the boundary Article IX of the Treaty of Portsmouth (1905) states. The box's other three edges lie in the Tatar Strait, La Pérouse Strait and the Sea of Okhotsk, so the parallel is the only line it draws on land."
+  },
+  "memel-territory": {
+   "of": { "ohm": 2691476 },
+   "is": "The Klaipėda (Memel) Territory as OpenHistoricalMap draws it (relation «Memelland»): north of the Neman and its Skirvytė arm, up to the pre-1919 German-Russian border. It is the same land as OpenHistoricalMap's Lithuania of 1923-1939 less its Lithuania of 1939 (measured: 0.0 km² apart)."
+  },
+  "hlucin-region": {
+   "of": { "minus": [ { "ohm": 2747876 }, { "ohm": 2747877 } ] },
+   "containing": [[18.19, 49.90]],
+   "is": "The Hlučín Region: what OpenHistoricalMap's Czechoslovakia gains on 4 February 1920 (its relation from that day less its relation of 1918-11-05 to 1920-02-04), the part holding Hlučín. Measured 316.99 km² against the 316.9 km² the region is stated to cover."
+  },
+  "julian-march-1920": {
+   "of": { "and": [ { "ohm": 2696325 }, { "line": [[12.8, 43.9], [16.0, 43.9], [16.0, 46.8], [12.8, 46.8], [12.8, 43.9]] } ] },
+   "is": "Italy as OpenHistoricalMap draws it from 1920 to 22 February 1924 (before Fiume was annexed), within a box around the northern Adriatic that holds the whole Italian-Yugoslav border of the Treaty of Rapallo and Zara; the box only keeps the photograph small — it holds every place where this Italy meets CShapes' Yugoslavia."
+  },
+  "julian-march-1924": {
+   "of": { "and": [ { "ohm": 2851104 }, { "line": [[12.8, 43.9], [16.0, 43.9], [16.0, 46.8], [12.8, 46.8], [12.8, 43.9]] } ] },
+   "is": "Italy as OpenHistoricalMap draws it from 1929 to 1940, within the same box: the Rapallo border with Fiume, annexed under the Treaty of Rome (1924). OpenHistoricalMap's Italy of 1924-1929 draws the same eastern border (it differs from this one only by the Vatican City)."
+  },
+  "ruthenia-vienna-1938": {
+   "of": { "and": [ { "ohm": 2747873 }, { "ohm": 2857483 } ] },
+   "is": "The part of Subcarpathian Ruthenia the First Vienna Award (2 November 1938) gave to Hungary — Uzhhorod, Mukachevo, Berehove: OpenHistoricalMap's Hungary of 2 November 1938 to 14 March 1939 within its Subcarpathian Ruthenia of 1920-1938."
+  },
+  "carpatho-ukraine-1939": {
+   "of": { "minus": [ { "ohm": 2747872 }, { "ohm": 2747873 } ] },
+   "is": "The rest of Subcarpathian Ruthenia (Carpatho-Ukraine), occupied by Hungary in March 1939: OpenHistoricalMap's Hungary of 14 March to 4 April 1939 less its Hungary of 2 November 1938."
+  }
+ },
  "notes": [
   {
    "about": ["kuril-1875"],
@@ -346,6 +566,86 @@
    ],
    "en": "Drawn as a separate state from 6 December 1922, the day the Irish Free State came into being. The Anglo-Irish Treaty was signed on 6 December 1921; CShapes 2.0, the source of this outline, records the signing day.",
    "jp": "1922 年 12 月 6 日——アイルランド自由国が成立した日——から別の国として描いている。英愛条約の調印は 1921 年 12 月 6 日で、この輪郭の出典 CShapes 2.0 は調印日を記録している。"
+  },
+  {
+   "about": ["danzig-annexation-1939", "danzig-1938-1939"],
+   "gw": 291,
+   "s": [1938, 9, 1],
+   "e": [1939, 8, 31],
+   "en": "The Free City of Danzig is drawn until 31 August 1939: it was annexed to Germany on 1 September 1939, the day the Second World War began. CShapes 2.0, the source of this outline, ends it a year earlier (31 August 1938) and draws it inside Germany from 30 September 1938.",
+   "jp": "自由都市ダンツィヒは 1939 年 8 月 31 日まで描いている。ドイツへの併合は、第二次世界大戦が始まった 1939 年 9 月 1 日である。この輪郭の出典 CShapes 2.0 は 1 年早い 1938 年 8 月 31 日で終わらせ、1938 年 9 月 30 日からドイツの中に描いている。"
+  },
+  {
+   "about": ["bukovina-austria-1918"],
+   "gw": 305,
+   "s": [1918, 11, 3],
+   "e": [1918, 11, 10],
+   "en": "Bukovina is drawn in Austria from 3 to 10 November 1918: it was a crown land of the Austrian half of the monarchy, not of Hungary, where CShapes 2.0, the source of this outline, places it. In those days Ukrainian and Romanian national councils held it between them; the Romanian army entered Czernowitz on 11 November.",
+   "jp": "1918 年 11 月 3〜10 日のブコヴィナはオーストリアに描いている。ブコヴィナは二重帝国のオーストリア側の王領で、この輪郭の出典 CShapes 2.0 が置くハンガリーの領土ではなかった。この間はウクライナ人とルーマニア人の民族評議会が分けて押さえ、11 月 11 日にルーマニア軍がチェルノフツィ（チェルニウツィ）に入った。"
+  },
+  {
+   "about": ["bukovina-romania-1918"],
+   "gw": 360,
+   "s": [1918, 11, 11],
+   "e": [1919, 9, 9],
+   "en": "Bukovina is drawn in Romania from 11 November 1918, when the Romanian army entered Czernowitz; the General Congress of Bukovina voted for union with Romania on 28 November. CShapes 2.0, the source of this outline, draws it in Hungary, which never held it, until Austria renounced it by the Treaty of Saint-Germain (10 September 1919).",
+   "jp": "ブコヴィナは、ルーマニア軍がチェルノフツィ（チェルニウツィ）に入った 1918 年 11 月 11 日からルーマニアに描いている（11 月 28 日にブコヴィナ総会がルーマニアとの合同を決議）。この輪郭の出典 CShapes 2.0 は、オーストリアがサン＝ジェルマン条約（1919 年 9 月 10 日）で放棄するまで、一度も領有していないハンガリーの中に描いている。"
+  },
+  {
+   "about": ["karafuto-50n"],
+   "gw": 7351,
+   "s": [1905, 9, 5],
+   "e": [1945, 8, 14],
+   "en": "Southern Sakhalin is drawn up to the fiftieth parallel, the boundary the Treaty of Portsmouth (1905) set. CShapes 2.0, the source of this outline, ends it about 11 km further south and places the strip between in Russia.",
+   "jp": "南樺太は、ポーツマス条約（1905 年）が定めた北緯 50 度線まで描いている。この輪郭の出典 CShapes 2.0 は約 11 km 南で終わらせ、その間の帯をロシアに含めている。"
+  },
+  {
+   "about": ["memel-german-1886-1920", "hlucin-german-1886-1920"],
+   "gw": 255,
+   "s": [1886, 1, 1],
+   "e": [1920, 2, 3],
+   "en": "Germany is drawn with the Memel (Klaipėda) Territory north of the Neman until 14 February 1920 and with the Hlučín Region until 3 February 1920; both were Prussian, and the Treaty of Versailles detached them. CShapes 2.0, the source of this outline, carries today's borders back over them, placing the Memel Territory in Russia (then Lithuania) and the Hlučín Region in Austria-Hungary (then Czechoslovakia).",
+   "jp": "ドイツは、ネマン川以北のメーメル（クライペダ）地方を 1920 年 2 月 14 日まで、フルチーン地方を 1920 年 2 月 3 日まで含めて描いている。どちらもプロイセン領で、ヴェルサイユ条約で切り離された。この輪郭の出典 CShapes 2.0 は今日の国境を遡らせ、メーメル地方をロシア（続いてリトアニア）に、フルチーン地方をオーストリア＝ハンガリー（続いてチェコスロバキア）に含めている。"
+  },
+  {
+   "about": ["memel-german-1886-1920"],
+   "gw": 255,
+   "s": [1920, 2, 4],
+   "e": [1920, 2, 14],
+   "en": "Germany is drawn with the Memel (Klaipėda) Territory until 14 February 1920, when a French administration took it over for the Allied Powers under the Treaty of Versailles. CShapes 2.0, the source of this outline, places it in Lithuania.",
+   "jp": "ドイツは、ヴェルサイユ条約に基づき連合国のためにフランスの行政府が引き継いだ 1920 年 2 月 15 日の前日まで、メーメル（クライペダ）地方を含めて描いている。この輪郭の出典 CShapes 2.0 はこの地方をリトアニアに含めている。"
+  },
+  {
+   "about": ["memel-allied-1920-1923"],
+   "gw": 3681,
+   "s": [1920, 2, 15],
+   "e": [1923, 2, 18],
+   "en": "The Memel (Klaipėda) Territory was governed by a High Commissioner of the Allied Powers from 15 February 1920 until Lithuania took it over on 19 February 1923, after the Klaipėda Revolt. CShapes 2.0, the source of these outlines, draws it in Lithuania throughout.",
+   "jp": "メーメル（クライペダ）地方は、1920 年 2 月 15 日から、クライペダ蜂起を経てリトアニアが引き継いだ 1923 年 2 月 19 日まで、連合国の高等弁務官が統治した。この輪郭の出典 CShapes 2.0 は、この間もリトアニアに含めている。"
+  },
+  {
+   "about": ["memel-german-1939-1945"],
+   "gw": 255,
+   "s": [1939, 3, 23],
+   "e": [1945, 1, 27],
+   "en": "Germany is drawn with the Memel (Klaipėda) Territory from 23 March 1939, when Lithuania ceded it, until the Red Army took Memel on 28 January 1945. CShapes 2.0, the source of this outline, leaves it in Lithuania, then in the Soviet Union.",
+   "jp": "ドイツは、リトアニアがメーメル（クライペダ）地方を割譲した 1939 年 3 月 23 日から、赤軍がメーメルを占領した 1945 年 1 月 28 日の前日まで、この地方を含めて描いている。この輪郭の出典 CShapes 2.0 は、リトアニア、続いてソ連に含めたままにしている。"
+  },
+  {
+   "about": ["julian-march-1920", "julian-march-1924"],
+   "gw": 325,
+   "s": [1920, 11, 12],
+   "e": [1943, 9, 8],
+   "en": "Italy is drawn with Istria, the Julian hinterland of Gorizia and Trieste, Zara and the islands of Cres and Lošinj from the Treaty of Rapallo (12 November 1920), and with Fiume from 22 February 1924, until the armistice of 8 September 1943; the line is OpenHistoricalMap's. CShapes 2.0, the source of this outline, carries Yugoslavia's post-war border back over this ground.",
+   "jp": "イタリアは、ラパッロ条約（1920 年 11 月 12 日）からイストリア、ゴリツィアとトリエステの後背地、ザラ（ザダル）、ツレス島・ロシニ島を、1924 年 2 月 22 日からはフィウメ（リエカ）も含めて、1943 年 9 月 8 日の休戦まで描いている。線は OpenHistoricalMap による。この輪郭の出典 CShapes 2.0 は、戦後のユーゴスラビアの国境をこの土地に遡らせている。"
+  },
+  {
+   "about": ["ruthenia-vienna-1938", "carpatho-ukraine-1939"],
+   "gw": 310,
+   "s": [1938, 11, 2],
+   "e": [1944, 10, 27],
+   "en": "Hungary is drawn with Uzhhorod, Mukachevo and Berehove from the First Vienna Award (2 November 1938), and with the rest of Carpatho-Ukraine from its annexation on 16 March 1939, until the Soviet offensive of October 1944; the line is OpenHistoricalMap's. CShapes 2.0, the source of this outline, leaves this ground in Czechoslovakia.",
+   "jp": "ハンガリーは、第一次ウィーン裁定（1938 年 11 月 2 日）からウジホロド・ムカチェヴォ・ベレホヴェを、1939 年 3 月 16 日の併合からはカルパト・ウクライナの残りも含めて、1944 年 10 月のソ連軍の攻勢まで描いている。線は OpenHistoricalMap による。この輪郭の出典 CShapes 2.0 は、この土地をチェコスロバキアに残している。"
   }
  ],
  "examined": [
@@ -489,6 +789,42 @@
    "finding": "Instruments signed within three days of a CShapes change, with a later effective date, that are about something else: bilateral investment treaties, Council of Europe conventions and protocols, environmental protocols (Kyoto, Volatile Organic Compounds), START II, and the Treaty of Osimo (Italy-Yugoslavia, 10 November 1975, met on the day of Angola's independence).",
    "verdict": "kept",
    "why": "None of them is the instrument of a change CShapes draws on the day it meets: an investment treaty, a convention or an arms-control treaty moves no border, and the Treaty of Osimo concerns two states CShapes does not change within three days of it. They are listed so that the finder's photograph is judged whole and a new candidate arrives counted."
+  },
+  {
+   "id": "galicia-1918-1919",
+   "finding": "CShapes draws Lviv, and all of Galicia, in «Austria» from 3 November 1918 to 9 September 1919.",
+   "verdict": "kept",
+   "why": "Galicia was a crown land of the Austrian half of the monarchy, and CShapes keeps all of that half (Galicia, Carniola, the Littoral, Dalmatia) under Austria until the Treaty of Saint-Germain, by whose Article 91 Austria renounced the former monarchy's lands outside its new frontiers — a sovereignty reading, not a statement of who governed. Who governed Galicia in those ten months was not one owner along one line: the Polish Liquidation Commission held West Galicia from the end of October 1918, while in East Galicia the West Ukrainian People's Republic and Poland fought along a moving front (Poland held Lviv from 22 November 1918 and took the rest of East Galicia by July 1919). No record IntMap carries draws those fronts, so a cut there would put a line on the map that no source states (dev-notes/2026-10-13-cshapes-review-cuts.md)."
+  },
+  {
+   "id": "fiume-1920-1924",
+   "finding": "From 12 November 1920 to 21 February 1924 the city of Fiume (Rijeka) is drawn in Yugoslavia.",
+   "verdict": "kept",
+   "why": "The Treaty of Rapallo made Fiume a free state (Gabriele D'Annunzio's Regency of Carnaro held the city until the end of December 1920), and it was annexed to Italy on 22 February 1924 — from that day the cut julian-march-1924 draws it in Italy. Drawing the Free State of Fiume needs a unit of its own, as the Memel Territory has (3681); it is not one of the findings this review was opened for, and the cut julian-march-1920 leaves the city where CShapes puts it rather than in Italy, which did not hold it."
+  },
+  {
+   "id": "julian-march-occupation-and-after",
+   "finding": "Istria and the Julian March are drawn in Austria from 3 November 1918 and in Yugoslavia from 10 September 1919 to 11 November 1920, and again in Yugoslavia from 9 September 1943.",
+   "verdict": "kept",
+   "why": "From November 1918 Italian troops held the ground up to the armistice line of the Treaty of London, which reached further than the Rapallo border (into Dalmatia, to Šibenik and Knin); no record IntMap carries draws that line, so the cut starts on the day the Treaty of Rapallo was signed, when Italy already held the ground it confirms. After the armistice of 8 September 1943 Germany occupied the region (the Operational Zone of the Adriatic Littoral), Yugoslav and Allied forces divided it in 1945 (the Morgan Line), and Italy's sovereignty ended only with the Treaty of Peace of 1947; none of those owners has a row on these days. Lastovo and Palagruža, Italian under Article 3 of the Treaty of Rapallo, have no polygon in CShapes, so nothing is drawn there to move."
+  },
+  {
+   "id": "czechoslovakia-1939-1945",
+   "finding": "CShapes keeps Bohemia, Moravia and Slovakia in Czechoslovakia from March 1939 to 1945 (the Protectorate of Bohemia and Moravia, the Slovak Republic, and the strip of eastern Slovakia Hungary took on 4 April 1939 are not drawn).",
+   "verdict": "kept",
+   "why": "This review cuts Subcarpathian Ruthenia out of Czechoslovakia for the years Hungary governed it, because Hungary is a record CShapes already draws there. The German protectorate and the Slovak state have no record at all; drawing them is a decision about the whole country for six years, not a correction of one region, and it is left to a review of its own. The 4 April 1939 strip (Sobrance and Stakčín) is measured at 1,067 km² in OpenHistoricalMap against about 1,700 km² in the literature, so its line is not settled enough to cut along."
+  },
+  {
+   "id": "bukovina-outline-coarse",
+   "finding": "The ground CShapes 2.0 adds to Romania on 10 September 1919 — the region the cuts bukovina-austria-1918 and bukovina-romania-1918 move — is 12,711 km², against 10,421 km² for OpenHistoricalMap's Duchy of Bukovina (1878-1918) and the duchy's stated 10,441 km²: about 2,650 km² of it lies outside the duchy (pieces of Maramureș in the west, of Galicia in the north, of Moldavia in the south and east), and about 360 km² of the duchy lies outside it.",
+   "verdict": "kept",
+   "why": "The cuts move exactly the ground CShapes itself hands to Romania on 10 September 1919, so Romania's outline does not change shape when CShapes' own row begins — the cut adds no new line, and the coarse line is CShapes' outline of Romania's Bukovina from 1919 to 1940. Redrawing that line is a correction of Romania's border for all those years, with OpenHistoricalMap's duchy as the line, and is left to a review of its own (dev-notes/2026-10-13-cshapes-review-cuts.md)."
+  },
+  {
+   "id": "karafuto-area",
+   "finding": "Southern Sakhalin (7351) covers 33,544 km² with the strip to the 50th parallel restored, against the 36,090 km² Karafuto Prefecture reported.",
+   "verdict": "kept",
+   "why": "The remaining difference is CShapes 2.0's generalised coastline (and Kaiba Island, which has no polygon), not a border: the outline now reaches the treaty's parallel. The coast is the subject of the coast records (data/hist-coast-snap.js), not of this ledger."
   }
  ]
 }
