@@ -47,7 +47,6 @@ import { MAP_ANSWER_EVENT } from './mobile-sheet.js';   /* «an answer is on the
 import * as bus from './bus.js';
 import { installState, promptInstall, onInstallChange } from './installable-app.js';
 import { entryRow } from './here-entry.js';
-import { showInResults } from './showcase-gallery.js';
 import './safe-html.js';
 
 const lang = () => { try { return window.IntMapI18N.lang(); } catch (_) { return 'en'; } };
@@ -95,13 +94,13 @@ const CSS = [
   '.sh-live-row::-webkit-scrollbar{display:none;}',
   '.sh-chip{flex:0 0 auto;scroll-snap-align:start;display:inline-flex;align-items:center;min-height:44px;max-width:15.5em;padding:0 15px;border:1px solid rgba(128,128,128,0.2);border-radius:22px;background:var(--input-bg);color:var(--text-main);font:inherit;font-size:13.5px;font-weight:600;line-height:1.2;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent;}',
   '.sh-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
-  '.sh-chip[aria-pressed="true"]{background:var(--primary-color);border-color:var(--primary-color);color:#fff;}',
+  '.sh-chip[aria-pressed="true"]{background:var(--primary-fill);border-color:var(--primary-color);color:#fff;}',
   '.sh-chip:active{transform:scale(0.97);}',
   '.sh-chip:focus-visible,.sh-inst button:focus-visible{outline:2px solid var(--primary-color);outline-offset:2px;}',
   '.sh-inst{display:flex;flex-direction:column;gap:8px;padding:14px;border:1px solid rgba(128,128,128,0.18);border-radius:14px;background:var(--input-bg);}',
   '.sh-inst b{font-size:14px;font-weight:650;line-height:1.25;}',
   '.sh-inst p{margin:0;font-size:12.5px;line-height:1.4;color:var(--text-muted);}',
-  '.sh-inst button{align-self:flex-start;min-height:44px;padding:0 18px;border:none;border-radius:22px;background:var(--primary-color);color:#fff;font:inherit;font-size:14px;font-weight:600;cursor:pointer;}',
+  '.sh-inst button{align-self:flex-start;min-height:44px;padding:0 18px;border:none;border-radius:22px;background:var(--primary-fill);color:#fff;font:inherit;font-size:14px;font-weight:600;cursor:pointer;}',
 ].join('\n');
 let styled = false;
 function style() { if (styled) return; styled = true; const st = document.createElement('style'); st.id = 'im-start-home-css'; st.textContent = CSS; document.head.appendChild(st); }
@@ -152,7 +151,9 @@ function render() {
   start.appendChild(entryRow(null));
   const gal = document.createElement('div'); gal.className = 'sh-gallery'; start.appendChild(gal);
   /* «See all» opens the gallery over the home and leaves the strip where it is (the default empties the search's list) */
-  showInResults(gal, () => {});
+  /* fetched when the home is drawn, never with it: the gallery is its own chunk (tests/showcase-gallery-checks ② — nothing imports it
+     statically), and the strip fills in when it arrives */
+  import('./showcase-gallery.js').then((G) => { if (gal.isConnected) G.showInResults(gal, () => {}); }).catch(() => { /* no strip; the rest of the home stands */ });
   const inst = document.createElement('section'); inst.className = 'sh-install'; start.appendChild(inst); drawInstall(inst);
 }
 

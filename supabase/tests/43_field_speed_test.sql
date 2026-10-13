@@ -40,12 +40,13 @@ select ok(exists(select 1 from unnest((select proconfig from pg_proc where oid =
 select ok(has_function_privilege('anon', 'public.field_speed(integer)', 'execute'), 'field-speed: anon may call field_speed');
 select ok(obj_description('public.field_speed(integer)'::regprocedure, 'pg_proc') ~ 'ANON MAY CALL: \S',
           'field-speed: its comment states why anon may call it');
-select ok(not exists(select 1 from information_schema.routine_columns c
-                      where c.specific_schema = 'public' and c.routine_name = 'field_speed'
-                        and c.column_name in ('n', 'count', 'total', 'day')),
+/* the columns it returns, read from the catalogue: a RETURNS TABLE column is an argument of mode 't' in pg_proc */
+select ok(not exists(select 1 from pg_proc p, unnest(p.proargnames, p.proargmodes::text[]) as a(name, mode)
+                      where p.oid = 'public.field_speed(integer)'::regprocedure and a.mode = 't'
+                        and a.name in ('n', 'count', 'total', 'day')),
           'field-speed: no returned column is a count or a day');
-select is((select c.data_type::text from information_schema.routine_columns c
-            where c.specific_schema = 'public' and c.routine_name = 'field_speed' and c.column_name = 'share'),
+select is((select format_type(a.typ, null) from pg_proc p, unnest(p.proargnames, p.proargmodes::text[], p.proallargtypes) as a(name, mode, typ)
+            where p.oid = 'public.field_speed(integer)'::regprocedure and a.mode = 't' and a.name = 'share'),
           'integer', 'field-speed: a share is a whole percent — a decimal place would give a small group''s count back');
 
 -- ─────────────────────────────────────────────────────────────────────────────

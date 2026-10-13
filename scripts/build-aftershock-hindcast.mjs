@@ -113,7 +113,7 @@ async function build() {
   const bundle = {
     v: 1, title: 'Aftershock forecast hindcast — every M' + MIN_MAG + '+ earthquake ' + FROM + ' to ' + TO + ', issued ' + ISSUE_DAYS + ' day after',
     publisher: G.publisher, url: G.url, licence: G.licence, licenceUrl: G.licenceUrl, attribution: G.attribution, builtBy: G.builtBy,
-    src: 'USGS ANSS ComCat (FDSN event service), read ' + new Date().toISOString().slice(0, 10) + '; model js/aftershock-core.js with data/aftershock-regimes.json.gz',
+    src: 'USGS ANSS ComCat (FDSN event service), read ' + new Date().toISOString().slice(0, 10) + '; model js/aftershock-core.js with data/aftershock-regimes.json.gz — ComCat event data: U.S. public domain (USGS); the regimes: OpenSHA OAF, CC0 1.0',
     retrievedAt: new Date().toISOString().slice(0, 10),
     set: { minMag: MIN_MAG, from: FROM, to: TO, issueDays: ISSUE_DAYS, count: mains.length },
     score: score(rows), rows,

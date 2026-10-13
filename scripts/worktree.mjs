@@ -56,7 +56,10 @@ import { liveDeployment } from './pages-publish-guard.mjs';
 import { install as installMergeDriver, pending as mergePending } from './merge-driver.mjs';
 import { blame as blameNights } from './nightly-blame.mjs';
 import { fetchAtlasEval, atlasEvalLine } from './lib/nightly-status.mjs';
-import { line as fieldSpeedLine } from './field-speed.mjs';
+/* (field-speed) NOT a static import: scripts/field-speed.mjs reads the counter's rule from supabase/functions/usage-count/shape.js,
+   and a tree without that file (a partial checkout, the minimal tree tests/r771 builds) would lose the WHOLE status to one
+   missing line. Loaded once, and a failure is said as «could not be read» while the rest of the status goes on. */
+const FIELD_SPEED = await import('./field-speed.mjs').catch((e) => ({ loadError: e }));
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '..');
@@ -251,7 +254,8 @@ function fieldSpeed() {
   if (!raw) return null;
   let b = null; try { b = JSON.parse(raw); } catch { return null; }
   const unread = (b.unread || []).find((u) => u.half === 'fieldSpeed');
-  return fieldSpeedLine(b.fieldSpeed || { unread: unread ? unread.why : '束にまだ無い' });
+  if (FIELD_SPEED.loadError) return { ok: false, text: '読者の手元での速さ: 読めなかった（scripts/field-speed.mjs を読み込めない: ' + String(FIELD_SPEED.loadError.message || FIELD_SPEED.loadError).split(/\r?\n/)[0].slice(0, 160) + '）' };
+  return FIELD_SPEED.line(b.fieldSpeed || { unread: unread ? unread.why : '束にまだ無い' });
 }
 const specTitle = (id, w = 90) => { const s = String(id); return s.length > w ? s.slice(0, w - 1) + '…' : s; };
 

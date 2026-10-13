@@ -289,7 +289,7 @@ test('⑤ Atlas and the operator reach the same reading', () => {
   assert.match(src('js/atlas-cap-system.js'), /row: \['system\.speed',\s+'speed'/);
   assert.match(src('js/atlas-cap-system.js'), /await statusPage\.describe\(\);[\s\S]{0,400}x\.id === 'speed'/, 'Atlas reads the status page\'s own speed section — no second computation');
   assert.ok(src('js/atlas-capabilities.js').includes('["system.speed","speed",'), 'and it is in the registry Atlas searches');
-  assert.match(src('scripts/worktree.mjs'), /fieldSpeedLine\(/, 'worktree status prints it');
+  assert.match(src('scripts/worktree.mjs'), /import\('\.\/field-speed\.mjs'\)[\s\S]*FIELD_SPEED\.line\(/, 'worktree status prints it (field-speed loaded on its own — a tree without shape.js keeps the rest of the status)');
   assert.match(src('scripts/build-service-status.mjs'), /fetchFieldSpeed\(/, 'the bundle builder reads it');
   /* the privacy policy says it, in both languages */
   const legal = src('js/legal-text.js');

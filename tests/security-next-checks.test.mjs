@@ -185,7 +185,7 @@ test('⑦ sw.js tells the page what background workers contacted — and only th
 test('⑧ the reader reaches it: the Settings button, the boot witness, the words in en and jp, and Atlas', () => {
   const html = fs.readFileSync('index.html', 'utf8');
   assert.match(html, /id="btn-connections"[^>]*>.*data-i18n="viewConnections"/);
-  assert.match(fs.readFileSync('js/connection-watch.js', 'utf8'), /closest\('#btn-connections'\)/, 'the button has its one listener in the module that is always loaded');
+  assert.match(fs.readFileSync('js/connection-watch.js', 'utf8'), /closest\('(?:[^']*, *)?#btn-connections(?:, *[^']*)?'\)/, 'the button has its one listener in the module that is always loaded');   /* (wave4-train) one document listener serves the Settings ▸ Privacy buttons (wave4-security added «Stored on this device» to it) */
   assert.match(fs.readFileSync('src/main.js', 'utf8'), /^import '\.\.\/js\/connection-watch\.js';$/m, 'the witness is on the boot path — one that starts late has missed the start');
   for (const l of ['en', 'jp']) {
     const loc = fs.readFileSync(`js/locales/ui.${l}.js`, 'utf8');

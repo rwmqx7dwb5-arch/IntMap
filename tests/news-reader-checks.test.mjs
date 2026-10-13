@@ -76,7 +76,12 @@ function lift(code, sig, where) {
 /* 綴りのまま: 主張が CSS / HTML の規則・markup の存在で、それが当たるか（計算済みスタイル）はブラウザにしか無い */
 test('R435 ① every solo class the reading surface emits has a rule in the stylesheet', () => {
   const css = CSS();
-  const declared = (t) => new RegExp('\\.' + t + '(?![\\w-])').test(css);
+  /* (wave4-train) …or a rule the reading surface injects itself: a lazy module's own look rides in with it rather than sit in the eager
+     css/intmap.css (js/news-events.js editionEntryStyle — «Today on the map»). A rule there is a string literal holding a selector
+     that names the class and opens a block; a mention in prose is not (comments are stripped). */
+  const injected = ['js/news-events.js', 'js/news-ui.js', 'js/article-reader.js'].map((f) => CODE(f)).join('\n');
+  const declared = (t) => new RegExp('\\.' + t + '(?![\\w-])').test(css)
+    || new RegExp('[\'"`][^\'"`\\n]*\\.' + t + '(?![\\w-])[^\'"`{\\n]*\\{[^\'"`\\n]*\\}').test(injected);
   const missing = [];
   let seen = 0;
   for (const f of ['js/news-events.js', 'js/news-ui.js', 'js/article-reader.js']) {

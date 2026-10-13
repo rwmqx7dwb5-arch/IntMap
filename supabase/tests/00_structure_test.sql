@@ -98,7 +98,7 @@ from unnest(array[
   -- reports on collections listed in Community maps (written only by report_community_map(); the reporter and an
   -- administrator read them), on what they are about (community_map_subjects — read by the functions only) and an
   -- administrator's holds (supabase/tests/38_community_maps_test.sql).
-  'collection_copies','community_map_reports','community_map_holds','community_map_subjects'
+  'collection_copies','community_map_reports','community_map_holds','community_map_subjects',
   -- (wave4-education) a teacher's class sets, and the students' hand-ins under them (written only through
   -- class_set_submit(code); read and deleted only by the set's owner) (supabase/tests/39_class_quest_test.sql).
   'class_sets',
@@ -136,7 +136,7 @@ from unnest(array[
   'saved_views','collection_shares',                        -- (collection-workspace) see the note above
   'quest_daily_results',                                     -- (watch-account-product) see the note above
   'collection_copies','community_map_reports',               -- (community-maps) see the note above
-  'community_map_holds','community_map_subjects'
+  'community_map_holds','community_map_subjects',
   'class_sets','class_set_answers'                           -- (wave4-education) see the note above
 ]) as t;                                                    -- 51 assertions
 
