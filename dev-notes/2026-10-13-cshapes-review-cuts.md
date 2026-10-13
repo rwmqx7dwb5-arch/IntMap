@@ -103,3 +103,7 @@ CShapes のブコヴィナの輪郭そのもの（12,711 km² 対 OHM の公国 
 `check:histeras`・`check:histnames`・`check:wars`・`check:elections`・`check:static`・`check:types`・`check:docs`・`check:datagov`・
 `check:i18n`・`check:testbudget`・`check:assets`。束を読む既存の node 検査 79 本（969 件）も緑。⚠ `check:perf` は上の理由で赤
 （`dist.data` が天井＋幅を 487 kB 超え）——main を取り込んでから `node scripts/perf-budget.mjs --update` で上げる。
+
+## 天井
+
+`dist.data` 1173525.5 → 1179879.9 kB（`perf-budget --update`、main を取り込んだ木で build）。主に `data/cshapes.js` の +709 KB——切り取りで生まれた新しい環と期間の行で、精度を落とさずには減らせない。残りは main の同梱データの定期更新の分。
