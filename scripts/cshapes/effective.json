@@ -1,7 +1,7 @@
 {
  "note": "Every Wikidata item with a day-precise point in time (P585 — for a treaty, the signing day) within 3 days of a day data/cshapes.js changes a polity, and a day-precise effective date (P7588, or P580 on a treaty) later than it. CShapes codes the signing day; scripts/cshapes/review.json judges each candidate (edges with wd: the change moved to the day the ground changed hands; examined with wds: kept, with the reason). Written by node scripts/build-cshapes.mjs --effective; read offline by --check (scripts/cshapes/effective.mjs).",
- "retrievedAt": "2026-10-07",
- "changeDays": 375,
+ "retrievedAt": "2026-10-12",
+ "changeDays": 386,
  "candidates": [
   {
    "wd": "Q269655",

@@ -67,6 +67,7 @@
  *      node scripts/build-cshapes.mjs --measure  # print the tolerance sweep and write nothing
  *      node scripts/build-cshapes.mjs --review   # apply scripts/cshapes/review.json to the committed file (idempotent)
  *      node scripts/build-cshapes.mjs --effective # ask Wikidata which change days have a later effective date → scripts/cshapes/effective.json
+ *      node scripts/build-cshapes.mjs --regions  # derive the regions review.json cuts along → scripts/cshapes/regions.json (network)
  *
  *  ⚠ `--check` IS THE ONLY MODE CI CAN RUN, and it deliberately re-derives nothing: the upstream is
  *  26.3 MB from a university web server that refused three of this round's connections outright, and
@@ -81,6 +82,7 @@ import { tmpdir } from 'node:os';
 import { LIC } from './histcities/lang.mjs';
 import { geometryOf, identityOf, repoolGeometry, previousPrecision, generatedPrecision } from './histborders/precision.mjs';
 import { changeDays, askedDays, effectiveQuery, candidatesOf, effectiveProblems, NEAR } from './cshapes/effective.mjs';
+import { cutPolygon, receive, roundMP, unionAll, bboxOf, mpArea, deriveRegion, regionProblems, DECIMALS as CUT_DECIMALS } from './cshapes/cuts.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'data', 'cshapes.js');
@@ -105,8 +107,8 @@ const URL_GEOJSON = 'https://icr.ethz.ch/data/cshapes/CShapes-2.0.geojson';
    the shared vocabulary's `source` group means 「where the data came from」 — two different facts
    wearing one word. Handing the object over whole would read the paying row as a URL and leave
    `paidBy` silent, which is the one obligation this bundle exists to record. */
-export const GOVERNANCE = {
-  'data/cshapes.js': {
+export const GOVERNANCE = (() => {
+  const own = {
     publisher: 'Schvitz, Rüegger, Girardin, Cederman, Weidmann, Gleditsch (ICR, ETH Zürich)',
     url: 'https://icr.ethz.ch/data/cshapes/',
     licence: 'CC BY-NC-SA 4.0',
@@ -127,8 +129,21 @@ export const GOVERNANCE = {
       canon: 'this record (the only builder that reads CShapes)',
     },
     builtBy: 'scripts/build-cshapes.mjs',
-  },
-};
+  };
+  /* (cshapes-review-cuts) part of the shipped outlines is cut along OpenHistoricalMap relations (scripts/cshapes/review.json
+     `cuts`, each relation pinned by version in scripts/cshapes/regions.json), so the record names that upstream beside
+     CShapes — CC0 makes no credit a condition, but the declared upstreams must be what the bytes are made of. The
+     CShapes entry is built from `own`, never spelled a second time. */
+  const cshapes = { publisher: own.publisher, url: own.url, licence: own.licence, attribution: own.attribution, paidBy: own.paidBy, cite: own.cite };
+  const ohm = { publisher: 'OpenHistoricalMap', url: 'https://www.openhistoricalmap.org/', licence: 'CC0 1.0',
+    licenceUrl: 'https://creativecommons.org/publicdomain/zero/1.0/', attribution: false, contributes: 'outline' };
+  return {
+  'data/cshapes.js': { ...own, upstreams: [cshapes, ohm],
+    /* which record's line stands where both speak: CShapes everywhere, except the regions a reviewed cut names */
+    priority: { rank: ['CShapes 2.0', 'OpenHistoricalMap'],
+      over: 'CShapes 2.0 draws every outline; OpenHistoricalMap draws only the lines of the regions scripts/cshapes/review.json cuts, for the spans those cuts state' } },
+  };
+})();
 
 /* The same statement in the shape the histcities record loader and its gate already speak — built
    from the values above, never spelled a second time. */
@@ -377,6 +392,11 @@ export function refineCShapes(have, baseline, finer) {
                   vertex of its outer ring is inside `within`; a polygon of the source record that is PARTLY
                   inside throws, so a selector that would cut land fails the build instead of drawing a cut;
                   a record that does not exist must be declared in `units`;
+     · `cuts`   — (cshapes-review-cuts) a PART of an outline moves to another record for a span, cut along a
+                  boundary the ledger derives from a cited record (`regions`, photographed in
+                  scripts/cshapes/regions.json by `--regions`); scripts/cshapes/cuts.mjs says how a cut treats
+                  the slivers two records' lines leave between them. Applied after `edges` and `ground`, in order;
+                  a recipient that has no row on some day of the span must be declared in `units`;
      · `notes`  — what the reader is told on the outline's card, copied whole into the bundle (`review.notes`),
                   which travels in the head js/hist-bundles.js hands to the page, tiled or whole.
    ⚠ IT IS IDEMPOTENT, AND check() HOLDS IT TO THAT: applied to its own output it changes nothing (a polygon
@@ -385,6 +405,11 @@ export function refineCShapes(have, baseline, finer) {
    or ends and never merged — a split that already exists is not made twice. */
 const REVIEW = join(ROOT, 'scripts', 'cshapes', 'review.json');
 export const readReview = (file = REVIEW) => JSON.parse(readFileSync(file, 'utf8'));
+/* (cshapes-review-cuts) the photograph of the regions the cuts are made along — written by `--regions`, read offline */
+const REGIONS = join(ROOT, 'scripts', 'cshapes', 'regions.json');
+export const readRegions = (file = REGIONS) => (existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : null);
+const unymd = (k) => [Math.floor(k / 10000), Math.floor(k / 100) % 100, k % 100];
+const byStart = (a, b) => ymdA(rowS(a)) - ymdA(rowS(b));
 const ymdA = (a) => ymd(a[0], a[1], a[2]);
 const dayShift = (a, n) => { const t = new Date(Date.UTC(a[0], a[1] - 1, a[2] + n)); return [t.getUTCFullYear(), t.getUTCMonth() + 1, t.getUTCDate()]; };
 const rowS = (f) => [f[2], f[3], f[4]], rowE = (f) => [f[5], f[6], f[7]];
@@ -408,9 +433,9 @@ function splitAt(feats, gw, at) {
     feats.splice(i, 1, withSpan(f, rowS(f), dayShift(at, -1)), withSpan(f, at, rowE(f))); i++; }
 }
 const polyKey = (p) => p.join(',');
-export function applyReview(data, review) {
+export function applyReview(data, review, photo = (review.cuts || []).length ? readRegions() : null) {
   const feats = data.feats.map((f) => withSpan(f, rowS(f), rowE(f)));
-  const units = review.units || {}, report = { edges: [], ground: [] };
+  const units = review.units || {}, report = { edges: [], ground: [], cuts: [] };
   for (const ed of review.edges || []) {
     const lo = Math.min(ymdA(ed.upstream), ymdA(ed.at)), hi = Math.max(ymdA(ed.upstream), ymdA(ed.at));
     const rows = feats.filter((f) => f[1] === ed.gw).sort((a, b) => ymdA(rowS(a)) - ymdA(rowS(b)));
@@ -489,17 +514,98 @@ export function applyReview(data, review) {
     }
     report.ground.push({ id: g.id, polygons: n, rows: moved.length });
   }
+  /* ══ (cshapes-review-cuts) `cuts` — a PART of an outline moves to another record for a span ═══════════════════════
+     Each source row inside the span gives up what the region takes of it (scripts/cshapes/cuts.mjs cutPolygon), and
+     the recipient takes ONE copy of it for the whole span (below). A day of the span on which no source row draws the
+     region (CShapes draws nobody in the Czech lands from 3 to 10 November 1918) is the recipient's all the same: the
+     verdict says the ground was the recipient's from `s` to `e`. A row a cut split and left the same on both sides is
+     joined again (a split is not an event). New rings join the pool, shared by content, never written twice. */
+  const pool = data.rings.slice();
+  let poolIdx = null;
+  const put = (ring) => {
+    if (!poolIdx) { poolIdx = new Map(); pool.forEach((r, i) => { const k = JSON.stringify(r); if (!poolIdx.has(k)) poolIdx.set(k, i); }); }
+    const k = JSON.stringify(ring); let i = poolIdx.get(k);
+    if (i === undefined) { i = pool.length; pool.push(ring); poolIdx.set(k, i); }
+    return i; };
+  const coordsOf = (p) => p.map((ri) => pool[ri]);
+  /* a row a cut split, and that is the same on both sides afterwards, is one row again — a split is not an event */
+  const fresh = new Set();
+  const splitHere = (gw, at) => { const t = ymdA(at);
+    if (feats.some((f) => f[1] === gw && ymdA(rowS(f)) < t && t <= ymdA(rowE(f)))) fresh.add(gw + '|' + t);
+    splitAt(feats, gw, at); };
+  const indexOf = (poly) => poly.map(put);
+  for (const c of review.cuts || []) {
+    const reg = photo && photo.regions && photo.regions[c.region];
+    if (!reg) throw new Error(`review cut ${c.id}: region ${c.region} is not in the photograph scripts/cshapes/regions.json — node scripts/build-cshapes.mjs --regions`);
+    const R = reg.geometry, rb = bboxOf(R), froms = [].concat(c.from), S = ymdA(c.s), E = ymdA(c.e);
+    for (const gw of [...froms, c.to]) { splitHere(gw, c.s); splitHere(gw, dayShift(c.e, 1)); }
+    const memo = new Map(), runs = [], copies = new Map(); let fragments = 0, rowsCut = 0;
+    for (const f of feats.filter((x) => froms.includes(x[1]) && ymdA(rowS(x)) >= S && ymdA(rowE(x)) <= E).sort(byStart)) {
+      const next = [], pieces = [];
+      for (const p of f[8]) {
+        const key = p.join(',');
+        if (!memo.has(key)) memo.set(key, cutPolygon(coordsOf(p), R, rb, { lines: reg.lines, keeps: c.keeps, minArea: MIN_AREA, label: `review cut ${c.id}: «${f[0]}» ${rowS(f).join('-')}` }));
+        const r = memo.get(key);
+        if (!r) { next.push(p); continue; }
+        for (const q of roundMP(r.rest, MIN_AREA)) next.push(indexOf(q));
+        pieces.push(r.piece); fragments += r.fragments.length;
+      }
+      if (!pieces.length) continue;
+      if (!next.length) throw new Error(`review cut ${c.id}: every polygon of «${f[0]}» ${rowS(f).join('-')} would move — that is \`ground\`, or the region is wrong`);
+      f[8] = next; rowsCut++;
+      const piece = roundMP(unionAll(pieces), MIN_AREA), k = JSON.stringify(piece);
+      if (!copies.has(k)) copies.set(k, piece);
+    }
+    /* ⚠ ONE GROUND, ONE COPY, FOR THE WHOLE SPAN — the rule `ground` states above, for the same reason. MEASURED on the
+       first run: Russia's rows of 1905-1945 carry three copies of Sakhalin (127, 222 and 464 vertices — rows the
+       precision work retained), so handing each row's own piece over split Southern Sakhalin's record twice for no
+       event. The verdict says the region was the recipient's from `s` to `e`: it receives the copy with the most
+       vertices for all of it, and a day no source row draws the region is covered too. */
+    if (copies.size) {
+      const verts = (mp) => mp.reduce((n, p) => n + p.reduce((m, r) => m + r.length, 0), 0);
+      const piece = [...copies.values()].reduce((a, p) => (!a || verts(p) > verts(a) ? p : a), null);
+      runs.push({ s: c.s, e: c.e, piece, k: JSON.stringify(piece) });
+    }
+    const rmemo = new Map(); let created = 0;
+    for (const r of runs) {
+      splitHere(c.to, r.s); splitHere(c.to, dayShift(r.e, 1));
+      const into = feats.filter((f) => f[1] === c.to && ymdA(rowS(f)) >= ymdA(r.s) && ymdA(rowE(f)) <= ymdA(r.e)).sort(byStart);
+      let cur = ymdA(r.s); const gaps = [];
+      for (const f of into) {
+        if (ymdA(rowS(f)) > cur) gaps.push([unymd(cur), dayShift(rowS(f), -1)]);
+        cur = ymdA(dayShift(rowE(f), 1));
+        const key = JSON.stringify(f[8]) + '|' + r.k;
+        if (!rmemo.has(key)) {
+          const got = receive(f[8].map(coordsOf), r.piece, MIN_AREA);
+          rmemo.set(key, got && [...f[8].filter((_, i) => !got.hit.includes(i)), ...roundMP(got.merged, MIN_AREA).map(indexOf)]);
+        }
+        const nx = rmemo.get(key); if (nx) f[8] = nx.map((p) => p.slice());
+      }
+      if (cur <= ymdA(r.e)) gaps.push([unymd(cur), r.e]);
+      if (gaps.length) {
+        const u = units[String(c.to)];
+        if (!u) throw new Error(`review cut ${c.id}: code ${c.to} has no row from ${gaps[0][0].join('-')} to ${gaps[0][1].join('-')} and is not declared in \`units\``);
+        for (const [gs, ge] of gaps) { feats.push([u.name, c.to, ...gs, ...ge, r.piece.map(indexOf)]); created++; }
+      }
+    }
+    report.cuts.push({ id: c.id, rows: rowsCut, copies: copies.size, fragments, created, deg2: runs.map((r) => +mpArea(r.piece).toFixed(4)) });
+  }
+  for (const key of fresh) {
+    const [gw, t] = key.split('|').map(Number), before = ymdA(dayShift(unymd(t), -1));
+    const A = feats.find((f) => f[1] === gw && ymdA(rowE(f)) === before), B = feats.find((f) => f[1] === gw && ymdA(rowS(f)) === t);
+    if (A && B && A[0] === B[0] && JSON.stringify(A[8]) === JSON.stringify(B[8])) { [A[5], A[6], A[7]] = rowE(B); feats.splice(feats.indexOf(B), 1); }
+  }
   /* a ring no row references any more (the coarse copy a source row gave up while the receiving record took the
      finer one) is dropped and the pool renumbered in its own order — ORPHAN_POINTS is 0, and a ring nobody draws is
      weight shipped for nothing. ⚠ data/border-coast.js marks rings BY POOL INDEX: a renumbering is a rebuild of it
      (node scripts/build-border-coast.mjs), which `npm run check:bordercoast` demands */
   const used = new Set(); for (const f of feats) for (const p of f[8]) for (const ri of p) used.add(ri);
-  let rings = data.rings;
-  if (used.size !== data.rings.length) {
+  let rings = pool;
+  if (used.size !== pool.length) {
     const map = new Map(); rings = [];
-    data.rings.forEach((r, i) => { if (used.has(i)) { map.set(i, rings.length); rings.push(r); } });
+    pool.forEach((r, i) => { if (used.has(i)) { map.set(i, rings.length); rings.push(r); } });
     for (const f of feats) f[8] = f[8].map((p) => p.map((ri) => map.get(ri)));
-    report.droppedRings = data.rings.length - rings.length;
+    report.droppedRings = pool.length - rings.length;
   }
   const notes = (review.notes || []).map((x) => ({ about: x.about, gw: x.gw, s: x.s, e: x.e, en: x.en, jp: x.jp }));
   /* the precision record counts rows (refined + retained = rows). A row the review adds — a split piece, or a unit
@@ -511,10 +617,10 @@ export function applyReview(data, review) {
 }
 /* what the committed bundle must show for every verdict — measured on the bundle, not on the ledger's word.
    Exported so tests/cshapes-review-findings-checks.test.mjs evaluates the same judgement the gate makes. */
-export function reviewProblems(d, review) {
+export function reviewProblems(d, review, photo = (review.cuts || []).length || review.regions ? readRegions() : null) {
   const out = [], say = (m) => out.push(m);
   const ids = new Set();
-  for (const x of [...(review.ground || []), ...(review.edges || [])]) {
+  for (const x of [...(review.ground || []), ...(review.edges || []), ...(review.cuts || [])]) {
     if (!x.id || ids.has(x.id)) say('review entry without a unique id: ' + JSON.stringify(x.id)); ids.add(x.id);
     if (!(typeof x.history === 'string' && x.history.length > 40)) say(`review ${x.id} states no history — a verdict without the event it rests on is not a verdict`);
     if (!(Array.isArray(x.sources) && x.sources.length && x.sources.every((s) => s && typeof s.cite === 'string' && s.cite.length > 10))) say(`review ${x.id} cites no source`);
@@ -522,7 +628,8 @@ export function reviewProblems(d, review) {
   for (const x of review.examined || []) if (!(x.id && x.finding && x.verdict && typeof x.why === 'string' && x.why.length > 40)) say(`examined finding ${x.id} has no verdict with a reason`);
   /* the bundle IS the ledger applied: re-applying changes nothing */
   let again = null;
-  try { again = applyReview(d, review).data; } catch (e) { say('scripts/cshapes/review.json cannot be applied to the committed bundle: ' + e.message); }
+  if ((review.cuts || []).length || review.regions) for (const m of regionProblems(review, photo)) say(m);
+  try { again = applyReview(d, review, photo).data; } catch (e) { say('scripts/cshapes/review.json cannot be applied to the committed bundle: ' + e.message); }
   if (again && JSON.stringify(again) !== JSON.stringify(d)) say('data/cshapes.js does not carry scripts/cshapes/review.json — node scripts/build-cshapes.mjs --review');
   const rowsOf = (gw) => d.feats.filter((f) => f[1] === gw).sort((a, b) => ymdA(rowS(a)) - ymdA(rowS(b)));
   for (const g of review.ground || []) {
@@ -542,6 +649,31 @@ export function reviewProblems(d, review) {
     if (cur <= E) say(`review ${g.id}: code ${g.to} does not hold the ground from ${String(cur)} to ${g.e.join('-')}`);
     const u = review.units && review.units[String(g.to)];
     if (u && into.some((f) => f[0] !== u.name)) say(`review ${g.id}: code ${g.to} is declared as «${u.name}» and drawn under another name`);
+  }
+  /* (cshapes-review-cuts) a cut, measured on the bundle: no source row inside the span draws land inside the region
+     (the floor the cut itself uses), and the recipient draws land inside it on every day of the span */
+  for (const c of review.cuts || []) {
+    const reg = photo && photo.regions && photo.regions[c.region];
+    if (!reg) continue;   /* said by regionProblems */
+    const R = reg.geometry, rb = bboxOf(R), S = ymdA(c.s), E = ymdA(c.e), memo = new Map();
+    const inside = (p) => { const k = p.join(',');
+      if (!memo.has(k)) memo.set(k, !!cutPolygon(p.map((ri) => d.rings[ri]), R, rb, { lines: 'cshapes', minArea: MIN_AREA, label: c.id }));
+      return memo.get(k); };
+    for (const gw of [].concat(c.from)) for (const f of rowsOf(gw)) {
+      if (ymdA(rowE(f)) < S || ymdA(rowS(f)) > E) continue;
+      const hit = f[8].filter(inside);
+      if (hit.length) say(`review ${c.id}: «${f[0]}» ${rowS(f).join('-')} still draws ${hit.length} polygon(s) inside the region it gave up`);
+    }
+    let cur = S;
+    for (const f of rowsOf(c.to).filter((x) => !(ymdA(rowE(x)) < S || ymdA(rowS(x)) > E))) {
+      if (ymdA(rowS(f)) > cur) break;
+      if (!f[8].some(inside)) say(`review ${c.id}: code ${c.to} ${rowS(f).join('-')} draws nothing inside the region it received`);
+      cur = Math.max(cur, ymdA(dayShift(rowE(f), 1)));
+    }
+    if (cur <= E) say(`review ${c.id}: code ${c.to} does not hold the region from ${unymd(cur).join('-')} to ${c.e.join('-')}`);
+    const u = review.units && review.units[String(c.to)];
+    if (u && rowsOf(c.to).some((f) => f[0] !== u.name)) say(`review ${c.id}: code ${c.to} is declared as «${u.name}» and drawn under another name`);
+    if (reg.lines === 'ohm' && !(Array.isArray(c.keeps) && c.keeps.length)) say(`review ${c.id}: its region's lines are another record's, so it must name the places the source keeps (\`keeps\`)`);
   }
   for (const ed of review.edges || []) {
     const rows = rowsOf(ed.gw), at = ymdA(ed.at), before = ymdA(dayShift(ed.at, -1));
@@ -596,6 +728,66 @@ async function effectiveMode() {
   writeFileSync(EFFECTIVE, JSON.stringify(photo, null, 1) + '\n');
   console.log(JSON.stringify({ changeDays: days.length, asked: ask.length, rows: rows.length, candidates: candidates.length }));
   for (const c of candidates) console.log(c.signed + ' → ' + c.effective + ' (+' + c.days + ' d)  ' + c.wd + ' ' + c.label + '  ·  ' + c.changes.map((x) => x.day + ' ' + x.rows.map((r) => r.kind + ' ' + r.name + '(' + r.gw + ')').join(', ')).join(' | '));
+}
+
+/* (cshapes-review-cuts) THE REGIONS THE CUTS ARE MADE ALONG — derived from the records review.json names and written as a
+   photograph (scripts/cshapes/regions.json), so `--review` and `--check` never need the network. Network: the
+   OpenHistoricalMap Overpass API (a relation with its version and timestamp, and any boundary sub-relation it has);
+   the upstream CShapes file (the cache `--fetch` fills) for {cshapes} leaves, cut at the bundle's own precision.
+   ⚠ ONE PASS, OR A REASON (.agents/rules/one-pass-or-a-reason.md §5): a relation is asked again only after an OBSERVED
+   failure (a thrown network error or a 5xx), at most 3 times, each attempt printed; a 4xx is final. */
+const OHM_API = 'https://overpass-api.openhistoricalmap.org/api/interpreter';
+async function ohmRelation(id) {
+  for (let attempt = 1; ; attempt++) {
+    let why;
+    try {
+      const r = await fetch(OHM_API, { method: 'POST', body: new URLSearchParams({ data: `[out:json][timeout:180];rel(${id});out meta geom;` }),
+        headers: { 'User-Agent': 'IntMap/build-cshapes (+https://github.com/rwmqx7dwb5-arch/IntMap)' } });
+      if (r.ok) { const el = (await r.json()).elements.find((e) => e.type === 'relation' && e.id === id); if (!el) throw Object.assign(new Error('OpenHistoricalMap has no relation ' + id), { final: true }); return el; }
+      if (r.status < 500) throw Object.assign(new Error('OpenHistoricalMap HTTP ' + r.status + ' for relation ' + id), { final: true });
+      why = 'HTTP ' + r.status;
+    } catch (e) { if (e.final) throw e; why = (e.cause && e.cause.code) || e.message; }
+    console.error(`  OpenHistoricalMap relation ${id}: attempt ${attempt} failed (${why})`);
+    if (attempt >= 3) throw new Error(`OpenHistoricalMap relation ${id}: ${why} after ${attempt} attempts`);
+    await new Promise((res) => setTimeout(res, 2000 * attempt));
+  }
+}
+async function regionsMode() {
+  const review = readReview();
+  const { ringsOf } = await import('./build-hist-borders.mjs');
+  let up = null;
+  const upstream = () => { if (!up) { if (!existsSync(GEOJSON)) throw new Error('no cached upstream at ' + GEOJSON + ' — node scripts/build-cshapes.mjs --fetch'); up = JSON.parse(readFileSync(GEOJSON, 'utf8')); } return up; };
+  const leaf = async (x) => {
+    if (x.ohm != null) {
+      const el = await ohmRelation(x.ohm), nested = new Map();
+      for (const m of el.members || []) if (m.type === 'relation' && !m.role) nested.set(m.ref, await ohmRelation(m.ref));
+      const { polys, dropped } = ringsOf(el, (ref) => nested.get(ref) || null, 0);
+      if (dropped) throw new Error(`OpenHistoricalMap relation ${x.ohm}: ${dropped} outline(s) do not close — the region would be a guess`);
+      const t = el.tags || {};
+      return { mp: polys, source: { ohm: x.ohm, version: el.version, timestamp: el.timestamp, name: t.name || null, nameEn: t['name:en'] || null, start: t.start_date || null, end: t.end_date || null } };
+    }
+    if (x.cshapes) {
+      const t = ymd(...x.cshapes.on);
+      const f = upstream().features.find((g) => { const p = g.properties; return p.gwcode === x.cshapes.gw && ymd(p.gwsyear, p.gwsmonth, p.gwsday) <= t && t <= ymd(p.gweyear, p.gwemonth, p.gweday); });
+      if (!f) throw new Error(`CShapes 2.0 has no row of code ${x.cshapes.gw} on ${x.cshapes.on.join('-')}`);
+      const g = f.geometry, p = f.properties;
+      const mp = (g.type === 'Polygon' ? [g.coordinates] : g.coordinates)
+        .map((poly) => poly.map((r) => cutCShapesRing(r, TOL, CUT_DECIMALS)).filter((r) => r.length >= 4 && Math.abs(ringArea(r)) >= MIN_AREA))
+        .filter((poly) => poly.length);
+      return { mp, source: { cshapes: x.cshapes, name: p.cntry_name, s: [p.gwsyear, p.gwsmonth, p.gwsday], e: [p.gweyear, p.gwemonth, p.gweday] } };
+    }
+    if (x.line) return { mp: [[x.line]], source: null };
+    throw new Error('a region leaf is none of ohm / cshapes / line: ' + JSON.stringify(x));
+  };
+  const regions = {};
+  for (const [id, spec] of Object.entries(review.regions || {})) {
+    regions[id] = await deriveRegion({ id, ...spec }, leaf, MIN_AREA);
+    console.log(`${id}: ${regions[id].lines} lines, ${regions[id].geometry.length} polygon(s), ${regions[id].geometry.reduce((n, p) => n + p.reduce((m, r) => m + r.length, 0), 0)} vertices`);
+  }
+  /* compact geometry, one region a line pair — the file is read by a program and diffed by a person */
+  const head = { about: 'The regions scripts/cshapes/review.json cuts along (`regions`), derived from the records each names and photographed here so the ledger applies offline. Written by node scripts/build-cshapes.mjs --regions; read by --review and --check (scripts/cshapes/cuts.mjs). Coordinates at the bundle\'s precision; parts smaller than the bundle\'s ring floor are dropped.', derivedOn: new Date().toISOString().slice(0, 10) };
+  const body = Object.entries(regions).map(([id, r]) => ' ' + JSON.stringify(id) + ': ' + JSON.stringify(r)).join(',\n');
+  writeFileSync(REGIONS, JSON.stringify(head, null, 1).replace(/\n}$/, ',\n "regions": {\n' + body + '\n }\n}\n'));
 }
 
 function precisionOnly() {
@@ -777,7 +969,7 @@ function check() {
   if (bad.length) { fail(bad); return; }
   console.log(`cshapes ok — ${d.feats.length} records, ${codeOf.size} polities, ${d.rings.length} rings `
     + `(${orphanRings} unreferenced, ${orphanPts} points), ${Y_MIN}-${Y_MAX}, ${LICENCE.licence}`
-    + (review ? `, ${(review.ground || []).length + (review.edges || []).length} reviewed finding(s) applied, ${(review.examined || []).length} examined and kept` : ''));
+    + (review ? `, ${(review.ground || []).length + (review.edges || []).length + (review.cuts || []).length} reviewed finding(s) applied, ${(review.examined || []).length} examined and kept` : ''));
 }
 
 function fail(bad) {
@@ -798,4 +990,5 @@ else if (arg.includes('--measure')) measure();
 else if (arg.includes('--precision-only')) precisionOnly();
 else if (arg.includes('--review')) reviewMode();
 else if (arg.includes('--effective')) await effectiveMode();
+else if (arg.includes('--regions')) await regionsMode();
 else compare();
