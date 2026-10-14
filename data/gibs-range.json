@@ -1,6 +1,6 @@
 {
  "source": "NASA EOSDIS GIBS — temporal extent measured by tile probe (404 outside the archive, 200 inside)",
- "probed": "2026-10-13",
+ "probed": "2026-10-14",
  "layers": {
   "gxndvi": {
    "gibs": "MODIS_Terra_NDVI_8Day",
