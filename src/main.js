@@ -254,7 +254,6 @@ import '../js/ocean-currents-field.js';
 import '../js/outbreaks.js';   /* (#R216) 世界の海流 — same World-data toolkit; AFTER world-packs for the same reason industry-web is. (#R650) …and the WHO Disease Outbreak News layer. */
 import '../js/sims.js';
 import '../js/tables.js';
-import '../js/legal.js';        /* …which imports js/legal-text.js — the words privacy.html / terms.html also read */
 /* (#R231) the phone's base-map square + its popover — the five view controls, lifted out of the Map &
    layers sheet ("レイヤー選択欄から分離"). After js/mobile-ui.js because initMobileUI() installs it. */
 import '../js/basemap-switch.js';
@@ -339,6 +338,9 @@ if (/[?&]here=1\b/.test(location.search)) import('../js/place-dossier.js').then(
 /* (learn-quests) …and a CHALLENGE LINK (`?quest=<kind>.<seed>.<n>` — js/quest-engine.js questQuery): the same set of questions
    for everyone who opens it, started by js/quest-panel.js once the map is ready. A chunk of its own, fetched only on its query. */
 if (/[?&]quest=/.test(location.search)) import('../js/quest-panel.js').then((m) => m.bootFromUrl());
+/* (wave4-mobility) …and a WORLD FLOWS LINK (`?wf=<ISO3>.<kind>.<dir>` — js/world-flows.js encodeLink): the card on that country and
+   flow once the map can draw. A chunk of its own, fetched only on its query. */
+if (/[?&]wf=/.test(location.search)) import('../js/world-flows.js').then((m) => m.bootFromUrl());
 
 /* ── (#R162/#R163 → module-graph) THE REQUIRED-MODULE GUARD ─────────────────────────────────────
    It used to hold MODULE_FACTORIES — 107 names, checked AFTER boot against window.IntMapModules,

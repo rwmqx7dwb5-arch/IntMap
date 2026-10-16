@@ -451,15 +451,17 @@ export async function openMyPlaces(HOST, opts) {
   const showAll = el('button', { cls: 'acct-btn acct-btn-quiet', id: 'mpl-show-all', text: T('Show all places on the map', 'すべての場所を地図に表示') });
   /* (watch-places) a saved place can be watched — earthquakes, warnings, volcanoes and news near it (js/place-watch.js) */
   const watchBtn = el('button', { cls: 'acct-btn acct-btn-quiet', id: 'mpl-watch', text: T('Watch places…', '見守る場所…') });
+  /* (community-maps) what other readers listed — the place a listed collection of one's own appears */
+  const communityBtn = el('button', { cls: 'acct-btn acct-btn-quiet', id: 'mpl-community', type: 'button', text: T('Community maps', 'みんなの地図') });
   const close = el('button', { cls: 'acct-close', id: 'mpl-close', text: T('Close', '閉じる') });
   const sheet = el('div', { cls: 'acct-sheet', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'mpl-h', tabindex: '-1' }, [
     /* (map-document-unify) ONE SHELF: places, saved maps, my maps, tours and Atlas answers — and what this device holds that the account does not */
     el('h2', { cls: 'acct-h', id: 'mpl-h', text: T('Library', 'ライブラリ') }),
-    el('p', { cls: 'mpl-lead', text: T('Everything you keep of a map: places, maps, your own drawn maps, tours and Atlas answers. What is saved to your account opens on every device you sign in on; file it into collections, and publish a collection as a read-only link.', '地図について残したものすべて——場所・地図・自分で描いた地図・ツアー・Atlas の回答——です。アカウントに保存したものはログインしたどの端末でも開けます。コレクションにまとめ、閲覧専用のリンクとして公開することもできます。') }),
+    el('p', { cls: 'mpl-lead', text: T('Everything you keep of a map: places, maps, your own drawn maps, tours and Atlas answers. What is saved to your account opens on every device you sign in on; file it into collections, publish a collection as a read-only link, and list it in Community maps for anyone to find.', '地図について残したものすべて——場所・地図・自分で描いた地図・ツアー・Atlas の回答——です。アカウントに保存したものはログインしたどの端末でも開けます。コレクションにまとめ、閲覧専用のリンクとして公開し、みんなの地図に掲載して誰でも見つけられるようにもできます。') }),
     el('div', { cls: 'acct-grp-t', text: T('Save', '保存') }),
     el('div', { cls: 'acct-card' }, [el('div', { cls: 'mpl-add' }, [name, coll, note]), el('div', { cls: 'mpl-btns' }, [saveView, saveMap])]),
     msg,
-    el('div', { cls: 'mpl-btns' }, [showAll, watchBtn]),
+    el('div', { cls: 'mpl-btns' }, [showAll, watchBtn, communityBtn]),
     list, close,
   ]);
   const m = el('div', { id: 'mpl-modal' }, [sheet]);
@@ -467,7 +469,7 @@ export async function openMyPlaces(HOST, opts) {
   const shut = () => { try { m.remove(); } catch (_) { } };
   close.onclick = shut;
 
-  let places = [], views = [], shares = [];
+  let places = [], views = [], shares = [], reachBy = {};
   /* the publishing doors live in js/shared-collection.js, read when the sheet first needs them */
   const SC = () => import('./shared-collection.js');
 
@@ -499,6 +501,10 @@ export async function openMyPlaces(HOST, opts) {
       const stop = el('button', { cls: 'acct-btn acct-btn-quiet', type: 'button', text: T('Stop publishing', '公開をやめる') });
       stop.dataset.effect = 'private';   /* deletes the reader's own share row: the link stops answering */
       box.append(el('p', { text: T('Published as a read-only link. Whoever opens it sees this collection as it is now.', '閲覧専用のリンクで公開中です。開いた人には、このコレクションの今の内容が見えます。') }), link, el('div', { cls: 'mpl-btns' }, [copy, stop]));
+      /* (community-maps) the second, explicit decision: list it so anyone can find it — and how far it has travelled */
+      const listing = el('div');
+      box.appendChild(listing);
+      import('./community-maps.js').then((C) => { if (listing.isConnected) listing.appendChild(C.listingBox(HOST, S, reachBy[String(S.id)], () => { reload(); })); }).catch(() => { });
       copy.onclick = async () => {
         try { await navigator.clipboard.writeText(S.url); msg.textContent = T('Link copied.', 'リンクをコピーしました。'); }
         catch (_) { try { link.select(); } catch (__) { } msg.textContent = T('Select the link and copy it.', 'リンクを選択してコピーしてください。'); }
@@ -519,7 +525,7 @@ export async function openMyPlaces(HOST, opts) {
   /* the header of a group, with its publishing toggle */
   const groupHead = (collection, title, label) => {
     const S = shares.find((s) => (s.collection == null ? null : String(s.collection)) === (collection == null ? null : String(collection)));
-    const pub = el('button', { cls: 'mpl-pub', type: 'button', 'aria-expanded': 'false', 'aria-pressed': S ? 'true' : 'false', text: S ? T('Published', '公開中') : T('Share', '共有') });
+    const pub = el('button', { cls: 'mpl-pub', type: 'button', 'aria-expanded': 'false', 'aria-pressed': S ? 'true' : 'false', text: S ? (S.listed_at && !S.hidden_at ? T('Listed', '掲載中') : T('Published', '公開中')) : T('Share', '共有') });
     const head = el('div', { cls: 'mpl-gh' }, [el('div', { cls: 'acct-grp-t', text: title }), pub]);
     const slot = el('div');
     pub.onclick = () => {
@@ -708,10 +714,14 @@ export async function openMyPlaces(HOST, opts) {
     device = dv || [];
     if (!rp.ok) { msg.textContent = placeFailureText(rp.error, lang); return; }
     places = rp.places; views = rv.ok ? rv.views : []; shares = rs.ok ? rs.shares : [];
+    /* (community-maps) how far each published collection has travelled — counts only, asked only when something is published */
+    reachBy = {};
+    if (shares.length) { const rr = await import('./community-maps.js').then((C) => C.reach(HOST.DB)).catch(() => ({ ok: false })); if (rr.ok) reachBy = rr.byShare; }
     render();
   };
   showAll.onclick = () => { showPlaces(HOST, places); shut(); };
   watchBtn.onclick = () => { shut(); import('./place-watch.js').then((M) => M.openWatchDigest(HOST)).catch(() => { }); };
+  communityBtn.onclick = () => { shut(); import('./community-maps.js').then((C) => C.openCommunityMaps(HOST)).catch(() => { }); };
   saveView.onclick = async () => {
     let c = null, z = null;
     try { const GE = IntMapGeoEngine; if (GE && GE.hasRenderer && GE.hasRenderer()) { c = GE.camera.getCenter(); z = GE.camera.getZoom(); } } catch (_) { }

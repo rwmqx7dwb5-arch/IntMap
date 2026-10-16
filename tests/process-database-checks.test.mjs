@@ -24,6 +24,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { load as loadYaml } from 'js-yaml';
 import { specFiles } from '../scripts/architecture-spec.mjs';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -463,3 +464,24 @@ test('R801 ④ pull_request is not path-filtered; heavy steps follow the scope v
   }
 });
 }
+
+
+/* (wave4-train) TWO STRING LITERALS WITH NOTHING BUT WHITESPACE OR A COMMENT BETWEEN THEM ARE ONE STRING IN SQL. Measured
+   2026-10-13 on PR #1105: a merge kept both branches' table-name lines in supabase/tests/00_structure_test.sql and the comma
+   between them was lost — 'community_map_subjects' 'class_sets' is the single name «community_map_subjectsclass_sets», so the
+   list asserted a table that does not exist and dropped two that do, and only a Postgres run could say so. The rule is the
+   language's, so it is read off every pgTAP file without one. */
+test('pgTAP: no array of names in supabase/tests joins two string literals without a comma', () => {
+  const dir = join(ROOT, 'supabase/tests');
+  let arrays = 0;
+  const bad = [];
+  for (const n of readdirSync(dir).filter((x) => x.endsWith('.sql'))) {
+    const sql = codeOnly(readFileSync(join(dir, n), 'utf8'), { lang: 'sql' });
+    for (const m of sql.matchAll(/array\s*\[([\s\S]*?)\]/gi)) {
+      arrays++;
+      for (const j of m[1].matchAll(/'([^']*)'\s+'([^']*)'/g)) bad.push(n + ': ' + JSON.stringify(j[1]) + ' ' + JSON.stringify(j[2]));
+    }
+  }
+  assert.ok(arrays > 10, 'the scan found ' + arrays + ' arrays — it has stopped reading the files');
+  assert.deepEqual(bad, [], 'adjacent literals are concatenated by Postgres — a comma is missing');
+});

@@ -6,10 +6,16 @@
 //  the section its row of the statement (data/connection-ledger.json) puts it in — and a host requested
 //  after the list is open must appear without reopening it. Playwright's own record of the main frame's
 //  finished requests is held against the list, so a request the witness missed is a red test.
+//  (wave4-security) The same boot then asks the browser what it KEEPS (js/device-storage-panel.js): a key holding a
+//  secret and another page's key on the shared address are seeded; the list must put each where its kind says, never
+//  show a value, delete one item on a second tap, and «Forget this device» must reload with the database the page held
+//  open deleted and the other page's key untouched. One boot for both lists — a spec of its own cost a second boot.
 // ============================================================================
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting } from './helpers/network.js';
 import { seededStorageState } from './helpers/session-seed.js';
+
+const SECRET = 'SECRET-AIS-KEY-wave4';
 
 const OK = (route) => route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*', 'content-type': 'application/json' }, body: '{}' });
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
@@ -17,6 +23,12 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR
 test('the list shows what the page really contacted, judged against the statement, live', async ({ browser }) => {
   const context = await browser.newContext({ storageState: seededStorageState() });
   await installHermeticRouting(context);
+  await context.addInitScript((secret) => {
+    if (sessionStorage.getItem('wave4-seeded')) return;
+    sessionStorage.setItem('wave4-seeded', '1');
+    localStorage.setItem('intmap_ais_key', secret);
+    localStorage.setItem('otherapp.state', 'belongs-to-another-page');
+  }, SECRET);
   /* registered after the hermetic block, so these win (Playwright runs routes in reverse order of registration) */
   await context.route('https://undeclared.example/**', OK);
   await context.route('https://later.example/**', OK);
@@ -68,5 +80,51 @@ test('the list shows what the page really contacted, judged against the statemen
   /* Escape closes it through the shared dialog registry */
   await page.keyboard.press('Escape');
   await expect(page.locator('#im-conn')).toBeHidden();
+
+  /* ── (wave4-security) what this browser keeps for IntMap ── */
+  await page.evaluate(() => document.getElementById('btn-device-storage').click());
+  const devPanel = page.locator('#im-dev .modal-content');
+  await expect(devPanel).toBeVisible({ timeout: 15_000 });
+  await expect(devPanel.locator('#im-dev-title')).toContainText(/can sign in or use a key|ログインやキー/, { timeout: 10_000 });
+
+  const whereKept = (area, name) => page.evaluate(([a, n]) => {
+    const row = [...document.querySelectorAll('#im-dev [data-area]')].find((r) => r.dataset.area === a && r.dataset.name === n);
+    return row ? row.closest('[data-sec]').dataset.sec : null;
+  }, [area, name]);
+  expect(await whereKept('local', 'intmap_ais_key'), 'a key the reader entered is a credential').toBe('kind-credential');
+  expect(await whereKept('local', 'otherapp.state'), 'a name IntMap does not write is shown apart').toBe('unnamed');
+  expect(await page.locator('#im-dev [data-sec="coverage"]').count(), 'what the list cannot see is always said').toBe(1);
+  expect(await devPanel.innerText(), 'no stored value is shown').not.toContain(SECRET);
+
+  /* one item: the first tap arms, the second deletes */
+  const del = page.locator('#im-dev [data-area="local"][data-name="intmap_ais_key"] .imd-del');
+  await del.click();
+  await expect(del).toHaveAttribute('data-armed', '1');
+  await del.click();
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('intmap_ais_key')), { timeout: 5_000 }).toBeNull();
+  await expect(page.locator('#im-dev [data-area="local"][data-name="intmap_ais_key"]')).toHaveCount(0);
+
+  /* all of IntMap's: two taps, a reload, and the other page's key is still there. The dashboard's database is held open
+     by the page itself (the browser answers «blocked»); the deletion it accepted must have happened by the time the
+     reloaded page opens it again — a probe row written now must be gone. */
+  const probe = (op) => page.evaluate((o) => new Promise((res) => {
+    const rq = indexedDB.open('intmap');
+    rq.onupgradeneeded = () => { try { rq.result.createObjectStore('kv'); } catch (_) { /* exists */ } };
+    rq.onsuccess = () => {
+      const db = rq.result, tx = db.transaction('kv', o === 'put' ? 'readwrite' : 'readonly'), st = tx.objectStore('kv');
+      const r = o === 'put' ? st.put('wave4', 'wave4-probe') : st.get('wave4-probe');
+      r.onsuccess = () => { const v = r.result; db.close(); res(v === undefined ? null : v); };
+      r.onerror = () => { db.close(); res('error'); };
+    };
+    rq.onerror = () => res('error');
+  }), op);
+  await probe('put');
+  expect(await probe('get'), 'the probe is in the dashboard database before forgetting').toBe('wave4');
+  const forget = page.locator('#imd-forget-all');
+  await forget.click();
+  /* the claims are about storage, so the reloaded page is asked as soon as its document exists — not after the app boots */
+  await Promise.all([page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30_000 }), forget.click()]);
+  expect(await page.evaluate(() => localStorage.getItem('otherapp.state'))).toBe('belongs-to-another-page');
+  expect(await probe('get'), 'the database the page held open was deleted once the page let go').toBeNull();
   await context.close();
 });

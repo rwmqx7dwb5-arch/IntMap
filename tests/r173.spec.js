@@ -10,6 +10,9 @@
 //      a stubbed ADS-B feed (#R170b) so the numbers are exact.
 import { test, expect } from '@playwright/test';
 import { loadLazyModules } from './helpers/app.js';
+/* (test-time-headroom) the fixed sleeps in this file are waits for the state they stood in for — tests/helpers/settle.js.
+   Every expect() below is unchanged; only the moment it looks moved. Before/after: dev-notes/2026-10-13-test-time-headroom.md */
+import { until } from './helpers/settle.js';
 
 /* ⚠ (#R186) See the same note in tests/r172.spec.js. Köppen is on by default now, its legend covers
    the part of the map these drags start on, and a gesture that lands on a legend never reaches the
@@ -35,27 +38,34 @@ const boot = async (page, query) => {
   await page.goto('/index.html' + (query || ''), { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !!window.__imap, null, { timeout: 60000 });
   await page.waitForFunction(() => window.__imap.isStyleLoaded(), null, { timeout: 60000 }).catch(() => {});
-  await page.waitForTimeout(600);   /* (#R212) the style is already loaded — this tail was 1.5 s in 20 specs */
+  /* (test-time-headroom) the 600 ms tail (#R212) is the renderer's own «can draw» now — the barrier tests/helpers/app.js
+     bootPage() uses */
+  await until(page, () => { try { return !window.IntMapGeoEngine.canDraw || window.IntMapGeoEngine.canDraw(); } catch (_) { return true; } }, null, { timeout: 60000 });
 };
 
 /* the eye, as the engine reports it */
 const eye = page => page.evaluate(() => { const E = window.IntMapGeoEngine.camera.eye();
   return { lng: E.lng, lat: E.lat, alt: E.alt }; });
 const metres = (a, b) => Math.hypot((b.lng - a.lng) * 91000, (b.lat - a.lat) * 111320);
-/* the sim's own pause (the P key), so the camera stops being rewritten every frame */
-const pause = async page => { await page.evaluate(() => {
+/* the sim's own pause (the P key), so the camera stops being rewritten every frame — (test-time-headroom) and then wait
+   until the sim says it flipped (js/flight-sim.js keeps `_pauseStart` > 0 while paused), not 2.5 s */
+const pause = async page => { const was = await page.evaluate(() => (window.IntMapFlightSim._st()._pauseStart || 0) > 0);
+  await page.evaluate(() => {
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'p', bubbles: true }));
     /* the release matters: the sim ignores a key that is already held, so a keydown on its own
        pauses once and every later one is swallowed */
     window.dispatchEvent(new KeyboardEvent('keyup', { key: 'p', bubbles: true })); });
-  await page.waitForTimeout(2500); };
+  await until(page, (w) => ((window.IntMapFlightSim._st()._pauseStart || 0) > 0) !== w, was, { timeout: 15000 }); };
 
-test('the cockpit contains a real world, with the viewpoint at the aeroplane (#R173 globe withdrawn in #R174)', async ({ page }) => {
+/* (test-time-headroom) ONE BOOT FOR THE COCKPIT AND THE VOLUME. The second test booted the whole app only to open the
+   3-D volume tool; it now opens it on this page once the flight has been stopped (the sim hands the view back — tests/r171
+   asserts that), and asks the same five things of it. Every expect() of both is here, unchanged. */
+test('the cockpit contains a real world, with the viewpoint at the aeroplane (#R173 globe withdrawn in #R174) — and the 3-D volume is a closed body, one solid, with a floor', async ({ page }) => {
   /* Generous, because a cockpit is the heaviest thing this app draws and CI has no GPU. Measured in
      headless software GL: the flat cockpit ran at 5 fps and the spherical one at 3 — the extra cost is
      real (more of what is in front of the aeroplane is actually drawn), and on a machine rendering in
      software it pushes a fixed-wall-clock test past three minutes. On a GPU the same test takes ~1 min. */
-  test.setTimeout(420000);
+  test.setTimeout(480000);
   await boot(page);
   /* (#R209) the simulator is no longer in the boot bundle — `window.IntMapFlightSim` exists only once
      `IntMapLazy.need('flightSim')` has resolved, which is what the app's own entry point awaits
@@ -63,7 +73,9 @@ test('the cockpit contains a real world, with the viewpoint at the aeroplane (#R
      module, so it has to arrive before the sim is started, not after. */
   await loadLazyModules(page);
   await page.evaluate(() => window.IntMapFlightSim.start({ lng: 138.66, lat: 35.05, alt: 6000, hdg: 0 }));
-  await page.waitForTimeout(9000);
+  /* (test-time-headroom) not 9 s of flight: the cockpit is up — the state the reading below asks about */
+  await until(page, () => { try { const m = window.__imap, S = window.IntMapFlightSim._st();
+    return window.IntMapFlightSim.active() && m.getZoom() > 11.1 && !!m.getTerrain() && Math.abs(window.IntMapGeoEngine.camera.altitude() - S.alt) < 120; } catch (_) { return false; } }, null, { timeout: 60000 });
   /* PAUSE before measuring. Everything asserted below is a property of the camera and the frame on
      screen, not of the aeroplane moving — and a paused cockpit stops re-writing the whole camera 60
      times a second, which is what made a GPU-less runner take seven minutes to answer a page.evaluate
@@ -95,23 +107,28 @@ test('the cockpit contains a real world, with the viewpoint at the aeroplane (#R
      A small patch, decoded in the page: a full-width screenshot decoded on top of a live cockpit
      crashed the tab on a GPU-less CI runner, and a few hundred square pixels of ground say the same. */
   const vp = page.viewportSize();
-  const png = (await page.screenshot({ clip: { x: Math.round(vp.width * 0.30), y: Math.round(vp.height * 0.62),
+  /* (test-time-headroom) asked until the ground has arrived, rather than once after a 9 s flight: a cockpit with no world
+     in it never reaches the threshold however long it is asked */
+  const groundColours = async () => { const png = (await page.screenshot({ clip: { x: Math.round(vp.width * 0.30), y: Math.round(vp.height * 0.62),
     width: Math.round(vp.width * 0.30), height: Math.round(vp.height * 0.20) } })).toString('base64');
-  const colours = await page.evaluate(async b64 => {
+  return page.evaluate(async b64 => {
     const img = new Image(); img.src = 'data:image/png;base64,' + b64; await img.decode();
     const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
     const x = c.getContext('2d'); x.drawImage(img, 0, 0);
     const d = x.getImageData(0, 0, c.width, c.height).data, seen = new Set();
     for (let i = 0; i < d.length; i += 4) seen.add((d[i] >> 3) + ',' + (d[i + 1] >> 3) + ',' + (d[i + 2] >> 3));
     return seen.size;
-  }, png);
-  expect(colours, 'the lower half of the cockpit must contain real ground').toBeGreaterThan(40);
+  }, png); };
+  await expect.poll(groundColours, { timeout: 60000, intervals: [500, 1000], message: 'the lower half of the cockpit must contain real ground' }).toBeGreaterThan(40);
 
   // near the ground the map goes back to the flat regime, where the imagery is sharpest
   await pause(page);                                        // …flying again for the descent
   await page.evaluate(async () => { const S = window.IntMapFlightSim._st(), t = (S._terrF || 0) + 250, a0 = S.alt;
     for (let i = 0; i < 25; i++) { S.alt = a0 + (t - a0) * (i + 1) / 25; await new Promise(r => setTimeout(r, 60)); } });
-  await page.waitForTimeout(5000);                          // the camera follows the altitude every frame
+  /* (test-time-headroom) the camera follows the altitude every frame — so wait until the descent has arrived (below
+     1,200 m and in the flat regime), not 5 s; the reading below then asks all four things as before */
+  await until(page, () => { try { const S = window.IntMapFlightSim._st(); return S.alt < 1200 && window.IntMapGeoEngine.camera.globeness() < 0.5
+    && Math.abs(window.IntMapGeoEngine.camera.altitude() - S.alt) < 120; } catch (_) { return false; } }, null, { timeout: 30000 });
   const low = await page.evaluate(() => ({ globeness: window.IntMapGeoEngine.camera.globeness(),
     zoom: window.__imap.getZoom(), alt: window.IntMapFlightSim._st().alt,
     eyeAlt: window.IntMapGeoEngine.camera.altitude() }));
@@ -162,21 +179,18 @@ test('the cockpit contains a real world, with the viewpoint at the aeroplane (#R
     try { delete window.__r377set; delete window.__r377; } catch (_) { } });
 
   await page.evaluate(() => window.IntMapFlightSim.stop());
-});
 
-test('the 3-D volume is a closed body — one solid, with a floor', async ({ page }) => {
-  test.setTimeout(120000);
-  await boot(page);
+  /* ── the 3-D volume is a closed body — one solid, with a floor (on the same page, after the flight) ── */
   await page.evaluate(() => document.getElementById('btn-tool-volume').click());
   await page.waitForFunction(() => !!window.IntMapVolume3D, null, { timeout: 30000 });   /* (#R311) that click fetches the tool (js/lazy-modules.js) */
-  await page.waitForTimeout(800);
+  await until(page, () => !!document.getElementById('v3d-base'));   /* (test-time-headroom) the tool is open — its panel is built — not a sleep */
   const st = await page.evaluate(() => {
     const V = window.IntMapVolume3D;
     V.setAltitudes(1000, 3000); V.setStyle('#ff3b30', 0.45);
     V.setRing(V.circleRing([139.85, 35.60], 3000, 48));
     return V.state();
   });
-  await page.waitForTimeout(1200);
+  /* (test-time-headroom) a 1.2 s sleep stood here AFTER the state had been read — it delayed nothing that is asserted */
   expect(st.canSolid, 'MapLibre can draw a closed body (a custom mesh, not an extrusion)').toBe(true);
   expect(st.body, 'and that is what is painted').toBe(true);
   expect(st.shell, 'the open shell is not painted at the same time').toBe(false);
@@ -198,6 +212,7 @@ test('the 3-D volume is a closed body — one solid, with a floor', async ({ pag
     expect(ok.body, `${shape} draws as the closed body`).toBe(true);
   }
 });
+
 
 /* ⚠ (remove-synthetic-planes) THE AIRCRAFT TEST THAT STOOD HERE BOOTED `?aviation=v1` — the per-browser
    airplanes.live sweep and its two MapLibre renderings (`lyr-planes`, `lyr-planes-3d`), with that

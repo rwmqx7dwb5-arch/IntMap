@@ -106,6 +106,16 @@ frame / timer / idle の4つの登録簿すべてからその capability の仕�
   `#co-compare-fixed`）は `visibility:hidden`（`tests/map-next.spec.js`）。
 - **入口は 1 つ**（シートの頭の欄が「場所の検索」と「Atlas に訊く」を兼ねる。`localFuzzyPlaces` の候補を `gotoPlace` で、`doGeocode({suggest:true})`・ネットワークなし、最後の行が
   「Atlas に訊く」。Enter は全検索して先頭の候補へ。古い応答は世代で捨てる。フォーカスで `full`、空で離れると元の段）。
+- **シートのホーム**（`js/start-home.js`。タブを選んでいない状態）——タブの行の下は 1 つのスクロール `.m-home` で、先頭に「はじめる」の 4 節（いまの地球・いまいる場所・この日と作例・ホーム画面）、その下に
+  ウィジェットボード（`#widget-board` を貸す。持ち主の表示・非表示は `js/widgets.js` のまま、`.m-home` はボードが出ている間だけ出る）。4 節は
+  ① **いまの地球**——ライブのレイヤーのスイッチ（読者に何も求めない始まりなので先頭）。一覧は書かず
+  `liveStarts` が導く（時間の宣言 `kind:'live'`・パネルで畳まれていない〔`rest` でも beta の棚でもない〕・パネルの行が組まれている、の 3 つ。
+  名前はタイルと同じ `IntMapLayerSidebar.rows()`）。押すと OS の `layer.on` / `layer.off`、点けたら地図が答え（`MAP_ANSWER_EVENT` `card`）で
+  シートは `min` へ。状態は地図の状態ストアの `toggles` で読み直す ② いまいる場所（`js/here-entry.js` `entryRow`——検索欄の空の状態と同じ行）
+  ③ この日の歴史地図と作例・ツアー（`showInResults`——検索欄の帯そのもの）
+  ④ ホーム画面への追加（設定の入口と同じ保持された prompt。`installState` が `prompt` か `ios` のときだけ）。**起動では読まない**——シートを
+  掴むか `min` より上で止まったときに `js/mobile-ui.js` `wantStart` が読み、`min` のシートは検索欄の行のまま。幅が広がるとボードを列へ返す。
+  門は `tests/wave4-ux-mobile-checks.test.mjs` と `tests/wave4-ux-mobile.spec.js`。
 - **右上の操作グループ**（`.m-ctl-group`）——Layers・地図・Tools・現在地を縦につないだガラス 1 本。「地図」画面はベースマップ（地図／衛星の 2 面の絵——同梱のデータから
   カメラの場所を描く・開いている間だけ）・投影（地球儀／平面／3D）・**基本表示**（`js/data-layers.js` `IntMapBaseDisplay.items()`＝宣言の `kind:'display'` を iOS のスイッチで。
   本物のチェックボックスを `change` で切り替える）・中心点の読み取り。コンパスは回転か傾斜しているときだけグループの下に出る。

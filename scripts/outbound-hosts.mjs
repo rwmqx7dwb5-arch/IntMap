@@ -301,12 +301,20 @@ function scanHtml(file, html, out) {
     if (inScript(m.index) || m[1].toLowerCase() === 'script') continue;
     const tag = m[1].toLowerCase();
     const rel = (/\brel\s*=\s*["']?([^"'>]+)/i.exec(m[2]) || [])[1] || '';
+    /* (wave4-train) the readiness page (readiness.html, scripts/org-pages.mjs) carries each ledger row's own probe
+       request as `data-probe` — the page REQUESTS it, so it is scanned like any other attribute, and the occurrence
+       keeps the exact request so check() can find the row that states it (see ①) */
+    const probeAttr = /\bdata-probe\s*=\s*"([^"]*)"/i.exec(m[2]);
+    const probeAt = probeAttr ? [probeAttr.index, probeAttr.index + probeAttr[0].length] : null;
+    const probe = probeAttr ? probeAttr[1].replace(/&amp;/g, '&') : null;
     for (const u of urlsIn(m[2])) {
       const link = tag === 'a' ? 'anchor'
         : tag === 'meta' ? 'metadata'
           : tag === 'link' && rel.split(/\s+/).every((r) => LINK_REL_NAMES.test(r)) ? 'metadata'
             : null;
-      out.push({ host: u.host, dynamic: u.dynamic, file, line: line(m.index + m[0].indexOf(u.host)), link });
+      const o = { host: u.host, dynamic: u.dynamic, file, line: line(m.index + m[0].indexOf(u.host)), link };
+      if (probeAt && u.at >= probeAt[0] && u.at < probeAt[1]) o.probe = probe;
+      out.push(o);
     }
   }
   /* text between tags is prose: a URL written there is not requested and not a link either */
@@ -389,8 +397,17 @@ export function check({ files, ledger, legalSource }) {
   const sw = switches(files);
   const where = (list) => list.slice(0, 3).map((o) => o.file + ':' + o.line).join(', ') + (list.length > 3 ? ` (+${list.length - 3})` : '');
 
-  /* ① every host requested is accounted for */
-  for (const [host, list] of requested) {
+  /* ① every host requested is accounted for.
+     ⚠ A ROW'S OWN PROBE IS ACCOUNTED FOR BY THAT ROW. Measured 2026-10-13: the readiness page makes each row's probe
+     request, and four of them name a host spelled differently from the row's `host` (`*.wikipedia.org` is probed at
+     de.wikipedia.org, Google's `mts*` at mts0, CARTO at c.basemaps, and the r.jina.ai probe carries example.com in its
+     path). Only an occurrence that IS a row's probe request, byte for byte, is excused, and by that row — the same
+     host requested anywhere else still has to be in the ledger. */
+  const probeRow = new Map();
+  for (const r of rows) if (r.probe && typeof r.probe.url === 'string') probeRow.set(r.probe.url, r);
+  for (const [host, all] of requested) {
+    const list = all.filter((o) => !(o.probe && probeRow.has(o.probe)));
+    if (!list.length) continue;
     if (!byHost.has(host)) problems.push(`${host} is requested by the browser code (${where(list)}) and ${LEDGER} does not account for it — say what it is sent and which words of Privacy §4 say so, or why it is only a link`);
   }
   /* ② each row is one of the forms, and its words are in the policy the reader is shown */
@@ -477,6 +494,9 @@ export function deriveConnectionLedger(ledger) {
     if (r.sends) out.sends = { code: r.sends.code, detail: r.sends.detail };
     if (form === 'disclosure') out.disclosure = { en: r.disclosure.en, jp: r.disclosure.jp };
     if (form === 'dormant') out.switch = r.dormant.switch;
+    /* (wave4-sales) the one representative request the nightly check makes (scripts/upstream-liveness.mjs) — the
+       readiness check (js/readiness-check.js) makes the same request from the reader's own device and network */
+    if (form === 'disclosure' && r.probe && typeof r.probe.url === 'string') out.probe = r.probe.url;
     return out;
   });
   const seen = new Set();

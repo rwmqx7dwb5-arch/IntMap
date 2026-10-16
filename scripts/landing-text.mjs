@@ -130,8 +130,9 @@ export const TEXT = {
           { h: 'Play a set', p: 'In the map, open the quiz (Layers, then Tools, then Learn quests — or the quiz menu) and choose a quest. A set is five or ten questions and climbs from easy to hard.' },
           { h: 'Copy the challenge link', p: 'At the end of the set, copy the challenge link. It holds which quest it is, a seed and the number of questions — nothing about you and nothing about the answers.' },
           { h: 'Everyone gets the same questions', p: 'Every student who opens the link answers exactly the same questions in the same order, on their own device, so the class can compare scores and talk about the same places and years.' },
+          { h: 'See every student’s answers', p: 'Signed in, choose “Use with a class” at the end of a set (or “Your class sets” in the quest menu) to get a class link instead. Students open it with no account and type a first name or a number; when they finish, their answers come to your board: who has handed in, each student’s score on every question, the class mean, the question the class found hardest, and every student’s tap drawn on the map around the true place. Close the set when the lesson ends, and download the table as CSV.' },
         ],
-        note: 'No account is needed, and nothing is sent anywhere: the scores stay on each device (the best score is kept in that browser). The questions come from the map’s data — GeoNames for the cities, the border record and IntMap’s war record for the days — and a rebuilt dataset can change the questions a link gives.',
+        note: 'A challenge link needs no account and sends nothing anywhere: the scores stay on each device (the best score is kept in that browser). A class link sends each student’s typed name and answers to the teacher who made it, and nothing else; the set and its answers are deleted a year after it was made. The questions come from the map’s data — GeoNames for the cities, the border record and IntMap’s war record for the days — and a rebuilt dataset can change the questions a link gives.',
       },
       examples: { h2: 'Examples for class', question: 'Question for class', open: 'Open this map', fits: 'Fits' },
       curriculum: {
@@ -384,8 +385,9 @@ export const TEXT = {
           { h: 'セットを解く', p: '地図で「レイヤー」の「ツール」から「学ぶクエスト」を開くか、クイズのメニューから選びます。1 セットは 5 問か 10 問で、やさしい問題からむずかしい問題へ進みます。' },
           { h: '挑戦リンクをコピーする', p: 'セットの最後に挑戦リンクをコピーします。リンクに入っているのはクエストの種類・seed・問題数だけで、あなたのことも答えも入っていません。' },
           { h: '全員が同じ問題を解く', p: 'リンクを開いた生徒は全員、自分の端末で同じ問題を同じ順で解きます。得点を比べ、同じ場所と年について話し合えます。' },
+          { h: '生徒全員の答えを見る', p: 'ログインして、セットの最後の「クラスで使う」（またはクエストのメニューの「クラスのセット」）を選ぶと、挑戦リンクの代わりにクラスのリンクができます。生徒はアカウントなしで開き、名字なしの名前か出席番号を入力します。解き終えると答えがあなたのボードに届きます——誰が提出したか、各生徒の問題ごとの得点、クラス平均、クラスがいちばん苦戦した問題、そして正解の場所のまわりに描いた生徒全員のタップ。授業が終わったらセットを締め切り、表を CSV でダウンロードできます。' },
         ],
-        note: 'アカウントは要らず、どこにも送信しません。得点はそれぞれの端末にだけ残ります（自己ベストはそのブラウザに保存）。問題は地図のデータ——都市は GeoNames、日付は国境の記録と IntMap の戦争記録——から作るので、データを作り直すと同じリンクの問題が変わることがあります。',
+        note: '挑戦リンクはアカウントが要らず、どこにも送信しません。得点はそれぞれの端末にだけ残ります（自己ベストはそのブラウザに保存）。クラスのリンクは、生徒が入力した名前と答えだけを、リンクを作った先生に送ります。セットと答えは作ってから 1 年で削除します。問題は地図のデータ——都市は GeoNames、日付は国境の記録と IntMap の戦争記録——から作るので、データを作り直すと同じリンクの問題が変わることがあります。',
       },
       examples: { h2: '授業で使える見本', question: '授業での問い', open: 'この地図を開く', fits: '対応' },
       curriculum: {

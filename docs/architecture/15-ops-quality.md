@@ -137,3 +137,22 @@ deep tier は push でも PR でも走らない（`scripts/tiers.mjs`）ので n
 - **判定**（`.github/workflows/nightly-bisect.yml` ＋ `scripts/nightly-bisect.mjs`）——`deep-alarm` が退行と範囲ごとに 1 回だけ起動する（run 名が鍵）。範囲の各 commit と通った晩（対照）で、その
   commit 自身の木・build・データでそのテストを単独で 3 回走らせ、境目を `culprit` / `narrowed` / `passes-alone` / `control-not-clean` / `flaky-at-bad` / `unmeasured` のどれかに決める。判定は
   Issue に、`culprit` は名指した PR にもコメントする。
+- **読めなかった晩は理由ごとに数えて述べる**（`nightly-blame.mjs` の `unreadReasons`・`deep-history.mjs` の `ghWhy`＝gh の stderr の言葉）。
+  1 晩も読めなかった窓は「連続で赤なし」ではなく「判定していない（NOT KNOWN）」と書く。
+
+### 15.10 読者の手元での速さ——版ごとの実測と、遅くなった版の判定
+
+読み方と手順の正本は [`docs/MONITORING.md`](../MONITORING.md) §2c。
+
+- **測るもの**: 起動画面（`index.html` の `__imBoot`）が上がるまでの時間の**区間**（1・2・3・4・6・8・12・20 秒以内と、それ超）と上がり方
+  （`idle`＝地図が落ち着いた・`timeout`＝待ちの逃げ道・`no-renderer`）を、版（build stamp の分と短い sha）と端末（携帯／PC）ごとに 1 読み込み 1 回。
+  宣言は `supabase/functions/usage-count/shape.js`（`ready` / `boot_end`・`bootRows`）、聞くのは `js/usage-counts.js`（`js/boot-stage.js` の
+  `interactive()`）。匿名の利用統計と同じ同意の規則・同じ送信・同じ保持（§2b）。隠れて始まった・使えるようになる前に隠れた・版の無い読み込みは数えない。
+- **公開の読みは 1 つ**: `public.field_speed(p_days)`（migration `20261013130000_field_speed.sql`・pgTAP `43_field_speed_test.sql`）。版と端末ごとの
+  **整数％の割合**と帯だけを返し、100 回未満は出さず、件数と日は返さない（件数＝通信量は管理者だけのもの。下限と丸めの根拠は migration のコメント）。
+- **版の実在**: 状態ページに出る版は main の first-parent の commit（その commit 時刻の分と短い sha＝build stamp と同じ出所）と一致するものだけ（`field-speed.mjs` `knownReleases`）。
+  ページ自身も自分の版より新しい版の行を出さない。Edge 側は未来（1 時間超）と 90 日より古い版を拒み、1 要求に速さの次元を 1 つずつしか受けない（`shape.js` `parse`）。
+- **判定**: `scripts/field-speed.mjs`（`summarise`・`judge`・`line`）。帯 300+ の版どうしで、新しい版が前の版の「4 人に 3 人」の時間以内に使えた割合が
+  10 ポイント以上減れば遅くなった・増えれば速くなった・時間は同じで落ち着いて開いた割合が 10 ポイント減れば信頼性が下がった。2 版そろわなければ「判定なし」。
+- **読み手**: `data/service-status.json` の `fieldSpeed`（`build-service-status.mjs`・bot PR で 1 日 2 回）→ 状態ページの節「読者の手元で開く速さ」と
+  見出し・この端末の節の「今回は N 秒で使えるようになりました」（`__imBoot.marks()` をそのページで読むだけ）、Atlas `system.speed`、`worktree.mjs status`。

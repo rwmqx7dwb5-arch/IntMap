@@ -34,12 +34,17 @@
 // the tilt reaches 180°.
 import { test, expect } from './helpers/app.js';
 import { installCameraRuler } from './helpers/camera-ruler.js';
+/* (test-time-headroom) the fixed sleeps in this file are waits for the state they stood in for — tests/helpers/settle.js.
+   Every expect() below is unchanged; only the moment it looks moved. Before/after: dev-notes/2026-10-13-test-time-headroom.md */
+import { until } from './helpers/settle.js';
 
 const boot = async page => {
   await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !!window.__imap, null, { timeout: 60000 });
   await page.waitForFunction(() => window.__imap.isStyleLoaded(), null, { timeout: 60000 }).catch(() => {});
-  await page.waitForTimeout(600);   /* (#R212) the style is already loaded — this tail was 1.5 s in 20 specs */
+  /* (test-time-headroom) the 600 ms tail (#R212) is the renderer's own «can draw» now — the barrier tests/helpers/app.js
+     bootPage() uses. tiltDrag() below still parks the camera and waits its 800 ms before it drags. */
+  await until(page, () => { try { return !window.IntMapGeoEngine.canDraw || window.IntMapGeoEngine.canDraw(); } catch (_) { return true; } }, null, { timeout: 60000 });
 };
 
 /* The drag, as a person performs it: ctrl held, pointer walked upwards, 70 steps of 6 px, which is
@@ -78,7 +83,9 @@ const tiltDrag = async (page, cc) => page.evaluate(async (c) => {
     prevP = m.getPitch(); prev = E;
   }
   fire(document, 'mouseup', cx, y, 0); await frame();
-  await wait(800);                                            // let drag inertia finish
+  /* let drag inertia finish — (test-time-headroom) asked of the renderer: not moving on two frames running, at most the
+     800 ms this used to sleep, so `afterInertia` is read where the glide has ended */
+  for (let still = 0, t0 = performance.now(); still < 2 && performance.now() - t0 < 800;) { await frame(); still = m.isMoving() ? 0 : still + 1; }
   return { space: E0.space, alt0: E0.alt, altMin, altMax, drift, jump, pitchStep,
            endPitch: m.getPitch(), afterInertia: window.__gap(E0, window.__eye()) };
 }, cc);

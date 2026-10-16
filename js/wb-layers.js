@@ -479,6 +479,17 @@ export function wbLayers(HOST){
       if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go,{once:true}); else setTimeout(go,0); }
     document.addEventListener('click',(ev)=>{ const b=ev.target&&ev.target.closest&&ev.target.closest('[data-qh-open]'); if(!b) return;
       const f=eqSeen.get(b.getAttribute('data-qh-open')); if(f) quakeRecord({ feature:f }); });
+    /* ══ (wave4-science) THE AFTERSHOCK FORECAST'S DOORS — the body is js/aftershock.js (lazy `aftershock`); the popup's button, the
+       earthquake record's selected quake, the Tools list, a link `?as=<ComCat id>`, the command and Atlas sim.aftershocks come through here ══ */
+    function aftershockOpen(o){ return Promise.resolve().then(()=>window.IntMapLazy.need('aftershock')).then(()=>window.IntMapAftershock.open(o||{}))
+      .catch(()=>{ try{ if(typeof imToast==='function') imToast(IntMapLang.t(HOST.lang,"Could not load the aftershock forecast","余震の見通しを読み込めませんでした")); }catch(_){} return null; }); }
+    try{ window.IntMapOS.register('aftershock.open',(ctx)=>aftershockOpen((ctx&&ctx.params)||{}),
+      { label:'Aftershock forecast · the chance of aftershocks of each size in the next day, week, month and year after an earthquake, with its uncertainty and its answer check', group:'data' }); }catch(_){}
+    /* only the parameter's presence is tested here; the body reads (and checks) it with js/aftershock-core.js decodeLink */
+    if(/[?&]as=/.test(location.search)){ const go=()=>{ aftershockOpen({ search: location.search }); };
+      if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go,{once:true}); else setTimeout(go,0); }
+    document.addEventListener('click',(ev)=>{ const b=ev.target&&ev.target.closest&&ev.target.closest('[data-as-open]'); if(!b) return;
+      aftershockOpen({ eventId: b.getAttribute('data-as-open') }); });
     function eqUrl(){ if(eqWin==='year') return 'https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime='+new Date(Date.now()-365*864e5).toISOString().slice(0,10)+'&minmagnitude=6&orderby=time&limit=2000';
       return 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/'+({day:'all_day',week:'all_week',month:'4.5_month'}[eqWin]||'all_week')+'.geojson'; }
     function eqOn(){ fetch(eqUrl()).then(r=>r.json()).then(j=>{ const src='src-eq';
@@ -498,7 +509,9 @@ export function wbLayers(HOST){
         GE().ui.attach(GE().ui.popup({closeButton:true,className:'plc-popup'}).setLngLat(e.lngLat).setHTML('<div style="font-size:12.5px;line-height:1.5;color:var(--text-main);"><b style="color:#ff453a;">M '+(p.mag!=null?(+p.mag).toFixed(1):'?')+'</b><br>'+IntMapSafe.html(p.place||'')+'<br><span style="color:var(--text-muted);">'+when+'</span>'+(eid?('<br><button data-shk-open="'+IntMapSafe.html(eid)+'" style="margin-top:6px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);border-radius:7px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">'+IntMapSafe.html(IntMapLang.t(HOST.lang,"Ground shaking (ShakeMap)","揺れの分布（ShakeMap）","Bodenerschütterung (ShakeMap)","Сотрясения грунта (ShakeMap)","Sacudida del suelo (ShakeMap)"))+'</button>'
           /* (live-news-product) the record around this quake — every catalogued earthquake nearby since the record began,
              with this one's rank (js/quake-history.js). The feature is handed over whole: the body has the one normaliser. */
-          +'<button data-qh-open="'+IntMapSafe.html(eid)+'" style="margin:6px 0 0 6px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);border-radius:7px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">'+IntMapSafe.html(IntMapLang.t(HOST.lang,"Earthquake record here","この場所の地震の記録"))+'</button>'):'')+'</div>'));
+          +'<button data-qh-open="'+IntMapSafe.html(eid)+'" style="margin:6px 0 0 6px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);border-radius:7px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">'+IntMapSafe.html(IntMapLang.t(HOST.lang,"Earthquake record here","この場所の地震の記録"))+'</button>'
+          /* (wave4-science) the aftershock forecast of this quake (js/aftershock.js) — from M5, where the catalogue has aftershocks to learn from */
+          +((+p.mag>=5)?'<button data-as-open="'+IntMapSafe.html(eid)+'" style="margin:6px 0 0 6px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);border-radius:7px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">'+IntMapSafe.html(IntMapLang.t(HOST.lang,"Aftershock forecast","余震の見通し"))+'</button>':'')):'')+'</div>'));
         if(eid){ const f0=e.features&&e.features[0]; eqSeen.set(eid,{ type:'Feature', id:eid, geometry:f0&&f0.geometry, properties:p }); } }); GE().events.onLayer('mouseenter','eq-pt',()=>{ GE().render.canvas().style.cursor='pointer'; }); GE().events.onLayer('mouseleave','eq-pt',()=>{ GE().render.canvas().style.cursor=''; });
         /* ONE delegated listener for every popup this layer will ever open — a popup's DOM is rebuilt
            on each click, so a handler bound to the button would have to be re-bound every time. */

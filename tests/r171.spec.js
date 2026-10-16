@@ -21,7 +21,12 @@
 // (a shared page cannot be reloaded under the other tests). The fresh-profile tilt ceiling is read
 // on that fresh page too, before anything is set. Not one expectation was removed or loosened; the
 // before/after table is in dev-notes/2026-10-03-suite-time-room.md.
+// (test-time-headroom) …and those three now share ONE fresh page instead of three: they ask about three settings none of
+// the others touches, the reload is last, and what must be read untouched is read first (dev-notes/2026-10-13-test-time-headroom.md).
 import { test, expect, loadLazyModules } from './helpers/app.js';
+/* (test-time-headroom) the fixed sleeps in this file are waits for the state they stood in for — tests/helpers/settle.js.
+   Every expect() below is unchanged; only the moment it looks moved. Before/after: dev-notes/2026-10-13-test-time-headroom.md */
+import { until, idleAfter } from './helpers/settle.js';
 /* (suite-time-room) the shared page is put back to the view THIS page's boot showed before each test —
    the view these tests were written against (tests/helpers/app.js, appView) */
 test.use({ appView: 'boot' });
@@ -61,11 +66,11 @@ test('the flight simulator flies the app Globe, and gives the view back on exit'
   await loadLazyModules(page);
   // take off from the FLAT view — the case #R170 set out to cover
   await page.evaluate(() => window.IntMapOS.exec('view.proj.flat', { source: 'test' }));
-  await page.waitForTimeout(500);
+  await until(page, () => /mercator/.test(JSON.stringify(window.__imap.getProjection())), null, { timeout: 10000 });
   expect(await bowAt(page), 'flat means flat').toBe(0);
 
   await page.evaluate(() => window.IntMapFlightSim.start({ lng: 138.7, lat: 35.3, alt: 3000 }));
-  await page.waitForTimeout(3500);
+  await until(page, () => window.IntMapFlightSim.active() && window.__imap.getZoom() > 11.1 && /globe/.test(JSON.stringify(window.__imap.getProjection())), null, { timeout: 30000 });
 
   const during = await page.evaluate(() => ({ zoom: window.__imap.getZoom(), active: window.IntMapFlightSim.active(),
     globeness: window.IntMapGeoEngine.camera.globeness(),
@@ -85,19 +90,56 @@ test('the flight simulator flies the app Globe, and gives the view back on exit'
   expect(during.proj, 'the sim flies the app Globe').toContain('globe');
 
   await page.evaluate(() => window.IntMapFlightSim.stop());
-  await page.waitForTimeout(1600);
+  await until(page, () => !window.IntMapFlightSim.active() && /mercator/.test(JSON.stringify(window.__imap.getProjection())), null, { timeout: 30000 });
   const after = await page.evaluate(() => JSON.stringify(window.__imap.getProjection()));
   expect(after, 'a pilot who took off from Flat gets Flat back').toContain('mercator');
   expect(await bowAt(page)).toBe(0);
 });
 
-test('the flight simulator is silent by default and the SOUND key says so', async ({ app }) => {
-  test.setTimeout(120000);
-  const page = await app.freshPage();   /* this test's subject is an untouched profile — it pays for its own boot */
+/* (test-time-headroom) ONE FRESH PROFILE FOR THE THREE CLAIMS THAT NEED ONE. Each of these took `app.freshPage()` and paid
+   for a whole boot of its own; they ask about three different settings (the viewpoint chip, the simulator's sound, the tilt
+   ceiling), none of which the others touch, so they share one untouched page. What must be read before ANYTHING is set is
+   read first (the ceiling, then the chip «off by default»); the sound key is asked before the pilot chooses (its key is not
+   written by the chip); the reload comes last because it is the only step that ends the page. Every expect() of the three is
+   here, unchanged. */
+test('an untouched profile: the viewpoint chip is off until asked and then tracks the camera, the flight simulator is silent until the pilot chooses, and the tilt setting survives a reload into Settings', async ({ app }) => {
+  test.setTimeout(300000);
+  const page = await app.freshPage();   /* the subject is an untouched profile — this test pays for that one boot */
+  /* ── the fresh profile's ceiling, read before anything is set ── */
+  const fresh = await page.evaluate(() => ({ max: window.__imap.getMaxPitch(), unlimited: window.IntMapTilt.isUnlimited() }));
+  expect(fresh.max, 'the standard ceiling is unchanged for a fresh profile').toBe(78);
+  expect(fresh.unlimited).toBe(false);
+
+  /* ── the viewpoint altitude appears in the always-on readout and tracks the camera ── */
+  const off = await page.evaluate(() => window.IntMapEyeAlt.text());
+  expect(off, 'off by default').toBe('');
+
+  await page.evaluate(() => window.IntMapEyeAlt.set(true));
+  await page.evaluate(async () => { window.__imap.jumpTo({ center: [138.7, 35.3], zoom: 12, pitch: 0, bearing: 0 }); await new Promise(r => setTimeout(r, 500)); });
+  await page.waitForTimeout(400);
+  const hi = await page.evaluate(() => ({ alt: window.IntMapGeoEngine.camera.altitude(), text: window.IntMapEyeAlt.text(),
+    shown: (() => { const el = document.getElementById('coord-readout'); return el && getComputedStyle(el).display !== 'none' ? el.textContent : ''; })() }));
+  // z12 over Japan: the camera sits ~16.8 km up (cameraToCenterDistance × ground metres per pixel)
+  expect(hi.alt).toBeGreaterThan(12000);
+  expect(hi.alt).toBeLessThan(22000);
+  expect(hi.text).toMatch(/^(Eye|視点|Kamera|Камера|Cámara) /);
+  expect(hi.shown, 'the chip must be visible in the readout even with the cursor off the map').toContain('Eye');
+
+  // zooming in halves the altitude for every zoom level
+  await page.evaluate(async () => { window.__imap.jumpTo({ zoom: 14, pitch: 0 }); await new Promise(r => setTimeout(r, 500)); });
+  const lo = await page.evaluate(() => window.IntMapGeoEngine.camera.altitude());
+  expect(lo / hi.alt, 'two zoom levels closer = a quarter of the altitude').toBeCloseTo(0.25, 1);
+
+  // tilting lowers the eye above the map centre
+  await page.evaluate(async () => { window.__imap.jumpTo({ zoom: 14, pitch: 60 }); await new Promise(r => setTimeout(r, 500)); });
+  const tilted = await page.evaluate(() => window.IntMapGeoEngine.camera.altitude());
+  expect(tilted / lo).toBeCloseTo(Math.cos(60 * Math.PI / 180), 1);
+
+  /* ── the flight simulator is silent by default and the SOUND key says so ── */
   // (#R209) IntMapFlightSim is fetched on demand now — ask for it the way the menu item does.
   await loadLazyModules(page);
   await page.evaluate(() => window.IntMapFlightSim.start({ lng: 138.7, lat: 35.3, alt: 3000 }));
-  await page.waitForTimeout(1500);
+  await until(page, () => !!document.querySelector('.fs-deck [data-act="mute"]'), null, { timeout: 30000 });   /* the deck is built */
   const deck = await page.evaluate(() => {
     const b = document.querySelector('.fs-deck [data-act="mute"]');
     /* (icon-system) the key's glyph is js/icons.js «speaker-off» / «speaker»: read which one by its path */
@@ -113,20 +155,27 @@ test('the flight simulator is silent by default and the SOUND key says so', asyn
   expect(deck.stored, 'nothing is stored until the pilot chooses').toBeNull();
   // turning it on persists, and the key flips
   await page.evaluate(() => document.querySelector('.fs-deck [data-act="mute"]').click());
-  await page.waitForTimeout(300);
+  await until(page, () => localStorage.getItem('intmap_fs_sound') != null, null, { timeout: 10000 });
   const after = await page.evaluate(() => ({ on: document.querySelector('.fs-deck [data-act="mute"]').classList.contains('on'), stored: localStorage.getItem('intmap_fs_sound') }));
   expect(after.on).toBe(true);
   expect(after.stored).toBe('on');
   await page.evaluate(() => window.IntMapFlightSim.stop());
+
+  /* ── the tilt setting survives a reload and is reflected in Settings (it reloads, so it is last) ── */
+  await page.evaluate(() => window.IntMapTilt.set(true));
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => !!window.__imap && !!window.IntMapGeoEngine, null, { timeout: 60000 });
+  await until(page, () => window.__imap.getMaxPitch() === 180, null, { timeout: 15000 });
+  expect(await page.evaluate(() => window.__imap.getMaxPitch())).toBe(180);
+  await page.click('#btn-open-settings');
+  await until(page, () => { const s = document.getElementById('setting-tilt-limit'); return !!s && s.value === 'unlimited'; }, null, { timeout: 10000 });
+  expect(await page.inputValue('#setting-tilt-limit')).toBe('unlimited');
 });
 
 test('Measure ▸ 3-D volume: a whole number can actually be typed, and it reaches the renderer', async ({ app }) => {
   test.setTimeout(150000);
   const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
-  await page.evaluate(async () => {
-    window.__imap.jumpTo({ center: [138.7274, 35.30], zoom: 9, pitch: 60, bearing: 0 });
-    await new Promise(r => setTimeout(r, 1500));
-  });
+  await idleAfter(page, () => window.__imap.jumpTo({ center: [138.7274, 35.30], zoom: 9, pitch: 60, bearing: 0 }), null, 1500);
   await page.click('#btn-measure-menu');
   await page.click('#btn-tool-volume');
   await page.waitForFunction(() => !!window.IntMapVolume3D, null, { timeout: 30000 });   /* (#R311) that click fetches the tool (js/lazy-modules.js) */
@@ -176,7 +225,7 @@ test('Measure ▸ 3-D volume: the altitude fields fit inside the panel', async (
   await page.click('#btn-measure-menu');
   await page.click('#btn-tool-volume');
   await page.waitForFunction(() => !!window.IntMapVolume3D, null, { timeout: 30000 });   /* (#R311) that click fetches the tool (js/lazy-modules.js) */
-  await page.waitForTimeout(300);
+  await until(page, () => !!document.getElementById('v3d-base'), null, { timeout: 10000 });
   const fit = await page.evaluate(() => {
     const p = document.getElementById('tool-panel');
     const r = p.getBoundingClientRect();
@@ -195,10 +244,7 @@ test('Measure ▸ 3-D volume: the altitude fields fit inside the panel', async (
 test('Measure ▸ 3-D volume: freehand, circle and rectangle footprints', async ({ app }) => {
   test.setTimeout(180000);
   const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
-  await page.evaluate(async () => {
-    window.__imap.jumpTo({ center: [138.7274, 35.30], zoom: 9.5, pitch: 55, bearing: 0 });
-    await new Promise(r => setTimeout(r, 1500));
-  });
+  await idleAfter(page, () => window.__imap.jumpTo({ center: [138.7274, 35.30], zoom: 9.5, pitch: 55, bearing: 0 }), null, 1500);
   await page.click('#btn-measure-menu');
   await page.click('#btn-tool-volume');
   await page.waitForFunction(() => !!window.IntMapVolume3D, null, { timeout: 30000 });   /* (#R311) that click fetches the tool (js/lazy-modules.js) */
@@ -244,7 +290,7 @@ test('Measure ▸ 3-D volume: freehand, circle and rectangle footprints', async 
 test('Measure ▸ 3-D volume: colour and opacity reach the renderer', async ({ app }) => {
   test.setTimeout(120000);
   const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
-  await page.evaluate(async () => { window.__imap.jumpTo({ center: [138.7274, 35.30], zoom: 9.5, pitch: 55 }); await new Promise(r => setTimeout(r, 1200)); });
+  await idleAfter(page, () => window.__imap.jumpTo({ center: [138.7274, 35.30], zoom: 9.5, pitch: 55 }), null, 1200);
   await page.click('#btn-measure-menu');
   await page.click('#btn-tool-volume');
   await page.waitForFunction(() => !!window.IntMapVolume3D, null, { timeout: 30000 });   /* (#R311) that click fetches the tool (js/lazy-modules.js) */
@@ -298,52 +344,6 @@ test('the tilt limit lifts to the renderer\'s full range and comes back down', a
   const off = await page.evaluate(() => ({ max: window.__imap.getMaxPitch(), pitch: Math.round(window.__imap.getPitch()) }));
   expect(off.max).toBe(78);
   expect(off.pitch, 'a camera left at 150° would be stuck at an angle the user can no longer reach').toBeLessThanOrEqual(78);
-});
-
-test('the tilt setting survives a reload and is reflected in Settings', async ({ app }) => {
-  test.setTimeout(120000);
-  const page = await app.freshPage();   /* it reloads, which a page shared with other tests cannot do — so it pays for its own boot */
-  /* the fresh profile's ceiling, read before anything is set (moved here from the tilt-limit test,
-     which now runs on the shared page) */
-  const fresh = await page.evaluate(() => ({ max: window.__imap.getMaxPitch(), unlimited: window.IntMapTilt.isUnlimited() }));
-  expect(fresh.max, 'the standard ceiling is unchanged for a fresh profile').toBe(78);
-  expect(fresh.unlimited).toBe(false);
-  await page.evaluate(() => window.IntMapTilt.set(true));
-  await page.reload({ waitUntil: 'domcontentloaded' });
-  await page.waitForFunction(() => !!window.__imap && !!window.IntMapGeoEngine, null, { timeout: 60000 });
-  await page.waitForTimeout(1200);
-  expect(await page.evaluate(() => window.__imap.getMaxPitch())).toBe(180);
-  await page.click('#btn-open-settings');
-  await page.waitForTimeout(400);
-  expect(await page.inputValue('#setting-tilt-limit')).toBe('unlimited');
-});
-
-test('the viewpoint altitude appears in the always-on readout and tracks the camera', async ({ app }) => {
-  test.setTimeout(120000);
-  const page = await app.freshPage();   /* this test's subject is an untouched profile — it pays for its own boot */
-  const off = await page.evaluate(() => window.IntMapEyeAlt.text());
-  expect(off, 'off by default').toBe('');
-
-  await page.evaluate(() => window.IntMapEyeAlt.set(true));
-  await page.evaluate(async () => { window.__imap.jumpTo({ center: [138.7, 35.3], zoom: 12, pitch: 0, bearing: 0 }); await new Promise(r => setTimeout(r, 500)); });
-  await page.waitForTimeout(400);
-  const hi = await page.evaluate(() => ({ alt: window.IntMapGeoEngine.camera.altitude(), text: window.IntMapEyeAlt.text(),
-    shown: (() => { const el = document.getElementById('coord-readout'); return el && getComputedStyle(el).display !== 'none' ? el.textContent : ''; })() }));
-  // z12 over Japan: the camera sits ~16.8 km up (cameraToCenterDistance × ground metres per pixel)
-  expect(hi.alt).toBeGreaterThan(12000);
-  expect(hi.alt).toBeLessThan(22000);
-  expect(hi.text).toMatch(/^(Eye|視点|Kamera|Камера|Cámara) /);
-  expect(hi.shown, 'the chip must be visible in the readout even with the cursor off the map').toContain('Eye');
-
-  // zooming in halves the altitude for every zoom level
-  await page.evaluate(async () => { window.__imap.jumpTo({ zoom: 14, pitch: 0 }); await new Promise(r => setTimeout(r, 500)); });
-  const lo = await page.evaluate(() => window.IntMapGeoEngine.camera.altitude());
-  expect(lo / hi.alt, 'two zoom levels closer = a quarter of the altitude').toBeCloseTo(0.25, 1);
-
-  // tilting lowers the eye above the map centre
-  await page.evaluate(async () => { window.__imap.jumpTo({ zoom: 14, pitch: 60 }); await new Promise(r => setTimeout(r, 500)); });
-  const tilted = await page.evaluate(() => window.IntMapGeoEngine.camera.altitude());
-  expect(tilted / lo).toBeCloseTo(Math.cos(60 * Math.PI / 180), 1);
 });
 
 test('Atlas can drive both new switches', async ({ app }) => {
@@ -408,7 +408,7 @@ test('the elevation profile still puts its cursor on the map through the engine'
   // #R169 deliberately made no browser claim about js/elevation-profile.js (it needs a real DEM).
   // This round moved its addSource/addLayer/setData onto the engine, so that claim is now needed:
   // the layer it creates is the only visible consequence of the migration.
-  await page.evaluate(async () => { window.__imap.jumpTo({ center: [138.7, 35.36], zoom: 10 }); await new Promise(r => setTimeout(r, 1500)); });
+  await idleAfter(page, () => window.__imap.jumpTo({ center: [138.7, 35.36], zoom: 10 }), null, 1500);
   await page.click('#btn-measure-menu');
   await page.click('#btn-tool-measure');
   const c = await page.locator('canvas.maplibregl-canvas').boundingBox();
@@ -420,7 +420,7 @@ test('the elevation profile still puts its cursor on the map through the engine'
   await page.waitForSelector('#elev-svg', { timeout: 60000 });
   await page.evaluate(() => { const s = document.getElementById('elev-svg'), b = s.getBoundingClientRect();
     s.dispatchEvent(new MouseEvent('mousemove', { clientX: b.x + b.width / 2, clientY: b.y + b.height / 2, bubbles: true })); });
-  await page.waitForTimeout(600);
+  await until(page, () => { try { return window.__imap.getSource('elev-cursor').serialize().data.features.length === 1; } catch (_) { return false; } }, null, { timeout: 10000 });
   const r = await page.evaluate(() => ({
     src: !!window.__imap.getSource('elev-cursor'),
     lyr: !!window.__imap.getLayer('elev-cursor-pt'),
@@ -439,7 +439,9 @@ test('the migrated modules still drive the map through the engine', async ({ app
   await page.click('#ms-btn');
   await page.waitForSelector('#ms-results > *', { timeout: 30000 });
   await page.locator('#ms-results > *').first().click();
-  await page.waitForTimeout(2500);
+  /* the flight has landed and the card is placed — not 2.5 s */
+  await until(page, () => { const card = document.querySelector('.search-result-card');
+    return !!card && parseFloat(card.style.left) > 0 && !!document.querySelector('.search-pin') && !window.__imap.isMoving() && Math.abs(window.__imap.getCenter().lng - 135.8) < 1.5; }, null, { timeout: 30000 });
   const r = await page.evaluate(() => {
     const card = document.querySelector('.search-result-card');
     return { card: !!card, positioned: !!(card && parseFloat(card.style.left) > 0), pin: !!document.querySelector('.search-pin'),

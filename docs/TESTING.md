@@ -87,7 +87,7 @@ candidates ending in «Ask Atlas»).
 gates a push is **5 spec files / 0.3 min** against a ceiling of 0.3 min — that is the FIXED gate; a PR
 also runs, in core, **every spec it added or edited** (read from the diff, `scripts/tiers.mjs`
 `changedSpecs()`), which has no ceiling of its own on purpose (`scripts/test-budget.mjs`, `BUDGET_S`); the **whole** suite is
-**162 measured spec files / 87.5 min** (5,249 s) of serial browser time against a ceiling of 87.5 min (the 68 s made
+**165 measured spec files / 87.9 min** (5,271 s) of serial browser time against a ceiling of 87.5 min (the 68 s made
 by re-measuring two deep entries that stood high — the ledger row `2026-10-08 atlas-product` in `scripts/test-budget.mjs` —
 paid for the four product specs of 2026-10-08: hist-product 8, mobile-product 26, live-news-product 8, sales-pro-audiences 15;
 the last 10 s of room went to desktop-one-entry 11, one boot measured 10.7 s); and
@@ -111,7 +111,7 @@ the last 10 s of room went to desktop-one-entry 11, one boot measured 10.7 s); a
 > （描かれた文字）も緑だった——**どちらも真だった。同じ文字を40回描くレイヤーについて。**
 > 数を数えるものがどこにも無かった。
 `node --test` discovers for itself — there is no list of them to keep (#R529). The nightly
-**deep** tier — **157 spec files** — is the whole suite minus core
+**deep** tier — **160 spec files** — is the whole suite minus core
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
 `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
@@ -1040,7 +1040,7 @@ node scripts/sync-newsgeo.mjs
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
-tier: `npm run test:deep`, **157 spec files** against core's 5 (plus, on a PR, whatever that PR added or
+tier: `npm run test:deep`, **160 spec files** against core's 5 (plus, on a PR, whatever that PR added or
 edited — `scripts/tiers.mjs` `changedSpecs()`, read from the diff; those stay in the nightly too), because #R204/#R207 turned the split
 from a hand-kept list into a **price** (`scripts/tiers.mjs`, `CORE_MAX_S = 1`): a spec may stand in
 front of a push only if it costs at most one second, so nearly every per-round regression file is
@@ -2211,6 +2211,9 @@ script、読者向けの出典行。
 - **`probe-declared`** — `scripts/outbound-hosts.json` の、ブラウザが要求する行はどれも代表の
   `probe` を持つ（または持てない理由）。訊くのは毎晩の `scripts/upstream-liveness.mjs`
   （`docs/MONITORING.md` §1e）。
+- **`stored-disclosed`**（wave4-security）— ブラウザのコードが読者のブラウザに書く全ての名前（キー・データベース・キャッシュ）が
+  `scripts/device-storage-words.json` に種類と en/jp の語を持ち、書き込みの消えた行・読めない名前・Cookie の設定が無く、
+  `data/device-storage-ledger.json` がその導出と一致する。規則は `scripts/device-storage-ledger.mjs`（`docs/DATA-GOVERNANCE.md` §4.8）。
 - **`facets-accounted`** — 19 欄が主題ごとに `stated` / `undeclared(why)` / `notApplicable(why)` の
   **どれか 1 つ**に入る。⚠ **鍵が無いのはこの 3 つのどれでもない。**
 - **`ledger-shrinks`** — 既存の違反は `data/governance-ledger.json` にあり、**counts は下向きにしか
@@ -2825,7 +2828,7 @@ span が順序どおりで、どの世紀にも在force の単位がある——
 観測があり、門が `package.json` と `ci.yml` に宣言されていること／
 `.agents/rules/historical-verification.md` が恒久の文脈として読み込まれること。
 
-### `tests/gis-*.test.mjs` — GIS 基盤の 11 本（#R819）
+### `tests/gis-*.test.mjs` — GIS 基盤の 12 本（#R819 と最寄り圏）
 
 **どれも「直した姿」ではなく「元の欠陥」に対して書いてある**（[[intmap-restate-the-defect-not-the-fix]]）。
 「キャッシュが効く」「複数の runtime を作れる」「扉が増えた」は**実装についての文**で、
@@ -2844,6 +2847,7 @@ span が順序どおりで、どの世紀にも在force の単位がある——
 | `gis-geometry-portable-checks` | 6 | factory が**自分のバイトから組み直されて**答えること／同じ演算が両スレッドで**同じ JSON** を返すこと／運べないものが**形を複製する前に**名指されること／⚠ **その分類が主張ではないこと**——宣言された全演算を、dep を抜いたカーネルに通して、事前判定どおりの拒否が出るか確かめる／公開の答えが動いていないこと（`geom-2` 据え置き） |
 | `gis-worker-dispatch-checks` | 7 | **受け口はあったが呼び手がいなかった**——`expr.rows` は登録済みで、`js/` にペイロードを組む者が 1 人もいなかった。同じ式が両経路で**画素単位で同じ格子**を出すこと／運べない式が実行前に判定され、主スレッドが同じ答えを出すこと／数値規則が**2 つ目にならない**こと（U+00A0 を含めてセル単位で一致）／中止が途中結果を答えにしないこと |
 | `gis-cache-checks` | 7 | 条件が 1 つも動いていない問いが**二度計算されない**こと／**5 つの条件を 1 つずつ動かす**と別の答えになること（⚠ 対照つき——同じ鎖 2 本は**同じ鍵**になるので「常に違う」では通らない）／切れば #R783 の経路と答えに戻ること／**引いた記録が食い違えば捨てて op が走る**こと |
+| `gis-voronoi-checks` | 8 | 最寄り圏が**窓を隙間なく分ける**こと（面積の和と窓の相対差 < 10⁻⁹——境界を両側が別々に描くと隙間が出る）／無作為な点が**総当たりで求めた最寄りの地点**の圏にあること（許すのは §2.9 の描画許容の帯だけ）／いちばん遠い場所が **0.05° の格子の総当たりより遠く**、その点の最寄り距離そのものであり、上界が述べた許容に収まること／全球・極・日付変更線・地点 1〜4・赤道上の 30 地点・**共円だらけの経緯度格子**に別の枝が要らないこと／同じ位置の 2 行・MultiPoint・拒否・同じ入力で同じバイト・版の台帳と組み込み・Atlas の案内文／**結合に失敗した行・作れなかった圏があれば上界を null にし記録を partial にする**こと（直す前のファイルで赤）。⚠ 参照は検査の中の総当たりで、カーネルの近傍集合に訊かない |
 | `gis-runtime-checks` | 12 | 同じ id を使う 2 つのジョブが互いの数を答えないこと——⚠ **2 つの本物の realm**（worker thread）で測る。プロセス内の「別 runtime のつもり」は、この検査自身の帳簿を測ることになる／片方を終えてももう片方が動くこと／解放時に飛んでいた呼びが**必ず決着する**こと／単一 runtime の経路が #R783 のままであること／**`scope-conflict` が守っているものを守り続ける**こと |
 
 ### `tests/drawing-tools-and-objects-checks.test.mjs` (#R782)
@@ -4976,6 +4980,17 @@ indonesia・haze + indonesia・AfD は 2 語に絞る・提案が無い見出し
 `MAX_SHARE` は送られる ⑩ 入口 4 つが 1 つの遅延本体に届く。
 spec 4 本は共有ページで、DB の 2 つの口を同じ fixture で答える: カードが提案の語で開き地図に点が描かれる（レンダラから
 数える）・再生が 1 日ずつ進み、その日までの点だけが描かれる・チップで問い直しリンクが語を名指す・閉じると地図から消える。
+### `tests/wave4-news-checks.test.mjs` (wave4-news)
+今日の世界（NEWS-EVENTS §18）。node 14 本・ネットワーク無し。出荷している `js/news-edition-core.js` を、**本番の
+`news_events` が本体と同じ問い合わせに返した 2026-10-05（UTC）の 619 行**（`tests/fixtures/news-edition-prod.json.gz`）で
+評価する: ① 窓に入る規則と件数（新しく 561・続く 58・2 媒体以上 144・地点不明 44）② 順位は媒体・記事・早い初報で、
+行の届く順に依らない ③ サーバーが窓の外の行を返しても版に入れない ④ 前回以降は前回より後の初報で、前回が無ければ
+何も「新しい」と言わない ⑤ 国は輪郭から（Novosibirsk → RU）・地点のあるものは国か海上に必ず入る ⑥ 窓（直近 24 時間・
+UTC の日・今日の途中・未来の日は無い・2 月 30 日は日でない）⑦ `?edition=` の読み書き（推測した値を信用しない）
+⑧ 前回の時刻は後ろへ戻らず、満杯の保存は「残せなかった」と言う ⑨ テキストのコピーと再生の順 ⑩ 本体がサーバーへ
+同じ規則と順で訊き、時計が「いま」のときだけ前回を書き、扉・入口（サーバーの head count）・Atlas の行が 1 つの本体に届く
+⑪ Atlas の検索が「今日のニュース」「what happened today」などで `news.edition` を先頭に返す ⑫ プライバシーポリシーが
+このブラウザに残すものを en と jp で言う ⑬「前回から N 件」は入口・カード・Atlas が同じカウンタ（前回の時刻ごとに保持・失敗は null）を読み、窓は印だけを持つ ⑭ js/ の全ファイルで `styledata` がクリックを登録し直さない。
 ### `tests/security-next-checks.test.mjs` と `tests/security-next.spec.js` (security-next)
 「このページの通信」とセキュリティのページ。node 9 本: ① `data/connection-ledger.json` は台帳の導出と同一で全行を持ち、
 各行は 4 つの形のどれか 1 つ ② 「送るもの」の符号すべてに読者の文が en と jp で在る（台帳の `SENDS` と両向き）
@@ -4987,6 +5002,9 @@ spec 4 本は共有ページで、DB の 2 つの口を同じ fixture で答え�
 `index.html` から、報告ボタンは用件 `security` の相談フォームへ、関数・最後の migration・フォームが同じ語を持つ。
 spec 1 本（実ブラウザ）: 経路で満たした要求・WebSocket・CSP が拒否したスクリプトが一覧のそれぞれの節に出る、
 Playwright 自身の記録した main frame の完了した要求が一覧に全部ある、開いている間に増えた接続先が出る、Escape で閉じる。
+同じ boot の後半（wave4-security）: 秘密を入れたキーと共有アドレスの他のページのキーを入れ、「この端末に保存されているもの」が
+キーを「ログインとキー」に、他のページのキーを「名前の無いもの」に置き、値を一切表示せず、2 回押しで 1 件消し、「この端末から消去」で
+再読み込みし、ページ自身が開いていたデータベース（消去要求に `blocked` を返す）が再読み込み後に消えていて、他のページのキーが残る。
 ### `tests/security-hardening-checks.test.mjs` (security-hardening)
 10 本・ネットワーク無し。どれも規則を**実データで評価**する。① ロックの全依存辺が範囲を満たす（読めない指定と欠けも 0）・
 実ロックの全 caret 下限を 1 patch 下げるとその辺がその位置で赤・範囲の読みが node-semver の答えと一致 ② JWT は
@@ -5026,6 +5044,17 @@ migration の既定値・CHECK を照合する。③ ページの読み手と実
 複数一致の地図は開かない・地図は共有リンクの復元で 1 度だけ開く・表示の無い地図は保存しない。④ 入口は動的 import
 （起動経路に載らない）・ログイン待ちのトークンの鍵を auth-ui とカードが共有する・書き込む操作要素は効果を宣言する
 （公開は `outward`）。
+### `tests/wave4-community-checks.test.mjs` (community-maps)
+5 本・データベース無し（DB の半分は `supabase/tests/38_community_maps_test.sql`）。① migration の扉——掲載・掲載の取り消し・報告・写しは
+uuid を取らず `auth.uid()` で口座を決め anon から剥がされ、管理の 2 本は `is_admin()` に訊く。anon に渡る EXECUTE は**全数を発見して**
+`community_maps` と `shared_collection` の 2 本だけ・どちらも理由を書き、答えを名前つきの欄から組む（`user_id`・`id`・`email`・`share_id` の欄も
+行ごとの `to_jsonb` も無い）。元の地図（`based_on`）を読む全箇所が「元が掲載中で非表示でない」を条件に持つ。新しい 2 表は何も持たずに始まり、
+関数以外は書かない。持ち主の列 grant は広がらない。写しの受領は持ち主以外だけが残す。② DB が縛る語（表示名 40・紹介文 500・メモ 1000・
+報告の理由・並び）を migration から読み、ページの定数と一致させる。③ 出荷される純関数を**評価**——名前・項目・経度をまたぐ範囲・地球全体・
+届いた数の文・両言語。④ 扉と Atlas の能力 5 本を**代役の DB で実行**——目録は GET・与えられないものは送らない・空の名前は DB に訊く前に拒む・
+掲載はコレクションの指定が無ければ訊き、表示名が無ければ訊き（Atlas は作らない）何も掲載しない・結果がリンクを運ぶ・掲載していないものを外すのは
+「もう済んでいる」・題が 2 件に一致すれば開かない・地図が無ければ範囲を訊く。⑤ 入口は動的 import・アカウントの行・ギャラリーの宣言された
+イベント・`js/community-maps.js` は markup を書かない。
 ### `tests/collection-workspace.spec.js` (collection-workspace)
 1 本・自分で起動する（クエリは起動時に 1 度だけ読まれるので、起動そのものが主題）。公開の読み取り
 `shared_collection` を PostgREST の形で答え（migration の適用の有無に依らない）、`?collection=<token>` で開いたページを
@@ -5033,3 +5062,16 @@ migration の既定値・CHECK を照合する。③ ページの読み手と実
 セッションのピン（`user-pins`）としてその位置に入りカメラが枠に収める、③ 一覧の地図を押すとアドレスがその地図の
 `v=` / `tt=` になりカメラが移る（共有リンクの復元）、④ 未ログインの「マイプレイスに追加」はログインを開きトークンを
 このタブの `sessionStorage` に残す、⑤ 閉じるとアドレスから `collection` が消え待ちトークンも消える。
+
+### `tests/wave4-security-checks.test.mjs` (wave4-security)
+「この端末に保存されているもの」。node 10 本・ネットワーク無し。発見と一覧の実関数を、注入したソースと偽のブラウザで評価する。
+① リポジトリの全書き込みに種類と en/jp の語があり、配る台帳が導出と同一、Cookie の設定 0 ② 語の無い新しい書き込み・
+書き込みの消えた行・Cookie・読めない名前をそれぞれ拒む ③ 名前を束縛で読む（const・連結・テンプレート・`?:`・キーのオブジェクト・
+名前を返す関数・別モジュールの包み関数・`indexedDB` を引数で受けた `idb.open`）、ストレージでないオブジェクトは数えない、
+`caches.keys()` から読み戻した名前は新しい名前でない ④ 種類の語が台帳の順に en/jp で在る ⑤ 照合は完全一致が先・長いパターン・
+同じ領域だけ、ログインのセッションは `signsOut` の credential ⑥ 偽のブラウザに秘密を入れ、観測・モデル・書き出しのどこにも
+値が出ない、種類の順・名前の無いもの（共有アドレスの他のページ）・件数・`valuesIncluded:false` ⑦ 「この端末から消去」は台帳が
+名指すものだけ、台帳を読めないときは何も消さず誰も「名前が無い」と言わない ⑧ 廃止した AI のキーをどのモジュールも保持しない
+⑨ Atlas の行・設定のボタンとリスナ・`security.html`／`ja/` の種類ごとの数が台帳と一致・Privacy §2 の文（en/jp）。
+⑩ ログインのセッションの行は supabase-js の式を `src/vendor.js` の URL で評価した IntMap 自身の名前で、他のプロジェクトのセッションに当たらない・
+固定部分が IntMap のものと証明できないワイルドカードは `bulk:false` が無ければ門が拒む（⑦ は一括消去がそれらと他のプロジェクトのセッションを取らないこと）。

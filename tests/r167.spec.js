@@ -20,6 +20,9 @@ import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics } from './helpers/network.js';
 import { exportedKeys } from './app-source.mjs';
 import { seededStorageState } from './helpers/session-seed.js';
+/* (test-time-headroom) the fixed sleeps in this file are waits for the state they stood in for — tests/helpers/settle.js.
+   Every expect() below is unchanged; only the moment it looks moved. Before/after: dev-notes/2026-10-13-test-time-headroom.md */
+import { until } from './helpers/settle.js';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -173,15 +176,17 @@ test('R167 #4 the legal texts render, and LIVE getters follow a runtime switch t
   // js/legal.js reads HOST.lang on EVERY call; a captured copy of currentLang would freeze the
   // Terms/Privacy texts in English for the rest of the session.
   // ids read out of js/legal.js, not guessed: #legal-tab-privacy paints #legal-body.
-  const paint = () => page.evaluate(() => {
-    document.getElementById('legal-tab-privacy')?.click();
-    return (document.getElementById('legal-body')?.textContent || '').trim().slice(0, 400);
-  });
+  /* (wave4-train) the words arrive on demand the first time (js/lazy-modules.js `legalText`), so the paint is awaited */
+  const paint = async () => {
+    await page.evaluate(() => document.getElementById('legal-tab-privacy')?.click());
+    await page.waitForFunction(() => (document.getElementById('legal-body')?.textContent || '').trim().length > 0, null, { timeout: 15000 });
+    return page.evaluate(() => (document.getElementById('legal-body')?.textContent || '').trim().slice(0, 400));
+  };
   const en = await paint();
   expect(en, 'the Privacy tab painted its English text').toMatch(/Privacy Policy/i);
 
   await page.evaluate(() => ((s) => { s.value = 'jp'; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.getElementById('setting-lang')));
-  await page.waitForTimeout(900);
+  await until(page, (c) => (document.documentElement.getAttribute('lang') || '').toLowerCase().startsWith(c), 'ja', { timeout: 15000 });
   const jp = await paint();
   expect(jp, 'the legal text re-rendered in Japanese through the live host getter').toMatch(/[぀-ヿ一-鿿]/);
   expect(jp).not.toBe(en);
@@ -196,7 +201,7 @@ test('R167 #4 the legal texts render, and LIVE getters follow a runtime switch t
   expect(railJp, 'the rail overlay row re-labelled in Japanese').toMatch(/[぀-ヿ一-鿿]/);
 
   await page.evaluate(() => ((s) => { s.value = 'en'; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.getElementById('setting-lang')));
-  await page.waitForTimeout(900);
+  await until(page, (c) => (document.documentElement.getAttribute('lang') || '').toLowerCase().startsWith(c), 'en', { timeout: 15000 });
 });
 
 test('R167 #5 WRITE-THROUGH: the news timeline sets HOST.globalData / HOST.newsFeatures and index.html sees it', async () => {
@@ -208,7 +213,10 @@ test('R167 #5 WRITE-THROUGH: the news timeline sets HOST.globalData / HOST.newsF
   //     bare `newsFeatures` (`if(newsFeatures.length) setSourceData(...)`). A stale array puts the
   //     pins straight back on the map.
   await page.evaluate(() => document.getElementById('btn-news')?.click());
-  await page.waitForTimeout(1800);
+  /* the seeded cache has filled the feed and the pins — the state the two «before» claims read */
+  await until(page, () => { const s = window.__imap && window.__imap.getSource('news-points');
+    let pins = 0; try { pins = s ? (s.serialize().data.features || []).length : 0; } catch { pins = 0; }
+    return document.querySelectorAll('#live-news-feed .news-item').length > 0 && pins > 0; }, null, { timeout: 15000 });
 
   /* MapLibre's GeoJSONSource keeps its data behind serialize(); `_data` is not the feature array. */
   const counts = () => page.evaluate(() => {
@@ -222,7 +230,12 @@ test('R167 #5 WRITE-THROUGH: the news timeline sets HOST.globalData / HOST.newsF
 
   // move the master clock back three days — the module's day-change branch runs
   await page.evaluate(() => window.IntMapTime.setDaysAgo(3, { source: 'test' }));
-  await page.waitForTimeout(2500);
+  /* the day change has emptied what it empties (a transition from non-empty, so «already empty» cannot satisfy it).
+     ⚠ The two 2.5 s waits after the basemap switches below are NOT changed: «the pins are not put back» is a claim
+     about what does NOT happen, and the time is the window it is made over. */
+  await until(page, () => { const s = window.__imap && window.__imap.getSource('news-points');
+    let pins = -1; try { pins = s ? (s.serialize().data.features || []).length : -1; } catch { pins = -1; }
+    return document.querySelectorAll('#live-news-feed .news-item').length === 0 && pins === 0; }, null, { timeout: 15000 });
 
   const after = await counts();
   expect(after.items, 'HOST.globalData=[] reached the closure: index.html re-rendered an empty feed').toBe(0);
@@ -240,7 +253,7 @@ test('R167 #5 WRITE-THROUGH: the news timeline sets HOST.globalData / HOST.newsF
   expect(rebuilt, 'HOST.newsFeatures=[] reached the closure: setupIntelLayers() had nothing to re-add').toBe(0);
 
   await page.evaluate(() => window.IntMapTime.setNow({ source: 'test' }));
-  await page.waitForTimeout(1200);
+  await until(page, () => window.IntMapTime.isLive(), null, { timeout: 10000 });
 });
 
 test('R167 #6 a moved module really runs against the real map (annotations + terrain sampler)', async () => {
@@ -282,7 +295,7 @@ test('R167 #7 js/dash-extended.js: the IndexedDB store really persists across a 
   await page.evaluate(async (k) => { await window.IntMapCache.set(k, { hello: 'world', n: 42 }); }, KEY);
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 45_000 });
   await page.waitForFunction(() => !!window.__imap, null, { timeout: 45_000 });
-  await page.waitForTimeout(2000);
+  await until(page, () => !!(window.IntMapCache && typeof window.IntMapCache.get === 'function'), null, { timeout: 30000 });
 
   const readBack = await page.evaluate(async (k) => await window.IntMapCache.get(k), KEY);
   expect(readBack, 'IntMapCache survived a reload through IndexedDB').toEqual({ hello: 'world', n: 42 });
