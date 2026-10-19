@@ -2,14 +2,14 @@
  "source": "CelesTrak GP (active)",
  "objects": 15928,
  "newestEpoch": "2026-10-20T15:59:30.152Z",
- "medianElementAgeHours": 7.7,
- "builtAt": "2026-10-19T08:54:18.105Z",
+ "medianElementAgeHours": 13.6,
+ "builtAt": "2026-10-19T20:35:56.897Z",
  "sources": {
   "celestrak": 15928,
   "satnogs": 0,
   "carried": 0
  },
- "lastCelestrakAt": "2026-10-19T08:54:18.105Z",
+ "lastCelestrakAt": "2026-10-19T20:35:56.897Z",
  "note": "Bundled fallback for the live satellite layer. Real element sets; SGP4 propagates them in real time and the app shows their age. When CelesTrak does not answer, the previous bundle is carried forward and updated with whatever did answer (`sources.carried` counts the carried sets; `lastCelestrakAt` is when CelesTrak last answered).",
  "errors": []
 }
