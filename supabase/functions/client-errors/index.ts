@@ -33,7 +33,8 @@
 //  parses every committed .ts as plain JavaScript.
 // ============================================================================
 import { corsFor, readCapped, RelayError } from "../_shared/relay-guard.js";
-import { makeLimiter, restRpcClient, hashedCallerKey } from "../_shared/rate-limit.js";
+import { makeLimiter, restRpcClient, callerKey, callerKeySecret } from "../_shared/rate-limit.js";
+import { secretKey, denoEnv } from "../_shared/supabase-keys.js";
 import {
   MAX,
   MAX_PER_REQUEST,
@@ -97,16 +98,6 @@ function say(cors, body, status) {
   });
 }
 
-/* The per-caller bucket key: HMAC-SHA-256(service key, address), 32 hex digits. A request with no
-   x-forwarded-for shares one bucket with every other such request — the failure direction of an
-   unidentifiable caller is «throttled with everyone else», the rule routing-relay states.
-   (anon-write-guard) The computation is _shared/rate-limit.js hashedCallerKey — reader-reports keys
-   its buckets the same way, so the rule lives in one place. No account is passed: this function
-   verifies none. */
-export async function callerKey(req, secret) {
-  return hashedCallerKey(req, secret);
-}
-
 /* The request, validated and shaped. Returns { reports } or { error, status }. */
 export async function parseBody(bytes, ua) {
   let body = null;
@@ -150,11 +141,13 @@ export async function handle(req) {
 
   /* The client is built per request from the platform-injected env (a module that throws on a
      missing env answers 500 to everyone — #R505). */
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+  const serviceKey = secretKey(denoEnv);
   const db = restRpcClient({ url: Deno.env.get("SUPABASE_URL") || "", serviceKey });
   const limiter = makeLimiter({ db });
   const n = parsed.reports.length;
-  const caller = await limiter.take(SCOPE_CALLER, await callerKey(req, serviceKey), {
+  /* the per-caller bucket key is _shared/rate-limit.js callerKey — an HMAC of the caller's network,
+     never the address (security-audit). No account is passed: this function verifies none. */
+  const caller = await limiter.take(SCOPE_CALLER, await callerKey(req, { secret: callerKeySecret((k) => Deno.env.get(k) || "") }), {
     capacity: PER_CALLER, refillPerSec: PER_CALLER / 3600, cost: n, onUnavailable: "deny",
   });
   if (caller.source !== "db") return say(cors, { error: "limiter_unavailable" }, 503);

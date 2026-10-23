@@ -51,6 +51,9 @@
  *          X.setHTML(v)  (MapLibre Popup — parses its argument as HTML, 30 call sites in js/)
  *          IntMapSafe.trusted(v)  (not a sink: the one door through which markup no template made
  *          enters a template — judged where it is written, safe-dom-template)
+ *          f(…, v, …)  where f writes that parameter into one of the above and is published on window/globalThis or
+ *          exported — DISCOVERED in js/ and the pages (sinkParams; js/map-tooltip.js setMapTooltipHTML(el, html) is
+ *          one), never listed; `--wrappers` prints them
  *  Where:  js/**.js, and the inline scripts of every TRACKED *.html (admin.html builds its tables there).
  *
  *  ⚠ THE MARKUP TAG (js/safe-html.js IntMapSafe.markup, aliased `html`) escapes every value for where it
@@ -65,7 +68,7 @@
  *  scripts/static-checks.mjs (§20) runs the comparison as its `output-taint` rule.
  * ==========================================================================*/
 import { readFileSync, readdirSync, statSync, writeFileSync, existsSync } from 'node:fs';
-import { join, dirname, relative, resolve } from 'node:path';
+import { join, dirname, relative, resolve, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { parseSource } from '../tests/helpers/ast.mjs';
@@ -619,6 +622,11 @@ export function analyse(src, { file = '', names: namesIn = null } = {}) {
     if (fn.type === 'FunctionDeclaration' && fn.id) e = decls.get(scopeOf(fn)).get(fn.id.name);
     else { const p = parent.get(fn); if (p && p.type === 'VariableDeclarator' && p.id.type === 'Identifier') e = decls.get(scopeOf(p)).get(p.id.name); }
     if (!e || e.fns.length !== 1 || e.defs.length || e.opaque || e.param) return null;
+    /* (security-audit) an EXPORTED function has callers in other files: with no call in this one, its callers used
+       to be the empty list — and a parameter it writes into a sink vanished as judged (`export function paint(el, h)
+       { el.innerHTML = h }` counted nothing). Its parameter stays a leaf; its importers are judged by sinkParams. */
+    const decl = fn.type === 'FunctionDeclaration' ? parent.get(fn) : parent.get(parent.get(parent.get(fn)) || fn);
+    if (decl && (decl.type === 'ExportNamedDeclaration' || decl.type === 'ExportDefaultDeclaration')) return null;
     const refs = refsByBinding.get(e) || [];
     const calls = [];
     for (const r of refs) { const p = parent.get(r); if (!(p && p.type === 'CallExpression' && p.callee === r)) return null; calls.push(p); }
@@ -651,30 +659,116 @@ export function analyse(src, { file = '', names: namesIn = null } = {}) {
     return !!db && !db.e.opaque && !db.e.param && db.e.defs.length > 0
       && db.e.defs.every((x) => /\.implementation\.createHTMLDocument\(/.test(text(x)));
   }
-  function sinks() {
+  /* ══ (security-audit) A FUNCTION THAT WRITES ITS PARAMETER INTO A SINK IS A SINK FOR ITS CALLERS ═════════════════
+     js/map-tooltip.js `setMapTooltipHTML(el, html)` assigns `el.innerHTML = html`; the leaf it leaves here is its
+     own parameter, and the calls in other files — one of which wrote an RSS title raw (js/news-ui.js) — were never
+     judged, because a call is not an assignment. lift() already follows a parameter to the callers of a function
+     used only in its own file; this is the same step across files. A parameter that reaches a sink of this file
+     unjudged, of a function lift could not follow, is reported with the CHANNELS that function is published on —
+     the two by which another file can name THIS function and no other:
+       global  `window.N = f` / `globalThis.N = f` / `self.N = f`  → a call `window.N(…)` / `globalThis.N(…)`, or a
+               bare `N(…)` that no binding of the calling file answers;
+       module  `export function f` / `export const f` / `export { f as N }`  → a call through an import of that file
+               (`import { N }` / `import * as M` then `M.N(…)`).
+     scan() collects them from every file and judges each such call as a sink (a fixpoint: a wrapper of a wrapper is
+     found in the next round). DISCOVERED, NOT LISTED (.agents/rules/no-ad-hoc-hardcoding.md §2.4).
+     ⚠ NOT BY NAME ALONE. Measured 2026-10-23: matching every `x.N(…)` by the property name found 27 «wrappers» and
+     turned `window.open`, `.read`, `.show`, `.row` … into sinks (+597 leaves, most of them not HTML at all) — a name
+     like `open` is 143 different functions in js/. A call through an object handed in (`HOST.N`, `K.N`) cannot be
+     resolved to one function here, so such a wrapper keeps the leaf at its definition, as before: what this rule
+     cannot follow stays owed where it is written. */
+  const GLOBAL_OBJ = /^(?:window|globalThis|self)\.([A-Za-z_$][\w$]*)$/;
+  const globalName = (m) => { const r = GLOBAL_OBJ.exec(pathOf(m)); return r ? r[1] : null; };
+  const modOf = (spec) => (typeof spec === 'string' && /^\.\.?\//.test(spec) ? posix.normalize(posix.join(posix.dirname(file), spec)) : null);
+  /* local name → { mod, name } for every import of a relative module (a namespace import has name '*') */
+  const imports = new Map();
+  for (const n of all) {
+    if (n.type !== 'ImportDeclaration') continue;
+    const mod = modOf(n.source.value); if (!mod) continue;
+    for (const sp of n.specifiers) {
+      if (sp.type === 'ImportSpecifier') imports.set(sp.local.name, { mod, name: sp.imported.name != null ? sp.imported.name : String(sp.imported.value) });
+      else if (sp.type === 'ImportDefaultSpecifier') imports.set(sp.local.name, { mod, name: 'default' });
+      else if (sp.type === 'ImportNamespaceSpecifier') imports.set(sp.local.name, { mod, name: '*' });
+    }
+  }
+  const importOf = (id) => { const s = ownerOf(id); return (s === ast && imports.has(id.name)) ? imports.get(id.name) : null; };
+  /* the channel keys a call reaches its function by — '' when it reaches none this rule can name */
+  function callKey(c) {
+    if (c.type === 'Identifier') {
+      const im = importOf(c); if (im) return im.name === '*' ? '' : 'module:' + im.mod + '#' + im.name;
+      return bindingOf(c) ? '' : 'global:' + c.name;
+    }
+    if (c.type === 'MemberExpression') {
+      const g = globalName(c); if (g) return 'global:' + g;
+      if (!c.computed && c.object.type === 'Identifier') { const im = importOf(c.object); if (im && im.name === '*') return 'module:' + im.mod + '#' + c.property.name; }
+    }
+    return '';
+  }
+  /* every sink with the NODES of its unjudged leaves. `via` — channel key → argument indices (sinkParams, over the
+     whole repository): a call reaching one is a sink for those arguments, judged here at the call like any other. */
+  function rawSinks(via) {
     const out = [];
     for (const n of all) {
-      let kind = null, value = null;
+      const found = [];
       if (n.type === 'AssignmentExpression' && (n.operator === '=' || n.operator === '+=') && n.left.type === 'MemberExpression') {
         const k = propName(n.left);
-        if (k === 'innerHTML' || k === 'outerHTML') { kind = k; value = n.right; }
-      } else if (n.type === 'CallExpression' && n.callee.type === 'MemberExpression') {
-        const k = propName(n.callee);
-        if (k === 'insertAdjacentHTML') { kind = k; value = n.arguments[1]; }
-        else if (k === 'setHTML') { kind = k; value = n.arguments[0]; }
-        else if (TRUSTED_PATH.test(pathOf(n.callee))) { kind = 'trusted'; value = n.arguments[0]; }
+        if ((k === 'innerHTML' || k === 'outerHTML') && !(k === 'innerHTML' && inertElement(n.left.object))) found.push([k, n.right]);
+      } else if (n.type === 'CallExpression') {
+        if (n.callee.type === 'MemberExpression') {
+          const k = propName(n.callee);
+          if (k === 'insertAdjacentHTML') found.push([k, n.arguments[1]]);
+          else if (k === 'setHTML') found.push([k, n.arguments[0]]);
+          else if (TRUSTED_PATH.test(pathOf(n.callee))) found.push(['trusted', n.arguments[0]]);
+        }
+        const key = via && via.size ? callKey(n.callee) : '';
+        const ix = key && via.get(key);
+        if (ix) for (const i of [...ix].sort()) if (n.arguments[i] && n.arguments[i].type !== 'SpreadElement') found.push(['via ' + key, n.arguments[i]]);
       } else if (n.type === 'MemberExpression' && TRUSTED_PATH.test(pathOf(n))) {
         const p = parent.get(n);
         if (!(p && ((p.type === 'CallExpression' && p.callee === n) || (p.type === 'MemberExpression' && p.object === n)))) {
-          const leaf = { line: n.loc.start.line, text: text(n), why: () => [{ line: n.loc.start.line, text: text(n) }] };
-          out.push({ line: n.loc.start.line, kind: 'trusted', leaves: [leaf] });
+          out.push({ line: n.loc.start.line, kind: 'trusted', bad: [n], verbatim: true });
         }
         continue;
       }
-      if (!kind) continue;
-      if (kind === 'innerHTML' && inertElement(n.left.object)) continue;
-      const bad = value ? [...new Set(leaves(value, EMPTY).flatMap((l) => lift(l, 0, new Set())))] : [];
-      out.push({ line: n.loc.start.line, kind, leaves: bad.map((x) => ({ line: x.loc.start.line, text: text(x).replace(/\s+/g, ' ').slice(0, 80), why: () => explain(x) })) });
+      for (const [kind, value] of found) {
+        const bad = value ? [...new Set(leaves(value, EMPTY).flatMap((l) => lift(l, 0, new Set())))] : [];
+        out.push({ line: n.loc.start.line, kind, bad });
+      }
+    }
+    return out;
+  }
+  function sinks(via) {
+    return rawSinks(via).map((s) => ({ line: s.line, kind: s.kind, leaves: s.bad.map((x) => (s.verbatim
+      ? { line: x.loc.start.line, text: text(x), why: () => [{ line: x.loc.start.line, text: text(x) }] }
+      : { line: x.loc.start.line, text: text(x).replace(/\s+/g, ' ').slice(0, 80), why: () => explain(x) })) }));
+  }
+  /* the channels `fn` is published on (see above) */
+  function channelsOf(fn) {
+    const out = new Set();
+    const p = parent.get(fn);
+    let e = null, top = null;
+    if (fn.type === 'FunctionDeclaration' && fn.id) { e = decls.get(scopeOf(fn)).get(fn.id.name); top = p; if (p && p.type === 'ExportNamedDeclaration') out.add('module:' + file + '#' + fn.id.name); if (p && p.type === 'ExportDefaultDeclaration') out.add('module:' + file + '#default'); }
+    else if (p && p.type === 'VariableDeclarator' && p.id.type === 'Identifier' && p.init === fn) {
+      e = decls.get(scopeOf(p)).get(p.id.name); const d = parent.get(p); top = d && parent.get(d);
+      if (top && top.type === 'ExportNamedDeclaration') out.add('module:' + file + '#' + p.id.name);
+    } else if (p && p.type === 'AssignmentExpression' && p.right === fn && p.left.type === 'MemberExpression') { const g = globalName(p.left); if (g) out.add('global:' + g); }
+    else if (p && p.type === 'ExportDefaultDeclaration') out.add('module:' + file + '#default');
+    if (e && e.fns.length === 1 && !e.defs.length) for (const r of refsByBinding.get(e) || []) {
+      const q = parent.get(r);
+      if (q && q.type === 'AssignmentExpression' && q.right === r && q.left.type === 'MemberExpression') { const g = globalName(q.left); if (g) out.add('global:' + g); }
+      else if (q && q.type === 'ExportSpecifier' && q.local === r) out.add('module:' + file + '#' + (q.exported.name != null ? q.exported.name : String(q.exported.value)));
+    }
+    return [...out];
+  }
+  function sinkParams(via) {
+    const out = [];
+    for (const s of rawSinks(via)) for (const x of s.bad) {
+      if (x.type !== 'Identifier') continue;
+      const b = bindingOf(x);
+      if (!b || !b.e.param || b.e.opaque || b.e.defs.length || b.e.mut.length || !b.scope || b.scope === ast) continue;
+      const i = b.scope.params.findIndex((q) => q.type === 'Identifier' && q.name === x.name);
+      if (i < 0) continue;
+      for (const key of channelsOf(b.scope)) out.push({ key, index: i, line: b.scope.loc.start.line });
     }
     return out;
   }
@@ -764,7 +858,7 @@ export function analyse(src, { file = '', names: namesIn = null } = {}) {
     }
     return out;
   }
-  return { sinks, definedFunctions, calledPaths, file, setNames, functionLeaves, templateProblems };
+  return { sinks, sinkParams, definedFunctions, calledPaths, file, setNames, functionLeaves, templateProblems };
 }
 
 /* ══ the repository ══════════════════════════════════════════════════════════════════════════════ */
@@ -832,16 +926,31 @@ export function scan(root = ROOT, sources = null, pages = sources ? {} : discove
     if (s === sig) break;
     sig = s;
   }
+  for (const a of Object.values(A)) a.setNames(names);
+  /* (security-audit) the functions that write a parameter into a sink, found in every file — and then the ones that
+     hand a parameter to one of those, until nothing new is found (each round can only add a name; the bound is a guard) */
+  let via = new Map(), vsig = '';
+  const wrappers = [];
+  for (let round = 0; round < 8; round++) {
+    const next = new Map(); const found = [];
+    for (const [k, a] of Object.entries(A)) for (const w of a.sinkParams(via)) {
+      if (!next.has(w.key)) next.set(w.key, new Set());
+      next.get(w.key).add(w.index); found.push({ file: fileOf[k], ...w });
+    }
+    const sig = JSON.stringify([...next].map(([n, ix]) => [n, [...ix].sort()]).sort());
+    via = next; wrappers.length = 0; wrappers.push(...found);
+    if (sig === vsig) break;
+    vsig = sig;
+  }
   const files = {}; const called = new Set(); const templates = [];
   for (const [k, a] of Object.entries(A)) {
-    a.setNames(names);
     const rel = fileOf[k];
-    const ss = a.sinks();
+    const ss = a.sinks(via);
     if (ss.length) (files[rel] ||= []).push(...ss);
     for (const p of a.calledPaths) called.add(p);
     for (const t of a.templateProblems()) templates.push(`${rel}:${t.line} ${t.msg}`);
   }
-  return { files, unparsed, called, srcs, analyzers: A, templates };
+  return { files, unparsed, called, srcs, analyzers: A, templates, via, wrappers };
 }
 
 export const unjudged = (sinks) => (sinks || []).reduce((a, s) => a + s.leaves.length, 0);
@@ -900,7 +1009,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     const m = measure();
     const sinks = Object.values(m.files).reduce((a, s) => a + s.length, 0);
     writeFileSync(LEDGER, JSON.stringify({
-      '//': 'written by scripts/output-taint.mjs --update — values reaching an HTML sink (innerHTML/outerHTML/insertAdjacentHTML/setHTML) that the analysis cannot show to be markup-free, per file; ratcheted both ways by check:static',
+      '//': 'written by scripts/output-taint.mjs --update — values reaching an HTML sink (innerHTML/outerHTML/insertAdjacentHTML/setHTML, and the argument of a function found to write it into one) that the analysis cannot show to be markup-free, per file; ratcheted both ways by check:static',
       sinks, total: total(m.counts), files: Object.fromEntries(Object.entries(m.counts).sort()),
     }, null, 1) + '\n');
     console.log(`output-taint: ledger written — ${total(m.counts)} unjudged values in ${Object.keys(m.counts).length} files (${sinks} sinks)`);
@@ -920,6 +1029,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       }
     }
     console.log(`\nsinks ${s} · with an unjudged value ${withExpr} · unjudged values ${t}`);
+    if (process.argv.includes('--wrappers')) for (const w of m.wrappers) console.log(`  sink by proxy: ${w.key} (arg ${w.index})  — ${w.file}:${w.line}`);
     for (const p of trustedProblems(m)) console.log('✗ ' + p);
   }
 }

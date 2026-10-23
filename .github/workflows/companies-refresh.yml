@@ -45,6 +45,8 @@ jobs:
       BRANCH: data/companies-refresh
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version-file: .nvmrc
@@ -88,7 +90,8 @@ jobs:
           git add data/companies
           printf 'data: re-read a weekly batch of the company atlas\n\nRebuilt by .github/workflows/companies-refresh.yml; the batch was chosen by\nscripts/companies/refresh-plan.mjs (osmPending first, then the oldest profiles).\n' > commit-message.txt
           git commit -F commit-message.txt
-          git push --force origin "$BRANCH"
+          # the checkout kept no credential (persist-credentials: false); the token is given to this one push, from the environment
+          git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$BRANCH"
           if [ -z "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')" ]; then
             gh pr create --base main --head "$BRANCH" \
               --title "data: re-read a weekly batch of the company atlas" \

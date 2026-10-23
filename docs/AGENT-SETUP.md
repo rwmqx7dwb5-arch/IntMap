@@ -264,7 +264,7 @@ at npipe:…`（実測 2026-08-24）。旗が無いと標準出力が 1 バイ�
 `supabase/config.toml` に `[functions.*]` として宣言されている。
 **`_shared/` は関数ではない**——ライブラリ用ディレクトリ（`ai-provider.js`・`newsgeo.js`・`relay-guard.js`・`rate-limit.js`・
 `atlas-persona.js`・`aviation-codec.js`・`aviation-model.js`・`news-cluster.js`・`news-entities.js`・`news-geo-prompt.js`・
-`news-ingest.js`・`radiation-sources.js`・`volcano-parse.js`・`who-don-extract.js`・`bbox.js`・`read-budget.js`・`client-error-shape.js`・`site-origin.js`・`fetch-relay-policy.js`・`ai-ledger.js`・`ai-usage.js`・`atlas-grade-schema.js`・`ai-stream.js`・`plans.js`・`inquiry-shape.js`・`correction-shape.js`・`place-watch.js`・`great-circle.js`）で、import した関数の中に CLI がバンドルする。`[functions._shared]` を書いてはならない。
+`news-ingest.js`・`radiation-sources.js`・`volcano-parse.js`・`who-don-extract.js`・`bbox.js`・`read-budget.js`・`client-error-shape.js`・`site-origin.js`・`fetch-relay-policy.js`・`ai-ledger.js`・`ai-usage.js`・`atlas-grade-schema.js`・`ai-stream.js`・`plans.js`・`inquiry-shape.js`・`correction-shape.js`・`place-watch.js`・`great-circle.js`・`supabase-keys.js`）で、import した関数の中に CLI がバンドルする。`[functions._shared]` を書いてはならない。
 
 `AGENTS.md` の天井のため、測定の詳細も名簿もここが正本で、`AGENTS.md` は 1 行で指すだけ。**数と名前を 2 か所に置かない。**
 

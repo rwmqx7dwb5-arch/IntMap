@@ -48,7 +48,7 @@ runs:
       with:
         node-version-file: .nvmrc
         cache: npm
-    - run: npm ci
+    - run: npm ci --ignore-scripts
       shell: bash
     # ⚠ (ci-build-once) NO data-assets HERE ANY MORE. It was here because this machine BUILT dist/, and
     # vite copies data/ into it. It no longer builds: the dist/ it serves already holds the datasets as

@@ -40,7 +40,7 @@
 //  Secrets: none.
 // ============================================================================
 
-import { corsFor, fetchGuarded, methodGate, relayFail, MAX_QUERY_URL } from "../_shared/relay-guard.js";
+import { corsFor, fetchGuarded, methodGate, relayFail, allowedUpstream, MAX_QUERY_URL } from "../_shared/relay-guard.js";
 import { callerGate } from "../_shared/rate-limit.js";
 
 const CORS = corsFor();
@@ -75,10 +75,9 @@ const TOPIC_RE = /^\/rss\/headlines\/section\/topic\/[A-Z][A-Z_]{1,31}$/;
 const EDITION_PARAMS = new Set(["hl", "gl", "ceid"]);
 const MAX_Q = 512;
 function allowed(raw) {
-  let u;
-  try { u = new URL(raw); } catch (_) { return false; }
-  if (u.protocol !== "https:") return false;
-  if (u.hostname !== "news.google.com") return false;
+  /* the origin — https, no userinfo, default port, this host — is relay-guard.js's one rule */
+  const u = allowedUpstream(raw, ["news.google.com"]);
+  if (!u) return false;
   if (u.hash) return false;
   const isSearch = u.pathname === "/rss/search";
   if (!isSearch && !TOPIC_RE.test(u.pathname)) return false;

@@ -31,8 +31,8 @@
 //      they are signed in.
 //
 //  ⚠ THE CALLER'S ADDRESS IS NOT STORED. The per-caller bucket is keyed by the account when there
-//  is one, otherwise by an HMAC of the address (_shared/rate-limit.js hashedCallerKey — the key
-//  client-errors uses). The rows themselves carry what they always carried: the User-Agent the page
+//  is one, otherwise by an HMAC of the caller's network (_shared/rate-limit.js callerKey — the key
+//  every function uses). The rows themselves carry what they always carried: the User-Agent the page
 //  sends (clamped), the page path, the language.
 //
 //  Deploy:  supabase functions deploy reader-reports --project-ref vpekfwdpurzejrrmacac --use-api
@@ -41,7 +41,8 @@
 //  NOTE: written WITHOUT TypeScript annotations, like client-errors — the node tests import this file.
 // ============================================================================
 import { corsFor, readCapped, RelayError } from "../_shared/relay-guard.js";
-import { makeLimiter, restRpcClient, hashedCallerKey, READERS_PER_ADDRESS } from "../_shared/rate-limit.js";
+import { makeLimiter, restRpcClient, callerKey, callerKeySecret, READERS_PER_ADDRESS } from "../_shared/rate-limit.js";
+import { secretKey, publishableKey, isPublicKey } from "../_shared/supabase-keys.js";
 import { MAX as ERROR_MAX, originAllowed } from "../_shared/client-error-shape.js";
 import { INQUIRY, INQUIRY_LIMITS, isReplyAddress } from "../_shared/inquiry-shape.js";
 import { CORRECTION_LIMITS, checkCorrection, newReceipt, receiptHash } from "../_shared/correction-shape.js";
@@ -210,9 +211,9 @@ export async function verifiedCaller(req, env) {
   const auth = req.headers.get("authorization") || "";
   const m = /^bearer\s+(\S+)\s*$/i.exec(auth);
   if (!m) return { kind: "anonymous" };
-  const anon = env("SUPABASE_ANON_KEY") || "";
-  /* the publishable key is what a signed-out client (or supabase-js) sends: it names no account */
-  if (anon && m[1] === anon) return { kind: "anonymous" };
+  const anon = publishableKey(env);
+  /* a public key (either generation) is what a signed-out client (or supabase-js) sends: it names no account */
+  if (isPublicKey(env, m[1])) return { kind: "anonymous" };
   const url = String(env("SUPABASE_URL") || "").replace(/\/+$/, "");
   if (!url || !anon) return { kind: "unavailable" };
   let r;
@@ -241,7 +242,7 @@ export async function verifiedCaller(req, env) {
    left open to it and to nobody else). → true when the database stored it. */
 async function insertRow(env, table, row) {
   const url = String(env("SUPABASE_URL") || "").replace(/\/+$/, "");
-  const key = env("SUPABASE_SERVICE_ROLE_KEY") || "";
+  const key = secretKey(env);
   if (!url || !key) return false;
   try {
     const res = await fetch(url + "/rest/v1/" + table, {
@@ -289,11 +290,11 @@ export async function handle(req) {
 
   /* The buckets, BEFORE the write. Built per request from the platform-injected env (a module that
      throws on a missing env answers 500 to everyone — #R505). */
-  const serviceKey = env("SUPABASE_SERVICE_ROLE_KEY");
+  const serviceKey = secretKey(env);
   const limiter = makeLimiter({ db: restRpcClient({ url: env("SUPABASE_URL"), serviceKey }) });
   const signedIn = caller.kind === "user";
   const perCaller = signedIn ? PER_READER_PER_HOUR : PER_READER_PER_HOUR * READERS_PER_ADDRESS;
-  const mine = await limiter.take(SCOPE_CALLER, await hashedCallerKey(req, serviceKey, signedIn ? caller.id : ""), {
+  const mine = await limiter.take(SCOPE_CALLER, await callerKey(req, { uid: signedIn ? caller.id : "", secret: callerKeySecret(env) }), {
     capacity: perCaller, refillPerSec: perCaller / 3600, cost: 1, onUnavailable: "deny",
   });
   if (mine.source !== "db") return say(cors, { error: "limiter_unavailable" }, 503);

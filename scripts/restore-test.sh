@@ -10,7 +10,14 @@
 #  you explicitly set ALLOW_NONLOCAL=1. NEVER point it at production.
 #
 #  Usage:
-#    GPG_PASSPHRASE=... ./scripts/restore-test.sh <encrypted.dump.gpg> <TARGET_DB_URL>
+#    BACKUP_PRIVATE_KEY_FILE=/path/to/private.asc ./scripts/restore-test.sh <encrypted.dump.gpg> <TARGET_DB_URL>
+#
+#  The backup is encrypted TO a public key (scripts/backup-db.sh), so decrypting it takes the matching PRIVATE
+#  key — held only by the operator, never in the repository or in GitHub. It is imported into a throwaway
+#  keyring (removed on exit) and never into the operator's own. If the key is protected by a passphrase, give it
+#  as BACKUP_PRIVATE_KEY_PASSPHRASE (optional; an unprotected key needs nothing).
+#  ⚠ A backup made BEFORE this change (a symmetric, passphrase-encrypted .dump.gpg; the artifacts are kept 7
+#  days) cannot be opened with a key — it needs the old passphrase, i.e. `gpg --decrypt` by hand.
 #
 #  Exit code 0 = restore verified; non-zero = failed (fail closed).
 # ============================================================================
@@ -18,7 +25,8 @@ set -euo pipefail
 
 ENC="${1:?usage: restore-test.sh <encrypted.dump.gpg> <TARGET_DB_URL>}"
 TARGET="${2:?usage: restore-test.sh <encrypted.dump.gpg> <TARGET_DB_URL>}"
-: "${GPG_PASSPHRASE:?set GPG_PASSPHRASE (the passphrase the dump was encrypted with)}"
+: "${BACKUP_PRIVATE_KEY_FILE:?set BACKUP_PRIVATE_KEY_FILE (the private key the dump was encrypted to; it is held by the operator, not by the repository)}"
+[ -s "$BACKUP_PRIVATE_KEY_FILE" ] || { echo "no private key at $BACKUP_PRIVATE_KEY_FILE"; exit 1; }
 
 command -v pg_restore >/dev/null || { echo "pg_restore not found"; exit 1; }
 command -v psql       >/dev/null || { echo "psql not found"; exit 1; }
@@ -37,7 +45,9 @@ esac
 sha256() { if command -v sha256sum >/dev/null; then sha256sum "$1"; else shasum -a 256 "$1"; fi; }
 
 TMP="$(mktemp -d)"
-trap 'rm -rf "$TMP"' EXIT
+# the throwaway keyring lives inside TMP: the private key goes away with the plaintext, on every exit path
+GNUPGHOME="$TMP/gnupg"; export GNUPGHOME; mkdir "$GNUPGHOME"; chmod 700 "$GNUPGHOME"
+trap 'gpgconf --kill gpg-agent >/dev/null 2>&1 || true; rm -rf "$TMP"' EXIT
 PLAIN="$TMP/restore.dump"
 
 # ── 1. Verify checksum if present ────────────────────────────────────────────
@@ -51,8 +61,12 @@ fi
 
 # ── 2. Decrypt ───────────────────────────────────────────────────────────────
 echo "[restore-test] decrypting…"
-printf '%s' "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback \
-  --passphrase-fd 0 -o "$PLAIN" -d "$ENC"
+gpg --batch --quiet --import "$BACKUP_PRIVATE_KEY_FILE" 2>/dev/null \
+  || { echo "could not import $BACKUP_PRIVATE_KEY_FILE as a private key"; exit 1; }
+# --pinentry-mode loopback lets --passphrase-fd answer a protected key without a pinentry window; an
+# unprotected key never asks. The passphrase goes in on a pipe, never as an argument.
+printf '%s' "${BACKUP_PRIVATE_KEY_PASSPHRASE:-}" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 \
+  -o "$PLAIN" -d "$ENC"
 
 # ── 3. Restore (continue on non-fatal errors; the verification below is the gate) ──
 echo "[restore-test] restoring into isolated target…"

@@ -609,7 +609,7 @@ test('R275 ⑧ the relay reads MeteoAlarm’s awareness level, and level 1 is no
    each from its own national service. */
 test('R275 ⑨ the WMO register is wired, one source per country, and it is not GDACS', () => {
   const s = WP(), t = RELAY();
-  assert.match(t, /h === "severeweather\.wmo\.int"/, 'the host is allow-listed structurally');
+  assert.match(t, /"severeweather\.wmo\.int": UPSTREAMS\.swic/, 'the host is allow-listed structurally');
   assert.match(t, /function summariseSWIC\(raw, mid\)\s*\{/, 'each member is summarised like the others');
   assert.match(t, /encodeURIComponent\("event,areadesc,sent,mem,s,expires,capurl,wkb_geometry"\)/,
     'the geometry column is NAMED — leaving it out returns every feature with a null shape');

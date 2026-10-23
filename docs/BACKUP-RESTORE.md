@@ -30,14 +30,21 @@ fully reproduce. Prefer them for a real recovery.
 ## Layer 2 — self-hosted encrypted `pg_dump` (free fallback)
 
 [`.github/workflows/db-backup.yml`](../.github/workflows/db-backup.yml) runs
-[`scripts/backup-db.sh`](../scripts/backup-db.sh) daily: `pg_dump` → **GPG AES-256** →
-SHA-256 checksum → metadata → uploaded as a **7-day, encrypted** artifact.
+[`scripts/backup-db.sh`](../scripts/backup-db.sh) daily: `pg_dump` → **OpenPGP, encrypted to a public key**
+([`scripts/backup-public-key.asc`](../scripts/backup-public-key.asc)) → SHA-256 checksum → metadata →
+uploaded as a **7-day, encrypted** artifact.
 
-### ⚠ Without its secrets the run is RED — not a green skip
+**An artifact of a public repository can be downloaded by anyone with a GitHub account.** So the
+contents are protected by public-key cryptography, and the key that opens them exists nowhere GitHub or the
+workflow can reach: the run holds only the *public* half (it can write a backup and cannot read one), and the
+*private* half is held by the operator alone. Before 2026-10 the dump was encrypted with a passphrase kept as
+a repository secret — a key the run itself held, in a workflow that executes repository code.
 
-**A run that took no backup is a failed run.** If `SUPABASE_DB_URL` or `BACKUP_GPG_PASSPHRASE` is
+### ⚠ Without its secret the run is RED — not a green skip
+
+**A run that took no backup is a failed run.** If `SUPABASE_ACCESS_TOKEN` is
 missing, the first step ([`scripts/ci-require-secrets.sh`](../scripts/ci-require-secrets.sh)) fails
-with one `::error::` per missing name, and the `status:backup-failing` issue opens and **says which
+with one `::error::` per missing name (the only secret the backup workflow reads is `SUPABASE_ACCESS_TOKEN`), and the `status:backup-failing` issue opens and **says which
 secret is missing** (its body is rewritten by every red run and it closes itself on the next green one).
 
 Until 2026-09 this workflow skipped and reported success instead. MEASURED 2026-09-24, run
@@ -56,7 +63,7 @@ New repository secret**. Type the value there yourself — never into chat, a fi
 | Secret | Used by | What it is | Where to get it |
 |---|---|---|---|
 | ~~`SUPABASE_DB_URL`~~ | — | **Not needed any more.** `db-backup.yml` derives a short-lived (300 s) database login from `SUPABASE_ACCESS_TOKEN` through the Management API — the Supabase CLI's own mechanism — and `pg_dump` switches to `postgres` (`--role`). No database password is stored anywhere. (`scripts/db-login-url.mjs`) | — |
-| `BACKUP_GPG_PASSPHRASE` | `db-backup.yml` | The **only** key to the backups. Lose it → they are unrecoverable. Leak it → encryption is defeated. | Generate one (`openssl rand -base64 32`), store it in your password manager **first**, then here. |
+| ~~`BACKUP_GPG_PASSPHRASE`~~ | — | **Not needed any more, and the repository secret can be deleted.** The backup is encrypted to the public key in `scripts/backup-public-key.asc`; no passphrase exists for the run to hold. The key that opens a backup is the operator's private key (see *Encryption & integrity*), which is **not** a repository secret. | — |
 | `SUPABASE_ACCESS_TOKEN` | `supabase-deploy.yml` (deploy + nightly drift) and `db-backup.yml` | A Supabase personal access token. MEASURED 2026-09-25 (CLI 2.106.0): `link`, `db push`, `migration list` and `functions deploy` all ran with it alone — no database password needed. | <https://supabase.com/dashboard/account/tokens> → **Generate new token** (name it e.g. `intmap-github-actions`). |
 
 Confirm each once it is set:
@@ -66,15 +73,28 @@ Confirm each once it is set:
    `scripts/release-state.mjs`. Green means production matches `main`; red with a table means it
    does not (that is information, not a setup error — see [`MIGRATIONS.md`](MIGRATIONS.md)).
 
-Until they are set, each of those runs is red and an issue names the missing secret. That is the
+Until it is set, each of those runs is red and an issue names the missing secret. That is the
 intended state of an unconfigured repository, not a fault to silence.
 
 ### Encryption & integrity
 
-- Cipher: GPG symmetric **AES-256**. The dump is encrypted **before** it leaves the runner.
-- The **encryption key is the passphrase**, kept only in GitHub Secrets / your password
-  manager — **never** stored next to the ciphertext. Lose it → backups are unrecoverable.
-  Leak it → encryption is defeated. Treat it like the DB password.
+- Cipher: **OpenPGP public-key encryption** (`gpg --encrypt --recipient-file`, session cipher AES-256) to the
+  key whose public half is tracked as `scripts/backup-public-key.asc` (fingerprint
+  `F43523D7249391C7F61CB91C3FEBBC40B20A217A`, an Ed25519 key with a cv25519 encryption subkey). The dump is
+  encrypted **before** it leaves the runner, in a throwaway keyring that is deleted with the run; each
+  `.meta.json` names the recipient fingerprint, so a reader knows which key a given backup needs.
+- **An artifact of a public repository is downloadable by anyone with a GitHub account. Therefore the
+  contents are protected by public-key encryption, and the decryption key is in neither the repository nor
+  GitHub — it is in the operator's hands only.** Keep that private key somewhere that is *not* next to the
+  backups (a password manager, an offline copy). Lose it → every backup is unrecoverable. Leak it → every
+  backup ever made to it, still held anywhere, is readable. The public half is not a secret.
+- **Changing the key** (suspected leak, rotation): generate a new pair (`gpg --quick-generate-key`, then
+  `--quick-add-key <fpr> cv25519 encr`), replace `scripts/backup-public-key.asc` with the new
+  `gpg --armor --export`, and open a pull request. Backups already made stay readable only by the old private
+  key, so keep it until they have expired (7 days).
+- A backup taken **before** this change is a *symmetric*, passphrase-encrypted file (GitHub keeps an artifact up to 7
+  days). It cannot be opened with the private key; it needs the old `BACKUP_GPG_PASSPHRASE` and `gpg --decrypt`
+  by hand, and `restore-test.sh` will not accept it.
 - Each backup ships a `.sha256` checksum and a `.meta.json` (timestamp, schemas, sizes,
   `pg_dump` version, migration head) — no data, no secrets.
 
@@ -98,15 +118,18 @@ set `ALLOW_NONLOCAL=1`.
 supabase start                                   # a local, isolated Postgres
 psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -c \
   'drop database if exists intmap_restore_test; create database intmap_restore_test;'
-GPG_PASSPHRASE='<your passphrase>' \
+BACKUP_PRIVATE_KEY_FILE='<path to your private key, ASCII-armoured>' \
   ./scripts/restore-test.sh path/to/intmap-<UTC>.dump.gpg \
   "postgresql://postgres:postgres@127.0.0.1:54322/intmap_restore_test"
 ```
 
-It verifies the checksum, decrypts, restores, and asserts the key tables have rows, **RLS is
+The key is imported into a scratch keyring that is deleted when the script exits (never into your own); if
+it is protected by a passphrase, also set `BACKUP_PRIVATE_KEY_PASSPHRASE`. The script verifies the checksum,
+decrypts, restores, and asserts the key tables have rows, **RLS is
 still enabled**, and policies/functions came back — printing `RESULT: PASS` or failing
 non-zero. Record how long it took (that's your practical RTO). CI runs this same roundtrip on
-synthetic data on every DB PR, so the pipeline itself is always known-good.
+synthetic data on every DB PR — with a throwaway key pair it generates for that job, so the pipeline
+itself is always known-good while the real private key never leaves the operator.
 
 ## Recovering production (real incident)
 
@@ -119,9 +142,9 @@ See [`INCIDENT-RESPONSE.md`](INCIDENT-RESPONSE.md#database-incidents) for the fu
 
 ## Never do this
 
-- ❌ Commit a dump, an encrypted dump, or the passphrase to the repo (`.gitignore` blocks
-  `*.dump*`, `/backups/`; `git` history is forever if you force it).
-- ❌ Store the passphrase in the same place as the encrypted dump.
+- ❌ Commit a dump, an encrypted dump, or the **private** key to the repo (`.gitignore` blocks
+  `*.dump*`, `/backups/`; `git` history is forever if you force it). The public key is meant to be committed.
+- ❌ Put the private key in GitHub (a secret, an artifact, a variable) or next to the encrypted dumps.
 - ❌ Restore a backup directly onto production to "test" it.
 - ❌ Put `SUPABASE_DB_URL` or `service_role` anywhere except GitHub Secrets / your password
   manager. Never in chat, code, or CI logs.

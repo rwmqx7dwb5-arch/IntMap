@@ -85,9 +85,12 @@ test('R266 ⑥: the warnings layer covers the G7 and China with their own servic
 
 test('R266 ⑭: the alert relay is an allow-list, not an open proxy', () => {
   const s = read('supabase/functions/alerts-relay/index.ts');
-  assert.match(s, /h === "feeds\.meteoalarm\.org"/);
-  assert.match(s, /h === "www\.nmc\.cn"/);
-  assert.match(s, /return null;\s*\n\}/, 'the allow-list falls through to something other than a refusal');
+  /* (security-audit) the hosts are the keys of one table, asked through the shared origin rule
+     (relay-guard.js allowedUpstream); anything not in it is refused — tests/security-audit-checks ④
+     runs the function and shows what it forwards */
+  assert.match(s, /"feeds\.meteoalarm\.org": UPSTREAMS\.meteoalarm/);
+  assert.match(s, /"www\.nmc\.cn": UPSTREAMS\.cma/);
+  assert.match(s, /return u \? matchRules\(u, UPSTREAM_HOSTS\[u\.hostname\]\) : null;/, 'the allow-list falls through to something other than a refusal');
   /* ⚠ THE HEADER IS STILL SENT; IT IS DECLARED IN ONE PLACE NOW. The four keyless relays share
      _shared/relay-guard.js (allow-list bounds, deadline, byte ceiling, generic errors), and the CORS
      object came with them — a literal grep in this file could only ever find a copy. */

@@ -2417,6 +2417,40 @@ table), and by reading it only where the fact is a spelling.
   boundary around observed content in the model prompt and the kernel's confirm step, and the input
   rules of the public relays (bbox range, same-host links, closed query keys, a malformed `%`).
 
+### The October 2026 security audit — `tests/security-audit{,-ci,-db,-frontend}-checks.test.mjs` (security-audit)
+
+Four files by subject, all `node --test`, no network; the database half is
+`supabase/tests/31_security_audit_test.sql`. The model is [`SECURITY-ARCHITECTURE.md`](SECURITY-ARCHITECTURE.md).
+
+- **`tests/security-audit-checks.test.mjs`** (Edge Functions, 13) — ① `client-error-shape.js`'s scrub answers
+  exactly what the earlier patterns answered on random and edge-case text, and a 64 KiB hostile body is scrubbed
+  in bounded (linear) time on every path the server runs ② `callerKey` never returns or contains the address,
+  an account comes first, IPv6 is one caller per /64 and an IPv4-mapped address is its IPv4, and no function
+  keys a bucket by the address ③ `radiation-feed`'s series window is rewritten from the parsed instant, so an
+  injected suffix never reaches the URL ④ the five `?u=` relays ask `allowedUpstream()` and none forwards a
+  port, userinfo or plain http ⑤ a reply address cannot carry `mailto:` structure and the console encodes it
+  anyway ⑥ `delete-account` refuses a last sign-in older than ten minutes, a token with none and a foreign
+  token ⑦ the new secret / publishable key wins over the legacy JWT, no file but `_shared/supabase-keys.js`
+  names a project-key variable (discovered over `supabase/functions/`), and `delete-account` proves its admin
+  credential before it removes anything.
+- **`tests/security-audit-ci-checks.test.mjs`** (CI and backups, 8) — the universe is discovered (workflows and
+  composite actions); every install passes `--ignore-scripts` and every checkout `persist-credentials: false`;
+  `scripts/workflow-hardening.mjs` refuses violating fragments; no workflow grants Pages / OIDC at the top and
+  a job that holds them runs no package manager; a bot push takes the token from its own `env:`; the backup is
+  encrypted to the tracked public key with no passphrase on either side, and `backup-db.sh` →
+  `restore-test.sh` is **executed** with a key pair (the wrong key and no key cannot open it).
+- **`tests/security-audit-db-checks.test.mjs`** (the migration, 9) — the vote tables end with only the own-row
+  SELECT policy and no `anon` read; the counters are created before the backfill; the three schedules are
+  by name and call functions a migration defines; the purges are SECURITY DEFINER, `search_path ''`,
+  service_role only; privacy §6 states the 730 / 14-day retention in en and jp; the community board is
+  **evaluated** — signed out it names no vote table and still shows totals, signed in it asks only for the
+  reader's own votes, and before the migration the totals are still the rows' count.
+- **`tests/security-audit-frontend-checks.test.mjs`** (the page, 7) — the news pin and band tooltips escape a
+  feed title that carries markup (evaluated), and every `setMapTooltipHTML` in `js/news-ui.js` is the shared
+  builder or a fully escaped template; an imported notebook / briefing step is judged again by the registry
+  and replayed stamped as outside content while this device's steps are unchanged (evaluated); `admin.html`'s
+  `connect-src` names this project's Supabase host and no wildcard.
+
 ### Anonymous writes and forced refreshes — `tests/anon-write-guard-checks.test.mjs` (anon-write-guard)
 
 Every Edge Function in it is **evaluated**, not read. ② `aviation-feed` and `ais-feed` in a fresh child per
@@ -4200,8 +4234,11 @@ Docker + the Supabase CLI (`supabase db start && supabase db reset --local && su
   `service_role` JWT and provider keys), SQL-PII guard, destructive-migration detector,
   workflow permissions + **`action-pinning`** (EVERY remote `uses:` must be a full 40-hex SHA —
   there is no exemption; `actions/*` and `github/*` were exempt once, which is where all of this
-  repo's actions live, so the rule ran on an empty set and passed by looking at nothing), asset
-  existence.
+  repo's actions live, so the rule ran on an empty set and passed by looking at nothing), what a
+  step may carry into the runner (`npm-install-scripts` — every dependency install passes
+  `--ignore-scripts`; `checkout-credentials` — every `actions/checkout` sets
+  `persist-credentials: false`; both errors, over every workflow **and** composite action, judged on
+  the parsed YAML by `scripts/workflow-hardening.mjs`), asset existence.
 - **`tests/security-logic.test.mjs`** (`node:test`) — unit-tests the constant-time compare, then
   **reads the Edge-Function sources** and asserts their invariants so a future edit cannot
   silently reintroduce a fail-open guard, a URL-query secret, an unauthenticated ai-proxy, or
@@ -4238,6 +4275,14 @@ Docker + the Supabase CLI (`supabase db start && supabase db reset --local && su
   `tests/ai-one-ledger-checks.test.mjs`, which EVALUATES `ai-proxy` (usage normalisation, the
   Anthropic cache breakpoints, the ledger's doors, the bucket key; the area-monitor runner it also
   evaluated was removed).
+- **`supabase/tests/31_security_audit_test.sql`** (pgTAP, security-audit) — a vote names its voter to nobody
+  else (`anon` holds no SELECT on either vote table; a signed-in reader reads their own votes, not another's;
+  no other SELECT policy is left); `vote_count` starts from the seeded votes, rises and falls with a vote, and
+  only the counter writes it; the purges are definer / pinned / service_role only, and
+  `purge_anonymous_reports` deletes signed-out reports older than 730 days and keeps the rest; each length
+  guard refuses one character past its cap and accepts the cap; the production-only functions are hardened
+  where they exist; a sign-up's public name is the provider's (clipped) or none, never the e-mail's local
+  part, and no sign-up makes itself an admin. Its source-side pair is `tests/security-audit-db-checks.test.mjs`.
 - **`tests/process-database-checks.test.mjs`** (`node --test`, #R507) — the source-side pair: the migrations
   end with `profiles_public` as a table, the drop of the old view is guarded on `relkind` so the
   migration stays re-runnable, only `SELECT` is ever granted, the PostgREST schema reload sits
