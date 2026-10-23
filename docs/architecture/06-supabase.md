@@ -58,7 +58,9 @@
   定数時間比較・POST のみ）。
 - **`news-ingest`** … 出来事 (Event) 側の収集（§4.4）。Source Registry の全フィードを取得し、正規化・媒体の帰属・AI 地点解析（決定論エンジンはフォールバック）・Event への増分割り当て・
   日本語訳・計測・保持。fail-closed（`NEWS_INGEST_SECRET`・`x-news-ingest-secret` ヘッダのみ・定数時間比較・POST のみ）。`current_news` と `refresh-news` には触れない。
-- **`delete-account`** … 呼出ユーザ自身のアカウントと全データをハード削除する（`verify_jwt` あり＋関数内でも検証・`confirm:"DELETE"` 必須）。所有テーブルを外部キーから発見し、
+- **`delete-account`** … 呼出ユーザ自身のアカウントと全データをハード削除する（`verify_jwt` あり＋関数内でも検証・`confirm:"DELETE"` 必須）。検証済みトークンの `amr` の最新の
+  時刻が 600 秒（`REAUTH_WINDOW_S`・`delete-account/recent-sign-in.js`）より前なら 401 `reauth_required` で何もしない（時刻が無い・読めないも拒否＝fail-closed。クライアントは
+  ログインシートを開く）。削除に使う管理キーで `auth.admin.getUserById` が通ることを先に確かめ、通らなければ何も消さない。所有テーブルを外部キーから発見し、
   1トランザクションで削除し、削除後に数え直してから Auth ユーザーを消す。どれか1つでも失敗したらアカウントは消さない。
 - **`routing-relay`** … 交通情報つき provider（Mapbox Directions）への鍵付きパススルー（`MAPBOX_TOKEN` はサーバにだけ）。`?probe=1` は鍵が設定されているかだけを答え、
   `js/routing-providers.js` がそれを読むまで交通機能は提示されない。profile とクエリは allow-list、座標は範囲まで検証、呼び出し側の `access_token` は破棄する。この関数だけ
@@ -66,7 +68,9 @@
   `RATE_MAX_KEYS`）と、有料呼び出しの直前の Postgres の共有バケツ（`relay_rate_buckets` ＋ `relay_take`・`_shared/rate-limit.js`）——IP 別 1 分・IP 別の 1 日の取り分（既定は全体の
   1 日 ÷ `READERS_PER_ADDRESS`＝300）・全体 1 分・全体 1 日。IP 別は fail-open で拒否は 429 `rate_limit`、全体は fail-closed（503 `limiter_unavailable`）で拒否は 429 `spend_ceiling`。
   上限は `ROUTING_RELAY_GLOBAL_PER_MIN` / `_PER_DAY` / `ROUTING_RELAY_PER_IP_PER_DAY`（既定は Mapbox の無料枠の内側）。呼び出し元の鍵は `_shared/rate-limit.js` の `callerKey`
-  （全関数で 1 つ。`callerKey(req, verifiedUid)` は検証済みのアカウントなら `uid:<uuid>`、そうでなければ `x-forwarded-for` の先頭のアドレス。uid を渡すのは `atlas-embed`）。
+  （全関数で 1 つ。`callerKey(req, { uid, secret })` は検証済みのアカウントなら `uid:<uuid>`、そうでなければ `x-forwarded-for` の先頭のアドレスが属するネットワーク——IPv4 は
+  そのまま・IPv6 は /64・IPv4-mapped は中の IPv4——を project の secret key で HMAC-SHA-256 した 32 桁の hex。アドレスそのものは `relay_rate_buckets` に書かない。uid を渡すのは
+  `atlas-embed`。使われなくなったバケツは pg_cron `relay-rate-buckets-sweep` が毎時 `sweep_relay_rate_buckets()` で消す）。
 - **`sv-cov`** … ストリートビュー・カバレッジ svv タイルの ACAO 付与プロキシ（秘密なし。厳格 allowlist——`mts0-3.google.com/vt?…lyrs=svv` ＋ 整数 x/y/z のみ・空タイルは透明 PNG）。
 - **`alerts-relay`** … 各国気象機関の警報フィードの ACAO 付与＋要約（秘密なし）。allowlist は `feeds.meteoalarm.org`・`www.nmc.cn`・`severeweather.wmo.int`（`/f/wfs` と `/json/*.json`
   だけ）・`publicalert.pagasa.dost.gov.ph`。`?u=` の allowlist はホスト・path・クエリ鍵まで規則化（`UPSTREAMS` の表。js/world-packs.js が送る鍵だけ。未知の鍵・ポート・userinfo は 400）。
@@ -160,10 +164,14 @@ DB が答えないときは `refresh=1` が無かったのと同じ答え（200�
 `reader-reports`・`usage-count` が共有するのは読み手だけ（`readCapped`＝要求本文を上限で切る、`fetchBounded`＝提供者への POST を本文の最後のバイトまで同じ期限と上限で読む）。
 リダイレクトは手で辿る（`followRedirects`。各ホップを同じ https オリジンか `allowRedirect(next, from)` で検査し、上限は 3 ホップ `MAX_REDIRECTS`）。共有しているのは URL allowlist・GET 限定・
 期限（`AbortSignal.timeout`）・バイト上限（`content-length` とストリーム読み出しの両方）・Content-Type 判定・外向きエラーはコード1語。公開レイヤーなのでログイン必須にはしない。
+呼び手の `?u=` を受ける 5 本（`news-relay` / `gdelt-relay` / `sv-cov` / `quotes-relay` / `alerts-relay`）の転送先のオリジンは `allowedUpstream()` 1 本が判定する——https のみ（`alerts-relay`
+だけは CMA のため http も許し、ホストごとの規則で絞る）・userinfo 無し・既定ポートのみ・ホストは一覧と完全一致。その先（パス・クエリ鍵）は各関数の規則。
 
 ### 6.3 環境変数（Edge Functions の secrets）
 
-- 自動注入: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+- 自動注入: `SUPABASE_URL`、新しい鍵 `SUPABASE_SECRET_KEYS` / `SUPABASE_PUBLISHABLE_KEYS`（`sb_secret_…` / `sb_publishable_…`）、旧 JWT `SUPABASE_SERVICE_ROLE_KEY` /
+  `SUPABASE_ANON_KEY`。この 4 つを読むのは `_shared/supabase-keys.js` だけで、新しい鍵を優先し旧 JWT はフォールバック（理由と検査は
+  [`docs/SECURITY-ARCHITECTURE.md`](../SECURITY-ARCHITECTURE.md) §5）
 - AI: `AI_PROVIDER`（anthropic|openai|gemini）, `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `GEMINI_API_KEY`, `AI_MODEL`（任意）
 - プロジェクト全体の 1 日の天井（任意・正の整数。既定は各関数の定数）: `AI_PROXY_GLOBAL_PER_DAY`, `NEWS_INGEST_GLOBAL_PER_DAY`, `REFRESH_NEWS_GLOBAL_PER_DAY`, `WHO_DON_GLOBAL_PER_DAY`,
   `ATLAS_EMBED_GLOBAL_PER_DAY`（§5「有料の提供元へは扉が 1 つだけ」）。`AI_PROXY_NEWCOMER_PER_DAY`（任意・7 日未満のアカウントの取り分。既定は全体の 1/3）

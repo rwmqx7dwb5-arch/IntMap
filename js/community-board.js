@@ -235,46 +235,58 @@ export function communityBoard(HOST){
      (Same tolerant pattern as refreshCurrentUser's is_pro probe.) Runs once, then cached. */
   async function detectCommCaps(){
     if(HOST.commCaps) return HOST.commCaps;
-    const caps={ category:false, threads:false, commentVotes:false, edited:false };
+    const caps={ category:false, threads:false, commentVotes:false, edited:false, voteCount:false };
     if(HOST.DB){
       const ok=async(tbl,cols)=>{ try{ const {error}=await HOST.DB.from(tbl).select(cols).limit(1); return !error; }catch(_){ return false; } };
       const postsRich=await ok('community_posts','id,category,edited_at');
       caps.category = postsRich || await ok('community_posts','id,category');
       const cmtsRich = await ok('community_comments','id,parent_id,edited_at');
       caps.threads = cmtsRich || await ok('community_comments','id,parent_id');
-      caps.commentVotes = await ok('community_comment_votes','comment_id');
+      /* (security-audit) the totals are columns once 20261023120000_security_audit.sql is applied — and that same
+         migration takes SELECT on the vote tables away from anon, so the comment-vote probe below would answer
+         «no comment votes» to every signed-out reader. Where the totals exist, the comment votes exist. */
+      caps.voteCount = await ok('community_posts','id,vote_count') && await ok('community_comments','id,vote_count');
+      caps.commentVotes = caps.voteCount || await ok('community_comment_votes','comment_id');
       caps.edited = postsRich && cmtsRich;
     }
     HOST.commCaps=caps; return caps;
   }
-  function commSelectStr(){
+  /* (security-audit) WHO VOTED IS READ BY THE VOTER ONLY. With the totals as columns the vote tables answer a
+     signed-in reader with their OWN rows (RLS) — enough for «did I vote?» — and anon holds no SELECT on them at
+     all; embedding a table the role cannot read fails the WHOLE request, so a signed-out reader asks for the
+     total alone. A database without the columns (migration not applied) still lets everyone read the rows, and
+     the total is their count, as before. */
+  function voteSel(c,uid,tbl){ return c.voteCount ? ',vote_count'+(uid?`,${tbl}(user_id)`:'') : `,${tbl}(user_id)`; }
+  const voteTotal=(n,rows)=>Number.isFinite(n)?n:(rows||[]).length;
+  function commSelectStr(uid){
     const c=HOST.commCaps||{};
     const pExtra=(c.category?',category':'')+(c.edited?',edited_at':'');
-    const cExtra=(c.threads?',parent_id':'')+(c.edited?',edited_at':'')+(c.commentVotes?',community_comment_votes(user_id)':'');
-    return `id,user_id,author_name,title,body,img,lat,lng,created_at${pExtra},community_comments(id,user_id,author_name,body,created_at${cExtra}),community_votes(user_id)`;
+    const cExtra=(c.threads?',parent_id':'')+(c.edited?',edited_at':'')+(c.commentVotes?voteSel(c,uid,'community_comment_votes'):'');
+    return `id,user_id,author_name,title,body,img,lat,lng,created_at${pExtra},community_comments(id,user_id,author_name,body,created_at${cExtra})${voteSel(c,uid,'community_votes')}`;
   }
-  const LEGACY_COMM_SELECT='id,user_id,author_name,title,body,img,lat,lng,created_at,community_comments(id,user_id,author_name,body,created_at),community_votes(user_id)';
+  const legacyCommSelect=(c,uid)=>'id,user_id,author_name,title,body,img,lat,lng,created_at,community_comments(id,user_id,author_name,body,created_at)'+voteSel(c,uid,'community_votes');
   async function loadCommunity(){
     if(!HOST.DB){ HOST.communityPosts=[]; HOST.renderCommunity(); return; }
     await detectCommCaps();
     const uid=HOST.user?HOST.user.id:null;
-    let res=await HOST.DB.from('community_posts').select(commSelectStr()).order('created_at',{ascending:false});
-    if(res.error){ /* rich select failed (partial migration) → fall back to the legacy shape */
-      HOST.commCaps={category:false,threads:false,commentVotes:false,edited:false};
-      res=await HOST.DB.from('community_posts').select(LEGACY_COMM_SELECT).order('created_at',{ascending:false});
+    let res=await HOST.DB.from('community_posts').select(commSelectStr(uid)).order('created_at',{ascending:false});
+    if(res.error){ /* rich select failed (partial migration) → fall back to the legacy shape. The totals are kept:
+                      where they exist the vote rows are no longer anon's to read. */
+      HOST.commCaps={category:false,threads:false,commentVotes:false,edited:false,voteCount:!!(HOST.commCaps&&HOST.commCaps.voteCount)};
+      res=await HOST.DB.from('community_posts').select(legacyCommSelect(HOST.commCaps,uid)).order('created_at',{ascending:false});
     }
     if(res.error){ console.warn('[IntMap] community load:', res.error.message); HOST.communityPosts=[]; HOST.renderCommunity(); return; }
     HOST.communityPosts=(res.data||[]).map(p=>({
       id:p.id, userId:p.user_id, title:p.title||'', body:p.body||'', img:p.img||'', lat:p.lat, lng:p.lng,
       ts:Date.parse(p.created_at)||Date.now(), editedTs:p.edited_at?Date.parse(p.edited_at):0,
       author:p.author_name||'', category:p.category||'general',
-      votes:(p.community_votes||[]).length,
+      votes:voteTotal(p.vote_count,p.community_votes),
       voted: uid?(p.community_votes||[]).some(v=>v.user_id===uid):false,
       comments:(p.community_comments||[]).slice().sort((a,b)=>(Date.parse(a.created_at)||0)-(Date.parse(b.created_at)||0))
                 .map(c=>({ id:c.id, postId:p.id, userId:c.user_id, text:c.body, author:c.author_name||'',
                           ts:Date.parse(c.created_at)||Date.now(), editedTs:c.edited_at?Date.parse(c.edited_at):0,
                           parentId:c.parent_id||null,
-                          votes:(c.community_comment_votes||[]).length,
+                          votes:voteTotal(c.vote_count,c.community_comment_votes),
                           voted: uid?(c.community_comment_votes||[]).some(v=>v.user_id===uid):false }))
     }));
     HOST.pushCommunityFeatures(); HOST.renderCommunity();

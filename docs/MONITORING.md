@@ -342,8 +342,9 @@ it was an `error` or a `rejection`, and **how many times, first and last seen**.
 
 ### What is never recorded
 
-- **No IP address.** The table has no column for one. The per-caller rate-limit bucket is keyed by an
-  HMAC of the address under the service key, never the address.
+- **No IP address.** The table has no column for one. The per-caller rate-limit bucket is keyed by
+  `callerKey` — an HMAC of the caller's network under the project secret key, never the address
+  ([`SECURITY-ARCHITECTURE.md`](SECURITY-ARCHITECTURE.md) §5).
 - **No account, user id, session, cookie or token.**
 - **No query string or fragment** — stripped from the page path and from every URL in the message
   and stack, on both sides of the wire.

@@ -69,8 +69,9 @@
 //           platform-injected SUPABASE_SERVICE_ROLE_KEY is not enough here (measured AccessDenied).
 // ============================================================================
 
-import { corsFor, fetchGuarded, methodGate, relayFail, MAX_QUERY_URL } from "../_shared/relay-guard.js";
+import { corsFor, fetchGuarded, methodGate, relayFail, allowedUpstream, MAX_QUERY_URL } from "../_shared/relay-guard.js";
 import { callerGate } from "../_shared/rate-limit.js";
+import { secretKey } from "../_shared/supabase-keys.js";
 import { SITE_USER_AGENT } from "../_shared/site-origin.js";
 
 /* ⚠⚠⚠ (#R468) THE DIAGNOSTIC HEADERS HAVE TO BE EXPOSED, OR THEY DO NOT EXIST WHERE THEY ARE READ.
@@ -157,10 +158,9 @@ const BUCKET = "gdelt";
 const ALLOWED_PARAMS = new Set(["query", "mode", "maxrecords", "format", "timespan", "sort"]);
 const MAX_QUERY_CHARS = 512;
 function allowed(raw) {
-  let u;
-  try { u = new URL(raw); } catch (_) { return false; }
-  if (u.protocol !== "https:") return false;
-  if (u.hostname !== "api.gdeltproject.org") return false;
+  /* the origin — https, no userinfo, default port, this host — is relay-guard.js's one rule */
+  const u = allowedUpstream(raw, ["api.gdeltproject.org"]);
+  if (!u) return false;
   if (u.pathname !== "/api/v2/doc/doc") return false;
   if (u.hash) return false;
   let sawQuery = false;
@@ -200,10 +200,11 @@ function svcUrl(path) {
    `x-intmap-gdelt-store: http400:AccessDenied` while the very same request written by hand with the
    project's service-role key succeeded. (This project's keys were rotated to the `sb_secret_...`
    format, so the legacy name no longer carries a credential Storage honours.) aviation-feed has
-   AVIATION_STORAGE_KEY at the head of its own list for the same reason; the platform names stay
-   behind it so a project that has not been rotated still works with no secret set at all. */
+   AVIATION_STORAGE_KEY at the head of its own list for the same reason. Behind it is the project
+   secret key as _shared/supabase-keys.js resolves it — the new `sb_secret_` key the platform injects
+   in SUPABASE_SECRET_KEYS, the legacy JWT only where there is none (security-audit). */
 function storageKey() {
-  return env("GDELT_STORAGE_KEY") || env("SUPABASE_SERVICE_ROLE_KEY") || env("SB_SECRET_KEY");
+  return env("GDELT_STORAGE_KEY") || secretKey(env);
 }
 
 /* -- the cache -------------------------------------------------------------------------------- */

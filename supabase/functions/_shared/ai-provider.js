@@ -36,6 +36,7 @@
 
 import { fetchBounded, RelayError } from "./relay-guard.js";
 import { makeLimiter, restRpcClient } from "./rate-limit.js";
+import { secretKey } from "./supabase-keys.js";
 
 /* ══ ① THE MODEL TABLE ═════════════════════════════════════════════════════════════════════════
    The canonical place for «which model answers when nobody chose one». Every function that calls a
@@ -174,7 +175,7 @@ export function spendCeiling(o) {
     async take(cost) {
       const n = Math.max(1, Math.floor(cost == null ? 1 : +cost || 1));
       if (!fn) return { ok: false, code: "no_ceiling" };
-      const db = restRpcClient({ url: env("SUPABASE_URL") || "", serviceKey: env("SUPABASE_SERVICE_ROLE_KEY") || "" });
+      const db = restRpcClient({ url: env("SUPABASE_URL") || "", serviceKey: secretKey(env) });
       const r = await makeLimiter({ db }).take(scope, "*", {
         capacity: perDay, refillPerSec: perDay / 86400, cost: n, onUnavailable: "deny",
       });
@@ -227,7 +228,7 @@ export function shareCeiling(o) {
     async take(cost) {
       const n = Math.max(1, Math.floor(cost == null ? 1 : +cost || 1));
       if (!fn || !share || !whole || typeof whole.take !== "function" || whole.fn !== fn) return { ok: false, code: "no_ceiling" };
-      const db = restRpcClient({ url: env("SUPABASE_URL") || "", serviceKey: env("SUPABASE_SERVICE_ROLE_KEY") || "" });
+      const db = restRpcClient({ url: env("SUPABASE_URL") || "", serviceKey: secretKey(env) });
       const r = await makeLimiter({ db }).take(scope, "*", {
         capacity: perDay, refillPerSec: perDay / 86400, cost: n, onUnavailable: "deny",
       });

@@ -46,7 +46,7 @@
 //           supabase secrets set WHO_DON_MODEL=...            (optional — this job's own model)
 //           supabase secrets set WHO_DON_EXTRACT=off          (optional kill-switch)
 //           supabase secrets set WHO_DON_GLOBAL_PER_DAY=<n>   (optional — moves the project-wide ceiling below)
-//  (SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY are injected automatically.)
+//  (SUPABASE_URL and the project keys are injected — read through _shared/supabase-keys.js.)
 //
 //  ⚠ NO TYPE ANNOTATIONS. scripts/static-checks.mjs parses every committed .ts with acorn, so the
 //  Edge Functions are plain JavaScript in .ts files — see the note at the top of alerts-relay.
@@ -55,6 +55,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { corsFor, fetchGuarded, relayFail } from "../_shared/relay-guard.js";
 import { callerGate } from "../_shared/rate-limit.js";
+import { secretKey, publishableKey, denoEnv } from "../_shared/supabase-keys.js";
 /* (edge-spend-and-models) The model table, the one door to a paid provider, the project-wide ceiling
    and the failure that carries a status and a length instead of the provider's body. */
 import {
@@ -314,9 +315,9 @@ async function handleGet(req) {
   }
   if (!ids.length) return json({ error: "ids_required", max: MAX_IDS }, 400);
 
-  /* the ANON key, not the service key: this path only reads a table whose RLS grants anon
+  /* the PUBLISHABLE key, not the secret key: this path only reads a table whose RLS grants anon
      `select`, and a read does not need the credential that can write. */
-  const db = createClient(Deno.env.get("SUPABASE_URL"), Deno.env.get("SUPABASE_ANON_KEY"), {
+  const db = createClient(Deno.env.get("SUPABASE_URL"), publishableKey(denoEnv), {
     auth: { persistSession: false },
   });
   const { data, error } = await db.from(TABLE)
@@ -410,7 +411,7 @@ async function handlePost(req) {
   const budgetMs = Math.max(30000, Math.min(300000, Number(body.budgetMs) || DEFAULT_BUDGET_MS));
   const left = () => budgetMs - (Date.now() - t0);
 
-  const db = createClient(Deno.env.get("SUPABASE_URL"), Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"), {
+  const db = createClient(Deno.env.get("SUPABASE_URL"), secretKey(denoEnv), {
     auth: { persistSession: false },
   });
 

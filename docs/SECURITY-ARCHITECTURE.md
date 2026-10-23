@@ -93,7 +93,12 @@ flowchart LR
    personal-information field (email / password / tel type, or a personal `autocomplete` token) by
    its placeholder — the delete-account field's placeholder is the reader's own address.
    ⚠ Residual: the «outside content was seen» signal is per turn; a later turn that answers
-   from history that included it starts clean.
+   from history that included it starts clean (§8 item 16).
+   A step that arrived from somebody else — a notebook file, or a briefing link's section the reader
+   kept — carries `from: 'imported'` for as long as it is kept; its own `replay` flag decides nothing:
+   a replay judges it again against the capability registry (`js/atlas-notebook-store.js`
+   `replayCalls`, which also requires its `args.type` to name the same capability as its `cap`) and
+   hands what passes to the executor stamped as outside content, so the rule above asks about it.
 
 ---
 
@@ -123,6 +128,18 @@ flowchart LR
     `author_name` from the author's `profiles_public` card and `created_at` from `now()` — the same
     grant-independent layer `tg_profiles_guard_privcols` is for `profiles`
     (`supabase/migrations/20260929100000_db_provenance_hardening.sql`).
+  - **Who voted is read by the voter alone.** `community_votes` / `community_comment_votes` have no
+    SELECT for `anon` and one own-row SELECT policy for `authenticated` (every other SELECT policy was
+    found in `pg_policies` and dropped, since production's names were not the migrations'); everybody
+    reads the total, `community_posts.vote_count` / `community_comments.vote_count`, which AFTER
+    triggers keep and no client role can write. The board and the admin console read the column, and
+    nothing subscribes to the vote tables over Realtime — another reader's vote arrives as the
+    post's or comment's UPDATE (`supabase/tests/31_security_audit_test.sql`; the table rows are in
+    [`DATABASE.md`](DATABASE.md)).
+  - **A public name is not made from an e-mail address.** `handle_new_user` writes the name the
+    provider gave (clipped to 255) or none, and never grants admin; production's own older version,
+    which wrote the address's local part and made the first account an admin, was replaced, and the
+    existing names equal to their local part were replaced by the provider's name or none.
   - **Public Storage buckets are read by URL, not listed.** `aviation` / `gdelt` / `ais` carry no
     SELECT policy: `/storage/v1/object/public/…` does not consult RLS, so such a policy only let anyone
     with the publishable key enumerate object names. Nothing in `js/` or `supabase/functions/` lists them.
@@ -143,8 +160,8 @@ flowchart LR
   the expensive tasks at the cheap counter's price. The cheap lane additionally refuses images and
   hosted web search and carries its own prompt ceiling.
   A user cannot inflate/deflate their own quota.
-  ⚠ **Per-account quota is not a bound on the project**: an account costs nothing to create
-  (`enable_signup`, no confirmation), so N accounts are N quotas. What bounds the invoice is the
+  ⚠ **Per-account quota is not a bound on the project**: an account costs one confirmed e-mail
+  address (§8 item 14), so N addresses are N quotas. What bounds the invoice is the
   project-wide ceiling in §5 («Spend ceilings»).
 - **AuthZ — admin:** `profiles.is_admin`, checked by the `is_admin()` SECURITY DEFINER
   function (with `search_path=''`) inside the admin-only RLS policies. `admin.html`'s login
@@ -266,9 +283,17 @@ run time is refused by `check:static` before anyone opens the panel that builds 
 page's code is what `scripts/safe-output.mjs` `inlineScripts` reads as its code — the same reader for
 both rules). `js/data-layers.js`, `js/stats-compare.js` and `admin.html` build every sink that was
 unjudged through the tag and hold no unjudged value; the rest of `js/` is in the ledger and moves the
-same way, one file at a time. ⚠ What the gate cannot see: a function in another module that forwards
-its argument to a sink (`window.setMapTooltipHTML(el, html)` in `js/map-tooltip.js`) is one leaf in
-that module, and the strings its callers hand it are not measured.
+same way, one file at a time. **A function that writes its parameter into a sink is a sink for its
+callers.** The gate discovers every such function published on `window` / `globalThis` / `self` or
+exported (`node scripts/output-taint.mjs --wrappers` prints them; `js/map-tooltip.js`
+`setMapTooltipHTML(el, html)` is one), and judges each call that reaches it by that channel — a
+`window.N(…)`, a bare `N(…)` no binding of the calling file answers, or a call through an import of
+the defining file — exactly as it judges an `innerHTML` write; a wrapper of a wrapper is found in the
+next round. Building it surfaced the news layer's crosshair tooltip and the dashboard pin tooltip writing
+a feed title raw; both escape now. ⚠ What it still cannot see: a call through an object handed in
+(`HOST.N`, `K.N`) cannot be resolved to one function, so such a wrapper keeps its parameter as a leaf
+where it is defined (matching by property name alone turned `window.open`, `.read`, `.show` … into
+sinks — measured 2026-10-23, +597 leaves, most of them not HTML).
 
 **A control that writes says so.** Atlas's confirmation before pressing an `outward` / `destructive`
 control reads the element's `data-effect` and nothing else. `scripts/data-effects.mjs` (the
@@ -314,14 +339,25 @@ flag that lives in a comment is not configuration. All twenty-one are declared t
 `quotes-relay` #R533, `client-errors` client-error-log, `atlas-embed` atlas-semantic-search,
 `fetch-relay` own-fetch-relay, `reader-reports` anon-write-guard, `usage-count` anonymous-usage-counts).
 ⚠ `supabase/functions/_shared/` is **not** a function: it is a library directory (`ai-provider.js`, `newsgeo.js`,
-`relay-guard.js`, `rate-limit.js`, `atlas-persona.js`, `aviation-codec.js`, `aviation-model.js`, `news-cluster.js`,
+`relay-guard.js`, `rate-limit.js`, `supabase-keys.js`, `atlas-persona.js`, `aviation-codec.js`, `aviation-model.js`, `news-cluster.js`,
 `news-entities.js`, `news-geo-prompt.js`, `news-ingest.js`, `radiation-sources.js`, `volcano-parse.js`, `who-don-extract.js`, `bbox.js`, `read-budget.js`, `client-error-shape.js`, `site-origin.js`, `fetch-relay-policy.js`, `ai-ledger.js`, `ai-usage.js`, `atlas-grade-schema.js`, `ai-stream.js`, `plans.js`, `inquiry-shape.js`, `correction-shape.js`, `great-circle.js`, `place-watch.js` — imported today only by the page, kept here so a future server evaluator runs the same rules; the one great-circle distance is the first of the last two, which the second imports as well) that the CLI bundles into the functions that import it.
+
+**The project's two keys are read in one place**, `_shared/supabase-keys.js` (`secretKey`,
+`publishableKey`, `serviceHeaders` — the `apikey` + `Bearer` pair every server-side request carries).
+The platform injects both generations: the new `sb_secret_…` / `sb_publishable_…` keys
+(`SUPABASE_SECRET_KEYS` / `SUPABASE_PUBLISHABLE_KEYS`, present in production — measured 2026-10-23) are
+preferred, and the legacy JWTs (`SUPABASE_SERVICE_ROLE_KEY` / `SUPABASE_ANON_KEY`), which Supabase
+retires by the end of 2026, are only the fallback. No other file under `supabase/functions/` names one
+of those variables — `tests/security-audit-checks.test.mjs` ⑦ discovers that rather than listing
+files — so disabling the legacy keys (§9) is one dashboard switch, not an edit per function. A
+function's diagnostics report which generation it resolved (`secret` / `legacy` / `none`), never the
+key. The functions' supabase-js is the browser's version (2.117.3), each pinned in its `deno.json`.
 
 | Function | `verify_jwt` | Auth | Uses `service_role` for | Provider key |
 |---|---|---|---|---|
 | `ai-proxy` | **true** | Supabase JWT (login required) → 401 | plan lookup + `consume/refund/settle_ai_turn` RPCs + the `ai-proxy:global:day` bucket (and, for an account under a week old, `ai-proxy:newcomer:day` first) | server env only, never logged; every provider request through `_shared/ai-provider.js` |
 | `atlas-embed` | **true** | Supabase JWT, and the function resolves the caller itself (`/auth/v1/user`) → 401 `signed_out`; the per-user buckets (minute, seed hour, **share of the day**) are keyed by that id | `atlas_capability_catalog_size` / `_similarity` / `_seed` RPCs and the shared `relay_take` buckets | `OPENAI_API_KEY` (the same secret as `ai-proxy`), server env only, never returned. The query is embedded per call and **not stored**; the catalogue key is recomputed from the text before anything is embedded or stored |
-| `delete-account` | **true** | Supabase JWT **and** an explicit re-check; body must be `{"confirm":"DELETE"}` | `delete_account_data(uuid)` then `auth.admin.deleteUser` | — |
+| `delete-account` | **true** | Supabase JWT **and** an explicit re-check **and a sign-in within the last 600 s** (the token's `amr`; otherwise 401 `reauth_required`); body must be `{"confirm":"DELETE"}` | `auth.admin.getUserById` (the credential proven before anything is removed), `delete_account_data(uuid)`, then `auth.admin.deleteUser` | — |
 | `refresh-news` | false (by design) | **fail-closed shared secret** (`x-refresh-secret` header, constant-time) | write `current_news`, read `geo_pins`; the `refresh-news:global:day` bucket | server env only; provider requests through `_shared/ai-provider.js` |
 | `news-ingest` | false (by design) | **fail-closed shared secret** (`x-news-ingest-secret` header, constant-time, POST only) | write the `news_*` Event tables; read `news_sources` / `news_source_feeds`; the `news-ingest:global:day` bucket | server env only; provider requests through `_shared/ai-provider.js` |
 | `who-don` | false (by design) | two callers: the public GET (already-extracted counts, per-address `callerGate` bucket) and the ingest POST behind a **fail-closed shared secret** (`x-who-don-secret` header, constant-time) | read (anon key) / upsert (service role) `who_don_extracts`; the `who-don:global:day` bucket | the AI provider key, server env only; provider requests through `_shared/ai-provider.js` |
@@ -333,7 +369,7 @@ flag that lives in a comment is not configuration. All twenty-one are declared t
 | `quotes-relay` | false | none — keyless public relay of two Yahoo Finance v8 endpoints (share prices) | — | — (those endpoints need no key) |
 | `gdelt-relay` | false | none — keyless public relay of GDELT DOC 2.0, cached (GDELT's own 429s arrive without ACAO) | the GDELT cache bucket (Storage) | — |
 | `volcano-feed` | false | none — keyless; relays the two volcano feeds that send no CORS headers (Smithsonian/USGS weekly report, volcanic-ash SIGMETs) parsed server-side | — | — |
-| `radiation-feed` | false | none — keyless; merges six national ambient-gamma networks into one array (the registry is `_shared/radiation-sources.js`) | — | — |
+| `radiation-feed` | false | none — keyless; merges six national ambient-gamma networks into one array (the registry is `_shared/radiation-sources.js`). A series' `from` / `to` are parsed once at the door into instants (`seriesWindow`) and only their canonical ISO spelling, encoded, reaches an upstream URL | — | — |
 | `fetch-relay` | false | none — keyless public relay of the upstreams in `_shared/fetch-relay-policy.js` (the ones that send no ACAO and have no relay of their own) | — | — |
 | `aviation-feed` | false | none for readers — keyless; serves live ADS-B to signed-out readers. **`?refresh=1` (the sweep) draws from one project-wide allowance** (`relay_take`, key `'*'`: one sweep run per cron interval); beyond it, or with the database silent, the cached answer and no upstream read | — | provider key (when a provider needs one) + `AVIATION_STORAGE_KEY` for the snapshot object: **server env only, never returned, never logged** |
 | `ais-feed` | false | none for readers — keyless; serves live ships to signed-out readers. The caller may pass a viewport box, never a URL. **`?refresh=1` draws from one project-wide allowance** (one per `WORLD_TTL_MS`); beyond it, the cached answer and no upstream read | — | `AISSTREAM_API_KEY` (optional; Digitraffic needs none) + `AIS_STORAGE_KEY` for the snapshot object: **server env only, never returned, never logged** — the diagnostic trace reports the key's LENGTH and whether it is alphanumeric, never the key |
@@ -399,12 +435,16 @@ without a login**, which is why they carry four bounds where a relay carries one
 `_shared/client-error-shape.js` runs in the browser before sending and again here before storing,
 because a server that trusts a client's scrubbing stores whatever anyone POSTs: web addresses lose
 their query and fragment, e-mail addresses / credential-shaped tokens / long quoted strings / long
-digit runs are masked, message and stack are cut to fixed lengths. ② **The fingerprint (the row a
-report lands on) is computed here**, never taken from the body. ③ **Nothing identifying is stored,
-by construction** — the table has no column for an IP, a user, a session, a query or a raw
-User-Agent (`supabase/tests/10_client_errors_test.sql` measures that over the catalogue), and the
-per-caller rate-limit bucket is keyed by an **HMAC of the address under the service key**, not the
-address, because `relay_rate_buckets.key` is stored in the clear and is not swept on a schedule.
+digit runs are masked, message and stack are cut to fixed lengths. The scrub runs **before** the rate
+limit on up to 64 KiB anyone may POST, so every pattern in it consumes a run once and decides in a
+callback (no pattern is retried from each position of a run it then rejects): measured 2026-10-23 on
+64 KiB hostile inputs, the worst case is 8.8 ms, where the earlier patterns took up to 3.7 s.
+② **The fingerprint (the row a report lands on) is computed here**, never taken from the body.
+③ **Nothing identifying is stored, by construction** — the table has no column for an IP, a user, a
+session, a query or a raw User-Agent (`supabase/tests/10_client_errors_test.sql` measures that over
+the catalogue), and the per-caller rate-limit bucket is keyed by `callerKey` — an **HMAC of the
+caller's network under the project secret key**, never the address (below, «Every public relay takes
+a token»), because `relay_rate_buckets.key` is stored in the clear.
 ④ **Bounded**: POST only, a 64 KiB body read with `readCapped`, at most ten reports per body, an
 `Origin` allow-list (production and `127.0.0.1` / `localhost` — it keeps other sites' pages
 out, and is not what bounds a scripted caller), a per-caller bucket (30 an hour) and a project bucket
@@ -425,12 +465,19 @@ the body says; a token the Auth server refuses is 401, not a quiet downgrade to 
 table's columns are read**, each under the `len_guard` ceiling (400 before the database is asked);
 `created_at`, `id` and anything else in the body are ignored. ③ **Bounded, and fail closed**: a 64 KiB
 body, the `Origin` allow-list `client-errors` uses, a per-caller bucket — the verified account (6 an
-hour), or an HMAC of the address (6 × `READERS_PER_ADDRESS` = 60 an hour; the address itself is not
-stored — `_shared/rate-limit.js` `hashedCallerKey`, shared with `client-errors`) — and a project bucket
+hour), or the HMAC of the caller's network (6 × `READERS_PER_ADDRESS` = 60 an hour; the address itself
+is not stored — `_shared/rate-limit.js` `callerKey`, the one key every bucket uses) — and a project bucket
 (500 a day, `READER_REPORTS_GLOBAL_PER_DAY`). When the send fails the bug reporter keeps the report on
 the device (`js/feedback.js`), so a refusal loses nothing. `supabase/tests/14_anon_write_guard_test.sql`
 holds the DATABASE half as a census over the catalogue: **no table in `public` accepts a direct INSERT
-from `anon`**, whatever it is called.
+from `anon`**, whatever it is called. An enquiry's reply address (`_shared/inquiry-shape.js`
+`isReplyAddress`) must be `local@domain` with at least two labels and may not hold what a `mailto:`
+URI reads as structure (`? & = # % /`, `[ ]`, the separators `, ;`) or what a mailbox name cannot
+hold unquoted (backslash, angle brackets, parentheses, the double quote, the colon, the backtick); the enquiries console still builds the Reply link
+through `mailtoReply()` (`js/admin-inquiries.js`), which encodes the address, so a row written before
+the rule cannot become a hidden Bcc either. Signed-out feedback and bug reports are deleted 730 days
+after they arrive (pg_cron `anonymous-reports-purge`, `purge_anonymous_reports`; signed-in rows end
+with the account), the retention the privacy policy §6 states.
 
 ⚠ **(anonymous-usage-counts) `usage-count` adds to anonymous aggregate counters, and the declaration is the allow-list.**
 The operator chose (2026-10-01) to measure what marketing reaches with IntMap's own counters only — no cookie, no
@@ -442,7 +489,7 @@ ever read — an extra key or position in the body cannot reach the database. �
 stored, by construction** — the function reads no Authorization (a signed-in reader is counted exactly like a
 signed-out one) and no User-Agent (the device class is a two-valued dimension); the day is the server's UTC
 date; `public.usage_counts` is exactly `(day, metric, dimension, count)` (`supabase/tests/16_usage_counts_test.sql`
-asserts the column set); the per-caller bucket is the same HMAC of the address `client-errors` uses.
+asserts the column set); the per-caller bucket is the same `callerKey` (an HMAC of the network) `client-errors` uses.
 ③ **Bounded, and fail closed**: POST only, a 16 KiB body, at most 64 rows, the `Origin` allow-list `client-errors`
 uses, a per-caller bucket (120 requests an hour) and a project bucket (100,000 a day, `USAGE_COUNT_GLOBAL_PER_DAY`),
 a per-request maximum per metric (once per page load, except the number of Atlas questions), and a **per-metric
@@ -489,15 +536,15 @@ storing Navigation API results, so every response — including the failures —
 same rule on the client by reading `IntMapRouteProviders.noStore('mapbox')` rather than hardcoding it.
 (3) It is the only relay with a **project-wide spend ceiling** (every public relay has a per-caller
 bucket since own-fetch-relay — see below), and since the September 2026 audit the limit is
-an accounting boundary rather than a per-isolate courtesy. Two layers: an in-memory bucket per
-`x-forwarded-for` (60 per minute, bounded to `RATE_MAX_KEYS` entries by evicting the least recently
+an accounting boundary rather than a per-isolate courtesy. Two layers, both keyed by the same
+`callerKey` (below): an in-memory bucket per caller (60 per minute, bounded to `RATE_MAX_KEYS` entries by evicting the least recently
 seen — it used to grow without bound when every entry was fresh) answers the cheap first refusal; then,
 immediately before the paid upstream call, four **shared** buckets in `public.relay_rate_buckets`
-(`_shared/rate-limit.js` → `relay_take`, one row lock per take) — the same caller address per minute,
-that address's **share of the day** (`ROUTING_RELAY_PER_IP_PER_DAY`, default the day ceiling ÷
+(`_shared/rate-limit.js` → `relay_take`, one row lock per take) — the same caller per minute,
+that caller's **share of the day** (`ROUTING_RELAY_PER_IP_PER_DAY`, default the day ceiling ÷
 `READERS_PER_ADDRESS` = 300 — without it 60/min spent the whole 3,000-a-day ceiling in fifty minutes
 from one address, found by the multi-aspect audit), the whole project per minute, and the whole project per day. The project-wide buckets **fail closed** (no answer
-from the database → no paid call, `503 limiter_unavailable`), the per-address one falls back to the
+from the database → no paid call, `503 limiter_unavailable`), the per-caller one falls back to the
 in-memory bucket. The daily ceiling defaults to 3,000 (inside Mapbox's free Directions tier) and is
 raised deliberately through `ROUTING_RELAY_GLOBAL_PER_DAY` / `_PER_MIN`, never by editing code; a
 refusal is `429 spend_ceiling`, which the client already classifies by status alone.
@@ -541,13 +588,19 @@ is measured in production, not here — if it does not, the rule refuses everyth
 `routing-relay` did. Now each of `alerts-relay`, `ais-feed`, `aviation-feed`, `cable-geo`,
 `fetch-relay`, `gdelt-relay`, `news-relay`, `quotes-relay`, `radiation-feed`, `sv-cov`,
 `volcano-feed` and `who-don` (its public GET) takes one from `<name>:ip` in
-`public.relay_rate_buckets` through `callerGate()` (`_shared/rate-limit.js`), keyed by the caller's
-address — the key is decided by one function, `callerKey(req, verifiedUid)`, which uses `uid:<uuid>` when
-the function has verified the account with the Auth server (atlas-embed) and never an unverified JWT
-`sub` (a caller-chosen string would be a fresh bucket per request); these relays verify nobody and so
-key by address (MEASURED 2026-09-26 against production: requests carrying a forged `x-forwarded-for`
-drained the same bucket as the caller's plain ones — the platform puts the real client address first,
-so a forged header does not buy a fresh bucket): capacity = the most a single reader's page asks of that relay in a minute (declared in
+`public.relay_rate_buckets` through `callerGate()` (`_shared/rate-limit.js`). **Every bucket in the
+project is keyed by one function, `callerKey(req, { uid, secret })`**: `uid:<uuid>` when the function has
+verified the account with the Auth server (atlas-embed) and never an unverified JWT `sub` (a
+caller-chosen string would be a fresh bucket per request); otherwise the caller's **network** — an IPv4
+address as itself, an IPv6 address as its /64 (the smallest prefix an ISP gives one subscriber's link,
+inside which privacy addresses rotate by design — keyed per address, one line could walk 2^64 fresh
+buckets), an IPv4-mapped address as the IPv4 it carries — as HMAC-SHA-256 under the project secret key
+(`callerKeySecret`), 32 hex digits. **No address is written to `relay_rate_buckets`**: there is no
+clear-text mode (the keyless relays and `routing-relay` used to key by the address itself), and
+`sweep_relay_rate_buckets()` removes idle buckets every hour (pg_cron `relay-rate-buckets-sweep`). These
+relays verify nobody and so key by network (MEASURED 2026-09-26 against production: requests carrying a
+forged `x-forwarded-for` drained the same bucket as the caller's plain ones — the platform puts the real
+client address first, so a forged header does not buy a fresh bucket): capacity = the most a single reader's page asks of that relay in a minute (declared in
 the relay, read from its client's timers — an estimate) × `READERS_PER_ADDRESS` (10, an estimate
 of readers behind one NAT). It **fails open**: these relays carry no per-call invoice, and a
 database outage must not become an outage of every live layer. A refusal is `429 rate_limit` with
@@ -558,6 +611,12 @@ bucket refusing and fails if any reaches an upstream. What stands in front of th
 so the five cannot drift apart: a URL **allow-list** (exact strings for cable-geo, an
 endpoint-shaped rule for news-relay, host+path for alerts-relay, host+path+`lyrs`+a z/x/y that
 must be **on the pyramid** for sv-cov, host+path+a closed parameter set for quotes-relay),
+whose **origin** part is one function for every relay that takes a caller's `?u=` (`news-relay`,
+`gdelt-relay`, `sv-cov`, `quotes-relay`, `alerts-relay`): `allowedUpstream(raw, hosts)` — https only
+(`alerts-relay` widens it to http for the one upstream measured to need it, CMA, and its per-host
+rules narrow it again), no userinfo, the scheme's default port only, a host equal to one listed (no
+suffix match). Until 2026-10-23 three of them compared the host name alone, so a port or a
+`user:pw@` prefix was forwarded. What each accepts after the origin stays its own.
 **GET only**, a **deadline** on every upstream fetch, a
 **byte ceiling** enforced on `content-length` *and* while streaming (an upstream may omit the
 length), a **content-type** rule, and **generic outward errors** — the caller learns which
@@ -595,6 +654,18 @@ unauthenticated GET could ask it to pull ~400 MB from EUMETNET.
   ⚠ The FK cascade is not a substitute: `donations`, `feedback` and `bug_reports` are
   `ON DELETE SET NULL`, so deleting the auth user would leave the person's own submitted text
   behind with a NULL owner.
+  ⚠ **A valid token is not a person at the keyboard.** A session left open on a shared computer,
+  or a token lifted from a tab, could erase the account — the one action in IntMap that cannot be
+  undone. So the function also asks when the person last signed in: the newest `timestamp` in the
+  verified token's `amr` claim (set when a method is used to sign in, not when the token is
+  refreshed — `delete-account/recent-sign-in.js`) must be within `REAUTH_WINDOW_S` = 600 s, the
+  value the operator approved. It **fails closed**: no `amr`, no readable timestamp, a payload that
+  is not a JWT, or a `sub` that is not the account the Auth server just verified is 401
+  `reauth_required`, and nothing is touched; the account sheet then opens the sign-in sheet
+  (`js/auth-ui.js`), and the next attempt goes through. Before any row is deleted, the client
+  that will delete the auth user reads the caller's own auth record (`auth.admin.getUserById`); a key
+  the Auth admin API refuses (a retired legacy key, a wrong one) answers `delete_failed` with nothing
+  removed, instead of leaving the data gone and the account standing.
 - **`refresh-news`** (#R138) is **fail-closed**: `REFRESH_SECRET` **must** be set or every
   request is refused (503) — it never runs publicly. The secret is read **only** from the
   `x-refresh-secret` header (never a URL query, so it can't reach access logs) and compared in
@@ -955,16 +1026,19 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
    renderer's AttributionControl is still never enabled, so the fix is defence in depth rather than the
    only control. `npm audit` no longer reports this advisory.
 
-13. **A post image or an avatar can still point at a third-party host.** `community_posts.img` and
-   `profiles.avatar_url` are free text; the client only ever writes inline `data:image/…` URLs
-   (`js/app-body.js` `compressImage`, the avatar crop in `js/auth-ui.js`) and uploads nothing to
-   Storage, but a direct REST write can store `https://tracker.example/pixel?id=…`, and every reader who
-   renders that post or card then sends their IP and User-Agent to that host. `IntMapSafe.url` (§4)
-   checks the scheme, which stops script, not tracking. **Not closed** by db-provenance-hardening: the
-   hardening proposed there («accept only this project's Storage URLs») describes a design the client
-   does not have. The fitting close is a DB CHECK (`NOT VALID`, so existing rows are not rewritten)
-   accepting `null` or `data:image/(png|jpeg|webp|gif);base64,…` on both columns — a change to what the
-   database accepts, left for a decision.
+13. **A post image or an avatar can still point at a third-party host.** Their **length** is bounded:
+   `NOT VALID` CHECKs (`comm_posts_media_len_guard`, `profiles_len_guard`) hold every new write of
+   `community_posts.img` to 6,000,000 characters and `profiles.avatar_url` to 350,000 (each the worst
+   case the shipped encoder was measured to produce, + 25 %), alongside `category` ≤ 120,
+   `display_name` ≤ 255 and `bio` ≤ 280. Their **content** is not: both columns are free text; the
+   client only ever writes inline `data:image/…` URLs (`js/app-body.js` `compressImage`, the avatar crop
+   in `js/auth-ui.js`) and uploads nothing to Storage, but a direct REST write can store
+   `https://tracker.example/pixel?id=…`, and every reader who renders that post or card then sends their
+   IP and User-Agent to that host. `IntMapSafe.url` (§4) checks the scheme, which stops script, not
+   tracking. **Not closed**: the hardening once proposed («accept only this project's Storage URLs»)
+   describes a design the client does not have. The fitting close is a DB CHECK (`NOT VALID`, so
+   existing rows are not rewritten) accepting `null` or `data:image/(png|jpeg|webp|gif);base64,…` on
+   both columns — a change to what the database accepts, left for a decision.
 14. **The project-wide AI ceilings can be exhausted by many accounts, which then denies AI to
    everyone for the rest of the day.** That is the ceiling working — the invoice stays bounded — but
    it turns «spend my money» into «deny everyone». `atlas-embed`'s per-account share raises the price
@@ -995,6 +1069,55 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
    only other provider is Google. Bounding these per account (a trigger over `relay_take`, or moving them
    behind a function as the reports were) changes how the community board writes, and is left for a
    decision.
+16. **Atlas's outside-content mark lasts one turn** (§2 rule 4). If the model copies an injected
+   instruction from an outside page into its own summary, a later turn that acts on that summary carries
+   no mark, and an `explicit` capability or an `outward` press would run without the confirmation.
+   Inferred from the design, not demonstrated. Accepted for now because a write still needs the model to
+   choose it from words the reader did not type in that turn; the close is to keep the mark with the
+   history it arrived in, so any turn whose context still carries that content asks.
+17. **The share target accepts a POST from any site.** `sw.js` answers the manifest's `share_target`
+   (`<scope>share-target`) and puts what arrives in the share inbox, whoever sent it — that is the Web
+   Share Target design, and a page elsewhere can submit the same form, which takes the reader to IntMap
+   with that item opened (`js/share-inbox.js`). Nothing is signed in, posted, spent or sent anywhere; what
+   is kept is bounded (`SHARE_LIMITS`), and the page drops anything older than `SHARE_TTL_MS` (an hour)
+   when it reads the inbox. Accepted because it reaches no
+   authenticated side effect. A possible close is to refuse a POST whose `Sec-Fetch-Site` names another
+   site — unmeasured whether every share sheet sends `none`.
+18. **Some third-party data is read at run time from moving branches.** `js/world-packs.js` and
+   `js/layer-packs.js` read a few datasets from `cdn.jsdelivr.net` at `@master` / `@main` (Natural
+   Earth admin-1 and time zones, Japanese municipalities, Taiwanese towns), so their bytes are whatever
+   the branch holds today. Everything shown from them is escaped (§4), and pinning would stop upstream
+   corrections arriving; the close, where it matters, is what the country outlines got — ship them from
+   one pinned commit (§7, «The country outlines are shipped»).
+19. **Supabase Auth uses the implicit flow**: an OAuth or magic-link return carries the tokens in the
+   URL fragment until supabase-js reads them and `js/auth-ui.js` clears the address (analytics never
+   see it, §7). PKCE would keep them out of the URL, but its code verifier lives in the browser that
+   started the flow, so a confirmation link opened on another device would stop working — left as is.
+20. **The admin console shares the app's origin and storage key.** An XSS anywhere in the app reads the
+   same `localStorage`, so it reads an administrator's session as well; `admin.html`'s stricter CSP
+   (§11.4) does not separate them. The close is a separate origin for the console.
+21. **`main` is guarded by required CI alone.** The ruleset (§9) requires a PR and the checks, with no
+   approving review and no CODEOWNERS — the repository is run by one person, so a review would be the
+   same person. The bots that push (data refreshes) hold a write token; it is kept away from
+   third-party code by `persist-credentials: false` on every checkout and `--ignore-scripts` on every
+   install (`check:static` rules `checkout-credentials` / `npm-install-scripts`, §9).
+22. **Capacity can be abused where nothing has a size or an end.** `shared_collection(token)` is
+   callable by `anon` and its answer has no size ceiling, so repeated calls with a valid token make the
+   database build a large jsonb each time; `atlas-embed`'s catalogue rows and the `gdelt` cache bucket
+   have no retention. None of these exposes data; each costs database or Storage capacity. The close is a
+   ceiling on the answer and a sweep for the two stores.
+23. **The project-wide buckets of the three anonymous writers can be spent by one sender.**
+   `client-errors`, `reader-reports` and `usage-count` each have a per-caller and a project bucket, and the
+   project one is a day's total for everybody: `reader-reports`' per-caller allowance (60 an hour) passes its
+   project day (500) in under nine hours, and a sender with many networks reaches the others' days too —
+   before IPv6 was keyed by /64 (§5), every address of one line was a caller of its own. Spending it refuses
+   everyone's reports for the rest of the day. Accepted because the project bucket is what bounds the
+   tables; what it costs is lost reports, not data (the bug reporter keeps a refused report on the device).
+24. **Two production-only objects are left as they are.** `public.is_admin(uuid)` exists only in
+   production, is callable by `anon`, and answers whether any given uuid is an admin — it belongs to the
+   same outside system as the `mgmt_*` tables (item 5) and is left for the same reason. `pg_net` is
+   installed in `public` (Supabase advisor `extension_in_public`); moving it means re-creating the
+   extension, which drops the HTTP calls every pg_cron job makes.
 
 ---
 
@@ -1016,8 +1139,17 @@ put a real secret value in the repo, a PR, or a log.**
   three CI jobs (**Static checks**, **Browser smoke + internal QA**, **Regression suite**) plus, since
   #R801, **Migrations rebuild + RLS/permission tests** (db.yml, which now runs on every PR and
   reports green in seconds when no database file changed) and a **code scanning** rule: CodeQL
-  alerts of severity high or above, or of level error, introduced by a PR block its merge. Keep
-  **Actions default permissions = read** (workflows already set least privilege).
+  alerts of severity high or above, or of level error, introduced by a PR block its merge. There is
+  no required review and no CODEOWNERS (§8 item 21).
+- **Actions default `GITHUB_TOKEN` permissions = read** — set 2026-10-23 (it was write). Every
+  workflow also declares its own: `deploy.yml` and `rollback.yml` grant `contents: read` at the top
+  and `pages` / `id-token` only to the job that publishes. What a step may carry is in code and held
+  by `check:static` (`scripts/workflow-hardening.mjs`, over every workflow **and** every composite
+  action under `.github/actions/`): rule `npm-install-scripts` — every dependency install passes
+  `--ignore-scripts`, so no dependency's install script runs with a job's secrets or token; rule
+  `checkout-credentials` — every `actions/checkout` sets `persist-credentials: false`, so the token is
+  not left in `.git/config` for later steps; a step that pushes takes `GH_TOKEN` from its own `env:`
+  and puts it in the push URL for that one command. Both rules are errors.
   ⚠ The 44 CodeQL alerts open on `main` at that date were triaged (#R801): the three
   `js/xss-through-dom` are `innerHTML` of values that are already escaped or numeric; the six
   `incomplete-html-attribute-sanitization` interpolate palette/colour strings from the code itself;
@@ -1026,16 +1158,15 @@ put a real secret value in the repo, a PR, or a log.**
   rest are in tests and data scripts. None was a reachable exploit; the real one is fixed.
 
 ### Supabase (project `vpekfwdpurzejrrmacac`)
-- **`refresh-news` — REQUIRED (this PR makes it fail-closed):**
-  1. `supabase secrets set REFRESH_SECRET=<a long random value>` (do not paste the value
-     anywhere in the repo).
-  2. Update the pg_cron job to send the **header** `x-refresh-secret: <REFRESH_SECRET>` when it
-     POSTs the function (header only — never `?secret=` in the URL). Example net.http_post
-     call shape (secret injected from a secure setting, not literal):
-     `select net.http_post(url:='https://<ref>.functions.supabase.co/refresh-news',
-      headers:=jsonb_build_object('Content-Type','application/json','x-refresh-secret', current_setting('app.refresh_secret')));`
-  3. Redeploy: `supabase functions deploy refresh-news --no-verify-jwt` (maintainer, gated).
-     Until the secret is set + cron updated, news refresh is intentionally **off** (fail-safe).
+- **The scheduler secrets (`REFRESH_SECRET`, `NEWS_INGEST_SECRET`) live in two places, and both
+  must hold the same value:** the function's secret (`supabase secrets set …`) and the vault entry the
+  pg_cron job reads (`refresh_news_secret`, `news_ingest_secret` — the jobs are code,
+  `supabase/migrations/20260925090000_cron_jobs_as_code.sql`, and post only while vault holds the
+  secret; header only, never `?secret=`). Rotating one side alone stops the job (the function refuses,
+  fail-closed). Both were rotated on 2026-10-23, because the old values had been left as literals in
+  the pg_cron run history, and a run after the rotation answered 200 for each; the history itself now
+  ends after 14 days (pg_cron `cron-run-history-purge`). The rotation steps are
+  [`INCIDENT-RESPONSE.md`](INCIDENT-RESPONSE.md) S1.
 - **Auth → URL Configuration**: confirm the production **Site URL** and **Redirect URLs** are
   the real production origins only (no wildcard, no stray localhost) to prevent open-redirect
   on OAuth. The R155 **password-reset** and **email-change** flows email a link back to
@@ -1046,6 +1177,13 @@ put a real secret value in the repo, a PR, or a log.**
   with the character requirement matching `supabase/config.toml` (`lower_upper_letters_digits`).
   The client mirrors this + runs its own HIBP k-anonymity check, but the dashboard toggle is the
   authoritative server-side guard and is NOT reproducible from the repo.
+  ⚠ MEASURED 2026-10-23: **leaked password protection is OFF in production** (`supabase db advisors
+  --linked` reports `auth_leaked_password_protection`). The operator turns it on in the dashboard;
+  depending on the plan it may be a paid feature.
+- **API keys — the legacy `anon` / `service_role` JWTs can be disabled** once the functions are seen
+  working on the new keys in production (they prefer them already — §5, `_shared/supabase-keys.js`;
+  Supabase retires the legacy keys by the end of 2026). Disabling is done in the dashboard and can be
+  undone. The browser already sends the publishable key.
 - **Auth → Passkeys / WebAuthn (#R155) — REQUIRED for passkeys to work:** configure the
   **Relying Party ID = the site's host** (`node scripts/site-url.mjs --host` — the bare host; on Pages
   `github.io` is on the public suffix list so the full `<owner>.github.io` host must be used) and add
@@ -1053,7 +1191,7 @@ put a real secret value in the repo, a PR, or a log.**
   passkey buttons degrade gracefully to password auth (feature-detected). supabase-js ≥ 2.105 is
   required; the app no longer takes it from a CDN at all — `src/vendor.js` imports the version
   `package.json` pins, so **check that pin** (and `admin.html`'s vendored copy) when this matters.
-  Current state: the pin is 2.117.2, `admin.html`'s copy is built from the same package, and the
+  Current state: the pin is 2.117.3 (the Edge Functions pin the same version), `admin.html`'s copy is built from the same package, and the
   relying party above answers on production (§8 item 9).
 - **Auth → SMTP**: for reliable delivery of confirmation / reset / email-change mails at volume,
   configure a custom SMTP sender (the default Supabase mailer is rate-limited). Optional but
@@ -1069,9 +1207,13 @@ put a real secret value in the repo, a PR, or a log.**
   applied to production on 2026-07-22 via the Management API** and verified (profiles PII leak +
   is_pro/plan escalation closed) — re-applying is a no-op.
 - **`delete-account` Edge Function (#R155)**: deployed with `verify_jwt` on
-  (`supabase functions deploy delete-account`). No secrets beyond the injected service-role key.
+  (`supabase functions deploy delete-account`). No secrets beyond the injected project keys.
 - **Backups**: register the backup secrets so `db-backup.yml` can run (see
-  [`BACKUP-RESTORE.md`](BACKUP-RESTORE.md)).
+  [`BACKUP-RESTORE.md`](BACKUP-RESTORE.md), the 正本 for the list). The dump is encrypted to the public
+  key tracked as `scripts/backup-public-key.asc`; **the private key that opens it is in neither the
+  repository nor GitHub** — the operator keeps it away from the backups, and losing it makes every
+  backup unrecoverable. The repository secret `BACKUP_GPG_PASSPHRASE` is no longer read and can be
+  deleted.
 
 ---
 
@@ -1104,15 +1246,20 @@ only the baseline's intended minimal set — including the monitor child tables 
 `_evidence`/`_reports`), which R144 had missed, so "run results cannot be forged" now holds at
 the grant layer too, not just via RLS. Added `NOT VALID` length caps on the anon/user-insertable
 text (`feedback`/`bug_reports`/`community_*`) as an abuse/DoS guard. The prod-only `rls_auto_enable`
-event trigger (auto-enables RLS on any new public table — a good fail-closed default) was kept.
+event trigger (auto-enables RLS on any new public table — a good fail-closed default) was kept; the
+EXECUTE that its SECURITY DEFINER function held for `anon` / `authenticated` is revoked (an event
+trigger fires without that check, so nothing it does changes), and the prod-only trigger function
+`set_updated_at()` has a pinned `search_path` — both applied only where they exist
+(`20261023120000_security_audit.sql`).
 Proven by **pgTAP `05_r155_security_test.sql`**, which reproduces the prod condition on CI (grants
 `authenticated` the blanket UPDATE) and asserts the guard trigger still blocks escalation — the
 one thing vanilla CI could not otherwise reproduce.
 
 ### 11.3 Account lifecycle & auth hardening (client + Edge Function)
-- **Account deletion (real, not logout):** `delete-account` Edge Function — JWT-gated,
-  `confirm:"DELETE"` required, explicit owned-row purge across every user-owned table, then
-  `auth.admin.deleteUser`. The account menu has a type-your-email confirmation.
+- **Account deletion (real, not logout):** `delete-account` Edge Function — JWT-gated, a sign-in
+  within the last ten minutes (otherwise `reauth_required`, and the account menu opens the sign-in
+  sheet), `confirm:"DELETE"` required, explicit owned-row purge across every user-owned table, then
+  `auth.admin.deleteUser` (§5). The account menu has a type-your-email confirmation.
 - **Access and portability, self-service (account-data-center):** `account_data_inventory()` (what the
   account holds, per kind, with what / why / how long) and `export_account_data()` (every owned row, every
   column, plus what `auth.users` / `auth.identities` hold, as one JSON file). Both are SECURITY DEFINER RPCs
@@ -1162,7 +1309,8 @@ one thing vanilla CI could not otherwise reproduce.
 ### 11.4 Admin console isolation (`admin.html`)
 Removed the public **Sign Up** (admins are DB-provisioned; the real boundary is RLS/RPC + the
 profiles guard trigger, so a non-admin who signs in is bounced by `gate()`). Added a **strict CSP**
-(`connect-src` locked to self + `*.supabase.co`; `object-src 'none'`; `base-uri`/`form-action 'self'`;
+(`connect-src` locked to self + this project's own Supabase host — no `*.supabase.co` wildcard, which
+admitted every Supabase project; `object-src 'none'`; `base-uri`/`form-action 'self'`;
 since csp-without-inline its three inline scripts are admitted by hash and nothing else inline runs),
 hardened the local escaper to also escape the single quote, added a `safeUrl()` scheme allow-list,
 and a **re-authentication ("sudo") gate** before the destructive starter-dataset import. Behavioural

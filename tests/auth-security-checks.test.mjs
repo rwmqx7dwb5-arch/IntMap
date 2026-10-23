@@ -61,7 +61,9 @@ test('#R155 admin.html has a Content-Security-Policy', () => {
   /* spelling kept — admin.html is a standalone page; its CSP meta, its absent sign-up and its re-auth prompt are its markup and inline script */
   assert.match(admin, /http-equiv="Content-Security-Policy"/, 'CSP meta present');
   assert.match(admin, /object-src 'none'/, 'object-src locked');
-  assert.match(admin, /connect-src 'self' https:\/\/\*\.supabase\.co/, 'connect-src locked to self + supabase');
+  /* (security-audit) locked to THIS project's host — the one the console's client is created with — not *.supabase.co */
+  const sbOrigin = new URL((admin.match(/window\.SUPABASE_URL\s*=\s*'([^']+)'/) || [])[1]).origin;
+  assert.ok(admin.includes("connect-src 'self' " + sbOrigin + ';'), 'connect-src locked to self + this project\'s Supabase host');
 });
 
 test('#R155 admin.html has NO public sign-up', () => {

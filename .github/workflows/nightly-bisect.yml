@@ -47,6 +47,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 0          # the range is history; trees and blobs of old commits are not needed here
           filter: blob:none
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
@@ -70,10 +71,12 @@ jobs:
       - name: The commit under test
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
+          persist-credentials: false
           ref: ${{ matrix.sha }}
       - name: The bisect tool (this workflow's commit — the commit under test may predate it)
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
+          persist-credentials: false
           path: _tool
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
@@ -93,7 +96,7 @@ jobs:
           INTMAP_DATA_STORE: ${{ runner.temp }}/intmap-data
         run: |
           set -euo pipefail
-          npm ci
+          npm ci --ignore-scripts
           if [ -f data-assets.json ]; then node scripts/data-assets.mjs pull; fi
           npm run build
           test -f dist/index.html
@@ -141,6 +144,8 @@ jobs:
       pull-requests: write     # the comment on the PR the verdict names
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version-file: .nvmrc

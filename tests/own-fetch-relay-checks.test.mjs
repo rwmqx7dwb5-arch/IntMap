@@ -672,7 +672,12 @@ test('own-fetch-relay ③ the bucket is the shared one, per address, and a datab
     const req = new Request('http://relay.test/', { headers: { 'x-forwarded-for': '198.51.100.9, 10.0.0.1' } });
     assert.equal(await callerGate(req, {}, { scope: 'fetch-relay', readerPerMin: 60, env }), null);
     assert.equal(seen[0].body.p_scope, 'fetch-relay:ip');
-    assert.equal(seen[0].body.p_key, '198.51.100.9', 'keyed by the caller\'s own address');
+    /* (security-audit) keyed by the caller — the first address — but as an HMAC of its network, never
+       the address itself (_shared/rate-limit.js callerKey; tests/security-audit-checks ②) */
+    const { callerKey } = await import(pathToFileURL(join(ROOT, 'supabase/functions/_shared/rate-limit.js')).href);
+    assert.equal(seen[0].body.p_key, await callerKey(new Request('http://relay.test/', { headers: { 'x-forwarded-for': '198.51.100.9' } }), { secret: 'svc' }),
+      'keyed by the caller\'s own address');
+    assert.ok(!seen[0].body.p_key.includes('198.51.100.9'), 'the address itself is stored');
     assert.equal(seen[0].body.p_capacity, 60 * READERS_PER_ADDRESS);
     assert.equal(callerCapacity('alerts-relay', 240, (k) => (k === 'ALERTS_RELAY_PER_IP_PER_MIN' ? '9000' : '')), 9000, 'the environment may move one relay');
     assert.equal(callerCapacity('alerts-relay', 240, () => 'nonsense'), 240 * READERS_PER_ADDRESS);

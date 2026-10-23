@@ -35,7 +35,7 @@
 
 import { corsFor, fetchGuarded, methodGate, relayFail } from "../_shared/relay-guard.js";
 import { callerGate } from "../_shared/rate-limit.js";
-import { PROVIDERS, providerById, mergeLatest } from "../_shared/radiation-sources.js";
+import { PROVIDERS, providerById, mergeLatest, seriesWindow } from "../_shared/radiation-sources.js";
 
 const CORS = corsFor();
 
@@ -250,14 +250,12 @@ async function handleSeries(params) {
     });
   }
 
-  const to = params.get("to") || new Date().toISOString().slice(0, 19) + "Z";
-  const from = params.get("from") ||
-    new Date(Date.parse(to) - 86400000).toISOString().slice(0, 19) + "Z";
-  if (!Number.isFinite(Date.parse(from)) || !Number.isFinite(Date.parse(to))) {
-    return bad("from/to must be ISO 8601 instants");
-  }
+  /* (security-audit) the window as the instants it parses to — never the caller's own text, which
+     reached an upstream query verbatim (_shared/radiation-sources.js seriesWindow says how) */
+  const win = seriesWindow(params.get("from"), params.get("to"), Date.now());
+  if (!win) return bad("from/to must be ISO 8601 instants");
 
-  const r = await runProvider(p, "series", { code, from, to });
+  const r = await runProvider(p, "series", { code, from: win.from, to: win.to });
   /* the provider knows no such station — the same answer as an unknown provider id above */
   if (r.reason === "nothing_to_ask") return bad("unknown station");
   if (!r.read) return json({ error: r.reason || "upstream_unreachable" }, 502, null);

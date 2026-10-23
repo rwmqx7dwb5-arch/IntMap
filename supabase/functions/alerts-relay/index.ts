@@ -30,7 +30,7 @@
 //  Secrets: none.
 // ============================================================================
 
-import { corsFor, fetchGuarded, methodGate, relayFail, MAX_QUERY_URL } from "../_shared/relay-guard.js";
+import { corsFor, fetchGuarded, methodGate, relayFail, allowedUpstream, MAX_QUERY_URL } from "../_shared/relay-guard.js";
 import { callerGate } from "../_shared/rate-limit.js";
 import { SITE_USER_AGENT } from "../_shared/site-origin.js";
 
@@ -118,11 +118,12 @@ async function mapPool(items, width, fn) {
 /* ⚠ (#R801) A LINK IN AN UPSTREAM INDEX IS AN INPUT. It may be followed only on the origin the index
    itself was fetched from (same scheme, host and port), or on a host the source entry names. */
 function linkAllowed(href, indexUrl, hosts) {
-  let u, idx;
-  try { u = new URL(String(href)); idx = new URL(String(indexUrl)); } catch (_) { return false; }
-  if (u.protocol !== "https:" || u.username || u.password || u.port !== "") return false;
-  if (u.hostname === idx.hostname && u.protocol === idx.protocol) return true;
-  return Array.isArray(hosts) && hosts.indexOf(u.hostname) >= 0;
+  let idx;
+  try { idx = new URL(String(indexUrl)); } catch (_) { return false; }
+  /* (security-audit) https, no userinfo, default port — relay-guard.js's one origin rule — on the
+     index's own host (when the index itself was https) or on a host the entry names */
+  const own = idx.protocol === "https:" ? [idx.hostname] : [];
+  return !!allowedUpstream(href, own.concat(Array.isArray(hosts) ? hosts : []));
 }
 
 /* The allow-list, checked structurally rather than with a `startsWith` so a crafted
@@ -192,15 +193,17 @@ function matchRules(u, rules) {
   return null;
 }
 
+const UPSTREAM_HOSTS = {
+  "feeds.meteoalarm.org": UPSTREAMS.meteoalarm,
+  "www.nmc.cn": UPSTREAMS.cma,
+  "severeweather.wmo.int": UPSTREAMS.swic,
+};
+/* (security-audit) the origin — no userinfo, default port, exactly one of these hosts — is
+   relay-guard.js's one rule, the one every ?u= relay asks. Both schemes pass it here because the CMA
+   feed is the one upstream that needs http (see UPSTREAMS); each host's own rules then decide. */
 function allowed(raw) {
-  let u;
-  try { u = new URL(raw); } catch (_) { return null; }
-  if (u.username || u.password || u.port !== "") return null;
-  const h = u.hostname.toLowerCase();
-  if (h === "feeds.meteoalarm.org") return matchRules(u, UPSTREAMS.meteoalarm);
-  if (h === "www.nmc.cn") return matchRules(u, UPSTREAMS.cma);
-  if (h === "severeweather.wmo.int") return matchRules(u, UPSTREAMS.swic);
-  return null;
+  const u = allowedUpstream(raw, Object.keys(UPSTREAM_HOSTS), { schemes: ["https:", "http:"] });
+  return u ? matchRules(u, UPSTREAM_HOSTS[u.hostname]) : null;
 }
 
 /* ══ ⚠⚠ THE METEOALARM FEED IS TEN MEGABYTES, AND NINE OF THEM ARE TRANSLATIONS ═══════════════

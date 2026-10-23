@@ -234,9 +234,13 @@ export function newsUi(HOST){
         ? IntMapLang.t(HOST.lang,'1 source','1媒体','1 Quelle','1 источник','1 fuente')
         : IntMapLang.t(HOST.lang,'{n} sources','{n}媒体','{n} Quellen','{n} источников','{n} fuentes')).replace('{n}',n);
     }
-    function _newsTipHTML(p){
+    /* (security-audit) ONE BUILDER FOR EVERY NEWS TOOLTIP. The mobile crosshair tooltip below used to write its own copy
+       of this markup with name / title / publisher interpolated RAW — and the title is the RSS <title> read as
+       textContent, so an entity-encoded `&lt;iframe…&gt;` in a feed arrives here as live markup. `tail` is the one
+       thing that tooltip adds (「タップで詳細」), escaped like everything else. */
+    function _newsTipHTML(p,tail){
       const isEv=p.ev==='1', n=+p.evSources||0;
-      const foot=isEv&&n>0 ? (IntMapSafe.html(p.publisher||'')+' · '+IntMapSafe.html(_srcCountLabel(n))) : IntMapSafe.html(p.publisher||'');
+      const foot=(isEv&&n>0 ? (IntMapSafe.html(p.publisher||'')+' · '+IntMapSafe.html(_srcCountLabel(n))) : IntMapSafe.html(p.publisher||''))+(tail?(' · '+IntMapSafe.html(tail)):'');
       return `<div style="display:flex;justify-content:space-between;gap:8px;"><span style="color:var(--primary-color);font-weight:600;font-size:11px;">[${IntMapSafe.html(p.name)}]</span><span style="color:var(--text-muted);font-size:11px;font-weight:500;">${formatCustomDate(p.pubDate)}</span></div><div style="line-height:1.4;font-weight:500;margin-top:4px;">${IntMapSafe.html(p.title)}</div><div style="color:var(--text-muted);margin-top:6px;font-size:11px;">${foot}</div>`;   /* (#R138 SEC) news name/title/publisher come from external RSS → escape */
     }
     GE.events.onLayer('mousemove','news-dots',e=>{
@@ -349,7 +353,7 @@ export function newsUi(HOST){
           _xhrNewsId=f.id; try{GE().layers.setFeatureState({source:'news-points',id:f.id},{hover:true});}catch(_){} }
         _xhrLink=pr.link||null; _xhrProps=pr;
         const el=HOST.ensureMapTooltip(); window.showMapTooltip(el); el.style.pointerEvents='auto'; el.style.cursor='pointer';
-        window.setMapTooltipHTML(el,`<div style="display:flex;justify-content:space-between;gap:8px;"><span style="color:var(--primary-color);font-weight:600;font-size:11px;">[${pr.name}]</span><span style="color:var(--text-muted);font-size:11px;font-weight:500;">${formatCustomDate(pr.pubDate)}</span></div><div style="line-height:1.4;font-weight:500;margin-top:4px;">${pr.title}</div><div style="color:var(--text-muted);margin-top:6px;font-size:11px;">${pr.publisher}${' · '+(IntMapLang.t(HOST.lang,'tap for details','タップで詳細','Für Details tippen','Нажмите для подробностей','toca para ver detalles'))}</div>`);
+        window.setMapTooltipHTML(el,_newsTipHTML(pr,IntMapLang.t(HOST.lang,'tap for details','タップで詳細','Für Details tippen','Нажмите для подробностей','toca para ver detalles')));   /* (security-audit) the shared builder escapes the external RSS fields */
         try{ HOST.positionTooltip(GE().coords.project(f.geometry.coordinates)); }catch(_){}
       } else { if(_xhrNewsId!=null){ try{GE().layers.setFeatureState({source:'news-points',id:_xhrNewsId},{hover:false});}catch(_){} _xhrNewsId=null; } _xhrLink=null; _xhrProps=null; if(HOST.mapTooltipEl){ window.hideMapTooltip(HOST.mapTooltipEl); HOST.mapTooltipEl.style.pointerEvents='none'; } }
     }catch(_){} }
@@ -375,7 +379,7 @@ export function newsUi(HOST){
         if(f.properties.layerRef) window.triggerLayerHover(f.properties.layerRef,true);
       }
       const el=HOST.ensureMapTooltip(); window.showMapTooltip(el);
-      window.setMapTooltipHTML(el,`<div style="color:${f.properties.color};font-weight:600;font-size:14px;">${f.properties.title}</div><div style="line-height:1.4;margin-top:4px;color:var(--text-muted);">${f.properties.body}</div>`);
+      window.setMapTooltipHTML(el,`<div style="color:${IntMapSafe.html(f.properties.color)};font-weight:600;font-size:14px;">${IntMapSafe.html(f.properties.title)}</div><div style="line-height:1.4;margin-top:4px;color:var(--text-muted);">${IntMapSafe.html(f.properties.body)}</div>`);   /* (security-audit) a pin's title/body: dashboard_cards rows and the dated-events index (Wikidata names) — text, never markup */
       HOST.positionTooltip(GE().coords.project(f.geometry.coordinates));
     });
     GE().events.onLayer('mouseleave','dash-dots',()=>{

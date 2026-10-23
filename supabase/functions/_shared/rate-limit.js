@@ -32,6 +32,9 @@
 //  plain JavaScript (see relay-guard.js).
 // ============================================================================
 
+import { v4Parts, v6Groups } from "./relay-guard.js";
+import { secretKey } from "./supabase-keys.js";
+
 /* How long a take may wait for the database before it counts as «did not answer». Observation
    (2026-09-18): a same-region PostgREST RPC from an Edge Function answers in tens of milliseconds;
    the paid upstream behind these relays is given 20 s. Three seconds is two orders of magnitude of
@@ -135,7 +138,7 @@ export function makeLimiter({ db }) {
    ours is the source address). A loop against any of them was bounded by nothing.
 
    So every public relay now takes one token per request from `<scope>:ip`, keyed by the caller's
-   address, before it asks its upstream. ⚠ IT FAILS OPEN. These relays carry no invoice per call, a
+   network (callerKey below — hashed, never the address itself), before it asks its upstream. ⚠ IT FAILS OPEN. These relays carry no invoice per call, a
    database outage must not become an outage of every live layer, and the thing this bounds is a
    single address's loop — which the database being down does not make more likely. The relay that
    DOES carry an invoice (routing-relay) keeps its own fail-closed project-wide buckets.
@@ -158,21 +161,26 @@ export function makeLimiter({ db }) {
        the relay's own readerPerMin; the environment only moves it. */
 export const READERS_PER_ADDRESS = 10;
 
-/* ══ (ai-one-ledger) WHO THE CALLER IS, DECIDED IN ONE PLACE ══════════════════════════════════════
-   callerKey(req, verifiedUid) → the bucket key.
+/* ══ (ai-one-ledger → security-audit) WHO THE CALLER IS, DECIDED IN ONE PLACE ═════════════════════
+   callerKey(req, { uid, secret }) → the bucket key, for EVERY function that takes from a bucket.
      · an ACCOUNT, when the function has verified one: "uid:<uuid>". An account is the identity a
        signed-in caller cannot change by changing networks, and it is the identity every other
        per-reader number here is kept by (the AI allowance, the embedding share). Readers behind one
        office / school / carrier NAT stop sharing a bucket the moment they are signed in.
-     · otherwise the ADDRESS, as routing-relay has always identified it: the first address in
-       x-forwarded-for (callerAddress below).
-   ⚠ `verifiedUid` MUST come from the Auth server (auth.getUser / /auth/v1/user), never from the JWT's
-   own `sub` read without verification: an unverified claim is a string the caller chose, and a key
-   the caller chooses is a fresh bucket per request. A value that is not a UUID is ignored — the key
-   falls back to the address rather than trusting a malformed id.
-   ⚠ THE KEYLESS RELAYS STILL KEY BY ADDRESS. They run with verify_jwt = false and serve signed-out
-   readers; verifying a JWT on each of their requests would add an Auth round trip to every live
-   layer's poll. Only the functions that already verify the caller (atlas-embed today) pass a uid.
+     · otherwise the caller's NETWORK (callerNetwork below), as HMAC-SHA-256(secret, network) — 32 hex
+       digits. The address is never the key and is never written anywhere.
+   ⚠ `uid` MUST come from the Auth server (auth.getUser / /auth/v1/user), never from the JWT's own
+   `sub` read without verification: an unverified claim is a string the caller chose, and a key the
+   caller chooses is a fresh bucket per request. A value that is not a UUID is ignored — the key falls
+   back to the network rather than trusting a malformed id. A header that spells «uid:…» cannot take
+   an account's key either: whatever the header says is hashed, and a hash is 32 hex digits.
+   ⚠ WHY ONE FUNCTION AND WHY HASHED (security-audit, 2026-10-23). There were two: `callerKey` keyed by
+   the address in the clear and `hashedCallerKey` by its HMAC, and which one a function called was a
+   choice each made — the keyless relays and routing-relay chose the clear one, so relay_rate_buckets,
+   whose rows are swept only when idle, held readers' IP addresses beside the scope they had used. A
+   bucket needs a key that is stable per caller and nothing more; the HMAC is that, one-way without the
+   secret (the key named by CALLER_KEY_SECRET_ENV — never sent anywhere). So there is one function and
+   it has no clear-text mode.
    The address itself: measured 2026-09-26 against production (routing-relay's note), a forged
    x-forwarded-for did NOT buy a fresh bucket — the platform puts the real client address first.
    ⚠ A REQUEST WITH NO ADDRESS SHARES ONE BUCKET — an unidentifiable caller is throttled with everyone
@@ -182,33 +190,68 @@ export function callerAddress(req) {
   const xff = (req && req.headers && req.headers.get("x-forwarded-for")) || "";
   return xff.split(",")[0].trim() || "unknown";
 }
-export function callerKey(req, verifiedUid) {
-  const uid = String(verifiedUid || "").trim();
-  if (UUID_RE.test(uid)) return "uid:" + uid.toLowerCase();
-  /* an address never takes an account's key: a header value that spells one is not an address */
-  const addr = callerAddress(req);
-  return /^uid:/i.test(addr) ? "unknown" : addr;
+
+/* ══ (security-audit) THE NETWORK AN ADDRESS STANDS FOR ═══════════════════════════════════════════
+   callerNetwork(address) → the string that is hashed into the key.
+     · IPv4 → "v4:a.b.c.d", one address (in its canonical dotted spelling, so `010.0.0.1` is 10.0.0.1).
+     · IPv6 → "v6:<first four groups>::/64". ⚠ THE /64, NOT THE ADDRESS: a /64 is the smallest prefix
+       an ISP assigns to one subscriber's link (RFC 6177 — a site is given a /48 or /56, and SLAAC needs
+       a full /64 per link), and every host on it chooses its own interface id — privacy addresses
+       (RFC 8981) rotate it by design. Keyed per address, one subscriber could walk 2^64 fresh buckets
+       without leaving their own line. Keyed per /64, that subscriber is one caller, which is what the
+       IPv4 key already assumes of an address shared by a household.
+     · an IPv4-mapped IPv6 address (`::ffff:a.b.c.d`, `::ffff:0a00:0001`) is the IPv4 address it
+       carries — the same caller arriving through a dual-stack socket must not get a second bucket.
+     · anything else ("unknown", a malformed header) → "raw:<as written>": still hashed, still one
+       bucket per spelling, and never mistaken for a network.
+   The parsing (`::` expansion, a dotted IPv4 tail, leading zeros) is relay-guard.js's — the same
+   reading publicAddress() judges a resolved address by — so there is one IPv6 reader in _shared. */
+export function callerNetwork(address) {
+  const s = String(address || "").trim().toLowerCase().replace(/^\[|\]$/g, "").replace(/%.*$/, "");
+  const v4 = v4Parts(s);
+  if (v4) return "v4:" + v4.join(".");
+  const g = s.includes(":") ? v6Groups(s) : null;
+  if (g) {
+    if (g.slice(0, 5).every((x) => x === 0) && g[5] === 0xffff) {
+      return "v4:" + [g[6] >> 8, g[6] & 255, g[7] >> 8, g[7] & 255].join(".");
+    }
+    return "v6:" + g.slice(0, 4).map((x) => x.toString(16)).join(":") + "::/64";
+  }
+  return "raw:" + s;
 }
 
-/* ══ (anon-write-guard) THE SAME KEY, WITHOUT WRITING THE ADDRESS DOWN ═══════════════════════════════
-   hashedCallerKey(req, secret, verifiedUid) → the bucket key for a function that STORES what its
-   callers send (client-errors, reader-reports), as opposed to a relay that only forwards.
-     · a verified account → "uid:<uuid>", exactly as callerKey above;
-     · otherwise HMAC-SHA-256(secret, address), 32 hex digits.
-   WHY NOT THE ADDRESS: relay_rate_buckets holds `key` in the clear and is swept only when idle, and a
-   function whose whole job is to keep a record must not also become a list of its readers' IPs by the
-   back door. The HMAC is one-way without the secret (the service key — never sent anywhere) and stable
-   per address, which is all a bucket needs. It was written inside client-errors (client-error-log);
-   reader-reports needed the same key, so it lives here and both import it rather than one copying it
-   (.agents/rules/no-ad-hoc-hardcoding.md §2.3). A request with no address shares one bucket, as
-   everywhere in this file. */
-export async function hashedCallerKey(req, secret, verifiedUid) {
-  const uid = String(verifiedUid || "").trim();
+/* The secret the network is hashed with, read from the environment in this ONE place — every caller
+   of callerKey passes `callerKeySecret(env)` rather than naming the variable itself, so moving the key
+   to a variable of its own is a change to this line. Today it is the project secret key
+   (_shared/supabase-keys.js secretKey — the new sb_secret_ key, else the legacy service-role JWT): the
+   one secret every function here already holds and no reader ever sees.
+   ⚠ An unset secret leaves the key computable by anyone (and IPv4 is 2^32 guesses), so a function
+   without it must not write a key anywhere: every caller here builds its database client from the
+   same service-role key and therefore stores nothing when it is missing (restRpcClient
+   `configured: false`). The fallback below exists only so the key is still a key — routing-relay's
+   in-process Map needs one either way. */
+export function callerKeySecret(env) {
+  return secretKey(env);
+}
+
+/* the HMAC key, imported once per secret (an isolate serves many requests with one secret) */
+let hmacKeyFor = { secret: null, key: null };
+async function hmacKey(secret) {
+  const s = String(secret || "no-secret");
+  if (hmacKeyFor.secret !== s) {
+    const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(s),
+      { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+    hmacKeyFor = { secret: s, key };
+  }
+  return hmacKeyFor.key;
+}
+
+export async function callerKey(req, o) {
+  const opts = o || {};
+  const uid = String(opts.uid || "").trim();
   if (UUID_RE.test(uid)) return "uid:" + uid.toLowerCase();
-  const addr = callerAddress(req);
-  const k = await crypto.subtle.importKey("raw", new TextEncoder().encode(String(secret || "no-secret")),
-    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  const d = new Uint8Array(await crypto.subtle.sign("HMAC", k, new TextEncoder().encode(addr)));
+  const network = callerNetwork(callerAddress(req));
+  const d = new Uint8Array(await crypto.subtle.sign("HMAC", await hmacKey(opts.secret), new TextEncoder().encode(network)));
   let hex = "";
   for (let i = 0; i < 16; i++) hex += d[i].toString(16).padStart(2, "0");
   return hex;
@@ -236,10 +279,10 @@ export async function callerGate(req, cors, o) {
   const env = typeof opts.env === "function" ? opts.env : () => "";
   const scope = String(opts.scope || "");
   const perMin = callerCapacity(scope, opts.readerPerMin, env);
-  const db = restRpcClient({ url: env("SUPABASE_URL") || "", serviceKey: env("SUPABASE_SERVICE_ROLE_KEY") || "" });
+  const db = restRpcClient({ url: env("SUPABASE_URL") || "", serviceKey: secretKey(env) });
   if (!db.configured) return null;
-  /* by address: no relay behind this gate verifies its caller (see callerKey) */
-  const r = await makeLimiter({ db }).take(scope + ":ip", callerKey(req), {
+  /* by network: no relay behind this gate verifies its caller (see callerKey) */
+  const r = await makeLimiter({ db }).take(scope + ":ip", await callerKey(req, { secret: callerKeySecret(env) }), {
     capacity: perMin, refillPerSec: perMin / 60, cost: 1, onUnavailable: "allow",
   });
   if (r.allowed) return null;
@@ -274,7 +317,7 @@ export async function callerGate(req, cors, o) {
 export async function forceGrant(scope, o) {
   const opts = o || {};
   const env = typeof opts.env === "function" ? opts.env : () => "";
-  const db = restRpcClient({ url: env("SUPABASE_URL") || "", serviceKey: env("SUPABASE_SERVICE_ROLE_KEY") || "" });
+  const db = restRpcClient({ url: env("SUPABASE_URL") || "", serviceKey: secretKey(env) });
   if (!db.configured) return "unavailable";
   const r = await makeLimiter({ db }).take(String(scope || ""), "*", {
     capacity: opts.capacity, refillPerSec: opts.refillPerSec, cost: 1, onUnavailable: "deny",

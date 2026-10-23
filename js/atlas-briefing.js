@@ -29,7 +29,7 @@
  * ==========================================================================*/
 import { buildBriefing, packBriefing, unpackBriefing, briefingLink, LINK_LIMIT_MEASURED } from './atlas-briefing-codec.js';
 import { notebookStore, restoreView } from './atlas-notebook.js';
-import { normalize, NOTEBOOK_SHOWN } from './atlas-notebook-store.js';
+import { normalize, importedEntry, replayCalls, NOTEBOOK_SHOWN } from './atlas-notebook-store.js';
 import { BriefingLink } from './briefing-link.js';
 import { MapState } from './map-state.js';
 import { layerField, keepInLibrary } from './atlas-notebook.js';   /* (map-document-unify) the answer kept as a map, the notebook's way */
@@ -172,8 +172,10 @@ export function makeAtlasBriefing(NOTEBOOK) {
   function rebuild(i) {
     if (!open || !open.b || !D) return null;
     const s = open.b.sections[i];
-    /* the sender's calls, stamped as outside content: what reaches the executor is the sender's choice, not this reader's */
-    const steps = (s.steps || []).filter((x) => x.replay && x.args && x.args.type).map((x) => Object.assign({}, x.args, { __externalContent: true }));
+    /* the sender's calls, as the sender's (js/atlas-notebook-store.js importedEntry / replayCalls): each is judged again by
+       the registry — the link's own `replay` flag decides nothing — and what passes is stamped as outside content, so what
+       reaches the executor is asked about as the sender's choice, not this reader's */
+    const steps = replayCalls(importedEntry(s), D.resolve);
     hide();
     return D.runDirect(L('Rebuild from the briefing', 'ブリーフィングから再現') + ': ' + s.question.slice(0, 80),
       [{ type: 'briefingOpen', section: i + 1, only: ['time'] }].concat(steps, [{ type: 'briefingOpen', section: i + 1 }]));
@@ -182,7 +184,9 @@ export function makeAtlasBriefing(NOTEBOOK) {
     const s = open && open.b && open.b.sections[i]; if (!s || !NOTEBOOK_SHOWN) return { ok: false };
     const S = notebookStore();
     if (await S.get(s.id)) return { ok: true, already: true, id: s.id };
-    const e = normalize(Object.assign({}, s, { updatedAt: Date.now(), pinned: false, followOf: null, syncedAt: 0 }));
+    /* (security-audit) the sender's calls, kept as the sender's: every step is marked imported, so a replay from the
+       notebook judges it again and stamps it as outside content (js/atlas-notebook-store.js importedEntry / replayCalls) */
+    const e = importedEntry(Object.assign({}, s, { updatedAt: Date.now(), pinned: false, followOf: null, syncedAt: 0 }));
     if (!e) return { ok: false };
     try { await S.put(e); } catch (err) { return { ok: false, error: String((err && err.message) || err) }; }
     return { ok: true, id: s.id };

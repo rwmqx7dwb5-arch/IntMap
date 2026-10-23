@@ -97,7 +97,7 @@ test('① every job that reads a secret FAILS without it, and names it (executed
     }
   }
   assert.deepEqual(problems, [], problems.join('\n'));
-  assert.ok(gates >= 1, 'at least one secret-reading job was measured (the backup reads two)');
+  assert.ok(gates >= 1, 'at least one secret-reading job was measured (the backup reads SUPABASE_ACCESS_TOKEN; its encryption key is a tracked PUBLIC key, not a secret)');
 });
 
 test('② an `if:` that reads a secret or variable (a green skip) exists only with a declared reason', () => {

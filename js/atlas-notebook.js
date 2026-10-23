@@ -25,7 +25,7 @@
  * ==========================================================================*/
 import {
   entryFromTurn, makeNotebookStore, idbBackend, memoryBackend, toMarkdown, toFile, fromFile,
-  rowFromEntry, entryFromRow, mergeCloud, diffResults, NOTEBOOK_SHOWN,
+  rowFromEntry, entryFromRow, mergeCloud, diffResults, replayCalls, NOTEBOOK_SHOWN,
 } from './atlas-notebook-store.js';
 import { icon } from './icons.js';
 import { IntMapLang } from './lang-registry.js';
@@ -213,7 +213,7 @@ export function makeAtlasNotebook() {
   async function exportMd(ids) { const all = await store.list(); const list = ids ? all.filter((e) => ids.indexOf(e.id) >= 0) : all; return download('intmap-atlas-notebook-' + stamp() + '.md', toMarkdown(list, D && D.lang ? D.lang() : 'en'), 'text/markdown'); }
   async function exportFile() { return download('intmap-atlas-notebook-' + stamp() + '.json', JSON.stringify(toFile(await store.list()), null, 1), 'application/json'); }
   async function importText(text) {
-    const r = fromFile(JSON.parse(text));
+    const r = fromFile(JSON.parse(text), D && D.resolve);   /* (security-audit) each step judged again by the registry — js/atlas-notebook-store.js */
     const have = new Set((await store.list()).map((e) => e.id));
     let added = 0; for (const e of r.entries) { if (have.has(e.id)) continue; await store.put(e); added++; }
     return { added, skipped: r.entries.length - added, rejected: r.rejected };
@@ -221,7 +221,7 @@ export function makeAtlasNotebook() {
 
   /* ── acting on an entry ───────────────────────────────────────────────────────────────────── */
   function replay(e) {
-    const steps = (e.steps || []).filter((s) => s.replay && s.args && s.args.type).map((s) => s.args);
+    const steps = replayCalls(e, D && D.resolve);   /* (security-audit) an imported step reaches the executor as outside content — js/atlas-notebook-store.js */
     hide();
     return D.runDirect(L('Replay from the notebook', 'ノートから再現') + ': ' + e.title,
       [{ type: 'notebookOpen', id: e.id, only: ['time'] }].concat(steps, [{ type: 'notebookOpen', id: e.id }]));
