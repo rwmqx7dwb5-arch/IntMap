@@ -1,6 +1,7 @@
 ---
 title: news-ui の setupIntelLayers が自分の `const GE` で外側の `GE()` を影にし、ダッシュボードのピンの hover / leave / click が #R178 から一度も結ばれていなかった——影を消して結び、同じ形を js/ 全体で測る門と、復活する hover の出力の符号化
 date: 2026-10-23
+pr: 1129
 ---
 
 〈依頼〉 2026-10-23 のセキュリティ点検で評価中に観測された `TypeError: GE is not a function`（js/news-ui.js）を、実際の挙動として再現し、根本原因（名前の影）を直し、復活する機能が仕様どおりか・別経路で置き換えられていないかを確かめる。
