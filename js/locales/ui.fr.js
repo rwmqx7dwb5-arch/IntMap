@@ -2220,7 +2220,6 @@ IntMapLang.define('fr', { ui: {
   "Tap a country on the map.": "Touchez un pays sur la carte.",
   "Tap a country to see who it trades with.": "Touchez un pays pour voir avec qui il commerce.",
   "Tap each corner on the map, then press Done.": "Touchez chaque coin sur la carte, puis appuyez sur Terminé.",
-  "tap for details": "touchez pour le détail",
   "Tap inside the rupture area — this is where the rupture starts.": "Touchez à l'intérieur de la zone de rupture — c'est là que la rupture commence.",
   "Tap the map to place it.": "Touchez la carte pour le placer.",
   "Tap the map to place the epicenter.": "Touchez la carte pour placer l'épicentre.",

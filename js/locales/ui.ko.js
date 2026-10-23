@@ -2210,7 +2210,6 @@ IntMapLang.define('ko', { ui: {
   "Tap a country on the map.": "지도에서 나라를 탭하세요.",
   "Tap a country to see who it trades with.": "나라를 탭하면 교역 상대를 볼 수 있습니다.",
   "Tap each corner on the map, then press Done.": "지도에서 각 꼭짓점을 탭한 뒤 「완료」를 누르세요.",
-  "tap for details": "탭하면 상세 정보",
   "Tap inside the rupture area — this is where the rupture starts.": "진원역 안쪽을 탭하세요 — 여기가 파괴의 시작점이 됩니다.",
   "Tap the map to place it.": "지도를 탭해 놓으세요.",
   "Tap the map to place the epicenter.": "지도를 탭해 진앙을 놓으세요.",
