@@ -2549,7 +2549,6 @@ IntMapLang.define('zh', {
     'Summarize and analyze the situation inside the drawn area': "摘要並分析所繪範圍內的情勢",
     'Summing the WorldPop population grid…': "正在加總 WorldPop 人口網格…",
     'surface projection': "地表投影",
-    'tap for details': "點按查看詳情",
     'Tap the map to move the pin': "點按地圖移動圖釘",
     'Tap to highlight • long-press for criteria': "點按以標示 • 長按設定條件",
     'The satellite layer is unavailable': "衛星圖層無法使用",

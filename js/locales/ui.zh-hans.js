@@ -2553,7 +2553,6 @@ IntMapLang.define('zh-hans', {
     'Summarize and analyze the situation inside the drawn area': "摘要并分析所绘范围内的情势",
     'Summing the WorldPop population grid…': "正在加总 WorldPop 人口网格…",
     'surface projection': "地表投影",
-    'tap for details': "点按查看详情",
     'Tap the map to move the pin': "点按地图移动图钉",
     'Tap to highlight • long-press for criteria': "点按以标示 • 长按设置条件",
     'The satellite layer is unavailable': "卫星图层无法使用",
