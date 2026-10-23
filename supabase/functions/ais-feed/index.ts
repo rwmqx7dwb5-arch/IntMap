@@ -39,6 +39,7 @@
  * ==========================================================================*/
 import { corsFor, fetchGuarded, relayFail, methodGate } from "../_shared/relay-guard.js";
 import { callerGate, forceGrant } from "../_shared/rate-limit.js";
+import { secretKey } from "../_shared/supabase-keys.js";
 import { parseBbox } from "../_shared/bbox.js";
 import { makeReadBudget } from "../_shared/read-budget.js";
 
@@ -228,8 +229,7 @@ function svcUrl(path: string): string {
   return base ? base + path : "";
 }
 function storageKey(): string {
-  return env("AIS_STORAGE_KEY") || env("AVIATION_STORAGE_KEY") ||
-    env("SUPABASE_SERVICE_ROLE_KEY") || env("SB_SECRET_KEY");
+  return env("AIS_STORAGE_KEY") || env("AVIATION_STORAGE_KEY") || secretKey(env);
 }
 
 // ── the shared snapshot ─────────────────────────────────────────────────────

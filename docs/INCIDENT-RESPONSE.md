@@ -27,9 +27,13 @@ being abused, or an Edge Function is being hit maliciously. See the model in
   it could reach was reachable.
 - **Leaked provider AI key** → revoke/rotate it in the provider console; `supabase secrets set`
   the new one.
-- **Leaked `REFRESH_SECRET`** → `supabase secrets set REFRESH_SECRET=<new>` and update the cron
-  header. (To take news refresh **fully offline** right now: **unset** `REFRESH_SECRET` — the
-  function is fail-closed and will refuse every request.)
+- **Leaked `REFRESH_SECRET` / `NEWS_INGEST_SECRET`** → set the new value on **both** sides, in the same
+  minute: the function (`supabase secrets set REFRESH_SECRET=<new>` / `NEWS_INGEST_SECRET=<new>`) and
+  the vault entry its pg_cron job reads (`refresh_news_secret` / `news_ingest_secret`:
+  `select vault.update_secret((select id from vault.secrets where name = '<name>'), '<new>');`). One
+  side alone stops the job — the function refuses a mismatched header. Confirm with the next run in
+  `cron.job_run_details` (200). (To take news refresh **fully offline** right now: **unset**
+  `REFRESH_SECRET` — the function is fail-closed and will refuse every request.)
 - **ai-proxy abused** → it already requires a JWT + per-user daily quota; to hard-stop, unset
   the provider key (returns 502) or lower `PLAN_LIMITS`/redeploy; consider revoking the abusing
   user's sessions (Supabase → Auth → Users).
@@ -249,7 +253,12 @@ Since `supabase-deploy.yml`, a migration reaches production when its PR merges �
 ### 8. service_role key leaked
 The `service_role` key bypasses RLS — treat a leak as a full-data compromise.
 1. **Rotate immediately:** Dashboard → **Settings → API → Rotate** the `service_role` key
-   (and the JWT secret if offered). This invalidates the leaked key.
+   (and the JWT secret if offered). This invalidates the leaked key. A leaked **`sb_secret_…`** key
+   (the new kind, which the functions prefer — `_shared/supabase-keys.js`) is closed by creating a
+   new secret key and deleting the leaked one under **Settings → API Keys**. The functions read it
+   from the platform-injected `SUPABASE_SECRET_KEYS` (the key named `default`, else the first), not
+   from a secret set by hand — confirm afterwards that `aviation-feed?meta=1` reports
+   `projectKey: "secret"` and that a write path (e.g. a feedback report) still succeeds.
 2. Update the key wherever it's legitimately used: **Edge Function secrets** (`supabase secrets
    set SUPABASE_SERVICE_ROLE_KEY=…`) and any CI secret that holds it.
 3. Purge it from wherever it leaked (rotate first — don't rely on deletion). If it was ever in

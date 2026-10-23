@@ -369,7 +369,9 @@ const fiStuk = {
     requests: 1,
     contentTypeRe: /xml/i,
     urls(q) {
-      return [FI_MPC + "&starttime=" + q.from + "&endtime=" + q.to +
+      /* (security-audit) encoded — MEASURED 2026-10-23: FMI answers `starttime=…T05%3A00%3A00Z` with
+         the same document, byte for byte, as the unencoded spelling */
+      return [FI_MPC + "&starttime=" + encodeURIComponent(String(q.from)) + "&endtime=" + encodeURIComponent(String(q.to)) +
         "&timestep=60&fmisid=" + encodeURIComponent(String(q.code).replace(/\D/g, ""))];
     },
     parse(bodies) {
@@ -847,6 +849,24 @@ export const PROVIDERS = [deBfs, jpNra, fiStuk, hkHko, nlRivm, usEpa];
 export function providerById(id) {
   for (const p of PROVIDERS) if (p.id === id) return p;
   return null;
+}
+
+/* ══ (security-audit) THE SERIES WINDOW IS TWO INSTANTS, NOT TWO STRINGS THE CALLER WROTE ═══════════
+   seriesWindow(from, to, nowMs) → { from, to } as `YYYY-MM-DDTHH:MM:SSZ`, or null when either is not
+   an instant. An absent `to` is now, an absent `from` is a day before `to` — the defaults
+   radiation-feed has always used.
+   WHY: radiation-feed checked only that Date.parse found a number in each and then passed the
+   caller's own text on, and the STUK builder above concatenated it into its query — so
+   `2024-01-01 12:00 (&x=y)`, which Date.parse reads as an instant, carried `&x=y` upstream, and a
+   `#` cut the rest of the URL off. Now the instant is parsed ONCE and only its canonical spelling
+   travels on; the builders also encode what they are handed (the probe script calls them directly). */
+export function seriesWindow(fromRaw, toRaw, nowMs) {
+  const iso = (ms) => new Date(ms).toISOString().slice(0, 19) + "Z";
+  const toMs = toRaw ? Date.parse(String(toRaw)) : (Number.isFinite(nowMs) ? nowMs : Date.now());
+  if (!Number.isFinite(toMs)) return null;
+  const fromMs = fromRaw ? Date.parse(String(fromRaw)) : toMs - 86400000;
+  if (!Number.isFinite(fromMs)) return null;
+  return { from: iso(fromMs), to: iso(toMs) };
 }
 
 /* ── THE MERGE ───────────────────────────────────────────────────────────────────────────────────

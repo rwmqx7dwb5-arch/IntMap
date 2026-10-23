@@ -197,6 +197,7 @@ test('client-error-log ② the browser is a name and a major version, never the 
 const ENV = { SUPABASE_URL: 'https://stub.supabase.test', SUPABASE_SERVICE_ROLE_KEY: 'stub-service-key' };
 globalThis.Deno = { env: { get: (n) => ENV[n] || '' }, serve: () => {} };
 const FN = await import(modUrl('supabase/functions/client-errors/index.ts'));
+const RL = await import(modUrl('supabase/functions/_shared/rate-limit.js'));
 
 const CALLER_IP = '203.0.113.77';
 function req(method, body, headers) {
@@ -261,11 +262,12 @@ test('client-error-log ③ a report is stored with a server-computed fingerprint
     assert.ok(!c.body.includes(CALLER_IP), `the caller's address reached the database in ${c.name}: ${c.body}`);
     assert.ok(!c.body.includes('10.0.0.1'));
   }
-  /* the per-caller bucket is keyed by an HMAC of the address: stable per address, not the address */
+  /* the per-caller bucket is keyed by an HMAC of the network: stable per caller, not the address
+     (_shared/rate-limit.js callerKey — the one rule every function keys by) */
   const k1 = JSON.parse(calls[0].body).p_key;
   assert.match(k1, /^[0-9a-f]{32}$/);
-  assert.equal(await FN.callerKey(req('POST'), ENV.SUPABASE_SERVICE_ROLE_KEY), k1);
-  assert.notEqual(await FN.callerKey(req('POST', null, { 'x-forwarded-for': '198.51.100.1' }), ENV.SUPABASE_SERVICE_ROLE_KEY), k1);
+  assert.equal(await RL.callerKey(req('POST'), { secret: ENV.SUPABASE_SERVICE_ROLE_KEY }), k1);
+  assert.notEqual(await RL.callerKey(req('POST', null, { 'x-forwarded-for': '198.51.100.1' }), { secret: ENV.SUPABASE_SERVICE_ROLE_KEY }), k1);
   assert.equal(JSON.parse(calls[1].body).p_key, '*', 'the second bucket is project-wide');
 });
 

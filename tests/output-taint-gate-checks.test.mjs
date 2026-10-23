@@ -125,6 +125,26 @@ test('①g every kind of sink is read; an element of an inert document is not a 
     'an element of the LIVE document fetches what it parses');
 });
 
+/* (security-audit) a function that writes its parameter into a sink, published on window or exported, is a sink for
+   its callers in every other file — discovered, never listed; a same-named method of some other object is not it */
+test('①h a sink by proxy: the published wrapper\'s callers in other files are judged at the call', () => {
+  const tip = { 'js/tip.js': `(function(){ function setTip(el, html){ el.innerHTML = html; } window.setTip = setTip; })();` };
+  assert.deepEqual(leavesOf({ ...tip, 'js/u.js': `function f(p){ window.setTip(el, '<b>' + p.title + '</b>'); }` }), ['html', 'p.title'],
+    'the caller\'s raw field is judged at the call (the definition keeps its own leaf for callers no rule can name)');
+  assert.deepEqual(leavesOf({ ...tip, 'js/u.js': `function f(p){ window.setTip(el, '<b>' + window.IntMapSafe.html(p.title) + '</b>'); setTip(el, 'x'); }` }), ['html']);
+  assert.deepEqual(leavesOf({ ...tip, 'js/u.js': `function f(p){ other.setTip(el, p.title); }` }), ['html'],
+    'a method of another object that happens to share the name is not the published function');
+  const mod = { 'js/m.js': `export function paint(el, h){ el.innerHTML = h; }` };
+  assert.deepEqual(leavesOf({ ...mod, 'js/u.js': `import { paint as P } from './m.js'; function f(p){ P(el, p.name); }` }), ['h', 'p.name'], 'reached through an import');
+  assert.deepEqual(leavesOf({ ...mod, 'js/u.js': `import * as M from './m.js'; function f(p){ M.paint(el, p.name); }` }), ['h', 'p.name'], 'and through a namespace import');
+  assert.deepEqual(leavesOf({ ...tip, 'js/w.js': `function outer(el, s){ window.setTip(el, s); } window.outer = outer;`, 'js/u.js': `function f(p){ window.outer(el, p.x); }` }).sort(), ['html', 'p.x', 's'],
+    'a wrapper of a wrapper is found in the next round');
+  /* the real tree: js/map-tooltip.js setMapTooltipHTML is found, and un-escaping a country name in its caller is red */
+  assert.ok(scan().wrappers.some((w) => w.key === 'global:setMapTooltipHTML' && w.file === 'js/map-tooltip.js'), 'setMapTooltipHTML is discovered');
+  const raw = check(ROOT, LEDGER, withFile('js/wb-layers.js', (s) => s.replace("'+IntMapSafe.html(p.nm||'')+'", "'+(p.nm||'')+'")));
+  assert.ok(raw.lines.some((l) => l.startsWith('js/wb-layers.js:') && /p\.nm/.test(l)), raw.lines.join('\n'));
+});
+
 /* ══ ② the declarations ══════════════════════════════════════════════════════════════════════════ */
 
 test('② a TRUSTED entry needs a reason, a function that exists where it says, and a caller', () => {
@@ -164,7 +184,9 @@ test('④a the OpenFreeMap country name and the country card are escaped — and
 test('④b no field of the ADS-B / AIS record reaches the tooltip markup unescaped', () => {
   const feedField = (l) => /^(?:p\.|p\[|acName$|nm$)/.test(l.text);
   const now = scan(ROOT, TREE).analyzers['js/data-layers.js'].functionLeaves('trafficTooltipHTML');
-  assert.ok(now.length > 0 && now.length < 8, 'the builder is found and judged: ' + JSON.stringify(now));
+  /* (security-audit) the builder reaches window.setMapTooltipHTML, a sink the gate now follows, so its last
+     unjudged values were made text and it may hold none — that it is FOUND is proved by the raw copy below */
+  assert.ok(now.length < 8, 'the builder is judged: ' + JSON.stringify(now));
   assert.deepEqual(now.filter(feedField), [], JSON.stringify(now));
   /* the defect as it was: the callsign, registration and squawk raw */
   const raw = withFile('js/data-layers.js', (s) => s.replace("escapeHtml(p.callsign||p.reg||p.icao24||'—')", "p.callsign||p.reg||p.icao24||'—'")

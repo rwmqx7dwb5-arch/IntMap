@@ -61,6 +61,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version: 20
@@ -121,7 +123,8 @@ jobs:
             cat refresh-summary.md 2>/dev/null || true
           } > commit-message.txt
           git commit -F commit-message.txt
-          git push --force origin "$BRANCH"
+          # the checkout kept no credential (persist-credentials: false); the token is given to this one push, from the environment
+          git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$BRANCH"
           if [ -z "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')" ]; then
             BODY="$(node -e 'const m=require("./data/tle/catalogue.json");console.log(`Rebuilt by the scheduled \`TLE snapshot\` workflow.\n\n| | |\n|---|---|\n| source | ${m.source} |\n| objects | ${m.objects} |\n| newest epoch | ${m.newestEpoch} |\n| median element age | ${m.medianElementAgeHours} h |\n\nThis is the copy the live-satellite layer falls back to when CelesTrak cannot be reached (#R185). Real element sets, propagated by SGP4 in real time; the app reports their age.`)')"
             BODY="$BODY

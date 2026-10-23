@@ -172,7 +172,7 @@
     "esbuild@0.28.2": true
   },
   "overrides": {
-    "dompurify": "3.4.16",
+    "dompurify": "3.4.17",
     "nanoid": "3.3.18"
   }
 }

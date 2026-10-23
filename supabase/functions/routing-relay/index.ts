@@ -39,7 +39,7 @@
 //        → the Mapbox Directions-Refresh JSON, unaltered (§16 route refresh).
 //
 //  Deploy: supabase functions deploy routing-relay --no-verify-jwt --project-ref vpekfwdpurzejrrmacac
-//  Secrets: MAPBOX_TOKEN  (SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are injected by the platform;
+//  Secrets: MAPBOX_TOKEN  (SUPABASE_URL and the project secret key are injected by the platform;
 //           ROUTING_RELAY_GLOBAL_PER_MIN / ROUTING_RELAY_GLOBAL_PER_DAY are optional overrides)
 //
 //  ⚠ NO TYPE ANNOTATIONS IN THIS FILE, like news-relay, cable-geo and sv-cov — the repo's static
@@ -47,7 +47,8 @@
 // ============================================================================
 
 import { corsFor, fetchGuarded, methodGate, relayFail, MAX_QUERY_URL } from "../_shared/relay-guard.js";
-import { makeLimiter, restRpcClient, callerKey, READERS_PER_ADDRESS } from "../_shared/rate-limit.js";
+import { makeLimiter, restRpcClient, callerKey, callerKeySecret, READERS_PER_ADDRESS } from "../_shared/rate-limit.js";
+import { secretKey, denoEnv } from "../_shared/supabase-keys.js";
 
 const CORS = corsFor();
 /* ⚠ THE LICENCE HEADER. Not tuning — see §2.10.1 in the note above. */
@@ -222,7 +223,7 @@ function rateOk(key, now) {
 async function spendOk(key) {
   const db = restRpcClient({
     url: Deno.env.get("SUPABASE_URL") || "",
-    serviceKey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "",
+    serviceKey: secretKey(denoEnv),
   });
   const limiter = makeLimiter({ db });
   const ip = await limiter.take(SCOPE_IP, key, {
@@ -322,7 +323,10 @@ Deno.serve(async (req) => {
   const q = url.searchParams;
   if (url.search.length > MAX_QUERY_URL) return fail("invalid_request", 400);
 
-  if (!rateOk(callerKey(req), Date.now())) return fail("rate_limit", 429);
+  /* one key for both stages: the in-process Map and the shared buckets (an HMAC of the network — never
+     the address, which relay_rate_buckets would otherwise keep; _shared/rate-limit.js callerKey) */
+  const who = await callerKey(req, { secret: callerKeySecret((k) => Deno.env.get(k) || "") });
+  if (!rateOk(who, Date.now())) return fail("rate_limit", 429);
 
   /* ⚠ THE KEY, AND ONLY FROM THE ENVIRONMENT. Nothing below ever puts it in a response, a header
      or an error; `probe` answers whether it is set, which is the one fact the page needs. */
@@ -369,7 +373,7 @@ Deno.serve(async (req) => {
   upstream.searchParams.set("access_token", token);
 
   /* the shared buckets, and nothing paid before them (see «THE SPEND CEILING») */
-  const refused = await spendOk(callerKey(req));
+  const refused = await spendOk(who);
   if (refused) return refused;
 
   try {

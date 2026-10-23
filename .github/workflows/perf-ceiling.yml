@@ -63,6 +63,8 @@ jobs:
       #   same commit whenever the job acts at all (the next step refuses any other), so the safe
       #   checkout costs nothing.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version-file: .nvmrc
@@ -123,7 +125,8 @@ jobs:
           git add tests/perf-baseline.json
           { echo "$TITLE"; echo; echo "Measured on main at $MEASURED_SHA by .github/workflows/perf-ceiling.yml."; echo; cat "$RUNNER_TEMP/perf-summary.md"; } > "$RUNNER_TEMP/commit-message.txt"
           git commit -F "$RUNNER_TEMP/commit-message.txt"
-          git push --force origin "$BRANCH"
+          # the checkout kept no credential (persist-credentials: false); the token is given to this one push, from the environment
+          git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$BRANCH"
           { echo "Measured on main at \`$MEASURED_SHA\`."; echo; cat "$RUNNER_TEMP/perf-summary.md"; } > "$RUNNER_TEMP/pr-body.md"
           PR="$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')"
           if [ -z "$PR" ]; then

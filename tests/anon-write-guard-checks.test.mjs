@@ -214,7 +214,7 @@ test('anon-write-guard ③ an anonymous report: both buckets BEFORE the write, u
   }
   const t0 = JSON.parse(calls[0].body);
   assert.equal(t0.p_scope, 'reader-reports:caller');
-  assert.equal(t0.p_key, await RL.hashedCallerKey(req('POST'), ENV.SUPABASE_SERVICE_ROLE_KEY), 'keyed by the shared HMAC of the address');
+  assert.equal(t0.p_key, await RL.callerKey(req('POST'), { secret: ENV.SUPABASE_SERVICE_ROLE_KEY }), 'keyed by the shared HMAC of the network');
   assert.equal(t0.p_capacity, FN.PER_READER_PER_HOUR * RL.READERS_PER_ADDRESS, 'an address may hold several readers');
   const t1 = JSON.parse(calls[1].body);
   assert.equal(t1.p_key, '*', 'the second bucket is project-wide');
@@ -263,12 +263,12 @@ test('anon-write-guard ③ the per-caller key is the one shared rule — client-
   const CE = src('supabase/functions/client-errors/index.ts');
   const RR = src('supabase/functions/reader-reports/index.ts');
   for (const [name, s] of [['client-errors', CE], ['reader-reports', RR]]) {
-    assert.match(s, /hashedCallerKey/, name + ' uses the shared HMAC key');
+    assert.match(s, /\bcallerKey\(req, \{/, name + ' uses the shared HMAC key');
     assert.ok(!/crypto\.subtle\.importKey/.test(s), name + ' keeps no HMAC of its own');
   }
-  assert.equal(await RL.hashedCallerKey(req('POST'), 'k', USER.id), 'uid:' + USER.id, 'a verified account keys by the account');
-  assert.match(await RL.hashedCallerKey(req('POST'), 'k'), /^[0-9a-f]{32}$/);
-  assert.notEqual(await RL.hashedCallerKey(req('POST'), 'k'), await RL.hashedCallerKey(req('POST', null, { 'x-forwarded-for': '198.51.100.9' }), 'k'));
+  assert.equal(await RL.callerKey(req('POST'), { uid: USER.id, secret: 'k' }), 'uid:' + USER.id, 'a verified account keys by the account');
+  assert.match(await RL.callerKey(req('POST'), { secret: 'k' }), /^[0-9a-f]{32}$/);
+  assert.notEqual(await RL.callerKey(req('POST'), { secret: 'k' }), await RL.callerKey(req('POST', null, { 'x-forwarded-for': '198.51.100.9' }), { secret: 'k' }));
 });
 
 /* ── ④ the page ──────────────────────────────────────────────────────────────────────────── */

@@ -14,6 +14,9 @@
 //  SAFETY
 //    • JWT REQUIRED (login) → 401 otherwise. No shared secret, no service_role from
 //      the client.
+//    • (security-audit) AND A RECENT SIGN-IN: the token's last sign-in (its `amr` claim) must be
+//      within REAUTH_WINDOW_S, or the answer is 401 { error: "reauth_required" } and nothing is
+//      touched. A valid token is not a person at the keyboard — recent-sign-in.js says why and how.
 //    • The client must send { confirm: "DELETE" } — a deliberate, explicit intent
 //      so a stray POST can't wipe an account.
 //    • Owned rows are deleted EXPLICITLY across every user-owned table (defense in
@@ -24,11 +27,13 @@
 //
 //  Deploy:  supabase functions deploy delete-account --project-ref vpekfwdpurzejrrmacac
 //           (verify_jwt can stay ON; we also verify the user explicitly.)
-//  Secrets: none beyond the injected SUPABASE_URL / SUPABASE_ANON_KEY /
-//           SUPABASE_SERVICE_ROLE_KEY.
+//  Secrets: none beyond the injected SUPABASE_URL and the project keys
+//           (_shared/supabase-keys.js: the new secret / publishable key, else the legacy JWTs).
 // ============================================================================
 
 import { createClient } from "@supabase/supabase-js";   // pinned in this function's deno.json
+import { bearerToken, recentSignIn } from "./recent-sign-in.js";
+import { secretKey, publishableKey, denoEnv } from "../_shared/supabase-keys.js";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -71,8 +76,8 @@ Deno.serve(async (req) => {
     if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 
     const url = Deno.env.get("SUPABASE_URL")!;
-    const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const anon = publishableKey(denoEnv);
+    const serviceKey = secretKey(denoEnv);
 
     // 1) Identify the caller from their JWT. Login is REQUIRED.
     const authHeader = req.headers.get("Authorization") || "";
@@ -80,6 +85,12 @@ Deno.serve(async (req) => {
     const { data: userData } = await userClient.auth.getUser();
     const user = userData?.user;
     if (!user) return json({ error: "auth", message: "Login required." }, 401);
+
+    // 1b) The person signed in RECENTLY — read from the same token the Auth server just accepted,
+    //     checked against the id it returned. Fails closed: no readable sign-in time is a refusal.
+    if (!recentSignIn(bearerToken(authHeader), user.id, Date.now()).ok) {
+      return json({ error: "reauth_required", message: "Sign in again, then delete the account." }, 401);
+    }
 
     // 2) Explicit-intent confirmation so a stray POST can't wipe an account.
     let payload: { confirm?: string } = {};
@@ -90,6 +101,16 @@ Deno.serve(async (req) => {
 
     const uid = user.id;
     const db = createClient(url, serviceKey, { auth: { persistSession: false } });
+
+    // 2b) The credential that will delete the auth user in step 4 must work BEFORE step 3 removes
+    //     anything: a key the Auth admin API refuses (a retired legacy key, a wrong one) would
+    //     otherwise leave the data gone and the account standing. A read of the caller's own auth
+    //     record by the same client is that proof, and it changes nothing (security-audit).
+    const { data: adminSees, error: adminErr } = await db.auth.admin.getUserById(uid);
+    if (adminErr || !adminSees?.user || adminSees.user.id !== uid) {
+      try { console.error("delete-account: admin credential check failed", String(adminErr?.message || "no_user").slice(0, 120)); } catch (_) { /* */ }
+      return json({ error: "delete_failed", message: "Could not delete the account data. Nothing was removed — please try again or contact support." }, 500);
+    }
 
     // 3) Purge owned rows in ONE transaction. The RPC raises rather than half-succeeding, so an
     //    error here means NOTHING was deleted — and the account is left intact to try again.

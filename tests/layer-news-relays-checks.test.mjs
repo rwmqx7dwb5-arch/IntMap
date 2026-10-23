@@ -173,7 +173,10 @@ test('#R216 ① proxy-fetch offers the Supabase relay FIRST, and reads SUPABASE_
 
 test('#R216 ① the news-relay function is an allow-list, and refuses a non-feed body', () => {
   const s = read('supabase/functions/news-relay/index.ts');
-  assert.match(s, /u\.hostname\s*!==\s*"news\.google\.com"/, 'the host is not pinned');
+  /* (security-audit) the host is pinned by the shared origin rule (relay-guard.js allowedUpstream — https,
+     no userinfo, default port, this exact host); tests/security-audit-checks ④ runs the function and
+     shows what it forwards */
+  assert.match(s, /allowedUpstream\(raw, \["news\.google\.com"\]\)/, 'the host is not pinned');
   /* ⚠ «THE PATH IS PINNED» IS THE PROPERTY; `startsWith("/rss/")` was one (loose) way of holding it.
      It accepted /rss/articles/CBMi… — the aggregator redirect every Google News item links to — so the
      relay would follow an arbitrary Google-hosted redirect target server-side. The rule is now the two

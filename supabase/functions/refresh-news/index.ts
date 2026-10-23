@@ -32,7 +32,7 @@
 //            supabase secrets set AI_MODEL=...                 (optional override; default _shared/ai-provider.js PROVIDER_DEFAULT_MODEL)
 //            supabase secrets set NEWS_AI=off                  (optional kill-switch → dictionary only)
 //            supabase secrets set REFRESH_NEWS_GLOBAL_PER_DAY=<n>   (optional — moves the project-wide ceiling below)
-//  (SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY are injected automatically.)
+//  (SUPABASE_URL and the project keys are injected — read through _shared/supabase-keys.js.)
 //  Run supabase_news_setup.sql once to create/extend current_news (incl. the
 //  analyzed_by column) + the pg_cron schedule.
 // ============================================================================
@@ -46,6 +46,7 @@ import "../_shared/newsgeo.js";
 /* (#R285) WHO Atlas is, from the generated mirror of js/atlas-persona.js. Editing it here is a build
    failure; edit js/atlas-persona.js and run `node scripts/sync-atlas-persona.mjs`. */
 import { personaPrompt } from "../_shared/atlas-persona.js";
+import { secretKey, denoEnv } from "../_shared/supabase-keys.js";
 import { NEWS_GEO_RULES } from "../_shared/news-geo-prompt.js";
 /* (edge-spend-and-models) The model table, the one door to a paid provider, the project-wide ceiling
    and the failure that carries a status and a length instead of the provider's body. */
@@ -578,7 +579,7 @@ Deno.serve(async (req) => {
   }
 
   const url = Deno.env.get("SUPABASE_URL")!;
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const serviceKey = secretKey(denoEnv);
   const db = createClient(url, serviceKey, { auth: { persistSession: false } });
 
   // Gazetteer straight from the table the client also uses.

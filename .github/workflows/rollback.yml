@@ -35,10 +35,11 @@ on:
         required: true
         type: string
 
+# Read-only by default: the `rollback` job runs the rolled-back commit's own npm ci and build, and the post-rollback
+# smoke runs repository code too; neither needs a publishing right. pages: write / id-token: write are on the one job
+# that publishes (`deploy`), which runs no repository code at all.
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages-production
@@ -64,6 +65,7 @@ jobs:
           fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 0          # need full history + tags to resolve an old ref
       - name: Resolve and check out the requested ref
         env:
@@ -114,7 +116,7 @@ jobs:
           INTMAP_DATA_STORE: ${{ runner.temp }}/intmap-data
         run: |
           set -euo pipefail
-          npm ci
+          npm ci --ignore-scripts
           if [ -f data-assets.json ]; then node scripts/data-assets.mjs pull; fi
           npm run build
           test -f dist/index.html || { echo "::error::dist/index.html missing — the build produced no site"; exit 1; }
@@ -151,6 +153,9 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     outputs:
       page_url: ${{ steps.deploy.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
     steps:
       - id: deploy
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346  # v5.0.1
@@ -161,11 +166,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: npm
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - run: npx playwright install --with-deps chromium
       - env:
           # empty → tests/prod-smoke.spec.js reads the address from site-origin.js (domain-portable)

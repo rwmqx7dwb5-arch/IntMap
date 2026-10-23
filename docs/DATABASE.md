@@ -54,8 +54,8 @@ is the human explanation.
 |---|---|---|---|
 | `community_posts` | User map posts. | Everyone. | Author inserts own — INSERT is a **column grant** (`user_id, author_name, title, body, img, lat, lng, category`), and `author_name` / `created_at` are **written by the database** (`tg_community_stamp_provenance`), never taken from the request; author **or admin** edits/deletes the content columns. |
 | `community_comments` | Threaded comments. | Everyone. | Author inserts own — column grant (`post_id, user_id, author_name, body, parent_id`), provenance stamped the same way; author **or admin** edits/deletes. |
-| `community_votes` | Upvotes (post,user). | Everyone (counts). | Owner insert/delete. |
-| `community_comment_votes` | Upvotes (comment,user). | Everyone. | Owner insert/delete. |
+| `community_votes` | Upvotes (post,user). | **The voter only** (own rows; anon none). Everyone sees the total as `community_posts.vote_count`, kept by a trigger. | Owner insert/delete. |
+| `community_comment_votes` | Upvotes (comment,user). | **The voter only** (own rows; anon none). Everyone sees the total as `community_comments.vote_count`. | Owner insert/delete. |
 | `community_reports` | Post flags. | **Admin only.** | Owner inserts own. |
 
 ### Feedback / ops (PII — admin-read)
