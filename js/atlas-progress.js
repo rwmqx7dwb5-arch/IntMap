@@ -117,7 +117,8 @@ export function makeAtlasProgress(HOST, deps) {
     photo: () => L('Matching the photo', '写真を照合', 'Foto abgleichen', 'Сверяю фото', 'Comparando la foto'),
     account: () => L('Reading your account data', 'アカウントのデータを確認'),
     places: () => L('Working with My places', 'マイプレイスを操作'),
-    corrections: () => L('Working with map error reports', '地図の誤り報告を確認')
+    corrections: () => L('Working with map error reports', '地図の誤り報告を確認'),
+    community: () => L('Working with Community maps', 'みんなの地図を操作')
   };
 
   /* wordFor(capabilityId) — the reader's word for one operation, via the registry's category.

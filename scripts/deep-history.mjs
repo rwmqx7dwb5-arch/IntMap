@@ -181,8 +181,17 @@ export function windowNights(actionYml) {
 /* ── the GitHub side ───────────────────────────────────────────────────────────────────────── */
 const gh = (args, timeout) => new Promise((res) => {
   execFile('gh', args, { cwd: REPO, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024, timeout, windowsHide: true },
-    (err, out) => res(err ? { ok: false, why: String((err && err.message) || err).split('\n')[0] } : { ok: true, out }));
+    (err, out, stderr) => res(err ? { ok: false, why: ghWhy(err, stderr) } : { ok: true, out }));
 });
+/** (nightly-unread) why a gh call failed, in gh's own words. The error's first line is only «Command failed: gh …» —
+    the HTTP status and GitHub's message are on stderr, and dropping them is how the CI alarm read 0 nights for a week
+    without anyone being told why. A timeout says so (execFile kills it and stderr is then usually empty). */
+export function ghWhy(err, stderr) {
+  if (err && err.killed) return 'gh の時間切れ';
+  const said = String(stderr || '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const head = String((err && err.message) || err || '').split('\n')[0];
+  return (said.length ? said.slice(0, 2).join(' / ') : head).slice(0, 240);
+}
 
 function masterDir() {
   return new Promise((res) => execFile('git', ['rev-parse', '--git-common-dir'], { cwd: REPO, encoding: 'utf8' },
@@ -223,7 +232,8 @@ async function readNight(run, deadline) {
   night.failed = [...new Set(night.failed)].sort();
   night.flaky = [...new Set(night.flaky)].sort();
   night.read = final;
-  if (!final) night.why = '一部の shard の log を読めなかった';
+  /* (nightly-unread) the reason is the shard's own — «could not read» with no why is what kept the CI alarm blind */
+  if (!final) night.why = '一部の shard の log を読めなかった: ' + (night.infra.find((x) => !/（(skipped|cancelled)）$/.test(x)) || '?');
   return { night, final };
 }
 

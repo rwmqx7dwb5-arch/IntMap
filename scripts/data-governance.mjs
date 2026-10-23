@@ -44,6 +44,10 @@
  *                       ledger row whose host the code no longer requests fails too. The rule itself
  *                       lives in scripts/outbound-hosts.mjs (tests/outbound-hosts-disclosed-checks
  *                       evaluates it on injected files); this gate only runs it.
+ *    stored-disclosed   (wave4-security) every name the browser code WRITES into the reader's browser — storage keys,
+ *                       IndexedDB databases, Cache Storage caches — has a kind and en + jp words in
+ *                       scripts/device-storage-words.json, and data/device-storage-ledger.json is what they derive
+ *                       (the file the reader's «Stored on this device» list reads). Rule: scripts/device-storage-ledger.mjs.
  *    probe-declared     every host the browser REQUESTS declares one representative probe in the
  *                       same ledger (or says why it cannot be probed). Checked here without a
  *                       network; scripts/upstream-liveness.mjs asks them, nightly.
@@ -449,6 +453,21 @@ function initializer(src, from) {
   return null;
 }
 
+/* A statement's top-level comma-separated parts (strings and brackets respected) — the declarators of one
+   `const a = 1, b = 2`. A part that is not `NAME = …` is not a declarator and is ignored by the caller. */
+function topLevelParts(expr) {
+  const out = []; let depth = 0, from = 0;
+  for (let k = 0; k < expr.length; k++) {
+    const c = expr[k];
+    if (c === '"' || c === "'" || c === '`') { const j = endOfString(expr, k); if (j < 0) return [expr]; k = j; continue; }
+    if (c === '{' || c === '[' || c === '(') depth++;
+    else if (c === '}' || c === ']' || c === ')') depth--;
+    else if (c === ',' && depth === 0) { out.push(expr.slice(from, k)); from = k + 1; }
+  }
+  out.push(expr.slice(from));
+  return out;
+}
+
 /* The file's own constants whose initialiser is PURE DATA, as values. ⚠ THIS IS WHAT MAKES THE
    BEST-WRITTEN DECLARATIONS READABLE: `url: SRC` is the right way to write one, because the URL the
    builder fetches and the URL the record states are one fact and belong in one place. A reader that
@@ -461,9 +480,18 @@ function initializer(src, from) {
 function literalConsts(src) {
   const known = new Map();
   const pending = [];
+  /* ⚠ ONE `const` MAY DECLARE SEVERAL NAMES. Measured 2026-10-13: build-aftershock-hindcast.mjs writes
+     `const MIN_MAG = 7, FROM = '2015-01-01', …;` and its declaration says `'M' + MIN_MAG`, so taking the whole
+     statement as ONE initialiser bound nothing and called a well-written declaration unreadable. The statement
+     is split at its top-level commas, and every `NAME = expr` declarator is a constant of its own. */
   for (const m of src.matchAll(/(?:^|\n)[ \t]*(?:export\s+)?const\s+([A-Za-z_$][\w$]*)\s*=/g)) {
-    const expr = initializer(src, m.index + m[0].length);
-    if (expr != null && !known.has(m[1])) pending.push({ name: m[1], expr });
+    const whole = initializer(src, m.index + m[0].length);
+    if (whole == null) continue;
+    topLevelParts(whole).forEach((part, i) => {
+      const later = i > 0 ? /^\s*([A-Za-z_$][\w$]*)\s*=(?!=)([\s\S]*)$/.exec(part) : null;
+      const d = i === 0 ? { name: m[1], expr: part } : later ? { name: later[1], expr: later[2] } : null;
+      if (d && !known.has(d.name)) pending.push(d);
+    });
   }
   const dataOnly = (expr) => {
     /* strings blanked out so that their contents cannot look like code */
@@ -1187,6 +1215,20 @@ async function main() {
   say('probe-declared', lv.probes.length > 0, lv.probes.length + ' probe(s) declared in ' + OUTBOUND_LEDGER
     + ' for the hosts the browser requests; ' + lv.notRequested.length + ' row(s) are links, dormant, or say why they cannot be probed');
   for (const p of lv.problems) say('probe-declared', false, p);
+
+  /* ── 9. stored-disclosed ─────────────────────────────────────────────────────────────── */
+  /* (wave4-security) The third half of «what the page does with the reader»: not what it ships nor whom it talks to,
+     but what it KEEPS in the reader's browser. Every name the browser code writes (localStorage / sessionStorage /
+     IndexedDB / Cache Storage — parsed, through the code's own bindings) has words and a kind in
+     scripts/device-storage-words.json, no row names a write that is gone, no write's name is unreadable, no cookie is
+     set, and data/device-storage-ledger.json — what the reader's «Stored on this device» list holds the browser
+     against — is what those derive. The rule lives in scripts/device-storage-ledger.mjs; this gate only runs it.
+     ⚠ The same refusal of an empty universe: a parser that found no write has measured nothing. */
+  const { check: checkStored, OUT: STORED_LEDGER } = await import('./device-storage-ledger.mjs');
+  const st = checkStored(ROOT);
+  say('stored-disclosed', st.found.length > 0, st.found.length + ' name(s) the browser code writes into the reader\'s browser');
+  for (const p of st.problems) say('stored-disclosed', false, p);
+  if (!st.problems.length) say('stored-disclosed', true, 'every one has a kind and en + jp words, and ' + STORED_LEDGER + ' is what they derive');
 
   /* ── the measurement, always printed ──────────────────────────────────────────────────── */
   const shards = m.bs.filter((b) => b.kind === 'shard');

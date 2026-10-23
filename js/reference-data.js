@@ -251,6 +251,12 @@ export const IntMapRefData = (function(){
        source's attribution name it. Read live by the reader's browser; IntMap ships no copy. */
     {n:'ISC-GEM Global Instrumental Earthquake Catalogue (International Seismological Centre / GEM Foundation) — through USGS ComCat',u:'https://www.isc.ac.uk/iscgem/',lic:'CC BY-SA 3.0',licUrl:'https://creativecommons.org/licenses/by-sa/3.0/',credit:true,
      cite:'Storchak, D.A. et al. ISC-GEM Global Instrumental Earthquake Catalogue (1904–), International Seismological Centre / GEM Foundation, doi:10.31905/D808B825'},
+    /* (wave4-science) «Aftershock forecast» (js/aftershock.js): the prior of every forecast is USGS's own — the generic Reasenberg–Jones
+       parameters per tectonic regime (Page et al. 2016), the catalogue-completeness rules and the García et al. (2012) regime table, shipped
+       unchanged from the OpenSHA OAF repository (CC0) in data/aftershock-regimes.json.gz (scripts/build-aftershock-regimes.mjs). CC0 asks
+       for no credit; the card, Atlas and the method page name it all the same. */
+    {n:'USGS Operational Aftershock Forecasting — generic parameters and tectonic regimes (OpenSHA OAF)',u:'https://github.com/opensha/opensha-oaf',lic:'CC0 1.0',licUrl:'https://creativecommons.org/publicdomain/zero/1.0/',credit:false,
+     cite:'Page, M.T. et al. (2016) Three ingredients for improved global aftershock forecasts. BSSA 106(5):2290–2301, doi:10.1785/0120160073; García, D. et al. (2012) BSSA 102(1):185–203'},
     /* (weekly-earth) «This week on Earth» (weekly/ and Atlas time.weeklyEarth): the natural events NASA's EONET tracks, read at
        BUILD time by scripts/build-weekly-earth.mjs into data/weekly-earth.json — the reader's browser never asks EONET anything.
        A U.S. Government work; NASA asks to be acknowledged, and every page and answer built from it names EONET and the
@@ -422,6 +428,11 @@ export const IntMapRefData = (function(){
        ⚠ AND THE ROW SAYS THE DATE, because the reader needs it: the upstream stopped being updated
        in June 2014 and says so itself. A credit that hid that would be the wrong credit. */
     {n:'OpenFlights — airline route database (country-pair route counts for the pandemic simulator; snapshot of June 2014, no longer updated; ODbL 1.0)',u:'https://openflights.org/data.php',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
+    /* (wave4-mobility) World flows (js/world-flows.js) — the record scripts/build-world-flows.mjs reads into data/world-flows.json.
+       CC BY 3.0 IGO allows commercial reuse with credit: the IMS 2024 workbook states it on every sheet (read 2026-10-13). The name
+       below is the `paidBy` of that builder's GOVERNANCE. */
+    {n:'UN DESA Population Division — International Migrant Stock 2024 (CC BY 3.0 IGO)',u:'https://www.un.org/development/desa/pd/content/international-migrant-stock',lic:'CC BY 3.0 IGO',licUrl:'https://creativecommons.org/licenses/by/3.0/igo/',credit:true,
+     cite:'United Nations Department of Economic and Social Affairs, Population Division (2024). International Migrant Stock 2024.'},
     /* (#R678) WHO Global Health Observatory — the UHC service coverage index (SDG 3.8.1) and IHR
        SPAR capacity 7, which give the pandemic simulator each country's medical capacity and
        emergency-response capability instead of the GDP proxy all four capacities used to share.

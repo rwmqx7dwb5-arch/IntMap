@@ -75,6 +75,85 @@ function layerId(d) {
   return LAYER_ID.test(s) ? s : null;
 }
 
+/* ══ (field-speed) HOW LONG THE MAP TOOK TO BECOME USABLE, BY RELEASE ══════════════════════════════
+   The lab measures the bytes a start-up reads (check:perf) and a phone profile on one runner; nothing
+   measured what readers actually wait. One page load adds, ONCE, two rows whose dimension is
+       <release>.<m|d>.<bucket>      metric `ready`     — the launch screen lifted after this long
+       <release>.<m|d>.<ending>      metric `boot_end`  — and this is how it lifted (index.html __imBoot)
+   <release> is the build stamp the page carries (scripts/build-stamp.mjs `2026-10-12T17:10:49Z-6830fff`)
+   folded into the counter's alphabet — `202610121710-6830fff`: minute and short sha, so the reader of the
+   counts can order releases without git and name the commit. A page whose stamp is not a release (an
+   unbuilt copy, a `-nogit` tarball) is not counted: a time with no release to belong to cannot be compared.
+   <m|d> is the counter's own device split (mobile / desktop — `device` above). Neither row says anything
+   about the reader beyond what `device` already does; the time is a RANGE, never the milliseconds.
+   THE BUCKETS (.agents/rules/no-ad-hoc-hardcoding.md §4):
+     · OBSERVED 2026-10-02 (js/boot-stage.js header): production on a phone profile became usable at
+       9.7–10.8 s; a desktop on this machine in 2–4 s. The edges resolve a second where readers mostly are
+       (1–4 s) and widen by ~1.5× above it, so one step is a change a reader feels at either end.
+     · 20 s is index.html's failsafe (`finish('timeout')` after 20000 ms) — the longest a launch screen can
+       stay up; `late` is a page whose failsafe timer itself ran late (a throttled tab).
+     · EXPIRES when the failsafe changes (then the last edge must follow it) or when most loads fall in one
+       bucket (the admin «Usage» tab shows it) — then the edges no longer separate what readers feel.
+     CANON: this array; the database function and every reader take the edges from the labels. */
+export const BOOT_EDGES_MS = Object.freeze([1000, 2000, 3000, 4000, 6000, 8000, 12000, 20000]);
+export const BOOT_BUCKETS = Object.freeze(BOOT_EDGES_MS.map((ms) => ms / 1000 + 's').concat(['late']));
+/* the three ways the launch screen lifts — the ending names js/app-body.js and index.html record (a contract
+   tests/shell-sky-space-checks.test.mjs already holds): the map settled (`idle`), an escape fired because a
+   milestone never arrived (`timeout`), or there was no map renderer at all (`no-renderer`) */
+export const BOOT_ENDINGS = Object.freeze(['idle', 'timeout', 'no-renderer']);
+const RELEASE = /^\d{12}-[0-9a-f]{7,12}$/;
+const STAMP = /^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d):\d\dZ-([0-9a-f]{7,12})$/;
+
+/** the release a build stamp names, in the counter's alphabet — or null (unbuilt, `-nogit`, anything else) */
+export function releaseOf(stamp) {
+  const m = STAMP.exec(String(stamp == null ? '' : stamp));
+  return m ? m[1] + m[2] + m[3] + m[4] + m[5] + '-' + m[6] : null;
+}
+/** the bucket label for a wait in milliseconds, or null when it is not a wait */
+export function bootBucket(ms) {
+  const v = Number(ms);
+  if (!Number.isFinite(v) || v < 0) return null;
+  for (let i = 0; i < BOOT_EDGES_MS.length; i++) if (v <= BOOT_EDGES_MS[i]) return BOOT_BUCKETS[i];
+  return 'late';
+}
+/* ══ (field-speed) A RELEASE THAT CANNOT EXIST IS REFUSED ON THE SERVER ══════════════════════════════
+   The shape alone lets a caller invent `209912312359-aaaaaaa`. Whether a release REALLY exists is a question for
+   main's history (scripts/field-speed.mjs asks git, the same source scripts/build-stamp.mjs writes the stamp
+   from, and publishes nothing else); the server can still refuse what no release can be, by time:
+     · RELEASE_FUTURE_MS = 1 h — a stamp is the committer time of a commit already merged and built, so it is never
+       after the moment its page reports; the hour is clock skew between GitHub and the function, not a window.
+     · RELEASE_MAX_AGE_MS = 90 days — public.field_speed() reads at most 90 days (its least(p_days, 90)); an older
+       release could never be read, so its rows only occupy the day's ceiling. Expires with that clamp.
+   `now` is passed only by the server (parse below). The browser's acceptRow has none: its own clock may be wrong,
+   and a wrong clock must not cost a reader's honest row — the server's clock decides. */
+const RELEASE_FUTURE_MS = 3600e3;
+const RELEASE_MAX_AGE_MS = 90 * 864e5;
+/** the UTC time a release names (ms), or NaN */
+export function releaseTime(rel) {
+  const m = /^(\d{4})(\d\d)(\d\d)(\d\d)(\d\d)-/.exec(String(rel || ''));
+  return m ? Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]) : NaN;
+}
+const releaseDim = (tail) => (d, now) => {
+  const p = String(d == null ? '' : d).split('.');
+  if (!(p.length === 3 && RELEASE.test(p[0]) && (p[1] === 'm' || p[1] === 'd') && tail.indexOf(p[2]) >= 0)) return null;
+  if (now != null) {
+    const t = releaseTime(p[0]);
+    if (!(t <= now + RELEASE_FUTURE_MS && t >= now - RELEASE_MAX_AGE_MS)) return null;
+  }
+  return p.join('.');
+};
+
+/** the two rows one page load adds, or [] — { stamp, mobile, ms, ending }; a hidden or prerendered start
+    is the caller's to leave out (it is not a wait a reader felt) */
+export function bootRows(o) {
+  const x = o || {};
+  const rel = releaseOf(x.stamp);
+  const b = bootBucket(x.ms);
+  if (!rel || !b || BOOT_ENDINGS.indexOf(x.ending) < 0) return [];
+  const dev = x.mobile ? 'm' : 'd';
+  return [{ m: 'ready', d: rel + '.' + dev + '.' + b }, { m: 'boot_end', d: rel + '.' + dev + '.' + x.ending }];
+}
+
 /* ══ THE DECLARATION ═══════════════════════════════════════════════════════════════════════════
    metric → { dim(d) → value|null, max, maxDims }   — and, in the comment at the end of each row, what
    the count means (the privacy policy, js/legal-text.js §1, says the same in words)
@@ -96,7 +175,13 @@ function layerId(d) {
      · atlas max 100 — a page load that asks Atlas more than 100 questions before it is hidden is far
        past any observed session; the daily AI allowance (ai_usage) ends such a session sooner.
        Expires if that allowance is raised past it. atlas_mode shares it: one answer per question, so
-       its count per page load can never pass the questions' (growth-loop). */
+       its count per page load can never pass the questions' (growth-loop).
+     · (field-speed) ready maxDims 720, boot_end 240 — one release per merge to main, and MEASURED on main
+       2026-09-13…10-13 at most 30 merges in a day (2026-10-01); a reader whose browser still holds an earlier
+       release counts under that one. 40 releases × 9 buckets × 2 devices = 720, × 3 endings × 2 = 240. The
+       ceiling refuses NEW dimensions, which on a busier day would be the newest release — the one this is for —
+       so it is sized to the busiest day seen, not the usual one. Expires when one day sees more than 40 releases.
+       */
 export const METRICS = Object.freeze({
   view:         { dim: closed(['']),                                          max: 1,   maxDims: 1 },   // the map was opened (one per page load)
   entry:        { dim: closed(['link', 'embed', 'showcase', 'about', 'teachers', 'news-map', 'embed-map', 'developers', 'history', 'on-this-day', 'countries', 'weekly']), max: 1, maxDims: 12 },   // opened from a link that carries a map view (a shared or saved link), embedded in another page (?embed=1), or reached from one of IntMap's own pages a visitor lands on first (an example's share page s/, the about page, the teacher page, the two pages by use news-map and embed-map, the developer page, the historical-map entry pages history/, the «on this day» pages on-this-day/, the country pages countries/ and the «this week on Earth» pages weekly/ — SITE_PAGES below)
@@ -110,14 +195,16 @@ export const METRICS = Object.freeze({
   feature:      { dim: closed(['compare', 'timelapse', 'share', 'donate', 'install']), max: 1, maxDims: 5 },   // page loads in which the feature was used
   atlas:        { dim: closed(['']),                                          max: 100, maxDims: 1 },   // questions asked to Atlas (the count only — never the question)
   atlas_mode:   { dim: closed(['text', 'map', 'chart', 'mixed']),             max: 100, maxDims: 4 },   // Atlas answers by the kind Atlas declared for them (js/atlas-agent.js ANSWER_MODES) — counted when a turn ends with an answer; never the question or the answer
+  ready:        { dim: releaseDim(BOOT_BUCKETS),                              max: 1,   maxDims: 720, perRequest: 1 },   // (field-speed) page loads whose launch screen lifted within this range, by release and device — the range, never the time
+  boot_end:     { dim: releaseDim(BOOT_ENDINGS),                              max: 1,   maxDims: 240, perRequest: 1 },   // (field-speed) how that launch screen lifted (map settled / an escape / no map renderer), by release and device
 });
 
 /** acceptRow(metric, dimension, n) → { m, d, n, cap } | null — the ONE validator both sides use. */
-export function acceptRow(metric, dimension, n) {
+export function acceptRow(metric, dimension, n, now) {
   const m = String(metric == null ? '' : metric);
   if (!Object.prototype.hasOwnProperty.call(METRICS, m)) return null;
   const spec = METRICS[m];
-  const d = spec.dim(dimension == null ? '' : dimension);
+  const d = spec.dim(dimension == null ? '' : dimension, now);
   if (d == null) return null;
   const k = Math.floor(Number(n));
   if (!Number.isFinite(k) || k < 1) return null;
@@ -126,7 +213,7 @@ export function acceptRow(metric, dimension, n) {
 
 /* How many rows one request may carry. The browser splits a larger batch; the server refuses more.
    Derived: the closed metrics are at most 1+5+3+2+5+1+4 = 21 rows, a page load records one ref and
-   three tags, and a reader who switches on more than ~40 distinct layers before the page is hidden
+   three tags, (field-speed) one ready and one boot_end, and a reader who switches on more than ~40 distinct layers before the page is hidden
    simply sends two requests. Expires with the declaration above. */
 export const MAX_ROWS_PER_REQUEST = 64;
 
@@ -138,16 +225,23 @@ export function encode(rows) {
 }
 
 /** parse(text) → { rows } | { error } — the server's reading of one request. */
-export function parse(text) {
+export function parse(text, now = Date.now()) {
   let body = null;
   try { body = JSON.parse(String(text)); } catch (_) { body = null; }
   if (!body || typeof body !== 'object' || !Array.isArray(body.c)) return { error: 'invalid_request' };
   if (body.c.length < 1 || body.c.length > MAX_ROWS_PER_REQUEST) return { error: 'invalid_request' };
   const merged = new Map();
+  /* (field-speed) `perRequest`: how many DISTINCT dimensions of the metric one request may carry. An honest page
+     load sends exactly one `ready` and one `boot_end`; without the limit one request could open 64 new dimensions
+     and twelve requests would fill the day's ceiling (720), refusing the real newest release. With it, filling it
+     takes 720 requests — past the per-caller bucket (120/hour), so from many addresses at once. */
+  const seen = {};
   for (const t of body.c) {
     if (!Array.isArray(t)) continue;
-    const r = acceptRow(t[0], t[1], t[2]);
+    const r = acceptRow(t[0], t[1], t[2], now);
     if (!r) continue;                                   // undeclared / refused: dropped, never stored
+    const lim = METRICS[r.m].perRequest;
+    if (lim && !merged.has(r.m + '\u0000' + r.d) && (seen[r.m] = (seen[r.m] || 0) + 1) > lim) continue;
     const key = r.m + '\u0000' + r.d;
     const prev = merged.get(key);
     /* a row repeated inside one request is still clamped to the metric's per-request max */

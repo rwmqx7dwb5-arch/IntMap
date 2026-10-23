@@ -131,8 +131,9 @@ worktree は分かれていても、次の場所は全セッションで 1 つ�
   （`tests/build-isolation-checks.test.mjs`）。強制終了されたビルドの一時ファイル（約 5 MB）は OneDrive の中に残る。
   `node_modules/.vite/`（dev の依存キャッシュ）、データ更新の上流キャッシュ（`node_modules/.cache/intmap-*`・
   `%TEMP%\intmap-*-cache`）も共有。
-- **時代タイルのキャッシュ**（`%LOCALAPPDATA%\intmap-data\hvt-cache`）: 全 worktree のビルドが読む。内容のハッシュで
-  名づけ、書いてから名前へ rename する。
+- **時代タイルのキャッシュ**（`%LOCALAPPDATA%\intmap-data\hvt-cache`）と**政体ページのカード**（`%LOCALAPPDATA%\intmap-data-cards`）:
+  全 worktree のビルドが読む。内容のハッシュで名づけ、書いてから名前へ rename する。カードは全ページを描いたビルドが、
+  そのビルドで使わなかったものを消す（`scripts/polity-pages.mjs` `pruneUnused`）。
 - **同じ木の `dist/`**: 2 つのビルドが重なると互いの `dist/` を空にし合った（`EPIPE`・CSS の無いページ）。ビルドは
   出力先を**1 本ずつ**握り（出力先から名づけた named pipe）、2 本目は待つ（`vite.config.js` の `acquireOutDirLock`）。
   別の出力先（`--outDir`）は待たない。錠が守るのは書き手どうしで、そのビルドを配っているサーバは守らない。

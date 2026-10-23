@@ -273,17 +273,18 @@ sheet を表の decoder（`decodeRows`）が読む。座標の無い表を場所
 | `js/gis-geotiff.js` | `window.IntMapGisGeotiff` | **GeoTIFF / COG の読み手**（依存なしで TIFF 6.0）——`sniff` / `read` / `readUrl` / `refusals`。バイトの供給元は `{size, read(offset,length)}` の 1 契約で、窓を覆う tile／strip だけを読み、`levels` / `levelAt` / `levelFor` が overviews から要求を満たす最も粗い段を選ぶ。BigTIFF・PlanarConfiguration 2・predictor 3 も読み、扱えないもの（JPEG-in-TIFF など）は名前を付けて断る。欠損は NaN |
 | `js/gis-warp.js` | `window.IntMapGisWarp` | **格子の再投影と再標本化**——`to4326` / `resample` / `align` / `methods` / `affineOf` / `footprintModes`。`method` に既定は無い。`opts.sink`（`begin` / `write` / `end`）へ窓ごとに書き出せ、予算は `opts.budgetBytes` か扉の `budgetBytes()` に訊く（無ければ受け皿を渡したときだけ `warp-budget-not-stated`）。超過は拒まず `report.memory.overBudget`・`report.footprint.boxExcess` として述べる。`footprint:'exact'` と `areaTolerance` |
 | `js/gis-sources.js` | `window.IntMapGisSources` | **供給元**——`list` / `features` / `region` / `acquire` / `declare` / `supply` / `supplierOf` / `plan` / `acquirePlanned` / `capabilitiesOf` / `measureCapabilities` / `auditCapabilities`。取得は必ず `coverage`（`all` / `partial` / `sample` と理由・範囲・時点・解像度）を伴い、`all` は供給元の宣言からしか届かない。`plan()` が上流で効く条件と後段に回る条件を述べ、`acquirePlanned()` が窓を取り切る（できなければ `plan-unsatisfiable`。後段は `kind:'staged'`）。答えた道は `coverage.answeredBy`。`analysis:true` はカメラ依存の答えを `renderer-view-dependent` で断る。能力は申告（導出）と実測（呼び手と同じ扉）の両方で、3 値のまま |
+| `js/gis-voronoi.js` | `window.IntMapGisVoronoi` | **球面の最寄り圏**——`cells` / `farthest` / `sphereRelError`。`voronoi` op の算術: 近傍は 3 次元凸包（球面 Delaunay）、圏は真の位置の二等分面で 8 つの八分円から切り出す。境界の描画と「いちばん遠い場所」の探索の許容は球と WGS-84 の差（`docs/GIS-CORE.md` §2.9） |
 | `js/gis-index.js` | `window.IntMapGisIndex` | **空間索引**——`build` / `query` / `queryEach` / `stats` / `resetMetrics`。偽陰性を出さない。種別は `grid`（既定）と `tiered`、`kind:'auto'` は数えて選ぶ。`stats()` が仕事そのもの（`buildMs` / `queries` / `queryMs` / `candidates` / `delivered` / `scanned` / `candidateRatio` / `scans` / `stopped` / `oversizeRatio` / `retained`）を述べる。厳密な判定は `queryEach(…,{test})` として渡される |
 | `js/gis-expr.js` | `window.IntMapGisExpr` | **式の解釈器**——`parse` / `evaluate` / `compile` / `functions` / `refusals` / `portable` / `nodeKinds`。自己完結した factory（`exprKernel()`）で、数値規則は `numberRuleFactory()` を渡す（無ければ `expr-no-number-rule`）。運べるかは queue の前に `portable(ast)` で訊く |
 | `js/gis-units.js` | `window.IntMapGisUnits` | **量の単位**——`parse` / `compare` / `convert` / `unitOfExpr`。`rasterDiff` / `mosaic` / `compute` / `rasterCalc` が同じ 1 か所に訊く。表は SI の定義値の原子だけで合成単位は解析する。沈黙は不一致ではないが、読めない綴りどうしは `unit-mismatch`。°C・°F は読みの換算と差の換算が別 |
 | `js/data-governance.js` | `window.IntMapDataGovernance` | **出自・権利・鮮度・測定の語彙**——`SPELLINGS`（`licence` と `license` が 1 つの事実だと述べる唯一の場所） / `FACETS`・`SUBJECTS` / `REASONS` / `FRESHNESS` / `read` / `freshness` / `attribution` / `account` / `measureQuality`。値を 1 つも持たない。表示文は値から導出する。`unknown` は弱い `stale` ではない。多上流の束は最も厳しい義務を残し、1 つでも沈黙していれば `null`。`scripts/data-governance.mjs` が Node でそのまま読む。正本は [`docs/DATA-GOVERNANCE.md`](../DATA-GOVERNANCE.md) |
 | `js/gis-layers.js` | `window.IntMapGisLayers` | **地図のレイヤーをデータセットにする橋**——`sources()` / `read()` / `toDataset()`（同期） / `acquireDataset()`（非同期） / `toRaster()` / `supplierFor()`。`load()` を述べた行には非同期の供給元が組み立てられる。供給元になれるかは行自身の宣言が決める。取得条件の語彙 `acquireFields()` の正本（ラスタは `bounds` / `width` / `height` / `where` / `unit` / `time` / `band`） |
-| `js/gis-ops.js` | `window.IntMapGisOps` | 処理（`filter` / `buffer` / `clip` / `intersect` / `difference` / `union` / `dissolve` / `relate` / `sample` / `zonal` / `rasterMask` / `rasterDiff` / `resample` / `rasterCalc` / `mosaic` / `rasterize` / `polygonize` / `measure` / `validate` / `repair` / `timeWindow` / `join` / `compute` / `aggregate` / `spatialJoin` / `nearestJoin` / `timeJoin` / `convert` / `coverage` / `profile` / `compareZones` / `reach`）の宣言と実行。結合は `cardinality` 必須、最近傍は索引の巡回順で答えない、時点の結合は半開区間、換算は単位カーネルに訊き `resolved` に残す、集計は量の意味に照らして判定を記録、量の著者は `quantityStatedBy`（`caller` / `column` / `band`）、`aggregate` の `weightBy`（`memberArea` 既定／`intersectionArea`）。`profile` / `compareZones` / `reach` は比べられる形にするだけ（`asOf` は比較されるだけで書き込まれない。分割・併合の判定は返さない）。引数の語彙は所有するカーネルに訊く（`valuesOf`）。計算した面を `surface`（`sphere` / `degree-plane` / `degree-grid` / `stated-plane`、`surfaces()`）で述べる。中止は `ctx` で下のカーネルまで渡す。出力は入力の意味（最も弱い `coverage`・時点・単位）を引き継ぐ |
+| `js/gis-ops.js` | `window.IntMapGisOps` | 処理（`filter` / `buffer` / `clip` / `intersect` / `difference` / `union` / `dissolve` / `relate` / `sample` / `zonal` / `rasterMask` / `rasterDiff` / `resample` / `rasterCalc` / `mosaic` / `rasterize` / `polygonize` / `measure` / `validate` / `repair` / `timeWindow` / `join` / `compute` / `aggregate` / `spatialJoin` / `nearestJoin` / `voronoi` / `timeJoin` / `convert` / `coverage` / `profile` / `compareZones` / `reach`）の宣言と実行。結合は `cardinality` 必須、最近傍は索引の巡回順で答えない、時点の結合は半開区間、換算は単位カーネルに訊き `resolved` に残す、集計は量の意味に照らして判定を記録、量の著者は `quantityStatedBy`（`caller` / `column` / `band`）、`aggregate` の `weightBy`（`memberArea` 既定／`intersectionArea`）。`profile` / `compareZones` / `reach` は比べられる形にするだけ（`asOf` は比較されるだけで書き込まれない。分割・併合の判定は返さない）。引数の語彙は所有するカーネルに訊く（`valuesOf`）。計算した面を `surface`（`sphere` / `degree-plane` / `degree-grid` / `stated-plane`、`surfaces()`）で述べる。中止は `ctx` で下のカーネルまで渡す。出力は入力の意味（最も弱い `coverage`・時点・単位）を引き継ぐ |
 | `js/gis-atlas.js` | `window.IntMapGis.atlas` | **Atlas がこの層に処理を依頼する扉**。目録は `ops()` そのもの。入力は登録済み id・題名・`layer:<id>`、出力は次の処理の入力になる id。能力は `data.gis`（計算）と `map.drawDataset`（描画）の 2 つ。取得条件（`acquire`）の語彙は `acquireFields()` に訊き、`op` の無い依頼は取得だけ（行・`coverage`・`next`）。`describe()` の `query.capabilities` が導いた申告を運び、実測は `capabilities(ref, opts)` ＝ `auditCapabilities` |
 | `js/gis-project.js` | `window.IntMapGisProject` | IndexedDB への保存・復元・引数を変えた再計算。ディスクに書くのはレシピだけ。タブの記憶に 1 回の実行の記憶（`cache`）を置き、鍵は条件 5 軸（入力のバイト・`describe()`＋読者の宣言・op でない祖先の出自・パラメーター・カーネルの版）の sha256（時刻は入らない。版を述べない部分があれば鍵を作らない）。引いた記録は突き合わせ、予算はバイトで LRU、使い回した段は `reused` |
 | `js/gis-worker.js` | `window.IntMapGisWorker` | **Worker の束ね役**（応答性の yield の隣の並列性）。`rasterDiff` の画素ループがここで走る（使えなければ主スレッドで完走し理由を書く）。中止は `terminate()` まで届き、`available()` と `probe()` は別の問い。幾何の運び口（`geometry.op` / `provideGeometry` / `geometryOps` / `geometryReady`）。`status().stopReachesRunningWork`、`runBlocks` の `partial` |
 | `js/gis-panel.js` | `window.IntMapGisPanel` | 操作卓（一覧・属性表・由来の連鎖・実行・保存） |
-| `js/gis-runtime.js` | `makeGisRuntime` | **組み立て**——ブラウザ入口と同じ `mount()` で 15 のカーネルを載せる。借り物は `EXTERNALS` が全一覧（各項に読み手の file:line）。`externals` を渡せば閉じた集合（`scope-carries-uninjected`）、渡さなければ生きた scope。plan → 検査 → install → mount で失敗したら巻き戻し、mount 後に 15 の global の同一性を照合（`kernel-not-reachable`）、二度目は同じ組。名前を持った実行コンテキストの表（`mount(scope, HOST, CONTEXT)`・`API.context`・`IntMapGisContext`・`contexts()`・`release(ctx)`＝自分が置いたものだけ外す、`keptForeign`、`context-id-taken`）。1 realm に 2 組は `scope-conflict`。2 つ目の realm は `workerSource({coreUrl})` / `serve(port)` / `attach(port)`、渡れない結果は `result-not-transferable`（どの message にも返事がちょうど 1 つ） |
+| `js/gis-runtime.js` | `makeGisRuntime` | **組み立て**——ブラウザ入口と同じ `mount()` で 16 のカーネルを載せる。借り物は `EXTERNALS` が全一覧（各項に読み手の file:line）。`externals` を渡せば閉じた集合（`scope-carries-uninjected`）、渡さなければ生きた scope。plan → 検査 → install → mount で失敗したら巻き戻し、mount 後に 15 の global の同一性を照合（`kernel-not-reachable`）、二度目は同じ組。名前を持った実行コンテキストの表（`mount(scope, HOST, CONTEXT)`・`API.context`・`IntMapGisContext`・`contexts()`・`release(ctx)`＝自分が置いたものだけ外す、`keptForeign`、`context-id-taken`）。1 realm に 2 組は `scope-conflict`。2 つ目の realm は `workerSource({coreUrl})` / `serve(port)` / `attach(port)`、渡れない結果は `result-not-transferable`（どの message にも返事がちょうど 1 つ） |
 | `js/gis-core.js` | `window.IntMapGis` | 上を起動する 1 つの扉と `draw()`——地物は `window.GeoJSONUpload` の 3 レイヤーへ、格子はエンジンの動的画像へ。「描けた」は描画器が報告した事実 |
 | `js/gis-shapefile.js` | `window.IntMapGisShapefile` | **Shapefile の読み手**（`.shp` / `.dbf` / `.prj` / `.cpg`）——`read` / `group` / `refusals` |
 | `js/gis-geopackage.js` | `window.IntMapGisGeopackage` | **GeoPackage の読み手**（依存なしで SQLite を読み取り専用で）——`sniff` / `tables` / `read` / `refusals` |
@@ -441,6 +442,39 @@ Atlas は `time.placeHistory`（`year` を渡すとその年に有効な行も�
 
 読めなかったとき（時間切れ・拒否・到達不能）は理由を言い、「地震が無かった」とは言わない。0 件は「カタログの答え」と言う。
 
+### 7.3j 世界とのつながり (World flows) — `js/world-flows.js` / `js/world-flows-core.js`
+
+1 つの国が、人・データ・航空路でどの国とどれだけつながっているかを、カードと地図の弧で読む。弧は国から相手へ大圏に沿い、
+太さは最大の相手との比、`›` が流れの向き（「この国の出身者が住む先」「出発する路線」は国から出る、「この国に住む人の出身国」
+「到着する路線」は国へ入る）。リストと地図は同じ相手を同じ順で出す（既定 15 件・「すべて表示」で全件）。
+
+| 流れ | 記録 | 何の数か |
+|---|---|---|
+| 人 | `data/world-flows.json`（`scripts/build-world-flows.mjs` が UN DESA International Migrant Stock 2024 の Table 1 から書く・CC BY 3.0 IGO） | ある国で生まれ別の国に住む人の**ストック**（年央 1990・1995 … 2020・2024）。移動した人数ではない。合計は DESA が述べる値（出身・居住が「その他・不明」の分を含む）で、名指しの相手の和との差を「記録が国を特定していない分」と書く |
+| データ | `data/subcables-meta.json`（海底ケーブルレイヤーと同じ記録） | 両国に陸揚げされ、その年までに運用開始した**系統の数**（記録が計画中と述べる系統はどの年でも数えない）。容量ではない。退役したケーブルは記録に無いので過去は少なく数える。運用開始年の無い系統は「現在」だけに数える |
+| 航空路 | `data/mobility.json` の `pairs`（OpenFlights 2014 年 6 月） | 国の組ごとの**路線数**。座席・便数・旅客ではない |
+| モノ | **このカードは描かない** | 「貿易フロー」レイヤー（`wp-dl-trade`・`js/world-packs.js`、CEPII BACI を OEC 経由）が既に答える。カードの「モノ」は、そのレイヤーを同じ国と向きで開く扉（行の `change` と、レイヤー族が登録した `IntMapShareState` の `world`——共有リンクと同じ 2 手）。貿易の実装は 1 つ |
+
+| 部品 | 中身 |
+|---|---|
+| 事実 | `js/world-flows-core.js`（純粋）——国の表 `placeIndex`（ISO 3 文字・2 文字・`N:<M49>`）と名前の照合、時刻の規則 `yearFor`（時計の年以前で最も新しい記録の年。記録より前は答えず `before-record` と最初の年）、3 つの読み方、`summarise`（合計・割合・地図外）、`arcLine`（アプリの turf の大圏を経度の連続に直す——180 度線で世界を横切らない）、`arcFeatures` |
+| 国 | Natural Earth（`data/ne-countries` の 10m、公有）の `LABEL_X/Y`・`NAME_EN`・`NAME_JA`・`ISO_N3_EH`。同じ番号を国と属領が持つときは `ADM0_A3 = ISO_A3_EH` の地物が国。Natural Earth に無い DESA の地域（一覧は束の `migration.unplaced`、ビルドが印字する）は DESA の名前で表に残し、位置を持たず、カードが「地図外」と数える |
+| カードと地図 | `js/world-flows.js`（遅延チャンク・窓口を公開しない）。`.country-popup` のカード、ソース `wf-src`（流れを替えると作り直し、`attribution` がその記録を名乗る）と層 `wf-arc` / `wf-arrow` / `wf-end`（順位の丸、押すとその国へ）/ `wf-rank` / `wf-home`。`IntMapTime.on` で読み直し、図の棒を押すと時計がその年へ。枠取りはカードが覆わない部分へ（`js/card-clearance.js`）、地球儀では地球がその部分を満たすズーム（`log2(π·D/512)`）より引かず、国を中心に置く |
+| 扉 | Tools ▾ の「道具」`tool.worldFlows`（`js/map-ui.js`）・地点カードの国の行（`js/place-dossier.js` `data-hn="flows"`）・リンク `?wf=<ISO3>.<流れ>.<向き>`（`src/main.js` → `bootFromUrl`）・Atlas `data.worldFlows`（`js/atlas-cap-data.js`、observer `panel`） |
+
+読めなかったときは「読み込みの失敗であって、つながりが無いという意味ではない」と言う。記録より前の年は別の年で代用しない。
+
+### 7.3j 余震の見通し (Aftershock forecast) — `js/aftershock.js` / `js/aftershock-core.js`
+M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1 年に M3／M5／M6／M7 以上と「本震と同規模以上」の余震が少なくとも 1 回起きる確率と、
+回数の 95% の範囲を出す。モデルは Reasenberg & Jones (1989)、事前分布は USGS が地殻変動の区分ごとに公表した一般パラメータ
+（Page et al. 2016）で、その系列の余震でベイズ更新する（p・c は固定＝USGS の OAF の Bayesian 結合と同じ）。手法の正本は
+`science.html#aftershock`（`js/locales/pages.{en,ja}.js`）、正本の説明（出典・送るもの）は [`docs/MAP-LAYERS.md`](../MAP-LAYERS.md) の「余震の見通し」。
+| 事実 | `js/aftershock-core.js`（純粋）——区分 `regimeAt`（カリフォルニアの 5 区域→García の 0.05° 格子）・検知限界 `completenessAt` / `mcAt`・余震域 `zoneOf`（Wells & Coppersmith の破壊長、本震と M≥magCentroid の余震の球面重心）・`kIntegral`・`posterior`・`forecast`（事後分布上のポアソン混合で確率と 2.5/50/97.5%）・`run`（答え合わせ `check` を含む）・USGS の `oaf` 製品の読み `oafUrl` / `readOafForecast`・`?as=` |
+| 束 | `data/aftershock-regimes.json.gz`（`scripts/build-aftershock-regimes.mjs`。OpenSHA OAF の 3 ファイルを 1 コミットに固定して無加工で写す・CC0）／`data/aftershock-hindcast.json`（`scripts/build-aftershock-hindcast.mjs`。2015〜2024 年の M7 以上 137 系列を本震の 1 日後に出した見通しと実際） |
+| カードと地図 | `js/aftershock.js`（IntMapLazy の `aftershock`）。ソース `as-src`、層 `as-ring` / `as-pt` / `as-main`。**マスタークロックが見通しの時点**——時計を動かすと読み込み済みの記録から計算し直し、範囲を外れたときだけ読み直す。ライブの時計がライブのまま進むだけでは計算し直さない |
+| 扉 | `js/wb-layers.js`（起動時）——地震ポップアップの「余震の見通し」（M5 以上）・`data-as-open`（地震の記録の選んだ地震からも）・命令 `aftershock.open`・`?as=` の検出。Tools ▾ の `sim.aftershocks` 行（`js/map-ui.js`）は最近 30 日の M5.5 以上の一覧で開く |
+| Atlas | `sim.aftershocks`（`js/atlas-cap-sim.js`。observer `panel`、要約は `forAtlas`、`at` で見通しの時点） |
+読めなかったときは理由を言い、「余震が無かった」とは言わない。USGS 自身の予測（いまは ETAS）がある地震では並べて示し、合算しない。
 ### 7.4 Chronos（統一時間）と「年」
 
 #### 歴史の束の読み込み
@@ -946,6 +980,32 @@ Atlas は `time.placeHistory`（`year` を渡すとその年に有効な行も�
   （1689 年より前）・1689〜2019 年の毎年 7 月 1 日・枚の年を訊き、英語の名前ごとに面積（km² の整数）と記録のビットを持つ。面積も記録も変わらない瞬間は 1 点に
   まとめる（唯一の圧縮）。枚が年を述べない断片・説明の名前（`_desc`）・名前の無い形は数えない（`skipped`）。各政体は最大の年・面積・記録・枠（日付変更線を
   またぐ政体は狭い側）と全体の枠を持つ。`--check` が束から作り直して照合する（`tests/hist-product-checks.test.mjs`）。
+
+### 7.4d 家族史と国境——読者の家族を、その日の記録で読む
+
+- **何を見せるか**（`js/family-history.js`）: 読者が加えた人物（名前・生年月日・没年月日・場所）、または読み込んだ GEDCOM ファイルの人物の各出来事について、
+  その日・その場所で歴史の記録が描く政体と第 1 級区分を、述べた記録の名前とともに出す（「この場所の歴史」と同じ `js/place-history.js` の
+  `placeHistory`・`nowAt`・`changeText`・`entryWords`・`unitWords`）。日付が年・月・「〜の間」だけで、その幅の中で記録が変わるなら、変わる日を並べる
+  （その日によって答えが違う）。「より前」「より後」だけの日付はその境の日で読み、そう述べる。
+- **生涯のあいだ**: 誕生（無ければ洗礼）から死亡（無ければ埋葬）まで、どちらかが無ければ最初と最後の日付のある出来事の間を生涯とし、その人物の
+  地図上の各場所について、生涯に重なる政体の行と、その間に地図の描くものが変わる日を種類つきで並べる。数えるのは **政体の変化**（前の政体が描かれなくなり、
+  別の政体が描かれる）だけで、記録の切り替わり（両側の端が `reach`／`handover`。1886 年など）、同じ政体の別の行（Wikidata 項目・CShapes の国コード・名前の
+  共有。OpenHistoricalMap が名前に書く版の年「(1868-1869)」は、その行の始まりの年を含むときだけ版の札として外す。Wikidata 項目が両方にあって違えば別の政体）、
+  重なり（2 つ目の主張が始まる日は数えず、元の主張が終わる日に 1 回）、継ぎ目（両端が `handover` の粗い記録の行は踏み越える）、記録の無い期間は数えない。
+  「この生涯を地図で再生」は最初の日・変化の日・最後の日だけを `startLapse({ instants, owner: 'family-history' })` で再生する。
+- **日付**: `js/gedcom.js` の `parseDate`（GEDCOM 5.5.1 / 7.0 の文法: ABT・CAL・EST・BEF・AFT・BET…AND・FROM…TO・INT、B.C./BCE、二重年号は後の年）が日の幅
+  `[k0, k1)` にする。ユリウス暦はユリウス通日で、フランス革命暦は各年の 1 ヴァンデミエールのグレゴリオ暦の日（共和暦 1〜14 年）で、ユダヤ暦は
+  プラットフォームの暦（`Intl` の `u-ca-hebrew`）で換算する。読めない日付は書かれたまま残し、幅を作らない。手入力は ISO（1905-03-12）・「1905年3月12日」・
+  「1850頃」「before 1900」も読む（`readDateInput`）。
+- **場所**: ファイルの座標（`PLAC.MAP`）はそのまま使う。地名は端末の地名辞典（検索の `localFuzzyPlaces`）と歴史都市名・Pleiades（`js/where-when.js`
+  `histCandidates`）に、カンマで区切った部分を小さい方から訊き、集落 1 つだけが名前そのものとして答えたときだけ置く（どの部分で見つけたかを示す）。複数なら
+  選ばせ、無ければ地図上で指定させる。国は場所にしない。GEDCOM の読み込みは同じ規則で全地名を 1 回ずつ、フレームごとの時間で区切って訊く。
+- **保存と送信**: 人物・日付・場所はこのブラウザの `localStorage`（`intmap_family_v1`）だけに置く。どこにも送らない（記録は地図と同じく必要な部分を読む）。
+  プライバシーポリシー §2 に記載。文字コードは BOM と `CHAR`（ANSEL は ASCII の範囲だけ読み、それ以外は理由を述べて断る）。
+- **地図**: シートが開いている間、地図上の出来事を点で描く（誕生は緑・死亡は灰・他は青、開いている人物は大きく）。点を押すとその人物を開く。「その日へ」は
+  時計をその日へ（`goToInstant`）、地図をその場所へ動かす。
+- **入口**: Chronos パネルの「家族史と国境」、Atlas `time.lifeAtPlace`（`place`／`lng`・`lat`、`from`・`to`、`play`、`open` は記入済みの新しい人物として開き、
+  保存は読者が押す）。回帰 `tests/wave4-history-checks.test.mjs`（リヴィウ・京都・ウージュホロド・ストラスブールの生涯を同梱の記録で読む）。
 
 ### 7.5 ウィジェット基盤
 

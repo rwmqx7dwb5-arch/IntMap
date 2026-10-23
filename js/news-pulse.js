@@ -13,6 +13,8 @@
  *  ⚠ THE ROW NAME LIVES HERE AND NOWHERE ELSE; the body reads it back through `label()` (#R519).
  *  (news-story) The doors of the STORY (js/news-story.js, lazy `newsStory`) are here for the same reason: the event
  *  reader's «Follow this story», a `?story=` link, the command `newsstory.open` and Atlas news.story exist at boot.
+ *  (wave4-news) So are the doors of TODAY ON THE MAP (js/news-edition.js, lazy `newsEdition`): the News list's entry, a
+ *  `?edition=` link, the command `newsedition.open` and Atlas news.edition.
  * ==========================================================================*/
 import { IntMapLang } from './lang-registry.js';
 import * as bus from './bus.js';
@@ -108,9 +110,40 @@ export function newsPulse(HOST) {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go, { once: true }); else setTimeout(go, 0);
   }
 
+  /* ══ (wave4-news) THE EDITION'S DOORS — the body is js/news-edition.js (lazy `newsEdition`); the News list's
+     «Today on the map», a link `?edition=2026-10-05` / `?edition=latest`, the command `newsedition.open` and Atlas
+     news.edition all come through here ══════════════════════════════════════════════════════════════════════════ */
+  let editionBody = null, editionPending = null;
+  function needEdition() {
+    if (editionBody) return Promise.resolve(editionBody);
+    if (!editionPending) {
+      editionPending = window.IntMapLazy.need('newsEdition')
+        .then(() => { editionBody = window.__imNewsEdition || null; return editionBody; })
+        .catch(() => { editionPending = null; return null; });
+    }
+    return editionPending;
+  }
+  async function edition(o) {
+    const b = await needEdition();
+    if (!b) { try { HOST.imToast(L('Could not load Today on the map','今日の世界を読み込めませんでした')); } catch (_) { } return { ok: false, error: 'module' }; }
+    return b.open(o || {});
+  }
+  try {
+    window.IntMapOS.register('newsedition.open', (ctx) => edition((ctx && ctx.params) || {}),
+      { label: 'Today on the map · the day\'s most-reported news events, what is new since the last visit, on the map', group: 'data' });
+  } catch (_) { }
+  /* only the parameter's presence is tested here; the value is read (and checked) by the body's editionFromSearch */
+  if (/[?&]edition(=|&|$)/.test(location.search)) {
+    const go = () => { edition({ search: location.search }); };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go, { once: true }); else setTimeout(go, 0);
+  }
+
   window.IntMapNewsIntel = {
     id: ID, label, toggle, setOn, ready: need,
     story, storyReady: needStory,
+    edition, editionReady: needEdition,
+    editionState: () => (editionBody ? Object.assign({ loaded: true }, editionBody.state()) : { loaded: false, open: false }),
+    closeEdition: () => { if (editionBody) editionBody.close(); },
     storyState: () => (storyBody ? Object.assign({ loaded: true }, storyBody.state()) : { loaded: false, open: false }),
     storySummary: () => (storyBody ? storyBody.summary() : null),
     closeStory: () => { if (storyBody) storyBody.close(); },

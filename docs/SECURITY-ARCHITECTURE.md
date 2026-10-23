@@ -451,6 +451,9 @@ a known one still counts) — the bound on what a scripted caller can add to the
 nothing is sent with Do Not Track or Global Privacy Control, and the Settings switch (or Atlas, `settings.usageCounts`)
 stops it at once and discards what was not yet sent. Rows are purged after 400 days (pg_cron `usage-counts-purge`);
 an admin reads totals through `usage_counts_summary`, which is SECURITY INVOKER so the admin-only SELECT policy decides.
+*(field-speed)* The one thing anyone may read from it is `field_speed(p_days)` — SECURITY DEFINER, executable by anon — which returns only
+**shares** of the two speed metrics per release and device with a coarse band, as whole percents, withholds any group under 100 page loads (below it the shares spell the count out), and returns no count
+and no day, so the traffic the counts describe stays the admin's.
 
 ⚠ **(anon-write-guard) `?refresh=1` on `aviation-feed` and `ais-feed` draws from ONE project-wide allowance.**
 Their read budget (`_shared/read-budget.js`, #R801) bounds one isolate, and a caller who spread `?refresh=1`
@@ -781,6 +784,26 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
   frames; workers while `sw.js` does not control the page) and says «could not compare», never
   «unlisted», when the statement itself cannot be read. `tests/security-next.spec.js` holds Playwright's
   own record of the main frame's finished requests against the list.
+
+- **(wave4-security) What the browser KEEPS is shown and deletable too.** `js/device-storage-panel.js`
+  (Settings ▸ Privacy ▸ Stored on this device, and Atlas `system.deviceStorage`) asks the browser for every
+  localStorage / sessionStorage key, every IndexedDB database it will name, every Cache Storage store and
+  its entry count, cookies, and the storage estimate, and judges each against `data/device-storage-ledger.json`:
+  grouped by kind (sign-in and keys → what the reader made → a record of use → preferences → copies and
+  housekeeping). **Values are never displayed or exported** — a value can be a session token or an API key.
+  The ledger is derived by `scripts/device-storage-ledger.mjs` from EVERY storage write in the browser code
+  (receivers by value flow, names through bindings, across modules) with the words of
+  `scripts/device-storage-words.json`; `check:datagov` (rule `stored-disclosed`) refuses an undescribed
+  name, a stale row, an unreadable name and any cookie write. The site's origin is shared with the
+  account's other Pages sites, so an unnamed item is shown apart, and «Forget this device» deletes only
+  ledger-named items and reloads (the sign-in session is removed by logging out, not by deleting the key
+  under a live client that would rewrite it). The session row is IntMap's own project only: supabase-js's
+  own key expression is evaluated with `src/vendor.js` `SUPABASE_URL`, never a `sb-*` pattern that would
+  reach another project's session on the shared origin; and a wildcard is taken in bulk only when its fixed
+  part proves the key is IntMap's (the product name, or a name derived from IntMap's backend) — `imc_*`
+  is marked `bulk:false` and the generator refuses an unproven wildcard without it. The same pass stopped `js/app-body.js` carrying the retired
+  BYOK AI provider keys forward in `intmap_ai_config` (loaded and re-saved ever since BYOK was retired, read by nothing;
+  Privacy §2 says no AI key is kept in the browser) and rewrites an old stored copy without them.
 
 - **(own-fetch-relay) No public CORS relay is used.** Upstreams that send no `Access-Control-Allow-Origin`
   (Google News RSS, GDELT, Yahoo share prices, the TeleGeography cable files, Street-View coverage
@@ -1136,6 +1159,24 @@ one thing vanilla CI could not otherwise reproduce.
   fragment) — no row id, account id or e-mail, and no whole-row `to_jsonb`, so a column added later is not published by
   accident (`tests/collection-workspace-checks.test.mjs` ①). A map from another account is untrusted text: the client
   re-encodes it through the share-link codec (`js/my-places.js canonicalState`) before keeping or opening it.
+- **Community maps (community-maps):** listing a published collection is a **second** explicit act (`list_community_map()`,
+  definer, account from `auth.uid()`); the owner's column grant on `collection_shares` stays `update (title)`, so the listing
+  columns, the lineage and an administrator's hiding cannot be written directly. The name a listing shows is one the owner
+  types for it (1-40 characters, no control characters) — never the account's e-mail or profile name, and Atlas asks for one
+  rather than make it up. The second anon-callable read, `community_maps()`, returns **only listed, unhidden rows**, from named
+  keys (no row id, account id or e-mail), matches the reader's words as words (`%`, `_`, `` escaped — a «%» is not a wildcard
+  that enumerates), and is asked as a GET (read-only in PostgREST). ⚠ **An unlisted link is never disclosed through somebody
+  else's listing**: the lineage (`based_on`) names the original — with its token — only while that original is listed and not
+  hidden, the rule held at every place it is read (`tests/wave4-community-checks.test.mjs` ①, pgTAP 38 ⑤). Copy receipts
+  (`collection_copies`) and reports (`community_map_reports`) are the writer's own rows with **no INSERT grant**; an owner sees
+  only counts, never who copied or reported. Moderation is `is_admin()`-gated in the function (42501 otherwise), a hide needs a
+  reason the owner reads, and it takes the collection out of the directory without touching the owner's link. ⚠ **A decision
+  must not live on a row its subject can delete**: the hold (`community_map_holds`) and the reports (`community_map_subjects` /
+  `community_map_reports`) are on (account, collection), not on the share row the owner deletes when unpublishing — so
+  unpublishing and publishing again neither lifts a hold nor erases the reports (pgTAP 38 ⑥b). The subject names the owner
+  without a foreign key or a `user_id` column, so `_owned_by_user_cols()` does not hand it to anyone's export and a reporter's
+  export carries an opaque subject id, never the owner's account. Every
+  owner-written word is set as text by `js/community-maps.js`, which writes no markup at all.
 - **Passkeys (WebAuthn):** supabase-js's passkey API (`signInWithPasskey`, `registerPasskey`,
   `auth.passkey.list/delete`; on by default since the SDK stopped reading `experimental.passkey`) —
   sign-in on the login modal, enroll/list/remove in the account Security section. Feature-detected

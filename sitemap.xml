@@ -152,6 +152,16 @@
     <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/contact.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="__INTMAP_SITE_URL__contact.html"/>
   </url>
+  <url><loc>__INTMAP_SITE_URL__readiness.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__readiness.html"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/readiness.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="__INTMAP_SITE_URL__readiness.html"/>
+  </url>
+  <url><loc>__INTMAP_SITE_URL__ja/readiness.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__readiness.html"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/readiness.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="__INTMAP_SITE_URL__readiness.html"/>
+  </url>
   <url><loc>__INTMAP_SITE_URL__s/europe-1914.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__s/europe-1914.html"/>
     <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/s/europe-1914.html"/>

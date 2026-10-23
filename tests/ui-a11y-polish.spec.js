@@ -352,7 +352,7 @@ test.describe('shell-experience: desktop at 1000 px', () => {
     expect(served.status, 'the nightly measurement is served beside the app: ' + JSON.stringify(served)).toBe(200);
     await page.click('#btn-open-settings');
     await page.click('#btn-status-page');
-    await page.waitForFunction(() => { const r = document.getElementById('im-status'); return !!r && r.style.display !== 'none' && !r.querySelector('[aria-busy]') && r.querySelectorAll('.ims-sec').length === 4; }, null, { timeout: 20_000 });
+    await page.waitForFunction(() => { const r = document.getElementById('im-status'); return !!r && r.style.display !== 'none' && !r.querySelector('[aria-busy]') && r.querySelectorAll('.ims-sec').length === 5; }, null, { timeout: 20_000 });
     const st = await page.evaluate(() => ({
       secs: [...document.querySelectorAll('#im-status .ims-sec')].map((x) => x.dataset.sec),
       upRows: document.querySelectorAll('#im-status .ims-sec[data-sec="upstream"] > .ims-group > .ims-row').length,
@@ -360,10 +360,12 @@ test.describe('shell-experience: desktop at 1000 px', () => {
       /* (ops-next) the record: one bar per measured night, one strip cell per night per supplier */
       bars: document.querySelectorAll('#im-status .ims-sec[data-sec="upstream"] .ims-record .ims-bar').length,
       strip: (document.querySelector('#im-status .ims-sec[data-sec="upstream"] details .ims-strip') || { children: [] }).children.length,
+      visit: [...document.querySelectorAll('#im-status .ims-sec[data-sec="device"] .ims-t')].map((t) => t.textContent).find((t) => /^This visit/.test(t)) || null,
       dialog: window.IntMapDialog.anyOpen(),
       settingsShut: getComputedStyle(document.getElementById('settings-modal')).display === 'none',
     }));
-    expect(st.secs).toEqual(['device', 'layers', 'upstream', 'atlas']);
+    expect(st.secs).toEqual(['device', 'layers', 'upstream', 'speed', 'atlas']);   // (field-speed)
+    expect(st.visit, '(field-speed) this visit says how long it took, from the launch screen record').toMatch(/^This visit was ready in \d+\.\d s$/);
     const down = bundle.upstream ? bundle.upstream.hosts.filter((h) => h.verdict === 'dead' || h.verdict === 'refused').length : 0;
     expect(st.upRows, 'one count row and one row per supplier the nightly check found not answering').toBe(bundle.upstream ? 1 + down : 1);
     expect(st.all, 'every supplier is listed behind the disclosure').toBe(bundle.upstream ? bundle.upstream.hosts.length : 0);

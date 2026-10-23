@@ -26,7 +26,7 @@ const P = (en, jp) => [en, jp];
    links fill it (at 1280–1680 px the English bar had 68 px to spare, and the two new pages need 264), and an overflowing bar
    clips its FIRST links behind the brand. Such a page is linked from every organisation page's footer instead (and from every
    landing page's, which lists all of ORG_NAV), so it is still one click from every page. */
-export const ORG_NAV = [['for-newsrooms', 'newsrooms'], ['press', 'press'], ['for-schools', 'schools'], ['curriculum', 'curriculum', { bar: false }], ['school-handout', 'handout', { bar: false }], ['for-research', 'research'], ['support', 'support'], ['corrections', 'corrections'], ['security', 'security'], ['contact', 'contact']];
+export const ORG_NAV = [['for-newsrooms', 'newsrooms'], ['press', 'press'], ['for-schools', 'schools'], ['curriculum', 'curriculum', { bar: false }], ['school-handout', 'handout', { bar: false }], ['for-research', 'research'], ['support', 'support'], ['corrections', 'corrections'], ['security', 'security'], ['contact', 'contact'], ['readiness', 'readiness', { bar: false }]];
 
 export const TEXT = {
   nav: {
@@ -40,6 +40,7 @@ export const TEXT = {
     security: P('Security', 'セキュリティ'),
     corrections: P('Map corrections', '地図の訂正'),
     contact: P('Contact', 'お問い合わせ'),
+    readiness: P('Network check', '接続診断'),
     open: P('Open the map', '地図を開く'),
     lang: P('日本語', 'English'),
     langLabel: P('Read this page in Japanese', 'このページを英語で読む'),
@@ -235,6 +236,8 @@ export const TEXT = {
     /* (curriculum-sales-kit) the two pages a school is handed from here: the units of its course, and the one sheet for its staff */
     unitsLink: P('Find your unit in the unit map', '単元対応表から選ぶ'),
     handoutLink: P('Print the one-page handout', '1 枚の案内を印刷する'),
+    /* (wave4-sales) the IT checklist's own test, run on the school's device and network */
+    itCheck: P('Check this device and network now', 'この端末とネットワークでいま確かめる'),
     examplesH: P('Example maps for class', '授業向けの見本の地図'),
     faqH: P('Questions schools ask', 'よくある質問'),
     faq: [
@@ -331,6 +334,109 @@ export const TEXT = {
     itPage: P('Checklist for IT', '情報担当の方へのチェックリスト'),
     askH: P('Questions', 'お問い合わせ'),
     ask: P('Write to us through the enquiry form. We answer by e-mail.', '相談フォームからお送りください。メールでお返事します。'),
+    networkCheck: P('Network check for IT', '情報担当向けの接続診断'),   /* (wave4-sales) readiness.html */
+  },
+
+  /* ── (wave4-sales) the network and device check — readiness.html ──────────────────────────────────────
+     Run on the device and network where IntMap will be used (js/readiness-page.js, js/readiness-check.js). {probes} is
+     the number of hosts the page asks (the derived connection ledger's probes) and {worst} the longest the check can take
+     on a network that drops every request (probes / PROBE_CONCURRENCY rounded up, x PROBE_TIMEOUT_MS) — both counted by
+     the generator. The words the running check needs travel to the page as data-* JSON (`live`, `report`). */
+  readiness: {
+    title: P('Network and device check — will IntMap work at your school or office?', '導入前の接続診断 — 学校・職場の端末とネットワークで IntMap は使えるか'),
+    description: P('Run it on the device and network where IntMap will be used. It checks what the map needs from the browser and asks each outside service IntMap loads once, then lists what your network blocks and what IT should allow.',
+      'IntMap を使う端末とネットワークで実行します。地図に必要なブラウザの機能を確かめ、IntMap が読み込む外部の接続先に 1 回ずつ問い合わせて、ネットワークで遮断されているものと情報担当が許可すべきものを示します。'),
+    h1: P('Will IntMap work here? Check it on the spot.', 'この端末とネットワークで使えるか、その場で確かめる。'),
+    lede: P('Open this page on a device your students or staff will use, on the same network, and run the check. It tests what the map needs from the browser and asks each of the {probes} outside services IntMap loads, then tells you what works, what is blocked and what to allow.',
+      '生徒や職員が使う端末で、同じネットワークにつないだままこのページを開き、診断を実行してください。地図に必要なブラウザの機能を確かめ、IntMap が読み込む外部の接続先 {probes} 件に問い合わせて、使えるもの・遮断されているもの・許可すべきものを示します。'),
+    start: P('Run the check', '診断を始める'),
+    allowLink: P('See the list to allow', '許可が必要な接続先を見る'),
+    startNote: P('The check sends one request from this device to each service listed below — the same requests the map makes when it is used. Nothing is sent to IntMap. It takes a few seconds, and at most {worst} seconds on a network that drops requests without answering.',
+      '診断はこの端末から下の各接続先へ 1 回ずつ問い合わせます。地図を使うときと同じ問い合わせで、IntMap には何も送りません。数秒で終わり、応答せずに要求を捨てるネットワークでも最長 {worst} 秒です。'),
+    noScript: P('The check itself needs JavaScript. The list of services to allow, below, can be used without it.',
+      '診断そのものには JavaScript が必要です。下の「許可が必要な接続先」の一覧は、JavaScript なしでも使えます。'),
+    resultH: P('Result', '診断の結果'),
+    allowH: P('Services to allow', '許可が必要な接続先'),
+    allowNote: P('Give this list to whoever manages the network filter. Each service is listed with what it is used for; the privacy policy and the security page say what each one is sent.',
+      'ネットワークのフィルターを管理している方に、この一覧をお渡しください。接続先ごとに用途を記しています。それぞれに何を送るかは、プライバシーポリシーとセキュリティのページに記載しています。'),
+    siteRow: P('IntMap itself — this site', 'IntMap 本体（このサイト）'),
+    colHost: P('Address', 'アドレス'),
+    colWhat: P('Used for', '用途'),
+    colState: P('This device', 'この端末から'),
+    tiers: {
+      first: P('What the map opens with', '地図を開くのに必要なもの'),
+      backend: P('Atlas, sign-in and the enquiry form', 'Atlas・ログイン・相談フォーム'),
+      layer: P('Data layers', 'データレイヤー'),
+    },
+    tierNotes: {
+      first: P('The base map, its imagery and the typefaces — the services the map asks for first, before anything is turned on. If one of these is blocked, the map opens with parts missing.',
+        '基図・衛星画像・文字の書体です。何もオンにしていない状態で、地図が最初に読み込みます。ここが遮断されていると、地図の一部が欠けた状態で開きます。'),
+      backend: P('IntMap\'s own backend. The map works without it; Atlas, accounts, saved maps and the forms on this site do not.',
+        'IntMap 自身の基盤です。地図はこれが無くても動きますが、Atlas・アカウント・保存した地図・このサイトのフォームは使えません。'),
+      layer: P('Each one is used only when a layer that needs it is turned on. If one is blocked, only that layer is missing.',
+        'それぞれ、必要とするレイヤーをオンにしたときだけ使います。遮断されていると、そのレイヤーだけが表示されません。'),
+    },
+    copyAllow: P('Copy the list', '一覧をコピー'),
+    copyReport: P('Copy the report', '結果をコピー'),
+    downloadReport: P('Download the report', '結果を保存'),
+    sendReport: P('Ask us, with the report attached', '結果を添えて相談する'),
+    limitsH: P('What this check cannot tell you', 'この診断で分からないこと'),
+    limits: [
+      P('A filter that shows its own page in place of a blocked service looks «reached» here: a web page is not allowed to read another site\'s answer. If parts of the map are still missing after the check passes, look for such a block page in the filter\'s log.',
+        '遮断した接続先の代わりに自前の画面を返すフィルターは、ここでは「到達」に見えます。ウェブページは他のサイトの応答の中身を読めないためです。診断が通っても地図の一部が欠ける場合は、フィルターの記録にそうした画面が無いかをご確認ください。'),
+      P('It describes one device on one network at one moment. Another room, another network or another time of day can differ.',
+        '1 台の端末・1 つのネットワーク・その時点の結果です。別の教室・別のネットワーク・別の時間帯では異なることがあります。'),
+      P('Services chosen while the map is in use — a webcam\'s own server, the site of a news article, a map server address a reader types in — are not in this list.',
+        '地図の利用中に決まる接続先（ライブカメラの配信元、ニュース記事のサイト、利用者が入力した地図サーバーのアドレスなど）は、この一覧に含まれません。'),
+      P('«Answered last night» is IntMap\'s own nightly check of the same services, run from a server outside your network.',
+        '「昨夜の確認」は、同じ接続先を IntMap が毎晩、あなたのネットワークの外にあるサーバーから確かめた結果です。'),
+    ],
+    /* the words the running check writes (js/readiness-page.js), as data-* JSON — {n} {total} {ms} {s} {ctx} {reached} are filled there */
+    live: {
+      running: P('Checking… {n} of {total}', '確認中… {total} 件中 {n} 件'),
+      pending: P('Not checked', '未確認'),
+      site: P('Reached — this page came from it', '到達 — このページの配信元'),
+      reached: P('Reached · {ms} ms', '到達 · {ms} ms'),
+      blocked: P('Not reached', '到達できず'),
+      timeout: P('No answer in {s} s', '{s} 秒以内に応答なし'),
+      supplierDown: P('also silent in last night\'s check — likely the service, not your network', '昨夜の確認でも応答なし — ネットワークではなく提供元の不調の可能性'),
+      supplierUp: P('answered last night — likely blocked on this network', '昨夜の確認では応答あり — このネットワークで遮断されている可能性'),
+      tierCount: P('{reached} of {total} reached', '{total} 件中 {reached} 件に到達'),
+      ready: P('IntMap works here.', 'この端末とネットワークで IntMap を使えます。'),
+      readyNote: P('The map can draw on this device and every service was reached.', 'この端末で地図を描画でき、すべての接続先に到達しました。'),
+      partial: P('The map works here, but some parts do not.', '地図は使えますが、一部の機能が使えません。'),
+      partialNote: P('The map can draw and the services it opens with were reached. The services marked below were not reached, so what uses them will be missing until they are allowed.',
+        '地図は描画でき、最初に読み込む接続先にも到達しました。下に印のある接続先には到達できなかったため、許可されるまでそれを使う機能は表示されません。'),
+      notReady: P('The map will not work properly here yet.', 'このままでは地図が正しく表示されません。'),
+      notReadyNote: P('Either this browser cannot draw the map, or a service the map opens with was not reached. The lines below say which.',
+        'このブラウザで地図を描画できないか、地図が最初に読み込む接続先に到達できませんでした。どちらかは下に示しています。'),
+      mapOk: P('Map drawing ({ctx}): available', '地図の描画（{ctx}）：使用可能'),
+      mapNo: P('Map drawing ({ctx}): not available — the map cannot be shown in this browser. Turn on hardware acceleration or {ctx} in the browser or its policy, or use another browser.',
+        '地図の描画（{ctx}）：使用不可 — このブラウザでは地図を表示できません。ブラウザまたは管理ポリシーでハードウェア アクセラレーションか {ctx} を有効にするか、別のブラウザをお使いください。'),
+      accelOk: P('Drawing uses the graphics processor.', '描画にグラフィックス処理装置（GPU）を使っています。'),
+      accelNo: P('Drawing runs without a graphics processor (in software): the map works, but moves slowly.', '描画が GPU を使わずにソフトウェアで行われています。地図は使えますが、動きが遅くなります。'),
+      workersOk: P('Background work (Web Workers): available', 'バックグラウンド処理（Web Worker）：使用可能'),
+      workersNo: P('Background work (Web Workers): not available — the map cannot load its data.', 'バックグラウンド処理（Web Worker）：使用不可 — 地図がデータを読み込めません。'),
+      offlineOk: P('An offline copy can be kept on this device.', 'この端末にオフライン用のコピーを保存できます。'),
+      offlineNo: P('This browser cannot keep an offline copy; the map still works online.', 'このブラウザはオフライン用のコピーを保存できません。オンラインでは地図を使えます。'),
+      storageNo: P('Settings cannot be saved in this browser (a private window or a policy); the map still works.', 'このブラウザでは設定を保存できません（プライベートウィンドウか管理ポリシーによる）。地図は使えます。'),
+      offline: P('This device says it is offline. Connect it to the network you want to check and run the check again.', 'この端末はオフラインと報告しています。確かめたいネットワークにつないでから、もう一度診断してください。'),
+      copied: P('Copied', 'コピーしました'),
+      again: P('Run again', 'もう一度診断する'),
+    },
+    /* the plain-text report (copied, downloaded or attached to an enquiry) — {when} {url} {ua} {verdict} filled by the page */
+    report: {
+      title: P('IntMap network and device check', 'IntMap 接続診断の結果'),
+      when: P('Checked: {when}', '診断日時：{when}'),
+      page: P('Page: {url}', 'ページ：{url}'),
+      browser: P('Browser: {ua}', 'ブラウザ：{ua}'),
+      verdict: P('Result: {verdict}', '結果：{verdict}'),
+      notReached: P('Not reached from this device (to allow):', 'この端末から到達できなかった接続先（許可が必要）：'),
+      supplier: P('Not reached, and silent in last night\'s check too (likely the service):', '到達できず、昨夜の確認でも応答なし（提供元の不調の可能性）：'),
+      none: P('(none)', '（なし）'),
+    },
+    /* (wave4-sales) on the contact page, when it arrives with a report (?attach=readiness) */
+    attached: P('The report of your network check is in the message below. Add what you would like to ask.', '接続診断の結果を下のメッセージ欄に入れました。ご相談の内容を書き足してください。'),
   },
 
   /* ── research & NGOs ─────────────────────────────────────────────────────────────────────── */
@@ -456,6 +562,12 @@ export const TEXT = {
     sendsNote: P('Grouped by what is sent, most personal first. The full list, site by site, is section 4 of the privacy policy.',
       '送るもの別に、個人に近いものから並べています。接続先ごとの全一覧はプライバシーポリシーの第 4 項にあります。'),
     sitesN: P('{n} sites', '{n} 件の接続先'),
+    deviceH: P('What stays in your browser', 'ブラウザに残るもの'),
+    deviceNote: P('Everything IntMap\'s code can keep in your browser — {names} kinds of item, found by reading every place the code writes one, never by a list someone keeps. In the map, Settings, then Privacy, then Stored on this device shows what your browser actually holds, with what each item is and its size (never its contents), and deletes one item or all of them.',
+      'IntMap のコードがブラウザに残しうるもの — {names} 種類。コードが書き込む箇所をすべて読んで数えたもので、誰かが手で管理する一覧ではありません。地図の「設定」から「プライバシー」の「この端末に保存されているもの」を開くと、あなたのブラウザが実際に保持しているものを、各項目が何か・大きさ（中身は表示しません）とともに示し、1 件ずつ、またはまとめて消せます。'),
+    itemsN: P('{n} kinds', '{n} 種類'),
+    cookiesNone: P('IntMap\'s code sets no cookies.', 'IntMap のコードは Cookie を設定しません。'),
+    cookiesSome: P('IntMap\'s code sets cookies; each is listed in the map.', 'IntMap のコードは Cookie を設定します。各 Cookie は地図の中の一覧に載っています。'),
     seeH: P('See it for yourself', '自分の目で確かめる'),
     see: [
       P('Open the list', '一覧を開く'),

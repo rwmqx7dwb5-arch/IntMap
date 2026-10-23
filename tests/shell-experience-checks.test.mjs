@@ -148,7 +148,7 @@ test('⑥c the page: the headline follows the worst thing that is true, and an u
   const base = { bundle: B, online: true, shell: true, storageMB: 12, layersOn: 1, layerProblems: [] };
   for (const lang of ['en', 'jp']) {
     const s = S.composeStatus(base, lang);
-    assert.deepEqual(s.sections.map((x) => x.id), ['device', 'layers', 'upstream', 'atlas']);
+    assert.deepEqual(s.sections.map((x) => x.id), ['device', 'layers', 'upstream', 'speed', 'atlas']);   // (field-speed) the readers' wait, before Atlas
     assert.equal(s.tone, 'warn');
     const up = s.sections.find((x) => x.id === 'upstream');
     assert.equal(up.rows.length, 1 + 3, 'the count row and one row per supplier not answering');

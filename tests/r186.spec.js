@@ -192,8 +192,11 @@ test('R186 atmosphere: switched on for satellite, and aimed at the real Sun', as
   await booted(page);
   const r = await page.evaluate(async () => {
     const wait = (ms) => new Promise((res) => setTimeout(res, ms));
+    const when = async (f, ms) => { const end = performance.now() + ms; while (performance.now() < end) { try { if (f()) return; } catch (_) { } await wait(50); } };   /* (test-time-headroom) the state, not a sleep */
     document.getElementById('btn-view-sat').click();
-    await wait(3000);
+    /* the satellite basemap is up with its atmosphere and the whole-Earth floor — what is read below — not 3 s */
+    await when(() => { const k = window.IntMapGeoEngine.scene.getSky(); const w = window.IntMapWorldBase.state();
+      return !!(k && k['atmosphere-blend']) && window.__imap.getLight().anchor === 'map' && w.visible && w.tilesMade > 0; }, 30000);
     const G = window.IntMapGeoEngine, S = window.IntMapSky, D = Math.PI / 180;
     const sky = G.scene.getSky();
     const L = window.__imap.getLight();
@@ -226,12 +229,13 @@ test('R186 POI: shop and facility names are their own layer and their own toggle
   const r = await page.evaluate(async () => {
     const wait = (ms) => new Promise((res) => setTimeout(res, ms));
     const G = window.IntMapGeoEngine, cb = document.getElementById('cb-poi');
+    const when = async (f, ms) => { const end = performance.now() + ms; while (performance.now() < end) { try { if (f()) return; } catch (_) { } await wait(50); } };   /* (test-time-headroom) the state, not a sleep */
     cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true }));
-    await wait(1400);
+    await when(() => G.layers.getLayout('ofm-poi', 'visibility') === 'visible', 15000);
     const on = G.layers.getLayout('ofm-poi', 'visibility');
     const src = G.scene.getStyle().layers.find((l) => l.id === 'ofm-poi');
     cb.checked = false; cb.dispatchEvent(new Event('change', { bubbles: true }));
-    await wait(600);
+    await when(() => G.layers.getLayout('ofm-poi', 'visibility') === 'none', 15000);
     return { on, off: G.layers.getLayout('ofm-poi', 'visibility'),
              sourceLayer: src && src['source-layer'], minzoom: src && src.minzoom,
              dot: G.layers.has('ofm-poi-dot') };
@@ -254,13 +258,15 @@ test('R186 sea level: the number applies as it is typed, and 100 % is opaque', a
   await booted(page);
   const r = await page.evaluate(async () => {
     const wait = (ms) => new Promise((res) => setTimeout(res, ms));
+    const when = async (f, ms) => { const end = performance.now() + ms; while (performance.now() < end) { try { if (f()) return; } catch (_) { } await wait(50); } };   /* (test-time-headroom) the state, not a sleep */
     const cb = document.getElementById('dl-sealevel');
     cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true }));
-    await wait(2500);
+    /* the layer is on and its legend's number field is built — not 2.5 s */
+    await when(() => window._seaLevelM != null && !!document.querySelector('#data-legend-sealevel .sl-num') && window.IntMapGeoEngine.layers.has('lyr-sealevel'), 30000);
     const before = window._seaLevelM;
     const num = document.querySelector('#data-legend-sealevel .sl-num');
     num.value = '37'; num.dispatchEvent(new Event('input', { bubbles: true }));
-    await wait(500);
+    await when(() => window._seaLevelM === 37, 5000);
     const ramp = window.IntMapGeoEngine.layers.getPaint('lyr-sealevel', 'color-relief-color');
     /* the flooded stops carry no alpha of their own any more, so `color-relief-opacity` IS the
        transparency — which is what makes 100 % mean 100 % */
@@ -292,7 +298,9 @@ test('R186 water: a source outside the working rectangle is not silently dropped
   const r = await page.evaluate(async () => {
     const wait = (ms) => new Promise((res) => setTimeout(res, ms));
     const TW = window.IntMapTerrainWater;
-    await TW.open({ lng: 138.62, lat: 36.30 }); await wait(1500);
+    const when = async (f, ms) => { const end = performance.now() + ms; while (performance.now() < end) { try { if (f()) return; } catch (_) { } await wait(50); } };   /* (test-time-headroom) the state, not a sleep */
+    await TW.open({ lng: 138.62, lat: 36.30 });
+    await when(() => { const st = TW.state(); return !!(st.grid && st.result); }, 30000);   /* the grid is built and solved — not 1.5 s */
     const g = TW.state().grid;
     /* the rectangle is drawn, so the user can see where an edit lands */
     const feats = window.IntMapGeoEngine.layers.sourceData

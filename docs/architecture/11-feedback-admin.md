@@ -26,6 +26,8 @@
   RLS が 0 行しか返さない。
 - **バグ報告**：`bug_reports`（診断情報 JSON 付き。`reader-reports` 経由で誰でも送れる・表へ直接は書けない・admin が閲覧）。
 - **教育向けの導入パック**：単元対応表（`curriculum.html`）と学校向けの 1 枚（`school-handout.html`）、いずれも `ja/` あり（§8.6.5）。どちらも相談フォーム（`about=classroom`）へ結ぶ。
+- **導入前の接続診断**：`readiness.html`（と `ja/`、§8.6.6）——組織が使う端末とネットワークで、地図の描画と全接続先への到達を確かめ、許可が必要な接続先を示す。結果は
+  相談フォームに添えられる（`contact.html?attach=readiness`、送るのは本人）。Atlas `system.readiness`。
 - **組織からの相談**：報道機関・学校・研究機関/NGO 向けの紹介ページ（`for-newsrooms.html`・`for-schools.html`・`for-research.html` と `ja/`）から `contact.html` のフォームへ。
   `reader-reports`（kind `inquiry`）経由で `org_inquiries` に入り、表へ直接は書けない。読むのは相談のコンソール `admin-inquiries.html`（`admin.html` とは別のページ・同じアカウント・`noindex`）
   ——状態（new / replied / closed / spam）とメモを付け、削除し、支援者を掲載する。保存期間は受信から 730 日、spam は 30 日（`purge_org_inquiries`・pg_cron）。ページの文は
@@ -56,3 +58,11 @@
     `corrections.log` が同じものを返す。
   - **保存期間**：spam は 30 日、公開しなかった回答済みは回答から 730 日、未回答と公開分は残す（`purge_map_corrections`・pg_cron `map-corrections-purge`）。アカウントを削除するとその
     アカウントの報告は消える（`_owned_by_user_cols` が発見する）。
+- **みんなの地図の報告とモデレーション**：読者が掲載したコレクション（§6.1・§8.1.2）は、ログインした読者が公開コレクションのカードの「このコレクションを報告」から理由（スパム・宣伝／
+  攻撃的・差別的／他人の個人情報／他人の著作物の無断転載／意図的に誤解を招く／その他）とメモで報告できる（`report_community_map()`・口座ごとに 1 件で、もう一度送ると更新・自分のものは不可・
+  掲載中のものだけ）。持ち主には誰が報告したかは見えない。管理者はみんなの地図のシートの下（`is_admin()` が真のときだけ出る）で報告されたコレクションを読み
+  （`community_map_reports_admin()`：題・作者・紹介文・掲載／非表示・未対応の件数・各報告の理由とメモと時刻。報告者は出さない）、**外す**（理由必須。持ち主はライブラリでその理由を読み、
+  再掲載できない。未対応の報告は「対応済み」）・**戻す**・**報告を却下**の 3 つを `moderate_community_map()` で行う。リンクそのもの（持ち主自身の配布）は触らない。
+  **報告と非表示はコレクション（口座とコレクション名）に付き、共有行には付かない**——持ち主が公開をやめて出し直しても非表示は解けず、報告も残り、一覧には「現在は非公開」として
+  出続ける。報告は報告者がアカウントを削除するまで残り、対応を終えたものは送信から 730 日で消える（`purge_community_map_reports`・pg_cron `community-map-reports-purge`）。
+  非表示は名前で持つので、中身を別の名前へ移して掲載し直すと新しい掲載になる（再び報告できる）。

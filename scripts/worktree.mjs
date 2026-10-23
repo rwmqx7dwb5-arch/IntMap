@@ -56,6 +56,10 @@ import { liveDeployment } from './pages-publish-guard.mjs';
 import { install as installMergeDriver, pending as mergePending } from './merge-driver.mjs';
 import { blame as blameNights } from './nightly-blame.mjs';
 import { fetchAtlasEval, atlasEvalLine } from './lib/nightly-status.mjs';
+/* (field-speed) NOT a static import: scripts/field-speed.mjs reads the counter's rule from supabase/functions/usage-count/shape.js,
+   and a tree without that file (a partial checkout, the minimal tree tests/r771 builds) would lose the WHOLE status to one
+   missing line. Loaded once, and a failure is said as «could not be read» while the rest of the status goes on. */
+const FIELD_SPEED = await import('./field-speed.mjs').catch((e) => ({ loadError: e }));
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '..');
@@ -158,7 +162,7 @@ const labelOf = (sha, subject) => {
 };
 
 /* ══ (#R304) THE NIGHTLY'S ANSWER, IN FRONT OF EVERY SESSION ════════════════════════════════════
-   The deep tier (157 spec files, 77 minutes — measured #R500; it was 27 files when this was written,
+   The deep tier (160 spec files, 77 minutes — measured #R500; it was 27 files when this was written,
    the number went stale three times before anybody re-measured it, and it moved 81 → 82 DURING that
    round. `node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`
    is the answer; scripts/deep-alarm.mjs derives it rather than restating it) has run every night since
@@ -241,6 +245,17 @@ function atlasEval() {
   const m = /github\.com[:/]([^/]+\/[^/]+?)(?:\.git)?$/.exec(q(['remote', 'get-url', 'origin']).trim());
   if (!m) return null;
   return atlasEvalLine(fetchAtlasEval(m[1], { cwd: REPO, timeoutMs: 6000, perPage: 30 }));
+}
+/* (field-speed) HOW LONG READERS WAIT, AND WHETHER THE NEWEST RELEASE MADE IT WORSE — what main's bundle says
+   (data/service-status.json, written by scripts/build-service-status.mjs from public.field_speed()). Read from
+   origin/main through git, so it costs no network and says what production's status page says. */
+function fieldSpeed() {
+  const raw = q(['show', 'origin/main:data/service-status.json']);
+  if (!raw) return null;
+  let b = null; try { b = JSON.parse(raw); } catch { return null; }
+  const unread = (b.unread || []).find((u) => u.half === 'fieldSpeed');
+  if (FIELD_SPEED.loadError) return { ok: false, text: '読者の手元での速さ: 読めなかった（scripts/field-speed.mjs を読み込めない: ' + String(FIELD_SPEED.loadError.message || FIELD_SPEED.loadError).split(/\r?\n/)[0].slice(0, 160) + '）' };
+  return FIELD_SPEED.line(b.fieldSpeed || { unread: unread ? unread.why : '束にまだ無い' });
 }
 const specTitle = (id, w = 90) => { const s = String(id); return s.length > w ? s.slice(0, w - 1) + '…' : s; };
 
@@ -533,6 +548,9 @@ function status(brief) {
     /* (shell-experience) the Atlas evaluation, ONLY when it is not green — the same rule as the deep tier above */
     const ae = atlasEval();
     if (ae && !ae.ok) console.log(`⚠ ${ae.text}${ae.url ? `  → ${ae.url}` : ''}`);
+    /* (field-speed) only when a release measurably made readers wait longer — the same rule as above */
+    const fsl = fieldSpeed();
+    if (fsl && !fsl.ok) console.log(`⚠ ${fsl.text}  → node scripts/field-speed.mjs`);
     /* (#R771) one line, and ONLY when something is actually outstanding. This prints at the top of
        every session, so a line that is always there is a line nobody reads. */
     const pw = pendingWork(master);
@@ -568,6 +586,8 @@ function status(brief) {
   console.log(`  deep tier (nightly) ${nf ? `${nf.what}${nf.ok ? '' : `   → gh run view ${nf.id} --log-failed`}   (${nf.day}${nf.age})` : '不明（gh が無い・未ログイン・オフラインのいずれか）'}`);
   const aev = atlasEval();
   console.log(`  Atlas 夜間評価       ${aev ? aev.text.replace(/^Atlas 夜間評価: /, '') + (aev.ok ? '' : `   → ${aev.url || 'gh run list --workflow=atlas-eval.yml'}`) : '不明（gh が無い・未ログイン・オフラインのいずれか）'}`);
+  const fsl = fieldSpeed();
+  console.log(`  読者の手元での速さ   ${fsl ? fsl.text.replace(/^読者の手元での速さ: /, '') : '不明（origin/main の data/service-status.json を読めない）'}`);
   const dh = deepHistory();
   if (!dh) {
     console.log('    直近の晩の分類   不明（gh が無い・未ログイン・オフライン・時間切れ のいずれか）→ node scripts/deep-history.mjs');

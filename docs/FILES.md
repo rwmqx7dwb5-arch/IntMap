@@ -59,6 +59,8 @@ for-newsrooms.html / press.html / for-schools.html / for-research.html / contact
 curriculum.html / school-handout.html
                                 単元対応表（3 つのカリキュラムの単元と、開ける地図・授業ツアー・クエスト・「この単元のツアーを作る」）と
                                 学校向けの A4 1 枚の案内（ja/ が日本語版）。同じく scripts/org-pages.mjs が生成する。Architecture.md §8.6.5
+readiness.html                  導入前の接続診断——許可が必要な接続先の一覧（3 層）と、この端末・ネットワークでの診断（js/readiness-page.js）。
+                                ja/ が日本語版。同じく scripts/org-pages.mjs が生成する。Architecture.md §8.6.6
                                 scripts/org-pages.mjs が生成する（手で編集しない。文は scripts/org-pages-text.mjs）。Architecture.md §11
 admin-inquiries.html            相談のコンソール（org_inquiries の閲覧・状態とメモ・削除、supporters の掲載）。英語・noindex。
 admin-corrections.html          地図の誤り報告のコンソール（map_corrections を世界地図の上に並べ、回答・公開する）。英語・noindex。
@@ -80,6 +82,9 @@ og-image.jpg                    リンクのカードの絵（本物の JPEG。�
 （dist だけ）history/years/ ja/history/years/ sitemap-years.xml
                                 年ごとの世界地図（年ごとのページと絵 world-map.svg・世紀ごとの一覧）とその sitemap。
                                 ビルドが scripts/year-pages.mjs で書く（§8.6.4）
+（dist だけ）history/polities/ ja/history/polities/ sitemap-polities.xml
+                                政体の盛衰の入口ページ（政体ごとのページ・カード card/<中身のハッシュ>.png・世紀ごとの一覧）とその sitemap。
+                                ビルドが scripts/polity-pages.mjs で書く（§8.6.4）
 （dist だけ）weekly/ ja/weekly/ sitemap-weekly.xml
                                 今週の地球（ISO 週ごとのページ・一覧・Atom フィード feed.xml）とその sitemap。
                                 ビルドが scripts/weekly-earth-pages.mjs で書く（§8.6.4）
@@ -256,7 +261,7 @@ gis-core.js                       **GIS 中核の 1 つの扉**（#R729）— �
                                   （`window.GeoJSONUpload.add` を通す＝地図に載せる道を 2 本作らない）。
                                   遅延読み込み `gisCore`。正本 `docs/GIS-CORE.md`
 gis-runtime.js                    **GIS の組み立て**（#R783）— `makeGisRuntime(deps)` が、ブラウザ入口と
-                                  **同じ `mount()`** で 15 のカーネルを載せる。`externals` を渡せば閉じた集合
+                                  **同じ `mount()`** で 16 のカーネルを載せる。`externals` を渡せば閉じた集合
                                   （渡していないものは scope に在っても使わない）、渡さなければ生きた scope。
                                   ⚠ **Atlas 用 GIS と外部 AI 用 GIS を別に作らないための 1 か所**。
                                   `js/gis-core.js` がこれを名前で読んで再公開する。
@@ -395,6 +400,12 @@ gis-index.js                      **空間索引** `window.IntMapGisIndex`（#R7
                                   `stats()` が仕事を述べる（build/query の時間・候補・**実際に幾何を見た数**・
                                   索引無しなら見たはずの数・その比・抱えている構造）。⚠ **数える場所は 1 つ**
                                   ——呼び出し元の厳密な判定は `queryEach(…,{test})` として渡され、写されない
+gis-voronoi.js                    **球面の最寄り圏** `window.IntMapGisVoronoi` — `voronoi` op の算術。
+                                  近傍は 3 次元凸包（＝球面 Delaunay）から、セルは**真の位置**の二等分面で
+                                  8 つの八分円を切り出す（極は片の角・日付変更線をまたぐ片は無い）。
+                                  共円の地点は凸包だけをずらした位置で建て、候補に 2 環近傍を足す。
+                                  境界の描画と「いちばん遠い場所」の探索の許容は球と WGS-84 の差
+                                  （`docs/GIS-CORE.md` §2.4.1 の 0.56 %）で、つまみではない（§2.9）
 gis-worker.js                     **Worker の束ね役** `window.IntMapGisWorker`（#R752）— 重い算術を
                                   main thread の外で走らせる。⚠ **`js/gis-ops.js` の yield の代わり
                                   ではなく隣**——あちらが足すのは応答性、これが足すのは**並列性**
@@ -833,7 +844,14 @@ news-events.js                    出来事単位の News（一覧・カテゴ�
                                   国の日報と企業パネルが読む行を開く口（`openRow`・`columns`）を持つ
 news-pulse.js                     「国ごとのニュースの脈」のレイヤー行と IntMapOS 命令と窓口
                                   `IntMapNewsIntel`（**eager**——行・名前・命令だけ。本体は news-intel.js）。
-                                  ストーリーの扉（`IntMapNewsIntel.story`・命令 `newsstory.open`・`?story=`）もここ
+                                  ストーリーの扉（`IntMapNewsIntel.story`・命令 `newsstory.open`・`?story=`）と
+                                  今日の世界の扉（`IntMapNewsIntel.edition`・命令 `newsedition.open`・`?edition=`）もここ
+news-edition.js                   今日の世界（その日のニュースを 1 つの版として）のカード——前回からの件数・
+                                  上位 10 件（媒体の数の順）・地図の番号のピンと再生・カテゴリと国・過去の日のチップ・
+                                  リンクとテキストのコピー。遅延取得（IntMapLazy の newsEdition）。正本は docs/NEWS-EVENTS.md §18
+news-edition-core.js              その計算の全部（純粋なモジュール）——窓（直近 24 時間／UTC の 1 日）・どの出来事が
+                                  窓に入るか・順位・前回以降・国とカテゴリの集計・`?edition=`・前回の時刻（このブラウザ）。
+                                  node が本番のデータで同じ関数を評価する
 news-story.js                     ストーリー（見出しが同じ語を含む出来事を日をまたいで束ねたもの）のカード——
                                   語のチップ・再生できる年表・地図（初報の時刻の色・広がりの線）・広がりの数。
                                   遅延取得（IntMapLazy の newsStory）。正本は docs/NEWS-EVENTS.md §17
@@ -949,7 +967,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  222 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  237 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -1072,7 +1090,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全222を検索・到達可能 219）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全237を検索・到達可能 234）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -1090,7 +1108,7 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
 atlas-hist-urban.js               Atlas の `time.cityPopulation` の本体——歴史上の都市人口の記録に、ある年の大都市・ある都市の人口の推移を訊き、
                                   値（`exec.cityPopulation`）と同じ事実の文で返す。規則は hist-urban.js。初回の呼び出しで動的 import（Atlas のチャンクに載せない）
-atlas-schemas.js                  **引数の schema**（#R406）— 222能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 237能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -1148,6 +1166,9 @@ company-facilities.js             選択中の企業の拠点を地図に描く�
 company-footprint.js              **企業の拠点の地図**——全企業の公表拠点を 1 枚に（data/companies/footprint.json）。グループ・業種の
                                   切り替え、表示範囲の企業と国の集計、`query()`（Atlas `data.companySites`）。カメラは動かさない。
                                   遅延（IntMapLazy `companyFootprint`） IntMapCompanyFootprint
+company-ties.js                   **企業でつながる国**——同じ拠点を「本社の国 → 拠点の国」の組で読む（外国企業の割合・海外拠点の割合・
+                                  世界の組）。相手国の塗りと大圏の線、`query()`（Atlas `data.companyTies`）。カメラは動かさない。
+                                  遅延（IntMapLazy `companyTies`） IntMapCompanyTies
 dash-extended.js                  ダッシュボードのキャッシュと拡張情報カード
 widgets.js                        ウィジェット板の入口（export widgets）——
                                   HOST との接続と window.IntMapWidgets2 の公開契約だけを持つ
@@ -1206,6 +1227,19 @@ quake-history.js                  **この場所の地震の記録**のカード
 quake-history-core.js             その事実の全部（純粋なモジュール）——FDSN の要求（地点は整数度に丸め、半径をその分広げる）・
                                   件数を先に訊いて下限を上げる規則（一度に 3,000 件）・端末での正確な円・最大・順位・年代・
                                   時刻 T までの記録・`?qh=`。node が実際の ComCat の答えで同じ関数を評価する
+world-flows.js                    **世界とのつながり**のカードと地図の弧——1 つの国が人（UN DESA の移民ストック）・データ（海底ケーブル系統）・
+                                  航空路（OpenFlights 2014）でどの国とつながるかを、時計の年以前で最も新しい記録で。「モノ」は貿易フロー
+                                  レイヤーを同じ国で開く扉。扉は Tools・地点カードの国の行・`?wf=`・Atlas `data.worldFlows`。遅延チャンク（§7.3j）
+world-flows-core.js               その事実の全部（純粋なモジュール）——国の表と照合・時刻の規則・3 つの読み方・合計と割合・弧（大圏の経度を連続に）
+card-clearance.js                 カードが覆わない部分に地図を収める余白（fitBounds の padding）。js/news-story.js と js/quake-history.js も同じ規則を閉包に持つ
+aftershock.js                     **余震の見通し**のカードと地図——M5 以上の地震について、今後 1 日〜1 年に各規模の余震が起きる確率と
+                                  回数の 95% の範囲、根拠（区分・一般パラメータ・事後分布）、累積余震と予想の図、USGS 自身の予測（あれば）、
+                                  実績。マスタークロックが見通しの時点で、終わった期間は答え合わせ。扉は js/wb-layers.js
+                                  （地震のポップアップ・命令 `aftershock.open`・`?as=`）。遅延取得（IntMapLazy の aftershock）
+                                  window.IntMapAftershock
+aftershock-core.js                そのモデルの全部（純粋なモジュール）——Reasenberg & Jones (1989) に USGS の一般パラメータ
+                                  （Page et al. 2016・García et al. 2012 の区分）を事前分布とするベイズ更新、時間変化する検知限界、
+                                  余震域、ポアソン混合の確率と範囲、答え合わせ、USGS の oaf 製品の読み。node が実際の ComCat の答えで評価する
 seismic.js                        地震波シミュレータ（477 KB）
 seismic-events.js                 過去の地震——公表された震源パラメータ
 seismic-site.js                   場址項は周波数の関数である window.IntMapSiteAmp
@@ -1355,17 +1389,35 @@ journey-through-time.js           **時をまたぐ道のり**——1 本の線�
                                   time-borders.js `collectionAt` が描く政体を線に沿って順に、区間ごとの km・越境点・海と記録の無い陸地と、
                                   一部の時点でだけ通る政体。Atlas `time.journey`（1 時点を政体ごとの色で地図に描く）と経路パネルの
                                   「その年の国境」が読む。最初に要るときに取りに行く
+territory-change.js               **持ち主が変わった土地**——1 つの範囲で 2 つの時点を比べ、各記録がセル（既定は約 100 万個）の中心に描く
+                                  政体が変わった土地を、受け取った政体の色で地図に描く。移動ごとの km²・元と新しい持ち主に占める割合・
+                                  かけらの数。同一性は CShapes の国家コード→Wikidata→名前の順で、同じコードの改名は一覧だけ、括弧の
+                                  保有者が変わったもの（Korea (Japan)）は描く。片方だけが描く土地は記録の端として分ける。Atlas
+                                  `time.territoryChange` が最初に要るときに取りに行く。史実照合は scripts/territory-change.mjs --sites
 polity-arc.js                     **政体の盛衰**——1 つの政体を全時代にわたって読む。地図がその名前で描き始めた年・描き終えた年（端が政体のものか
                                   記録の切り替わりかを区別）、描かれた面積の推移のグラフ（区間ごとに描いた記録の色・記録の継ぎ目の破線）、最大の
                                   描画面積の年、記録上の別の名前（同じ Wikidata 項目・地図上の同じ名前）。グラフを押すと時計がその年へ、「一生を再生」は
                                   形が変わる年だけをタイムラプスで。索引は data/polity-arcs.json。入口は Chronos パネル・この場所の歴史の各行・
-                                  Atlas `time.polityArc`（docs/architecture/07-map.md §7.4c）
+                                  Atlas `time.polityArc`（docs/architecture/07-map.md §7.4c）。同じ読み手（describe・valueAt・related・chartSvg・largest）で
+                                  政体の盛衰の静的な入口ページ（scripts/polity-pages.mjs、§8.6.4）も書かれる
+family-history.js                 **家族史と国境**——読者の家族（手入力、または GEDCOM の読み込み）の各出来事を、その日・その場所で
+                                  歴史の記録が描く政体と第 1 級区分で読み（日付が年・月だけなら幅の中の変化も）、各人物の生涯のあいだの
+                                  政体の変化を数える（記録の切り替わり・同じ政体の別の行・重なり・継ぎ目は数えない）。地名は端末の地名辞典と
+                                  歴史都市名・Pleiades に訊き、1 つに決まるときだけ置く。このブラウザにだけ保存。入口は Chronos パネル・
+                                  Atlas `time.lifeAtPlace`（docs/architecture/07-map.md §7.4d）。最初に要るときに取りに行く
+gedcom.js                         **GEDCOM（5.5.1 / 7.0）の読み手**——文字コード（BOM・CHAR。ANSEL は ASCII の範囲だけ）、記録の木、
+                                  DATE か PLAC を持つ構造を出来事として、座標（PLAC.MAP）、家族の出来事を両配偶者へ。日付は文法どおりに
+                                  日の幅へ（ユリウス暦・フランス革命暦・ユダヤ暦を換算）。family-history.js が読む
 events-near.js                    範囲 × 期間の地震と出来事の**読み手 1 つ**——USGS の M2.5 以上・7 日のフィードをセッション内で 1 回
                                   取得して共有し、`news_events` の窓をページ送りで読み、どちらも位置を送らずに端末で範囲を絞る。
                                   状態の語彙（`ok` / `none` / `unavailable`＋理由）の正本。地点カード・place-watch.js・
                                   Atlas の research.related / impact / 実世界オブジェクトが読む
 here-entry.js                     検索欄の空の状態の先頭に「いま、ここ」「写真の場所」の 2 行を出す（search-geocode.js が
-                                  作例ギャラリーと一緒に読む）。写真は押した瞬間にファイル選択を開く
+                                  作例ギャラリーと一緒に読む）。同じ行（entryRow）を start-home.js も持つ。写真は押した瞬間にファイル選択を開く
+start-home.js                     **携帯のシートのホーム**——タブを選んでいないシートの先頭に、いまいる場所・「いまの地球」（ライブの
+                                  レイヤーのスイッチ。時間の宣言・パネルの畳み・組まれた行から導く）・この日の歴史地図と作例・
+                                  ホーム画面への追加を置き、ウィジェットボードを同じスクロールの下に借りる。シートを掴むか min より上で
+                                  止まったときに mobile-ui.js が読む（起動では読まない）。幅が広がるとボードを返す
 share-inbox.js                    **共有で開く**——共有シート（manifest の share_target → sw.js が受けて `?share=<id>`）・写真の
                                   場所・Atlas `view.openShared` が渡したものを地図で開く。写真はカメラの記録（EXIF の位置と撮影時刻、
                                   photo-geo-exif.js）からピン・地点カード（「いま」が先頭）・撮影日の地図。位置の無い写真は稜線照合（photo-geo.js）へ。
@@ -1411,6 +1463,11 @@ connection-watch.js               **このページが実際に通信した相�
 connections-panel.js              **「このページの通信」**——記録した各ホストを `data/connection-ledger.json`（出口の台帳から導出）と突き合わせ、
                                   送るもの別にまとめ、台帳に名前の無いもの・台帳と食い違うもの・CSP が拒否したものと、この一覧に見えないものを
                                   述べる。ライブ更新・JSON の書き出し。Atlas `system.connections` も同じ `describe` を読む。オンデマンド
+device-storage-panel.js           **「この端末に保存されているもの」**——ブラウザが持つもの（localStorage・sessionStorage・IndexedDB・
+                                  Cache Storage・Cookie・容量の見積り）を尋ね、各項目を `data/device-storage-ledger.json` と突き合わせて
+                                  種類別（ログインとキー → 作ったもの → 操作の記録 → 設定 → 写しと内部の記録）に並べる。中身は表示も書き出しも
+                                  しない。1 件ずつ・「この端末から消去」（台帳が名指すものだけ）で消せる。照合の規則 `globMatch` は台帳の
+                                  生成器も使う。Atlas `system.deviceStorage` も同じ `describe` を読む。オンデマンド（wave4-security）
 auth-ui.js                        アカウント・認証・Supabase のブート
 account-data.js                  「あなたのデータ」——アカウントが保持するものの目録（account_data_inventory）と完全な書き出し
                                   （export_account_data・JSON 1 ファイル）。どの表かは DB が発見する（削除と同じ走査）——このファイルは
@@ -1425,7 +1482,11 @@ my-places.js                      マイプレイス——アカウントに保�
                                   地図ドキュメントを save_view に渡す（1 枚の地図は従来どおりの 4 引数、段のあるものは kind と steps つき）
 shared-collection.js              公開コレクション——publish_collection / 公開の停止（所有者の DELETE）/ 公開の読み取り shared_collection(token) /
                                   自分のアカウントへの写し copy_shared_collection と、`?collection=<token>` で開いたページのカード（場所をピンで、
-                                  地図を一覧で。複数段の地図＝ツアーは授業モードで再生）。auth-ui.js がそのページでだけ読み込む。オンデマンド（collection-workspace）
+                                  地図を一覧で。複数段の地図＝ツアーは授業モードで再生）。auth-ui.js がそのページでだけ読み込む。オンデマンド（collection-workspace）。
+                                  掲載中ならカードに作成者・紹介文・保存された数・元にした地図と報告、アプリ内から開く openShared（community-maps）
+community-maps.js                 みんなの地図——読者が掲載した公開コレクションの目録（community_maps を GET で・語／並び／地図の表示範囲）・
+                                  地図で開く（shared-collection.js openShared）・ライブラリの掲載の箱（list_community_map / unlist・保存された数）・
+                                  公開カードの掲載欄と報告（report_community_map）・管理者の報告一覧と外す／戻す／却下。markup を書かない。オンデマンド
 place-watch.js                    見守る場所——保存した場所の周辺の地震（USGS）・気象警報（警報レイヤー自身の記録）・火山の警戒レベル
                                   （volcano-intel）・独立した複数媒体が報じた出来事（news_events）を、IntMap を開いている間 10 分ごとに
                                   読み、新しいものをトースト 1 回とアカウントボタンの印で知らせ、ダイジェストのシートに出す。判定は
@@ -1449,7 +1510,7 @@ table-bind.js                     **表の場所の列**（純関数）——各
                                   名前を持つ全ロケールと Natural Earth の名前の列から発見）／都市名（GeoNames）のどれかを値で判定し、行ごとに
                                   場所の鍵（ISO alpha-3、無ければ ADM0_A3／GeoNames id）を返す。同名は曖昧として解決しない（同じ行の国の列で絞る）
 legal-text.js                     利用規約とプライバシーポリシーの**本文**（唯一の写し。JA/EN）
-legal.js                          その本文をアプリ内モーダルに表示する
+legal.js                          その本文をアプリ内モーダルに表示する（本文は開いたときに遅延モジュール legalText で読む）
 dialog.js                         ダイアログの唯一の契約 window.IntMapDialog —— 登録簿（open/adopt・anyOpen）、Esc・Tab トラップ・
                                   閉じたときのフォーカス復帰、「押せる」の契約（role+tabindex を Enter/Space で押す委譲・makeActionable）、
                                   検索欄の listbox（矢印キー）。数える側は scripts/keyboard-reach.mjs
@@ -1508,6 +1569,10 @@ quest-panel.js                    **学ぶクエストのパネル**——出題
 quest-daily.js                    **今日のクエストの記録と連続日数**——その日のセット（seed `d<YYYY>-<MM>-<DD>`）の最初の結果を、このブラウザ（localStorage
                                   `intmap_quest_daily`）とログイン中はアカウント（`quest_daily_results`）に残し、両方を合わせて連続日数・最近 7 日を数える。
                                   パネル・アカウントのシート・Atlas の learn.daily が同じ集計を読む（遅延・グローバル無し）（§8.6.4）
+quest-class.js                    **クラスのセット**（DOM なし）——クラスのリンク `&class=<code>` の読み書き、答えが運ばれる形（場所＝[lng,lat] 小数 3 桁・年・null）、
+                                  エンジンで全提出を採点する集計（問題ごとの平均・中央値・いちばん苦戦した問題）、CSV、`class_sets`／`class_set_answers` と生徒の 2 つの RPC の扉（§8.6.4）
+quest-class-board.js              **先生のボード**——クラスのセットの一覧・作成・1 セットの結果（リンク・受付の開閉・平均・苦戦した問題・場所の問題のクラスのタップを地図に・
+                                  年の分布・生徒ごとの得点・提出の削除・CSV）。採点は quest-panel.js の questionsOf() のエンジン。Atlas の learn.class も読む（遅延・グローバル無し）（§8.6.4）
 premium-plan.js                   プレミアムの節——ただしその全機能が無料である
 supporter.js                      IntMap を支援する——支援パネルの「支援の使い道」（プラン表の 1 日の上限と
                                   public.operating_stats() の今月の AI 要求数・トークン数）と、控えめな提案カード
@@ -1521,6 +1586,7 @@ admin-corrections.js              admin-corrections.html の動き——管理�
 map-corrections.js                地図の誤り報告の読者側——カード（地点・表示・年を添付）、送信（reader-reports kind correction）、受付番号の保管、
                                   回答の読み取り（受付番号とアカウント）、回答の通知、公開記録。クリックで取得（起動経路に載らない）
 atlas-cap-corrections.js          Atlas の corrections.* —— report（下書きしてカードを開く・送るのは読者）／mine／log
+atlas-cap-community.js            Atlas の community.* —— browse（目録）／open（地図で開く）／list（掲載・表示名は訊く）／unlist／mine（届いた数）
 admin-inquiries.js                admin-inquiries.html の動き——管理者の確認、相談の一覧・状態・メモ・削除、支援者の掲載・非表示・削除
 admin-pipeline.js                 相談のコンソールの Pipeline タブ（ES module・admin-inquiries.js がタブを開いたとき import()）——会話の段
                                   （lead→talking→trial→adopted|declined）・次にやること・期日。語はページの data-*（inquiry-shape.js が正本）
@@ -1555,6 +1621,10 @@ whats-new.js                      **「新着」**——IntMap に加わった�
                                   `newsen`/`newsjp` から書く）。設定 ▸ 新着・未読の印（ボタンが初めて画面に入ったときに数える）・
                                   Atlas の `system.whatsNew` が読む。初めて使われたときに取得（握りは `layer-state.js` の
                                   `window.IntMapWhatsNew`）。15-ops-quality.md §15.9
+readiness-check.js                導入前の接続診断の規則——描画文脈（maplibre-gl と同じ）・接続先を 3 層に分ける（index.html の preconnect／基盤／
+                                  レイヤー）・1 回の no-cors 問い合わせ（到達／到達できず／時間内に応答なし）・昨夜の確認と結ぶ判定。
+                                  readiness.html（js/readiness-page.js）と Atlas の system.readiness が読み、scripts/org-pages.mjs が許可リストを書く。08-ui.md §8.6.6
+readiness-page.js                 readiness.html の動き（素のまま配るモジュール）——押すと診断し、行ごとに結果を書き、結果をコピー・保存・相談へ添付
 host-match.js                     出口の台帳（`scripts/outbound-hosts.json`）のホスト名・パターン（`*.wikipedia.org`）の照合 1 つ。
                                   `scripts/upstream-liveness.mjs` と `service-status.js` が同じ関数を読む
 fetch-deadline.js                 締切つきの取得 `jsonWithin()` / `readWithin()`——相手が答えるのをやめても必ず終わる 1 回の取得。
@@ -1625,8 +1695,13 @@ service-status.json               **昨夜の確認を読者へ**——上流ホ
                                   （`.github/workflows/tle-refresh.yml` が 1 日 2 回）。`history` に毎晩の判定を 1 晩 1 文字で最大 90 晩
                                   （公開台帳）、`atlasEval.offline` にセッション不要の評価の件数
 connection-ledger.json            **このページの通信を何と突き合わせるか**——`scripts/outbound-hosts.json` の全行のうち読者に見せる部分
-                                  （host・形〈disclosure／link／dormant／removedBy〉・what・送るもの・Privacy §4 の語句）。生成は
+                                  （host・形〈disclosure／link／dormant／removedBy〉・what・送るもの・Privacy §4 の語句・要求する行の probe〈毎晩の確認と同じ
+                                  1 回の要求。導入前の接続診断が読む〉）。生成は
                                   scripts/connection-ledger.mjs（`--write` / `--check`）。`check:datagov`（規則 outbound-disclosed）が突き合わせる
+device-storage-ledger.json        **この端末に保存されているものを何と突き合わせるか**——ブラウザのコードが書き込む全ての名前（キー・
+                                  データベース・キャッシュ。`*` は実行時に決まる部分）と、その種類・読者向けの語（en/jp）・書くファイル、
+                                  Cookie を書く箇所の数。生成は scripts/device-storage-ledger.mjs（`--write` / `--check`）。
+                                  `check:datagov`（規則 stored-disclosed）が突き合わせる
 offline-sources.json              **どの供給元のファイルを回線なしで使えるよう保存してよいか**——`scripts/outbound-hosts.json` の各ホスト行の
                                   `offline`（allowed・kind・pathPrefix・規約の URL・理由）から導出。述べられていないホストは入らない。
                                   生成は scripts/offline-sources.mjs（`--write` / `--check`）。`check:datagov`（規則 offline-declared）が突き合わせる
@@ -1681,7 +1756,7 @@ subcables.json                    海底ケーブルの経路（`scripts/build-s
 subcables-lp.json                 陸揚げ地点（点）。既存の黄色い点はこれを描く
 subcables-meta.json               ケーブル単位のメタデータ（所有者・RFS・総延長・接続国・
                                   陸揚げ地点）と、陸揚げ地点ごとの「ここに来るケーブル」。
-                                  クリック時のポップアップだけが読む（線の描画は読まない）。
+                                  クリック時のポップアップと「世界とのつながり」のデータ（国ごとの共有系統）が読む（線の描画は読まない）。
                                   ⚠ カードを9言語で出すための**結合鍵**も持つ——国名の
                                   ISO 3166-1 alpha-2（`countryCodes` / `cc`）・`rfsMonth` /
                                   `rfsQuarter`・`lengthKm`。国名や月名の訳語は入れない（CLDR）
@@ -1707,7 +1782,7 @@ airports.json                     国ごとの**定期便のある空港の規�
 mobility.json                     **国どうしの航空路線数**（有向 4,565 ペア・出発国 230）と、国別の
                                   **実測の入国旅行者数**（World Bank `ST.INT.ARVL`・2019 年以前の最新年）。
                                   パンデミック・シミュレーターが「次にどの国へ届くか」を引く重みに使う
-                                  （`js/playground.js` がシムを開いたときだけ取りに行く）。
+                                  （`js/playground.js` がシムを開いたときだけ取りに行く）。路線数は「世界とのつながり」の航空路も読む（§7.3j）。
                                   上流は OpenFlights（ODbL 1.0）＋ OurAirports（public domain・空港コード→国）
                                   ＋ World Bank（CC BY 4.0）。生成は `scripts/build-mobility.mjs`（`--check` あり）。
                                   ⚠⚠ **路線表は 2014 年 6 月で更新が止まっている**（OpenFlights 自身が明記）。
@@ -1873,6 +1948,9 @@ on-this-day.json                  **日付つき出来事の索引**——暦の
                                   その横に Wikidata が述べる出来事（`events`：項目・日付を述べた属性・精度つき）。scripts/build-on-this-day.mjs が書き、--check が照合する（§8.6.3）
 polity-arcs.json                  **政体の盛衰の索引**——地図が描く名前ごとの、記録が変える瞬間ごとの描画面積（km²・描いた記録）、最大の描画面積の年と枠、
                                   Wikidata 項目。scripts/build-polity-arcs.mjs が地図のコード（history-pages.mjs mapReader）で書く（§7.4c）
+world-flows.json                  **世界とのつながりの表**——国（Natural Earth の位置と名前、表に無い DESA の地域は位置なし）と、UN DESA International
+                                  Migrant Stock 2024 の出身国 × 居住国の年央ストック（1990〜2024 の 8 時点・欠けは null）と DESA が述べる合計。
+                                  scripts/build-world-flows.mjs が書く（`--check` あり・§7.3j）
 weekly-earth.json                 ISO 週ごとの記録（USGS の M5.5 以上の地震・NASA EONET の自然現象）。scripts/build-weekly-earth.mjs が週を足し、既にある週は保つ。--check が形式を照合する（§8.6.4）
 wars.json                         6つの戦争の記録（支配・戦線・作戦・種別・兵力と死傷／`scripts/build-wars.mjs` が書き、検証する）
 religion.json / language.json     宗教の分布／言語の分布（国ごとの記録＋言語名・ISO 639-3・訳）
@@ -1893,7 +1971,7 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全21本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（52本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（55本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス） ＋ 見守る場所 ＋ 保存した地図と公開コレクション ＋ 地図ドキュメント（ツアー・回答の段）。32本）
   functions/<name>/index.ts       Edge Functions（21本。一覧と各本の役割は Architecture.md §6.2。
@@ -1966,6 +2044,8 @@ scripts/
                                   その前日を比べ、戦争の記録の出来事と合わせて暦の日ごとに。Wikidata の出来事は下の写しから。`--check` で記録と照合（§8.6.3）
   build-polity-arcs.mjs           data/polity-arcs.json（政体の盛衰の索引）を書く——地図のコード（history-pages.mjs mapReader）で Cliopatria が変わる年と
                                   1689〜2019 年の毎年 7 月 1 日を読み、名前ごとに描かれた面積を記録つきで。`--check` で束と照合、`--show <名前>` で 1 件（§7.4c）
+  build-world-flows.mjs           data/world-flows.json（世界とのつながりの表）を書く——UN DESA International Migrant Stock 2024 の Table 1 を
+                                  Natural Earth の国に M49 で結ぶ。表に無い地域は落とさず位置なしで残し印字する。`--check` で上流と照合（§7.3j）
   fetch-world-events.mjs          索引が運ぶ Wikidata の出来事を取る（選んだ記事 → 項目 → 日付・精度・場所・名前・説明）。日付を述べない項目は
                                   落とし、史実と矛盾する値は理由つきで拒む。写しは scripts/time-index/wikidata-events.json（生成器はネットに出ない）
   on-this-day-pages.mjs           この日の歴史地図の静的ページ・カードの絵・sitemap の生成器（onThisDayPagesPlugin）と、
@@ -1977,6 +2057,11 @@ scripts/
   year-pages.mjs                  年ごとの世界地図の生成器（yearPagesPlugin）——年は記録から規則で選び（chooseYears）、名前と絵は
                                   history-pages.mjs mapReader、出来事は data/on-this-day.json（§8.6.4）
   year-pages-text.mjs             そのページの文の唯一の写し（en + jp）
+  polity-pages.mjs                政体の盛衰の入口ページ・カード・sitemap の生成器と `--queue` の投稿の下書き——政体と事実は
+                                  data/polity-arcs.json を js/polity-arc.js で読み、カードの形は history-pages.mjs mapReader（§8.6.4）
+  polity-pages-text.mjs           そのページと下書きの文の唯一の写し（en + jp）
+  polity-choice.mjs               政体ページのアドレス・一覧・sitemap の名前と Vite プラグイン（polityPagesPlugin）——生成器を import しないので
+                                  history-pages.mjs・year-pages.mjs・vite.config.js が循環なしに読む
   lib/world-svg.mjs               世界の絵（Equal Earth・SVG）を記録の輪郭から描く——表示のための簡略化と日付変更線の処理
   build-weekly-earth.mjs          data/weekly-earth.json を書く——USGS FDSN と NASA EONET に 1 回ずつ訊き、終わった週を足す（無人の定期更新の名簿）（§8.6.4）
   weekly-earth-pages.mjs          今週の地球の静的ページ・Atom フィード・sitemap の生成器（weeklyEarthPagesPlugin）と、`--queue` の投稿の下書き
@@ -2320,10 +2405,20 @@ scripts/
   build-service-status.mjs        `data/service-status.json` を作る。最新の `upstream-liveness` artifact と `atlas-eval.yml`
                                   の実行記録を gh で読み、言うことが変わったときだけ書く。読めなかった半分は `null` と理由
                                   毎晩の結果を `history` に畳み込む（`advanceHistory`・`--backfill` で残っている結果から埋める）、
-                                  選挙の上流の言葉は宣言から（`readerLedger`）、`atlas-eval-offline` を件数に（`offlineSummary`）
+                                  選挙の上流の言葉は宣言から（`readerLedger`）、`atlas-eval-offline` を件数に（`offlineSummary`）、
+                                  読者の手元での速さを `field-speed.mjs` から（`fieldSpeed`）
+  field-speed.mjs                 **読者の手元での速さ**——公開の読み `public.field_speed()` を頁めくりで読み（鍵は `src/vendor.js`
+                                  から）、版と端末ごとの分位（半数・4 人に 3 人が何秒以内か）と、よく測れた最新の版が前の版より
+                                  遅いか（`judge`・帯 300+ どうしで 10 ポイント）を出す。状態ページの文（en / jp）も `sentences()` がここで作る。
+                                  `build-service-status.mjs` と `worktree.mjs status` が読む
   whats-new.mjs                   **更新情報**——dev-notes/ の `newsen`/`newsjp` から `whats-new.json`・`updates.html`／`ja/updates.html`・
                                   Atom（`updates.xml`／`ja/updates.xml`）・`sitemap-updates.xml` を build 時に dist/ へ（`whatsNewPlugin`）
   connection-ledger.mjs           `data/connection-ledger.json` を、ホスト台帳（outbound-hosts.json）から導出して書く／照合する（security-next）
+  device-storage-ledger.mjs       ブラウザのコードの保存の書き込み（setItem・indexedDB.open・caches.open）を acorn で全部見つけ、名前を束縛
+                                  （const・連結・テンプレート・オブジェクト・関数の戻り値・モジュールをまたぐ包み関数）で読み、
+                                  `device-storage-words.json` の語と合わせて `data/device-storage-ledger.json` を書く／照合する（wave4-security）
+  device-storage-words.json       ブラウザに保存する名前ごとの種類と読者向けの語（en/jp）。ライブラリが自分の名前で書くもの（ログインの
+                                  セッション）は `libraries` に、その名前を作るソースの行とともに
   offline-sources.mjs             `data/offline-sources.json` を、ホスト台帳（outbound-hosts.json）の `offline` から導出して書く／照合する
   lib/nightly-status.mjs          夜間ジョブの記録を値にする 1 か所——`readerUpstreams`（読者向けの上流の要約）・
                                   `atlasEvalState` / `atlasEvalLine`（最後の成功・最新の回が何も測っていないか・失敗した段の注記）。
@@ -2469,7 +2564,7 @@ scripts/
                                   index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
                                   マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
                                   なるなら 1 ファイルで両方を名乗る
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 157 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 160 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の
@@ -2495,7 +2590,8 @@ scripts/
   nightly-blame.mjs               **nightly の赤を、それを起こした変更へ渡す**。退行ごとに main の commit の範囲と、
                                   spec の reach に触れた変更（＝容疑）を証拠つきで並べる。`--markdown` は
                                   `deep-alarm.mjs --append` が Issue に足す節、`--dispatch` は退行と範囲ごとに 1 回
-                                  だけ `nightly-bisect.yml` を起動する（run 名が鍵）。`worktree.mjs status` が 1 行で出す
+                                  だけ `nightly-bisect.yml` を起動する（run 名が鍵）。`worktree.mjs status` が 1 行で出す。
+                                  読めなかった晩は理由ごとに数え、1 晩も読めなかった窓は「赤なし」ではなく「判定していない」と書く
   nightly-bisect.mjs              **どの merge が壊したかを測って決める**。範囲の各 commit（と通った晩＝対照）で
                                   その 1 テストを単独で 3 回走らせ、境目を判定する（culprit / narrowed /
                                   passes-alone / control-not-clean / flaky-at-bad / unmeasured）。判定は nightly の
@@ -2543,6 +2639,8 @@ tests/
   prod-smoke.spec.js              実 URL に対するスモーク（PROD_URL）
   security.spec.js                実ブラウザでの無害化確認
   helpers/network.js              hermetic なルーティングと console の分類
+  helpers/field-speed-page.mjs    本物の `js/usage-counts.js` を偽のページで 1 回起動し、起動画面が上がった後に送られる行を出す
+                                  （起動画面の判定は 1 ページ 1 回の promise なので、1 プロセス＝1 ページ）
   helpers/colour-difference.js    **2色がどれくらい違って見えるか**（sRGB→CIELAB＋CIEDE2000）。
                                   #R487 まで prod-smoke は「見分けられるか」を **sRGB のユークリッド距離**で
                                   訊いていたが、その距離は見え方を順序づけない（出荷中の風の表で実測、

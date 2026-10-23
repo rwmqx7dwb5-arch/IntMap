@@ -96,6 +96,20 @@
     } catch (_) { /* an old browser: the defaults stand */ }
     syncHint();
     purpose.addEventListener('change', syncHint);
+    /* (wave4-sales) ?attach=readiness — the network check (readiness.html, js/readiness-page.js) left its report in this tab's
+       sessionStorage; it goes into an EMPTY message box, cut to the box's own maxlength (the form's limit), and the page says so.
+       The reader still writes and sends the enquiry — nothing is sent from here. */
+    try {
+      if (new URLSearchParams(location.search).get('attach') === 'readiness') {
+        var rep = sessionStorage.getItem('intmap_readiness_report'), box = form.elements.message;
+        if (rep && box && !String(box.value).trim()) {
+          var max = box.maxLength > 0 ? box.maxLength : rep.length;
+          box.value = '\n\n' + rep;   /* two empty lines above it, for the question */
+          if (box.value.length > max) box.value = box.value.slice(0, max - 1) + '…';
+          say('attached');
+        }
+      }
+    } catch (_) { /* no storage: the box stays empty */ }
 
     form.addEventListener('submit', function (e) {
       e.preventDefault();

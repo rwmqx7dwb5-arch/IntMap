@@ -61,6 +61,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          # (field-speed) scripts/field-speed.mjs publishes a release's speed only when the release is a commit of
+          # main's first-parent history (the source of the build stamp); a shallow clone verifies nothing. Commits and
+          # trees only — no file contents of old commits are fetched.
+          fetch-depth: 0
+          filter: blob:none
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version: 20

@@ -140,7 +140,9 @@ function wireCards(root) {
    on a phone fills the sheet the field has raised (css/intmap.css #m-search-slot). It is drawn only while the
    field is EMPTY and focused — js/search-geocode.js asks for it then, and the first letter typed replaces it
    with the place candidates. One row, examples then tours, scrolled sideways; «See all» opens the gallery. */
-export function showInResults(res) {
+/** `onLeave` — what «See all» ends where the strip is drawn. Absent: the search's list closes (as it always did);
+ *  the phone sheet's home (js/start-home.js) passes its own, so its strip stays — the shape of js/here-entry.js entryRow. */
+export function showInResults(res, onLeave) {
   if (!res) return false;
   style();
   const g = galleryItems();
@@ -155,7 +157,8 @@ export function showInResults(res) {
   wireCards(res);
   import('./on-this-day.js').then((m) => m.fillSlot(res.querySelector('.otd-slot'))).catch(() => { /* no card: the strip stands alone */ });
   const all = res.querySelector('.sg-all');
-  if (all) all.addEventListener('click', () => { res.style.display = 'none'; res.innerHTML = ''; openGallery(); });
+  const leave = typeof onLeave === 'function' ? onLeave : () => { res.style.display = 'none'; res.innerHTML = ''; };
+  if (all) all.addEventListener('click', () => { leave(); openGallery(); });
   res.style.display = 'block';
   return true;
 }
@@ -181,8 +184,14 @@ export function openGallery(opts) {
     + (g.tours.length ? '<section class="sg-sec" id="sg-tours" data-sg-topic="tours"><h3>' + H(t('Classroom tours', '授業ツアー')) + '</h3>'
       + '<p class="sg-sub">' + H(t('A lesson as a sequence of maps, full screen for a projector, with words to read out and a question for the class.', '地図を順にたどる授業の進行表。プロジェクター向けの全画面で、読み上げる文と生徒への問いが付きます。')) + '</p>'
       + '<div class="sg-grid">' + g.tours.map(cardHTML).join('') + '</div></section>' : '')
+    /* (community-maps) after IntMap's own examples, the maps readers made and listed for everyone (js/community-maps.js) */
+    + '<section class="sg-sec" id="sg-community" data-sg-topic="community"><h3>' + H(t('Community maps', 'みんなの地図')) + '</h3>'
+    + '<p class="sg-sub">' + H(t('Collections of places, maps and tours that readers made and listed for everyone — open one, or keep a copy and build on it.', '読者が作り、みんなに向けて掲載した場所・地図・ツアーのコレクション。開いて見ることも、保存して自分の地図の元にすることもできます。')) + '</p>'
+    + '<button type="button" class="sg-all" id="sg-community-open" data-effect="none">' + H(t('Browse Community maps', 'みんなの地図を見る')) + '</button></section>'
     + '</div>';
   wireCards(box);
+  /* the sheet needs the app host (the database client, the reader's language and account) — js/auth-ui.js holds it */
+  box.querySelector('#sg-community-open').addEventListener('click', () => { if (dlg) dlg.close('button'); else { try { box.remove(); } catch (_) { } } bus.emit('intmap-open-community'); });
   const panel = /** @type {HTMLElement} */ (box.querySelector('.sg-box'));
   const close = () => { dlg = null; try { box.remove(); } catch (_) { } };
   box.querySelector('.sg-x').addEventListener('click', () => { if (dlg) dlg.close('button'); else close(); });

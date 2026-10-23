@@ -10,6 +10,9 @@
  *  questState() says whether the panel is open, which kind, which seed, which question — so a start that put
  *  the first question on screen is reported as done, and a start whose data could not be read is reported as
  *  that failure, never as «nothing changed». Atlas does not answer the questions for the reader.
+ *
+ *  learn.class (wave4-education) — CLASS SETS: the teacher's side of a challenge link (js/quest-class.js and its board):
+ *  make a set, list the sets, read a set's results, open or close it for hand-ins, open the board.
  * ==========================================================================*/
 import { str, int, one } from './atlas-caps.js';
 
@@ -114,6 +117,93 @@ export default [
         + '<div style="font-size:12.5px;margin:2px 0;">' + esc(streak + ' · ' + L('best streak ' + st.best + ' days', '最長 ' + st.best + ' 日')) + '</div>'
         + note(esc(L('Last 7 days: ', '最近 7 日: ') + week)) + note(esc(where)),
       { meta: { daily: { today: s.today, account: s.account, todayKinds: s.todayKinds, streak: st, recent: s.recent, days: s.days } } });
+    },
+  },
+  /* (wave4-education) learn.class — CLASS SETS: a learn quest given to a class so the students' answers reach the teacher
+     (js/quest-class.js, the board js/quest-class-board.js, public.class_sets / class_set_answers). Atlas can make a set
+     (of the set on screen, or of a kind), list the teacher's sets, read one set's RESULTS — the same tally the board shows,
+     scored by the engine the students' panel used — open or close a set for hand-ins, and open the board.
+     ⚠ THE VERDICT IS THE DATABASE'S ROW OR THE BOARD'S STATE, READ AFTER THE CALL (.agents/rules/one-pass-or-a-reason.md §4).
+     Students' names are the teacher's data: Atlas reports them to the signed-in teacher whose set it is, and nobody else
+     can read them (RLS). Atlas never hands in answers for a student. */
+  {
+    row: ['learn.class',                'classSet',       'classQuest,classResults,classBoard,classLink,assignQuest,quizResults', 'panel', 'none', 'account.classes,panel.quest,map.quest,camera', 'panel', 'persist', 'explicit', '', ''],
+    doc: [
+      { in: 'learn.quest', at: 720, text: '{"type":"classSet","action"?:"list"|"create"|"results"|"open"|"close"|"board","kind"?:"where"|"when","n"?:5|10,"seed"?:str,"title"?:str,"code"?:str} = CLASS SETS (クラスのセット — a learn quest given to a class so EVERY STUDENT\'S ANSWERS REACH THE TEACHER; students open the class link with no account and type a name). Needs the teacher signed in. create makes a set — of the set on screen when no kind is given, else of kind (n 5 or 10, a new seed unless "seed") with an optional "title" — and returns the CLASS LINK to hand out; list (default) returns the teacher\'s sets with their codes and how many handed in; results (with "code") returns how the class did: how many handed in, the class mean and median, the HARDEST question, each question\'s mean and median distance / years off, and each student\'s total — for 「クラスの結果は？」「どの問題が難しかった？」「誰が提出した？」「生徒の答えを見せて」, "how did my class do?", "which question did they get wrong?"; open / close (with "code") start or stop taking answers; board opens the teacher\'s board (with "code": that set, where each place question\'s taps can be drawn on the map). Use this — not quest — whenever the reader says class, students, assign, hand in or results. Do not hand in answers for a student. ' },
+    ],
+    schema: () => ({ type: 'object', properties: { action: one('list', 'create', 'results', 'open', 'close', 'board'), kind: str(), n: int(1, null), seed: str(), title: str(), code: str() } }),
+    async run(a, dctx, K) { const R = K.R, L = K.L, esc = K.esc, note = K.note, warn = K.warn, HOST = K.HOST;
+      const P = await import('./quest-panel.js');
+      const E = await import('./quest-engine.js');
+      const C = await import('./quest-class.js');
+      const B = await import('./quest-class-board.js');
+      const lang = L('en', 'jp');
+      const act = String(a.action || (a.code ? 'results' : 'list')).trim();
+      const SIGN_IN = { code: 'SIGN_IN_REQUIRED', category: 'input', retryable: false, userGoalSatisfied: false, produced: [] };
+      const fail = (code) => R(false, warn(esc(C.classFailureText(code, lang))), { meta: code === 'sign_in' ? SIGN_IN : { code: String(code || 'failed').toUpperCase() } });
+      if (!HOST.user) {
+        if (act === 'board') await P.openClassBoard();   /* the board itself offers the sign-in */
+        return fail('sign_in');
+      }
+      const code = a.code ? String(a.code).trim().toUpperCase() : '';
+      const setLine = (x) => '<div style="font-size:12px;line-height:1.6;"><b>' + esc(x.title || E.kindTitle(x.kind, lang)) + '</b> · ' + esc(E.kindTitle(x.kind, lang) + ' · ' + x.n + L(' questions', ' 問') + ' · ' + String(x.created_at || '').slice(0, 10) + ' · ' + x.answered + L(' handed in', ' 人提出') + ' · ' + (x.open ? L('taking answers', '受付中') : L('closed for answers', '締切'))) + ' <span style="opacity:.6;">[code ' + esc(x.code) + ']</span></div>';
+      if (act === 'board') {
+        const st = await P.openClassBoard(code ? { code } : null);
+        const ok = !!(st && st.open && (!code || (st.set && st.set.code === code)));
+        return R(ok, ok ? note('✓ ' + esc(L('The class board is open', 'クラスのボードを開きました') + (st.set ? ': ' + (st.set.title || E.kindTitle(st.set.kind, lang)) : ''))) : warn(esc(L('No class set has that code', 'そのコードのクラスのセットはありません') + ': ' + code)),
+          { meta: { board: st } });
+      }
+      if (act === 'create') {
+        const cur = P.questState();
+        const kind = a.kind ? String(a.kind) : cur.kind;
+        const seed = a.seed ? String(a.seed) : (!a.kind && cur.seed ? cur.seed : P.freshSeed());
+        const n = a.n != null ? +a.n : (!a.kind && cur.n ? cur.n : E.SET_LENGTHS[0]);
+        if (!kind || E.QUEST_KIND_IDS.indexOf(kind) < 0) return R(false, warn(esc(L('Name the quest — kind', 'クエストの種類（kind）を指定してください') + ': ' + E.QUEST_KIND_IDS.join(', '))), { meta: { code: 'needs_input' } });
+        if (!C.classable(kind, seed, n)) return R(false, warn(esc(L('A class set has ' + E.SET_LENGTHS.join(' or ') + ' questions and a seed of letters, digits, _ and -.', 'クラスのセットの問題数は ' + E.SET_LENGTHS.join(' か ') + '、seed は英数字・_・- です。'))), { meta: { code: 'needs_input' } });
+        const r = await C.createClassSet(HOST.DB, { kind, seed, n, title: a.title });
+        if (!r.ok) return fail(r.error);
+        const link = B.linkOf(r.set);
+        return R(true, note('✓ ' + esc(L('Made the class set', 'クラスのセットを作りました'))) + setLine(r.set)
+          + '<div style="font-size:12px;word-break:break-all;margin:2px 0;">' + esc(L('Class link', 'クラスのリンク')) + ': ' + esc(link) + '</div>'
+          + note(esc(L('Students open it with no account and type a name; their answers come to the teacher\'s board. The set takes answers until it is closed.', '生徒はアカウントなしで開いて名前を入力します。答えは先生のボードに届きます。締め切るまで提出を受け付けます。'))),
+          { meta: { classSet: { code: r.set.code, kind, seed, n, title: r.set.title || '', open: true, link } } });
+      }
+      if (act === 'open' || act === 'close') {
+        if (!code) return R(false, warn(esc(L('Which set? Give its code (list shows them).', 'どのセットですか？ コードを指定してください（list で一覧できます）。'))), { meta: { code: 'needs_input' } });
+        const l = await C.listClassSets(HOST.DB);
+        if (!l.ok) return fail(l.error);
+        const x = l.sets.find((y) => y.code === code);
+        if (!x) return fail('not_found');
+        const want = act === 'open';
+        if (x.open === want) return R(true, note('✓ ' + esc(want ? L('The set already takes answers', 'このセットはすでに受付中です') : L('The set is already closed', 'このセットはすでに締め切られています'))) + setLine(x), { meta: { classSet: { code, open: x.open } } });
+        const r = await C.setClassOpen(HOST.DB, x.id, want);
+        if (!r.ok) return fail(r.error);
+        return R(r.open === want, note('✓ ' + esc(want ? L('The set takes answers again', '提出の受付を再開しました') : L('Closed the set for answers', '提出を締め切りました'))) + setLine(Object.assign({}, x, { open: r.open })), { meta: { classSet: { code, open: r.open } } });
+      }
+      if (act === 'results') {
+        if (!code) return R(false, warn(esc(L('Which set? Give its code (list shows them).', 'どのセットですか？ コードを指定してください（list で一覧できます）。'))), { meta: { code: 'needs_input' } });
+        const r = await B.readSet(code, HOST);
+        if (!r.ok) return r.error === 'data' ? R(false, warn(esc(L('The questions of this set could not be made from the map\'s data', 'このセットの問題を地図のデータから作れませんでした'))), { meta: { code: 'UNAVAILABLE' } }) : fail(r.error);
+        const T = r.T;
+        const qLines = T.questions.map((x) => {
+          const q = r.qs[x.i];
+          const how = q.kind === 'where' ? (x.medianKm != null ? L('median ' + Math.round(x.medianKm) + ' km away', '中央値 ' + Math.round(x.medianKm) + ' km ずれ') : L('no taps', 'タップなし'))
+            : (x.medianOff != null ? L('median ' + x.medianOff + ' y off, exact ' + x.exact, '中央値 ' + x.medianOff + ' 年ずれ・ぴったり ' + x.exact + ' 人') : L('no answers', '答えなし'));
+          return '<div style="font-size:12px;line-height:1.6;">' + (x.i + 1) + '. ' + esc(C.questionLabel(q, lang)) + ' — ' + esc(L('mean ', '平均 ') + x.mean + ' · ' + how + (x.skipped ? ' · ' + L('skipped ', 'スキップ ') + x.skipped : '')) + (x.i === T.hardest ? ' <b>' + esc(L('(hardest)', '（最難）')) + '</b>' : '') + '</div>';
+        }).join('');
+        const sLines = T.students.map((st) => esc(st.name) + ' ' + st.total).join(' · ');
+        return R(true, setLine(r.set)
+          + (T.count ? '<div style="font-size:12.5px;margin:2px 0;">' + esc(L(T.count + ' handed in · class mean ' + T.meanTotal + ' / ' + T.max + ' · median ' + T.medianTotal, T.count + ' 人提出・クラス平均 ' + T.meanTotal + ' / ' + T.max + '・中央値 ' + T.medianTotal)) + '</div>' + qLines
+            + note(esc(L('Students: ', '生徒: ')) + sLines) : note(esc(L('Nobody has handed in yet.', 'まだ提出はありません。')))),
+          { meta: { classResults: { code, kind: r.set.kind, n: r.set.n, open: r.set.open, count: T.count, meanTotal: T.meanTotal, medianTotal: T.medianTotal, max: T.max, hardest: T.hardest,
+            questions: T.questions.map((x) => ({ i: x.i, label: C.questionLabel(r.qs[x.i], lang), mean: x.mean, answered: x.answered, skipped: x.skipped, medianKm: x.medianKm, medianOff: x.medianOff, exact: x.exact })),
+            students: T.students.map((st) => ({ name: st.name, total: st.total, scores: st.scores })) } } });
+      }
+      /* list */
+      const l = await C.listClassSets(HOST.DB);
+      if (!l.ok) return fail(l.error);
+      return R(true, l.sets.length ? l.sets.map(setLine).join('') : note(esc(L('No class sets yet — create one (of the set on screen, or of a kind).', 'クラスのセットはまだありません。create で作れます（表示中のセットか、種類を指定）。'))),
+        { meta: { classSets: l.sets.map((x) => ({ code: x.code, kind: x.kind, n: x.n, title: x.title || '', open: x.open, answered: x.answered, created_at: x.created_at })) } });
     },
   },
 ];
