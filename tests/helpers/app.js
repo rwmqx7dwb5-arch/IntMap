@@ -372,3 +372,24 @@ export async function loadLazyModules(page) {
     if (failed.length) throw new Error('on-demand module(s) failed to load: ' + failed.join('; '));
   });
 }
+
+/**
+ *  Switch the UI language the way a reader does (`#setting-lang` → setLang() in js/app-body.js) and
+ *  return once the switch has LANDED.
+ *
+ *  ⚠ A LANGUAGE SWITCH IS NOT SYNCHRONOUS. Every language but English is a chunk fetched on first
+ *  use (js/lang-switch.js `when`): setLang() applies nothing until that chunk has arrived, and only
+ *  then sets `<html lang>`, repaints (`updateI18n`) and fires `intmap-lang` — all in the same
+ *  callback. Specs that slept a fixed 700–900 ms after the change event measured the machine, not
+ *  the app: MEASURED on the nightly deep tier (2026-11-01…14), the first attempt of
+ *  tests/r165.spec.js #4 failed on 12 of 14 nights and tests/r167.spec.js #4 on 8, every time
+ *  still reading English, and passed on the retry once the chunk was cached.
+ *  `<html lang>` is set inside that callback before the repaint, so waiting for it is waiting for
+ *  the switch itself; a chunk that never comes is reported, not slept through.
+ *  @param {import('@playwright/test').Page} page
+ *  @param {string} code an IntMapLang code ('en', 'jp', …)
+ */
+export async function switchLanguage(page, code) {
+  await page.evaluate((c) => ((s) => { s.value = c; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.getElementById('setting-lang')), code);
+  await page.waitForFunction((c) => document.documentElement.getAttribute('lang') === window.IntMapLang.htmlTag(c), code, { timeout: 20_000 });
+}
