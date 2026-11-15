@@ -189,8 +189,8 @@ select has_function('public', 'purge_anonymous_reports', array['integer'], 'secu
 select has_function('public', 'purge_cron_run_history',  array['integer'], 'security-audit ④: purge_cron_run_history(int) exists');
 select ok((select prosecdef from pg_proc where oid = 'public.purge_anonymous_reports(integer)'::regprocedure), 'security-audit ④: purge_anonymous_reports is SECURITY DEFINER');
 select ok((select prosecdef from pg_proc where oid = 'public.purge_cron_run_history(integer)'::regprocedure),  'security-audit ④: purge_cron_run_history is SECURITY DEFINER');
-select ok('search_path=""' = any((select proconfig from pg_proc where oid = 'public.purge_anonymous_reports(integer)'::regprocedure)), 'security-audit ④: purge_anonymous_reports pins search_path to ''''');
-select ok('search_path=""' = any((select proconfig from pg_proc where oid = 'public.purge_cron_run_history(integer)'::regprocedure)),  'security-audit ④: purge_cron_run_history pins search_path to ''''');
+select ok(exists(select 1 from unnest((select proconfig from pg_proc where oid = 'public.purge_anonymous_reports(integer)'::regprocedure)) e where e = 'search_path=""'), 'security-audit ④: purge_anonymous_reports pins search_path to ''''');
+select ok(exists(select 1 from unnest((select proconfig from pg_proc where oid = 'public.purge_cron_run_history(integer)'::regprocedure)) e where e = 'search_path=""'),  'security-audit ④: purge_cron_run_history pins search_path to ''''');
 select ok(not has_function_privilege('anon',          'public.purge_anonymous_reports(integer)', 'execute'), 'security-audit ④: anon cannot purge reports');
 select ok(not has_function_privilege('authenticated', 'public.purge_anonymous_reports(integer)', 'execute'), 'security-audit ④: authenticated cannot purge reports');
 select ok(    has_function_privilege('service_role',  'public.purge_anonymous_reports(integer)', 'execute'), 'security-audit ④: service_role purges reports');
