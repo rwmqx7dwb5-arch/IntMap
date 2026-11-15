@@ -58,6 +58,7 @@ export const BorderProvenanceCard = (function () {
     const ceYear = (raw) => year(raw < 0 ? raw + 1 : raw);
     return { T, year, day, ceYear };
   }
+  const LA = IntMapLang.pickArgs();   /* (atlas-cited-answers) a label held as data — the answer's source list reads it in the reply's language */
   const metres = (dec) => { const m = 111320 * Math.pow(10, -dec); return m >= 1000 ? (m / 1000).toFixed(m >= 10000 ? 0 : 1) + ' km' : (m >= 1 ? Math.round(m) + ' m' : m.toFixed(2) + ' m'); };
   const degKm = (deg) => { const km = deg * 111.32; return km >= 1 ? km.toFixed(km >= 10 ? 0 : 1) + ' km' : Math.round(km * 1000) + ' m'; };
 
@@ -400,7 +401,16 @@ export const BorderProvenanceCard = (function () {
     const card = await render(prov, HOST, GE);
     /* the same card on the map, at the point asked about — the reader sees what Atlas read */
     if (pt && a.open !== false) { try { await present(GE, HOST, pt, prov); } catch (_) { /* the answer stands */ } }
-    return R(true, String(card), { meta: { code: 'OK', category: 'ok', retryable: false, userGoalSatisfied: true, produced: ['explanation'] } });
+    /* (atlas-cited-answers) the same facts as data, for the answer's source list (js/atlas-answer-sources.js): each record
+       drawing a shape here, named as the card names it, in both languages the list can be read in */
+    const en = W({ lang: 'en' }), jp = W({ lang: 'jp' });
+    const d = prov.date, iso = (d && isFinite(d.y)) ? (d.y < 0 ? '-' : '') + String(Math.abs(d.y)).padStart(4, '0') + '-' + String(d.m).padStart(2, '0') + '-' + String(d.d).padStart(2, '0') : '';
+    const provenance = [];
+    for (const s of prov.sections) for (const sd of s.sides || []) {
+      provenance.push({ kind: 'line', what: sd.name || LA('The border here', 'ここの境界'),
+        source: [recordName(sd, en), recordName(sd, jp)], date: iso, at: pt || prov.at || null });
+    }
+    return R(true, String(card), { meta: { code: 'OK', category: 'ok', retryable: false, userGoalSatisfied: true, produced: ['explanation'], provenance } });
   }
 
   return {

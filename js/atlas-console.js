@@ -45,6 +45,7 @@ import { makeAtlasCatalogText } from './atlas-catalog-text.js';   /* (#R318) the
 import { makeAtlasAnswerPipeline } from './atlas-answer-pipeline.js';   /* (#R350/#R472) the analysis answer as a contract: evidence registry -> ONE call -> audit -> report. The audit no longer re-asks or rewrites the answer. */
 import { makeAtlasAnswerRender } from './atlas-answer-render.js';   /* (#R350) every link on screen is built from the registry, never from the model's prose */
 import { makeAtlasEvidence } from './atlas-evidence.js';
+import { makeAtlasAnswerSources, attachSources } from './atlas-answer-sources.js'; import { shareApi } from './atlas-cap-panel.js';   /* (atlas-cited-answers) the answer's sources, joined by code from the results of the tools it ran */
 import { makeAtlasAnswerContract } from './atlas-answer-contract.js';
 import { makeAtlasAnswerAudit } from './atlas-answer-audit.js';
 import { makeAtlasExamples } from './atlas-examples.js';   /* (#R309) the starter chips — see the ceiling note there */
@@ -1053,6 +1054,7 @@ export function atlasConsole(HOST){
     const { runStructuredAnswer, auditMeta } = makeAtlasAnswerPipeline();
     const ARENDER = makeAtlasAnswerRender(); const { renderAnswer, answerPlainText, answerCSS, citedRecords } = ARENDER;   /* (#R589) the whole surface too, because _atlCompose needs demoteProseLinks */
     const { makeEvidenceRegistry } = makeAtlasEvidence();
+    const SRCS = attachSources({ core: makeAtlasAnswerSources({ L, esc, lang: _mirrorLang }), GE, HOST, shareLink: () => { try { return shareApi().link(); } catch (_) { return location.href; } }, onReady: (b) => { try { if (b && b.isConnected) _atlCompose(b); } catch (_) { } } });   /* (atlas-cited-answers) js/atlas-answer-sources.js — repaints a reply when the map's half of its sources lands */
     const { normalizeAnswer } = makeAtlasAnswerContract();
     const GEOBJ = makeAtlasGeoObject();   /* (#R397) geoObject / placed / pointLike / describesUserPoint / mergeKnown */
     const ANOM = makeAtlasAnomalyScore();   /* (#R397) cross-domain hazard ranking with an explainable score */
@@ -2608,13 +2610,14 @@ export function atlasConsole(HOST){
          ⚠ NOT HIDDEN: each action's own body still renders its honest per-action outcome below. */
       let head=say?('<div style="margin-bottom:6px;">'+mdMini(say)+'</div>'):LIVE.draftHtml(ai);   /* (atlas-live-stream) no answer yet: what is being written stands where it will stand — a compose between tools must not erase it */ try{ const _cr=COMPOSE.recordsFor(keep); if(_cr.length&&head) head=COMPOSE.linkProse(head,_cr); if(head) head=ARENDER.demoteProseLinks(head,_curPlanCites,_cr); }catch(_){}   /* (#R511) the names in the answer get the numbers the markers carry — from the records THIS reply drew, read off its own results. ⚠⚠⚠ (#R589) AND AN ANCHOR IN THAT PROSE CLAIMS INTMAP FETCHED THE PAGE: the structured path builds every link from the registry, this one renders what Atlas wrote, which is how 「(mapion.co.jp)」 shipped as a live link to a page nothing in the turn had requested. The rule, and the set of hosts this turn actually retrieved, are js/atlas-answer-render.js. */
       if(ai.__atlCancelled) head=_cancelledNote()+head;
+      try{ const _sv=SRCS.compose(ai,keep,{ final:!!say, question:ai.__atlQ||'' }); head=_sv.head(head); body+=_sv.footer; }catch(_){}   /* (atlas-cited-answers) a number in Atlas's words that equals a value a tool returned gets that source's [n]; the list and the answer's Cite go under the reply — js/atlas-answer-sources.js */
       /* ⚠⚠⚠ (#R733) A TURN THAT RAN OUT IS NOT A TURN THAT FINISHED, and only IntMap knows which it was:
          js/atlas-agent.js stops for two reasons that are not Atlas deciding it is done, and neither reaches
          the model. Measured, three production turns ended `stopped:'step_budget'` reading as finished answers
          — one promised a highlight, never called it, and closed without a word. Architecture.md has the rest. */
       if(ai.__atlCut) head=head+_cutNote();
       ai.innerHTML=(head+body)||esc(L('Done.','完了しました。','Fertig.','Готово.','Hecho.')); try{ PROG.live(ai); }catch(_){}   /* ⚠ (#R723) THIS LINE IS WHY THE INDICATOR DIED AFTER THE FIRST TOOL: it assigns innerHTML, and `.atl-stage` is both the word and the marker the cancel scan needs. See PROG.live. */
-      try{ _refreshMapChips(); }catch(_){}   /* (#R122) sync every map-toggle chip's on/off to real ownership+visibility */ try{ COMPOSE.bind(ai); }catch(_){}   /* (#R511) hover a name → its marker rings; hover the marker → the name lights */
+      try{ SRCS.bind(ai, ai.__atlQ||''); }catch(_){} try{ _refreshMapChips(); }catch(_){}   /* (#R122) sync every map-toggle chip's on/off to real ownership+visibility */ try{ COMPOSE.bind(ai); }catch(_){}   /* (#R511) hover a name → its marker rings; hover the marker → the name lights */
     }catch(e){ try{ ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; }catch(_){} } }
     async function runActions(ai, say, acts, gen){
       const results=[]; const fails=[]; let cancelled=false;
@@ -2873,9 +2876,9 @@ export function atlasConsole(HOST){
             is one of the stops line 4736 already calls 'has its own note'; this line simply
            did not read it. The question IS the turn's text. */
         ai.__atlSay=out.text||((String(out.stopped||'')!=='awaiting_user'&&out.results&&out.results.length)?L('Atlas ran its tools but did not write an answer this time — what they returned is shown above; ask again or narrow the question.','Atlas は道具を動かしましたが、今回は回答文を書けませんでした——道具が返したものは上に示しています。もう一度訊くか、問いを絞ってください。','Atlas hat seine Werkzeuge ausgeführt, aber diesmal keine Antwort geschrieben — was sie zurückgaben, steht oben; frag noch einmal oder enger.','Atlas запустил инструменты, но не написал ответ — их результаты выше; спросите снова или уже.','Atlas ejecutó sus herramientas pero esta vez no escribió una respuesta: lo que devolvieron está arriba; pregunta de nuevo o acota la pregunta.'):'');   /* (#R731) a turn that ran tools and wrote nothing says so — the forced final can come back machine-shaped (refused as prose in js/atlas-agent.js readReply) and the reader was left with result rows and no sentence; the sentence is IntMap's and says what happened, not what the answer would have been */
-        try{ LIVE.end(ai,'answered'); }catch(_){}   /* (atlas-live-stream) the draft gives way to the answer — compose renders `__atlSay` in its place */
+        ai.__atlQ=q; try{ LIVE.end(ai,'answered'); }catch(_){}   /* (atlas-live-stream) the draft gives way to the answer — compose renders `__atlSay` in its place */
         _atlCompose(ai); try{ LIVE.answered(ai); }catch(_){}
-        recordTurn(q,out.text||'',_ranActions,[]); try{ ASTATE.endTurn(turn,{ reply:String(out.text||''), status:String(out.stopped||'answered'), aiCalls:((out.trace&&out.trace.steps)||[]).length, cites:(_curPlanCites||[]).map(c=>({url:c.url,title:c.title||''})) }); }catch(_){}   /* ⚠ (#R760) `endTurn` had ZERO callers, so every turn IntMap ever ran stayed `status:'running'` with an empty `reply` forever — a record with no reader inside the product, and a false one to every reader outside it */
+        recordTurn(q,out.text||'',_ranActions,[]); try{ const _et=ASTATE.endTurn(turn,{ reply:String(out.text||''), status:String(out.stopped||'answered'), aiCalls:((out.trace&&out.trace.steps)||[]).length, cites:(_curPlanCites||[]).map(c=>({url:c.url,title:c.title||''})) }); if(_et) Object.defineProperty(_et,'answerSources',{ value:SRCS.ready(ai), configurable:true, enumerable:false }); }catch(_){}   /* (atlas-cited-answers) the reply's source list, for the notebook — not enumerable, so a turn record that is serialised stays plain data */   /* ⚠ (#R760) `endTurn` had ZERO callers, so every turn IntMap ever ran stayed `status:'running'` with an empty `reply` forever — a record with no reader inside the product, and a false one to every reader outside it */
         try{ PROG.done(ai); }catch(_){} msgTools(ai,q);
       }catch(e){
         if(gen!==_runGen){ try{ ASTATE.endTurn(turn,{status:'cancelled'}); }catch(_){} _markCancelled(ai); return; }
