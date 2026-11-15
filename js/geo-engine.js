@@ -353,8 +353,11 @@ function _redrawLocalGlyphs(m,cover){
      gave); a notch mid-flight changes the ACCELERATION, never the speed, so there is no stop.
      ω = 0.02 /ms: a single notch is 95 % there in 150 ms (the stock curve took 200), eight notches
      settle 150 ms after the last one. Simulated against the measured cadence: evenness 0.10 vs 0.6.
-     ⚠ The handler finishes on its own clock (200 ms after the last notch); while the spring has
-     not arrived, the end is postponed — the same five fields its own finish writes, restored below.
+     ⚠ The handler finishes on its own clock: the frame its curve ends on asks the handler manager for a
+     200 ms timeout (`res.timeout`) whose token is `_finishWait`, and the timeout is ignored once the
+     handler no longer holds that token (maplibre-gl 6.18 ScrollZoomHandler.onTimeout). While the spring
+     has not arrived, the end is postponed by withdrawing both — the request and the token — and keeping
+     the gesture open; the frame the spring arrives on lets the stock finish through unchanged.
      Lifts when: the pinned renderer's wheel path is velocity-continuous by itself (then `renderFrame`
      or `_targetZoom` will have changed shape and the guard below declines to install). */
   const WHEEL_SPRING_W=0.02;
@@ -391,7 +394,7 @@ function _redrawLocalGlyphs(m,cover){
       res.zoomDelta=z-tr.zoom; lastOut=z; this._lastExpectedZoom=z;
       if(!arrived){
         /* the stock handler may have just declared the gesture over: keep it open one frame more */
-        if(this._finishTimeout){ clearTimeout(this._finishTimeout); delete this._finishTimeout; }
+        if(res.timeout&&res.timeout.token===this._finishWait){ delete res.timeout; delete this._finishWait; }
         this._active=true; this._needsRerender=true; res.needsRenderFrame=true;
       } else if(!res.needsRenderFrame){ z=null; lastOut=null; lastTarget=null; }
       return res;
@@ -477,8 +480,12 @@ function _redrawLocalGlyphs(m,cover){
     while(first>0&&buf.length&&buf[buf.length-1].time-buf[first].time<3*FRAME_MS) first--;
     return buf.slice(first);
   }
+  /* the renderer's HandlerInertia, held by its HandlerManager — `Map._handlerManager` since maplibre-gl
+     6.18 (`_handlers` before; tests/map-motion-checks ④ reads the field's name out of the installed
+     source). The one reader of it: both the release and the drag's destination ask here. */
+  const _inertiaOf=(mm)=>{ const H=mm&&mm._handlerManager; return (H&&H._inertia)||null; };
   function _glideRelease(mm){
-    const H=mm&&mm._handlers, I=H&&H._inertia;
+    const I=_inertiaOf(mm);
     if(!I||I.__imGlide||typeof I._onMoveEnd!=='function'||!Array.isArray(I._inertiaBuffer)) return false;
     I.__imGlide=true;
     const stock=I._onMoveEnd;
@@ -572,7 +579,7 @@ function _redrawLocalGlyphs(m,cover){
      gate exists to hold. */
   function _dragDestination(mm){
     try{
-      const I=mm._handlers&&mm._handlers._inertia, g=mm.__imGlide;
+      const I=_inertiaOf(mm), g=mm.__imGlide;
       if(!I||!g||g.maxSpeed===0||!mm.dragPan||!mm.dragPan.isActive()) return null;
       const t=maplibregl.now(), buf=(I._inertiaBuffer||[]).filter((e)=>t-e.time<=INERTIA_CUTOFF_MS);
       const E=_inertiaWindow(buf,t); if(E.length<2) return null;

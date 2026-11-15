@@ -99,18 +99,25 @@ test('R182 ①: the transcribed constants match the installed maplibre-gl', () =
   const sz = new mlLib.ScrollZoomHandler({}, () => {}, {});
   assert.equal(C.DEFAULT_ZOOM_RATE, sz._defaultZoomRate, 'ScrollZoomHandler default (trackpad) zoom rate');
   assert.equal(C.WHEEL_ZOOM_RATE, sz._wheelZoomRate, 'ScrollZoomHandler wheel zoom rate');
-  /* and the four inertia families — the defaults object is module-scope, so read from the source */
+  /* and the inertia families — the defaults object is module-scope, so read from the source.
+     (deps-minor-patch-nov) 6.18 took the bearing off this law: it turns under friction
+     (bearingFrictionOptions), evaluated against the library itself in ④b below */
   const inertiaSrc = ML_SRC.filter((x) => /\bconst defaultInertiaOptions\b/.test(x.text));
   assert.equal(inertiaSrc.length, 1, 'HandlerInertia\'s defaults are declared in one place');
   const T = inertiaSrc[0].text;
   const fam = (n) => { const m = new RegExp('const default' + n + 'InertiaOptions\\s*=\\s*extend\\(\\{([^}]*)\\}').exec(T); assert.ok(m, n); return m[1]; };
   const num = (body, k) => Number(new RegExp(k + ':\\s*([\\d.]+)').exec(body)[1]);
   assert.equal(num(/const defaultInertiaOptions\s*=\s*\{([^}]*)\}/.exec(T)[1], 'linearity'), 0.3);
-  for (const [key, n] of [['pan', 'Pan'], ['zoom', 'Zoom'], ['bearing', 'Bearing'], ['pitch', 'Pitch']]) {
+  for (const [key, n] of [['pan', 'Pan'], ['zoom', 'Zoom'], ['pitch', 'Pitch']]) {
     const body = fam(n);
     assert.equal(C.INERTIA[key].deceleration, num(body, 'deceleration'), key + ' deceleration');
     assert.equal(C.INERTIA[key].maxSpeed, num(body, 'maxSpeed'), key + ' maxSpeed');
   }
+  assert.deepEqual(Object.keys(C.INERTIA).sort(), ['pan', 'pitch', 'zoom'], 'no family is transcribed that the library no longer has');
+  const fr = /const bearingFrictionOptions\s*:\s*FrictionOptions\s*=\s*\{([^}]*)\}/.exec(T);
+  assert.ok(fr, "HandlerInertia's bearingFrictionOptions");
+  for (const k of ['halfLife', 'minSpeed', 'maxSpeed', 'stopSpeed'])
+    assert.equal(C.BEARING_FRICTION[k], num(fr[1], k), 'bearing friction ' + k);
 });
 
 /* ── ② THE GLOBE PAN IS MAPLIBRE'S, NOT THE INTUITIVE ONE ────────────────────────────────
@@ -207,6 +214,42 @@ test('R182 ④: calculateEasing is MapLibre\'s, including the maxSpeed clamp', (
   /* a violent one is capped at maxSpeed, which is what stops a fling flying off the planet */
   const fast = inertiaEase(100000, 10, C.INERTIA.pan);
   assert.ok(Math.abs(fast.duration - (1400 / (2500 * 0.3)) * 1000) < 1e-6, 'clamped to maxSpeed');
+});
+
+/* ── ④b THE BEARING GLIDE IS MAPLIBRE'S HandlerInertia, EVALUATED ──────────────────────────
+   HandlerInertia is not exported, so it is compiled from the source the package ships (as
+   tests/cesium-globe-drag-checks does for the globe) and fed the same recorded turns on the
+   renderer's own clock. Its ease and frictionEase must agree on the angle, the duration and the
+   easing curve — and on the turns too slow to glide at all. */
+test('R182 ④b: frictionEase is HandlerInertia\'s bearing glide (maplibre-gl 6.18+)', async () => {
+  const { build } = await import('esbuild');
+  const { fileURLToPath } = await import('node:url');
+  const r = await build({
+    stdin: { contents: "export {HandlerInertia} from './ui/handler_inertia.ts'; export {setNow, restoreNow} from './util/time_control.ts';",
+      resolveDir: fileURLToPath(new URL('src/', ML_PKG)), loader: 'ts' },
+    bundle: true, write: false, format: 'esm', platform: 'node', logLevel: 'error',
+  });
+  const L = await import('data:text/javascript;base64,' + Buffer.from(r.outputFiles[0].text).toString('base64'));
+  const { frictionEase } = loadInput()._math;
+  const C = loadInput()._consts;
+  const camera = { getBearing: () => 0, getCenter: () => ({ lng: 0, lat: 0 }), unproject: (p) => p };
+  try {
+    /* every entry inside VELOCITY_WINDOW (≤ 3 frames of 16 ms), so both sides measure the same interval */
+    for (const [perFrame, frames] of [[3, 3], [0.5, 3], [20, 3], [-6, 3], [0.9, 2], [2, 2]]) {
+      const hi = new L.HandlerInertia(camera);
+      let t = 1000;
+      for (let i = 0; i < frames; i++) { L.setNow(t); hi.record({ bearingDelta: perFrame }); t += 16; }
+      L.setNow(t);
+      const ease = hi._onMoveEnd();
+      const total = perFrame * (frames - 1), ms = 16 * frames;   /* the first entry only marks the start */
+      const mine = frictionEase(total, ms, C.BEARING_FRICTION);
+      if (!ease) { assert.equal(mine, undefined, `${perFrame}°/frame: MapLibre does not glide, nor may we`); continue; }
+      assert.ok(mine, `${perFrame}°/frame: MapLibre glides`);
+      assert.ok(Math.abs(ease.bearing - Math.max(-179, Math.min(179, mine.amount))) < 1e-9, `angle ${ease.bearing} vs ${mine.amount}`);
+      assert.ok(Math.abs(ease.duration - mine.duration) < 1e-9, `duration ${ease.duration} vs ${mine.duration}`);
+      for (const k of [0, 0.1, 0.5, 0.9, 1]) assert.ok(Math.abs(ease.easing(k) - mine.easing(k)) < 1e-12, `easing(${k})`);
+    }
+  } finally { L.restoreNow(); }
 });
 
 /* ── ⑤ CESIUM'S OWN NAVIGATION IS OFF, AND ALL EIGHT NAMES ARE IMPLEMENTED ─────────────── */
