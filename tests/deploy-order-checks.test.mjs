@@ -166,7 +166,6 @@ function groupFor(expr, ctx) {
 
 test('④ a dispatch on main cannot cancel main\'s push run (the one that publishes)', () => {
   const ci = yaml.load(rd(join(WF, 'ci.yml')));
-  assert.equal(ci.concurrency['cancel-in-progress'], true);
   const g = (event_name, ref) => groupFor(ci.concurrency.group, { workflow: 'CI', event_name, ref });
   const main = 'refs/heads/main';
   assert.notEqual(g('workflow_dispatch', main), g('push', main), 'a dispatch on main shares the publishing run\'s group');
@@ -179,4 +178,20 @@ test('④ a dispatch on main cannot cancel main\'s push run (the one that publis
   assert.equal(g('schedule', main), 'ci-CI-nightly');
   /* and a dispatched run never publishes — the reason it may not cancel one that does */
   assert.match(String(ci.jobs.pages.if), /github\.event_name == 'push'/);
+});
+
+/* ── ⑤ (deploy-cancel-chain) a burst of merges cannot leave production behind ─────────────────────
+ * MEASURED 2026-11-15: seven merges 3-13 min apart, a run ~17-20 min — every push run on main was
+ * cancelled by the next, the last one was red, and production stayed on a 2026-10-22 commit. The
+ * fact guarded is the one that broke: on a push to main, the running run is not cancelled (a newer
+ * push replaces only the PENDING run), so whatever is running publishes if green. Evaluated per event. */
+test("⑤ a push to main never cancels main's running push run; every other event still supersedes its own", () => {
+  const ci = yaml.load(rd(join(WF, 'ci.yml')));
+  const c = (event_name, ref) => groupFor(String(ci.concurrency['cancel-in-progress']), { workflow: 'CI', event_name, ref });
+  const main = 'refs/heads/main';
+  assert.equal(c('push', main), 'false', 'a push to main cancels the run that would have published');
+  assert.equal(c('pull_request', 'refs/pull/9/merge'), 'true', "a PR's newer push still cancels its older run");
+  assert.equal(c('workflow_dispatch', main), 'true');
+  assert.equal(c('workflow_dispatch', 'refs/heads/feat/x'), 'true');
+  assert.equal(c('schedule', main), 'true');
 });
