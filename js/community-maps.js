@@ -1,7 +1,7 @@
 /* ============================================================================
  *  IntMap · COMMUNITY MAPS — the collections readers chose to share with everyone, found, opened and kept   (community-maps)
  * ----------------------------------------------------------------------------
- *  The reader-facing half of supabase/migrations/20261013080000_community_maps.sql.
+ *  The reader-facing half of supabase/migrations/20261116080000_community_maps.sql.
  *  A published collection (js/shared-collection.js) travelled only as far as its owner handed the link. Here its owner
  *  may LIST it — a second, explicit act, under a name typed for the purpose (never the account's e-mail or profile
  *  name) and a summary — and then anyone can find it: by words, by what others kept most, by what was updated last,
@@ -134,7 +134,7 @@ export function failureText(error, lang) {
 /* ── the doors ────────────────────────────────────────────────────────────────────────────────── */
 
 /** The directory, a page at a time. q = { query, sort, offset, limit, bbox } → {ok, items, hasMore, sort, offset, error?}
- *  (no total: the database reads one page plus one row, never every listing — supabase/migrations/20261013080000_community_maps.sql §6) */
+ *  (no total: the database reads one page plus one row, never every listing — supabase/migrations/20261116080000_community_maps.sql §6) */
 export async function browse(DB, q) {
   if (!DB) return { ok: false, error: 'unavailable' };
   q = q || {};

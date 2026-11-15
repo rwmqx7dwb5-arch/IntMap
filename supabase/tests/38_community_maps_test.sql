@@ -18,7 +18,7 @@
 --    ⑥b THE HOLD AND THE REPORTS ARE ON THE COLLECTION, NOT ITS SHARE ROW: the owner unpublishing and publishing
 --      again does not lift the hold nor erase the reports; the queue still names it, and holds it with no share.
 --    ⑦ unpublishing takes the receipts and reports with it and cuts the lineage; the export carries both tables.
---  supabase/migrations/20261013080000_community_maps.sql.
+--  supabase/migrations/20261116080000_community_maps.sql.
 -- ============================================================================
 begin;
 select no_plan();

@@ -9,7 +9,7 @@
 --      naming set_id; anon touches neither table directly.
 --    ⑤ a set takes at most 400 hand-ins; the purge removes sets older than its argument with their answers;
 --      account deletion and the export reach class_sets with no list naming it.
---  supabase/migrations/20261013090000_class_quest.sql.
+--  supabase/migrations/20261116090000_class_quest.sql.
 -- ============================================================================
 begin;
 select no_plan();

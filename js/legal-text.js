@@ -110,7 +110,7 @@ window.IntMapLegalText = (function () {
      usable after it was opened — a RANGE (shape.js BOOT_BUCKETS), never the time — how the launch screen lifted, and the
      release the page was, beside the device type the counter already keeps (shape.js `ready` / `boot_end`). Same
      recipient, same consent rules, same 400-day retention. §3 says what it is for and that the speed of each release is
-     PUBLISHED — as shares only (public.field_speed, supabase/migrations/20261013130000_field_speed.sql) — on the status page. */
+     PUBLISHED — as shares only (public.field_speed, supabase/migrations/20261116130000_field_speed.sql) — on the status page. */
   /* (growth-loop) Privacy §1: TWO MORE THINGS ARE COUNTED, SAID HERE BEFORE THEY ARE. The kind of each Atlas
      answer (text / map / chart / mixed — the label Atlas gives it, shape.js `atlas_mode`), and whether the map
      was opened from one of IntMap's own introduction pages (an example's share page, About, For teachers —

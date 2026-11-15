@@ -25,7 +25,7 @@ import { showPlaces, openDoc, kindLabel } from './my-places.js';
 import { fromSavedView, isTour } from './map-doc.js';   /* (map-document-unify) a published map is a map document: a map, a my map, a tour, an Atlas answer */
 import { MapState } from './map-state.js';   /* the address bar is written through the store's one door */
 
-/* the owner's own columns of a share (supabase/migrations/20261003211500_collection_workspace.sql, + 20261013080000_community_maps.sql) */
+/* the owner's own columns of a share (supabase/migrations/20261003211500_collection_workspace.sql, + 20261116080000_community_maps.sql) */
 const SHARE_COLS = 'id,collection,title,token,created_at,listed_at,author_name,summary';
 const SHARE_COLS_BEFORE_LISTING = 'id,collection,title,token,created_at';
 /* the token the database mints: 32 hex characters (gen_random_uuid() without its dashes) */

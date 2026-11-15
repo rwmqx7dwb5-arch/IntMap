@@ -75,7 +75,7 @@ test('② a page load is counted once, when its launch screen lifts — and a hi
 
 /* ── ③ ─────────────────────────────────────────────────────────────────────── */
 test('③ the public reading publishes shares and bands, the bands the verdict needs, and only the speed shape', () => {
-  const sql = src('supabase/migrations/20261013130000_field_speed.sql');
+  const sql = src('supabase/migrations/20261116130000_field_speed.sql');
   const bands = [...sql.matchAll(/then '(\d+\+)'/g)].map((m) => m[1]).concat([...sql.matchAll(/else '(\d+\+)'/g)].map((m) => m[1]));
   for (const b of FS.JUDGE_BANDS) assert.ok(bands.includes(b), `the verdict asks for band ${b}, which the database returns`);
   /* (review) a share with a decimal place lets 30–99 loads be solved back into their count: whole percents, floor 100 */

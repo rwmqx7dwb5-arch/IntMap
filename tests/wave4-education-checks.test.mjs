@@ -31,7 +31,7 @@ import * as CLASS from '../js/quest-class.js';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const rel = (abs) => relative(ROOT, abs).replace(/\\/g, '/');
-const MIG = read('supabase/migrations/20261013090000_class_quest.sql');
+const MIG = read('supabase/migrations/20261116090000_class_quest.sql');
 
 /* the map's geodesy, evaluated as the classic script it is — the engine the panel builds */
 const W = {}; new Function('window', read('js/geodesy.js'))(W);

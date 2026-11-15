@@ -148,7 +148,7 @@ deep tier は push でも PR でも走らない（`scripts/tiers.mjs`）ので n
   （`idle`＝地図が落ち着いた・`timeout`＝待ちの逃げ道・`no-renderer`）を、版（build stamp の分と短い sha）と端末（携帯／PC）ごとに 1 読み込み 1 回。
   宣言は `supabase/functions/usage-count/shape.js`（`ready` / `boot_end`・`bootRows`）、聞くのは `js/usage-counts.js`（`js/boot-stage.js` の
   `interactive()`）。匿名の利用統計と同じ同意の規則・同じ送信・同じ保持（§2b）。隠れて始まった・使えるようになる前に隠れた・版の無い読み込みは数えない。
-- **公開の読みは 1 つ**: `public.field_speed(p_days)`（migration `20261013130000_field_speed.sql`・pgTAP `43_field_speed_test.sql`）。版と端末ごとの
+- **公開の読みは 1 つ**: `public.field_speed(p_days)`（migration `20261116130000_field_speed.sql`・pgTAP `43_field_speed_test.sql`）。版と端末ごとの
   **整数％の割合**と帯だけを返し、100 回未満は出さず、件数と日は返さない（件数＝通信量は管理者だけのもの。下限と丸めの根拠は migration のコメント）。
 - **版の実在**: 状態ページに出る版は main の first-parent の commit（その commit 時刻の分と短い sha＝build stamp と同じ出所）と一致するものだけ（`field-speed.mjs` `knownReleases`）。
   ページ自身も自分の版より新しい版の行を出さない。Edge 側は未来（1 時間超）と 90 日より古い版を拒み、1 要求に速さの次元を 1 つずつしか受けない（`shape.js` `parse`）。

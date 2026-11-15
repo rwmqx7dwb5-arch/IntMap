@@ -23,7 +23,7 @@ import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
-const MIG = read('supabase/migrations/20261013080000_community_maps.sql');
+const MIG = read('supabase/migrations/20261116080000_community_maps.sql');
 const SQL = codeOnly(MIG, { lang: 'sql' });
 
 function fnBody(name) {

@@ -7,7 +7,7 @@
  *  type the name the teacher asks for, and their answers reach the teacher's board (js/quest-class-board.js).
  *
  *  This file is the part with no DOM: the link, the shape an answer travels in, the doors to the database
- *  (public.class_sets / public.class_set_answers — supabase/migrations/20261013090000_class_quest.sql) and the TALLY.
+ *  (public.class_sets / public.class_set_answers — supabase/migrations/20261116090000_class_quest.sql) and the TALLY.
  *  ⚠ NO SCORE TRAVELS. The student's panel sends the raw answers; the board re-makes the questions from (kind, seed, n)
  *    and scores every answer with the one scoring rule the student's panel used (js/quest-engine.js — `engine.score`,
  *    handed in to tally()). A score sent by the student would be a second copy nobody could check.

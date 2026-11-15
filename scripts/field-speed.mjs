@@ -13,7 +13,7 @@
  *  lifted, under the release it was (supabase/functions/usage-count/shape.js `ready` / `boot_end`, through
  *  the anonymous counter's own consent rules). The database publishes one reading of those counts —
  *  public.field_speed(p_days): per release and device, SHARES and a band, never a count
- *  (supabase/migrations/20261013130000_field_speed.sql). This file is that reading's one reader:
+ *  (supabase/migrations/20261116130000_field_speed.sql). This file is that reading's one reader:
  *
  *    PURE   summarise(rows) — the releases, newest first, each device's shares, its median and 3-in-4
  *           wait as a bucket edge, the share of loads whose map settled (`idle`);
