@@ -33,6 +33,7 @@ export default [
      (js/atlas-executor.js 4b). */
   {
     row: ['navigation.start',           'startNavigation','startNav,beginNavigation,guideMe,driveThere',           'routing', 'route',   'map.route,navigation',   'route,map,panel',     'external','explicit','',        'navigation'],
+    ui: { none: '2026-11-16' },
     /* ══ (#R347) ACTIVE NAVIGATION — the live half of routing ══════════════════════════════════
        None of the four takes a target: they act on the route and the guidance that already exist,
        and `navigation.start` refuses with «plan a route first» rather than inventing one. */
@@ -67,6 +68,7 @@ export default [
   },
   {
     row: ['navigation.stop',            'stopNavigation', 'endNavigation,stopNav',                              'routing', 'none',    'navigation',             'panel',               'session', 'none',   '',         ''],
+    ui: { none: '2026-11-16' },
     doc: [
       { in: 'navigation', at: 20, text: '{"type":"stopNavigation"} = end it and put the map back (「案内停止」「ナビをやめて」, "stop navigation"); ' },
     ],
@@ -83,6 +85,7 @@ export default [
   },
   {
     row: ['navigation.status',          'navStatus',      'howLongLeft,etaNow,remaining,nextTurn,arrivalTime',           'routing', 'none',    '',                       'explanation',         'read',    'none',   '',         ''],
+    ui: { none: '2026-11-16' },
     doc: [
       { in: 'navigation', at: 30, text: '{"type":"navStatus"} = ANSWER FROM THE LIVE NAVIGATION STATE \u2014 remaining time, remaining distance, arrival clock time, the next maneuver and the road it is on, whether the driver is off route, and whether the time includes traffic or is the router\u2019s plain estimate. Use for 「あと何分？」「このまま行ったら何時着？」「次の曲がり角は？」「残りどのくらい？」, "how much longer", "what time will I arrive", "what is the next turn", "am I still on route"; ' },
     ],
@@ -108,6 +111,7 @@ export default [
   },
   {
     row: ['navigation.camera',          'navCamera',      'recenter,overview,followMe,northUp',                          'routing', 'camera',  'camera,camera.follow',                 'map,camera',          'session', 'none',   '',         ''],
+    ui: { none: '2026-11-16' },
     doc: [
       { in: 'navigation', at: 40, text: '{"type":"navCamera","mode"?:"follow"|"north"|"overview"|"free"} = how the camera behaves while navigating \u2014 "follow" turns with the vehicle (heading-up) and keeps it low on the screen, "north" keeps north up, "overview" frames the whole remaining route, "free" stops following. {"type":"recenter"} alone resumes following after the user has panned away. Use for 「全体表示」「現在地に戻して」「北を上に」, "show the whole route", "recenter", "overview"; ' },
     ],
@@ -125,6 +129,7 @@ export default [
   },
   {
     row: ['navigation.voice',           'navVoice',       'mute,unmute,voiceGuidance',                                   'routing', 'setting', 'navigation',             'setting',             'session', 'none',   '',         ''],
+    ui: { none: '2026-11-16' },
     doc: [
       { in: 'navigation', at: 50, text: '{"type":"navVoice","mode"?:"off"|"alerts"|"guidance"} = spoken guidance — "guidance" announces every turn at four distances, "alerts" speaks only the final call and re-routes, "off" is silent. {"type":"mute"} / {"type":"unmute"} are shortcuts. Use for 「音声案内を止めて」「ミュート」, "mute", "turn the voice back on". THE TIME AND DISTANCE COME FROM THE NAVIGATION STATE, NEVER FROM YOUR OWN ARITHMETIC: do not estimate an arrival time, and do not say a route is traffic-aware unless navStatus said so — the open routers carry no traffic and the reply says which it is.\n' },
     ],

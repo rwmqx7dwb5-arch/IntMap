@@ -30,6 +30,7 @@ export default [
      minutes long and is reported through the `photoGeo` state section (js/atlas-state.js). */
   {
     row: ['photo.locate',               'photoLocate',    'photoGeolocate,whereWasThisTaken,skylineMatch',               'photo',   'panel',   'panel.photoGeo',         'panel,explanation',   'session', 'none',   '',         'photoGeo'],
+    ui: { at: ['.lst-toolrow[data-act="tool.photoLocate"]'] },
     /* (#R527) 写真の撮影地点。EVERY ARGUMENT IS OPTIONAL, AND THAT IS THE SHAPE OF THE FEATURE,
        not a relaxation of rule (3): the two inputs that decide the answer — the photograph and
        the ridge traced on it — cannot travel in an action at all, because the reader supplies

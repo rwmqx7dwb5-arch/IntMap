@@ -90,6 +90,7 @@ function worldObjectLine(o, L) {
 export default [
   {
     row: ['research.brief',             'brief',          '',                                                            'research','none',    '',                       'explanation',         'read',    'none',   'place?',   '', 'external'],
+    ui: { none: '2026-11-16' },
     doc: [
       { in: 'country', at: 40, text: '{"type":"brief","place":str} (structured AI intelligence brief with live web headlines, rendered right here in the chat — use ONLY when the user EXPLICITLY asks for a brief/report/調査/ブリーフ; NEVER as a substitute for answering a question); ' },
     ],
@@ -138,6 +139,7 @@ export default [
   },
   {
     row: ['research.askHere',           'askHere',        '',                                                            'research','none',    '',                       'explanation',         'read',    'none',   'point',    ''],
+    ui: { none: '2026-11-16' },
     doc: [
       { in: 'country', at: 50, text: '{"type":"askHere","place":str} (ask AI about a spot); ' },
     ],
@@ -162,6 +164,7 @@ export default [
        the card on the map draws the same record, and Atlas receives it whole as `exec.placeProfile`
        (js/atlas-toolsurface.js → `observed`), so a figure Atlas quotes is one the reader can see. */
     row: ['research.placeProfile',      'placeProfile',   'placeDossier,pointProfile,whatIsHere',                        'research','none',    '',                       'explanation',         'read',    'none',   'point',    ''],
+    ui: { at: ['#src-profile', '#ctx-menu'] },
     doc: [
       { in: 'country', at: 55, text: '{"type":"placeProfile","place"?:str,"lng"?:num,"lat"?:num} = PLACE PROFILE / 地点プロファイル — one card of everything IntMap holds about a single point, as values with their units and sources: coordinates, the OpenStreetMap name and administrative chain (市区町村・都道府県・州), the country (Natural Earth) with its statistics, the elevation or sea depth (標高・水深, terrarium DEM), the value of EVERY data layer the reader has switched on at that point (表示中レイヤーの値) — and, by name, each layer that is on but cannot be read at a point, with the reason — the local time and time zone (現地時刻・タイムゾーン), sunrise, sunset and daylight (日の出・日の入り・昼の長さ) — and what is happening there now: the weather now, the earthquakes of M2.5+ within 300 km in the last 7 days (USGS), the news events placed within 300 km in the last 72 hours, and what the place used to be called. It is the SAME card and record as hereNow (which lists the «now» sections first). Use it for 「この地点について教えて」「ここはどんな場所」「what is at this spot / what does the map know here」. A section that could not be read says why instead of being left out; do not describe an unavailable section as empty. "place":"here" is the point Atlas last touched (e.g. after askHere). ' },
     ],
@@ -187,6 +190,7 @@ export default [
        `exec.hereNow`. With no place it reads the DEVICE position (js/locate-me.js, the one reading view.locate uses),
        which is why the confirm cell is `explicit`: Atlas proposing it unasked must not read the sensor silently. */
     row: ['research.hereNow',           'hereNow',        'hereAndNow,whatIsHappeningHere,aroundMeNow,nearMeNow',          'research','none',    '',                       'explanation',         'read',    'explicit','place?',   '',  'external'],
+    ui: { at: ['[data-hn-entry="here"]'] },
     doc: [
       { in: 'country', at: 56, text: '{"type":"hereNow","place"?:str,"lng"?:num,"lat"?:num} = HERE, NOW / いま、ここ — what is happening at one point right now, as values with their sources: the weather now and today (Open-Meteo, MET Norway as fallback) with the local time, sunrise and sunset, the earthquakes of M2.5+ within 300 km in the last 7 days (USGS), the news events placed within 300 km in the last 72 hours (IntMap news events), and what the place used to be called with each span (IntMap\'s renamed-city record — e.g. Edo for Tokyo) — plus everything placeProfile reads (it is the SAME card and record, with these sections first). With NO place it uses the reader\'s device position (asks browser permission; the exact position stays on the device — only a point rounded to 0.1° is sent, for the place name and the weather). Use it for 「いまここで何が起きてる」「近くで地震あった？」「この辺のニュース」「ここは昔なんて呼ばれてた」, "what is happening around me", "anything near me right now". A section that could not be read says why; an empty section (no quake within the reach) is an answer, not a failure. ' },
     ],
@@ -216,6 +220,7 @@ export default [
        and `research.placeProfile` each name the thing they are about by the same `ref` (type:id), and the next two
        capabilities follow it. They draw nothing: the answer is the object and what is tied to it. */
     row: ['research.object',            'worldObject',    'realWorldObject,whatIsThis',                                     'research','none',    '',                       'explanation',         'read',    'none',   '',         ''],
+    ui: { none: '2026-11-16' },
     doc: [
       { in: 'country', at: 62, text: '{"type":"worldObject","ref"?:str,"name"?:str,"objectType"?:TYPE} = 実世界オブジェクト — THE REAL-WORLD OBJECT behind a name or a ref — one record with its type, id (ref = type:id), position and how that position is known (provenance), time, extent, the article ids and evidence ids that vouch for it, its sources and its typed ties to other objects. Use it for 「この地震は何？」「その火山の記録を」「2番の出来事の詳細」, "what is that earthquake", when the question is about ONE thing a previous answer surfaced (impact, events, volcano, company news and place profile name their objects by ref in `observed.worldObjects`) — pass that ref. TYPE is one of earthquake, news_event, article, facility, company, volcano, city, place_profile, place. A name IntMap holds is resolved from the loaded news, the volcano catalogue, the company atlas or the USGS week; a name nothing holds is answered as not found, never guessed. Use research.related for «what else belongs with it».\n' },
     ],
@@ -239,6 +244,7 @@ export default [
   },
   {
     row: ['research.related',           'worldRelated',   'related,relatedObjects,whatIsAround',                                 'research','none',    '',                       'explanation',         'read',    'none',   '',         '', 'external'],
+    ui: { at: ['[data-pd="related"]'] },
     doc: [
       { in: 'country', at: 63, text: '{"type":"worldRelated","ref"?:str,"name"?:str,"objectType"?:str,"km"?:num,"hours"?:num,"types"?:[TYPE,…]} = 関連オブジェクト・周辺の対象 — WHAT BELONGS WITH ONE REAL-WORLD OBJECT: the earthquakes, news events, articles, facilities, cities, volcanoes and companies tied to it, each with WHY: `linked` (an edge, or an article / evidence id they share), `near` (within km — default 300 — or inside its extent) and `concurrent` (within hours — default 72). Two things are related when linked, or near and concurrent (a facility has no time, so it is judged by place alone); time alone is never a relation. Use it for 「この地震について、近くの施設と関連記事も」「この出来事の周辺」, "what is around that quake", "news about this volcano"; pass the `ref` an earlier answer returned (observed.worldObjects) or the name. It reads the objects this session surfaced plus the loaded news and the USGS week; it reports what it found and how many, and says so when nothing is tied to the object.\n' },
     ],
@@ -274,6 +280,7 @@ export default [
   },
   {
     row: ['research.mapReport',         'mapReport',      'newsMap,reportMap',                                           'research','paint',   'map.poi',                'map,explanation',     'session', 'none',   '',         ''],
+    ui: { none: '2026-11-16' },
     doc: [
       { in: 'research.mapReport', text: 'NOT FOR A MULTI-CONDITION FILTER. A question of the form 「AかつBかつCの都市・地点」 — several numeric thresholds at once, or a threshold on one dataset beside a threshold on another — is a QUERY, not an essay: emit {"type":"query"} and let IntMap compute the rows. Answering such a question with prose about what WOULD have to be checked is the exact failure that action exists to remove. RESEARCH MAPPED ONTO THE MAP (CURRENT / RECENT live-news incidents ONLY): {"type":"mapReport","topic":str,"place"?:str,"count"?:int} = Atlas researches the topic from LIVE NEWS EVIDENCE that IntMap gathers (GDELT + Google News + loaded IntMap news — the model does NOT web-search; it classifies/summarizes the evidence) (pass "count" whenever the user asks for a specific number of items, e.g. 「10件表示して」 → count:10) and puts the concrete findings ON THE MAP as pins — each pin is ONE real, DATED, current/recent incident/event/entity with a 1-2 sentence AI summary and, where a real article exists, a link — plus an overview and clickable item list in the chat. mapReport is for CURRENT/RECENT dated incidents backed by LIVE NEWS ONLY. Do NOT use it for: a past-era or historical situation, historical background / powers / trade / strategic importance, a place general situation at a past time, or stable knowledge — for ANY of those use researchMap (below). USE mapReport (not a plain "answer", not "analyze") whenever the user asks to summarize/investigate CURRENT events ON the map ("〇〇の近況について地図上にまとめて", "map the situation in X right now") OR to research a topic of recent incidents that have real locations — recent incidents ("最近のアメリカの銃犯罪を調べて" → each ACTUAL shooting incident pinned in the city it happened, with date and casualties; NEVER a generic "gun crime is common in city X" answer), conflicts, disasters, elections, disease outbreaks, strikes, protests, infrastructure projects. Combine it freely with flyTo/layers. Plain "answer" is for questions with no geographic footprint.\n' },
     ],
@@ -359,6 +366,7 @@ export default [
   },
   {
     row: ['research.situationMap',      'researchMap',    'research_map,situationMap',                                   'research','paint',   'map.poi',                'map,explanation',     'session', 'none',   '',         ''],
+    ui: { none: '2026-11-16' },
     doc: [
       { in: 'research.situationMap', text: 'NOT FOR A MULTI-CONDITION FILTER. A question of the form 「AかつBかつCの都市・地点」 — several numeric thresholds at once, or a threshold on one dataset beside a threshold on another — is a QUERY, not an essay: emit {"type":"query"} and let IntMap compute the rows. Answering such a question with prose about what WOULD have to be checked is the exact failure that action exists to remove. RESEARCH & SITUATION MAP (HISTORICAL / CURRENT / MIXED — the general research-onto-the-map action): {"type":"researchMap","topic":str,"place":str,"temporalMode":"historical"|"current"|"mixed","year"?:int,"evidenceMode":"historical"|"live"|"mixed"} = researches a place or topic SITUATION and returns BOTH a written explanation AND related REAL places pinned on the map, produced INDEPENDENTLY (the written answer is returned even when the map cannot be drawn). USE THIS — not mapReport, not historicalMap — for: "what was the situation at PLACE in YEAR" or "この時代／当時のPLACEは？" (temporalMode:"historical", year = the asked or currently-displayed year, evidenceMode:"historical"); a place present-day general situation that is not a specific live-incident hunt (temporalMode:"current"); and "compare YEAR vs now / 1900年と現在を比較" (temporalMode:"mixed"). It resolves the place REAL extent (IntMapRegionResolver / placeExtent) and, for a sea / gulf / strait / region with no polygon, still frames the bbox or center and pins the related places — a failure to draw does NOT fail the answer. Historical mode is grounded in established history + Wikipedia (NOT live news); current/mixed adds live-news evidence for the present part. Do NOT output coordinates (locationName + country resolve client-side). Examples: [map shows 1900] "当時のオホーツク海の状況を地図で教えて" → {"type":"researchMap","topic":"1900年ごろのオホーツク海の状況","place":"オホーツク海","temporalMode":"historical","year":1900,"evidenceMode":"historical"}; "この時代の中央アジアは？" → researchMap historical with the displayed year; "1750年のサヘル交易圏を表示して" → year:1750; "1900年と現在の樺太／サハリンを比較して" → temporalMode:"mixed".\n' },
     ],
@@ -418,6 +426,7 @@ export default [
   },
   {
     row: ['research.historicalMap',     'historicalMap',  'historical,powerMap,allianceMap',                             'research','factions','map.factions',           'map,explanation',     'session', 'none',   '',         ''],
+    ui: { none: '2026-11-16' },
     doc: [
       { in: 'historical-alliances', at: 10, text: '{"type":"historicalMap","era":str} = colors the country fills by faction/alliance for a historical moment (mapped onto modern borders, clearly labeled approximate). Use ONLY for an era ALLIANCE / faction / power / bloc map — "第一次世界大戦1916年3月の勢力図をマッピングして" → {"type":"historicalMap","era":"World War I March 1916"}, "map the Cold War alliances in 1962", "WWII in 1942". Do NOT use it for a single sea / region / city situation at a past time — that is researchMap (a water body or a local region is NEVER an alliance map). A curated, accurate WWI-1916 map is built in; other eras are composed live. ' },
     ],
@@ -452,6 +461,7 @@ export default [
   },
   {
     row: ['research.analyze',           'analyze',        'research,synthesize',                                         'research','none',    '',                       'explanation',         'read',    'none',   '',         '', 'external'],
+    ui: { none: '2026-11-16' },
     /* ⚠ AND THE OTHER ONE THIS ROUND IS NAMED AFTER: 「何を分析しますか？」 was reached by a plan
        that had already been accepted. Every caller in this repo spells it `question`. */
     /* ⚠ `temporalMode` IS ATLAS'S, AND IT IS WHY IT IS DECLARED HERE. The analyze case used to
@@ -653,6 +663,7 @@ export default [
   },
   {
     row: ['research.impact',            'impact',         'impactAnalysis,nearbyCritical',                               'research','paint',   'map.poi',                'map,explanation',     'session', 'none',   'place?',   '', 'external'],
+    ui: { none: '2026-11-16' },
     doc: [
       { in: 'research.impact', text: 'GEOGRAPHIC IMPACT ANALYSIS: {"type":"impact","place"?:str,"event"?:"quake","km"?:num,"focus"?:["nuclear"|"dam"|"port"|"airport"|"hospital"|"military"|"power", …]} — analyses WHERE an event\'s impact spreads: real critical facilities (OpenStreetMap), nearby cities with real population tags, week\'s earthquakes in radius, loaded news, country density; draws the radius circle + clickable pins and fits the view (use for "この地震に最も近い原発と人口集中地を表示して" → {"type":"impact","event":"quake","focus":["nuclear"]}, "チェルノブイリ周辺300kmの影響分析"). event:"quake" targets the most relevant recent earthquake (nearest to the last referenced place, else the day\'s largest). Default focus = nuclear + dams; km default 300.\n' },
     ],
@@ -752,6 +763,7 @@ export default [
   },
   {
     row: ['research.events',            'events',         'newsEvents,groupNews',                                        'research','paint',   'map.poi',                'map,explanation',     'session', 'none',   'place?',   'newsEvents', 'external'],
+    ui: { at: ['#live-news-feed', '#news-cat-chips'] },
     doc: [
       { in: 'events', at: 10, text: '{"type":"events","place"?:str,"hours"?:6-168,"n"?:int} — ONE event = its many articles (multiple outlets, first report → latest, one map pin per event, clickable). Use for "最近の出来事をまとめて", "what is happening (in X)?", "group the news by event" — the News tab already shows events, clustered SERVER-SIDE over the whole 72-hour window, and this reads what is loaded rather than re-clustering it (fast, deterministic); use mapReport instead when the user wants NEW research via web search on a specific topic. Follow-ups like "2番の出来事を分析して" → emit ' },
     ],
@@ -835,6 +847,7 @@ export default [
   },
   {
     row: ['research.scenario',          'scenario',       'whatIf,runScenario,scenarioRun',                              'research','none',    '',                       'explanation',         'session', 'none',   '',         '', 'external'],
+    ui: { none: '2026-11-16' },
     /* (atlas-reasoning) PRODUCT.md §4 item 12 — «IF X HAPPENED, WHAT FOLLOWS?», answered as a structure. It runs one of the
        simulators through its OWN capability (K.dispatch — the executor of record, so nothing here re-implements a model) and
        optionally research.impact around the same point, then reports FOUR FIELDS that are never empty: the assumptions (and

@@ -39,6 +39,7 @@ export default [
      the MODEL's next input — column 8 'explicit' (js/atlas-executor.js 4b). */
   {
     row: ['attach.recall',              'recallAttachment','recall_attachment,recallFile,reopenAttachment',               'dialog',  'none',    '',                       'explanation',         'read',    'explicit','',        '', 'external'],
+    ui: { none: '2026-11-16' },
     /* (#R773) 取り寄せるものは名前で指す。名前は [ATTACHED EARLIER…] が述べたもので、無ければ
        その一覧が返る（存在しない名前に対して黙って別のものを返さない）。
        (#R790) `offset` は任意——長いテキストの続きを読むときだけ、前回の応答が返した

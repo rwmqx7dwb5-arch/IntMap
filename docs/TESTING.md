@@ -3808,6 +3808,14 @@ do — and the source of the files that implement it:
 | 16–17 | a success is claimed on top of a swallowed error, or a promise is reported before it settles |
 | 18 | a capability promises the map and is verified without looking at it |
 | 19–20 | an operation that waits for input cannot be resumed; a state-dependent capability has nobody to ask |
+| 24 | a capability's declared screen entry (`ui.at`) names an id, class or attribute that no page or non-Atlas `js/` file builds |
+
+**The feature inventory** (`node scripts/feature-inventory.mjs`, `--md`, `--json`) reads the same entries and prints
+one row per capability: whether a reader reaches it **without Atlas** (the entry's `ui`: a control, signed-in only,
+none as measured on a date, or **unknown** when `ui` is absent — never counted as reachable), how many files under
+`tests/` name its id, and production verification, which is **unknown** for every row because no per-capability
+production record exists. Check 24 proves a declared control is *built*; whether a reader *sees* it is not measured.
+`tests/feature-inventory-checks.test.mjs` hands each rule its defect.
 
 ```bash
 node scripts/atlas-capability-audit.mjs            # the report, with the classification counts
