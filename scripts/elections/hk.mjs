@@ -94,9 +94,13 @@ function derivedColour(key) {
    class name, a heading or a piece of prose. Cells keep their `id` because the Commission's own
    identifiers — 「lc1_3_total_num」 — are the only structural key that says which constituency and
    which candidate a cell belongs to. */
-const unescape = (s) => s.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '')
-  .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-  .replace(/&quot;/g, '"').replace(/&#39;|&rsquo;|&#8217;/g, '’').replace(/\s+/g, ' ').trim();
+export const unescape = (s) => stripTags(s.replace(/<br\s*\/?>/gi, ' '))
+  .replace(/&(nbsp|amp|lt|gt|quot|#39|rsquo|#8217);/g, (_, e) => ENTITY[e]).replace(/\s+/g, ' ').trim();
+/* to a fixed point, so that no removal can leave a tag behind (CodeQL js/incomplete-multi-character-sanitization).
+   With `[^>]*` one pass already gets there; the loop states the property instead of relying on that argument. */
+function stripTags(s) { for (let prev; prev !== s;) { prev = s; s = s.replace(/<[^>]*>/g, ''); } return s; }
+/* decoded in ONE pass: «&amp;lt;» is the text «&lt;», and a second pass after «&amp;» would turn it into «<» */
+const ENTITY = { nbsp: ' ', amp: '&', lt: '<', gt: '>', quot: '"', '#39': '’', rsquo: '’', '#8217': '’' };
 
 function tables(html) {
   const out = [];

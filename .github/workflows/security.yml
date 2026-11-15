@@ -15,7 +15,10 @@ on:
     branches: [main]
   pull_request:
   schedule:
-    - cron: '17 3 * * 1'   # weekly, Monday 03:17 UTC — catches newly-published CodeQL queries
+    # (security-watch) DAILY, not weekly: an advisory is published against code that has not changed, so the
+    # scheduled run is what finds it — a weekly one let it sit up to six days. 02:47 UTC is clear of db-backup and
+    # tle-refresh (03:17) and the nightly drift/liveness runs (04:41).
+    - cron: '47 2 * * *'   # daily 02:47 UTC — new advisories, newly-published CodeQL queries
   workflow_dispatch:
 
 # Least privilege. CodeQL needs security-events: write to upload its SARIF results.
@@ -40,7 +43,7 @@ permissions:
 # ⚠ `workflow_dispatch` DELIBERATELY STAYS ON `github.ref`, for ci.yml's reason: it is the button a
 #   round presses on its own branch, and a constant group would make two branches cancel each other.
 concurrency:
-  group: security-${{ github.workflow }}-${{ github.event_name == 'schedule' && 'weekly' || github.ref }}
+  group: security-${{ github.workflow }}-${{ github.event_name == 'schedule' && 'scheduled' || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -70,9 +73,11 @@ jobs:
   # → 404, automated security fixes `enabled: false`), and dependabot.yml's version updates only move the
   # DIRECT dependencies. The lock shipped DOMPurify 3.4.13 to the browser (through Cesium) for twelve days
   # inside two published advisories, and source-map-js 1.2.1 (build tool) inside a high one; no run said so.
+  # (security-watch) Dependabot alerts and security updates were turned on 2026-11-16; this job stays, because it
+  # is the one that fails a PR and feeds the scheduled watch below — the alerts only list.
   # This asks the registry's advisory database about the LOCK (no install, no node_modules): any advisory in
   # what the browser is shipped (`--omit=dev`) fails, and a high or critical one in the build/test tooling.
-  # Weekly as well as on every PR, because an advisory is published against code that has not changed.
+  # Daily as well as on every PR, because an advisory is published against code that has not changed.
   # Advisory like CodeQL above (not a required check); the lock's internal consistency — the defect that let
   # 3.4.13 stay below Cesium's own floor — is a required rule in check:static (scripts/lock-ranges.mjs).
   dependency-advisories:
@@ -90,3 +95,48 @@ jobs:
       - name: Build and test tooling — high or critical
         if: ${{ always() }}
         run: npm audit --package-lock-only --audit-level=high
+
+  # (security-watch) A RED SCHEDULED RUN USED TO REACH NOBODY. The weekly run failed in the Actions list and
+  # nowhere else; a new advisory against main surfaced only when some unrelated PR happened to run the same job
+  # (measured 2026-11-16: PR #1129 red on «Dependency advisories» for an advisory main already carried). This job
+  # turns the scheduled result into the ONE incident issue every scheduled job here uses
+  # (scripts/ci-incident-issue.cjs): opened on red, rewritten while red, closed on the next green.
+  # Red means: either job above failed, or code scanning holds an open alert at the severity the ruleset on
+  # main blocks a PR for (high / critical) — an alert on main is one no PR introduced, so no PR check will name it.
+  watch:
+    name: Scheduled security watch
+    needs: [codeql, dependency-advisories]
+    if: ${{ always() && github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write            # the single incident issue
+      security-events: read    # list the open code-scanning alerts
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Open / rewrite / close security incident issue
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        env:
+          CODEQL: ${{ needs.codeql.result }}
+          AUDIT: ${{ needs.dependency-advisories.result }}
+        with:
+          script: |
+            const incident = require('./scripts/ci-incident-issue.cjs');
+            const alerts = await github.paginate(github.rest.codeScanning.listAlertsForRepo,
+              { ...context.repo, state: 'open', per_page: 100 });
+            const blocking = alerts.filter((a) => ['high', 'critical'].includes(a.rule.security_severity_level));
+            const causes = [];
+            if (process.env.AUDIT !== 'success') causes.push('npm audit reports a published advisory against the lock (job «Dependency advisories»)');
+            if (process.env.CODEQL !== 'success') causes.push('the CodeQL analysis did not complete');
+            if (blocking.length) causes.push(`${blocking.length} open code-scanning alert(s) at high/critical: ` +
+              blocking.map((a) => `#${a.number} ${a.rule.id} (${a.most_recent_instance.location.path})`).join(', '));
+            await incident({ github, context }, {
+              label: 'status:security-advisory',
+              title: 'Scheduled security watch is red',
+              labelDescription: 'Automated: a published advisory or an open high/critical code-scanning alert on main',
+              ok: causes.length === 0,
+              cause: causes.join('; '),
+              runbook: '`docs/SECURITY-ARCHITECTURE.md` §8 and `docs/INCIDENT-RESPONSE.md` → "Security advisory".',
+            });

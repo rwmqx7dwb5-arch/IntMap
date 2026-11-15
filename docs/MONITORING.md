@@ -1,6 +1,6 @@
 # Monitoring IntMap
 
-Two independent layers:
+Independent layers:
 
 1. **Uptime (external / black-box)** — is the live site up? Runs in GitHub Actions, no
    third-party account required.
@@ -10,6 +10,9 @@ Two independent layers:
    ring buffer in the page keeps the last errors for the Bug Report tool as well.
 3. **Usage (anonymous counts)** — how is the site found and used? IntMap's **own** aggregate
    counters (no cookie, no vendor, no person) in the **Usage** tab of `admin.html` — §2b.
+4. **Security advisories** — a daily CodeQL + npm audit run whose red opens the single
+   `status:security-advisory` issue. Its description is in
+   [`SECURITY-ARCHITECTURE.md`](SECURITY-ARCHITECTURE.md) §9 (not repeated here).
 
 ## 1. Uptime monitoring
 
