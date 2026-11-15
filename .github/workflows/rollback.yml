@@ -48,6 +48,7 @@ jobs:
   rollback:
     name: Redeploy ${{ inputs.ref }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     steps:
       # ⚠ A ROLLBACK THAT DID NOTHING MUST NOT BE GREEN. This job used to carry
       # `if: vars.ENABLE_PAGES_DEPLOY == 'true'`, so with the switch off a person who pressed
@@ -146,6 +147,7 @@ jobs:
     name: Deploy rollback
     needs: rollback
     runs-on: ubuntu-latest
+    timeout-minutes: 30   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
@@ -159,6 +161,7 @@ jobs:
     name: Post-rollback smoke (live URL)
     needs: deploy
     runs-on: ubuntu-latest
+    timeout-minutes: 30   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0

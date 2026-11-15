@@ -23,6 +23,7 @@ jobs:
   probe:
     name: HTTP probe
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     steps:
       # (domain-portable) the address is supabase/functions/_shared/site-origin.js; scripts/site-url.mjs
       # prints it and needs nothing but node (package.json for the module type), so a sparse checkout.

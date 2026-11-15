@@ -47,6 +47,7 @@ jobs:
   codeql:
     name: CodeQL (JavaScript / TypeScript)
     runs-on: ubuntu-latest
+    timeout-minutes: 30   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     permissions:
       contents: read
       security-events: write   # upload the SARIF results to code scanning
@@ -78,6 +79,7 @@ jobs:
   dependency-advisories:
     name: Dependency advisories (npm audit)
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     permissions:
       contents: read
     steps:
