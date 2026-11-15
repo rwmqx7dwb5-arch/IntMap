@@ -595,8 +595,8 @@ jobs:
   browser-deep:
     name: Deep ${{ matrix.suite }} ${{ matrix.shard }}/${{ matrix.of }}
     runs-on: ubuntu-latest
-    timeout-minutes: 120   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+    timeout-minutes: 120   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     needs: [build]            # (ci-build-once) the same one build as the core tier
     strategy:
       fail-fast: false
