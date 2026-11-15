@@ -49,11 +49,12 @@ export function rowsOn(iso) {
    first, in a colour of its own (`ground`), from Natural Earth's 1:50m countries — today's land, which is the shape the
    coast had on every date this record covers — and the record's polities over it. */
 let _land = null;
+const landPath = async () => (await import('../../js/ne-countries.js')).neCountriesPath('50m');
 async function land() {
   if (!_land) {
     const NE = await import('../../js/ne-countries.js');
     const { gunzipSync } = await import('node:zlib');
-    const fc = NE.decodeNECountries(JSON.parse(gunzipSync(readFileSync(join(ROOT, NE.neCountriesPath('50m')))).toString('utf8')));
+    const fc = NE.decodeNECountries(JSON.parse(gunzipSync(readFileSync(join(ROOT, await landPath()))).toString('utf8')));
     _land = fc.features.flatMap((f) => (f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : []));
   }
   return _land;
@@ -209,9 +210,10 @@ export function png(cv) {
 }
 
 /* ── the figures: the app's own Inter (fonts/src/Inter.ttf, the source of its glyph atlases) ─────────── */
+const FONT_PATH = 'fonts/src/Inter.ttf';
 let _font = null;
 async function font() {
-  if (!_font) { const ot = (await import('opentype.js')).default; _font = ot.parse(readFileSync(join(ROOT, 'fonts/src/Inter.ttf')).buffer.slice(0)); }
+  if (!_font) { const ot = (await import('opentype.js')).default; _font = ot.parse(readFileSync(join(ROOT, FONT_PATH)).buffer.slice(0)); }
   return _font;
 }
 /** the outline of a run of text as rings in pixel space, glyph by glyph (no shaping: figures, a hyphen and a Latin wordmark need none) */
@@ -323,6 +325,13 @@ export async function stamp(cv, label, opt = {}) {
   const mark = textRings(ft, 'IntMap', 0, 0, 34 * SS);
   const mx = W - mark.width - 48 * SS, my = Hh - 44 * SS;
   fill(cv, textRings(ft, 'IntMap', mx, my, 34 * SS).rings, C.text, 0.92);
+}
+
+/** (polity-pages) the files a card's pixels depend on besides its geometry and words — this file, the figures' font and the
+ *  land laid under every card — read from the same names the loaders above read, so a cache keyed by them (scripts/lib/page-card.mjs
+ *  drawerKey) is invalidated by any change to how a card is drawn */
+export async function drawerFiles() {
+  return [fileURLToPath(import.meta.url), join(ROOT, FONT_PATH), join(ROOT, await landPath())];
 }
 
 export { canvas, fill as fillRings, stroke as strokeRing, downsample, mercY, C as CARD_COLOURS, SS as CARD_SUPERSAMPLE, land as todayLand };

@@ -8,6 +8,9 @@
 //   5. the drone planner: real terrain, AMSL/AGL kept apart, specific reasons, edit/recompute/save/delete
 import { test, expect } from '@playwright/test';
 import { loadLazyModules } from './helpers/app.js';
+/* (test-time-headroom) the fixed sleeps in this file are waits for the state they stood in for — tests/helpers/settle.js.
+   Every expect() below is unchanged; only the moment it looks moved. Before/after: dev-notes/2026-10-13-test-time-headroom.md */
+import { until, idleAfter } from './helpers/settle.js';
 
 /* (remove-synthetic-planes) `query` was how the aircraft test in this file pinned the airplanes.live
    sweep (`?aviation=v1`). That path and its test are removed; the parameter stays because boot() is
@@ -22,7 +25,9 @@ const boot = async (page, query) => {
   await page.goto('/index.html' + (query || ''), { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !!window.__imap, null, { timeout: 60000 });
   await page.waitForFunction(() => window.__imap.isStyleLoaded(), null, { timeout: 60000 }).catch(() => {});
-  await page.waitForTimeout(600);   /* (#R212) the style is already loaded — this tail was 1.5 s in 20 specs */
+  /* (test-time-headroom) the 600 ms tail (#R212) is the renderer's own «can draw» now — the barrier tests/helpers/app.js
+     bootPage() uses; the one test that read a lazily fetched global straight after boot waits for that global itself */
+  await until(page, () => { try { return !window.IntMapGeoEngine.canDraw || window.IntMapGeoEngine.canDraw(); } catch (_) { return true; } }, null, { timeout: 60000 });
 };
 
 test('the flight simulator looks up, and the sky is the renderer’s', async ({ page }) => {
@@ -131,16 +136,47 @@ test('with the tilt ceiling lifted, zooming in still moves the viewpoint', async
    tests/r352.spec.js, what the page does when the feed fails by
    tests/remove-synthetic-planes-checks.test.mjs, and live aircraft by tests/r341-live.spec.js. */
 
-test('the 3-D volume survives the globe→flat handover at z12', async ({ page }) => {
-  test.setTimeout(180000);
+/* (test-time-headroom) ONE BOOT FOR THE TWO 3-D VOLUME CLAIMS. They were two tests that each booted the whole app to
+   open the same tool; the drawing-complete button is asked first (it needs an empty footprint), then the sidebar it hid is
+   put back and the globe→flat handover is asked of the same open tool — setRing() replaces the footprint, so it starts
+   from exactly the state the second test used to build after its own boot. Every expect() of both is here, unchanged. */
+test('the 3-D volume: the drawing-complete button really stops the clicks, and the body survives the globe→flat handover at z12', async ({ page }) => {
+  test.setTimeout(240000);
   await boot(page);
+  await page.evaluate(() => { try { document.getElementById('sidebar').style.display = 'none'; window.__imap.resize(); } catch (_) {} });
+  await page.evaluate(() => window.__imap.jumpTo({ center: [139.76, 35.68], zoom: 11, pitch: 0, bearing: 0 }));
   await page.evaluate(() => document.getElementById('btn-tool-volume').click());
   await page.waitForFunction(() => !!window.IntMapVolume3D, null, { timeout: 30000 });   /* (#R311) that click fetches the tool (js/lazy-modules.js) */
-  await page.waitForTimeout(700);
+  /* (test-time-headroom) each sleep below became the state it waited for — except the 500 ms after the click that must
+     NOT add a vertex: that one is the window the «no more vertices» claim is made over, and it stays */
+  await until(page, () => !!document.getElementById('v3d-base'));
+  // three clicks on the map = a footprint
+  for (const [k, p] of [[500, 250], [700, 250], [700, 430]].entries()) {
+    await page.mouse.click(p[0], p[1]);
+    await until(page, (n) => window.IntMapVolume3D.state().points >= n, k + 1, { timeout: 5000 });
+  }
+  expect(await page.evaluate(() => window.IntMapVolume3D.state().points)).toBe(3);
+  const btn = page.locator('#v3d-seal');
+  await expect(btn, 'the button appears once there is a footprint').toBeVisible();
+  await btn.click();
+  await until(page, () => window.IntMapVolume3D.state().sealed === true, null, { timeout: 5000 });
+  expect(await page.evaluate(() => window.IntMapVolume3D.state().sealed)).toBe(true);
+  // …and now a click on the map is a click on the map
+  await page.mouse.click(560, 430); await page.waitForTimeout(500);
+  expect(await page.evaluate(() => window.IntMapVolume3D.state().points), 'no more vertices').toBe(3);
+  // pressing it again reopens the footprint
+  await page.locator('#v3d-seal').click();
+  await until(page, () => window.IntMapVolume3D.state().sealed === false, null, { timeout: 5000 });
+  await page.mouse.click(540, 420);
+  await until(page, () => window.IntMapVolume3D.state().points >= 4, null, { timeout: 5000 });
+  expect(await page.evaluate(() => window.IntMapVolume3D.state().points), 'and drawing resumes').toBe(4);
+
+  /* ── the globe→flat handover, on the same open tool — with the sidebar the first half hid put back ── */
+  await page.evaluate(() => { try { document.getElementById('sidebar').style.display = ''; window.__imap.resize(); } catch (_) {} });
   await page.evaluate(() => { const V = window.IntMapVolume3D;
     V.setAltitudes(1000, 3000); V.setStyle('#ff3b30', 0.6);
     V.setRing(V.circleRing([139.76, 35.68], 3000, 48)); });
-  await page.waitForTimeout(900);
+  /* (test-time-headroom) the 900 ms that stood here is the first zoom's wait below: nothing is read before it */
 
   const red = async () => {
     const png = (await page.screenshot({ clip: { x: 440, y: 60, width: 700, height: 620 } })).toString('base64');
@@ -154,26 +190,20 @@ test('the 3-D volume survives the globe→flat handover at z12', async ({ page }
   };
   const seen = [];
   for (const z of [11, 12, 13]) {
-    await page.evaluate(zz => window.__imap.jumpTo({ center: [139.76, 35.68], zoom: zz, pitch: 55, bearing: 0 }), z);
+    /* (test-time-headroom) ⚠ #R783's comment below is kept because its reasoning is the reason for this change. The
+       1,400 ms floor existed because `m.loaded()` can be true in the gap between a jumpTo and the frame that requests
+       its tiles, so «idle» read too early. tests/helpers/settle.js idleAfter registers for the `idle` that FOLLOWS the
+       jump before making it, which closes that gap — so the floor goes and the renderer's own answer stays, with the
+       same 8 s ceiling. The threshold below is still not lowered. */
+    await idleAfter(page, (zz) => window.__imap.jumpTo({ center: [139.76, 35.68], zoom: zz, pitch: 55, bearing: 0 }), z, 8000);
     /* ⚠⚠⚠ (#R783) A FIXED 1,400 ms IS NOT «THE FRAME IS DRAWN». When the composite came late the
        red count was 0 and this test reported «nothing was painted» — which is indistinguishable,
        from the outside, from «not painted YET» (one-pass-or-a-reason.md §2: an observer must not
        report a success as a failure). Measured: 18.6 s here against 46.4 s for this same test on the
        CI runner. ⚠ The threshold below is NOT lowered — only the moment we look at it moves: we wait
        for the renderer to say it is idle, and keep the old delay as the floor. */
-    await page.waitForTimeout(1400);
-    await page.evaluate(() => new Promise((done) => {
-      const m = window.__imap; const t0 = Date.now();
-      const give = () => done();
-      if (m && typeof m.once === 'function' && typeof m.loaded === 'function') {
-        if (m.loaded()) return requestAnimationFrame(() => requestAnimationFrame(give));
-        m.once('idle', () => requestAnimationFrame(() => requestAnimationFrame(give)));
-        setTimeout(give, 8000);   /* the renderer may never go idle while tiles stream; the floor above still held */
-        return;
-      }
-      const tick = () => (Date.now() - t0 > 2000 ? give() : requestAnimationFrame(tick));
-      tick();
-    }));
+    /* …and two frames after it, as before, so the screenshot reads the composited frame */
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
     const variant = await page.evaluate(() => +window.IntMapGeoEngine.camera.globeness().toFixed(2));
     seen.push({ z, red: await red(), variant });
   }
@@ -191,33 +221,11 @@ test('the 3-D volume survives the globe→flat handover at z12', async ({ page }
   expect(await page.evaluate(() => !!document.querySelector('#v3d-solid')), 'no Solid checkbox').toBe(false);
 });
 
-test('the 3-D volume polygon has a drawing-complete button that really stops the clicks', async ({ page }) => {
-  test.setTimeout(120000);
-  await boot(page);
-  await page.evaluate(() => { try { document.getElementById('sidebar').style.display = 'none'; window.__imap.resize(); } catch (_) {} });
-  await page.evaluate(() => window.__imap.jumpTo({ center: [139.76, 35.68], zoom: 11, pitch: 0, bearing: 0 }));
-  await page.evaluate(() => document.getElementById('btn-tool-volume').click());
-  await page.waitForFunction(() => !!window.IntMapVolume3D, null, { timeout: 30000 });   /* (#R311) that click fetches the tool (js/lazy-modules.js) */
-  await page.waitForTimeout(700);
-  // three clicks on the map = a footprint
-  for (const p of [[500, 250], [700, 250], [700, 430]]) { await page.mouse.click(p[0], p[1]); await page.waitForTimeout(350); }
-  expect(await page.evaluate(() => window.IntMapVolume3D.state().points)).toBe(3);
-  const btn = page.locator('#v3d-seal');
-  await expect(btn, 'the button appears once there is a footprint').toBeVisible();
-  await btn.click();
-  await page.waitForTimeout(300);
-  expect(await page.evaluate(() => window.IntMapVolume3D.state().sealed)).toBe(true);
-  // …and now a click on the map is a click on the map
-  await page.mouse.click(560, 430); await page.waitForTimeout(500);
-  expect(await page.evaluate(() => window.IntMapVolume3D.state().points), 'no more vertices').toBe(3);
-  // pressing it again reopens the footprint
-  await page.locator('#v3d-seal').click(); await page.waitForTimeout(300);
-  await page.mouse.click(540, 420); await page.waitForTimeout(500);
-  expect(await page.evaluate(() => window.IntMapVolume3D.state().points), 'and drawing resumes').toBe(4);
-});
-
-test('the drone planner answers with the real terrain, and says exactly what fails', async ({ page }) => {
-  test.setTimeout(240000);
+/* (test-time-headroom) ONE BOOT FOR THE PLANNER AND ITS INJECTION GUARD. The second half used to boot the app only to
+   reach the same planner; it reloads the page itself (the stored route is what carries the payload across), so nothing the
+   first half did survives into what it asserts. Every expect() of both is here, unchanged. */
+test('the drone planner answers with the real terrain, says exactly what fails — and a hostile route cannot inject markup into its panel', async ({ page }) => {
+  test.setTimeout(360000);
   const errs = [];
   page.on('pageerror', e => errs.push(String(e).slice(0, 200)));
   await boot(page);
@@ -225,7 +233,7 @@ test('the drone planner answers with the real terrain, and says exactly what fai
   /* (#R176) the toolbar button is gone — the planner opens through its own API, the way Atlas opens it */
   expect(await page.evaluate(() => !!document.getElementById('btn-tool-drone')), 'no drone button anywhere').toBe(false);
   await page.evaluate(() => window.IntMapDrone.open());
-  await page.waitForTimeout(600);
+  await until(page, () => window.IntMapDrone.state().open === true, null, { timeout: 10000 });   /* (test-time-headroom) not 600 ms */
   expect(await page.evaluate(() => window.IntMapDrone.state().open)).toBe(true);
 
   /* A route that flies straight through Mt Fuji at 100 m ABOVE THE GROUND at each end. The ends are
@@ -321,51 +329,55 @@ test('the drone planner answers with the real terrain, and says exactly what fai
   expect(seams.after, 'the test source is gone').not.toContain('t-nfz');
 
   expect(errs, 'no page errors along the way').toEqual([]);
-});
 
-/* (#R174 SEC) CodeQL caught this on the PR: a route can arrive from localStorage or from
-   IntMapDrone.setRoute/setSpec without ever passing the panel's numeric inputs, and its spec values reached
-   an `value="…"` attribute raw. Sanitised at the door AND escaped at the sink — one of the two being right
-   is not a design. */
-test('a hostile route cannot inject markup into the planner panel', async ({ page }) => {
-  test.setTimeout(120000);
-  await boot(page);
-  const PAYLOAD = '"><img src=x onerror="window.__pwned=1">';
-  // 1. straight through the public API
-  await page.evaluate(p => { const D = window.IntMapDrone; D.open();
-    D.setRoute({ id: p, name: p, presetId: p, spec: { cruiseSpeed: p, maxAgl: p, batteryWh: p },
-      wp: [{ lng: 139.7, lat: 35.6, alt: p, ref: p, hold: p }] }); D.open(); }, PAYLOAD);
-  await page.waitForTimeout(600);
-  // 2. and through the store, which is the path the API cannot police
-  await page.evaluate(p => { localStorage.setItem('intmap_drone_routes', JSON.stringify([
-    { id: p, name: p, spec: { cruiseSpeed: p }, wp: [{ lng: 139.7, lat: 35.6, alt: p, ref: p }] }])); }, PAYLOAD);
-  await page.reload({ waitUntil: 'domcontentloaded' });
-  await page.waitForFunction(() => !!window.IntMapDrone, null, { timeout: 60000 });
-  await page.waitForTimeout(1200);
-  await page.evaluate(() => window.IntMapDrone.open());
-  await page.waitForTimeout(800);
+  /* ── a hostile route, on the same page ──────────────────────────────────────────────────────── */
+  /* (#R174 SEC) CodeQL caught this on the PR: a route can arrive from localStorage or from
+     IntMapDrone.setRoute/setSpec without ever passing the panel's numeric inputs, and its spec values reached
+     an `value="…"` attribute raw. Sanitised at the door AND escaped at the sink — one of the two being right
+     is not a design. */
+  {   /* its own scope: the planner half above already has an `r` */
+    const PAYLOAD = '"><img src=x onerror="window.__pwned=1">';
+    // 1. straight through the public API
+    await page.evaluate(p => { const D = window.IntMapDrone; D.open();
+      D.setRoute({ id: p, name: p, presetId: p, spec: { cruiseSpeed: p, maxAgl: p, batteryWh: p },
+        wp: [{ lng: 139.7, lat: 35.6, alt: p, ref: p, hold: p }] }); D.open(); }, PAYLOAD);
+    await page.waitForTimeout(600);
+    // 2. and through the store, which is the path the API cannot police
+    await page.evaluate(p => { localStorage.setItem('intmap_drone_routes', JSON.stringify([
+      { id: p, name: p, spec: { cruiseSpeed: p }, wp: [{ lng: 139.7, lat: 35.6, alt: p, ref: p }] }])); }, PAYLOAD);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => !!window.IntMapDrone, null, { timeout: 60000 });
+    /* (test-time-headroom) 1.2 s + 0.8 s became the state they stood in for: the store has been read (the route is listed)
+       and the panel that lists it is built — the reading below then asks what it always asked */
+    await until(page, () => window.IntMapDrone.routes().length > 0, null, { timeout: 15000 });
+    await page.evaluate(() => window.IntMapDrone.open());
+    await until(page, () => !!document.querySelector('#drone-panel .dn-open'), null, { timeout: 15000 });
 
-  const r = await page.evaluate(() => ({ pwned: !!window.__pwned,
-    imgs: document.querySelectorAll('#drone-panel img').length,
-    spec: window.IntMapDrone.spec(),
-    /* the stored route is what carried the payload across the reload; the panel lists it by name */
-    savedName: (window.IntMapDrone.routes()[0] || {}).name,
-    savedShown: (document.querySelector('#drone-panel .dn-open') || {}).textContent,
-    saved: window.IntMapDrone.routes().length }));
-  expect(r.pwned, 'no script ran').toBe(false);
-  expect(r.imgs, 'no element was injected into the panel').toBe(0);
-  // the numbers really are numbers, not strings that happen to render
-  Object.values(r.spec).forEach(v => expect(typeof v, 'every aircraft limit is a number').toBe('number'));
-  expect(isFinite(r.spec.cruiseSpeed)).toBe(true);
-  expect(r.saved, 'the stored route was accepted, not thrown away').toBe(1);
-  expect(r.savedName, 'the name survives intact in the model').toContain('<img');
-  expect(r.savedShown, '…and is shown as TEXT, which is the whole point').toContain('<img');
+    const r = await page.evaluate(() => ({ pwned: !!window.__pwned,
+      imgs: document.querySelectorAll('#drone-panel img').length,
+      spec: window.IntMapDrone.spec(),
+      /* the stored route is what carried the payload across the reload; the panel lists it by name */
+      savedName: (window.IntMapDrone.routes()[0] || {}).name,
+      savedShown: (document.querySelector('#drone-panel .dn-open') || {}).textContent,
+      saved: window.IntMapDrone.routes().length }));
+    expect(r.pwned, 'no script ran').toBe(false);
+    expect(r.imgs, 'no element was injected into the panel').toBe(0);
+    // the numbers really are numbers, not strings that happen to render
+    Object.values(r.spec).forEach(v => expect(typeof v, 'every aircraft limit is a number').toBe('number'));
+    expect(isFinite(r.spec.cruiseSpeed)).toBe(true);
+    expect(r.saved, 'the stored route was accepted, not thrown away').toBe(1);
+    expect(r.savedName, 'the name survives intact in the model').toContain('<img');
+    expect(r.savedShown, '…and is shown as TEXT, which is the whole point').toContain('<img');
+  }
 });
 
 test('the drone planner is reachable from Atlas and fits a phone', async ({ page }) => {
   test.setTimeout(180000);
   await page.setViewportSize({ width: 390, height: 780 });
   await boot(page);
+  /* (test-time-headroom) the boot's 600 ms tail is gone, and this is the one test that read a lazily fetched global straight
+     after it: the Atlas kernel boot() asks for (IntMapAtlas.ensure) — so it waits for that kernel, not for a clock */
+  await until(page, () => !!(window.IntMapConsole && window.IntMapConsole.dispatch), null, { timeout: 30000 });
   const res = await page.evaluate(() => window.IntMapConsole.dispatch({ type: 'drone', action: 'plan',
     from: 'Tokyo Station', to: 'Haneda Airport', alt: 100, ref: 'agl', aircraft: 'prosumer' }));
   expect(res.ok).toBe(true);

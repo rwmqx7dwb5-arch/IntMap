@@ -481,13 +481,19 @@ const gitIn = (dir, ...args) =>
    an import (scripts/dev-notes.mjs) and a hand-written list here died with ERR_MODULE_NOT_FOUND, the
    same shape tests/r295 recorded for round-names.mjs (.agents/rules/no-ad-hoc-hardcoding.md §2.4).
    master-sync.mjs is not imported — worktree.mjs RUNS it — so it is named as the second entry. */
+/* the files the status runs, found by following its relative imports — static and dynamic, `./` and `../` — as the
+   repository paths Node resolves them to. (wave4-train) A list of `./` names alone missed
+   supabase/functions/usage-count/shape.js, which scripts/field-speed.mjs imports, and the whole status died in the
+   fixture; a tree really missing it is held separately (worktree.mjs says «could not be read» and goes on). */
 const SCRIPTS = (() => {
   const seen = new Set();
-  const take = (f) => {
-    if (seen.has(f)) return; seen.add(f);
-    for (const m of readFileSync(join(ROOT, 'scripts', f), 'utf8').matchAll(/\bfrom\s*['"]\.\/([^'"]+)['"]/g)) take(m[1]);
+  const take = (rel) => {
+    if (seen.has(rel)) return; seen.add(rel);
+    for (const m of codeOnly(readFileSync(join(ROOT, rel), 'utf8')).matchAll(/(?:\bfrom\s*|\bimport\(\s*)['"](\.{1,2}\/[^'"]+)['"]/g)) {
+      take(path.posix.normalize(path.posix.join(path.posix.dirname(rel), m[1])));
+    }
   };
-  take('worktree.mjs'); take('master-sync.mjs');
+  take('scripts/worktree.mjs'); take('scripts/master-sync.mjs');
   return [...seen];
 })();
 
@@ -509,7 +515,7 @@ const scenario = () => {
   gitIn(master, 'config', 'user.name', 'R771');
 
   mkdirSync(join(master, 'scripts'), { recursive: true });
-  for (const f of SCRIPTS) cpSync(join(ROOT, 'scripts', f), join(master, 'scripts', f));
+  for (const f of SCRIPTS) { mkdirSync(dirname(join(master, f)), { recursive: true }); cpSync(join(ROOT, f), join(master, f)); }
 
   const base = gitIn(master, 'rev-parse', 'HEAD');
   return { tmp, origin, worka, master, base };
@@ -566,6 +572,20 @@ test('R771 (1) status and status --brief survive a machine with no gh, and exit 
       process.platform === 'win32' ? ['/c', 'gh', 'auth', 'status'] : ['-c', 'gh auth status'],
       { encoding: 'utf8', env: minimalEnv() });
     assert.notEqual(probe.status, 0, 'precondition: gh must not be able to answer under this env');
+  } finally { drop(s.tmp); }
+});
+
+/* (wave4-train) a tree without the counter's rule (supabase/functions/usage-count/shape.js, which scripts/field-speed.mjs
+   imports) loses one line of the status, never the status: worktree.mjs loads field-speed on its own and says it could not */
+test('R771 (1b) status survives a tree that lacks a file one of its lines needs', () => {
+  const s = scenario();
+  try {
+    const shape = join(s.master, 'supabase/functions/usage-count/shape.js');
+    assert.ok(existsSync(shape), 'precondition: the fixture copies what the status imports (else this measures nothing)');
+    rmSync(shape);
+    const r = run(s, ['status', '--brief']);
+    assert.equal(r.code, 0, 'status must exit 0 without shape.js: ' + r.stderr);
+    assert.ok(r.stdout.trim().length, 'and still report');
   } finally { drop(s.tmp); }
 });
 

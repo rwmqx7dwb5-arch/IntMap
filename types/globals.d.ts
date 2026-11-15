@@ -71,6 +71,7 @@ interface IntMapPublished {
   IntMapCompanyData: any;
   IntMapCompanyPanel: any;
   IntMapCompanyFootprint: any;
+  IntMapCompanyTies: any;
   IntMapCompanyFacilities: any;
   IntMapWaves: any;
   IntMapNewsEvents: any;

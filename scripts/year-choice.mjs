@@ -15,6 +15,9 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
    load: history-pages imports this file for its sitemap index, and in that cycle its bindings are not yet initialised here. */
 export const YEAR_HUB = 'history/years/';
 export const YEAR_SITEMAP = 'sitemap-years.xml';
+/** a year's address segment (astronomical: 0 is 1 BC → «1-bc»). Here, not in history-pages, so the modules that the
+ *  generators import without a cycle (this one, scripts/polity-choice.mjs) can name a year; history-pages re-exports it. */
+export const slugOf = (y) => (y <= 0 ? (1 - y) + '-bc' : String(y));
 
 /* ⚠ (no-ad-hoc-hardcoding §4) THE SHARE OF YEAR-TO-YEAR CHANGES THAT MAKES A YEAR A TURNING POINT.
    observation: 2026-10-07, over the records as shipped — 657 non-zero year-to-year changes from 3200 BC to 2019; the top

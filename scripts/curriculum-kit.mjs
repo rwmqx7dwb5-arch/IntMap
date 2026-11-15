@@ -33,15 +33,16 @@ const { SHOWCASE, CAPTURED } = await import('../js/showcase.js');
 const { tourById, tourLink, tourSteps, encodeCustomTour, customTourLink, TOUR_REQUEST_LIMIT } = await import('../js/tours.js');
 const { sharedIds } = await import('../js/layer-manifest.js');
 const { encode } = await import('../js/map-state.js');
-const { QUEST_KIND_IDS, questQuery, SEED_RE } = await import('../js/quest-engine.js');
+const { QUEST_KIND_IDS, questQuery, SEED_RE, SET_LENGTHS } = await import('../js/quest-engine.js');
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const KIT_PATH = 'data/curriculum-units.json';
 export const KIT = JSON.parse(readFileSync(join(ROOT, KIT_PATH), 'utf8'));
 
-/* the question counts the quest panel offers (js/quest-panel.js, its «Questions per set» select) — read from the panel,
-   so a unit cannot ask for a length the panel would not offer */
-export const QUEST_LENGTHS = [...readFileSync(join(ROOT, 'js/quest-panel.js'), 'utf8').matchAll(/<option value="(\d+)">/g)].map((m) => +m[1]);
+/* the question counts the quest panel offers — its «Questions per set» select (js/quest-panel.js) and the class-set form
+   (js/quest-class-board.js) both render quest-engine's SET_LENGTHS, so that list is read here: a unit cannot ask for a
+   length the panel would not offer */
+export const QUEST_LENGTHS = SET_LENGTHS.slice();
 
 const LANG_I = { en: 0, jp: 1 };
 const showcase = (id) => SHOWCASE.find((s) => s.id === id) || null;

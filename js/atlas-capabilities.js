@@ -345,6 +345,21 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["time.journey","journey","journeyThroughTime,bordersThen,crossingsThroughTime,routeThroughTime,historicalCrossings","time","paint","map.line","map,explanation","session","none","points",""],
       ["time.stepHere","stepHere","nextChangeHere,previousChangeHere,stepPlaceHistory","time","time","time","map,time","session","none","point",""],
       ["time.quakeHistory","quakeHistory","earthquakeHistory,seismicHistory,quakeRecord,earthquakeRecord,pastEarthquakes","time","panel","panel.quakeHistory,camera","panel,explanation","session","none","place?","quakeHistory"],
+      ["data.worldFlows","worldFlows","countryFlows,countryConnections,migrationFlows,diaspora,migrantStock","data","panel","panel.worldFlows,camera,time","panel,explanation","session","none","country",""],
+      ["community.browse","communityMaps","browseCommunityMaps,findCommunityMaps,publicMaps,othersMaps,sharedMapsDirectory","community","none","panel.community","explanation","session","none","",""],
+      ["community.open","communityMapOpen","openCommunityMap,openListedCollection,showCommunityMap","community","panel","map.object,camera","panel","session","none","",""],
+      ["community.list","listCommunityMap","listInCommunityMaps,shareWithEveryone,makeMapPublic","community","none","account.places","explanation","external","explicit","",""],
+      ["community.unlist","unlistCommunityMap","takeOutOfCommunityMaps,stopListing","community","none","account.places","explanation","persist","none","",""],
+      ["community.mine","myCommunityMaps","myListedMaps,myPublishedReach,howFarMyMapsTravelled","community","none","","explanation","read","none","",""],
+      ["data.companyTies","companyTies","companiesBetweenCountries,foreignCompanies,companiesAbroad,corporatePresence,whoseCompanies","data","paint","map.companyTies","map,explanation","session","none","country?","companyTies"],
+      ["learn.class","classSet","classQuest,classResults,classBoard,classLink,assignQuest,quizResults","panel","none","account.classes,panel.quest,map.quest,camera","panel","persist","explicit","",""],
+      ["news.edition","newsEdition","todayOnTheMap,dailyEdition,newsDigest,todaysNews,dayInNews","data","panel","panel.newsEdition,camera","panel,explanation","session","none","","newsEdition","external"],
+      ["sim.aftershocks","aftershocks","aftershockForecast,aftershockProbability,aftershockOutlook,afterShocks","sim","panel","panel.aftershock,camera","panel,explanation","session","none","place?","aftershock"],
+      ["system.readiness","readiness","networkCheck,deploymentCheck,schoolNetwork,allowlist,firewallCheck,readinessCheck","system","none","","explanation","read","none","",""],
+      ["system.deviceStorage","deviceStorage","storedOnThisDevice,localData,browserStorage,whatIsStoredHere,cookies","system","none","","explanation","read","none","",""],
+      ["system.speed","speed","fieldSpeed,loadTime,startupTime,performance,howFast","system","none","","explanation","read","none","",""],
+      ["time.territoryChange","territoryChange","landChangedHands,territorialChanges,borderChangeMap,whoGainedLand,changedHands","time","paint","map.polygon","map,explanation","session","none","place?",""],
+      ["time.lifeAtPlace","lifeAtPlace","livedUnder,lifeThroughBorders,ancestorJurisdiction,familyHistory","time","time","time,camera","map,time,explanation","session","none","point",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 
@@ -909,6 +924,12 @@ export function makeAtlasCapabilities(HOST, OPTS) {
           var html = (raw && raw.html) || '';
           var unresolved = (raw && raw.exec && Array.isArray(raw.exec.unresolved)) ? raw.exec.unresolved : [];
           if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: html };
+          /* ⚠ (wave4-atlas) AN ANSWER WHOSE MAP IS EMPTY IS AN ANSWER. A painter that measured and found nothing to draw
+             («the records draw the same polity over every cell at both instants») says so with `meta.paintsNothing`, and
+             nothing moving is then the state it set out to reach — the verdict `not_rendered` would tell Atlas a correct
+             answer failed and send it to ask again (.agents/rules/one-pass-or-a-reason.md §1). Only `true` counts: a
+             painter that did not say it has made no such claim. */
+          if (raw && raw.meta && raw.meta.paintsNothing === true) return { status: 'completed', code: 'ok', observed: { paint: after || null, nothing: true }, html: html };
           /* the dispatch says some of what it was asked for never resolved. ⚠ (#R742) THAT IS A
              STATEMENT ABOUT THE TARGETS, NOT ABOUT THE MAP: this used to return `not_rendered` without
              looking at the map at all, so thirteen oblasts drawn and one unresolved was reported as
@@ -1851,7 +1872,16 @@ export function makeAtlasCapabilities(HOST, OPTS) {
               var na = norm(a);
               if (!na) return;
               var needle = form ? '"' + na + '"' : '"type":"' + na + '"';
-              for (var i = b.text.indexOf(needle); i >= 0; i = b.text.indexOf(needle, i + 1)) found.push(i);
+              for (var i = b.text.indexOf(needle); i >= 0; i = b.text.indexOf(needle, i + 1)) {
+                /* ⚠ (wave4-train) A QUOTED WORD FOLLOWED BY `:` IS ANOTHER ENTRY'S ARGUMENT, NOT A MENTION. Measured
+                   2026-10-13: system.deviceStorage's entry opens `{"type":"deviceStorage","show"?:true}`, and on the
+                   catalogue line that holds it places.show has no `"type":"show"` — so the bare `"show"` (an argument
+                   key) was read as places.show's opening and handed it the rest of deviceStorage's entry:
+                   「この端末に何が保存されている？」 ranked places.show first, and deviceStorage scored nothing for any
+                   word its own entry wrote. A key names a parameter of the entry it sits in; prose names a capability. */
+                if (form && /^\s*\??\s*:/.test(b.text.slice(i + needle.length, i + needle.length + 4))) continue;
+                found.push(i);
+              }
             });
           }
           if (!found.length) { b.unnamed.push(id); return; }

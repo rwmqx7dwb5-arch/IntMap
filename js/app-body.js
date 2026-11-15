@@ -663,12 +663,15 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
    *  feature routes through the ai-proxy Edge Function with the user's session JWT;
    *  provider keys live ONLY on the server.
    * ===================================================================== */
-  let aiConfig={ provider:'openai', models:{}, keys:{} };
+  let aiConfig={ provider:'openai', models:{} };
   try{ const s=JSON.parse(localStorage.getItem('intmap_ai_config')||'null'); if(s&&typeof s==='object'){
     if(s.provider) aiConfig.provider=s.provider;
-    aiConfig.keys=Object.assign({},s.keys||{});
     aiConfig.models=Object.assign({},s.models||{});
     if(typeof s.model==='string' && s.model && !aiConfig.models[aiConfig.provider]) aiConfig.models[aiConfig.provider]=s.model; /* migrate legacy single-model field */
+    /* (wave4-security) ⚠ THE RETIRED BYOK KEYS WERE CARRIED FORWARD. `s.keys` (a reader's own AI provider keys, from
+       before #R27) was copied into aiConfig and written back by every saveAIConfig() — nothing reads it, and Privacy §2
+       says no AI key is kept in the browser. It is no longer loaded, and a stored copy is rewritten without it once. */
+    if(s.keys && Object.keys(s.keys).length){ const c=Object.assign({},s); delete c.keys; localStorage.setItem('intmap_ai_config',JSON.stringify(c)); }
   } }catch(_){}
   /* (#R169) moved verbatim to js/ai-core.js — see Architecture.md §3.1. */
 

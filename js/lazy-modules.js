@@ -105,6 +105,7 @@ export const LAZY_REGISTRY = Object.freeze({
   companyData: { publishes: 'IntMapCompanyData', load: () => import('./company-data.js'), mount: (IM_HOST, m) => { window.IntMapCompanyData=m.companyData(IM_HOST); } },
   companyPanel: { publishes: 'IntMapCompanyPanel', load: () => import('./company-panel.js'), mount: (IM_HOST, m) => { window.IntMapCompanyPanel=m.companyPanel(IM_HOST); }, also: ['companyData', 'companyFacilities'] },
   companyFootprint: { publishes: 'IntMapCompanyFootprint', load: () => import('./company-footprint.js'), mount: (IM_HOST, m) => { window.IntMapCompanyFootprint=m.companyFootprint(IM_HOST); }, also: ['companyData'] },
+  companyTies: { publishes: 'IntMapCompanyTies', load: () => import('./company-ties.js'), mount: (IM_HOST, m) => { window.IntMapCompanyTies=m.companyTies(IM_HOST); }, also: ['companyData', 'companyFootprint'] },
   companyFacilities: { publishes: 'IntMapCompanyFacilities', load: () => import('./company-facilities.js'), mount: (IM_HOST, m) => { window.IntMapCompanyFacilities=m.companyFacilities(IM_HOST); }, also: ['companyData'] },
   analysisCorrelate: { publishes: '__imAnalysisCorrelate', load: () => import('./analysis-correlate.js'), mount: (IM_HOST, m) => { m.analysisCorrelate(IM_HOST); } },
   analysisEvents: { publishes: '__imAnalysisEvents', load: () => import('./analysis-world-events.js'), mount: (IM_HOST, m) => { m.analysisEvents(IM_HOST); } },
@@ -112,15 +113,20 @@ export const LAZY_REGISTRY = Object.freeze({
   warLayer: { publishes: '__imWarFronts', load: () => import('./war-layer.js'), mount: (IM_HOST, m) => { m.warLayer(IM_HOST); } },
   waves: { publishes: 'IntMapWaves', load: () => import('./waves.js'), mount: (IM_HOST, m) => { window.IntMapWaves=m.waves(IM_HOST); } },
   navigation: { publishes: 'IntMapNavigation', load: () => import('./navigation.js'), self: true },
+  /* (wave4-train) the Terms and the Privacy Policy, read only when the reader opens them (js/legal.js) — 59 kB of policy prose was
+     in the start-up bundle for a modal most visits never open. privacy.html / terms.html still load the same file raw. */
+  legalText: { publishes: 'IntMapLegalText', load: () => import('./legal-text.js'), self: true },
   routingTraffic: { publishes: 'IntMapRouteTraffic', load: () => import('./routing-traffic.js'), self: true },
   newsEvents: { publishes: 'IntMapNewsEvents', load: () => import('./news-events.js'), mount: (IM_HOST, m) => { window.IntMapNewsEvents=m.newsEvents(IM_HOST); } },
   photoGeo: { publishes: 'IntMapPhotoGeo', load: () => import('./photo-geo.js'), mount: (IM_HOST, m) => { window.IntMapPhotoGeo=m.photoGeo(IM_HOST); } },
   myMap: { publishes: 'IntMapMyMap', load: () => import('./my-map.js'), mount: (IM_HOST, m) => { window.IntMapMyMap=m.myMap(IM_HOST); } },
   shakeMap: { publishes: 'IntMapShakeMap', load: () => import('./shakemap.js'), mount: (IM_HOST, m) => { window.IntMapShakeMap=m.shakeMap(IM_HOST); } },
   quakeHistory: { publishes: 'IntMapQuakeHistory', load: () => import('./quake-history.js'), mount: (IM_HOST, m) => { m.quakeHistory(IM_HOST); } },
+  aftershock: { publishes: 'IntMapAftershock', load: () => import('./aftershock.js'), mount: (IM_HOST, m) => { m.aftershock(IM_HOST); } },   /* (wave4-science) the aftershock forecast — doors in js/wb-layers.js */
   radiationLayer: { publishes: 'IntMapRadiationObs', load: () => import('./radiation-layer.js'), mount: (IM_HOST, m) => { window.IntMapRadiationObs=m.radiationLayer(IM_HOST); } },
   newsIntel: { publishes: '__imNewsIntel', load: () => import('./news-intel.js'), mount: (IM_HOST, m) => { m.newsIntel(IM_HOST); }, also: ['newsEvents'] },
   newsStory: { publishes: '__imNewsStory', load: () => import('./news-story.js'), mount: (IM_HOST, m) => { m.newsStory(IM_HOST); }, also: ['newsEvents'] },
+  newsEdition: { publishes: '__imNewsEdition', load: () => import('./news-edition.js'), mount: (IM_HOST, m) => { m.newsEdition(IM_HOST); }, also: ['newsEvents'] },
   netHealthLive: { publishes: '__imNetHealth', load: () => import('./net-health-live.js'), mount: (IM_HOST, m) => { m.netHealthLive(IM_HOST); } },
   spaceBody: { publishes: '__imSpaceBody', load: () => import('./space.js'), mount: (IM_HOST, m) => { window.__imSpaceBody=m.spaceBody(IM_HOST); } },
   worldPacksBody: { publishes: '__wpTrade', load: () => import('./world-packs.js'), mount: (IM_HOST, m) => { m.worldPacksBody(IM_HOST); } },

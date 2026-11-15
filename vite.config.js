@@ -52,6 +52,7 @@ import { publicApiPlugin } from './scripts/public-api.mjs';
 import { whatsNewPlugin } from './scripts/whats-new.mjs';
 import { countryPagesPlugin } from './scripts/country-pages.mjs';   // (country-pages) one entry page per country, after the history pages and the public API it links to
 import { yearPagesPlugin } from './scripts/year-pages.mjs';   // (history-year-pages) «World map in 1914» — one page per chosen year with the world drawn, after the history pages it links
+import { polityPagesPlugin } from './scripts/polity-choice.mjs';   // (polity-pages) «Mongol Empire through time» — one page per polity the dated records draw, after the year pages it links
 import { onThisDayPagesPlugin } from './scripts/on-this-day-pages.mjs';   // (marketing-next) the «on this day» pages and their cards, written into dist/ like the history pages
 import { weeklyEarthPagesPlugin } from './scripts/weekly-earth-pages.mjs';   // (weekly-earth) «This week on Earth»: a page per week, the hub and the Atom feeds
 
@@ -118,11 +119,22 @@ export const STATIC_ASSETS = [
   'js/service-status.js',
   'js/host-match.js',
   'js/fetch-deadline.js',
+  /* (wave4-sales) …and the rest of js/service-status.js's static imports. MEASURED 2026-10-13: it imports js/bus.js (and that
+     js/mobile-sheet.js), neither of which was copied — so the page's import of the status reader failed in dist/ and the data-
+     sources page never said which supplier had not answered. tests/wave4-sales-checks.test.mjs now walks the import graph of
+     every module this list ships, so a module a raw page reaches cannot be left behind again. */
+  'js/bus.js',
+  'js/mobile-sheet.js',
+  /* (wave4-train) …and the release rule js/service-status.js reads (field-speed: `releaseOf`, `BOOT_ENDINGS` from the
+     usage-count function's shape.js — plain ESM, no dependency, the one rule the page and the counter share). The two branches
+     met only in the merge: the status reader learned the import after the sales branch had listed its imports, so dist/ would
+     have served the raw pages a module whose import 404s. Same walk as above (tests/wave4-sales-checks.test.mjs ⑤). */
+  'supabase/functions/usage-count/shape.js',
   /* (#R280) the Terms and the Privacy Policy as ORDINARY PAGES with their own URL — a policy that
      can only be reached by opening the app and clicking a footer link cannot be linked to, cited
      or read by someone deciding whether to sign in at all. Same shape as the two pages above:
      shells served verbatim, so everything they <script src> has to be copied too. js/legal-text.js
-     is served RAW here AND bundled into the app (src/main.js imports it) for the same reason
+     is served RAW here AND bundled into the app (as an on-demand chunk the Terms / Privacy modal loads — js/lazy-modules.js legalText) for the same reason
      js/reference-data.js is: it is the ONE copy of the text, and copying it is how the page avoids
      becoming a second one that goes stale. */
   'privacy.html',
@@ -159,6 +171,9 @@ export const STATIC_ASSETS = [
   'contact.html',
   'support.html',
   'security.html',                      // (security-next) what the page sends and to whom, and the private way to report a problem
+  'readiness.html',                     // (wave4-sales) the network and device check an organisation runs before adopting IntMap
+  'js/readiness-page.js',               // (wave4-sales) …the check on that page, a module
+  'js/readiness-check.js',              // (wave4-sales) …and the rules it shares with Atlas (system.readiness), which it imports
   'admin-inquiries.html',
   'js/org-page.js',
   'js/admin-inquiries.js',
@@ -966,5 +981,5 @@ export default defineConfig({
      than read off filenames. scripts/perf-budget.mjs is the gate that reads it; it runs on
      every build because the report is what stops "the biggest chunk is big" from being
      mistaken for "startup is slow". */
-  plugins: [buildStampPlugin(ROOT), siteUrlPlugin(), maplibreSource(), maplibreSharedWorker(), buildReportPlugin(), copyStatic(), historyPagesPlugin(), publicApiPlugin(), countryPagesPlugin(), yearPagesPlugin(), whatsNewPlugin(), onThisDayPagesPlugin(), weeklyEarthPagesPlugin(), appShell(), histTiles(), katexAssets(), supabaseAdminSdk(), supabaseAdminSdkDev(), cesiumAssets(), cesiumDevAssets(), cspHashesPlugin(), buildLock()],
+  plugins: [buildStampPlugin(ROOT), siteUrlPlugin(), maplibreSource(), maplibreSharedWorker(), buildReportPlugin(), copyStatic(), historyPagesPlugin(), publicApiPlugin(), countryPagesPlugin(), yearPagesPlugin(), polityPagesPlugin(), whatsNewPlugin(), onThisDayPagesPlugin(), weeklyEarthPagesPlugin(), appShell(), histTiles(), katexAssets(), supabaseAdminSdk(), supabaseAdminSdkDev(), cesiumAssets(), cesiumDevAssets(), cspHashesPlugin(), buildLock()],
 });

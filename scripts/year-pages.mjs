@@ -48,7 +48,7 @@ export { YEAR_HUB, YEAR_SITEMAP, TURN_SHARE, EVENT_KINDS, chooseYears };
 import { TEXT as HISTORY_TEXT } from './history-pages-text.mjs';
 import { SITE_TOKEN } from './site-url.mjs';
 import { LANGS, HUB as HISTORY_HUB, REGIONS, mapReader, collect, shell, esc, fill, breadcrumbLd, siteImage, partKm2In, pagePath as historyPagePath,
-  regionView, isoDay, yearWords, slugOf, tierWords, sitemap } from './history-pages.mjs';
+  regionView, isoDay, yearWords, slugOf, tierWords, sitemap, upFrom } from './history-pages.mjs';
 import { COUNTRY_HUB } from './country-pages.mjs';
 import { OTD_HUB, dayPath, model as otdModel, CHANNELS, xWeight } from './on-this-day-pages.mjs';
 import { siteUrl } from '../supabase/functions/_shared/site-origin.js';
@@ -59,6 +59,8 @@ import { records, yearOf, eventName, eventDesc, dateWords, sourceOf } from '../j
 import { decodeNECountries, neCountriesPath } from '../js/ne-countries.js';
 import { draw as drawWorld } from './lib/world-svg.mjs';
 import { CARD, CARD_FILE } from './lib/page-card.mjs';
+import { POLITY_HUB, readIndex as readPolityIndex, assignSlugs as politySlugs } from './polity-choice.mjs';   /* (polity-pages) each name links its polity's page (a module that imports no generator) */
+import { largest as datedPolities } from '../js/polity-arc.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const MAP_FILE = 'world-map.svg';
@@ -132,7 +134,10 @@ export async function model(opt = {}) {
     p.added = [...b.values()].filter((n) => !a.has(n.en));
     p.removed = [...a.values()].filter((n) => !b.has(n.en));
   });
-  return { bands: B, choice, pages: out, land, idx, days, src: { snapshot: readBundle('data/hist-eras.js').src } };
+  /* (polity-pages) the name the map writes → its polity page (the polities the dated records draw, the pages' own set and addresses) */
+  const pidx = readPolityIndex(), pall = datedPolities(pidx, Infinity), pslugs = politySlugs(pidx, pall);
+  const polity = new Map(pall.map((a) => [a.n, pslugs.get(a)]));
+  return { bands: B, choice, pages: out, land, idx, days, polity, src: { snapshot: readBundle('data/hist-eras.js').src } };
 }
 
 /* ══ RENDER ══════════════════════════════════════════════════════════════════════════════════════ */
@@ -154,7 +159,8 @@ export function eraOf(y) {
   return { k: 'mbc', n: Math.floor((bc - 1) / 1000) + 1 };
 }
 const ordinal = (n) => { const s = n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th'; return n.toLocaleString('en-US') + s; };
-function eraWords(e, lang) {
+/* (polity-pages) exported: the polity hub groups by the same centuries, in the same words */
+export function eraWords(e, lang) {
   const T = TEXT[lang];
   const n = lang === 'jp' ? String(e.n) : ordinal(e.n);
   return fill(e.k === 'c' ? T.centuryAD : e.k === 'cbc' ? T.centuryBC : T.millenniumBC, { n });
@@ -202,7 +208,9 @@ function renderYear(M, p, L) {
     breadcrumbLd(crumbs),
   ];
   const showSource = lang === 'jp';
-  const row = (x) => `      <tr><td>${esc(nameFor(x, lang))}${x.desc ? ` <span class="hp-desc">(${esc(T.described)})</span>` : ''}</td>${showSource ? `<td lang="en">${x.jp ? esc(x.en) : ''}</td>` : ''}`
+  const up0 = upFrom(yearPath(p.y, L));   /* the table is built outside body(up); the same way up from the page */
+  const nameCell = (x) => { const s = M.polity && M.polity.get(x.en); return s ? `<a href="${up0}${L.dir}${POLITY_HUB}${s}/" data-polity="${esc(s)}">${esc(nameFor(x, lang))}</a>` : esc(nameFor(x, lang)); };
+  const row = (x) => `      <tr><td>${nameCell(x)}${x.desc ? ` <span class="hp-desc">(${esc(T.described)})</span>` : ''}</td>${showSource ? `<td lang="en">${x.jp ? esc(x.en) : ''}</td>` : ''}`
     + `<td class="yp-rec">${esc(recordWords(x, T))}${[...x.qids].map((q) => ` <a href="https://www.wikidata.org/wiki/${esc(q)}" data-wikidata="${esc(q)}">${esc(q)}</a>`).join('')}</td><td class="hp-num">${km2Words(x.km, L)}</td></tr>`;
   const head = `      <tr><th>${esc(T.colName)}</th>${showSource ? `<th>${esc(T.colSource)}</th>` : ''}<th>${esc(T.colRecord)}</th><th class="hp-num">${esc(T.colArea)}</th></tr>`;
   const shown = p.names.slice(0, TABLE_ROWS), rest = p.names.slice(TABLE_ROWS);

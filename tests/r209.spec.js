@@ -188,6 +188,7 @@ const MEMBER = {
   netHealthLive: ['__imNetHealth', 'report'],   /* (#R546) */
   shakeMap: ['IntMapShakeMap', 'open'],   /* (#R546) */
   quakeHistory: ['IntMapQuakeHistory', 'open'],   /* (live-news-product) */
+  aftershock: ['IntMapAftershock', 'open'],   /* (wave4-science) */
   /* (#R577) the sea state. Its member is `toggle` — the door the layer row calls; a module that
      arrived and published only its state getters would light the checkbox and draw nothing. */
   waves: ['IntMapWaves', 'toggle'],
@@ -223,6 +224,8 @@ const MEMBER = {
      member is the door js/map-ui.js and Atlas both call; routingTraffic's is the one js/routing.js
      calls on the first route request. */
   navigation: ['IntMapNavigation', 'start'],
+  /* (wave4-train) the policy text, fetched when the Terms / Privacy modal opens (js/legal.js) */
+  legalText: ['IntMapLegalText', 'html'],
   routingTraffic: ['IntMapRouteTraffic', 'route'],
   /* ⚠⚠ (#R400) EIGHT MORE, FROM FIVE DIFFERENT ROUNDS, AND THAT IS THE THIRD TIME.
      Read the #R341 note above: #R322 added five keys to the loader and not to this table, so the
@@ -259,10 +262,14 @@ const MEMBER = {
   /* (ux-next) the company footprint. Both of its doors read `query` — Atlas's `company.footprint`
      (js/atlas-cap-data.js) and the session tabs' `company.footprint` (js/session-tabs.js). */
   companyFootprint: ['IntMapCompanyFootprint', 'query'],
+  /* (wave4-companies) companies between countries. Atlas's `data.companyTies` and the kernel's `company.ties` both call open(). */
+  companyTies: ['IntMapCompanyTies', 'open'],
   /* (map-next) the reader's own map. Atlas's `map.myMap` (js/atlas-cap-map.js) refuses a body without `state`. */
   myMap: ['IntMapMyMap', 'state'],
   /* (news-next) the story view. js/news-pulse.js's needStory() takes the body and calls `open`. */
   newsStory: ['__imNewsStory', 'open'],
+  /* (wave4-news) Today on the map. js/news-pulse.js's needEdition() takes the body and calls `open`. */
+  newsEdition: ['__imNewsEdition', 'open'],
 };
 
 test('R209 ③: every deferred module actually arrives, registers and publishes', async ({ app }) => {

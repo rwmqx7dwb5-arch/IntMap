@@ -261,6 +261,7 @@ IntMapLang.define('en', { ui: {
       lblStatusPage:"IntMap, now",
       lblConnections:"Privacy",
       viewConnections:"This page's connections — who it has contacted, and what each is sent",
+      viewDeviceStorage:"Stored on this device — what IntMap keeps in this browser, and a way to delete it",
       viewSecurityPage:"Security & trust — how IntMap protects you, and how to report a problem ↗",
       viewStatusPage:"What is working — this device, the layers, the data sources",
       viewWhatsNew:"What’s new — changes to IntMap, newest first",

@@ -518,6 +518,8 @@ export function profileHtml(p, HOST, opts) {
   else if (c.status === 'ok') {
     let flag = ''; try { flag = c.flag ? window.IntMapSafe.flag(c.flag) + ' ' : ''; } catch (_) { flag = ''; }
     here += row(L('Country', '国'), flag + esc(c.name), [c.code, c.capital ? (L('capital ', '首都 ') + c.capital) : null].filter(Boolean).join(' · '));
+    /* (wave4-mobility) the country's connections to the world — js/world-flows.js, fetched by the tap (reads bundled records only) */
+    if (!opts.inert) here += item('data-hn="flows"', '<span class="hn-t">' + esc(L('World flows of ' + c.name, c.name + 'と世界のつながり')) + '</span><span class="hn-m">' + esc(L('people · goods · data cables · flights, on the map', '人・モノ・海底ケーブル・航空路を地図で')) + '</span>');
   } else here += row(L('Country', '国'), hole(c.reason));
   if (pl && pl.status === 'ok' && pl.postcode) here += row(L('Postcode', '郵便番号'), esc(pl.postcode));
   h += sec(L('This point', 'この地点'), here);
@@ -698,6 +700,7 @@ function ensureCard(HOST) {
       if (k === 'quake') { const it = current.quakes && current.quakes.items[i]; if (it) flyTo(it.lng, it.lat, 8); }
       else if (k === 'qrecord') { try { const t = card.querySelector('#pd-title'); const o = { lng: current.at.lng, lat: current.at.lat, name: t ? t.textContent : '' }; window.IntMapLazy.need('quakeHistory').then(() => window.IntMapQuakeHistory.open(o)).catch(() => { try { H.imToast(words(H).L('Could not load the earthquake record', '地震の記録を読み込めませんでした')); } catch (_) { /* no toast host */ } }); } catch (_) { /* the lazy door is boot's; without it the row does nothing */ } }
       else if (k === 'news') { const it = current.news && current.news.items[i]; if (it) openNews(it, H); }
+      else if (k === 'flows') { const c = current.country; if (c && c.status === 'ok') import('./world-flows.js').then((m) => m.openFlows({ country: c.code })).catch(() => { try { H.imToast(words(H).L('World flows could not be loaded', '世界とのつながりを読み込めませんでした')); } catch (_) { /* nothing to say it with */ } }); }
       else if (k === 'past') { const it = current.past && current.past.spans[i], y = it ? spanYear(it) : null; if (y != null) { try { IntMapTime.setYear(y, { source: 'here-now' }); } catch (_) { /* the clock refuses a year it cannot reach */ } flyTo(current.at.lng, current.at.lat, 9); } }
       else if (k.indexOf('pharc:') === 0) {
         /* (hist-product) a polity of «This place through time» → its rise and fall (js/polity-arc.js), found by the Wikidata

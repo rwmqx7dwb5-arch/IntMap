@@ -225,13 +225,15 @@ if (W) {
     }
   } catch (_) { /* unsupported */ }
 
-  /* the Settings entry — one document listener, like the status page's (js/layer-state.js) */
+  /* the Settings ▸ Privacy entries — one document listener, like the status page's (js/layer-state.js): this page's
+     connections, and (wave4-security) what this browser keeps for IntMap (js/device-storage-panel.js) */
   try {
     document.addEventListener('click', (e) => {
-      const b = e.target && e.target.closest ? e.target.closest('#btn-connections') : null;
+      const b = e.target && e.target.closest ? e.target.closest('#btn-connections, #btn-device-storage') : null;
       if (!b) return;
       try { const sm = document.getElementById('settings-modal'); if (sm) sm.style.display = 'none'; } catch (_) { /* no settings */ }
-      import('./connections-panel.js').then((M) => M.open()).catch(() => { /* the chunk did not load; the button stays */ });
+      const load = b.id === 'btn-device-storage' ? import('./device-storage-panel.js') : import('./connections-panel.js');
+      load.then((M) => M.open()).catch(() => { /* the chunk did not load; the button stays */ });
     });
   } catch (_) { /* no DOM */ }
 }

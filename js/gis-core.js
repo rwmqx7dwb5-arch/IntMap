@@ -93,6 +93,7 @@ import { makeGisRaster } from './gis-raster.js';
 import { makeGisWarp } from './gis-warp.js';
 import { makeGisAtlas } from './gis-atlas.js';
 import { makeGisIndex } from './gis-index.js';
+import { makeGisVoronoi } from './gis-voronoi.js';
 import { makeGisExpr } from './gis-expr.js';
 import { makeGisUnits } from './gis-units.js';
 import { makeDataGovernance } from './data-governance.js';
@@ -155,6 +156,10 @@ function mount(scope, HOST, CONTEXT) {
      demand, so this costs what its own bytes cost. */
   const warp = makeGisWarp();
   const index = makeGisIndex();
+  /* (voronoi) The spherical nearest-site diagram behind the `voronoi` op. Mounted here for the reason
+     every kernel above is: js/gis-ops.js reads window.IntMapGisVoronoi at CALL time, and publishing it
+     is what puts its version into provenance.engine (js/gis-project.js discovers IntMapGis*). Pure. */
+  const voronoi = makeGisVoronoi();
   /* (#R738) The expression kernel behind the compute op. Pure — a tokeniser and a recursive-descent
      parser, no eval and no Function — and mounted here for the reason the note above gives: js/gis-ops.js
      reads window.IntMapGisExpr at CALL time, so a module importing it privately would be a second
@@ -277,7 +282,7 @@ function mount(scope, HOST, CONTEXT) {
     verify: project.verify,
   });
 
-  const API = { data, geometry, crs, raster, warp, index, expr, units, worker, sources, layers, ops, project, panel, draw, atlas, flow,
+  const API = { data, geometry, crs, raster, warp, index, voronoi, expr, units, worker, sources, layers, ops, project, panel, draw, atlas, flow,
     context: ctx,
     open: () => panel.open(), close: () => panel.close(), toggle: () => panel.toggle() };
   try { scope.IntMapGis = API; } catch (_) { }
@@ -298,7 +303,7 @@ function mount(scope, HOST, CONTEXT) {
      under a name the next assembly is about to publish. One list, verified here, handed back below
      (.agents/rules/no-ad-hoc-hardcoding.md §2-4: 「一覧が要るなら、一覧を発見する」). */
   const verified = [['IntMapData', data], ['IntMapGisGeometry', geometry], ['IntMapGisCrs', crs],
-    ['IntMapGisRaster', raster], ['IntMapGisWarp', warp], ['IntMapGisIndex', index], ['IntMapGisExpr', expr],
+    ['IntMapGisRaster', raster], ['IntMapGisWarp', warp], ['IntMapGisIndex', index], ['IntMapGisVoronoi', voronoi], ['IntMapGisExpr', expr],
     ['IntMapGisUnits', units], ['IntMapDataGovernance', governance], ['IntMapGisWorker', worker], ['IntMapGisSources', sources],
     ['IntMapGisLayers', layers], ['IntMapGisOps', ops], ['IntMapGisProject', project], ['IntMapGis', API],
     ['IntMapGisContext', ctx]];

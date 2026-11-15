@@ -1596,6 +1596,14 @@ export function layerSidebar(HOST){
         dot:()=>{ try{ const s=dsOpened&&dsOpened.state(); return !!(s&&s.drawn); }catch(_){ return false; } },
         label:()=>T('Data studio','データスタジオ'),
         hint:()=>T('Map your own table by country or city, colour it, analyse it and share it as a link','自分の表を国や都市に結び、塗り分け・分析し、リンクで公開する') },
+      /* (wave4-mobility) WORLD FLOWS — who a country is connected to by people, goods, submarine cables and airline routes, as arcs
+         on the map that follow the clock (js/world-flows.js — a chunk of its own, reached by import(); it publishes no global, so
+         the row carries no `mod` and a press always opens it). */
+      { id:'tool.worldFlows', ic:_svg('<circle cx="5" cy="17" r="2"/><circle cx="19" cy="17" r="2"/><path d="M6.6 15.6C8.6 8.5 15.4 8.5 17.4 15.6"/><path d="M15.2 11.6l2.2 4 1.6-4.2"/>'), en:'World flows', group:'tool',
+        keys:'world flows connections migration migrants diaspora trade exports imports partners cables flights routes 世界とのつながり つながり 移民 在外 出身者 貿易 輸出 輸入 貿易相手 海底ケーブル 航空路',
+        run:()=>import('./world-flows.js').then(m=>m.openFlows({})).then(()=>true,()=>{ try{ HOST.imToast(T('World flows could not be loaded — check your connection and try again.','世界とのつながりを読み込めませんでした。接続を確認して、もう一度お試しください。')); }catch(_){} return false; }),
+        label:()=>T('World flows','世界とのつながり'),
+        hint:()=>T('Who a country is connected to — people, goods, data cables and flights — over time','国と国のつながり（人・モノ・データ・航空路）とその変化') },
       { id:'sim.seismic', mod:'IntMapSeismic', ic:SVG_QUAKE, run:null,   /* registered in js/app-body.js beside the OS kernel */
         label:()=>T('Earthquake simulator','地震シミュレーター','Erdbeben-Simulator','Симулятор землетрясений','Simulador de terremotos'),
         hint:()=>T('Place a source and watch the shaking spread','震源を置いて揺れの広がりを見る','Herd setzen und die Erschütterung verfolgen','Задайте очаг и смотрите, как расходятся колебания','Coloque una fuente y vea propagarse el temblor') },
@@ -1658,6 +1666,15 @@ export function layerSidebar(HOST){
         run:()=>_askPoint(_lazy('ashPlume',(ll)=>{ const A=window.IntMapAshPlume; return A&&A.open({ lng:ll.lng, lat:ll.lat }); }),'sim.ashPlume'),
         label:()=>T('Volcanic ash — if it erupted now','火山灰 — いま噴火したら'),
         hint:()=>T('Where the ash of an eruption here would go on the live upper-air wind','ここで噴火したら、実際の上空の風で灰がどこへ行くか') },
+      /* ══ (wave4-science) AFTERSHOCK FORECAST (js/aftershock.js) ══════════════════════════════════════
+         From this list there is no earthquake under the cursor, so the card opens on its chooser — the M5.5+ earthquakes of the
+         last 30 days (USGS's own summary feed) — rather than asking for a point: a forecast belongs to an earthquake, not to a
+         place. The popup, the earthquake record and Atlas `sim.aftershocks` open it on a named quake. One kernel id for all. */
+      { id:'sim.aftershocks', mod:'IntMapAftershock', get ic(){ return String(icon('chart',{size:16})); }, en:'Aftershock forecast',
+        keys:'aftershock aftershocks forecast probability omori earthquake sequence seismic 余震 余震確率 余震の見通し 地震 確率 大森',
+        run:_lazy('aftershock',()=>{ const A=window.IntMapAftershock; return A&&A.open({}); }),
+        label:()=>T('Aftershock forecast','余震の見通し'),
+        hint:()=>T('After a large earthquake, the chance of aftershocks of each size — and how well such forecasts have done','大きな地震のあと、各規模の余震が起きる確率と、その見通しの当たり具合') },
       /* ⚠ (#R296) ONE ROW FOR BOTH — 「電波・通信圏と見通し線解析を統合して」. The panel switches between
          「見通し線」 (geometry / radar shadow) and 「電波・通信圏」 (the same viewshed with refraction, a
          frequency and a link-budget range); the `sim.rf` row that stood below is gone with it. */
@@ -2152,7 +2169,9 @@ export function layerSidebar(HOST){
       try{ const lt=host&&host.querySelector('#lyr-presets'); const dd=document.getElementById('layer-dropdown');
         if(lt&&dd) dd.appendChild(lt); }catch(_){}
       if(host){ const i=_hosts.indexOf(host); if(i>=0) _hosts.splice(i,1); host.remove(); } }catch(_){} }
-    return { open, close, toggle, apply, mountInto, unmountFrom, mountTools };
+    /* (wave4-ux-mobile) `rows` is the panel's own reading of its rows (id, the name the row shows, its checkbox, `rest`),
+       handed to the phone sheet's home (js/start-home.js) so its «Live now» chips say what the tiles say — not a copy. */
+    return { open, close, toggle, apply, mountInto, unmountFrom, mountTools, rows: rowsFromDropdown };
   })();
 }
 

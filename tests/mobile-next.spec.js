@@ -12,6 +12,7 @@
  *    workers (playwright.config.js), so the inbox is filled the way the worker fills it.
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
+import { settleLayout as settle } from './helpers/settle.js';
 
 const TOKYO_TOWER = { latitude: 35.658585, longitude: 139.745433, accuracy: 12 };
 
@@ -38,30 +39,8 @@ const REACH = (sel) => {
   return out;
 };
 
-/* (spacetime-train) MOTION HAS STOPPED — the condition a fixed wait stood in for. Each named element's box (and its scroll
-   offset) is read on three consecutive frames and must be the same on all three, and no finite animation or transition that
-   moves it, its ancestors or its descendants may be running. Reading the box forces the style flush, so a transition that a
-   class change has just asked for has already begun by the first read: a check made before the motion starts cannot pass.
-   Unlike a fixed wait it cannot judge a panel half-way through its move, and it does not wait past the moment it stops. */
-async function settle(page, sels, timeout = 15_000) {
-  const deadline = Date.now() + timeout;
-  for (;;) {
-    const ok = await page.evaluate((list) => new Promise((res) => {
-      const els = list.map((s) => document.querySelector(s));
-      if (els.some((e) => !e)) { res(false); return; }
-      const snap = () => els.map((e) => { const r = e.getBoundingClientRect(); return [r.left, r.top, r.width, r.height, e.scrollTop, e.scrollLeft].map((v) => Math.round(v * 2) / 2).join(','); }).join('|');
-      const moving = () => document.getAnimations().some((a) => {
-        if (a.playState !== 'running' || !a.effect || !(a.effect.target instanceof Element)) return false;
-        if (a.effect.getTiming().iterations === Infinity) return false;   /* a spinner never stops; it does not move the panel */
-        const t = a.effect.target; return els.some((e) => t === e || t.contains(e) || e.contains(t));
-      });
-      const a = snap();
-      requestAnimationFrame(() => { const b = snap(); requestAnimationFrame(() => { const c = snap(); res(a === b && b === c && !moving()); }); });
-    }), sels);
-    if (ok) return;
-    if (Date.now() > deadline) throw new Error('still moving after ' + timeout + ' ms: ' + sels.join(', '));
-  }
-}
+/* (spacetime-train) MOTION HAS STOPPED — the condition a fixed wait stood in for. (test-time-headroom) One copy, shared:
+   tests/helpers/settle.js `settleLayout`. */
 
 test.describe('mobile-next: 375 × 812, touch', () => {
   test.use({ viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true, geolocation: TOKYO_TOWER, permissions: ['geolocation'] });
@@ -73,9 +52,10 @@ test.describe('mobile-next: 375 × 812, touch', () => {
     await page.waitForSelector('#ms-results .hn-entry [data-hn-entry="here"]', { state: 'visible', timeout: 20_000 });
     const order = await page.evaluate(() => { const r = document.getElementById('ms-results'); return [...r.children].map((c) => c.className.split(' ')[0]); });
     expect(order[0], 'the phone\'s doors come first, above the example maps').toBe('hn-entry');
-    const rows = await page.evaluate(() => [...document.querySelectorAll('.hn-entry button')].map((b) => { const r = b.getBoundingClientRect(); return { h: r.height, own: document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest('button') === b }; }));
+    /* (wave4-ux-mobile) scoped to the search's list: the sheet's home holds the same row (js/start-home.js), hidden under the list while it is open */
+    const rows = await page.evaluate(() => [...document.querySelectorAll('#ms-results .hn-entry button')].map((b) => { const r = b.getBoundingClientRect(); return { h: r.height, own: document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest('button') === b }; }));
     for (const r of rows) { expect(r.own, 'the row is what a finger lands on').toBe(true); expect(r.h).toBeGreaterThanOrEqual(44); }
-    await page.tap('.hn-entry [data-hn-entry="here"]');
+    await page.tap('#ms-results .hn-entry [data-hn-entry="here"]');
     await page.waitForSelector('#pd-popup', { state: 'visible', timeout: 20_000 });
     await page.waitForFunction(() => document.querySelectorAll('#pd-popup [data-pending]').length === 0 && !!document.querySelector('#pd-popup .hn-sec'), null, { timeout: 60_000 });
     const card = await page.evaluate(() => ({

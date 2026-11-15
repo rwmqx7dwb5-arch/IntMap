@@ -157,3 +157,18 @@ Atlas の `research.events`（「最近の出来事をまとめて」）は出�
   語と対の数を GROUP BY で出し、照合を MATERIALIZED の囲いに入れる。NEWS-EVENTS §17.5）。
 - **読めなかったときは理由を言う**（`failureOf`。時間切れ・権限・未配備・データベース不在・ネットワーク・その他。Atlas には `errorKind`）。
 - **入口**: 出来事の詳細の「この出来事の流れを追う」・リンク・命令・Atlas `news.story`。ストーリーは述べた問いであって判定ではない（カードは常に「見出しに … を含む出来事」と言い、線は報道の順序）。
+
+---
+
+### 4.8 今日の世界 — その日のニュースを 1 つの版として — `js/news-edition.js`
+
+直近 24 時間（Chronos の瞬間まで）または UTC の 1 日に報じられていた出来事を、独立した媒体の数の順に 1 つの版として読む。
+正本は [`docs/NEWS-EVENTS.md` §18](../NEWS-EVENTS.md)。
+
+- **起動時に在るのは扉だけ**: `IntMapNewsIntel.edition`・IntMapOS 命令 `newsedition.open`・`?edition=` の検出（`js/news-pulse.js`）。
+  本体は `IntMapLazy` の `newsEdition`。News 一覧の上の入口は `js/news-events.js`（`#news-edition-entry`）。
+- **計算は `js/news-edition-core.js` の 1 本**（純粋）: 窓（`editionWindow`）・入る規則（報道の期間が窓と重なる）・順位（`rank`）・
+  前回以降・国（`makeCountryIndex`）とカテゴリの集計・アドレス（`editionQuery` / `editionFromSearch`）・前回の時刻（`readSeen` /
+  `writeSeen`、`localStorage` の `intmap_news_edition_seen`）。
+- **サーバーの読み口は既存の表だけ**: `news_events` の匿名 SELECT 1 回（窓の規則と順位をそのまま送る）と、入口の件数の head count。
+- **Chronos に従う**（窓の終わりは時計の瞬間。前回の時刻を書くのは時計が「いま」のときだけ）。
