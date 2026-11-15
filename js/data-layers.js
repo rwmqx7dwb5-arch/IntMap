@@ -3586,7 +3586,7 @@ export function dataLayers(HOST){
         const who=(st&&(st.attribution||st.provider))||'';
         /* IntMapSafe.html — the project's escaper. .escape() does not exist, and calling it would
            throw into the catch below and silently drop the attribution ODbL requires. */
-        if(who) return (window.IntMapSafe?window.IntMapSafe.html(who):who)+' · ADS-B';
+        if(who) return window.IntMapSafe.html(who)+' · ADS-B';   /* (security-audit) the provider's name, from the relay's header: always text — the raw branch for a missing encoder wrote it as markup, and js/safe-html.js is loaded before this module (the markup tag above needs it) */
       }catch(_){}
       return 'ADS-B';
     }
@@ -4216,7 +4216,7 @@ export function dataLayers(HOST){
           const tip=k===selectedPlane
             ? (IntMapLang.t(HOST.lang,'Click to hide','クリックで軌跡を消す','Klicken zum Ausblenden','Нажмите, чтобы скрыть','Clic para ocultar'))
             : (IntMapLang.t(HOST.lang,'Click to show','クリックで軌跡を表示','Klicken für die Spur','Нажмите, чтобы показать','Clic para mostrar'));
-          return st.fixes>=2?`<div style="font-size:11px;margin-top:3px;color:#ffd23f;">${lbl} — ${tip}</div>`:''; })()+
+          return st.fixes>=2?`<div style="font-size:11px;margin-top:3px;color:#ffd23f;">${window.IntMapSafe.html(lbl)} — ${tip}</div>`:''; })()+   /* (security-audit) text: this tooltip reaches window.setMapTooltipHTML, a sink check:static now follows */
         `<div style="font-size:10px;color:var(--text-muted);margin-top:5px;border-top:1px solid rgba(128,128,128,0.18);padding-top:4px;">${(IntMapLang.t(HOST.lang,'Last seen','最終受信','Zuletzt empfangen','Последний приём','Última recepción'))+' '+agoStr(p.lastContact)}<br>${_planeSourceLine()}</div>`;
     }
     function setupTrafficLayer(id){

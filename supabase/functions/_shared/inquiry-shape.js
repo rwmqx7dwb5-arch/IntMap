@@ -38,10 +38,24 @@ export const INQUIRY_LIMITS = Object.freeze({
   name: 120, email: 254, organization: 200, role: 120, website: 400, country: 80, message: 5000, page: 400, lang: 16,
 });
 
-/* An address the way the table's CHECK reads one (something@something), within its length. Deliberately
-   no stricter: a reply that bounces costs the admin one look; refusing a real address loses the enquiry. */
+/* An address an administrator can reply to: `local@domain`, the domain at least two dot-separated labels,
+   within the table's length. Still lenient about what a mailbox may be called (non-ASCII, `+` tags, an
+   apostrophe — a reply that bounces costs the admin one look; refusing a real address loses the enquiry).
+   ⚠ (security-audit) NOT LENIENT ABOUT WHAT A mailto: LINK READS AS STRUCTURE. The address becomes the
+   «Reply» link in the enquiries console (js/admin-inquiries.js), and the old test /^[^\s@]+@[^\s@]+$/
+   admitted `a@b.c?bcc=x@y.z` — a link that opens with a hidden Bcc, or a second recipient after `,`/`;`.
+   So the characters RFC 6068 gives meaning inside a mailto: URI (`? & = # % /` and `[ ]`), the address
+   separators `, ;`, and those that are not in a mailbox name without quoting (backslash, angle brackets,
+   parentheses, the double quote, the colon, the backtick) are refused here; and the console encodes the address as well, so a row written before this rule, or by
+   anything that does not ask it, cannot become structure either.
+   The table's CHECK (`email like '%_@_%'`, 20261003150000_org_inquiries.sql) stays the database's outer
+   bound; this is the stricter door every write passes through (reader-reports). */
+const NOT_IN_ADDRESS = '\\s\\u0000-\\u001f\\u007f@?&=#%/\\[\\],;\\\\<>()":`';
+const ADDRESS_LOCAL = '[^' + NOT_IN_ADDRESS + ']+';
+const ADDRESS_LABEL = '[^' + NOT_IN_ADDRESS + '.]+';
+const REPLY_ADDRESS = new RegExp('^' + ADDRESS_LOCAL + '@' + ADDRESS_LABEL + '(?:\\.' + ADDRESS_LABEL + ')+$');
 export function isReplyAddress(s) {
-  return typeof s === 'string' && s.length >= 3 && s.length <= INQUIRY_LIMITS.email && /^[^\s@]+@[^\s@]+$/.test(s);
+  return typeof s === 'string' && s.length >= 3 && s.length <= INQUIRY_LIMITS.email && REPLY_ADDRESS.test(s);
 }
 
 /* (sales-next) WHAT HAPPENS TO AN ENQUIRY AFTER IT ARRIVES — the operator's two axes, read by the enquiries console

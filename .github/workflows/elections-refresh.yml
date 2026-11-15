@@ -43,13 +43,15 @@ jobs:
       BRANCH: data/elections-refresh
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version-file: .nvmrc
       # the packs read spreadsheets (xlsx), PDFs (pdfjs-dist) and TopoJSON (topojson-client) —
       # devDependencies, so the whole lockfile is installed
       - name: Install the build's dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
       - name: Is the record behind the world?
         run: node scripts/build-elections.mjs --watch --summary "$GITHUB_STEP_SUMMARY" --importable-out importable.txt
       - name: Rebuild the packs whose newer election can now be imported
@@ -74,7 +76,8 @@ jobs:
           git add data/elections
           printf 'data: the weekly elections refresh\n\nWritten by .github/workflows/elections-refresh.yml: the refresh record of every\npolity (scripts/build-elections.mjs --watch) and any pack whose newer election became importable.\n' > commit-message.txt
           git commit -F commit-message.txt
-          git push --force origin "$BRANCH"
+          # the checkout kept no credential (persist-credentials: false); the token is given to this one push, from the environment
+          git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$BRANCH"
           if [ -z "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')" ]; then
             gh pr create --base main --head "$BRANCH" \
               --title "data: the weekly elections refresh" \

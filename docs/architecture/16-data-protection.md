@@ -12,7 +12,7 @@ DB 構造をコード化し、RLS／権限を自動テストし、バックア�
 ### 16.1 Supabase CLI 構成
 
 - `supabase/config.toml` — ローカル／CI 用（本番非接続）。`db.major_version` は本番と一致していない（宣言 15 / 本番 17.6）ので、上げるときは `supabase db reset` の通過を確認してから行う。
-- `supabase/migrations/*.sql` — **唯一の設計図**（52本）。冪等・非破壊（`if not exists` / `create or replace` / `drop policy if exists`）。
+- `supabase/migrations/*.sql` — **唯一の設計図**（53本）。冪等・非破壊（`if not exists` / `create or replace` / `drop policy if exists`）。
 - `supabase/seed.sql` — **100% 合成**（`.test` ドメイン・プレースホルダ UUID）。
 - `supabase/tests/*_test.sql` — pgTAP。範囲は構造・RLS/権限マトリクス・関数・権限昇格・News Events・公開プロフィール表・中継の共有レート制限・監査の是正（答えた turn は返金されない・全表の
   TRUNCATE 不可・search_path・報告の帰属・著者が編集できる列）・エラー記録（匿名は読めも書けもしない・admin は読むだけ・同じ fingerprint は回数を足す・30 日の保持）・能力ベクトル・
@@ -52,8 +52,8 @@ DB 構造をコード化し、RLS／権限を自動テストし、バックア�
 - `.github/workflows/db.yml` — PR では常に発火して常に結果を返す（GitHub Ruleset の必須チェックにするため）。job の先頭で base との差分から DB 関連パス（一覧は scope step の 1 か所）に変更が
   あるかを判定し、無ければ重い step を飛ばして緑。あればローカル Supabase で `db reset` → **drift gate**（`db diff` が空であること。`db diff` 自身が失敗したら失敗）→ pgTAP →
   **backup/restore ラウンドトリップ**（合成データ）。本番非接続・秘密不要・fail-closed。
-- `.github/workflows/db-backup.yml` — 毎日 `pg_dump` → GPG → 7 日保持の artifact。`SUPABASE_DB_URL` ＋ `BACKUP_GPG_PASSPHRASE` のどちらかが無ければ run は赤で、`status:backup-failing` の Issue が
-  どの secret が無いかを述べる（揃えば次の緑で閉じる）。secret が無いのに緑で skip する形を全ワークフローについて禁じている（`tests/backup-and-deploy-as-code-checks.test.mjs` が
+- `.github/workflows/db-backup.yml` — 毎日 `pg_dump` → **公開鍵暗号（OpenPGP）** → 7 日保持の artifact。暗号化先は追跡された公開鍵 `scripts/backup-public-key.asc`（public repo の artifact は GitHub アカウントがあれば誰でも取得できる。だから中身は公開鍵暗号で、復号鍵はリポジトリにも GitHub にも無い——運用者の手元だけ）。run が持つのは公開鍵だけなので書けるが読めない。`SUPABASE_ACCESS_TOKEN` が無ければ run は赤で、`status:backup-failing` の Issue が
+  どの secret が無いかを述べる（揃えば次の緑で閉じる）。過去の対称暗号の artifact（最長 7 日残る）の復号には旧パスフレーズが要る（`docs/BACKUP-RESTORE.md`）。secret が無いのに緑で skip する形を全ワークフローについて禁じている（`tests/backup-and-deploy-as-code-checks.test.mjs` が
   `.github/workflows/` を発見し、secret を読む job の関門を secret 空で実行して非ゼロ終了を確かめ、`if:` で secret / 変数を読む skip は理由を宣言したもの——`ENABLE_PAGES_DEPLOY`——だけを通す）。
   方針 ＝ Managed backups 優先＋その pg_dump を予備とする。
 - `.github/workflows/supabase-deploy.yml` — Edge Functions と migration の配備、および nightly のドリフト検査（§15.4）。

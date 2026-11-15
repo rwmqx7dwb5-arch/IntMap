@@ -18,8 +18,9 @@
  *     it to the ledger; what remains of ③ is the ledger's own doors, asked directly below
  *     (openTurn with a caller's own turn bounds).
  *  ④ The per-caller bucket was keyed by x-forwarded-for even where the caller was a verified account.
- *     ⇒ callerKey(req, verifiedUid) keys by the account when there is one, and never by a value that
- *       is not a UUID (an unverified claim would be a fresh bucket per request).
+ *     ⇒ callerKey(req, { uid }) keys by the account when there is one, and never by a value that
+ *       is not a UUID (an unverified claim would be a fresh bucket per request). (security-audit) Without
+ *       one it is an HMAC of the caller's network, never the address — tests/security-audit-checks ②.
  *
  *  Runner: the Edge Functions are evaluated in a child process with Deno.serve captured and fetch
  *  stubbed (the shape of tests/edge-spend-and-models-checks.test.mjs); ai-proxy is TypeScript and
@@ -110,22 +111,27 @@ test('ai-one-ledger ② withPromptCache marks the end of the tools and of the sy
 });
 
 /* ══ ④ the bucket key ════════════════════════════════════════════════════════════════════════ */
-test('ai-one-ledger ④ callerKey: the verified account when there is one, the address otherwise', () => {
+test('ai-one-ledger ④ callerKey: the verified account when there is one, the network otherwise', async () => {
   const req = (h) => new Request('https://fn.test/', { headers: h || {} });
   const uid = '6F1D2C3B-0000-4000-8000-00000000ABCD';
-  assert.equal(R.callerKey(req({ 'x-forwarded-for': '203.0.113.7, 10.0.0.1' }), uid), 'uid:' + uid.toLowerCase());
-  assert.equal(R.callerKey(req({ 'x-forwarded-for': '203.0.113.7, 10.0.0.1' })), '203.0.113.7');
-  assert.equal(R.callerKey(req({ 'x-forwarded-for': '203.0.113.9' }), uid), R.callerKey(req({ 'x-forwarded-for': '198.51.100.2' }), uid),
+  const key = (h, u) => R.callerKey(req(h), { uid: u, secret: 'k' });
+  const byAddress = await key({ 'x-forwarded-for': '203.0.113.7' });
+  assert.equal(await key({ 'x-forwarded-for': '203.0.113.7, 10.0.0.1' }, uid), 'uid:' + uid.toLowerCase());
+  assert.equal(await key({ 'x-forwarded-for': '203.0.113.7, 10.0.0.1' }), byAddress, 'the first address in x-forwarded-for decides');
+  assert.match(byAddress, /^[0-9a-f]{32}$/, 'an address is keyed by its HMAC, never in the clear');
+  assert.equal(await key({ 'x-forwarded-for': '203.0.113.9' }, uid), await key({ 'x-forwarded-for': '198.51.100.2' }, uid),
     'an account keeps its bucket across networks');
-  /* a value that is not a verified-looking id is not an identity: the address decides */
+  /* a value that is not a verified-looking id is not an identity: the network decides */
   for (const bad of ['', null, 'u1', 'uid:x', '../../etc', uid + 'x', ' ']) {
-    assert.equal(R.callerKey(req({ 'x-forwarded-for': '203.0.113.7' }), bad), '203.0.113.7', `«${bad}» was taken as an account`);
+    assert.equal(await key({ 'x-forwarded-for': '203.0.113.7' }, bad), byAddress, `«${bad}» was taken as an account`);
   }
-  assert.equal(R.callerKey(req()), 'unknown', 'no address → the shared bucket, never an exemption');
+  const none = await key({});
+  assert.equal(none, await key({}), 'no address → the shared bucket, never an exemption');
+  assert.notEqual(none, byAddress);
   assert.equal(R.callerAddress(req({ 'x-forwarded-for': ' 192.0.2.1 ,x' })), '192.0.2.1');
-  /* an address can never take an account's key: a header that spells one is not an address */
-  assert.equal(R.callerKey(req({ 'x-forwarded-for': 'uid:' + uid.toLowerCase() })), 'unknown');
-  assert.equal(R.callerKey(req({ 'x-forwarded-for': '2001:db8::1' })), '2001:db8::1', 'an IPv6 address is still an address');
+  /* an address can never take an account's key: a header that spells one is hashed like any other */
+  assert.match(await key({ 'x-forwarded-for': 'uid:' + uid.toLowerCase() }), /^[0-9a-f]{32}$/);
+  assert.match(await key({ 'x-forwarded-for': '2001:db8::1' }), /^[0-9a-f]{32}$/, 'an IPv6 address is still a caller');
 });
 
 /* ══ the ledger's doors, against a fake database ══════════════════════════════════════════════ */

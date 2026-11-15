@@ -1893,7 +1893,7 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全21本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（52本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（53本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス） ＋ 見守る場所 ＋ 保存した地図と公開コレクション ＋ 地図ドキュメント（ツアー・回答の段）。32本）
   functions/<name>/index.ts       Edge Functions（21本。一覧と各本の役割は Architecture.md §6.2。
@@ -1912,6 +1912,7 @@ supabase/
                                   inquiry-shape.js〔組織からの相談の語彙・上限・返信先の規則。org-pages.mjs も読む〕・
                                   correction-shape.js〔地図の誤り報告の語彙・上限・検証規則・受付番号とそのハッシュ。カードと関数と生成器が読む〕 /
                                   place-watch.js〔見守る場所の判定——近さ・強さ・新しさ。今はページだけが読む。将来のサーバー評価が同じ規則を使うためここに置く〕 /
+                                  supabase-keys.js〔project key の唯一の読み手。新しい secret・publishable key を優先し、旧 JWT はフォールバック〕 /
                                   great-circle.js〔大円距離 `haversineKm`（地球半径 6,371 km）の唯一の実装。ページと関数が import する〕）
                                   ⚠ site-origin.js は**本番のアドレスの唯一の置き場**（`CUSTOM_DOMAIN` が
                                   変える値）。ブラウザ・Edge Function・スクリプト・テストが import し、

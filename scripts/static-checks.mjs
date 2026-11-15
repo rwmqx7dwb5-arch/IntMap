@@ -22,6 +22,7 @@ import { COUNTRY_HUB } from './country-pages.mjs';
 import { pagePath as UPDATES_PAGE, feedPath as UPDATES_FEED } from './whats-new.mjs';
 import { WEEKLY_HUB } from './weekly-earth-pages.mjs';   /* (weekly-earth) the weekly digest's hub, written by the build */
 import { outOfOrder } from './migration-order.mjs';
+import { hardeningProblems } from './workflow-hardening.mjs';   /* (security-audit) what a CI step may carry into the runner */
 import { findSecrets, SECRET_SCAN_SELF, secretScanUniverse } from './secret-scan.mjs';   /* (security-hardening) rule 2's shapes and judgement */
 
 const ROOT = resolve(join(dirname(fileURLToPath(import.meta.url)), '..'));
@@ -277,16 +278,27 @@ for (const f of yamlFiles) {
   let doc;
   try { doc = yaml.load(t); }
   catch (e) { err('yaml', `${f.rel}: invalid YAML — ${e.message}`); continue; }
+  /* (security-audit) A composite action (.github/actions/<name>/action.yml) is a step list that runs inside a
+     workflow's job, with that job's token and secrets — the same path as a workflow's own steps. So the rules
+     about a STEP (what it installs, what it keeps of the token, how the actions it uses are pinned) are stated
+     about both, and the universe is discovered by the path, not listed. Only the workflow's own shape (trigger,
+     jobs, permissions) is workflow-only. The two step rules are scripts/workflow-hardening.mjs — a function a
+     test evaluates, so the rule is shown to refuse, not just to be present. */
+  const isWorkflow = f.rel.startsWith('.github/workflows/');
+  const isAction = /^\.github\/actions\/[^/]+\/action\.ya?ml$/.test(f.rel);
+  if (isWorkflow || isAction) for (const p of hardeningProblems(doc, f.rel)) err(p.check, p.msg);
   // Workflow-specific structural + security checks.
-  if (f.rel.startsWith('.github/workflows/')) {
-    if (!doc || (!('on' in doc) && !(true in doc))) err('yaml', `${f.rel}: workflow missing an "on:" trigger`);
-    if (!doc || !doc.jobs || typeof doc.jobs !== 'object') err('yaml', `${f.rel}: workflow has no jobs`);
-    if (doc && !('permissions' in doc)) {
-      const jobPerms = doc.jobs && Object.values(doc.jobs).every((j) => j && 'permissions' in j);
-      if (!jobPerms) warn('workflow-perms', `${f.rel}: no explicit "permissions:" — GITHUB_TOKEN defaults are broad; pin least privilege`);
-    }
-    if (/pull_request_target/.test(t) && /actions\/checkout/.test(t)) {
-      warn('workflow-security', `${f.rel}: uses pull_request_target with checkout — never build/run untrusted PR code with repo secrets`);
+  if (isWorkflow || isAction) {
+    if (isWorkflow) {
+      if (!doc || (!('on' in doc) && !(true in doc))) err('yaml', `${f.rel}: workflow missing an "on:" trigger`);
+      if (!doc || !doc.jobs || typeof doc.jobs !== 'object') err('yaml', `${f.rel}: workflow has no jobs`);
+      if (doc && !('permissions' in doc)) {
+        const jobPerms = doc.jobs && Object.values(doc.jobs).every((j) => j && 'permissions' in j);
+        if (!jobPerms) warn('workflow-perms', `${f.rel}: no explicit "permissions:" — GITHUB_TOKEN defaults are broad; pin least privilege`);
+      }
+      if (/pull_request_target/.test(t) && /actions\/checkout/.test(t)) {
+        warn('workflow-security', `${f.rel}: uses pull_request_target with checkout — never build/run untrusted PR code with repo secrets`);
+      }
     }
     /* (#R138) Supply-chain: an action pinned to a moveable tag can be repointed to malicious code —
        `v4` is a branch-like ref its owner rewrites on every release, so "pinned to v4" means "runs

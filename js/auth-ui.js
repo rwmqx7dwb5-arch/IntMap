@@ -612,6 +612,14 @@ export function authUi(HOST){
           const sres=await HOST.DB.auth.getSession(); const session=sres&&sres.data&&sres.data.session;
           const r=await fetch(window.SUPABASE_URL+'/functions/v1/delete-account',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+((session&&session.access_token)||''),'apikey':window.SUPABASE_ANON_KEY},body:JSON.stringify({confirm:'DELETE'})});
           const j=await r.json().catch(()=>({}));
+          /* (security-audit) the function deletes only after a RECENT sign-in (supabase/functions/delete-account/
+             recent-sign-in.js — ten minutes). Nothing was touched; the way on is the sign-in sheet every method
+             already uses (password, Google, passkey), with the reason on it. The session is kept: signing in
+             again replaces it, and closing the sheet leaves the reader exactly where they were. */
+          if(j&&j.error==='reauth_required'){
+            const again=_authL('For your security, please sign in again, then delete your account.','安全のため、もう一度ログインしてから削除してください。');
+            msg.textContent=again; _acctClose(); openAuthModal(again); return;
+          }
           if(!r.ok||!j.ok) throw new Error(j.message||'delete failed');
           try{ await HOST.DB.auth.signOut(); }catch(_){}
           HOST.user=null; HOST.bookmarks=[];
@@ -772,7 +780,8 @@ export function authUi(HOST){
         .on('postgres_changes',{event:'*',schema:'public',table:'dashboard_cards'}, ()=>HOST.loadDashFromSupabase().then(()=>{ try{ if(HOST.mode==='info') HOST.renderDashboard(); }catch(_){} }))
         .on('postgres_changes',{event:'*',schema:'public',table:'community_posts'},    ()=>HOST.loadCommunity())
         .on('postgres_changes',{event:'*',schema:'public',table:'community_comments'}, ()=>{ if(HOST.mode==='community') HOST.loadCommunity(); })
-        .on('postgres_changes',{event:'*',schema:'public',table:'community_votes'},    ()=>{ if(HOST.mode==='community') HOST.loadCommunity(); })
+        /* (security-audit) no community_votes subscription: a reader may read only their OWN votes, so another
+           reader's vote arrives as the vote_count UPDATE on community_posts / community_comments above. */
         .on('postgres_changes',{event:'*',schema:'public',table:'current_news'},       ()=>{ try{ if(window.__IM_USE_SERVER_NEWS!==false && !HOST.activeSearchQuery&&!HOST.newsDate&&HOST.newsLangMode!=='multi') HOST.loadNewsFromSupabase(); }catch(_){} })   /* (#R40) gated off while the server feed is temporarily disabled */
         .subscribe();
     }catch(e){ console.warn('[IntMap] realtime subscribe failed:', e&&e.message); }

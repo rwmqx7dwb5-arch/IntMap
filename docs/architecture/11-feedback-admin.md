@@ -22,13 +22,15 @@
   - EN: `https://donate.stripe.com/5kQdR2d2m1oa1lAadk5gc01?locale=en`
   - JA: `https://donate.stripe.com/8x29AM9Qa2se7JYetA5gc00?locale=ja`
 - **管理コンソール `admin.html`**：`geo_pins`（ニュース辞書）の追加／編集、`dashboard_cards` 編集、`community_reports` の対応、`feedback` 閲覧、`community_posts` / `community_comments` の
-  モデレーション。公開サインアップは無い。CSP は厳格（`connect-src` は self ＋ `*.supabase.co`）。破壊的操作の前に再認証を求める。ログインゲートは利便のためで、非 admin が開いても
+  モデレーション。公開サインアップは無い。CSP は厳格（`connect-src` は self ＋ このプロジェクトの Supabase のホスト 1 つ。ワイルドカードは無い）。破壊的操作の前に再認証を求める。ログインゲートは利便のためで、非 admin が開いても
   RLS が 0 行しか返さない。
-- **バグ報告**：`bug_reports`（診断情報 JSON 付き。`reader-reports` 経由で誰でも送れる・表へ直接は書けない・admin が閲覧）。
+- **バグ報告**：`bug_reports`（診断情報 JSON 付き。`reader-reports` 経由で誰でも送れる・表へ直接は書けない・admin が閲覧）。未ログインで送られたフィードバックとバグ報告は
+  受信から 730 日で消える（`purge_anonymous_reports`・pg_cron `anonymous-reports-purge`。ログイン中に送った分はアカウントの削除と共に消える。プライバシーポリシー §6）。
 - **教育向けの導入パック**：単元対応表（`curriculum.html`）と学校向けの 1 枚（`school-handout.html`）、いずれも `ja/` あり（§8.6.5）。どちらも相談フォーム（`about=classroom`）へ結ぶ。
 - **組織からの相談**：報道機関・学校・研究機関/NGO 向けの紹介ページ（`for-newsrooms.html`・`for-schools.html`・`for-research.html` と `ja/`）から `contact.html` のフォームへ。
   `reader-reports`（kind `inquiry`）経由で `org_inquiries` に入り、表へ直接は書けない。読むのは相談のコンソール `admin-inquiries.html`（`admin.html` とは別のページ・同じアカウント・`noindex`）
-  ——状態（new / replied / closed / spam）とメモを付け、削除し、支援者を掲載する。保存期間は受信から 730 日、spam は 30 日（`purge_org_inquiries`・pg_cron）。ページの文は
+  ——状態（new / replied / closed / spam）とメモを付け、削除し、支援者を掲載する。返信リンクは `mailtoReply()` が宛先をエンコードして作る（返信先が `mailto:` の構造を運べないことは
+  [`docs/SECURITY-ARCHITECTURE.md`](../SECURITY-ARCHITECTURE.md) §5）。保存期間は受信から 730 日、spam は 30 日（`purge_org_inquiries`・pg_cron）。ページの文は
   `scripts/org-pages-text.mjs`（en + jp）、生成と門は `scripts/org-pages.mjs`。営業の手引きは `docs/sales/`。
   - **パイプライン**（Pipeline タブ・`js/admin-pipeline.js`、タブを開いたときだけ `import()`）: 状態とは別に会話がどこまで進んだかを持つ——`stage`（lead → talking → trial → adopted |
     declined）・`next_step`・`next_step_on`（期日）・`stage_changed_at`。段ごとの列、送り手の区分 × 段の件数、期日が今日（運営者の暦日）以前のもの、段が進んだのに期日の無いもの、ページが

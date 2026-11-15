@@ -1,19 +1,25 @@
 # IntMap — scheduled encrypted database backup.
 # ----------------------------------------------------------------------------
 # A free, self-hosted fallback to Supabase's managed backups. It runs pg_dump,
-# encrypts with GPG (AES-256), checksums, and uploads the ENCRYPTED file as a
-# short-retention artifact.
+# encrypts it TO A PUBLIC KEY (OpenPGP; scripts/backup-public-key.asc, tracked), checksums, and
+# uploads the ENCRYPTED file as a short-retention artifact.
 #
-# ⚠ WITHOUT ITS TWO SECRETS THIS RUN IS RED, AND IT OPENS AN ISSUE NAMING THE MISSING ONE.
+# ⚠ THE ARTIFACT OF A PUBLIC REPOSITORY IS DOWNLOADABLE BY ANYONE WITH A GITHUB ACCOUNT. So no key that can
+# DECRYPT exists anywhere GitHub or this run can reach it: the run holds the public half (it can write a
+# backup, not read one) and the private half is the operator's alone (docs/BACKUP-RESTORE.md). It used to be a
+# passphrase in a repository secret — a key the run itself held, in a workflow that executes repository code.
+#
+# ⚠ WITHOUT ITS SECRET THIS RUN IS RED, AND IT OPENS AN ISSUE NAMING THE MISSING ONE.
 # It used to skip and report success. MEASURED 2026-09-24, run 35975392869: it printed
 # 「DB backup is DORMANT」 and was green — as it had been every night since the file existed — while
 # docs/INCIDENT-RESPONSE.md sent a reader in a data-loss incident to 「the newest backup」. There was
 # no backup. A run that could not do its job is a failed run; the gate is
 # scripts/ci-require-secrets.sh and tests/backup-and-deploy-as-code-checks.test.mjs runs it.
 #
-# The two secrets, and the one-time registration, are in docs/BACKUP-RESTORE.md (the 正本):
+# The one secret, and the one-time registration, are in docs/BACKUP-RESTORE.md (the 正本):
 #   SUPABASE_ACCESS_TOKEN   Supabase access token — a short-lived DB login is derived from it (no stored DB password).
-#   BACKUP_GPG_PASSPHRASE   The ONLY key to the backups — losing it makes them unrecoverable.
+# The key to the backups is the operator's PRIVATE key, which is not a secret of this repository at all —
+# losing it makes the backups unrecoverable, and it is the only thing that can open them.
 #
 # NOTE: even encrypted, these artifacts are held on GitHub. Retention is short
 # (7 days). Managed Supabase backups / PITR remain the primary line of defense —
@@ -40,6 +46,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
 
       # Secrets can't be read in `if:` conditions, so the gate is a step — and a missing secret
       # FAILS it (exit 1, one ::error:: per missing name). Every step below then skips, except the
@@ -48,8 +56,7 @@ jobs:
         id: gate
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          BACKUP_GPG_PASSPHRASE: ${{ secrets.BACKUP_GPG_PASSPHRASE }}
-        run: bash scripts/ci-require-secrets.sh SUPABASE_ACCESS_TOKEN BACKUP_GPG_PASSPHRASE
+        run: bash scripts/ci-require-secrets.sh SUPABASE_ACCESS_TOKEN
 
       - name: Install tools
         run: sudo apt-get update && sudo apt-get install -y postgresql-client gnupg
@@ -81,7 +88,6 @@ jobs:
 
       - name: Dump + encrypt + checksum
         env:
-          GPG_PASSPHRASE: ${{ secrets.BACKUP_GPG_PASSPHRASE }}
           DB_URL_FILE: ${{ runner.temp }}/db-url
           OUT_DIR: ${{ runner.temp }}/backups
         run: bash scripts/backup-db.sh

@@ -468,11 +468,13 @@ function yahooPrefixes() {
    builds, offered to a relay that refuses it, is a wasted round trip that looks like an outage.
    ⚠ The predicate is EVALUATED, not read: #R505 — a check that reads source cannot see what the
    code does. */
-test('#R533 ⑦ quotes-relay accepts the URLs the app builds and refuses everything else', () => {
+test('#R533 ⑦ quotes-relay accepts the URLs the app builds and refuses everything else', async () => {
   const src = read('supabase/functions/quotes-relay/index.ts');
   const body = src.slice(src.indexOf('const SYMBOL_RE'), src.indexOf('Deno.serve'));
   assert.ok(body.includes('function allowed'), 'found the allow-list predicate');
-  const allowed = new Function(body + '\nreturn allowed;')();
+  /* the origin rule it imports (relay-guard.js allowedUpstream — security-audit), handed in as exported */
+  const { allowedUpstream } = await import('../supabase/functions/_shared/relay-guard.js');
+  const allowed = new Function('allowedUpstream', body + '\nreturn allowed;')(allowedUpstream);
 
   for (const u of [
     'https://query1.finance.yahoo.com/v8/finance/spark?symbols=AAPL,MSFT&range=1mo&interval=1d',

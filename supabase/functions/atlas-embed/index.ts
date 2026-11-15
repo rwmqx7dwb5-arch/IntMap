@@ -37,13 +37,14 @@
 //            ATLAS_EMBED_MODEL (optional; default text-embedding-3-small)
 //            ATLAS_EMBED_GLOBAL_PER_DAY (optional override of the project-wide ceiling)
 //            ATLAS_EMBED_PER_USER_PER_DAY (optional override of one account's share of it)
-//  (SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY are injected by the platform.)
+//  (SUPABASE_URL and the project keys are injected by the platform — read through _shared/supabase-keys.js.)
 //
 //  ⚠ NO TYPE ANNOTATIONS IN THIS FILE — scripts/static-checks.mjs parses it as plain JavaScript.
 // ============================================================================
 
 import { corsFor, readCapped, RelayError } from "../_shared/relay-guard.js";
-import { makeLimiter, restRpcClient, callerKey, READERS_PER_ADDRESS } from "../_shared/rate-limit.js";
+import { makeLimiter, restRpcClient, callerKey, callerKeySecret, READERS_PER_ADDRESS } from "../_shared/rate-limit.js";
+import { secretKey, publishableKey, denoEnv } from "../_shared/supabase-keys.js";
 /* (edge-spend-and-models) the project-wide ceiling and the one door to the provider, shared with
    every other function that holds a provider key */
 import { spendCeiling, providerFetch, ProviderFail } from "../_shared/ai-provider.js";
@@ -171,14 +172,14 @@ Deno.serve(async (req) => {
     if (req.method !== "POST") return fail("method_not_allowed", 405);
 
     const url = Deno.env.get("SUPABASE_URL") || "";
-    const anon = Deno.env.get("SUPABASE_ANON_KEY") || "";
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    const anon = publishableKey(denoEnv);
+    const serviceKey = secretKey(denoEnv);
 
     const uid = await callerId(req, url, anon);
     if (!uid) return fail("signed_out", 401);
     /* (ai-one-ledger) the bucket key, decided where every function's is (_shared/rate-limit.js
        callerKey): the account, because the Auth server has just verified it */
-    const who = callerKey(req, uid);
+    const who = await callerKey(req, { uid, secret: callerKeySecret((k) => Deno.env.get(k) || "") });
 
     const key = Deno.env.get("OPENAI_API_KEY") || "";
     if (!key) return fail("unconfigured", 503);

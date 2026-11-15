@@ -46,6 +46,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
+          persist-credentials: false
           # both ends of the diff below have to exist locally; the default shallow fetch
           # gives only the merge commit, and «base is missing» would send every PR down
           # the run-in-full branch — correct, but it would cost every round 8 minutes.
@@ -160,11 +161,24 @@ jobs:
       # Prove the backup → encrypt → checksum → decrypt → restore → verify pipeline
       # end to end, on SYNTHETIC seed data only (no secrets, no production access).
       # This is the automatable half of the restore drill (§10).
+      # The real backup is encrypted to a public key whose private half only the operator holds, so this step
+      # cannot use it: it makes a THROWAWAY key pair (no passphrase, in a scratch keyring that is deleted with
+      # the job), encrypts to the public half and restores with the private half — the same two scripts, the
+      # same two key paths, a key that guards nothing.
       - name: Backup + restore roundtrip (synthetic data)
         if: steps.scope.outputs.run == 'true'
-        env:
-          GPG_PASSPHRASE: ci-throwaway-passphrase-not-a-secret
         run: |
+          set -euo pipefail
+          KEYS="$(mktemp -d)"
+          GNUPGHOME="$(mktemp -d)"; export GNUPGHOME; chmod 700 "$GNUPGHOME"
+          gpg --batch --passphrase '' --quick-generate-key "CI roundtrip <ci-roundtrip@intmap.invalid>" ed25519 cert never
+          FPR="$(gpg --batch --with-colons --list-keys | awk -F: '$1=="fpr"{print $10; exit}')"
+          gpg --batch --passphrase '' --quick-add-key "$FPR" cv25519 encr never
+          gpg --batch --armor --export "$FPR" > "$KEYS/public.asc"
+          gpg --batch --pinentry-mode loopback --passphrase '' --armor --export-secret-keys "$FPR" > "$KEYS/private.asc"
+          gpgconf --kill gpg-agent; rm -rf "$GNUPGHOME"; unset GNUPGHOME   # the scripts below bring their own scratch keyrings
+          export BACKUP_PUBLIC_KEY_FILE="$KEYS/public.asc"
+          export BACKUP_PRIVATE_KEY_FILE="$KEYS/private.asc"
           export DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
           export OUT_DIR="$RUNNER_TEMP/backups"
           export DUMP_SCHEMAS="public auth storage"

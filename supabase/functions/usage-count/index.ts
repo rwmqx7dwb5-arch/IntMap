@@ -10,7 +10,7 @@
 //  WHAT IS STORED, AND WHAT IS NOT:
 //    stored · a count per (server UTC day, declared metric, dimension the metric's rule accepts)
 //    never  · the request's IP address (the per-caller bucket is keyed by an HMAC of it under the
-//             service key — _shared/rate-limit.js hashedCallerKey, the rule client-errors uses)
+//             service key — _shared/rate-limit.js callerKey, the rule every function uses)
 //           · the User-Agent (not read at all — the device class is a two-valued dimension)
 //           · a user id or session (this function verifies no account and reads no Authorization)
 //           · a time finer than the day, any key or position of the body other than the three of
@@ -30,7 +30,8 @@
 //  parses every committed .ts as plain JavaScript.
 // ============================================================================
 import { corsFor, readCapped, RelayError } from "../_shared/relay-guard.js";
-import { makeLimiter, restRpcClient, hashedCallerKey } from "../_shared/rate-limit.js";
+import { makeLimiter, restRpcClient, callerKey, callerKeySecret } from "../_shared/rate-limit.js";
+import { secretKey, denoEnv } from "../_shared/supabase-keys.js";
 import { originAllowed } from "../_shared/client-error-shape.js";
 import { MAX_ROWS_PER_REQUEST, parse } from "./shape.js";
 
@@ -78,13 +79,6 @@ function say(cors, body, status) {
   });
 }
 
-/* The per-caller bucket key: HMAC-SHA-256(service key, address) — the address itself is never written
-   anywhere. No account is passed: this function verifies none, so a signed-in reader is keyed and
-   counted exactly like a signed-out one. */
-export async function callerKey(req, secret) {
-  return hashedCallerKey(req, secret);
-}
-
 /** The request body, validated and shaped. { rows } | { error, status }. */
 export function parseBody(bytes) {
   const r = parse(new TextDecoder("utf-8").decode(bytes));
@@ -116,10 +110,13 @@ export async function handle(req) {
 
   /* built per request from the platform-injected env (a module that throws on a missing env answers
      500 to everyone — #R505) */
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+  const serviceKey = secretKey(denoEnv);
   const db = restRpcClient({ url: Deno.env.get("SUPABASE_URL") || "", serviceKey });
   const limiter = makeLimiter({ db });
-  const caller = await limiter.take(SCOPE_CALLER, await callerKey(req, serviceKey), {
+  /* the per-caller bucket key is _shared/rate-limit.js callerKey — an HMAC of the caller's network, the
+     address itself is never written anywhere. No account is passed: this function verifies none, so a
+     signed-in reader is keyed and counted exactly like a signed-out one. */
+  const caller = await limiter.take(SCOPE_CALLER, await callerKey(req, { secret: callerKeySecret((k) => Deno.env.get(k) || "") }), {
     capacity: PER_CALLER, refillPerSec: PER_CALLER / 3600, cost: 1, onUnavailable: "deny",
   });
   if (caller.source !== "db") return say(cors, { error: "limiter_unavailable" }, 503);

@@ -36,7 +36,7 @@
 //           supabase secrets set NEWS_GEO_AI=off               (optional kill-switch, #R404 地点解析)
 //           supabase secrets set NEWS_GEO_MODEL=...            (optional — 地点解析だけ別モデル)
 //           supabase secrets set NEWS_INGEST_GLOBAL_PER_DAY=<n> (optional — プロジェクト全体の天井を動かす。下の SCHEDULE)
-//  (SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY are injected automatically.)
+//  (SUPABASE_URL and the project keys are injected — read through _shared/supabase-keys.js.)
 //
 //  NOTE: written WITHOUT TypeScript annotations, like sv-cov / cable-geo / news-relay —
 //  scripts/static-checks.mjs runs `node --check` over every committed .ts.
@@ -44,6 +44,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { fetchGuarded } from "../_shared/relay-guard.js";
+import { secretKey, denoEnv } from "../_shared/supabase-keys.js";
 /* (edge-spend-and-models) モデルの既定表・有料の提供元へ通じる唯一の扉・プロジェクト全体の天井・
    本文ではなく長さだけを運ぶ失敗。どれも他の 4 関数と同じ 1 本。 */
 import {
@@ -1590,7 +1591,7 @@ Deno.serve(async (req) => {
   const startedAt = new Date(start).toISOString();
 
   const url = Deno.env.get("SUPABASE_URL");
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const serviceKey = secretKey(denoEnv);
   const db = createClient(url, serviceKey, { auth: { persistSession: false } });
 
   const result = { stages: want, retention: RETENTION };
