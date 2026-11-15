@@ -378,7 +378,10 @@ test('R499 ④ the map tooltip is shown and hidden through ONE guarded setter', 
   /* (remove-synthetic-planes) 37 → 31: six of the converted sites were the hover / click / pick
      tooltips of the airplanes.live sweep's two MapLibre renderings (js/data-layers.js), removed with
      that sweep — not reverted to a direct write. The offenders list above is what holds the rule. */
-  assert.ok(sites >= 31, `only ${sites} call sites use the guarded setter; the conversion covered 37, six of them in the removed aircraft renderings`);
+  /* (news-crosshair-shadow) 31 → 27: four more were in js/news-ui.js's mobile crosshair preview, disabled by
+     #R107 and unreachable since — removed as dead code (dev-notes/2026-10-23-news-crosshair-shadow.md §1), not
+     reverted to a direct write. */
+  assert.ok(sites >= 27, `only ${sites} call sites use the guarded setter; the conversion covered 37, six of them in the removed aircraft renderings and four in the removed news crosshair`);
   assert.ok(adopters >= 7, `only ${adopters} files adopted it; the defect was spread over 7`);
 });
 

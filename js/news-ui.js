@@ -17,10 +17,6 @@ import { icon, withIcons } from './icons.js';   /* (icon-system) the one icon se
 
 export function newsUi(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
-  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
-     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
-     isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   const saveBookmarks=()=>localStorage.setItem('intmap_bookmarks',JSON.stringify(HOST.bookmarks));
 
   /* ══ (#R210) ★ SAVED ARTICLES SURVIVE THE FEED THEY CAME FROM ═════════════════════════════════
@@ -132,26 +128,29 @@ export function newsUi(HOST){
   let hoveredNewsId=null, hoveredDashId=null;
 
   function setupIntelLayers(){
-    /* (#R161 MapLibre reduction, Phase 3) the NEWS overlay is created through IntMapGeoEngine.
-       `GE` falls back to nothing only if the engine has not been constructed yet (it is built in
-       map.on('load') before the first call), in which case we simply return and the existing
-       styledata re-run creates the layers. */
-    const GE=IntMapGeoEngine;
+    /* (#R161 MapLibre reduction, Phase 3) the NEWS overlay is created through IntMapGeoEngine, reached
+       through the ONE accessor `GE()` at the top of this factory. If the renderer cannot draw yet we simply
+       return and the styledata re-run creates the layers.
+       ⚠ (news-crosshair-shadow) This function used to declare its own `const GE=IntMapGeoEngine`, which
+       SHADOWED that accessor: everything written `GE().x` worked, and the first `GE()` below it threw
+       `TypeError: GE is not a function` — swallowed by the caller, so the dashboard-pin hover/leave/click
+       were never bound (from #R178 on). One name, one meaning; tests/news-crosshair-shadow-checks.test.mjs
+       fails any js/ call to a function name that an inner non-function binding shadows. */
     /* (#R170) ready() → canDraw(). ready() means "the renderer has fully settled, tiles and all", which is
        false for most of the time a user spends panning — so the news pin layer, like every dl-* layer, was
        waiting for an idle frame it might not get for seconds. Creating sources/layers only needs a parsed
        style, which is what canDraw() answers. */
-    if(!GE||!GE.canDraw()) return;
+    if(!GE().canDraw()) return;
     HOST.ensureLabelPill();
-    if(!GE.layers.hasSource('news-points')){
-      GE.layers.addSource('news-points',{type:'geojson',data:{type:'FeatureCollection',features:[]},promoteId:'fid'});
-      GE.layers.add({id:'news-pulse',type:'circle',source:'news-points',filter:['match',['get','mapped'],['true','publisher'],true,false],paint:{
+    if(!GE().layers.hasSource('news-points')){
+      GE().layers.addSource('news-points',{type:'geojson',data:{type:'FeatureCollection',features:[]},promoteId:'fid'});
+      GE().layers.add({id:'news-pulse',type:'circle',source:'news-points',filter:['match',['get','mapped'],['true','publisher'],true,false],paint:{
         'circle-radius':['interpolate',['linear'],['zoom'],0,8,4,14,10,22],
         'circle-color':['match',['get','mapped'],'publisher','#5856d6','#007aff'],
         'circle-opacity':0.18,
         'circle-stroke-width':0
       }});
-      GE.layers.add({id:'news-dots',type:'circle',source:'news-points',paint:{
+      GE().layers.add({id:'news-dots',type:'circle',source:'news-points',paint:{
         'circle-radius':['case',['boolean',['feature-state','hover'],false],10,7],
         'circle-color':['match',['get','mapped'],
           'true','#007aff',
@@ -168,7 +167,7 @@ export function newsUi(HOST){
       }});
       /* Title preview "band" to the right of the pin; hidden when hovered (popup takes over).
          (#R15) Shown for publisher-located pins too, not just subject pins. */
-      GE.layers.add({id:'news-labels',type:'symbol',source:'news-points',layout:{   /* (#R15c) band on ALL pins incl. not-yet-located */
+      GE().layers.add({id:'news-labels',type:'symbol',source:'news-points',layout:{   /* (#R15c) band on ALL pins incl. not-yet-located */
         'text-field':['get','short'],
         'text-size':window.IntMapLabelScale.sub(0.92),
         'text-font':['literal',['Noto Sans Regular']],
@@ -201,26 +200,26 @@ export function newsUi(HOST){
         'text-opacity':['case',['boolean',['feature-state','hover'],false],0,['case',['boolean',['feature-state','bnd'],false],1,0]],
         'icon-opacity':['case',['boolean',['feature-state','hover'],false],0,['case',['boolean',['feature-state','bnd'],false],1,0]]
       }});
-      GE.events.on('moveend',HOST.scheduleNewsDeclutter); GE.events.on('zoomend',HOST.scheduleNewsDeclutter);
+      GE().events.on('moveend',HOST.scheduleNewsDeclutter); GE().events.on('zoomend',HOST.scheduleNewsDeclutter);
       /* If pins were accumulated before map.load, flush them now. */
-      if(HOST.newsFeatures.length){ GE.layers.setSourceData('news-points',{type:'FeatureCollection',features:HOST.newsFeatures}); try{HOST.scheduleNewsDeclutter();}catch(_){} }
+      if(HOST.newsFeatures.length){ GE().layers.setSourceData('news-points',{type:'FeatureCollection',features:HOST.newsFeatures}); try{HOST.scheduleNewsDeclutter();}catch(_){} }
       try{ HOST.refreshNewsPill(); }catch(_){}   /* (#R32) set the band's initial colors for the current theme */
     }
-    if(!GE.layers.hasSource('dash-points')){
-      GE.layers.addSource('dash-points',{type:'geojson',data:{type:'FeatureCollection',features:[]},promoteId:'fid'});
-      GE.layers.add({id:'dash-pulse',type:'circle',source:'dash-points',paint:{
+    if(!GE().layers.hasSource('dash-points')){
+      GE().layers.addSource('dash-points',{type:'geojson',data:{type:'FeatureCollection',features:[]},promoteId:'fid'});
+      GE().layers.add({id:'dash-pulse',type:'circle',source:'dash-points',paint:{
         'circle-radius':['interpolate',['linear'],['zoom'],0,10,4,18,10,28],
         'circle-color':['get','color'],
         'circle-opacity':0.20,
         'circle-stroke-width':0
       }});
-      GE.layers.add({id:'dash-dots',type:'circle',source:'dash-points',paint:{
+      GE().layers.add({id:'dash-dots',type:'circle',source:'dash-points',paint:{
         'circle-radius':['case',['boolean',['feature-state','hover'],false],11,8],
         'circle-color':['get','color'],
         'circle-stroke-width':2,
         'circle-stroke-color':'#ffffff'
       }});
-      if(HOST.dashFeatures.length) GE.layers.setSourceData('dash-points',{type:'FeatureCollection',features:HOST.dashFeatures});
+      if(HOST.dashFeatures.length) GE().layers.setSourceData('dash-points',{type:'FeatureCollection',features:HOST.dashFeatures});
     }
     if(window._intelHandlersBound) return;
     window._intelHandlersBound=true;
@@ -239,22 +238,22 @@ export function newsUi(HOST){
       const foot=isEv&&n>0 ? (IntMapSafe.html(p.publisher||'')+' · '+IntMapSafe.html(_srcCountLabel(n))) : IntMapSafe.html(p.publisher||'');
       return `<div style="display:flex;justify-content:space-between;gap:8px;"><span style="color:var(--primary-color);font-weight:600;font-size:11px;">[${IntMapSafe.html(p.name)}]</span><span style="color:var(--text-muted);font-size:11px;font-weight:500;">${formatCustomDate(p.pubDate)}</span></div><div style="line-height:1.4;font-weight:500;margin-top:4px;">${IntMapSafe.html(p.title)}</div><div style="color:var(--text-muted);margin-top:6px;font-size:11px;">${foot}</div>`;   /* (#R138 SEC) news name/title/publisher come from external RSS → escape */
     }
-    GE.events.onLayer('mousemove','news-dots',e=>{
+    GE().events.onLayer('mousemove','news-dots',e=>{
       if(!e.features.length) return;
-      GE.render.setCursor('pointer');
+      GE().render.setCursor('pointer');
       const f=e.features[0];
       if(hoveredNewsId!==f.id){
-        if(hoveredNewsId!=null) try{GE.layers.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:false});}catch(err){}
+        if(hoveredNewsId!=null) try{GE().layers.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:false});}catch(err){}
         hoveredNewsId=f.id;
-        try{GE.layers.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:true});}catch(err){}
+        try{GE().layers.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:true});}catch(err){}
       }
       const el=HOST.ensureMapTooltip(); window.showMapTooltip(el);
       window.setMapTooltipHTML(el,_newsTipHTML(f.properties));   /* (#R138 SEC) news name/title/publisher come from external RSS → escape */
-      HOST.positionTooltip(GE.coords.project(f.geometry.coordinates));
+      HOST.positionTooltip(GE().coords.project(f.geometry.coordinates));
     });
-    GE.events.onLayer('mouseleave','news-dots',()=>{
-      if(hoveredNewsId!=null){ try{GE.layers.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:false});}catch(err){} hoveredNewsId=null; }
-      GE.render.setCursor('');
+    GE().events.onLayer('mouseleave','news-dots',()=>{
+      if(hoveredNewsId!=null){ try{GE().layers.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:false});}catch(err){} hoveredNewsId=null; }
+      GE().render.setCursor('');
       if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl);
     });
     /* (#R38) MOBILE: tapping a news pin/band shows a POPUP with a "Read" button rather than jumping straight
@@ -304,7 +303,7 @@ export function newsUi(HOST){
       back.classList.add('show');
     }
     window._showMobileNewsPopup=_showMobileNewsPopup;
-    GE.events.onLayer('click','news-dots',e=>{
+    GE().events.onLayer('click','news-dots',e=>{
       if(!e.features.length) return;
       const p=e.features[0].properties;
       if(HOST.isMobile()){ _showMobileNewsPopup(p); return; }
@@ -312,51 +311,27 @@ export function newsUi(HOST){
     });
     /* (#R37) The BAND (news-labels = the place-name pill) is the big, natural tap target — make it clickable
        too, not just the tiny dot ("地名ラベルを押しても反応しない"). */
-    GE.events.onLayer('click','news-labels',e=>{ if(!e.features.length) return; const p=e.features[0].properties; if(HOST.isMobile()){ _showMobileNewsPopup(p); return; } _openNewsFeature(p); });
-    GE.events.onLayer('mousemove','news-labels',e=>{ if(!e.features.length) return; GE.render.setCursor('pointer'); const f=e.features[0];
+    GE().events.onLayer('click','news-labels',e=>{ if(!e.features.length) return; const p=e.features[0].properties; if(HOST.isMobile()){ _showMobileNewsPopup(p); return; } _openNewsFeature(p); });
+    GE().events.onLayer('mousemove','news-labels',e=>{ if(!e.features.length) return; GE().render.setCursor('pointer'); const f=e.features[0];
       /* (#R159) hovering the BAND itself must hide the band while the popup shows — the band's icon/text-opacity
          collapses to 0 when this feature's `hover` state is set (same rule the dot uses). The band sits offset to the
          right of the dot and swallows the pointer, so the news-dots handler never fires here; set the state directly,
          reusing the shared `hoveredNewsId` so crossing dot↔band never leaves a stuck-hover. */
       if(hoveredNewsId!==f.id){
-        if(hoveredNewsId!=null) try{GE.layers.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:false});}catch(err){}
+        if(hoveredNewsId!=null) try{GE().layers.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:false});}catch(err){}
         hoveredNewsId=f.id;
-        try{GE.layers.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:true});}catch(err){}
+        try{GE().layers.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:true});}catch(err){}
       }
       const el=HOST.ensureMapTooltip(); window.showMapTooltip(el);
       window.setMapTooltipHTML(el,_newsTipHTML(f.properties));   /* (#R138 SEC) news name/title/publisher come from external RSS → escape */
-      HOST.positionTooltip(GE.coords.project(f.geometry.coordinates)); });
-    GE.events.onLayer('mouseleave','news-labels',()=>{ GE.render.setCursor(''); if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl);
-      if(hoveredNewsId!=null){ try{GE.layers.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:false});}catch(err){} hoveredNewsId=null; }   /* (#R159) restore the band when the pointer leaves it */ });
-    /* (#R37) MOBILE crosshair → news popup, the same way the DESKTOP cursor reveals the pin under it
-       ("モバイル版でも…十字ポインターの位置のニュースは…ポップアップが出るように"). On every settle, look for a news
-       pin/band right under the centre crosshair and show the same popup there; tap it to open the article. */
-    let _xhrNewsId=null, _xhrLink=null, _xhrProps=null;
-    function _crosshairNews(){ try{
-      /* (#R107) DISABLED on mobile per request ("disable hover news pin and popping news popup in mobile version"):
-         no auto hover-highlight of the pin under the crosshair and no auto-popping news tooltip. Tapping a pin/label
-         still opens the article (that handler is separate). Clear any lingering state and bail. */
-      if(HOST.mapTooltipEl){ window.hideMapTooltip(HOST.mapTooltipEl); HOST.mapTooltipEl.style.pointerEvents='none'; }
-      if(_xhrNewsId!=null){ try{GE().layers.setFeatureState({source:'news-points',id:_xhrNewsId},{hover:false});}catch(_){} _xhrNewsId=null; _xhrLink=null; _xhrProps=null; }
-      return;
-      if(!HOST.isMobile()||!_imCanDraw()||!GE().layers.has('news-dots')) return;
-      if(HOST.toolMode||document.body.classList.contains('pg-we')){ if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl); return; }
-      const c=GE().coords.project(GE().camera.getCenter()); const R=22;
-      const layers=['news-labels','news-dots'].filter(l=>GE().layers.get(l));
-      let hits=[]; try{ hits=GE().coords.queryRenderedFeatures([[c.x-R,c.y-R],[c.x+R,c.y+R]],{layers}); }catch(_){}
-      if(hits&&hits.length){ let best=hits[0],bd=Infinity; hits.forEach(f=>{ try{ const p=GE().coords.project(f.geometry.coordinates); const d=Math.hypot(p.x-c.x,p.y-c.y); if(d<bd){bd=d;best=f;} }catch(_){} }); const f=best, pr=f.properties||{};
-        if(_xhrNewsId!==f.id){ if(_xhrNewsId!=null) try{GE().layers.setFeatureState({source:'news-points',id:_xhrNewsId},{hover:false});}catch(_){}
-          _xhrNewsId=f.id; try{GE().layers.setFeatureState({source:'news-points',id:f.id},{hover:true});}catch(_){} }
-        _xhrLink=pr.link||null; _xhrProps=pr;
-        const el=HOST.ensureMapTooltip(); window.showMapTooltip(el); el.style.pointerEvents='auto'; el.style.cursor='pointer';
-        window.setMapTooltipHTML(el,`<div style="display:flex;justify-content:space-between;gap:8px;"><span style="color:var(--primary-color);font-weight:600;font-size:11px;">[${pr.name}]</span><span style="color:var(--text-muted);font-size:11px;font-weight:500;">${formatCustomDate(pr.pubDate)}</span></div><div style="line-height:1.4;font-weight:500;margin-top:4px;">${pr.title}</div><div style="color:var(--text-muted);margin-top:6px;font-size:11px;">${pr.publisher}${' · '+(IntMapLang.t(HOST.lang,'tap for details','タップで詳細','Für Details tippen','Нажмите для подробностей','toca para ver detalles'))}</div>`);
-        try{ HOST.positionTooltip(GE().coords.project(f.geometry.coordinates)); }catch(_){}
-      } else { if(_xhrNewsId!=null){ try{GE().layers.setFeatureState({source:'news-points',id:_xhrNewsId},{hover:false});}catch(_){} _xhrNewsId=null; } _xhrLink=null; _xhrProps=null; if(HOST.mapTooltipEl){ window.hideMapTooltip(HOST.mapTooltipEl); HOST.mapTooltipEl.style.pointerEvents='none'; } }
-    }catch(_){} }
-    window._crosshairNews=_crosshairNews;
-    GE().events.on('moveend',_crosshairNews);
-    /* tap the crosshair popup itself → open the article (the dot under the crosshair is too small to hit) */
-    document.addEventListener('click',(ev)=>{ try{ if(!HOST.isMobile()||!_xhrProps) return; if(HOST.mapTooltipEl&&HOST.mapTooltipEl.style.display!=='none'&&HOST.mapTooltipEl.contains(ev.target)){ _showMobileNewsPopup(_xhrProps); } }catch(_){} });
+      HOST.positionTooltip(GE().coords.project(f.geometry.coordinates)); });
+    GE().events.onLayer('mouseleave','news-labels',()=>{ GE().render.setCursor(''); if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl);
+      if(hoveredNewsId!=null){ try{GE().layers.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:false});}catch(err){} hoveredNewsId=null; }   /* (#R159) restore the band when the pointer leaves it */ });
+    /* (news-crosshair-shadow) The #R37 MOBILE crosshair → news popup was turned off on request in #R107
+       ("disable hover news pin and popping news popup in mobile version"): its body sat after an early `return;`,
+       and the tap on its popup could only fire once that body had run. On a phone a news pin or band is opened by
+       tapping it — the news-dots / news-labels click handlers above → _showMobileNewsPopup. The unreachable code,
+       its moveend binding and its document click listener were removed rather than revived (dev-notes). */
     /* Dash hover/click */
     GE().events.onLayer('mousemove','dash-dots',e=>{
       if(!e.features.length) return;
@@ -375,7 +350,9 @@ export function newsUi(HOST){
         if(f.properties.layerRef) window.triggerLayerHover(f.properties.layerRef,true);
       }
       const el=HOST.ensureMapTooltip(); window.showMapTooltip(el);
-      window.setMapTooltipHTML(el,`<div style="color:${f.properties.color};font-weight:600;font-size:14px;">${f.properties.title}</div><div style="line-height:1.4;margin-top:4px;color:var(--text-muted);">${f.properties.body}</div>`);
+      /* (news-crosshair-shadow SEC) escaped: the writer of dash-points (js/analysis-world-events.js) puts Wikidata's
+         labels in `title` — external text — and this handler, bound again now, writes it as markup. */
+      window.setMapTooltipHTML(el,`<div style="color:${IntMapSafe.html(f.properties.color)};font-weight:600;font-size:14px;">${IntMapSafe.html(f.properties.title)}</div><div style="line-height:1.4;margin-top:4px;color:var(--text-muted);">${IntMapSafe.html(f.properties.body)}</div>`);
       HOST.positionTooltip(GE().coords.project(f.geometry.coordinates));
     });
     GE().events.onLayer('mouseleave','dash-dots',()=>{
