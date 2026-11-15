@@ -17,7 +17,7 @@
          operator picked off disk. It calls js/admin-literal.js's PARSER now, which cannot invoke anything, so the whole
          page no longer needs the capability. A CSP that grants eval to a page with no eval in it is
          a grant nobody is watching. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-bi5UzGl+THpcxTbS3pEddnFrkN/EJ54B9qeYLMiklJ0=' 'sha256-3OHKZ+ViBKyiUEP3Z8TsVNvIaOif1akJt0G8TYhecw0=' 'sha256-vmBLyZdjQVfKdRzLnjsYvQ/Vwq7T2PnOB8+wx6QkksA='; connect-src 'self' https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; media-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-bi5UzGl+THpcxTbS3pEddnFrkN/EJ54B9qeYLMiklJ0=' 'sha256-3OHKZ+ViBKyiUEP3Z8TsVNvIaOif1akJt0G8TYhecw0=' 'sha256-SwRJlvZxS9TaqiYiegX5HvZSBnYn9h5lTxkaEBxX0Cc='; connect-src 'self' https://vpekfwdpurzejrrmacac.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; media-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- (growth-loop) the site's address, for the «Growth» tab's campaign links. NOT written here: the build fills the
      token in every copied page (scripts/site-url.mjs fillSiteToken — the address has one owner,
@@ -969,12 +969,12 @@
       }
       /* all posts */
       head.innerHTML='<th>When</th><th>Title</th><th>Author</th><th>Body</th><th></th>';
-      const {data,error}=await sb.from('community_posts').select('id,title,body,author_name,created_at,community_votes(user_id),community_comments(id)').order('created_at',{ascending:false}).limit(500);
+      const {data,error}=await sb.from('community_posts').select('id,title,body,author_name,created_at,vote_count,community_comments(id)').order('created_at',{ascending:false}).limit(500);
       if(error) throw error;
       $('comm-count').textContent='· '+data.length+' posts';
       tb.innerHTML=data.length?data.map(p=>html`<tr>
         <td style="white-space:nowrap;color:var(--muted)">${fmtTime(p.created_at)}</td>
-        <td>${p.title||'(no title)'}<div class="muted" style="font-size:11px;">▲${(p.community_votes||[]).length} · ${ic('chat')}${(p.community_comments||[]).length}</div></td>
+        <td>${p.title||'(no title)'}<div class="muted" style="font-size:11px;">▲${p.vote_count||0} · ${ic('chat')}${(p.community_comments||[]).length}</div></td>
         <td>${p.author_name||'?'}</td>
         <td style="max-width:420px;color:var(--muted)">${(p.body||'').slice(0,160)}</td>
         <td><button class="btn danger sm" data-del-post="${p.id}">Del</button></td></tr>`).join(''):'<tr><td colspan="5" class="muted">No posts.</td></tr>';

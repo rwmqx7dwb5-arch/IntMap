@@ -395,8 +395,10 @@ node scripts/companies-audit.mjs --report          # 検査とカバレッジ表
    ——**`osmPending` が先、次に古いプロフィール**。大きさは `BATCH`（根拠と失効条件はその定数の
    註）。⚠ **選ぶのは索引にある企業だけ**: `build.mjs` は同一 QID の 2 行を「全部の行を見て」
    1 つに畳むので、片割れだけのバッチは 2 社目のトヨタを出荷してしまう。
-2. `build.mjs --only <バッチ>`。`.cache/companies` は `actions/cache` で run をまたいで運ぶ
-   （osm.mjs は訊く前に保存済みの応答を全部読むので、バッチは累積する）。
+2. `build.mjs --only <バッチ> --osm-deadline <時刻>`。`.cache/companies` は run をまたいで運ぶ
+   （osm.mjs は訊く前に保存済みの応答を全部読むので、バッチは累積する）。保存は**job が失敗しても**行い、
+   OpenStreetMap には期限（workflow の `OSM_MINUTES`）があって、届かなかった企業は `osmPending` のまま出荷する
+   ——⚠ 実測 2026-10-26〜11-09: Overpass が遅いだけで 90 分の timeout に 3 週続けて殺され、キャッシュも残らなかった。
 3. `check:companies` を通ったバイトだけを bot の PR にし、`land-bot-pr` で着地させる。
 
 各プロフィールは自分が組み立てられた日（`generatedAt`）を持ち、パネルの見出しが

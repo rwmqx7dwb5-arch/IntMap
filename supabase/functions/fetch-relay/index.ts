@@ -41,7 +41,7 @@
 //        → 400 {"error":"not_allowed"} for a URL or an address the rule refuses; 502 {"error":"not_an_article"}
 //
 //  Deploy:  supabase functions deploy fetch-relay --no-verify-jwt --use-api --project-ref vpekfwdpurzejrrmacac
-//  Secrets: none (SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are injected by the platform, for the bucket).
+//  Secrets: none (SUPABASE_URL and the project secret key are injected by the platform, for the bucket — _shared/supabase-keys.js).
 //
 //  ⚠ NO TYPE ANNOTATIONS IN THIS FILE — the repo's static gate parses every committed .ts as plain
 //  JavaScript (see the note at the top of alerts-relay).
