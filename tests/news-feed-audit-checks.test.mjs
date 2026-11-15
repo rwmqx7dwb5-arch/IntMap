@@ -115,12 +115,14 @@ test('R372 ③ a DOWNLOAD failure is forgotten; a failure after the file arrived
 
 /* 綴りのまま: 対象は CI の workflow・文書で、実行されるのは GitHub 上（ここでは記述を確かめるしかない） */
 test('R372 ④ the nightly cannot be cancelled by a merge — and push/PR are byte-for-byte unchanged', () => {
-  for (const [f, tag] of [['.github/workflows/ci.yml', 'nightly'], ['.github/workflows/security.yml', 'weekly']]) {
+  for (const f of ['.github/workflows/ci.yml', '.github/workflows/security.yml']) {
     const y = raw(f);
     const g = /^concurrency:\s*\n\s*group:\s*(.+)$/m.exec(y);
     assert.ok(g, `${f} declares a concurrency group`);
     assert.match(g[1], /github\.event_name\s*==\s*'schedule'/, `${f}: a schedule gets its own group`);
-    assert.ok(g[1].includes(`'${tag}'`), `${f}: …named ${tag}`);
+    /* (security-watch) the NAME of that group is not the fact — security.yml's went weekly → daily and its group
+       was renamed with it; what matters is that a schedule maps to one constant string */
+    assert.match(g[1], /'schedule'\s*&&\s*'[a-z-]+'\s*\|\|/, `${f}: …a constant one`);
     /* ⚠ THE OTHER HALF OF THE ASSERTION. Every other event must still fall through to github.ref,
        or this "fix" would stop a new commit from superseding an in-flight run on the same branch. */
     assert.match(g[1], /\|\|\s*github\.ref/, `${f}: everything else still keys on github.ref`);

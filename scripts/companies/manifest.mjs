@@ -29,7 +29,7 @@ export function curatedRows() {
   if (!m) throw new Error('js/companies.js: RAW table not found — the parser and the file have drifted');
   const body = codeOnly(m[1]);
   let rows;
-  try { rows = JSON.parse('[' + body.replace(/,\s*$/, '') + ']'.replace(/^/, '')); } catch (_) { rows = null; }
+  try { rows = JSON.parse('[' + body.replace(/,\s*$/, '') + ']'); } catch (_) { rows = null; }
   if (!rows) {
     /* The table is JS, not JSON: single quotes and escapes. Evaluate it in a
        function with no scope rather than reimplementing a JS string parser. */
