@@ -634,7 +634,7 @@ export default [
              {n,c,k} — so the coordinate and provenance `normalizeAnswer` had just merged in were
              discarded ONE LINE before the pinning step that needed them, and the name was resolved
              again from scratch. `_env.places` are already GeoObjects; hand them over whole. */
-          try{ html+=await _pinReplyPlaces(_env.places||[],{text:answerPlainText(_env),citations:_reg.all().filter(r=>r.finalUrl).map(r=>({url:r.finalUrl,title:r.title}))}); }catch(e){ try{ console.warn('analyze map audit',e); }catch(_){} }
+          try{ html+=await _pinReplyPlaces(_env.places||[],{text:answerPlainText(_env),placesDeclared:true,citations:_reg.all().filter(r=>r.finalUrl).map(r=>({url:r.finalUrl,title:r.title,publisher:r.publisher||''}))}); }catch(e){ try{ console.warn('analyze map audit',e); }catch(_){} }
           /* (#R131) Freshness-critical question but live web verification did NOT run: label the answer a PROVISIONAL
              assessment built mainly on already-gathered headlines, so headline-only leads are never presented as
              confirmed direct evidence (the Central-Asia failure). Applies equally when the web search timed out into

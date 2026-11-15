@@ -27,8 +27,8 @@
 //  Deploy:   supabase functions deploy ai-proxy --project-ref vpekfwdpurzejrrmacac
 //            (verify_jwt can stay ON; we also verify the user explicitly.)
 //  Secrets:  supabase secrets set AI_PROVIDER=openai                  (openai | anthropic | gemini)
-//            supabase secrets set AI_MODEL=gpt-5.6-terra             (#R736; OVERRIDES OPENAI_DEFAULT_MODEL below, so the two are set together. For EVERY reader — except the developer account, which may choose one for its own calls: #R722 below.)
-//            supabase secrets set OPENAI_API_KEY=sk-...               (CURRENT provider — Terra via /v1/responses)
+//            supabase secrets set AI_MODEL=gpt-6.1-sol               (atlas-gpt6-models; OVERRIDES OPENAI_DEFAULT_MODEL below, so the two are set together. For EVERY reader — except the developer account, which may choose one for its own calls: #R722 below.)
+//            supabase secrets set OPENAI_API_KEY=sk-...               (CURRENT provider — GPT-6.1 Sol via /v1/responses)
 //            # other providers stay wired but dormant:
 //            supabase secrets set GEMINI_API_KEY=AIza...              (if AI_PROVIDER=gemini)
 //            supabase secrets set GEMINI_SEARCH_ENABLED=false         (#R113 Gemini grounding, default OFF)
