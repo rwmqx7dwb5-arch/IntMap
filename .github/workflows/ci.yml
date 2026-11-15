@@ -64,6 +64,7 @@ jobs:
   build:
     name: Build the site (once per run)
     runs-on: ubuntu-latest
+    timeout-minutes: 20   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     outputs:
       site: ${{ steps.names.outputs.site }}
       pages: ${{ steps.names.outputs.pages }}
@@ -155,6 +156,7 @@ jobs:
   gates:
     name: Gates ${{ matrix.shard }}/${{ matrix.of }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     needs: [build]
     if: ${{ !cancelled() }}
     strategy:
@@ -203,6 +205,7 @@ jobs:
   static:
     name: Static checks
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     needs: [build, gates]
     if: ${{ always() }}
     steps:
@@ -221,6 +224,7 @@ jobs:
   upstream:
     name: Era snapshots — still the whole upstream set? (network)
     runs-on: ubuntu-latest
+    timeout-minutes: 30   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -247,6 +251,7 @@ jobs:
   formats:
     name: Exports read by GDAL (third-party readers)
     runs-on: ubuntu-latest
+    timeout-minutes: 30   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -421,6 +426,7 @@ jobs:
   checks:
     name: Regression ${{ matrix.shard }}/${{ matrix.of }}
     runs-on: ubuntu-latest
+    timeout-minutes: 60   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     strategy:
       fail-fast: false            # one slow shard must not hide the results of the others
       matrix:
@@ -462,6 +468,7 @@ jobs:
   checks-gate:
     name: Regression suite
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     needs: [checks]
     if: ${{ always() }}
     steps:
@@ -534,6 +541,7 @@ jobs:
   browser:
     name: Browser ${{ matrix.suite }} ${{ matrix.shard }}/${{ matrix.of }}
     runs-on: ubuntu-latest
+    timeout-minutes: 45   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     needs: [build]            # (ci-build-once) it tests the run's one build; it builds nothing itself
     env:
       IM_TIER: core
@@ -599,6 +607,7 @@ jobs:
     name: Deep ${{ matrix.suite }} ${{ matrix.shard }}/${{ matrix.of }}
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+    timeout-minutes: 120   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     needs: [build]            # (ci-build-once) the same one build as the core tier
     strategy:
       fail-fast: false
@@ -635,6 +644,7 @@ jobs:
   timings:
     name: Record the measured times on main
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     needs: [browser, browser-deep]
     if: ${{ github.ref == 'refs/heads/main' && always() }}
     permissions:
@@ -679,6 +689,7 @@ jobs:
   browser-gate:
     name: Browser smoke + internal QA
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     needs: [browser, browser-deep]
     if: ${{ always() }}
     steps:
@@ -719,6 +730,7 @@ jobs:
   deep-alarm:
     name: Nightly deep tier — raise or clear the alarm
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     needs: [build, browser-deep]
     if: ${{ github.event_name == 'schedule' && always() && (needs.browser-deep.result != 'skipped' || needs.build.result != 'success') }}
     permissions:
@@ -795,6 +807,7 @@ jobs:
     needs: [build, static, checks-gate, browser-gate]
     if: ${{ !cancelled() && github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.ENABLE_PAGES_DEPLOY == 'true' && needs.build.result == 'success' && needs.static.result == 'success' && needs.checks-gate.result == 'success' && needs.browser-gate.result == 'success' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     permissions:
       pages: write            # the ONLY job in this workflow that can publish
       id-token: write
@@ -838,6 +851,7 @@ jobs:
     needs: [build, static, checks-gate, browser-gate]
     if: ${{ !cancelled() && github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.AWS_PUBLISH_ROLE_ARN != '' && needs.build.result == 'success' && needs.static.result == 'success' && needs.checks-gate.result == 'success' && needs.browser-gate.result == 'success' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     permissions:
       id-token: write         # the OIDC token the role trusts
       contents: read
@@ -878,6 +892,7 @@ jobs:
     needs: [pages]
     if: ${{ !cancelled() && needs.pages.result == 'success' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:

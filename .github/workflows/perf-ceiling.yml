@@ -51,6 +51,7 @@ jobs:
   tighten:
     name: Lower the ceilings main's build fell below
     runs-on: ubuntu-latest
+    timeout-minutes: 30   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     # A push to main only (a pull request's run measures a tree that is not main), and not a run
     # that a newer push cancelled (that push's own run is the one to measure).
     if: ${{ github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion != 'cancelled' }}

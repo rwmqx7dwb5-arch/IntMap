@@ -51,6 +51,7 @@ jobs:
     name: Build + verify
     if: ${{ vars.ENABLE_PAGES_DEPLOY == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
@@ -103,6 +104,7 @@ jobs:
     name: Deploy to Pages
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 30   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
@@ -136,6 +138,7 @@ jobs:
     name: Post-deploy smoke (live URL)
     needs: deploy
     runs-on: ubuntu-latest
+    timeout-minutes: 30   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:

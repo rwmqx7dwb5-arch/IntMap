@@ -210,6 +210,17 @@ comment (2026-10-11: none does).
 CI shard turning an online gate red. ⚠ `npm run check:<x>` typed by hand is not guarded; to reproduce a runner,
 `node --import ./scripts/no-network.mjs scripts/<gate>.mjs --check`.
 
+### Every job has a timeout — a hang costs its own length, not six hours (ci-job-timeouts)
+
+⚠ MEASURED 2026-10-13: `Regression 3/3` of a pull request hung after its last reported test and ran until GitHub's
+own 360-minute limit, because no job in any workflow declared `timeout-minutes` (26 jobs). Every job now does, at
+about three times the longest run measured on 2026-11-16 (the last 10 PR runs, 8 pushes to main and 8 nights of
+`ci.yml`, 12 runs of every other workflow; the jobs that had not run — `rollback.yml`, `perf-ceiling.yml` — were
+given their `deploy.yml` counterparts'), and never under 15 minutes. Longest measured: Deep rest 34 min,
+Deep cesium 21, TLE refresh 21 (it waits for its pull request's CI), Regression 17, Browser rest 11, Gates 8.
+Raise a limit when a real run approaches it, never to pass a hang.
+`tests/ci-job-timeouts-checks.test.mjs` requires every job of every workflow to declare one.
+
 ### One boot per worker, and the three things a boot can be asked to be (suite-time-room)
 
 `tests/helpers/app.js` (#R208) gives every test in a worker the SAME booted page and resets it before each
