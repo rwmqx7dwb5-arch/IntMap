@@ -89,7 +89,8 @@ test('security-audit ①: every setMapTooltipHTML in js/news-ui.js is the shared
       if (c.type === 'MemberExpression' && c.property && c.property.name === 'setMapTooltipHTML') calls.push(n);
     },
   });
-  assert.ok(calls.length >= 4, 'the tooltip writes are found (' + calls.length + ')');
+  /* 4 → 3: the mobile crosshair tooltip, unreachable since #R107, was removed as dead code (news-crosshair-shadow) */
+  assert.ok(calls.length >= 3, 'the tooltip writes are found (' + calls.length + ')');
   const isEsc = (e) => e.type === 'CallExpression' && e.callee.type === 'MemberExpression' && e.callee.object.name === 'IntMapSafe' && e.callee.property.name === 'html';
   for (const n of calls) {
     const v = n.arguments[1], at = 'js/news-ui.js:' + n.loc.start.line;
