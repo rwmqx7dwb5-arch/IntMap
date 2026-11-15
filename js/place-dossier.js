@@ -294,9 +294,9 @@ async function newsNear(pt, reachKm, hours, HOST) {
 let PH = null;
 async function historyModule() {
   if (PH) return PH;
-  const { placeHistory, historyMarkup, historySpeech, jumpTo, PLACE_HISTORY_CSS } = await import('./place-history.js');
-  PH = { placeHistory, historyMarkup, historySpeech, jumpTo };
-  try { if (!document.getElementById('im-place-history-css')) { const st = document.createElement('style'); st.id = 'im-place-history-css'; st.textContent = PLACE_HISTORY_CSS; document.head.appendChild(st); } } catch (_) { /* no document (a harness) */ }
+  const { placeHistory, historyMarkup, historySpeech, historyAction, ensureHistoryCss } = await import('./place-history.js');
+  PH = { placeHistory, historyMarkup, historySpeech, historyAction };
+  ensureHistoryCss();
   return PH;
 }
 async function historyAt(pt) {
@@ -702,21 +702,11 @@ function ensureCard(HOST) {
       else if (k === 'news') { const it = current.news && current.news.items[i]; if (it) openNews(it, H); }
       else if (k === 'flows') { const c = current.country; if (c && c.status === 'ok') import('./world-flows.js').then((m) => m.openFlows({ country: c.code })).catch(() => { try { H.imToast(words(H).L('World flows could not be loaded', '世界とのつながりを読み込めませんでした')); } catch (_) { /* nothing to say it with */ } }); }
       else if (k === 'past') { const it = current.past && current.past.spans[i], y = it ? spanYear(it) : null; if (y != null) { try { IntMapTime.setYear(y, { source: 'here-now' }); } catch (_) { /* the clock refuses a year it cannot reach */ } flyTo(current.at.lng, current.at.lat, 9); } }
-      else if (k.indexOf('pharc:') === 0) {
-        /* (hist-product) a polity of «This place through time» → its rise and fall (js/polity-arc.js), found by the Wikidata
-           item its record binds, else by the name it is drawn with, and in the years this row covers */
-        const hi = current.history, E = hi && hi.status === 'ok' && hi.nation ? hi.nation.entries[+k.slice(6)] : null;
-        if (E) {
-          const qid = (E.ids || []).map((x) => x.id && x.id.qid).filter(Boolean);
-          const y = Math.floor(E.from.k / 10000);
-          import('./polity-arc.js').then((m) => m.openArc({ name: E.name, qid, year: y, lang: () => { try { return H.lang || 'en'; } catch (_) { return 'en'; } } })).catch(() => { /* the sheet could not be loaded */ });
-        }
-      }
-      else if (k.indexOf('ph:') === 0 || k.indexOf('pha:') === 0) {
-        /* (place-through-time) a row of «This place through time»: the clock goes to it and the map to the point */
-        const hi = current.history, j = +k.slice(k.indexOf(':') + 1);
-        const E = hi && hi.status === 'ok' ? (k.indexOf('pha:') === 0 ? hi.admin && hi.admin.entries[j] : hi.nation && hi.nation.entries[j]) : null;
-        if (E && PH && PH.jumpTo(E)) flyTo(current.at.lng, current.at.lat, 7);
+      else if (k.indexOf('pharc:') === 0 || k.indexOf('ph:') === 0 || k.indexOf('pha:') === 0) {
+        /* (place-through-time) a row of «This place through time»: the clock goes to it and the map to the point; its
+           «rise and fall» opens js/polity-arc.js — js/place-history.js `historyAction`, the one handler every surface uses */
+        const hi = current.history;
+        if (hi && hi.status === 'ok' && PH && PH.historyAction(hi, k, () => { try { return H.lang || 'en'; } catch (_) { return 'en'; } }) === 'clock') flyTo(current.at.lng, current.at.lat, 7);
       }
       else if (k === 'ph-load') {
         const at = { lng: current.at.lng, lat: current.at.lat }, rec = current;

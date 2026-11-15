@@ -811,8 +811,10 @@ us-elections.js                   すべての米大統領選挙 IntMapUSElectio
 net-health.js                     インターネットの健康状態の**2行**（障害／到達性）IntMapNetHealth（**eager**——行と IntMapOS 命令だけ・`ROWS` が行の正本）
 net-health-live.js                その測定そのもの（**on-demand**・`__imNetHealth`・`PROVIDERS` が観測網の正本／信号の一覧は応答から発見／docs/INTERNET-HEALTH.md）
 elections.js                      各国の**国政選挙** IntMapElections（選挙区で塗り、凡例は議会全体・国と選挙を選ぶ／**国名も政党名も1つも持たない**——すべて data/elections/ から来る。正本 docs/ELECTIONS.md）
+                                  `atPoint`: 点を含む選挙区を各議院の最新の選挙から（index.json の `boxes` で読むファイルを絞る）
 war-fronts.js                     戦争の**6行**（WW1／WW2／朝鮮／ベトナム／中東／ユーゴ）IntMapWarFronts（**eager**——行と IntMapOS 命令だけ・`ROWS` が行の正本）
 war-layer.js                      戦争の層そのもの（**on-demand**・`__imWarFronts`・戦争ごとに1インスタンス／凡例に日スライダーと再生）
+                                  `atPoint`: 1 地点（または国）がどの戦争でどの陣営に・いつからいつまで置かれたかと、その国の日付つきの出来事——塗りと同じ規則
 war-geom.js                       戦線の線で国の輪郭を切る幾何 `WarGeom`（ビルドとブラウザが同じ1本を使う）
 industry-web.js                   産業の相関 window.IntMapIndustry
 outbreaks.js                      感染症アウトブレイク window.IntMapOutbreaks（**eager**——行と Atlas 命令が
@@ -845,6 +847,11 @@ news-events.js                    出来事単位の News（一覧・カテゴ�
                                   結果を読む。正本は docs/NEWS-EVENTS.md
                                   一覧の上に取り込みの健全性の 1 行（`news_ingest_health()`）を出し、
                                   国の日報と企業パネルが読む行を開く口（`openRow`・`columns`）を持つ
+event-past.js                     **この土地の過去**——ニュースの出来事の地点を、IntMap の歴史の記録に照らす節（出来事の詳細の
+                                  ボタンで取りに行く・Atlas `news.eventPast`）。治めた政体は place-history.js、記録上の戦争は war-layer.js
+                                  `atPoint`、国政選挙は elections.js `atPoint` が答え、ここは束ねて描くだけ。位置が国の代表点の出来事は地点の
+                                  年表を出さずに国の戦争と選挙だけ（粒度は news-cluster.js の `representativeKinds`）
+                                  （docs/NEWS-EVENTS.md §18）
 news-pulse.js                     「国ごとのニュースの脈」のレイヤー行と IntMapOS 命令と窓口
                                   `IntMapNewsIntel`（**eager**——行・名前・命令だけ。本体は news-intel.js）。
                                   ストーリーの扉（`IntMapNewsIntel.story`・命令 `newsstory.open`・`?story=`）と
@@ -970,7 +977,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  239 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  240 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -1112,7 +1119,7 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
 atlas-hist-urban.js               Atlas の `time.cityPopulation` の本体——歴史上の都市人口の記録に、ある年の大都市・ある都市の人口の推移を訊き、
                                   値（`exec.cityPopulation`）と同じ事実の文で返す。規則は hist-urban.js。初回の呼び出しで動的 import（Atlas のチャンクに載せない）
-atlas-schemas.js                  **引数の schema**（#R406）— 239能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 240能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝

@@ -301,4 +301,39 @@ export default [
       return R(true, html, { meta: { code: r.events ? 'OK' : 'NO_RESULTS', category: r.events ? 'ok' : 'evidence', retryable: false, semanticTarget: r.day || 'latest',
         produced: ['panel', 'explanation'], userGoalSatisfied: true, edition: r } }); },
   },
+  /* ══ (news-with-history) A NEWS EVENT'S GROUND, READ AGAINST ITS HISTORY ══════════════════════════════════════════
+     The SAME record the event card's «This place's past» draws (js/event-past.js): who held the event's point
+     (js/place-history.js), the recorded wars that reached it (js/war-layer.js atPoint) and the national elections fought
+     there (js/elections.js atPoint). An event placed only on a country's representative point gets the country's wars
+     and elections and no point timeline, and the answer says why. Read-only: nothing is drawn, the clock does not move. */
+  {
+    row: ['news.eventPast',             'eventPast',      'eventPlacePast,eventHistory,newsPlaceHistory,eventBackground', 'data',    'none',    '',                       'explanation',         'read',    'none',   'text?',    'newsEvents'],
+    doc: [
+      { in: 'events', at: 46, text: 'A NEWS EVENT\'S PLACE IN HISTORY / この出来事の土地の過去: {"type":"eventPast","event"?:publicId} — the ground a live news event stands on, read against IntMap\'s historical records: (1) WHO HELD THAT EXACT POINT, oldest first (the same record as time.placeHistory: polities with spans, edge kinds, record IDs, and the gaps no record covers); (2) THE GROUND IN THE RECORDED WARS — for each of the wars IntMap draws day by day, which side the war record puts the point on from which day to which day (the record\'s control and dated front lines, the rules the war layer paints by — a side means the state was a PARTY, not that fighting reached the point) and the war\'s dated events in the country the point lay in (where something is recorded); (3) THE NATIONAL ELECTIONS FOUGHT THERE — the newest election of each chamber whose districts contain the point, with the seat totals and the district\'s own result. Precision is the event\'s own: an event placed on a COUNTRY (or a first-level unit, an organisation, or with no stated precision) has only a representative point, so it gets no point timeline — only the wars the record gives that country\'s code and the country\'s national elections — and the answer says so (place.level, place.why). The event the reader has open is used when none is named. Answer only from what it returns: the war record is a handful of wars, not every conflict — a war it does not list is one IntMap has no record of, never «there was none»; quote a gap as a gap. Use for 「この出来事の場所の歴史は」「このニュースの土地は昔どこの国だった」「この場所で過去に戦争は」「ここの選挙区は誰が勝った」「what is the history of where this happened」. ' },
+    ],
+    phrases: () => ['この出来事の場所の歴史', 'この土地の過去', 'ニュースの場所の歴史', 'この場所で過去に戦争', 'この出来事の選挙区'].concat(['history of where this happened', 'event place history', 'past of this news place']),   /* the Japanese phrases, then the English words — two lists, not translations of each other */
+    schema: () => ({ type: 'object', properties: { event: str() } }),
+    async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, esc = K.esc, HOST = K.HOST;
+      let pid = String(a.event || '').trim();
+      try { await window.IntMapLazy.need('newsEvents'); } catch (_) { }
+      const NE = window.IntMapNewsEvents;
+      if (!NE || typeof NE.itemByPublicId !== 'function') return R(false, warn(L('The news events are not available', 'ニュースの出来事を利用できません')), { meta: { code: 'MODULE_UNAVAILABLE', category: 'capability', retryable: false, produced: [], userGoalSatisfied: false } });
+      /* no event named: the event the reader has open (js/news-events.js state — observed on the page) */
+      if (!pid) { try { const s = NE.state(); pid = (s && s.selectedEventId) || ''; } catch (_) { } }
+      if (!pid) return R(false, warn(L('Name a news event, or open one', 'ニュースの出来事を指定するか、開いてください')), { meta: { code: 'NEEDS_INPUT', category: 'input', retryable: true, produced: [], userGoalSatisfied: false } });
+      let item = null;
+      try { item = await NE.itemByPublicId(pid); }
+      catch (_) { return R(false, warn(L('The news collection could not be reached — this does not mean the event does not exist', 'ニュースの収集に到達できませんでした（出来事が無いという意味ではありません）')), { meta: { code: 'UPSTREAM_UNAVAILABLE', category: 'evidence', retryable: true, produced: [], userGoalSatisfied: false } }); }
+      if (!item) return R(false, warn(L('No such news event', 'その出来事が見つかりません') + ': ' + esc(pid)), { meta: { code: 'NOT_FOUND', category: 'input', retryable: false, semanticTarget: pid, produced: [], userGoalSatisfied: false } });
+      const EP = await import('./event-past.js');
+      let lang = 'en'; try { lang = HOST.lang || 'en'; } catch (_) { lang = 'en'; }
+      const place = EP.eventPlace(item);
+      const rec = await EP.readPast(place);
+      try { EP.ensureCss(); } catch (_) { }
+      const exec = { eventPast: Object.assign({ event: pid }, EP.forAtlas(rec)) };
+      const ok = place.level !== 'none';
+      return R(ok, '<div><b>' + esc(L('This place’s past', 'この土地の過去') + (place.name ? ' — ' + place.name : '')) + '</b>' + EP.pastHtml(rec, lang, { inert: true }) + '</div>',
+        { exec, meta: { code: ok ? 'OK' : 'NO_RESULTS', category: ok ? 'ok' : 'evidence', retryable: false, semanticTarget: pid, produced: ['explanation'], userGoalSatisfied: ok } });
+    },
+  },
 ];

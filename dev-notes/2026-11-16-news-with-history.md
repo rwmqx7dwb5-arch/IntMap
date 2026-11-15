@@ -1,0 +1,51 @@
+---
+title: ニュースに歴史を付ける——出来事の詳細に「この土地の過去」（治めた政体・記録上の戦争・国政選挙）。読み手は地点カード・戦争の塗り・選挙レイヤーの既存のもので、出来事の位置が国の代表点なら年表を出さずに理由を述べる
+date: 2026-11-16
+newsen: News events have "This place's past": who held the event's ground, the recorded wars its state was in and the events there, and its district's national election. An event placed only on a country shows the country's wars and elections instead, and says why.
+newsjp: ニュースの出来事に「この土地の過去」を追加。押すと、出来事の地点を治めた政体の年表、記録上の戦争でその国が置かれた陣営とそこで記録された出来事、その地点の選挙区の国政選挙の結果を出します。位置が国の代表点にすぎない出来事は、地点の年表の代わりに国の戦争と選挙を出し、理由を述べます。
+---
+
+〈依頼〉改善案「ニュースに歴史を付ける」: ニュースの出来事カードに、その土地の「この場所の歴史」・過去の紛争・国政選挙を添える。
+同じ読み手・同じデータを使い写しを作らない／国単位か地点単位かで正直に分ける／記録の無い期間は空白のまま／Atlas からも／
+カードの重さと起動時間を増やさない。
+
+利用者の決定（質問で確認）: ①読み込みは**ボタンで**（開くだけでは読まない） ②**国単位の出来事は国の情報だけ**（代表点で年表を
+出さない） ③地点単位の出来事は**その選挙区の結果まで**。
+
+## 0. 測った
+
+- 出来事には粒度の欄が無い。最も近いのは代表記事の `subject_type`（`news_articles`）で、束ね方（`_shared/news-cluster.js`）が
+  既に `representativeKinds`＝国・第 1 級区分・組織を「代表点しか持たない解決」として持っていた → その表をそのまま読む。
+- 出来事の地点（`rep_*`）は代表記事の対象とは限らない。本番の 200 件で「Sydney Airport」「Amman」「Kyiv」の出来事の代表記事が
+  `country` 型だった（サーバーは構成記事の地点から最も具体的なものを選ぶ・`_shared/news-ingest.js`）。→ 粒度は代表記事の
+  `subject_type` ではなく、**選ばれた地点を名指す構成記事が与える種類**（`placeKind`。食い違う・誰も名指さない＝運用者が動かした
+  ときは「述べられていない」）。国単位の出来事の点は首都（Canada→Ottawa）で、国の代表点にすぎない。
+- 戦争の記録（`data/wars.json`）は 6 戦争。`control` は交戦国を全部陣営に置く——フランスは朝鮮戦争の国連側。最初の版は
+  「この土地に及んだ戦争」と書いていて、パリに朝鮮戦争が「及んだ」ことになった（回帰検査の最初の実行で発覚）。
+  → 陣営は**交戦国であったこと**で戦場ではない、と画面と Atlas の説明が述べ、どこで何があったかは日付つきの出来事に言わせる。
+  欄の名前も `reached` → `involved`。
+- 選挙の polity の `home` を点の絞りに使うと選挙区を落とす: オーストラリアの 330,658 頂点のうち 4,233 が `home` の外。
+  → 境界の版ごとの外接箱 `index.boxes` を build が導出し `--check` が照合する（読み手は絞りで偽陰性を出さない）。
+- 実データでの答え（`tests/news-with-history-checks.test.mjs`）: パリは WW2 で 1940 年 6 月〜1944 年 8 月に枢軸側（前線の切り分け
+  込み）、朝鮮戦争では国連側で出来事 0 件、東京（港区）は衆議院の最新の選挙の東京の小選挙区、大西洋の真ん中は「国が無いので
+  戦争に問えない」、日本（国単位）は CShapes の gw 740。
+
+## 1. 作ったもの
+
+- `js/event-past.js`（新規・押下で動的 import）: 粒度の判定 `eventPlace`、3 つの読み手を同時に呼ぶ `readPast`、描画 `pastHtml`、
+  Atlas 用 `forAtlas`、カードへの取り付け `mount`。何も新しく決めない。
+- `js/war-layer.js` `atPoint`: 塗りの `baseFaction`・`activeFronts`・`cutsFor` を `makeWar` の中から層の範囲へ出して（写しでなく
+  1 つの定義を共有）、点の陣営を記録が何かを述べる日だけで問う。扉は `js/war-fronts.js` `IntMapWarFronts.atPoint`。
+- `js/elections.js` `atPoint`: 各議院の最新の選挙で点を含む選挙区（`_imPipGeo`）と議席・候補者と得票。「誰が勝ったか」は
+  層の吹き出しが持っていた規則を `rowResult` に出して両方が読む（吹き出しの HTML を別モジュールへ渡すと出力の検査
+  `output-taint` が拒む——データで渡して出来事の節が `IntMapSafe.html` で描く）。
+- `js/place-history.js` `historyAction`・`ensureHistoryCss`: 行の押下と CSS の注入が地点カード・Atlas に 2〜3 か所写されていた
+  ので 1 つにし、地点カード・Atlas・出来事の節が同じものを呼ぶ（形式上の削除。役目は `historyAction` / `ensureHistoryCss` が
+  引き継ぐ。`tests/hist-product-checks.test.mjs` ⑦ は扉の新しい場所を読むよう更新）。
+- `js/news-events.js`: 詳細に節とボタン、Atlas 用に `itemByPublicId`。
+- Atlas `news.eventPast`（`js/atlas-cap-news.js`、行は `atlas-caps --write` で生成）。
+
+## 2. 検査
+
+`tests/news-with-history-checks.test.mjs`（実データの CShapes・戦争・選挙ファイルを本物の読み手に通す 4 件）。
+文書: `docs/NEWS-EVENTS.md` §18・`PRODUCT.md`・`docs/ELECTIONS.md` §2・`docs/architecture/07-map.md` §7.3f・`docs/FILES.md`。

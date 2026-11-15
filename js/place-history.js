@@ -490,6 +490,28 @@ export function jumpTo(E) {
   } catch (_) { return false; }
 }
 
+/** a press inside `historyMarkup` (its `data-hn`): `ph:i` / `pha:i` set the clock to that row, `pharc:i` opens that polity's
+    rise and fall (js/polity-arc.js). ONE handler for every surface that shows the timeline — the place card and a news
+    event's «This place's past» (js/event-past.js). → 'clock' | 'arc' | null (not a key of this timeline, or nothing done) */
+export function historyAction(rec, key, lang) {
+  const k = String(key || '');
+  if (!rec || rec.status === 'unavailable') return null;
+  if (k.indexOf('pharc:') === 0) {
+    const E = rec.nation ? rec.nation.entries[+k.slice(6)] : null;
+    if (!E) return null;
+    const qid = (E.ids || []).map((x) => x.id && x.id.qid).filter(Boolean);
+    const y = Math.floor(E.from.k / 10000);
+    import('./polity-arc.js').then((m) => m.openArc({ name: E.name, qid, year: y, lang: () => (typeof lang === 'function' ? lang() : (lang || 'en')) })).catch(() => { /* the sheet could not be loaded */ });
+    return 'arc';
+  }
+  if (k.indexOf('ph:') === 0 || k.indexOf('pha:') === 0) {
+    const j = +k.slice(k.indexOf(':') + 1);
+    const E = k.indexOf('pha:') === 0 ? rec.admin && rec.admin.entries[j] : rec.nation && rec.nation.entries[j];
+    return E && jumpTo(E) ? 'clock' : null;
+  }
+  return null;
+}
+
 /* the timeline's rules — injected with the place card's (js/place-dossier.js `placeCardStyle`) */
 export const PLACE_HISTORY_CSS = [
   '.ph-list{position:relative;margin:2px 0 4px;}',
@@ -509,3 +531,7 @@ export const PLACE_HISTORY_CSS = [
   '@media (pointer:coarse){.ph-arc{min-height:44px;}}',
   '.ph-sub{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);margin:10px 0 3px;}',
 ].join('\n');
+/** the timeline's rules in the document, once — every surface that draws `historyMarkup` calls this */
+export function ensureHistoryCss() {
+  try { if (!document.getElementById('im-place-history-css')) { const st = document.createElement('style'); st.id = 'im-place-history-css'; st.textContent = PLACE_HISTORY_CSS; document.head.appendChild(st); } } catch (_) { /* no document (a harness) */ }
+}
