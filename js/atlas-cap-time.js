@@ -57,7 +57,27 @@ export default [
     async run(a, dctx, K) { const { whereWhen } = await import('./atlas-where-when.js'); const res = await whereWhen(a, K); return withCoverage(res, K); },
   },
   {
-    row: ['time.coverage',              'timeCoverage',   'layerTime,whatCanBeDrawn',                                    'time',    'none',    '',                       'explanation',         'read',    'none',   '',         ''],
+    row: ['time.textMap',               'textMap',        'mapText,textToEraMap,passageMap,eraMapFromText',               'time',    'mapCompose', 'map.compose,map.highlight,time', 'map,explanation', 'session', 'none',   '',         ''],
+    /* (text-to-era-map) A PASSAGE ON THE MAP OF ITS OWN TIME. Atlas reads the passage (there is no second AI call and no
+       extractor); this checks what it read against the passage — every place name and every quoted date must be IN the
+       reader's text — reads the quoted date by the calendar where it can (js/where-when.js), sets the clock only to an
+       instant the text states, and places the names through map.compose with `era` (historical city names and Pleiades
+       first). The rule is js/atlas-text-map.js. */
+    doc: [
+      { in: 'tools-panels', at: 222, text: '{"type":"textMap","places":[{"name":str (EXACTLY as written in the text),"as"?:str,"country"?:str,"kind"?:str,"role"?:str}],"when"?:{"quote":str,"read":str},"others"?:[{"quote":str,"read":str}],"inferred"?:{"read":str,"reason":str},"title"?:str} = A TEXT ON THE MAP OF ITS TIME / 文章をその時代の地図に — for a passage the reader pasted, typed or attached (a chronicle, travel diary, war record, letter, textbook: 奥の細道, the Gallic War, 三国志, a pilgrim\'s itinerary). YOU read it: list the places it names, in the order the text names them, each with "name" spelled EXACTLY as in the text (an inflected Latin form, an old kana spelling — as written) and, when that spelling is not one a record would hold, "as" = the form to look up (the dictionary form, the name it had then, or today\'s name: your identification — the reader sees it as yours; for a settlement whose old name may also be a district somewhere else today, give today\'s municipality — a post town 草加 → 草加市). "when" = the instant of the passage: "quote" is the words IN THE TEXT that say when (「元禄二とせ」, "M. Messala et M. Pisone consulibus", "in the third year of"), "read" is that instant as a line ("元禄2年", "61 BC", "1689-05-16"). IntMap checks every name and quote against the reader\'s text (a name not in it is `not_in_text` and drawn nowhere; a quote not in it moves no clock), reads the quote by the calendar where it can and refuses a "read" that disagrees, sets the master clock — the borders, subdivisions and city names of that instant — and places the names with the historical city names and Pleiades\' ancient places FIRST, then the gazetteer; a name it cannot ground, or two places sharing one old name, is listed as not placed, never put somewhere else. If the passage states several instants, put the one the passage is about in "when" (say why in your answer) and the rest in "others" — they become buttons. NEVER GIVE "when" FOR A YEAR THE TEXT DOES NOT STATE: a date you know only from outside the text (when the work was written) goes in "inferred" and is offered as a button marked as an estimate, not applied. Use for 「この文章を当時の地図に」「この史料の地名を地図に」「紀行文の旅程を地図で」"map this passage in its time", "put the places in this text on a historical map". ' },
+    ],
+    phrases: () => ['当時の地図', 'その時代の地図', '文章の地名', '史料の地名', '文中の地名', '紀行文', '戦記'].concat(['this passage', 'this text', 'places in this text', 'map of its time', 'historical text']),   /* the Japanese phrases, then the English words — two lists, not translations of each other */
+    schema: () => ({ type: 'object', required: ['places'], properties: {
+      places: list({ type: 'object', required: ['name'], properties: { name: str(), as: str(), country: str(), kind: str(), role: str() } }, 1, 24),
+      when: { type: 'object', required: ['quote', 'read'], properties: { quote: str(), read: str() } },
+      others: list({ type: 'object', required: ['quote', 'read'], properties: { quote: str(), read: str() } }, null, 8),
+      inferred: { type: 'object', required: ['read'], properties: { read: str(), reason: str() } },
+      title: str() } }),
+    /* the run lives in js/atlas-text-map.js, fetched on first use, so the Atlas chunk does not carry it */
+    async run(a, dctx, K) { const { textMap } = await import('./atlas-text-map.js'); return textMap(a, dctx, K); },
+  },
+  {
+    row: ['time.coverage',             'timeCoverage',   'layerTime,whatCanBeDrawn',                                    'time',    'none',    '',                       'explanation',         'read',    'none',   '',         ''],
     /* (world-at-time) WHAT A MAP AT ONE INSTANT CAN DRAW — for every layer, from what its source states
        (js/layer-time-decl.js through js/layer-time-kernel.js), without switching anything on or moving
        the clock. `on` limits it to the ticked layers. No instant → the clock's. */
