@@ -13,7 +13,13 @@
 #   than by one bundle's cadence. The LANDING is shared, not copied: .github/actions/land-bot-pr.
 # ⚠ THE CACHE IS WHAT MAKES «A BATCH» CUMULATIVE. scripts/companies/osm.mjs harvests every Overpass
 #   answer it has ever stored before asking anything, so .cache/companies is carried between runs
-#   (actions/cache, a new key each run so the newest answers are always saved).
+#   (a new key each run so the newest answers are always saved).
+#   ⚠ SAVED EVEN WHEN THE JOB FAILS. MEASURED 2026-10-26, 11-02, 11-09: Overpass answered slowly enough
+#   that the build ran into the 90-minute timeout three weeks running, and actions/cache's post-step
+#   saves only after a successful job — so nothing fetched was kept and every week began again from
+#   nothing. The restore and the save are separate steps, the save under always(); and the build has
+#   a deadline for OpenStreetMap (OSM_MINUTES below, scripts/companies/osm.mjs) so it finishes,
+#   marks the companies it did not reach osmPending, and proposes what it has.
 # ⚠ A RUN THAT CANNOT REACH THE UPSTREAMS WRITES NOTHING WRONG: build.mjs drops what it cannot
 #   source and marks a company osmPending rather than claiming «no sites», and check:companies gates
 #   the bytes before the pull request is opened.
@@ -50,7 +56,7 @@ jobs:
           node-version-file: .nvmrc
       # No `npm ci`: scripts/companies/ uses nothing but the runtime (and curl, which the runner has).
       - name: Restore the upstream answers of earlier runs
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: .cache/companies
           key: companies-cache-${{ github.run_id }}
@@ -66,10 +72,22 @@ jobs:
             node scripts/companies/refresh-plan.mjs --out batch.txt --summary "$GITHUB_STEP_SUMMARY"
           fi
       - name: Rebuild the batch from Wikidata, OpenStreetMap, SEC EDGAR and GLEIF
+        env:
+          # OSM_MINUTES: the share of the job's 90 minutes OpenStreetMap may take. MEASURED 2026-11-09: the
+          # steps before it take ~3 minutes; after it, SEC + GLEIF, the gate and land-bot-pr (which waits for
+          # the pull request's CI — 16 minutes on 2026-10-12) need the rest. Lower it if a later step starts
+          # running into the timeout; raise it only with the job's timeout-minutes.
+          OSM_MINUTES: '45'
         run: |
           # ⚠ an empty --only would mean «everything» to build.mjs; an empty plan means «nothing»
           if [ ! -s batch.txt ]; then echo "the plan is empty — nothing to rebuild"; exit 0; fi
-          node scripts/companies/build.mjs --only "$(cat batch.txt)"
+          node scripts/companies/build.mjs --only "$(cat batch.txt)" --osm-deadline "$(date -u -d "+${OSM_MINUTES} minutes" +%Y-%m-%dT%H:%M:%SZ)"
+      - name: Keep every upstream answer fetched, whether or not the job goes on to succeed
+        if: ${{ always() }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: .cache/companies
+          key: companies-cache-${{ github.run_id }}
       - name: The bytes must pass the company gate before anything is proposed
         run: |
           node scripts/companies-audit.mjs --gate

@@ -432,7 +432,13 @@ async function main() {
        away real facilities and mark companies pending that are not. */
     const offline = has('--no-osm');
     log(offline ? '  OpenStreetMap: cache only (--no-osm)' : '  querying OpenStreetMap…');
-    osmBy = await osmFacilities([...new Set(coQid.values())], { log, offline });
+    /* --osm-deadline <ISO time>: stop asking OpenStreetMap at that moment (scripts/companies/osm.mjs, the
+       deadline note). An unreadable value is refused, not ignored — ignoring it is the run that never ends. */
+    const dl = arg('--osm-deadline', null);
+    const deadline = dl == null ? undefined : Date.parse(dl);
+    if (dl != null && !Number.isFinite(deadline)) throw new Error('--osm-deadline is not a time: ' + dl);
+    if (deadline) log('    OpenStreetMap deadline: ' + new Date(deadline).toISOString());
+    osmBy = await osmFacilities([...new Set(coQid.values())], { log, offline, deadline });
     let tot = 0;
     for (const v of osmBy.values()) tot += v.length;
     log('    OSM elements explicitly linked to a company: ' + tot);

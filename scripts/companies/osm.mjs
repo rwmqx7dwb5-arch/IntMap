@@ -135,11 +135,11 @@ function curlPost(url, body, timeoutMs) {
   });
 }
 
-async function overpass(body) {
+async function overpass(body, timeoutMs = 200000) {
   let lastErr = null;
   for (const ep of ENDPOINTS) {
     if (_curlOk !== false) {
-      try { const j = await curlPost(ep, body, 200000); _curlOk = true; return j; }
+      try { const j = await curlPost(ep, body, timeoutMs); _curlOk = true; return j; }
       catch (e) {
         lastErr = e;
         if (/ENOENT|exit 127/.test(String(e))) _curlOk = false;   /* no curl here — fall through to fetch */
@@ -148,7 +148,7 @@ async function overpass(body) {
     }
     try {
       return await httpJSON(ep, {
-        method: 'POST', body, retries: 2, timeoutMs: 200000,
+        method: 'POST', body, retries: 2, timeoutMs,
         headers: { 'Content-Type': 'text/plain' },
       });
     } catch (e) { lastErr = e; }
@@ -197,6 +197,21 @@ function readElement(el, known) {
 export async function osmFacilities(qids, opts = {}) {
   const log = opts.log || (() => {});
   const offline = !!opts.offline;
+  /* ⚠ A DEADLINE, because a slow upstream is not a down one. MEASURED 2026-10-26, 11-02 and 11-09: the weekly
+     refresh reached «querying OpenStreetMap…» two and a half minutes in and printed nothing more until the job's
+     90-minute timeout cancelled it. Each query may take 200 s per endpoint before it fails, and failures
+     interleaved with successes never reach BREAK_AFTER in a row — so the breaker below never opens, and a
+     cancelled job saves no cache, so the next week started from nothing again. Past `deadline` (epoch ms) no new
+     question is asked and no request may outlive it; the companies not reached ship as osmPending exactly as
+     when the breaker opens, and the build finishes and is gated and proposed. */
+  const deadline = Number.isFinite(opts.deadline) ? opts.deadline : Infinity;
+  const left = () => deadline - Date.now();
+  let expired = false;
+  const timeUp = () => {
+    if (!expired && left() < 15000) { expired = true; log('  ⚠ the OpenStreetMap deadline is reached — the companies not yet asked ship as osmPending'); }
+    return expired;
+  };
+  const budget = () => Math.max(1000, Math.min(200000, left() - 5000));
   const list = [...new Set(qids)].filter(Boolean);
   const out = new Map();
   list.forEach((q) => out.set(q, []));
@@ -261,8 +276,8 @@ export async function osmFacilities(qids, opts = {}) {
       const body = query(q);
       let j = cacheGet('osm', body, 21 * 24 * 3600 * 1000);
       if (j) { asked.add(q); absorb(j); if (++done % 50 === 0) log('  overpass ' + done + '/' + list.length + ' companies'); continue; }
-      if (offline || broken) { failed.push(q); continue; }   /* not asking: --no-osm, or the upstream is down */
-      try { j = await overpass(body); cachePut('osm', body, j); consecutive = 0; }
+      if (offline || broken || timeUp()) { failed.push(q); continue; }   /* not asking: --no-osm, the upstream is down, or out of time */
+      try { j = await overpass(body, budget()); cachePut('osm', body, j); consecutive = 0; }
       catch (_) {
         failed.push(q); done++;
         if (++consecutive >= BREAK_AFTER && !broken) {
@@ -283,14 +298,15 @@ export async function osmFacilities(qids, opts = {}) {
      was broken and the loop simply continued. Failures get one more try, and
      whatever still fails is REPORTED BY NAME so the build can mark those profiles
      rather than publish an absence it never established. */
-  if (failed.length && !broken && !offline) {
+  if (failed.length && !broken && !offline && !timeUp()) {
     log('  overpass: ' + failed.length + ' companies failed — one retry each');
     const stillDead = [];
     for (const q of failed) {
       const body = query(q);
       let j = cacheGet('osm', body, 21 * 24 * 3600 * 1000);
       if (!j) {
-        try { j = await overpass(body); cachePut('osm', body, j); }
+        if (timeUp()) { stillDead.push(q); continue; }
+        try { j = await overpass(body, budget()); cachePut('osm', body, j); }
         catch (_) { stillDead.push(q); continue; }
       }
       absorb(j);
