@@ -1010,7 +1010,7 @@ put a real secret value in the repo, a PR, or a log.**
   `GET /repos/…/vulnerability-alerts` → **404, disabled**; `automated-security-fixes` → `{"enabled":false}`.
   `.github/dependabot.yml` configures VERSION updates of direct dependencies only, which is why a vulnerable
   transitive DOMPurify sat in the lock unreported — security-hardening. Until they are on, the only watcher is
-  the `Dependency advisories (npm audit)` job in `security.yml`); **CodeQL** runs from `security.yml` (free for this public repo).
+  the `Dependency advisories (npm audit)` job in `security.yml`. ⚠ MEASURED 2026-11-16: an exact pin in `package.json` `overrides` (`"dompurify": "3.4.16"`) held the package below the release that closed three critical advisories for five weeks — no update could move it — so `check:static` (`lock-ranges`, `scripts/lock-ranges.mjs` `exactOverrides`) refuses an exact override: a security floor is written as a range); **CodeQL** runs from `security.yml` (free for this public repo).
 - **Branch protection / ruleset on `main`** — applied (ruleset «Protect main», re-read 2026-09-18):
   PRs required, force-push and deletion blocked, no bypass actors, and the required checks are the
   three CI jobs (**Static checks**, **Browser smoke + internal QA**, **Regression suite**) plus, since
