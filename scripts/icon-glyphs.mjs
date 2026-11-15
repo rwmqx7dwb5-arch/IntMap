@@ -139,7 +139,7 @@ export function sitesIn(rel, text) {
   else if (ext === '.html') {
     /* blank what is not page text, keeping offsets: comments, then each <script>/<style> read in its own language */
     let page = codeOnly(text, { lang: 'html', offsets: true });
-    page = page.replace(/(<script\b([^>]*)>)([\s\S]*?)(<\/script>)/gi, (m, open, attrs, body, close, at) => {
+    page = page.replace(/(<script\b([^>]*)>)([\s\S]*?)(<\/script\b[^>]*>)/gi, (m, open, attrs, body, close, at) => {
       const start = at + open.length;
       if (/type\s*=\s*["']?application\/(?:ld\+)?json/i.test(attrs)) { const g = pictographs(body); if (g.length) push(start, g, 'json'); }
       else fromScript(body, start);

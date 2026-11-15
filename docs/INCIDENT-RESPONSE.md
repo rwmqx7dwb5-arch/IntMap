@@ -275,6 +275,19 @@ The `service_role` key bypasses RLS — treat a leak as a full-data compromise.
 4. Take a forensic backup (so evidence isn't lost), then restore/clean as needed.
 5. Document the timeline; decide on user disclosure with the maintainer.
 
+### 10. Security advisory (the `status:security-advisory` issue opened)
+The daily **Scheduled security watch** job in `.github/workflows/security.yml` opens it; the body names
+which of three causes it saw, and the next green scheduled run closes it.
+1. **npm audit reports an advisory** → `npm audit --package-lock-only --omit=dev` locally names the package
+   and the path to it. Move the lock past the fixed version (a range the depending package itself declares —
+   `check:static` rule `lock-ranges` refuses one it does not). Check whether a Dependabot security-update PR
+   already does this before writing one.
+2. **An open high/critical code-scanning alert** → fix it, or, only when it is not reachable, dismiss it in
+   Security → Code scanning with the reason written in the dismissal (the reason is the record).
+3. **CodeQL did not complete** → read the run log; a re-run that goes green closes the issue.
+If the advisory is exploitable in what production serves, treat it as the security incident at the top of
+this page (S0–S1) first and the dependency second.
+
 ---
 
 #### After any incident

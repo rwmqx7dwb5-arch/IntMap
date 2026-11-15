@@ -255,7 +255,7 @@ test('③ check:assets is RED when dist/ lacks a set, and when dist/ holds a lin
     writeFileSync(join(r, 'dist', 'index.html'), '<!doctype html>');
     let got = node(r, ['scripts/asset-report.mjs', '--check']);
     assert.notEqual(got.status, 0, 'a dist/ without the datasets must not pass');
-    for (const s of Object.values(DA.readManifest(ROOT).sets)) assert.match(got.stderr, new RegExp(`dist/${s.path.replace(/[.]/g, '\\.')} is missing`));
+    for (const s of Object.values(DA.readManifest(ROOT).sets)) assert.match(got.stderr, new RegExp(`dist/${s.path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} is missing`));
     /* …and a dist/ that LINKS the set passes the digest but must still be refused */
     const { m } = await fixture(store);
     const fake = { ...DA.readManifest(r), sets: { fx: m.sets.fx } };

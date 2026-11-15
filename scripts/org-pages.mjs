@@ -576,7 +576,10 @@ export function securityFacts() {
     advisoryWatch: advisoryWatch(),
   };
 }
-/* (security-hardening) a job that audits the shipped (non-dev) dependencies from the lock, weekly and on every PR */
+/* (security-hardening) a job that audits the shipped (non-dev) dependencies from the lock, on a schedule and on every PR.
+   (security-watch) The page says HOW OFTEN, so the cadence is read from the workflow's cron, not written in the text:
+   the sentence said 「every week」 and stayed true only until the schedule changed. A cron that is neither daily nor
+   weekly is not described at all (null) rather than described wrongly. */
 function advisoryWatch() {
   const dir = '.github/workflows';
   for (const f of readdirSync(join(ROOT, dir)).filter((n) => /\.ya?ml$/.test(n))) {
@@ -584,10 +587,19 @@ function advisoryWatch() {
     const on = wf.on || wf[true] || {};
     if (!on.schedule || !('pull_request' in on)) continue;
     for (const job of Object.values(wf.jobs || {})) {
-      if ((job.steps || []).some((st) => /\bnpm audit\b/.test(st.run || '') && /--omit=dev/.test(st.run))) return true;
+      if ((job.steps || []).some((st) => /\bnpm audit\b/.test(st.run || '') && /--omit=dev/.test(st.run))) return cronCadence(on.schedule);
     }
   }
-  return false;
+  return null;
+}
+/* the most frequent of the schedules, as 'daily' / 'weekly'; null when a cron says anything else */
+function cronCadence(schedule) {
+  const kinds = schedule.map(({ cron }) => {
+    const [, , dom, mon, dow] = String(cron).trim().split(/\s+/);
+    if (dom !== '*' || mon !== '*') return null;
+    return dow === '*' ? 'daily' : /^\d$/.test(dow) ? 'weekly' : null;
+  });
+  return kinds.includes('daily') ? 'daily' : kinds.includes('weekly') ? 'weekly' : null;
 }
 function securityBody(F, L) {
   const T = TEXT.security, k = L.i, S = F.security;
@@ -598,7 +610,7 @@ function securityBody(F, L) {
   const guards = [S.analytics ? T.analyticsOn : T.analyticsOff, S.inline ? T.withInline : T.noInline];
   if (S.unsafeEval) guards.push(T.evalNote);
   if (S.leakCheckByPrefix) guards.push(T.leakCheck);
-  if (S.advisoryWatch) guards.push(T.advisoryWatch);
+  if (S.advisoryWatch) guards.push(T.advisoryWatch[S.advisoryWatch]);
   guards.push(T.yourData);
   const li = (list) => list.map((p) => `<li>${esc(p[k])}</li>`).join('\n        ');
   return `<main class="lp-main">
