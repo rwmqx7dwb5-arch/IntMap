@@ -252,3 +252,20 @@ if (process.argv[1] && /lock-ranges\.mjs$/.test(process.argv[1].replace(/\\/g, '
   console.log(`lock-ranges: ${r.edges} edges · ${r.unmet.length} unmet · ${r.unjudged.length} unjudged · ${r.missing.length} missing`);
   process.exit(r.unmet.length || r.unjudged.length || r.missing.length || r.overrides.length ? 1 : 0);
 }
+
+/**
+ * exactOverrides(pkg) → [{ name, spec }] — every root override that names one exact version.
+ *   MEASURED 2026-11-16: `"dompurify": "3.4.16"` was written as a security FLOOR and stood as a CEILING for five
+ *   weeks after 3.4.17 closed three critical advisories (GHSA-cg2g-xh64-v4q7, GHSA-mrv2-3pqr-j5jr,
+ *   GHSA-c6gr-qvv4-5v3f). An override applies to every copy in the tree, so neither Dependabot nor `npm audit fix`
+ *   could move the package past it, and the audit job failed on every PR from 2026-10-23 — the weekly data
+ *   refreshes included. overrideEdges asks «does the lock meet the pin»; this asks «can the pin ever be met by a
+ *   newer version». A floor is written as a range (`^x.y.z`, `>=x.y.z`).
+ */
+export function exactOverrides(pkg) {
+  const out = [];
+  for (const [name, spec] of Object.entries((pkg && pkg.overrides) || {})) {
+    if (typeof spec === 'string' && parseVersion(spec.replace(/^=/, '')) && !/[\^~<>*xX| ]/.test(spec)) out.push({ name, spec });
+  }
+  return out;
+}

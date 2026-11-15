@@ -852,6 +852,9 @@ try {
   const { overrideEdges } = await import('./lock-ranges.mjs');
   for (const o of overrideEdges(JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')), JSON.parse(readFileSync(join(ROOT, 'package-lock.json'), 'utf8'))))
     err('lock-ranges', `package.json: overrides pins ${o.name}@${o.spec}, but the lock holds ${o.locked} (${o.at})${o.why ? ' — ' + o.why : ''} — npm ci refuses this tree; move the pin to the locked version`);
+  const { exactOverrides } = await import('./lock-ranges.mjs');
+  for (const o of exactOverrides(JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'))))
+    err('lock-ranges', `package.json: overrides pins ${o.name} to exactly ${o.spec} — an exact override is a ceiling the day the next advisory lands (nothing can move the package past it); write the floor as a range, e.g. ^${o.spec.replace(/^=/, '')}`);
 } catch (e) {
   err('lock-ranges', 'could not run the lock-ranges rule: ' + (e && e.message));
 }

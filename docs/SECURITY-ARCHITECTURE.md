@@ -1010,8 +1010,11 @@ put a real secret value in the repo, a PR, or a log.**
   (`automated-security-fixes` → `{"enabled":true}`). The last two were off until that date, so the transitive
   dependencies had one watcher, the npm audit job; turned on, they reported three DOMPurify advisories at once
   (one critical) on the shipped lock. `.github/dependabot.yml` still configures only the VERSION updates of the
-  direct dependencies; a security update is a PR of its own, for any depth. **CodeQL** runs from `security.yml`
-  (free for this public repo).
+  direct dependencies; a security update is a PR of its own, for any depth. ⚠ MEASURED 2026-11-16: an exact
+  pin in `package.json` `overrides` (`"dompurify": "3.4.16"`) held the package below the release that closed
+  three critical advisories for five weeks — no update could move it — so `check:static` (`lock-ranges`,
+  `scripts/lock-ranges.mjs` `exactOverrides`) refuses an exact override: a security floor is written as a range.
+  **CodeQL** runs from `security.yml` (free for this public repo).
 - **The daily watch** — `security.yml` runs CodeQL and npm audit **daily** (and on every PR), and its
   `Scheduled security watch` job turns a red scheduled run, or an open high/critical code-scanning alert on
   `main`, into the single `status:security-advisory` issue (`scripts/ci-incident-issue.cjs`, the mechanism the

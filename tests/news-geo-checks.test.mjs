@@ -290,17 +290,21 @@ test('#R161 #16 the engine contract grew and the news overlay runs through it', 
   assert.equal(onLayer('mouseenter', 'a-news-marker', handler), 'adapter-result');
   assert.equal(sent[1][2], handler, 'hover is forwarded untouched');
   /* news overlay: creation, data, declutter, theming and pointer events via GE */
-  assert.ok(html.includes("GE.layers.addSource('news-points'"), 'news source not created through the engine');
-  assert.ok(html.includes("GE.layers.add({id:'news-dots'"), 'news-dots layer not created through the engine');
-  assert.ok(html.includes("GE.layers.add({id:'news-labels'"), 'news-labels layer not created through the engine');
-  assert.ok(html.includes("GE.layers.setSourceData('news-points'"), 'news data not pushed through the engine');
+  /* (news-crosshair-shadow) js/news-ui.js reaches the engine through its one accessor `GE()` — setupIntelLayers'
+     own `const GE=IntMapGeoEngine` shadowed it and threw on the first `GE()` — so the fact is «through GE,
+     called or not», not one spelling of it (tests/news-crosshair-shadow-checks.test.mjs measures the binding). */
+  const viaGE = (rest) => html.includes('GE.' + rest) || html.includes('GE().' + rest);
+  assert.ok(viaGE("layers.addSource('news-points'"), 'news source not created through the engine');
+  assert.ok(viaGE("layers.add({id:'news-dots'"), 'news-dots layer not created through the engine');
+  assert.ok(viaGE("layers.add({id:'news-labels'"), 'news-labels layer not created through the engine');
+  assert.ok(viaGE("layers.setSourceData('news-points'"), 'news data not pushed through the engine');
   /* (#R242) the de-clutter moved to js/map-typography.js with the band measurement it depends on —
      same invariant, read where the code now lives. */
   const mt = readFileSync(join(ROOT, 'js/map-typography.js'), 'utf8');
   assert.ok(mt.includes("GE.coords.project(g.coordinates)"), 'declutter still projects on the raw map');
   assert.ok(mt.includes("GE.layers.setFeatureState({source:'news-points',id:it.fid}"), 'declutter still writes feature-state on the raw map');
   assert.ok(html.includes("_GEp.layers.setPaint('news-labels','text-color'"), 'news band theming not through the engine');
-  assert.equal((html.match(/GE\.events\.onLayer\(/g) || []).length, 6, 'expected all six news pointer handlers on the engine');
+  assert.equal((html.match(/GE(?:\(\))?\.events\.onLayer\('(?:mousemove|mouseleave|click)','news-(?:dots|labels)'/g) || []).length, 6, 'expected all six news pointer handlers on the engine');
   /* and none of the news handlers may be bound on the raw map any more */
   assert.ok(!/map\.on\('(?:mousemove|mouseleave|click)','news-(?:dots|labels)'/.test(html), 'a news handler is still bound to the raw map');
 });
