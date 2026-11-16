@@ -57,7 +57,9 @@ const feed = async (page) => page.evaluate(async () => {
     A.snapshot(),
     new Promise((r) => setTimeout(() => r(null), 30000)),
   ]);
-  return { n: fx ? fx.length : 0, err: A.state().err || (fx ? null : 'the catalogue request did not settle') };
+  /* a catalogue the layer already HOLDS (the shipped floor, painted before the live feed answers) is a
+     catalogue: the clock bounds the wait for the live rungs, not whether there is anything to test */
+  return { n: fx ? fx.length : A.state().catalogue, err: A.state().err || (fx ? null : 'the catalogue request did not settle') };
 });
 const needFeed = async (page) => { const f = await feed(page);
   test.skip(f.n === 0, 'the CelesTrak catalogue is unreachable from this runner: ' + (f.err || 'no records')); };
@@ -82,7 +84,9 @@ const needFeedFor = async (page, group) => {
       A.snapshot(),
       new Promise((r) => setTimeout(() => r(null), 30000)),
     ]);
-    return { n: fx ? fx.length : 0, err: A.state().err || (fx ? null : 'the catalogue request did not settle') };
+    /* a catalogue the layer already HOLDS (the shipped floor, painted before the live feed answers) is a
+     catalogue: the clock bounds the wait for the live rungs, not whether there is anything to test */
+    return { n: fx ? fx.length : A.state().catalogue, err: A.state().err || (fx ? null : 'the catalogue request did not settle') };
   }, group);
   test.skip(f.n === 0, 'the CelesTrak "' + group + '" catalogue is unreachable from this runner: ' + (f.err || 'no records'));
 };
@@ -306,7 +310,11 @@ test('R184 ⑤: selecting an object draws its track + footprint and opens a card
       const cb = document.getElementById('dl-sats');
       cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true }));
       const t0 = Date.now();
-      while (Date.now() - t0 < 25000 && window.IntMapSatellites.state().drawn === 0) await new Promise((r) => setTimeout(r, 250));
+      /* wait for the layer to be ON, not merely for drawn > 0: ④ turned it off on this shared page and
+         stop() keeps the last fixes, which were computed for the instant of THEIR paint — a clock moved
+         while the layer was off (needIss) is not in them until start() paints again (measured: get(25544)
+         null 3/3 with the old condition, because drawn was already > 0 from ④'s fixes) */
+      while (Date.now() - t0 < 25000 && !(window.IntMapSatellites.state().on && window.IntMapSatellites.state().drawn > 0)) await new Promise((r) => setTimeout(r, 250));
       const A = window.IntMapSatellites;
       /* THE ISS, by its NORAD number — never "whatever is first" (see needIss: that substitution is how
          LCS 1 was asserted to be the ISS on three nights) */
