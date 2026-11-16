@@ -142,6 +142,10 @@ bin *i* of *n* — the same glob, packed longest-first (the packing `ci-gates.mj
 in `.github/checks-cost.json` — and hands node those files. node's own `--test-shard` splits by count,
 and one run measured 11m16s / 8m32s / 4m52s because the heaviest files had landed together.
 
+- **A hang is named, not cancelled.** The runner gives every test `--test-timeout` = 3 × the slowest file in
+  the ledger (a caller's own value wins) and `--test-force-exit`, so a stuck test is reported by name and a
+  timer or socket it left open cannot hold its file's child — without them one hang held a shard until the
+  job's `timeout-minutes` cancelled it with no name.
 - The ledger decides **balance, never membership**: a file it does not know is charged the median and
   still runs; `node scripts/checks-shards.mjs --check` fails on a row for a file that is gone.
 - Each CI shard writes what it measured (`--timings "$RUNNER_TEMP/checks-timings.json"` — outside the
