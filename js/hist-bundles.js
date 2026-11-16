@@ -900,7 +900,8 @@ window.IntMapHistBundles = (function () {
         file: spec.file,
         get data() { return e.mirror; },
         edges: (end, lo, hi) => call({ op: 'edges', global, end, lo, hi }),
-        at: (t, end) => call({ op: 'at', global, t, end }).then((r) => { follow(e, t, end); return r; }),
+        /* the answer is the question's own promise, untouched: the guess hangs off it and adds no step to the answer */
+        at: (t, end) => { const p = call({ op: 'at', global, t, end }); p.then(() => follow(e, t, end), () => {}); return p; },
         /* (chronos-prefetch) the chunks `at(t, end)` will read, read into the thread now — nothing is answered and nothing
            reaches the mirror; the `at` that follows finds them held (or in flight, and waits). For a caller that knows the
            instant before it can ask (js/time-admin1.js, while the borders' hand-over holds the page thread). → Promise<void>,
