@@ -975,7 +975,8 @@ atlas-capabilities.js             **能力レジストリの正本**（#R318）�
 atlas-caps.js                     **能力ひとつ＝項目ひとつ**の仕組み — 項目（行・説明文 doc・方針 policy・事後条件 goal・
                                   チップ chips・schema・run）の検証と、そこから dispatch の表・schema の表・登録表の行・
                                   方針の表・カタログのブロック（catalogueBlocks）を導く関数、旧 switch の default
-                                  （unknownAction）、schema の組み立て関数
+                                  （unknownAction）、schema の組み立て関数、能力の `run` への扉 makeCapRunDoor（build はカーネルに各能力ファイルの
+                                  `run` 抜きの写しを渡し、`run` はチャンク `atlas-cap-runs` を初めて要るときに取る。`scripts/atlas-caps-split.mjs`）
 atlas-caps-modules.js             ⚠ 生成物（`node scripts/atlas-caps.mjs --write`）— 能力の名前空間ファイルの一覧（js/ から発見・遅延チャンクだけが読む）
 atlas-cap-account.js              Atlas の能力 — 自分のアカウントのデータの目録と書き出し（account.*。account-data-center）
 atlas-cap-attach.js               Atlas の能力 — 添付の取り寄せ（attach.recall）
@@ -2719,7 +2720,9 @@ tests/
 
 置き場所とは別に、**起動時に読むか、押されてから取りに行くか**を決める。`js/lazy-modules.js` の
 `window.IntMapLazy` が遅延モジュールを持つ（フライトシム／Playground／地震／津波／地形と水／
-見通し線／ストリートビュー／夜空／Atlas カーネル）。
+見通し線／ストリートビュー／夜空／Atlas カーネル／ドローン計画／放射性物質拡散・日照・人口・鉄道到達圏ほか。
+一覧の正本は `LAZY_REGISTRY`）。Atlas カーネルの中でも、各能力の `run` は別チャンク（`atlas-cap-runs`）で、
+初めて能力が実行されるときに取る（`js/atlas-caps.js` の `makeCapRunDoor`）。
 
 - ファクトリを呼んだ瞬間に**共有 UI を作らない**こと（レイヤー行やタブは、押される前に現れてはならない）。
 - **入口が数えられること。** 右クリックメニュー・タブ・設定のボタン・Atlas の dispatch のどれから来ても

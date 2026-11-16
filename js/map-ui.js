@@ -1649,7 +1649,7 @@ export function layerSidebar(HOST){
          data the standing rules forbid. Reported rather than papered over. `mod` is still real: the
          row lights when a plume IS on the map and a second press clears it. */
       { id:'sim.radiation', mod:'IntMapRadiation', ic:SVG_PLUME, en:'Radioactive plume simulator',
-        run:()=>{ try{ return !!(window.IntMapRadiation&&window.IntMapRadiation.openPanel()); }catch(_){ return false; } },
+        run:_lazy('radiation',()=>window.IntMapRadiation&&window.IntMapRadiation.openPanel()),
         label:()=>T('Radioactive plume simulator','放射性プルーム拡散シミュレーター','Simulator radioaktiver Fahnen','Симулятор радиоактивного шлейфа','Simulador de pluma radiactiva'),
         hint:()=>T('Disperse a release on the live wind field','実際の風の場で放出を拡散させる','Freisetzung im realen Windfeld ausbreiten','Выброс в реальном поле ветра','Dispersa una emisión con el viento real') },
       /* ══ (science-instruments) IF IT ERUPTED NOW — the volcanic-ash what-if (js/ash-plume.js) ══════
@@ -1699,7 +1699,7 @@ export function layerSidebar(HOST){
            sunrise, noon and sunset, and drew the cast shadows, for `GE().camera.getCenter()` — with
            「観測地点は地図の中心」 written above them. Naming the guess is not the same as not guessing, and
            the reader has now said so. It asks first, like the three rows above it. */
-        run:()=>_askPoint((ll)=>{ try{ if(!window.IntMapSun) return false; window.IntMapSun.open(ll); return true; }catch(_){ return false; } },'sim.sun'),
+        run:()=>_askPoint(_lazy('sun',(ll)=>{ if(!window.IntMapSun) return false; window.IntMapSun.open(ll); return true; }),'sim.sun'),
         label:()=>T('Sunlight hours & shade','日照時間・影の解析','Sonnenstunden & Schatten','Часы солнца и тени','Horas de sol y sombra'),
         hint:()=>T('Where the sun reaches, hour by hour','時間ごとに日が当たる場所','Wo die Sonne stündlich hinkommt','Куда солнце попадает по часам','Dónde llega el sol, hora a hora') },
       { id:'sim.nightSky', mod:'IntMapNightSky', ic:SVG_STAR, en:'Night sky from here',
@@ -1729,7 +1729,7 @@ export function layerSidebar(HOST){
          not. #R469 deleted that layer outright — 「⛰ 傾斜・斜面方向レイヤーは完全削除。」 — so there is
          no longer anything to exclude, and nothing here was ever a door to it. */
       { id:'sim.drone', mod:'IntMapDrone', ic:SVG_DRONE, en:'Drone flight planner',
-        run:()=>{ try{ return !!(window.IntMapDrone&&window.IntMapDrone.open()); }catch(_){ return false; } },
+        run:_lazy('drone',()=>window.IntMapDrone&&window.IntMapDrone.open()),
         label:()=>T('Drone flight planner','ドローン飛行計画','Drohnen-Flugplanung','Планировщик полёта дрона','Planificador de vuelo de dron'),
         hint:()=>T('Battery, clearance and no-fly zones over the real terrain','実地形の上で電池・対地高度・飛行禁止区域を解く','Akku, Bodenabstand und Sperrzonen über echtem Gelände','Батарея, высота над землёй и бесполётные зоны над реальным рельефом','Batería, margen sobre el suelo y zonas prohibidas en terreno real') },
       /* ══ ⚠⚠ (#R296) FOUR ROWS STOOD HERE AND NONE OF THEM DOES ANY MORE ═══════════════════════════

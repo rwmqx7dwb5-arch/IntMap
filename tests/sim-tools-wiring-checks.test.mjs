@@ -18,6 +18,7 @@ import { join, posix } from 'node:path';
 import * as acorn from 'acorn';
 import { lazyFiles, factoryCalls } from './app-source.mjs';
 import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
+import { LAZY_REGISTRY } from '../js/lazy-modules.js';   /* (startup-weight) the planner is fetched on demand */
 
 const root = new URL('../', import.meta.url);
 const ROOT = fileURLToPath(root);
@@ -85,9 +86,9 @@ test('R176 ③: the drone launcher is gone from every menu, the planner is not',
   assert.doesNotMatch(index, /data-proxy="btn-tool-drone"/, 'not in the mobile tools sheet');
   assert.doesNotMatch(R('js/drone-nav.js'), /getElementById\('btn-tool-drone'\)/, 'and nothing hunts for the button any more');
   /* the feature itself is untouched — the user asked for the BUTTON to go, not the planner */
-  assert.ok(EAGER.has('js/drone-nav.js'), 'the planner is still loaded');
-  assert.ok(instantiated('js/drone-nav.js', 'droneNav'), 'and still instantiated');
-  assert.match(body, /\bdroneNav\((IM_HOST)\)/, '…with the host');
+  /* (startup-weight) fetched on demand — the registry loads it and instantiates it with the host */
+  assert.ok(LAZY_REGISTRY.drone && /drone-nav\.js/.test(String(LAZY_REGISTRY.drone.load)), 'the planner is still loaded (on demand)');
+  assert.match(String(LAZY_REGISTRY.drone.mount), /\bm\.drone\(IM_HOST\)/, 'and still instantiated, with the host');
   /* (science-instruments) Atlas still opens it directly — through the planner's own capability: a `tool` name
      meaning the drone is handed to routing.drone's droneRun, which opens window.IntMapDrone. The dispatch is
      EVALUATED in tests/science-instruments-checks.test.mjs ⑥; here both halves of the door are read. */
