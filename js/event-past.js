@@ -114,7 +114,9 @@ export function pastHtml(rec, lang, opts) {
       const head = esc(warName(w)) + ' <span class="ep-when">' + esc(w.span[0] + ' – ' + w.span[1]) + '</span>';
       h.push('<div class="ep-war">' + (opts.inert ? '<div class="ep-war-h">' + head + '</div>' : '<button type="button" class="ep-war-h ep-go" data-ep="war:' + esc(String(wi)) + '">' + head + '</button>'));
       const sided = w.periods.filter((p) => p.faction !== 'NEUTRAL');
-      if (!sided.length) h.push('<div class="ep-note">' + esc(L('The record lists this ground but puts it on no side for the whole war.', '記録はこの土地を挙げているが、戦争の全期間でどの陣営にも置いていない。')) + '</div>');
+      if (!sided.length) h.push('<div class="ep-note">' + esc(w.listed
+        ? L('The record lists this ground but puts it on no side for the whole war.', '記録はこの土地を挙げているが、戦争の全期間でどの陣営にも置いていない。')
+        : L('The record does not put this ground’s state on a side; it is here only because of the dated events below.', '記録はこの土地の国をどの陣営にも置いていない。ここに出るのは下の日付つきの出来事があるためだけ。')) + '</div>');
       w.periods.forEach((p) => {
         const side = p.faction === 'NEUTRAL' ? L('on no side in the record', '記録上どの陣営でもない') : pickName(p.side) || p.faction;
         h.push('<div class="ep-per"><i style="background:' + esc(p.faction === 'NEUTRAL' ? 'rgba(128,128,128,0.45)' : (p.col || '#888')) + '"></i><span class="ep-when">' + esc(p.from + ' – ' + p.to) + '</span> <b>' + esc(side) + '</b> <span class="ep-src">' + esc(p.state + ' · gw ' + p.gw) + '</span></div>');
