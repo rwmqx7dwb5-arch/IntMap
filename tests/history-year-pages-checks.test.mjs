@@ -142,6 +142,8 @@ test('⑤ the page: picture, map link, structured data, hreflang, links, nothing
       assert.ok(out[p] || out[p + 'index.html'] || tracked(p) || generated.test(p), rel + ' links to ' + u + ' which nothing writes');
     }
   }
+  /* (polity-pages) each name the dated records draw links its polity's page — the German Empire of 1914 among them */
+  for (const L of LANGS) assert.ok(page(1914, L).includes('href="' + H.upFrom(P.yearPath(1914, L)) + L.dir + 'history/polities/german-empire/" data-polity="german-empire"'), '1914 ' + L.key + ' links the German Empire page');
   /* each year links the history page that lists the same names, where the history pages have one */
   assert.ok(page(1914, LANGS[0]).includes('data-history-run="1914"'));
   assert.ok(!page(1648, LANGS[0]).includes('data-history-run='), '1648 is between two sheets: the history pages have no page for it');

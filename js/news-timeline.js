@@ -841,7 +841,17 @@ export function newsTimeline(HOST){
       const lbl=()=>{ paBtn.textContent=IntMapLang.t(HOST.lang,'Rise and fall of a polity','政体の盛衰'); };
       lbl(); bus.on('intmap-lang',lbl);
       paBtn.onclick=()=>{ import('./polity-arc.js').then(m=>m.openArc({ lang:()=>HOST.lang })).catch(()=>{}); };
-      tnBtn.parentNode.insertBefore(paBtn,tnBtn.nextSibling); }
+      tnBtn.parentNode.insertBefore(paBtn,tnBtn.nextSibling); fhMount(); }
+    /* (wave4-history) FAMILY HISTORY ACROSS BORDERS — the reader's own people, read at their own days over the same border
+       records (js/family-history.js, fetched when it is pressed). Beside the three above, for the same reason. The
+       gazetteer the sheet locates place names with is the search's own (HOST.localFuzzyPlaces). */
+    let fhBtn=null;
+    function fhMount(){ if(fhBtn||!paBtn||!paBtn.parentNode) return;
+      fhBtn=document.createElement('button'); fhBtn.type='button'; fhBtn.id='ntl-family'; fhBtn.className='ntl-yb';
+      const lbl=()=>{ fhBtn.textContent=IntMapLang.t(HOST.lang,'Family history across borders','家族史と国境'); };
+      lbl(); bus.on('intmap-lang',lbl);
+      fhBtn.onclick=()=>{ import('./family-history.js').then(m=>m.openFamily({ lang:()=>HOST.lang, local:(q)=>HOST.localFuzzyPlaces(q) })).catch(()=>{}); };
+      paBtn.parentNode.insertBefore(fhBtn,paBtn.nextSibling); }
     /* WRITE side: inputs → kernel */
     tg.onclick=()=>{ tl.classList.toggle('collapsed'); if(!tl.classList.contains('collapsed')){ localizeChrome(); try{ refreshUI(IntMapTime.state()); }catch(_){} lapseMount(); ybMount(); } _tmSyncTerminator(); };
     if(closeX) closeX.onclick=()=>{ tl.classList.add('collapsed'); _tmSyncTerminator(); };

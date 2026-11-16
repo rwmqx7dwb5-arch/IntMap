@@ -50,7 +50,7 @@ import { makeLabelOcclusion } from './label-occlusion.js';
 import { makeWheelZoom } from './wheel-zoom.js';
 import { makeLayerDropdown } from './layer-dropdown.js';
 import { makeLayerFavs } from './layer-favs.js';
-import { makeProjection } from './map-projection.js';   /* (#R298) Globe / Flat and the flat map's free scroll — one subject, five places, see the file */
+import { makeProjection, openingProjection } from './map-projection.js';   /* (#R298) Globe / Flat and the flat map's free scroll — one subject, five places, see the file */
 import { makePremiumPlan } from './premium-plan.js';
 import { STRIPE_DONATE, installSupporter, renderSupportCosts } from './supporter.js';   /* (supporter-funnel) where support goes, and when to mention it */
 import { readWorldBank, wbIndicator, wbIndicatorFor } from './wb-indicators.js';   /* (country-analysis-unify) the one World Bank read and its catalogue */
@@ -663,12 +663,15 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
    *  feature routes through the ai-proxy Edge Function with the user's session JWT;
    *  provider keys live ONLY on the server.
    * ===================================================================== */
-  let aiConfig={ provider:'openai', models:{}, keys:{} };
+  let aiConfig={ provider:'openai', models:{} };
   try{ const s=JSON.parse(localStorage.getItem('intmap_ai_config')||'null'); if(s&&typeof s==='object'){
     if(s.provider) aiConfig.provider=s.provider;
-    aiConfig.keys=Object.assign({},s.keys||{});
     aiConfig.models=Object.assign({},s.models||{});
     if(typeof s.model==='string' && s.model && !aiConfig.models[aiConfig.provider]) aiConfig.models[aiConfig.provider]=s.model; /* migrate legacy single-model field */
+    /* (wave4-security) ⚠ THE RETIRED BYOK KEYS WERE CARRIED FORWARD. `s.keys` (a reader's own AI provider keys, from
+       before #R27) was copied into aiConfig and written back by every saveAIConfig() — nothing reads it, and Privacy §2
+       says no AI key is kept in the browser. It is no longer loaded, and a stored copy is rewritten without it once. */
+    if(s.keys && Object.keys(s.keys).length){ const c=Object.assign({},s); delete c.keys; localStorage.setItem('intmap_ai_config',JSON.stringify(c)); }
   } }catch(_){}
   /* (#R169) moved verbatim to js/ai-core.js — see Architecture.md §3.1. */
 
@@ -899,7 +902,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     /* (#R178) even the primary view is built through the contract. It could not be while the engine
        was created inside this map's own 'load' handler; js/geo-engine.js is imported before anything
        else now, so `maplibregl` is named in exactly one file in the project. */
-    map=GE().ui.createView({ container:'map', renderWorldCopies:false, attributionControl:false,
+    /* (opening-projection) a flat session always wraps (#R297, js/map-projection.js applyFlatPanSetting), so a
+       `?flat` view is BUILT wrapping too — with copies off its first resize clamps the opening centre to ±85° */
+    map=GE().ui.createView({ container:'map', renderWorldCopies:openingProjection()==='flat', attributionControl:false,
       /* (#R18) MSAA antialiasing — DESKTOP ONLY. The 3D globe/terrain silhouette and the satellite
          horizon read jagged without it; MSAA smooths every polygon + terrain edge for a clear quality
          jump WITHOUT dropping tile resolution (so quality up, nothing sacrificed — the user: "表示速度、
@@ -989,6 +994,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       /* ⚠ (#R498) THIS ONE STAYS A WIDTH TEST ON PURPOSE. Everything else #R498 moved onto
          `_imPhoneClass()` is a COST; this is a CAPABILITY, and how far a landscape phone can zoom
          in is not something to take away for speed without being asked. It was asked. Left at 19. */
+      /* (opening-projection) …and it is BUILT in the projection it opens in, or the centre above is clamped
+         to ±85° before the globe exists (js/map-projection.js openingProjection has the measurement) */
+      projection:openingProjection(),
       center:_openingCentre, zoom:1.7, minZoom:0, maxZoom:(isMobile()?18:19),
       style:{ version:8, glyphs:'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
         sources:{ 'bl':{type:'raster',tiles:carto('light_all'),tileSize:256,attribution:window.CARTO_ATTRIBUTION},'bln':{type:'raster',tiles:carto('light_nolabels'),tileSize:256,attribution:window.CARTO_ATTRIBUTION},'bd':{type:'raster',tiles:carto('dark_all'),tileSize:256,attribution:window.CARTO_ATTRIBUTION},'bdn':{type:'raster',tiles:carto('dark_nolabels'),tileSize:256,attribution:window.CARTO_ATTRIBUTION},'sat-labels':{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],tileSize:256},'satellite':{type:'raster',tiles:(window.__imSatProto?['imapsat://{z}/{y}/{x}']:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}']),tileSize:256,maxzoom:19,attribution:'Imagery © Esri, Maxar, Earthstar Geographics'},'tool-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}},'grid-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}} },

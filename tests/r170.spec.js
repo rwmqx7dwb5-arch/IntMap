@@ -182,8 +182,25 @@ test('Measure ▸ 3-D volume draws a real-scale box and honours the typed altitu
      Over Mt Fuji a reading of 0 m is not plausible, so a positive value IS the "settled" signal, and
      chaseGround() re-paints within a second of the real tile arriving. */
   await page.waitForFunction((g) => Math.abs((window.IntMapVolume3D.state().ground || 0) - g) < 1, GROUND, { timeout: 30000 })
-    .catch(async () => { const s = await page.evaluate(() => window.IntMapVolume3D.state());
-      throw new Error('the DEM never answered ' + GROUND + ' m: ' + JSON.stringify({ ground: s.ground, groundState: s.groundState, groundError: s.groundError, terrain: s.terrain })); });
+    .catch(async () => {
+      /* (deep-tier-red) UNEXPLAINED ON CI, SO THE FAILURE SAYS WHAT THE RENDERER HELD. Red on 3 of 14 nights
+         (2026-11-01…14) with ground 0 / «reading» / no error, and never locally — 6× / 12× CPU throttle,
+         SwiftShader, one map worker, DEM answers delayed 9 s and the CI hour all passed. The traces show every
+         DEM tile answered 200, 8.8 s after the 3-D click. Whether the terrain source then counted as loaded,
+         whether the map stopped drawing frames, and what the elevation query answers directly are the three
+         facts that separate «the tile never reached the terrain» from «no frame read it» — so they are in
+         the message rather than guessed at. */
+      const s = await page.evaluate(() => {
+        const st = window.IntMapVolume3D.state(), m = window.__imap, t = (() => { try { return m.getTerrain(); } catch (_) { return null; } })();
+        const c = m.getCenter(); let direct = null, loaded = null, frames = 0;
+        try { direct = m.queryTerrainElevation(c); } catch (_) { /* none */ }
+        try { loaded = t && t.source ? m.isSourceLoaded(t.source) : null; } catch (_) { /* none */ }
+        return { ground: st.ground, groundState: st.groundState, groundError: st.groundError, terrain: st.terrain,
+          source: t && t.source, sourceLoaded: loaded, mapLoaded: m.loaded(), moving: m.isMoving(), directAtCentre: direct, zoom: m.getZoom(), frames };
+      });
+      s.frames = await page.evaluate(() => new Promise((res) => { let n = 0; const m = window.__imap, on = () => { n++; };
+        m.on('render', on); m.triggerRepaint(); setTimeout(() => { m.off('render', on); res(n); }, 3000); }));
+      throw new Error('the DEM never answered ' + GROUND + ' m: ' + JSON.stringify(s)); });
   const on = await page.evaluate(() => ({
     st: window.IntMapVolume3D.state(),
     base: window.__imap.getPaintProperty('imv3d-vol', 'fill-extrusion-base'),

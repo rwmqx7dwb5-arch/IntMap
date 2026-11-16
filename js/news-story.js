@@ -474,8 +474,10 @@ export function newsStory(HOST) {
     });
   }
 
-  /* a basemap swap discards the layers (js/news-intel.js listens to the same signal) */
-  try { GE().events.on('styledata', () => { if (st.open && !GE().layers.hasSource(SRC)) { wired = false; paint(); } }); } catch (_) { }
+  /* ⚠ A basemap swap discards the LAYERS, not the clicks: the engine registers a layer's click / hover by layer id on
+     the map (js/geo-engine.js onLayer → map.on(type, layerId, fn)), and that registration outlives setStyle. Re-wiring
+     here added a second delegated click per swap, and one tap then opened the event once per swap. Only repaint. */
+  try { GE().events.on('styledata', () => { if (st.open && !GE().layers.hasSource(SRC)) { paint(); } }); } catch (_) { }
   try { bus.on('intmap-lang', () => setTimeout(() => { if (st.open) draw(); }, 30)); } catch (_) { }
 
   const API = { open, close, setTerms, play, pause, seek, summary, link,

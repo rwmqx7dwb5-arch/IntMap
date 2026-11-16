@@ -236,10 +236,13 @@ export function nowAt(rec, k, lang) {
   for (const E of held) {
     const text = E.unnamed ? L('A shape the record draws without a name', '記録が名前を与えずに描いている形')
       : E.withheld ? L('Name withheld: «' + E.withheld.name + '»', '名前を描いていない: 「' + E.withheld.name + '」') : labelAt(E, k);
-    out.polities.push({ text, quiet: !!(E.unnamed || E.withheld), sheet: E.from.edge === 'sheet', realm: !!E.realm });
+    out.polities.push({ text, quiet: !!(E.unnamed || E.withheld), sheet: E.from.edge === 'sheet', realm: !!E.realm, E });
   }
   out.gap = !held.length;
-  if (A && A.status === 'ok') for (const E of A.entries) if (E.from.k <= k && k < E.to.k) out.units.push(E.label || E.name);
+  /* (wave4-history) the entries themselves ride along, so a reader that names the record of each (js/family-history.js)
+     reads the same «held at k» as this — never a second rule */
+  out.unitEntries = [];
+  if (A && A.status === 'ok') for (const E of A.entries) if (E.from.k <= k && k < E.to.k) { out.units.push(E.label || E.name); out.unitEntries.push(E); }
   return out;
 }
 /** an instant in the words the timeline uses for it: the day where the record states a day, the year where it states a year */
@@ -449,6 +452,22 @@ function entryMarkup(E, i, W, row, inert) {
   return row('ph:' + i, html`<span class="ph-n">${name}</span><span class="ph-when">${when}</span>`,
     html`${arc}${renames.length ? html`<span class="ph-src">${renames.join(' · ')}</span>` : ''}${extra.length ? html`<span class="ph-src">${extra.join(' · ')}</span>` : ''}${notes.length ? html`<span class="ph-src">${notes.join(' ')}</span>` : ''}${sheetOnly ? '' : html`<span class="ph-src">${idsMarkup(E.ids, W)}</span>`}`,
     quiet ? 'ph-quiet' : '', quiet);
+}
+
+/** (wave4-history) an entry of the timeline in the timeline's own words — its name (at instant k when given: renames are
+    dated), its two edges as the card says them (a record's reach or a handover is said as such), and the records that
+    draw it. js/family-history.js says a life's polities with these, so the two pages cannot word an edge differently. */
+export function entryWords(E, lang, records, k) {
+  const W = words(lang, records), L = W.L;
+  const name = E.unnamed ? L('A shape the record draws without a name', '記録が名前を与えずに描いている形')
+    : E.withheld ? L('Name withheld: «' + E.withheld.name + '»', '名前を描いていない: 「' + E.withheld.name + '」')
+    : (k != null ? labelAt(E, k) : (E.labels.length ? E.labels[0].label : E.name));
+  return { name, from: edgeText('from', E.from, W), to: edgeText('to', E.to, W), quiet: !!(E.unnamed || E.withheld), records: E.tiers.map((t) => W.recordName(t)) };
+}
+/** (wave4-history) a first-level unit in the same words the card's lower list uses */
+export function unitWords(E, lang, records) {
+  const W = words(lang, records);
+  return { name: E.label || E.name, from: adminEdgeText('from', E.from, W), to: adminEdgeText('to', E.to, W), record: W.recordName(E.record && E.record.gap ? null : 'ohm', E.record) };
 }
 
 /** the same record as plain sentences — js/map-reader.js speaks the place card; Atlas reads the JSON */

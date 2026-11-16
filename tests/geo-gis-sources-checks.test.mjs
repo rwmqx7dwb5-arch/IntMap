@@ -974,8 +974,12 @@ describe('§ #R763 · numbers, not sentences', () => {
   test('#R763 ① _om は数と単位を分けて返し、文はその数から作られる', () => {
     /* 綴りのまま: 対象は描画エンジンか DOM の上で組み立てられる closure の中にあり、Node で呼べる扉が無い（_om は js/map-ui.js の Open-Meteo 読み取り closure）。 */
     const src = read('js/map-ui.js');
-    const at = src.indexOf('async function _om(');
-    const body = src.slice(at, src.indexOf('(#R732)', at));
+    /* (gis-chain-audit) the row is built by _omRead, which BOTH Open-Meteo roads (one position, a window)
+       hand their answer to — so the fact is checked where it is made, once for both. */
+    const at = src.indexOf('function _omRead(');
+    assert.ok(at >= 0, '_omRead が無い');
+    const body = src.slice(at, src.indexOf('async function _om(', at));
+    assert.ok(/_omRead\(sp,\s*j\)/.test(src.slice(src.indexOf('async function _om('))), '_om が _omRead を通っていない');
     assert.ok(/value\s*:\s*x/.test(body), '_om が value を返していない');
     assert.ok(/unit\s*:\s*\(/.test(body), '_om が unit を値として返していない');
     /* 文と数が 1 か所から出ていること: text は x から組み立てられる */

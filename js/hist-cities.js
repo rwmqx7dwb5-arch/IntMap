@@ -161,12 +161,21 @@ window.IntMapHistCities = (function () {
       data = (j && Array.isArray(j.cities) && j.cities.length) ? j : null;
       bounds = null; cache = { key: null, expr: null };   /* both are derived from `data` */
       /* the labels were drawn while this was in flight — redraw them now that the table exists */
-      if (data) { try { if (window.applyLabelLang) window.applyLabelLang(); } catch (_) {} }
+      if (data) { try { if (window.applyLabelLang) window.applyLabelLang(); } catch (_) {} declare(); }
       return data;
     }).catch(function () { return null; }).finally(function () { loading = null; });
     return loading;
   }
 
+  /* (chronos-prefetch) the receipt (js/chronos.js `drawn`): the label writer asked `textField` for the clock's
+     instant and got this epoch's expression — so the names of THAT instant are what the city layer now holds.
+     Nothing is declared while the record is still in flight or the city labels are off (nothing asked). */
+  function declare() {
+    try {
+      if (!traveling() || !data || !cache.key) return;
+      if (cache.key.split('|')[0] === String(epochOf(dnum(IntMapTime.when())))) IntMapTime.drawn('cities', IntMapTime.when());
+    } catch (_) {}
+  }
   function traveling() {
     try { return !!(IntMapTime && !IntMapTime.isLive()); } catch (_) { return false; }
   }
@@ -310,6 +319,7 @@ window.IntMapHistCities = (function () {
       IntMapTime.on(function (e) {
         if (!e.isLive) ensure();
         try { if (window.applyLabelLang) window.applyLabelLang(); } catch (_) {}
+        declare();
       });
     } catch (_) {}
   }

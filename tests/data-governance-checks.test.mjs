@@ -375,3 +375,24 @@ test('⑫ the gate reads a declaration at the record level, not at the map level
   assert.ok(Number(m[1]) >= owed,
     `the gate sees ${m[1]} credit conditions but the declarations state at least ${owed} — it is reading the map, not the records`);
 });
+
+test('⑭ a declaration that names a constant from a multi-name `const a = 1, b = 2;` is read, not called unreadable', async () => {
+  /* Measured 2026-10-13: build-aftershock-hindcast.mjs writes `const MIN_MAG = 7, FROM = '…', …;` and its GOVERNANCE says
+     `'M' + MIN_MAG`; the reader took the whole statement as one initialiser, bound nothing, and the gate recorded the
+     declaration as unreadable. The builders this applies to are found in the source, not named here. */
+  const { builderDeclarations } = await import('../scripts/data-governance.mjs');
+  const dir = join(ROOT, 'scripts');
+  const cases = [];
+  for (const e of readdirSync(dir)) {
+    if (!e.endsWith('.mjs')) continue;
+    const t = readFileSync(join(dir, e), 'utf8');
+    const g = t.indexOf('export const GOVERNANCE');
+    if (g < 0) continue;
+    for (const m of t.matchAll(/\n[ \t]*const\s+[A-Za-z_$][\w$]*\s*=\s*[^;\n(]*?,\s*([A-Za-z_$][\w$]*)\s*=/g)) {
+      if (new RegExp('(?<![\\w$])' + m[1] + '(?![\\w$])').test(t.slice(g, g + 4000))) { cases.push('scripts/' + e); break; }
+    }
+  }
+  assert.ok(cases.length >= 1, 'no builder declares a constant this way — the case cannot be measured');
+  const unreadable = new Set(builderDeclarations().filter((b) => b.unreadable).flatMap((b) => [b.subject, ...(b.paths || [])]));
+  for (const c of cases) assert.ok(![...unreadable].some((s) => String(s).startsWith(c)), c + ' is reported unreadable');
+});

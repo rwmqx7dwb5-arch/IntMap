@@ -125,7 +125,20 @@ export function blame(h, { cwd = REPO, index = null } = {}) {
     Object.assign(row, suspects(reach, commits));
     out.push(row);
   }
-  return { known: true, regressions: out, mended: (h.mended || []).length, sporadic: (h.sporadic || []).length, read: h.read, nights: h.nights };
+  /* (nightly-unread) …and WHY a night was not read. MEASURED 2026-10-13: every nightly alarm since this file existed
+     (2026-10-04, -06, -10, -11 …) printed 「読めた 0 晩」 and the issue said «No test has been red on two consecutive
+     read nights» — a sentence about nights that were never read, with the reason dropped on the floor. Locally the
+     same history read all 14 nights. «Could not read» is not «nothing red» (.agents/rules/one-pass-or-a-reason.md §5),
+     so the reasons travel with the answer and the words below say which it is. */
+  return { known: true, regressions: out, mended: (h.mended || []).length, sporadic: (h.sporadic || []).length, read: h.read, nights: h.nights,
+    unread: unreadReasons(h) };
+}
+
+/** why the unread nights were not read: [{ why, nights }] — the same reason once, with how many nights gave it */
+export function unreadReasons(h) {
+  const by = new Map();
+  for (const u of (h && h.unread) || []) by.set(u.why, (by.get(u.why) || 0) + 1);
+  return [...by.entries()].map(([why, nights]) => ({ why, nights })).sort((a, b) => b.nights - a.nights);
 }
 
 /* ── words ─────────────────────────────────────────────────────────────────────────────────── */
@@ -137,6 +150,8 @@ const evidence = (c) => [c.touchesSpec ? 'spec そのものを変えた' : null,
 export function render(b) {
   if (!b.known) return `nightly-blame: 不明（${b.why}）`;
   const L = [`nightly-blame — 連続で赤の test ${b.regressions.length} 件（直近 ${b.nights} 晩・読めた ${b.read} 晩）`];
+  for (const u of b.unread || []) L.push(`  読めなかった晩 ${u.nights}: ${u.why}`);
+  if (!b.read) L.push('  ⚠ 1 晩も読めていない——「連続で赤が無い」ではなく「判定していない」');
   for (const r of b.regressions) {
     L.push('', `■ ${short(r.id, 120)}`, `  ${r.streak} 晩連続（${r.since} から）`);
     if (!r.range) { L.push(`  範囲: なし — ${r.why}`); continue; }
@@ -154,6 +169,14 @@ export function render(b) {
 export function markdown(b) {
   if (!b.known) return `### Regressions and their suspects\n\nThe history of the nights could not be read (${b.why}).\n`;
   const L = ['### Regressions and their suspects', ''];
+  const why = (b.unread || []).map((u) => `${u.nights} night(s): ${u.why}`).join('; ');
+  if (!b.read) {
+    /* a window with no night read has no verdict to give — said as such, with the reasons, never as «nothing red» */
+    L.push(`**No night could be read** (window: ${b.nights} nights), so whether any test is red night after night is NOT KNOWN. `
+      + (why ? `Why: ${why}.` : 'No reason was recorded.'));
+    return L.join('\n') + '\n';
+  }
+  if (why) L.push(`Not read: ${why}.`, '');
   if (!b.regressions.length) {
     L.push(`No test has been red on two consecutive read nights (window: ${b.nights} nights, ${b.read} read). `
       + `${b.mended} were red night after night and passed on the newest; ${b.sporadic} failed sporadically — \`node scripts/deep-history.mjs\` lists them.`);

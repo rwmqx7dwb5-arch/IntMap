@@ -686,15 +686,17 @@ export function timeAdmin1(HOST) {
         } catch (_) { return false; }
       }
 
+      /* (chronos-prefetch) this tier's receipt: the instant whose units it has just handed the map (js/chronos.js `drawn`) */
+      function _declare() { try { IntMapTime.drawn('subdivisions:' + cfg.key, shownWhen); } catch (_) {} }
       function apply(fc) {
         const my = seq; shownFC = fc;
         if (cfg.onApply) { try { cfg.onApply(fc); } catch (_) {} }
         try {
           if (GE().layers.hasSource(cfg.src) && GE().layers.has(cfg.line)) {
-            GE().layers.setSourceData(cfg.src, labelsFor(fc)); GE().layers.setSourceData(cfg.lnSrc, linesFor(fc)); _setGap(fc); _applyNow(); return;
+            GE().layers.setSourceData(cfg.src, labelsFor(fc)); GE().layers.setSourceData(cfg.lnSrc, linesFor(fc)); _setGap(fc); _applyNow(); _declare(); return;
           }
         } catch (_) {}
-        if (ensure()) { try { GE().layers.setSourceData(cfg.src, labelsFor(fc)); GE().layers.setSourceData(cfg.lnSrc, linesFor(fc)); _setGap(fc); } catch (_) {} _applyNow(); }
+        if (ensure()) { try { GE().layers.setSourceData(cfg.src, labelsFor(fc)); GE().layers.setSourceData(cfg.lnSrc, linesFor(fc)); _setGap(fc); } catch (_) {} _applyNow(); _declare(); }
         /* (#R140's shape) the style was mid-load — don't latch the era units absent until a reload. */
         else whenStyleReady().then(() => { if (active && seq === my) apply(fc); });
       }
@@ -733,13 +735,23 @@ export function timeAdmin1(HOST) {
            line aimed above is not held — it is the map's own tiles, filtered, and it costs nothing here. */
         try { const TB = eraBorders(); if (TB && typeof TB.settled === 'function') await TB.settled(); } catch (_) {}
         if (my !== seq || !active) return;
+        /* ══ (chronos-prefetch) …AND THIS INSTANT'S UNITS ARE READ THE MOMENT THE BORDERS ARE HANDED OVER ══════════
+           MEASURED 2026-11-16 (scripts/chronos-latency.mjs, built site, desktop GPU): the next line's `await` of two
+           promises that had ALREADY resolved returned ~0.4 s later, because MapLibre's ingestion of the borders this
+           turn just handed it was queued first and runs on this thread; only then did `fcAt` ask the history thread
+           for the instant's units — and the Range reads and the parse ran after it, in series. Reading them is the
+           other thread's and the network's work, so it is started here and runs while this thread is busy: `warm`
+           reads into the thread exactly the chunks `fcAt`'s question below will read, answers nothing and puts
+           nothing on the page, so what is drawn is decided by that question as before. Still after the borders,
+           as the order above requires. */
+        try { if (_H) _H.warm(_ymd(y, m, dd), 'exclusive'); } catch (_) {}
         const d = (await Promise.all([load(), BC() ? BC().load() : null]))[0];   /* (#R564) the marks settle before the first collection is built, so nothing is cached unmarked */
         if (my !== seq || !active) return;
         if (!d) { setTimeout(() => { try { if (active && my === seq) go(when); } catch (_) {} }, 4000); return; }
         if (d.lines && vtRev !== d.lines) { vtRev = d.lines; vtAt = null; vtAim(y, m, dd); }
         let key; try { key = 'a' + epoch(d, y, m, dd); } catch (_) { key = 'a' + y; }
         if (shownKey === key) {
-          try { if (ensure()) _applyNow(); else whenStyleReady().then(() => { if (active && shownKey === key && ensure()) _applyNow(); }); } catch (_) {}
+          try { if (ensure()) { _applyNow(); _declare(); } else whenStyleReady().then(() => { if (active && shownKey === key && ensure()) { _applyNow(); _declare(); } }); } catch (_) {}
           return;
         }
         let fc = cache.get(key);

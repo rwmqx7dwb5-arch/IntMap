@@ -35,14 +35,15 @@ const FOOTPRINT_URL = 'data/companies/footprint.json';
 const PRECISIONS = ['exact', 'city', 'region'];   /* the order scripts/companies/footprint.mjs writes them in */
 
 /* ══ THE PURE HALF ═══════════════════════════════════════════════════════════════════════════════════════════ */
-/** the compact file → one object per site. `groupOf(type)` and `companyOf(id)` are handed in (js/company-data.js). */
+/** the compact file → one object per site. `groupOf(type)` and `companyOf(id)` are handed in (js/company-data.js).
+    `home` is the company's own country (the index's `cc`, ISO-3) — what js/company-ties.js reads against the site's `cc`. */
 export function expand(fp, groupOf, companyOf) {
   if (!fp || !Array.isArray(fp.f)) return [];
   const g = typeof groupOf === 'function' ? groupOf : () => 'other';
   const co = typeof companyOf === 'function' ? companyOf : () => null;
   return fp.f.map((r, i) => {
     const cid = fp.companies[r[0]], type = fp.types[r[1]], c = co(cid) || {};
-    return { i, cid, cname: c.n || cid, sec: c.sec || 'other', type, group: g(type), lon: +r[2], lat: +r[3], cc: r[4] || '', precision: PRECISIONS[r[5]] || 'exact', status: fp.statuses[r[6]] || 'operating', name: r[7] || '' };
+    return { i, cid, cname: c.n || cid, sec: c.sec || 'other', home: c.cc || '', type, group: g(type), lon: +r[2], lat: +r[3], cc: r[4] || '', precision: PRECISIONS[r[5]] || 'exact', status: fp.statuses[r[6]] || 'operating', name: r[7] || '' };
   });
 }
 /** is (lon,lat) inside [w,s,e,n]? The box may run past ±180 (a camera over the Pacific) — it is unwrapped, not clipped. */
@@ -191,6 +192,8 @@ export function companyFootprint(HOST) {
       const el = /** @type {Element} */ (e.target);
       const g = el.closest('[data-cfp-group]'); if (g) { toggleGroup(g.getAttribute('data-cfp-group')); return; }
       const c = el.closest('[data-cfp-co]'); if (c) { openCompany(c.getAttribute('data-cfp-co')); return; }
+      /* (wave4-companies) the same sites read by country pair — js/company-ties.js, through the kernel's company.ties */
+      if (el.closest('.cfp-ties')) { try { window.IntMapOS.exec('company.ties', { source: 'ui', params: {} }); } catch (_) { } return; }
       if (el.closest('.cfp-x')) close();
     });
     panel.addEventListener('change', (e) => { const s = /** @type {HTMLSelectElement} */ (e.target); if (s && s.classList.contains('cfp-sec')) setFilter({ sectors: s.value ? [s.value] : null }); });
@@ -212,6 +215,7 @@ export function companyFootprint(HOST) {
       + '<label class="cfp-row">' + H(t('Sector', '業種')) + ' <select class="cfp-sec"><option value="">' + H(t('All sectors', 'すべての業種')) + '</option>'
       + secs.map((s) => '<option value="' + H(s) + '"' + (_sectors && _sectors[0] === s ? ' selected' : '') + '>' + H(secLabel(s)) + '</option>').join('') + '</select></label>'
       + '<div class="cfp-view" aria-live="polite"></div>'
+      + '<button type="button" class="cfp-ties">' + icon('network', { size: 14 }) + ' ' + H(t('Companies between countries', '企業でつながる国')) + '</button>'
       + '<p class="cfp-honest">' + H(t('Only the sites the sources publish, for the companies IntMap carries — an empty place on this map is not an empty place on the ground.',
         'IntMap が載せている企業について、出典が公表している拠点だけです。この地図で空いている場所が、実際に空いているとは限りません。')) + '</p>';
     paintView();
@@ -297,6 +301,7 @@ export function companyFootprint(HOST) {
       '#co-fp-panel .cfp-co{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
       '#co-fp-panel .cfp-bar{display:flex;width:64px;height:6px;border-radius:3px;overflow:hidden;background:rgba(128,128,128,0.2);flex:none;}',
       '#co-fp-panel .cfp-ccs{margin-top:6px;color:var(--text-muted);font-size:11.5px;}',
+      '#co-fp-panel .cfp-ties{display:flex;align-items:center;gap:6px;width:100%;min-height:32px;margin-top:8px;padding:6px 9px;border:none;border-radius:8px;background:var(--input-bg);color:var(--text-main);font:inherit;font-size:11.5px;font-weight:600;cursor:pointer;}',
       '#co-fp-panel .cfp-honest{margin:8px 0 0;color:var(--text-muted);font-size:10.5px;line-height:1.5;}',
       '.cfp-site-h{display:flex;align-items:center;gap:7px;font-size:13px;padding-right:22px;}',
       '.cfp-site-s{margin:3px 0 8px;color:var(--text-muted);font-size:11.5px;}',
@@ -307,6 +312,14 @@ export function companyFootprint(HOST) {
     document.head.appendChild(st);
   }
 
-  const API = { open, close, query, setFilter, state, isShown: () => !!_shown };
+  /** (wave4-companies) the loaded sites themselves, for the one other reader of this file — js/company-ties.js, which
+      reads the same rows by country pair. One fetch and one copy in memory, whichever of the two opened first. */
+  async function rows() {
+    await window.IntMapLazy.need('companyData');
+    await load();
+    return { rows: _rows, generatedAt: _fp.generatedAt, companies: _fp.companies.length };
+  }
+
+  const API = { open, close, query, setFilter, state, rows, isShown: () => !!_shown };
   return API;
 }

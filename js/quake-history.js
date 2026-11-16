@@ -444,6 +444,8 @@ export function quakeHistory(HOST) {
       + '<div class="qh-sel-act">';
     h += atIt ? '<span class="qh-at">' + S(L('The map shows this moment', '地図はこの瞬間です')) + '</span>'
       : '<button type="button" class="qh-moment" data-qh="moment" data-time-intent="1">' + S(L('Show this moment', 'この瞬間の地図にする')) + '</button>';
+    /* (wave4-science) the aftershock forecast of the chosen quake — through the one door (js/wb-layers.js `data-as-open`), from M5 */
+    if (e.mag != null && e.mag >= 5) h += '<button type="button" class="nst-all" data-as-open="' + S(e.id) + '">' + S(L('Aftershock forecast', '余震の見通し')) + '</button>';
     if (e.shakemap) h += '<button type="button" class="nst-all" data-qh="shake">' + S(L('Ground shaking (ShakeMap)', '揺れの分布（ShakeMap）')) + '</button>';
     if (e.url) h += '<a class="nst-all qh-usgs" href="' + S(window.IntMapSafe.url(e.url)) + '" target="_blank" rel="noopener">' + S(L('USGS event page', 'USGS の地震ページ')) + '</a>';
     return h + '</div></div>';
@@ -471,8 +473,10 @@ export function quakeHistory(HOST) {
   /* the clock moves the record: repaint and reword on every change while the card is open (one per frame) */
   let raf = 0;
   try { IntMapTime.on(() => { if (!st.open || raf) return; raf = requestAnimationFrame(() => { raf = 0; if (st.open && st.rec) { drawDyn(); paint(); } }); }); } catch (_) { }
-  /* a basemap swap discards the layers (js/news-story.js listens to the same signal) */
-  try { GE().events.on('styledata', () => { if (st.open && !GE().layers.hasSource(SRC)) { wired = false; paint(); } }); } catch (_) { }
+  /* ⚠ A basemap swap discards the LAYERS, not the clicks: the engine registers a layer's click / hover by layer id on
+     the map (js/geo-engine.js onLayer → map.on(type, layerId, fn)), and that registration outlives setStyle. Re-wiring
+     here added a second delegated click per swap, and one tap then opened the event once per swap. Only repaint. */
+  try { GE().events.on('styledata', () => { if (st.open && !GE().layers.hasSource(SRC)) { paint(); } }); } catch (_) { }
   try { bus.on('intmap-lang', () => setTimeout(() => { if (st.open) draw(); }, 30)); } catch (_) { }
 
   const API = { open, close, select, toMoment, toNow, setRadius, setFloor, summary, link,

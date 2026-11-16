@@ -3,6 +3,9 @@
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
 import { loadLazyModules } from './helpers/app.js';
+/* (test-time-headroom) the fixed sleeps in this file are waits for the state they stood in for — tests/helpers/settle.js.
+   Every expect() below is unchanged; only the moment it looks moved. Before/after: dev-notes/2026-10-13-test-time-headroom.md */
+import { until } from './helpers/settle.js';
 
 const ready = async (page) => {
   await page.goto('/?rafshim=1', { waitUntil: 'domcontentloaded' });
@@ -165,7 +168,9 @@ test('R193 startup: the heavy optional payloads are off the boot path', async ({
      ⚠ The suite seeds the base toggles ON and the THEMATIC layers off (tests/helpers/session-seed.js;
      (#R225) an empty `layers` now means «the reader switched everything off»), so Köppen is off here —
      asserting on boot traffic alone would pass against a page that simply never drew Köppen. */
-  await page.waitForTimeout(3000);
+  /* not 3 s: the boot has finished building itself (tests/r204.spec.js measured that a box ticked before `__imBoot.isDone()`
+     races the app's own re-assertion of layer visibility) */
+  await until(page, () => { try { return !window.__imBoot || window.__imBoot.isDone(); } catch (_) { return true; } }, null, { timeout: 60000 });
   const enabled = await page.evaluate(() => {
     const c = document.getElementById('dl-climate');
     if (!c) return false;
@@ -176,7 +181,9 @@ test('R193 startup: the heavy optional payloads are off the boot path', async ({
   await page.waitForFunction(() => {
     try { return window.IntMapGeoEngine.layers.hasSource('src-climate'); } catch (_) { return false; }
   }, null, { timeout: 30000 });
-  await page.waitForTimeout(2500);
+  /* not 2.5 s: the small picture has arrived (asked every 100 ms). A full-resolution file fetched before it would already
+     be in `seen` when it does, so the order check below sees exactly what it saw before. */
+  for (const end = Date.now() + 30000; Date.now() < end && !seen.some((s) => /koppen_mercator_[0-9-]+_4k\.png$/.test(s.url));) await page.waitForTimeout(100);
   const small = seen.filter((s) => /koppen_mercator_[0-9-]+_4k\.png$/.test(s.url));
   const full = seen.filter((s) => /koppen_mercator_[0-9-]+\.png$/.test(s.url));
   expect(small.length).toBeGreaterThan(0);

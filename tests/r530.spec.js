@@ -205,7 +205,7 @@ test('地方区分の境界が Chronos に従う — 現在・1900年・スイ�
        ——1280×720 で最大 14,000 回、しかも**最初の1個が見つかるまで**なので、ラベルが右下にある
        日はその全部を払う。同じ答えは1回で出る: レイヤーが描いている地物を全部もらい、その地物の
        座標を投影すれば、それがラベルの居る場所である。主張は1文字も変えていない。 */
-    let hit = null;
+    const candidates = [];
     /* map-ui's built-in place/geography labels yield to non-label owners.
        Reader registrations extend that label family dynamically. This mirrors
        ALL_LBL, not every symbol layer: news symbols remain click owners. */
@@ -242,41 +242,56 @@ test('地方区分の境界が Chronos に従う — 現在・1900年・スイ�
          The earlier picker checked only symbols/circles ABOVE an era layer.
          _ownedByOther instead asks every registered non-label owner at this pixel,
          irrespective of layer type or drawing order. Fallback listeners are not
-         exclusive owners. Map-level claimClick can still consume the eventual
-         click; a missing outline remains a failure rather than being retried away. */
+         exclusive owners. The map-level owners, which no layer list holds, are asked
+         when the tap is made (below). */
       if (ownerLayers.length && m.queryRenderedFeatures([p.x, p.y], { layers: ownerLayers }).length) continue;
-      hit = { x: p.x, y: p.y, props: f.properties }; break;
+      candidates.push({ x: p.x, y: p.y, props: f.properties });
     }
-    if (!hit) return { hit: false };
-    const TA = window.IntMapTimeAdmin1;
-    const era = TA.geomAt(hit.props), relationId = TA.idAt(hit.props);
-    let refined = null;
-    /* Observe the same ID-keyed flight the click uses. No await: a slow/failed
-       upstream cannot delay or replace the requirement for an immediate outline.
-       If it resolves before the existing poll, that same record's refinement is
-       also correct; it must not fail for differing from the simplified bundle. */
-    if (relationId != null && TA.geomFullAt) TA.geomFullAt(hit.props).then(g => {
-      if (TA.idAt(hit.props) === relationId) refined = g;
-    }).catch(() => {});
-    for (const t of ["mousedown", "mouseup", "click"]) c.dispatchEvent(new MouseEvent(t, { bubbles: true, cancelable: true, clientX: r.left + hit.x, clientY: r.top + hit.y, button: 0, buttons: t === "mousedown" ? 1 : 0 }));
-    /* ⚠ (#R604) 固定の 1.5 秒 sleep をやめ、**答えが出るまで待つ**（#R410 の作法。この spec の冒頭が
-       自分でそう書いている）。IntMapOutline が輪郭を置くまでの時間は記録の大きさで動くので、
-       秒数を書くと記録が育つたびに嘘になる——実測、束が 3,049→4,679 件になっただけで 1.5 秒は
-       足りなくなった。⚠ 待つのは「輪郭が置かれたか」であって「**正しい**輪郭か」ではない:
-       今日の同名地物を描く欠陥のあるビルドでもこの待ちは真になり、下の assertion がそれを落とす。 */
-    const cur = await (async () => {
-      for (let i = 0; i < 60; i++) {
-        const c0 = window.IntMapOutline && window.IntMapOutline.current && window.IntMapOutline.current();
-        if (c0 && c0.geo) return c0;
-        await new Promise((z) => setTimeout(z, 250));
-      }
-      return null;
-    })();
-    const sameShape = expected => !!(cur && cur.geo && expected && JSON.stringify(cur.geo) === JSON.stringify(expected));
-    return { hit: true, same: sameShape(era) || sameShape(refined),
-             drew: !!(cur && cur.geo), name: String(hit.props.NAME || "") };
+    /* ══ ⚠⚠ …AND THE OWNERS NO LAYER LIST CAN NAME ANSWER ONLY WHEN THE TAP IS MADE ══════════════════
+       The filter above asks the LAYER owners. Live aircraft, satellites, the seismic and tsunami read-outs
+       hit-test themselves at map level and say so through `events.claimClick` (js/geo-engine.js #R210) —
+       nothing can ask them in advance. MEASURED (nightly 2026-11-04 and 11-07, the screenshot of the
+       failure): this worker's shared page had the aircraft layer on from an earlier spec, an airBaltic
+       flight was over Lolland, and the tap on «Maribo County» opened that aircraft's card — the app's
+       arbitration was right, the pixel was the plane's. So the tap is made, and the engine is asked
+       whether another owner took THIS click (`clickClaimed`, by event identity — what js/map-ui.js
+       `_deferLabel` asks one microtask later before it opens the label). A claimed tap is not the
+       label's click and says nothing about the outline; the next candidate is the next label, not the
+       same tap again. An unclaimed tap that draws nothing is still the failure below. */
+    const TA = window.IntMapTimeAdmin1, claimedBy = [];
+    for (const hit of candidates) {
+      const era = TA.geomAt(hit.props), relationId = TA.idAt(hit.props);
+      let refined = null;
+      /* Observe the same ID-keyed flight the click uses. No await: a slow/failed
+         upstream cannot delay or replace the requirement for an immediate outline.
+         If it resolves before the existing poll, that same record's refinement is
+         also correct; it must not fail for differing from the simplified bundle. */
+      if (relationId != null && TA.geomFullAt) TA.geomFullAt(hit.props).then(g => {
+        if (TA.idAt(hit.props) === relationId) refined = g;
+      }).catch(() => {});
+      let tap = null;
+      for (const t of ["mousedown", "mouseup", "click"]) { const ev = new MouseEvent(t, { bubbles: true, cancelable: true, clientX: r.left + hit.x, clientY: r.top + hit.y, button: 0, buttons: t === "mousedown" ? 1 : 0 }); if (t === "click") tap = ev; c.dispatchEvent(ev); }
+      if (window.IntMapGeoEngine.events.clickClaimed(tap)) { claimedBy.push(String(hit.props.NAME || "")); continue; }
+      /* ⚠ (#R604) 固定の 1.5 秒 sleep をやめ、**答えが出るまで待つ**（#R410 の作法。この spec の冒頭が
+         自分でそう書いている）。IntMapOutline が輪郭を置くまでの時間は記録の大きさで動くので、
+         秒数を書くと記録が育つたびに嘘になる——実測、束が 3,049→4,679 件になっただけで 1.5 秒は
+         足りなくなった。⚠ 待つのは「輪郭が置かれたか」であって「**正しい**輪郭か」ではない:
+         今日の同名地物を描く欠陥のあるビルドでもこの待ちは真になり、下の assertion がそれを落とす。 */
+      const cur = await (async () => {
+        for (let i = 0; i < 60; i++) {
+          const c0 = window.IntMapOutline && window.IntMapOutline.current && window.IntMapOutline.current();
+          if (c0 && c0.geo) return c0;
+          await new Promise((z) => setTimeout(z, 250));
+        }
+        return null;
+      })();
+      const sameShape = expected => !!(cur && cur.geo && expected && JSON.stringify(cur.geo) === JSON.stringify(expected));
+      return { hit: true, same: sameShape(era) || sameShape(refined),
+               drew: !!(cur && cur.geo), name: String(hit.props.NAME || ""), claimedBy };
+    }
+    return { hit: false, claimedBy };
   });
-  expect(outline.hit, "no era subdivision label on screen to click").toBe(true);
+  expect(outline.hit, `no era subdivision label on screen to click (taps another owner took: ${outline.claimedBy.join(', ') || 'none'})`).toBe(true);
   expect(outline.drew, `clicking ${outline.name} highlighted nothing`).toBe(true);
   expect(outline.same, `clicking ${outline.name} highlighted a shape that is not the record's — today's namesake, the defect this round removed`).toBe(true);
   await page.evaluate(() => { document.querySelectorAll(".plc-popup .maplibregl-popup-close-button").forEach((b) => b.click()); });

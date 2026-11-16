@@ -70,9 +70,11 @@ test('R203 ① the app does not open on a black planet, at whatever hour the sui
   expect(Array.isArray(chosen), 'the app published the centre it opened at').toBe(true);
   expect(chosen[1], 'at the latitude it always has').toBeCloseTo(20, 4);
   /* the property, evaluated HERE rather than in the page: the Sun is up over what the app chose.
-     ⚠ NOT compared against `camera.getCenter()` — on a desktop the sidebar sets camera PADDING, so
-     the reported centre is the centre of the padded view and is tens of degrees away from the one
-     the view was created at. Measured while writing this: published 176.748, reported 89.107. */
+     ⚠ (opening-projection) That the camera is really THERE is ①b's claim, at a pinned hour. The note that
+     stood here read «published 176.748, reported 89.107» as camera padding; it was the defect ①b pins —
+     the view was built Mercator and its first resize clamped the centre to ±(world − canvas)/2, so at the
+     hours the nightly runs (sub-solar longitude beyond ±85°) the app opened on the terminator, 26–33 %
+     of this window dark. */
   expect(OpeningView.solarElevation(Date.now(), chosen[1], chosen[0]),
     'the Sun stands over the opening centre').toBeGreaterThan(OpeningView.MIN_ELEV_DEG - 1);
 
@@ -82,6 +84,27 @@ test('R203 ① the app does not open on a black planet, at whatever hour the sui
   /* before the fix, over the same central window: mean 29 and 52 % of the pixels under luminance 15 */
   expect(lum, `the planet under the camera is lit (mean luminance ${lum.toFixed(1)})`).toBeGreaterThan(60);
   expect(s.darkFrac, `and it is not night (${(100 * s.darkFrac).toFixed(0)}% dark)`).toBeLessThan(0.25);
+});
+
+/* ── ①b the app OPENS where it decided to, at an hour when that is far from 10°E ─────────────────
+   ① runs at whatever hour the suite does, so it exercises the rotation only in the evening (UTC) — which
+   is why only the nightly saw it. This pins the clock at the nightly's own hour, when the sub-solar
+   longitude is about −167°: MEASURED before the fix on an 880-px canvas, published −167.169, camera
+   −84.779 (the Mercator clamp at z1.7) and the terminator through the middle of the screen.
+   ⚠ Its own page, because the clock has to be in place before the app reads it to choose the centre. */
+test('R203 ①b the camera opens at the published centre, not clamped to ±85°', async ({ browser }) => {
+  const p = await browser.newPage();
+  try {
+    await p.clock.install({ time: new Date('2026-11-12T22:55:00Z') });
+    await p.clock.resume();
+    await p.goto('/');
+    await p.waitForFunction(() => {
+      try { return !!window.__imap && window.IntMapGeoEngine.canDraw(); } catch (_) { return false; }
+    }, null, { timeout: 60000 });
+    const at = await p.evaluate(() => ({ chosen: window.__imOpeningCentre, c: window.IntMapGeoEngine.camera.getCenter() }));
+    expect(Math.abs(at.chosen[0]), 'at this hour the app rotates away from 10°E, past the Mercator clamp').toBeGreaterThan(90);
+    expect(Math.abs(at.c.lng - at.chosen[0]), `camera ${at.c.lng.toFixed(3)} vs published ${at.chosen[0]}`).toBeLessThan(0.01);
+  } finally { await p.close(); }
 });
 
 /* ── ② 「ななめに地表を見た際にズームすると、地平線付近が点滅する」 ───────────────────────────

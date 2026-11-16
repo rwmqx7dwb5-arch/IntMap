@@ -293,6 +293,9 @@ export function makeSessionTabs(HOST, CTX) {
        when no control bound to it is on screen (js/command-palette.js) */
     ['company.footprint', async(p)=>{ await window.IntMapLazy.need('companyFootprint'); const F=window.IntMapCompanyFootprint; if(!F) return {ok:false,err:'no module'};
       if(p&&p.close){ F.close(); return {ok:true,shown:false}; } const st=await F.open({groups:p&&p.groups,sectors:p&&p.sectors}); return Object.assign({ok:!!st.shown},st); }, 'Company atlas · every company’s sites on one map (params.groups/sectors, params.close)','company',['Company sites map','企業の拠点の地図']],
+    /* (wave4-companies) whose companies operate where — the footprint read by country pair (js/company-ties.js) */
+    ['company.ties', async(p)=>{ await window.IntMapLazy.need('companyTies'); const T=window.IntMapCompanyTies; if(!T) return {ok:false,err:'no module'};
+      if(p&&p.close){ T.close(); return {ok:true,shown:false}; } const st=await T.open({country:p&&p.country,direction:p&&p.direction,groups:p&&p.groups,sectors:p&&p.sectors}); return Object.assign({ok:!!st.shown},st); }, 'Company atlas · companies between countries (params.country ISO-3, params.direction in|out, params.groups/sectors, params.close)','company',['Companies between countries','企業でつながる国']],
     /* ⚠ (#R774) 「訊いたが、そこには値が無かった」 IS REPORTED AS ITSELF, NOT AS A READING. js/map-ui.js
        sampleAt now returns a row for every registration it ASKED, so the rows it hands back are two
        kinds of fact; putting both under `values` would offer Atlas a reading with no value in it.

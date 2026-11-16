@@ -60,6 +60,10 @@ const BENIGN = new Set([
      events».) (monitors-retire) «Current map view», «Error», «Limitations» and «Watching» left this list with the area
      monitors: each collided only with that module's site, so none of them collides any more. */
   'Ocean currents',
+  /* (wave4-train) 'People' — the family tree's list of persons (人物, js/family-history.js) and the migration kind of the
+     world's ties (人, js/world-flows.js): both name human beings counted one by one; fr «Personnes», ko «사람», zh «人»
+     read right at either site. */
+  'People',
 
   ' d', ' h', ' min', ' s', 'active', 'Address', 'Advisory', 'Aerosol / haze',
   'Aircraft', 'Aircraft at real altitude', 'Altitude', 'Area', 'articles',

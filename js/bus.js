@@ -122,7 +122,7 @@ export const EVENTS = Object.freeze({
   [MAP_ANSWER_EVENT]: {
     means: 'a module put an answer on the map (kind card), or a card in the sheet that must be read through (kind read); on a phone the sheet settles to show it',
     detail: '{ kind }',
-    from: ['js/atlas-examples.js', 'js/map-corrections.js', 'js/on-this-day.js', 'js/place-dossier.js', 'js/quest-panel.js', 'js/search-geocode.js', 'js/showcase-gallery.js'],
+    from: ['js/atlas-examples.js', 'js/map-corrections.js', 'js/on-this-day.js', 'js/place-dossier.js', 'js/quest-panel.js', 'js/search-geocode.js', 'js/showcase-gallery.js', 'js/start-home.js'],
   },
   'intmap-hist-identity': {
     means: 'the historical-country identity table arrived for the shown year; borders drawn before it re-label',
@@ -152,6 +152,11 @@ export const EVENTS = Object.freeze({
     means: 'something asks for the Library (js/my-places.js — places, saved maps, tours, Atlas answers), with a map document (js/map-doc.js) to save into the account if it carries one; js/auth-ui.js opens it with the app host',
     detail: '{ doc }',
     from: ['js/atlas-notebook.js', 'js/tour-builder.js'],
+  },
+  'intmap-open-community': {
+    means: 'something asks for Community maps (js/community-maps.js — the collections readers listed for everyone); js/auth-ui.js opens it with the app host',
+    detail: null,
+    from: ['js/showcase-gallery.js'],
   },
   'intmap-theme': {
     means: 'the colour theme (data-theme on <html>) changed between light and dark; the sky re-renders',

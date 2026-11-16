@@ -63,8 +63,9 @@ export function search(idx, q, limit) {
     .sort((x, y) => x.r - y.r || y.a.pk[1] - x.a.pk[1]).slice(0, limit || 30).map((x) => x.a);
 }
 /** the polities the DATED records draw (Cliopatria, OpenHistoricalMap, CShapes), by their largest drawn extent — the
- *  sheets' cultural areas are searchable but not ranked beside them: a sheet states a period, not a polity's year */
-function largest(idx, limit) { return idx.arcs.filter((a) => a.d && a.d.length).slice(0, limit || 20); }
+ *  sheets' cultural areas are searchable but not ranked beside them: a sheet states a period, not a polity's year.
+ *  (polity-pages) exported: the same rule chooses which polities have a static page (scripts/polity-pages.mjs) */
+export function largest(idx, limit) { return idx.arcs.filter((a) => a.d && a.d.length).slice(0, limit || 20); }
 /** one polity by its Wikidata item, else its name; when several share the item, the one the map draws in `year` */
 function find(idx, want) {
   const w = want || {};
@@ -127,8 +128,10 @@ export function describe(idx, arc) {
   out.peak = { y: pk[0], km: pk[1], recs: pk[2] ? recsOf(idx, pk[2]) : ['sheet'], bb: pk[3] || arc.bb };
   return out;
 }
-/** the drawn area in year `y` (the step the index holds), and the records that drew it — null where it is not drawn */
-function valueAt(idx, arc, y) {
+/** the drawn area in year `y` (the step the index holds), and the records that drew it — null where it is not drawn
+ *  (polity-pages: exported with `related` and `chartSvg` — the static pages, scripts/polity-pages.mjs, read the index
+ *  through the same three, so a page and this sheet cannot state a polity differently) */
+export function valueAt(idx, arc, y) {
   const d = arc.d || [];
   let hit = null;
   for (const p of d) { if (p[0] <= y) hit = p; else break; }
@@ -137,7 +140,7 @@ function valueAt(idx, arc, y) {
   return sh ? { y, km: sh[1], recs: ['sheet'] } : null;
 }
 /** the other names: linked to the same Wikidata item, or written identically by the map in the reader's language */
-function related(idx, arc, lang) {
+export function related(idx, arc, lang) {
   const out = [], seen = new Set([arc]);
   const qs = arc.q || [];
   for (const a of idx.arcs) if (!seen.has(a) && (a.q || []).some((q) => qs.includes(q))) { seen.add(a); out.push({ arc: a, why: 'qid', qid: (a.q || []).find((q) => qs.includes(q)) }); }
@@ -183,7 +186,9 @@ export function spanOf(D) {
   if (D.sheets.length && !D.points.length) { a = D.sheets[0].y; b = D.sheets[D.sheets.length - 1].y; if (b - a < 20) { a -= 10; b += 10; } }
   return [a, Math.max(b, a + 1)];
 }
-function chartSvg(idx, arc, D, lg, nowY) {
+/** the chart, as an SVG string (`nowY` null: no clock line) — styled by the classes below (CSS), and on the static pages
+ *  by css/history-pages.css, which names the same classes */
+export function chartSvg(idx, arc, D, lg, nowY) {
   const t = IntMapLang.pick(() => lg);
   const sp = spanOf(D); if (!sp) return '';
   const [a, b] = sp, top = Math.max(1, D.peak.km) * 1.1;
@@ -292,7 +297,7 @@ export async function openArc(want) {
   sheet.hidden = false;
   /* opened by the reader's operation: it takes the front from the panel the operation was made in (js/ui-stack.js `opened`) */
   try { globalThis.IntMapStack.opened(sheet); } catch (_) { /* no stack owner (Node) */ }
-  if (!unsubClock) unsubClock = IntMapTime.on(() => { clearTimeout(paintTimer); paintTimer = setTimeout(() => { if (state.arc) paintArc(); }, 200); });
+  if (!unsubClock) unsubClock = IntMapTime.on(() => { clearTimeout(paintTimer); paintTimer = setTimeout(paintNow, 200); });
   const w = want || {};
   if (typeof w.lang === 'function') langOf = w.lang;
   state.q = w.query || '';
@@ -338,6 +343,22 @@ function paintList() {
   if (had) { const r = sheet.querySelector('.pa-results'); if (r) r.outerHTML = sec; return; }
   sheet.innerHTML = head(null) + '<div class="pa-body"><input type="search" class="pa-q" enterkeyhint="search" autocomplete="off" aria-label="' + esc(t('Find a polity', '政体を探す')) + '" placeholder="' + esc(t('Find a polity — e.g. Mongol Empire', '政体を探す（例: モンゴル帝国）')) + '" value="' + esc(state.q) + '">' + sec
     + '<p class="pa-src">' + esc(t('Index of ', '収録: ') + idx.arcs.length.toLocaleString() + t(' names the map draws', ' の名前')) + ' · ' + esc(['clio', 'ohm', 'cshapes', 'sheet'].map((k) => recordName(idx, k)).join(' · ')) + '</p></div>';
+}
+/* The clock moves only the chart's year marker (`chartSvg(…, nowYear())` is the one clock-dependent
+   piece of the sheet), so a clock change replaces the chart and nothing else. Repainting the whole sheet
+   — as it did — wiped the hover readout, the focused button and the reader's place 200 ms after every
+   tick, including the tick the reader's own click on the chart (or «Go to its largest») caused. The
+   chart element itself is kept (its contents and attributes are swapped), so a pointer resting on it
+   and anything holding it stay on the same node. */
+function paintNow() {
+  if (!sheet || sheet.hidden || !state.idx || !state.arc) return;
+  const old = sheet.querySelector('.pa-chart');
+  if (!old) { paintArc(); return; }
+  const idx = state.idx, a = state.arc, box = document.createElement('div');
+  box.innerHTML = chartSvg(idx, a, describe(idx, a), lang(), nowYear());
+  const neu = box.firstElementChild; if (!neu) return;
+  for (const at of Array.from(neu.attributes)) old.setAttribute(at.name, at.value);
+  old.innerHTML = neu.innerHTML;
 }
 function paintArc() {
   if (!sheet || sheet.hidden || !state.idx || !state.arc) return;
