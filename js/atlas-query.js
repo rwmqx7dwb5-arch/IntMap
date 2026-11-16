@@ -1073,6 +1073,7 @@ export function atlasQuery(HOST) {
 
   async function run(spec) {
     const notes = [], sources = [], caps = [], unapplied = [];
+    const colSrc = Object.create(null);   /* (atlas-cited-answers) column id → the source its values came from — `provenanceOf` below */
     syncUserTables();   /* (#R729) read at the moment of the query — see the header above TABLES */
     const from = String((spec && (spec.from || spec.table)) || 'cities').trim().toLowerCase();
     const T = TABLES[from];
@@ -1150,7 +1151,7 @@ export function atlasQuery(HOST) {
         notes.push(colName(c._col) + ' — ' + notApplied() + ' (' + info.unavailable + ')');
         continue;
       }
-      if (info.source) sources.push({ what: c._col.label, src: info.source, origin: c._col.origin });
+      if (info.source) { sources.push({ what: c._col.label, src: info.source, origin: c._col.origin }); colSrc[c._col.id] = info.source; }
       const kept = target.filter((r) => passes(c, r.v[c._col.id], c._col.kind));
       rows = kept;
     }
@@ -1258,6 +1259,7 @@ export function atlasQuery(HOST) {
         if (c.cost >= 2 && rows.length > NET_CAP) caps.push({ what: c.label, cap: NET_CAP, of: rows.length });
         const info = await c.ensure(target) || {};
         if (info.source && !sources.find((s) => s.src === info.source)) sources.push({ what: c.label, src: info.source, origin: c.origin });
+        if (info.source) colSrc[c.id] = info.source;
       }
     }
     const ord = spec && (spec.order || spec.sort);
@@ -1313,7 +1315,7 @@ export function atlasQuery(HOST) {
     const resultKey = 'data.query:' + [from, condKey.join('&'), rest, 'limit=' + lim].join('|');
 
     return { ok: true, table: from, tableLabel: T.label, offered, scanned, matched, rows, columns: shown, unapplied,
-      universe: base.universe || null, resultKey,
+      universe: base.universe || null, resultKey, colSrc, baseSource: base.source || T.source,
       /* (#R732) a spatial condition reports in the same column a NEAR join does — see spatialStage */
       joins: joins.map((j) => String(j.as || j.of || '')).concat(sres.labels), notes, sources, caps, spec };
   }
@@ -1524,6 +1526,26 @@ export function atlasQuery(HOST) {
       sources: (res.sources || []).map((s) => ({ what: (typeof s.what === 'string') ? s.what : L.arr(s.what), src: s.src || '' })),
     };
   }
+  /* ══ (atlas-cited-answers) WHERE EACH PRINTED COLUMN'S NUMBERS CAME FROM, AS DATA ═══════════════════
+     The method line under the table names a source per column for the READER; this is the same fact for the
+     answer's source list (js/atlas-answer-sources.js), which marks a number in Atlas's prose with the column it
+     equals. One item per printed column of numbers: the source measuring it named (`colSrc`), else the table's
+     (an intrinsic column IS the table's record). `values` are the numbers the printed rows carry, unrounded — the
+     matcher compares at the prose's own precision. A column with no source is not listed: an item without an
+     author would claim one. */
+  function provenanceOf(res) {
+    const out = [];
+    for (const c of res.columns || []) {
+      if (c.id === 'name' || (c.kind && c.kind !== 'number')) continue;
+      const src = (res.colSrc && res.colSrc[c.id]) || res.baseSource || '';
+      if (!src) continue;
+      const values = [];
+      for (const r of res.rows || []) { const v = r.v[c.id]; if (typeof v === 'number' && isFinite(v)) values.push(v); }
+      out.push({ kind: 'number', what: c.label, of: TABLES[res.table] ? TABLES[res.table].label : res.table, unit: c.unit || '',
+        source: src, origin: c.origin || 'raw', values });
+    }
+    return out;
+  }
   function announce(res) { try { window.IntMapOS.emit({ kernel: 'query', phase: 'answered', result: compactResult(res) }); } catch (_) { } }
 
   async function answer(a, ui) {
@@ -1597,7 +1619,7 @@ export function atlasQuery(HOST) {
         'Ни одна строка не удовлетворяет всем условиям — каждое было действительно проверено.',
         'Ninguna fila cumple todas las condiciones — cada una fue evaluada.')) + '</div>';
     return { ok: true, html: gap + title + (res.matched ? tableHtml(res) : none) + methodHtml(res),
-      objectIds: ids, resultKey: res.resultKey, result: res };
+      objectIds: ids, resultKey: res.resultKey, result: res, provenance: provenanceOf(res) };
   }
 
   const API = { run, answer, catalogue, colName, tableName, distKm, human,

@@ -23,6 +23,7 @@
  * ==========================================================================*/
 
 import { IntMapLang } from './lang-registry.js';
+import { sourcesMarkdown } from './atlas-answer-sources.js';   /* (atlas-cited-answers) the answer's source list, written the one way */
 
 /* ⚠ THE ONE SWITCH: IS THE INVESTIGATION NOTEBOOK SHOWN TO THE READER AT ALL?
    Observed 2026-10-04: the owner called it 「Investigation notebook とかいう謎機能」 and, asked, answered
@@ -129,6 +130,7 @@ export function entryFromTurn(turn, ctx) {
     title: question.replace(/\s+/g, ' ').slice(0, 140), question,
     answer: str(t.reply, 64000), lang: str(c.lang, 12), status: str(t.status || 'answered', 32),
     view: c.view || null, steps, results: (c.results || []).filter((r) => r && +r.at >= at), sources: c.sources || [],
+    provenance: c.provenance || [], credit: c.credit || '',   /* (atlas-cited-answers) the reply's own source list and credit line (js/atlas-answer-sources.js) */
     note: '', followOf: c.followOf || null, pinned: false,
   });
 }
@@ -159,6 +161,10 @@ export function normalize(e) {
       unapplied: arr(r.unapplied).map((u) => str(u, 200)), sources: arr(r.sources).filter(obj).map((s) => ({ what: str(s.what, 200), src: str(s.src, 400) })),
     })),
     sources: arr(e.sources).filter(obj).filter((s) => /^https?:\/\//i.test(String(s.url || ''))).map((s) => ({ url: str(s.url, 2000), title: str(s.title || s.url, 300) })),
+    /* (atlas-cited-answers) the list under the reply: what each [n] was, whose record, its licence and the citation its publisher asks for */
+    provenance: arr(e.provenance).filter(obj).filter((p) => str(p.source, 400)).map((p) => ({ n: Math.max(0, Math.floor(+p.n) || 0), kind: str(p.kind, 12), what: str(p.what, 300), source: str(p.source, 400),
+      licence: str(p.licence, 160), cite: str(p.cite, 800), url: /^https?:\/\//i.test(String(p.url || '')) ? str(p.url, 2000) : '', date: str(p.date, 32) })),
+    credit: str(e.credit, 2000),
     note: str(e.note, 8000), followOf: e.followOf ? str(e.followOf, 80) : null, pinned: !!e.pinned,
     syncedAt: +e.syncedAt || 0,
   };
@@ -240,6 +246,7 @@ export function toMarkdown(entries, lang) {
       out.push('');
     });
     if ((e.sources || []).length) { out.push('**' + t('Sources', '出典') + '**', ''); e.sources.forEach((s) => out.push('- [' + mdCell(s.title) + '](' + s.url + ')')); out.push(''); }
+    sourcesMarkdown(e.provenance, lang, e.credit).forEach((l) => out.push(l));
     const v = e.view || {}, cam = v.camera;
     if (cam && isFinite(cam.lat) && isFinite(cam.lng)) {
       const tm = v.time && !v.time.live && v.time.t != null ? iso(v.time.t) : t('live', 'ライブ');

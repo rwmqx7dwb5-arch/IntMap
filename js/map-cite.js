@@ -159,6 +159,9 @@ async function dataCitations(summary) {
  * `borders` is read only while the era layer draws; it does not make a file.
  */
 export async function citeNow(link, caption) {
+  /* (atlas-cited-answers) a date the clock was just moved to is still being drawn — read the borders it settles on, not
+     the moment before (an Atlas answer is written while `time.travel`'s draw is in flight) */
+  { const t = TB(); try { if (t && t.active && t.active() && t.settled) await t.settled(); } catch (_) { /* read what is drawn */ } }
   const facts = mapFacts(link, caption);
   const refs = references(facts);
   let borders = null;
