@@ -76,8 +76,32 @@ export function backDays(nowMs, n) {
 }
 
 /* ── the ranking ──────────────────────────────────────────────────────────────────────────────── */
+/* An event's span: first report (first_published_at — null when no article stated a time, then the instant IntMap first
+   saw it) to the latest article (null → the first report). ⚠ THE SERVER IS ASKED THE SAME RULE (windowFilter below):
+   measured before it was, the query compared first_published_at alone, and a row whose first_published_at is null —
+   which this rule places by first_seen_at — was dropped by the server before this rule ever saw it. */
 const atOf = (r) => Date.parse((r && (r.first_published_at || r.first_seen_at)) || '');
 const lastOf = (r) => { const t = Date.parse((r && r.last_article_at) || ''); return isFinite(t) ? t : atOf(r); };
+
+/* ⚠⚠ «NEW SINCE YOUR LAST VISIT» IS WHAT REACHED INTMAP SINCE THEN — the instant the collection first saw the event
+   (first_seen_at, NOT NULL in public.news_events), not the instant its first article says it was published. Measured
+   before this: both the mark and the server's count used first_published_at, so an event published at 11:00, ingested
+   at 12:30 and read by someone who last looked at 12:00 was never new to them — it had not been on the map at 12:00,
+   and after it was it counted as older than their visit. ONE column, read by the mark here and by the count
+   (js/news-events.js editionCount), so the entry, the card and Atlas cannot say two numbers. */
+export const ARRIVAL_COL = 'first_seen_at';
+/* arrivedOf(row) → epoch ms the collection first saw the event, NaN when the row does not state it */
+const arrivedOf = (r) => Date.parse((r && r[ARRIVAL_COL]) || '');
+
+/** windowFilter(win) → the PostgREST `or` expression of the window rule — the span (atOf … lastOf) overlaps
+    [sinceMs, untilMs) — with the SAME null fallbacks as atOf / lastOf. One `.or()` on the query (js/news-edition.js). */
+export function windowFilter(win) {
+  const q = (ms) => '"' + new Date(ms).toISOString() + '"';
+  const u = q(win.untilMs), s = q(win.sinceMs);
+  const starts = 'or(first_published_at.lt.' + u + ',and(first_published_at.is.null,first_seen_at.lt.' + u + '))';
+  const reaches = 'or(last_article_at.gte.' + s + ',and(last_article_at.is.null,first_published_at.gte.' + s + '),and(last_article_at.is.null,first_published_at.is.null,first_seen_at.gte.' + s + '))';
+  return 'and(' + starts + ',' + reaches + ')';
+}
 /** rank(a, b) — the edition's order: independent outlets, articles, the earlier first report, the id */
 export function rank(a, b) {
   return (b.sources - a.sources) || (b.articles - a.articles) || (a.at - b.at) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
@@ -86,7 +110,7 @@ export function rank(a, b) {
 /** buildEdition(rows, { sinceMs, untilMs, seenMs, keyAt, limit, top }) — public.news_events rows read as an edition:
  *    events      every event whose reporting span overlaps the window, in rank order, each with
  *                  isNew      first reported inside the window (else it continues from `at`)
- *                  sinceSeen  first reported after `seenMs` (the reader's last visit) — only when seenMs is given. This is
+ *                  sinceSeen  ARRIVED after `seenMs` (the reader's last visit; ARRIVAL_COL) — only when seenMs is given. This is
  *                             the MARK on an event of this window; how many events in all were first reported since the
  *                             last visit is NOT counted here (a visit two days ago reaches outside a 24-hour window) — it
  *                             is the server's count, through `makeSinceCounter` below, the one number the entry and the card say
@@ -110,7 +134,7 @@ export function buildEdition(rows, opts) {
     const p = (r.rep_lng != null && r.rep_lat != null && isFinite(+r.rep_lng) && isFinite(+r.rep_lat)) ? [+r.rep_lng, +r.rep_lat] : null;
     events.push({ id: String(r.public_id), title: String(r.representative_title || ''), at, last, p, place: r.rep_place_name_en || '',
       cat: r.primary_category || '', sources: Math.max(1, +r.independent_source_count || 1), articles: Math.max(1, +r.article_count || 1),
-      isNew: at >= since, sinceSeen: seen != null && at > seen, country: p && keyAt ? (keyAt(p[0], p[1]) || null) : null, row: r });
+      isNew: at >= since, sinceSeen: seen != null && arrivedOf(r) > seen, country: p && keyAt ? (keyAt(p[0], p[1]) || null) : null, row: r });
   }
   events.sort(rank);
   const top = events.slice(0, topN).map((e, i) => Object.assign(e, { n: i + 1 }));
@@ -133,7 +157,7 @@ export function buildEdition(rows, opts) {
 
 /** makeSinceCounter({ ask, ttlMs, now }) → count(seenMs) — how many events in all were first reported after the last visit,
  *  the ONE number «N new since your last visit» means wherever it is said (the News entry, the card, Atlas). `ask(seenMs)`
- *  resolves to the server's count (js/news-events.js: a head count of `first_published_at > seen`), or null.
+ *  resolves to the server's count (js/news-events.js: a head count of `ARRIVAL_COL > seen`), or null.
  *  ⚠ HELD PER LAST VISIT: an answer — and a question still in flight — belongs to the `seenMs` it was asked for. A count
  *    asked for the previous mark is never handed back for the new one (the mark moves the moment the edition is read).
  *  A failed ask is null («could not count»), never 0, and is not kept, so the next render asks again. */

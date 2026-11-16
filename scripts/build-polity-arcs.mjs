@@ -70,7 +70,51 @@ export const DATED = ['clio', 'ohm', 'cshapes'];
 const V = 1;
 
 const readBundle = (rel) => { const t = readFileSync(join(ROOT, rel), 'utf8'); return JSON.parse(t.slice(t.indexOf('=') + 1).replace(/;\s*$/, '')); };
-const round2 = (x) => Math.round(x * 100) / 100;
+
+/** each DATED record's own reach, as the bundles state it: [[from, to], …] in years, inclusive. A record's piece is a point
+ *  only at an instant inside its record's reach — (wave4-refine) measured 2026-11-16: «Sumerian City-States» was indexed from
+ *  the sheet year 122,999 BC, 119,600 years before Cliopatria's first row (3399 BC), because the map answered a Cliopatria
+ *  piece there (js/time-borders.js keys an instant before the record's first edge to the FIRST epoch, `_epochIn`), and the
+ *  page, its title and the hub all said «from 123,000 BC». The window is the record's statement; nothing below it is.
+ *  `clio`: the bundle's `window`; `ohm`: OpenHistoricalMap's two bundles (data/hist-borders.js to CShapes' first day, then
+ *  data/hist-borders-late.js); `cshapes`: the clock's CShapes band (js/time-borders.js CS_MIN, CS_MAX). */
+export function recordWindows(bands, clioWindow, ohmWindows) {
+  const W = { clio: [clioWindow], ohm: ohmWindows.filter(Boolean), cshapes: [[bands.csFrom, bands.csTo]] };
+  for (const r of DATED) if (!W[r] || !W[r].length || W[r].some((w) => !Array.isArray(w) || !(w[0] <= w[1]))) throw new Error('polity-arcs: the record ' + r + ' states no reach');
+  return W;
+}
+/** is year `y` inside the reach of record `rec` — a RANGE test (the defect compared a year with the record's first year only) */
+export const inWindow = (W, rec, y) => !!(W[rec] && W[rec].some((w) => y >= w[0] && y <= w[1]));
+
+/* ══ (wave4-refine) IS THE ITEM A ROW STATES REALLY THAT ROW'S UNIT? (.agents/rules/historical-verification.md §4-3) ══════════
+   A QID on a row is the upstream's claim. Measured 2026-11-16: «Zhai» states Q7183 (Qin dynasty), «Republic of Pirates» Q778
+   (The Bahamas), «Spanish Bay Islands» and «British Bay Islands» one department of Honduras, «Colony of Maryland» the
+   Republic of Maryland in Liberia — and the static pages, trusting the claim, drew each pair as one polity. So before a QID
+   may join names, each name is held against what the repository already knows about the ITEM, never against another name:
+     · its labels — the English label scripts/histclio/wikidata.json fetched (`l`) and the labels data/histnames.json carries
+       for it (`byQid`), each compared with the row's OWN name in the SAME language (the names the record writes, read from
+       the row, never the labels the map fills in from this same item — that would compare the item with itself), by the
+       one name-agreement measure the geocoder uses (js/atlas-geo-resolve.js placeRules.agreement: containment, else the
+       Dice coefficient of character bigrams, at its NAME_AGREE_MIN);
+     · its lifespan (P571 / P576, `s` / `e` in scripts/histclio/wikidata.json): a name drawn only outside it is another unit.
+   → 'ok' (a label agrees, and the lifespan, when known, meets the drawn span), 'differs' (labels in a shared language, none
+   agrees), 'lifespan', or 'unverified' (no label in a language the row writes — the repository cannot tell). Only 'ok' joins;
+   the measure can only REFUSE the upstream's claim, it never joins two names by their spelling. */
+export function itemIdentity(own, item, span, agree, min) {
+  const it = item || {};
+  if (span && Array.isArray(it.s) && it.s.length) {
+    const from = Math.min(...it.s), to = Array.isArray(it.e) && it.e.length ? Math.max(...it.e) : Infinity;
+    if (span[1] < from || span[0] > to) return 'lifespan';
+  }
+  let shared = false, best = 0;
+  for (const [lang, labels] of Object.entries(it.labels || {})) {
+    const mine = own && own[lang];
+    if (!mine || !mine.length || !labels.length) continue;
+    shared = true;
+    for (const n of mine) for (const l of labels) best = Math.max(best, agree(n, l));
+  }
+  return !shared ? 'unverified' : best >= min ? 'ok' : 'differs';
+}
 
 /** the instants the index is read at: sheet years (each its own statement), the years below the OpenHistoricalMap floor
  *  on which the map's own world changes (`changeYears` — js/time-borders.js `changeDates`), and every year from that floor
@@ -83,9 +127,7 @@ export function instants(bands, sheetYears, changeYears) {
   return [...s].sort((a, b) => a - b);
 }
 
-/* ── the box of a set of geometries, the narrow way round the antimeridian ──────────────────────────
-   A polity that straddles 180° (the Russian Empire with Alaska, Fiji) has a plain box the width of the world. The
-   longitudes its parts cover are arcs on a circle; the box is the complement of the widest empty gap between them. */
+/* ── the box of each part of a geometry (js/polity-arc.js narrowBox folds them the narrow way round the antimeridian) ── */
 function partBoxes(g, out) {
   const polys = !g ? [] : g.type === 'Polygon' ? [g.coordinates] : g.type === 'MultiPolygon' ? g.coordinates : [];
   for (const p of polys) {
@@ -96,29 +138,37 @@ function partBoxes(g, out) {
   }
   return out;
 }
-export function narrowBox(boxes) {
-  if (!boxes.length) return null;
-  const s = Math.min(...boxes.map((b) => b[1])), n = Math.max(...boxes.map((b) => b[3]));
-  const iv = boxes.map((b) => [b[0], b[2]]).sort((a, b) => a[0] - b[0]);
-  /* merge the covered arcs, then find the widest gap between consecutive ones (and the one across ±180°) */
-  const merged = [];
-  for (const x of iv) { const l = merged[merged.length - 1]; if (l && x[0] <= l[1]) l[1] = Math.max(l[1], x[1]); else merged.push([x[0], x[1]]); }
-  let best = { gap: (merged[0][0] + 360) - merged[merged.length - 1][1], w: merged[0][0], e: merged[merged.length - 1][1] };
-  for (let i = 1; i < merged.length; i++) {
-    const gap = merged[i][0] - merged[i - 1][1];
-    if (gap > best.gap) best = { gap, w: merged[i][0], e: merged[i - 1][1] + 360 };
-  }
-  return [round2(best.w), round2(s), round2(best.e), round2(n)];
-}
 
 /** → the index object (what data/polity-arcs.json holds) */
 export async function build(opt = {}) {
   const { mapReader } = await import('./history-pages.mjs');
   const { july1, partsOfTier, recordOf } = await import('./year-choice.mjs');
   const { areaKm2 } = await import('../js/year-book.js');
+  const { narrowBox } = await import('../js/polity-arc.js');
   const R = await mapReader();
   const B = R.bands;
   const eras = readBundle('data/hist-eras.js'), clio = readBundle('data/hist-clio.js');
+  const ohmEarly = readBundle('data/hist-borders.js'), ohmLate = readBundle('data/hist-borders-late.js');
+  const W = recordWindows(B, clio.window, [ohmEarly.window, ohmLate.window]);
+  /* (wave4-refine) the Wikidata item a piece's ROW states. The map writes `_qid` on some records' pieces and not on others
+     (OpenHistoricalMap 1689–1885 carries it in the row, not on the piece), so the index lost it: the 27 slices «New Spain
+     (1667-1697)» … all state Q170603 and the index said none. The map's own provenance answer reads the row
+     (js/time-borders.js `provenanceOf` → `ids`); a geometry is one row's, so it is asked once per geometry. */
+  /* …and the row's OWN names in every language it writes (the record's, before the map fills a gap from the item —
+     itemIdentity), read from the bundle row the provenance answer names */
+  const rowsOf = { 'data/hist-borders.js': ohmEarly, 'data/hist-borders-late.js': ohmLate, 'data/hist-clio.js': clio };
+  const qidOfGeom = new WeakMap();
+  const rowQid = (f) => {
+    const g = f.geometry; if (!g) return { q: null, own: null };
+    if (qidOfGeom.has(g)) return qidOfGeom.get(g);
+    let q = null, own = null;
+    try {
+      const side = R.api.provenanceOf(f); const id = side && (side.ids || []).find((x) => x.kind === 'wikidata'); q = id ? String(id.value) : null;
+      const b = side && side.index && rowsOf[side.index.file], row = b && b.feats[side.index.i];
+      if (row && row[0] && typeof row[0] === 'object') own = row[0];
+    } catch (_) { q = null; }
+    const v = { q, own }; qidOfGeom.set(g, v); return v;
+  };
   const sheetYears = new Set(eras.snaps.map((s) => s.y));
   /* the days the map's world changes, as the map itself lists them (js/time-borders.js `changeDates`: Cliopatria's rows, the
      moves from one sheet to the next, OpenHistoricalMap's and CShapes' edges). It lists only the records already open, so
@@ -129,10 +179,10 @@ export async function build(opt = {}) {
      record's edges, and the instants read above open the coast pieces with the rest */
   const at = instants(B, [...sheetYears], changed);
   const years = opt.years ? at.filter((y) => opt.years.includes(y)) : at;
-  const skipped = { described: 0, unnamed: 0, sheetFill: 0 };
+  const skipped = { described: 0, unnamed: 0, sheetFill: 0, outsideWindow: 0 };
   /* polity name (as the map writes it in English) → its accumulators */
   const P = new Map();
-  const src = { clio: clio.src, ohm: readBundle('data/hist-borders.js').src, cshapes: readBundle('data/cshapes.js').src, sheet: eras.src };
+  const src = { clio: clio.src, ohm: ohmEarly.src, cshapes: readBundle('data/cshapes.js').src, sheet: eras.src };
   for (let yi = 0; yi < years.length; yi++) {
     const y = years[yi];
     const r = await R.labelsAt(july1(y));
@@ -148,18 +198,29 @@ export async function build(opt = {}) {
       const rec = recordOf(p, parts);
       const bit = DATED.indexOf(rec);
       if (bit < 0 && !isSheet) { skipped.sheetFill++; return; }   /* a sheet's piece between sheet years states no year (header) */
+      if (bit >= 0 && !inWindow(W, rec, y)) { skipped.outsideWindow++; return; }   /* a dated record's piece outside its own reach states nothing (recordWindows) */
       let h = here.get(en);
-      if (!h) { h = { km: 0, mask: 0, sk: 0, boxes: [], jp: r.labels.jp[i], qids: new Set() }; here.set(en, h); }
+      if (!h) { h = { km: 0, mask: 0, sk: 0, boxes: [], jp: r.labels.jp[i], qids: new Set(), own: new Map() }; here.set(en, h); }
       const km = areaKm2(f.geometry);
       if (bit >= 0) { h.km += km; h.mask |= 1 << bit; } else h.sk += km;
-      if (p._qid) h.qids.add(String(p._qid));
+      const row = bit >= 0 ? rowQid(f) : { q: null, own: null };
+      const q = p._qid ? String(p._qid) : row.q;
+      if (q) {
+        h.qids.add(q);
+        if (row.own) { if (!h.own.has(q)) h.own.set(q, []); h.own.get(q).push(row.own); }
+      }
       partBoxes(f.geometry, h.boxes);
     });
     for (const [en, h] of here) {
       let A = P.get(en);
-      if (!A) { A = { n: en, jp: new Map(), q: new Set(), d: [], s: [], boxes: [], peak: null, last: null }; P.set(en, A); }
+      if (!A) { A = { n: en, jp: new Map(), q: new Set(), own: new Map(), d: [], s: [], boxes: [], peak: null, last: null }; P.set(en, A); }
       if (h.jp && h.jp !== en) A.jp.set(h.jp, (A.jp.get(h.jp) || 0) + 1);
       for (const q of h.qids) A.q.add(q);
+      for (const [q, list] of h.own) {
+        if (!A.own.has(q)) A.own.set(q, {});
+        const o = A.own.get(q);
+        for (const names of list) for (const [lang, v] of Object.entries(names)) if (typeof v === 'string' && v) { if (!o[lang]) o[lang] = []; if (!o[lang].includes(v)) o[lang].push(v); }
+      }
       const km = Math.round(h.km);
       if (h.mask) {
         /* a change point only where the rounded area or the records change (an absence was closed by a 0 point below) */
@@ -179,13 +240,31 @@ export async function build(opt = {}) {
     }
     if (opt.progress && yi % 100 === 0) process.stderr.write('  ' + y + ' (' + yi + '/' + years.length + ')\n');
   }
+  /* the item's facts the repository already holds (itemIdentity) */
+  const facts = JSON.parse(readFileSync(join(ROOT, 'scripts/histclio/wikidata.json'), 'utf8')).facts || {};
+  const hn = (JSON.parse(readFileSync(join(ROOT, 'data/histnames.json'), 'utf8')).byQid) || {};
+  const { makeAtlasGeoResolve } = await import('../js/atlas-geo-resolve.js');
+  const PR = makeAtlasGeoResolve.placeRules;
+  const agree = (a, b) => PR.agreement(a, { name: b });
+  const itemOf = (q) => {
+    const labels = {};
+    if (facts[q] && facts[q].l) labels.en = [facts[q].l];
+    for (const [lang, v] of Object.entries((hn[q] && hn[q].n) || {})) labels[lang] = [v];
+    return { labels, s: facts[q] && facts[q].s, e: facts[q] && facts[q].e };
+  };
   const arcs = [];
   for (const A of P.values()) {
     if (!A.d.length && !A.s.length) continue;
     const o = { n: A.n };
     const jp = [...A.jp.entries()].sort((a, b) => b[1] - a[1])[0];
     if (jp) o.j = jp[0];
-    if (A.q.size) o.q = [...A.q].sort();
+    if (A.q.size) {
+      o.q = [...A.q].sort();
+      const drawn = A.d.filter((p) => p[1] > 0).map((p) => p[0]);
+      const end = A.d.length && A.d[A.d.length - 1][1] === 0 ? A.d[A.d.length - 1][0] - 1 : B.csTo;
+      const span = drawn.length ? [Math.min(...drawn), end] : null;
+      o.qv = o.q.map((q) => itemIdentity(Object.assign({ en: [A.n] }, A.own.get(q) || {}), itemOf(q), span, agree, PR.NAME_AGREE_MIN));
+    }
     if (A.d.length) o.d = A.d;
     if (A.s.length) o.s = A.s;
     o.bb = narrowBox(A.boxes);
@@ -201,7 +280,7 @@ export async function build(opt = {}) {
   return {
     upstreams: G.upstreams, cadence: G.cadence, builtBy: G.builtBy, schema: G.schema,
     v: V, recs: DATED, src,
-    instants: { sheets: [...sheetYears].filter((y) => y <= B.csTo).sort((a, b) => a - b), clioFrom: clio.window[0], dayFrom: B.ohmFrom, csFrom: B.csFrom, to: B.csTo, at: 'July 1' },
+    instants: { sheets: [...sheetYears].filter((y) => y <= B.csTo).sort((a, b) => a - b), clioFrom: clio.window[0], dayFrom: B.ohmFrom, csFrom: B.csFrom, to: B.csTo, at: 'July 1', windows: W },
     skipped, arcs,
   };
 }

@@ -101,7 +101,7 @@ function urlsIn(text) {
   const out = [];
   for (const m of text.matchAll(URL_RE)) {
     const host = hostOf(m[1]);
-    out.push({ host, at: m.index, dynamic: host.split('.').every((l) => l === '*') || !host.includes('.') });
+    out.push({ host, at: m.index, scheme: m[0].slice(0, m[0].indexOf(':')).toLowerCase(), dynamic: host.split('.').every((l) => l === '*') || !host.includes('.') });
   }
   return out;
 }
@@ -251,7 +251,10 @@ function scanJs(file, src, out, offset = 0, whole = src) {
       for (const u of urlsIn(text)) {
         const before = text.slice(Math.max(0, u.at - 400), u.at);
         const link = ANCHOR.test(before) ? 'anchor' : NAMESPACE_ATTR.test(before) ? 'namespace' : linkByAncestry(anc, n);
-        out.push({ host: u.host, dynamic: u.dynamic, file, line: line(offset + n.start), link });
+        const o = { host: u.host, scheme: u.scheme, dynamic: u.dynamic, file, line: line(offset + n.start), link };
+        /* (wave4-refine) a socket's whole address, as the literal writes it — the readiness check opens the same one */
+        if (/^wss?$/.test(u.scheme)) o.url = /^[^\s"'`<>]+/.exec(text.slice(u.at))[0];
+        out.push(o);
       }
     }
     if (n.type === 'Literal') return;
@@ -291,10 +294,10 @@ function scanHtml(file, html, out) {
     const body0 = m.index + m[0].indexOf('>') + 1;
     scripts.push([m.index, m.index + m[0].length]);
     if (/json|ld\+json|importmap|template/i.test(type)) {
-      for (const u of urlsIn(m[2])) out.push({ host: u.host, dynamic: u.dynamic, file, line: line(body0 + u.at), link: 'metadata' });
+      for (const u of urlsIn(m[2])) out.push({ host: u.host, scheme: u.scheme, dynamic: u.dynamic, file, line: line(body0 + u.at), link: 'metadata' });
     } else if (m[2].trim()) scanJs(file, m[2], out, body0, html);
     const src = /\bsrc\s*=\s*["']([^"']+)/i.exec(m[1]);
-    if (src) for (const u of urlsIn(src[1])) out.push({ host: u.host, dynamic: u.dynamic, file, line: line(m.index), link: null });
+    if (src) for (const u of urlsIn(src[1])) out.push({ host: u.host, scheme: u.scheme, dynamic: u.dynamic, file, line: line(m.index), link: null });
   }
   const inScript = (i) => scripts.some(([a, b]) => i >= a && i < b);
   for (const m of blank.matchAll(/<(\w+)\b([^>]*)>/g)) {
@@ -312,7 +315,7 @@ function scanHtml(file, html, out) {
         : tag === 'meta' ? 'metadata'
           : tag === 'link' && rel.split(/\s+/).every((r) => LINK_REL_NAMES.test(r)) ? 'metadata'
             : null;
-      const o = { host: u.host, dynamic: u.dynamic, file, line: line(m.index + m[0].indexOf(u.host)), link };
+      const o = { host: u.host, scheme: u.scheme, dynamic: u.dynamic, file, line: line(m.index + m[0].indexOf(u.host)), link };
       if (probeAt && u.at >= probeAt[0] && u.at < probeAt[1]) o.probe = probe;
       out.push(o);
     }
@@ -325,7 +328,7 @@ function scanCss(file, css, out) {
   const line = lineIndex(css);
   const blank = codeOnly(css, { lang: 'css', offsets: true });
   for (const m of blank.matchAll(/(?:url\(\s*["']?|@import\s+["'])([^"')\s]+)/gi)) {
-    for (const u of urlsIn(m[1])) out.push({ host: u.host, dynamic: u.dynamic, file, line: line(m.index), link: null });
+    for (const u of urlsIn(m[1])) out.push({ host: u.host, scheme: u.scheme, dynamic: u.dynamic, file, line: line(m.index), link: null });
   }
 }
 
@@ -478,6 +481,67 @@ export function deriveOfflineSources(ledger) {
   };
 }
 
+/* ══ (wave4-refine) THE PROTOCOL EACH HOST IS CONTACTED OVER — FROM THE CODE, NOT A LIST ══════════════════════════
+   The readiness check (js/readiness-check.js) asked every host with an https `no-cors` GET and called an answer
+   «reached». Two hosts are contacted over a WebSocket, which a filter can refuse while it lets https through: the
+   reader's own AIS stream (`new WebSocket('wss://stream.aisstream.io/v0/stream')`, js/data-layers.js) and IntMap's
+   backend's live updates (Supabase Realtime). Both are read from the code that opens them:
+     · every ws:// / wss:// address a browser file writes as a literal (the scheme of each occurrence, above);
+     · Supabase Realtime, when a browser file subscribes to a channel of the client (`….channel(…)….subscribe()`): the
+       socket the client library opens — its address as supabase-js derives it from the project URL (`realtimeUrl`: a
+       path and an http→ws scheme rewrite) and realtime-js completes it (the `websocket` transport, `apikey` and the
+       default `vsn`), each read from the installed library's own source, with the project URL and its publishable key
+       from src/vendor.js (where the page has them). A library whose source no longer says so stops this script instead
+       of guessing. */
+const readText = (root, rel) => fs.readFileSync(path.join(root, rel), 'utf8');
+function need(re, text, what) { const m = re.exec(text); if (!m) throw new Error('outbound-hosts: cannot read ' + what + ' — the code that states it changed'); return m; }
+/** does a browser file subscribe to a Supabase Realtime channel (`x.channel(…)[.on(…)…].subscribe()`) */
+export function subscribesRealtime(files) {
+  for (const { file, text } of files) {
+    if (!/\.js$|\.mjs$/.test(file) || !text.includes('.channel(') || !text.includes('.subscribe(')) continue;
+    let ast; try { ast = parse(text, file); } catch (_) { continue; }
+    let hit = false;
+    const chainHasChannel = (n) => { for (let c = n; c && !hit;) { if (c.type === 'CallExpression') { if (memberName(c.callee) === 'channel') return true; c = c.callee; } else if (c.type === 'MemberExpression') c = c.object; else return false; } return false; };
+    const walk = (n) => {
+      if (hit || !n || typeof n.type !== 'string') return;
+      if (n.type === 'CallExpression' && memberName(n.callee) === 'subscribe' && chainHasChannel(n.callee.object)) { hit = true; return; }
+      for (const k of Object.keys(n)) { if (SKIP.has(k)) continue; const v = n[k]; if (Array.isArray(v)) for (const c of v) walk(c); else if (v && typeof v.type === 'string') walk(v); }
+    };
+    walk(ast);
+    if (hit) return true;
+  }
+  return false;
+}
+/** the Supabase Realtime socket the client library opens for this project, read from the library and src/vendor.js */
+export function realtimeSocket(root = ROOT) {
+  const vendor = readText(root, 'src/vendor.js');
+  const project = need(/window\.SUPABASE_URL\s*=\s*'([^']+)'/, vendor, 'the project URL in src/vendor.js')[1];
+  const key = need(/window\.SUPABASE_ANON_KEY\s*=\s*'([^']+)'/, vendor, 'the publishable key in src/vendor.js')[1];
+  const sb = readText(root, 'node_modules/@supabase/supabase-js/dist/index.mjs');
+  const rpath = need(/realtimeUrl\s*=\s*new URL\("([^"]+)",\s*baseUrl\)/, sb, 'supabase-js realtimeUrl')[1];
+  const [, from, to] = need(/realtimeUrl\.protocol\s*=\s*this\.realtimeUrl\.protocol\.replace\("([a-z]+)",\s*"([a-z]+)"\)/, sb, 'supabase-js realtimeUrl scheme');
+  const consts = readText(root, 'node_modules/@supabase/realtime-js/dist/module/lib/constants.js');
+  const transport = need(/websocket:\s*'([a-z]+)'/, consts, 'realtime-js TRANSPORTS.websocket')[1];
+  const vsnName = need(/DEFAULT_VSN\s*=\s*([A-Z0-9_]+)/, consts, 'realtime-js DEFAULT_VSN')[1];
+  const vsn = need(new RegExp(vsnName + "\\s*=\\s*'([^']+)'"), consts, 'realtime-js ' + vsnName)[1];
+  const u = new URL(rpath, project.replace(/\/?$/, '/'));
+  u.protocol = u.protocol.replace(from, to);
+  return { host: u.hostname, url: u.href.replace(/\/$/, '') + '/' + transport + '?apikey=' + encodeURIComponent(key) + '&vsn=' + encodeURIComponent(vsn) };
+}
+/** host → { protocols: [scheme…], socket: url|null } for every host the browser REQUESTS, from the code */
+export function protocolsOf(files, root = ROOT) {
+  const by = new Map();
+  const at = (h) => { if (!by.has(h)) by.set(h, { protocols: new Set(), socket: null }); return by.get(h); };
+  for (const o of discover(files)) {
+    if (o.link || o.dynamic || o.probe || !o.scheme) continue;
+    const e = at(o.host);
+    e.protocols.add(o.scheme);
+    if (o.url && !e.socket) e.socket = o.url;
+  }
+  if (subscribesRealtime(files)) { const r = realtimeSocket(root); const e = at(r.host); e.protocols.add(new URL(r.url).protocol.replace(':', '')); if (!e.socket) e.socket = r.url; }
+  return new Map([...by].map(([h, e]) => [h, { protocols: [...e.protocols].sort(), socket: e.socket }]));
+}
+
 export const CONNECTION_LEDGER = 'data/connection-ledger.json';
 /** (security-next) data/connection-ledger.json, derived: the part of every row a READER is shown when the page's
     observed connections are checked against this ledger (js/connections-panel.js — Settings ▸ This page's connections,
@@ -485,8 +549,9 @@ export const CONNECTION_LEDGER = 'data/connection-ledger.json';
     link / dormant / removedBy), because the reader is told which of the four an observed host is: a `link` row the
     page actually REQUESTED, or a `dormant` one, contradicts this ledger and is shown as such. The probe, the offline
     statement and the notes stay here — the page needs none of them. */
-export function deriveConnectionLedger(ledger) {
+export function deriveConnectionLedger(ledger, protocols) {
   const rows = (ledger && Array.isArray(ledger.hosts)) ? ledger.hosts : [];
+  const P = protocols || new Map();
   const hosts = rows.map((r) => {
     const form = ['disclosure', 'link', 'dormant', 'removedBy'].find((k) => r[k] != null) || null;
     const out = { host: r.host, form, what: r.what };
@@ -497,6 +562,10 @@ export function deriveConnectionLedger(ledger) {
     /* (wave4-sales) the one representative request the nightly check makes (scripts/upstream-liveness.mjs) — the
        readiness check (js/readiness-check.js) makes the same request from the reader's own device and network */
     if (form === 'disclosure' && r.probe && typeof r.probe.url === 'string') out.probe = r.probe.url;
+    /* (wave4-refine) how the code contacts it (protocolsOf), and the socket it opens there — the readiness check opens it */
+    const p = P.get(r.host);
+    if (p && p.protocols.length) out.protocols = p.protocols;
+    if (form === 'disclosure' && p && p.socket) out.socket = p.socket;
     return out;
   });
   const seen = new Set();
@@ -525,7 +594,8 @@ export function deriveConnectionLedger(ledger) {
 /** The rule against the working tree, as check:datagov runs it. */
 export function checkRepository(root = ROOT) {
   const ledger = readLedger(root);
-  const r = check({ files: browserFiles(root), ledger, legalSource: fs.readFileSync(path.join(root, LEGAL), 'utf8') });
+  const files = browserFiles(root);
+  const r = check({ files, ledger, legalSource: fs.readFileSync(path.join(root, LEGAL), 'utf8') });
   /* ④ (offline-declared) the file the page reads is the ledger's statement, not a second one */
   try {
     const have = JSON.parse(fs.readFileSync(path.join(root, OFFLINE_SOURCES), 'utf8'));
@@ -534,7 +604,7 @@ export function checkRepository(root = ROOT) {
   /* (security-next) …and so is the file the page holds its OBSERVED connections against */
   try {
     const have = JSON.parse(fs.readFileSync(path.join(root, CONNECTION_LEDGER), 'utf8'));
-    if (JSON.stringify(have) !== JSON.stringify(deriveConnectionLedger(ledger))) r.problems.push(`${CONNECTION_LEDGER} does not match ${LEDGER} — run \`node scripts/connection-ledger.mjs --write\``);
+    if (JSON.stringify(have) !== JSON.stringify(deriveConnectionLedger(ledger, protocolsOf(files, root)))) r.problems.push(`${CONNECTION_LEDGER} does not match ${LEDGER} — run \`node scripts/connection-ledger.mjs --write\``);
   } catch (_) { r.problems.push(`${CONNECTION_LEDGER} is missing or unreadable — run \`node scripts/connection-ledger.mjs --write\``); }
   return r;
 }

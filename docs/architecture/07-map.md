@@ -450,14 +450,14 @@ Atlas は `time.placeHistory`（`year` を渡すとその年に有効な行も�
 
 | 流れ | 記録 | 何の数か |
 |---|---|---|
-| 人 | `data/world-flows.json`（`scripts/build-world-flows.mjs` が UN DESA International Migrant Stock 2024 の Table 1 から書く・CC BY 3.0 IGO） | ある国で生まれ別の国に住む人の**ストック**（年央 1990・1995 … 2020・2024）。移動した人数ではない。合計は DESA が述べる値（出身・居住が「その他・不明」の分を含む）で、名指しの相手の和との差を「記録が国を特定していない分」と書く |
-| データ | `data/subcables-meta.json`（海底ケーブルレイヤーと同じ記録） | 両国に陸揚げされ、その年までに運用開始した**系統の数**（記録が計画中と述べる系統はどの年でも数えない）。容量ではない。退役したケーブルは記録に無いので過去は少なく数える。運用開始年の無い系統は「現在」だけに数える |
-| 航空路 | `data/mobility.json` の `pairs`（OpenFlights 2014 年 6 月） | 国の組ごとの**路線数**。座席・便数・旅客ではない |
+| 人 | `data/world-flows.json`（`scripts/build-world-flows.mjs` が UN DESA International Migrant Stock 2024 の Table 1 から書く・CC BY 3.0 IGO） | ある国で生まれ別の国に住む人の**ストック**（各年の 7 月 1 日時点、1990・1995 … 2020・2024）。移動した人数ではない。**現在の国境による推計**（DESA の推計であって当時の国境ではない）とカードが言う。合計は DESA が述べる値（出身・居住が「その他・不明」の分を含む）で、名指しの相手の和との差を「記録が国を特定していない分」と書く |
+| データ | `data/subcables-meta.json`（海底ケーブルレイヤーと同じ記録） | 両国に陸揚げされ、その年までに運用開始した**系統の数**（記録が計画中と述べる系統はどの年でも数えない）。容量ではない。退役したケーブルは記録に無いので過去は少なく数える。運用開始年の無い系統は「現在」だけに数える。記録は運用開始の**年**しか述べないので、系統はその年が終わった時点から数え、時計がその年の途中にある系統は数えずに「この年に運用開始（日付は記録に無い）」として別に述べる（`sameYear`） |
+| 航空路 | `data/mobility.json` の `pairs`（OpenFlights 2014 年 6 月） | 国の組ごとの**路線数**。座席・便数・旅客ではない。「2014 年 6 月の表」なので、その月が終わった時点（2014-07-01）から述べたものとして読む |
 | モノ | **このカードは描かない** | 「貿易フロー」レイヤー（`wp-dl-trade`・`js/world-packs.js`、CEPII BACI を OEC 経由）が既に答える。カードの「モノ」は、そのレイヤーを同じ国と向きで開く扉（行の `change` と、レイヤー族が登録した `IntMapShareState` の `world`——共有リンクと同じ 2 手）。貿易の実装は 1 つ |
 
 | 部品 | 中身 |
 |---|---|
-| 事実 | `js/world-flows-core.js`（純粋）——国の表 `placeIndex`（ISO 3 文字・2 文字・`N:<M49>`）と名前の照合、時刻の規則 `yearFor`（時計の年以前で最も新しい記録の年。記録より前は答えず `before-record` と最初の年）、3 つの読み方、`summarise`（合計・割合・地図外）、`arcLine`（アプリの turf の大圏を経度の連続に直す——180 度線で世界を横切らない）、`arcFeatures` |
+| 事実 | `js/world-flows-core.js`（純粋）——国の表 `placeIndex`（ISO 3 文字・2 文字・`N:<M49>`）と名前の照合、時刻の規則 `yearFor`（**年ではなく時点で比べる**: 各記録の値はそれが述べる時点——移民は 7 月 1 日 `midYearMs`、航空路はその月の終わり、ケーブルは運用開始年の終わり `heldFromMs` / `yearEndMs`——から成り立つとし、時計の瞬間以前に成り立つ最も新しいものを読む。記録より前は答えず `before-record` と最初の年）、3 つの読み方、`summarise`（合計・割合・地図外）、`arcLine`（アプリの turf の大圏を経度の連続に直す——180 度線で世界を横切らない）、`arcFeatures` |
 | 国 | Natural Earth（`data/ne-countries` の 10m、公有）の `LABEL_X/Y`・`NAME_EN`・`NAME_JA`・`ISO_N3_EH`。同じ番号を国と属領が持つときは `ADM0_A3 = ISO_A3_EH` の地物が国。Natural Earth に無い DESA の地域（一覧は束の `migration.unplaced`、ビルドが印字する）は DESA の名前で表に残し、位置を持たず、カードが「地図外」と数える |
 | カードと地図 | `js/world-flows.js`（遅延チャンク・窓口を公開しない）。`.country-popup` のカード、ソース `wf-src`（流れを替えると作り直し、`attribution` がその記録を名乗る）と層 `wf-arc` / `wf-arrow` / `wf-end`（順位の丸、押すとその国へ）/ `wf-rank` / `wf-home`。`IntMapTime.on` で読み直し、図の棒を押すと時計がその年へ。枠取りはカードが覆わない部分へ（`js/card-clearance.js`）、地球儀では地球がその部分を満たすズーム（`log2(π·D/512)`）より引かず、国を中心に置く |
 | 扉 | Tools ▾ の「道具」`tool.worldFlows`（`js/map-ui.js`）・地点カードの国の行（`js/place-dossier.js` `data-hn="flows"`）・リンク `?wf=<ISO3>.<流れ>.<向き>`（`src/main.js` → `bootFromUrl`）・Atlas `data.worldFlows`（`js/atlas-cap-data.js`、observer `panel`） |
@@ -467,9 +467,9 @@ Atlas は `time.placeHistory`（`year` を渡すとその年に有効な行も�
 ### 7.3j 余震の見通し (Aftershock forecast) — `js/aftershock.js` / `js/aftershock-core.js`
 M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1 年に M3／M5／M6／M7 以上と「本震と同規模以上」の余震が少なくとも 1 回起きる確率と、
 回数の 95% の範囲を出す。モデルは Reasenberg & Jones (1989)、事前分布は USGS が地殻変動の区分ごとに公表した一般パラメータ
-（Page et al. 2016）で、その系列の余震でベイズ更新する（p・c は固定＝USGS の OAF の Bayesian 結合と同じ）。手法の正本は
+（Page et al. 2016）で、その系列の余震で a・p・c を格子上でまとめてベイズ更新する（尤度に −p·Σln(tᵢ+c) を含む。USGS の系列固有モデルが学ぶのと同じ 3 つ）。p と log10 c の事前分布の幅は同梱 19 組のパラメータのばらつき（p 0.136・log10 c 0.210、推定）。期間は固定日数の 1・7・31・366 日（USGS の `forecast.json` の実測と一致）。検知限界の下限は観測網の値か、系列から最大曲率法＋0.2（Woessner & Wiemer 2005）で推定した値の大きいほう。余震が 50 個未満で推定できず、地震が検証期間（2015 年以降）より古いときは事前分布だけで答え、照合しない。「95%」はモデルの幅で、同梱の答え合わせで測った実際の被覆率を併記する（数値の正本は `data/aftershock-hindcast.json` と手法のページ）。深さ 70 km 以上の本震には注記を出す。過去の時点の見通しは現在のカタログで計算することも述べる。手法の正本は
 `science.html#aftershock`（`js/locales/pages.{en,ja}.js`）、正本の説明（出典・送るもの）は [`docs/MAP-LAYERS.md`](../MAP-LAYERS.md) の「余震の見通し」。
-| 事実 | `js/aftershock-core.js`（純粋）——区分 `regimeAt`（カリフォルニアの 5 区域→García の 0.05° 格子）・検知限界 `completenessAt` / `mcAt`・余震域 `zoneOf`（Wells & Coppersmith の破壊長、本震と M≥magCentroid の余震の球面重心）・`kIntegral`・`posterior`・`forecast`（事後分布上のポアソン混合で確率と 2.5/50/97.5%）・`run`（答え合わせ `check` を含む）・USGS の `oaf` 製品の読み `oafUrl` / `readOafForecast`・`?as=` |
+| 事実 | `js/aftershock-core.js`（純粋）——区分 `regimeAt`（カリフォルニアの 5 区域→García の 0.05° 格子）・検知限界 `completenessAt` / `mcAt`・系列からの推定 `estimateMc`・事前分布の形 `shapePrior`・期間 `windows`・余震域 `zoneOf`（Wells & Coppersmith の破壊長、本震と M≥magCentroid の余震の球面重心）・`kIntegral`・`posterior`・`forecast`（事後分布上のポアソン混合で確率と 2.5/50/97.5%）・`run`（答え合わせ `check` と注記 `notes` を含む）・実測の被覆率 `testedCoverage`・USGS の `oaf` 製品の読み `oafUrl` / `readOafForecast`・`?as=` |
 | 束 | `data/aftershock-regimes.json.gz`（`scripts/build-aftershock-regimes.mjs`。OpenSHA OAF の 3 ファイルを 1 コミットに固定して無加工で写す・CC0）／`data/aftershock-hindcast.json`（`scripts/build-aftershock-hindcast.mjs`。2015〜2024 年の M7 以上 137 系列を本震の 1 日後に出した見通しと実際） |
 | カードと地図 | `js/aftershock.js`（IntMapLazy の `aftershock`）。ソース `as-src`、層 `as-ring` / `as-pt` / `as-main`。**マスタークロックが見通しの時点**——時計を動かすと読み込み済みの記録から計算し直し、範囲を外れたときだけ読み直す。ライブの時計がライブのまま進むだけでは計算し直さない |
 | 扉 | `js/wb-layers.js`（起動時）——地震ポップアップの「余震の見通し」（M5 以上）・`data-as-open`（地震の記録の選んだ地震からも）・命令 `aftershock.open`・`?as=` の検出。Tools ▾ の `sim.aftershocks` 行（`js/map-ui.js`）は最近 30 日の M5.5 以上の一覧で開く |
@@ -978,7 +978,10 @@ M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1
   （`name`・`qid`・`year`・`pick`、`go: peak|first|last`・`play`・`show`）。
 - **索引**: `data/polity-arcs.json`（`scripts/build-polity-arcs.mjs`）。地図のコード（`history-pages.mjs` の `mapReader`）に、Cliopatria の行が始まる・終わる全ての年
   （1689 年より前）・1689〜2019 年の毎年 7 月 1 日・枚の年を訊き、英語の名前ごとに面積（km² の整数）と記録のビットを持つ。面積も記録も変わらない瞬間は 1 点に
-  まとめる（唯一の圧縮）。枚が年を述べない断片・説明の名前（`_desc`）・名前の無い形は数えない（`skipped`）。各政体は最大の年・面積・記録・枠（日付変更線を
+  まとめる（唯一の圧縮）。**点を打つのはその記録の窓の中だけ**——Cliopatria は束の `window`、OpenHistoricalMap は 2 つの束（CShapes の初日まで `data/hist-borders.js`、
+  その後 `data/hist-borders-late.js`）、CShapes は時計の帯（`js/time-borders.js` `CS_MIN`〜`CS_MAX`）。窓より前の瞬間に記録の最初の版を答えさせない（範囲で判定する）。
+  地図の読み手 `js/time-borders.js` も同じで、記録の最初の端より前の瞬間は専用の状態 `pre`（何も効力が無い）として鍵を持つので、Cliopatria を読む順番に
+  かかわらず窓の外では描かない。枚が年を述べない断片・説明の名前（`_desc`）・名前の無い形は数えない（`skipped`）。各政体は最大の年・面積・記録・枠（日付変更線を
   またぐ政体は狭い側）と全体の枠を持つ。`--check` が束から作り直して照合する（`tests/hist-product-checks.test.mjs`）。
 
 ### 7.4d 家族史と国境——読者の家族を、その日の記録で読む
@@ -995,13 +998,20 @@ M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1
   「この生涯を地図で再生」は最初の日・変化の日・最後の日だけを `startLapse({ instants, owner: 'family-history' })` で再生する。
 - **日付**: `js/gedcom.js` の `parseDate`（GEDCOM 5.5.1 / 7.0 の文法: ABT・CAL・EST・BEF・AFT・BET…AND・FROM…TO・INT、B.C./BCE、二重年号は後の年）が日の幅
   `[k0, k1)` にする。ユリウス暦はユリウス通日で、フランス革命暦は各年の 1 ヴァンデミエールのグレゴリオ暦の日（共和暦 1〜14 年）で、ユダヤ暦は
-  プラットフォームの暦（`Intl` の `u-ca-hebrew`）で換算する。読めない日付は書かれたまま残し、幅を作らない。手入力は ISO（1905-03-12）・「1905年3月12日」・
+  プラットフォームの暦（`Intl` の `u-ca-hebrew`）で換算する。読めない日付は書かれたまま残し、幅を作らない。グレゴリオ暦以外の暦で年か月だけの日付（ユダヤ暦 5700 年＝1939-09-14〜1940-10-02）は
+  グレゴリオ暦の年として言わず、覆う最初と最後の日の範囲として、書かれた暦を添えて示す。手入力は ISO（1905-03-12）・「1905年3月12日」・
   「1850頃」「before 1900」も読む（`readDateInput`）。
 - **場所**: ファイルの座標（`PLAC.MAP`）はそのまま使う。地名は端末の地名辞典（検索の `localFuzzyPlaces`）と歴史都市名・Pleiades（`js/where-when.js`
-  `histCandidates`）に、カンマで区切った部分を小さい方から訊き、集落 1 つだけが名前そのものとして答えたときだけ置く（どの部分で見つけたかを示す）。複数なら
-  選ばせ、無ければ地図上で指定させる。国は場所にしない。GEDCOM の読み込みは同じ規則で全地名を 1 回ずつ、フレームごとの時間で区切って訊く。
+  `histCandidates`）に、カンマで区切った部分を小さい方から訊き、集落 1 つだけが名前そのものとして答え、**地名の残りの部分と矛盾しない**ときだけ置く（どの部分で見つけたかを示す）。
+  残りの部分が名指す国と第 1 級区分は**識別子で**照合する（`containerReader`——Natural Earth の国 `c:<ADM0_A3>`／主権国 `c:<SOV_A3>` と、第 1 級区分 `a1:<stableId>`
+  〔ISO 3166-2 があればそれ〕。2 文字の略号は国として読まない）。矛盾する候補は 1 つに決めず、何と矛盾するかを添えて選択肢に出す。複数なら
+  選ばせ、無ければ地図上で指定させる。歴史上の名前（歴史都市名・Pleiades）は、記録がその出来事の日付にその名前を述べているときだけ候補になる。国は場所にしない。GEDCOM の読み込みは同じ規則で全地名を 1 回ずつ、フレームごとの時間で区切って訊く。
+- **出来事にしないもの**: 末日聖徒イエス・キリスト教会の儀式（GEDCOM 仕様の LDS_INDIVIDUAL_ORDINANCE の BAPL・CONL・ENDL・INIL・SLGC と
+  LDS_SPOUSE_SEALING の SLGS）。日付は儀式の日、場所は神殿で、しばしば死後の代理で行われるので、生涯の日や場所ではない。
 - **保存と送信**: 人物・日付・場所はこのブラウザの `localStorage`（`intmap_family_v1`）だけに置く。どこにも送らない（記録は地図と同じく必要な部分を読む）。
-  プライバシーポリシー §2 に記載。文字コードは BOM と `CHAR`（ANSEL は ASCII の範囲だけ読み、それ以外は理由を述べて断る）。
+  「GEDCOM ファイルとして保存」は家族を **GEDCOM 5.5.1・UTF-8**（CRLF）のファイルとしてこの端末上で組み立て（`js/gedcom.js` `writeGedcom`）、ブラウザのダウンロードに
+  渡すだけで送信しない。プライバシーポリシー §2 に記載。文字コードは BOM と `CHAR` で、**どの復号も厳格**（宣言された文字コードで正しくないバイトがあれば
+  推測せず理由を述べて断る。ANSEL は ASCII の範囲だけ読み、それ以外は断る）。
 - **地図**: シートが開いている間、地図上の出来事を点で描く（誕生は緑・死亡は灰・他は青、開いている人物は大きく）。点を押すとその人物を開く。「その日へ」は
   時計をその日へ（`goToInstant`）、地図をその場所へ動かす。
 - **入口**: Chronos パネルの「家族史と国境」、Atlas `time.lifeAtPlace`（`place`／`lng`・`lat`、`from`・`to`、`play`、`open` は記入済みの新しい人物として開き、

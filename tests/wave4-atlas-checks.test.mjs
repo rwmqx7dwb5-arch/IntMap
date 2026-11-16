@@ -88,7 +88,8 @@ test('④ a polity is its code, then its Wikidata item, then any name the record
   assert.equal(T.samePolity(id({ NAME: 'Serbia', _gw: 340 }), id({ NAME: 'Serbia', _gw: 345 })).same, false, 'the code decides before the name');
   assert.deepEqual(T.samePolity(id({ NAME: 'A', _qid: 'Q1' }), id({ NAME: 'B', _qid: 'Q1' })), { same: true, by: 'qid' });
   const cs = id({ NAME: 'United States', _gw: 2 }), ne = id({ NAME: 'United States of America', NAME_LONG: 'United States', WIKIDATAID: 'Q30' }, true);
-  assert.deepEqual(T.samePolity(cs, ne), { same: true, by: 'name' });
+  assert.deepEqual(T.samePolity(cs, ne), { same: true, by: 'name', seam: true }, 'one name, two records: the same name, said to cross a seam');
+  assert.deepEqual(T.samePolity(id({ NAME: 'Prussia' }), id({ NAME: 'Prussia' })), { same: true, by: 'name' }, 'within one record its names are its identity');
   assert.equal(T.samePolity(id({ NAME: 'French Third Republic', _qid: 'Q70802' }), id({ NAME: 'France', _gw: 220 })).same, false);
 });
 
@@ -127,9 +128,12 @@ test('⑤ what the records draw: a transfer, a rename, a new bracket, the edge o
   assert.deepEqual(R.renamed.map(name), ['Russia → Soviet Union']);
   const ko = tr['Korean Empire → Korea (Japan)'];
   assert.ok(ko && ko.sameIdentifier && ko.holderInName, 'one code, a holder in the bracket: drawn as a change of hands');
-  assert.ok(tr['Cliopatria Land → CShapes Land'] && tr['Cliopatria Land → CShapes Land'].comparedByNameOnly, 'no shared identifier: said');
-  const ov = tr['Cliopatria Land → CShapes Land / Claimant'];
+  /* two records sharing no identifier, two names: compared by name only — listed apart, not a transfer, not counted */
+  const no = Object.fromEntries(R.nameOnly.map((x) => [name(x), x]));
+  assert.ok(!tr['Cliopatria Land → CShapes Land'] && no['Cliopatria Land → CShapes Land'] && no['Cliopatria Land → CShapes Land'].comparedByNameOnly, 'no shared identifier: said, and not a transfer');
+  const ov = no['Cliopatria Land → CShapes Land / Claimant'];
   assert.ok(ov && ov.overlap, 'two shapes at once: both named, none chosen');
+  assert.ok(Math.abs(R.totals.changedKm2 - R.transfers.reduce((a, x) => a + x.km2, 0)) < 1e-6 && R.totals.nameOnlyKm2 > 0, 'the total is the transfers alone');
   assert.deepEqual(R.recordOnly.map((x) => x.side + ':' + x.polity[0].en), ['from:Edge'], 'drawn at one instant only is the edge of a record');
   assert.equal(R.recordOnly[0].otherDraws, 'none');
   /* asked to, the rename is drawn too */
@@ -161,7 +165,8 @@ test('⑥ Atlas: the answer reaches the model, each transfer is one declared pol
   const r1 = await T.atlasRun(a, K);
   assert.equal(r1.ok, true);
   const X = r1.exec.territoryChange;
-  assert.ok(X.transfers.length >= 3 && X.transfers.every((t) => typeof t.km2 === 'number' && t.from && t.to));
+  assert.ok(X.transfers.length >= 2 && X.transfers.every((t) => typeof t.km2 === 'number' && t.from && t.to));
+  assert.ok(X.nameOnly.length >= 1 && X.seam, 'a pair across two records is said, apart from the transfers');
   assert.deepEqual(X.renamed.map((x) => x.from + ' → ' + x.to), ['Russia → Soviet Union']);
   assert.equal(X.stepDeg, 0.1);
   assert.equal(polys.length, X.transfers.length, 'one polygon per transfer');

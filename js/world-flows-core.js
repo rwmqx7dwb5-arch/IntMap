@@ -15,9 +15,12 @@
  *  this country trade with», with its own arcs, sections and clock, and the card opens it on the country (js/world-flows.js)
  *  instead of drawing trade a second way.
  *
- *  The instant is the master clock's (js/chronos.js): a flow is read at the latest year its record states AT OR BEFORE
- *  the clock — and when the clock is before the record begins, there is no answer and the reason says so (never the
- *  record's first year presented as the clock's).
+ *  The instant is the master clock's (js/chronos.js): a flow is read at the latest statement its record makes AT OR BEFORE
+ *  the clock's INSTANT — and when the clock is before the record begins, there is no answer and the reason says so (never
+ *  the record's first year presented as the clock's). ⚠ COMPARED AS INSTANTS, NOT AS YEARS: each record states its own
+ *  instant — DESA's stock is «as at 1 July», the route table is the month of June 2014 (held once the month is over), a
+ *  cable's ready-for-service is a YEAR (held once that year is over; within it the day is not stated). Measured before
+ *  this: a clock at 2024-03-01 read the 2024 mid-year stock, four months before the date it is a stock at.
  *  ⚠ PURE: no DOM, no map, no fetch. js/world-flows.js reads the bundles and hands them in; Node evaluates every function
  *  here (tests/wave4-mobility-checks.test.mjs) against the committed files.
  *  ⚠ NOTHING IS ESTIMATED. A pair a record does not list is absent, not zero; a value the record marks as missing is
@@ -70,19 +73,36 @@ export const placeName = (p, lang) => (p ? (lang === 'jp' && p.ja ? p.ja : p.en)
 export const onMap = (p) => !!(p && p.x != null && p.y != null && isFinite(p.x) && isFinite(p.y));
 
 /* ══ THE INSTANT ═══════════════════════════════════════════════════════════════════════════════════════════ */
+/** UN DESA's International Migrant Stock is an estimate «as at 1 July» of each year it states (UTC: DESA names no zone). */
+export const midYearMs = (y) => Date.UTC(y, 6, 1);
+/** the last instant of a year — what a statement of the YEAR alone holds by (the day within it is not stated) */
+export const yearEndMs = (y) => Date.UTC(y + 1, 0, 1) - 1;
 /**
- * yearFor(years, clockYear) — the year of a record to read at the clock's year: the latest stated year at or before it.
- *   clockYear null (the clock is live) → the latest year the record states.
- *   → { year, exact } or { year: null, reason: 'before-record', first } when the clock is before the record begins.
+ * heldFromMs('2014-06' | '2014') — the first instant a statement of that PERIOD holds in full: the instant after the month
+ * (or the year) ends. A table «of June 2014» does not yet say what flew on 10 June. null when the stamp is not a period.
  */
-export function yearFor(years, clockYear) {
+export function heldFromMs(stamp) {
+  const m = /^(\d{4})(?:-(\d{2}))?$/.exec(String(stamp == null ? '' : stamp).trim());
+  if (!m) return null;
+  const y = +m[1];
+  return m[2] ? Date.UTC(y, +m[2], 1) : Date.UTC(y + 1, 0, 1);
+}
+/**
+ * yearFor(years, atMs, statedMs) — the year of a record to read at the clock's INSTANT `atMs`: the latest stated year whose
+ * statement holds at or before it. `statedMs(y)` is the instant the record's statement for year y holds from (midYearMs for
+ * DESA, heldFromMs for a snapshot).
+ *   atMs null (the clock is live) → the latest year the record states.
+ *   → { year, statedMs, live? } or { year: null, reason: 'before-record', first, firstMs } when the clock is before the record.
+ */
+export function yearFor(years, atMs, statedMs) {
   const ys = (years || []).slice().sort((a, b) => a - b);
   if (!ys.length) return { year: null, reason: 'no-years' };
-  if (clockYear == null) return { year: ys[ys.length - 1], exact: true, live: true };
+  const at = typeof statedMs === 'function' ? statedMs : yearEndMs;
+  if (atMs == null) return { year: ys[ys.length - 1], statedMs: at(ys[ys.length - 1]), live: true };
   let hit = null;
-  for (const y of ys) if (y <= clockYear) hit = y;
-  if (hit == null) return { year: null, reason: 'before-record', first: ys[0] };
-  return { year: hit, exact: hit === clockYear };
+  for (const y of ys) if (at(y) <= atMs) hit = y;
+  if (hit == null) return { year: null, reason: 'before-record', first: ys[0], firstMs: at(ys[0]) };
+  return { year: hit, statedMs: at(hit) };
 }
 
 /* ══ THE FOUR READINGS — each returns the partners of place `i` as [{ p, v }] (p = place index), largest first ══ */
@@ -110,13 +130,16 @@ export function basisOf(mig, i) {
   return { type, imputed: type.includes('I'), note: b.note == null ? null : b.note, noteText: b.note != null && mig.notes ? mig.notes[b.note] || null : null };
 }
 /**
- * cables: data/subcables-meta.json `cables` → for place i, the other places that share a cable system in service by `year`
- * (its ready-for-service year at or before; `year` null = today, where a listed cable that is not planned counts even
- * without a stated year). → { partners: [{ p, v, names }], systems, undated, unresolved }
+ * cables: data/subcables-meta.json `cables` → for place i, the other places that share a cable system in service at the
+ * instant `atMs` (null = today, where a listed cable that is not planned counts even without a stated year).
+ * ⚠ The record states the ready-for-service YEAR, not the day: a system is in service at `atMs` once its year is over
+ * (yearEndMs ≤ atMs). One whose year is still running at `atMs` is not counted — the record does not say whether it was
+ * in service yet — and is reported in `sameYear` instead of being dropped silently.
+ * → { partners: [{ p, v, names }], systems, undated, sameYear, unresolved }
  */
-export function cablePartners(meta, P, i, year) {
+export function cablePartners(meta, P, i, atMs) {
   const me = P.rows[i];
-  const res = { partners: [], systems: 0, undated: 0, unresolved: [] };
+  const res = { partners: [], systems: 0, undated: 0, sameYear: 0, unresolved: [] };
   if (!me || !me.a2) return res;
   const by = new Map();
   for (const id of Object.keys((meta && meta.cables) || {})) {
@@ -125,7 +148,9 @@ export function cablePartners(meta, P, i, year) {
     if (!cc.includes(me.a2)) continue;
     /* ONE rule for a past year and for today: a system the record calls planned is not in service, whatever its year (22 planned
        systems carry a ready-for-service year; counting them by year alone made the count for a year disagree with today's) */
-    const live = !c.isPlanned && (c.rfsYear != null ? (year == null || c.rfsYear <= year) : year == null);
+    if (c.isPlanned) continue;
+    if (atMs != null && c.rfsYear != null && yearEndMs(c.rfsYear) > atMs && Date.UTC(c.rfsYear, 0, 1) <= atMs) { res.sameYear++; continue; }
+    const live = c.rfsYear != null ? (atMs == null || yearEndMs(c.rfsYear) <= atMs) : atMs == null;
     if (!live) continue;
     if (c.rfsYear == null) res.undated++;
     res.systems++;

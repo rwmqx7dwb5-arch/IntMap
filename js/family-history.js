@@ -26,20 +26,23 @@
  *    A file's coordinates (PLAC.MAP) are used as written. A name is asked of the readers that already exist on the
  *    device — the gazetteer (`local`, the search's own `localFuzzyPlaces`) and the historical city names and Pleiades
  *    (js/where-when.js `histCandidates`, so «Lemberg» and «Königsberg» find their cities) — part by part from the
- *    smallest (a file writes «village, county, country»). Exactly one place that IS the name is applied, and the page
- *    says which part found it; several are offered to choose from; none leaves the event unlocated with «pick it on the
- *    map». A country is never a place: its centre is not where anyone was born.
+ *    smallest (a file writes «village, county, country»). Exactly one place that IS the name, and that the rest of the
+ *    text does not contradict (the countries and first-level divisions it names, by identifier — `containerReader`), is
+ *    applied, and the page says which part found it; several are offered to choose from, each saying what it
+ *    contradicts; none leaves the event unlocated with «pick it on the map». A historical name is a candidate only on a
+ *    date a record attests it. A country is never a place: its centre is not where anyone was born.
  *  ══ PRIVATE BY CONSTRUCTION ═══════════════════════════════════════════════════════════════════════════════════════
  *    The people, the dates and the places stay in this browser (localStorage `intmap_family_v1`): no request carries
  *    them — the records and gazetteers are files the app already downloads, read on the device. Atlas sees none of it
- *    unless the reader types it to Atlas. The privacy policy says so (js/legal-text.js).
+ *    unless the reader types it to Atlas. The privacy policy says so (js/legal-text.js). «Save as a GEDCOM file» writes
+ *    the family into a file built in this browser (js/gedcom.js writeGedcom) and hands it to the browser's download.
  *  Doors: the Chronos panel (js/news-timeline.js) and Atlas `time.lifeAtPlace` (js/atlas-cap-time.js → `atlasRun`).
  *  Strings IntMap writes here are en + jp (CONSTITUTION.md §7). No emoji.
  * ==========================================================================*/
 import { IntMapLang } from './lang-registry.js';
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
-import { parseDate, readDateInput, decode, parseGedcom, tagWords, kAdd, LIFE_OPENS, LIFE_CLOSES } from './gedcom.js';
+import { parseDate, readDateInput, decode, parseGedcom, writeGedcom, tagWords, kAdd, LIFE_OPENS, LIFE_CLOSES } from './gedcom.js';
 import './safe-html.js';
 
 const esc = (s) => globalThis.IntMapSafe.html(String(s == null ? '' : s));
@@ -54,7 +57,8 @@ const WW_ = () => import('./where-when.js');
 
 /* ══ DAYS ════════════════════════════════════════════════════════════════════════════════════════════════════════ */
 const kParts = (k) => { const y = Math.floor(k / 10000), r = k - y * 10000, m = Math.floor(r / 100); return [y, m, r - m * 100]; };
-/** the day a date is read at: its first day, or — when only its end is bounded (BEF, TO) — the last day before that end */
+/** the day a date is read at: its first day, or — when only its end is bounded — the last day before that end (for
+    BEF x the day before x; for TO x, whose end is the day after x, x's own last day) */
 export function instantOf(d) {
   if (!d || d.problem) return null;
   return d.k0 != null ? d.k0 : (d.k1 != null ? kAdd(d.k1, -1) : null);
@@ -74,18 +78,24 @@ export function dateWords(d, lang) {
     if (prec === 'month') { try { if (p[0] >= 1) { const mid = new Date(0); mid.setUTCFullYear(p[0], p[1] - 1, 15); return new Intl.DateTimeFormat(tag, { year: 'numeric', month: 'long', timeZone: 'UTC' }).format(mid); } return new Intl.DateTimeFormat(tag, { month: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2000, p[1] - 1, 15))) + ' ' + yearT(p[0]); } catch (_) { return yearT(p[0]) + '-' + String(p[1]).padStart(2, '0'); } }
     try { return HS.dateText(p[0], p[1], p[2], tag); } catch (_) { return p.join('-'); }
   };
+  /* ⚠ A YEAR OR A MONTH OF ANOTHER CALENDAR IS NOT A GREGORIAN YEAR OR MONTH. Hebrew 5700 is 14 September 1939 to
+     2 October 1940; written as «1939» it names a year the date mostly is not. Such a date is said as the Gregorian days
+     it covers — its first and its last — and the calendar it was written in is said beside it (below). */
+  const span = d.cal && d.cal !== 'gregorian' && d.prec !== 'day';
+  const prec = span ? 'day' : d.prec;
+  const whole = (k0, k1) => (span && k0 != null && k1 != null && kAdd(k1, -1) !== k0 ? L(one(k0, 'day') + ' – ' + one(kAdd(k1, -1), 'day'), one(k0, 'day') + '〜' + one(kAdd(k1, -1), 'day')) : one(k0, prec));
   /* the last day an exclusive end covers, at the date's precision */
-  const lastOf = (k1, prec) => (prec === 'year' ? one(kAdd(k1, -1), 'year') : prec === 'month' ? one(kAdd(k1, -1), 'month') : one(kAdd(k1, -1), 'day'));
+  const lastOf = (k1, pr) => (pr === 'year' ? one(kAdd(k1, -1), 'year') : pr === 'month' ? one(kAdd(k1, -1), 'month') : one(kAdd(k1, -1), 'day'));
   let s;
   switch (d.qual) {
-    case 'before': s = L('before ' + one(d.k1, d.prec), one(d.k1, d.prec) + ' より前'); break;
-    case 'after': s = L('after ' + lastOf(d.k0, d.prec), lastOf(d.k0, d.prec) + ' より後'); break;
-    case 'between': s = L('between ' + one(d.k0, d.prec) + ' and ' + lastOf(d.k1, d.prec), one(d.k0, d.prec) + '〜' + lastOf(d.k1, d.prec) + ' の間'); break;
-    case 'period': s = d.k0 == null ? L('until ' + lastOf(d.k1, d.prec), lastOf(d.k1, d.prec) + ' まで') : d.k1 == null ? L('from ' + one(d.k0, d.prec), one(d.k0, d.prec) + ' から') : L(one(d.k0, d.prec) + ' to ' + lastOf(d.k1, d.prec), one(d.k0, d.prec) + '〜' + lastOf(d.k1, d.prec)); break;
-    case 'about': s = L('about ' + one(d.k0, d.prec), one(d.k0, d.prec) + ' 頃'); break;
-    case 'calculated': s = L('calculated ' + one(d.k0, d.prec), one(d.k0, d.prec) + '（計算）'); break;
-    case 'estimated': s = L('estimated ' + one(d.k0, d.prec), one(d.k0, d.prec) + '（推定）'); break;
-    default: s = one(d.k0, d.prec);
+    case 'before': s = L('before ' + one(d.k1, prec), one(d.k1, prec) + ' より前'); break;
+    case 'after': s = L('after ' + lastOf(d.k0, prec), lastOf(d.k0, prec) + ' より後'); break;
+    case 'between': s = L('between ' + one(d.k0, prec) + ' and ' + lastOf(d.k1, prec), one(d.k0, prec) + '〜' + lastOf(d.k1, prec) + ' の間'); break;
+    case 'period': s = d.k0 == null ? L('until ' + lastOf(d.k1, prec), lastOf(d.k1, prec) + ' まで') : d.k1 == null ? L('from ' + one(d.k0, prec), one(d.k0, prec) + ' から') : L(one(d.k0, prec) + ' to ' + lastOf(d.k1, prec), one(d.k0, prec) + '〜' + lastOf(d.k1, prec)); break;
+    case 'about': s = L('about ' + whole(d.k0, d.k1), whole(d.k0, d.k1) + ' 頃'); break;
+    case 'calculated': s = L('calculated ' + whole(d.k0, d.k1), whole(d.k0, d.k1) + '（計算）'); break;
+    case 'estimated': s = L('estimated ' + whole(d.k0, d.k1), whole(d.k0, d.k1) + '（推定）'); break;
+    default: s = whole(d.k0, d.k1);
   }
   const calW = { julian: L('Julian calendar', 'ユリウス暦'), french: L('French Republican calendar', 'フランス革命暦'), hebrew: L('Hebrew calendar', 'ユダヤ暦') }[d.cal];
   const notes = [];
@@ -99,15 +109,18 @@ export function dateWords(d, lang) {
 /**
  * atEvent(rec, date, lang, PH) — what the records draw over the event's place on its day.
  *   → { status, at, polities:[{ name, records, realm, quiet, sheet }], units:[{ name, record }], gap, bound, within:[{ k, text }] }
- *   `bound` is 'before' / 'after' when the date only bounds the day (read at the bound); `within` lists the instants
- *   inside the date's span (a year, a month, «between») at which what the map draws over the place changes.
+ *   `bound` says how a date that only bounds the day was read: 'before' (BEF x — the day before x), 'after' (AFT x —
+ *   the day after x), 'until' (TO x — x's last day, x being in the period), 'from' (FROM x — x's first day); `within`
+ *   lists the instants inside the date's span (a year, a month, «between») at which what the map draws over the place
+ *   changes.
  */
 function atEvent(rec, date, lang, PH) {
   const at = instantOf(date);
   const N = rec && rec.nation;
   const out = { status: (N && N.status) || 'unavailable', at, polities: [], units: [], gap: false, bound: null, within: [] };
   if (at == null) { out.status = 'undated'; return out; }
-  if (date.k0 == null) out.bound = 'before'; else if (date.k1 == null) out.bound = 'after';
+  const period = date.qual === 'period';
+  if (date.k0 == null) out.bound = period ? 'until' : 'before'; else if (date.k1 == null) out.bound = period ? 'from' : 'after';
   const now = PH.nowAt(rec, at, lang);
   out.status = now.status;
   if (now.status !== 'ok') return out;
@@ -167,6 +180,23 @@ function samePolity(a, b) {
 }
 
 /**
+ * claimChange(before, after, same) — how the set of polities drawn over one piece of ground changed between two
+ * readings. `same(x, y)` says whether a polity of the first set is one of the second.
+ *   → { gone:[x of before with no partner after], came:[y of after with no partner before], kind }
+ *     kind 'same'    — every polity has its partner (nothing gone, nothing new);
+ *          'overlap' — a claim began over the polities still drawn, or one of several ended, and nothing else moved:
+ *                      the ground was not handed from one polity to another, so it is not a change of hands;
+ *          'change'  — a polity drawn before is gone AND one not drawn before is drawn.
+ * THE ONE JUDGEMENT of «a claim beginning or ending is not a transfer»: `lifeAt` below counts a life's changes with it,
+ * and js/territory-change.js judges every cell of a region with it, so the two pages cannot disagree about one place.
+ */
+export function claimChange(before, after, same) {
+  const gone = before.filter((x) => !after.some((y) => same(x, y)));
+  const came = after.filter((y) => !before.some((x) => same(x, y)));
+  return { gone, came, kind: gone.length && came.length ? 'change' : gone.length || came.length ? 'overlap' : 'same' };
+}
+
+/**
  * lifeAt(rec, k0, k1, lang, PH) — what the map draws over one place during [k0, k1).
  *   → { status, entries:[{ name, from, to, records, realm, quiet, sheet }], shifts:[{ k, text, kind }], changes, units:[…] }
  * A shift is an instant inside the span at which what the map draws over the place changes (`changesOf`). `changes`
@@ -205,9 +235,8 @@ function lifeAt(rec, k0, k1, lang, PH) {
     if (!held.length) kind = base.length ? 'gap' : 'other';
     else if (!base.length) base = held;
     else {
-      const gone = base.filter((E) => !held.some((x) => x === E || samePolity(x, E)));
-      const came = held.filter((E) => !base.some((x) => x === E || samePolity(x, E)));
-      if (gone.length && came.length) { kind = gone.every((E) => recordEdge(E.to)) && came.every((E) => recordEdge(E.from)) ? 'record' : 'polity'; base = held; }
+      const C = claimChange(base, held, (E, x) => x === E || samePolity(x, E)), gone = C.gone, came = C.came;
+      if (C.kind === 'change') { kind = gone.every((E) => recordEdge(E.to)) && came.every((E) => recordEdge(E.from)) ? 'record' : 'polity'; base = held; }
       else if (came.length) kind = 'overlap';
       else {
         const fresh = held.filter((E) => base.indexOf(E) < 0);
@@ -230,17 +259,28 @@ function lifeAt(rec, k0, k1, lang, PH) {
    'city'); a country and a contested area are not where an event happened */
 const SETTLEMENT = new Set(['city', 'town', 'capital']);
 /**
- * locate(text, deps) → { status:'one'|'several'|'none', part?, rows:[{ name, lng, lat, kind, source, note }] }
- * deps = { local?(q) → gazetteer rows, hist?(q) → historical rows, same?(a,b) → one place? }
+ * locate(text, deps, date?) → { status:'one'|'several'|'none', part?, rows:[{ name, lng, lat, kind, source, note, conflict? }] }
+ * deps = { local?(q) → gazetteer rows, hist?(q, when) → historical rows, same?(a,b) → one place?,
+ *          names?(part) → the identifiers of the places a part of the text names (a country, a first-level division),
+ *          within?(row) → the identifiers of the places a candidate lies in }
+ * `date` (a parsed date) is the event's: a historical name that no record attests at that date is not a candidate.
+ * ⚠ THE REST OF THE TEXT IS EVIDENCE. «Paris, Lamar, Texas, USA» names the containers of its Paris; a candidate that lies
+ *   in none of the places the rest of the text names (Paris, France) contradicts the text and is never taken as the one
+ *   answer — compared by identifier (deps.names / deps.within), never by spelling. A candidate that agrees with more of
+ *   the named containers is preferred; a candidate whose containers are unknown is not contradicted; when every
+ *   candidate contradicts the text they are offered to choose from, each saying which part it contradicts (a file may
+ *   name the state of its day — «Lemberg, Galizien, Österreich» — where today's Ukraine lies).
  */
-export function locate(text, deps) {
+export function locate(text, deps, date) {
   const D = deps || {};
   const parts = String(text || '').split(',').map((s) => s.trim()).filter(Boolean);
-  for (const part of parts) {
-    const rows = [];
+  const at = date ? instantOf(date) : null;
+  const when = at != null ? (() => { const p = kParts(at); return { y: p[0], m: p[1], d: p[2], precision: 'day' }; })() : null;
+  for (let pi = 0; pi < parts.length; pi++) {
+    const part = parts[pi], rows = [];
     let local = []; try { local = (D.local ? D.local(part) : []) || []; } catch (_) { local = []; }
     for (const l of local) if (l && l.exact && l.kind !== 'country' && isFinite(+l.lng) && isFinite(+l.lat)) rows.push({ name: l.name, lng: +l.lng, lat: +l.lat, kind: l.kind || '', source: 'gazetteer', note: '', guard: 0 });
-    let hist = []; try { hist = (D.hist ? D.hist(part) : []) || []; } catch (_) { hist = []; }
+    let hist = []; try { hist = (D.hist ? D.hist(part, when) : []) || []; } catch (_) { hist = []; }
     for (const h of hist) {
       if (!(h && h.level >= 3) || !isFinite(+h.lng) || !isFinite(+h.lat)) continue;
       const twin = rows.find((r) => (D.same ? D.same(r, h) : false) || (r.source !== 'gazetteer' && Math.abs(r.lng - h.lng) < 1e-4 && Math.abs(r.lat - h.lat) < 1e-4));
@@ -251,11 +291,94 @@ export function locate(text, deps) {
     const merged = [];
     for (const r of rows) { const tw = merged.find((m) => D.same && D.same(m, r)); if (tw) { if (!tw.note && r.note) tw.note = r.note; continue; } merged.push(r); }
     if (!merged.length) continue;
-    const towns = merged.filter((r) => SETTLEMENT.has(r.kind));
-    if (towns.length === 1 && merged.length === 1) return { status: 'one', part, rows: merged };
-    return { status: 'several', part, rows: merged.slice(0, 8) };
+    /* the larger places the text names after this part, each as the identifiers it names (a part that names nothing
+       IntMap holds — «Lamar», «Galizien» — is no evidence either way) */
+    const named = [];
+    for (const p of parts.slice(pi + 1)) { let ids = []; try { ids = (D.names ? D.names(p) : []) || []; } catch (_) { ids = []; } if (ids.length) named.push({ part: p, ids }); }
+    let pool = merged;
+    if (named.length && D.within) {
+      /* how many of the named places hold each candidate (null: where it lies is not known — no evidence) */
+      const agrees = new Map();
+      for (const r of merged) {
+        let w = []; try { w = D.within(r) || []; } catch (_) { w = []; }
+        const n = w.length ? named.filter((c) => c.ids.some((id) => w.indexOf(id) >= 0)).length : null;
+        agrees.set(r, n);
+        if (n === 0) r.conflict = named.map((c) => c.part).join(', ');
+      }
+      const best = Math.max(0, ...[...agrees.values()].filter((n) => n != null));
+      /* the candidates the text agrees with most; with none agreeing, all of them, each marked with what it contradicts */
+      if (best > 0) pool = merged.filter((r) => agrees.get(r) === best);
+    }
+    const towns = pool.filter((r) => SETTLEMENT.has(r.kind));
+    if (towns.length === 1 && pool.length === 1 && !pool[0].conflict) return { status: 'one', part, rows: pool };
+    return { status: 'several', part, rows: pool.slice(0, 8) };
   }
   return { status: 'none', rows: [] };
+}
+
+/**
+ * containerReader(countries, admin1, A1) — deps.names / deps.within for `locate`, from the two outline files IntMap
+ * already ships: today's countries (Natural Earth admin-0, window.countryGeo) and the first-level divisions
+ * (data/admin1-world.json.gz, js/atlas-admin1.js `load`). An identifier is 'c:<ADM0_A3>' for a country (and its
+ * sovereign, 'c:<SOV_A3>' — a file's «USA» holds Puerto Rico) and 'a1:<stableId>' for a division (its ISO 3166-2 code where it has one — js/atlas-admin1.js).
+ *   names(part)  — the countries whose Natural Earth names (every NAME_* column, the formal and short names, the
+ *                  three-letter codes) fold to the part, and the divisions js/atlas-admin1.js `matchIn` finds by name;
+ *                  «Georgia» names both the country and the US state, and both are kept.
+ *   within(row)  — the countries and divisions whose outline holds the candidate.
+ * Two-letter codes are not read as a country: «IL», «CA», «GA» are a state as often as a country.
+ */
+export function containerReader(countries, admin1, A1) {
+  const feats = (countries && Array.isArray(countries.features)) ? countries.features : [];
+  const norm = (s) => (A1 && A1.norm ? A1.norm(s) : String(s == null ? '' : s).normalize('NFKD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim());
+  const idsOf = (p) => [p.ADM0_A3, p.SOV_A3].filter((x) => /^[A-Z]{3}$/.test(String(x || ''))).map((x) => 'c:' + x);
+  const byName = new Map();
+  for (const f of feats) {
+    const p = f.properties || f.p || {};
+    const own = p.ADM0_A3 ? ['c:' + p.ADM0_A3] : [];
+    for (const k of Object.keys(p)) {
+      const v = p[k];
+      if (typeof v !== 'string' || !v) continue;
+      const isName = /^NAME/.test(k) || ['ADMIN', 'GEOUNIT', 'SUBUNIT', 'BRK_NAME', 'FORMAL_EN', 'FORMAL_FR', 'ABBREV'].indexOf(k) >= 0 || (/^(ISO_A3|ADM0_A3)$/.test(k) && /^[A-Z]{3}$/.test(v));
+      const isSov = k === 'SOVEREIGNT' || (k === 'SOV_A3' && /^[A-Z]{3}$/.test(v));
+      if (!isName && !isSov) continue;
+      const key = norm(v); if (!key) continue;
+      let set = byName.get(key); if (!set) byName.set(key, (set = new Set()));
+      for (const id of isSov ? ['c:' + p.SOV_A3] : own) set.add(id);
+    }
+  }
+  const geomOf = (f) => f.geometry || (f.g ? f.g : null);
+  /* each outline's box, once — a candidate is tested only against the outlines whose box holds it (every place of a
+     file is asked, and the countries may be Natural Earth's 10 m outlines) */
+  const boxes = feats.map((f) => {
+    let a = 180, b = 90, c = -180, d = -90;
+    const scan = (x) => { if (typeof x[0] === 'number') { if (x[0] < a) a = x[0]; if (x[1] < b) b = x[1]; if (x[0] > c) c = x[0]; if (x[1] > d) d = x[1]; return; } for (const y of x) scan(y); };
+    try { scan(geomOf(f).coordinates); } catch (_) { return null; }
+    return [a, b, c, d];
+  });
+  return {
+    names(part) {
+      const out = new Set(byName.get(norm(part)) || []);
+      if (admin1 && A1 && A1.matchIn) {
+        /* a division's own name or code (matchIn scores 100 / 90); a shared stem is a resemblance, not a name */
+        try { const m = A1.matchIn(admin1, part); if (m && m.score >= 90) for (const u of [m.unit].concat(m.candidates || [])) out.add('a1:' + u.stableId); } catch (_) { /* no division by that name */ }
+      }
+      return [...out];
+    },
+    within(row) {
+      const pt = { type: 'Point', coordinates: [+row.lng, +row.lat] }, out = new Set();
+      if (A1 && A1.intersectsGeo) {
+        feats.forEach((f, i) => {
+          const b = boxes[i]; if (!b || row.lng < b[0] || row.lng > b[2] || row.lat < b[1] || row.lat > b[3]) return;
+          if (A1.intersectsGeo(pt, geomOf(f))) for (const id of idsOf(f.properties || f.p || {})) out.add(id);
+        });
+        if (admin1 && admin1.units) for (const u of admin1.units) {
+          const b = u.bbox; if (!b || row.lng < b[0] || row.lng > b[2] || row.lat < b[1] || row.lat > b[3]) continue;
+          if (A1.intersectsGeo(pt, u.geo)) { out.add('a1:' + u.stableId); if (u.iso3) out.add('c:' + u.iso3); }
+        }
+      }
+      return [...out];
+    },
+  };
 }
 
 /* ══ THE FAMILY, KEPT IN THIS BROWSER ═════════════════════════════════════════════════════════════════════════ */
@@ -422,6 +545,7 @@ function listHtml() {
       return '<li><button type="button" class="fh-row" data-person="' + esc(p.id) + '"><span class="fh-n">' + esc(p.name || t('(no name)', '（名前なし）')) + '</span><span class="fh-v">' + esc(lifeText(p)) + '</span>'
         + '<span class="fh-s">' + esc(t(p.events.length + ' events · ' + ev + ' placed on the map', '出来事 ' + p.events.length + ' 件 · 地図上 ' + ev + ' 件')) + '</span></button></li>';
     }).join('') + '</ol>' + (hits.length > shown.length ? '<p class="fh-note">' + esc(t((hits.length - shown.length) + ' more — narrow the search', 'ほか ' + (hits.length - shown.length) + ' 人（検索で絞り込めます）')) + '</p>' : '') + '</div>';
+    h += '<div class="fh-big"><button type="button" class="fh-act" data-act="export">' + esc(t('Save as a GEDCOM file', 'GEDCOM ファイルとして保存')) + '</button></div>';
     if (store.file && store.file.name) h += '<p class="fh-note">' + esc(t('From ' + store.file.name + (store.file.source ? ' (' + store.file.source + ')' : '') + ', read ' + store.file.read, store.file.name + (store.file.source ? '（' + store.file.source + '）' : '') + ' から読み込み（' + store.file.read + '）')) + '</p>';
     h += ui.arm === 'wipe' ? '<p class="fh-warn">' + esc(t('Delete all ' + P.length + ' people from this browser?', 'このブラウザから ' + P.length + ' 人をすべて削除しますか？')) + '</p><div class="fh-big"><button type="button" class="fh-act fh-danger" data-act="wipe-go">' + esc(t('Delete everything', 'すべて削除')) + '</button><button type="button" class="fh-act" data-act="disarm">' + esc(t('Cancel', 'キャンセル')) + '</button></div>'
       : '<div class="fh-big"><button type="button" class="fh-act fh-danger" data-act="wipe">' + esc(t('Delete everything kept here', 'ここに保存した内容をすべて削除')) + '</button></div>';
@@ -503,7 +627,8 @@ function eventHtml(p, e) {
 function candHtml(res, target) {
   if (!res || res.status === 'none') return '<div class="fh-src">' + esc(t('No place IntMap holds answers to this name — pick it on the map.', 'IntMap が持つ地名に該当がありません。地図上で指定してください。')) + '</div>';
   return '<div class="fh-cands"><div class="fh-lbl">' + esc(t('Places named «' + res.part + '» — choose one', '「' + res.part + '」という名前の場所 — 1 つ選んでください')) + '</div><ol class="fh-list">'
-    + res.rows.map((r, i) => '<li><button type="button" class="fh-row" data-cand="' + esc(target + '|' + i) + '"><span class="fh-n">' + esc(r.name) + '</span><span class="fh-v">' + esc(coordText(r)) + '</span>' + (r.note ? '<span class="fh-s">' + esc(r.note) + '</span>' : '') + '</button></li>').join('') + '</ol></div>';
+    + res.rows.map((r, i) => '<li><button type="button" class="fh-row" data-cand="' + esc(target + '|' + i) + '"><span class="fh-n">' + esc(r.name) + '</span><span class="fh-v">' + esc(coordText(r)) + '</span>' + (r.note ? '<span class="fh-s">' + esc(r.note) + '</span>' : '')
+      + (r.conflict ? '<span class="fh-s">' + esc(t('Not in «' + r.conflict + '», which the place name also says', '地名に書かれた「' + r.conflict + '」の中にはありません')) + '</span>' : '') + '</button></li>').join('') + '</ol></div>';
 }
 const KINDS = ['BIRT', 'BAPM', 'MARR', 'RESI', 'EMIG', 'IMMI', 'CENS', 'DEAT', 'BURI'];
 function addEventHtml() {
@@ -532,11 +657,17 @@ function addHtml() {
   h += privacyHtml();
   return h;
 }
-function draftPerson(d) {
+/* ⚠ THE FORM ASKS «WHERE THEY LIVED», NOT WHERE THEY WERE BORN OR DIED. The place is kept as what was said — a
+   residence (RESI) with that place and no date of its own — and the birth and the death keep their dates and no place.
+   Written onto both, it told the event list (and a GEDCOM file written from it) that the person was born and died
+   there, which nobody said. The life is still read over the place: «During this life» reads every placed event's place
+   over the span from birth to death (placesOf, lifeWindow). */
+export function draftPerson(d) {
   const ev = [];
   const place = d.lng != null ? { lng: d.lng, lat: d.lat, how: d.by ? 'name' : 'picked', by: d.by || undefined } : {};
-  if (d.birth) ev.push(Object.assign({ id: newId('e'), tag: 'BIRT', date: d.birth, typed: true, d: readDateInput(d.birth) }, d.place ? { place: d.place } : {}, place));
-  if (d.death) ev.push(Object.assign({ id: newId('e'), tag: 'DEAT', date: d.death, typed: true, d: readDateInput(d.death) }, d.place ? { place: d.place } : {}, place));
+  if (d.birth) ev.push({ id: newId('e'), tag: 'BIRT', date: d.birth, typed: true, d: readDateInput(d.birth) });
+  if (d.death) ev.push({ id: newId('e'), tag: 'DEAT', date: d.death, typed: true, d: readDateInput(d.death) });
+  if (d.place || d.lng != null) ev.push(Object.assign({ id: newId('e'), tag: 'RESI', date: '', typed: true, d: readDateInput('') }, d.place ? { place: d.place } : {}, place));
   return { id: newId('@P'), name: (d.name || '').trim(), sex: '', parents: [], spouses: [], children: [], events: ev };
 }
 
@@ -582,12 +713,22 @@ function jurHtml(J) {
   if (J.status === 'unavailable') return esc(t('The historical records could not be read here.', 'ここでは歴史の記録を読めませんでした。'));
   if (J.status === 'none') return esc(t('No historical record draws a polity over this place.', 'この場所に政体を描く歴史の記録はありません。'));
   let h = '';
-  if (J.bound) h += '<div class="fh-src">' + esc(J.bound === 'before' ? t('The date is only «before»: read on the last day before it.', '日付は「より前」だけなので、その直前の日で読んでいます。') : t('The date is only «after»: read on the first day after it.', '日付は「より後」だけなので、その直後の日で読んでいます。')) + '</div>';
+  if (J.bound) h += '<div class="fh-src">' + esc(boundWords(J.bound)) + '</div>';
   if (J.gap) h += '<div>' + esc(t('No record draws a polity over this place on this day.', 'この日、この場所に政体を描く記録はありません。')) + '</div>';
   for (const p of J.polities) h += '<div><span class="fh-p">' + esc(p.name) + '</span>' + (p.realm ? ' <span class="fh-src">' + esc(t('(the realm, drawn over its members)', '（構成国の上に描く上位の政体）')) + '</span>' : '') + ' <span class="fh-src">' + esc(p.records.join(' + ')) + '</span></div>';
   for (const u of J.units) h += '<div>' + esc(u.name) + ' <span class="fh-src">' + esc(u.record) + '</span></div>';
   if (J.within.length) h += '<div class="fh-chg">' + esc(t('The records change during this date\'s span — the day decides:', 'この日付の幅の中で記録が変わります。日によって答えが違います:')) + '<br>' + J.within.map((c) => esc(c.text)).join('<br>') + '</div>';
   return h;
+}
+/* how a date that only bounds its day was read (atEvent `bound`) — the words say the day actually read */
+function boundWords(bound) {
+  switch (bound) {
+    case 'before': return t('The date is only «before»: read on the last day before it.', '日付は「より前」だけなので、その直前の日で読んでいます。');
+    case 'after': return t('The date is only «after»: read on the first day after it.', '日付は「より後」だけなので、その直後の日で読んでいます。');
+    case 'until': return t('The date is only «to»: read on its own last day, which the period includes.', '日付は「まで」だけなので、期間に含まれるその最後の日で読んでいます。');
+    case 'from': return t('The date is only «from»: read on its own first day, which the period includes.', '日付は「から」だけなので、期間に含まれるその最初の日で読んでいます。');
+    default: return '';
+  }
 }
 /* why a listed change is not counted, in words */
 function shiftWhy(kind) {
@@ -636,12 +777,34 @@ async function play(lng, lat, k0, k1) {
   try { const E = GE(); E.camera.flyTo({ center: [lng, lat], zoom: 6, duration: 900 }); } catch (_) { /* no renderer */ }
   return L.startLapse({ instants, owner: 'family-history', loop: false });
 }
-function locateDeps() {
-  return WW_().then((WW) => WW.ensureHist().then(() => ({
-    local: (q) => { try { return localOf ? localOf(q) || [] : []; } catch (_) { return []; } },
-    hist: (q) => WW.histCandidates(q, null, lang()),
+/* the readers a place name is asked of — every one of them READ before the first name is asked, so the answer does not
+   depend on what else the reader happened to open first: the world gazetteer (js/gazetteer.js `warm` — until it lands
+   the search's rows are the curated table alone, and a session that had touched the search box answered differently),
+   the historical names (`ensureHist`), and the two outline files the rest of a place's text is checked against
+   (containerReader: today's countries, and the first-level divisions — one read per session, js/atlas-admin1.js) */
+let _containers = null;
+function containersNow() {
+  if (!_containers) {
+    /* the division index is js/atlas-admin1.js's (its file read through js/data-door.js — one read shared with every other
+       reader of it); today's countries are js/routing-ops.js `countryOutlines`, the outlines the map draws */
+    _containers = Promise.all([import('./atlas-admin1.js'), import('./routing-ops.js')]).then(async ([M, RO]) => {
+      const A1 = M.makeAtlasAdmin1({});
+      let idx = null; try { idx = await A1.load(); } catch (_) { idx = null; _containers = null; }   /* without it, countries alone are evidence (and the next ask reads it again) */
+      return { A1, idx, countries: RO.countryOutlines };
+    }).catch(() => ({ A1: null, idx: null, countries: () => null }));
+  }
+  /* the countries are asked at each use: they arrive with the map, and a later call sees them */
+  return _containers.then(({ A1, idx, countries }) => { let cg = null; try { cg = countries() || null; } catch (_) { cg = null; } return containerReader(cg, idx, A1); });
+}
+export function locateDeps(local, containers) {
+  const ask = typeof local === 'function' ? local : localOf;   /* the search's rows (openFamily's `local`), or a reader handed in */
+  const warm = (() => { try { const G = window.IntMapGazetteer; return G && G.warm ? G.warm() : null; } catch (_) { return null; } })();
+  return Promise.all([WW_().then((WW) => WW.ensureHist().then(() => WW)), Promise.resolve(warm).catch(() => null), containers || containersNow()]).then(([WW, , C]) => ({
+    local: (q) => { try { return ask ? ask(q) || [] : []; } catch (_) { return []; } },
+    hist: (q, when) => WW.histCandidates(q, when || null, lang()),
     same: (a, b) => WW.samePlace(a, b),
-  })));
+    names: C.names, within: C.within,
+  }));
 }
 function setPlace(e, row, part) { e.lng = +row.lng; e.lat = +row.lat; e.how = part ? 'name' : 'picked'; if (part) e.by = part; else delete e.by; delete e.unfound; }
 function pick(onPick) {
@@ -653,14 +816,19 @@ function pick(onPick) {
     the list per frame, so the page keeps answering — the time, not a count, bounds each slice) */
 async function locateAll() {
   const deps = await locateDeps();
+  /* one question per place text and year: a historical name is a candidate only in the years a record attests it */
   const byText = new Map();
-  for (const p of store.people) for (const e of p.events) if (e.lng == null && e.place) { if (!byText.has(e.place)) byText.set(e.place, []); byText.get(e.place).push(e); }
+  for (const p of store.people) for (const e of p.events) if (e.lng == null && e.place) {
+    const at = instantOf(e.d), key = e.place + '\u0000' + (at == null ? '' : kParts(at)[0]);
+    if (!byText.has(key)) byText.set(key, { place: e.place, d: e.d, evs: [] });
+    byText.get(key).evs.push(e);
+  }
   const texts = [...byText.keys()];
   let one = 0, several = 0, none = 0, i = 0;
   while (i < texts.length) {
     const t0 = performance.now();
     while (i < texts.length && performance.now() - t0 < 12) {
-      const res = locate(texts[i], deps), evs = byText.get(texts[i]); i++;
+      const q = byText.get(texts[i]), res = locate(q.place, deps, q.d), evs = q.evs; i++;
       if (res.status === 'one') { one++; for (const e of evs) setPlace(e, res.rows[0], res.part); }
       else if (res.status === 'several') several++;
       else { none++; for (const e of evs) e.unfound = true; }
@@ -678,7 +846,7 @@ async function importFile(file) {
   try {
     const bytes = new Uint8Array(await file.arrayBuffer());
     const dec = decode(bytes);
-    if (dec.problem) { ui.busy = null; ui.report = dec.problem === 'ansel' ? t('This file is in the ANSEL character set, which IntMap does not read. Export it again as UTF-8 from your genealogy program.', 'このファイルの文字コードは ANSEL で、IntMap は読めません。家系図ソフトから UTF-8 で書き出し直してください。') : t('This file\'s character set (' + dec.charset + ') is not one IntMap reads. Export it again as UTF-8.', 'このファイルの文字コード（' + dec.charset + '）は IntMap が読めません。UTF-8 で書き出し直してください。'); paint(); return; }
+    if (dec.problem) { ui.busy = null; ui.report = dec.problem === 'invalid-bytes' ? t('This file holds bytes that are not valid in its character set (' + dec.charset + '), so its names cannot be read without guessing. Export it again as UTF-8.', 'このファイルには文字コード（' + dec.charset + '）として正しくないバイトがあり、推測せずには名前を読めません。UTF-8 で書き出し直してください。') : dec.problem === 'ansel' ? t('This file is in the ANSEL character set, which IntMap does not read. Export it again as UTF-8 from your genealogy program.', 'このファイルの文字コードは ANSEL で、IntMap は読めません。家系図ソフトから UTF-8 で書き出し直してください。') : t('This file\'s character set (' + dec.charset + ') is not one IntMap reads. Export it again as UTF-8.', 'このファイルの文字コード（' + dec.charset + '）は IntMap が読めません。UTF-8 で書き出し直してください。'); paint(); return; }
     const g = parseGedcom(dec.text);
     if (!g.people.length) { ui.busy = null; ui.report = t('No people were found in this file — is it a GEDCOM file?', 'このファイルに人物が見つかりませんでした。GEDCOM ファイルですか？'); paint(); return; }
     store = fromGedcom(g, file.name);
@@ -690,6 +858,21 @@ async function importFile(file) {
       c.people + ' 人・出来事 ' + c.events + ' 件（IntMap が読める日付 ' + c.dated + ' 件）。場所: ファイルに座標があった出来事 ' + c.located + ' 件、地名 ' + res.places + ' 件のうち ' + res.one + ' 件を特定、' + res.several + ' 件は複数の場所に該当（各人物で選べます）、' + res.none + ' 件は該当なし（地図上で指定してください）。');
   } catch (e) { ui.busy = null; ui.report = t('The file could not be read: ', 'ファイルを読み込めませんでした: ') + (e && e.message ? e.message : String(e)); }
   paint(); draw();
+}
+/** the family as a GEDCOM file (js/gedcom.js writeGedcom), built in this browser and handed to its own download —
+    nothing is sent anywhere; the file is named after the file it was read from, or «family» */
+function exportFile() {
+  if (!store || !store.people.length) return;
+  const text = writeGedcom(store.people);
+  const base = String((store.file && store.file.name) || 'family').replace(/\.(ged|gedcom)$/i, '') || 'family';
+  try {
+    const url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
+    const a = document.createElement('a'); a.href = url; a.download = base + '.ged';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+    ui.report = t('Saved ' + store.people.length + ' people as ' + base + '.ged (GEDCOM 5.5.1, UTF-8).', store.people.length + ' 人を ' + base + '.ged（GEDCOM 5.5.1、UTF-8）として保存しました。');
+  } catch (e) { ui.report = t('The file could not be saved: ', 'ファイルを保存できませんでした: ') + (e && e.message ? e.message : String(e)); }
+  paint();
 }
 function onInput(ev) {
   const el = ev.target; if (!el) return;
@@ -713,6 +896,7 @@ async function onClick(ev) {
   if (act === 'disarm') { ui.arm = null; paint(); return; }
   if (act === 'import') { if (store.people.length) { ui.arm = 'import'; paint(); return; } const f = sheet.querySelector('.fh-file'); if (f) f.click(); return; }
   if (act === 'import-go') { ui.arm = null; const f = sheet.querySelector('.fh-file'); if (f) f.click(); return; }
+  if (act === 'export') { exportFile(); return; }
   if (act === 'wipe') { ui.arm = 'wipe'; paint(); return; }
   if (act === 'wipe-go') { store = emptyStore(); try { localStorage.removeItem(STORE_KEY); } catch (_) { /* nothing kept */ } ui.arm = null; ui.report = null; recs.clear(); paint(); draw(); return; }
   if (b.dataset.person) { ui.view = 'person'; ui.pid = b.dataset.person; ui.arm = null; ui.cands = null; paint(); draw(); fitPerson(); return; }
@@ -722,7 +906,7 @@ async function onClick(ev) {
   if (b.dataset.delev) { if (p) { p.events = p.events.filter((e) => e.id !== b.dataset.delev); save(); paint(); draw(); } return; }
   if (b.dataset.locate) {
     const e = evOf(b.dataset.locate); if (!e) return;
-    const res = locate(e.place, await locateDeps());
+    const res = locate(e.place, await locateDeps(), e.d);
     if (res.status === 'one') { setPlace(e, res.rows[0], res.part); save(); ui.cands = null; }
     else { ui.cands = { ev: e.id, res }; if (res.status === 'none') e.unfound = true; }
     paint(); draw(); return;
@@ -754,11 +938,11 @@ async function onClick(ev) {
     if (!date && !place) return;
     const e = Object.assign({ id: newId('e'), tag: kind, date, typed: true, d: readDateInput(date) }, place ? { place } : {});
     p.events.push(e);
-    if (place) { const res = locate(place, await locateDeps()); if (res.status === 'one') setPlace(e, res.rows[0], res.part); else { ui.cands = { ev: e.id, res }; if (res.status === 'none') e.unfound = true; } }
+    if (place) { const res = locate(place, await locateDeps(), e.d); if (res.status === 'one') setPlace(e, res.rows[0], res.part); else { ui.cands = { ev: e.id, res }; if (res.status === 'none') e.unfound = true; } }
     save(); paint(); draw(); return;
   }
   if (act === 'draft-locate' && ui.draft) {
-    const res = locate(ui.draft.place, await locateDeps());
+    const res = locate(ui.draft.place, await locateDeps(), ui.draft.birth ? readDateInput(ui.draft.birth) : null);
     if (res.status === 'one') { Object.assign(ui.draft, { lng: res.rows[0].lng, lat: res.rows[0].lat, by: res.part }); ui.cands = null; } else ui.cands = { ev: 'draft', res };
     paint(); return;
   }

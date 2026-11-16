@@ -474,8 +474,14 @@ index.html __imBoot          the launch screen records when and how it lifted (i
                             (<release> = the build stamp's minute and short sha). Not counted when the page
                             started hidden or prerendered, or was hidden before it became usable, or carries
                             no release. Same beacon, same consent rules as §2b.
+  → usage-count (server)    each speed row counts ONCE per caller, release and UTC day (shape.js speedOnce):
+                            a no-refill token in relay_rate_buckets (scope usage-count:speed-once) under the
+                            caller's HMAC key (callerKey — never the address); a second reading that day is
+                            dropped. So a «page load» here is a network a release reached that day: readers
+                            behind one address are one reading. The token row is swept after 48 idle hours.
   → usage_counts            (day, metric, dimension) += 1, admin-only like every other count
-  → public.field_speed(p_days)   the ONE public reading: per release and device, the SHARE in each range and
+  → public.field_speed()    the ONE public reading, over a FIXED 14-day window (no argument: a window the
+                            caller chose could be narrowed to one day and differenced): per release and device, the SHARE in each range and
                             each ending (whole percents) and a band (100+ … 10000+); groups under 100 withheld; no count, no day
                             only releases on main's first-parent history are published (field-speed.mjs knownReleases);
                             the function refuses future / 90-day-old releases and one speed dimension per request

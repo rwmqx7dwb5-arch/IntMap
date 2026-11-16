@@ -90,8 +90,12 @@ function layerId(d) {
      · OBSERVED 2026-10-02 (js/boot-stage.js header): production on a phone profile became usable at
        9.7–10.8 s; a desktop on this machine in 2–4 s. The edges resolve a second where readers mostly are
        (1–4 s) and widen by ~1.5× above it, so one step is a change a reader feels at either end.
-     · 20 s is index.html's failsafe (`finish('timeout')` after 20000 ms) — the longest a launch screen can
-       stay up; `late` is a page whose failsafe timer itself ran late (a throttled tab).
+     · 20 s is index.html's failsafe (`finish('timeout')` 20000 ms after the launch-screen script ran) — the longest a
+       launch screen can stay up. (wave4-refine) `late` IS EVERY LOAD THE FAILSAFE ENDED, not only a throttled tab: the
+       time is `performance.now()` at `finish` — measured from the start of navigation — and the 20 s timer starts only
+       when the inline script runs, after the HTML before it has arrived and parsed, so a failsafe ending is always
+       past 20000 ms and lands here. A `late` with the ending `idle` is a page whose map settled after 20 s (a throttled
+       or very slow load); the failsafe's own share is the `timeout` ending of `boot_end`.
      · EXPIRES when the failsafe changes (then the last edge must follow it) or when most loads fall in one
        bucket (the admin «Usage» tab shows it) — then the edges no longer separate what readers feel.
      CANON: this array; the database function and every reader take the edges from the labels. */
@@ -122,8 +126,9 @@ export function bootBucket(ms) {
    from, and publishes nothing else); the server can still refuse what no release can be, by time:
      · RELEASE_FUTURE_MS = 1 h — a stamp is the committer time of a commit already merged and built, so it is never
        after the moment its page reports; the hour is clock skew between GitHub and the function, not a window.
-     · RELEASE_MAX_AGE_MS = 90 days — public.field_speed() reads at most 90 days (its least(p_days, 90)); an older
-       release could never be read, so its rows only occupy the day's ceiling. Expires with that clamp.
+     · RELEASE_MAX_AGE_MS = 90 days — a release older than the last quarter of main's history is not one
+       scripts/field-speed.mjs can verify (it reads main's first-parent commits of the last 91 days), so its rows could
+       never be published and only occupy the day's ceiling. Expires with that history window.
    `now` is passed only by the server (parse below). The browser's acceptRow has none: its own clock may be wrong,
    and a wrong clock must not cost a reader's honest row — the server's clock decides. */
 const RELEASE_FUTURE_MS = 3600e3;
@@ -152,6 +157,29 @@ export function bootRows(o) {
   if (!rel || !b || BOOT_ENDINGS.indexOf(x.ending) < 0) return [];
   const dev = x.mobile ? 'm' : 'd';
   return [{ m: 'ready', d: rel + '.' + dev + '.' + b }, { m: 'boot_end', d: rel + '.' + dev + '.' + x.ending }];
+}
+
+/* ══ (wave4-refine) ONE READING PER CALLER, RELEASE AND DAY ══════════════════════════════════════════
+   `perRequest` bounds one REQUEST; nothing bounded a caller. One address reloading the map a hundred times added a
+   hundred `ready` rows to its release, and a share of page loads became a share of whoever reloaded most. So the
+   server keeps, per speed metric, ONE row per (caller, release, UTC day): the caller is the per-caller bucket's own key
+   (_shared/rate-limit.js callerKey — an HMAC of the caller's network; no address, no account), and the token is taken
+   from the shared buckets (public.relay_take, scope SPEED_ONCE_SCOPE) under that key, the release and the day, with no
+   refill. A second reading that day is dropped; the request's other rows are counted as before.
+   ⚠ What this counts is therefore NETWORKS a release reached that day, not page loads: readers behind one address
+   (an office, a school, a carrier NAT) are one reading. The status page's «page loads» are these readings.
+   The bucket row lives until public.sweep_relay_rate_buckets() removes it after 48 idle hours — longer than the day
+   in its key, so a swept row can never re-open a day. */
+export const SPEED_ONCE_SCOPE = 'usage-count:speed-once';
+/** the speed rows of a request, each with the key of its once-a-day token (without the caller) — [{ row, once }] */
+export function speedOnce(rows, now = Date.now()) {
+  const day = new Date(now).toISOString().slice(0, 10).replace(/-/g, '');
+  const out = [];
+  for (const r of rows || []) {
+    if (!r || !METRICS[r.m] || !METRICS[r.m].perRequest) continue;
+    out.push({ row: r, once: r.m + '.' + String(r.d).split('.')[0] + '.' + day });
+  }
+  return out;
 }
 
 /* ══ THE DECLARATION ═══════════════════════════════════════════════════════════════════════════

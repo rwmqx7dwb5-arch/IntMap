@@ -145,13 +145,13 @@ deep tier は push でも PR でも走らない（`scripts/tiers.mjs`）ので n
 読み方と手順の正本は [`docs/MONITORING.md`](../MONITORING.md) §2c。
 
 - **測るもの**: 起動画面（`index.html` の `__imBoot`）が上がるまでの時間の**区間**（1・2・3・4・6・8・12・20 秒以内と、それ超）と上がり方
-  （`idle`＝地図が落ち着いた・`timeout`＝待ちの逃げ道・`no-renderer`）を、版（build stamp の分と短い sha）と端末（携帯／PC）ごとに 1 読み込み 1 回。
+  （`idle`＝地図が落ち着いた・`timeout`＝待ちの逃げ道・`no-renderer`）を、版（build stamp の分と短い sha）と端末（携帯／PC）ごとに 1 読み込み 1 回。サーバ側では呼び出し元（`_shared/rate-limit.js` `callerKey`＝ネットワークの HMAC。アドレスそのものは書かない）× 指標 × 版 × UTC 日につき 1 回だけ数える（`shape.js` `speedOnce`・`relay_rate_buckets` の scope `usage-count:speed-once`、補充なしの札。札は 48 時間使われなければ `sweep_relay_rate_buckets` が消す）。したがって数えているのは読み込みではなく**その日その版が届いたネットワーク**で、同じアドレスの後ろの複数の読者は 1 回になる。
   宣言は `supabase/functions/usage-count/shape.js`（`ready` / `boot_end`・`bootRows`）、聞くのは `js/usage-counts.js`（`js/boot-stage.js` の
   `interactive()`）。匿名の利用統計と同じ同意の規則・同じ送信・同じ保持（§2b）。隠れて始まった・使えるようになる前に隠れた・版の無い読み込みは数えない。
-- **公開の読みは 1 つ**: `public.field_speed(p_days)`（migration `20261116130000_field_speed.sql`・pgTAP `43_field_speed_test.sql`）。版と端末ごとの
+- **公開の読みは 1 つ**: `public.field_speed()`（migration `20261116130000_field_speed.sql`、期間を 14 日に固定した `20261116131000_wave4_refine_field_speed.sql`・pgTAP `43_field_speed_test.sql`）。期間は引数ではない（呼び出し側が選べる期間は 1 日に狭められ、2 つの期間の差で 1 日の件数が出てしまう）。版と端末ごとの
   **整数％の割合**と帯だけを返し、100 回未満は出さず、件数と日は返さない（件数＝通信量は管理者だけのもの。下限と丸めの根拠は migration のコメント）。
 - **版の実在**: 状態ページに出る版は main の first-parent の commit（その commit 時刻の分と短い sha＝build stamp と同じ出所）と一致するものだけ（`field-speed.mjs` `knownReleases`）。
-  ページ自身も自分の版より新しい版の行を出さない。Edge 側は未来（1 時間超）と 90 日より古い版を拒み、1 要求に速さの次元を 1 つずつしか受けない（`shape.js` `parse`）。
+  ページ自身も自分の版より新しい版の行を出さない。Edge 側は未来（1 時間超）と 90 日より古い版（`field-speed.mjs` が検証できる main の履歴より古い）を拒み、1 要求に速さの次元を 1 つずつしか受けない（`shape.js` `parse`）。
 - **判定**: `scripts/field-speed.mjs`（`summarise`・`judge`・`line`）。帯 300+ の版どうしで、新しい版が前の版の「4 人に 3 人」の時間以内に使えた割合が
   10 ポイント以上減れば遅くなった・増えれば速くなった・時間は同じで落ち着いて開いた割合が 10 ポイント減れば信頼性が下がった。2 版そろわなければ「判定なし」。
 - **読み手**: `data/service-status.json` の `fieldSpeed`（`build-service-status.mjs`・bot PR で 1 日 2 回）→ 状態ページの節「読者の手元で開く速さ」と

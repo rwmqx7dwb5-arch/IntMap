@@ -7,7 +7,9 @@
  *  itself. The earthquake popup's «Aftershock forecast», the earthquake record's selected quake, the Tools list, a link
  *  `?as=<ComCat id>`, the IntMapOS command `aftershock.open` and Atlas `sim.aftershocks` all open the same card:
  *    · the chance of at least one aftershock of M3+, M5+, M6+, M7+ and «as large as this one» in the next day, week,
- *      month and year, each with the 95 % range of the number — the probability and its uncertainty together;
+ *      month and year, each with the model's 95 % range of the number — the probability and its uncertainty together —
+ *      and beside it how often real counts fell inside such ranges in the shipped test (the model's 95 % is not a
+ *      measured rate, and the card does not let it pass for one);
  *    · what the forecast stands on: the tectonic regime and its generic parameters, the aftershock zone, the catalogue's
  *      completeness, how many aftershocks it learned from and how far they moved the prior;
  *    · the curve teachers draw on the board: the aftershocks counted so far against the decay the model expects;
@@ -29,7 +31,7 @@ import { MapState } from './map-state.js';
 import { jsonWithin } from './fetch-deadline.js';
 import { loadData } from './data-door.js';
 import { AS, prepare, completenessAt, radius, normalise, catalogUrl, eventUrl, oafUrl, readOafForecast, run, ring, windows,
-  listRecent, nearUrl, pickNear, encodeLink, decodeLink, forAtlas } from './aftershock-core.js';
+  listRecent, nearUrl, pickNear, encodeLink, decodeLink, forAtlas, testedCoverage } from './aftershock-core.js';
 
 const AS_CSS = [
   '.as-warn{ margin:0 0 8px; padding:9px 12px; border-radius:12px; background:rgba(255,159,10,0.14); font-size:12px; line-height:1.45; color:var(--text-main); }',
@@ -78,7 +80,7 @@ export function aftershock(HOST) {
   const SRC = 'as-src', RING = 'as-ring', PT = 'as-pt', MAIN = 'as-main';
 
   const st = { open: false, seq: 0, loading: false, err: '', errKind: null, main: null, events: null, loadedEnd: 0, lowMag: null,
-    issueMs: null, issuedLive: false, clockBefore: false, r: null, oaf: null, oafState: 'none', list: null, cal: null, calOpen: false, painted: 0, paintError: '', place: '' };
+    issueMs: null, issuedLive: false, clockBefore: false, r: null, oaf: null, oafState: 'none', list: null, cal: null, calOpen: false, painted: 0, paintError: '', place: '', readMin: null };
   let P = null;
 
   function clockMs() { try { return IntMapTime.nowMs(); } catch (_) { return Date.now(); } }
@@ -113,6 +115,7 @@ export function aftershock(HOST) {
     try { const c = await jsonWithin(q('count', minMag), SHORT_MS); n = c && isFinite(+c.count) ? +c.count : (isFinite(+c) ? +c : null); } catch (_) { n = null; }
     st.lowMag = null;
     if (n != null && n > AS.CAP && minMag < mc.magCat) { st.lowMag = minMag; minMag = mc.magCat; }
+    st.readMin = minMag;   /* the floor the read was cut at: the completeness estimate reads its histogram above it */
     const j = await jsonWithin(q('query', minMag), READ_MS);
     st.events = ((j && j.features) || []).map(normalise).filter(Boolean);
     st.loadedEnd = end;
@@ -124,6 +127,7 @@ export function aftershock(HOST) {
     const p = Object.assign({}, o || {});
     if (p.search) { const d = decodeLink(p.search); if (d) Object.assign(p, d); }
     const my = ++st.seq;
+    clearTimeout(pend);   /* a clock recompute scheduled for the previous earthquake must not run against this one */
     Object.assign(st, { open: true, loading: true, err: '', errKind: null, r: null, main: null, events: null, oaf: null, oafState: 'none', list: null, calOpen: false, place: String(p.name || '') });
     show(); draw();
     try {
@@ -145,10 +149,11 @@ export function aftershock(HOST) {
         if (st.main.mag == null || st.main.mag < AS.MIN_MAIN) throw Object.assign(new Error('too small'), { reason: 'too-small' });
         st.issueMs = issueFor(st.main);
         const oafRead = ev.oaf ? jsonWithin(ev.oaf, SHORT_MS).then((j) => { st.oaf = readOafForecast(j); st.oafState = st.oaf ? 'ok' : 'unreadable'; }).catch(() => { st.oafState = 'unreadable'; }) : Promise.resolve();
+        const calRead = readTest();   /* the measured coverage the card and Atlas state beside the model's 95 % */
         await readSequence(st.main, st.issueMs);
         if (my !== st.seq) return null;
         compute();
-        await oafRead;
+        await oafRead; await calRead;
       } else {
         await loadList(my);   /* no earthquake named: the chooser */
       }
@@ -163,7 +168,11 @@ export function aftershock(HOST) {
     if (my !== st.seq) return;
     st.list = listRecent(j, Date.now());
   }
-  function compute() { st.r = run(P, st.main, st.events, st.issueMs, { now: Date.now() }); }
+  function compute() { st.r = run(P, st.main, st.events, st.issueMs, { now: Date.now(), readMin: st.readMin }); }
+  function readTest() {
+    if (st.cal) return Promise.resolve();
+    return loadData(AS.HINDCAST).then((j) => { st.cal = j; }).catch(() => { st.cal = { failed: true }; });
+  }
 
   /* the clock moves the issue time: recompute from what was read; read again only when the clock leaves it */
   let pend = 0;
@@ -173,7 +182,10 @@ export function aftershock(HOST) {
        issued «now» stands until the reader reopens it or moves the clock (no re-read every minute) */
     if (clockLive() && st.issuedLive) return;
     clearTimeout(pend);
+    const mine = st.seq;
     pend = setTimeout(async () => {
+      /* the reader may have opened another earthquake (st.main is null while it is read) or closed the card in the 250 ms */
+      if (mine !== st.seq || !st.open || !st.main || st.loading) return;
       const issue = issueFor(st.main);
       if (Math.abs(issue - st.issueMs) < 60000) return;
       st.issueMs = issue;
@@ -296,7 +308,7 @@ export function aftershock(HOST) {
   }
   async function toggleCal() {
     st.calOpen = !st.calOpen;
-    if (st.calOpen && !st.cal) { try { st.cal = await loadData('data/aftershock-hindcast.json'); } catch (_) { st.cal = { failed: true }; } }
+    if (st.calOpen && !st.cal) await readTest();
     drawDyn();
   }
   function openRecord() {
@@ -343,7 +355,9 @@ export function aftershock(HOST) {
     const days = r.tIssueDays;
     const ago = days < 0.995 ? L('{h} hours', '{h} 時間').replace('{h}', (days * 24).toFixed(1)) : L('{d} days', '{d} 日').replace('{d}', days < 10 ? days.toFixed(1) : nf(Math.round(days)));
     h += '<div class="as-issue">' + S((clockLive() || st.clockBefore ? L('Issued now ({t}), {a} after the mainshock.', 'いま（{t}）時点の見通し。本震から {a} 後。') : L('As it could have been issued at {t} — the map\'s clock — {a} after the mainshock, from the aftershocks recorded by then.', '地図の時計の時刻 {t} に出せた見通し（本震から {a} 後、その時点までに記録された余震から）。'))
-      .replace('{t}', fmtUTC(r.issueMs)).replace('{a}', ago)) + (st.clockBefore && !clockLive() ? ' ' + S(L('The clock stands before this earthquake, so the forecast is issued now.', '時計がこの地震より前を指しているため、いまの時点で出しています。')) : '') + '</div>';
+      .replace('{t}', fmtUTC(r.issueMs)).replace('{a}', ago)) + (st.clockBefore && !clockLive() ? ' ' + S(L('The clock stands before this earthquake, so the forecast is issued now.', '時計がこの地震より前を指しているため、いまの時点で出しています。')) : '')
+      + (pastIssue() ? ' ' + S(L('Computed from today\'s USGS catalogue: magnitudes and locations revised since then, and aftershocks added later, are in it — what forecasters had at that time may have differed.', '現在の USGS カタログから計算しています。その後に改訂された規模や震源、後から追加された余震も含まれるため、当時の予報担当者が持っていた情報とは異なる場合があります。')) : '') + '</div>';
+    h += notesHTML(r);
     const wk = r.forecast[1], b6 = wk.bins.find((b) => b.mag === 6 && !b.asLarge), bm = wk.bins.find((b) => b.asLarge);
     h += '<div class="as-head"><b>' + S(L('Chance of at least one M6+ aftershock in the next week: {p}', '今後1週間に M6 以上の余震が少なくとも1回起きる確率: {p}').replace('{p}', pct(b6.probability))) + '</b>'
       + '<span>' + S(L('Of an earthquake as large as this one ({m}) or larger: {p} — about 1 in {n}.', 'この地震（{m}）と同じかそれより大きい地震: {p}（およそ {n} 回に 1 回）。').replace('{m}', M(r.main.mag)).replace('{p}', pct(bm.probability)).replace('{n}', nf(Math.max(1, Math.round(1 / Math.max(bm.probability, 1e-6)))))) + '</span></div>';
@@ -359,20 +373,23 @@ export function aftershock(HOST) {
     h += '<button type="button" class="nst-all" data-as="record">' + S(L('Earthquake record here', 'この場所の地震の記録')) + '</button>';
     h += '</div>';
     if (st.calOpen) h += calHTML();
-    h += '<div class="nint-foot nint-cov">' + S(L('Model: Reasenberg & Jones (1989) — modified Omori decay and Gutenberg–Richter sizes — with the generic parameters USGS published for each tectonic regime (Page et al. 2016; regimes of García et al. 2012) and the time-dependent catalogue completeness of Page et al. (2016), updated with this sequence\'s own aftershocks (Bayesian, p and c fixed as in USGS\'s code). Aftershocks: USGS ANSS ComCat, public domain. Parameters: USGS OpenSHA OAF, CC0. Times are UTC.',
-      'モデル: Reasenberg & Jones (1989)——改良大森則による減衰とグーテンベルク・リヒター則による規模——に、USGS が地殻変動の区分ごとに公表した一般的なパラメータ（Page ほか 2016、区分は García ほか 2012）と、本震直後のカタログの検知漏れ（Page ほか 2016）を用い、この地震の実際の余震で更新しています（ベイズ更新。p と c は USGS のコードと同じく固定）。余震: USGS ANSS ComCat（パブリックドメイン）。パラメータ: USGS OpenSHA OAF（CC0）。時刻は UTC。'))
+    h += '<div class="nint-foot nint-cov">' + S(L('Model: Reasenberg & Jones (1989) — modified Omori decay and Gutenberg–Richter sizes — with the generic parameters USGS published for each tectonic regime (Page et al. 2016; regimes of García et al. 2012) and the time-dependent catalogue completeness of Page et al. (2016), updated with this sequence\'s own aftershocks (Bayesian over a grid of a, p and c, as USGS\'s sequence-specific model learns them). Aftershocks: USGS ANSS ComCat, public domain. Parameters: USGS OpenSHA OAF, CC0. Times are UTC.',
+      'モデル: Reasenberg & Jones (1989)——改良大森則による減衰とグーテンベルク・リヒター則による規模——に、USGS が地殻変動の区分ごとに公表した一般的なパラメータ（Page ほか 2016、区分は García ほか 2012）と、本震直後のカタログの検知漏れ（Page ほか 2016）を用い、この地震の実際の余震で更新しています（a・p・c の格子上のベイズ更新。USGS の系列固有モデルと同じく 3 つとも学習）。余震: USGS ANSS ComCat（パブリックドメイン）。パラメータ: USGS OpenSHA OAF（CC0）。時刻は UTC。'))
       + ' <a href="./science.html#aftershock" target="_blank" rel="noopener">' + S(L('How it is computed', '計算の方法')) + '</a></div>';
     h += '<div class="nst-share"><button type="button" class="nst-link" data-as="link">' + S(L('Copy link to this forecast', 'この見通しへのリンクをコピー')) + '</button></div>';
     body.innerHTML = h;
   }
   function tableHTML(r) {
-    const rows = r.forecast[0].bins.map((b, j) => ({ label: b.asLarge ? L('≥ this ({m})', 'この規模以上（{m}）').replace('{m}', M(b.mag)) : 'M' + b.mag + '+', j }));
+    /* a mainshock of exactly M5.0 / 6.0 / 7.0 makes «≥ this» the same row as «M6+»: one row, named both ways */
+    const bins0 = r.forecast[0].bins, same = (b) => !b.asLarge && bins0.some((x) => x.asLarge && Math.abs(x.mag - b.mag) < 1e-9);
+    const rows = bins0.map((b, j) => ({ b, j })).filter(({ b }) => !(b.asLarge && bins0.some((x) => !x.asLarge && Math.abs(x.mag - b.mag) < 1e-9)))
+      .map(({ b, j }) => ({ label: b.asLarge ? L('≥ this ({m})', 'この規模以上（{m}）').replace('{m}', M(b.mag)) : same(b) ? L('M{k}+ (≥ this, {m})', 'M{k} 以上（この規模以上・{m}）').replace('{k}', String(b.mag)).replace('{m}', M(b.mag)) : 'M' + b.mag + '+', j }));
     let h = '<table class="as-tab"><thead><tr><th>' + S(L('Magnitude', '規模')) + '</th>' + r.forecast.map((w) => '<th>' + S(winLabel(w.key)) + '</th>').join('') + '</tr></thead><tbody>';
     for (const row of rows) {
       h += '<tr><td>' + S(row.label) + '</td>';
       r.forecast.forEach((w, i) => {
         const b = w.bins[row.j], c = r.check[i];
-        let cell = '<span class="as-p">' + S(pct(b.probability)) + '</span><span class="as-r">' + S(b.hi === b.lo ? String(b.lo) : b.lo + '–' + nf(b.hi)) + '</span>';
+        let cell = '<span class="as-p">' + S(pct(b.probability)) + '</span><span class="as-r">' + S(b.hi === b.lo ? nf(b.lo) : nf(b.lo) + '–' + nf(b.hi)) + '</span>';
         if (c.state === 'closed') {
           const k = c.bins[row.j];
           if (!k.checkable) cell += '<span class="as-na" title="' + S(L('Below the catalogue\'s completeness: not checkable', 'カタログの検知限界より小さいため検証できません')) + '">' + S(L('n/a', '対象外')) + '</span>';
@@ -383,8 +400,29 @@ export function aftershock(HOST) {
       });
       h += '</tr>';
     }
-    h += '</tbody></table><div class="as-cap">' + S(L('Each cell: the chance of at least one, and below it the range of the number (95% of outcomes). Where a window has ended, what the catalogue recorded.',
-      '各欄: 少なくとも 1 回起きる確率と、その下に回数の範囲（95% の結果が入る幅）。期間が終わっている欄には、カタログに記録された実際の回数。')) + '</div>';
+    h += '</tbody></table><div class="as-cap">' + S(L('Each cell: the chance of at least one, and below it the model\'s 95% range of the number. Where a window has ended, what the catalogue recorded.',
+      '各欄: 少なくとも 1 回起きる確率と、その下にモデルが示す回数の 95% の幅。期間が終わっている欄には、カタログに記録された実際の回数。')) + ' ' + S(coverageLine()) + '</div>';
+    return h;
+  }
+  /* the measured coverage, said beside the model's 95 %: the share of the tested sequences whose real M5+ count fell inside */
+  function coverageLine() {
+    const cov = testedCoverage(st.cal);
+    if (!cov) return st.cal && st.cal.failed ? L('That 95% is the model\'s own; the test of how often real counts fall inside it could not be read.', 'この 95% はモデル自身の値です。実際の回数がこの幅に入る割合の検証結果は読み込めませんでした。') : '';
+    const at = (k) => { const z = cov.rows.find((x) => x.window === k && x.mag === 5); return z && z.inside != null ? Math.round(100 * z.inside) + '%' : '—'; };
+    return L('That 95% is the model\'s own: tested on {n} past earthquakes of M{g}+, the real M5+ count fell inside it {d} of the time over a day, {w} over a week, {m} over a month and {y} over a year.',
+      'この 95% はモデル自身の値です。過去の M{g} 以上の地震 {n} 件での検証では、実際の M5 以上の回数がこの幅に入ったのは 1 日で {d}、1 週間で {w}、1 か月で {m}、1 年で {y} でした。')
+      .replace('{n}', nf(cov.sequences)).replace('{g}', String(cov.minMag)).replace('{d}', at('day')).replace('{w}', at('week')).replace('{m}', at('month')).replace('{y}', at('year'));
+  }
+  function pastIssue() { return !clockLive() && !st.clockBefore; }
+  /* what the reader must know about THIS forecast (core notesOf: prior alone, completeness raised, a deep mainshock) */
+  function notesHTML(r) {
+    let h = '';
+    for (const n of forAtlas(r).notes) {
+      if (n.code === 'prior-only') h += '<div class="as-warn">' + S(L('The catalogue\'s completeness here cannot be estimated from this sequence (only {n} aftershocks recorded by then), and the earthquake is older than the period the network floor was tested on ({y} on). The forecast is the regime\'s prior alone, and nothing is checked against what happened.', 'この系列からはカタログの検知限界を推定できず（その時点までに記録された余震は {n} 個）、地震も検知限界が検証された期間（{y} 年以降）より古いため、見通しは区分の事前分布だけによるもので、実際との照合もしていません。')
+        .replace('{n}', nf(n.events)).replace('{y}', n.testedFrom.slice(0, 4))) + '</div>';
+      if (n.code === 'deep') h += '<div class="as-warn">' + S(L('This earthquake was {d} km deep (deeper than {b} km). Intermediate and deep earthquakes usually have far fewer aftershocks than shallow ones of the same size, and the tectonic regime here is chosen by the epicentre, not by depth — read the numbers with that in mind; the aftershocks recorded so far are what move them.', 'この地震の深さは {d} km です（{b} km より深い）。やや深発・深発地震は、同じ規模の浅い地震より余震がずっと少ないのが普通で、ここでの地殻変動の区分は震央だけで決めており深さは見ていません。その点を踏まえて数値を読んでください。数値を動かすのは、これまでに記録された余震です。')
+        .replace('{d}', nf(Math.round(n.depthKm))).replace('{b}', nf(n.boundaryKm))) + '</div>';
+    }
     return h;
   }
   /* the cumulative count of the aftershocks the model learned from (each at or above the completeness of its own
@@ -399,8 +437,8 @@ export function aftershock(HOST) {
     const complete = r.inZone.filter((e) => e.mag != null && e.mag >= Math.max(mc.magCat, mc.F * r.main.mag - mc.G - mc.H * Math.log10(Math.max((e.t - r.main.t) / DAY, 1e-9))));
     const times = complete.map((e) => (e.t - r.main.t) / DAY).filter((t) => t > 0 && t <= tEnd).sort((a, b) => a - b);
     const nPts = 40, ts = []; for (let i = 0; i <= nPts; i++) ts.push(t0 * Math.pow(tEnd / t0, i / nPts));
-    const exp = (a) => ts.map((t) => r.expectedAt(t, a));
-    const mid = exp(r.posterior.aMid), lo = exp(r.posterior.aLo), hi = exp(r.posterior.aHi);
+    const band3 = ts.map((t) => r.expectedBand(t));
+    const mid = band3.map((b) => b.mid), lo = band3.map((b) => b.lo), hi = band3.map((b) => b.hi);
     const yMax = Math.max(1, times.length, hi[hi.length - 1]) * 1.08;
     const X = (t) => Pd.l + Math.log(t / t0) / Math.log(tEnd / t0) * (W - Pd.l - Pd.r), Y = (n) => H - Pd.b - n / yMax * (H - Pd.t - Pd.b);
     let g = '';
@@ -427,11 +465,15 @@ export function aftershock(HOST) {
     const li = (k, v) => '<li><span>' + S(k) + '</span> ' + S(v) + '</li>';
     let h = '<div class="nint-sec">' + S(L('What it stands on', 'この見通しの根拠')) + '</div><ul class="as-facts">';
     h += li(L('Tectonic regime:', '地殻変動の区分:'), regName);
-    h += li(L('Generic parameters:', '一般的なパラメータ:'), 'b ' + par.b + ' · p ' + par.p + ' · c ' + par.c + ' ' + L('days', '日') + ' · a ' + post.priorMean.toFixed(2) + ' ± ' + post.priorSd.toFixed(2));
-    h += li(L('Learned from this sequence:', 'この地震の余震から:'), L('{n} aftershocks used; a = {m} ± {s}', '{n} 個の余震を使用。a = {m} ± {s}').replace('{n}', nf(r.used)).replace('{m}', post.mean.toFixed(2)).replace('{s}', post.sd.toFixed(2))
+    h += li(L('Generic parameters:', '一般的なパラメータ:'), 'b ' + par.b + ' · p ' + post.pPriorMean.toFixed(2) + ' ± ' + post.pPriorSd.toFixed(2) + ' · c ' + par.c + ' ' + L('days', '日') + ' · a ' + post.priorMean.toFixed(2) + ' ± ' + post.priorSd.toFixed(2));
+    h += li(L('Learned from this sequence:', 'この地震の余震から:'), L('{n} aftershocks used; a = {m} ± {s}, p = {pm} ± {ps}, c = {c} days', '{n} 個の余震を使用。a = {m} ± {s}、p = {pm} ± {ps}、c = {c} 日').replace('{n}', nf(r.used)).replace('{m}', post.mean.toFixed(2)).replace('{s}', post.sd.toFixed(2))
+      .replace('{pm}', post.pMean.toFixed(2)).replace('{ps}', post.pSd.toFixed(2)).replace('{c}', String(post.cMean))
       + (r.used < 5 ? ' — ' + L('too few to move the prior much', '少なく、事前分布からほとんど動いていません') : ''));
     h += li(L('Aftershock zone:', '余震域:'), L('{r} km around the centroid of {n} aftershocks (Wells & Coppersmith rupture length)', '{n} 個の余震の重心から半径 {r} km（Wells & Coppersmith の破壊長）').replace('{r}', nf(Math.round(r.zone.radiusKm))).replace('{n}', nf(r.zone.centroidFrom)));
-    h += li(L('Catalogue completeness:', 'カタログの検知限界:'), 'M' + mc.magCat + ' (' + mc.region + ')' + (st.lowMag != null ? ' — ' + L('the read was limited to this floor (the sequence is larger than one read)', 'この下限で読み込みました（一度に読める件数を超えるため）') : ''));
+    h += li(L('Catalogue completeness:', 'カタログの検知限界:'), 'M' + mc.magCat + ' (' + mc.region + ')'
+      + (mc.source === 'sequence' ? ' — ' + L('estimated from this sequence\'s own magnitudes ({n} aftershocks, maximum curvature + {c}); the network floor here is M{f}', 'この系列自身の規模分布から推定（余震 {n} 個、最大曲率法 + {c}）。この地域のネットワークの下限は M{f}')
+        .replace('{n}', nf(mc.estimate.n)).replace('{c}', String(AS.MC_CORR)).replace('{f}', String(mc.networkMagCat)) : '')
+      + (st.lowMag != null ? ' — ' + L('the read was limited to this floor (the sequence is larger than one read)', 'この下限で読み込みました（一度に読める件数を超えるため）') : ''));
     if (r.largestAfter) h += li(L('Largest aftershock so far:', 'これまでの最大余震:'), M(r.largestAfter.mag) + ' · ' + fmtUTC(r.largestAfter.t));
     return h + '</ul>';
   }
@@ -456,7 +498,11 @@ export function aftershock(HOST) {
     for (const m of [5, 6, 7]) {
       h += '<tr><td>' + S('M' + m + '+') + '</td>' + ['day', 'week', 'month', 'year'].map((k) => { const s = rows.find((x) => x.window === k && x.mag === m); return '<td>' + (s ? '<span class="as-p">' + S(pct(s.meanP)) + '</span><span class="as-r">' + S(L('happened {h}', '実際 {h}').replace('{h}', pct(s.happened))) + '</span>' : '') + '</td>'; }).join('') + '</tr>';
     }
-    h += '</tbody></table><div class="as-cap">' + S(L('Top: the average forecast chance of at least one; below: how often one actually happened. Equal numbers would be a perfectly calibrated forecast — this model runs high, most at M7+ and over longer windows, so read its larger numbers as upper-side estimates.',
+    const cov = testedCoverage(c);
+    if (cov) for (const m of [5, 6]) {
+      h += '<tr><td>' + S(L('M{m}+ in range', 'M{m} 以上・幅内').replace('{m}', m)) + '</td>' + ['day', 'week', 'month', 'year'].map((k) => { const z = cov.rows.find((x) => x.window === k && x.mag === m); return '<td>' + (z && z.inside != null ? '<span class="as-p">' + S(Math.round(100 * z.inside) + '%') + '</span><span class="as-r">' + S(nf(z.n) + ' ' + L('seq.', '件')) + '</span>' : '') + '</td>'; }).join('') + '</tr>';
+    }
+    h += '</tbody></table><div class="as-cap">' + S(L('«in range»: how often the real count fell inside the model\'s 95% range — a calibrated range would hold it 95% of the time.', '「幅内」: 実際の回数がモデルの 95% の幅に入った割合。較正が完全なら 95% になります。')) + ' ' + S(L('Top: the average forecast chance of at least one; below: how often one actually happened. Equal numbers would be a perfectly calibrated forecast — this model runs high, most at M7+ and over longer windows, so read its larger numbers as upper-side estimates.',
       '上: 少なくとも 1 回起きる確率の予想の平均。下: 実際に起きた割合。両者が等しければ完全に較正された予測です。このモデルは高めに出る傾向があり、M7 以上や長い期間ほど大きく外れるので、大きな値は上振れ気味の見積もりとして読んでください。')) + '</div></div>';
     return h;
   }
@@ -474,7 +520,7 @@ export function aftershock(HOST) {
     const k = st.errKind;
     if (k === 'not-found') return L('USGS has no event with that id', 'その ID の地震は USGS のカタログにありません');
     if (k === 'too-small') return L('An aftershock forecast needs a mainshock of M{m} or more: below it the global catalogue records too few aftershocks to learn from.', '余震の見通しには M{m} 以上の本震が必要です（それより小さいと、全球のカタログに学べるだけの余震が記録されません）。').replace('{m}', AS.MIN_MAIN);
-    if (k === 'none-near') return L('The USGS catalogue holds no earthquake of M{m} or more within {r} km of that place in the {d} days before the clock.', 'その場所の {r} km 以内には、時計の時刻までの {d} 日間に M{m} 以上の地震が USGS のカタログにありません。').replace('{m}', AS.MIN_MAIN).replace('{r}', '300').replace('{d}', AS.LIST_DAYS);
+    if (k === 'none-near') return L('The USGS catalogue holds no earthquake of M{m} or more within {r} km of that place in the {d} days before the clock.', 'その場所の {r} km 以内には、時計の時刻までの {d} 日間に M{m} 以上の地震が USGS のカタログにありません。').replace('{m}', AS.MIN_MAIN).replace('{r}', nf(AS.NEAR_KM)).replace('{d}', AS.LIST_DAYS);
     if (k === 'timeout') return L('The USGS catalogue did not answer in time', 'USGS のカタログが時間内に応答しませんでした') + not;
     if (k === 'http') return L('The USGS catalogue refused the request', 'USGS のカタログが要求を拒否しました') + not;
     if (k === 'network') return L('The USGS catalogue could not be reached', 'USGS のカタログに到達できませんでした') + not;
@@ -485,10 +531,14 @@ export function aftershock(HOST) {
   /** summary() — what Atlas is handed */
   function summary() {
     const base = { ok: !st.err, open: st.open, error: st.err || null, errorKind: st.errKind, painted: st.painted, paintError: st.paintError || null, link: link() || null,
-      clockBeforeMainshock: st.clockBefore || undefined, readFloorRaised: st.lowMag != null || undefined };
+      clockBeforeMainshock: st.clockBefore || undefined, readFloorRaised: st.lowMag != null || undefined,
+      rules: { minMainshock: AS.MIN_MAIN, nearKm: AS.NEAR_KM, nearDays: AS.LIST_DAYS, chooserMin: AS.LIST_MIN } };
     if (st.list) return Object.assign(base, { chooser: st.list.slice(0, 15).map((e) => ({ id: e.id, magnitude: e.mag, place: e.place, time: new Date(e.t).toISOString() })) });
     if (!st.r) return base;
     const A = forAtlas(st.r);
+    const cov = testedCoverage(st.cal);
+    A.tested = cov ? Object.assign({ what: 'how often the real count fell inside the model\'s 95% range (inside: a fraction of n)' }, cov) : { unavailable: true };
+    if (pastIssue()) A.computedFromTodaysCatalogue = true;
     if (st.oaf) A.usgsForecast = { issued: st.oaf.issued ? new Date(st.oaf.issued).toISOString() : null, model: st.oaf.model,
       windows: st.oaf.windows.map((w) => ({ label: w.label, bins: w.bins.map((b) => ({ magnitudeAtLeast: b.mag, probabilityPercent: +(100 * b.probability).toFixed(1), count95: [b.lo, b.hi] })) })) };
     return Object.assign(base, A);

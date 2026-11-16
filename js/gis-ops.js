@@ -1970,6 +1970,18 @@ export function makeGisOps() {
         }));
     }
 
+    /* Planar area in degree² of an areal geometry AS WRITTEN — outer minus holes. ⚠ NOT AN AREA ON
+       THE EARTH (areaKm2 is that); it is read only to reconcile pieces of one cut against the whole,
+       which is a planar question about the kernel's own plane: shoelace is exactly additive over a
+       cut, which no formula over a subdivided spherical edge is. Rings from js/gis-geometry.js arrive
+       already cut into [−180,180], so there is no seam to unwrap here. */
+    function planarDeg2(g) {
+      const ring = (r) => { const pts = ringPositions(r); let a = 0; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) a += pts[j][0] * pts[i][1] - pts[i][0] * pts[j][1]; return Math.abs(a / 2); };
+      let a = 0;
+      for (const p of polygonsOf(g)) { if (!p.length) continue; let x = ring(p[0]); for (let h = 1; h < p.length; h++) x -= ring(p[h]); a += x; }
+      return a;
+    }
+
     /* ══ (voronoi) 最寄り圏と、いちばん遠い場所 ═════════════════════════════════════════════════
        One row per site of input 0 whose nearest-site region meets the window (input 1): the region
        cut to the window, the site's own columns, and where in it the farthest point from the site
@@ -2029,6 +2041,9 @@ export function makeGisOps() {
       const cand = candidateSource(wins);
       const led = makeGeoLedger();
       const perRow = new Map();
+      /* planar area of what each window received, summed over every piece of every cell — see the
+         reconciliation after the loop */
+      const got = new Map();
       let outside = 0, borderTol = 0;
       for (let u = 0; u < positions.length; u++) {
         if (!(await ctx.tick(1, total))) return fail('cancelled', { done: ctx.done(), total: total });
@@ -2047,7 +2062,7 @@ export function makeGisOps() {
             if (!boxesMeet(pb, w.bbox)) continue;
             const r = GG.attempt.intersection(piece, w.geometry);
             if (!led.ok(r)) continue;
-            if (r.geometry) parts.push({ geometry: r.geometry, half: pc.half });
+            if (r.geometry) { parts.push({ geometry: r.geometry, half: pc.half }); got.set(w, (got.get(w) || 0) + planarDeg2(r.geometry)); }
           }
         }
         if (!parts.length) { outside++; continue; }
@@ -2063,6 +2078,34 @@ export function makeGisOps() {
         for (const pt of parts) acc.parts.push(pt);
         if (cell.polar) acc.polar = true;
         if (far && (!acc.far || far.km > acc.far.km)) acc.far = far;
+      }
+
+      /* ⚠⚠⚠ THE CELLS TILE THE SPHERE, SO WHAT THE WINDOWS RECEIVED MUST ADD UP TO THE WINDOWS. Every
+         way ground could go missing above was a named failure — except one: an intersection that
+         「succeeded」 with nothing in it. MEASURED: the window box(−180,−10,180,10) with sites at
+         0°, 120°, −120° came back ok:true, 0 rows, sitesOutsideWindow:3, because the geometry kernel
+         read the −180 → 180 edge as the seam and folded the band to a line (fixed there, see
+         unwrapRingR in js/gis-geometry.js). Nothing here could tell 「ここには誰の圏も無い」 from
+         「計算できなかった」 — and on a sphere the first is impossible. So each window's share is
+         reconciled: the PLANAR area of its pieces (exactly additive over a cut, which a spherical
+         formula over subdivided edges is not — measured 0.2% apart on an Antarctic ring that the
+         pieces covered with no gap) against the planar area of the window as the same kernel draws
+         it (union of the window alone: the same seam cut and pole clamp the pieces went through).
+         TOLERANCE, observed: over 60 random runs (1–40 sites, boxes, seam-crossing boxes, bands) the
+         worst relative difference was 7.6e-15 — float64 rounding over the pieces. 1e-9 stands five
+         orders above that and is what is allowed; it expires if the cell kernel ever stops tiling
+         exactly (a drawn border that leaves gaps would need its own allowance from edgeTolKm). */
+      const TILE_REL_TOL = 1e-9;
+      let windowsShort = 0;
+      for (const w of wins) {
+        const whole = GG.attempt.union([w.geometry]);
+        if (!led.ok(whole)) continue;
+        const want = planarDeg2(whole.geometry), have = got.get(w) || 0;
+        if (!(want > 0)) continue;
+        if (Math.abs(have - want) > TILE_REL_TOL * want) {
+          windowsShort++;
+          led.ok({ ok: false, why: 'geometry-failed', detail: { stage: 'window-coverage', window: w.id, windowDeg2: want, coveredDeg2: have } });
+        }
       }
 
       /* ⚠ THE FARTHEST PLACE IS FOLDED BEFORE ANY ROW IS ASSEMBLED, and the proof is withdrawn when
@@ -2128,6 +2171,7 @@ export function makeGisOps() {
         coincidentRows: coincident,
         rowsWithoutPosition: unplaced,
         sitesOutsideWindow: outside,
+        windowsNotCovered: windowsShort,
         neighbours: built.method,
         hullOrphans: built.orphans,
         farthestKm: best ? best.km : null,
@@ -5895,7 +5939,11 @@ export function makeGisOps() {
        refuse today, which is the one thing this version exists to announce. The arithmetic itself is
        untouched: `weightBy` defaults to 'memberArea', the weight this op has always used, so every
        recipe that does not name the new parameter produces the numbers it produced before. */
-    const KERNEL_VERSION = 'ops-9';
+    /* (wave4-refine) ops-9 -> ops-10: `voronoi` reconciles what each window received against the
+       window (see runVoronoi), so a run that lost ground without any step failing by name now carries
+       `geometryFailed` / `farthestBoundWhy` (or is refused when nothing was computed) where ops-9
+       answered a plain success. A saved step can replay to a refusal, which is what this announces. */
+    const KERNEL_VERSION = 'ops-10';
     const API = {
       /* The implementation a saved recipe replays through (see KERNEL_VERSION above). */
       version: () => KERNEL_VERSION,

@@ -498,9 +498,9 @@ a known one still counts) — the bound on what a scripted caller can add to the
 nothing is sent with Do Not Track or Global Privacy Control, and the Settings switch (or Atlas, `settings.usageCounts`)
 stops it at once and discards what was not yet sent. Rows are purged after 400 days (pg_cron `usage-counts-purge`);
 an admin reads totals through `usage_counts_summary`, which is SECURITY INVOKER so the admin-only SELECT policy decides.
-*(field-speed)* The one thing anyone may read from it is `field_speed(p_days)` — SECURITY DEFINER, executable by anon — which returns only
+*(field-speed)* The one thing anyone may read from it is `field_speed()` — SECURITY DEFINER, executable by anon, over a fixed 14-day window the caller cannot choose (a chosen window could be narrowed to a day and two windows differenced into a day's count) — which returns only
 **shares** of the two speed metrics per release and device with a coarse band, as whole percents, withholds any group under 100 page loads (below it the shares spell the count out), and returns no count
-and no day, so the traffic the counts describe stays the admin's.
+and no day, so the traffic the counts describe stays the admin's. The two speed metrics are counted once per caller, release and UTC day (`usage-count/shape.js` `speedOnce`): a no-refill token in `relay_rate_buckets` under the caller's HMAC key — never the address — which `sweep_relay_rate_buckets` removes after 48 idle hours.
 
 ⚠ **(anon-write-guard) `?refresh=1` on `aviation-feed` and `ais-feed` draws from ONE project-wide allowance.**
 Their read budget (`_shared/read-budget.js`, #R801) bounds one isolate, and a caller who spread `?refresh=1`

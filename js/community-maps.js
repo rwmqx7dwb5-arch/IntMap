@@ -36,6 +36,16 @@ export const SORTS = Object.freeze(['new', 'reused', 'updated']);
 const PAGE = 20;
 const TOKEN_RE = /^[0-9a-f]{32}$/;
 
+/* (wave4-refine) THE DOORS THAT HAND BACK WORDS ANOTHER READER WROTE — a listing's title, summary and the name it is listed
+   under, the title of the collection a listing was built on. Whatever puts one of these results in front of Atlas's model
+   carries text a third party wrote, and its capability row says so (column 11 `ingests:'external'`, js/atlas-capabilities.js);
+   check:capabilities reads this declaration and fails a row that calls one of these doors without it. */
+const WORDS_BY_OTHERS = Object.freeze({
+  browse: 'the title, summary and listed name of every collection on the page, and of the one each was built on — written by their owners',
+  openEntry: 'the collection’s title, places, notes and listing — written by its owner',
+  listMap: 'the title of the collection this one was built on — written by its owner',
+});
+
 /* ── pure helpers (Node runs them) ───────────────────────────────────────────────────────────── */
 
 /** The name a listing is shown under: trimmed, no control characters, at most AUTHOR_MAX — '' when there is none. */
@@ -113,6 +123,7 @@ function errOf(error) {
   if (c === '22023') return 'invalid';
   if (c === '23514') return 'too_long';
   if (c === '55000') return 'hidden';
+  if (c === 'IMOWN') return 'own';   /* report_community_map: the reader's own collection (its own code since wave4-refine) */
   if (c === 'P0002') return 'not_listed';
   if (c === 'PGRST202' || c === '42883') return 'not_deployed';
   return 'failed';
@@ -125,6 +136,8 @@ export function failureText(error, lang) {
   if (error === 'invalid') return T('A listing needs a name to show and something in the collection.', '掲載には表示名と、コレクションの中身が必要です。');
   if (error === 'too_long') return T('The name can be at most ' + AUTHOR_MAX + ' characters and the summary ' + SUMMARY_MAX + '.', '表示名は ' + AUTHOR_MAX + ' 文字、紹介文は ' + SUMMARY_MAX + ' 文字までです。');
   if (error === 'hidden') return T('IntMap’s administrators have taken this collection out of Community maps. Its link still works.', 'このコレクションは IntMap の管理者によって、みんなの地図から外されています。リンクは引き続き使えます。');
+  if (error === 'own') return T('This is your own collection — you can change it or take it out of Community maps from your Library.', 'これはあなた自身のコレクションです。変更やみんなの地図からの取り下げは、ライブラリから行えます。');
+  if (error === 'invalid_cursor') return T('The list changed while it was being read. Search again to start from the top.', '読み込み中に一覧が変わりました。もう一度検索して、最初から表示してください。');
   if (error === 'not_listed') return T('That collection is not in Community maps.', 'そのコレクションは、みんなの地図に掲載されていません。');
   if (error === 'not_deployed') return T('Community maps are not available on this server yet.', 'このサーバーではまだ、みんなの地図を利用できません。');
   if (error === 'unavailable') return T('The account service is not reachable right now.', 'アカウントのサービスに接続できません。');
@@ -133,21 +146,25 @@ export function failureText(error, lang) {
 
 /* ── the doors ────────────────────────────────────────────────────────────────────────────────── */
 
-/** The directory, a page at a time. q = { query, sort, offset, limit, bbox } → {ok, items, hasMore, sort, offset, error?}
- *  (no total: the database reads one page plus one row, never every listing — supabase/migrations/20261116080000_community_maps.sql §6) */
+/** The directory, a page at a time. q = { query, sort, after, limit, bbox } → {ok, items, hasMore, next, sort, error?}
+ *  KEYSET: `after` is the `next` the previous page returned (the sort key of its last row) — every page is read from where the
+ *  last one ended, at the same cost however deep. No total: the database reads one page plus one row, never every listing
+ *  (supabase/migrations/20261116140000_wave4_refine_community_class.sql §4). */
 export async function browse(DB, q) {
   if (!DB) return { ok: false, error: 'unavailable' };
   q = q || {};
-  const args = { p_sort: SORTS.indexOf(q.sort) >= 0 ? q.sort : 'new', p_limit: Math.max(1, Math.min(50, Math.round(+q.limit || PAGE))), p_offset: Math.max(0, Math.round(+q.offset || 0)) };
+  const args = { p_sort: SORTS.indexOf(q.sort) >= 0 ? q.sort : 'new', p_limit: Math.max(1, Math.min(50, Math.round(+q.limit || PAGE))) };
   /* an argument left out is the function's default (supabase-js writes `null` as the word null in a GET) */
   const words = String(q.query == null ? '' : q.query).trim();
   if (words) args.p_query = words.slice(0, 100);
+  if (typeof q.after === 'string' && q.after) args.p_after = q.after;
   if (Array.isArray(q.bbox) && q.bbox.length === 4 && q.bbox.every(Number.isFinite)) args.p_bbox = q.bbox.map((x) => +(+x).toFixed(4));
   try {
     const { data, error } = await DB.rpc('community_maps', args, { get: true });
     if (error) return { ok: false, error: errOf(error) };
-    if (!data || data.ok !== true) return { ok: false, error: 'failed' };
-    return { ok: true, hasMore: data.has_more === true, sort: data.sort, offset: +data.offset || 0, items: (Array.isArray(data.items) ? data.items : []).map(entryOf).filter(Boolean) };
+    if (!data || data.ok !== true) return { ok: false, error: (data && data.error === 'invalid_cursor') ? 'invalid_cursor' : 'failed' };
+    const next = data.has_more === true && typeof data.next === 'string' && data.next ? data.next : null;
+    return { ok: true, hasMore: !!next, next, sort: data.sort, items: (Array.isArray(data.items) ? data.items : []).map(entryOf).filter(Boolean) };
   } catch (_) { return { ok: false, error: 'failed' }; }
 }
 
@@ -215,11 +232,12 @@ async function adminQueue(DB) {
   } catch (_) { return { ok: false, error: 'failed' }; }
 }
 
-/** An administrator's decision: 'hide' (with the reason the owner reads) | 'restore' | 'dismiss'. */
-async function moderate(DB, token, action, reason) {
+/** An administrator's decision on a queue entry's `ref` (or the token the collection is published under — the one
+ *  argument moderate_community_map() takes, p_ref): 'hide' (with the reason the owner reads) | 'restore' | 'dismiss'. */
+async function moderate(DB, ref, action, reason) {
   if (!DB) return { ok: false, error: 'unavailable' };
   try {
-    const { data, error } = await DB.rpc('moderate_community_map', { p_token: token, p_action: action, p_reason: reason == null ? null : String(reason).slice(0, 300) });
+    const { data, error } = await DB.rpc('moderate_community_map', { p_ref: String(ref || ''), p_action: action, p_reason: reason == null ? null : String(reason).slice(0, 300) });
     if (error) return { ok: false, error: errOf(error) };
     return data && data.ok ? { ok: true } : { ok: false, error: (data && data.error) || 'failed' };
   } catch (_) { return { ok: false, error: 'failed' }; }
@@ -319,7 +337,7 @@ export async function openCommunityMaps(HOST, opts) {
   ensureStyle();
   const old = document.getElementById('cmm-modal'); if (old) old.remove();
 
-  const st = { query: String(opts.query || ''), sort: SORTS.indexOf(opts.sort) >= 0 ? opts.sort : 'new', area: !!opts.area, offset: 0, items: [], hasMore: false, gen: 0 };
+  const st = { query: String(opts.query || ''), sort: SORTS.indexOf(opts.sort) >= 0 ? opts.sort : 'new', area: !!opts.area, next: null, items: [], hasMore: false, gen: 0 };
   const msg = el('p', { cls: 'acct-msg', role: 'status', 'aria-live': 'polite' });
   const search = el('input', { cls: 'cmm-search', id: 'cmm-q', type: 'search', maxlength: '100', 'aria-label': T('Search Community maps', 'みんなの地図を検索'), placeholder: T('Search titles, summaries and names', '題・紹介文・作成者で検索') });
   search.value = st.query;
@@ -366,15 +384,16 @@ export async function openCommunityMaps(HOST, opts) {
   /* one request per change: a newer one makes an older answer stale (gen), so a slow page cannot overwrite a newer one */
   const load = async (append) => {
     const gen = ++st.gen;
-    if (!append) st.offset = 0;
+    if (!append) st.next = null;
     const bbox = st.area ? viewBbox() : null;
-    if (st.area && !bbox) { st.items = []; st.hasMore = false; render(); msg.textContent = T('The map is showing the whole globe — zoom in to ask about an area.', '地図が地球全体を表示しています。範囲で探すには拡大してください。'); return; }
+    if (st.area && !bbox) { st.items = []; st.hasMore = false; st.next = null; render(); msg.textContent = T('The map is showing the whole globe — zoom in to ask about an area.', '地図が地球全体を表示しています。範囲で探すには拡大してください。'); return; }
     msg.textContent = T('Reading…', '読み込み中…');
-    const r = await browse(HOST.DB, { query: st.query, sort: st.sort, offset: append ? st.items.length : 0, limit: PAGE, bbox });
+    const r = await browse(HOST.DB, { query: st.query, sort: st.sort, after: append ? st.next : null, limit: PAGE, bbox });
     if (gen !== st.gen) return;
     if (!r.ok) { msg.textContent = failureText(r.error, lang); return; }
     st.items = append ? st.items.concat(r.items) : r.items;
     st.hasMore = r.hasMore;
+    st.next = r.next;
     render();
   };
   let typing = null;
@@ -478,8 +497,11 @@ export function listingBox(HOST, share, reachOf, done) {
   return box;
 }
 
-/* ══ THE SHARED COLLECTION'S CARD — its listing, the original, and reporting (js/shared-collection.js) ═══════ */
-export function listingSection(HOST, token, listing, onOpenOriginal) {
+/* ══ THE SHARED COLLECTION'S CARD — its listing, the original, and reporting (js/shared-collection.js) ═══════
+   `mine` — the signed-in reader published this collection themselves (js/shared-collection.js ownsShare, asked of the
+   database): there is nothing to report to IntMap about one's own collection, so the card offers no report, and says
+   where the owner changes it instead. The database refuses the report anyway (IMOWN) — the button is not the rule. */
+export function listingSection(HOST, token, listing, onOpenOriginal, mine) {
   const lang = HOST && HOST.lang;
   const T = IntMapLang.pick(() => lang);
   ensureStyle();
@@ -493,6 +515,10 @@ export function listingSection(HOST, token, listing, onOpenOriginal) {
     o.dataset.effect = 'none';
     o.onclick = () => onOpenOriginal(String(b.token));
     kids.push(o);
+  }
+  if (mine) {
+    kids.push(el('p', { cls: 'cmm-meta', text: T('You listed this collection. Change it or take it out of Community maps from your Library.', 'あなたが掲載したコレクションです。変更やみんなの地図からの取り下げは、ライブラリから行えます。') }));
+    return el('div', { cls: 'cmm-in-card' }, kids);
   }
   /* reporting: a reason from the closed vocabulary and a note; signed in (one report per account) */
   const res = el('p', { cls: 'cmm-meta', role: 'status', 'aria-live': 'polite' });

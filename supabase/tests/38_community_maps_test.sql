@@ -70,8 +70,8 @@ select ok(not has_column_privilege('authenticated', 'public.collection_shares', 
 select ok(not has_column_privilege('authenticated', 'public.collection_shares', 'reused_count', 'update'), 'the owner cannot write the reuse counter');
 select ok(not has_column_privilege('authenticated', 'public.collection_shares', 'derived_from', 'update'), 'the owner cannot rewrite the lineage');
 select ok(not has_column_privilege('authenticated', 'public.collection_shares', 'author_name', 'update'),  'the author name is written through list_community_map only');
-select ok(    has_function_privilege('anon', 'public.community_maps(text, text, integer, integer, double precision[])', 'execute'), 'anon may read the directory');
-select ok(obj_description('public.community_maps(text, text, integer, integer, double precision[])'::regprocedure, 'pg_proc') ~ 'ANON MAY CALL: \S', 'and the function states why');
+select ok(    has_function_privilege('anon', 'public.community_maps(text, text, integer, text, double precision[])', 'execute'), 'anon may read the directory');
+select ok(obj_description('public.community_maps(text, text, integer, text, double precision[])'::regprocedure, 'pg_proc') ~ 'ANON MAY CALL: \S', 'and the function states why');
 select ok(not has_function_privilege('anon', 'public.list_community_map(text, text, text, text)', 'execute'), 'anon cannot list');
 select ok(not has_function_privilege('anon', 'public.report_community_map(text, text, text)', 'execute'),     'anon cannot report');
 select ok(not has_function_privilege('anon', 'public.moderate_community_map(text, text, text)', 'execute'),   'anon cannot moderate');
@@ -121,12 +121,15 @@ select _sel('d_word',   'select public.community_maps(''KANSAI'')::text');
 select _sel('d_author', 'select public.community_maps(''ms a'')::text');
 select _sel('d_none',   'select public.community_maps(''zzzz'')::text');
 select _sel('d_pct',    'select public.community_maps(''%'')::text');
-select _sel('d_japan',  'select public.community_maps(null, ''new'', 24, 0, array[129, 30, 146, 46]::double precision[])::text');
-select _sel('d_europe', 'select public.community_maps(null, ''new'', 24, 0, array[-10, 35, 30, 60]::double precision[])::text');
-select _sel('d_wrap',   'select public.community_maps(null, ''new'', 24, 0, array[120, 20, -30, 60]::double precision[])::text');
-select _sel('d_page',   'select public.community_maps(null, ''new'', 1, 1)::text');
-select _sel('d_page0',  'select public.community_maps(null, ''new'', 1, 0)::text');
-select _sel('d_lim',    'select public.community_maps(null, ''bogus'', 9999, -5)::text');
+select _sel('d_japan',  'select public.community_maps(null, ''new'', 24, null, array[129, 30, 146, 46]::double precision[])::text');
+select _sel('d_europe', 'select public.community_maps(null, ''new'', 24, null, array[-10, 35, 30, 60]::double precision[])::text');
+select _sel('d_wrap',   'select public.community_maps(null, ''new'', 24, null, array[120, 20, -30, 60]::double precision[])::text');
+-- (wave4-refine) KEYSET PAGES: the second page is asked after the first page's cursor, not at an offset
+select _sel('d_page0',  'select public.community_maps(null, ''new'', 1)::text');
+select _sel('d_page',   format('select public.community_maps(null, ''new'', 1, %L)::text', (_tok('d_page0')::jsonb) ->> 'next'));
+select _sel('d_othercur', format('select public.community_maps(null, ''reused'', 1, %L)::text', (_tok('d_page0')::jsonb) ->> 'next'));
+select _sel('d_badcur', 'select public.community_maps(null, ''new'', 1, ''v1|new|0|zz|nope'')::text');
+select _sel('d_lim',    'select public.community_maps(null, ''bogus'', 9999)::text');
 select _sel('anon_tbl', 'select count(*)::text from public.collection_copies');
 reset role;
 
@@ -161,7 +164,11 @@ select is((_tok('d_page')::jsonb) ->> 'has_more', 'false', 'the second does not'
 select ok(((_tok('d_page0')::jsonb) -> 'items' -> 0 ->> 'token') <> ((_tok('d_page')::jsonb) -> 'items' -> 0 ->> 'token'),
           'the two pages hold different collections — the order is total (listed_at, then id), so no row is on both or neither');
 select is((_tok('d_lim')::jsonb) ->> 'limit', '50', 'at most 50 a page');
-select is((_tok('d_lim')::jsonb) ->> 'offset', '0', 'a negative offset is the first page');
+select ok((_tok('d_page0')::jsonb) ->> 'next' ~ '^v1\|new\|', 'the first page hands back the cursor of its last row');
+select is((_tok('d_page')::jsonb) -> 'next', 'null'::jsonb, 'the last page has no cursor');
+select is((_tok('d_othercur')::jsonb) ->> 'error', 'invalid_cursor', 'a cursor made for another order is refused, not read as the first page');
+select is((_tok('d_badcur')::jsonb) ->> 'error', 'invalid_cursor', 'a cursor that is not one is refused');
+select ok(not ((_tok('d_lim')::jsonb) ? 'offset'), 'no offset: the directory pages by keyset');
 select is((_tok('d_lim')::jsonb) ->> 'sort', 'new', 'an unknown sort is «new»');
 select is(_tok('anon_tbl'), 'DENIED', 'anon cannot read the copy receipts');
 
@@ -249,7 +256,7 @@ select is(_tok('r_mine'), '1|spam',    'the reporter reads their own report, as 
 select is(_tok('r_queue'), 'DENIED', 'a non-admin cannot read the queue');
 select is(_tok('r_mod'),   'DENIED', 'a non-admin cannot moderate');
 select is(_tok('r_upd'),   'DENIED',    'a report''s status is not written directly');
-select is(_tok('r_own'),   'ERR:22023', 'the owner cannot report their own collection');
+select is(_tok('r_own'),   'ERR:IMOWN', 'the owner cannot report their own collection — and is told so with its own code (wave4-refine)');
 select is(_tok('r_aread'), '0',         'the owner never reads who reported them');
 select is(_tok('r_anon'),  'DENIED',    'anon cannot report');
 

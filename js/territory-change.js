@@ -31,9 +31,19 @@
  *    · land one instant draws and the other does not is NOT a transfer: it is the edge of a record (a record that
  *      begins or ends, a coast drawn by a coarser sheet) and is listed under `recordOnly` — «no record» is never
  *      written as «no state»;
- *    · two shapes the record draws over one cell are both named (an overlap); none is chosen;
- *    · a transfer whose two sides share no identifier and differ in name is marked `comparedByNameOnly` — the records
- *      may write one polity under two names (the Cliopatria → CShapes seam in 1886 does), and the answer says so.
+ *    · two shapes the record draws over one cell are both named (an overlap); none is chosen. A claim that only BEGINS
+ *      over polities still drawn, or one of several that ENDS, moved no land from one polity to another: it is listed
+ *      under `overlaps` and is not counted (js/family-history.js `claimChange` — the judgement a life's changes are
+ *      counted with);
+ *    · ⚠ ACROSS TWO RECORDS, A NAME IS NOT AN IDENTITY. CShapes codes a state (gw); OpenHistoricalMap from 1886 and
+ *      Cliopatria give a Wikidata item; OpenHistoricalMap before 1886 and the era sheets give a name alone. No
+ *      crosswalk between the CShapes code and the Wikidata item can be derived from the data (CShapes rows carry a
+ *      name and a code, and Wikidata holds no property for the Correlates of War / Gleditsch–Ward code — searched
+ *      2026-11-16). So where the two sides of a cell are drawn by different records sharing no identifier and their
+ *      names differ, the land is listed under `nameOnly` and is NOT a transfer: not in the total, not drawn unless asked
+ *      (`drawNameOnly`). Measured before this rule, Europe 1885 → 1887 «lost» 5.3 million km² (Russian Empire → Russia,
+ *      2.8 million) across the 1886 seam where nothing changed hands;
+ *    · the ribbon two records leave along a border they both draw is set apart under `drawing` (RIBBON_DEG).
  *  ⚠ THE LATTICE IS THE PRECISION, AND IT IS IN THE ANSWER. A cell is inside a polity when its CENTRE is (the even-odd
  *    rule of js/routing-ops.js `ptInPoly`, evaluated a row at a time — tests/wave4-atlas-checks.test.mjs holds the two
  *    equal on the shipped records); land narrower than a cell can be missed and an area is good to about half a cell
@@ -47,6 +57,7 @@ import { nameIn, htmlText, bordersNow } from './year-book.js';
 import { countryOutlines } from './routing-ops.js';
 import { instantOf, instantLabel } from './journey-through-time.js';
 import { IntMapEraName } from './time-borders.js';   /* the one «Base (Gloss)» decomposition the records' names are read with */
+import { claimChange } from './family-history.js';   /* the one judgement of «a claim began or ended» against «land changed hands» */
 
 /* ══ THE LATTICE ══════════════════════════════════════════════════════════════════════════════════
    How many cells a comparison lays when Atlas does not name a step. MEASURED 2026-10-13 (Node 24, this file over the
@@ -156,13 +167,19 @@ export function identityOf(f, lang, modern) {
   return { gw: p._gw != null ? +p._gw : null, qid: p._qid ? String(p._qid) : null, en, local: nameIn(p, lang) || en, names, realm: !!p._realm,
     record: p._rec ? String(p._rec) : (p._gw != null ? 'cshapes' : null) };
 }
-/** one polity at both instants? By the identifier both state; by name only when they share none */
+/** one polity at both instants? By the identifier both state; by name only when they share none — and a name compared
+    ACROSS two records (one draws it under a CShapes code, the other under a Wikidata item or under none) is marked
+    `seam`: the two records were written by different hands and neither says the other's polity is its own
+    («Russian Empire» in OpenHistoricalMap, «Russia» gw 365 in CShapes). Within one record its own names are its identity. */
 export function samePolity(a, b) {
   if (a.gw != null && b.gw != null) return { same: a.gw === b.gw, by: 'gw' };
   if (a.qid && b.qid) return { same: a.qid === b.qid, by: 'qid' };
-  for (const n of a.names) if (b.names.has(n)) return { same: true, by: 'name' };
-  return { same: false, by: 'name' };
+  let same = false; for (const n of a.names) if (b.names.has(n)) { same = true; break; }
+  return a.record === b.record ? { same, by: 'name' } : { same, by: 'name', seam: true };
 }
+/* one polity's own key — its identifier, or its record and name (the same key at both instants iff samePolity would
+   join them by an identifier or within one record) */
+const polityKey = (id) => (id.gw != null ? 'gw:' + id.gw : id.qid ? 'q:' + id.qid : 'n:' + (id.record || '') + ':' + id.en.toLowerCase());
 
 /* what the record draws at one cell: the polities (a realm set aside under a drawn member), or nothing */
 function cellPolities(fis, ids) {
@@ -176,13 +193,6 @@ function cellPolities(fis, ids) {
   for (const fi of use) if (!uniq.some((u) => samePolity(ids[u], ids[fi]).same)) uniq.push(fi);
   uniq.sort((x, y) => (ids[x].en < ids[y].en ? -1 : ids[x].en > ids[y].en ? 1 : 0));
   return { kind: uniq.length > 1 ? 'overlap' : 'polity', set: uniq };
-}
-/* every polity of one set has a partner in the other, both ways */
-function sameSet(A, B, idsA, idsB) {
-  if (A.length !== B.length) return { same: false, byNameOnly: false };
-  let byNameOnly = true;
-  for (const a of A) { let hit = null; for (const b of B) { const r = samePolity(idsA[a], idsB[b]); if (r.same) { hit = r; break; } } if (!hit) return { same: false, byNameOnly: false }; if (hit.by !== 'name') byNameOnly = false; }
-  return { same: true, byNameOnly };
 }
 const setKey = (set, ids) => set.map((fi) => ids[fi].gw != null ? 'gw:' + ids[fi].gw : ids[fi].qid ? 'q:' + ids[fi].qid : 'n:' + ids[fi].en.toLowerCase()).join(' / ');
 const setNames = (set, ids) => set.map((fi) => ({ en: ids[fi].en, local: ids[fi].local }));
@@ -254,23 +264,52 @@ export function traceCells(cells, L) {
 }
 
 /* the 4-connected pieces of a set of cells, each with its area and its area-weighted centre — the largest piece is
-   where the map is flown to and where the answer says the land lies */
+   where the map is flown to and where the answer says the land lies. A piece also carries its cells and its MEAN
+   WIDTH in degrees, 2·area / perimeter on the lattice (2·n·step / exposed cell sides): the measure the ribbon between
+   two records' drawings of one border is told apart by (RIBBON_DEG below). */
 function pieces(cells, L, areaOfRow) {
   const idx = new Map(); cells.forEach((c, i) => idx.set(c, i));
   const seen = new Uint8Array(cells.length), out = [];
   for (let i = 0; i < cells.length; i++) {
     if (seen[i]) continue;
-    let km2 = 0, sx = 0, sy = 0, n = 0; const stack = [i]; seen[i] = 1;
+    let km2 = 0, sx = 0, sy = 0, n = 0, sides = 0; const stack = [i], own = []; seen[i] = 1;
     while (stack.length) {
       const k = stack.pop(), cell = cells[k], c = cell % L.cols, r = (cell - c) / L.cols, a = areaOfRow[r];
-      km2 += a; sx += a * cellLng(L, c); sy += a * cellLat(L, r); n++;
+      km2 += a; sx += a * cellLng(L, c); sy += a * cellLat(L, r); n++; own.push(cell);
       for (const nb of [c > 0 ? cell - 1 : -1, c < L.cols - 1 ? cell + 1 : -1, r > 0 ? cell - L.cols : -1, r < L.rows - 1 ? cell + L.cols : -1]) {
-        if (nb < 0) continue; const j = idx.get(nb); if (j != null && !seen[j]) { seen[j] = 1; stack.push(j); }
+        const j = nb < 0 ? null : idx.get(nb);
+        if (j == null) { sides++; continue; }
+        if (!seen[j]) { seen[j] = 1; stack.push(j); }
       }
     }
-    out.push({ km2, cells: n, lng: km2 ? sx / km2 : null, lat: km2 ? sy / km2 : null });
+    out.push({ km2, cells: n, lng: km2 ? sx / km2 : null, lat: km2 ? sy / km2 : null, widthDeg: sides ? (2 * n * L.step) / sides : 0, own });
   }
   return out.sort((a, b) => b.km2 - a.km2);
+}
+
+/* ══ A BORDER DRAWN TWICE IS NOT LAND THAT MOVED ════════════════════════════════════════════════════════════════
+   Two records digitised by different hands never draw a shared border on the same line, so comparing an instant one
+   record draws with an instant another draws leaves a RIBBON along every border the two polities share — at both
+   instants. Its mean width is the distance between the two drawings, and that distance has been MEASURED for IntMap's
+   historical records: scripts/build-hist-clio.mjs SLIVER_W (observed 2026-10-04 over the 769,000 pieces the record
+   subtractions left: the counts fall steeply to a valley at 0.200–0.225° and rise again — ribbons below the valley,
+   ground above it). A piece of a transfer is a ribbon when ① the giver is still drawn at the second instant and the
+   receiver was drawn at the first (the same pair of identifiers at both), ② the two sides are drawn by DIFFERENT
+   records, and ③ the piece is narrower than that width. One record drawing a border in two places at two instants has
+   moved it, and that is never set aside.
+   ⚠ Canon: scripts/build-hist-clio.mjs SLIVER_W (tests/wave4-refine-history-checks.test.mjs holds the two equal).
+   Expires when either record is re-digitised at another scale or the valley moves when it is re-measured. */
+export const RIBBON_DEG = 0.2;
+
+/* ══ WHAT A LATTICE COSTS — said before it is laid (an estimate, never a limit) ════════════════════════════════
+   MEASURED 2026-10-13 (DEFAULT_CELLS above): 0.5–0.9 µs a cell, labelled, judged and traced. The memory is the typed
+   arrays a comparison holds at once, per cell: the first feature at each instant and of the land (3 × Int32), the class
+   at each instant (2 × Int32) and the tracing buffer (Uint8) — 21 bytes. */
+const US_PER_CELL = [0.5, 0.9];
+const BYTES_PER_CELL = 3 * 4 + 2 * 4 + 1;
+export function estimate(L) {
+  const cells = L.cols * L.rows;
+  return { cells, seconds: US_PER_CELL.map((u) => Math.round(cells * u / 1e5) / 10), megabytes: Math.round(cells * BYTES_PER_CELL / 1048576) };
 }
 
 /* ══ ONE INSTANT, AS THE MAP DRAWS IT ═════════════════════════════════════════════════════════════ */
@@ -310,10 +349,13 @@ function yielder(yieldTo) {
 export async function territoryChange(box, from, to, deps, opts) {
   const L = lattice(box, (opts || {}).stepDeg);
   if (!L) return { failed: 'region-empty' };
+  const est = estimate(L);
+  /* asked only what it would cost: the estimate, and nothing laid */
+  if ((opts || {}).estimateOnly) return { estimateOnly: true, from, to, lattice: L, estimate: est };
   /* a lattice the page cannot hold is refused by name with its size — never a frozen or crashed tab (the typed arrays
      throw RangeError when the allocation is refused); a step that fits is the default's, and the refusal says it */
-  try { return await compare(L, from, to, deps, opts || {}); }
-  catch (e) { if (e instanceof RangeError) return { failed: 'lattice-too-large', cells: L.cols * L.rows, lattice: L, fits: lattice([L.w, L.s, L.e, L.n]) }; throw e; }
+  try { return Object.assign(await compare(L, from, to, deps, opts || {}), { estimate: est }); }
+  catch (e) { if (e instanceof RangeError) return { failed: 'lattice-too-large', cells: L.cols * L.rows, lattice: L, fits: lattice([L.w, L.s, L.e, L.n]), estimate: est }; throw e; }
 }
 async function compare(L, from, to, deps, o) {
   const lang = deps.lang || 'en', drawRenamed = !!o.drawRenamed;
@@ -350,31 +392,42 @@ async function compare(L, from, to, deps, o) {
   const CA = classify(labA, idsA); await tick();
   const CB = classify(labB, idsB); await tick();
 
-  const transfers = new Map(), renamed = new Map(), recordOnly = new Map(), heldA = new Map(), heldB = new Map();
+  const transfers = new Map(), renamed = new Map(), recordOnly = new Map(), nameOnly = new Map(), overlaps = new Map(), heldA = new Map(), heldB = new Map();
+  const usedA = new Uint8Array(CA.classes.length), usedB = new Uint8Array(CB.classes.length);
   let landKm2 = 0, unrecordedBothKm2 = 0, comparedKm2 = 0;
   const bump = (m, k, a, init) => { let e = m.get(k); if (!e) m.set(k, (e = Object.assign({ km2: 0 }, init()))); e.km2 += a; return e; };
   const verdicts = new Map();
+  /* the cell's polities at the two instants, judged by the one judgement of claims (js/family-history.js claimChange —
+     the same that counts the changes of a life at one place):
+       same     every polity has its partner — unchanged, or renamed, or a holder newly written in its bracket;
+       overlap  a claim began over polities still drawn, or one of several ended: no land changed hands;
+       change   a polity is gone and another came — a TRANSFER when every polity gone and every polity come is compared
+                by an identifier both records state or by the names of one record; otherwise the two sides are drawn by
+                different records that share no identifier (the 1886 seam: OpenHistoricalMap and Cliopatria name a
+                polity, CShapes codes it) and only their NAMES differ — listed apart (`nameOnly`), not counted, not drawn
+                unless asked (`drawNameOnly`): «Russian Empire» → «Russia» is not land that changed hands. */
   const judge = (ia, ib) => {
     const vk = ia * 1048576 + ib; let v = verdicts.get(vk);
     if (v) return v;
     const pa = CA.classes[ia], pb = CB.classes[ib];
     if (!pa.named && !pb.named) v = { what: 'neither' };
     else if (pa.named && pb.named) {
-      const eq = sameSet(pa.set, pb.set, idsA, idsB);
-      if (eq.same) {
+      const C = claimChange(pa.set, pb.set, (x, y) => samePolity(idsA[x], idsB[y]).same);
+      const key = pa.key + ' → ' + pb.key;
+      if (C.kind === 'same') {
         if (pa.en === pb.en) v = { what: 'same' };
         else {
           /* the bracket the record writes the holder in — compared polity by polity, matched by identifier */
           const gloss = (n) => { const m = IntMapEraName.split(n); return m ? m.gloss.toLowerCase() : ''; };
           let held = false;
           for (const x of pa.set) for (const y of pb.set) if (samePolity(idsA[x], idsB[y]).same && gloss(idsA[x].en) !== gloss(idsB[y].en)) held = true;
-          v = (held || drawRenamed) ? { what: 'transfer', key: pa.key + ' → ' + pb.key, byNameOnly: false, sameIdentifier: true, held } : { what: 'renamed', key: pa.key + ' → ' + pb.key };
+          v = (held || drawRenamed) ? { what: 'transfer', key, sameIdentifier: true, held } : { what: 'renamed', key };
         }
       }
+      else if (C.kind === 'overlap') v = { what: 'overlap', key, began: C.came, ended: C.gone };
       else {
-        /* by name only when no polity of either side shares an identifier type with one of the other */
-        let byNameOnly = true; for (const x of pa.set) for (const y of pb.set) if (samePolity(idsA[x], idsB[y]).by !== 'name') byNameOnly = false;
-        v = { what: 'transfer', key: pa.key + ' → ' + pb.key, byNameOnly };
+        let seam = false; for (const x of C.gone) for (const y of C.came) if (samePolity(idsA[x], idsB[y]).seam) seam = true;
+        v = seam ? { what: 'nameOnly', key } : { what: 'transfer', key, gone: C.gone, came: C.came };
       }
     } else v = { what: pa.named ? 'fromOnly' : 'toOnly' };
     verdicts.set(vk, v); return v;
@@ -386,15 +439,21 @@ async function compare(L, from, to, deps, o) {
       const onLand = labLand ? labLand.first[cell] >= 0 : null;
       if (pa.kind === 'none' && pb.kind === 'none') { if (onLand) { landKm2 += a; unrecordedBothKm2 += a; } continue; }
       if (onLand !== false) landKm2 += a;
-      if (pa.named) bump(heldA, pa.key, a, () => ({}));
-      if (pb.named) bump(heldB, pb.key, a, () => ({}));
+      if (pa.named) { bump(heldA, pa.key, a, () => ({})); usedA[ia] = 1; }
+      if (pb.named) { bump(heldB, pb.key, a, () => ({})); usedB[ib] = 1; }
       const v = judge(ia, ib);
       if (v.what === 'same' || v.what === 'neither') { if (v.what === 'same') comparedKm2 += a; continue; }
       if (v.what === 'renamed') { comparedKm2 += a; bump(renamed, v.key, a, () => ({ from: setNames(pa.set, idsA), to: setNames(pb.set, idsB) })); continue; }
-      if (v.what === 'transfer') {
+      if (v.what === 'overlap') {
         comparedKm2 += a;
-        const e = bump(transfers, v.key, a, () => ({ fromKey: pa.key, toKey: pb.key, from: setNames(pa.set, idsA), to: setNames(pb.set, idsB),
-          overlap: pa.kind === 'overlap' || pb.kind === 'overlap', comparedByNameOnly: !!v.byNameOnly, sameIdentifier: !!v.sameIdentifier, holderInName: !!v.held, cells: [] }));
+        bump(overlaps, v.key, a, () => ({ from: setNames(pa.set, idsA), to: setNames(pb.set, idsB), began: setNames(v.began, idsB), ended: setNames(v.ended, idsA) }));
+        continue;
+      }
+      if (v.what === 'transfer' || v.what === 'nameOnly') {
+        comparedKm2 += a;
+        const e = bump(v.what === 'transfer' ? transfers : nameOnly, v.key, a, () => ({ fromKey: pa.key, toKey: pb.key, from: setNames(pa.set, idsA), to: setNames(pb.set, idsB),
+          overlap: pa.kind === 'overlap' || pb.kind === 'overlap', comparedByNameOnly: v.what === 'nameOnly', sameIdentifier: !!v.sameIdentifier, holderInName: !!v.held,
+          gone: v.gone || null, came: v.came || null, cells: [] }));
         e.cells.push(cell);
         continue;
       }
@@ -404,19 +463,54 @@ async function compare(L, from, to, deps, o) {
     }
     await tick();
   }
-  const list = [...transfers.values()].sort((x, y) => y.km2 - x.km2);
-  for (const t of list) {
+  /* the polities each instant draws somewhere in the region (by their own keys) */
+  const present = (CX, used, ids) => { const s = new Set(); CX.classes.forEach((k, i) => { if (used[i]) for (const fi of k.set) s.add(polityKey(ids[fi])); }); return s; };
+  const presentA = present(CA, usedA, idsA), presentB = present(CB, usedB, idsB);
+  /* a transfer between the same two polities drawn at both instants by two different records: its ribbons (pieces
+     narrower than RIBBON_DEG) are the two drawings of one border, set apart as `drawing` (see RIBBON_DEG) */
+  const drawing = new Map();
+  const kept = [];
+  for (const t of transfers.values()) {
+    t.pieces = pieces(t.cells, L, areaOfRow);
+    const twice = t.gone && t.came && t.gone.every((x) => presentB.has(polityKey(idsA[x]))) && t.came.every((y) => presentA.has(polityKey(idsB[y])));
+    const twoHands = twice && t.gone.some((x) => t.came.some((y) => idsA[x].record !== idsB[y].record));
+    if (twoHands) {
+      const ribbons = t.pieces.filter((p) => p.widthDeg < RIBBON_DEG);
+      if (ribbons.length) {
+        const d = bump(drawing, t.fromKey + ' → ' + t.toKey, 0, () => ({ from: t.from, to: t.to, pieces: 0, widestDeg: 0 }));
+        for (const p of ribbons) { d.km2 += p.km2; d.pieces++; if (p.widthDeg > d.widestDeg) d.widestDeg = p.widthDeg; }
+        const out = new Set(); for (const p of ribbons) for (const c of p.own) out.add(c);
+        t.cells = t.cells.filter((c) => !out.has(c));
+        t.pieces = t.pieces.filter((p) => p.widthDeg >= RIBBON_DEG);
+        t.km2 = t.pieces.reduce((s, p) => s + p.km2, 0);
+      }
+    }
+    if (t.cells.length) kept.push(t);
+  }
+  const list = kept.sort((x, y) => y.km2 - x.km2);
+  const finish = (t) => {
     t.shareOfFrom = heldA.has(t.fromKey) ? t.km2 / heldA.get(t.fromKey).km2 : null;
     t.shareOfTo = heldB.has(t.toKey) ? t.km2 / heldB.get(t.toKey).km2 : null;
-    t.pieces = pieces(t.cells, L, areaOfRow);
-  }
+    if (!t.pieces) t.pieces = pieces(t.cells, L, areaOfRow);
+    for (const p of t.pieces) delete p.own;
+    delete t.gone; delete t.came;
+    return t;
+  };
+  list.forEach(finish);
+  const nameOnlyList = [...nameOnly.values()].sort((x, y) => y.km2 - x.km2).map(finish);
+  const sum = (arr) => arr.reduce((s, t) => s + t.km2, 0);
+  const overlapList = [...overlaps.values()].sort((x, y) => y.km2 - x.km2), drawingList = [...drawing.values()].sort((x, y) => y.km2 - x.km2);
+  const srcA = (A.record && (A.record.src || A.record.tier)) || null, srcB = (B.record && (B.record.src || B.record.tier)) || null;
   return {
     from, to, records: { from: A.record, to: B.record }, lattice: L,
     stepKm: L.step * D2R * R_KM * Math.cos(((L.s + L.n) / 2) * D2R),
     transfers: list,
     renamed: [...renamed.values()].sort((x, y) => y.km2 - x.km2),
+    nameOnly: nameOnlyList, overlaps: overlapList, drawing: drawingList,
     recordOnly: [...recordOnly.values()].sort((x, y) => y.km2 - x.km2),
-    totals: { landKm2, comparedKm2, changedKm2: list.reduce((s, t) => s + t.km2, 0), unrecordedBothKm2 },
+    /* the two instants are read from different records — said, so the answer is read as the seam it is */
+    seam: srcA !== srcB || nameOnlyList.length > 0,
+    totals: { landKm2, comparedKm2, changedKm2: sum(list), nameOnlyKm2: sum(nameOnlyList), overlapKm2: sum(overlapList), drawingKm2: sum(drawingList), unrecordedBothKm2 },
   };
 }
 
@@ -424,22 +518,41 @@ async function compare(L, from, to, deps, o) {
 const nmList = (arr) => arr.map((n) => (n.local && n.local !== n.en ? n.local + ' (' + n.en + ')' : n.en)).join(' / ');
 const r0 = (x) => Math.round(x);
 const pct = (x) => (x == null ? null : Math.round(x * 1000) / 10);
+/** the day an instant is read on, as YYYY-MM-DD — a bare year is read on 15 June of it (js/journey-through-time.js
+    `instantOf`), and the answer says so rather than leaving «1885» to stand for a whole year */
+export function readOn(I) {
+  if (!I || I.now) return null;
+  if (I.iso) return I.iso;
+  const d = I.when, y = I.year;
+  return (y < 0 ? '-' + String(-y).padStart(6, '0') : String(y).padStart(4, '0')) + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+const estFor = (E) => (E ? { cells: E.cells, secondsAbout: E.seconds, megabytesAbout: E.megabytes, basis: 'measured 0.5–0.9 µs and 21 bytes a cell (Node 24, the shipped records) — an estimate, not a limit' } : null);
 export function forAtlas(R, lang) {
-  if (R.failed) return Object.assign({ failed: R.failed, side: R.side || null }, R.failed === 'lattice-too-large' ? { cells: R.cells, defaultStepDeg: +R.fits.step.toFixed(5) } : {});
+  if (R.failed) return Object.assign({ failed: R.failed, side: R.side || null }, R.failed === 'lattice-too-large' ? { cells: R.cells, defaultStepDeg: +R.fits.step.toFixed(5) } : {}, R.estimate ? { estimate: estFor(R.estimate) } : {});
   const L = R.lattice;
+  const readAs = { from: readOn(R.from), to: readOn(R.to) };
+  const bare = (I) => I && !I.now && !I.iso;
+  const instants = Object.assign({}, readAs, bare(R.from) || bare(R.to) ? { bareYear: 'a bare year is read on 15 June of that year' } : {});
+  if (R.estimateOnly) return { estimateOnly: true, from: instantLabel(R.from, 'en'), to: instantLabel(R.to, 'en'), instantsReadOn: instants, region: [L.w, L.s, L.e, L.n].map((v) => +v.toFixed(4)), stepDeg: +L.step.toFixed(5), estimate: estFor(R.estimate), lang };
+  const pairs = (arr) => arr.map((x) => ({ from: nmList(x.from), to: nmList(x.to), km2: r0(x.km2) }));
   return {
-    from: instantLabel(R.from, 'en'), to: instantLabel(R.to, 'en'), records: R.records,
+    from: instantLabel(R.from, 'en'), to: instantLabel(R.to, 'en'), instantsReadOn: instants, records: R.records,
     region: [L.w, L.s, L.e, L.n].map((v) => +v.toFixed(4)), stepDeg: +L.step.toFixed(5), stepKmAtCentre: Math.round(R.stepKm * 10) / 10,
-    comparedBy: 'the CShapes state code where both instants state one, else the Wikidata item, else the names the records write — a renamed state with the same identifier is listed under renamed, not as a transfer',
+    estimate: estFor(R.estimate),
+    comparedBy: 'the CShapes state code where both instants state one, else the Wikidata item, else the names ONE record writes — a renamed state with the same identifier is listed under renamed; two records that share no identifier are compared by name only and that land is listed under nameOnly, not as a transfer',
     areasAre: 'km² of the lattice cells whose centre each record draws inside the polity — good to about half a cell along every edge; land narrower than a cell can be missed',
+    seam: R.seam ? 'the two instants are drawn by different records; where they share no identifier the land is compared by name only (nameOnly) and is not counted as changing hands' : undefined,
     transfers: R.transfers.map((t) => Object.assign({ from: nmList(t.from), to: nmList(t.to), km2: r0(t.km2),
       shareOfFromPct: pct(t.shareOfFrom), shareOfToPct: pct(t.shareOfTo), pieces: t.pieces.length,
       largestPieceAt: t.pieces[0] && t.pieces[0].lng != null ? [+t.pieces[0].lng.toFixed(3), +t.pieces[0].lat.toFixed(3)] : null },
-    t.overlap ? { overlap: 'one side draws two shapes over this land; none is chosen' } : {},
-    t.comparedByNameOnly ? { comparedByNameOnly: 'the two records share no identifier for these polities — this may be one polity written under two names' } : {})),
-    renamed: R.renamed.map((x) => ({ from: nmList(x.from), to: nmList(x.to), km2: r0(x.km2) })),
+    t.overlap ? { overlap: 'one side draws two shapes over this land; none is chosen' } : {})),
+    renamed: pairs(R.renamed),
+    nameOnly: pairs(R.nameOnly || []).map((x) => Object.assign(x, { note: 'different records with no identifier in common: the names differ, which may be one polity under two names — not counted, not drawn' })),
+    overlaps: (R.overlaps || []).map((x) => Object.assign({ from: nmList(x.from), to: nmList(x.to), km2: r0(x.km2) }, x.began.length ? { claimBegan: nmList(x.began) } : {}, x.ended.length ? { claimEnded: nmList(x.ended) } : {})),
+    borderDrawing: (R.drawing || []).map((x) => ({ between: nmList(x.from) + ' | ' + nmList(x.to), km2: r0(x.km2), ribbons: x.pieces, widestDeg: +x.widestDeg.toFixed(3), note: 'one border drawn by two records; narrower than ' + RIBBON_DEG + '° — the measured distance between two records\' drawings — so not a transfer' })),
     recordOnly: R.recordOnly.map((x) => ({ drawnOnlyAt: x.side === 'from' ? instantLabel(R.from, 'en') : instantLabel(R.to, 'en'), polity: nmList(x.polity), km2: r0(x.km2), otherInstantDraws: x.otherDraws === 'none' ? (x.onLand ? 'land with no record' : 'nothing (sea)') : 'a shape without a name' })),
-    totals: { changedKm2: r0(R.totals.changedKm2), comparedKm2: r0(R.totals.comparedKm2), landKm2: r0(R.totals.landKm2), landNoRecordAtEitherKm2: r0(R.totals.unrecordedBothKm2) },
+    totals: { changedKm2: r0(R.totals.changedKm2), comparedKm2: r0(R.totals.comparedKm2), landKm2: r0(R.totals.landKm2), landNoRecordAtEitherKm2: r0(R.totals.unrecordedBothKm2),
+      nameOnlyKm2: r0(R.totals.nameOnlyKm2 || 0), overlapKm2: r0(R.totals.overlapKm2 || 0), borderDrawingKm2: r0(R.totals.drawingKm2 || 0) },
     lang,
   };
 }
@@ -455,8 +568,11 @@ function failText(code, t) {
 }
 export function answerHtml(R, lang, opts) {
   const o = opts || {}, t = IntMapLang.pick(() => lang);
-  if (R.failed) return '<div>' + htmlText(failText(R.failed, t)) + '</div>';
   const loc = lang === 'jp' ? 'ja-JP' : 'en-US';
+  const estText = (E) => t(E.cells.toLocaleString(loc) + ' cells — about ' + E.seconds[0] + '–' + E.seconds[1] + ' s and ' + E.megabytes + ' MB',
+    'セル ' + E.cells.toLocaleString(loc) + ' 個 — 約 ' + E.seconds[0] + '〜' + E.seconds[1] + ' 秒・' + E.megabytes + ' MB');
+  if (R.failed) return '<div>' + htmlText(failText(R.failed, t)) + '</div>' + (R.estimate ? '<div style="font-size:11px;color:var(--text-muted);">' + htmlText(estText(R.estimate)) + '</div>' : '');
+  if (R.estimateOnly) return '<div>' + htmlText(t('Estimated before any cell is laid: ', 'セルを置く前の見積もり: ') + estText(R.estimate) + t(' (step ', '（刻み ') + (+R.lattice.step.toFixed(5)) + t('°).', '°）。')) + '</div>';
   const km2 = (x) => Math.round(x).toLocaleString(loc) + ' km²';
   const sw = (c) => c ? '<span style="display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px;background:' + htmlText(c) + ';"></span>' : '';
   const nm = (arr) => htmlText(arr.map((n) => n.local || n.en).join(' / '));
@@ -464,7 +580,9 @@ export function answerHtml(R, lang, opts) {
   const muted = (s) => '<span style="color:var(--text-muted);">' + s + '</span>';
   let h = '<div style="margin-top:4px;">' + htmlText(t('Changed hands: ', '持ち主が変わった土地: ')) + '<b>' + htmlText(km2(R.totals.changedKm2)) + '</b>'
     + muted(htmlText(t(' in ' + R.transfers.length + (R.transfers.length === 1 ? ' transfer' : ' transfers'), '（' + R.transfers.length + ' 件の移動）'))) + '</div>';
-  if (!R.transfers.length) h += '<div>' + htmlText(t('The records draw the same polity over every cell they draw at both instants.', '両方の時点で記録が描くすべてのセルで、同じ政体が描かれています。')) + '</div>';
+  const apart = (R.nameOnly || []).length + (R.overlaps || []).length + (R.drawing || []).length;
+  if (!R.transfers.length) h += '<div>' + htmlText(apart ? t('No land passed from one polity to another that the records identify at both instants; what differs is listed below.', '両方の時点で記録が識別できる政体の間では、持ち主が変わった土地はありません。異なる点は下に挙げます。')
+    : t('The records draw the same polity over every cell they draw at both instants.', '両方の時点で記録が描くすべてのセルで、同じ政体が描かれています。')) + '</div>';
   else {
     h += '<div style="line-height:1.6;margin-top:2px;">' + R.transfers.map((x) => '<div>' + sw((o.colors || {})[x.toKey]) + nm(x.from) + ' → <b>' + nm(x.to) + '</b> ' + muted(htmlText(km2(x.km2)
       + (x.shareOfFrom != null ? t(' · ' + share(x.shareOfFrom) + ' of the giver here', ' · 元の持ち主の ' + share(x.shareOfFrom)) : '')
@@ -474,26 +592,42 @@ export function answerHtml(R, lang, opts) {
   }
   if (R.renamed.length) h += '<div style="margin-top:6px;"><b>' + htmlText(t('Same state, other name', '同じ国家・別の名前')) + '</b><div style="line-height:1.6;">'
     + R.renamed.map((x) => nm(x.from) + ' → ' + nm(x.to) + ' ' + muted(htmlText(km2(x.km2)))).join(' · ') + '</div></div>';
+  const section = (title, arr, line) => (arr && arr.length ? '<div style="margin-top:6px;"><b>' + htmlText(title) + '</b><div style="line-height:1.6;">' + arr.map(line).join(' · ') + '</div></div>' : '');
+  h += section(t('Compared by name only — different records, no shared identifier (not counted, not drawn)', '名前だけの比較 — 記録が異なり共通の識別子がない（数えず、塗らない）'), R.nameOnly,
+    (x) => sw((o.colors || {})['name:' + x.toKey]) + nm(x.from) + ' → ' + nm(x.to) + ' ' + muted(htmlText(km2(x.km2))));
+  h += section(t('A claim began or ended over land still held (not counted)', '主張が始まった・終わっただけの重なり（数えない）'), R.overlaps,
+    (x) => nm(x.from) + ' → ' + nm(x.to) + ' ' + muted(htmlText(km2(x.km2))));
+  h += section(t('One border drawn by two records (narrower than ' + RIBBON_DEG + '°; not counted)', '2 つの記録による同じ国境の描き方の差（幅 ' + RIBBON_DEG + '° 未満。数えない）'), R.drawing,
+    (x) => nm(x.from) + ' | ' + nm(x.to) + ' ' + muted(htmlText(km2(x.km2))));
   if (R.recordOnly.length) h += '<div style="margin-top:6px;"><b>' + htmlText(t('Drawn at one instant only (the edge of a record, not a transfer)', '片方の時点だけが描く土地（記録の端であって移動ではない）')) + '</b><div style="line-height:1.6;">'
     + R.recordOnly.map((x) => nm(x.polity) + ' ' + muted(htmlText(instantLabel(x.side === 'from' ? R.from : R.to, lang) + ' · ' + km2(x.km2)))).join(' · ') + '</div></div>';
   const L = R.lattice;
+  if (R.seam) h += '<div style="margin-top:6px;font-size:11.5px;">' + htmlText(t('The two instants are drawn by different records — a seam between records. Where the two share no identifier for a polity, only names are compared, and that land is listed apart, not counted as changing hands.',
+    '2 つの時点は異なる記録が描いています（記録の継ぎ目）。政体について共通の識別子を持たないところは名前だけで比べ、その土地は別に挙げて、持ち主が変わった土地には数えていません。')) + '</div>';
+  const bareYear = [R.from, R.to].filter((I) => I && !I.now && !I.iso);
+  if (bareYear.length) h += '<div style="margin-top:4px;font-size:11px;color:var(--text-muted);">' + htmlText(t('A year alone is read on 15 June of that year: ', '年だけの指定はその年の 6 月 15 日で読んでいます: ') + bareYear.map((I) => readOn(I)).join(', ')) + '</div>';
+  if (R.estimate && R.estimate.cells > DEFAULT_CELLS) h += '<div style="margin-top:4px;font-size:11px;color:var(--text-muted);">' + htmlText(estText(R.estimate) + t(' (estimated before the comparison).', '（比較の前の見積もり）。')) + '</div>';
   h += '<div style="margin-top:6px;font-size:11px;color:var(--text-muted);">' + htmlText(t('Records: ', '記録: ') + instantLabel(R.from, lang) + ' — ' + ((R.records.from && (R.records.from.src || R.records.from.tier)) || '') + ' · ' + instantLabel(R.to, lang) + ' — ' + ((R.records.to && (R.records.to.src || R.records.to.tier)) || '')) + '</div>';
   h += '<div style="margin-top:4px;font-size:10.5px;color:var(--text-muted);line-height:1.45;">' + htmlText(t(
-    'Each record was asked which polity it draws at the centre of every ' + (+L.step.toFixed(4)) + '° cell (≈ ' + Math.round(R.stepKm) + ' km) — areas are good to about half a cell along every edge, and land narrower than a cell can be missed. Polities are compared by the CShapes state code where both instants state one, else by the Wikidata item, else by the names the records write. The coloured land is held at the second instant by the polity of its colour.',
-    '各記録に、' + (+L.step.toFixed(4)) + '°（約 ' + Math.round(R.stepKm) + ' km）のセルの中心でどの政体を描くかを訊きました。面積は各辺でセル半分ほどの精度で、セルより細い土地は漏れることがあります。政体の同一性は、両時点が CShapes の国家コードを持てばそれで、無ければ Wikidata の項目で、それも無ければ記録が書く名前で判定しています。色の付いた土地は、2 つ目の時点でその色の政体が持つ土地です。')) + '</div>';
+    'Each record was asked which polity it draws at the centre of every ' + (+L.step.toFixed(4)) + '° cell (≈ ' + Math.round(R.stepKm) + ' km) — areas are good to about half a cell along every edge, and land narrower than a cell can be missed. Polities are compared by the CShapes state code where both instants state one, else by the Wikidata item, else by the names one record writes. The coloured land is held at the second instant by the polity of its colour.',
+    '各記録に、' + (+L.step.toFixed(4)) + '°（約 ' + Math.round(R.stepKm) + ' km）のセルの中心でどの政体を描くかを訊きました。面積は各辺でセル半分ほどの精度で、セルより細い土地は漏れることがあります。政体の同一性は、両時点が CShapes の国家コードを持てばそれで、無ければ Wikidata の項目で、それも無ければ同じ記録が書く名前で判定しています。色の付いた土地は、2 つ目の時点でその色の政体が持つ土地です。')) + '</div>';
   return h;
 }
 
 /* ══ ON THE MAP — one (Multi)Polygon per transfer, coloured by the polity that receives it ══ */
-function transferPolys(R, colorOf, lang) {
+function transferPolys(R, colorOf, lang, drawNameOnly) {
   const colors = {}, polys = []; let n = 0;
-  for (const x of R.transfers) {
-    if (!colors[x.toKey]) colors[x.toKey] = colorOf(n++);
+  /* the transfers; and, only when asked, the land compared by name only — under its own colour key and its own name, so
+     it is never read as a transfer */
+  const sets = [[R.transfers, '', 0.45]].concat(drawNameOnly ? [[R.nameOnly || [], 'name:', 0.25]] : []);
+  for (const [list, pre, op] of sets) for (const x of list) {
+    const ck = pre + x.toKey;
+    if (!colors[ck]) colors[ck] = colorOf(n++);
     const rings = traceCells(x.cells, R.lattice);
     if (!rings.length) continue;
-    const name = IntMapLang.t(lang, x.from.map((v) => v.en).join(' / ') + ' → ' + x.to.map((v) => v.en).join(' / '),
+    const name = (pre ? IntMapLang.t(lang, 'name only: ', '名前だけの比較: ') : '') + IntMapLang.t(lang, x.from.map((v) => v.en).join(' / ') + ' → ' + x.to.map((v) => v.en).join(' / '),
       x.from.map((v) => v.local || v.en).join(' / ') + ' → ' + x.to.map((v) => v.local || v.en).join(' / ')) + ' · ' + Math.round(x.km2).toLocaleString(lang === 'jp' ? 'ja-JP' : 'en-US') + ' km²';
-    polys.push({ geo: rings.length === 1 ? { type: 'Polygon', coordinates: rings[0] } : { type: 'MultiPolygon', coordinates: rings }, color: colors[x.toKey], op: 0.45, name });
+    polys.push({ geo: rings.length === 1 ? { type: 'Polygon', coordinates: rings[0] } : { type: 'MultiPolygon', coordinates: rings }, color: colors[ck], op, name });
   }
   return { polys, colors };
 }
@@ -550,15 +684,18 @@ export async function atlasRun(a, K) {
       : L('Which region? Name one, give a bbox, or show it on the map.', 'どの範囲ですか？地域名か bbox を指定するか、地図に表示してください。'))), { meta: { code: 'NEEDS_INPUT', category: 'input', retryable: true, produced: [], userGoalSatisfied: false } });
   try { if (K.ensureData) await K.ensureData(); } catch (_) { /* answered below */ }
   const stepDeg = (a.stepDeg != null && +a.stepDeg > 0) ? +a.stepDeg : (a.stepKm != null && +a.stepKm > 0) ? (+a.stepKm / (R_KM * D2R)) : null;
-  const res = await territoryChange(reg.box, I0, I1, { borders: bordersNow(), land: countryOutlines, lang }, { stepDeg });
+  const drawNameOnly = !!a.drawNameOnly;
+  const res = await territoryChange(reg.box, I0, I1, { borders: bordersNow(), land: countryOutlines, lang }, { stepDeg, drawRenamed: !!a.drawRenamed, estimateOnly: !!a.estimateOnly });
   const title = '<b>' + htmlText(L('Land that changed hands', '持ち主が変わった土地')) + ' — ' + htmlText(instantLabel(I0, lang) + ' → ' + instantLabel(I1, lang)) + (reg.name ? ' · ' + htmlText(reg.name) : '') + '</b>';
   const exec = { territoryChange: forAtlas(res, lang) };
   if (res.failed) return R(false, title + answerHtml(res, lang), { exec });
+  /* asked what it would cost: answered, and nothing is laid or drawn */
+  if (res.estimateOnly) return R(true, title + answerHtml(res, lang), { exec, meta: { resultKey: 'time.territoryChange:estimate', paintsNothing: true } });
   /* a redraw of the same question replaces its own land (the question is the identity — journey's rule) */
   const L0 = res.lattice;
   const ident = DRAW_PREFIX + instantLabel(I0, 'en') + '>' + instantLabel(I1, 'en') + '@' + [L0.w, L0.s, L0.e, L0.n].map((v) => v.toFixed(3)).join(',') + '/' + L0.step.toFixed(5);
   K._hlPolys = K._hlPolys.filter((p) => !(p && p.territory === ident));
-  const F = transferPolys(res, (i) => K._hlPaletteColor(i), lang);
+  const F = transferPolys(res, (i) => K._hlPaletteColor(i), lang, drawNameOnly);
   for (const p of F.polys) { p.territory = ident; p.key = ident + ' ' + p.name; K._hlPolys.push(p); }
   const okP = K.paintPolys();
   try { if (L0.e - L0.w < 340) K.GE().camera.fitBounds([[L0.w, L0.s], [L0.e, L0.n]], { padding: 60, maxZoom: 9, duration: 900 }); } catch (_) { /* no renderer */ }

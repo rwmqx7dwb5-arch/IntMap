@@ -237,9 +237,15 @@ describe('§ #R732 · arbitrary shapes, the seam, reprojection, the layer bridge
     assert.ok(minLon >= -180.0001 && maxLon <= 180.0001, 'the answer was left unwrapped (' + minLon + '…' + maxLon + ')');
 
     /* ⚠ THE ONE REFUSAL THAT SURVIVED, AND IT IS ABOUT THE PLANE RATHER THAN THE DATA. A ring that
-       spans a whole turn is a polar cap or a whole-world ring, and no cylindrical plane holds one. */
-    const wraps = { type: 'Polygon', coordinates: [[[-180, 80], [-60, 80], [60, 80], [180, 80], [180, 89], [-180, 89], [-180, 80]]] };
+       walks once round a pole and never says which pole (its closing edge is ¾ of a turn) has no
+       planar picture. ⚠ (wave4-refine) The band written as the whole parallel walked east and back
+       along another — [−180,80] … [180,80], [180,89], [−180,89] — used to stand here as the refused
+       example. It is a region of the cylinder and has one planar picture in [−180,180]; it is now
+       accepted (tests/wave4-refine-news-geo-checks.test.mjs). */
+    const wraps = { type: 'Polygon', coordinates: [[[0, 80], [90, 85], [180, 80], [-90, 89], [0, 80]]] };
     assert.equal(geometry.toMulti(wraps), null, 'a world-wrapping ring was accepted into the plane');
+    const band = { type: 'Polygon', coordinates: [[[-180, 80], [-60, 80], [60, 80], [180, 80], [180, 89], [-180, 89], [-180, 80]]] };
+    assert.ok(geometry.toMulti(band) && geometry.toMulti(band).length === 1, 'a band stated by its full parallels was refused');
   });
 
   /* ══ ⑤ 距離と述語は形そのものを読む ═══════════════════════════════════════════════════════ */
@@ -556,9 +562,14 @@ describe('§ #R743 · kernel correctness against independent references', () => 
   const poly = (rings, p) => feat({ type: 'Polygon', coordinates: rings }, p);
   const box = (w, s, e, n) => [[w, s], [e, s], [e, n], [w, n], [w, s]];
 
-  /* A ring that spans a whole turn — a polar cap. No cylindrical plane holds one, and the kernel has
-     named that refusal in its header since #R732 without any line returning it. */
-  const WRAPS = { type: 'Polygon', coordinates: [[[-180, 80], [-60, 80], [60, 80], [180, 80], [180, 89], [-180, 89], [-180, 80]]] };
+  /* A ring that walks once round the pole and never says which pole — its closing edge, unwrapped,
+     is three-quarters of a turn. No cylindrical plane holds it, and the kernel has named that
+     refusal in its header since #R732 without any line returning it.
+     ⚠ (wave4-refine) THIS WAS [−180,80] → … → [180,80] → [180,89] → [−180,89], and that ring is NOT
+     a refusal: it is the band 80°–89°N stated the way GeoJSON states one (the whole parallel walked
+     east, back along the other), and refusing it is what made a window round the world answer
+     「0 件」. That ring is now asked to be ACCEPTED in tests/wave4-refine-news-geo-checks.test.mjs. */
+  const WRAPS = { type: 'Polygon', coordinates: [[[0, 80], [90, 85], [180, 80], [-90, 89], [0, 80]]] };
 
   /* ── the references, derived from nothing in js/gis-ops.js ──────────────────────────────────── */
 

@@ -51,7 +51,7 @@ import { siteUrl } from '../supabase/functions/_shared/site-origin.js';
 import { campaignOf } from '../supabase/functions/usage-count/shape.js';
 import { encode } from '../js/map-state.js';
 import * as OTD from '../js/on-this-day.js';
-import { describe, valueAt, related, chartSvg, largest } from '../js/polity-arc.js';
+import { describe, valueAt, related, chartSvg, largest, itemsOf, itemArc, itemsPending } from '../js/polity-arc.js';
 import { DATED } from './build-polity-arcs.mjs';
 import { CARD, CARD_FILE } from './lib/page-card.mjs';
 
@@ -109,20 +109,33 @@ export async function model(opt = {}) {
   const days = new Set(otdModel(otd).days);
   const otdNames = otdByName(otd);
   const want = opt.only ? new Set(opt.only) : null;
-  const pages = [];
-  for (const arc of all) {
-    const slug = slugs.get(arc);
+  /* (wave4-refine) ONE PAGE PER WIKIDATA ITEM (js/polity-arc.js itemsOf): the names whose records state the same one item are
+     one page, at the address of the name it is headed by; every other name of the item keeps its address (a page that existed
+     stays reachable) and is written as the same page with its canonical link on the item's (`aliases`), and is not listed in
+     the hub or the sitemap. A name with no item, or with two, is its own page — never joined by its spelling. */
+  const items = itemsOf(idx, all);
+  const canonOf = new Map();   /* a dated name → the address of the page that states it */
+  for (const a of all) { const it = items.get(a); canonOf.set(a, slugs.get(it ? it.canon : a)); }
+  const pages = [], aliases = [];
+  for (const a of all) {
+    const it = items.get(a), slug = slugs.get(a);
+    if (it && it.canon !== a) { aliases.push({ slug, to: slugs.get(it.canon), arc: a }); continue; }
     if (want && !want.has(slug)) continue;
+    const arc = it ? itemArc(it) : a;
     const D = describe(idx, arc);
     const drawnIn = (y) => { const v = valueAt(idx, arc, y); return !!(v && v.recs.some((r) => DATED.includes(r))); };
     pages.push({
       arc, slug, D,
       years: years.filter((y) => y >= D.first.y && (D.last.y == null || y <= D.last.y) && drawnIn(y)),
-      days: (otdNames.get(arc.n) || []).filter((e) => e.md && days.has(e.md)),
+      days: (arc.names || [arc.n]).flatMap((n) => otdNames.get(n) || []).filter((e) => e.md && days.has(e.md))
+        .sort((x, y) => (x.d < y.d ? -1 : x.d > y.d ? 1 : 0)),
     });
   }
-  if (want) for (const s of want) if (!pages.some((p) => p.slug === s)) throw new Error('polity-pages: no polity has the address ' + s);
-  return { idx, all, slugs, pages };
+  const pageOf = new Map(pages.map((p) => [p.slug, p]));
+  const aliasPages = aliases.filter((x) => pageOf.has(x.to));
+  if (want) for (const s of want) if (!pages.some((p) => p.slug === s)) throw new Error('polity-pages: no polity has the address ' + s + (aliases.some((x) => x.slug === s) ? ' of its own — it is a name of the item at ' + aliases.find((x) => x.slug === s).to : ''));
+  /* the names whose stated item could not be confirmed as theirs: their own pages, listed for review (itemsPending) */
+  return { idx, all, slugs, pages, items, canonOf, aliases: aliasPages, pending: itemsPending(idx, all) };
 }
 
 /* ══ RENDER ══════════════════════════════════════════════════════════════════════════════════════ */
@@ -166,7 +179,7 @@ function edgeWords(D, side, T, lang, dayFrom) {
   return fill(side === 'first' ? (day ? T.edge.statedDay : T.edge.stated) : (day ? T.edge.statedLastDay : T.edge.statedLast), { y });
 }
 
-function renderPolity(M, p, L) {
+function renderPolity(M, p, L, at) {
   const T = TEXT[L.key], HT = HISTORY_TEXT[L.key], lang = L.key, D = p.D, arc = p.arc;
   const W = wordsOf(p, L);
   const title = fill(T.title, W);
@@ -191,8 +204,9 @@ function renderPolity(M, p, L) {
   const stretches = stretchesOf(D, M.idx.instants.to);
   const fact = (k, v) => `      <dt>${esc(T.facts[k])}</dt><dd>${v}</dd>`;
   const wd = (arc.q || []).map((q) => `<a href="https://www.wikidata.org/wiki/${esc(q)}" data-wikidata="${esc(q)}">${esc(q)}</a>`).join(' · ');
-  const others = related(M.idx, arc, lang);
-  const linkOther = (o, up) => { const s = M.slugs.get(o.arc); const D2 = describe(M.idx, o.arc); const n = esc(nameOf(o.arc, lang)) + ' <span class="pp-span">' + esc(spanWords(D2, lang)) + '</span>'; return s ? `<a href="${up}${polityPath(s, L)}" data-polity="${esc(s)}">${n}</a>` : `<span class="pp-plain">${n}</span>`; };
+  const own = new Set(arc.members || [arc]);
+  const others = related(M.idx, arc, lang).filter((o) => !own.has(o.arc));
+  const linkOther = (o, up) => { const s = (M.canonOf && M.canonOf.get(o.arc)) || M.slugs.get(o.arc); const D2 = describe(M.idx, o.arc); const n = esc(nameOf(o.arc, lang)) + ' <span class="pp-span">' + esc(spanWords(D2, lang)) + '</span>'; return s ? `<a href="${up}${polityPath(s, L)}" data-polity="${esc(s)}">${n}</a>` : `<span class="pp-plain">${n}</span>`; };
   const body = (up) => `  <section class="lp-hero lp-hero-t hp-hero">
     <div class="lp-hero-text">
       <h1>${esc(fill(T.h1, W))}</h1>
@@ -214,7 +228,7 @@ ${fact('last', esc(W.last) + `<span class="pp-edge">${esc(edgeWords(D, 'last', T
 ${stretches.length > 1 ? fact('stretches', esc(fill(T.stretchesValue, { n: stretches.length.toLocaleString(L.intl), list: stretches.map((x) => spanWords({ first: { y: x.a }, last: { y: x.b } }, lang)).join(lang === 'jp' ? '、' : ', ') }))) + '\n' : ''}${fact('peak', esc(fill(T.peakValue, W)))}
 ${fact('changes', esc(fill(T.changesValue, { n: D.points.filter((x) => x.km > 0).length.toLocaleString(L.intl) })))}
 ${fact('records', esc(D.records.map((r) => recWords(r, T)).join(' · ')))}
-${wd ? fact('wikidata', wd) + '\n' : ''}    </dl>
+${wd ? fact('wikidata', wd) + '\n' : ''}${arc.names && arc.names.length > 1 ? fact('names', esc(fill(T.namesValue, { n: arc.names.length.toLocaleString(L.intl), qid: arc.q[0], list: arc.members.map((m) => nameOf(m, lang) === m.n || lang !== 'jp' ? m.n + ' (' + spanWords(describe(M.idx, m), lang) + ')' : nameOf(m, lang) + '／' + m.n + '（' + spanWords(describe(M.idx, m), lang) + '）').join(lang === 'jp' ? '、' : '; ') }))) + '\n' : ''}    </dl>
     <p class="hp-chips"><a href="${esc(up + mapLink(arc, D, D.first.y, lang))}" data-polity-map="first">${esc(fill(T.ctaFirst, W))}</a> <a href="${esc(up + mapLink(arc, D, D.last.y, lang))}" data-polity-map="last">${esc(fill(T.ctaLast, W))}</a></p>
   </section>
 
@@ -253,7 +267,8 @@ ${T.method.map((m) => `    <p class="lp-note">${esc(fill(m, { ohmFrom: String(M.
     <p><a class="lp-open" href="${up}sources.html">${esc(T.sourcesLink)} →</a></p>
   </section>`;
   const image = { path: cardFor(M, p), width: CARD.width, height: CARD.height, alt: fill(T.cardAlt, W) };
-  return shell({ ...M, image }, L, { path: polityPath(p.slug, L), pathFor: (l) => polityPath(p.slug, l), title, description, crumbs, ld, body });
+  /* `at`: the address of another name of the item — the same page, its canonical, hreflang and og:url the item's (shell's pathFor) */
+  return shell({ ...M, image }, L, { path: at ? polityPath(at, L) : polityPath(p.slug, L), pathFor: (l) => polityPath(p.slug, l), title, description, crumbs, ld, body });
 }
 
 /* ⚠ (no-ad-hoc-hardcoding §4) display only: how many of the largest the hub names above the centuries — a screenful on a
@@ -302,6 +317,8 @@ export async function outputs(M) {
   const out = {};
   for (const L of LANGS) {
     for (const p of M.pages) out[polityPath(p.slug, L) + 'index.html'] = renderPolity(M, p, L);
+    const byPage = new Map(M.pages.map((p) => [p.slug, p]));
+    for (const x of M.aliases || []) out[polityPath(x.slug, L) + 'index.html'] = renderPolity(M, byPage.get(x.to), L, x.slug);
     out[hubPath(L) + 'index.html'] = renderHub(M, L);
   }
   out[POLITY_SITEMAP] = sitemap([(l) => hubPath(l), ...M.pages.map((p) => (l) => polityPath(p.slug, l))], 'scripts/polity-pages.mjs');
@@ -327,7 +344,8 @@ const partsOf = (g) => (!g ? [] : g.type === 'Polygon' ? [g.coordinates] : g.typ
 export function shapesAt(r, name) {
   const parts = partsOfTier(r.tier);
   const polity = [];
-  r.fc.features.forEach((f, i) => { const pr = f.properties || {}; if (r.labels.en[i] === name && !pr._desc && DATED.includes(recordOf(pr, parts))) polity.push(...partsOf(f.geometry)); });
+  const names = new Set([].concat(name));   /* one name, or an item's names (js/polity-arc.js itemArc) */
+  r.fc.features.forEach((f, i) => { const pr = f.properties || {}; if (names.has(r.labels.en[i]) && !pr._desc && DATED.includes(recordOf(pr, parts))) polity.push(...partsOf(f.geometry)); });
   return { polity, context: r.fc.features.map((f) => partsOf(f.geometry)) };
 }
 /** the card cache's directory, or null when the store cannot be used */
@@ -359,7 +377,7 @@ export function pruneUnused(dir, startedAt) {
   return n;
 }
 /** the jobs of one year — what a worker needs to draw that year's cards (the page model stays on the build's thread) */
-const jobsOf = (M, y) => M.pages.filter((p) => p.D.peak.y === y).map((p) => ({ slug: p.slug, name: p.arc.n, box: p.D.peak.bb || p.arc.bb, label: yearWords(y, 'en') }));
+const jobsOf = (M, y) => M.pages.filter((p) => p.D.peak.y === y).map((p) => ({ slug: p.slug, name: p.arc.names || p.arc.n, box: p.D.peak.bb || p.arc.bb, label: yearWords(y, 'en') }));
 /** the cache key of a card: the digest of everything its pixels depend on */
 function digest(parts) {
   const h = createHash('sha256');
@@ -382,7 +400,7 @@ async function drawYear(R, y, jobs, dir, cache, drawer) {
   };
   for (const j of jobs) {
     const { polity, context } = shapesAt(r, j.name);
-    if (!polity.length) throw new Error('polity-pages: the map draws no «' + j.name + '» on ' + isoDay(y) + ', the year the index says it is largest');
+    if (!polity.length) throw new Error('polity-pages: the map draws no «' + [].concat(j.name).join('», «') + '» on ' + isoDay(y) + ', the year the index says it is largest');
     const key = cardKey(drawer, day, polity, j.box, j.label);
     const kept = cache ? join(cache, key.slice(0, 2), key + '.png') : null;
     if (kept && existsSync(kept)) {
@@ -505,8 +523,11 @@ if (isMain) (async () => {
     for (const ch of CHANNELS) if (campaignOf('?utm_source=' + ch + '&utm_medium=social&utm_campaign=' + POST_CAMPAIGN).length !== 3) throw new Error('polity-pages: the tags for ' + ch + ' do not pass the counter\'s rule');
     process.stdout.write(queueMarkdown(M, siteUrl('')) + '\n');
   } else if (process.argv.includes('--list')) {
-    const idx = readIndex(), all = largest(idx, Infinity), slugs = assignSlugs(idx, all);
-    for (const a of all) console.log(polityPath(slugs.get(a), LANGS[0]) + '\t' + a.n);
-    console.log('polity-pages: ' + all.length + ' polities');
+    const idx = readIndex(), all = largest(idx, Infinity), slugs = assignSlugs(idx, all), items = itemsOf(idx, all);
+    let n = 0;
+    for (const a of all) { const it = items.get(a); if (it && it.canon !== a) console.log(polityPath(slugs.get(a), LANGS[0]) + '\t' + a.n + '\t→ ' + polityPath(slugs.get(it.canon), LANGS[0])); else { n++; console.log(polityPath(slugs.get(a), LANGS[0]) + '\t' + a.n); } }
+    const pend = itemsPending(idx, all);
+    for (const x of pend) console.log('pending	' + x.qid + '	' + x.why + '	' + x.name);
+    console.log('polity-pages: ' + n + ' pages for ' + all.length + ' names (' + (all.length - n) + ' names are another name of an item and canonical to its page; ' + pend.length + ' names state an item shared with another name that could not be confirmed as theirs — own pages, listed above for review)');
   } else console.log('usage: node scripts/polity-pages.mjs --out <dir> | --list | --queue [--only <slug>,…]');
 })().catch((e) => { console.error(e); process.exit(1); });

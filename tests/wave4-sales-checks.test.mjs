@@ -28,7 +28,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const src = (p) => readFileSync(join(ROOT, p), 'utf8');
 const RC = await import('../js/readiness-check.js');
 const LIVENESS = await import('../scripts/upstream-liveness.mjs');
-const { readLedger, deriveConnectionLedger } = await import('../scripts/outbound-hosts.mjs');
+const { readLedger, deriveConnectionLedger, protocolsOf, browserFiles } = await import('../scripts/outbound-hosts.mjs');
 const GEN = await import('../scripts/org-pages.mjs');
 const { TEXT, ORG_NAV } = await import('../scripts/org-pages-text.mjs');
 const OUT = GEN.outputs();
@@ -46,15 +46,19 @@ test('wave4-sales ① the context, the clock, the lanes and the probes come from
   const raw = readLedger();
   const nightly = LIVENESS.declared(raw).probes;
   const shipped = JSON.parse(src('data/connection-ledger.json'));
-  assert.deepEqual(shipped, JSON.parse(JSON.stringify(deriveConnectionLedger(raw))), 'data/connection-ledger.json is what the ledger derives');
+  assert.deepEqual(shipped, JSON.parse(JSON.stringify(deriveConnectionLedger(raw, protocolsOf(browserFiles(ROOT), ROOT)))), 'data/connection-ledger.json is what the ledger and the code derive');
   const index = src('index.html');
   const firstView = RC.firstViewHosts([...index.matchAll(/<link rel="preconnect" href="([^"]+)"/g)].map((m) => m[1]));
   const backend = new URL(/window\.SUPABASE_URL = '([^']+)'/.exec(src('src/vendor.js'))[1]).hostname;
   const probes = RC.probeRows(shipped.hosts, { firstView, backend });
-  assert.deepEqual(probes.map((p) => p.url).sort(), nightly.map((p) => p.url).sort(), 'the readiness check asks exactly what the nightly check asks');
+  /* (wave4-refine) over https it asks exactly what the nightly check asks — except a host the code reaches ONLY over a socket,
+     which it asks by opening that socket; and every socket the code opens is opened */
+  const socketOnly = new Set(shipped.hosts.filter((h) => h.socket && !(h.protocols || []).some((p) => p === 'https' || p === 'http')).map((h) => h.host));
+  assert.deepEqual(probes.filter((p) => p.kind === 'https').map((p) => p.url).sort(), nightly.filter((p) => !socketOnly.has(p.host)).map((p) => p.url).sort(), 'the readiness check asks over https what the nightly check asks');
+  assert.deepEqual(probes.filter((p) => p.kind === 'socket').map((p) => p.url).sort(), shipped.hosts.filter((h) => h.form === 'disclosure' && h.socket).map((h) => h.socket).sort(), 'and opens every socket the code opens');
   assert.ok(firstView.length >= 1, 'index.html declares what the first view needs');
   for (const h of firstView) assert.ok(probes.some((p) => p.tier === 'first' && LIVENESS.hostMatches(p.host, h)), h + ' (preconnect) is checked in the first tier');
-  assert.deepEqual(probes.filter((p) => p.tier === 'backend').map((p) => p.host), [backend], 'the backend tier is IntMap\'s backend');
+  assert.deepEqual([...new Set(probes.filter((p) => p.tier === 'backend').map((p) => p.host))], [backend], 'the backend tier is IntMap\'s backend (asked over https and its Realtime socket)');
   /* link and dormant rows are never asked */
   for (const r of shipped.hosts.filter((h) => h.form !== 'disclosure')) assert.equal(r.probe, undefined, r.host + ' is not requested and carries no probe');
 });
@@ -110,7 +114,9 @@ test('wave4-sales ④ the page is the allowlist, in both languages, and its poli
     const rows = [...html.matchAll(/<tr data-probe="([^"]+)" data-host="([^"]+)" data-tier="([a-z]+)">/g)].map((m) => ({ url: unhtml(m[1]), host: unhtml(m[2]), tier: m[3] }));
     assert.deepEqual(rows, F.readiness.probes.map((p) => ({ url: p.url, host: p.host, tier: p.tier })), rel + ': one row per probe, in the check\'s order');
     const csp = /http-equiv="Content-Security-Policy" content="([^"]+)"/.exec(html)[1];
-    assert.match(csp, /connect-src 'self' https:;/, rel + ': any https origin, nothing else');
+    const sockets = RC.socketOrigins(F.readiness.probes);
+    assert.ok(sockets.length >= 1, 'the code opens at least one socket (wave4-refine)');
+    assert.equal(/connect-src ([^;]+);/.exec(csp)[1], "'self' https: " + sockets.join(' '), rel + ': any https origin and the sockets the check opens — not every wss: origin');
     assert.ok(!csp.includes(F.backend), rel + ': names no backend (it is not one of the pages that talk to it)');
     assert.match(html, /<script type="module" src="(\.\.\/|\.\/)js\/readiness-page\.js"><\/script>/);
     assert.match(html, /id="rd-start"[^>]*data-effect="none"[^>]*hidden/, 'the start button appears only when the script runs');

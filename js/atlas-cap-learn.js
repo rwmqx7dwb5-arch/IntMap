@@ -125,9 +125,12 @@ export default [
      scored by the engine the students' panel used — open or close a set for hand-ins, and open the board.
      ⚠ THE VERDICT IS THE DATABASE'S ROW OR THE BOARD'S STATE, READ AFTER THE CALL (.agents/rules/one-pass-or-a-reason.md §4).
      Students' names are the teacher's data: Atlas reports them to the signed-in teacher whose set it is, and nobody else
-     can read them (RLS). Atlas never hands in answers for a student. */
+     can read them (RLS). Atlas never hands in answers for a student.
+     ⚠ (wave4-refine) The results carry each name AS THE STUDENT TYPED IT — words a third party wrote — so the row declares
+     `ingests:'external'` (column 11); js/quest-class-board.js readSet says so itself (WORDS_BY_OTHERS) and check:capabilities
+     holds the row to it. */
   {
-    row: ['learn.class',                'classSet',       'classQuest,classResults,classBoard,classLink,assignQuest,quizResults', 'panel', 'none', 'account.classes,panel.quest,map.quest,camera', 'panel', 'persist', 'explicit', '', ''],
+    row: ['learn.class',                'classSet',       'classQuest,classResults,classBoard,classLink,assignQuest,quizResults', 'panel', 'none', 'account.classes,panel.quest,map.quest,camera', 'panel', 'persist', 'explicit', '', '', 'external'],
     doc: [
       { in: 'learn.quest', at: 720, text: '{"type":"classSet","action"?:"list"|"create"|"results"|"open"|"close"|"board","kind"?:"where"|"when","n"?:5|10,"seed"?:str,"title"?:str,"code"?:str} = CLASS SETS (クラスのセット — a learn quest given to a class so EVERY STUDENT\'S ANSWERS REACH THE TEACHER; students open the class link with no account and type a name). Needs the teacher signed in. create makes a set — of the set on screen when no kind is given, else of kind (n 5 or 10, a new seed unless "seed") with an optional "title" — and returns the CLASS LINK to hand out; list (default) returns the teacher\'s sets with their codes and how many handed in; results (with "code") returns how the class did: how many handed in, the class mean and median, the HARDEST question, each question\'s mean and median distance / years off, and each student\'s total — for 「クラスの結果は？」「どの問題が難しかった？」「誰が提出した？」「生徒の答えを見せて」, "how did my class do?", "which question did they get wrong?"; open / close (with "code") start or stop taking answers; board opens the teacher\'s board (with "code": that set, where each place question\'s taps can be drawn on the map). Use this — not quest — whenever the reader says class, students, assign, hand in or results. Do not hand in answers for a student. ' },
     ],

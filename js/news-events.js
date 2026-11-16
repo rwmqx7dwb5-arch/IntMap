@@ -29,7 +29,7 @@ import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { ingestVerdict } from './news-intel-core.js';   /* (news-intelligence) 取り込みの健全性の判定 — node が同じ関数を評価する */
 import { freshChip } from './freshness.js';     /* (news-intelligence) 「いつ時点か・誰が測ったか」の 1 つの部品 */
-import { readSeen, makeSinceCounter } from './news-edition-core.js';   /* (wave4-news) 「今日の世界」を前回開いた時刻——入口の件数の起点 */
+import { readSeen, makeSinceCounter, ARRIVAL_COL } from './news-edition-core.js';   /* (wave4-news) 「今日の世界」を前回開いた時刻——入口の件数の起点 */
 
 export function newsEvents(HOST) {
   const L = IntMapLang.pick(() => HOST.lang);
@@ -471,7 +471,7 @@ export function newsEvents(HOST) {
   const editionCount = makeSinceCounter({ ttlMs: EDITION_COUNT_TTL_MS, ask: async (seen) => {
     if (!HOST.DB || typeof HOST.DB.from !== 'function') return null;
     const { count, error } = await HOST.DB.from('news_events').select('id', { count: 'exact', head: true })
-      .eq('status', 'active').is('merged_into', null).gt('first_published_at', new Date(seen).toISOString());
+      .eq('status', 'active').is('merged_into', null).gt(ARRIVAL_COL, new Date(seen).toISOString());   /* the mark's own column (js/news-edition-core.js ARRIVAL_COL) */
     if (error) throw error;
     return count;
   } });

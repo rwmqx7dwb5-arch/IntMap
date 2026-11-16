@@ -186,6 +186,17 @@ function paramOf(name, parents) {
   }
   return null;
 }
+/* (wave4-refine) the declarations of a name a use at `parents` can SEE: one declared at the module's top, or in a function
+   the use is inside. By name the union also held a binding of the same name inside an UNRELATED function — measured
+   2026-11-16: js/readiness-check.js names its storage probe `const k = 'intmap_readiness_probe'` in deviceReport, and
+   `const k = next++` in probeAll made the write «unreadable» (`*`). A declaration no enclosing scope holds is invisible
+   to the use in JavaScript, so leaving it out drops nothing the code can write; when none is visible (a use the walk
+   cannot place), the union is kept as before. */
+function visible(ds, cx, parents) {
+  if (!ds || ds.length < 2) return ds;
+  const seen = ds.filter((d) => { const chain = cx.above.get(d) || []; let fn = null; for (let i = chain.length - 1; i >= 0; i--) if (isFn(chain[i])) { fn = chain[i]; break; } return !fn || parents.includes(fn); });
+  return seen.length ? seen : ds;
+}
 /* the name a function is known by in its file: its declaration, or the binding it initialises */
 function fnName(fn, parents) {
   if (fn.id && fn.id.name) return fn.id.name;
@@ -235,7 +246,7 @@ function globsOf(node, cx, parents, world, depth = 0, truthy = new Set()) {
         const sites = p.at >= 0 ? callSites(p, cx, world) : [];
         return sites.length ? sites.flatMap(({ call, cx: c }) => (call.arguments[p.at] ? again(call.arguments[p.at], c.above.get(call) || [], new Set(), c) : [ABSENT])) : [WILD];
       }
-      const ds = cx.decl.get(node.name);
+      const ds = visible(cx.decl.get(node.name), cx, parents);
       if (ds) return ds.flatMap((d) => again(d, cx.above.get(d) || []));
       /* an imported binding: its declaration in the module it comes from */
       const imp = cx.imports.get(node.name);
@@ -295,12 +306,16 @@ function reaches(node, g, cx, parents, world, depth = 0) {
     case 'Identifier': {
       const p = paramOf(node.name, parents);
       if (p) return p.at >= 0 && callSites(p, cx, world).some(({ call, cx: c }) => call.arguments[p.at] && again(call.arguments[p.at], c.above.get(call) || [], c));
-      const ds = cx.decl.get(node.name);
+      const ds = visible(cx.decl.get(node.name), cx, parents);
       if (ds) return ds.some((d) => again(d, cx.above.get(d) || []));
       return node.name === g;   /* not bound in the module: the global itself */
     }
+    /* `window.localStorage` — and `w.localStorage` where `w` is what a caller handed in as `window` (wave4-refine: measured
+       2026-11-16, js/readiness-check.js deviceReport(doc, win) writes `intmap_readiness_probe` through `const w = win || {}`
+       and js/readiness-page.js calls it with `window`; a receiver read by its SPELLING missed it). The object is asked the
+       same question, of each global host, through the same walk: bindings, parameters (across modules), `||`, `?:`. */
     case 'MemberExpression':
-      return !node.computed && node.property.name === g && node.object.type === 'Identifier' && GLOBAL_HOSTS.has(node.object.name);
+      return !node.computed && node.property.name === g && [...GLOBAL_HOSTS].some((h) => reaches(node.object, h, cx, parents, world, depth + 1));
     case 'ConditionalExpression': return again(node.consequent) || again(node.alternate);
     case 'LogicalExpression': return again(node.left) || again(node.right);
     case 'CallExpression': return returnsOf(node, cx).some(({ f, fp }) => again(f, fp));

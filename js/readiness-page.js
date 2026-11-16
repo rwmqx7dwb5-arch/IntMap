@@ -42,7 +42,7 @@ function wire(main) {
     for (const t of TIERS) {
       lines.push('# ' + (TIER[t] || t));
       if (t === 'first' && siteRow) lines.push(location.origin);
-      for (const p of probes) if (p.tier === t) lines.push(p.host);
+      for (const p of probes) if (p.tier === t && !lines.includes(p.host)) lines.push(p.host);   /* a host asked over https and a socket is one line */
       lines.push('');
     }
     return lines.join('\n');
@@ -66,11 +66,19 @@ function wire(main) {
     start.disabled = true;
     result.hidden = false;
     $('rd-verdict').hidden = true;
+    const device = deviceReport(document, window);
+    /* (wave4-refine) a device that says it is offline is asked nothing: one line, not every host «not reached» */
+    if (device.online === false) {
+      for (const tr of rows) setState(tr, '', '');
+      render(device, assess(device, [], null));
+      start.textContent = LIVE.again || start.textContent;
+      start.disabled = false;
+      return;
+    }
     for (const tr of rows) setState(tr, LIVE.pending, '');
     if (siteRow) setState(siteRow, LIVE.site, 'ok');   /* this page loaded from it */
     progress.textContent = fill(LIVE.running, { n: 0, total: probes.length });
     try { result.scrollIntoView({ block: 'start', behavior: 'smooth' }); } catch (_) { /* an old browser: the reader scrolls */ }
-    const device = deviceReport(document, window);
     const results = await probeAll(probes, {
       timeoutMs, concurrency,
       onResult: (r, i, done) => { setState(rows[i], stateText(r), r.verdict === 'reached' ? 'ok' : 'bad'); progress.textContent = fill(LIVE.running, { n: done, total: probes.length }); },
@@ -95,14 +103,19 @@ function wire(main) {
   });
 
   function render(device, m) {
-    const head = { ready: [LIVE.ready, LIVE.readyNote], partial: [LIVE.partial, LIVE.partialNote], 'not-ready': [LIVE.notReady, LIVE.notReadyNote] }[m.overall];
+    const head = { ready: [LIVE.ready, LIVE.readyNote], partial: [LIVE.partial, LIVE.partialNote], 'not-ready': [LIVE.notReady, LIVE.notReadyNote], offline: [LIVE.offline, ''] }[m.overall];
     $('rd-verdict-h').textContent = head[0];
     $('rd-verdict-p').textContent = head[1];
     $('rd-verdict').className = 'lp-tile rd-verdict is-' + m.overall;
     const dev = $('rd-device'); dev.textContent = '';
     const devLines = [];
     const add = (text, cls) => { devLines.push(text); li(dev, text, cls); };
-    if (device.online === false) add(LIVE.offline, 'bad');
+    if (m.overall === 'offline') {
+      $('rd-tiers').textContent = '';
+      report = attach = [REP.title, fill(REP.page, { url: location.href.split('#')[0] }), '', LIVE.offline].join('\n');
+      $('rd-verdict').hidden = false;
+      return;
+    }
     add(fill(device.map ? LIVE.mapOk : LIVE.mapNo, { ctx }), device.map ? 'ok' : 'bad');
     if (device.map && device.accelerated != null) add(device.accelerated ? LIVE.accelOk : LIVE.accelNo, device.accelerated ? 'ok' : 'warn');
     add(device.workers ? LIVE.workersOk : LIVE.workersNo, device.workers ? 'ok' : 'bad');

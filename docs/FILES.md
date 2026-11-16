@@ -1228,7 +1228,7 @@ quake-history-core.js             その事実の全部（純粋なモジュー�
                                   件数を先に訊いて下限を上げる規則（一度に 3,000 件）・端末での正確な円・最大・順位・年代・
                                   時刻 T までの記録・`?qh=`。node が実際の ComCat の答えで同じ関数を評価する
 world-flows.js                    **世界とのつながり**のカードと地図の弧——1 つの国が人（UN DESA の移民ストック）・データ（海底ケーブル系統）・
-                                  航空路（OpenFlights 2014）でどの国とつながるかを、時計の年以前で最も新しい記録で。「モノ」は貿易フロー
+                                  航空路（OpenFlights 2014）でどの国とつながるかを、時計の瞬間以前に成り立つ最も新しい記録で（値が述べる時点と比べる）。「モノ」は貿易フロー
                                   レイヤーを同じ国で開く扉。扉は Tools・地点カードの国の行・`?wf=`・Atlas `data.worldFlows`。遅延チャンク（§7.3j）
 world-flows-core.js               その事実の全部（純粋なモジュール）——国の表と照合・時刻の規則・3 つの読み方・合計と割合・弧（大圏の経度を連続に）
 card-clearance.js                 カードが覆わない部分に地図を収める余白（fitBounds の padding）。js/news-story.js と js/quake-history.js も同じ規則を閉包に持つ
@@ -1238,8 +1238,9 @@ aftershock.js                     **余震の見通し**のカードと地図—
                                   （地震のポップアップ・命令 `aftershock.open`・`?as=`）。遅延取得（IntMapLazy の aftershock）
                                   window.IntMapAftershock
 aftershock-core.js                そのモデルの全部（純粋なモジュール）——Reasenberg & Jones (1989) に USGS の一般パラメータ
-                                  （Page et al. 2016・García et al. 2012 の区分）を事前分布とするベイズ更新、時間変化する検知限界、
-                                  余震域、ポアソン混合の確率と範囲、答え合わせ、USGS の oaf 製品の読み。node が実際の ComCat の答えで評価する
+                                  （Page et al. 2016・García et al. 2012 の区分）を事前分布とする a・p・c の格子ベイズ更新、時間変化する
+                                  検知限界と系列からの推定（最大曲率法＋0.2）、余震域、固定日数の期間（1・7・31・366 日）、ポアソン混合の
+                                  確率と範囲、答え合わせと注記、同梱の答え合わせによる実測の被覆率、USGS の oaf 製品の読み。node が実際の ComCat の答えで評価する
 seismic.js                        地震波シミュレータ（477 KB）
 seismic-events.js                 過去の地震——公表された震源パラメータ
 seismic-site.js                   場址項は周波数の関数である window.IntMapSiteAmp
@@ -1392,7 +1393,9 @@ journey-through-time.js           **時をまたぐ道のり**——1 本の線�
 territory-change.js               **持ち主が変わった土地**——1 つの範囲で 2 つの時点を比べ、各記録がセル（既定は約 100 万個）の中心に描く
                                   政体が変わった土地を、受け取った政体の色で地図に描く。移動ごとの km²・元と新しい持ち主に占める割合・
                                   かけらの数。同一性は CShapes の国家コード→Wikidata→名前の順で、同じコードの改名は一覧だけ、括弧の
-                                  保有者が変わったもの（Korea (Japan)）は描く。片方だけが描く土地は記録の端として分ける。Atlas
+                                  保有者が変わったもの（Korea (Japan)）は描く。片方だけが描く土地は記録の端として分ける。記録の継ぎ目で共通の
+                                  識別子が無く名前も違う組は nameOnly（合計外・既定で塗らない）、主張の重なりの始まり・終わりは overlaps（合計外）、
+                                  別の記録が同じ境界を 0.2° 未満ずらして描いた帯は borderDrawing。張る前の費用の見積もり estimate（estimateOnly）。Atlas
                                   `time.territoryChange` が最初に要るときに取りに行く。史実照合は scripts/territory-change.mjs --sites
 polity-arc.js                     **政体の盛衰**——1 つの政体を全時代にわたって読む。地図がその名前で描き始めた年・描き終えた年（端が政体のものか
                                   記録の切り替わりかを区別）、描かれた面積の推移のグラフ（区間ごとに描いた記録の色・記録の継ぎ目の破線）、最大の
@@ -1403,9 +1406,10 @@ polity-arc.js                     **政体の盛衰**——1 つの政体を全�
 family-history.js                 **家族史と国境**——読者の家族（手入力、または GEDCOM の読み込み）の各出来事を、その日・その場所で
                                   歴史の記録が描く政体と第 1 級区分で読み（日付が年・月だけなら幅の中の変化も）、各人物の生涯のあいだの
                                   政体の変化を数える（記録の切り替わり・同じ政体の別の行・重なり・継ぎ目は数えない）。地名は端末の地名辞典と
-                                  歴史都市名・Pleiades に訊き、1 つに決まるときだけ置く。このブラウザにだけ保存。入口は Chronos パネル・
+                                  歴史都市名・Pleiades（その日付に記録が述べる名前だけ）に訊き、地名の残りの部分（国・第 1 級区分を識別子で）と矛盾せず 1 つに
+                                  決まるときだけ置く。LDS の儀式は出来事にしない。このブラウザにだけ保存し、GEDCOM 5.5.1（UTF-8）への書き出しも端末内。入口は Chronos パネル・
                                   Atlas `time.lifeAtPlace`（docs/architecture/07-map.md §7.4d）。最初に要るときに取りに行く
-gedcom.js                         **GEDCOM（5.5.1 / 7.0）の読み手**——文字コード（BOM・CHAR。ANSEL は ASCII の範囲だけ）、記録の木、
+gedcom.js                         **GEDCOM（5.5.1 / 7.0）の読み手と書き手**——文字コード（BOM・CHAR。復号は厳格。ANSEL は ASCII の範囲だけ）、LDS の儀式を除外、`writeGedcom`（5.5.1・UTF-8・CRLF）、記録の木、
                                   DATE か PLAC を持つ構造を出来事として、座標（PLAC.MAP）、家族の出来事を両配偶者へ。日付は文法どおりに
                                   日の幅へ（ユリウス暦・フランス革命暦・ユダヤ暦を換算）。family-history.js が読む
 events-near.js                    範囲 × 期間の地震と出来事の**読み手 1 つ**——USGS の M2.5 以上・7 日のフィードをセッション内で 1 回
@@ -1484,7 +1488,7 @@ shared-collection.js              公開コレクション——publish_collecti
                                   自分のアカウントへの写し copy_shared_collection と、`?collection=<token>` で開いたページのカード（場所をピンで、
                                   地図を一覧で。複数段の地図＝ツアーは授業モードで再生）。auth-ui.js がそのページでだけ読み込む。オンデマンド（collection-workspace）。
                                   掲載中ならカードに作成者・紹介文・保存された数・元にした地図と報告、アプリ内から開く openShared（community-maps）
-community-maps.js                 みんなの地図——読者が掲載した公開コレクションの目録（community_maps を GET で・語／並び／地図の表示範囲）・
+community-maps.js                 みんなの地図——読者が掲載した公開コレクションの目録（community_maps を GET で・語／並び／地図の表示範囲・続きは前ページのカーソル `next` で keyset 送り）・
                                   地図で開く（shared-collection.js openShared）・ライブラリの掲載の箱（list_community_map / unlist・保存された数）・
                                   公開カードの掲載欄と報告（report_community_map）・管理者の報告一覧と外す／戻す／却下。markup を書かない。オンデマンド
 place-watch.js                    見守る場所——保存した場所の周辺の地震（USGS）・気象警報（警報レイヤー自身の記録）・火山の警戒レベル
@@ -1569,7 +1573,7 @@ quest-panel.js                    **学ぶクエストのパネル**——出題
 quest-daily.js                    **今日のクエストの記録と連続日数**——その日のセット（seed `d<YYYY>-<MM>-<DD>`）の最初の結果を、このブラウザ（localStorage
                                   `intmap_quest_daily`）とログイン中はアカウント（`quest_daily_results`）に残し、両方を合わせて連続日数・最近 7 日を数える。
                                   パネル・アカウントのシート・Atlas の learn.daily が同じ集計を読む（遅延・グローバル無し）（§8.6.4）
-quest-class.js                    **クラスのセット**（DOM なし）——クラスのリンク `&class=<code>` の読み書き、答えが運ばれる形（場所＝[lng,lat] 小数 3 桁・年・null）、
+quest-class.js                    **クラスのセット**（DOM なし）——クラスのリンク `&class=<code>` の読み書き、答えが運ばれる形（場所＝[lng,lat] 小数 3 桁・年・null）、名前が拒まれる文字 `NAME_REFUSED`（DB の display_name() と同じ集合）、
                                   エンジンで全提出を採点する集計（問題ごとの平均・中央値・いちばん苦戦した問題）、CSV、`class_sets`／`class_set_answers` と生徒の 2 つの RPC の扉（§8.6.4）
 quest-class-board.js              **先生のボード**——クラスのセットの一覧・作成・1 セットの結果（リンク・受付の開閉・平均・苦戦した問題・場所の問題のクラスのタップを地図に・
                                   年の分布・生徒ごとの得点・提出の削除・CSV）。採点は quest-panel.js の questionsOf() のエンジン。Atlas の learn.class も読む（遅延・グローバル無し）（§8.6.4）
@@ -1622,7 +1626,8 @@ whats-new.js                      **「新着」**——IntMap に加わった�
                                   Atlas の `system.whatsNew` が読む。初めて使われたときに取得（握りは `layer-state.js` の
                                   `window.IntMapWhatsNew`）。15-ops-quality.md §15.9
 readiness-check.js                導入前の接続診断の規則——描画文脈（maplibre-gl と同じ）・接続先を 3 層に分ける（index.html の preconnect／基盤／
-                                  レイヤー）・1 回の no-cors 問い合わせ（到達／到達できず／時間内に応答なし）・昨夜の確認と結ぶ判定。
+                                  レイヤー）・1 回の no-cors 問い合わせ（到達／到達できず／時間内に応答なし）・WebSocket で使う接続先はその WebSocket を開いて確かめる・
+                                  端末がオフラインなら何も訊かず `offline`・昨夜の確認と結ぶ判定。
                                   readiness.html（js/readiness-page.js）と Atlas の system.readiness が読み、scripts/org-pages.mjs が許可リストを書く。08-ui.md §8.6.6
 readiness-page.js                 readiness.html の動き（素のまま配るモジュール）——押すと診断し、行ごとに結果を書き、結果をコピー・保存・相談へ添付
 host-match.js                     出口の台帳（`scripts/outbound-hosts.json`）のホスト名・パターン（`*.wikipedia.org`）の照合 1 つ。
@@ -1971,9 +1976,9 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全21本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（56本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（58本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
-  tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス） ＋ 見守る場所 ＋ 保存した地図と公開コレクション ＋ 地図ドキュメント（ツアー・回答の段）。32本）
+  tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス） ＋ 見守る場所 ＋ 保存した地図と公開コレクション ＋ 地図ドキュメント（ツアー・回答の段） ＋ みんなの地図 ＋ クラスのセット ＋ 読者の手元での速さ ＋ 名前の正規化と提出の組み直し。34本）
   functions/<name>/index.ts       Edge Functions（21本。一覧と各本の役割は Architecture.md §6.2。
                                   usage-count/shape.js は関数の中の宣言で、ブラウザも import する）
   functions/ai-proxy/*.ts         ai-proxy は仕事ごとのモジュール（index.ts＝経路の表・ask.ts＝1 回の要求・
@@ -2059,7 +2064,8 @@ scripts/
                                   history-pages.mjs mapReader、出来事は data/on-this-day.json（§8.6.4）
   year-pages-text.mjs             そのページの文の唯一の写し（en + jp）
   polity-pages.mjs                政体の盛衰の入口ページ・カード・sitemap の生成器と `--queue` の投稿の下書き——政体と事実は
-                                  data/polity-arcs.json を js/polity-arc.js で読み、カードの形は history-pages.mjs mapReader（§8.6.4）
+                                  data/polity-arcs.json を js/polity-arc.js で読み（身元の確認を通った同じ Wikidata 項目の名前は 1 ページ・別名は旧アドレスで
+                                  canonical を統合ページへ・`--list` が検証待ちを列挙）、カードの形は history-pages.mjs mapReader（§8.6.4）
   polity-pages-text.mjs           そのページと下書きの文の唯一の写し（en + jp）
   polity-choice.mjs               政体ページのアドレス・一覧・sitemap の名前と Vite プラグイン（polityPagesPlugin）——生成器を import しないので
                                   history-pages.mjs・year-pages.mjs・vite.config.js が循環なしに読む

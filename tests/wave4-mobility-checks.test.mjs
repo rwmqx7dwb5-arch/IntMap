@@ -6,7 +6,8 @@
  *       the partners it names; the places carry the anchors the map draws them at;
  *    ② NOTHING IS INVENTED: a missing DESA estimate is null, not 0; a code Natural Earth cannot anchor stays in the table
  *       under DESA's own name with no anchor; the bundle states the builder's provenance, and its credit row exists;
- *    ③ THE INSTANT: the latest stated year at or before the clock; before the record → no answer and the first year;
+ *    ③ THE INSTANT: the latest statement dated at or before the clock's INSTANT (DESA's 1 July, a month once it is over);
+ *       before the record → no answer, the first year and the instant it holds from (tests/wave4-refine-news-geo-checks ⑥);
  *    ④ THE READINGS: the two directions are the two sides of the same cell; cables count systems in service by the year
  *       (never fewer later); flights are the 2014 table's row; GOODS are not a second implementation — the card opens the
  *       Trade flows layer through its own door;
@@ -75,12 +76,13 @@ test('② nothing invented: a missing estimate is null, an unanchored code keeps
   for (const u of G.upstreams) assert.ok(!/\bNC\b|non-?commercial/i.test(u.licence), u.publisher + ': a licence IntMap may use commercially');
 });
 
-test('③ the instant: the latest stated year at or before the clock; before the record, no answer', () => {
-  const ys = [1990, 1995, 2000, 2024];
-  assert.deepEqual(C.yearFor(ys, null), { year: 2024, exact: true, live: true });
-  assert.deepEqual(C.yearFor(ys, 1997), { year: 1995, exact: false });
-  assert.deepEqual(C.yearFor(ys, 2000), { year: 2000, exact: true });
-  assert.deepEqual(C.yearFor(ys, 1989), { year: null, reason: 'before-record', first: 1990 });
+test('③ the instant: the latest statement at or before the clock\'s instant; before the record, no answer', () => {
+  const ys = [1990, 1995, 2000, 2024], mid = C.midYearMs;
+  assert.deepEqual(C.yearFor(ys, null, mid), { year: 2024, statedMs: mid(2024), live: true });
+  assert.deepEqual(C.yearFor(ys, Date.UTC(1997, 5, 15), mid), { year: 1995, statedMs: mid(1995) });
+  assert.deepEqual(C.yearFor(ys, mid(2000), mid), { year: 2000, statedMs: mid(2000) }, 'the stated instant itself reads its own year');
+  assert.deepEqual(C.yearFor(ys, mid(2000) - 1, mid), { year: 1995, statedMs: mid(1995) }, 'the instant before it does not');
+  assert.deepEqual(C.yearFor(ys, Date.UTC(1989, 11, 31), mid), { year: null, reason: 'before-record', first: 1990, firstMs: mid(1990) });
 });
 
 test('④ the readings: one cell from both sides; cables never fewer later; flights are the table\'s row', () => {
@@ -91,7 +93,7 @@ test('④ the readings: one cell from both sides; cables never fewer later; flig
   assert.equal(inn.find((x) => x.p === mex).v, out[0].v, 'the same cell read from both sides');
   const meta = json('data/subcables-meta.json');
   let prev = -1;
-  for (let y = 1990; y <= 2024; y++) { const c = C.cablePartners(meta, P, jpn, y); assert.ok(c.systems >= prev, 'cables in service never fall as the year advances (the record holds no retirements)'); prev = c.systems; }
+  for (let y = 1990; y <= 2024; y++) { const c = C.cablePartners(meta, P, jpn, C.yearEndMs(y)); assert.ok(c.systems >= prev, 'cables in service never fall as the year advances (the record holds no retirements)'); prev = c.systems; }
   const now = C.cablePartners(meta, P, jpn, null);
   assert.ok(now.systems >= prev && now.partners.length > 0, 'today counts every listed system that is not planned');
   /* (review) ONE rule for a year and for today: a planned system is never in service — measured before the fix, the US read 90
@@ -99,9 +101,11 @@ test('④ the readings: one cell from both sides; cables never fewer later; flig
   const thisYear = new Date().getUTCFullYear();
   const planned = new Set(Object.values(meta.cables).filter((c) => c.isPlanned).map((c) => c.name));
   assert.ok(planned.size > 0 && Object.values(meta.cables).some((c) => c.isPlanned && c.rfsYear != null), 'the record holds planned systems with a year (the case the rule is about)');
+  /* (wave4-refine) «this year» is the year once it is over: a ready-for-service year is not a day, so within the year the
+     systems of that year are `sameYear`, not in service (tests/wave4-refine-news-geo-checks ⑥) */
   for (const i of [jpn, at('USA'), at('EGY'), at('GBR')]) {
-    assert.equal(C.cablePartners(meta, P, i, thisYear).systems, C.cablePartners(meta, P, i, null).systems, P.rows[i].c + ': this year\'s count is today\'s');
-    for (const y of [2000, thisYear, thisYear + 5]) for (const p of C.cablePartners(meta, P, i, y).partners) assert.ok(!p.names.some((n) => planned.has(n)), P.rows[i].c + ' ' + y + ': no planned system is counted in service');
+    assert.equal(C.cablePartners(meta, P, i, C.yearEndMs(thisYear)).systems, C.cablePartners(meta, P, i, null).systems, P.rows[i].c + ': this year\'s count is today\'s');
+    for (const y of [2000, thisYear, thisYear + 5]) for (const p of C.cablePartners(meta, P, i, C.yearEndMs(y)).partners) assert.ok(!p.names.some((n) => planned.has(n)), P.rows[i].c + ' ' + y + ': no planned system is counted in service');
   }
   const S = C.summarise(P, jpn, 'cables', 'link', null, now.partners, { base: now.systems });
   /* (review) a cable has no direction: its arcs carry `link`, and the arrowhead layer leaves them out */

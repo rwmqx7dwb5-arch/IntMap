@@ -231,6 +231,14 @@ export function timeBorders(HOST){
     function _epochIn(b,t){ let lo=0,hi=b.length-1,ans=b.length?b[0]:t;
       while(lo<=hi){ const mid=(lo+hi)>>1; if(b[mid]<=t){ ans=b[mid]; lo=mid+1; } else hi=mid-1; }
       return ans; }
+    /* ⚠ (wave4-refine) THE CACHE KEY OF A RECORD THAT MAY BE ASKED OUTSIDE ITS EDGES. `_epochIn` answers the FIRST edge for
+       an instant before every edge, so an instant before a record's reach shared the key of its first epoch: measured
+       2026-11-16, reading 1 July 3399 BC and then 122,999 BC drew Cliopatria's Sumerian City-States 119,600 years below
+       Cliopatria's first row, and reading them the other way round cached the empty answer of 122,999 BC under that key
+       and drew NO Cliopatria at 3399 BC — what the map drew depended on the order it was asked in. Before the first edge
+       nothing of the record is in force, which is one state of its own ('pre'); before the edges are known, the instant
+       itself is the key. */
+    function _epochKey(b,t){ if(!b||!b.length) return 't'+t; return b[0]>t?'pre':String(_epochIn(b,t)); }
     function csEpoch(d,y,m,dd){ return _epochIn(csBounds(d),_ymd(y,m,dd)); }
     /* ══ (hist-bundles-off-main) THE THREE COUNTRY RECORDS ARE OPENED THROUGH js/hist-bundles.js ════
        They were <script> tags, so the first travel evaluated a 13-34 MB literal on the thread that
@@ -955,10 +963,10 @@ export function timeBorders(HOST){
          keyed before it arrived (`ce-1`) is never reused after */
       coursesLoad(); const [cd,od]=await Promise.all([clLoad(),olLoad()]); if(!cd&&!od) return null;
       const t=_ymd(year,mon,day), parts=[], keys=[];
-      let ol=null; if(od){ const k='ol'+_epochIn(_olBnd||[],t);
+      let ol=null; if(od){ const k='ol'+_epochKey(_olBnd,t);
         ol=cache.get(k); if(!ol){ ol=await olFC(od,year,mon,day); cache.set(k,ol); }
         if(ol&&ol.features.length){ parts.push(ol); keys.push(k); } else ol=null; }
-      let cl=null; if(cd){ const k='cl'+_epochIn(_clBnd||[],t);
+      let cl=null; if(cd){ const k='cl'+_epochKey(_clBnd,t);
         cl=cache.get(k); if(!cl){ cl=await clFC(cd,year,mon,day); cache.set(k,cl); }
         if(cl&&cl.features.length){ parts.push(cl); keys.push(k); } else cl=null; }
       if(!parts.length) return null;
@@ -1061,7 +1069,7 @@ export function timeBorders(HOST){
       g=(polys.length===1)?{type:'Polygon',coordinates:polys[0]}:{type:'MultiPolygon',coordinates:polys};
       _snGeom.set(idx,g); _rowOf.set(g,{rec:'coast-snap',d,i:idx,file:'data/hist-coast-snap.js',parent:parentRow||null}); return g; }
     /* the snap record's epoch at `t` — a part of the composition's cache key (null when the record cannot be read) */
-    async function _snapEpoch(t){ try{ const d=await snLoad(); return (d&&_snH)?'sn'+_epochIn(_snBnd||[],t):null; }catch(_){ return null; } }
+    async function _snapEpoch(t){ try{ const d=await snLoad(); return (d&&_snH)?'sn'+_epochKey(_snBnd,t):null; }catch(_){ return null; } }
     /* the snap pieces in force at `t` whose parents are among `features` (the shapes the composition draws then) → the
        features ([] when nothing is in force or the record cannot be read) */
     async function _snapsFor(features,t){ try{
@@ -1093,7 +1101,7 @@ export function timeBorders(HOST){
         if(hd){ let k; try{ k='hb'+hbEpoch(hd,year,mon,day); }catch(_){ k='hb'+year; }
           let fc=cache.get(k); if(!fc){ try{ fc=await hbFC(hd,year,mon,day); cache.set(k,fc); }catch(_){ fc=null; } }
           if(fc){ parts.push(fc); keys.push(k); made.ohm=fc.features.length; } } }
-      { const k='cl'+_epochIn(_clBnd||[],_ymd(year,mon,day));
+      { const k='cl'+_epochKey(_clBnd,_ymd(year,mon,day));
         let fc=cache.get(k); if(!fc){ try{ fc=await clFC(cd,year,mon,day); cache.set(k,fc); }catch(_){ fc=null; } }
         if(!fc) return null;
         parts.push(fc); keys.push(k); made.clio=fc.features.length; }

@@ -33,9 +33,9 @@ import { clockFor } from './proxy-fetch.js';
 import { MapState } from './map-state.js';
 import { whenHost } from './host-door.js';
 import * as bus from './bus.js';
-import { clearOfCard } from './card-clearance.js';
+import { clearOfCard, frameBox } from './card-clearance.js';
 import './safe-html.js';   /* publishes globalThis.IntMapSafe — the escaper below */
-import { DIRECTED, basisOf, placeIndex, findPlace, searchPlaces, placeName, yearFor, migrationPartners,
+import { DIRECTED, basisOf, placeIndex, findPlace, searchPlaces, placeName, yearFor, midYearMs, heldFromMs, migrationPartners,
   cablePartners, flightPartners, summarise, totalsSeries, totalAt, arcFeatures } from './world-flows-core.js';
 
 /** the app's one escaper (js/safe-html.js) — read once, here */
@@ -60,23 +60,29 @@ async function places() { const idx = await load(INDEX); if (!_P || _P.idx !== i
 
 /* the year of a 2014 snapshot, as the table states it (`routesSnapshot`: '2014-06') */
 const snapshotYear = (mob) => { const m = /^(\d{4})/.exec(String((mob && mob.routesSnapshot) || '')); return m ? +m[1] : null; };
-/** the clock's year, or null while it is live */
-const clockYear = () => { try { return IntMapTime.isLive() ? null : IntMapTime.year(); } catch (_) { return null; } };
+/** the clock's INSTANT (epoch ms), or null while it is live — every record is compared with it as an instant
+    (js/world-flows-core.js §THE INSTANT), never by its year */
+const clockMs = () => { try { return IntMapTime.isLive() ? null : IntMapTime.nowMs(); } catch (_) { return null; } };
+/** a year named alone — Atlas's `year`, a bar of the chart — is read at its middle, 1 July (UTC): the instant DESA's stock is
+    stated at, and inside the year in every time zone, so the clock it moves to shows that year */
+const yearMs = midYearMs;
+const utcYear = (ms) => (ms == null ? null : new Date(ms).getUTCFullYear());
 
 /**
- * read(kind, i, dir, cy) — one reading at the clock's year `cy` (null = live).
- *   → { ok:true, kind, dir, year, yf, sum (js/world-flows-core.js summarise), series:[{y, v}], extra }
- *   | { ok:false, reason: 'before-record' (with `first`) | 'unavailable' }
+ * read(kind, i, dir, atMs) — one reading at the clock's instant `atMs` (null = live).
+ *   → { ok:true, kind, dir, year, at, yf, sum (js/world-flows-core.js summarise), series:[{y, v, at}], extra }
+ *   | { ok:false, reason: 'before-record' (with `first`, `firstMs`) | 'unavailable' }
  */
-export async function read(kind, i, dir, cy) {
+export async function read(kind, i, dir, atMs) {
+  const cy = atMs == null ? null : +atMs;
   const P = await places(), idx = P.idx;
   const d = DIRECTED[kind] ? (dir === 'in' ? 'in' : 'out') : 'link';
   if (kind === 'migration') {
-    const yf = yearFor(idx.migration.years, cy);
-    if (yf.year == null) return { ok: false, kind, dir: d, reason: yf.reason, first: yf.first };
+    const yf = yearFor(idx.migration.years, cy, midYearMs);
+    if (yf.year == null) return { ok: false, kind, dir: d, reason: yf.reason, first: yf.first, firstMs: yf.firstMs };
     const partners = migrationPartners(idx.migration, i, d, yf.year);
     const sum = summarise(P, i, kind, d, yf.year, partners, { total: totalAt(idx, kind, i, d, yf.year) });
-    return { ok: true, kind, dir: d, year: yf.year, yf, sum, series: totalsSeries(idx, kind, i, d) };
+    return { ok: true, kind, dir: d, year: yf.year, at: cy, yf, sum, series: totalsSeries(idx, kind, i, d).map((p) => Object.assign({ at: midYearMs(p.y) }, p)) };
   }
   if (kind === 'cables') {
     const meta = await load(CABLES);
@@ -85,17 +91,21 @@ export async function read(kind, i, dir, cy) {
     /* the systems in service year by year, from the first ready-for-service year any of its cables states to the clock */
     const years = [];
     for (const id of Object.keys(meta.cables || {})) { const x = meta.cables[id]; if ((x.countryCodes || []).includes(P.rows[i] && P.rows[i].a2) && x.rfsYear != null) years.push(x.rfsYear); }
-    const last = cy == null ? new Date().getUTCFullYear() : cy;
+    /* one bar per year, each counted at the instant a tap on it moves the clock to (yearMs), so the bar and the card it opens
+       say one number */
+    const last = utcYear(cy == null ? Date.now() : cy);
     const series = [];
-    if (years.length) for (let y = Math.min(...years); y <= last; y++) series.push({ y, v: cablePartners(meta, P, i, y).systems });
-    return { ok: true, kind, dir: d, year: cy, yf: { year: cy, live: cy == null }, sum, series, extra: { systems: c.systems, undated: c.undated, unresolved: c.unresolved } };
+    if (years.length) for (let y = Math.min(...years); y <= last; y++) series.push({ y, at: yearMs(y), v: cablePartners(meta, P, i, yearMs(y)).systems });
+    const year = utcYear(cy);
+    return { ok: true, kind, dir: d, year, at: cy, yf: { year, live: cy == null }, sum, series, extra: { systems: c.systems, undated: c.undated, sameYear: c.sameYear, unresolved: c.unresolved } };
   }
   const mob = await load(FLIGHTS);
   const y0 = snapshotYear(mob);
-  const yf = yearFor(y0 != null ? [y0] : [], cy);
-  if (yf.year == null) return { ok: false, kind, dir: d, reason: yf.reason, first: yf.first };
+  /* the table is «June 2014»: it holds once that month is over (heldFromMs) */
+  const yf = yearFor(y0 != null ? [y0] : [], cy, () => heldFromMs(mob && mob.routesSnapshot));
+  if (yf.year == null) return { ok: false, kind, dir: d, reason: yf.reason, first: yf.first, firstMs: yf.firstMs };
   const partners = flightPartners(mob, P, i, d);
-  return { ok: true, kind, dir: d, year: yf.year, yf, sum: summarise(P, i, kind, d, yf.year, partners), series: [] };
+  return { ok: true, kind, dir: d, year: yf.year, at: cy, yf, sum: summarise(P, i, kind, d, yf.year, partners), series: [] };
 }
 
 /* ══ WORDS ═══════════════════════════════════════════════════════════════════════════════════════════════════════ */
@@ -110,6 +120,8 @@ function valueWords(kind, v, lg) {
   return t(v + (v === 1 ? ' route' : ' routes'), v + ' 路線');
 }
 const pct = (s) => (s == null ? '' : (s < 0.001 ? '<0.1' : (Math.round(s * 1000) / 10).toFixed(1)) + '%');
+/** a day, as UTC (every instant this card compares is a UTC statement) */
+const dayWords = (ms, lg) => { try { return new Date(ms).toLocaleDateString(LOC(lg), { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' }); } catch (_) { return new Date(ms).toISOString().slice(0, 10); } };
 const KIND_COLOUR = { migration: '#ff9f0a', trade: '#0a84ff', cables: '#bf5af2', flights: '#30b0c7' };
 function kindLabel(kind, lg) {
   const t = IntMapLang.pick(() => lg);
@@ -129,7 +141,7 @@ export function headline(r, name, lg) {
     ? t(v + ' born in other countries lived in ' + name + ' at mid-' + r.year + ', from ' + n + ' countries and areas the record names.', r.year + '年央、' + name + 'には外国生まれの' + v + 'が住んでいました（記録が名指す出身国・地域は' + n + '）。')
     : t(v + ' born in ' + name + ' lived in other countries at mid-' + r.year + ', in ' + n + ' countries and areas the record names.', r.year + '年央、' + name + '生まれの' + v + 'が国外に住んでいました（記録が名指す居住国・地域は' + n + '）。');
   if (r.kind === 'cables') {
-    const when = r.year == null ? t('today', '今日') : t('in ' + r.year, r.year + '年');
+    const when = r.at == null ? t('today', '今日') : t('on ' + dayWords(r.at, lg), dayWords(r.at, lg) + 'に');
     return t('The cable record lists ' + s.total + (s.total === 1 ? ' system' : ' systems') + ' landing in ' + name + ' in service ' + when + ', reaching ' + n + ' other countries and areas.',
       '海底ケーブルの記録には、' + when + '運用中で' + name + 'に陸揚げされる系統が' + s.total + 'あり、' + n + 'の国・地域とつながっています。');
   }
@@ -140,10 +152,10 @@ export function headline(r, name, lg) {
 /** what the number is — and is not (said under every reading) */
 function caveat(r, lg) {
   const t = IntMapLang.pick(() => lg);
-  if (r.kind === 'migration') return t('A stock, not a number of moves: people living in a country other than the one they were born in, at mid-year, as UN DESA estimates it (census, register and survey based). The record states 1990, 1995 … 2020 and 2024; the card reads the latest estimate at or before the clock.',
-    'ある年の年央に、生まれた国以外に住んでいる人の数（ストック）で、その年に移動した人数ではありません。国連経済社会局の推計（国勢調査・登録・調査に基づく）。記録は 1990・1995 … 2020・2024 年で、時計の年以前で最も新しい推計を表示します。');
-  if (r.kind === 'cables') return t('A count of cable systems landing in both countries, not of capacity or traffic. A system is counted from the ready-for-service year the record states; cables retired before today are not in the record, so earlier years count fewer than were in service then.',
-    '両国に陸揚げされているケーブル系統の数で、容量や通信量ではありません。記録が述べる運用開始年から数えます。現在までに退役したケーブルは記録に無いため、過去の年は当時の実数より少なく数えます。');
+  if (r.kind === 'migration') return t('A stock, not a number of moves: people living in a country other than the one they were born in, as at 1 July, as UN DESA estimates it (census, register and survey based), within present-day borders. The record states 1990, 1995 … 2020 and 2024; the card reads the latest estimate dated at or before the clock.',
+    'ある年の 7 月 1 日時点で、生まれた国以外に住んでいる人の数（ストック）で、その年に移動した人数ではありません。現在の国境による推計（国連経済社会局、国勢調査・登録・調査に基づく）。記録は 1990・1995 … 2020・2024 年で、時計の時点以前の日付で最も新しい推計を表示します。');
+  if (r.kind === 'cables') return t('A count of cable systems landing in both countries, not of capacity or traffic. The record states the ready-for-service YEAR, not the day, so a system is counted once its year is over; cables retired before today are not in the record, so earlier years count fewer than were in service then.',
+    '両国に陸揚げされているケーブル系統の数で、容量や通信量ではありません。記録が述べるのは運用開始の「年」で日付ではないため、その年が終わった時点から数えます。現在までに退役したケーブルは記録に無いため、過去の年は当時の実数より少なく数えます。');
   return t('Which airline routes existed in June 2014 (OpenFlights, no longer updated) — not seats, flights per week or passengers. A country with no direct route can still be reached with a connection.',
     '2014 年 6 月に存在した航空路線（OpenFlights、更新終了）で、座席数・便数・旅客数ではありません。直行路線の無い国へも乗り継ぎで行けます。');
 }
@@ -188,7 +200,10 @@ function basisWords(b, lg) {
 }
 function failureWords(r, lg) {
   const t = IntMapLang.pick(() => lg);
-  if (r.reason === 'before-record') return t('The record begins in ' + r.first + ' — it says nothing about the clock’s year. Move the clock to ' + r.first + ' or later.', 'この記録は ' + r.first + ' 年から始まり、時計の年については何も述べていません。時計を ' + r.first + ' 年以降へ動かしてください。');
+  if (r.reason === 'before-record') {
+    const d = r.firstMs != null ? dayWords(r.firstMs, lg) : String(r.first);
+    return t('The record’s first statement holds from ' + d + ' — it says nothing about the clock’s time. Move the clock to ' + d + ' or later.', 'この記録の最初の記述は ' + d + ' からのもので、時計の時点については何も述べていません。時計を ' + d + ' 以降へ動かしてください。');
+  }
   return t('This record could not be read. That is a failure to read it, not an absence of connections.', 'この記録を読み込めませんでした。読み込みの失敗であって、つながりが無いという意味ではありません。');
 }
 
@@ -287,7 +302,7 @@ async function refresh() {
   draw('loading');
   let r;
   if (st.kind === 'trade') r = { ok: true, kind: 'trade', door: true };
-  else { try { r = await read(st.kind, st.i, st.dir, clockYear()); } catch (_) { r = { ok: false, kind: st.kind, reason: 'unavailable' }; } }
+  else { try { r = await read(st.kind, st.i, st.dir, clockMs()); } catch (_) { r = { ok: false, kind: st.kind, reason: 'unavailable' }; } }
   if (my !== st.seq) return;
   st.r = r;
   draw(null); paint();
@@ -316,7 +331,7 @@ function draw(phase) {
   const r = st.r;
   if (!r || r.kind !== st.kind) return msg(t('Reading the records…', '記録を読んでいます…'));
   if (r.door) { body.innerHTML = tradeHtml(me, lg); return; }
-  if (!r.ok) { body.innerHTML = '<div class="nint-empty">' + esc(failureWords(r, lg)) + '</div>' + (r.reason === 'before-record' ? '<div class="nst-share"><button type="button" class="nst-all" data-wf-year="' + esc(r.first) + '" data-time-intent="1">' + esc(t('Go to ' + r.first, r.first + ' 年へ')) + '</button></div>' : ''); return; }
+  if (!r.ok) { body.innerHTML = '<div class="nint-empty">' + esc(failureWords(r, lg)) + '</div>' + (r.reason === 'before-record' && r.firstMs != null ? '<div class="nst-share"><button type="button" class="nst-all" data-wf-at="' + esc(r.firstMs) + '" data-time-intent="1">' + esc(t('Go to ' + dayWords(r.firstMs, lg), dayWords(r.firstMs, lg) + 'へ')) + '</button></div>' : ''); return; }
   const s = r.sum, rows = st.all ? s.partners : s.partners.slice(0, SHOW);
   const top = s.partners[0];
   let h = '<div class="nst-spread"><div><b>' + esc(valueWords(r.kind, r.kind === 'flights' ? s.listed : s.total, lg)) + '</b><span>' + esc(r.kind === 'cables' ? t('systems in service', '運用中の系統') : t('in total', '合計')) + '</span></div>'
@@ -330,6 +345,7 @@ function draw(phase) {
   if (s.partners.length > SHOW) h += '<div class="nst-share wf-more"><button type="button" class="nst-all" data-wf="all">' + esc(st.all ? t('Show the largest ' + SHOW, '上位 ' + SHOW + ' 件だけ表示') : t('Show all ' + s.partners.length, 'すべて表示（' + s.partners.length + ' 件）')) + '</button></div>';
   if (s.offMap > 0) h += '<div class="nint-foot nint-cov">' + esc(t('Not on the map (no anchor in the map’s country shapes): ', '地図に描けない相手（地図の国の形に位置が無いもの）: ') + valueWords(r.kind, s.offMap, lg) + (s.total ? ' (' + pct(s.offMap / s.total) + ')' : '')) + '</div>';
   if (r.kind === 'migration') { const named = s.listed, rest = s.total - named; if (rest > 0) h += '<div class="nint-foot nint-cov">' + esc(t('Not attributed to a country by the record (unknown or other): ', '記録が国を特定していない分（不明・その他）: ') + valueWords(r.kind, rest, lg)) + '</div>'; }
+  if (r.kind === 'cables' && r.extra && r.extra.sameYear) h += '<div class="nint-foot nint-cov">' + esc(t(r.extra.sameYear + ' more ' + (r.extra.sameYear === 1 ? 'system states ' : 'systems state ') + r.year + ' as the ready-for-service year; the record does not say whether by this date, so ' + (r.extra.sameYear === 1 ? 'it is' : 'they are') + ' not counted.', 'ほかに ' + r.extra.sameYear + ' 系統が運用開始年を ' + r.year + ' 年としていますが、この日付までに運用されていたかは記録に無いため数えていません。')) + '</div>';
   if (r.kind === 'cables' && r.extra && r.extra.undated) h += '<div class="nint-foot nint-cov">' + esc(t(r.extra.undated + ' of these systems state no ready-for-service year; they are counted only today.', 'このうち ' + r.extra.undated + ' 系統は運用開始年の記載が無く、現在の数にだけ含めています。')) + '</div>';
   h += '<div class="nint-foot nint-cov">' + esc(caveat(r, lg)) + '</div>';
   h += '<div class="nint-foot nint-cov">' + esc(sourceLine(r.kind, P.idx, lg)) + '</div>';
@@ -363,7 +379,7 @@ function chartSvg(r, lg) {
   ser.forEach((p, k) => {
     const hgt = p.v ? Math.max(2, Math.round(p.v / max * (H - 4))) : 0;
     const cur = p.y === r.year || (r.year == null && k === ser.length - 1);
-    g += '<rect data-wf-year="' + esc(p.y) + '" data-time-intent="1" x="' + (k * bw + 0.5).toFixed(1) + '" y="' + (H - hgt) + '" width="' + Math.max(1, bw - 1.5).toFixed(1) + '" height="' + hgt + '" class="' + (cur ? 'nst-bar-now' : 'nst-bar-past') + '"><title>'
+    g += '<rect data-wf-at="' + esc(p.at) + '" data-time-intent="1" x="' + (k * bw + 0.5).toFixed(1) + '" y="' + (H - hgt) + '" width="' + Math.max(1, bw - 1.5).toFixed(1) + '" height="' + hgt + '" class="' + (cur ? 'nst-bar-now' : 'nst-bar-past') + '"><title>'
       + esc(p.y + ': ' + valueWords(r.kind, p.v, lg) + ' — ' + t('tap to move the clock here', 'タップで時計をこの年へ')) + '</title></rect>';
   });
   return '<svg class="nst-time wf-chart" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="' + esc(t('Total by year', '年ごとの合計')) + '">' + g + '</svg>'
@@ -382,7 +398,8 @@ function onClick(ev) {
   const d = el.closest('[data-wf-d]'); if (d) { st.dir = d.getAttribute('data-wf-d'); st.all = false; refresh(); return; }
   const p = el.closest('[data-wf-p]'); if (p) { focus(+p.getAttribute('data-wf-p')); return; }
   const tr = el.closest('[data-wf-trade]'); if (tr && _P && st.i >= 0) { const res = openTrade(_P.rows[st.i].c, tr.getAttribute('data-wf-trade')); if (!res.ok) { try { host.imToast(IntMapLang.t(lang(), 'The Trade flows layer could not be opened', '貿易フローを開けませんでした')); } catch (_) { /* nothing to say it with */ } } return; }
-  const y = el.closest('[data-wf-year]'); if (y) { try { IntMapTime.setYear(+y.getAttribute('data-wf-year'), { source: 'world-flows' }); } catch (_) { /* the clock refuses a year it cannot reach */ } return; }
+  /* to the INSTANT the bar or the button reads at — a year alone would land the clock on a day the reading is not of */
+  const y = el.closest('[data-wf-at]'); if (y) { const ms = +y.getAttribute('data-wf-at'); if (isFinite(ms)) { try { IntMapTime.set(new Date(ms), { source: 'world-flows' }); } catch (_) { /* the clock refuses an instant it cannot reach */ } } return; }
   if (el.closest('[data-wf="all"]')) { st.all = !st.all; draw(null); paint(); return; }
   if (el.closest('[data-wf="now"]')) { try { IntMapTime.setNow({ source: 'world-flows' }); } catch (_) { /* no clock */ } return; }
   if (el.closest('[data-wf="link"]')) copyLink();
@@ -492,14 +509,13 @@ function wire() {
 /** frame the country and the partners the map draws (longitudes unwrapped around the country, as the arcs are) */
 function fit() {
   const f = features(); if (!f.length) return;
-  let w = Infinity, s = 90, e = -Infinity, n = -90;
-  for (const x of f) {
-    const cs = x.geometry.type === 'Point' ? [x.geometry.coordinates] : x.geometry.coordinates;
-    for (const c of cs) { if (c[0] < w) w = c[0]; if (c[0] > e) e = c[0]; if (c[1] < s) s = c[1]; if (c[1] > n) n = c[1]; }
-  }
+  /* each arc is one continuous run of longitude and each point a position; the box is the shortest stretch of the circle that
+     holds them all (js/card-clearance.js frameBox — the same framing the day's edition uses) */
+  const fb = frameBox(f.map((x) => x.geometry.coordinates));
+  if (!fb) return;
   /* Web Mercator ends at ±85.0511° (atan(sinh(π))): a box past it has no camera */
   const LAT = 85.0511;
-  const box = [[w, Math.max(-LAT, s)], [e, Math.min(LAT, n)]];
+  const box = [[fb[0][0], Math.max(-LAT, fb[0][1])], [fb[1][0], Math.min(LAT, fb[1][1])]];
   try {
     const cam = GE().camera, rect = GE().render.canvas().getBoundingClientRect(), pad = clearOfCard(pop, rect);
     /* ⚠ ON A SPHERE, A BOX WIDER THAN THE VISIBLE HEMISPHERE FRAMES A GLOBE SMALLER THAN THE MAP. Measured 2026-10-13 in the
@@ -549,7 +565,7 @@ export async function atlas(a, K) {
   }
   const kinds = a.kind && CHIPS.includes(a.kind) ? [a.kind] : CHIPS;
   const dir = a.direction === 'in' ? 'in' : 'out';
-  const cy = a.year != null && isFinite(+a.year) ? (IntMapTime.isPresentYear(+a.year) ? null : Math.round(+a.year)) : clockYear();
+  const cy = a.year != null && isFinite(+a.year) ? (IntMapTime.isPresentYear(+a.year) ? null : yearMs(Math.round(+a.year))) : clockMs();
   const top = Math.max(1, Math.min(250, Math.round(+a.top || 10)));
   const name = placeName(P.rows[i], lg);
   const readings = [];
@@ -579,10 +595,10 @@ export async function atlas(a, K) {
   }
   const did = [];
   if (a.show) {
-    if (a.year != null && cy !== clockYear()) { try { if (cy == null) IntMapTime.setNow({ source: 'atlas' }); else IntMapTime.setYear(cy, { source: 'atlas' }); did.push(L('clock at ' + (cy == null ? 'now' : cy), '時計を' + (cy == null ? '現在' : cy + ' 年') + 'へ')); } catch (_) { /* the clock refuses a year it cannot reach */ } }
+    if (a.year != null && cy !== clockMs()) { try { if (cy == null) IntMapTime.setNow({ source: 'atlas' }); else IntMapTime.set(new Date(cy), { source: 'atlas' }); did.push(L('clock at ' + (cy == null ? 'now' : dayWords(cy, lg)), '時計を' + (cy == null ? '現在' : dayWords(cy, lg)) + 'へ')); } catch (_) { /* the clock refuses an instant it cannot reach */ } }
     const sm = await openFlows({ country: P.rows[i].c, kind: a.kind && CHIPS.includes(a.kind) ? a.kind : kinds[0], dir, lang: () => lg });
     did.push(L('opened World flows (' + sm.painted + ' arcs on the map)', '「世界とのつながり」を表示（地図に ' + sm.painted + ' 本の弧）'));
   }
-  const facts = { country: { code: P.rows[i].c, name }, clockYear: cy, readings };
-  return R(true, html + (did.length ? '<div>' + esc(did.join(' · ')) + '</div>' : ''), { meta: { worldFlows: facts, resultKey: 'data.worldFlows:' + P.rows[i].c + ':' + kinds.join(',') + ':' + dir + ':' + (cy == null ? 'now' : cy) + (a.show ? ':show' : '') } });
+  const facts = { country: { code: P.rows[i].c, name }, clockYear: utcYear(cy), clockAt: cy == null ? null : new Date(cy).toISOString(), readings };
+  return R(true, html + (did.length ? '<div>' + esc(did.join(' · ')) + '</div>' : ''), { meta: { worldFlows: facts, resultKey: 'data.worldFlows:' + P.rows[i].c + ':' + kinds.join(',') + ':' + dir + ':' + (cy == null ? 'now' : new Date(cy).toISOString().slice(0, 10)) + (a.show ? ':show' : '') } });
 }

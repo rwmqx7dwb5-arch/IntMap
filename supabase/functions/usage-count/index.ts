@@ -22,7 +22,9 @@
 //    · two SHARED token buckets (_shared/rate-limit.js → public.relay_take): per caller and per
 //      project-day, both failing CLOSED;
 //    · a per-day ceiling on the DISTINCT dimensions of each metric (shape.js `maxDims`), enforced
-//      inside record_usage_counts — the bound on what a scripted caller can add to the table.
+//      inside record_usage_counts — the bound on what a scripted caller can add to the table;
+//    · (wave4-refine) the speed rows (`ready` / `boot_end`) at most once per caller, release and UTC day
+//      (shape.js `speedOnce` — a token under the caller's HMAC key, never the address).
 //
 //  Deploy:  supabase functions deploy usage-count --project-ref vpekfwdpurzejrrmacac --use-api
 //
@@ -33,7 +35,7 @@ import { corsFor, readCapped, RelayError } from "../_shared/relay-guard.js";
 import { makeLimiter, restRpcClient, callerKey, callerKeySecret } from "../_shared/rate-limit.js";
 import { secretKey, denoEnv } from "../_shared/supabase-keys.js";
 import { originAllowed } from "../_shared/client-error-shape.js";
-import { MAX_ROWS_PER_REQUEST, parse } from "./shape.js";
+import { MAX_ROWS_PER_REQUEST, parse, speedOnce, SPEED_ONCE_SCOPE } from "./shape.js";
 
 /* THE NUMBERS (.agents/rules/no-ad-hoc-hardcoding.md §4 — observation, expiry, canonical place):
    · MAX_BODY_BYTES = 16 KiB. Derived: MAX_ROWS_PER_REQUEST (64) rows × at most ~110 characters each
@@ -116,7 +118,8 @@ export async function handle(req) {
   /* the per-caller bucket key is _shared/rate-limit.js callerKey — an HMAC of the caller's network, the
      address itself is never written anywhere. No account is passed: this function verifies none, so a
      signed-in reader is keyed and counted exactly like a signed-out one. */
-  const caller = await limiter.take(SCOPE_CALLER, await callerKey(req, { secret: callerKeySecret((k) => Deno.env.get(k) || "") }), {
+  const who = await callerKey(req, { secret: callerKeySecret((k) => Deno.env.get(k) || "") });
+  const caller = await limiter.take(SCOPE_CALLER, who, {
     capacity: PER_CALLER, refillPerSec: PER_CALLER / 3600, cost: 1, onUnavailable: "deny",
   });
   if (caller.source !== "db") return say(cors, { error: "limiter_unavailable" }, 503);
@@ -127,15 +130,31 @@ export async function handle(req) {
   if (day.source !== "db") return say(cors, { error: "limiter_unavailable" }, 503);
   if (!day.allowed) return say(cors, { error: "rate_limit" }, 429);
 
+  /* (wave4-refine) a speed reading counts once per caller, release and day (shape.js speedOnce): a token with no
+     refill under the caller's key — a second reading is dropped, and so is one the limiter could not answer for
+     (the rest of the request is still counted). */
+  let rows = parsed.rows;
+  const once = speedOnce(rows);
+  if (once.length) {
+    const drop = new Set();
+    for (const o of once) {
+      const t = await limiter.take(SPEED_ONCE_SCOPE, who + "." + o.once, { capacity: 1, refillPerSec: 0, cost: 1, onUnavailable: "deny" });
+      if (!t.allowed) drop.add(o.row);
+    }
+    rows = rows.filter((r) => !drop.has(r));
+    if (!rows.length) return say(cors, { accepted: parsed.rows.length, counted: 0, full: 0, repeated: drop.size }, 202);
+  }
+
   /* ONE call for the whole batch: the rows are added in one statement per row inside one transaction,
      so a request is counted whole or not at all. `cap` is the server's own ceiling from shape.js —
      the body never supplies it. */
   const res = await db.rpc("record_usage_counts", {
-    p_rows: parsed.rows.map((r) => ({ m: r.m, d: r.d, n: r.n, cap: r.cap })),
+    p_rows: rows.map((r) => ({ m: r.m, d: r.d, n: r.n, cap: r.cap })),
   });
   if (!res || res.error) return say(cors, { error: "unavailable" }, 503);
   const counted = Number(res.data) || 0;
-  return say(cors, { accepted: parsed.rows.length, counted, full: parsed.rows.length - counted }, 202);
+  const repeated = parsed.rows.length - rows.length;
+  return say(cors, { accepted: parsed.rows.length, counted, full: rows.length - counted, ...(repeated ? { repeated } : {}) }, 202);
 }
 
 Deno.serve(handle);

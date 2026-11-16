@@ -43,7 +43,10 @@ export const TEXT = {
       changes: 'Years its drawn shape changes',
       records: 'Drawn by',
       wikidata: 'Wikidata',
+      names: 'Names in the records',
     },
+    /* (wave4-refine) one page per Wikidata item: shown when the records draw the item under more than one name */
+    namesValue: 'The records link {n} names to the Wikidata item {qid}: {list}. This page draws them as one line — at each instant, the area drawn under any of them — under the name the map writes over the most years.',
     peakValue: '{km} km² in {peak}',
     changesValue: '{n}',
     /* shown when the map draws the name in more than one stretch (the «Kingdom of Italy» of 887 and of 1861 share a name) */
@@ -110,7 +113,9 @@ export const TEXT = {
       changes: '描かれる形が変わる年の数',
       records: '描いている記録',
       wikidata: 'Wikidata',
+      names: '記録上の名前',
     },
+    namesValue: '記録は{n}個の名前を Wikidata の項目 {qid} に結んでいます：{list}。このページはそれらを 1 本の線として描きます（各時点で、いずれかの名前の下に描かれる面積の合計）。見出しの名前は、地図が最も多くの年にわたって書く名前です。',
     peakValue: '{peak}の{km} km²',
     changesValue: '{n}',
     stretchesValue: '{n}つの離れた期間：{list}。地図はどれにも同じ名前を書きますが、同じ政体だとは述べていません。',

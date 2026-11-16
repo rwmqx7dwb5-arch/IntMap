@@ -359,6 +359,11 @@ export async function openBoard(o) {
   await showList();
   return boardState();
 }
+/* (wave4-refine) readSet hands back the tally WITH each student's name, as the student typed it (CLASS.classAnswers): words a
+   third party wrote, so the capability that reads it declares `ingests:'external'` — check:capabilities holds it to this. */
+const WORDS_BY_OTHERS = Object.freeze({
+  readSet: 'the name each student typed when they handed in',
+});
 /** Atlas's view of one set: its tally, read now (the same tally the board shows). `host` is the caller's (Atlas's K.HOST):
  *  the board may never have been opened in this session, so its own HOST cannot be the one read with.
  *  → { ok, set, qs, T } | { ok:false, error } */
