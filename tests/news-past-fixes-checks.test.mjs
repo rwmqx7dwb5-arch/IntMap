@@ -99,7 +99,12 @@ import { createRequire } from 'node:module';
 const CS = (() => { const prev = globalThis.window; globalThis.window = {}; try { createRequire(import.meta.url)('../data/cshapes.js'); return globalThis.window.__CSHAPES; } finally { globalThis.window = prev; } })();
 const k0 = (f) => f[2] * 10000 + f[3] * 100 + f[4], k1 = (f) => f[5] * 10000 + f[6] * 100 + f[7];
 const csPolys = (f) => f[8].map((p) => p.map((ri) => CS.rings[ri]));
-const door = { data: CS, during: async (t0, t1) => CS.feats.map((f, i) => (k0(f) <= t1 && k1(f) >= t0 ? i : -1)).filter((i) => i >= 0),
+/* the door as js/hist-bundles.js serves it: the page holds a SPARSE MIRROR — a row is on it only after a question that
+   needed it (`during`) brought it; `contains` answers from the worker and lands nothing. MEASURED in production
+   2026-11-17: a full mirror here hid that today's Ukraine (CShapes 2014-03-18 →) was never brought, and the country answer
+   threw on its outline. */
+const mirror = { rings: CS.rings, feats: [] };
+const door = { data: mirror, during: async (t0, t1) => { const ix = CS.feats.map((f, i) => (k0(f) <= t1 && k1(f) >= t0 ? i : -1)).filter((i) => i >= 0); for (const i of ix) mirror.feats[i] = CS.feats[i]; return ix; },
   contains: async (x, y) => ({ rows: CS.feats.map((f, i) => (WarGeom.pointInPolys([x, y], csPolys(f)) ? [i, Object.assign(f.slice(), { 8: null })] : null)).filter(Boolean), dates: [], sheets: [] }) };
 /* ONE window for both modules: the importer leaves its globals on globalThis, so a second window would replace the first */
 const wwin = Object.assign(win, { IntMapHistBundles: { open: () => Promise.resolve(door) } });
@@ -126,6 +131,11 @@ test('⑤ Ukraine, asked of its land: the Second World War is the USSR\'s record
   assert.ok(poland.length && poland.every((p) => p.predecessor && p.share > 0 && p.to <= '1945-05-08'), JSON.stringify(poland));
   assert.ok(ww2.periods.every((p) => p.gw !== 369), 'Ukraine itself is not given a side it did not have');
   assert.ok(ww2.events.length > 0, 'the dated events on the present land');
+  /* the other present rows production measured as unreachable (they start after the last recorded war) */
+  for (const [x, y, nm] of [[37.62, 55.75, 'Russia'], [20.46, 44.82, 'Serbia'], [32.53, 15.5, 'Sudan']]) {
+    const r = await WARS.atPoint(x, y, { level: 'country' });
+    assert.equal(r.status, 'ok', nm + ': ' + JSON.stringify(r.reason));
+  }
   const jp = await WARS.atPoint(139.69, 35.69, { level: 'country' });
   assert.ok(jp.wars.find((w) => w.id === 'ww2').periods.every((p) => p.gw === 740 && !p.predecessor), 'Japan is its own record');
   /* the card and Atlas say so */
