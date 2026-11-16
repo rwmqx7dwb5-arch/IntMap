@@ -595,9 +595,26 @@ function _redrawLocalGlyphs(m,cover){
         return _destOf(mm,sz._targetZoom,null,sz._aroundPoint?mm.unproject(sz._aroundPoint):null); }catch(_){}
     return mm.__imDest||null;
   }
+  /* the contract's projection MODE → MapLibre's projection spec. One mapping, read by setProjection and by
+     _newMap (a view CREATED in a mode). Unknown values fall back to mercator. */
+  function _projSpec(mode){ return (mode==='globe-true')?{type:'vertical-perspective'}:(mode==='globe')?{type:'globe'}:{type:'mercator'}; }
+  /* (opening-projection) `projection` is a contract MODE ('flat' | 'globe' | 'globe-true'), written into the
+     style the view is BUILT with rather than set after. A view built Mercator with renderWorldCopies:false
+     clamps its `center` on the first resize (±84.78° at z1.7 on an 880-px canvas — js/map-projection.js
+     openingProjection has the measurement), and a later switch to the globe keeps the clamped centre;
+     MapLibre leaves the centre alone when the construction style declares the globe. A style that already
+     names a projection keeps it; 'globe-true' the renderer cannot honour opens as the plain globe, the
+     same fallback setProjection makes. */
+  function _builtInProjection(opts){
+    if(opts.projection==null) return;
+    let mode=opts.projection; delete opts.projection;
+    if(mode==='globe-true'&&!MAPLIBRE_CAPS.globeAllZooms) mode='globe';
+    if(opts.style&&typeof opts.style==='object'&&!opts.style.projection) opts.style=Object.assign({},opts.style,{projection:_projSpec(mode)});
+  }
   /* THE ONE `new maplibregl.Map` in the project (tests/maplibre-attribution-xss-checks.test.mjs) */
   function _newMap(o){
     const opts=Object.assign({},o||{});
+    _builtInProjection(opts);   /* (opening-projection) built in the projection it opens in — see above */
     const wantCredit=!!(opts.credit||opts.attributionControl||opts.customAttribution), extra=opts.customAttribution;
     delete opts.credit; delete opts.customAttribution; opts.attributionControl=false;
     let mm=null; try{ mm=new maplibregl.Map(opts); }catch(_){ return null; }
@@ -1101,7 +1118,7 @@ function _redrawLocalGlyphs(m,cover){
        honestly instead of the user discovering it as a blank cockpit. */
     setProjection(mode){ const m=_m(); if(!(m&&m.setProjection)) return false;
       if(mode==='globe-true'&&!MAPLIBRE_CAPS.globeAllZooms) return false;
-      const spec=(mode==='globe-true')?{type:'vertical-perspective'}:(mode==='globe')?{type:'globe'}:{type:'mercator'};
+      const spec=_projSpec(mode);
       try{ m.setProjection(spec); return true; }catch(_){ /* an older renderer may not know vertical-perspective — the plain globe is the closest it has */
         if(mode==='globe-true'){ try{ m.setProjection({type:'globe'}); return true; }catch(__){} } return false; } },
     getProjection(){ const m=_m(); try{ return (m&&m.getProjection)?m.getProjection():null; }catch(_){ return null; } },

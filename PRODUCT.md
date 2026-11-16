@@ -372,9 +372,9 @@ Plus 月 500 円／US$4、Pro 月 1,500 円／US$10（根拠の無い数であ�
   Atlas `data.companyTies`）。
   [`docs/COMPANIES.md`](docs/COMPANIES.md)・[`docs/NEWS-EVENTS.md`](docs/NEWS-EVENTS.md) §16.4。
 - **自分のデータを地図に載せる** — ファイルを地図にドラッグするか、**Tools ▾ ▸ 分析**の「地図データの読み込み」から。
-  **GeoJSON / KML / KMZ / GPX / CSV・TSV / WKT**。拡張子ではなく中身で判定し、CSV は区切り文字・小数点コンマ・Shift_JIS などの
+  **GeoJSON / KML / KMZ / GPX / CSV・TSV / WKT / Shapefile（zip の組） / GeoPackage / GeoTIFF / Excel**（形式の正本は [`docs/architecture/07-map.md`](docs/architecture/07-map.md)）。拡張子ではなく中身で判定し、CSV は区切り文字・小数点コンマ・Shift_JIS などの
   文字コードと緯度経度の列を中身から見つける。⚠ 根拠が無ければ推測せず、検討した列名を挙げて断り、選んだ列は取り込み後に必ず名乗る
-  （「CSV · 1,240 · 列: lat / lon」）。**Shapefile と PMTiles はまだ読めない**（zip に `.shp` があればそう名指して断る）。
+  （「CSV · 1,240 · 列: lat / lon」）。**PMTiles はまだ読めない**。
 - **データと分析（読み込んだデータを加工し、その結果をまた加工する）** — **Tools ▾ ▸ 分析**の「データと分析」。取り込んだファイルも
   分析の結果も同じ 1 つのデータセットとして並び、属性表を見て処理を重ねられる:
   属性で絞る／点・線・面の半径の圏（負の半径で内側へ削る）／切り取り／重なりの交差・差・合併／同じ値で溶かす／空間的な関係で絞る

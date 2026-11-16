@@ -360,7 +360,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["system.speed","speed","fieldSpeed,loadTime,startupTime,performance,howFast","system","none","","explanation","read","none","",""],
       ["time.territoryChange","territoryChange","landChangedHands,territorialChanges,borderChangeMap,whoGainedLand,changedHands","time","paint","map.polygon","map,explanation","session","none","place?",""],
       ["time.lifeAtPlace","lifeAtPlace","livedUnder,lifeThroughBorders,ancestorJurisdiction,familyHistory","time","time","time,camera","map,time,explanation","session","none","point",""],
-      ["time.textMap","textMap","mapText,textToEraMap,passageMap,eraMapFromText","time","mapCompose","map.compose,map.highlight,time","map,explanation","session","none","",""],
+      ["data.gisProject","gisProject","saveAnalysis,openAnalysis,rerunAnalysis,analysisProject","data","none","gis.project","explanation","persist","explicit","","gisCore"],
     ];
     /* ⚠ GENERATED ROWS — END */
 

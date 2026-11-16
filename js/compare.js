@@ -736,11 +736,17 @@ export function compare(HOST){
       if(L.time) return LT.judge(L.time,CT);
       if(L.lid) return LT.verdict(L.lid,CT,L.drawnBy||{});
       return null; }
-    /* the latest judgement in flight — `judged()` resolves when the window has answered for its current instant */
+    /* the latest judgement in flight — `judged()` resolves when the window has answered for its current instant.
+       ⚠ (then-now-card) EVERY run records itself here, not only the ones applyTime starts. A run superseded by a newer one
+       returns early, so a `_judging` left pointing at it answered «judged» while the newer run was still reading the
+       record: the layer pick starts one run through `L.add`'s callback (applyTime) and a second right after it, and the
+       second was not stored — measured, judged() resolved with the layer still held and nothing drawn, and the
+       then-and-now card made after it had no 1914 borders (nightly, first attempt of tests/then-now-card.spec.js). */
     let _judging=Promise.resolve();
-    function applyTime(){ _judging=judgeAndShow(); return _judging; }
+    function applyTime(){ return judgeAndShow(); }
     async function judged(){ let p; do{ p=_judging; try{ await p; }catch(_){} }while(p!==_judging); return timeState(); }
-    async function judgeAndShow(){ const my=++_tSeq;
+    function judgeAndShow(){ const run=judgeRun(); _judging=run; return run; }
+    async function judgeRun(){ const my=++_tSeq;
       const L=built?CMP_LAYERS.find(x=>x.k===curCmpLayer):null;
       if(!L){ _tv=null; _tNote=null; paintTime(); return; }
       /* off the present nothing is shown before the rule has answered — the main map's own order (js/layer-time-kernel.js):

@@ -44,6 +44,18 @@
  *  js/weather.js, js/layer-packs.js, js/space.js, js/playground.js and js/feedback.js. A copy taken
  *  at factory time would be the wrong answer for every one of them (#R165's rule).
  * ==========================================================================*/
+/* (opening-projection) WHICH PROJECTION THIS SESSION OPENS IN — 'flat' for a `?flat` link, the globe otherwise.
+   Asked twice: by boot() below, and by js/app-body.js when it CREATES the view, because the renderer has to be
+   told at construction. MEASURED (2026-11-16, 880-px canvas, clock 2026-11-12T22:55Z): js/opening-view.js chose
+   −167.169° (the sub-solar longitude), but the view was built as a Mercator map with renderWorldCopies:false
+   and its first resize CLAMPED the centre to ±84.78° (the longitude at which a z1.7 world just fills the
+   width) before boot() made it a globe — so the app opened on the terminator, not on the lit hemisphere.
+   MapLibre skips that clamp when the style it is built with declares the globe (map.ts constructor,
+   `shouldConstrainUsingMercatorTransform`). */
+export function openingProjection(){
+  try{ return /[?&]flat\b/.test(location.search)?'flat':'globe'; }catch(_){ return 'globe'; }
+}
+
 export function makeProjection(CTX){
   /* the four the shell does NOT reassign, rebound under their own names so the body is verbatim */
   const GE=CTX.GE, isMobile=CTX.isMobile, updateOcclusion=CTX.updateOcclusion, IntMapOS=CTX.os;
@@ -106,7 +118,7 @@ export function makeProjection(CTX){
        pans left the centre on 141.3°. 「自由スクロールできない」, exactly.
        The projection is a kernel command with five things to set; a second entrance that sets one
        of them is not a shortcut, it is a state nothing else in the app knows how to repair. */
-    try{ if(/[?&]flat\b/.test(location.search)){
+    try{ if(openingProjection()==='flat'){
         if(IntMapOS.has&&IntMapOS.has('view.proj.flat')) IntMapOS.exec('view.proj.flat',{source:'url'});
         else { GE().camera.setProjection('flat'); GE().camera.setMinZoom(flatMinZoom()); applyFlatPanSetting(); } }
       else GE().camera.setProjection('globe'); }catch(e){}

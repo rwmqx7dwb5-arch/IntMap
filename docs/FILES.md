@@ -1403,6 +1403,10 @@ polity-arc.js                     **政体の盛衰**——1 つの政体を全�
                                   形が変わる年だけをタイムラプスで。索引は data/polity-arcs.json。入口は Chronos パネル・この場所の歴史の各行・
                                   Atlas `time.polityArc`（docs/architecture/07-map.md §7.4c）。同じ読み手（describe・valueAt・related・chartSvg・largest）で
                                   政体の盛衰の静的な入口ページ（scripts/polity-pages.mjs、§8.6.4）も書かれる
+population-grid.js                **値を持つ人口の格子**——WorldPop 1 km（2000〜2020・CC BY 4.0）を WorldPop の ArcGIS 画像サービスから
+                                  窓ごとに GeoTIFF で読み、各セルの人数をその 30″ セルの地面の面積（`js/gis-raster.js` pixelAreaKm2）で割って
+                                  **人/km²** にする（区域集計の areaIntegral がそのまま「範囲の人口」になる）。年・セル寸法・最大画像寸法は
+                                  サービス自身の記述から読む。登録は `js/map-ui.js` の `population` 行（描画は持たず、取得だけ）。
 family-history.js                 **家族史と国境**——読者の家族（手入力、または GEDCOM の読み込み）の各出来事を、その日・その場所で
                                   歴史の記録が描く政体と第 1 級区分で読み（日付が年・月だけなら幅の中の変化も）、各人物の生涯のあいだの
                                   政体の変化を数える（記録の切り替わり・同じ政体の別の行・重なり・継ぎ目は数えない）。地名は端末の地名辞典と
@@ -2568,7 +2572,7 @@ scripts/
                                   index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
                                   マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
                                   なるなら 1 ファイルで両方を名乗る
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 160 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 161 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の

@@ -201,7 +201,10 @@ export const KERNELS = {
      has to ASK (`footprint:"exact"`), and the aggregation, the void rule, the apportioning and
      the mode tie-break are the same code deciding the same way. A recipe that names no footprint
      replays through the box, bit for bit. */
-  'js/gis-raster.js': { version: 'raster-4', sha256: '91525f982f62e7b54807407c4d3841be33ca9d21e53230f3bf3bf46f26e97a15' },
+  /* (gis-chain-audit) HASH ONLY. samplerGrid() carries a band's stated `quantity` (a supplier's statement of
+     what a cell means — js/population-grid.js says density) onto the band it builds; a band that states none
+     is built exactly as before, so every recipe replays bit for bit. */
+  'js/gis-raster.js': { version: 'raster-4', sha256: '9ab84a5073301cd5dfb9c125b0d2f735e3b25860a577183b70c50c66845be96f' },
   /* (#R774) A FIRST DECLARATION. js/gis-units.js decides whether two quantities may be combined and
      what the conversion is; every caller above asks it, so a change to the table or to the
      expression walk changes what a replayed recipe answers or refuses. */
