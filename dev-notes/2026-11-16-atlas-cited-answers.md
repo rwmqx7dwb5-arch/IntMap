@@ -35,7 +35,12 @@ newsjp: IntMap の道具を使った Atlas の回答の下に「この回答の�
 - **国別統計の順位・色分け**（`data.rank` など）: 指標の定義（`js/atlas-metrics.js`）に出典が無い。`metricSource` も束縛されていない。指標に出典を持たせるのが先。
 - 「120万人」のように**単位を換えて丸めた数**は照合しない（一致しないので印が付かない＝正直な欠落）。
 
-## 3. 検査
+## 3. 費用
+
+- 遅延読み込みの `atlas-console` チャンクが **1530.0 kB → 1548.8 kB（+18.8 kB）**。増えた分は `js/atlas-answer-sources.js` そのもの（照合・一覧・Cite の欄と CSS）。
+  `tests/perf-baseline.json` のその 1 行だけを上げた。起動時の束（eager）は変わらない。地図側の半分（`js/map-cite.js`・境界の出自カード）は押したときと回答が書き終わったときに読む動的 import のまま。
+
+## 4. 検査
 
 - `tests/atlas-cited-answers-checks.test.mjs`: 実物のクエリエンジンが列の出典と値を述べる／数字の照合（日本語に付いた数・精度・1 桁・名前・リンク・実体参照）／
   出典の無い項目を作らない／一覧の注記と線のボタンと Cite／ノート・Markdown・ブリーフィング。
