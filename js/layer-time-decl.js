@@ -172,7 +172,7 @@ export const TIME = Object.freeze({
     follows: 'js/layer-pkg-histurban.js apply', self: 'js/layer-pkg-histurban.js apply',
     says: LA('Urban populations stated by Chandler and Modelski (Reba et al. 2016)', 'Chandler と Modelski が述べた都市人口（Reba ほか 2016）') },
   'dl-popgrid': { kind: 'record', from: 2000, to: 2020, carry: 'last', by: 'js/data-layers.js POPGRID_EPOCHS', ownDate: 'js/data-layers.js POPGRID_EPOCHS',
-    says: LA('WorldPop population grid (2000–2020)', 'WorldPop 人口グリッド（2000〜2020 年）') },
+    says: LA('GPW v4 population density imagery (NASA SEDAC via GIBS, 2000–2020)', 'GPW v4 人口密度の画像（NASA SEDAC・GIBS 配信、2000〜2020 年）') },
   'dl-nightsat': { kind: 'record', from: 2012, to: 2016, carry: 'last', by: 'js/night-lights.js forYear', self: 'js/night-lights.js forYear',
     says: LA('NASA Black Marble night lights (2012, 2016)', 'NASA Black Marble 夜間光（2012・2016 年）') },
   'dl-tfr': { kind: 'series', from: 1960, carry: 'last', by: 'js/time-countries.js WB_FLOOR', follows: 'js/time-countries.js WB_FLOOR',

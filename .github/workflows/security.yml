@@ -114,6 +114,7 @@ jobs:
     needs: [codeql, dependency-advisories]
     if: ${{ always() && github.event_name == 'schedule' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # ci-job-timeouts: not yet run when added — the floor (docs/TESTING.md)
     permissions:
       contents: read
       issues: write            # the single incident issue
