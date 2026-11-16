@@ -282,7 +282,7 @@ test('⑥b SIMBAD: the credit row and the builder ask one canonical host first, 
     r = runWithFakeUpstream('scripts/build-deepsky.mjs', { byHost: { [canonical]: dead, 'simbad.cfa.harvard.edu': dead, 'simbad.idia.ac.za': dead } }, 'data/deep-sky.json');
     assert.notEqual(r.status, 0, r.out);
     assert.equal(r.sentinel, 'SENTINEL', 'data/deep-sky.json was not written');
-    for (const h of [canonical, 'simbad.cfa.harvard.edu', 'simbad.idia.ac.za']) assert.match(r.out, new RegExp(h.replace(/[.]/g, '[.]') + ':'));
+    for (const h of [canonical, 'simbad.cfa.harvard.edu', 'simbad.idia.ac.za']) assert.ok(r.out.includes(h + ': '), 'the reason from ' + h + ' is reported');
   } finally { rmSync(dirname(log), { recursive: true, force: true }); }
 });
 
