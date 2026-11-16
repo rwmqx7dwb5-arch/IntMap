@@ -272,7 +272,7 @@ export function newsEvents(HOST) {
       subjectLoc, subjectName: row.rep_place_name_en || '',
       subjectType: (rep && rep.subject_type) || '',
       /* (news-with-history) WHAT KIND OF PLACE THE EVENT'S OWN POINT IS. The point (`rep_*`) is the place the server chose
-         among the members' places (supabase/functions/_shared/news-ingest.js, keyed by the member's `subject_name_en`), and
+         among the members' places (the server's ingest grouping, keyed by the member's `subject_name_en`), and
          it need not be the representative ARTICLE's subject: measured 2026-11-16 on 200 live events, «Sydney Airport»,
          «Amman» and «Kyiv» sat on events whose representative article was typed `country`. So the kind is the one the
          members that name THIS place give it — and when they disagree, or none names it (an operator moved the point),

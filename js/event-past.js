@@ -30,6 +30,8 @@ import { DEFAULTS } from '../supabase/functions/_shared/news-cluster.js';
 import './safe-html.js';
 import { placeHistory, historyHtml, historyAction, forAtlas as historyForAtlas, ensureHistoryCss } from './place-history.js';
 
+/* the two doors this section asks — both are published by their layer's factory on window (js/war-fronts.js eager, js/elections.js) */
+const WARS = () => window.IntMapWarFronts, ELECTIONS = () => window.IntMapElections;
 const esc = (s) => globalThis.IntMapSafe.html(String(s == null ? '' : s));   /* js/safe-html.js, imported above */
 
 /**
@@ -54,7 +56,7 @@ export function eventPlace(item) {
 export async function readPast(place) {
   if (!place || place.level === 'none' || !place.at) return { place, history: null, wars: null, elections: null };
   const { lng, lat } = place.at;
-  const W = window.IntMapWarFronts, E = window.IntMapElections;
+  const W = WARS(), E = ELECTIONS();
   const settle = (p, reason) => Promise.resolve().then(() => p()).then((v) => v, (e) => ({ status: 'unavailable', reason: String((e && e.reason) || (e && e.message) || reason) }));
   const [history, wars, elections] = await Promise.all([
     place.level === 'point' ? settle(() => placeHistory({ lng, lat }).then((r) => Object.assign({ status: 'ok' }, r)), 'history-failed') : Promise.resolve({ status: 'not-asked', reason: place.why }),
@@ -68,7 +70,7 @@ export async function readPast(place) {
 function words(lang) {
   const L = IntMapLang.pick(() => lang);
   const pickName = (o) => (o && typeof o === 'object') ? (o[lang] || o.en || Object.values(o)[0] || '') : String(o || '');
-  const warName = (w) => { try { const n = window.IntMapWarFronts && window.IntMapWarFronts.label(w.id); if (n) return n; } catch (_) { /* the door names its rows */ } return pickName(w.name); };
+  const warName = (w) => { try { const n = WARS() && WARS().label(w.id); if (n) return n; } catch (_) { /* the door names its rows */ } return pickName(w.name); };
   return { L, pickName, warName };
 }
 const kindWords = (L, kind) => ({
@@ -191,7 +193,7 @@ export function forAtlas(rec) {
   return out;
 }
 
-export const EVENT_PAST_CSS = [
+const EVENT_PAST_CSS = [
   '.ep-where{font-size:12px;color:var(--text-muted);line-height:1.5;margin:2px 0 6px;}',
   '.ep-sub{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);margin:12px 0 4px;}',
   '.ep-war,.ep-body{margin:4px 0 8px;}',
@@ -237,12 +239,12 @@ export async function mount(el, item, HOST) {
     if (t.dataset.hn) { historyAction(rec.history, t.dataset.hn, lang); return; }
     const k = t.dataset.ep || '';
     if (k.indexOf('war:') === 0) {
-      const w = rec.wars && rec.wars.wars[+k.slice(4)], W = window.IntMapWarFronts;
+      const w = rec.wars && rec.wars.wars[+k.slice(4)], W = WARS();
       if (!w || !W) return;
       const first = w.periods.find((p) => p.faction !== 'NEUTRAL') || w.periods[0];
       Promise.resolve(W.toggle(w.id, true)).then(() => { if (first) W.setDate(w.id, first.from); }).catch(() => { /* the layer states its own failure */ });
     } else if (k.indexOf('elec:') === 0) {
-      const E = window.IntMapElections; if (!E) return;
+      const E = ELECTIONS(); if (!E) return;
       Promise.resolve(E.toggle(true)).then(() => E.select(k.slice(5))).catch(() => { /* the layer states its own failure */ });
     }
   };

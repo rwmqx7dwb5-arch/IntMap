@@ -479,7 +479,7 @@ export function historySpeech(rec, lang) {
 
 /* ══ THE CLOCK — a row's button ═════════════════════════════════════════════════════════════════════════════════ */
 /** move the clock to an entry (`{jump}`); → true when the clock accepted it */
-export function jumpTo(E) {
+function jumpTo(E) {
   if (!E || !E.jump) return false;
   const p = kParts(E.jump.k);
   try {
@@ -513,7 +513,7 @@ export function historyAction(rec, key, lang) {
 }
 
 /* the timeline's rules — injected with the place card's (js/place-dossier.js `placeCardStyle`) */
-export const PLACE_HISTORY_CSS = [
+const PLACE_HISTORY_CSS = [
   '.ph-list{position:relative;margin:2px 0 4px;}',
   '.ph-list::before{content:"";position:absolute;left:5px;top:10px;bottom:10px;width:2px;border-radius:1px;background:rgba(128,128,128,0.22);}',
   '.ph-row{position:relative;display:flex;gap:10px;align-items:flex-start;padding:5px 0;color:var(--text-main);font-size:12.5px;}',

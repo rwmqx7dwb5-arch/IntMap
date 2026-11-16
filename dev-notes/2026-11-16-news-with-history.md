@@ -49,3 +49,13 @@ newsjp: ニュースの出来事に「この土地の過去」を追加。押す
 
 `tests/news-with-history-checks.test.mjs`（実データの CShapes・戦争・選挙ファイルを本物の読み手に通す 4 件）。
 文書: `docs/NEWS-EVENTS.md` §18・`PRODUCT.md`・`docs/ELECTIONS.md` §2・`docs/architecture/07-map.md` §7.3f・`docs/FILES.md`。
+
+## 3. 台帳を上げたもの（理由）
+
+- `check:surface`（window 経由の読み）を 1 本ずつ上げた: `window.IntMapWarFronts`・`window.IntMapElections`（どちらも層の
+  factory が window に出す扉で、import できる持ち主が無い。`js/event-past.js` で 1 つの accessor にまとめた）、
+  `window.IntMapSafe`（`import './safe-html.js'` のあと globalThis から読む、他の module と同じ形）、`window.IntMapLazy`・
+  `window.IntMapNewsEvents`（Atlas `news.eventPast` が出来事を引く。`news.story` と同じ経路）、`window._imPipGeo`
+  （選挙区の点内判定。地点カードと同じ関数を写さずに使う）。
+- `check:perf` の非同期チャンク `place-history`（`historyAction`・`ensureHistoryCss` が地点カードと Atlas から移ってきた分）と
+  `war-layer`（`atPoint`）の天井を上げた。どちらも押されたとき・層を点けたときだけ読まれ、起動の集合は増えていない。
