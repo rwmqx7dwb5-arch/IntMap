@@ -795,6 +795,9 @@ time-admin1.js                    時間軸の上の歴史的**地方区分**（
                                   動的 import）。`coverage().known` がその日付の割合と、同じ土地の二重主張の
                                   種類別の件数（data/hist-claims.json）を返し、Atlas の `time.coverage` が読む
                                   （docs/MAP-LAYERS.md §7.7・記録は data/hist-admin1.js）
+admin-present.js                  過去の日付の地方区分が**今と同じ所**を決める純関数（`makeRegion`・`clipLines`・
+                                  `ownPieces`・`rowIsToday`・`PRESENT_EPS_KM`）。time-admin1.js（区分）と time-borders.js（国境）がそこを現在の線（と名前）で描き、
+                                  記録の線をその外へ切る（docs/MAP-LAYERS.md §7.7）
 time-countries.js                 時計の年から見た Countries タブ
 history.js                        歴史的国家／同一性／マディソン系列
 hist-cities.js                    時計の年の**都市名** IntMapHistCities（6474都市・`ofm-city` の text-field を match で包み、各分岐を `distance` のガード半径で括る・記録は data/hist-cities.json）
@@ -967,7 +970,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  237 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  239 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -1091,7 +1094,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全237を検索・到達可能 234）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全239を検索・到達可能 236）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -1109,7 +1112,7 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
 atlas-hist-urban.js               Atlas の `time.cityPopulation` の本体——歴史上の都市人口の記録に、ある年の大都市・ある都市の人口の推移を訊き、
                                   値（`exec.cityPopulation`）と同じ事実の文で返す。規則は hist-urban.js。初回の呼び出しで動的 import（Atlas のチャンクに載せない）
-atlas-schemas.js                  **引数の schema**（#R406）— 237能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 239能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -1365,6 +1368,9 @@ where-when.js                     **「どこ＋いつ」の読み方**（1 つ�
                                   マスタークロックへ合わせる（`applyWhen`）。検索欄・コマンドパレット・Atlas `time.whereWhen` が使う。使うときに読む
 atlas-where-when.js               Atlas `time.whereWhen` の実行——where-when.js の `interpret` の行から、選んだ行へ飛んで時計を合わせるか、
                                   複数の候補を番号つきで返す（何も動かさない）。atlas-cap-time.js が初めて使うときに読む
+atlas-text-map.js                 Atlas `time.textMap` の実行——読者の文章（このメッセージ・以前のメッセージ・テキスト添付）に Atlas が読んだ地名と
+                                  「いつ」の語句が**本当にあるか**を照合し、語句を暦で読めれば暦の読みを採り（漢数字・「とせ」も）、文が述べる時点に
+                                  だけ時計を合わせ、地名を `map.compose` の `era` で置く。atlas-cap-time.js が初めて使うときに読む
 wiki-lookup.js                    地物の Wikipedia 記事を**照会用の欄**（wikidata・name:<言語>・name:en…）から引く。表示用の `name`
                                   （多言語を並べた表記）は最後に、1 つの名前のときだけ。地名ポップアップの Wikipedia ボタンが使う
 place-dossier.js                  **地点カード**（地点プロファイル／いま、ここ）——1 地点について地図が持つもの（名前と行政区分・国・
@@ -1401,6 +1407,10 @@ polity-arc.js                     **政体の盛衰**——1 つの政体を全�
                                   形が変わる年だけをタイムラプスで。索引は data/polity-arcs.json。入口は Chronos パネル・この場所の歴史の各行・
                                   Atlas `time.polityArc`（docs/architecture/07-map.md §7.4c）。同じ読み手（describe・valueAt・related・chartSvg・largest）で
                                   政体の盛衰の静的な入口ページ（scripts/polity-pages.mjs、§8.6.4）も書かれる
+population-grid.js                **値を持つ人口の格子**——WorldPop 1 km（2000〜2020・CC BY 4.0）を WorldPop の ArcGIS 画像サービスから
+                                  窓ごとに GeoTIFF で読み、各セルの人数をその 30″ セルの地面の面積（`js/gis-raster.js` pixelAreaKm2）で割って
+                                  **人/km²** にする（区域集計の areaIntegral がそのまま「範囲の人口」になる）。年・セル寸法・最大画像寸法は
+                                  サービス自身の記述から読む。登録は `js/map-ui.js` の `population` 行（描画は持たず、取得だけ）。
 family-history.js                 **家族史と国境**——読者の家族（手入力、または GEDCOM の読み込み）の各出来事を、その日・その場所で
                                   歴史の記録が描く政体と第 1 級区分で読み（日付が年・月だけなら幅の中の変化も）、各人物の生涯のあいだの
                                   政体の変化を数える（記録の切り替わり・同じ政体の別の行・重なり・継ぎ目は数えない）。地名は端末の地名辞典と
@@ -2566,7 +2576,7 @@ scripts/
                                   index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
                                   マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
                                   なるなら 1 ファイルで両方を名乗る
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 160 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 161 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の

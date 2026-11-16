@@ -57,12 +57,16 @@ async function profileHere(pt) {
   return placeProfile(pt, narratorApi.host, {});
 }
 
-/** what the reading mode adds to the narrator's short paragraph: the move, then the profile of the centre */
-async function enrich(summary) {
+/** what the reading mode adds to the narrator's short paragraph: the move, then the profile of the centre.
+ *  `current` (from the narrator) says whether this paragraph will still be spoken once it is whole. ⚠ `last` is the centre the
+ *  reader was TOLD about, so it moves only with a paragraph that is said: a paragraph superseded while its profile was being gathered
+ *  (an arrow key, then «=» before the profile came back) must not take the move with it — the next paragraph says the move from the
+ *  centre the reader last heard (measured on CI: the zoom's paragraph said no move, the arrow's was dropped, the move was never said). */
+async function enrich(summary, current) {
   const pt = centre();
   const moved = last ? moveWords(last, pt, narratorApi.host.lang) : '';
-  last = pt;
   const prof = await profileHere(pt);
+  if (!current || current()) last = pt;
   return [summary, moved, profileSpeech(prof, narratorApi.host)].filter(Boolean).join(' ');
 }
 

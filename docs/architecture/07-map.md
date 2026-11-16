@@ -513,7 +513,17 @@ M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1
   値は元の倍精度と一致する（一致しない環は書かれたまま）。ビルドは毎回切ったものを読み戻して全行・全環・全日付・全シートを照合する。
   記録（`data/*.js`）は源で配信もされ、タイルの無いサーバ（`npm run dev`）・別の記録の索引・チャンクでないバイトでは丸ごと読む側へ戻る。
   継ぎ足しはタイルでも Worker が行う（`openTiled` が `splice` と同じ規則）。Service Worker は `data/` を扱わない。回帰は
-  `tests/hist-vector-tiles-checks.test.mjs`。取得を外から観測するとき、DevTools プロトコルの完了（Playwright の `requestfinished` /
+  `tests/hist-vector-tiles-checks.test.mjs`。
+- **時計の一歩先を読む。** 1 つの記録が `at(a)`、`at(b)` と続けて訊かれたら、扉は `at(b + (b − a))` が読むチャンク（月日が同じなら年、
+  違えば日の歩幅）を Worker へ先に読む（`js/hist-bundles.js` の `follow`）。答えず、写しにも載せない——その時点の行が画面へ出るのは
+  その時点が訊かれたときだけで、どの行を描くかは訊かれた時点の `rowsFor` が決める。読みは 1 接続だけの別の列で、訊かれた読みが待って
+  いれば始めず、読者がその先へ進んでいれば捨てる。`maySpeculate` が否（Data Saver・2G・携帯）なら読まない。保持の上限は記録そのもの
+  （チャンクは捨てないので、全期間を旅した読者が持つ量と同じ）。地方区分は、国境を地図へ渡した瞬間にその時点のチャンクを `warm` で
+  読み始める（MapLibre が国境を取り込むあいだ、ページのスレッドは空かないが Worker と通信は空いている）。先読みや `warm` の読みが
+  失敗しても、それを待っていた問いは自分で読み直す（全体読みへは戻らない）。描いた当人は時計に受領証を残し
+  （`IntMapTime.drawn(layer, when)` / `drawnState()`。国境・`subdivisions:a1` などの各段・都市名）、`scripts/chronos-latency.mjs` が
+  時計を動かしてから各層を地図へ渡すまでと、地図が描き終わる（`idle`）までを測る。回帰は `tests/chronos-prefetch-checks.test.mjs`。
+  取得を外から観測するとき、DevTools プロトコルの完了（Playwright の `requestfinished` /
   `requestfailed`）を読まない（読み切っても `net::ERR_ABORTED` と報告しうる）——ページの Resource Timing と
   `IntMapHistBundles.requested(global)`／`loaded(global)` で見る（`tests/history-prefetch-on-demand.spec.js`）。
 - **1 地点を全時代について訊く問いは `contains(lng, lat)` で、Worker が答える。** 答えは行が述べること（名前・期間・身元・出典日付）と
@@ -583,6 +593,9 @@ M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1
 - **その時刻の地方区分は、国境が地図に渡ったあとで組み立てる**（`js/time-borders.js` の `settled()`。国境が描かれた・同じだった・現代年だった・
   答えが来なかった・`clear()` のどれでも閉じる）。`js/time-admin1.js` は OHM タイル線の絞り込みを先に合わせ、束の読み込みの前にその番を待つ
   （地方区分の束を worker へ渡す処理が国境と取り合うため）。
+- **過去の日付でも、国境と区分が今と同じ所は今と同じ線（と区分の名前）で描く**（`js/admin-present.js`・`js/time-admin1.js`）。その日付に在る単位の
+  記録が今も続く（行の終了年 9999、または記録が今日の輪郭だと述べる `todayOutline`）なら、その土地の線は現在と同じ OpenFreeMap の線、名前は `ofm-admin1`。その後に変わった単位の
+  7 km 以内と記録の無い土地は記録の線。国境は CShapes の行が記録の最終日まで続くものが対象（`imtb-now-line`）。正本は `docs/MAP-LAYERS.md`。
 - **記録が黙っている土地は斜線になる**（`js/time-admin1.js` の `_know`・`imta-know-fill` / `imta-know-lbl`）。第1級区分の記録が 1% 未満の政体は
   その輪郭に、一部だけの政体は記録の無い土地（0.1° の矩形）に斜線を引き、「この年代の地方区分の記録なし」「地方区分の記録はこの土地の N% だけ」と
   書く。旅行時に `js/hist-knowledge.js` を動的 import し、区分と国境の後に計算する（古い日付の結果は捨てる）。レイヤー行の注記と
@@ -909,8 +922,9 @@ M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1
   として送り（`__syn`）、箱はイベント無しでチェックに戻す。読者の選択・共有リンク・セッションはそのまま。述べる時刻に戻れば 1 回の「オン」で配る。
   `self` の層は預からず行に印だけを出す。自己修復（`IntMapLayerAudit`）は預かっている箱を空と数えない（`timeHeld`）。
 - **現在の時計で止まってよいのは `entry` の層だけ**（門が検査する）。
-- **読み手は 3 つ**: 行（`js/layer-state.js` の `nodata`）／凡例 `#data-legend-worldtime`（「描いていません」と「別の時点の記録を表示」）／Atlas
+- **読み手は 2 つ**: 行（`js/layer-state.js` の `nodata`。描いていない理由の文はその行に出る）／Atlas
   （`layerStates`・`time` 節の `layers`・能力 `time.coverage`。`time.travel` の結果にも描けなくなった層を添える）。
+- **時計を動かしても地図の上にカードは出さない**（利用者の判断。かつての「この日時の地図」カードは撤去した）。
 - **宣言は時計が現在を離れたときに読む**（`import()`）。
 - **世界銀行の指標は目録 1 つ・取得 1 本**: 系列コード（合算・廃止系列の後継）・名前・単位・国テーブルの欄は `js/wb-indicators.js` の `WB_INDICATORS` だけが
   持ち、取得は同じファイルの `readWorldBank`（応答中の共有・同時 6 本・`ok`／`none` は保持し `unavailable` は保持しない・時間切れは `late`）。系列コードと

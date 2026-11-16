@@ -1737,7 +1737,7 @@ export function atlasConsole(HOST){
        a captured value: this closure REPLACES the array, so a copy would go stale. */
     const _pinReplyPlaces = makePinReplyPlaces({ GE, GEOBJ, L, geocode, paintPois, ledger: GLEDGER,   /* (#R489) the audit RESOLVES places and then threw the result away — it is the one pass that sees every place an answer named, so it is where the conversation learns them (js/atlas-geo-ledger.js) */
       getPois: () => _pois, setPois: (v) => { _pois = v; } });
-    const COMPOSE = makeAtlasMapCompose({ GE, L, esc, geocode, verifyPlaces: (names, ms) => geoVerifyMany(names, { turnId: _curTurnKey, timeoutMs: ms }), verifyStrong: _gvStrong, ledger: GLEDGER, geoObject: GEOBJ.geoObject, parseColor, dispatch: (x) => dispatch(x), countryCodeAt: (lng, lat) => { try { return (typeof codeAtPoint === 'function') ? (codeAtPoint(lng, lat) || '') : ''; } catch (_) { return ''; } } });   /* (#R511) js/atlas-map-compose.js — the ledger it files into is the one the pin audit and `pin` read, so a place composed here is data for the next turn. `dispatch` is hoisted; the lambda is read at run time. */
+    const COMPOSE = makeAtlasMapCompose({ GE, L, esc, geocode, histResolve: (n, w) => import('./where-when.js').then((m) => m.placeAt(n, w, HOST.lang)), verifyPlaces: (names, ms) => geoVerifyMany(names, { turnId: _curTurnKey, timeoutMs: ms }), verifyStrong: _gvStrong, ledger: GLEDGER, geoObject: GEOBJ.geoObject, parseColor, dispatch: (x) => dispatch(x), countryCodeAt: (lng, lat) => { try { return (typeof codeAtPoint === 'function') ? (codeAtPoint(lng, lat) || '') : ''; } catch (_) { return ''; } } });   /* (#R511) js/atlas-map-compose.js — the ledger it files into is the one the pin audit and `pin` read, so a place composed here is data for the next turn. `dispatch` is hoisted; the lambda is read at run time. */
     /* ---- dispatch (every action maps to REAL existing engine code — "IntMapの全動作") ---- */
     /* (atlas-capability-modules) THE DISPATCH IS ONE LOOKUP. What each capability does used to be a `case` of a
        2,190-line switch here; it is now the `run` of that capability's entry in js/atlas-cap-<namespace>.js, beside its
@@ -1888,7 +1888,7 @@ export function atlasConsole(HOST){
       get layerCatalog(){ return layerCatalog; },
       get exitTool(){ return exitTool; },
       get _selfLocSeed(){ return _selfLocSeed; },
-      get _curTurn(){ return _curTurn; }, set _curTurn(v){ _curTurn=v; },
+      get _curTurn(){ return _curTurn; }, set _curTurn(v){ _curTurn=v; }, get _hist(){ return _hist; },   /* (text-to-era-map) the reader's earlier messages — js/atlas-text-map.js checks what Atlas read against them */
       get _atlRecallImgs(){ return _atlRecallImgs; }, set _atlRecallImgs(v){ _atlRecallImgs=v; },
       get _atlRecallAtts(){ return _atlRecallAtts; }, set _atlRecallAtts(v){ _atlRecallAtts=v; },
       get VFRAMES(){ return VFRAMES; },
@@ -2091,7 +2091,7 @@ export function atlasConsole(HOST){
     /* ---- UI ---- */
     let panel=null, chatEl=null, inEl=null, styled=false;
     let _atlImgs=[];   /* (#R149) pending pasted/attached image data-URLs to send with the next message (vision) */
-    let _atlFiles=[];  /* (#R158/#R540) pending NON-image attachments, as ATL_FILE.read returned them: kind:'text' {name,text,size,truncated,encoding,from} or kind:'doc' {name,mime,b64} */
+    let _atlPasted=false;   /* (text-to-era-map) text arrived by paste and is not sent yet — the composer offers 「当時の地図に置く」 */ let _atlFiles=[];  /* (#R158/#R540) pending NON-image attachments, as ATL_FILE.read returned them: kind:'text' {name,text,size,truncated,encoding,from} or kind:'doc' {name,mime,b64} */
     /* (#R540) WHICH FILES ATLAS ACCEPTS IS NO LONGER A LIST — js/atlas-attach.js asks the BYTES (its header has the whole argument). Images → the vision
        channel. PDFs → the providers' own document block. Anything a text encoding decodes, including what a .docx/.xlsx/.pptx/.odt/.kmz/.zip holds → the attachment channel. Everything else is refused BY REASON. */
     const _atlWhy=(d)=>{ const w=d&&d.why; if(w==='too-big') return L('That file is too large','そのファイルは大きすぎます','Diese Datei ist zu groß','Этот файл слишком велик','Ese archivo es demasiado grande')+' ('+atlFmtBytes((d&&d.limit)||ATL_FILE.LIMITS.docBytes)+')';
@@ -2169,13 +2169,13 @@ export function atlasConsole(HOST){
       /* (#R118) Enter=send, Shift+Enter=NEWLINE (the input is a textarea now); the box auto-grows to 4-5 lines */
       const go=panel.querySelector('.atl-go'); go.onclick=fire; inEl.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); fire(); } });
       const _autoGrow=()=>{ try{ inEl.style.height='auto'; inEl.style.height=Math.min(inEl.scrollHeight,132)+'px'; }catch(_){} };
-      inEl.addEventListener('input',()=>{ try{ if(!go.classList.contains('busy')) go.classList.toggle('idle',!inEl.value.trim()); }catch(_){} _autoGrow(); });   /* (#R142) don't fight the Stop button's busy state */
+      inEl.addEventListener('input',()=>{ try{ if(!go.classList.contains('busy')) go.classList.toggle('idle',!inEl.value.trim()); }catch(_){} _autoGrow(); if(_atlPasted&&!inEl.value.trim()){ _atlPasted=false; _atlRenderImgs(); } });   /* (#R142) don't fight the Stop button's busy state */
       inEl.__autoGrow=_autoGrow;
       /* (#R149) VISION — paste / drag-drop / attach an image into the Atlas input, then send it with your message.
          Uses the SAME client→ai-proxy image path the satellite-compare feature already uses (compressImage → JPEG
          data-URL → images[] the Edge Function forwards as OpenAI input_image). */
       try{
-        inEl.addEventListener('paste',(e)=>{ try{ const items=(e.clipboardData&&e.clipboardData.items)||[]; const files=[]; for(const it of items){ if(it&&it.kind==='file'){ const f=it.getAsFile&&it.getAsFile(); if(f) files.push(f); } } if(files.length){ e.preventDefault(); _atlAddFiles(files); } }catch(_){} });   /* (#R158) any pasted FILE (image or text), not images only — _atlAddFiles validates; pasted plain TEXT (kind:'string') is untouched */
+        inEl.addEventListener('paste',(e)=>{ try{ const items=(e.clipboardData&&e.clipboardData.items)||[]; const files=[]; for(const it of items){ if(it&&it.kind==='file'){ const f=it.getAsFile&&it.getAsFile(); if(f) files.push(f); } } if(files.length){ e.preventDefault(); _atlAddFiles(files); } else if(e.clipboardData&&e.clipboardData.getData('text')){ _atlPasted=true; setTimeout(_atlRenderImgs,0); } }catch(_){} });   /* (#R158) any pasted FILE (image or text), not images only — _atlAddFiles validates; pasted plain TEXT (kind:'string') is untouched */
         const atk=panel.querySelector('.atl-attach'); if(atk) atk.onclick=()=>{ try{ const fi=document.createElement('input'); fi.type='file'; fi.multiple=true; fi.style.display='none'; fi.setAttribute('aria-label',atk.getAttribute('title')||''); fi.onchange=()=>{ try{ _atlAddFiles([...(fi.files||[])]); }catch(_){} try{ fi.remove(); }catch(_){} }; document.body.appendChild(fi); fi.click(); }catch(_){} };   /* (#R158) no accept restriction — images + text files both allowed */
         /* (#R154) VOICE INPUT — Web Speech API dictation. Inserts recognised text into the box (user reviews then sends);
            recognition language follows the UI language. Hidden if the browser has no SpeechRecognition. */
@@ -2319,11 +2319,11 @@ export function atlasConsole(HOST){
       return panel; }
     /* (#R149) VISION helpers — pending pasted/attached image thumbnails in the input bar (cap 4 = ai-proxy MAX_IMAGES). */
     function _atlRenderImgs(){ try{ if(!panel) return; const row=panel.querySelector('.atl-imgrow'); if(!row) return;
-      if(!_atlImgs.length&&!_atlFiles.length){ row.style.display='none'; row.innerHTML=''; return; }
+      const eraChip=_atlFiles.some(f=>f&&f.kind==='text')||(_atlPasted&&!!(inEl&&inEl.value.trim()));   /* (text-to-era-map) a passage is here: offer it on the map of its time */ if(!_atlImgs.length&&!_atlFiles.length&&!eraChip){ row.style.display='none'; row.innerHTML=''; return; }
       const rm=L('Remove','削除','Entfernen','Удалить','Quitar');
       const imgH=_atlImgs.map((u,i)=>'<div class="atl-thumb"><img src="'+esc(IntMapSafe.url(u,{allowData:true}))+'" alt=""><button class="atl-thumb-x" data-kind="img" data-i="'+i+'" title="'+rm+'">×</button></div>').join('');
       const fileH=_atlFiles.map((f,i)=>'<div class="atl-fchip" data-atlvid="'+esc(ATTACH_STORE.put(f))+'" title="'+esc(f.name)+((f.size)?(' · '+atlFmtBytes(f.size)):'')+'"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg><span class="atl-fchip-n">'+esc(f.name)+'</span><button class="atl-thumb-x atl-fchip-x" data-kind="file" data-i="'+i+'" title="'+rm+'">×</button></div>').join('');
-      row.style.display='flex'; row.innerHTML=imgH+fileH;
+      row.style.display='flex'; row.innerHTML=imgH+fileH+(eraChip?'<button type="button" class="atl-eramap">'+esc(L('Map this text in its time','当時の地図に置く'))+'</button>':''); { const ec=row.querySelector('.atl-eramap'); if(ec) ec.onclick=()=>{ const ask=L('Place the places named in this text on the map of its time.','この文章に出てくる地名を、その時代の地図に置いて。'); const v=inEl.value.trim(); inEl.value=v?ask+'\n\n'+v:ask; fire(); }; }   /* (text-to-era-map) the request goes to Atlas like any other — one turn, one use; Atlas reads the passage and calls time.textMap */
       row.querySelectorAll('.atl-thumb-x').forEach(b=>{ b.onclick=()=>{ const k=b.getAttribute('data-kind'), i=+b.getAttribute('data-i');
         if(k==='file'){ if(i>=0&&i<_atlFiles.length){ try{ ATTACH_STORE.drop(_atlFiles[i]); }catch(_){} _atlFiles.splice(i,1); } } else { if(i>=0&&i<_atlImgs.length) _atlImgs.splice(i,1); }   /* (#R773) drop: 送る前に外された添付は、誰も開けないので預かり続けない */
         _atlRenderImgs(); _atlSyncGo(); }; });
@@ -2339,7 +2339,7 @@ export function atlasConsole(HOST){
       if(bad){ try{ aiToast(_atlWhy(bad)); }catch(_){} }
       _atlRenderImgs(); _atlSyncGo(); try{ inEl&&inEl.focus(); }catch(_){}
     }catch(_){} }
-    function fire(){ const v=inEl.value.trim(); const imgs=_atlImgs.slice(); const files=_atlFiles.slice(); if(v||imgs.length||files.length){ inEl.value=''; _atlImgs=[]; _atlFiles=[]; try{ _atlRenderImgs(); }catch(_){} try{ inEl.__autoGrow&&inEl.__autoGrow(); }catch(_){} try{ const g=panel&&panel.querySelector('.atl-go'); if(g) g.classList.add('idle'); }catch(_){} run(v,imgs,files); } }   /* (#R149/#R158) send text + any pasted/attached images and files */
+    function fire(){ const v=inEl.value.trim(); const imgs=_atlImgs.slice(); const files=_atlFiles.slice(); if(v||imgs.length||files.length){ _atlPasted=false; inEl.value=''; _atlImgs=[]; _atlFiles=[]; try{ _atlRenderImgs(); }catch(_){} try{ inEl.__autoGrow&&inEl.__autoGrow(); }catch(_){} try{ const g=panel&&panel.querySelector('.atl-go'); if(g) g.classList.add('idle'); }catch(_){} run(v,imgs,files); } }   /* (#R149/#R158) send text + any pasted/attached images and files */
     /* (#R43) HONEST reporting loop (unchanged behaviour, factored out so the AI path AND the deterministic
        fast-path/rescue share it): run every action, collect REAL per-step results, surface failures prominently
        instead of trusting the model's optimistic "say". Returns the list of failed actions. */

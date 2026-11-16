@@ -149,7 +149,7 @@ const SWITCHBOARD = () => {
    two hundred lines away — a spelling check would have to be loosened to something that no longer says
    anything. Evaluating it says MORE than the old one did: it asserts the visibility every layer
    actually receives in every combination of the two boxes and the clock. */
-function runSwitchboard({ traveling, on = true, namesOn = true, vtState = 'live' }) {
+function runSwitchboard({ traveling, on = true, namesOn = true, vtState = 'live', presentNames = [] }) {
   const seen = {};
   const box = {
     active: traveling, ensureModernDeep() {}, note: () => 'coverage sentence',
@@ -160,7 +160,9 @@ function runSwitchboard({ traveling, on = true, namesOn = true, vtState = 'live'
        green-looking source, silent switchboard. `vtState` is a parameter of the scenario now. */
     TIERS: [{ cfg: { line: 'imta-line', vtLine: 'imta-vt-line', lbl: 'imta-lbl' }, vtState: () => vtState },
             { cfg: { line: 'imta2-line', vtLine: 'imta2-vt-line', lbl: 'imta2-lbl' }, vtState: () => vtState }],
-    GE: () => ({ hasRenderer: () => true, layers: { has: () => true, setLayout: (id, k, v) => { seen[id] = v; } } }),
+    /* (hist-modern-admin) the switchboard also narrows `ofm-admin1` to today's names where a past date's units are today's */
+    T1: { presentNames: () => presentNames }, _a1Filter: undefined,
+    GE: () => ({ hasRenderer: () => true, layers: { has: () => true, setLayout: (id, k, v) => { seen[id] = v; }, getFilter: () => ['has', 'name'], setFilter: (id, f) => { seen[id + ':filter'] = f; } } }),
     document: { getElementById: (id) => ({ checked: id === 'cb-admin1' ? on : namesOn, closest: () => null }) },
     window: {},
   };
@@ -216,6 +218,11 @@ test('⑦ one feature, one switch — and the NAMES follow the switch the modern
      boundary it belongs to — measured 0.8-2.9 s late while `applyLabelLang` owned that half alone. */
   assert.equal(runSwitchboard({ traveling: false })['ofm-admin1'], 'visible', "today's province names are on the same switchboard");
   assert.equal(past['ofm-admin1'], 'none', "today's province names must go with today's province line");
+  /* (hist-modern-admin) …except where the date's units ARE today's: there today's names stand in, narrowed to those ids */
+  const same = runSwitchboard({ traveling: true, presentNames: [11, 12] });
+  assert.equal(same['ofm-admin1'], 'visible', "a past date whose prefectures are today's names them as Now does");
+  assert.match(JSON.stringify(same['ofm-admin1:filter']), /["id"\],["literal",[11,12]]/, 'and only those names');
+  assert.deepEqual(runSwitchboard({ traveling: false })['ofm-admin1:filter'], ['has', 'name'], "Now gets the layer's own filter back");
   /* ⚠ (#R564) the LINE follows cb-admin1 and the NAME follows cb-names — unchecking the names must
      not take the boundaries with it. */
   assert.equal(noNames['imta-vt-line'], 'visible', 'unchecking place names took the era boundaries with it');

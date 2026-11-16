@@ -45,7 +45,7 @@ export const ATLAS_GRADE_MAX_OUTPUT = 700;
  * is NOT the provider answering Atlas's turns and whose key is set. `null` when there is none — a model
  * grading its own provider's answer is not an independent grade, so the task refuses rather than
  * quietly grading with the answerer. The order is the cost order of the default models
- * (_shared/ai-provider.js PROVIDER_DEFAULT_MODEL: gemini-3.5-flash, claude-haiku-4-5, gpt-5.6-terra).
+ * (_shared/ai-provider.js PROVIDER_DEFAULT_MODEL: gemini-3.5-flash, claude-haiku-4-5, gpt-6.1-sol).
  */
 export const GRADER_ORDER = Object.freeze(['gemini', 'anthropic', 'openai']);
 export function graderProviderFor(answering, keyed) {
