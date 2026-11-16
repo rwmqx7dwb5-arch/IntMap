@@ -809,7 +809,7 @@ export function newsEvents(HOST) {
        地点が無いことを述べる）。 */
     if (item.analysis && Array.isArray(item.analysis.subjectLoc)) {
       html += '<div class="ev-d-sec ev-past" id="ev-past"><h3>' + S(L('This place’s past', 'この土地の過去')) + '</h3>' +
-        '<button type="button" class="ev-story" id="ev-past-go">' + S(L('Show who held this ground, the recorded wars that reached it and its national elections', 'この土地を治めた政体・及んだ記録上の戦争・国政選挙を表示')) + '</button></div>';
+        '<button type="button" class="ev-story" id="ev-past-go">' + S(L('Show who held this ground, the recorded wars its state was a party to and its national elections', 'この土地を治めた政体・その国が当事者だった記録上の戦争・国政選挙を表示')) + '</button></div>';
     }
 
     /* ── なぜこの塊なのか ── 自動化が間違った理由を隠さない（§11 の規律を読み手にも）。 */
