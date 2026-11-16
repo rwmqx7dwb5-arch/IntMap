@@ -4664,7 +4664,7 @@
        "content-type": "application/json"
       },
       "body": {
-       "model": "gpt-5.6-sol",
+       "model": "gpt-6.1-terra",
        "input": [
         {
          "role": "user",
@@ -4721,7 +4721,7 @@
      }
     ],
     "logs": [
-     "ai-proxy model fallback {\"from\":\"gpt-5.6-terra\",\"to\":\"gpt-5.6-sol\",\"status\":404}"
+     "ai-proxy model fallback {\"from\":\"gpt-5.6-terra\",\"to\":\"gpt-6.1-terra\",\"status\":404}"
     ]
    },
    {
@@ -7583,8 +7583,8 @@
       "model": "gpt-5.6-terra"
      },
      "fallback": [
-      "gpt-5.6-sol",
-      "gpt-5.6-luna"
+      "gpt-6.1-terra",
+      "gpt-6-luna"
      ]
     },
     "calls": [
@@ -10126,7 +10126,7 @@
      "retryable": false,
      "meta": {
       "provider": "openai",
-      "model": "gpt-5.6-terra",
+      "model": "gpt-6.1-sol",
       "task": "free_text"
      }
     },
@@ -10188,7 +10188,7 @@
      }
     ],
     "logs": [
-     "ai-proxy provider fail {\"provider\":\"openai\",\"model\":\"gpt-5.6-terra\",\"task\":\"free_text\",\"code\":\"provider_unavailable\",\"http\":502,\"meta\":{}}"
+     "ai-proxy provider fail {\"provider\":\"openai\",\"model\":\"gpt-6.1-sol\",\"task\":\"free_text\",\"code\":\"provider_unavailable\",\"http\":502,\"meta\":{}}"
     ]
    }
   ],

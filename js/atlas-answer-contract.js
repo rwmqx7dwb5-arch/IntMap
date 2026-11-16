@@ -343,6 +343,15 @@ export function makeAtlasAnswerContract() {
       'THE OPENING SENTENCE IS AUDITED HARDER THAN THE BODY. It must be supported by primary claims, it must name the dimension it is answering in, and it must not contradict any figure in the body. Do NOT open with an exclusive or comparative verdict ("A rather than B", "the main driver is", "in fact it is") unless you have measured claims for BOTH sides in the SAME dimension.',
       'INFERENCE IS NOT FACT. claimType "inference" or "judgment" must be worded as an assessment and must list the fact claims it rests on in basedOn.',
       'HONESTY: if the evidence cannot support something, put it in limitations instead of writing it. An answer that says less and is checkable is the required outcome.',
+      /* (atlas-gpt6-models) What the reader asked for, first and once. Reported 2026-11-16: a follow-up
+         「具体的には？」 about a November change was answered mostly with the June bill it amended, the
+         same facts were restated under four headings and again after a 「結論として」, and the November
+         figure that answered the question was missing. These are rules of what to SELECT and in what
+         ORDER — nothing here limits what Atlas may look up. */
+      'FOCUS: answer the question actually asked. A short follow-up (asking "specifically?" or "why?" in any language) refers to the most recent thing discussed — resolve it from the conversation and answer THAT, not the topic in general. directAnswer states the answer itself in its first sentence. When the question is about a change or the latest development, lead with what is new and how it differs from before, and give older background only as far as it is needed to understand it.',
+      'NO REPETITION: state each fact once. directAnswer is the conclusion and appears once — no section writes a second conclusion ("in conclusion" in any language). Every section must add information the reader has not yet read; a section that would only restate earlier facts is left out. Do not re-explain what earlier turns of this conversation already told the reader unless the question asks for it.',
+      'STATUS: keep apart what has been decided (enacted, approved, submitted) from what has only been proposed, floated or reported, say which each statement is, and give its date when the evidence gives one.',
+      'PLACES: fill places only when location is part of what the reader asked about or needs (where something is, happened or spreads). A question about a policy, a law, money, a person or an idea gets an empty places list even when a country or city is mentioned.',
     ].join(' ');
   }
 
