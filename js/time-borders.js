@@ -159,6 +159,8 @@ export function timeBorders(HOST){
     let shownYear=null, shownFC=null;
     let _provWhen=null;   /* (border-provenance) the instant go() was last asked for — the date the card reads the shapes at */
     let _drawnWhen=null;   /* (sales-pro-audiences) the instant the collection ON SCREEN answers — set only when it is applied, so a reader of the shapes (js/border-extract.js) is never handed the next instant while its collection is still loading */
+    /* (chronos-prefetch) the receipt (js/chronos.js `drawn`) is an OBSERVATION of the hand-over, so it can never cost the hand-over: a clock that does not take receipts (an older build, a test's partial clock) leaves the borders drawn exactly as before. */
+    function _receipt(when){ try{ if(typeof IntMapTime.drawn==='function') IntMapTime.drawn('borders',when); }catch(_){} }
     /* (hist-coverage-expansion) the sheet a COMPOSED collection draws its last layer from — `shownY` is
        the composition's key then, a string, and the sentence still has to name the sheet's year */
     let shownSheet=null;
@@ -2198,8 +2200,8 @@ export function timeBorders(HOST){
          from the collection, so a collection that arrived without marks (the aourednik fallback)
          still has one — computed once and kept on the object the year cache holds. */
       const _ln=()=>{ try{ return _strokeFor(fc); }catch(_){ return {type:'FeatureCollection',features:[]}; } };
-      try{ if(GE().layers.hasSource('imtb-src')&&GE().layers.hasSource('imtb-ln-src')&&GE().layers.has('imtb-line')){ GE().layers.setSourceData('imtb-src',fc); GE().layers.setSourceData('imtb-ln-src',_ln()); _pushLbl(fc); window._applyBorders(); _afterApply(); IntMapTime.drawn('borders',_drawnWhen); return; } }catch(_){}
-      if(ensure()){ try{ GE().layers.setSourceData('imtb-src',fc); GE().layers.setSourceData('imtb-ln-src',_ln()); }catch(_){} _pushLbl(fc); try{ window._applyBorders(); }catch(_){} _afterApply(); IntMapTime.drawn('borders',_drawnWhen); }
+      try{ if(GE().layers.hasSource('imtb-src')&&GE().layers.hasSource('imtb-ln-src')&&GE().layers.has('imtb-line')){ GE().layers.setSourceData('imtb-src',fc); GE().layers.setSourceData('imtb-ln-src',_ln()); _pushLbl(fc); window._applyBorders(); _afterApply(); _receipt(_drawnWhen); return; } }catch(_){}
+      if(ensure()){ try{ GE().layers.setSourceData('imtb-src',fc); GE().layers.setSourceData('imtb-ln-src',_ln()); }catch(_){} _pushLbl(fc); try{ window._applyBorders(); }catch(_){} _afterApply(); _receipt(_drawnWhen); }
       /* (#R140) was map.once('idle',…) — a ONE-SHOT 'idle' that NEVER fires on a busy/backgrounded map (another source
          still tile-loading), so the era layers were never created and the borders stayed absent until a reload
          ("歴史的国境が表示されない・再読み込みで治る"). Reuse the app's own whenStyleReady() (polls canDraw(), so a busy
@@ -2315,7 +2317,7 @@ export function timeBorders(HOST){
       if(r.modern){ clear(); return; }
       /* (#R140) the same collection already on screen: don't re-push it — and don't silently give up when the style is
          mid-load, retry once ready instead of latching absent borders */
-      if(shownY===r.key&&shownCorr===r.corr){ _drawnWhen=when; try{ if(ensure()){ window._applyBorders(); IntMapTime.drawn('borders',when); } else whenStyleReady().then(()=>{ if(active&&shownY===r.key&&shownCorr===r.corr&&ensure()){ window._applyBorders(); IntMapTime.drawn('borders',when); } }); }catch(_){} return; }
+      if(shownY===r.key&&shownCorr===r.corr){ _drawnWhen=when; try{ if(ensure()){ window._applyBorders(); _receipt(when); } else whenStyleReady().then(()=>{ if(active&&shownY===r.key&&shownCorr===r.corr&&ensure()){ window._applyBorders(); _receipt(when); } }); }catch(_){} return; }
       shownY=r.key; shownCorr=r.corr; shownSheet=(r.sheet!=null)?r.sheet:null; _drawnWhen=when; apply(r.fc);
       } finally { if(my===seq||!active) _turnClose(); } }   /* (deep-tier-reds) the turn this instant's subdivisions wait on */
     IntMapTime.on(e=>{ clearTimeout(go._t);   /* cancel any pending apply first, so Now after a fast travel really clears */
