@@ -481,6 +481,22 @@
       }
     },
     {
+      "host": "worldpop.arcgis.com",
+      "what": "WorldPop 1 km population grid (image service)",
+      "whatJp": "WorldPop 1 km 人口格子（画像サービス）",
+      "sends": {
+        "code": "area",
+        "detail": "the corner coordinates of the analysed window and the year"
+      },
+      "disclosure": {
+        "en": "worldpop.arcgis.com",
+        "jp": "worldpop.arcgis.com"
+      },
+      "probe": {
+        "url": "https://worldpop.arcgis.com/arcgis/rest/services/WorldPop_Total_Population_1km/ImageServer?f=json"
+      }
+    },
+    {
       "host": "apiprevmet3.inmet.gov.br",
       "what": "Brazil INMET active warnings",
       "whatJp": "ブラジル INMET の発表中の警報",

@@ -513,7 +513,17 @@ M5 以上の実際の地震について、今後 1 日・1 週間・1 か月・1
   値は元の倍精度と一致する（一致しない環は書かれたまま）。ビルドは毎回切ったものを読み戻して全行・全環・全日付・全シートを照合する。
   記録（`data/*.js`）は源で配信もされ、タイルの無いサーバ（`npm run dev`）・別の記録の索引・チャンクでないバイトでは丸ごと読む側へ戻る。
   継ぎ足しはタイルでも Worker が行う（`openTiled` が `splice` と同じ規則）。Service Worker は `data/` を扱わない。回帰は
-  `tests/hist-vector-tiles-checks.test.mjs`。取得を外から観測するとき、DevTools プロトコルの完了（Playwright の `requestfinished` /
+  `tests/hist-vector-tiles-checks.test.mjs`。
+- **時計の一歩先を読む。** 1 つの記録が `at(a)`、`at(b)` と続けて訊かれたら、扉は `at(b + (b − a))` が読むチャンク（月日が同じなら年、
+  違えば日の歩幅）を Worker へ先に読む（`js/hist-bundles.js` の `follow`）。答えず、写しにも載せない——その時点の行が画面へ出るのは
+  その時点が訊かれたときだけで、どの行を描くかは訊かれた時点の `rowsFor` が決める。読みは 1 接続だけの別の列で、訊かれた読みが待って
+  いれば始めず、読者がその先へ進んでいれば捨てる。`maySpeculate` が否（Data Saver・2G・携帯）なら読まない。保持の上限は記録そのもの
+  （チャンクは捨てないので、全期間を旅した読者が持つ量と同じ）。地方区分は、国境を地図へ渡した瞬間にその時点のチャンクを `warm` で
+  読み始める（MapLibre が国境を取り込むあいだ、ページのスレッドは空かないが Worker と通信は空いている）。先読みや `warm` の読みが
+  失敗しても、それを待っていた問いは自分で読み直す（全体読みへは戻らない）。描いた当人は時計に受領証を残し
+  （`IntMapTime.drawn(layer, when)` / `drawnState()`。国境・`subdivisions:a1` などの各段・都市名）、`scripts/chronos-latency.mjs` が
+  時計を動かしてから各層を地図へ渡すまでと、地図が描き終わる（`idle`）までを測る。回帰は `tests/chronos-prefetch-checks.test.mjs`。
+  取得を外から観測するとき、DevTools プロトコルの完了（Playwright の `requestfinished` /
   `requestfailed`）を読まない（読み切っても `net::ERR_ABORTED` と報告しうる）——ページの Resource Timing と
   `IntMapHistBundles.requested(global)`／`loaded(global)` で見る（`tests/history-prefetch-on-demand.spec.js`）。
 - **1 地点を全時代について訊く問いは `contains(lng, lat)` で、Worker が答える。** 答えは行が述べること（名前・期間・身元・出典日付）と

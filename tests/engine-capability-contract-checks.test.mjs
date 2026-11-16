@@ -354,7 +354,13 @@ test('#R172 the engine refuses a projection it cannot honour instead of wrecking
   assert.equal(MAPLIBRE_CAPS.globeAllZooms, false, 'MapLibre cannot give a curved Earth at cockpit zoom with a DEM — say so');
   const asked = [];
   const m = { setProjection: (spec) => asked.push(spec) };
-  const A = adapterMethods(GE_SRC, GE, 'maplibre', ['setProjection'], { _m: () => m, MAPLIBRE_CAPS });
+  /* (opening-projection) the mode→spec mapping is one function the adapter and view construction share;
+     it is handed in from the source, evaluated, rather than restated here */
+  let fn = null;
+  walk.full(GE, (n) => { if (!fn && n.type === 'FunctionDeclaration' && n.id && n.id.name === '_projSpec') fn = n; });
+  assert.ok(fn, 'js/geo-engine.js has the one mode→spec mapping, _projSpec');
+  const _projSpec = new Function(`${GE_SRC.slice(fn.start, fn.end)}; return _projSpec;`)();
+  const A = adapterMethods(GE_SRC, GE, 'maplibre', ['setProjection'], { _m: () => m, MAPLIBRE_CAPS, _projSpec });
   assert.equal(A.setProjection('globe-true'), false,
     'setProjection must decline rather than blank the map; the caller then reports honestly');
   assert.deepEqual(asked, [], 'and a declined projection never reaches the renderer');

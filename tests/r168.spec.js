@@ -31,6 +31,9 @@
 //     artefact: the same probe leaves #community-feed empty on main at 730b401 too. The module's
 //     presence and factory are covered by #1, its scope and RW contract by r168-checks/r165-checks.
 import { test, expect } from '@playwright/test';
+/* (deep-tier-red) a language switch waits for the switch to land, not a fixed sleep — tests/helpers/settle.js `until`,
+   the same wait tests/r166.spec.js and tests/r167.spec.js use (the locale chunk is fetched on first use) */
+import { until } from './helpers/settle.js';
 import { installHermeticRouting, collectPageDiagnostics, isBenign } from './helpers/network.js';
 import { seededStorageState } from './helpers/session-seed.js';
 import { routeNECountries } from './helpers/ne-countries-route.js';
@@ -378,9 +381,9 @@ test('R168 #9 LIVE getters: four of the modules re-render after a runtime langua
   // (js/auth-ui.js is not probed here: its modal is localized by index.html's data-i18n sweep rather
   // than by the module, so it would not discriminate. js/community.js cannot be rendered hermetically
   // — see the header.)
+  await page.evaluate(() => ((s) => { s.value = 'jp'; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.getElementById('setting-lang')));
+  await until(page, (c) => (document.documentElement.getAttribute('lang') || '').toLowerCase().startsWith(c), 'ja', { timeout: 15000 });
   const res = await page.evaluate(async () => {
-    ((s) => { s.value = 'jp'; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.getElementById('setting-lang'));
-    await new Promise((r) => setTimeout(r, 1400));
     const out = {};
     document.getElementById('btn-stats')?.click();
     await new Promise((r) => setTimeout(r, 1200));
@@ -403,7 +406,7 @@ test('R168 #9 LIVE getters: four of the modules re-render after a runtime langua
   expect(cjk.test(res.news), 'js/news-ui.js re-rendered in Japanese').toBe(true);
   expect(cjk.test(res.tool), 'js/tool-panel.js re-rendered in Japanese').toBe(true);
   await page.evaluate(() => ((s) => { s.value = 'en'; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.getElementById('setting-lang')));
-  await page.waitForTimeout(800);
+  await until(page, (c) => (document.documentElement.getAttribute('lang') || '').toLowerCase().startsWith(c), 'en', { timeout: 15000 });
 });
 
 test('R168 #10 no IntMap-originated console error or uncaught exception during the exercise', () => {

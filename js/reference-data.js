@@ -670,7 +670,7 @@ export const IntMapRefData = (function(){
     {n:'Maddison Project Database 2020 (Bolt & van Zanden)',u:'https://www.rug.nl/ggdc/historicaldevelopment/maddison/'},
     {n:'World Bank Open Data',u:'https://data.worldbank.org/',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},
     {n:'IMF World Economic Outlook',u:'https://www.imf.org/en/Publications/WEO'},
-    {n:'WorldPop (University of Southampton)',u:'https://www.worldpop.org/'},
+    {n:'WorldPop (University of Southampton)',u:'https://www.worldpop.org/',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/'},
     {n:'AI provider — OpenAI (Anthropic / Google selectable)',u:'https://openai.com/'}
   ];
   /* ══ ⚠ (#R246) ONE RESOLVER FOR THIS REGISTRY'S DESCRIPTIONS, AND IT LIVES WITH THE REGISTRY ═══
