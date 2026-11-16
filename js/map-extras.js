@@ -392,7 +392,7 @@ export function terrain(HOST){
     const tileURL=(z,x,y)=>'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/'+z+'/'+x+'/'+y+'.png';
     function loadTile(z,x,y){ const key=z+'/'+x+'/'+y; if(cache[key]) return cache[key];
       const pr=new Promise(res=>{ const im=new Image(); im.crossOrigin='anonymous';
-        im.onload=()=>{ try{ const cv=document.createElement('canvas'); cv.width=im.naturalWidth; cv.height=im.naturalHeight; const cx=cv.getContext('2d'); cx.drawImage(im,0,0); res({data:cx.getImageData(0,0,cv.width,cv.height).data,w:cv.width,h:cv.height}); }catch(e){ res(null); } };
+        im.onload=()=>{ try{ const cv=document.createElement('canvas'); cv.width=im.naturalWidth; cv.height=im.naturalHeight; const cx=cv.getContext('2d',{willReadFrequently:true}); cx.drawImage(im,0,0); res({data:cx.getImageData(0,0,cv.width,cv.height).data,w:cv.width,h:cv.height}); }catch(e){ res(null); } };
         im.onerror=()=>res(null); im.src=tileURL(z,x,y); });
       cache[key]=pr; return pr; }
     const lon2x=(lon,z)=>(lon+180)/360*Math.pow(2,z);

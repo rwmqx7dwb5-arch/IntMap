@@ -9,6 +9,8 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+/* (speed-overhaul) the one terrarium decode, shared with src/dem-worker.js */
+import { decodeTerrarium } from './dem-decode.js';
 
 export function mapReadout(HOST){
   /* (#R251) the module's language helper. It used to be bound INSIDE `tropicLabel()` only, so the
@@ -549,7 +551,6 @@ export function mapReadout(HOST){
     _demInflight++; _demStats.requested++;
     if(_demInflight>_demStats.peakInflight) _demStats.peakInflight=_demInflight;
     if(_demCache.size>_demStats.peakResident) _demStats.peakResident=_demCache.size;
-    const img=_demNewImage(); img.crossOrigin='anonymous';
     let settled=false;
     const settle=()=>{ if(settled) return false; settled=true; clearTimeout(tmo); _demInflight--; return true; };
     const tmo=setTimeout(()=>{ if(!settle()) return; _demStats.timedOut++;
@@ -559,12 +560,11 @@ export function mapReadout(HOST){
        the image was in flight, the answer is discarded rather than inserted above the ceiling —
        otherwise cancelling work would be a way of putting data back (#R671). */
     const live=()=>_demCache.get(key)==='loading';
-    /* (#R223) decode straight to elevations and let the <img> go — see _decodeTile */
-    img.onload=()=>{
-      /* the pending record's fields under the names the rest of this file uses — the void chase
-         below is #R265's statement unchanged, and it should not have to be re-read to be recognised */
-      const lng=w.lng, lat=w.lat, onReady=w.onReady, z=w.z;
-      let r=null; try{ r=live()?_decodeTile(img):null; }catch(_){ r=null; }
+    const failed=_demFailedFor(key,settle,live);
+    /* the pending record's fields under the names the rest of this file uses — the void chase
+       below is #R265's statement unchanged, and it should not have to be re-read to be recognised */
+    const lng=w.lng, lat=w.lat, onReady=w.onReady, z=w.z;
+    const landed=(r)=>{
       if(!settle()) return;
       if(!live()){ _demStats.stale++; _demPump(); return; }
       _demCache.set(key,(r&&r.el)||null);
@@ -576,20 +576,39 @@ export function mapReadout(HOST){
       if(r&&r.voids&&z>DEM_VOID_MIN_Z){ try{ demElevAt(lng,lat,onReady,z-1,0); }catch(_){} }
       if(r&&r.el&&onReady){ try{ onReady(); }catch(_){} }
     };
+    /* ══ (speed-overhaul) THE DECODE IS A WORKER'S WHEN THERE IS ONE ══════════════════════════════════
+       src/dem-worker.js fetches the same URL and runs the same js/dem-decode.js; the page only stores the
+       Float32Array it is handed. A failed worker request is a failed tile (the same marker, the same 4 s
+       expiry below) — never a second request for the same tile from this side. */
+    const DW=(typeof window!=='undefined')?window.IntMapDemWorker:null;
+    const viaWorker=DW&&typeof DW.decode==='function'?DW.decode(_demURL(w.z,w.x,w.y),DEM_REQUEST_TIMEOUT_MS):null;
+    if(viaWorker){
+      viaWorker.then((r)=>{ if(r&&r.voids&&live()) _countVoids(r.voids); landed(r); }, ()=>failed());
+      return;
+    }
+    const img=_demNewImage(); img.crossOrigin='anonymous';
+    /* (#R223) decode straight to elevations and let the <img> go — see _decodeTile */
+    img.onload=()=>{
+      let r=null; try{ r=live()?_decodeTile(img):null; }catch(_){ r=null; }
+      landed(r);
+    };
     /* ⚠ (#R221) A FAILED TILE USED TO BE DEAD FOR THE WHOLE SESSION. null is the "asked and got
        nothing" marker, and nothing ever cleared it — so one dropped request (a phone changing
        network, a 503 from the tile host) left a permanent hole that every later intensity field
        painted with the fallback site class. The marker is kept, so the field being built right now
        still sees a definite answer rather than waiting, and it EXPIRES a few seconds later so the
        next build asks again. Bounded: one retry per tile per 4 s, never a loop. */
-    img.onerror=()=>{
+    img.onerror=()=>failed();
+    img.src=_demURL(w.z,w.x,w.y);
+  }
+  function _demFailedFor(key,settle,live){
+    return ()=>{
       if(!settle()) return;
       if(!live()){ _demStats.stale++; _demPump(); return; }
       _demCache.set(key,null); _demStats.errors++;
       setTimeout(()=>{ if(_demCache.get(key)===null) _demCache.delete(key); },4000);
       _demCacheTrim(); _demPump();
     };
-    img.src=_demURL(w.z,w.x,w.y);
   }
   /* the one place a DEM request is constructed, so a test can watch what this store actually asks
      for rather than reading the source and believing it (#R505) */
@@ -672,10 +691,11 @@ export function mapReadout(HOST){
      covers the same place with real, published, coarser data (85.61 m at z12 where z14 is void) —
      and the parent is requested the moment a holed tile decodes, so the fallback has something to
      read. What cannot be answered at any level is counted and reportable (#R185: no silent caps). */
-  const DEM_NODATA_BELOW=-12000;   /* Challenger Deep is −10,935 m — under this is not Earth */
+  /* DEM_NODATA_BELOW (−12,000 m: Challenger Deep is −10,935 m — under this is not Earth) is js/dem-decode.js's */
   const DEM_VOID_MIN_Z=6;          /* how far down the pyramid a hole may be chased */
   const DEM_VOID_STEPS=4;
   const _demVoid={ tiles:0, holedTiles:0, cells:0, fallbacks:0, unfilled:0 };
+  function _countVoids(voids){ if(voids){ _demVoid.cells+=voids; _demVoid.holedTiles++; if(voids===65536) _demVoid.tiles++; } }
   function _decodeTile(img){
     try{
       if(!_decCv){ _decCv=document.createElement('canvas'); _decCv.width=256; _decCv.height=256;
@@ -683,17 +703,9 @@ export function mapReadout(HOST){
       if(!_decCtx) return null;
       _decCtx.clearRect(0,0,256,256);
       _decCtx.drawImage(img,0,0,256,256);
-      const d=_decCtx.getImageData(0,0,256,256).data;
-      const out=new Float32Array(65536);
-      let voids=0;
-      for(let i=0,o=0;i<65536;i++,o+=4){
-        /* an untouched pixel of the cleared canvas is (0,0,0,0) and a void terrarium pixel is
-           (0,0,0,255); both decode to −32,768, and both are «no data», not «32.8 km down» */
-        const v=(d[o]*256+d[o+1]+d[o+2]/256)-32768;
-        if(d[o+3]===0||!(v>DEM_NODATA_BELOW)){ out[i]=NaN; voids++; } else out[i]=v;
-      }
-      if(voids){ _demVoid.cells+=voids; _demVoid.holedTiles++; if(voids===65536) _demVoid.tiles++; }
-      return { el:out, voids };
+      const r=decodeTerrarium(_decCtx.getImageData(0,0,256,256).data);
+      _countVoids(r.voids);
+      return r;
     }catch(e){ return null; }
   }
   /* the decoded elevations for a cache entry — a Float32Array, or null while loading / after a failure */

@@ -1023,7 +1023,7 @@ export function timeAdmin1(HOST) {
         try { if (GE().scene.hasImage(IMG)) return (img = true); } catch (_) {}
         try {
           const DPR = 2, S = 10 * DPR, c = document.createElement('canvas'); c.width = S; c.height = S;
-          const g = c.getContext('2d'); if (!g) return false;
+          const g = c.getContext('2d',{willReadFrequently:true}); if (!g) return false;
           g.strokeStyle = ADMIN1_COLOR; g.globalAlpha = 0.5; g.lineWidth = 1.1 * DPR;
           g.beginPath(); g.moveTo(0, S); g.lineTo(S, 0); g.moveTo(-S / 2, S / 2); g.lineTo(S / 2, -S / 2); g.moveTo(S / 2, S * 1.5); g.lineTo(S * 1.5, S / 2); g.stroke();
           const im = g.getImageData(0, 0, S, S);

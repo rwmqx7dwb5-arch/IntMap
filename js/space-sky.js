@@ -182,13 +182,19 @@ window.IntMapSky=(function(){
            string concatenations every frame on top of ~99,000 canvas state changes; the strings are
            the same every time, so they are built once here. The curve is documented at its use site
            in draw() — this is the same arithmetic, evaluated at load. */
+        stars.al=new Float32Array(n);
         for(let i=0;i<n;i++){
           const v=mag[i];
           const b=Math.max(0,Math.min(1,(9.8-v)/11.3));
           const a=Math.min(1,0.14+Math.pow(b,1.5)*1.45);
           stars.sz[i]=0.55+Math.pow(b,2.2)*3.7;
           stars.css[i]='rgba('+cr[i]+','+cg[i]+','+cb[i]+','+a.toFixed(3)+')';
+          stars.al[i]=+a.toFixed(3);   /* the same alpha the css string carries, for the GPU path */
         }
+        /* (speed-overhaul) the stars the GPU cannot draw as a square point — a halo or a disc — are few
+           (V < 3.4: a few hundred of 98,887); the canvas draws those, in catalogue order, over the field */
+        const big=[]; for(let i=0;i<n;i++) if(mag[i]<1.6||stars.sz[i]>=1.6) big.push(i);
+        stars.big=Int32Array.from(big);
         starsLoading=null; schedule(); return stars;
       })).catch(e=>{ starErr=String(e&&e.message||e); starsLoading=null;
         console.warn('[sky] star catalog unavailable — the sky falls back to the plain background:',starErr);
@@ -208,6 +214,7 @@ window.IntMapSky=(function(){
       const a=p[0]*D2R, b=p[1]*D2R, c=Math.cos(b);
       stars.vx[i]=Math.sin(a)*c; stars.vy[i]=Math.sin(b); stars.vz[i]=Math.cos(a)*c; }
     stars.precessedFor=T;
+    stars.glFor=null;   /* the GPU copy of the unit vectors is stale */
   }
   /* ══ (#R187) THE WHOLE ROTATION AS ONE MATRIX ══════════════════════════════════════════════════
      projectDirection() is the CONTRACT — it is what the tests check against map.project(), and it is
@@ -234,8 +241,95 @@ window.IntMapSky=(function(){
     return rows;
   }
 
+  /* ══ (speed-overhaul) THE FIELD IS DRAWN BY THE GPU, IN ONE CALL ═════════════════════════════════
+     「速度を根本的に劇的に早くして」. MEASURED (dist built unminified, desktop 1280×800, CDP sampler over
+     8.4 s of easeTo/panBy on the default satellite globe): this file's draw() was 914 ms of main-thread
+     time — more than the renderer itself — because every camera frame issued ~99,000 fillStyle changes
+     and fillRect calls for stars that are fixed on the celestial sphere. Nothing about the picture
+     needed the CPU: each faint star is a square of side `sz` at a projected point, painted source-over
+     with the alpha its css string already carries.
+     So the square stars go to one WebGL draw of a buffer uploaded once per precession (once a day of map
+     time), with the SAME projection (the #R187 matrix, below as uniforms) and the SAME anti-aliasing a
+     canvas gives an axis-aligned rect — the exact box overlap of the square with each device pixel.
+     The result is copied onto #space-canvas with one drawImage, so the canvas the page (and the tests)
+     read is still the one canvas, and the halos, discs, Moon and Sun are painted over it as before.
+     ⚠ A browser without WebGL, or a lost context, takes the canvas loop below — the same picture, the
+     old cost. Nothing is dropped. */
+  const GLS={ cv:null, gl:null, prog:null, buf:null, n:0, failed:false, u:null };
+  const VS='attribute vec3 a_v; attribute float a_s; attribute vec4 a_c;'+
+    'uniform mat3 u_m; uniform vec4 u_p; uniform vec4 u_d; uniform vec2 u_dev;'+   /* u_p = (fa, f, ox, oy); u_d = (W, H, dpr, 0) */
+    'varying vec4 v_c; varying vec2 v_xy; varying float v_h;'+
+    'void main(){ vec3 r=u_m*a_v; float w=-r.z;'+
+    ' if(!(w>1e-9)){ gl_Position=vec4(2.0,2.0,2.0,1.0); gl_PointSize=0.0; return; }'+
+    ' float x=((u_p.x*r.x+u_p.z*r.z)/w*0.5+0.5)*u_d.x; float y=(0.5-(u_p.y*r.y+u_p.w*r.z)/w*0.5)*u_d.y;'+
+    ' if(x<-4.0||x>u_d.x+4.0||y<-4.0||y>u_d.y+4.0){ gl_Position=vec4(2.0,2.0,2.0,1.0); gl_PointSize=0.0; return; }'+
+    ' vec2 X=vec2(x,y)*u_d.z; v_xy=X; v_h=a_s*u_d.z*0.5; v_c=a_c;'+
+    ' gl_PointSize=ceil(a_s*u_d.z)+2.0;'+
+    ' gl_Position=vec4(X.x/u_dev.x*2.0-1.0, 1.0-X.y/u_dev.y*2.0, 0.0, 1.0); }';   /* u_dev = the canvas in device px */
+  const FS='#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n'+
+    'uniform float u_hd; varying vec4 v_c; varying vec2 v_xy; varying float v_h;'+
+    'void main(){ vec2 p=vec2(gl_FragCoord.x, u_hd-gl_FragCoord.y);'+   /* device px, top-left origin */
+    ' vec2 lo=max(p-0.5, v_xy-v_h), hi=min(p+0.5, v_xy+v_h); vec2 o=max(hi-lo, 0.0);'+
+    ' float a=v_c.a*o.x*o.y; if(a<=0.0) discard; gl_FragColor=vec4(v_c.rgb*a, a); }';
+  function glInit(){
+    if(GLS.gl||GLS.failed) return GLS.gl;
+    try{
+      const c=document.createElement('canvas');
+      const gl=c.getContext('webgl',{ alpha:true, premultipliedAlpha:true, antialias:false, depth:false, stencil:false, preserveDrawingBuffer:false });
+      if(!gl){ GLS.failed=true; return null; }
+      const sh=(t,s)=>{ const o=gl.createShader(t); gl.shaderSource(o,s); gl.compileShader(o); if(!gl.getShaderParameter(o,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)||'shader'); return o; };
+      const p=gl.createProgram(); gl.attachShader(p,sh(gl.VERTEX_SHADER,VS)); gl.attachShader(p,sh(gl.FRAGMENT_SHADER,FS)); gl.linkProgram(p);
+      if(!gl.getProgramParameter(p,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p)||'link');
+      c.addEventListener('webglcontextlost',(e)=>{ try{ e.preventDefault(); }catch(_){} GLS.gl=null; GLS.failed=true; if(stars) stars.glFor=null; schedule(); });
+      GLS.cv=c; GLS.gl=gl; GLS.prog=p; GLS.buf=gl.createBuffer();
+      GLS.u={ m:gl.getUniformLocation(p,'u_m'), p:gl.getUniformLocation(p,'u_p'), d:gl.getUniformLocation(p,'u_d'), hd:gl.getUniformLocation(p,'u_hd'), dev:gl.getUniformLocation(p,'u_dev'),
+              v:gl.getAttribLocation(p,'a_v'), s:gl.getAttribLocation(p,'a_s'), c:gl.getAttribLocation(p,'a_c') };
+    }catch(e){ GLS.failed=true; GLS.gl=null; try{ console.warn('[sky] GPU star field unavailable — drawing on the canvas:',String(e&&e.message||e)); }catch(_){} }
+    return GLS.gl;
+  }
+  /* the square stars, in catalogue order: x y z (unit vector), size, r g b a — 8 floats each */
+  function glUpload(){
+    const gl=GLS.gl; if(stars.glFor===stars.precessedFor) return;
+    const n=stars.n, out=new Float32Array(n*8); let k=0;
+    for(let i=0;i<n;i++){ if(stars.mag[i]<1.6||stars.sz[i]>=1.6) continue;
+      out[k++]=stars.vx[i]; out[k++]=stars.vy[i]; out[k++]=stars.vz[i]; out[k++]=stars.sz[i];
+      out[k++]=stars.cr[i]/255; out[k++]=stars.cg[i]/255; out[k++]=stars.cb[i]/255; out[k++]=stars.al[i]; }
+    gl.bindBuffer(gl.ARRAY_BUFFER,GLS.buf); gl.bufferData(gl.ARRAY_BUFFER,out.subarray(0,k),gl.STATIC_DRAW);
+    GLS.n=k/8; stars.glFor=stars.precessedFor;
+  }
+  /* draw the square stars into the GL canvas and hand it back (null → the caller draws them itself) */
+  function glField(Wd,Hd,M,f,fa,ox,oy,W,H,dpr){
+    const gl=glInit(); if(!gl) return null;
+    try{
+      glUpload();
+      if(GLS.cv.width!==Wd||GLS.cv.height!==Hd){ GLS.cv.width=Wd; GLS.cv.height=Hd; }
+      gl.viewport(0,0,Wd,Hd); gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.useProgram(GLS.prog); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
+      /* column-major: the shader's u_m*v must equal the rows M[r]·v the canvas loop computes */
+      gl.uniformMatrix3fv(GLS.u.m,false,new Float32Array([M[0][0],M[1][0],M[2][0], M[0][1],M[1][1],M[2][1], M[0][2],M[1][2],M[2][2]]));
+      gl.uniform4f(GLS.u.p,fa,f,ox,oy); gl.uniform4f(GLS.u.d,W,H,dpr,0); gl.uniform1f(GLS.u.hd,Hd); gl.uniform2f(GLS.u.dev,Wd,Hd);
+      gl.bindBuffer(gl.ARRAY_BUFFER,GLS.buf);
+      gl.enableVertexAttribArray(GLS.u.v); gl.vertexAttribPointer(GLS.u.v,3,gl.FLOAT,false,32,0);
+      gl.enableVertexAttribArray(GLS.u.s); gl.vertexAttribPointer(GLS.u.s,1,gl.FLOAT,false,32,12);
+      gl.enableVertexAttribArray(GLS.u.c); gl.vertexAttribPointer(GLS.u.c,4,gl.FLOAT,false,32,16);
+      gl.drawArrays(gl.POINTS,0,GLS.n);
+      return GLS.cv;
+    }catch(e){ GLS.failed=true; GLS.gl=null; return null; }
+  }
+  /* how many stars are in view for a frame — a diagnostic (state().last.stars), so it is counted when
+     asked rather than on every camera frame */
+  function countInView(fr){
+    if(!fr||!stars) return 0;
+    const { M, f, fa, ox, oy, W, H }=fr; let n=0;
+    for(let i=0;i<stars.n;i++){ const vx=stars.vx[i], vy=stars.vy[i], vz=stars.vz[i];
+      const dz=M[2][0]*vx+M[2][1]*vy+M[2][2]*vz, w=-dz; if(!(w>1e-9)) continue;
+      const x=((fa*(M[0][0]*vx+M[0][1]*vy+M[0][2]*vz)+ox*dz)/w*0.5+0.5)*W; if(x<-4||x>W+4) continue;
+      const y=(0.5-(f*(M[1][0]*vx+M[1][1]*vy+M[1][2]*vz)+oy*dz)/w*0.5)*H; if(y<-4||y>H+4) continue; n++; }
+    return n;
+  }
+
   /* ── the canvas ────────────────────────────────────────────────────────────────────────────── */
-  let cv=null, ctx=null, raf=0, wired=false, forced=null, lastDraw=null;
+  let cv=null, ctx=null, raf=0, wired=false, forced=null, lastDraw=null, lastFrame=null;
   function canvas(){
     if(cv) return cv;
     const mc=document.getElementById('map-container'), mp=document.getElementById('map');
@@ -315,7 +409,13 @@ window.IntMapSky=(function(){
       const f=1/Math.tan(F.fovRad/2), aspect=W/H;
       const ox=(-F.offsetX*2/W), oy=(F.offsetY*2/H);
       const fa=f/aspect;
-      for(let i=0;i<stars.n;i++){
+      lastFrame={ M, f, fa, ox, oy, W, H };
+      /* (speed-overhaul) the square stars in one GPU draw (see GLS); the loop below then paints only the
+         halos and discs over them. Without a GPU the loop paints every star, as it always did. */
+      const field=glField(cv.width,cv.height,M,f,fa,ox,oy,W,H,dpr);
+      if(field){ ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.drawImage(field,0,0); ctx.restore(); }
+      const big=field?stars.big:null, nb=big?big.length:stars.n;
+      for(let j=0;j<nb;j++){ const i=big?big[j]:j;
         const vx=stars.vx[i], vy=stars.vy[i], vz=stars.vz[i];
         const dz=m20*vx+m21*vy+m22*vz;
         const w=-dz; if(!(w>1e-9)) continue;                     /* behind the camera */
@@ -348,9 +448,9 @@ window.IntMapSky=(function(){
         ctx.fillStyle=stars.css[i];
         if(s<1.6) ctx.fillRect(x-s/2,y-s/2,s,s);
         else { ctx.beginPath(); ctx.arc(x,y,s/2,0,6.283185307); ctx.fill(); }
-        drawn++;
       }
-    }
+      drawn=-1;   /* counted when asked — state().last.stars — not on every camera frame */
+    } else lastFrame=null;
     /* == (#R219) THE MOON, AND A SUN THAT IS A STAR RATHER THAN A WHITE CIRCLE ====================
        「宇宙を探索ではないときの通常の時に、宇宙に実際の時間の実際の場所の忠実な光りかた、グラフィックの
         月を配置するように。また、太陽のグラフィックがチープだからリアルに。（地球視点での見た目。）」
@@ -479,11 +579,15 @@ window.IntMapSky=(function(){
     start:wire,
     refresh:schedule,
     set(on){ forced=(on==null?null:!!on); schedule(); return forced; },
+    /* (speed-overhaul) take the canvas loop instead of the GPU field (false) or back (true) — so a test can
+       hold the two pictures against each other; returns whether the GPU field is in use */
+    gpu(on){ if(on===false){ GLS.failed=true; GLS.gl=null; } else if(on===true){ GLS.failed=false; if(stars) stars.glFor=null; } schedule(); return !!(on!==false&&glInit()); },
     isOn:()=>!!(cv&&cv.style.display!=='none'&&shouldDraw()),
     /* diagnostics — every number the drawing used, so a test never has to read pixels to know
        whether the sky is in the right place */
     state:()=>({ active:shouldDraw(), forced, stars:stars?stars.n:0, error:starErr,
-      last:lastDraw?Object.assign({},lastDraw):null }),
+      last:lastDraw?Object.assign({},lastDraw,lastDraw.stars<0?{ stars:countInView(lastFrame) }:null):null,
+      gpu:!!GLS.gl }),
     /* the astronomy and the camera, exposed by name so tests can check them against published
        values and against map.project() rather than against themselves (#R176) */
     gmstDeg, sunPosition, precess, bvToRGB, sphereVec,

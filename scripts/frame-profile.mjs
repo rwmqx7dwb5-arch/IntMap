@@ -479,7 +479,7 @@ REQUESTS STARTED BEFORE READY  (${cnt.toFixed(0)} requests, ${(tot / 1024).toFix
   /* the request list against js/boot-stage.js: an undeclared data/ file, or a row this device should read
      later, read during the boot, is a VIOLATION of the plan — the runtime half of what check:perf proves statically */
   const violations = [];
-  const stageOf = (row) => (MOBILE ? row.phone : (row.other || 'boot')) || 'boot';
+  const stageOf = (row) => BootStage.stageFor(row, MOBILE);   /* the plan's own rule (js/boot-stage.js stageFor) */
   for (const r of rows) {
     let u; try { u = new URL(r.k.startsWith('/') ? BASE + r.k : 'https://' + r.k); } catch (_) { continue; }
     const same = u.origin === new URL(BASE).origin;

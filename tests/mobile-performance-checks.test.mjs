@@ -61,10 +61,11 @@ test('① a phone reads a `settled` row after the launch screen lifts and an idl
   while (!read && phone.runIdle()) await tick();
   assert.equal(read, true, 'never released after the launch screen lifted and the thread went idle');
 
+  /* (speed-overhaul) a desktop waits for the same moment — a settled row is settled on every device */
   const other = bootStage({ phone: false });
-  assert.equal(other.S.stageOf('stars'), 'boot');
-  let now = false; other.S.at('stars').then(() => { now = true; }); await tick();
-  assert.equal(now, true, 'a desktop waited — every other device keeps the schedule it had');
+  assert.equal(other.S.stageOf('stars'), 'settled');
+  assert.equal(other.S.stageOf('world-basemap'), 'boot', 'what the first frame is drawn from is still read at once');
+  assert.equal(other.S.stageOf('cshapes'), 'boot', 'a row read on demand is not held back on a desktop');
 });
 
 test('① two settled reads take two idle periods, in the order they were asked', async () => {

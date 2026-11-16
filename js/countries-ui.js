@@ -459,6 +459,14 @@ export function countriesUi(HOST){
                  the window the renderer tests assert in. Nothing here is urgent, so it gives the
                  thread back every 16 features. Same reason the tsunami's bathymetry pass yields every
                  8 rows (#R193): the work is fine, holding the thread while doing it is not. */
+              /* ⚠ (speed-overhaul) …BY TIME, NOT BY COUNT, AND IN BOTH LOOPS. MEASURED (390×844, CPU ×4, a zoom to
+                 Tokyo — the gesture that starts this pass on a phone): every 16 features is not a bound when one
+                 feature is Russia, and the second loop below (the home and full extents of ~250 codes) gave the
+                 thread back NEVER — a ~600 ms task under the reader's next pan. Each slice now ends after
+                 SLICE_MS of work; same arithmetic, same order, same result. 8 ms is half a 60 Hz frame (a
+                 rule of thumb, not a measurement): the rest of the frame stays the renderer's. */
+              const SLICE_MS=8; let _t0=performance.now();
+              const slice=async()=>{ if(performance.now()-_t0<SLICE_MS) return; await new Promise(r=>setTimeout(r,0)); _t0=performance.now(); };
               const best=new Map(), fs=hi.features;
               for(let i=0;i<fs.length;i++){
                 const f=fs[i], p=f.properties||{};
@@ -468,21 +476,21 @@ export function countriesUi(HOST){
                 let area=0; try{ area=turf.area(f)/1e6; }catch(e){}
                 /* (#R15) the largest-area polygon per code is the mainland — same rule as above */
                 const cur=best.get(code); if(!cur||area>cur.area) best.set(code,{area,f});
-                if((i&15)===15) await new Promise(r=>setTimeout(r,0));
+                await slice();
               }
               let added=0;
-              best.forEach((v,code)=>{ const s=HOST.countryStats[code];
+              for(const [code,v] of best){ await slice(); const s=HOST.countryStats[code];
                 /* ⚠⚠⚠ (#R375) A CODE THE COARSE FILE NEVER HAD GETS A ROW, NOT A `return`. This line read
                    `if(!s) return;` — an enrichment pass over a table assumed to already hold every code.
                    It does not (see the constructor above), and the 75 it misses are precisely the ones
                    `codeAtPoint` starts answering the moment the line below swaps `countryGeo` to the fine
                    collection. Creating the row here is what keeps THE TABLE AND THE GEOMETRY THE SAME SET:
                    they change in the same pass, off the same file, or they do not change at all. */
-                if(!s){ HOST.countryStats[code]=_mkStat(v.f,code,v.area); added++; return; }
+                if(!s){ HOST.countryStats[code]=_mkStat(v.f,code,v.area); added++; continue; }
                 /* an EXISTING row is enriched IN PLACE, never replaced — see the ⚠ above `upgrade` */
                 s.area=Math.round(v.area); s._area=v.area;
                 s.density=(s.pop&&v.area)?s.pop/v.area:null;
-                s.bbox=_homeOf(v.f)||s.bbox; s.bboxAll=_fullOf(v.f)||s.bboxAll; });
+                s.bbox=_homeOf(v.f)||s.bbox; s.bboxAll=_fullOf(v.f)||s.bboxAll; }
               /* ⚠⚠⚠ (#R393) A ROW CREATED HERE IS A PRESENT-DAY ROW, AND THIS PASS LANDS AFTER THE CLOCK
                  MAY ALREADY HAVE TRAVELLED. `_mkStat` reads the file: 2024's population and GDP. Below
                  the World Bank's 1960 floor js/time-countries.js overlays ONCE, so nothing would ever

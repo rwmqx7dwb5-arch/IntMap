@@ -240,7 +240,7 @@ frame / timer / idle の4つの登録簿すべてからその capability の仕�
 
 - **起動は段で読む**（`js/boot-stage.js`・`window.__imBootStage`）。資源ごとに「誰が・いつ・なぜ」の行があり、携帯の段は `boot`（起動画面の間）／`settled`（起動画面が上がった後の
   idle。1 つの idle につき 1 件、頼まれた順）／`need`（読み手が頼んだとき）。読み手は自分の発意の読みの前に `at(行)` を待つ（星空 `data/stars.bin`・地名辞書
-  `data/gazetteer-phone.json.gz`・国の表 `data/ne-countries/`・世界銀行の最新値は `settled`）。段は読む時刻を動かすだけ。携帯以外は全行 `boot`。「起動画面が上がった」は
+  `data/gazetteer-phone.json.gz`・国の表 `data/ne-countries/`・世界銀行の最新値は `settled`）。段は読む時刻を動かすだけ。携帯以外でも `settled` の行は `settled`、残りは `boot`（`stageFor`）。「起動画面が上がった」は
   `__imBoot.done` と起動画面の `boot-gone` の早い方（index.html の 20 秒の非常口は `done` を通らない）。表は発見で完全に保たれる（`npm run check:perf` が起動グラフの名指す
   `data/…` を全部拾い、行の無いものと何も指さない行を赤にし、`boot` 行の合計を `phone.bytes`／`phone.requests` の天井にする——`docs/TESTING.md`）。
 - **Natural Earth の国（110m／50m／10m）は自サイトから読む**（`data/ne-countries/`、固定コミット、`js/ne-countries.js` が復号。10m は 2.81 MB）。展開と parse はデータの扉の

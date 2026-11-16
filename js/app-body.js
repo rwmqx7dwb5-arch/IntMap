@@ -2122,7 +2122,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       const dark=_newsUIDark();
       const dpr=2, w=40, h=30, r=12;
       const cv=document.createElement('canvas'); cv.width=w*dpr; cv.height=h*dpr;
-      const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr);
+      const ctx=cv.getContext('2d',{willReadFrequently:true}); ctx.scale(dpr,dpr);
       const rr=(x,y,ww,hh,rad)=>{ ctx.beginPath(); ctx.moveTo(x+rad,y); ctx.arcTo(x+ww,y,x+ww,y+hh,rad); ctx.arcTo(x+ww,y+hh,x,y+hh,rad); ctx.arcTo(x,y+hh,x,y,rad); ctx.arcTo(x,y,x+ww,y,rad); ctx.closePath(); };
       ctx.fillStyle = dark ? 'rgba(244,244,247,0.94)' : 'rgba(18,18,20,0.82)';
       rr(0.5,0.5,w-1,h-1,r); ctx.fill();
@@ -4242,7 +4242,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
         if(c&&(c.saveData===true||/(^|-)2g$/.test(c.effectiveType||''))) return; }catch(_){}
       /* (mobile-performance) a phone's main thread is busy for most of its boot, so «idle» landed INSIDE it
          (MEASURED 390×844 CPU ×4: the country file started at 8.8 s of a 8.4–9 s boot). js/boot-stage.js row
-         `ne-countries` puts it behind the moment a phone can be touched; every other device keeps this schedule. */
+         `ne-countries` puts it behind the moment the app can be touched — on every device since speed-overhaul. */
       if(BootStage.stageOf('ne-countries')!=='boot'){ BootStage.at('ne-countries',()=>{ try{ return loadCountryData(); }catch(_){ return null; } }); return; }
       if('requestIdleCallback' in window) requestIdleCallback(warm,{timeout:7000}); else setTimeout(warm,4000); };
     let started=false; const once=()=>{ if(started) return; started=true; go(); };
