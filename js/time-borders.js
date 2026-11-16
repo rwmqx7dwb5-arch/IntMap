@@ -2198,8 +2198,8 @@ export function timeBorders(HOST){
          from the collection, so a collection that arrived without marks (the aourednik fallback)
          still has one — computed once and kept on the object the year cache holds. */
       const _ln=()=>{ try{ return _strokeFor(fc); }catch(_){ return {type:'FeatureCollection',features:[]}; } };
-      try{ if(GE().layers.hasSource('imtb-src')&&GE().layers.hasSource('imtb-ln-src')&&GE().layers.has('imtb-line')){ GE().layers.setSourceData('imtb-src',fc); GE().layers.setSourceData('imtb-ln-src',_ln()); _pushLbl(fc); window._applyBorders(); _afterApply(); return; } }catch(_){}
-      if(ensure()){ try{ GE().layers.setSourceData('imtb-src',fc); GE().layers.setSourceData('imtb-ln-src',_ln()); }catch(_){} _pushLbl(fc); try{ window._applyBorders(); }catch(_){} _afterApply(); }
+      try{ if(GE().layers.hasSource('imtb-src')&&GE().layers.hasSource('imtb-ln-src')&&GE().layers.has('imtb-line')){ GE().layers.setSourceData('imtb-src',fc); GE().layers.setSourceData('imtb-ln-src',_ln()); _pushLbl(fc); window._applyBorders(); _afterApply(); IntMapTime.drawn('borders',_drawnWhen); return; } }catch(_){}
+      if(ensure()){ try{ GE().layers.setSourceData('imtb-src',fc); GE().layers.setSourceData('imtb-ln-src',_ln()); }catch(_){} _pushLbl(fc); try{ window._applyBorders(); }catch(_){} _afterApply(); IntMapTime.drawn('borders',_drawnWhen); }
       /* (#R140) was map.once('idle',…) — a ONE-SHOT 'idle' that NEVER fires on a busy/backgrounded map (another source
          still tile-loading), so the era layers were never created and the borders stayed absent until a reload
          ("歴史的国境が表示されない・再読み込みで治る"). Reuse the app's own whenStyleReady() (polls canDraw(), so a busy
@@ -2315,7 +2315,7 @@ export function timeBorders(HOST){
       if(r.modern){ clear(); return; }
       /* (#R140) the same collection already on screen: don't re-push it — and don't silently give up when the style is
          mid-load, retry once ready instead of latching absent borders */
-      if(shownY===r.key&&shownCorr===r.corr){ _drawnWhen=when; try{ if(ensure()) window._applyBorders(); else whenStyleReady().then(()=>{ if(active&&shownY===r.key&&shownCorr===r.corr&&ensure()) window._applyBorders(); }); }catch(_){} return; }
+      if(shownY===r.key&&shownCorr===r.corr){ _drawnWhen=when; try{ if(ensure()){ window._applyBorders(); IntMapTime.drawn('borders',when); } else whenStyleReady().then(()=>{ if(active&&shownY===r.key&&shownCorr===r.corr&&ensure()){ window._applyBorders(); IntMapTime.drawn('borders',when); } }); }catch(_){} return; }
       shownY=r.key; shownCorr=r.corr; shownSheet=(r.sheet!=null)?r.sheet:null; _drawnWhen=when; apply(r.fc);
       } finally { if(my===seq||!active) _turnClose(); } }   /* (deep-tier-reds) the turn this instant's subdivisions wait on */
     IntMapTime.on(e=>{ clearTimeout(go._t);   /* cancel any pending apply first, so Now after a fast travel really clears */

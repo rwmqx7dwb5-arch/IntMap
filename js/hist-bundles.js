@@ -442,6 +442,16 @@ window.IntMapHistBundles = (function () {
       if (S[m.global] && S[m.global].tiled) return S[m.global].h;
       return openTiled(m.global, m.dirs);
     }
+    /* (chronos-prefetch) the instant one more step ahead of `b` by the step from `a` to `b`: whole years when the
+       two instants share a month and day (the stepper's year step keeps 15 June), days otherwise. Answered here,
+       where the YYYYMMDD arithmetic already lives. */
+    if (m.op === 'next') {
+      var pa = partsOf(m.a), pb = partsOf(m.b);
+      if (pa[1] === pb[1] && pa[2] === pb[2]) return ymd(2 * pb[0] - pa[0], pb[1], pb[2]);
+      var dayNo = function (p) { var t = new Date(0); t.setUTCFullYear(p[0], p[1] - 1, p[2]); return Math.round(t.getTime() / 864e5); };
+      var tn = new Date(0); tn.setUTCDate(1 + 2 * dayNo(pb) - dayNo(pa));
+      return ymd(tn.getUTCFullYear(), tn.getUTCMonth() + 1, tn.getUTCDate());
+    }
     var B = S[m.global];
     if (!B) { var e = new Error('not open: ' + m.global); e.reason = 'closed'; throw e; }
     var d = B.d, out = [], i, sp = B.span;
@@ -553,7 +563,9 @@ window.IntMapHistBundles = (function () {
     const W = D.win || ((typeof window !== 'undefined') ? window : {});
     const pageState = {};
     const counts = { opened: 0, worker: 0, page: 0, preset: 0, slices: 0, rows: 0, rings: 0,
-      tiled: 0, indexes: 0, ranges: 0, rangeBytes: 0, chunks: 0, wholeFiles: 0, fellBack: 0 };
+      tiled: 0, indexes: 0, ranges: 0, rangeBytes: 0, chunks: 0, wholeFiles: 0, fellBack: 0,
+      /* (chronos-prefetch) the reads made one step ahead of the reader (`follow`): chunks and bytes, both also in the totals above */
+      prefetchChunks: 0, prefetchBytes: 0 };
     const ringOf = (typeof WeakMap === 'function') ? new WeakMap() : null;   /* ring array → [global, index, pool length] */
     const globalOfObj = (typeof WeakMap === 'function') ? new WeakMap() : null;
     const entries = new Map();   /* global → { p, handle, mirror, preset } */
@@ -662,21 +674,37 @@ window.IntMapHistBundles = (function () {
        wider fan-out changes the order bytes arrive in, not when the answer does. */
     const GAP_BYTES = 32 * 1024;
     const PARALLEL = 6;
-    let running = 0;
-    const waiting = [];
-    function limited(fn) {
+    let running = 0, ahead = 0;
+    const waiting = [], aheadWaiting = [];
+    /* (chronos-prefetch) a read made one step AHEAD of the reader (`follow`) takes one connection at most and starts only
+       when no read anybody is waiting for is queued — so a question the reader actually asked always finds
+       PARALLEL - 1 connections, and a guess about the next step never queues in front of this one. */
+    const pump = () => {
+      const n = waiting.shift(); if (n) return n();
+      if (ahead === 0 && running < PARALLEL) { const a = aheadWaiting.shift(); if (a) a(); }
+    };
+    function limited(fn, isAhead) {
       return new Promise((res, rej) => {
-        const go = () => { running++; Promise.resolve().then(fn).then(res, rej).finally(() => { running--; const n = waiting.shift(); if (n) n(); }); };
-        if (running < PARALLEL) go(); else waiting.push(go);
+        const go = () => { running++; if (isAhead) ahead++;
+          Promise.resolve().then(fn).then(res, rej).finally(() => { running--; if (isAhead) ahead--; pump(); }); };
+        if (isAhead) { if (ahead === 0 && running < PARALLEL && !waiting.length) go(); else aheadWaiting.push(go); }
+        else if (running < PARALLEL) go(); else waiting.push(go);
       });
     }
     /* the chunks a question needs, read and handed to the thread. A chunk another question is already
        reading is waited for, not read twice. */
-    function fetchNeed(e, list) {
+    /* (chronos-prefetch) reads no question is waiting on yet: `kind` 'ahead' (one step ahead, its own lane — `follow`)
+       or 'warm' (the instant a caller is about to ask — `warm`); undefined for a question's own reads */
+    const guessReads = new WeakSet();
+    function fetchNeed(e, list, kind) {
+      const isAhead = kind === 'ahead';
       const wait = [], todo = new Map();
       for (const it of list || []) {
         const p = e.inflight.get(it[0]);
-        if (p) { wait.push(p); continue; }
+        /* (chronos-prefetch) a chunk already being read one step ahead is waited for — and if that read failed, the
+           question the reader asked reads the chunk itself: a guess's failure is never the answer's. (A question that
+           reached it first owns it, and the guess waits on the question.) */
+        if (p) { wait.push(guessReads.has(p) && !kind ? p.catch(() => fetchNeed(e, [it])) : p); continue; }
         if (!todo.has(it[1])) todo.set(it[1], []);
         todo.get(it[1]).push(it);
       }
@@ -691,17 +719,48 @@ window.IntMapHistBundles = (function () {
       }
       const reads = runs.map((run) => {
         const dir = e.tiles[run.pi], url = e.archives[run.pi];
-        const pr = limited(() => readRange(url, run.start, run.end - 1, dir.archive.bytes)).then(({ base, bytes }) => {
+        const pr = limited(() => readRange(url, run.start, run.end - 1, dir.archive.bytes), isAhead).then(({ base, bytes }) => {
           const parts = run.items.map((it) => ({ c: it[0], bytes: bytes.slice(it[2] - base, it[2] - base + it[3]) }));
           counts.chunks += parts.length;
+          if (isAhead) { counts.prefetchChunks += parts.length; counts.prefetchBytes += bytes.byteLength; }
           return ask({ op: 'feed', global: e.global, parts }, parts.map((x) => x.bytes));
         });
+        if (kind) guessReads.add(pr);
         for (const it of run.items) e.inflight.set(it[0], pr);
         const clear = () => { for (const it of run.items) if (e.inflight.get(it[0]) === pr) e.inflight.delete(it[0]); };
         pr.then(clear, clear);
         return pr;
       });
       return Promise.all(wait.concat(reads));
+    }
+    /* ══ (chronos-prefetch) ONE STEP AHEAD, IN THE DIRECTION THE READER IS MOVING ══════════════════════════════
+       「時計で年を動かすと、その時点の国境・地方区分を取り直すまで待ちが出る」 MEASURED (scripts/chronos-latency.mjs,
+       dev-notes/2026-11-16-chronos-prefetch.md): a one-year step was spent mostly waiting for the chunks of the new
+       instant, read by Range AFTER the clock moved. The reader's next step is predictable from the two last ones —
+       a record asked `at(a)` then `at(b)` is asked `at(b + (b - a))` next whenever the reader keeps stepping — so
+       once a record has answered `b`, the chunks `at(next)` will read are read now, in the lane above, into the
+       THREAD only (`need` + `feed`: nothing is answered and nothing reaches the page's mirror).
+       ⚠ IT CANNOT CHANGE AN ANSWER. A chunk is the record's own bytes and `install` checks it is the chunk asked
+       for; which rows an instant shows is still decided by `rowsFor` on the instant actually asked. The next
+       question reads what it needs exactly as before — the chunks already held are simply not read again.
+       BOUNDS — no number is chosen here: ONE instant ahead per record and `end`; the thread's holding is capped
+       by the record itself (chunks are never dropped, and a reader who travels the whole range holds it all
+       either way); the page holds nothing more; and nothing at all where js/mem-budget.js `maySpeculate` says
+       a speculative copy is dear (Data Saver, 2G, a phone). A guess the reader has already stepped past is
+       dropped before its reads start. A record held whole or preset has nothing to read ahead. */
+    const speculate = () => {
+      try { if (typeof D.maySpeculate === 'function') return !!D.maySpeculate(); } catch (_) { return false; }
+      try { const MB = W.IntMapMemBudget; return !!(MB && typeof MB.maySpeculate === 'function' && MB.maySpeculate()); } catch (_) { return false; }
+    };
+    function follow(e, t, end) {
+      if (!e.lastAt) e.lastAt = new Map();
+      const prev = e.lastAt.get(end); e.lastAt.set(end, t);
+      if (prev == null || prev === t || e.preset || e.mode !== 'tiled' || !speculate()) return;
+      const still = () => e.lastAt.get(end) === t && e.mode === 'tiled' && e.epoch === epoch;
+      ask({ op: 'next', a: prev, b: t })
+        .then((nx) => (still() ? ask({ op: 'need', global: e.global, q: { op: 'at', t: nx, end } }) : []))
+        .then((list) => (still() && list && list.length ? fetchNeed(e, list, 'ahead') : null))
+        .catch(() => { /* a guess that could not be read costs the next question nothing: it reads its own chunks */ });
     }
     const validIndex = (d, global) => !!(d && d.hvt === 1 && d.global === global && d.head && Array.isArray(d.span) && Array.isArray(d.chunks) && d.archive);
 
@@ -841,7 +900,13 @@ window.IntMapHistBundles = (function () {
         file: spec.file,
         get data() { return e.mirror; },
         edges: (end, lo, hi) => call({ op: 'edges', global, end, lo, hi }),
-        at: (t, end) => call({ op: 'at', global, t, end }),
+        at: (t, end) => call({ op: 'at', global, t, end }).then((r) => { follow(e, t, end); return r; }),
+        /* (chronos-prefetch) the chunks `at(t, end)` will read, read into the thread now — nothing is answered and nothing
+           reaches the mirror; the `at` that follows finds them held (or in flight, and waits). For a caller that knows the
+           instant before it can ask (js/time-admin1.js, while the borders' hand-over holds the page thread). → Promise<void>,
+           never rejected: a read that failed is read again by the question itself. */
+        warm: (t, end) => ((e.preset || e.mode !== 'tiled' || e.epoch !== epoch) ? Promise.resolve()
+          : ask({ op: 'need', global, q: { op: 'at', t, end } }).then((list) => fetchNeed(e, list, 'warm')).then(() => {}, () => {})),
         during: (t0, t1) => call({ op: 'during', global, t0, t1 }),
         /* (place-through-time) every row of all time, and every era-sheet polygon, that holds [lng, lat] — what each
            says, not its geometry (see the job). Asked of the thread that holds every row; nothing lands on the mirror. */
