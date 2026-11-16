@@ -59,3 +59,14 @@ newsjp: ニュースの出来事に「この土地の過去」を追加。押す
   （選挙区の点内判定。地点カードと同じ関数を写さずに使う）。
 - `check:perf` の非同期チャンク `place-history`（`historyAction`・`ensureHistoryCss` が地点カードと Atlas から移ってきた分）と
   `war-layer`（`atPoint`）の天井を上げた。どちらも押されたとき・層を点けたときだけ読まれ、起動の集合は増えていない。
+
+## 4. CI で止まっていた検査（この作業の変更とは無関係の、既存の欠陥）
+
+`tests/wave4-atlas-checks.test.mjs` ⑥ が CI の回帰シャードで 1,190 秒止まって落ちた（この PR で 2 回、2026-11-16 に他の 4 本の
+branch でも同じ）。原因: ③ と ⑦ が開く `scripts/territory-change.mjs` の harness は、time-borders の sandbox が
+`setTimeout: () => 0` を globalThis に入れ、それがファイルの残りに残る（`scripts/lib/import-module.mjs` の globals は残る設計）。
+⑥ はページ自身の経路を走らせ、1 段が 16 ms を超えたときだけ `setTimeout` で 1 フレーム譲る（`js/territory-change.js`
+`yielder`）。速い機械では 1 度も譲らないので通り、負荷のある runner では譲った先の Promise が永久に解決しなかった。
+再現: 読むたびに 20 ms 進む時計を preload すると毎回 ⑥ だけが止まる。直し: ⑥ はファイル冒頭（harness より前）に取っておいた
+ページの `setTimeout` で走り、さらに毎回フレームを超える時計で走る（譲る経路を全機械で通る）。stub に戻すと ⑥ は毎回止まる
+ことを確かめた。製品のコードは正しい（ブラウザでタイマーが stub されることはない）。
