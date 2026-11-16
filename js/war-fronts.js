@@ -68,7 +68,13 @@ export function warFronts(HOST) {
     return pending;
   }
 
-  async function toggle(id, want, opts) {
+  /* (news-past-fixes) THE ROW'S LATEST SWITCH, so a caller that ticks the box can wait for the layer it switched.
+     A day set before the record has arrived used to be dropped (js/war-layer.js setDate needs the war), and the
+     layer's own «on» then moved the view to the war's first day — both `<war>.show` and a news event's war heading
+     go through the checkbox and must land on THEIR day, after the switch has finished, never before it. */
+  const switching = Object.create(null);
+  function toggle(id, want, opts) { return (switching[id] = toggleNow(id, want, opts)); }
+  async function toggleNow(id, want, opts) {
     /* switching OFF something that was never fetched is already true — do not download a layer in
        order to turn it off */
     if (!want && !body) return false;
@@ -133,7 +139,9 @@ export function warFronts(HOST) {
   function osShow(id, ctx) {
     osToggle(id, { params: { on: true } });
     const d = ctx && ctx.params && ctx.params.date;
-    if (d) need().then((b) => { try { b && b.setDate(id, String(d).slice(0, 10)); } catch (_) { } });
+    const done = Promise.resolve(switching[id]).then((ok) => (ok ? need() : null));
+    if (!d) return done.then((b) => !!b);
+    return done.then((b) => { if (!b) return false; try { b.setDate(id, String(d).slice(0, 10)); return true; } catch (_) { return false; } });
   }
   try {
     for (const R of ROWS) {
@@ -175,6 +183,9 @@ export function warFronts(HOST) {
        read this. */
     label: (id) => { const R = ROWS.find((x) => x.id === id); return R ? R.label() : ''; },
     toggle,
+    /* (news-past-fixes) switch a war on THROUGH ITS LAYERS-PANEL ROW (so the row, the share link and the map agree)
+       and show one day of it — what Atlas `<war>.show` does; resolves when the day is drawn */
+    show: (id, date) => osShow(id, { params: { on: true, date } }),
     ready: need,
     isOn: (id) => !!(body && body.isOn(id)),
     date: (id) => (body ? body.date(id) : null),

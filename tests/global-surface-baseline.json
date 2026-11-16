@@ -1127,7 +1127,7 @@
   "IntMapLangSwitch": 5,
   "IntMapLayerAudit": 3,
   "IntMapLayerHold": 1,
-  "IntMapLayerHome": 12,
+  "IntMapLayerHome": 10,
   "IntMapLayerPreviews": 11,
   "IntMapLayerSidebar": 19,
   "IntMapLayerState": 6,

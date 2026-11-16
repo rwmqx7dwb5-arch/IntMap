@@ -3,8 +3,8 @@
  *      represents a country is not read as a place; no location → nothing is read
  *   ② the war reader asks the real war record with the fill's rules: Paris was under the Axis from June 1940 and freed
  *      in 1944; a point no recorded war reached says so; a country-level answer names the country by its CShapes code
- *   ③ the election reader finds the district under a point in the real files, prefiltered by the index's boxes, which
- *      are the files' own extent (a box that missed a vertex would drop a real district)
+ *   ③ the election reader finds the district under a point in the real files, prefiltered by the index's cover (the
+ *      cells each file's polygons touch — its superset property is tests/news-past-fixes-checks.test.mjs)
  *   ④ the drawing: a country-level event gets no timeline and says why; gaps and silent wars are stated, not filled;
  *      the card costs a button (nothing is read until it is pressed); Atlas's row is generated
  */
@@ -95,18 +95,12 @@ test('② wars at a point: the record\'s sides and days, by the fill\'s own rule
   assert.ok(jw2.periods.some((p) => p.faction !== 'NEUTRAL'), 'Japan has a side in WW2');
 });
 
-test('③ elections at a point: the district from the real files; the boxes are the files\' own extent', async () => {
+test('③ elections at a point: the district from the real files, one cover per boundary era', async () => {
   const index = JSON.parse(rd('data/elections/index.json'));
   const geos = [...new Set(index.elections.map((e) => e.geo).filter(Boolean))];
-  assert.deepEqual(Object.keys(index.boxes).sort(), geos.sort(), 'one box per boundary era');
+  assert.deepEqual(Object.keys(index.cover.files).sort(), geos.sort(), 'one cover per boundary era');
   const listed = new Set(readdirSync(new URL('../data/elections/', import.meta.url)));
   for (const g of geos) assert.ok(listed.has(g), g);
-  /* a box holds every vertex of its file — the prefilter can only let too much through */
-  for (const g of geos.filter((x) => /^jp-|^uk-/.test(x))) {
-    const fc = JSON.parse(rd('data/elections/' + g)), b = index.boxes[g];
-    const walk = (c) => { if (typeof c[0] === 'number') { assert.ok(c[0] >= b[0] && c[0] <= b[2] && c[1] >= b[1] && c[1] <= b[3], g); } else c.forEach(walk); };
-    fc.features.forEach((f) => walk(f.geometry.coordinates));
-  }
   const tokyo = await ELECT.atPoint(139.7454, 35.6586, { district: true });   /* Minato, Tokyo */
   assert.equal(tokyo.status, 'ok');
   const jp = tokyo.polities.find((p) => p.id === 'jp');
@@ -143,6 +137,9 @@ test('④ the drawing states what it does not show; the card reads nothing until
   const h2 = EP.pastHtml(country, 'jp');
   assert.ok(!/TIMELINE/.test(h2), 'a country-level event gets no point timeline');
   assert.match(h2, /代表点で、出来事が起きた地点ではありません/);
+  /* (news-past-fixes) the election note of a country-level event speaks of the country, not of «this point» */
+  assert.match(h2, /この国で行われたもの（出来事の代表点で問い合わせ/);
+  assert.ok(!/その選挙区がこの地点を含むもの|この地点は、IntMap が持つ/.test(h2), 'no «this point» in a country-level answer');
   assert.ok(!/data-ep=/.test(EP.pastHtml(city, 'en', { inert: true })), 'Atlas\'s bubble is inert');
   const A = EP.forAtlas(country);
   assert.equal(A.place.level, 'country'); assert.equal(A.history.notAsked, 'representative-point-of-country');

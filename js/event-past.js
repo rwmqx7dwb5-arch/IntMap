@@ -105,7 +105,7 @@ export function pastHtml(rec, lang, opts) {
   const Wr = rec.wars;
   if (!Wr) h.push('<div class="hn-why" data-pending>' + esc(L('Reading the war records…', '戦争の記録を読み込み中…')) + '</div>');
   else if (Wr.status === 'unavailable') h.push('<div class="hn-why">' + esc(L('The war records could not be read (' + Wr.reason + ').', '戦争の記録を読み込めませんでした（' + Wr.reason + '）。')) + '</div>');
-  else if (Wr.status === 'none') h.push('<div class="hn-why">' + esc(L('No border record names a country at this point, so no war record can be asked.', 'この地点に国を描く国境の記録が無いため、戦争の記録に問えません。')) + '</div>');
+  else if (Wr.status === 'none') h.push('<div class="hn-why">' + esc(P.level === 'point' ? L('No border record names a country at this point, so no war record can be asked.', 'この地点に国を描く国境の記録が無いため、戦争の記録に問えません。') : L('No border record names a country at the event’s representative point, so no war record can be asked.', 'この出来事の代表点に国を描く国境の記録が無いため、戦争の記録に問えません。')) + '</div>');
   else {
     if (Wr.level === 'country' && Wr.country) h.push('<div class="ep-note">' + esc(L('Country: ' + Wr.country.name + ' (CShapes, Gleditsch–Ward code ' + Wr.country.gw + '). The side is the one the war record gives that code — front lines inside the country are not applied.', '国: ' + Wr.country.name + '（CShapes・Gleditsch–Ward コード ' + Wr.country.gw + '）。陣営は戦争の記録がそのコードに与えるもので、国内の前線による分割は含めていません。')) + '</div>');
     const reached = Wr.wars.filter((w) => w.involved), silent = Wr.wars.filter((w) => !w.involved);
@@ -143,7 +143,7 @@ export function pastHtml(rec, lang, opts) {
   const El = rec.elections;
   if (!El) h.push('<div class="hn-why" data-pending>' + esc(L('Reading the election records…', '選挙の記録を読み込み中…')) + '</div>');
   else if (El.status === 'unavailable') h.push('<div class="hn-why">' + esc(L('The election records could not be read (' + El.reason + ').', '選挙の記録を読み込めませんでした（' + El.reason + '）。')) + '</div>');
-  else if (El.status === 'none') h.push('<div class="hn-why">' + esc(L('This point lies in no district of the national elections IntMap holds.', 'この地点は、IntMap が持つ国政選挙のどの選挙区にも入っていません。')) + '</div>');
+  else if (El.status === 'none') h.push('<div class="hn-why">' + esc(P.level === 'point' ? L('This point lies in no district of the national elections IntMap holds.', 'この地点は、IntMap が持つ国政選挙のどの選挙区にも入っていません。') : L('The event’s representative point lies in no district of the national elections IntMap holds, so no election of this country can be named.', 'この出来事の代表点は IntMap が持つ国政選挙のどの選挙区にも入っていないため、この国の選挙を挙げられません。')) + '</div>');
   else {
     El.polities.forEach((p) => {
       h.push('<div class="ep-pol"><b>' + esc(p.name) + '</b>');
@@ -168,7 +168,7 @@ export function pastHtml(rec, lang, opts) {
       });
       h.push('</div>');
     });
-    h.push('<div class="ep-note">' + esc(L('The newest election of each chamber IntMap holds whose districts contain this point.', 'IntMap が持つ各議院の最新の選挙のうち、その選挙区がこの地点を含むもの。')) + '</div>');
+    h.push('<div class="ep-note">' + esc(P.level === 'point' ? L('The newest election of each chamber IntMap holds whose districts contain this point.', 'IntMap が持つ各議院の最新の選挙のうち、その選挙区がこの地点を含むもの。') : L('The newest election of each chamber IntMap holds that was fought in this country (asked at the event’s representative point; no district is named, because the point is not where the event happened).', 'IntMap が持つ各議院の最新の選挙のうち、この国で行われたもの（出来事の代表点で問い合わせ。代表点は出来事の起きた場所ではないので、選挙区は挙げません）。')) + '</div>');
   }
   return h.join('');
 }
@@ -244,10 +244,13 @@ export async function mount(el, item, HOST) {
       const w = rec.wars && rec.wars.wars[+k.slice(4)], W = WARS();
       if (!w || !W) return;
       const first = w.periods.find((p) => p.faction !== 'NEUTRAL') || w.periods[0];
-      Promise.resolve(W.toggle(w.id, true)).then(() => { if (first) W.setDate(w.id, first.from); }).catch(() => { /* the layer states its own failure */ });
+      /* (news-past-fixes) through the war's Layers-panel row, like the checkbox and Atlas `<war>.show`: calling the layer
+         directly drew the fill while the row stayed unticked and the share link left it out */
+      Promise.resolve(W.show(w.id, first ? first.from : '')).catch(() => { /* the layer states its own failure */ });
     } else if (k.indexOf('elec:') === 0) {
       const E = ELECTIONS(); if (!E) return;
-      Promise.resolve(E.toggle(true)).then(() => E.select(k.slice(5))).catch(() => { /* the layer states its own failure */ });
+      /* (news-past-fixes) the election is chosen BEFORE the switch and the map goes to it (js/elections.js `open`) */
+      Promise.resolve(E.open(k.slice(5))).catch(() => { /* the layer states its own failure */ });
     }
   };
   return rec;

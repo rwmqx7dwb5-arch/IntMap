@@ -59,6 +59,7 @@ import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { loadUpstreams, checkDeclarations, stamp, dueOf, refreshOf } from './lib/elections-live.mjs';
 import { territoryClaims, enumerate, territoryOf } from './lib/elections-claims.mjs';
+import { DEG, coverOf, encodeCells } from '../js/election-cover.js';
 
 /* ⚠ (upstream-liveness) 出自は値である。読むのは js/data-governance.js の read() と
    npm run check:datagov（scripts/data-governance.mjs）。この宣言は少なくとも「どの bundle を書くか」と
@@ -86,7 +87,7 @@ const LIST = argv.includes('--list');
 const WATCH = argv.includes('--watch');
 const ANNOTATE = argv.includes('--annotate');
 const ENUMERATE = argv.includes('--enumerate');
-const BOXES = argv.includes('--boxes');
+const COVER = argv.includes('--cover');
 const argOf = (k) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : null; };
 const TODAY = new Date().toISOString().slice(0, 10);
 const ONLY = (() => { const i = argv.indexOf('--only'); return i < 0 ? null : new Set(argv.slice(i + 1).filter(a => !a.startsWith('--'))); })();
@@ -165,27 +166,23 @@ function commitDate(e) {
   } catch (_) { return null; }
 }
 
-/* (news-with-history) THE BOX OF EACH BOUNDARY ERA — [west, south, east, north] over every vertex of the file, so a reader
-   that holds a point can tell which files could contain it WITHOUT downloading them (js/elections.js `atPoint`). It is the
-   files' own extent, derived here and nowhere else: the polity's `home` is a framing box for the camera and does not hold
-   every district (MEASURED 2026-11-16: 4,233 of Australia's 330,658 vertices lie outside it), so a prefilter on `home`
-   would drop real districts. A box is a superset of its geometry, so the prefilter can only let too much through. */
-function geoBoxes(index) {
-  const out = {};
+/* (news-past-fixes) THE GRID CELLS EACH BOUNDARY ERA TOUCHES, so a reader that holds a point can tell which files could
+   contain it WITHOUT downloading them (js/elections.js `atPoint`). Derived here from the files and nowhere else; the codec,
+   the cell size and why it is not one box per file are js/election-cover.js. ⚠ The polity's `home` is a framing box for
+   the camera and does not hold every district (MEASURED 2026-11-16: 4,233 of Australia's 330,658 vertices lie outside it). */
+function geoCover(index) {
+  const files = {};
   for (const id of [...new Set((index.elections || []).map(e => e.geo).filter(Boolean))].sort()) {
     const fc = readPart('geo', id); if (!fc || !Array.isArray(fc.features)) continue;
-    let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity;
-    const walk = (c) => { if (typeof c[0] === 'number') { if (c[0] < w) w = c[0]; if (c[0] > e) e = c[0]; if (c[1] < s) s = c[1]; if (c[1] > n) n = c[1]; } else for (const x of c) walk(x); };
-    for (const f of fc.features) if (f && f.geometry && f.geometry.coordinates) walk(f.geometry.coordinates);
-    if (isFinite(w)) out[id] = [w, s, e, n];
+    files[id] = encodeCells(coverOf(fc, DEG));
   }
-  return out;
+  return { deg: DEG, files };
 }
 
 function writeIndex(index) {
   index.polities.sort((a, b) => a.id.localeCompare(b.id));
   index.elections.sort((a, b) => a.polity.localeCompare(b.polity) || a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
-  index.boxes = geoBoxes(index);
+  delete index.boxes; index.cover = geoCover(index);
   writeFileSync(INDEX, JSON.stringify(index, null, 1));
 }
 
@@ -293,7 +290,7 @@ function runCheck() {
   }
   const index = JSON.parse(readFileSync(INDEX, 'utf8'));
   const errs = validate(index, readPart);
-  if (JSON.stringify(index.boxes || {}) !== JSON.stringify(geoBoxes(index))) errs.push('index.boxes disagrees with the geometry files — run `node scripts/build-elections.mjs --boxes`');
+  if (JSON.stringify(index.cover || {}) !== JSON.stringify(geoCover(index))) errs.push('index.cover disagrees with the geometry files — run `node scripts/build-elections.mjs --cover`');
   /* ⚠ AND THE FILES ON DISK MUST BE THE FILES THE INDEX NAMES — no more. An orphan left behind by
      a pack that was renamed is shipped to every reader and never loaded by anything. */
   const named = new Set(['index.json']);
@@ -374,7 +371,7 @@ async function runBuild() {
   index.elections.sort((a, b) => a.polity.localeCompare(b.polity) || a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
   index.parties = Object.fromEntries(Object.entries(index.parties).sort((a, b) => a[0].localeCompare(b[0])));
   stamp(index, loadUpstreams(ROOT), { commitDate });
-  index.boxes = geoBoxes(index);
+  delete index.boxes; index.cover = geoCover(index);
   index._ = 'Built by scripts/build-elections.mjs from the packs in scripts/elections/. Every election ' +
     'carries its own `src` (attribution) and `lic` (licence); see docs/ELECTIONS.md.';
   writeFileSync(INDEX, JSON.stringify(index, null, 1));
@@ -391,7 +388,7 @@ if (ANNOTATE) {
   runEnumerate();
 } else if (LIST) {
   for (const f of packFiles()) console.log(f.replace(/\.mjs$/, ''));
-} else if (BOXES) {
+} else if (COVER) {
   const index = JSON.parse(readFileSync(INDEX, 'utf8'));
   writeIndex(index);
   runCheck();
