@@ -142,7 +142,10 @@ export function makeAtlasNotebook() {
     let followOf = null;
     if (reask && String(t.question).trim() === reask.question.trim()) { followOf = reask.root; }
     reask = null;
+    /* (atlas-cited-answers) the reply's source list — settled once the map's half of it landed (js/atlas-answer-sources.js `ready`) */
+    let as = null; try { as = t.answerSources ? await t.answerSources : null; } catch (_) { as = null; }
     const e = entryFromTurn(t, { view: v, results, sources: (t.cites || []).map((c) => ({ url: c.url, title: c.title || c.url })),
+      provenance: (as && as.items) || [], credit: (as && as.credit) || '',
       lang: D.lang ? D.lang() : '', resolve: D.resolve, now: Date.now(), followOf });
     if (!e) return told(null, t, 'empty');
     if (!prefs.keep) return told(e, t, 'not-kept');

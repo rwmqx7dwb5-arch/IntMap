@@ -1147,6 +1147,8 @@ atlas-answer-pipeline.js          Atlas — 台帳 → 1 回の呼び出し → 
                                   監査は回答を書き換えず・削らず・問い直さない。所見は Atlas が読んで判断する
 atlas-answer-render.js            Atlas — 構造化回答の描画（#R350）。引用記号と出典カードはレジストリからのみ生成し、
                                   モデルが書いた URL はリンクにしない
+atlas-answer-sources.js           Atlas — 道具を使った回答の出典。実行した道具の結果（meta.provenance）・描かれた国境の記録・
+                                  地図の出典表記から一覧を作り、返った値と等しい本文の数字に [n] を付け、線の出自カードと引用を開く
 ```
 
 ### 3.8 `js/` — 分析・パネル・シミュレーション
@@ -2575,7 +2577,7 @@ scripts/
                                   index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
                                   マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
                                   なるなら 1 ファイルで両方を名乗る
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 161 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 162 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の
