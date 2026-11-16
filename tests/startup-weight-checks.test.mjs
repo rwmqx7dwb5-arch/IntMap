@@ -19,7 +19,7 @@ import { readFileSync, existsSync, statSync, readdirSync } from 'node:fs';
 import { join, dirname, resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as acorn from 'acorn';
-import { capNamespaces, capMetaSource, capsModulesForKernel, capRunsModule, capRunsAllModule, META_QUERY } from '../scripts/atlas-caps-split.mjs';
+import { capNamespaces, capMetaSource, capsModulesForKernel, capRunsModule, capRunsAllModule, importsToCopies, META_QUERY } from '../scripts/atlas-caps-split.mjs';
 import { makeCapRunDoor } from '../js/atlas-caps.js';
 import { LAZY_REGISTRY } from '../js/lazy-modules.js';
 
@@ -161,4 +161,24 @@ test('startup-weight ⑤ the build\'s own report agrees: the kernel carries the 
   for (const f of ['js/drone-nav.js', 'js/sims.js', 'js/legal-text.js']) {
     assert.ok(!r.eager.chunks.some((file) => r.chunks[file] && Object.keys(r.chunks[file].modules).includes(f)), `${f} is in an eager chunk`);
   }
+});
+
+test('startup-weight ⑥ a module that is not a capability module is handed the copy of every capability module it imports, whoever it is', () => {
+  const files = new Set(Object.values(capNamespaces(read('js/atlas-caps-modules.js'))));
+  /* the importers are discovered, not listed: every js/ file that imports a capability module and is not one */
+  const importers = readdirSync(join(ROOT, 'js')).filter((f) => f.endsWith('.js') && !files.has(f) && f !== 'atlas-caps-modules.js')
+    .filter((f) => { const s = read('js/' + f); return [...files].some((c) => s.includes('./' + c)); });
+  for (const f of importers) {
+    const out = importsToCopies(read('js/' + f), files);
+    assert.ok(out, f + ' imports a capability module and was not rewritten');
+    for (const c of files) {
+      assert.ok(!["'./" + c + "'", '"./' + c + '"', '`./' + c + '`'].some((q) => out.includes(q)), f + ' still imports the real ' + c);
+    }
+  }
+  /* static, re-export and dynamic forms; a name that only looks like one (the aggregator) is not a capability module */
+  const one = [...files][0];
+  const src = "import a from './" + one + "';\nexport { b } from './" + one + "';\nconst c = () => import('./" + one + "');\nimport d from './atlas-caps-modules.js';\n";
+  const out = importsToCopies(src, files);
+  assert.equal(out.split(META_QUERY).length - 1, 3);
+  assert.match(out, /'\.\/atlas-caps-modules\.js'/);
 });

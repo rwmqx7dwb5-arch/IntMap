@@ -112,6 +112,34 @@ export function capRunsAllModule(namespaces, jsDir) {
     'export const modules = {', ...ent.map(([ns], i) => '  ' + JSON.stringify(ns) + ': m' + i + ','), '};', ''].join('\n');
 }
 
+/** ⚠ ANY OTHER MODULE THAT IMPORTS A CAPABILITY MODULE GETS THE COPY TOO. Measured: js/atlas-console.js took
+    `shareApi` from js/atlas-cap-panel.js (atlas-cited-answers), and that one import put the whole real panel module —
+    every `run` — back into the kernel. A named export of the copy is the same code as the module's (only the entries'
+    `run` differs, and that still reaches the real function through the door), so serving the copy changes nothing a
+    caller can see. Only the capability modules themselves (their sibling imports, unchanged) and `atlas-cap-runs`
+    read the real ones. The importer is not listed: every module under js/ and src/ is asked. */
+export function importsToCopies(src, capFiles) {
+  if (!src.includes('atlas-cap-')) return null;
+  let ast;
+  try { ast = acorn.parse(src, { ecmaVersion: 'latest', sourceType: 'module' }); } catch (_) { return null; }
+  const edits = [];
+  const visit = (n) => {
+    if (!n || typeof n.type !== 'string') return;
+    const s = (n.type === 'ImportDeclaration' || ((n.type === 'ExportNamedDeclaration' || n.type === 'ExportAllDeclaration') && n.source)) ? n.source
+      : (n.type === 'ImportExpression' && n.source.type === 'Literal') ? n.source : null;
+    if (s && typeof s.value === 'string') {
+      const m = /(?:^|\/)(atlas-cap-[a-z0-9-]+\.js)$/.exec(s.value);
+      if (m && capFiles.has(m[1])) edits.push([s.start, s.end, JSON.stringify(s.value + META_QUERY)]);
+    }
+    for (const k in n) { const v = n[k]; if (k !== 'parent' && v && typeof v === 'object') (Array.isArray(v) ? v.forEach(visit) : visit(v)); }
+  };
+  visit(ast);
+  if (!edits.length) return null;
+  let out = src;
+  for (const [a, b, s] of edits.sort((x, y) => y[0] - x[0])) out = out.slice(0, a) + s + out.slice(b);
+  return out;
+}
+
 export function atlasCapsSplit(root) {
   const jsDir = resolve(root, 'js');
   const namespaces = () => capNamespaces(readFileSync(resolve(jsDir, 'atlas-caps-modules.js'), 'utf8'));
@@ -131,7 +159,15 @@ export function atlasCapsSplit(root) {
       return { code: capMetaSource(readFileSync(resolve(jsDir, m[1]), 'utf8'), ns[0], 'js/' + m[1]), map: null };
     },
     transform(code, id) {
-      return CAPS_MODULES_RE.test(id) ? { code: capsModulesForKernel(code), map: null } : null;
+      if (CAPS_MODULES_RE.test(id)) return { code: capsModulesForKernel(code), map: null };
+      if (id.includes('?') || id.includes('node_modules') || !/\.(m?js)$/.test(id)) return null;
+      const p = slash(id);
+      if (!/\/(js|src)\//.test(p)) return null;
+      const files = new Set(Object.values(namespaces()));
+      const base = p.slice(p.lastIndexOf('/') + 1);
+      if (files.has(base) && /\/js\//.test(p)) return null;   /* a real capability module keeps its real siblings */
+      const out = importsToCopies(code, files);
+      return out == null ? null : { code: out, map: null };
     },
   };
 }
