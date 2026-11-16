@@ -36,7 +36,8 @@ import { publicHostname } from "./relay-guard.js";
 export const FETCH_RELAY_FUNCTION = "fetch-relay";
 
 /* One rule per upstream. `hosts` is exact (no wildcards); `path` is anchored; `query` maps EVERY
-   key the URL may carry to the shape of its value, and every key it names must be present.
+   key the URL may carry to the shape of its value, and every key it names must be present — except the
+   keys the rule lists in `optional` (a key there may be absent; when present it is held to its shape).
    `redirectHosts` (optional) are names the rule admits only as a redirect hop — see fetchRelayRule.
    `probe` is ONE concrete URL the rule admits and the upstream answers (the smallest one measured):
    scripts/probe-relay-ladder.mjs asks our relay for it every six hours, and tests/own-fetch-relay-checks holds it to
@@ -112,6 +113,34 @@ export const FETCH_RELAY_RULES = Object.freeze([
     timeoutMs: 20000,
     cacheSeconds: 7200,
   },
+  {
+    id: "world-bank-indicator",
+    probe: "https://api.worldbank.org/v2/country/JPN/indicator/SP.POP.TOTL?format=json&mrnev=1&per_page=1",
+    /* js/wb-indicators.js — the World Bank's indicator API, read DIRECTLY first: it sends
+       Access-Control-Allow-Origin: * to a request that carries an Origin. This rule is the second way, for when it
+       does not. MEASURED 2026-11-16 (production, then curl with the site's Origin): the API's CDN keys its cache on the
+       address alone, so an answer first fetched WITHOUT an Origin is served to every reader for hours with no ACAO
+       (`CF-Cache-Status: HIT`, `Age: 863`) — and it had happened to BOTH spellings of SP.POP.TOTL's query, the one the
+       page asks and the reversed one it used to retry with (wb-cors-cached-copy), so the retry met the same refusal.
+       A copy without the header is harmless to this function (it reads server-side), so the relay is the retry that
+       cannot be refused the same way. Sizes: SP.POP.TOTL, all countries, 1990:2027, per_page 20000 = 1,925,696 B
+       in 0.44 s cached; a cold JPN query took over 60 s once — the clock is the page's own for this host
+       (js/proxy-fetch.js WORLDBANK_DIRECT_MS). The answer changes once a year or so; the CDN itself keeps ~7 h. */
+    hosts: ["api.worldbank.org"],
+    path: /^\/v2\/country\/[A-Za-z0-9;]{2,200}\/indicator\/[A-Za-z0-9._]{1,60}$/,
+    query: {
+      format: /^json$/,
+      per_page: /^\d{1,5}$/,
+      source: /^\d{1,3}$/,
+      date: /^\d{4}(?::\d{4})?$/,
+      mrnev: /^\d{1,2}$/,
+    },
+    optional: ["source", "date", "mrnev"],
+    type: /^application\/json/i,
+    maxBytes: 8 * 1024 * 1024,
+    timeoutMs: 20000,
+    cacheSeconds: 21600,
+  },
 ]);
 
 /* The rule that admits `raw`, or null. Structural, never a prefix test: the URL is parsed, and a
@@ -138,7 +167,9 @@ export function fetchRelayRule(raw, opts) {
       if (!re || seen.has(k) || !re.test(v)) { ok = false; break; }
       seen.add(k);
     }
-    if (!ok || seen.size !== want.length) continue;
+    if (!ok) continue;
+    const optional = rule.optional || [];
+    if (want.some((k) => !seen.has(k) && !optional.includes(k))) continue;
     return rule;
   }
   return null;
