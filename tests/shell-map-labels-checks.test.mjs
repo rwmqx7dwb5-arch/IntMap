@@ -240,6 +240,7 @@ async function boot(lang, mode) {
   win.isMobile = () => false;
   win.imLabelLang = mode;
   win.IntMapMapTypography = { placeFont: () => ['literal', ['Inter']], readerFont: () => ['literal', ['Inter']], cjkFamily: () => '', glyphRewrite: noop };
+  win.IntMapLabelScale = { halo: (w) => w };   /* applyLabelLang re-asserts the halo through js/label-scale.js */
   const M = await importModule('js/place-labels.js', {
     globals: { window: win, document: { baseURI: 'https://example.invalid/' } },
     mocks: {
@@ -337,10 +338,14 @@ test('#R772 ④ ui / local / en still produce exactly one line, unchanged', asyn
    one language beside two-line city names — the shape #R429 records. */
 test('#R772 ⑤ the second line reaches every layer that draws a tile name', async () => {
   const { EN_BOTH } = await both();
-  for (const id of ['ofm-country', 'ofm-admin1', 'ofm-city', 'ofm-other', 'ofm-poi', 'ofm-river', 'ofm-water']) {
+  for (const id of ['ofm-admin1', 'ofm-city', 'ofm-other', 'ofm-poi', 'ofm-river', 'ofm-water']) {
     assert.ok(EN_BOTH.has(id), 'no text-field written for ' + id);
     assert.equal(draw(EN_BOTH.get(id), TOKYO), 'Tokyo' + NL + '東京', id);
   }
+  /* (news-type-polish) 「現地名地名併記は、国名については無しに。」 — a country name is ONE line, in the
+     reader's language, in this mode as in every other */
+  assert.ok(EN_BOTH.has('ofm-country'), 'no text-field written for ofm-country');
+  assert.equal(draw(EN_BOTH.get('ofm-country'), TOKYO), 'Tokyo', 'ofm-country draws no endonym line');
   /* the peak layer keeps its ▲ on the first line and takes the endonym under it. */
   assert.equal(draw(EN_BOTH.get('ofm-peak'), TOKYO), '▲ Tokyo' + NL + '東京');
 });
@@ -969,7 +974,7 @@ test('#R253 ⑦ the CJK face is chosen per label, and the renderer is told which
   /* the layers use it, and re-apply it when the language changes */
   /* spelling kept: js/place-labels.js builds its layers inside the label factory against the live renderer; which font expression it passes is read off its text. */
   assert.match(pl, /const FONT=MT\(\)\.placeFont\(\)/, 'the place layers no longer name their own faces');
-  assert.match(pl, /setLayout\(id,'text-font',fontExpr\)/, 'applyLabelLang does not re-apply the face with the language');
+  assert.match(pl, /setLayout\(id,'text-font',id==='ofm-country'\?fontCountry:fontExpr\)/, 'applyLabelLang does not re-apply the face with the language');
   assert.match(pl, /'text-font':FONTSEA/, 'the sea gazetteer no longer takes the reader’s own stack');
 
   /* …and a stack name that is a font family must still resolve to a real glyph URL: `text-font`
@@ -982,6 +987,19 @@ test('#R253 ⑦ the CJK face is chosen per label, and the renderer is told which
   assert.match(latin.url, /^https:\/\/example\.invalid\/app\/fonts\/Inter%20Regular\/0-255\.pbf$/, 'a Latin range still comes from this origin’s own atlas');
   assert.equal(ja.T.glyphRewrite('https://tiles.openfreemap.org/fonts/Noto%20Sans%20Regular/12288-12543.pbf', 'Glyphs'), undefined,
     'a stack the server already serves is left alone');
+
+  /* (news-type-polish) 「国名ラベルは太字に」 — the WEIGHT travels with the stack name. A bold stack gets the
+     bold atlas for the self-hosted ranges and the server's bold Noto for the rest; the bold faces are
+     the reader's faces with the weight word, so MapLibre's local CJK rasteriser draws them at 700 too. */
+  const bold = ja.T.placeFont('bold');
+  assert.deepEqual(bold[2][1], ja.T.placeFont()[2][1].map((f) => f + ' Bold'), 'placeFont(bold) is the same faces in the bold weight');
+  const stackOf = (faces) => encodeURIComponent(faces.join(','));
+  const bLatin = ja.T.glyphRewrite('https://tiles.openfreemap.org/fonts/' + stackOf(bold[2][1]) + '/0-255.pbf', 'Glyphs');
+  assert.match(bLatin.url, /\/app\/fonts\/Inter%20Bold\/0-255\.pbf$/, 'a bold Latin range comes from the bold atlas');
+  const bOther = ja.T.glyphRewrite('https://tiles.openfreemap.org/fonts/' + stackOf(bold[2][1]) + '/1536-1791.pbf', 'Glyphs');
+  assert.equal(bOther.url, 'https://tiles.openfreemap.org/fonts/Noto%20Sans%20Bold/1536-1791.pbf', 'a bold range outside the atlas comes from the server in bold');
+  assert.match(ja.T.glyphRewrite('https://tiles.openfreemap.org/fonts/' + stackOf(ja.T.placeFont()[2][1]) + '/0-255.pbf', 'Glyphs').url,
+    /\/fonts\/Inter%20Regular\/0-255\.pbf$/, 'a regular stack still gets the regular atlas');
 });
 }
 
@@ -1060,7 +1078,7 @@ const ERA = ['imtb-lbl', 'imtb-lbl2'].map((id) => ({ id, def: layerDef(TB, id) }
 /* spelling kept: browser script (js/place-labels.js, js/time-borders.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
 test('r309 ② the era country labels carry the same values as ofm-country', () => {
   /* the plain values: whatever ofm-country says, both era layers must say */
-  for (const key of ['text-letter-spacing', 'text-max-width', 'text-padding', 'text-color', 'text-halo-color', 'text-halo-width']) {
+  for (const key of ['text-letter-spacing', 'text-max-width', 'text-padding', 'text-color', 'text-halo-color']) {
     const want = prop(MODERN, key);
     assert.ok(want, 'ofm-country declares ' + key);
     for (const e of ERA) {
@@ -1070,6 +1088,10 @@ test('r309 ② the era country labels carry the same values as ofm-country', () 
   /* the size RAMP is a call into js/label-scale.js — the two files spell the module differently
      (`LS` vs `window.IntMapLabelScale`), so compare the ARGUMENT, which is the tier being asked for */
   const tier = (def) => { const m = /place\('([a-z]+)'\)/.exec(prop(def, 'text-size') || ''); return m && m[1]; };
+  /* the halo is a call too (js/label-scale.js `halo`), spelled `LS` or `window.IntMapLabelScale` — compare the weight asked for */
+  const halo = (def) => { const m = /halo\(([0-9.]+)\)/.exec(prop(def, 'text-halo-width') || ''); return m && m[1]; };
+  assert.ok(halo(MODERN), 'ofm-country asks js/label-scale.js for its halo');
+  for (const e of ERA) assert.equal(halo(e.def), halo(MODERN), e.id + ' asks for the same halo weight');
   assert.equal(tier(MODERN), 'country', 'ofm-country asks IntMapLabelScale for the country tier');
   for (const e of ERA) assert.equal(tier(e.def), tier(MODERN), e.id + ' asks for the same label tier');
 });
@@ -1094,7 +1116,9 @@ test('r309 ② the era labels get a REAL font family, and the basemap re-paints 
      MapLibre 5 therefore rasterises it through sans-serif. Neither era label may name it. */
   for (const e of ERA) assert.ok(!/Noto Sans Regular/.test(e.def), e.id + ' does not ask for the retired stack');
   /* …and the face they DO ask for is the one for text already in the reader's language */
-  assert.ok(/readerFont\(\)/.test(TB), 'js/time-borders.js takes its face from IntMapMapTypography.readerFont()');
+  assert.ok(/readerFont\('bold'\)/.test(TB), "js/time-borders.js takes its face from IntMapMapTypography.readerFont('bold')");
+  /* (news-type-polish) 「国名ラベルは太字に」 — the present and the past country names are both the bold weight */
+  assert.ok(/placeFont\('bold'\)/.test(prop(MODERN, 'text-font') || ''), 'ofm-country asks for the bold weight');
   /* the colours above are the birth values; the basemap swap is what keeps them true afterwards */
   const body = fnBody(PL, 'applyLabelLang');
   for (const e of ERA) assert.ok(body.includes(e.id), 'applyLabelLang re-paints ' + e.id + ' with the rest of the country labels');

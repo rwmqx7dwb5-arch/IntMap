@@ -157,7 +157,7 @@ export function placeLabels(HOST){
       const MT=()=>window.IntMapMapTypography;
       const FONT=MT().placeFont();
       const before = GE().layers.has('grid-lines') ? 'grid-lines' : undefined;
-      if(!GE().layers.has('ofm-country')) GE().layers.add({id:'ofm-country',type:'symbol',source:'ofm','source-layer':'place',filter:['==',['get','class'],'country'],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.place('country'),'text-letter-spacing':0.08,'text-max-width':8,'text-padding':6},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.7}}, before);   /* (#R210) 発色を濃く: pure white on a heavier halo */
+      if(!GE().layers.has('ofm-country')) GE().layers.add({id:'ofm-country',type:'symbol',source:'ofm','source-layer':'place',filter:['==',['get','class'],'country'],layout:{visibility:'none','text-field':['get','name'],'text-font':MT().placeFont('bold'),'text-size':LS.place('country'),'text-letter-spacing':0.08,'text-max-width':8,'text-padding':6},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':LS.halo(1.7)}}, before);   /* (#R210) 発色を濃く: pure white on a heavier halo */
       /* (city-label-size) WHICH STEP OF THE SIZE LADDER A SETTLEMENT IS ON — read off the tiles' own statements, nothing
          listed by hand. OpenMapTiles `place` carries `rank` (1 = most important; measured 2026-10-05 over Japan and Korea:
          Tokyo 1, Osaka/Seoul 2, Pyongyang/Hiroshima 3, Nagasaki 4, Nagoya/Kyoto/Fukuoka 5, Yokohama/Kobe 6) and `capital`
@@ -172,7 +172,7 @@ export function placeLabels(HOST){
         ['<=',CITY_RANK,4],1,
         ['<=',CITY_RANK,6],2,
         3];
-      if(!GE().layers.has('ofm-city')) GE().layers.add({id:'ofm-city',type:'symbol',source:'ofm','source-layer':'place',minzoom:3,filter:['all',['in',['get','class'],['literal',['city','town']]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.placeTiered('city',CITY_TIER),'symbol-sort-key':['+',['*',CITY_TIER,100],CITY_RANK],'text-max-width':7,'text-variable-anchor':['top','bottom','left','right'],'text-radial-offset':0.4,'text-justify':'auto','icon-optional':true},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.6}});   /* (#R210) 発色を濃く */
+      if(!GE().layers.has('ofm-city')) GE().layers.add({id:'ofm-city',type:'symbol',source:'ofm','source-layer':'place',minzoom:3,filter:['all',['in',['get','class'],['literal',['city','town']]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.placeTiered('city',CITY_TIER),'symbol-sort-key':['+',['*',CITY_TIER,100],CITY_RANK],'text-max-width':7,'text-variable-anchor':['top','bottom','left','right'],'text-radial-offset':0.4,'text-justify':'auto','icon-optional':true},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':LS.halo(1.6)}});   /* (#R210) 発色を濃く */
       /* ══ (#R198) THE NAMES OF THE THINGS BETWEEN A COUNTRY AND A CITY ═══════════════════════════
          「地方行政区分も地名ラベルをつけるように。（例：日本の都道府県、アメリカ・ドイツ・オーストラリア
            の州、中国の省など。）」
@@ -223,7 +223,7 @@ export function placeLabels(HOST){
         layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.place('admin1'),
           'text-letter-spacing':0.06,'text-max-width':8,'text-padding':4,'text-optional':true,
           'symbol-sort-key':['coalesce',['get','rank'],6]},
-        paint:{'text-color':A1_TEXT(),'text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.5}});   /* (#R252) the colour of the boundary it names — see A1_TEXT */
+        paint:{'text-color':A1_TEXT(),'text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':LS.halo(1.5)}});   /* (#R252) the colour of the boundary it names — see A1_TEXT */
       /* ══ ⚠⚠⚠ (#R252) THE NAMES BELOW A MUNICIPALITY — AND A MISSPELLED CLASS ═══════════════════════
          「地名ラベルに、都道府県や市区町村までは出ても、それ未満の地名は出てこない。出るように。（世界共通）」
 
@@ -262,7 +262,7 @@ export function placeLabels(HOST){
         filter:['all',['has','name'],['in',['get','class'],['literal',['village','suburb','hamlet','borough','quarter','neighbourhood','isolated_dwelling','farm']]],OTHER_GATE],
         layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.place('other'),'text-max-width':7,'text-optional':true,
           'symbol-sort-key':['+',['*',OTHER_TIER,1000],['coalesce',['get','rank'],20]]},
-        paint:{'text-color':'#f4f6fa','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.4}});   /* (#R210) 発色を濃く */
+        paint:{'text-color':'#f4f6fa','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':LS.halo(1.4)}});   /* (#R210) 発色を濃く */
       /* (#R40) "河川や湖、その他地形のラベルが欲しい" — rivers/lakes/seas (water_name) + mountain peaks (mountain_peak),
          from the same OFM vector source. Italic blue for water (cartographic convention), a ▲ for peaks with
          elevation. They follow the Place-names toggle + the active label language (handled in applyLabelLang). */
@@ -280,7 +280,7 @@ export function placeLabels(HOST){
          POINT label geometry) but drawn with symbol-placement:line — line placement on a point lands the label
          off the actual river. River/canal names live in the `waterway` LINE layer; placing them there makes them
          follow the real river line on the basemap (aligned). */
-      if(!GE().layers.has('ofm-river')) GE().layers.add({id:'ofm-river',type:'symbol',source:'ofm','source-layer':'waterway',minzoom:6,filter:['in',['get','class'],['literal',['river','canal']]],layout:{visibility:'none','symbol-placement':'line','text-field':['get','name'],'text-font':FONTI,'text-size':LS.sub(0.95),'text-max-angle':38,'text-letter-spacing':0.02,'symbol-spacing':350},paint:{'text-color':'#7fc4ff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.1}});
+      if(!GE().layers.has('ofm-river')) GE().layers.add({id:'ofm-river',type:'symbol',source:'ofm','source-layer':'waterway',minzoom:6,filter:['in',['get','class'],['literal',['river','canal']]],layout:{visibility:'none','symbol-placement':'line','text-field':['get','name'],'text-font':FONTI,'text-size':LS.sub(0.95),'text-max-angle':38,'text-letter-spacing':0.02,'symbol-spacing':350},paint:{'text-color':'#7fc4ff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':LS.halo(1.1)}});
       /* (#R62) sea/ocean/bay labels moved OFF the vector tiles: water_name label points are stored PER TILE, so the
          visible label jumped to a different point at every zoom level ("ズームに応じて位置がどんどんずれてしまう").
          OFM now only supplies LAKE names (compact bodies → no visible drift); seas/oceans/gulfs come from the fixed
@@ -300,10 +300,10 @@ export function placeLabels(HOST){
       try{ if(!GE().layers.hasSource('stab-water-src')) GE().layers.addSource('stab-water-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}}); }catch(_){}
       /* (#R69) both water layers additionally gate each pin on its first-seen tile zoom (`mz`, see _harvestOne)
          so zoomed-in harvests don't flood lower zooms ("水域ラベルが…過剰な数見えすぎ"). */
-      if(!GE().layers.has('ofm-water')) GE().layers.add({id:'ofm-water',type:'symbol',source:'stab-water-src',minzoom:5.5,filter:['all',['!',['in',['get','class'],['literal',['ocean','sea','bay','strait','gulf','lagoon']]]],['<=',['coalesce',['get','mz'],0],['+',['zoom'],0.2]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONTI,'text-size':LS.sub(0.95),'text-max-width':8},paint:{'text-color':'#8fd0ff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.1}});
+      if(!GE().layers.has('ofm-water')) GE().layers.add({id:'ofm-water',type:'symbol',source:'stab-water-src',minzoom:5.5,filter:['all',['!',['in',['get','class'],['literal',['ocean','sea','bay','strait','gulf','lagoon']]]],['<=',['coalesce',['get','mz'],0],['+',['zoom'],0.2]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONTI,'text-size':LS.sub(0.95),'text-max-width':8},paint:{'text-color':'#8fd0ff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':LS.halo(1.1)}});
       /* (#R65) seas/bays/straits/gulfs from the SAME pinned dynamic source (visible from low zoom) — every
          named water body worldwide gets a stable label, not just the curated majors. */
-      if(!GE().layers.has('ofm-water2')) GE().layers.add({id:'ofm-water2',type:'symbol',source:'stab-water-src',minzoom:2,filter:['all',['in',['get','class'],['literal',['ocean','sea','bay','strait','gulf','lagoon']]],['<=',['coalesce',['get','mz'],0],['+',['zoom'],0.2]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONTI,'text-letter-spacing':0.06,'text-max-width':8,'text-size':LS.sub(1)},paint:{'text-color':'#8fd0ff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.1,'text-opacity':0.95}});
+      if(!GE().layers.has('ofm-water2')) GE().layers.add({id:'ofm-water2',type:'symbol',source:'stab-water-src',minzoom:2,filter:['all',['in',['get','class'],['literal',['ocean','sea','bay','strait','gulf','lagoon']]],['<=',['coalesce',['get','mz'],0],['+',['zoom'],0.2]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONTI,'text-letter-spacing':0.06,'text-max-width':8,'text-size':LS.sub(1)},paint:{'text-color':'#8fd0ff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':LS.halo(1.1),'text-opacity':0.95}});
       try{ if(!GE().layers.hasSource('geo-sea-src')){
         GE().layers.addSource('geo-sea-src',{type:'geojson',data:_seaFC()});
       }
@@ -318,7 +318,7 @@ export function placeLabels(HOST){
            construction. An ocean used to be the BIGGEST text on the map (19.3 px against a city's 15);
            it is a non-place label, so it is now under the place ladder like every other one. */
         'text-size':LS.subCase(['==',['get','big'],1],1,0.86)},
-        paint:{'text-color':'#8fd0ff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.1,'text-opacity':0.95}}); }catch(_){}
+        paint:{'text-color':'#8fd0ff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':LS.halo(1.1),'text-opacity':0.95}}); }catch(_){}
       /* (#R63) peaks: CONSTANT text size — size interpolation read as sliding. (#R67) rendered DIRECTLY from the
          mountain_peak tiles (point nodes are sub-pixel accurate at every zoom's own tiles).
          (#R68) MEASURED root cause of the still-reported drift: the anchors were glued (≤2.4 m across z10→z13.5,
@@ -326,7 +326,7 @@ export function placeLabels(HOST){
          point — the ▲ marker sat half-a-string-width LEFT of the summit, a constant SCREEN offset that spans
          kilometres of terrain at low zoom and metres at high zoom → the ▲ visibly pointed at different terrain
          at every zoom. The string is now LEFT-anchored: the ▲ glyph itself sits ON the summit at every zoom. */
-      if(!GE().layers.has('ofm-peak')) GE().layers.add({id:'ofm-peak',type:'symbol',source:'ofm','source-layer':'mountain_peak',minzoom:7,filter:['has','name'],layout:{visibility:'none','text-field':['concat','▲ ',['get','name']],'text-font':FONT,'text-size':LS.sub(0.92),'text-max-width':30,'text-anchor':'left','text-justify':'left','text-offset':[-0.32,0]},paint:{'text-color':'#e7dcc8','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}});
+      if(!GE().layers.has('ofm-peak')) GE().layers.add({id:'ofm-peak',type:'symbol',source:'ofm','source-layer':'mountain_peak',minzoom:7,filter:['has','name'],layout:{visibility:'none','text-field':['concat','▲ ',['get','name']],'text-font':FONT,'text-size':LS.sub(0.92),'text-max-width':30,'text-anchor':'left','text-justify':'left','text-offset':[-0.32,0]},paint:{'text-color':'#e7dcc8','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':LS.halo(1.2)}});
       /* ══ (#R186) THE NAMES OF PLACES YOU GO TO ═════════════════════════════════════════════════
          「Base map & labelsに、地点の名前も追加して。（例：地名などではなく、店舗名や施設名など）」
 
@@ -645,6 +645,11 @@ export function placeLabels(HOST){
        ⚠ The face needs no change: placeFont() (js/map-typography.js) gives the reader's stack to a
        feature that HAS the reader's name key — exactly the feature that gets a second line — and
        that stack ends in the pan-Han face, so the endonym is drawn by the stack drawing the exonym. */
+    /* (news-type-polish) 「現地名地名併記は、国名については無しに。」 — a country name is printed once, in
+       the reader's language: the endonym line belongs to cities and regions, where the local spelling is
+       what the reader meets on the ground. `countryExpr` is the reader-language expression BEFORE the
+       second line is added, so every rule that chooses the reader's text still chooses it here. */
+    const countryExpr=nameExpr;
     if(mode==='ui+local'){
       const _loc=['coalesce',['get','name'],''], _ui=nameExpr;
       nameExpr=['case',['any',['==',_loc,''],['==',['to-string',_ui],_loc]],_ui,['concat',_ui,'\n',_loc]];
@@ -660,7 +665,10 @@ export function placeLabels(HOST){
     /* ⚠ (#R253) THE FACE IS PART OF THE LANGUAGE, so it is re-applied wherever `text-field` is. One
        expression per layer, built once here: `placeFont()` reads `IntMapOsmNameKeys` for the language
        that is now current, so it must not be captured from layer-creation time. */
-    const fontExpr=window.IntMapMapTypography.placeFont(), fontSea=window.IntMapMapTypography.readerFont();
+    const MTy=window.IntMapMapTypography, fontExpr=MTy.placeFont(), fontSea=MTy.readerFont();
+    /* (news-type-polish) 「国名ラベルは太字に」 — the same per-label face rule, in the bold weight. The era
+       country labels below take the bold reader face for the same reason they take `fontSea`. */
+    const fontCountry=MTy.placeFont('bold'), fontEraCountry=MTy.readerFont('bold');
     try{ ['ofm-river','ofm-water','ofm-water2'].forEach(id=>{ if(!GE().layers.has(id)) return; GE().layers.setLayout(id,'visibility',showGeo?'visible':'none'); GE().layers.setLayout(id,'text-field',nameExpr); GE().layers.setLayout(id,'text-font',fontExpr); });
       if(GE().layers.has('ofm-peak')){ GE().layers.setLayout('ofm-peak','visibility',showGeo?'visible':'none'); GE().layers.setLayout('ofm-peak','text-field',['concat','▲ ',nameExpr]); GE().layers.setLayout('ofm-peak','text-font',fontExpr); }
       /* ⚠ (#R242) the curated sea gazetteer carries FIVE name columns and used to be read with a
@@ -717,7 +725,7 @@ export function placeLabels(HOST){
     ['ofm-country','ofm-admin1','ofm-city','ofm-other'].forEach(id=>{ if(!GE().layers.has(id)) return;
       const _showThis=((id==='ofm-country'&&_travelingLbl)||(id==='ofm-admin1'&&_travelingAdm))?false:show;
       GE().layers.setLayout(id,'visibility',_showThis?'visible':'none');
-      let _fld=nameExpr, _gen=false;
+      let _fld=(id==='ofm-country')?countryExpr:nameExpr, _gen=false;
       if(id==='ofm-city'){ try{ const HC=window.IntMapHistCities; if(HC){ _fld=HC.textField(nameExpr,HOST.lang,mode); _gen=!!(HC.built&&HC.built(_fld)); } }catch(_){ _fld=nameExpr; _gen=false; } }
       const _lyr=(id==='ofm-city')?GE().layers.get(id):null;
       const _held=!!(_lyr&&typeof _lyr==='object'&&_cityFieldWritten.get(_lyr)===_fld);
@@ -725,7 +733,7 @@ export function placeLabels(HOST){
          there): MapLibre's validator parses it a second time on every real change, and its shape is
          validated by the tests instead. Everything else here is validated as always. */
       if(!_held){ GE().layers.setLayout(id,'text-field',_fld,_gen?{validate:false}:undefined); if(_lyr&&typeof _lyr==='object') _cityFieldWritten.set(_lyr,_fld); }
-      GE().layers.setLayout(id,'text-font',fontExpr);   /* (#R253) the face follows the label's own language */
+      GE().layers.setLayout(id,'text-font',id==='ofm-country'?fontCountry:fontExpr);   /* (#R253) the face follows the label's own language */
       /* dark map / satellite → light text; light map → dark text. */
       const lightText = sat || isDark;
       /* (#R210) 「全地名ラベルの白と黒の発色を濃く」— the whites go to pure white and the blacks to pure
@@ -734,7 +742,7 @@ export function placeLabels(HOST){
          the region (A1_TEXT), the same colour on both basemaps, with the dark halo that colour needs. */
       GE().layers.setPaint(id,'text-color', (id==='ofm-admin1')?A1_TEXT():(lightText?'#ffffff':'#000000'));
       GE().layers.setPaint(id,'text-halo-color', (id==='ofm-admin1'||lightText)?'rgba(0,0,0,0.9)':'rgba(255,255,255,0.96)');
-      GE().layers.setPaint(id,'text-halo-width', id==='ofm-country'?1.7:id==='ofm-city'?1.6:1.45);
+      GE().layers.setPaint(id,'text-halo-width', LS.halo(id==='ofm-country'?1.7:id==='ofm-city'?1.6:1.45));
     });
     /* == (#R309) THE ERA COUNTRY LABELS ARE COUNTRY LABELS, SO THEY FOLLOW THE SAME BASEMAP RULE ==
        「昔の国名ラベルの見た目や挙動も今の国名ラベルと完全に同じに。」 `imtb-lbl` / `imtb-lbl2`
@@ -751,10 +759,10 @@ export function placeLabels(HOST){
        to the pan-Han face. Same reason the curated sea gazetteer uses it (#R242). */
     try{ const _eraLight = sat || isDark;
       ['imtb-lbl','imtb-lbl2'].forEach(id=>{ if(!GE().layers.has(id)) return;
-        GE().layers.setLayout(id,'text-font',fontSea);
+        GE().layers.setLayout(id,'text-font',fontEraCountry);
         GE().layers.setPaint(id,'text-color', _eraLight?'#ffffff':'#000000');
         GE().layers.setPaint(id,'text-halo-color', _eraLight?'rgba(0,0,0,0.9)':'rgba(255,255,255,0.96)');
-        GE().layers.setPaint(id,'text-halo-width', 1.7);
+        GE().layers.setPaint(id,'text-halo-width', LS.halo(1.7));
       }); }catch(_){}
     /* (#R530) …and the ERA PROVINCE label is a province label, so it takes the province tier's face
        for the same reason and its colour from the line that draws the region (#R252). It is created
@@ -770,7 +778,7 @@ export function placeLabels(HOST){
         GE().layers.setLayout(_id,'text-font',fontSea);
         GE().layers.setPaint(_id,'text-color',A1_TEXT());
         GE().layers.setPaint(_id,'text-halo-color','rgba(0,0,0,0.9)');
-        GE().layers.setPaint(_id,'text-halo-width',1.45);
+        GE().layers.setPaint(_id,'text-halo-width',LS.halo(1.45));
       } }catch(_){}
     try{ window._applyAdmin1&&window._applyAdmin1(); }catch(_){}
   }

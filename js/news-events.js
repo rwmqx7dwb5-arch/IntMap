@@ -443,9 +443,11 @@ export function newsEvents(HOST) {
     const draw = () => {
       const v = healthVerdict();
       const fmt = (ms) => { try { return new Date(ms).toLocaleString(IntMapLang.locale(HOST.lang), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (_) { return new Date(ms).toISOString(); } };
-      const by = L('IntMap news collection', 'IntMap のニュース収集');
+      /* (news-type-polish) 「· by IntMap news collection はいらない。」 — on this line the measurer is the list
+         itself, so the attribution said nothing the reader did not already know. `by` stays on the surfaces
+         where the time could belong to someone else (js/news-edition.js, js/news-intel.js). */
       let html = freshChip({ at: v.lastOkAt, rhythmMs: v.rhythmMs, now: nowMs(), unverified: v.state === 'unverified',
-        verb: 'updated', by, lang: HOST.lang, fmt });
+        verb: 'updated', lang: HOST.lang, fmt });
       if (v.state === 'unverified') {
         /* 訊けなかったときに一覧自身が言えること：いま載っている中で最も新しい出来事の時刻 */
         const newest = events().reduce((a, e) => (e && e.lastAt && e.lastAt > a ? e.lastAt : a), '');
@@ -569,8 +571,14 @@ export function newsEvents(HOST) {
          いた。カードには `.news-pub` に媒体が 2 つまで出るが、それは Event 全体の媒体で
          あって**この文を書いた媒体ではない**（3 媒体の Event ではどれの文か分からない）。
          「各記述に根拠媒体が付く」がこの機能の約束なので、切られない側に置く。 */
+      /* ⚠ (news-type-polish) 「ニュースソースの重複表示」 — …but when the event has ONE outlet, `.news-pub`
+         below already names it, and the prefix printed the same name a second time on the same card
+         (measured: every 1-source event, e.g. «CNBC A deepening reliance…» over «CNBC»). The rule is the
+         fact the prefix exists for: name the sentence's outlet where the card does not already name it. */
+      const outlets = new Set(ev.outlets || []);
+      const named = outlets.size === 1 && outlets.has(g0.source);
       if (t) t.insertAdjacentHTML('afterend',
-        '<div class="ev-gist"><span class="ev-gist-src">' + S(g0.source) + '</span> ' + S(g0.text) + '</div>');
+        '<div class="ev-gist">' + (named ? '' : '<span class="ev-gist-src">' + S(g0.source) + '</span> ') + S(g0.text) + '</div>');
     }
 
     /* ── 「記事を読む」を二次導線へ下げる（#R405）─────────────────────────

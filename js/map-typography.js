@@ -46,6 +46,14 @@ window.IntMapMapTypography = (function () {
      that script's RANGES — one list, two readers ([[intmap-recurring-lessons]] G). */
   const GLYPH_RANGES = [0, 256, 512, 768, 1024, 1280, 7680, 8192, 8448, 8704];
   const GLYPH_STACK = 'Inter Regular';
+  /* (news-type-polish) 「国名ラベルは太字に」 — the second weight scripts/build-glyphs.mjs emits (its
+     WEIGHTS). A layer asks for it by NAMING a bold stack (`placeFont('bold')`); the name is also what
+     MapLibre's local rasteriser reads for the CJK weight (`_fontWeight` matches the word «Bold»). */
+  const GLYPH_STACK_BOLD = 'Inter Bold';
+  const isBoldStack = (stack) => /\bbold\b/i.test(stack);
+  /* a face list in the weight asked for: «Noto Sans JP» → «Noto Sans JP Bold». The family part is
+     what the browser draws CJK with; the suffix is only the weight word. */
+  const weighted = (faces, weight) => (weight === 'bold' ? faces.map((f) => f + ' Bold') : faces);
 
   /* ══ ⚠⚠ (#R253) THIS WAS ANSWERING WITH THE BCP-47 TAG, NOT THE APP'S LANGUAGE CODE ═════════════
      `window.IM_HOST` and `window.currentLang` do not exist — `IM_HOST` is a module-local `const` in
@@ -135,9 +143,9 @@ window.IntMapMapTypography = (function () {
   /* the `text-font` for a layer whose text is ALREADY in the reader's language — the curated sea
      gazetteer resolves one string per feature (#R242), so there is no name key to test and the
      per-label `case` below would wrongly send every sea name to the pan-Han face. */
-  function readerFont() { return _readerFaces(); }
-  function placeFont() {
-    const l = _lang(), own = _readerFaces();
+  function readerFont(weight) { return weighted(_readerFaces(), weight); }
+  function placeFont(weight) {
+    const l = _lang(), own = weighted(_readerFaces(), weight);
     /* ⚠ THE TRADITIONAL SETTING NEEDS THE SAME `case`, NOT AN EXEMPTION. 「中国語設定の日本語地名は
        中国語フォントに統一」 reads as «one Chinese face for the whole label», and for zh-Hant that
        cannot be Noto Sans TC: measured, TC does not carry 区 / 渋 / 峠 / 蔵, so a Japanese place name
@@ -155,7 +163,7 @@ window.IntMapMapTypography = (function () {
        exonym the tiles carry (#R242) — so the key that justifies that face is the Japanese one. An
        English map of China then falls to `name`, which is Chinese, and gets the pan-Han face whole. */
     if (!keys.length) keys = ['name:ja'];
-    return ['case', ['any'].concat(keys.map((k) => ['has', k])), ['literal', own], ['literal', [HAN_ALL]]];
+    return ['case', ['any'].concat(keys.map((k) => ['has', k])), ['literal', own], ['literal', weighted([HAN_ALL], weight)]];
   }
   function syncCjkFamily() {
     try {
@@ -275,17 +283,34 @@ window.IntMapMapTypography = (function () {
      rasteriser does NOT handle (Arabic, Thai, Devanagari…). The Latin/Cyrillic ranges already come
      from this origin's Inter atlases; everything else is folded back onto the one stack OpenFreeMap
      actually serves, so a non-CJK label in a place-name layer is byte-identical to before. */
-  const SERVER_STACK = 'Noto Sans Regular';
+  const SERVER_STACK = 'Noto Sans Regular', SERVER_STACK_BOLD = 'Noto Sans Bold';
   function glyphRewrite(url, type) {
     try {
       if (type !== 'Glyphs' || typeof url !== 'string') return undefined;
       const m = /\/fonts\/([^/]+)\/(\d+)-(\d+)\.pbf/.exec(url);
       if (!m) return undefined;
-      if (GLYPH_RANGES.indexOf(+m[2]) >= 0) return { url: new URL('fonts/' + encodeURIComponent(GLYPH_STACK) + '/' + m[2] + '-' + m[3] + '.pbf', document.baseURI).href };
-      const stack = decodeURIComponent(m[1]);
+      const stack = decodeURIComponent(m[1]), bold = isBoldStack(stack);
+      if (GLYPH_RANGES.indexOf(+m[2]) >= 0) return { url: new URL('fonts/' + encodeURIComponent(bold ? GLYPH_STACK_BOLD : GLYPH_STACK) + '/' + m[2] + '-' + m[3] + '.pbf', document.baseURI).href };
       if (!/Noto Sans (JP|SC|TC)|Pretendard/.test(stack)) return undefined;
-      return { url: url.replace('/fonts/' + m[1] + '/', '/fonts/' + encodeURIComponent(SERVER_STACK) + '/') };
+      return { url: url.replace('/fonts/' + m[1] + '/', '/fonts/' + encodeURIComponent(bold ? SERVER_STACK_BOLD : SERVER_STACK) + '/') };
     } catch (_) { return undefined; }
+  }
+
+  /* ══ (news-type-polish) WHERE THE BAND SITS — ONE GEOMETRY, THREE READERS ══════════════════════════
+     「青いピンが吹き出しに半分埋まって見える接続部分も整えます。」 Measured before this: the layer put the
+     text 1.25 em right of the pin and the sprite's `content` inset added 8 px to the fit padding, so the
+     pill's left edge sat ~4 px LEFT of the pin's centre — half the 9 px dot (7 + 2 px rim) under the pill.
+     And the declutter below assumed the pill started 9 px right of the pin and was text + 18 px wide —
+     a third, different answer. Now all three read BAND: the pill starts `lead` px right of the pin
+     centre (rim 9 + gap 4), is padded `padX`/`padY` round the text, and the layer's text-offset is
+     derived from it per zoom (text-offset is in ems of a size that changes with zoom). */
+  const BAND = { lead: 13, padX: 9, padY: 4 };
+  const BAND_W = 0.92;
+  const labelScale = () => window.IntMapLabelScale;   /* js/label-scale.js, read when asked (it loads before any band is drawn) */   /* the band's text weight on the sub ladder (news-labels' text-size) */
+  function bandOffset() {
+    const LSc = labelScale();
+    return ['interpolate', ['linear'], ['zoom']].concat(...LSc.SUB.map(([z]) =>
+      [z, ['literal', [Math.round((BAND.lead + BAND.padX) / Math.max(6, LSc.subAt(z, BAND_W)) * 1000) / 1000, 0]]]));
   }
 
   let _ctx = null, _px = 0; const _cache = new Map();
@@ -293,7 +318,7 @@ window.IntMapMapTypography = (function () {
     const fallback = { w: Math.min(txt.length, 16) * 6.4 + 28, h: 19 };
     try {
       const z = IntMapGeoEngine.camera.getZoom();
-      const px = Math.max(6, Math.round((window.IntMapLabelScale.subAt(z, 0.92) || 10) * 10) / 10);
+      const px = Math.max(6, Math.round((labelScale().subAt(z, BAND_W) || 10) * 10) / 10);
       if (px !== _px) { _cache.clear(); _px = px; }
       const got = _cache.get(txt); if (got) return got;
       if (!_ctx) { const c = document.createElement('canvas'); _ctx = c.getContext('2d'); }
@@ -318,7 +343,7 @@ window.IntMapMapTypography = (function () {
       }
       push();
       const wide = lines.reduce((m, l) => Math.max(m, _ctx.measureText(l).width), 0);
-      const box = { w: Math.ceil(Math.min(wide, maxW)) + 18, h: Math.ceil(Math.max(1, lines.length) * px * 1.2) + 4 };
+      const box = { w: Math.ceil(Math.min(wide, maxW)) + 2 * BAND.padX, h: Math.ceil(Math.max(1, lines.length) * px * 1.2) + 2 * BAND.padY };
       if (_cache.size > 4000) _cache.clear();
       _cache.set(txt, box);
       return box;
@@ -399,7 +424,7 @@ window.IntMapMapTypography = (function () {
          collision at a glance, and the reported defect is 「重なりすぎ」. */
       const GAP = 5;
       const hit = (r) => { for (const c of claimed) { if (r.x < c.x + c.w + GAP && r.x + r.w + GAP > c.x && r.y < c.y + c.h + GAP && r.y + r.h + GAP > c.y) return true; } return false; };
-      for (const it of vis) { const r = { x: it.x + 9, y: it.y - it.h / 2, w: it.w, h: it.h }; if (!hit(r) && !covered(r)) { claimed.push(r); win.add(it.fid); } }
+      for (const it of vis) { const r = { x: it.x + BAND.lead, y: it.y - it.h / 2, w: it.w, h: it.h }; if (!hit(r) && !covered(r)) { claimed.push(r); win.add(it.fid); } }
       for (const it of items) { try { GE.layers.setFeatureState({source:'news-points',id:it.fid}, { bnd: win.has(it.fid) }); } catch (_) { } }
     } catch (_) { }
   }
@@ -448,5 +473,5 @@ window.IntMapMapTypography = (function () {
   }
   installFlagFont();
 
-  return { GLYPH_RANGES, GLYPH_STACK, cjkFamily, placeFont, readerFont, syncCjkFamily, webFonts, ensureWebFonts, glyphRewrite, bandBox, bandText, declutterNewsBands, installFlagFont };
+  return { GLYPH_RANGES, GLYPH_STACK, GLYPH_STACK_BOLD, BAND, BAND_W, bandOffset, cjkFamily, placeFont, readerFont, syncCjkFamily, webFonts, ensureWebFonts, glyphRewrite, bandBox, bandText, declutterNewsBands, installFlagFont };
 })();
