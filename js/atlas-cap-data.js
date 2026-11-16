@@ -115,6 +115,48 @@ export default [
     },
   },
   {
+    row: ['data.gisProject',            'gisProject',     'saveAnalysis,openAnalysis,rerunAnalysis,analysisProject',      'data',    'none',    'gis.project',            'explanation',         'persist', 'explicit', '',         'gisCore'],
+    /* ⚠⚠ THE PROJECT LAYER EXISTED AND ATLAS COULD NOT REACH IT. js/gis-project.js saves an analysis as
+       its recipe, opens it again by re-running the recipe, and re-computes a chain downstream when one
+       step's parameters change (setParams) — measured 2026-11-16 in a real browser: save → setParams →
+       load all answer ok. None of it had a capability, so 「さっきの分析を保存して」「半径を 20 km に
+       して計算し直して」 had nothing to call, while every op that MAKES the datasets did
+       ([[intmap-atlas-can-run-the-ops-not-copies-of-them]]). This row is that door and nothing more:
+       every action is one call of the project kernel, and the kernel's own refusals come back as they are.
+       Column 7 'persist' — a project is written to IndexedDB; column 8 'explicit' — `remove` deletes a
+       saved project and `open` replaces the session's datasets with the saved ones. */
+    doc: [
+      { in: 'spatial-analysis', at: 40, text: 'SAVE / REOPEN / RE-RUN AN ANALYSIS (分析の保存・再開・再計算): {"type":"gisProject","action":"save"|"list"|"open"|"rerun"|"remove","name"?:str,"id"?:str,"dataset"?:ID,"params"?:{…}}. save stores the whole chain of this session (the imports with their content, every op as its recipe) under "name" and answers with its id; list names the saved ones; open re-runs a saved project (omit id = the latest) and reports which steps failed, which were reused and whether the engine of an op changed since it was saved; rerun changes the params of ONE step ("dataset" = the id that step produced, "params" = the new values, merged into the old) and recomputes everything downstream — the answer lists rebuilt / reused / failed, and a step whose upstream failed is marked stale, never silently kept; remove deletes a saved project. Use this rather than repeating every gis step when the reader says 「保存して」「この前の分析を開いて」「半径だけ変えてやり直して」. ' },
+    ],
+    schema: () => ({ type: 'object', properties: { action: one('save', 'list', 'open', 'rerun', 'remove'), name: str(), id: str(), dataset: str(), params: obj() }, required: ['action'] }),
+    async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, esc = K.esc;
+      await window.IntMapLazy.need('gisCore');
+      const P = window.IntMapGisProject;
+      if (!P) return R(false, warn(L('The analysis projects could not be loaded.', '分析プロジェクトを読み込めませんでした。')));
+      const act = String(a.action || '');
+      /* the kernel's answer is handed back whole: its fields are the facts (rebuilt / failed / stale …) */
+      const say = (ok, text, out) => ok ? R(true, esc(text), { meta: { gisProject: Object.assign({ action: act }, out) } })
+        : R(false, warn(esc(text) + ' (' + esc(String((out && out.why) || 'failed')) + ')'), { meta: { gisProject: Object.assign({ action: act }, out) } });
+      if (act === 'save') { const r = await P.save(a.name == null ? '' : String(a.name));
+        return say(!!(r && r.ok), L('Saved the analysis' + (r && r.id ? ' as ' + r.id : '') + '.', '分析を保存しました' + (r && r.id ? '（' + r.id + '）' : '') + '。'), r || {}); }
+      if (act === 'list') { const ls = await P.list(); const rows = (ls || []).map((p) => ({ id: p.id, name: p.name, savedAt: p.savedAt, datasets: p.datasets }));
+        return say(true, L(rows.length + ' saved analyses.', '保存済みの分析は ' + rows.length + ' 件です。'), { projects: rows }); }
+      if (act === 'open') { const r = await P.load(a.id == null || a.id === '' ? null : String(a.id));
+        return say(!!(r && r.ok), L('Reopened ' + ((r && r.restored) || 0) + ' datasets' + (r && r.failed && r.failed.length ? ', ' + r.failed.length + ' failed' : '') + '.',
+          ((r && r.restored) || 0) + ' 件のデータセットを再開しました' + (r && r.failed && r.failed.length ? '（' + r.failed.length + ' 件は失敗）' : '') + '。'), r || {}); }
+      if (act === 'rerun') {
+        if (a.dataset == null || a.dataset === '') return R(false, warn(esc(L('Name the dataset whose step should change (dataset).', '条件を変える段のデータセット（dataset）を指定してください。'))));
+        const r = await P.setParams(String(a.dataset), (a.params && typeof a.params === 'object') ? a.params : {});
+        return say(!!(r && r.ok), L('Recomputed ' + ((r && r.rebuilt && r.rebuilt.length) || 0) + ' datasets' + (r && r.failed && r.failed.length ? ', ' + r.failed.length + ' failed' : '') + '.',
+          ((r && r.rebuilt && r.rebuilt.length) || 0) + ' 件のデータセットを再計算しました' + (r && r.failed && r.failed.length ? '（' + r.failed.length + ' 件は失敗）' : '') + '。'), r || {}); }
+      if (act === 'remove') {
+        if (a.id == null || a.id === '') return R(false, warn(esc(L('Name the saved analysis to remove (id).', '削除する保存済みの分析（id）を指定してください。'))));
+        const r = await P.remove(String(a.id));
+        return say(!!(r && r.ok), L('Removed the saved analysis.', '保存済みの分析を削除しました。'), r || {}); }
+      return R(false, warn(esc(L('Unknown action: ', '不明な操作: ') + act)));
+    },
+  },
+  {
     row: ['data.rank',                  'rank',           '',                                                            'data',    'paint',   'map.choropleth',         'map,explanation',     'session', 'none',   'metric',   ''],
     doc: [
       { in: 'country-statistics', at: 10, text: '{"type":"rank","metric":KEY,"order":"top"|"bottom","n":int}; ' },
