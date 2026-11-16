@@ -74,7 +74,7 @@ export default [
       inferred: { type: 'object', required: ['read'], properties: { read: str(), reason: str() } },
       title: str() } }),
     /* the run lives in js/atlas-text-map.js, fetched on first use, so the Atlas chunk does not carry it */
-    async run(a, dctx, K) { const { textMap } = await import('./atlas-text-map.js'); return textMap(a, dctx, K); },
+    async run(a, dctx, K) { const { textMap } = await import('./atlas-text-map.js'); return textMap(a, dctx, K, { said: K._lastUserMsg, hist: K._hist, turn: K._curTurn }); },
   },
   {
     row: ['time.coverage',             'timeCoverage',   'layerTime,whatCanBeDrawn',                                    'time',    'none',    '',                       'explanation',         'read',    'none',   '',         ''],

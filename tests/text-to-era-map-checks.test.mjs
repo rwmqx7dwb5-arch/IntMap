@@ -17,6 +17,9 @@ await import('../js/hist-scale.js');
 await import('../js/safe-html.js');
 const WW = await import('../js/where-when.js');
 const TM = await import('../js/atlas-text-map.js');
+/* the capability as Atlas runs it: the entry's run, which hands the conversation off K to the module */
+const ENTRY = (await import('../js/atlas-cap-time.js')).default.find((x) => x.row[0] === 'time.textMap');
+const RUN = (a, dctx, K) => ENTRY.run(a, dctx, K);
 const { makeAtlasMapCompose } = await import('../js/atlas-map-compose.js');
 const { IntMapTime } = await import('../js/chronos.js');
 const { makeAtlasGeoLedger } = await import('../js/atlas-geo-ledger.js');
@@ -79,7 +82,7 @@ test('a stated instant: the quote must be in the text, and the calendar\'s readi
 
 test('奥の細道: the clock goes to 1689 from 「元禄二とせ」, the places are the passage\'s, a name it does not contain is not drawn', async () => {
   const { K, eng, asked } = kernel(OKU);
-  const r = await TM.textMap({
+  const r = await RUN({
     when: { quote: '元禄二とせ', read: '元禄2年' },
     places: [{ name: '富士', as: '富士山' }, { name: '上野' }, { name: '谷中' }, { name: '千じゆ', as: '千住' }, { name: '草加' }, { name: '平泉' }],
   }, { turnId: 't1' }, K);
@@ -95,7 +98,7 @@ test('奥の細道: the clock goes to 1689 from 「元禄二とせ」, the place
 
 test('Bellum Gallicum: Bibracte is placed by Pleiades, Genavam by Atlas\'s identification, the year is Atlas\'s reading of the consuls', async () => {
   const { K, asked } = kernel(BG);
-  const r = await TM.textMap({
+  const r = await RUN({
     when: { quote: 'L. Pisone, A. Gabinio consulibus', read: '58 BC' },
     places: [{ name: 'Genavam', as: 'Geneva' }, { name: 'Bibracte' }],
   }, { turnId: 't2' }, K);
@@ -112,7 +115,7 @@ test('no year in the passage: the clock is not moved, and a year known from outs
   IntMapTime.setYear(1900, { source: 'test' });
   const text = '其日漸草加と云宿にたどり着にけり。';
   const { K } = kernel(text);
-  const r = await TM.textMap({ places: [{ name: '草加' }], inferred: { read: '1689', reason: 'おくのほそ道の旅は元禄2年' },
+  const r = await RUN({ places: [{ name: '草加' }], inferred: { read: '1689', reason: 'おくのほそ道の旅は元禄2年' },
     when: undefined }, { turnId: 't3' }, K);
   assert.equal(r.exec.era.applied, false); assert.equal(r.exec.era.inferred.applied, false);
   assert.equal(IntMapTime.when().getUTCFullYear(), 1900, 'nothing the text does not state moves the clock');
@@ -150,8 +153,8 @@ test('an explicit `as` outranks the conversation\'s memory of the bare label', a
   const { K } = kernel(OKU);
   GAZ['草加'] = { lng: 139.285, lat: 36.085, name: '草加' };   /* the namesake neighbourhood today's gazetteer offered (measured 2026-11-16) */
   GAZ['草加市'] = { lng: 139.804, lat: 35.825, name: '草加市' };
-  await TM.textMap({ when: { quote: '元禄二とせ', read: '元禄2年' }, places: [{ name: '草加' }] }, { turnId: 'a1' }, K);
-  const r = await TM.textMap({ when: { quote: '元禄二とせ', read: '元禄2年' }, places: [{ name: '草加', as: '草加市' }] }, { turnId: 'a2' }, K);
+  await RUN({ when: { quote: '元禄二とせ', read: '元禄2年' }, places: [{ name: '草加' }] }, { turnId: 'a1' }, K);
+  const r = await RUN({ when: { quote: '元禄二とせ', read: '元禄2年' }, places: [{ name: '草加', as: '草加市' }] }, { turnId: 'a2' }, K);
   assert.equal(r.meta.compose.placed[0].lng, 139.804, 'the revision is the place Atlas named, not the ledger\'s earlier answer for the label');
 });
 

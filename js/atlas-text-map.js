@@ -25,12 +25,14 @@
  * ==========================================================================*/
 import { ATTACH_LOG } from './atlas-attach-log.js';
 
-/* ── the text the reader gave: this message, the earlier messages, and every text attachment of the conversation ── */
-export function corpusOf(K) {
-  const parts = [];
-  try { if (K._lastUserMsg) parts.push(String(K._lastUserMsg)); } catch (_) { }
-  try { (K._hist || []).forEach((h) => { const s = String((h && h.s) || ''); if (s.indexOf('User: ') === 0) parts.push(s.slice(6)); }); } catch (_) { }
-  try { ATTACH_LOG.earlier((+K._curTurn || 0) + 1).forEach((r) => { if (r && r.kind === 'text' && r.text) parts.push(String(r.text)); }); } catch (_) { }
+/* ── the text the reader gave: this message, the earlier messages, and every text attachment of the conversation ──
+   `talk` is {said, hist, turn}, read off the kernel by the entry's run (js/atlas-cap-time.js), so the kernel state this
+   capability depends on is named where K is audited (tests/atlas-capability-modules-checks.test.mjs ③) */
+function corpusOf(talk) {
+  const parts = [], t = talk || {};
+  try { if (t.said) parts.push(String(t.said)); } catch (_) { }
+  try { (t.hist || []).forEach((h) => { const s = String((h && h.s) || ''); if (s.indexOf('User: ') === 0) parts.push(s.slice(6)); }); } catch (_) { }
+  try { ATTACH_LOG.earlier((+t.turn || 0) + 1).forEach((r) => { if (r && r.kind === 'text' && r.text) parts.push(String(r.text)); }); } catch (_) { }
   return parts;
 }
 
@@ -100,13 +102,14 @@ function wire(WW) {
  * a.others[]?  {quote, read}   other instants the text states — listed, not applied
  * a.inferred?  {read, reason}  an instant known from OUTSIDE the text — offered, never applied
  * a.title?
+ * talk         {said, hist, turn} — this message, the conversation's history, the current turn (see corpusOf)
  */
-export async function textMap(a, dctx, K) {
+export async function textMap(a, dctx, K, talk) {
   const L = K.L, esc = K.esc;
   a = a || {};
   const WW = await import('./where-when.js');
   wire(WW);
-  const corpus = corpusOf(K);
+  const corpus = corpusOf(talk);
   const lang = (() => { try { return K.HOST.lang; } catch (_) { return 'en'; } })();
   const wt = (w) => WW.whenText(w, lang);
 
