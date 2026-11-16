@@ -952,23 +952,45 @@ export function timeBorders(HOST){
        polity on 1 July 1885 and 79.1% a year later. data/hist-borders-late.js is OHM on CShapes' days already less
        CShapes' ground (scripts/build-hist-clio.mjs --ohm-late), and data/hist-clio.js is cut against both, so this
        is again a union with no geometric decision in it. Either record unreadable, the others still compose. */
-    async function csComposite(csKey,csfc,year,mon,day){ try{
+    /* ══ (deep-tier-reds) WHAT THE COMPOSITION READS IS ASKED FOR AT ONCE, NOT ONE RECORD AFTER ANOTHER ══════════════
+       Of the four records a 1886–2019 instant is composed from, only the coast-snap MATCH needs another record's answer
+       (a piece is drawn when its parent is) — the OHM-late rows, the Cliopatria rows and the snap rows in force at `t`
+       are each a question about `t` alone. They were asked in a chain: CShapes opened and answered, THEN the two others
+       opened and answered one after the other, THEN the snap record opened and answered. MEASURED 2026-11-16 (Playwright
+       Chromium on the built, tiled site, clock to 1916-07-01 over Europe, the Natural Earth attributes held back as
+       tests/r410-late.spec.js holds them): cshapes open 0.4→3.1 s, edges →3.5, at →5.8; clio + ohm-late open →6.5,
+       ohm-late at →7.9, clio at →9.1; coast-snap open →9.7, at →13.0; borders on the map 14.4 s — every step waiting
+       on the one before it, and on the nightly deep tier (a slower runner) the same chain ran past the test's 20 s on
+       6 of 14 nights. `csSide` starts the three beside CShapes, so the instant costs the longest of them rather than
+       their sum. Nothing is decided differently: the same keys, the same caches, the same failure rules (a record that
+       cannot be read is left out; a build that throws drops the composition to CShapes alone, as before). */
+    function csSide(year,mon,day){ const t=_ymd(year,mon,day);
       /* the course file is asked for but not waited on: its arrival repaints the line (onArrive), and a composition
          keyed before it arrived (`ce-1`) is never reused after */
-      coursesLoad(); const [cd,od]=await Promise.all([clLoad(),olLoad()]); if(!cd&&!od) return null;
+      coursesLoad();
+      /* a record's rows at `t`, built once the names they carry (`hnFor`) are there — as collectionAt awaited them before */
+      const part=(load,bnd,pre,build)=>Promise.all([load(),hnLoad()]).then(async([d])=>{ if(!d) return { d:null };
+        const k=pre+_epochIn(bnd()||[],t); let fc=cache.get(k); if(!fc){ fc=await build(d,year,mon,day); cache.set(k,fc); } return { d, k, fc }; });
+      const s={ ol:part(olLoad,()=>_olBnd,'ol',olFC), cl:part(clLoad,()=>_clBnd,'cl',clFC), snk:_snapEpoch(t) };
+      s.snIx=s.snk.then(k=>k?_snIxAt(k,t):null);
+      /* awaited by csComposite; when CShapes does not answer they are left unread, which must not be an unhandled rejection */
+      for(const p of Object.values(s)) p.catch(()=>{});
+      return s; }
+    /* the snap rows in force in one epoch of the record — a question about the epoch alone, so it is asked once per epoch */
+    const _snIx=new Map();
+    function _snIxAt(snk,t){ let p=_snIx.get(snk); if(!p){ p=_snH.at(t,'exclusive'); _snIx.set(snk,p); p.catch(()=>{ if(_snIx.get(snk)===p) _snIx.delete(snk); }); } return p; }
+    async function csComposite(csKey,csfc,year,mon,day,side){ try{
+      side=side||csSide(year,mon,day);
+      const [o,c]=await Promise.all([side.ol,side.cl]); if(!c.d&&!o.d) return null;
       const t=_ymd(year,mon,day), parts=[], keys=[];
-      let ol=null; if(od){ const k='ol'+_epochIn(_olBnd||[],t);
-        ol=cache.get(k); if(!ol){ ol=await olFC(od,year,mon,day); cache.set(k,ol); }
-        if(ol&&ol.features.length){ parts.push(ol); keys.push(k); } else ol=null; }
-      let cl=null; if(cd){ const k='cl'+_epochIn(_clBnd||[],t);
-        cl=cache.get(k); if(!cl){ cl=await clFC(cd,year,mon,day); cache.set(k,cl); }
-        if(cl&&cl.features.length){ parts.push(cl); keys.push(k); } else cl=null; }
+      let ol=null; if(o.d){ ol=o.fc; if(ol&&ol.features.length){ parts.push(ol); keys.push(o.k); } else ol=null; }
+      let cl=null; if(c.d){ cl=c.fc; if(cl&&cl.features.length){ parts.push(cl); keys.push(c.k); } else cl=null; }
       if(!parts.length) return null;
       /* (coast-snap-gaps) the land the records' coasts left out, under the one polity that bounds it */
-      const snk=await _snapEpoch(t); if(snk) keys.push(snk);
+      const snk=await side.snk; if(snk) keys.push(snk);
       const key='cp:'+csKey+'|'+keys.join('|')+'|ce'+_courseEp(t);
       let fc=cache.get(key);
-      if(!fc){ const base=csfc.features.concat(...parts.map(p=>p.features)), sn=snk?await _snapsFor(base,t):null;
+      if(!fc){ const base=csfc.features.concat(...parts.map(p=>p.features)), sn=snk?await _snapsFor(base,t,side.snIx):null;
         fc={type:'FeatureCollection',features:base.concat(sn||[])}; _tOf.set(fc,t);
         _lnOf.set(fc,new Map([[_courseEp(t),{type:'FeatureCollection',features:_linesFor(csfc,t).features.concat(...parts.map(p=>_linesFor(p,t).features))}]]));
         _made.set(fc,{cs:csfc.features.length,ohm:ol?ol.features.length:0,late:!!ol,clio:cl?cl.features.length:0,sheet:null}); cache.set(key,fc); }
@@ -1066,9 +1088,9 @@ export function timeBorders(HOST){
     async function _snapEpoch(t){ try{ const d=await snLoad(); return (d&&_snH)?'sn'+_epochIn(_snBnd||[],t):null; }catch(_){ return null; } }
     /* the snap pieces in force at `t` whose parents are among `features` (the shapes the composition draws then) → the
        features ([] when nothing is in force or the record cannot be read) */
-    async function _snapsFor(features,t){ try{
+    async function _snapsFor(features,t,ixP){ try{   /* `ixP`: the rows in force, already asked for (csSide) */
       const d=await snLoad(); if(!d||!_snH) return [];
-      const ix=await _snH.at(t,'exclusive'), feats=[];
+      const ix=await (ixP||_snH.at(t,'exclusive')), feats=[];
       if(!ix||!ix.length) return feats;
       const by=new Map(); for(const f of features){ const r=f.geometry?_rowOf.get(f.geometry):null, pk=_snParentKey(r); if(pk&&!by.has(pk)) by.set(pk,[f,r]); }
       for(const i of ix){ const m=d.feats[i][9]||{}, hit=by.get(m.t+':'+(m.y!=null?m.y+':':'')+m.i); if(!hit) continue;
@@ -2240,7 +2262,8 @@ export function timeBorders(HOST){
       const year=isD?when.getFullYear():Math.round(+when), mon=isD?(when.getMonth()+1):7, day=isD?when.getDate():1;
       /* (#R117/#R421) 1886–2019 → DAY-EXACT CShapes borders. Falls back to the snapshot path below if the
          CShapes bundle can't be loaded. */
-      if(year>=CS_MIN&&year<=CS_MAX){ const d=(await Promise.all([csLoad(),bcLoad(),hnLoad()]))[0];   /* (#R531) the marks settle before the first collection is built, so nothing is cached unmarked */
+      if(year>=CS_MIN&&year<=CS_MAX){ const side=csSide(year,mon,day);   /* (deep-tier-reds) the rest of the composition is asked for beside CShapes, not after it — see `csSide` */
+        const d=(await Promise.all([csLoad(),bcLoad(),hnLoad()]))[0];   /* (#R531) the marks settle before the first collection is built, so nothing is cached unmarked */
         if(d){ let key; try{ key='cs'+csEpoch(d,year,mon,day)+String(_csNameKey(_ymd(year,mon,day))).padStart(8,'0'); }catch(_){ key='cs'+year; }   /* the EPOCH, not the date: a quiet decade keeps one cache entry and re-renders nothing — (marketing-next) and the year of the name rules, which can turn inside an epoch: eight more digits, so the key stays «record + digits» (the tier is what is left when the digits are taken off) */
           let fc=cache.get(key); if(!fc){ try{ fc=_csNotesOn(await csFC(d,year,mon,day),_ymd(year,mon,day)); cache.set(key,fc); }catch(_){ fc=null; } }
           if(fc){
@@ -2249,7 +2272,7 @@ export function timeBorders(HOST){
                Measured 2026-10-04: CShapes alone puts 75.7% of the world's land inside a polity on 1 July 1886 —
                the interior of Africa before the partition is not in a state system's record. When Cliopatria has
                nothing there (or cannot be read) the answer is CShapes' alone, as before. */
-            const cc=await csComposite(key,fc,year,mon,day);
+            const cc=await csComposite(key,fc,year,mon,day,side);
             return cc||{ key, fc, corr:false, tier:'cshapes' }; } } }
       /* (hist-coverage-expansion) below CShapes, the composed world — OHM, then Cliopatria, then the
          sheet, each on the ground the ones above leave. Null (a record that could not be read) falls

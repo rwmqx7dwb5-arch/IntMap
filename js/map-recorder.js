@@ -773,15 +773,42 @@ function compareShown() {
   const st = C && typeof C.timeState === 'function' ? C.timeState() : null;
   return st && st.open && C && typeof C._map === 'function' && C._map() ? st : null;
 }
+/* ══ (then-now-card) THE WINDOW'S PICTURE IS TAKEN ONCE IT HAS DRAWN WHAT IT WAS ASKED TO DRAW ═════════════════════════
+   The window's layer is picked in the same breath as the swipe opens («あの頃といま», Atlas `thenNow`, a restored link): its
+   judgement reads the border record and its view then tiles 300-odd polygons in a worker. A picture read before that is the
+   bare ground under the borders — measured, a card whose THEN pane was one flat colour and whose credits had no border
+   record, made a few seconds after the swipe opened (nightly, first attempt of tests/then-now-card.spec.js). So the card
+   waits for the window's own answer (`judged()`: the newest judgement, its record put on the map) and then for the view's
+   `idle` — MapLibre fires it after a frame with nothing left to load or place, and a repaint asks for that frame when the
+   view is already quiet. The window draws only static layers, so idle comes; the bound is for a view that never settles
+   (a source that keeps reloading). On the bound the picture is still made and the result says `settled:false` — what was
+   not observed is stated, not reported as a failure (.agents/rules/one-pass-or-a-reason.md §5).
+   VIEW_SETTLE_MS — observed: the window's 1914 record settled 2.6–4.4 s after the pick on a 4-core laptop (2026-11-16,
+   tests/then-now-card.spec.js traced); set at about 3× the slowest. Expires when the record or this window's layers change size
+   materially. Owner: here (the one reader of the window's picture). */
+const VIEW_SETTLE_MS = 15000;
+/** @param {any} C the window's controller  @param {any} view its view → Promise<boolean> idle was seen */
+async function viewSettled(C, view) {
+  try { if (typeof C.judged === 'function') await C.judged(); } catch (_) { /* the judgement's own failure is in its state */ }
+  return new Promise((res) => {
+    let done = false;
+    const fin = (/** @type {boolean} */ v) => { if (done) return; done = true; clearTimeout(t); try { view.events.off('idle', idle); } catch (_) { /* gone */ } res(v); };
+    const idle = () => fin(true);
+    const t = setTimeout(() => fin(false), VIEW_SETTLE_MS);
+    try { view.events.on('idle', idle); view.render.triggerRepaint(); } catch (_) { fin(false); }
+  });
+}
 async function comparePanes() {
-  const st = compareShown(); if (!st) return null;
-  const view = /** @type {any} */ (compareApi())._map();
+  if (!compareShown()) return null;
+  const C = /** @type {any} */ (compareApi()), view = C._map();
+  const settled = await viewSettled(C, view);
+  const st = compareShown(); if (!st) return null;   /* read after the judgement: whether the layer is held is part of it */
   const [a, b] = await Promise.all([grabView(view), grabMain()]);
   /* the window's credit is the one its view paints (js/geo-engine.js, the drawn sources of that view) */
   let wc = [];
   try { const el = document.querySelector('#compare-map .map-credit-view'); const t = el && el.textContent && el.textContent.trim(); if (t) wc = [t]; } catch (_) { wc = []; }
   if (!wc.length) { try { wc = drawnCredits(view.scene.getStyle(), view.camera.getZoom(), []); } catch (_) { wc = []; } }
-  return { st, a, b, credits: drawnCredits(null, 0, wc.concat(mainCredits())) };
+  return { st, a, b, settled, credits: drawnCredits(null, 0, wc.concat(mainCredits())) };
 }
 /* (then-now-card) THE PLACE THE VIEW SHOWS, by name — js/place-dossier.js `viewPlaceName` (OpenStreetMap through Nominatim,
    the app's one reverse geocode and its one queue), asked at the map's own scale. The module is fetched only for a paired
@@ -1143,7 +1170,7 @@ async function thenNowCard(o, S, base) {
   const url = lastCardUrl = URL.createObjectURL(blob);
   const name = 'intmap-then-now-' + slug(st.iso || st.label) + '-' + slug(st.main.iso || st.main.label) + '-' + S.w + 'x' + S.h + '.png';
   return Object.assign(base, { ok: true, paired: true, blob, url, name, credits: P.credits, instant: st.label + ' | ' + st.main.label,
-    then: st.label, now: st.main.label, place, layer: sub || null,
+    then: st.label, now: st.main.label, place, layer: sub || null, settled: P.settled,
     legends: 0, legendsOmitted: 0, linkFull: !!L.brand.link.full, linkShown: L.brand.link.text,
     band: { y: L.band.y, h: L.band.h, lines: L.credit.lines.map((l) => ({ x: l.x, y: l.y, w: Math.round(l.w), h: l.h })) },
     card: L.headline ? L.headline.box : null, legendBoxes: [], divider: L.panes[1].rect.x });
