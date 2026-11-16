@@ -1,6 +1,7 @@
 ---
 title: 速度の根本改善——星空を GPU で 1 回に描く・標高タイルの復号をワーカーへ・読み戻す canvas を CPU 側に・起動後に回せる読み込みは PC でも起動後に・Atlas の 1 手ごとの待ちを短く
 date: 2026-11-17
+pr: 1160
 newsen: The map moves more smoothly on the globe (the star sky is drawn by the GPU in one call, elevation tiles decode off the main thread), the desktop start-up no longer reads the star catalogue and country tables before the map is usable, and each Atlas step waits less on the server.
 newsjp: 地球儀表示で地図の動きが滑らかに（背景の星空を GPU で一度に描き、標高タイルの復号を別スレッドへ）。PC の起動時に星表と国の表を地図が使えるようになってから読むように。Atlas の 1 手ごとのサーバ側の待ちを短縮しました。
 ---
