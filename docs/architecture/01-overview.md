@@ -156,6 +156,21 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   static import 閉包に入っていないことを実際のグラフで測る。eager と遅延の両方が読むモジュールから別の共有モジュールへ
   static import を張らない（`vite.config.js` の fetch-deadline-layer の項。`js/star-catalogue.js` は扉を
   `window.IntMapDataDoor` 経由で読む——import すると eager チャンクが 7 → 9 本になる）。
+- **Atlas カーネルは能力の「データ」を持ち、能力の「実行」は使われたときに取る。** カーネル（遅延チャンク `atlas-console`）が
+  最初の質問の前に要るのは各能力の行・schema・カタログ文・phrases・方針・チップで、`run` はモデルがその能力を呼んだときに
+  初めて要る。`scripts/atlas-caps-split.mjs`（`vite.config.js` の `atlasCapsSplit`、build と dev の両方）が
+  `js/atlas-caps-modules.js` の各 `./atlas-cap-<名前空間>.js` を `?atlas-cap-meta` の写しに差し替え、写しは同じソースの
+  各項目の `run` を扉（`js/atlas-caps.js` の `makeCapRunDoor`）経由の呼び出しに置き換えたもの（`run` だけが読む補助は死にコードになり束から落ちる）。
+  名前空間ファイル（本物の `run` 付き）は全部を import する仮想モジュール 1 本の `import()` の先にあり、チャンク
+  `atlas-cap-runs` として、どれかの能力が初めて実行されるときに届く（名前空間ごとに分けると、`js/chronos.js` などを本体抜きで
+  読むチャンクができて束ね器が起動チャンクへ畳まなくなり、起動のリクエストが 9 → 11 に増えた）。名前空間は集約ファイルから
+  発見する。仮想モジュールの id は ` ` で始めない（`maplibre-gl` group が束ね器の補助として起動チャンクへ取り込む）。写しと本体は
+  同じファイルの 2 つのインスタンスなので、**最上位に状態を持てる能力ファイル（`let`／`var`／実行文）は build が拒む**。
+  ソースは分けないので Node・検査・生成器は 1 本のファイルをそのまま読む（`tests/startup-weight-checks.test.mjs`）。
+- **起動時に描かれない機能の本体は `LAZY_REGISTRY` に置く。** ドローン計画（`drone`＋`droneOps`）・`js/sims.js` の 4 つ
+  （`radiation`／`popArea`／`sun`／`transitReach`）は入口（Tools の行・右クリック・Atlas の能力・共有リンクの状態）が
+  `IntMapLazy.need` を先に呼ぶ。共有リンクの状態のキーは遅延モジュール名と同じ（`IntMapShareState.apply` がその名で取りに行く）。
+  Atlas の能力は行の第 10 列（`lazyModules`）で宣言し、executor が実行の前に取る。
 - **`data/stars.bin` の読み手は 1 つ。** `js/star-catalogue.js` が `js/data-door.js`（`as:'arrayBuffer'`）でバイトを取り、
   IMSTAR1/2 のレコードを一度だけ列（赤経・赤緯・等級・B−V・年周視差）に復号する。星空（`js/space-sky.js`）と
   エクスプローラ（`js/space.js`）はそこから自分の形を作る。

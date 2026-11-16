@@ -130,6 +130,16 @@ export const LAZY_REGISTRY = Object.freeze({
   netHealthLive: { publishes: '__imNetHealth', load: () => import('./net-health-live.js'), mount: (IM_HOST, m) => { m.netHealthLive(IM_HOST); } },
   spaceBody: { publishes: '__imSpaceBody', load: () => import('./space.js'), mount: (IM_HOST, m) => { window.__imSpaceBody=m.spaceBody(IM_HOST); } },
   worldPacksBody: { publishes: '__wpTrade', load: () => import('./world-packs.js'), mount: (IM_HOST, m) => { m.worldPacksBody(IM_HOST); } },
+  /* (startup-weight) the drone planner and its operational layer (110 kB of the boot chunk), and the four simulators of
+     js/sims.js (116 kB with the plume model) — nothing of them is drawn at boot. The planner asks the operational layer
+     to register into it the moment it is mounted, so a `compute()` straight after `need('drone')` sees the wind and the
+     hazard sources (drone-ops.js would otherwise find the planner on its next 120 ms poll). */
+  drone: { publishes: 'IntMapDrone', load: () => import('./drone-nav.js'), mount: (IM_HOST, m) => { m.drone(IM_HOST); try { /** @type {any} */ (window).IntMapDroneOps.install(); } catch (_) { } }, also: ['droneOps'] },
+  droneOps: { publishes: 'IntMapDroneOps', load: () => import('./drone-ops.js'), mount: (IM_HOST, m) => { m.droneOps(IM_HOST); } },
+  radiation: { publishes: 'IntMapRadiation', load: () => import('./sims.js'), mount: (IM_HOST, m) => { m.radiation(IM_HOST); } },
+  popArea: { publishes: 'IntMapPopArea', load: () => import('./sims.js'), mount: (IM_HOST, m) => { m.popArea(IM_HOST); } },
+  sun: { publishes: 'IntMapSun', load: () => import('./sims.js'), mount: (IM_HOST, m) => { m.sun(IM_HOST); } },
+  transitReach: { publishes: 'IntMapTransitReach', load: () => import('./sims.js'), mount: (IM_HOST, m) => { m.transitReach(IM_HOST); } },
 });
 /* the boot guard's two lists, derived: the factory-backed names, and the one registered by a file
    nobody fetches on its own (js/aviation-live.js imports js/aircraft-points.js statically — #R408) */

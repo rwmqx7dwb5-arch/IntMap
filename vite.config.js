@@ -55,6 +55,7 @@ import { yearPagesPlugin } from './scripts/year-pages.mjs';   // (history-year-p
 import { polityPagesPlugin } from './scripts/polity-choice.mjs';   // (polity-pages) «Mongol Empire through time» — one page per polity the dated records draw, after the year pages it links
 import { onThisDayPagesPlugin } from './scripts/on-this-day-pages.mjs';   // (marketing-next) the «on this day» pages and their cards, written into dist/ like the history pages
 import { weeklyEarthPagesPlugin } from './scripts/weekly-earth-pages.mjs';   // (weekly-earth) «This week on Earth»: a page per week, the hub and the Atom feeds
+import { atlasCapsSplit } from './scripts/atlas-caps-split.mjs';   // (startup-weight) the Atlas kernel carries each capability's data; its `run` is a chunk of its own — see the file
 
 const ROOT = resolve(import.meta.dirname);
 
@@ -981,5 +982,5 @@ export default defineConfig({
      than read off filenames. scripts/perf-budget.mjs is the gate that reads it; it runs on
      every build because the report is what stops "the biggest chunk is big" from being
      mistaken for "startup is slow". */
-  plugins: [buildStampPlugin(ROOT), siteUrlPlugin(), maplibreSource(), maplibreSharedWorker(), buildReportPlugin(), copyStatic(), historyPagesPlugin(), publicApiPlugin(), countryPagesPlugin(), yearPagesPlugin(), polityPagesPlugin(), whatsNewPlugin(), onThisDayPagesPlugin(), weeklyEarthPagesPlugin(), appShell(), histTiles(), katexAssets(), supabaseAdminSdk(), supabaseAdminSdkDev(), cesiumAssets(), cesiumDevAssets(), cspHashesPlugin(), buildLock()],
+  plugins: [buildStampPlugin(ROOT), siteUrlPlugin(), atlasCapsSplit(ROOT), maplibreSource(), maplibreSharedWorker(), buildReportPlugin(), copyStatic(), historyPagesPlugin(), publicApiPlugin(), countryPagesPlugin(), yearPagesPlugin(), polityPagesPlugin(), whatsNewPlugin(), onThisDayPagesPlugin(), weeklyEarthPagesPlugin(), appShell(), histTiles(), katexAssets(), supabaseAdminSdk(), supabaseAdminSdkDev(), cesiumAssets(), cesiumDevAssets(), cspHashesPlugin(), buildLock()],
 });

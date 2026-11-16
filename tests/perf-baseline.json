@@ -9,8 +9,8 @@
     "cssGzip": 63308
   },
   "async": {
-    "raw": 13341494,
-    "gzip": 4443537,
+    "raw": 13826290,
+    "gzip": 4627743,
     "chunks": {
       "account-data": 7346,
       "aircraft-detail": 17009,
@@ -27,7 +27,7 @@
       "atlas-executor": 59145,
       "atlas-geo-resolve": 49361,
       "atlas-hist-urban": 7748,
-      "atlas-notebook": 271,
+      "atlas-notebook": 35115,
       "atlas-query": 48520,
       "atlas-reasoning": 15328,
       "atlas-view-capture": 8492,
@@ -167,7 +167,7 @@
   "dist": {
     "total": 1570310796,
     "data": 1208196998,
-    "assets": 20850871
+    "assets": 21179682
   },
   "phone": {
     "bytes": 342631,

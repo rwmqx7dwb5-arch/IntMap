@@ -43,7 +43,7 @@ export default [
           if(/transit|train|rail|metro|subway|tram|電車|鉄道|地下鉄|列車|公共/.test(rawM)){   /* (#R91) rail reachability isochrone */
             let tmin=Array.isArray(a.minutes)?Math.max.apply(null,a.minutes.map(Number)):(+a.minutes||+a.time||+a.mins||60);
             try{ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(8,11-tmin/20)}); }catch(_){}
-            let tr=null; try{ tr=await window.IntMapTransitReach.open({lng:ll.lng,lat:ll.lat},tmin); }catch(_){}
+            let tr=null; try{ await window.IntMapLazy.need('transitReach'); tr=await window.IntMapTransitReach.open({lng:ll.lng,lat:ll.lat},tmin); }catch(_){}
             if(tr&&tr.ok) return R(true, note(icon('train')+' '+esc(ll.name||a.place||'')+' — '+tr.minutes+' '+L('min by rail','分・鉄道到達圏','Min per Bahn','мин по ж/д','min en tren'))+note(tr.stations.length+' '+L('stations reachable within the time budget, riding the REAL OSM rail network (edge time = length ÷ line-class speed) — colored green→orange by minutes. Not a live timetable.','駅に時間内で到達可能。実在のOSM鉄道網を辿り（所要＝距離÷路線種別速度）、緑→橙で所要時間を色分け。実時刻表ではありません。','Bahnhöfe im Zeitbudget erreichbar (echtes OSM-Bahnnetz).','станций достижимо (реальная ж/д сеть OSM).','estaciones alcanzables (red ferroviaria real OSM).')));
             return R(false, warn(withIcons(L('No rail reachable here in that time (or the rail-data service is busy). Try a point nearer a station, or {icon:car}/{icon:walk}.','この時間で到達できる鉄道が見つかりません（またはデータ混雑）。駅の近くや車・徒歩をお試しください。','Kein Bahnnetz erreichbar.','Ж/д недоступна.','Sin ferrocarril alcanzable.'))));
           }
@@ -250,7 +250,7 @@ export default [
 /* (science-instruments) THE DRONE PLANNER'S ONE DOOR, exported so `map.tool` {"name":"drone"} reaches it with
    arguments instead of toggling the panel through a word match of its own (js/atlas-cap-map.js). */
 export async function droneRun(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, note = K.note, geocode = K.geocode, esc = K.esc, GE = K.GE;
-      { const D=window.IntMapDrone;
+      { try{ await window.IntMapLazy.need('drone'); }catch(_){} const D=window.IntMapDrone;   /* (startup-weight) the planner is fetched on demand — js/lazy-modules.js */
           if(!D) return R(false, warn(L('Drone planner unavailable','ドローン航法を使えません','Drohnenplaner nicht verfügbar','Планировщик дрона недоступен','Planificador de dron no disponible')));
           const act=String(a.action||(a.from||a.to?'plan':'open')).toLowerCase();
           if(act==='close'){ D.close(); return R(true, note(icon('drone')+' '+L('Closed','閉じました','Geschlossen','Закрыто','Cerrado'))); }

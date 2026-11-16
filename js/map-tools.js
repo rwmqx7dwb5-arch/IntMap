@@ -358,7 +358,9 @@ export function drawTool(HOST){
        Multiple enclosed loops are summed as a MultiPolygon. Same live progress bar as the measure/radius panels so
        the button never just sits on "Calculating…". */
     async function _estimateDrawPop(p, btn){
-      const rings=(loopRings||[]).filter(r=>r&&r.length>=4); if(!rings.length || !window.IntMapPopArea) return;
+      const rings=(loopRings||[]).filter(r=>r&&r.length>=4); if(!rings.length) return;
+      await window.IntMapLazy.need('popArea');   /* (startup-weight) js/sims.js is fetched on demand — js/lazy-modules.js */
+      if(!window.IntMapPopArea) return;
       const geom = rings.length===1 ? {type:'Polygon',coordinates:[rings[0]]} : {type:'MultiPolygon',coordinates:rings.map(r=>[r])};
       let box=p.querySelector('.tp-prog'); if(!box){ box=document.createElement('div'); box.className='tp-prog'; box.style.cssText='margin:7px 0 2px;';
         box.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px;font-size:10.5px;color:var(--text-muted);margin-bottom:3px;"><span class="tp-prog-lbl" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span><b class="tp-prog-pct" style="flex:0 0 auto;">0%</b></div><div style="height:7px;border-radius:4px;background:rgba(128,128,128,0.22);overflow:hidden;"><div class="tp-prog-fill" style="height:100%;width:0%;background:var(--prog-grad);transition:width .2s;"></div></div>';
@@ -1036,6 +1038,7 @@ export function isochrone(HOST){
       const cost=COST[String(opts.mode||mode).toLowerCase()]||'auto'; mode=cost;
       /* (#R296) the transit branch — a different engine behind the same controls (see the note on COST) */
       if(cost==='transit'){
+        await window.IntMapLazy.need('transitReach');   /* (startup-weight) js/sims.js is fetched on demand */
         const t=TR(); if(!t||!t.open){ renderPanel('err'); return {ok:false,reason:'render'}; }
         let mm=Array.isArray(opts.minutes)?opts.minutes.slice():(opts.minutes!=null?[+opts.minutes]:mins.slice());
         mm=mm.map(x=>Math.round(+x)).filter(x=>x>0&&x<=120); if(!mm.length) mm=[30];
