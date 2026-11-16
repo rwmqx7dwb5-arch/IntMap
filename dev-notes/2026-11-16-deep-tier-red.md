@@ -1,6 +1,7 @@
 ---
 title: nightly の deep tier が 2026-10-13 から毎晩赤——14 晩分の失敗を 1 本ずつ根本原因で直す（製品の欠陥 7 件・待ちの誤り 6 件・説明できない 3 件）
 date: 2026-11-16
+pr: 1151
 newsen: Nightly-test fixes: keyboard map reading always says how far the map moved, borders for years like 1916 draw up to twice as fast, the Rise and fall readout stays when you click, the globe opens on the daylit side at any hour, and then-and-now cards wait for the old borders.
 newsjp: 夜間テストで見つかった欠陥を直しました。キーボードでの地図の読み上げが移動距離を必ず伝えます。1916 年などの国境が最大で約 2 倍速く描かれます。政体の盛衰でグラフをクリックしても読み取りが消えません。地球儀はどの時刻でも昼側で開きます。あの頃といまのカードは昔の国境が描かれてから作られます。
 ---
