@@ -1510,6 +1510,18 @@ Fast, dependency-light gate that catches cheap-to-detect breakage before the bro
   holds the browser side: the intent reads the indexes, the journey reads the archive with 206s, and the
   whole record is never fetched. The before/after on a phone profile is in
   `dev-notes/2026-10-01-hist-vector-tiles.md`.
+- **Reading one clock step ahead never changes what an instant shows** (chronos-prefetch) —
+  `tests/chronos-prefetch-checks.test.mjs` cuts the records as the tile check does and walks CShapes (inclusive
+  end) and the first subdivision tier with both gap records through two doors, one reading ahead and one not:
+  ① the next instant is the same step again (years, days, year 0, the leap day); ② every instant answers the same
+  rows, and THE PAGE HOLDS EXACTLY THE SAME ROWS AND RINGS — the instant read ahead never reaches the page before
+  it is asked (a door that ships it fails here); ③ a step that continues the last one reads nothing itself, while
+  the same walk without the read-ahead does; ④ nothing is read ahead when `maySpeculate` says no; ⑤ a read
+  ahead that fails costs the next question nothing and the door stays on the tiles; ⑥ the same on a real
+  `worker_threads` thread; ⑦ `warm` reads into the thread only and the question after it reads nothing, and a
+  failed warm read is not the answer's failure. The latency itself is measured, not gated, by
+  `scripts/chronos-latency.mjs` (the drawers' own receipts, `IntMapTime.drawnState()`); the before/after is in
+  `dev-notes/2026-11-16-chronos-prefetch.md`.
 - **A comment stripper that is not the shared one** (`comment-stripper`, test-code-only-one) —
   `scripts/comment-strippers.mjs` reads every `.js`/`.mjs`/`.cjs` under `tests/` and `scripts/` from
   the parser and finds a stripper by what it DOES, not what it is called: a `.replace()` whose
