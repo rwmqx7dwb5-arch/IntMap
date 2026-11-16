@@ -9,8 +9,8 @@
     "cssGzip": 63308
   },
   "async": {
-    "raw": 13826290,
-    "gzip": 4627743,
+    "raw": 13899932,
+    "gzip": 4656661,
     "chunks": {
       "account-data": 7346,
       "aircraft-detail": 17009,

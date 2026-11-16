@@ -70,3 +70,6 @@ branch でも同じ）。原因: ③ と ⑦ が開く `scripts/territory-change
 再現: 読むたびに 20 ms 進む時計を preload すると毎回 ⑥ だけが止まる。直し: ⑥ はファイル冒頭（harness より前）に取っておいた
 ページの `setTimeout` で走り、さらに毎回フレームを超える時計で走る（譲る経路を全機械で通る）。stub に戻すと ⑥ は毎回止まる
 ことを確かめた。製品のコードは正しい（ブラウザでタイマーが stub されることはない）。
+- 非同期の合計（`async.raw` / `async.gzip`）の天井も上げた。この作業が足した非同期チャンクは `event-past`（16.2 kB・ボタンを
+  押したときだけ読む）と、上の 2 つのチャンクの増分。起動の集合は増えていない。合計の残りの差は、main 側で天井がまだ記録されて
+  いない新しいチャンク（perf-budget が「main's CI records its ceiling after the merge」と述べるもの）の分。
