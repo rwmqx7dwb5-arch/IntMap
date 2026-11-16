@@ -27,9 +27,13 @@ being abused, or an Edge Function is being hit maliciously. See the model in
   it could reach was reachable.
 - **Leaked provider AI key** → revoke/rotate it in the provider console; `supabase secrets set`
   the new one.
-- **Leaked `REFRESH_SECRET`** → `supabase secrets set REFRESH_SECRET=<new>` and update the cron
-  header. (To take news refresh **fully offline** right now: **unset** `REFRESH_SECRET` — the
-  function is fail-closed and will refuse every request.)
+- **Leaked `REFRESH_SECRET` / `NEWS_INGEST_SECRET`** → set the new value on **both** sides, in the same
+  minute: the function (`supabase secrets set REFRESH_SECRET=<new>` / `NEWS_INGEST_SECRET=<new>`) and
+  the vault entry its pg_cron job reads (`refresh_news_secret` / `news_ingest_secret`:
+  `select vault.update_secret((select id from vault.secrets where name = '<name>'), '<new>');`). One
+  side alone stops the job — the function refuses a mismatched header. Confirm with the next run in
+  `cron.job_run_details` (200). (To take news refresh **fully offline** right now: **unset**
+  `REFRESH_SECRET` — the function is fail-closed and will refuse every request.)
 - **ai-proxy abused** → it already requires a JWT + per-user daily quota; to hard-stop, unset
   the provider key (returns 502) or lower `PLAN_LIMITS`/redeploy; consider revoking the abusing
   user's sessions (Supabase → Auth → Users).
@@ -249,7 +253,12 @@ Since `supabase-deploy.yml`, a migration reaches production when its PR merges �
 ### 8. service_role key leaked
 The `service_role` key bypasses RLS — treat a leak as a full-data compromise.
 1. **Rotate immediately:** Dashboard → **Settings → API → Rotate** the `service_role` key
-   (and the JWT secret if offered). This invalidates the leaked key.
+   (and the JWT secret if offered). This invalidates the leaked key. A leaked **`sb_secret_…`** key
+   (the new kind, which the functions prefer — `_shared/supabase-keys.js`) is closed by creating a
+   new secret key and deleting the leaked one under **Settings → API Keys**. The functions read it
+   from the platform-injected `SUPABASE_SECRET_KEYS` (the key named `default`, else the first), not
+   from a secret set by hand — confirm afterwards that `aviation-feed?meta=1` reports
+   `projectKey: "secret"` and that a write path (e.g. a feedback report) still succeeds.
 2. Update the key wherever it's legitimately used: **Edge Function secrets** (`supabase secrets
    set SUPABASE_SERVICE_ROLE_KEY=…`) and any CI secret that holds it.
 3. Purge it from wherever it leaked (rotate first — don't rely on deletion). If it was ever in
@@ -265,6 +274,19 @@ The `service_role` key bypasses RLS — treat a leak as a full-data compromise.
    data + their own rows. If service_role or the DB password, assume full access → §8 + PITR.
 4. Take a forensic backup (so evidence isn't lost), then restore/clean as needed.
 5. Document the timeline; decide on user disclosure with the maintainer.
+
+### 10. Security advisory (the `status:security-advisory` issue opened)
+The daily **Scheduled security watch** job in `.github/workflows/security.yml` opens it; the body names
+which of three causes it saw, and the next green scheduled run closes it.
+1. **npm audit reports an advisory** → `npm audit --package-lock-only --omit=dev` locally names the package
+   and the path to it. Move the lock past the fixed version (a range the depending package itself declares —
+   `check:static` rule `lock-ranges` refuses one it does not). Check whether a Dependabot security-update PR
+   already does this before writing one.
+2. **An open high/critical code-scanning alert** → fix it, or, only when it is not reachable, dismiss it in
+   Security → Code scanning with the reason written in the dismissal (the reason is the record).
+3. **CodeQL did not complete** → read the run log; a re-run that goes green closes the issue.
+If the advisory is exploitable in what production serves, treat it as the security incident at the top of
+this page (S0–S1) first and the dependency second.
 
 ---
 

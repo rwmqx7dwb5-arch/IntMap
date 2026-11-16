@@ -25,7 +25,7 @@
 //  Secrets: none.
 // ============================================================================
 
-import { corsFor, fetchGuarded, MAX_QUERY_URL } from "../_shared/relay-guard.js";
+import { corsFor, fetchGuarded, allowedUpstream, MAX_QUERY_URL } from "../_shared/relay-guard.js";
 import { callerGate } from "../_shared/rate-limit.js";
 import { SITE_URL } from "../_shared/site-origin.js";
 
@@ -59,6 +59,10 @@ function bad(status, msg) {
    minute is 90. ESTIMATED from that caller. */
 const READER_PER_MIN = 120;
 
+/* The coverage tile hosts js/street-view.js asks: Google's four tile shards mts0 … mts3 — the same
+   four the pattern /^mts[0-3]\.google\.com$/ admitted before the origin rule moved to relay-guard.js. */
+const SV_HOSTS = ["mts0.google.com", "mts1.google.com", "mts2.google.com", "mts3.google.com"];
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
   if (req.method !== "GET") return bad(405, "GET only");
@@ -66,19 +70,21 @@ Deno.serve(async (req) => {
   if (limited) return limited;
 
   // The client passes the full Google tile URL as ?u=<encoded>; we validate it hard.
-  let target;
+  let raw;
   try {
-    const raw = new URL(req.url).searchParams.get("u");
+    raw = new URL(req.url).searchParams.get("u");
     if (!raw) return bad(400, "missing u");
     if (raw.length > MAX_QUERY_URL) return bad(400, "bad url");
-    target = new URL(raw);
+    new URL(raw);   /* parsed here only so a malformed URL is still 400, not the origin rule's 403 */
   } catch {
     return bad(400, "bad url");
   }
 
   // Allowlist — Google Street-View coverage (svv) tiles ONLY. Never an open proxy.
-  if (target.protocol !== "https:") return bad(403, "https only");
-  if (!/^mts[0-3]\.google\.com$/.test(target.hostname)) return bad(403, "host not allowed");
+  /* (security-audit) the origin — https, no userinfo, default port, one of the tile hosts — is
+     relay-guard.js's one rule, the one every ?u= relay asks */
+  const target = allowedUpstream(raw, SV_HOSTS);
+  if (!target) return bad(403, "host not allowed");
   if (target.pathname !== "/vt") return bad(403, "path not allowed");
   if (target.searchParams.get("lyrs") !== "svv") return bad(403, "layer not allowed");
   // z ∈ 0..22 (1–2 digits); x,y ∈ 0..2^z-1 (up to 7 digits at z=22). Integer-only, no scheme tricks.

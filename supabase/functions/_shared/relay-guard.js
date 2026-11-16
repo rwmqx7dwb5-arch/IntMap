@@ -253,6 +253,31 @@ export function methodGate(req, cors) {
    enough to matter is not a tile, a feed or a GeoJSON path — it is somebody probing. */
 export const MAX_QUERY_URL = 2048;
 
+/* ══ (security-audit) THE ORIGIN A FORWARDED URL MUST HAVE — ONE ANSWER FOR EVERY ?u= RELAY ══════════
+   allowedUpstream(raw, hosts, { schemes }) → the parsed URL, or null.
+     · scheme   — https only, unless the caller widens it (alerts-relay, whose CMA feed is the one
+                  upstream measured to need http — its per-host rules then narrow it again);
+     · userinfo — none. `https://user:pw@host/` asks the upstream to authenticate as someone;
+     · port     — the scheme's default only. WHATWG URL writes a default port as "" (`:443` on https
+                  is the same origin), so anything else is a different service on that host;
+     · host     — EXACTLY one of `hosts` (the URL parser has already lower-cased it). No suffix match,
+                  and a trailing dot is a different spelling, refused.
+   Measured 2026-10-23: quotes-relay and alerts-relay refused a port and userinfo (#R801); news-relay,
+   gdelt-relay and sv-cov compared the host name only, so `https://news.google.com:8443/…` and
+   `https://x:y@news.google.com/…` were forwarded. What each relay accepts after the origin (paths,
+   query keys) stays its own — the origin is the part that has one right answer. */
+export function allowedUpstream(raw, hosts, opts) {
+  const o = opts || {};
+  const schemes = Array.isArray(o.schemes) ? o.schemes : ["https:"];
+  let u;
+  try { u = new URL(String(raw)); } catch (_) { return null; }
+  if (schemes.indexOf(u.protocol) < 0) return null;
+  if (u.username || u.password) return null;
+  if (u.port !== "") return null;
+  for (const h of (hosts || [])) if (u.hostname === h) return u;
+  return null;
+}
+
 /* ══ A HOST NAME THAT CANNOT BE THIS PROJECT'S OWN NETWORK ════════════════════════════════════
    (own-fetch-relay) Every relay here forwards only to host NAMES it lists, so the private-address question
    has so far been answered by the lists alone. fetch-relay is the first relay whose list is long
@@ -283,7 +308,7 @@ export function publicHostname(hostname) {
    public unicast address. The ranges are the special-purpose registries (RFC 6890 and the IANA
    IPv4/IPv6 special-purpose tables): unspecified, loopback, private, shared (CGN), link-local,
    documentation, benchmarking, multicast, reserved, IPv4-mapped/NAT64 forms of those. */
-function v4Parts(ip) {
+export function v4Parts(ip) {
   const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(ip);
   if (!m) return null;
   const p = m.slice(1).map(Number);
@@ -303,7 +328,7 @@ function publicV4(p) {
   return true;
 }
 /* an IPv6 address (any spelling: `::`, leading zeros, a dotted IPv4 tail) → its eight 16-bit groups, or null */
-function v6Groups(s) {
+export function v6Groups(s) {
   let head = s, tailV4 = null;
   const dot = /^(.*:)(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/.exec(s);
   if (dot) { tailV4 = v4Parts(dot[2]); if (!tailV4) return null; head = dot[1] + "0:0"; }

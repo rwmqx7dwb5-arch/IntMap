@@ -25,7 +25,10 @@ function pageCacheNames() {
       const src = strip(fs.readFileSync(file, 'utf8'));
       for (const m of src.matchAll(/caches\.open\(\s*([^)]+?)\s*\)/g)) {
         const arg = m[1];
-        let name = /^['"`]([^'"`]+)['"`]$/.exec(arg)?.[1];
+        /* (wave4-train) a name the browser itself just listed (`for (const x of await caches.keys())`) opens a cache that EXISTS —
+           the inventory of js/device-storage-panel.js counting what each holds — and names nothing the page creates or owns */
+        if (/^[A-Za-z_$][\w$]*$/.test(arg) && new RegExp(`for\\s*\\(\\s*(?:const|let|var)\\s+${escapeRe(arg)}\\s+of\\s+await\\s+caches\\.keys\\(\\)\\s*\\)`).test(src)) continue;
+        let name =/^['"`]([^'"`]+)['"`]$/.exec(arg)?.[1];
         if (!name && /^[A-Za-z_$][\w$]*$/.test(arg)) {
           name = new RegExp(`\\b(?:const|let|var)\\s+${escapeRe(arg)}\\s*=\\s*['"\`]([^'"\`]+)['"\`]`).exec(src)?.[1];
         }

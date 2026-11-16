@@ -10,6 +10,9 @@
  *      takes the source and the card down.
  *   ③  the place popup's Wikipedia button asks by the feature's query fields: for OSM's composite Libya label it
  *      asks en «Libya» and never the three-script display name, and the button appears.
+ *   ④⑤ (wave4-companies) companies between countries: the sites card's button opens the ties card; the world reading
+ *      draws one line per country pair (the renderer's own count under 'map.companyTies'); a country shades its partners,
+ *      the direction and the factory filter change the pairs drawn, and closing takes both sources and the card down.
  *  One page, one load.
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
@@ -128,4 +131,45 @@ test('③ the place popup asks Wikipedia by the feature\'s query fields, not its
   expect(asked.some((u) => /ⵍⵉⴱⵢⴰ/.test(u)), 'the display name was asked: ' + asked.join(' | ')).toBe(false);
   expect(asked[0]).toMatch(/en\.wikipedia\.org\/api\/rest_v1\/page\/summary\/Libya$/);
   await page.unroute(/wikipedia\.org/);
+});
+
+/* ══ ④⑤ (wave4-companies) COMPANIES BETWEEN COUNTRIES — js/company-ties.js, on the page the footprint already loaded ══ */
+const drawn = (id) => page.evaluate((src) => { const r = window.IntMapGeoEngine.render.drawn({ owners: ['map.companyTies'] }); const s = r && r.surfaces[src]; return s ? s.features : -1; }, id);
+
+test('④ (wave4-companies) from the sites card to the world network: one line per pair, the card says the reading query() gives', async () => {
+  test.setTimeout(120000);
+  const st = await page.evaluate(() => window.IntMapOS.exec('company.footprint', { source: 'test' }));
+  expect(st.ok, JSON.stringify(st)).toBe(true);
+  await page.locator('#co-fp-panel .cfp-ties').click();
+  const panel = page.locator('#co-ties-panel');
+  await expect(panel).toBeVisible();
+  await expect(page.locator('#co-fp-panel')).toHaveCount(0);
+  const w = await page.evaluate(() => window.IntMapCompanyTies.query({}));
+  expect(w.kind).toBe('world');
+  expect(w.pairs.length).toBeGreaterThan(100);
+  const undrawn = await page.evaluate(() => window.IntMapCompanyTies.state().undrawn.length);
+  await expect.poll(() => drawn('co-ties-line-src'), { timeout: 20000 }).toBe(w.pairs.length - undrawn);
+  await expect(panel.locator('.cti-sum')).toContainText(String(w.cross.sites) + ' of ' + String(w.sites));
+});
+
+test('⑤ (wave4-companies) a country: partners shaded, direction and kind of site change the pairs, closing takes it all down', async () => {
+  test.setTimeout(120000);
+  const panel = page.locator('#co-ties-panel');
+  await panel.locator('select.cti-cc').selectOption('JPN');
+  const inJ = await page.evaluate(() => window.IntMapCompanyTies.query({ country: 'JPN', direction: 'in' }));
+  await expect.poll(() => drawn('co-ties-line-src'), { timeout: 20000 }).toBe(inJ.partners.length);
+  /* the partners plus Japan itself are shaded (Natural Earth outlines, one or more features per country) */
+  await expect.poll(() => drawn('co-ties-fill-src'), { timeout: 20000 }).toBeGreaterThan(inJ.partners.length);
+  await panel.locator('[data-cti-dir="out"]').click();
+  const outJ = await page.evaluate(() => window.IntMapCompanyTies.query({ country: 'JPN', direction: 'out' }));
+  expect(outJ.cross.sites).toBeGreaterThan(0);
+  await expect.poll(() => drawn('co-ties-line-src'), { timeout: 20000 }).toBe(outJ.partners.length);
+  await expect(panel.locator('.cti-list > li')).toHaveCount(outJ.partners.length);
+  await panel.locator('select.cti-grp').selectOption('factory');
+  const fac = await page.evaluate(() => window.IntMapCompanyTies.query({ country: 'JPN', direction: 'out', groups: ['factory'] }));
+  expect(fac.sites).toBeLessThan(outJ.sites);
+  await expect.poll(() => drawn('co-ties-line-src'), { timeout: 20000 }).toBe(fac.partners.length);
+  await panel.locator('.cti-x').click();
+  await expect(panel).toHaveCount(0);
+  expect(await page.evaluate(() => [window.IntMapGeoEngine.layers.hasSource('co-ties-line-src'), window.IntMapGeoEngine.layers.hasSource('co-ties-fill-src')])).toEqual([false, false]);
 });

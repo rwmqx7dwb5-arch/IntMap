@@ -35,7 +35,7 @@
 //            supabase secrets set ANTHROPIC_API_KEY=sk-ant-...        (if AI_PROVIDER=anthropic)
 //            supabase secrets set AI_PROXY_GLOBAL_PER_DAY=<n>         (optional — moves the project-wide ceiling, GLOBAL_PER_DAY below)
 //            supabase secrets set AI_PROXY_NEWCOMER_PER_DAY=<n>       (optional — the share accounts under a week old draw from, NEWCOMER_SHARE below)
-//  (SUPABASE_URL, SUPABASE_ANON_KEY + SUPABASE_SERVICE_ROLE_KEY are injected.)
+//  (SUPABASE_URL and the project keys are injected — read through _shared/supabase-keys.js.)
 //
 // ----------------------------------------------------------------------------
 //  (#R113) Gemini 3.5 Flash / thinkingLevel:"low" migration — RESPONSIBILITY SPLIT.

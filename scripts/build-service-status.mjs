@@ -7,7 +7,9 @@
  *  see (scripts/lib/nightly-status.mjs has the measurement):
  *    · upstream-liveness.yml — which of the hosts the browser asks are answering, refusing or silent,
  *      and since when (its artifact `upstream-liveness`, kept 90 days);
- *    · atlas-eval.yml — when the production Atlas was last evaluated, and why it was not.
+ *    · atlas-eval.yml — when the production Atlas was last evaluated, and why it was not;
+ *    · (field-speed) how long readers waited for the map to become usable, by release, and whether the
+ *      newest release made it worse — the public reading public.field_speed() (scripts/field-speed.mjs).
  *  The app reads the bundle in three places (js/service-status.js): the status page, the sentence a
  *  layer row adds when its request fails (「データ元は 10/02 から応答していません」), and the rows of
  *  the data-sources list.
@@ -47,6 +49,7 @@ import { fileURLToPath } from 'node:url';
 import { readerUpstreams, fetchAtlasEval, ghJSON, ghRepo, OFFLINE_REPORT } from './lib/nightly-status.mjs';
 import { measureQuality } from '../js/data-governance.js';
 import { buildProbes, BUILD_UPSTREAMS } from './upstream-liveness.mjs';
+import { fetchFieldSpeed } from './field-speed.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const OUT = 'data/service-status.json';
@@ -211,7 +214,7 @@ function offlineOf(repo, run) {
 }
 
 /** the bundle, from the two inputs — pure, so a test can build one without a network */
-export function compose({ liveness, ledger, atlasEval, unread, now, previousHistory }) {
+export function compose({ liveness, ledger, atlasEval, fieldSpeed, unread, now, previousHistory }) {
   const at = (now || new Date()).toISOString();
   const upstream = readerUpstreams(liveness, ledger);
   /* the in-band record first, so check:datagov's head read finds it (scripts/data-governance.mjs bundleRecord) */
@@ -226,6 +229,8 @@ export function compose({ liveness, ledger, atlasEval, unread, now, previousHist
     builtAt: at,
     upstream,
     atlasEval: atlasEval || null,
+    /* (field-speed) the readers' wait by release — null when it could not be read (the reason is in `unread`) */
+    fieldSpeed: fieldSpeed && !fieldSpeed.unread ? fieldSpeed : null,
     unread: unread && unread.length ? unread : [],
     /* (ops-next) every measured night carried forward — see advanceHistory */
     history: advanceHistory(previousHistory || null, upstream),
@@ -233,7 +238,10 @@ export function compose({ liveness, ledger, atlasEval, unread, now, previousHist
 }
 
 const sameSaying = (a, b) => {
-  const strip = (o) => { const c = Object.assign({}, o); delete c.builtAt; delete c.generatedAt; delete c.retrievedAt; return JSON.stringify(c); };
+  /* (field-speed) the reading's own time is the moment it was asked, not something it says */
+  const strip = (o) => { const c = Object.assign({}, o); delete c.builtAt; delete c.generatedAt; delete c.retrievedAt;
+    if (c.fieldSpeed) { c.fieldSpeed = Object.assign({}, c.fieldSpeed); delete c.fieldSpeed.measuredAt; }
+    return JSON.stringify(c); };
   return strip(a) === strip(b);
 };
 
@@ -253,6 +261,9 @@ async function main() {
   if (!atlasEval) unread.push({ half: 'atlasEval', why: repo ? 'the runs of atlas-eval.yml could not be read' : 'no repository to read' });
   /* (ops-next) the half that needs no session, when a run uploaded it — else null, and the page says nothing about it */
   if (atlasEval) atlasEval.offline = atlasEval.offlineRun ? offlineOf(repo, atlasEval.offlineRun) : null;
+  /* (field-speed) the public reading — it needs no gh, only the network */
+  const fieldSpeed = await fetchFieldSpeed({ root: ROOT });
+  if (fieldSpeed.unread) unread.push({ half: 'fieldSpeed', why: fieldSpeed.unread });
 
   const file = path.join(ROOT, arg('--out') || OUT);
   let prev = null; try { prev = JSON.parse(fs.readFileSync(file, 'utf8')); } catch { prev = null; }
@@ -262,7 +273,7 @@ async function main() {
   if (has('--backfill') && repo && !lp) {
     for (const r of olderLiveness(repo)) previousHistory = advanceHistory(previousHistory, readerUpstreams(r, ledger));
   }
-  const out = compose({ liveness, ledger, atlasEval, unread, previousHistory });
+  const out = compose({ liveness, ledger, atlasEval, fieldSpeed, unread, previousHistory });
   if (has('--print')) { console.log(JSON.stringify(out, null, 2)); return; }
   if (prev && sameSaying(prev, out)) { console.log(`${OUT}: nothing new since ${prev.builtAt} — left as it was`); return; }
   /* ⚠ A RUN THAT READ NOTHING DOES NOT OVERWRITE A BUNDLE THAT READ SOMETHING — the halves it could not
@@ -270,11 +281,13 @@ async function main() {
   if (prev) {
     if (!out.upstream && prev.upstream) out.upstream = prev.upstream;
     if (!out.atlasEval && prev.atlasEval) out.atlasEval = prev.atlasEval;
+    if (!out.fieldSpeed && prev.fieldSpeed) out.fieldSpeed = prev.fieldSpeed;
   }
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify(out, null, 1) + '\n');
   const u = out.upstream;
   console.log(`${OUT}: history ${out.history.nights.length} night(s) · upstream ${u ? `${u.measuredAt} · ${u.hosts.filter((h) => h.verdict !== 'alive').length} not alive of ${u.hosts.length}` : 'unread'}`
+    + ` · field speed ${out.fieldSpeed ? out.fieldSpeed.releases.length + ' release(s)' : 'unread'}`
     + ` · atlas eval ${out.atlasEval ? (out.atlasEval.lastSuccessAt ? 'last success ' + out.atlasEval.lastSuccessAt : 'never succeeded in ' + out.atlasEval.total + ' run(s)') : 'unread'}`);
 }
 

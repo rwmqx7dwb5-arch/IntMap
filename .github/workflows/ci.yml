@@ -64,24 +64,49 @@ jobs:
   build:
     name: Build the site (once per run)
     runs-on: ubuntu-latest
+    timeout-minutes: 20   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     outputs:
       site: ${{ steps.names.outputs.site }}
       pages: ${{ steps.names.outputs.pages }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: npm
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - uses: ./.github/actions/data-assets    # (data-outside-git) vite copies data/ into dist/
       - name: Artifact names (the attempt that built them)
         id: names
         run: |
           echo "site=site-build-${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
           echo "pages=github-pages-${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+      # (polity-pages) THE CARDS OF THE POLITY PAGES ARE KEPT BETWEEN RUNS, IN A CACHE OF THEIR OWN.
+      # scripts/polity-pages.mjs keeps each card it draws in the card store beside the data store (cardStoreOf: «<store>-cards»;
+      # the build step sets no INTMAP_DATA_STORE, so on this runner that is ~/.cache/intmap-data-cards), named by the digest of
+      # what its pixels depend on, so a build draws only the cards whose inputs changed (MEASURED 2026-10-13: 2,112 cards,
+      # ~70 MB, 0.2–0.45 s each). The path is NOT under ${{ runner.temp }}/intmap-data, the one path the data-assets
+      # action's cache restores and saves, and the key prefix intmap-polity-cards- is not its intmap-data-, so neither cache
+      # writes the other's files. Restored from the latest main run that saved it; saved only on a push to main (the
+      # timings' shape below: a run-id key, read back by its prefix). The build itself removes the cards it did not use
+      # (pruneUnused — the same rule on a developer's machine), so what is saved is exactly this build's cards.
+      # tests/polity-pages-checks.test.mjs ⑧ reads these steps against the code.
+      - name: Restore the polity cards (the latest main run's)
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ~/.cache/intmap-data-cards
+          key: intmap-polity-cards-${{ github.run_id }}
+          restore-keys: intmap-polity-cards-
       - name: Build the site (Vite)
         run: npm run build
+      - name: Keep the polity cards for the next run
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ~/.cache/intmap-data-cards
+          key: intmap-polity-cards-${{ github.run_id }}
       - name: Hand the build to the jobs that read it
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
@@ -153,6 +178,7 @@ jobs:
   gates:
     name: Gates ${{ matrix.shard }}/${{ matrix.of }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     needs: [build]
     if: ${{ !cancelled() }}
     strategy:
@@ -164,11 +190,13 @@ jobs:
           - { shard: 3, of: 3 }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: npm
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - uses: ./.github/actions/data-assets    # (data-outside-git) the datasets outside git, before anything reads them
       # (ci-build-once) asked of the SAME plan --shard executes, so the download and the build task
       # cannot land on different shards.
@@ -199,6 +227,7 @@ jobs:
   static:
     name: Static checks
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     needs: [build, gates]
     if: ${{ always() }}
     steps:
@@ -217,14 +246,17 @@ jobs:
   upstream:
     name: Era snapshots — still the whole upstream set? (network)
     runs-on: ubuntu-latest
+    timeout-minutes: 30   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: npm
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - uses: ./.github/actions/data-assets    # (data-outside-git) the datasets outside git, before anything reads them
       - run: node scripts/build-hist-eras.mjs --check-upstream
 
@@ -241,14 +273,17 @@ jobs:
   formats:
     name: Exports read by GDAL (third-party readers)
     runs-on: ubuntu-latest
+    timeout-minutes: 30   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: npm
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - run: python -m pip install --disable-pip-version-check rasterio pyogrio rio-cogeo
       - name: COG, GeoPackage and GeoTIFF as a third party reads them
         env:
@@ -413,6 +448,7 @@ jobs:
   checks:
     name: Regression ${{ matrix.shard }}/${{ matrix.of }}
     runs-on: ubuntu-latest
+    timeout-minutes: 60   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     strategy:
       fail-fast: false            # one slow shard must not hide the results of the others
       matrix:
@@ -422,11 +458,13 @@ jobs:
           - { shard: 3, of: 3 }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: npm
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - uses: ./.github/actions/data-assets    # (data-outside-git) the datasets outside git, before anything reads them
       # (#R166) Was `node --test` over two named files (security-logic and the since-retired area-monitor logic), so the R1xx
       # source-level suites ran only on a developer's machine — including the file-split invariants,
@@ -452,6 +490,7 @@ jobs:
   checks-gate:
     name: Regression suite
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     needs: [checks]
     if: ${{ always() }}
     steps:
@@ -524,6 +563,7 @@ jobs:
   browser:
     name: Browser ${{ matrix.suite }} ${{ matrix.shard }}/${{ matrix.of }}
     runs-on: ubuntu-latest
+    timeout-minutes: 45   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     needs: [build]            # (ci-build-once) it tests the run's one build; it builds nothing itself
     env:
       IM_TIER: core
@@ -541,6 +581,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 2
       - uses: ./.github/actions/browser-tier
         with: { tier: core, suite: "${{ matrix.suite }}", shard: "${{ matrix.shard }}", of: "${{ matrix.of }}", allow-empty: "${{ matrix.allow-empty || 'false' }}", dist-artifact: "${{ needs.build.outputs.site }}" }
@@ -588,6 +629,7 @@ jobs:
     name: Deep ${{ matrix.suite }} ${{ matrix.shard }}/${{ matrix.of }}
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+    timeout-minutes: 120   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     needs: [build]            # (ci-build-once) the same one build as the core tier
     strategy:
       fail-fast: false
@@ -603,6 +645,8 @@ jobs:
           - { suite: rest, shard: 5, of: 5 }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/browser-tier
         with: { tier: deep, suite: "${{ matrix.suite }}", shard: "${{ matrix.shard }}", of: "${{ matrix.of }}", dist-artifact: "${{ needs.build.outputs.site }}" }
 
@@ -622,12 +666,15 @@ jobs:
   timings:
     name: Record the measured times on main
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     needs: [browser, browser-deep]
     if: ${{ github.ref == 'refs/heads/main' && always() }}
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version-file: .nvmrc
@@ -664,6 +711,7 @@ jobs:
   browser-gate:
     name: Browser smoke + internal QA
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     needs: [browser, browser-deep]
     if: ${{ always() }}
     steps:
@@ -704,6 +752,7 @@ jobs:
   deep-alarm:
     name: Nightly deep tier — raise or clear the alarm
     runs-on: ubuntu-latest
+    timeout-minutes: 15   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     needs: [build, browser-deep]
     if: ${{ github.event_name == 'schedule' && always() && (needs.browser-deep.result != 'skipped' || needs.build.result != 'success') }}
     permissions:
@@ -713,6 +762,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
+          persist-credentials: false
           # (delivery-quality) the range a regression broke in is HISTORY: the merges between two nights.
           # Commits and trees only — no file contents of old commits are read.
           fetch-depth: 0
@@ -779,6 +829,7 @@ jobs:
     needs: [build, static, checks-gate, browser-gate]
     if: ${{ !cancelled() && github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.ENABLE_PAGES_DEPLOY == 'true' && needs.build.result == 'success' && needs.static.result == 'success' && needs.checks-gate.result == 'success' && needs.browser-gate.result == 'success' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     permissions:
       pages: write            # the ONLY job in this workflow that can publish
       id-token: write
@@ -795,6 +846,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
+          persist-credentials: false
           sparse-checkout: scripts/pages-publish-guard.mjs
           sparse-checkout-cone-mode: false
       - id: guard
@@ -821,6 +873,7 @@ jobs:
     needs: [build, static, checks-gate, browser-gate]
     if: ${{ !cancelled() && github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.AWS_PUBLISH_ROLE_ARN != '' && needs.build.result == 'success' && needs.static.result == 'success' && needs.checks-gate.result == 'success' && needs.browser-gate.result == 'success' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     permissions:
       id-token: write         # the OIDC token the role trusts
       contents: read
@@ -832,6 +885,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
+          persist-credentials: false
           sparse-checkout: |
             scripts/aws-publish.mjs
             scripts/pages-publish-guard.mjs
@@ -860,13 +914,16 @@ jobs:
     needs: [pages]
     if: ${{ !cancelled() && needs.pages.result == 'success' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30   # ci-job-timeouts: ~3× the longest measured run (docs/TESTING.md)
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: npm
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - run: npx playwright install --with-deps chromium
       - name: Smoke-test the freshly deployed site
         env:

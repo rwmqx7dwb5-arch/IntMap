@@ -209,6 +209,67 @@ export default [
       return R(true, h, { meta: { ash: r } });
     },
   },
+  /* ══ (wave4-science) THE AFTERSHOCK FORECAST — «will there be more, and how big?» ══════════════════════════
+     The Reasenberg–Jones forecast with USGS's published generic parameters (Page et al. 2016; js/aftershock-core.js), updated
+     with the sequence's own aftershocks, for any M5+ earthquake in the USGS catalogue — in a card with the uncertainty, the
+     answer check against what happened (the master clock is the issue time) and USGS's own forecast where it published one
+     (js/aftershock.js). The earthquake is named by its ComCat id, or found as the largest M5+ of the last 30 days near a place. */
+  {
+    row: ['sim.aftershocks',            'aftershocks',    'aftershockForecast,aftershockProbability,aftershockOutlook,afterShocks', 'sim', 'panel', 'panel.aftershock,camera', 'panel,explanation', 'session', 'none', 'place?', 'aftershock'],
+    science: 'aftershock',
+    scenario: {
+      subject: 'place', baselineParam: 'at',
+      data: [
+        T('USGS ANSS ComCat — the mainshock and every aftershock recorded in its zone', 'USGS ANSS ComCat — 本震と、余震域に記録されたすべての余震'),
+        T('USGS generic Reasenberg–Jones parameters per tectonic regime (Page et al. 2016) and the García et al. (2012) regionalization', 'USGS が地殻変動の区分ごとに公表した Reasenberg–Jones の一般パラメータ (Page ほか 2016) と García ほか (2012) の区分'),
+        T('The time-dependent catalogue completeness after a mainshock (Page et al. 2016)', '本震直後のカタログの時間変化する検知限界 (Page ほか 2016)'),
+      ],
+      excluded: [
+        T('Where in the zone or on which day an aftershock happens — the probability is for the whole circle and the whole window', '余震が余震域のどこで・どの日に起きるかは扱わない — 確率は円全体・期間全体についてのもの'),
+        T('Secondary triggering beyond the Omori decay (an ETAS cascade), slow slip and volcanic unrest', '大森則の減衰を超える二次的な誘発（ETAS の連鎖）、スロースリップ、火山活動'),
+      ],
+      uncertainty: [
+        T('Each probability carries the 95% range of the number; the productivity a is a posterior distribution, wide when few aftershocks are recorded', '各確率には回数の 95% の幅が付く。生産性 a は事後分布で、余震の記録が少ないほど幅が広い'),
+        T('Tested on 137 M7+ sequences (2015–2024): the model runs high, most at M7+ and over longer windows', 'M7 以上の 137 系列（2015〜2024 年）で検証: このモデルは高めに出る。M7 以上や長い期間ほど大きい'),
+      ],
+    },
+    doc: [
+      { in: 'more-features', at: 560, text: '{"type":"aftershocks","eventId"?:str (a USGS ComCat id, e.g. from the earthquakes layer, earthquakeHistory or the earthquakes table),"place"?:str,"lng"?:num,"lat"?:num,"at"?:ISO-8601 UTC (the issue time; default the master clock)} = AFTERSHOCK FORECAST / 余震の見通し — answers «will there be more aftershocks?», «what is the chance of another M6 this week?», «could a bigger one follow?» after a real earthquake of M5 or more: the chance of at least one aftershock of M3+, M5+, M6+, M7+ and of one AS LARGE AS THE MAINSHOCK in the next day, week, month and year, each WITH THE 95% RANGE OF THE NUMBER, from the Reasenberg–Jones model with the generic parameters USGS published for the mainshock\'s tectonic regime (Page et al. 2016), updated with the sequence\'s own aftershocks from the USGS catalogue. Opens a card (table, the cumulative aftershocks against the expected decay, what it stands on, USGS\'s own forecast where USGS published one) and draws the aftershock zone and the aftershocks on the map. Without "eventId", "place"/"lng"+"lat" picks the LARGEST M5+ earthquake within 300 km in the 30 days before the issue time; with nothing, the card lists the recent M5.5+ earthquakes. "at" (or the master clock) in the PAST issues the forecast as it could have been issued then, and for windows that have ended the result says what actually happened (answerCheck: within / below / above the 95% range). It is NOT an official forecast and the model runs high in its published test (137 M7+ sequences) — always say so, give the range with the probability, and point to the national agency (in Japan the JMA). Use for 「余震の確率は」「この地震のあと大きな地震は来る？」「能登の余震はどのくらい続く」「what are the odds of a big aftershock after the Turkey earthquake」. ' },
+    ],
+    phrases: () => ['余震', '余震の確率', '余震の見通し', '大きな余震', 'これより大きな地震', '本震'].concat(['aftershock', 'aftershocks', 'aftershock forecast', 'chance of aftershocks', 'bigger earthquake to follow']),   /* the Japanese phrases, then the English words — two lists, not translations of each other */
+    schema: () => ({ type: 'object', properties: { eventId: str(), place: str(), lng: lng(), lat: lat(), at: str() } }),
+    async run(a, dctx, K) { const R = K.R, warn = K.warn, esc = K.esc, L = K.L, geocode = K.geocode;
+      let pt = null, name = '';
+      const eventId = a.eventId ? String(a.eventId).trim() : '';
+      if (!eventId) {
+        if (a.lng != null && a.lat != null && isFinite(+a.lng) && isFinite(+a.lat)) { pt = { lng: +a.lng, lat: +a.lat }; name = String(a.place || ''); }
+        else if (a.place && /^(here|there)$/i.test(String(a.place).trim()) && K._herePoint) { pt = { lng: +K._herePoint.lng, lat: +K._herePoint.lat }; name = K._herePoint.name || ''; }
+        else if (a.place) { const ll = await geocode(a.place); if (!ll) return R(false, warn(L('IntMap could not place «' + esc(String(a.place)) + '». Give coordinates or a USGS event id.', '「' + esc(String(a.place)) + '」を地図上に特定できませんでした。座標か USGS の地震 ID を指定してください。')), { meta: { code: 'NOT_FOUND', category: 'input', retryable: true, produced: [], userGoalSatisfied: false } }); pt = { lng: +ll.lng, lat: +ll.lat }; name = ll.name || String(a.place); }
+      }
+      try { await window.IntMapLazy.need('aftershock'); } catch (_) { /* answered below */ }
+      const A = window.IntMapAftershock;
+      if (!A || typeof A.open !== 'function') return R(false, warn(L('The aftershock forecast is not available', '余震の見通しを利用できません')), { meta: { code: 'MODULE_UNAVAILABLE', category: 'capability', retryable: false, produced: [], userGoalSatisfied: false } });
+      if (a.at) { const ms = Date.parse(String(a.at)); if (!isFinite(ms)) return R(false, warn(L('«at» is not a date: give it as ISO-8601 UTC.', '「at」が日時として読めません。ISO-8601（UTC）で指定してください。')), { meta: { code: 'BAD_INPUT', category: 'input', retryable: true, produced: [], userGoalSatisfied: false } }); A.issueAt(ms); }
+      const r = await A.open({ eventId: eventId || undefined, lng: pt ? pt.lng : undefined, lat: pt ? pt.lat : undefined, name });
+      if (!r || r.ok === false) {
+        const k = r && r.errorKind;
+        return R(false, warn(k === 'too-small' ? L('An aftershock forecast needs a mainshock of M5 or more.', '余震の見通しには M5 以上の本震が必要です。')
+          : k === 'none-near' ? L('The USGS catalogue holds no M5+ earthquake within 300 km of that place in the 30 days before the issue time.', 'その場所の 300 km 以内に、見通しの時点までの 30 日間で M5 以上の地震は USGS のカタログにありません。')
+          : k === 'not-found' ? L('USGS has no event with that id.', 'その ID の地震は USGS のカタログにありません。')
+          : L('The aftershock forecast could not be computed', '余震の見通しを計算できませんでした') + (k ? ' (' + esc(k) + ')' : '')), { meta: { code: k === 'not-found' || k === 'none-near' ? 'NOT_FOUND' : k === 'too-small' ? 'BAD_INPUT' : 'UPSTREAM_UNAVAILABLE', category: k === 'too-small' ? 'input' : 'evidence', retryable: !(k === 'not-found' || k === 'too-small' || k === 'none-near'), produced: [], userGoalSatisfied: false } });
+      }
+      if (r.chooser) return R(true, '<div style="font-size:12.5px;line-height:1.55;">' + esc(L('Opened the aftershock forecast with the recent earthquakes of M5.5+ to choose from: ', '最近の M5.5 以上の地震から選べる「余震の見通し」を開きました: ') + r.chooser.slice(0, 6).map((e) => 'M' + Number(e.magnitude).toFixed(1) + ' ' + (e.place || '') + ' (' + e.id + ')').join(' · ')) + '</div>', { meta: { code: 'OK', category: 'ok', retryable: false, produced: ['panel'], userGoalSatisfied: false }, exec: { aftershocks: r } });
+      const pctOf = (w, m, big) => { const W = r.forecast.find((x) => x.window === w); const b = W && W.bins.find((x) => (big ? x.asLargeAsMainshock : x.magnitudeAtLeast === m && !x.asLargeAsMainshock)); return b ? b.probabilityPercent + '% (' + b.count95[0] + '–' + b.count95[1] + ')' : '—'; };
+      let html = '<div style="font-weight:600;margin:2px 0 4px;">' + esc(L('Aftershock forecast', '余震の見通し') + ' — M' + Number(r.mainshock.magnitude).toFixed(1) + ' ' + (r.mainshock.place || '')) + '</div>';
+      html += '<div style="font-size:12px;line-height:1.6;">' + esc(L('Issued {t} ({d} days after). Next week: M5+ {a}, M6+ {b}, M7+ {c}; as large as the mainshock {m}. In parentheses: the 95% range of the number.', '{t} 時点（本震の {d} 日後）。今後 1 週間: M5 以上 {a}・M6 以上 {b}・M7 以上 {c}・本震と同規模以上 {m}。括弧内は回数の 95% の範囲。')
+        .replace('{t}', r.issued.slice(0, 16).replace('T', ' ') + ' UTC').replace('{d}', String(r.daysAfterMainshock)).replace('{a}', pctOf('week', 5)).replace('{b}', pctOf('week', 6)).replace('{c}', pctOf('week', 7)).replace('{m}', pctOf('week', null, true))) + '</div>';
+      html += '<div style="font-size:12px;">' + esc(L('Regime {g}; {n} aftershocks used; zone {k} km.', '区分 {g}・使用した余震 {n} 個・余震域 {k} km。').replace('{g}', r.regime).replace('{n}', String(r.aftershocksUsed)).replace('{k}', String(Math.round(r.zone.radiusKm)))) + '</div>';
+      if (r.answerCheck && r.answerCheck.length) html += '<div style="font-size:12px;">' + esc(L('What happened after: ', 'その後の実際: ') + r.answerCheck.map((c) => c.window + ' ' + c.bins.map((b) => 'M' + b.magnitudeAtLeast + '+ ' + b.observed + ' (' + b.verdict + ')').join(', ')).join(' · ')) + '</div>';
+      if (r.usgsForecast) html += '<div style="font-size:12px;">' + esc(L('USGS published its own forecast (', 'USGS 独自の見通しもあります（') + (r.usgsForecast.model || '') + L(') — shown beside it in the card.', '）— カードに並べて表示しています。')) + '</div>';
+      html += '<div style="font-size:11px;color:var(--text-muted);line-height:1.5;">' + esc(L('Not an official forecast; the model runs high in its published test. Follow the national agency. Method: science.html#aftershock', '公式の予測ではありません。公開した検証ではこのモデルは高めに出ます。各国の機関の発表に従ってください。手法: science.html#aftershock')) + '</div>';
+      return R(true, html, { meta: { code: 'OK', category: 'ok', retryable: false, produced: ['panel', 'explanation'], userGoalSatisfied: true }, exec: { aftershocks: r } });
+    },
+  },
   {
     row: ['sim.flightSim',              'flightSim',      'flightsim,flightsimulator,flysim,pilot',                      'sim',     'sim',     'camera,map.flightsim',   'map,camera',          'session', 'none',   'place?',   'flightSim'],
     science: 'flight',

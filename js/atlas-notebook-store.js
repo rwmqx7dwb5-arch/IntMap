@@ -55,6 +55,50 @@ export function replayable(capabilityId, status, resolve) {
   return !!(c && c.risk === 'reversible-session' && c.legacy);
 }
 
+/* ══ (security-audit) WHO WROTE A STEP — THIS DEVICE, OR A FILE ═════════════════════════════════════
+   A step this device recorded is what the reader's own Atlas ran, and replaying it runs it again as it ran.
+   A step that arrived from somebody else — a notebook FILE (fromFile) or a section of a briefing LINK the reader
+   kept (js/atlas-briefing.js keep, through importedEntry) — is its author's choice of calls: its `replay` flag
+   and its `args` are whatever they wrote. Two things follow, and both are facts about the step, not a list:
+     · it carries `from: 'imported'` for as long as it is kept (device, account, a file exported again);
+     · its `replay` is never what decides a run — replayCalls() judges an imported step again against the
+       registry at the moment it would run (replayableStep: the rule entryFromTurn() applies, asked of the call
+       that would actually be dispatched), and hands what passes to the dispatch stamped `__externalContent` —
+       the outside-content mark the briefing's rebuild already uses — so js/atlas-executor.js asks before an
+       'explicit' row or an outward / destructive press runs, exactly as for anything else from outside.
+       fromFile() also judges the flag on the way in, so the panel counts what a replay will run.
+   A step with no `from` is one this device recorded — every entry stored before the field existed is read
+   that way, and its replay is unchanged. */
+export const IMPORTED = 'imported';
+
+/** replayable(), asked of the call a replay would really dispatch: the step's `args.type` must name the
+    same capability as its `cap`, so a file cannot label a map step and carry another call in its args */
+export function replayableStep(step, resolve) {
+  const s = step || {};
+  if (!replayable(s.cap, s.status, resolve)) return false;
+  const type = s.args && s.args.type;
+  if (!type) return false;
+  let a = null, b = null; try { a = resolve(String(type)); b = resolve(String(s.cap)); } catch (_) { return false; }
+  return !!(a && b && a.id === b.id);
+}
+
+/** an entry somebody else made (a file, a kept briefing section), as this device keeps it: normalized, every step
+    marked IMPORTED. With `resolve` its flags are judged now; without, the sender's flag stays as a hint only —
+    replayCalls() judges again before anything runs. */
+export function importedEntry(e, resolve) {
+  const n = normalize(e); if (!n) return null;
+  n.steps = n.steps.map((s) => Object.assign({}, s, { from: IMPORTED, replay: typeof resolve === 'function' ? replayableStep(s, resolve) : s.replay }));
+  return n;
+}
+
+/** the calls a replay of `entry` dispatches, in order. A step this device recorded runs as recorded; an imported
+    one only when the registry (`resolve`) says now that it may, and then stamped as outside content. */
+export function replayCalls(entry, resolve) {
+  return ((entry && entry.steps) || []).filter((s) => s.replay && s.args && s.args.type)
+    .filter((s) => s.from !== IMPORTED || (typeof resolve === 'function' && replayableStep(s, resolve)))
+    .map((s) => s.from === IMPORTED ? Object.assign({}, s.args, { __externalContent: true }) : s.args);
+}
+
 /* the action object again, as the dispatch receives it: the `__` stamps the executor adds are its own
    bookkeeping (turn ids, outside-content flags) and are not part of what was asked */
 export function cleanArgs(args) {
@@ -102,7 +146,10 @@ export function normalize(e) {
     v: VERSION, id: String(e.id), at: +e.at || 0, updatedAt: +e.updatedAt || +e.at || 0,
     title: str(e.title || question, 140), question, answer: str(e.answer, 64000), lang: str(e.lang, 12), status: str(e.status, 32),
     view: obj(e.view),
-    steps: arr(e.steps).filter(obj).map((s) => ({ cap: str(s.cap, 80), args: obj(s.args) || {}, status: str(s.status, 24), code: str(s.code, 60), replay: !!s.replay })),
+    /* args pass cleanArgs: a `__` stamp is the executor's own bookkeeping, and one written into a stored or
+       imported step (an `__externalContent:false`) is not something any step may carry into a replay */
+    steps: arr(e.steps).filter(obj).map((s) => Object.assign({ cap: str(s.cap, 80), args: cleanArgs(obj(s.args) || {}), status: str(s.status, 24), code: str(s.code, 60), replay: !!s.replay },
+      s.from === IMPORTED ? { from: IMPORTED } : {})),
     results: arr(e.results).filter(obj).map((r) => ({
       at: +r.at || 0, key: str(r.key, 2000), spec: obj(r.spec) || {}, table: str(r.table, 80), tableLabel: str(r.tableLabel, 120),
       matched: +r.matched || 0, offered: +r.offered || 0,
@@ -205,12 +252,15 @@ export function toMarkdown(entries, lang) {
 export function toFile(entries) {
   return { format: FORMAT, v: VERSION, exportedAt: Date.now(), entries: (entries || []).map((e) => { const c = Object.assign({}, e); delete c.syncedAt; return c; }) };
 }
-/** a file a reader chose → { entries, rejected }. Throws only when it is not a notebook at all. */
-export function fromFile(obj) {
+/** a file a reader chose → { entries, rejected }. Throws only when it is not a notebook at all.
+    `resolve` is the capability registry's (js/atlas-capabilities.js resolve): every step is judged again by it and
+    marked IMPORTED (see above). Without it no imported step is replayable — the file's own flag is never the answer. */
+export function fromFile(obj, resolve) {
   if (!obj || obj.format !== FORMAT) throw new Error('not-a-notebook');
   if (+obj.v > VERSION) throw new Error('newer-version');
   const entries = [], all = Array.isArray(obj.entries) ? obj.entries : [];
-  all.forEach((e) => { const n = normalize(Object.assign({}, e, { syncedAt: 0 })); if (n) entries.push(n); });
+  const judge = typeof resolve === 'function' ? resolve : () => null;   /* no registry: nothing a file says is replayable */
+  all.forEach((e) => { const n = importedEntry(Object.assign({}, e, { syncedAt: 0 }), judge); if (n) entries.push(n); });
   return { entries, rejected: all.length - entries.length };
 }
 

@@ -104,16 +104,44 @@ export function stripUrls(text) {
 /* What might be something a person typed or a credential, replaced by a placeholder. A URL has
    already lost its query by the time this runs (stripUrls first). `digits` is off for a stack: a
    minified bundle is one long line, so a frame's COLUMN is routinely six digits and is the part of
-   the frame that locates the defect. */
+   the frame that locates the defect.
+
+   ⚠ (security-audit) EVERY PATTERN HERE CONSUMES A RUN ONCE. This runs on the server BEFORE the rate
+   limit (parseBody → shapeReport), on up to MAX_BODY_BYTES of text anyone may POST, so a pattern that
+   is retried from every position of a run it then rejects is an unauthenticated CPU lever. MEASURED
+   2026-10-23 (Node 22, 64 KiB inputs): the e-mail pattern as it was written —
+   /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi — took 2.8 s on a run of digits with no `@` (every start
+   in the run re-scanned the run to its end), and the curly / corner-bracket quote patterns
+   (/“[^”\n]{25,}”/) took 3.6 s on a run of opening marks with no closing one. Each is now a pattern
+   that takes the whole run in ONE match and a callback that decides whether it is the thing:
+     · a run of local-part characters, with the `@domain.tld` after it when there is one — only a
+       match that reached the `@` is an address. A run that is not one is skipped whole, which is
+       exactly what the old pattern concluded after retrying each of its positions (none of them
+       could reach a different `@`: the run ends where the first non-local character is).
+     · an opening mark, everything up to the next closing mark or newline, and the closing mark if
+       that is what stopped it — replaced only when it closed and the inside is ≥ 25 long. Every
+       later opening mark inside the same stretch would have hit the same stop with a shorter inside,
+       so the old pattern could not have matched any of them either.
+   tests/security-audit-checks.test.mjs holds the outputs equal to the old patterns' on random and
+   edge-case text, and bounds the 64 KiB worst case. ⚠ NO LOOKBEHIND: the browser imports this file
+   as-is, and Safari before 16.4 refuses the whole module on a lookbehind. */
+const EMAIL_RUN = /[A-Z0-9._%+-]+(@[A-Z0-9.-]+\.[A-Z]{2,})?/gi;
+const CURLY_RUN = /“[^”\n]*(”?)/g;
+const CORNER_RUN = /「[^」\n]*(」?)/g;
+/* a quoted stretch `run` (opening mark … closing mark, `closed` = the closing mark or "") is replaced
+   by `quoted` when it closed and its inside is at least 25 characters — the old {25,} */
+function quotedRun(run, closed, quoted) {
+  return (closed && run.length - 2 >= 25) ? quoted : run;
+}
 export function redact(text, opts) {
   const o = opts || {};
   let s = String(text == null ? "" : text)
-    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "<email>")
+    .replace(EMAIL_RUN, (run, at) => (at ? "<email>" : run))
     .replace(/\beyJ[A-Za-z0-9_-]{8,}(?:\.[A-Za-z0-9_-]+){0,2}/g, "<token>")   // a JWT
     .replace(/\b[A-Za-z0-9_-]{32,}\b/g, "<token>")                              // a key / hash / id
     .replace(/(["'`])[^"'`\n]{25,}\1/g, "$1…$1")                                // a long quoted string
-    .replace(/“[^”\n]{25,}”/g, "“…”")
-    .replace(/「[^」\n]{25,}」/g, "「…」");
+    .replace(CURLY_RUN, (run, closed) => quotedRun(run, closed, "“…”"))
+    .replace(CORNER_RUN, (run, closed) => quotedRun(run, closed, "「…」"));
   if (o.digits !== false) s = s.replace(/\d{6,}/g, "<n>");
   return s;
 }
@@ -153,15 +181,47 @@ export function cleanMessage(message) {
 
 /* The first line of a stack that is a FRAME (V8 `    at f (url:1:2)`, SpiderMonkey/JSC `f@url:1:2`),
    reduced to the file's last path segment and its position — the origin and directories vary with
-   where the page is served from, the file and position are what identify the call site. */
+   where the page is served from, the file and position are what identify the call site.
+
+   ⚠ (security-audit) THE FILE AND POSITION ARE READ FROM THE END, NOT SEARCHED FOR. They were the
+   pattern /([^\s()@/]+?)(:\d+:\d+|:\d+)\)?\s*$/ — a lazy run anchored only at the END, which the
+   engine retries from every position of the line: MEASURED 2026-10-23, 39 ms on one 4,000-character
+   line (MAX.stack), 1.5 s on 64 KiB. frameAt() states what that pattern matched and finds it in one
+   backward pass: the line's tail is `:<digits>` or `:<digits>:<digits>`, then an optional `)`, then
+   whitespace; the file is the run of file characters (not whitespace, `(`, `)`, `@`, `/`) that ends
+   where the position begins — and when the run would be empty before a two-part position, the
+   pattern's lazy run took the first `:<digits>` as the file, so this does too.
+   tests/security-audit-checks.test.mjs holds it equal to the old pattern on random frames. */
+const FRAME_CHAR = /[^\s()@/]/;
+const SPACE = /\s/;
+function isDigit(c) { return c >= "0" && c <= "9"; }
+/* the `:<digits>` group that ends at `e` (exclusive) → its start (the colon), or -1 */
+function posGroupStart(line, e) {
+  let i = e;
+  while (i > 0 && isDigit(line[i - 1])) i--;
+  return (i < e && i > 0 && line[i - 1] === ":") ? i - 1 : -1;
+}
+/* → [file, position] as the old pattern's two groups, or null where it did not match */
+function frameAt(line) {
+  let e = line.length;
+  while (e > 0 && SPACE.test(line[e - 1])) e--;
+  if (e > 0 && line[e - 1] === ")") e--;
+  const last = posGroupStart(line, e);
+  if (last < 0) return null;
+  const first = posGroupStart(line, last);
+  let r = last;
+  while (r > 0 && FRAME_CHAR.test(line[r - 1])) r--;
+  const q = (first >= 0 && r < first) ? first : (r < last ? last : -1);
+  return q < 0 ? null : [line.slice(r, q), line.slice(q, e)];
+}
 export function topFrame(stack) {
   for (const raw of String(stack || "").split(/\r?\n/)) {
     const line = raw.trim();
     if (!line) continue;
-    const m = /([^\s()@/]+?)(:\d+:\d+|:\d+)\)?\s*$/.exec(line);
+    const m = frameAt(line);
     if (!m || !(/^at\s/.test(line) || line.includes("@"))) continue;
     const fn = /^at\s+(?:async\s+)?(?:new\s+)?([^\s(]+)\s+\(/.exec(line) || /^([^@\s]*)@/.exec(line);
-    return ((fn && fn[1]) ? fn[1] + " " : "") + m[1] + m[2];
+    return ((fn && fn[1]) ? fn[1] + " " : "") + m[0] + m[1];
   }
   return "";
 }
@@ -216,14 +276,19 @@ export async function fingerprint(shaped) {
 
 /* Derived on the SERVER from the request's User-Agent, so the full string is never stored and the
    client never sends one. Order matters: Edge, Opera and Samsung Internet all also say «Chrome», and
-   Chrome and every iOS browser also say «Safari». */
+   Chrome and every iOS browser also say «Safari».
+   ⚠ (security-audit) Safari's version is `(\d+)(?:\.[.\d]*)?`, not `(\d+)[.\d]*`: the two classes
+   overlapped on digits, so a long digit run that did not end in whitespace was split at every point
+   before the match was given up — MEASURED 2026-10-23, 1.6 s on a 64 KiB header value. The capture is
+   the same (the whole leading digit run — the old split could only ever succeed at the whole run),
+   which tests/security-audit-checks.test.mjs holds on random version strings. */
 const UA_RULES = [
   ["Edge", /\bEdg(?:e|A|iOS)?\/(\d+)/],
   ["Opera", /\bOPR\/(\d+)/],
   ["Samsung Internet", /\bSamsungBrowser\/(\d+)/],
   ["Firefox", /\b(?:Firefox|FxiOS)\/(\d+)/],
   ["Chrome", /\b(?:Chrome|CriOS)\/(\d+)/],
-  ["Safari", /\bVersion\/(\d+)[.\d]*\s(?:Mobile\/\S+\s)?Safari\//],
+  ["Safari", /\bVersion\/(\d+)(?:\.[.\d]*)?\s(?:Mobile\/\S+\s)?Safari\//],
 ];
 export function browserOf(ua) {
   const s = String(ua || "");

@@ -6,7 +6,9 @@
  *  manifest.webmanifest (scripts/build-app-manifest.mjs) makes IntMap installable and sw.js keeps a
  *  copy of the app so an installed IntMap opens with no network. This file is the page's half:
  *
- *  ① THE INSTALL ENTRY, in Settings → About & support. Chromium hands the page a
+ *  ① THE INSTALL ENTRY, in Settings → About & support — and, on a phone, at the foot of the sheet's home
+ *    (js/start-home.js reads `installState` / `promptInstall` / `onInstallChange` here, so both doors offer the
+ *    same thing from the same held event). Chromium hands the page a
  *    `beforeinstallprompt` event when the site meets its install criteria; holding it (preventDefault)
  *    replaces the browser's own mini-infobar with one quiet button the reader presses when they want
  *    it. iOS has no such event — Safari installs only from its Share sheet — so there the entry is the
@@ -48,15 +50,21 @@ function isAppleMobile() {
  * What the install entry should offer right now.
  * @returns {'installed'|'prompt'|'ios'|'none'}
  */
-function installState() {
+export function installState() {
   if (_installed || isStandalone()) return 'installed';
   if (_deferred) return 'prompt';
   if (isAppleMobile()) return 'ios';
   return 'none';
 }
 
+/** @type {Set<(st:string)=>void>} the other door to installing — js/start-home.js, the phone sheet's home */
+const _listeners = new Set();
+/** fn(state) whenever what the install entry can offer changes; returns the unsubscribe @param {(st:string)=>void} fn */
+export function onInstallChange(fn) { if (typeof fn !== 'function') return () => {}; _listeners.add(fn); return () => { _listeners.delete(fn); }; }
+
 function syncInstallEntry() {
   if (typeof document === 'undefined') return;
+  { const st = installState(); _listeners.forEach((fn) => { try { fn(st); } catch (_) { /* one door's failure is not the other's */ } }); }
   const group = document.getElementById('setting-install-group');
   const btn = document.getElementById('setting-install-app');
   const ios = document.getElementById('setting-install-ios');
@@ -67,7 +75,7 @@ function syncInstallEntry() {
   if (ios) ios.hidden = st !== 'ios';
 }
 
-async function promptInstall() {
+export async function promptInstall() {
   const ev = _deferred; if (!ev) return;
   /* the event can be used once: whatever the reader answers, it is spent */
   _deferred = null;

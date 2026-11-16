@@ -6,7 +6,8 @@
  *  natural — what is happening where I stand (the place card's «Here, now», js/place-dossier.js), and where a photo in my library was taken
  *  (js/share-inbox.js openShared). Neither opens by itself and neither reads the position before it is pressed:
  *  the browser's own location prompt follows the press.
- *  Loaded with the gallery on the first empty focus (js/search-geocode.js); the two modules it opens are fetched
+ *  Loaded with the gallery on the first empty focus (js/search-geocode.js), and by the phone sheet's home
+ *  (js/start-home.js), which holds the same row (`entryRow`); the two modules it opens are fetched
  *  by the press. Strings are en + jp (CONSTITUTION.md §7); marks are js/icons.js line icons.
  * ==========================================================================*/
 import { IntMapLang } from './lang-registry.js';
@@ -39,22 +40,32 @@ function pickPhoto(HOST) {
   inp.click();
 }
 
-/** put the two rows at the top of the empty-state list `res` (idempotent). → true when drawn */
-export function showEntry(res) {
-  if (!res || res.querySelector('.hn-entry')) return false;
+/** The two rows as one element — the search's empty state (`showEntry`) and the phone sheet's home
+ *  (js/start-home.js) both hold this same row. `onPress` runs first on a press, so each place says what a press
+ *  ends there (the search closes its list; the home leaves itself as it is). */
+export function entryRow(onPress) {
   style();
   const row = document.createElement('div');
   row.className = 'hn-entry'; row.setAttribute('role', 'group'); row.setAttribute('aria-label', t('Where you are', 'いまいる場所'));
   row.innerHTML = '<button type="button" data-hn-entry="here"><span class="hn-e-i">' + icon('target', { size: 20 }) + '</span><span><b>' + H(t('Here, now', 'いま、ここ')) + '</b><small>' + H(t('Weather, quakes, news, history', '天気・地震・ニュース・歴史')) + '</small></span></button>'
-    + '<button type="button" data-hn-entry="photo"><span class="hn-e-i">' + icon('image', { size: 20 }) + '</span><span><b>' + H(t('Photo\'s place', '写真の場所')) + '</b><small>' + H(t('Where a photo was taken', '写真の撮影地を地図に')) + '</small></span></button>';
+    + '<button type="button" data-hn-entry="photo"><span class="hn-e-i">' + icon('image', { size: 20 }) + '</span><span><b>' + H(t('Photo\'s place','写真の場所')) + '</b><small>' + H(t('Where a photo was taken', '写真の撮影地を地図に')) + '</small></span></button>';
   row.addEventListener('click', (e) => {
     const b = e.target && e.target.closest ? e.target.closest('[data-hn-entry]') : null; if (!b) return;
     const HOST = hostDoor.host; if (!HOST) return;
-    /* the press ends the search: the field gives up the caret (on a phone the keyboard closes and the sheet comes down) */
-    try { const inp = document.getElementById('ms-input'); if (inp) inp.blur(); } catch (_) { /* no field */ }
-    res.style.display = 'none'; res.innerHTML = '';
+    try { if (onPress) onPress(); } catch (_) { /* the place's own ending is not this row's */ }
     if (b.dataset.hnEntry === 'here') import('./place-dossier.js').then((m) => m.openHereNow(HOST)).catch(() => {});
     else pickPhoto(HOST);
+  });
+  return row;
+}
+
+/** put the two rows at the top of the empty-state list `res` (idempotent). → true when drawn */
+export function showEntry(res) {
+  if (!res || res.querySelector('.hn-entry')) return false;
+  /* the press ends the search: the field gives up the caret (on a phone the keyboard closes and the sheet comes down) */
+  const row = entryRow(() => {
+    try { const inp = document.getElementById('ms-input'); if (inp) inp.blur(); } catch (_) { /* no field */ }
+    res.style.display = 'none'; res.innerHTML = '';
   });
   res.insertBefore(row, res.firstChild);
   res.style.display = 'block';

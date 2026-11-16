@@ -70,6 +70,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 0      # the last successful deploy's commit must exist here (and its copy of the script)
 
       - name: Require Supabase secret
@@ -84,7 +85,7 @@ jobs:
 
       - name: Install Supabase CLI
         # same pinned action and version as db.yml (#R138 SEC: full commit SHA)
-        uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359  # v3.0.1
+        uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13  # v3.2.0
         with:
           version: 2.106.0
 
@@ -129,6 +130,8 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Require Supabase secret
         id: gate
@@ -141,7 +144,7 @@ jobs:
           node-version-file: .nvmrc
 
       - name: Install Supabase CLI
-        uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359  # v3.0.1
+        uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13  # v3.2.0
         with:
           version: 2.106.0
 

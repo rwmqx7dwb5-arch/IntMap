@@ -589,7 +589,10 @@ export function newsIntel(HOST) {
   }
 
   /* a basemap swap discards every layer this file added (js/war-layer.js listens to the same signal) */
-  try { GE().events.on('styledata', () => { if (st.on && !GE().layers.hasSource(SRC)) { wired = false; whenDrawable(() => { paint(); legend(); }); } }); } catch (_) { }
+  /* ⚠ A basemap swap discards the LAYERS, not the clicks: the engine registers a layer's click / hover by layer id on
+     the map (js/geo-engine.js onLayer → map.on(type, layerId, fn)), and that registration outlives setStyle. Re-wiring
+     here added a second delegated click per swap, and one tap then opened the event once per swap. Only repaint. */
+  try { GE().events.on('styledata', () => { if (st.on && !GE().layers.hasSource(SRC)) { whenDrawable(() => { paint(); legend(); }); } }); } catch (_) { }
   /* Chronos moves the window — the fetch follows the clock's day */
   try { IntMapTime.on(() => { if (st.on) refresh(false); }); } catch (_) { }
   try { bus.on('intmap-lang', () => setTimeout(() => { if (st.on) legend(); if (st.briefKey) drawBrief(); }, 30)); } catch (_) { }

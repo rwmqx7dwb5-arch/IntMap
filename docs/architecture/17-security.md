@@ -34,8 +34,9 @@
   （引数ごと）・`js/` 全体でその名前の関数が全部安全な注入依存（`{ esc }`）・宣言された翻訳関数（`TRUSTED`。定義場所と理由の文を持つ）。判定できない葉はファイルごとに
   `tests/output-taint-baseline.json` と両方向に照合する（未判定は「危険」ではない）。`--why` は葉を定義まで辿る。同じ規則が `.markup` タグを読み（タグ付きテンプレートは安全、`.trusted(x)` は
   呼ばれた場所で判定、`trusted` を呼ばずに参照する箇所は未判定の葉）、タグ自身の `plan` を全テンプレートの文面に走らせて実行時に拒否されるものを落とす。母集合は `js/**/*.js` と、追跡されて
-  いる全 `*.html` の inline script（`git ls-files`。`scripts/safe-output.mjs` の `inlineScripts`）。`js/data-layers.js`・`js/stats-compare.js`・`admin.html` は未判定の値を持たない。門に見えないもの:
-  別モジュールで引数を sink に渡す関数（`js/map-tooltip.js` の `setMapTooltipHTML`）の呼び手が渡す文字列。
+  いる全 `*.html` の inline script（`git ls-files`。`scripts/safe-output.mjs` の `inlineScripts`）。`js/data-layers.js`・`js/stats-compare.js`・`admin.html` は未判定の値を持たない。
+  引数を sink に書く関数で `window` / `globalThis` に公開されたもの・export されたもの（`js/map-tooltip.js` の `setMapTooltipHTML` 等。`--wrappers` が一覧を出す）は AST から
+  発見し、その呼び出しも sink として判定する。門に見えないもの: 渡されたオブジェクト越しの呼び出し（`HOST.N` 等）——1 つの関数に解決できないので、定義側の引数が未判定の葉のまま残る。
 - **書き込む操作要素は自分でそう述べる**（Atlas がボタンを押す前の確認——`js/atlas-controls.js` `controlEffect` → `js/atlas-executor.js` 4b——は `data-effect` しか読まない。
   `scripts/data-effects.mjs`＝`check:static` の `data-effect` 規則が、Supabase の書き込み・`rpc`・`functions.invoke`・認証の変更・POST の Edge Function に届く UI ハンドラ〔同じファイルの関数・
   他ファイルで同名の分割代入・`Obj.name.apply` の転送・`window.name`・工場関数に渡された host リテラルのメンバーを辿る。引数として渡された関数は辿らない〕のうち要素が `data-effect` を
@@ -47,12 +48,15 @@
 - **ai-proxy** ＝ `verify_jwt` ＋ 明示的なユーザー検証（未ログイン 401）・プラン別1日上限を `consume_ai_turn`（ターンごとに 1 回 `increment_ai_usage`）で原子的に消費・入力上限を本文を読む前に
   適用・鍵/prompt/JWT は非ログ。上流の本文と例外文言は応答にもログにも出さない。
 - **refresh-news** ＝ **fail-closed**（`REFRESH_SECRET` 未設定なら全リクエスト拒否。秘密は `x-refresh-secret` ヘッダのみ・定数時間比較・POST のみ）。
-- **delete-account** ＝ `verify_jwt` ＋ 関数内検証 ＋ `confirm:"DELETE"`。1トランザクションで所有行を削除し、削除後に数え直して残っていれば raise。Auth ユーザーの削除はその後だけ。
+- **delete-account** ＝ `verify_jwt` ＋ 関数内検証 ＋ 10 分以内のログイン（トークンの `amr`。古い・読めないは 401 `reauth_required`）＋ `confirm:"DELETE"`。削除に使う管理キーが
+  通ることを先に確かめる。1トランザクションで所有行を削除し、削除後に数え直して残っていれば raise。Auth ユーザーの削除はその後だけ。
+- **投票者は本人だけが読める**（`community_votes` / `community_comment_votes` は `anon` に SELECT が無く、`authenticated` は自分の行だけ）。合計はトリガが保つ `vote_count` 列で誰でも読める。
 - **アカウントの目録・書き出し・場所の保存**（`account_data_inventory` / `export_account_data` / `save_place`）＝ Edge Function を持たない SECURITY DEFINER RPC で、口座を名指す引数を持たない
   （`auth.uid()` だけが口座を決める。`delete_account_data(uuid)` が service_role 専用なのと逆の設計）。EXECUTE は `authenticated` だけ。書き出しは `relay_take('account-export')` の柵を持つ。
   `saved_places` へ入る口は `save_place()` だけ（INSERT の grant が無い）で、所有者は列単位 grant で `user_id` / `created_at` を書き換えられない。`save_view` と `publish_collection` も同じ形。
-  `anon` が呼べるのは `shared_collection(token)` だけ（トークン 122 ビットがリンクの鍵・表は `anon` から読めない・返すのは名前つきの欄だけ）。正本は `docs/SECURITY-ARCHITECTURE.md`。
-- **無認証中継**は `_shared/relay-guard.js` を共有する（本数と一覧は §6.2）。
+  `anon` が呼べるのは `shared_collection(token)` と、持ち主が掲載したものだけの目録 `community_maps()` だけ（トークン 122 ビットがリンクの鍵・表は `anon` から読めない・返すのは名前つきの
+  欄だけ）。みんなの地図の掲載・報告・モデレーションも関数だけが書く（`list_community_map` / `report_community_map` / `moderate_community_map`）。正本は `docs/SECURITY-ARCHITECTURE.md`。
+- **無認証中継**は `_shared/relay-guard.js` を共有する（本数と一覧は §6.2）。レート制限のバケツの鍵はどの関数でも `_shared/rate-limit.js` の `callerKey` が決め、アドレスそのものは保存しない（§6.2）。
 
 ### 17.3 ブラウザ側の設定
 
@@ -82,6 +86,18 @@
   （枠の中・`sw.js` が制御していないときのバックグラウンド処理）を毎回述べる。台帳を読めないときは「照合できなかった」と言う。公開のページ `security.html`（`ja/`）は、送るものと接続先の数・
   アクセス解析の有無・`script-src` の中身を台帳と `index.html` から、依存の脆弱性照合を `.github/workflows/` から読んで書き、非公開の報告窓口（相談フォームの用件 `security`）へ渡す。GitHub の
   非公開の脆弱性報告は有効になっていない（`docs/SECURITY-ARCHITECTURE.md` §9）。
+- **このブラウザが IntMap のために保持しているものを、読者が見て消せる**（設定 ▸ プライバシー ▸ この端末に保存されているもの・Atlas `system.deviceStorage`）。
+  `js/device-storage-panel.js`（オンデマンド）がブラウザに尋ねる——localStorage と sessionStorage の全キー（大きさは UTF-16 の 2 バイト／文字）・`indexedDB.databases()` が名指すデータベース・
+  Cache Storage の全保存領域とその件数・Cookie・`navigator.storage.estimate()`／`persisted()`——そして各項目を `data/device-storage-ledger.json` と突き合わせ、種類別（ログインとキー →
+  作ったもの → 操作の記録 → 設定 → 写しと内部の記録）に並べる。**中身は表示も書き出しもしない**（キーの値はログインのトークンでありうる）。台帳は `scripts/device-storage-ledger.mjs` が
+  ブラウザのコードの**全ての書き込み**（`setItem`・`indexedDB.open`・`caches.open`。受け手は綴りでなく値の流れで、名前は束縛——const・連結・テンプレート・オブジェクト・関数の戻り値・
+  モジュールをまたぐ包み関数——で読む）から発見し、`scripts/device-storage-words.json` の語と合わせて導出する。`check:datagov`（規則 `stored-disclosed`）は語の無い名前・書き込みの消えた行・
+  読めない名前・Cookie の設定を拒む。ログインのセッション（supabase-js が自分の名前 `sb-<ref>-auth-token` で書く）は語ファイルの `libraries` に、その名前を作るソースの行とともに宣言し、
+  門が `node_modules` のその行を読む。サイトのアドレス（GitHub Pages のホスト）は同じアカウントの他のページと共有なので、台帳に名前の無い項目は「名前が無い」として別に示し、
+  「この端末から消去」は台帳が名指すものだけを消して再読み込みする（ログインのセッションは個別には消さず、ログアウトで消える）。ログインの
+  セッションの名前は supabase-js の式を `src/vendor.js` の `SUPABASE_URL` で評価した IntMap 自身のもので、他のプロジェクトのセッションに当たらない。
+  ワイルドカードは固定部分が IntMap のものと証明できるときだけ一括消去の対象（できないもの `imc_*` は `bulk:false`、門が強制）。公開のページ `security.html` の「ブラウザに残るもの」は
+  同じ台帳から種類ごとの数とログイン・キーの一覧を書く。
 - **`index.html` の `script-src` には現在 `'unsafe-eval'` と 7 つの CDN の source が入っている**（インラインの `<script>` のハッシュはこの数に入らない）（`unpkg.com` / `maps.googleapis.com` /
   `www.googletagmanager.com` / `www.google-analytics.com` / `ssl.google-analytics.com` / `www.clarity.ms` / `*.clarity.ms`）。`unpkg.com` だけは 1 ファイルの完全なパス
   （`https://unpkg.com/@openmeteo/weather-map-layer@0.0.19/dist/index.js`）で、`js/wx-ecmwf.js` の `SDK_VER` を上げるときは CSP のパスも同じ版にする（`tests/output-taint-gate-checks.test.mjs` ⑥ が
@@ -108,6 +124,9 @@
 これが唯一の見張り——`docs/SECURITY-ARCHITECTURE.md` §9）＋ **ロックファイルの整合**（`check:static` の `lock-ranges`・`scripts/lock-ranges.mjs` が全依存辺について解決される版が依存元の
 宣言する範囲を満たすかを node-semver と同じ読みで判定し、読めない指定は拒む）＋ **秘密の混入**（`check:static` の `secret-scan`・`scripts/secret-scan.mjs` が git が commit しうる全ファイル
 のうちバイトが text のものを読み、全 JWT の role を見て、Supabase の個人アクセストークン・Stripe の制限キーと webhook 署名秘密・Google OAuth のクライアント秘密・npm トークンほかの形を拒む）
+＋ **ステップが runner に持ち込むもの**（`check:static` の `npm-install-scripts` と `checkout-credentials`・`scripts/workflow-hardening.mjs`。全 workflow と全 composite action で、依存の
+インストールは `--ignore-scripts`、`actions/checkout` は `persist-credentials: false`。push するステップは自分の `env:` の `GH_TOKEN` を使う。リポジトリの Actions 既定の `GITHUB_TOKEN`
+権限は read——`docs/SECURITY-ARCHITECTURE.md` §9）
 ＋ `tests/security-logic.test.mjs`（Edge Function／SW／admin／CSP の不変条件とパーサのユニットテスト）＋ pgTAP。`npm test` で全部走る。
 
 - 「X は消えたか」を検査するときは、X が書かれていた構文で書く（パターンが自分を説明するコメントに当たる）。

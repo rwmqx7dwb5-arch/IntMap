@@ -204,22 +204,6 @@
           "basis": "lexical",
           "matches": [
             {
-              "id": "routing.isochrone",
-              "tool": "routing_isochrone"
-            },
-            {
-              "id": "sim.radiation",
-              "tool": "sim_radiation"
-            },
-            {
-              "id": "map.radius",
-              "tool": "map_radius"
-            },
-            {
-              "id": "sim.sunHours",
-              "tool": "sim_sunHours"
-            },
-            {
               "id": "time.travel",
               "tool": "set_time"
             },
@@ -286,6 +270,14 @@
             {
               "id": "time.quakeHistory",
               "tool": "time_quakeHistory"
+            },
+            {
+              "id": "time.territoryChange",
+              "tool": "time_territoryChange"
+            },
+            {
+              "id": "time.lifeAtPlace",
+              "tool": "time_lifeAtPlace"
             }
           ]
         }

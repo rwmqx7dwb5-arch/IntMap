@@ -24,7 +24,7 @@
 //  .ts with acorn, so the Edge Functions are plain JavaScript in .ts files — see the
 //  note at the top of news-relay.
 // ============================================================================
-import { corsFor, fetchGuarded, methodGate, relayFail, noData, NO_DATA_HEADER, MAX_QUERY_URL } from "../_shared/relay-guard.js";
+import { corsFor, fetchGuarded, methodGate, relayFail, noData, allowedUpstream, NO_DATA_HEADER, MAX_QUERY_URL } from "../_shared/relay-guard.js";
 import { callerGate } from "../_shared/rate-limit.js";
 
 /* (relay-no-data-one-pass) this relay answers Yahoo's explicit «no data» with relay-guard.js noData(),
@@ -56,12 +56,10 @@ const INTERVAL_RE = /^[0-9]{1,3}(?:m|h|d|wk|mo)$/;
 const SPARK_MAX_SYMBOLS = 20;
 
 function allowed(raw) {
-  let u;
-  try { u = new URL(raw); } catch (_) { return false; }
-  if (u.protocol !== "https:") return false;
-  if (u.hostname !== "query1.finance.yahoo.com" && u.hostname !== "query2.finance.yahoo.com") return false;
-  /* (#R801) the ORIGIN is the allow-listed one, not merely the hostname: no port, no userinfo */
-  if (u.port !== "" || u.username || u.password) return false;
+  /* (#R801 → security-audit) the ORIGIN is the allow-listed one, not merely the hostname: https, no
+     userinfo, default port — relay-guard.js's one rule, which every ?u= relay now asks */
+  const u = allowedUpstream(raw, ["query1.finance.yahoo.com", "query2.finance.yahoo.com"]);
+  if (!u) return false;
   if (u.hash) return false;
 
   const isSpark = u.pathname === "/v8/finance/spark";

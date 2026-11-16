@@ -29,6 +29,7 @@ import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { ingestVerdict } from './news-intel-core.js';   /* (news-intelligence) 取り込みの健全性の判定 — node が同じ関数を評価する */
 import { freshChip } from './freshness.js';     /* (news-intelligence) 「いつ時点か・誰が測ったか」の 1 つの部品 */
+import { readSeen, makeSinceCounter } from './news-edition-core.js';   /* (wave4-news) 「今日の世界」を前回開いた時刻——入口の件数の起点 */
 
 export function newsEvents(HOST) {
   const L = IntMapLang.pick(() => HOST.lang);
@@ -394,6 +395,7 @@ export function newsEvents(HOST) {
     row.innerHTML = html;
     row.style.display = '';
     renderHealth();
+    renderEditionEntry();
     Array.prototype.forEach.call(row.querySelectorAll('.news-cat-chip'), (b) => {
       b.onclick = () => {
         category = b.dataset.cat || 'all';
@@ -405,6 +407,7 @@ export function newsEvents(HOST) {
   function hideChips() {
     const row = document.getElementById('news-cat-chips'); if (row) { row.style.display = 'none'; row.innerHTML = ''; }
     const h = document.getElementById('news-ingest-health'); if (h) h.style.display = 'none';
+    const ed = document.getElementById('news-edition-entry'); if (ed) ed.style.display = 'none';
   }
 
   /* ══ (news-intelligence) 取り込みが今も回っているか — 一覧の上の 1 行 ════════════════════════════
@@ -455,6 +458,57 @@ export function newsEvents(HOST) {
     };
     draw();
     askHealth().then(draw, draw);
+  }
+
+  /* ══ (wave4-news) 「今日の世界」への入口 — 一覧の上の 1 枚 ═══════════════════════════════════════════
+     一覧は「最後に更新された順」で、毎朝の問い「今日の世界で何が起きたか・前回から何が新しいか」には答えない。
+     その答えは js/news-edition.js（扉は js/news-pulse.js の IntMapNewsIntel.edition）。ここは入口と、その上の件数だけ。
+     ⚠ 件数は**サーバーに数えさせる**（head の count）。読み込んだ 200 件から数えると、200 件を超えた朝に嘘になる。
+     ⚠ 数えるのは時計が「いま」のときだけ——前回の印は「いまのニュースをそこまで読んだ」という記録だから。 */
+  const EDITION_COUNT_TTL_MS = HEALTH_TTL_MS;   /* 同じ一覧の再描画のたびに訊かない長さ（取り込みの 1 行と同じ） */
+  /* the ONE count of «new since your last visit» (js/news-edition-core.js makeSinceCounter, held per last visit); the
+     card asks the same counter through API.sinceLastVisit, so the entry and the card cannot say two numbers */
+  const editionCount = makeSinceCounter({ ttlMs: EDITION_COUNT_TTL_MS, ask: async (seen) => {
+    if (!HOST.DB || typeof HOST.DB.from !== 'function') return null;
+    const { count, error } = await HOST.DB.from('news_events').select('id', { count: 'exact', head: true })
+      .eq('status', 'active').is('merged_into', null).gt('first_published_at', new Date(seen).toISOString());
+    if (error) throw error;
+    return count;
+  } });
+  /* the entry's look, injected with it (this module is lazy; its rules are not in the eager css/intmap.css) */
+  function editionEntryStyle() {
+    if (document.getElementById('news-edition-css')) return;
+    const el = document.createElement('style'); el.id = 'news-edition-css'; el.textContent = [
+      '.news-edition-entry{ display:flex; flex-direction:column; align-items:flex-start; gap:2px; width:100%; margin-top:8px; padding:10px 12px; min-height:48px; border:0; border-radius:12px; background:var(--primary-tint,rgba(10,132,255,0.12)); color:var(--primary-on-tint,#0a63c9); text-align:left; cursor:pointer; }',
+      '.news-edition-entry:hover{ filter:brightness(0.97); }',
+      '.news-edition-t{ font-size:14px; font-weight:650; line-height:1.25; }',
+      '.news-edition-s{ font-size:12px; line-height:1.35; color:var(--text-muted); }',
+      '.news-edition-entry.has-new .news-edition-s{ color:#d70015; font-weight:600; }',
+    ].join('\n');
+    document.head.appendChild(el);
+  }
+  function renderEditionEntry() {
+    const host = document.getElementById('news-filter-toggle');
+    if (!host) return;
+    editionEntryStyle();
+    let el = document.getElementById('news-edition-entry');
+    if (!el) {
+      el = document.createElement('button'); el.type = 'button'; el.id = 'news-edition-entry'; el.className = 'news-edition-entry';
+      el.addEventListener('click', () => { try { window.IntMapNewsIntel.edition({}); } catch (_) { } });
+      host.appendChild(el);
+    }
+    let live = true; try { live = IntMapTime.isLive(); } catch (_) { }
+    let seen = null; try { seen = readSeen(window.localStorage); } catch (_) { }
+    const draw = (n) => {
+      const sub = (live && seen != null && n != null)
+        ? L('{n} new since your last visit · the most-reported events, on the map', '前回から新しく {n} 件・最も多く報じられた出来事を地図で').replace('{n}', Number(n).toLocaleString(IntMapLang.locale(HOST.lang)))
+        : L('The most-reported events of the last 24 hours, on the map', '直近 24 時間に最も多く報じられた出来事を地図で');
+      el.innerHTML = '<span class="news-edition-t">' + S(L('Today on the map', '今日の世界')) + '</span><span class="news-edition-s">' + S(sub) + '</span>';
+      el.classList.toggle('has-new', !!(live && seen != null && n));
+      el.style.display = '';
+    };
+    draw(null);
+    if (live && seen != null) editionCount(seen).then(draw, () => draw(null));
   }
 
   /* 一覧と地図の両方が通す述語。⚠ 1 か所しかない。 */
@@ -905,6 +959,10 @@ export function newsEvents(HOST) {
     health: () => askHealth().then(() => Object.assign({ summary: healthErr ? null : health, error: healthErr }, healthVerdict())),
     toggleStar, isSaved, differences, quantities,
     categories: () => CATS.map(([k, v]) => ({ key: k, label: L.arr(v) })),
+    /* (wave4-news) the edition re-counts its entry after it marked a visit — only when the entry is on screen
+       (re-rendering the chips here would show them outside News) */
+    sinceLastVisit: (seen) => editionCount(seen),
+    refreshEditionEntry: () => { const el = document.getElementById('news-edition-entry'); if (el && el.style.display !== 'none') renderEditionEntry(); },
     category: () => category,
     setCategory: (c) => { category = c || 'all'; renderChips(); try { HOST.startNews(); } catch (_) { } },
     selected: () => selected,

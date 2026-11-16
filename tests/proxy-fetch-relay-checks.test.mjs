@@ -65,6 +65,7 @@ import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { fetchViaProxy, ownRelayUrl } from '../js/proxy-fetch.js';
 import { ARTICLE_MIN_BYTES } from '../supabase/functions/_shared/fetch-relay-policy.js';
+import { allowedUpstream } from '../supabase/functions/_shared/relay-guard.js';
 import { liftFunction } from './helpers/lift-function.mjs';
 import { makeAtlasSources } from '../js/atlas-sources.js';
 import { ATLAS_BUDGETS } from '../js/atlas-deadlines.js';
@@ -457,11 +458,12 @@ test('R464 ⑤: WEB_BUDGET_MS covers one cold gdelt-relay read, or the cache cou
 /* ── ⑥ the relay's allow-list, executed ────────────────────────────────────────────────────────── */
 const RELAY = read('supabase/functions/gdelt-relay/index.ts');
 /* the guard and the key derivation are plain JavaScript in a .ts file (scripts/static-checks.mjs
-   parses every committed .ts with acorn), so the real functions can simply be run. */
-const relayFns = new Function(
+   parses every committed .ts with acorn), so the real functions can simply be run. The origin rule they
+   import (relay-guard.js allowedUpstream — security-audit) is handed in as the module exports it. */
+const relayFns = new Function('allowedUpstream',
   RELAY.slice(RELAY.indexOf('const ALLOWED_PARAMS'), RELAY.indexOf('async function cacheKey'))
   + ' return { allowed, canonical };',
-)();
+)(allowedUpstream);
 
 test('R464 ⑥: the relay forwards the one endpoint the app builds, and refuses everything else', () => {
   assert.equal(relayFns.allowed(GDELT), true, 'the URL js/atlas-sources.js composes must be relayed');

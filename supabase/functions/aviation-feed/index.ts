@@ -54,6 +54,7 @@
 
 import { corsFor, fetchGuarded, relayFail, methodGate } from "../_shared/relay-guard.js";
 import { callerGate, forceGrant } from "../_shared/rate-limit.js";
+import { secretKey, secretKeyKind } from "../_shared/supabase-keys.js";
 import { parseBbox } from "../_shared/bbox.js";
 import { makeReadBudget } from "../_shared/read-budget.js";
 // Both imported for their side effect: they set globalThis.IntMapAviationCodec / …Model.
@@ -356,12 +357,12 @@ async function ensureBucket() {
   } catch (_) { /* the upload below reports the real outcome */ }
 }
 
-/*  Supabase has injected this under more than one name over time (SUPABASE_SERVICE_ROLE_KEY, and
- *  SB_SECRET_KEY on newer key formats), and a project may also set its own. Trying the names in
- *  order costs nothing and means the snapshot does not silently stop persisting the day the
- *  platform renames the variable — which is a failure that looks exactly like "the layer is slow". */
+/*  A project may set its own Storage key; otherwise the project secret key, whichever generation the
+ *  platform injects (_shared/supabase-keys.js — the one reader of those names), so the snapshot does
+ *  not silently stop persisting the day the platform renames or retires a variable — which is a
+ *  failure that looks exactly like "the layer is slow". */
 function storageKey() {
-  return env("AVIATION_STORAGE_KEY") || env("SUPABASE_SERVICE_ROLE_KEY") || env("SB_SECRET_KEY");
+  return env("AVIATION_STORAGE_KEY") || secretKey(env);
 }
 
 async function saveSnapshot(bytes) {
@@ -1075,8 +1076,7 @@ Deno.serve(async (req) => {
         storage: {
           bucket: BUCKET,
           hasUrl: !!env("SUPABASE_URL"),
-          hasServiceKey: !!env("SUPABASE_SERVICE_ROLE_KEY"),
-          hasSecretKey: !!env("SB_SECRET_KEY"),
+          projectKey: secretKeyKind(env),       // "secret" | "legacy" | "none" — never the key
           hasAviationKey: !!env("AVIATION_STORAGE_KEY"),
         },
         limits: {

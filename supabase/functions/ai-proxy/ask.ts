@@ -11,6 +11,7 @@ import { createClient } from "@supabase/supabase-js";   // pinned in this functi
    body and the provider's answer are read through them so a byte ceiling and a deadline hold WHILE
    the bytes arrive, not after they have all been buffered. */
 import { readCapped, RelayError } from "../_shared/relay-guard.js";
+import { secretKey, publishableKey, denoEnv } from "../_shared/supabase-keys.js";
 /* (ai-one-ledger) The plan table, the account and the turn ledger's doors (written to be shared by
    every caller that charges the same allowance), and what a provider answer cost (one shape for three providers,
    plus the Anthropic prompt-cache breakpoints). */
@@ -48,8 +49,8 @@ import { awaitAnswer, claimAnswer, beatAnswer, finishAnswer, replayed } from "./
 export async function ask(req: Request): Promise<Response> {
 
   const url = Deno.env.get("SUPABASE_URL")!;
-  const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const anon = publishableKey(denoEnv);
+  const serviceKey = secretKey(denoEnv);
 
   // 1) Identify the user from their JWT. Login is required.
   const authHeader = req.headers.get("Authorization") || "";

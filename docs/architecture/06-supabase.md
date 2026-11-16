@@ -10,7 +10,7 @@
 
 ### 6.1 テーブル
 
-**表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](../DATABASE.md)**（pgTAP による実証手順も同じファイル）。現在 **45 表**（`quest_daily_results`（今日のクエストの記録・§8.6.4） /
+**表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](../DATABASE.md)**（pgTAP による実証手順も同じファイル）。現在 **51 表**（`collection_copies`・`community_map_reports`・`community_map_subjects`・`community_map_holds`（みんなの地図の写しの受領・報告・報告の対象・管理者の非表示） / `class_sets` と `class_set_answers`（クラスのセットと生徒の提出・§8.6.4） / `quest_daily_results`（今日のクエストの記録・§8.6.4） /
 `map_corrections`（地図の誤り報告・§11） / `place_watches`（見守る場所） / `saved_views` / `collection_shares` / `news_event_entities` / `ai_turn_answers` / `atlas_notebook_entries`（Atlas の
 調査ノート・同期をオンにした読者のみ） / `usage_counts` / `saved_places` / `account_data_catalog` / `profiles` / `profiles_public` / `current_news` / `geo_pins` / `favorites` / `user_prefs` /
 `dashboard_cards` / `ai_usage` / `ai_turns` / `ai_gloss_usage` / `relay_rate_buckets` / `atlas_capability_vectors` / `usage_counts`（匿名の利用統計） / `community_*` 5 表 / `feedback` /
@@ -33,10 +33,24 @@
   （122 ビット）で、リンクそのものが閲覧の鍵。公開の読み取りは `shared_collection(token)` 1 つだけ（SECURITY DEFINER で `anon` が呼べ、コメントに `ANON MAY CALL:` の理由。今の場所と
   地図を id・アカウント・メールを含まずに返し、各地図の `kind` と `steps` も返す）。`anon` は 2 表のどちらにも権限を持たない。`copy_shared_collection(token)` はログインした読者が自分の
   アカウントへ写す（同じものは「保存済み」・`source` は `shared`・ドキュメントごと写す）。公開をやめるのは所有者の DELETE（リンクは `not_found`）。pgTAP `24_collection_workspace_test.sql`。
+- **みんなの地図（掲載・写しの受領・系譜・報告）**——公開したコレクションを持ち主がもう一度明示的に**掲載**すると（`list_community_map()` だけ。`collection_shares` の `listed_at`・
+  持ち主がその場で打つ表示名 `author_name`〔1〜40 字。アカウントのメールや表示名は使わない〕・`summary`〔≤ 500〕。所有者の列 grant は今も `title` だけ）、`community_maps()`（`anon` が
+  GET で呼べる目録。語・並び〔新着／よく保存された／更新〕・範囲〔経度をまたぐ箱も〕で引き、名前つきの欄だけを返す）に載る。`copy_shared_collection()` は写した読者の受領
+  `collection_copies`（コレクションと口座ごとに 1 行・持ち主自身の写しは数えない）を残し、持ち主は数だけを読む（`my_collection_reach()`）。写した先のコレクションを掲載すると
+  `derived_from` が元を指し、元が掲載中で非表示でない間だけ目録と `shared_collection()` の `listing` がその題・作者・リンクを示す（未掲載の元のリンクは出さない）。報告は
+  `report_community_map()`（ログイン必須・口座ごとに 1 件・自分のものは不可）→ `community_map_reports`、管理者が `community_map_reports_admin()` で読み `moderate_community_map()` で
+  外す（理由必須・持ち主が読む・持ち主は再掲載できない）／戻す／却下する。**報告と非表示は共有行ではなく (口座, コレクション) に付く**（`community_map_subjects`・
+  `community_map_holds`）ので、持ち主が公開をやめて出し直しても非表示は解けず報告も消えない。リンクは触らない。目録はページの分だけ読む（並びごとの部分索引・
+  `reused_count` と `content_updated_at` はトリガーが保つ・総数は返さず `has_more`）。pgTAP `38_community_maps_test.sql`。画面は §8.1.2、モデレーションは §11。
 - **見守る場所（`place_watches`）** は保存場所 1 件に 1 行（`place_id` が主キー）。半径・種類ごとの基準（NULL＝見守らない）・オン/オフ・既読（`seen_at`・`seen_keys` ≤ 2,000）。所有者の
   RLS で、挿入は場所が呼び手のものであるときだけ、`user_id` はトリガー `tg_place_watches_own` が固定する。判定はページ（§18.1）。
 - **今日のクエストの記録（`quest_daily_results`）** は読者・暦の日・種類ごとに 1 行（主キー）で 5 問の得点だけ（`js/quest-engine.js` の `DAILY_N`・`QUEST_MAX`）。UPDATE の権限が無く
   2 回目は主キーで拒まれる。所有者の RLS、`user_id` はトリガー `tg_quest_daily_results_own` が固定し、UTC で明日より後の日は拒む。pgTAP は `30_quest_daily_test.sql`。
+- **クラスのセット（`class_sets`）と生徒の提出（`class_set_answers`）** — ログインした先生が学ぶクエストをクラスに配る。セットは種類・seed・問題数（5／10）・題・受付中か・
+  コード（8 文字・`gen_random_uuid()` の乱数バイトから。生徒のリンクの鍵）で、所有者の RLS・作成は 1 日 50（`relay_take('class-set')`）。生徒は**アカウントなし**で
+  `class_set_open(code)`・`class_set_submit(code, name, answers)` の 2 つだけを呼ぶ（SECURITY DEFINER・コメントに `ANON MAY CALL:`）。提出は名前と**生の答え**だけで
+  **得点を持たない**（ボードが同じエンジンで採点する）。同じ名前の 2 度目は `name_taken`、締め切ったセットは受け付けない、1 セット 400 まで、提出の速さはセットごとの `relay_take('class-answer')`（一度に 45・10 分で 45 回復、超えると `busy`）。読む・消すはセットの持ち主だけ。
+  作ってから 365 日で提出ごと削除（pg_cron `class-sets-purge`）。pgTAP は `39_class_quest_test.sql`。
 
 **DB の設計図は `supabase/migrations/` だけ**（全テーブル・制約・index・RLS・grants・トリガ・RPC）。本番へ手で SQL を流さない。手順は [`docs/MIGRATIONS.md`](../MIGRATIONS.md)。
 
@@ -58,7 +72,9 @@
   定数時間比較・POST のみ）。
 - **`news-ingest`** … 出来事 (Event) 側の収集（§4.4）。Source Registry の全フィードを取得し、正規化・媒体の帰属・AI 地点解析（決定論エンジンはフォールバック）・Event への増分割り当て・
   日本語訳・計測・保持。fail-closed（`NEWS_INGEST_SECRET`・`x-news-ingest-secret` ヘッダのみ・定数時間比較・POST のみ）。`current_news` と `refresh-news` には触れない。
-- **`delete-account`** … 呼出ユーザ自身のアカウントと全データをハード削除する（`verify_jwt` あり＋関数内でも検証・`confirm:"DELETE"` 必須）。所有テーブルを外部キーから発見し、
+- **`delete-account`** … 呼出ユーザ自身のアカウントと全データをハード削除する（`verify_jwt` あり＋関数内でも検証・`confirm:"DELETE"` 必須）。検証済みトークンの `amr` の最新の
+  時刻が 600 秒（`REAUTH_WINDOW_S`・`delete-account/recent-sign-in.js`）より前なら 401 `reauth_required` で何もしない（時刻が無い・読めないも拒否＝fail-closed。クライアントは
+  ログインシートを開く）。削除に使う管理キーで `auth.admin.getUserById` が通ることを先に確かめ、通らなければ何も消さない。所有テーブルを外部キーから発見し、
   1トランザクションで削除し、削除後に数え直してから Auth ユーザーを消す。どれか1つでも失敗したらアカウントは消さない。
 - **`routing-relay`** … 交通情報つき provider（Mapbox Directions）への鍵付きパススルー（`MAPBOX_TOKEN` はサーバにだけ）。`?probe=1` は鍵が設定されているかだけを答え、
   `js/routing-providers.js` がそれを読むまで交通機能は提示されない。profile とクエリは allow-list、座標は範囲まで検証、呼び出し側の `access_token` は破棄する。この関数だけ
@@ -66,7 +82,9 @@
   `RATE_MAX_KEYS`）と、有料呼び出しの直前の Postgres の共有バケツ（`relay_rate_buckets` ＋ `relay_take`・`_shared/rate-limit.js`）——IP 別 1 分・IP 別の 1 日の取り分（既定は全体の
   1 日 ÷ `READERS_PER_ADDRESS`＝300）・全体 1 分・全体 1 日。IP 別は fail-open で拒否は 429 `rate_limit`、全体は fail-closed（503 `limiter_unavailable`）で拒否は 429 `spend_ceiling`。
   上限は `ROUTING_RELAY_GLOBAL_PER_MIN` / `_PER_DAY` / `ROUTING_RELAY_PER_IP_PER_DAY`（既定は Mapbox の無料枠の内側）。呼び出し元の鍵は `_shared/rate-limit.js` の `callerKey`
-  （全関数で 1 つ。`callerKey(req, verifiedUid)` は検証済みのアカウントなら `uid:<uuid>`、そうでなければ `x-forwarded-for` の先頭のアドレス。uid を渡すのは `atlas-embed`）。
+  （全関数で 1 つ。`callerKey(req, { uid, secret })` は検証済みのアカウントなら `uid:<uuid>`、そうでなければ `x-forwarded-for` の先頭のアドレスが属するネットワーク——IPv4 は
+  そのまま・IPv6 は /64・IPv4-mapped は中の IPv4——を project の secret key で HMAC-SHA-256 した 32 桁の hex。アドレスそのものは `relay_rate_buckets` に書かない。uid を渡すのは
+  `atlas-embed`。使われなくなったバケツは pg_cron `relay-rate-buckets-sweep` が毎時 `sweep_relay_rate_buckets()` で消す）。
 - **`sv-cov`** … ストリートビュー・カバレッジ svv タイルの ACAO 付与プロキシ（秘密なし。厳格 allowlist——`mts0-3.google.com/vt?…lyrs=svv` ＋ 整数 x/y/z のみ・空タイルは透明 PNG）。
 - **`alerts-relay`** … 各国気象機関の警報フィードの ACAO 付与＋要約（秘密なし）。allowlist は `feeds.meteoalarm.org`・`www.nmc.cn`・`severeweather.wmo.int`（`/f/wfs` と `/json/*.json`
   だけ）・`publicalert.pagasa.dost.gov.ph`。`?u=` の allowlist はホスト・path・クエリ鍵まで規則化（`UPSTREAMS` の表。js/world-packs.js が送る鍵だけ。未知の鍵・ポート・userinfo は 400）。
@@ -135,7 +153,7 @@
   `supabase/functions/usage-count/shape.js`（ブラウザと関数が同じファイルを import し、宣言に無い metric・規則に合わない dimension を捨てる）。日はサーバーの時計で決め、IP・User-Agent・
   アカウント・セッション・時刻は持たない。守りは POST 限定・本文上限 16 KiB・Origin・共有 token bucket 2 つ（閉じて失敗）・metric ごと 1 日の dimension 数の上限
   （`record_usage_counts`）。1 日の上限は `USAGE_COUNT_GLOBAL_PER_DAY`。保持は 400 日（pg_cron `usage-counts-purge`）。読むのは `admin.html` の **Usage** と **Growth** タブ（Growth は
-  入口・流入元・utm・Atlas の回答の型で読み、utm 付きの発信リンクも作る。`usage_counts_summary` は SECURITY INVOKER）。[`docs/MONITORING.md`](../MONITORING.md) §2b。
+  入口・流入元・utm・Atlas の回答の型で読み、utm 付きの発信リンクも作る。`usage_counts_summary` は SECURITY INVOKER）。読者の手元での速さ（`ready` / `boot_end`）だけは `field_speed(p_days)`（SECURITY DEFINER・anon 可）が版と端末ごとの**割合**と帯で公開する（整数％・100 回未満は出さない・件数と日は返さない。§15.10）。[`docs/MONITORING.md`](../MONITORING.md) §2b。
 - **`reader-reports`** … フィードバックとバグ報告の書き込み先（`--no-verify-jwt`・秘密なし）。`js/feedback.js` の 2 つのフォームと組織からの相談フォーム（`contact.html`・`js/org-page.js`、
   kind `inquiry`）が POST し、関数が service_role で `feedback` / `bug_reports` / `org_inquiries` に 1 行書く（相談の語彙・上限・返信先は `_shared/inquiry-shape.js`。返信先は本人が書いた
   アドレスで、`user_id` だけが検証済みのセッションから来る。見えない欄 `website_confirm` が埋まっていれば 400）。表へ直接は書けない（`anon`・`authenticated` の INSERT policy と grant は
@@ -160,10 +178,14 @@ DB が答えないときは `refresh=1` が無かったのと同じ答え（200�
 `reader-reports`・`usage-count` が共有するのは読み手だけ（`readCapped`＝要求本文を上限で切る、`fetchBounded`＝提供者への POST を本文の最後のバイトまで同じ期限と上限で読む）。
 リダイレクトは手で辿る（`followRedirects`。各ホップを同じ https オリジンか `allowRedirect(next, from)` で検査し、上限は 3 ホップ `MAX_REDIRECTS`）。共有しているのは URL allowlist・GET 限定・
 期限（`AbortSignal.timeout`）・バイト上限（`content-length` とストリーム読み出しの両方）・Content-Type 判定・外向きエラーはコード1語。公開レイヤーなのでログイン必須にはしない。
+呼び手の `?u=` を受ける 5 本（`news-relay` / `gdelt-relay` / `sv-cov` / `quotes-relay` / `alerts-relay`）の転送先のオリジンは `allowedUpstream()` 1 本が判定する——https のみ（`alerts-relay`
+だけは CMA のため http も許し、ホストごとの規則で絞る）・userinfo 無し・既定ポートのみ・ホストは一覧と完全一致。その先（パス・クエリ鍵）は各関数の規則。
 
 ### 6.3 環境変数（Edge Functions の secrets）
 
-- 自動注入: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+- 自動注入: `SUPABASE_URL`、新しい鍵 `SUPABASE_SECRET_KEYS` / `SUPABASE_PUBLISHABLE_KEYS`（`sb_secret_…` / `sb_publishable_…`）、旧 JWT `SUPABASE_SERVICE_ROLE_KEY` /
+  `SUPABASE_ANON_KEY`。この 4 つを読むのは `_shared/supabase-keys.js` だけで、新しい鍵を優先し旧 JWT はフォールバック（理由と検査は
+  [`docs/SECURITY-ARCHITECTURE.md`](../SECURITY-ARCHITECTURE.md) §5）
 - AI: `AI_PROVIDER`（anthropic|openai|gemini）, `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `GEMINI_API_KEY`, `AI_MODEL`（任意）
 - プロジェクト全体の 1 日の天井（任意・正の整数。既定は各関数の定数）: `AI_PROXY_GLOBAL_PER_DAY`, `NEWS_INGEST_GLOBAL_PER_DAY`, `REFRESH_NEWS_GLOBAL_PER_DAY`, `WHO_DON_GLOBAL_PER_DAY`,
   `ATLAS_EMBED_GLOBAL_PER_DAY`（§5「有料の提供元へは扉が 1 つだけ」）。`AI_PROXY_NEWCOMER_PER_DAY`（任意・7 日未満のアカウントの取り分。既定は全体の 1/3）

@@ -100,10 +100,11 @@ function shareLines(shares, esc, T) {
     + esc(s.collection == null ? T('everything', 'すべて') : (s.collection || T('Unfiled', '未分類'))) + '</b> «' + esc(s.title) + '» — ' + esc(s.url) + '</div>').join('');
 }
 
-/* Which collection a request names, among the ones the account actually has — never a guess:
+/* Which collection a request names, among the ones the account actually has — never a guess (also community.list /
+   community.unlist, js/atlas-cap-community.js — the same rule, not a copy):
    `all:"everything"` is everything (null), a name must match an existing collection (width/case-insensitive). */
 const _norm = (s) => String(s || '').normalize('NFKC').toLowerCase().replace(/\s+/g, ' ').trim();
-async function resolveCollection(a, M, HOST) {
+export async function resolveCollection(a, M, HOST) {
   if (a.all === 'everything') return { ok: true, collection: null };
   if (a.all === 'unfiled') return { ok: true, collection: '' };
   if (a.collection == null || !String(a.collection).trim()) return { ok: false, code: 'NEEDS_INPUT' };

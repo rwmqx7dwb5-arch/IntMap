@@ -114,6 +114,18 @@
     });
   }
 
+  /* (security-audit) The Reply link. The address is DATA inside the URI, never its structure: it was
+     concatenated as typed, so an address carrying `?bcc=…` or `,other@…` became a header or a second
+     recipient of the link the administrator clicks. reader-reports now refuses such an address
+     (supabase/functions/_shared/inquiry-shape.js isReplyAddress); this side encodes it anyway, for the
+     rows written before that rule. The mailbox and the domain are encoded on either side of the last
+     `@`, which stays literal — the one character every mail client reads as the separator. */
+  function mailtoReply(addr) {
+    var s = String(addr == null ? '' : addr), at = s.lastIndexOf('@');
+    var to = at > 0 ? encodeURIComponent(s.slice(0, at)) + '@' + encodeURIComponent(s.slice(at + 1)) : encodeURIComponent(s);
+    return 'mailto:' + to + '?subject=' + encodeURIComponent('Re: your enquiry to IntMap');
+  }
+
   function inquiryCard(row) {
     var c = el('div', 'card');
     var top = el('div', 'row');
@@ -130,7 +142,7 @@
     if (row.role) facts.appendChild(el('span', null, row.role));
     if (row.country) facts.appendChild(el('span', null, row.country));
     var mail = el('a', null, row.email);
-    mail.href = window.IntMapSafe.url('mailto:' + row.email + '?subject=' + encodeURIComponent('Re: your enquiry to IntMap'));
+    mail.href = window.IntMapSafe.url(mailtoReply(row.email));
     facts.appendChild(mail);
     if (row.website) {
       var w = window.IntMapSafe.url(row.website);

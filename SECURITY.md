@@ -23,10 +23,9 @@ people most often get wrong about this project.
    (日本語: `ja/security.html`) → *Report a security problem*, which opens the contact form with
    **«A security problem (private report)»** chosen. The report is stored in `public.org_inquiries`, which
    only IntMap's administrators can read (RLS), and is answered by e-mail.
-2. ⚠ **GitHub's Private Vulnerability Reporting is not enabled on this repository** (measured
-   2026-10-03: `GET /repos/rwmqx7dwb5-arch/IntMap/private-vulnerability-reporting` → `{"enabled":false}`).
-   Turning it on is a repository-setting change awaiting the owner's approval; until then the form above
-   is the private channel. If neither works for you, open a **minimal** public issue that says only
+2. **GitHub's Private Vulnerability Reporting**: the repository's Security tab → *Report a vulnerability*
+   (enabled 2026-11-16). The report is visible only to the maintainers until an advisory is published.
+   If neither works for you, open a **minimal** public issue that says only
    *"security report — please provide a contact"* with **no exploit details**.
 
 You can also see, in the running app, every site your page has contacted and what IntMap says each is
