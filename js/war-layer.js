@@ -971,6 +971,13 @@ export function warLayer(HOST) {
     let country = null, land = null, terr = null;
     if (level === 'country') {
       country = { gw: now.gw, name: now.name, to: dstr(now.e), askedOf: 'land' };
+      /* ⚠ (news-past-land-rows) TODAY'S ROW IS BROUGHT ONTO THE MIRROR FIRST. The page holds a sparse mirror of CShapes
+         (js/hist-bundles.js): this layer brought only the rows in force during its wars (`load`), and `contains` answers
+         from the worker without landing anything. Today's outline of a country whose present row starts after the last
+         recorded war — MEASURED in production 2026-11-17: Ukraine (2014-03-18 →), Russia, Serbia, Montenegro, Sudan,
+         South Sudan — was not on the page, and the answer threw «reading '8'» unless another reader had happened to bring it. */
+      if (!cs.feats[now.i]) { try { await door.during(now.s, now.s); } catch (e) { return { status: 'unavailable', reason: 'borders-' + String((e && e.reason) || 'failed') }; } }
+      if (!cs.feats[now.i]) return { status: 'unavailable', reason: 'present-outline-unreachable' };
       terr = polysOf(now.i);
       land = landSamples(terr, pt);
     }
