@@ -54,12 +54,16 @@ import { IntMapGeoEngine } from './geo-engine.js';
                     record that is not derived and outranks the present-day outline carried back
      withheld       (with reconstructed) build-time data — the ground and windows the dossiers researched and could not
                     settle (`unresolved`), written to the reconstruction's cache by its builder (scripts/histrecon/withheld-file.mjs). It is never drawn, but the present-day outline carried back yields to it as to a
-                    drawn row: research that says «the line here is not known» must not be answered by today's line */
+                    drawn row: research that says «the line here is not known» must not be answered by today's line
+     todayOutline   every row is the PRESENT-DAY outline of a unit that still exists (scripts/build-hist-admin-fill.mjs says
+                    so of its own record), whatever span the row is drawn for — a row cut short where another record speaks
+                    is still today's unit drawn with today's outline. js/admin-present.js `rowIsToday` reads it: where the
+                    units of a date are today's, today's line and names stand in (1966-11-01 ends 岡山県's row, measured) */
 export const HIST_ADMIN_GAPS = [
   { file: 'data/hist-kuni.js',             global: '__HISTKUNI',        set: 'hk',              derived: true },
   { file: 'data/hist-admin-surveys.js',    global: '__HISTADMSURVEY',   set: 'histadmsurvey',   derived: false },
   { file: 'data/hist-admin-surveys-nc.js', global: '__HISTADMSURVEYNC', set: 'histadmsurveync', derived: false, nonCommercial: true },
-  { file: 'data/hist-admin-fill.js',       global: '__HISTADMFILL',     set: 'histadmfill',     derived: true },
+  { file: 'data/hist-admin-fill.js',       global: '__HISTADMFILL',     set: 'histadmfill',     derived: true, todayOutline: true },
   { file: 'data/hist-admin-recon.js',      global: '__HISTADMRECON',    set: 'histadmrecon',    derived: true, reconstructed: true, withheld: true },
 ];
 export const IntMapBorderCoast = (function () {

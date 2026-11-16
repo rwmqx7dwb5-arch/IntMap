@@ -20,7 +20,9 @@ import { IntMapBorderCoast } from './border-coast.js';
 import { jsonWithin, isUnobserved } from './fetch-deadline.js';   /* (hist-era-span-fidelity) the reviewed spans, read under a clock */
 import { clockFor } from './proxy-fetch.js';
 import * as bus from './bus.js';
-import { registerReader, wireLineClick, lineNear, decimalsOf, rowKey, shapesAt } from './border-provenance.js';   /* (border-provenance) the line's own record, on a press */
+import { registerReader, wireLineClick, lineNear, decimalsOf, rowKey, shapesAt } from './border-provenance.js';
+/* (hist-modern-admin) where a past date's borders are today's borders, today's line draws them — js/admin-present.js */
+import { makeRegion, clipLines, ownPieces } from './admin-present.js';   /* (border-provenance) the line's own record, on a press */
 
 /* (then-now-card) THE CREDIT OF THE ERA BORDER RECORDS — the chain collectionAt() reads (CShapes 2.0 → OpenHistoricalMap →
    Cliopatria → historical-basemaps, with OSM under OHM). Written once: the main map's two sources below carry it, and so does
@@ -106,7 +108,7 @@ export function timeBorders(HOST){
   /* (hist-border-same-look) every layer this module draws the era with — ONE list, read by `clear()` below
      and by js/app-body.js `_applyBorders` (via `layerIds`), which each kept a hand-typed copy; a casing
      added to one copy and not the other would have stayed on screen after the clock returned to Now. */
-  const _DRAWN_LAYERS=['imtb-fill','imtb-casing','imtb-line','imtb-lbl','imtb-lbl2'];
+  const _DRAWN_LAYERS=['imtb-fill','imtb-casing','imtb-line','imtb-now-casing','imtb-now-line','imtb-lbl','imtb-lbl2'];
   return (function(){
     if(!GE().hasRenderer()||!GE().hasRenderer()||!IntMapTime) return {};
     /* (#R349) 1815 and 1880 are new. The clock's floor moved to 1850 (js/chronos.js) and CShapes —
@@ -442,7 +444,32 @@ export function timeBorders(HOST){
     const _wholeLines=(fc,t)=>_BC().wholeLines(fc,t);
     /* (hist-border-same-look) what `imtb-line` is handed: the outline with every shared edge struck once
        (js/border-coast.js `strokedOnce`). Neighbouring countries cut their common border from both rings. */
-    const _strokeFor=(fc,t)=>{ const v=_linesFor(fc,t); try{ return _BC().strokedOnce(v); }catch(_){ return v; } };
+    const _strokeFor0=(fc,t)=>{ const v=_linesFor(fc,t); try{ return _BC().strokedOnce(v); }catch(_){ return v; } };
+    /* ══ (hist-modern-admin) TODAY'S LINE WHERE THE DATE'S BORDERS ARE TODAY'S ══════════════════════════════════════
+       「今と同じにもかかわらず…変な感じになってる」 — measured 2026-11-16 at 1950-06-15 on the Pyrenees (unchanged since
+       1868): the era line ran 0.56 km from today's at the median, 1.79 km at p90 and 8.25 km at worst. The rule is the
+       subdivisions' (js/admin-present.js): where every polity in force is still in force today (`_open`), the border
+       is drawn by today's supply (`borders-only-line`'s features, read back out of the tiles on screen) and the era
+       outline is clipped away there; within PRESENT_EPS_KM of a polity that has since changed, the era record draws.
+       Offline (no present-day tiles) nothing is handed over. */
+    let _pr={fc:null,region:null}, _prLive=false, _prT=0;
+    const _prRegion=fc=>{ if(!fc) return null; if(_pr.fc!==fc){ _pr={fc,region:makeRegion((fc.features||[]).filter(f=>!(f.properties&&f.properties._coastSnap)))}; } return _pr.region; };
+    const _prOn=fc=>{ if(!_prLive) return false; const r=_prRegion(fc); return !!(r&&!r.empty); };
+    const _strokeFor=(fc,t)=>{ const v=_strokeFor0(fc,t); if(!_prOn(fc)) return v; const r=_prRegion(fc);
+      return {type:'FeatureCollection',features:clipLines(v.features||[],(x,y)=>!r.modernAt(x,y))}; };
+    function _presentNow(){ try{
+      if(!active||!shownFC||!GE().layers.hasSource('imtb-now-src')) return;
+      const C=GE().coords, L=GE().layers;
+      const was=_prOn(shownFC);
+      _prLive=(C.querySourceFeatures('ofm',{sourceLayer:'boundary'})||[]).length>0;
+      const on=_prOn(shownFC); let now=[];
+      if(on){ const r=_prRegion(shownFC);
+        now=clipLines(ownPieces(C.querySourceFeatures('ofm',{sourceLayer:'boundary',filter:['all',['==',['get','admin_level'],2],['!=',['get','maritime'],1]]})||[]),(x,y)=>r.modernAt(x,y)); }
+      L.setSourceData('imtb-now-src',{type:'FeatureCollection',features:now});
+      if(was!==on&&L.hasSource('imtb-ln-src')) L.setSourceData('imtb-ln-src',_strokeFor(shownFC));
+    }catch(_){} }
+    const _presentSoon=()=>{ clearTimeout(_prT); _prT=setTimeout(_presentNow,60); };
+    try{ GE().events.on('idle',()=>{ if(active) _presentSoon(); }); }catch(_){}
     /* (hist-border-refine) the course redraws (data/hist-courses.js) hold only while their fact does, so a line
        depends on the date as well as the collection: lines are memoised per collection AND per course epoch, and a
        composed collection remembers the instant it was composed for (`_tOf`) */
@@ -500,7 +527,11 @@ export function timeBorders(HOST){
         /* (#R695) CShapes names are bare English; the table is what makes 1886-2019 readable in
            anything else. `_gw` is untouched — it is the record's identifier, not a name. */
         const i18=hnFor('cshapes',NAME,null,null);
-        feats.push({type:'Feature',geometry:_csGeomOf(_csD,i),properties:Object.assign({NAME:NAME,name:NAME,_gw:f[1]},i18?{_i18n:i18}:{})});
+        /* (hist-modern-admin) `_open`: the row is still in force on the last day CShapes covers (CS_MAX-12-31) — and on the
+           day after, this file hands the map to today's borders itself (`modernAt`), so the record and the app together
+           say this polity's border has not moved since. js/admin-present.js reads it. */
+        const _open=(f[5]>CS_MAX||(f[5]===CS_MAX&&f[6]===12&&f[7]>=31))?1:0;
+        feats.push({type:'Feature',geometry:_csGeomOf(_csD,i),properties:Object.assign({NAME:NAME,name:NAME,_gw:f[1],_open},i18?{_i18n:i18}:{})});
         const lg=_csLineOf(_csD,i); if(lg) lines.push(_lineFeat(lg)); }
       const fc={type:'FeatureCollection',features:feats};
       _lnOf.set(fc,new Map([['*',{type:'FeatureCollection',features:lines}]]));   /* (#R531) what `imtb-line` strokes — the same at every date ('*'): CShapes and OHM are never redrawn */
@@ -1558,6 +1589,11 @@ export function timeBorders(HOST){
          the moment the clock left Now. The precision dash is the one thing this line adds. */
       if(!GE().layers.has('imtb-line')) GE().layers.add({id:'imtb-line',type:'line',source:'imtb-ln-src',layout:(_BS.layout?_BS.layout():{'line-join':'round'}),paint:Object.assign(_BS.paint?_BS.paint():{'line-color':'#d9dbe0','line-opacity':0.95,'line-width':['interpolate',['linear'],['zoom'],1,0.95,4,1.55,8,2.2,12,2.9]},{'line-dasharray':['match',['to-number',['coalesce',['get','BORDERPRECISION'],['get','borderprecision']],-1],1,['literal',[2,2]],2,['literal',[6,2]],['literal',[1,0]]]})}, before);
       if(!GE().layers.has('imtb-casing')) GE().layers.add({id:'imtb-casing',type:'line',source:'imtb-ln-src',layout:(_BS.layout?_BS.layout():{'line-join':'round'}),paint:(_BS.casingPaint?_BS.casingPaint():{'line-color':'#000000','line-opacity':0.35,'line-width':['interpolate',['linear'],['zoom'],1,2.0,4,2.8,8,3.8,12,4.9]})}, 'imtb-line');
+      /* (hist-modern-admin) today's border where the date's borders are today's — `borders-only-line` / `-casing`'s own
+         layout and paint (js/border-style.js), so the two are the same stroke */
+      if(!GE().layers.hasSource('imtb-now-src')) GE().layers.addSource('imtb-now-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'});
+      if(!GE().layers.has('imtb-now-line')) GE().layers.add({id:'imtb-now-line',type:'line',source:'imtb-now-src',layout:(_BS.layout?_BS.layout():{'line-join':'round'}),paint:(_BS.paint?_BS.paint():{'line-color':'#d9dbe0','line-opacity':0.95,'line-width':['interpolate',['linear'],['zoom'],1,0.95,4,1.55,8,2.2,12,2.9]})}, 'imtb-casing');   /* directly under the era line: a national border reads above every subdivision, as at Now */
+      if(!GE().layers.has('imtb-now-casing')) GE().layers.add({id:'imtb-now-casing',type:'line',source:'imtb-now-src',layout:(_BS.layout?_BS.layout():{'line-join':'round'}),paint:(_BS.casingPaint?_BS.casingPaint():{'line-color':'#000000','line-opacity':0.35,'line-width':['interpolate',['linear'],['zoom'],1,2.0,4,2.8,8,3.8,12,4.9]})}, 'imtb-now-line');
       /* == (#R309) A PAST COUNTRY'S NAME IS A COUNTRY NAME ======================================
          「昔の国名ラベルの見た目や挙動も今の国名ラベルと完全に同じに。」 #R101 gave the RENAMED half its
          own smaller "era style" (that request was about the UNCHANGED half keeping the normal one), so
@@ -2186,7 +2222,7 @@ export function timeBorders(HOST){
       }catch(_){} });
       return fc;
       }catch(_){ return fc; } }
-    function apply(fc){ const mySeq=seq; shownFC=fc; _writeNote(); try{ fc=tagSame(fc,_tagWhen()); }catch(_){}
+    function apply(fc){ const mySeq=seq; shownFC=fc; _writeNote(); _presentSoon(); try{ fc=tagSame(fc,_tagWhen()); }catch(_){}
       /* (#R94m) set the data on the EXISTING source directly (not gated by isStyleLoaded) — that gate was why a
          SECOND year change didn't update: ensure() could transiently return false and block setData, so the
          borders stayed on the first year until you went back to Now. No re-assert timeouts → no flicker.
@@ -2214,6 +2250,7 @@ export function timeBorders(HOST){
          the "現在でも地名ラベルをクリックできない" half of the report). */
       try{ GE().layers.setSourceData('imtb-src',{type:'FeatureCollection',features:[]}); }catch(_){}
       try{ GE().layers.setSourceData('imtb-ln-src',{type:'FeatureCollection',features:[]}); }catch(_){}
+      try{ clearTimeout(_prT); if(GE().layers.hasSource('imtb-now-src')) GE().layers.setSourceData('imtb-now-src',{type:'FeatureCollection',features:[]}); }catch(_){}
       try{ GE().layers.setSourceData('imtb-lbl-src',{type:'FeatureCollection',features:[]}); }catch(_){}
       try{ _DRAWN_LAYERS.forEach(id=>{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility','none'); }); }catch(_){}
       _restoreBase(); try{ window._applyBorders&&window._applyBorders(); }catch(_){} }
